@@ -1,136 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab0GWInr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 04:43:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32169 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503Ab0GWIno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 04:43:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,246,1278313200"; 
-   d="scan'208";a="538083971"
-Subject: Re: [PATCH] Don't apply for write lock on tasklist_lock if parent
- doesn't ptrace other processes
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, andi.kleen@intel.com,
-        stable@kernel.org
-In-Reply-To: <20100722090524.GA6647@redhat.com>
-References: <1279176663.2096.1264.camel@ymzhang.sh.intel.com>
-	 <20100721144944.5351c741.akpm@linux-foundation.org>
-	 <20100721222529.EFBAA400B6@magilla.sf.frob.com>
-	 <20100722090524.GA6647@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Fri, 23 Jul 2010 16:45:05 +0800
-Message-Id: <1279874705.2096.1274.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753379Ab0GWIsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 04:48:55 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9488 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab0GWIsx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 04:48:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Fri, 23 Jul 2010 01:48:48 -0700
+From: Wei Ni <wni@nvidia.com>
+To: "'Takashi Iwai'" <tiwai@suse.de>
+CC: "'Wu Fengguang'" <fengguang.wu@intel.com>,
+        "'Pavel Hofman'" <pavel.hofman@insite.cz>,
+        "'alsa-devel'" <alsa-devel@alsa-project.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'akpm'" <akpm@linux-foundation.org>,
+        Stephen Warren <swarren@nvidia.com>
+Date: Fri, 23 Jul 2010 16:43:57 +0800
+Subject: RE: Support MCP89 hdmi audio
+Thread-Topic: Support MCP89 hdmi audio
+Thread-Index: Acso07nMflWDO5UDTmCfLvbdwLjmOgAeCMgwAD24pmA=
+Message-ID: <6B4D417B830BC44B8026029FD256F7F1C29D065C7E@HKMAIL01.nvidia.com>
+References: <6B4D417B830BC44B8026029FD256F7F1C29D065C70@HKMAIL01.nvidia.com>
+ <s5hr5ix2dzb.wl%tiwai@suse.de>
+ <6B4D417B830BC44B8026029FD256F7F1C29D065C72@HKMAIL01.nvidia.com>
+In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C29D065C72@HKMAIL01.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 11:05 +0200, Oleg Nesterov wrote:
-> I am not surpized perf blaims tasklist, but I am really surpized this patch
-> adds 10% improvement...
-I changed aim7 workfile to focus on fork/exec and other a couple of sub-cases.
-And this behavior is clear on 8-socket machines. 
+Hi, Takashi
+I tried your patch file, it worked fine on MCP89 board.
+But I still need to check some other problems.
+So please don't add this patch now.
 
-> 
-> On 07/21, Roland McGrath wrote:
-> >
-> > > > @@ -331,6 +331,9 @@ void exit_ptrace(struct task_struct *tra
-> > > >  	struct task_struct *p, *n;
-> > > >  	LIST_HEAD(ptrace_dead);
-> > > >
-> > > > +	if (list_empty(&tracer->ptraced))
-> > > > +		return;
-> > > > +
-> > > >  	write_lock_irq(&tasklist_lock);
-> > > >  	list_for_each_entry_safe(p, n, &tracer->ptraced, ptrace_entry) {
-> > > >  		if (__ptrace_detach(tracer, p))
-> >
-> > I think we may have tried that before.  Oleg can tell us if it's really
-> > safe vs a race with PTRACE_TRACEME or something like that.
-> 
-> Yes, this can race with ptrace_traceme(). Without tasklist_lock in
-> exit_ptrace(), it is possible that ptrace_traceme() starts __ptrace_link()
-> before it sees PF_EXITING, and completes before the result of list_add()
-> is visible to the exiting parent. tasklist acts as a barrier.
-Thanks for your kind explanation.
+Thanks
+Wei.
 
-> 
-> So, this list_empty() check needs taskslit at least for reading. But, we
-> are going to take it for writing right after exit_ptrace() returns, afaics
-> we can add this fastpatch check for free.
-> 
-> Uncompiled/untested.
-> 
-> Oleg.
-> 
->  kernel/ptrace.c |   10 +++++++---
->  kernel/exit.c   |    3 ++-
->  2 files changed, 9 insertions(+), 4 deletions(-)
-> 
-> --- x/kernel/ptrace.c
-> +++ x/kernel/ptrace.c
-> @@ -324,26 +324,30 @@ int ptrace_detach(struct task_struct *ch
->  }
->  
->  /*
-> - * Detach all tasks we were using ptrace on.
-> + * Detach all tasks we were using ptrace on. Called with tasklist held.
->   */
->  void exit_ptrace(struct task_struct *tracer)
->  {
->  	struct task_struct *p, *n;
->  	LIST_HEAD(ptrace_dead);
->  
-> -	write_lock_irq(&tasklist_lock);
-> +	if (likely(list_empty(&tracer->ptraced)))
-> +		return;
-> +
->  	list_for_each_entry_safe(p, n, &tracer->ptraced, ptrace_entry) {
->  		if (__ptrace_detach(tracer, p))
->  			list_add(&p->ptrace_entry, &ptrace_dead);
->  	}
-> -	write_unlock_irq(&tasklist_lock);
->  
-> +	write_unlock_irq(&tasklist_lock);
->  	BUG_ON(!list_empty(&tracer->ptraced));
->  
->  	list_for_each_entry_safe(p, n, &ptrace_dead, ptrace_entry) {
->  		list_del_init(&p->ptrace_entry);
->  		release_task(p);
->  	}
-> +
-> +	write_lock_irq(&tasklist_lock);
->  }
->  
->  int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len)
-> --- x/kernel/exit.c
-> +++ x/kernel/exit.c
-> @@ -771,9 +771,10 @@ static void forget_original_parent(struc
-After applying my patch (although it's incorrect as there is a race with TRACEME),
-perf shows write_lock_irq in forget_original_parent consumes less than 40% cpu time on
-8-socket machine.
+-----Original Message-----
+From: Wei Ni 
+Sent: Thursday, July 22, 2010 11:14 AM
+To: 'Takashi Iwai'
+Cc: Wu Fengguang; 'Pavel Hofman'; 'alsa-devel'; 'linux-kernel'; 'akpm'
+Subject: RE: Support MCP89 hdmi audio
 
-Is it possible to optimize it to use finer locks instead of the global tasklist_lock?
+it's great, I will try it.
+
+Thanks
+Wei.
+
+-----Original Message-----
+From: Takashi Iwai [mailto:tiwai@suse.de] 
+Sent: Wednesday, July 21, 2010 8:53 PM
+To: Wei Ni
+Cc: Wu Fengguang; 'Pavel Hofman'; 'alsa-devel'; 'linux-kernel'; 'akpm'
+Subject: Re: Support MCP89 hdmi audio
+
+At Wed, 21 Jul 2010 19:45:09 +0800,
+Wei Ni wrote:
+> 
+> Hi, all
+> I'm an Nvidia engineer, I maintain the nvidia linux hdmi audio driver.
+> 
+> An end-user report a problem with his TV attached to an MCP89.
+> ALSA won't send audio to it, because
+> PD=0:
+> HDMI hot plug event: Pin=5 Presence_Detect=1 ELD_Valid=0
+> HDMI hot plug event: Pin=5 Presence_Detect=0 ELD_Valid=1
+> 
+> As you know, in linux driver patch_hdmi.c, it use (pind && eldv)
+> in unsolicited events. So the driver can't detect the monitor.
+> 
+> >From the HAD specification
+> (http://download.intel.com/standards/hdaudio/pdf/HDA036.pdf):
+> 
+> Original text for Unsolicited Response PD bit:
+> 
+> Presence Detect: When this bit is set, sense measurement has
+> changed on the pin widget and software can use the pin sense
+> control verb to determine the current pin sense data state.
+> For analog pin widgets, this UR means that Presence Detect or
+> Impedance has changed on the pin widget.
+> For digital pin widgets, including HDMI pin widgets, this means
+> that presence detect (and optionally ELD valid bit) has
+> **changed**. [my emphasis]
+> 
+> Updated text for Unsolicted Response PD bit:
+> 
+> Presence Detect: This bit reflects the **present** [my
+> emphasis] state of the Pin Sense Presence Detect bit when the
+> unsolicited response is triggered. Software can optionally use
+> the pin sense control verb to determine the latest pin sense
+> data state. This bit implementation is only required for
+> digital display pin widget. Non digital display pin widget is
+> optional to implement this bit.
+> 
+> For our MCP89, the values indicates the change of status of PD, not the actual value of PD,
+> which follows older description of UR for PD bit.
+> 
+> So could we add a workaround for MCP89? We could use Pin Sense to determine again in
+> unsolicited events. If it return 0xc0000000, it means PD=1 and ELVD=1.
+> Or do you have any suggestions?
+
+Yes.  The patch below does similar thing.
+Could you give it a try?
 
 
->  	struct task_struct *p, *n, *reaper;
->  	LIST_HEAD(dead_children);
->  
-> +	write_lock_irq(&tasklist_lock);
-> +
->  	exit_ptrace(father);
->  
-> -	write_lock_irq(&tasklist_lock);
->  	reaper = find_new_reaper(father);
->  
->  	list_for_each_entry_safe(p, n, &father->children, sibling) {
-> 
+thanks,
 
+Takashi
 
+---
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 86067ee..2fc5396 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -52,6 +52,10 @@ struct hdmi_spec {
+ 	 */
+ 	struct hda_multi_out multiout;
+ 	unsigned int codec_type;
++
++	/* misc flags */
++	/* PD bit indicates only the update, not the current state */
++	unsigned int old_pin_detect:1;
+ };
+ 
+ 
+@@ -616,6 +620,9 @@ static void hdmi_setup_audio_infoframe(struct hda_codec *codec, hda_nid_t nid,
+  * Unsolicited events
+  */
+ 
++static void hdmi_present_sense(struct hda_codec *codec, hda_nid_t pin_nid,
++			       struct hdmi_eld *eld);
++
+ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
+ {
+ 	struct hdmi_spec *spec = codec->spec;
+@@ -632,6 +639,12 @@ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
+ 	if (index < 0)
+ 		return;
+ 
++	if (spec->old_pin_detect) {
++		if (pind)
++			hdmi_present_sense(codec, tag, &spec->sink_eld[index]);
++		pind = spec->sink_eld[index].monitor_present;
++	}
++
+ 	spec->sink_eld[index].monitor_present = pind;
+ 	spec->sink_eld[index].eld_valid = eldv;
+ 
+diff --git a/sound/pci/hda/patch_nvhdmi.c b/sound/pci/hda/patch_nvhdmi.c
+index 3c10c0b..b0652ac 100644
+--- a/sound/pci/hda/patch_nvhdmi.c
++++ b/sound/pci/hda/patch_nvhdmi.c
+@@ -478,6 +478,7 @@ static int patch_nvhdmi_8ch_89(struct hda_codec *codec)
+ 
+ 	codec->spec = spec;
+ 	spec->codec_type = HDA_CODEC_NVIDIA_MCP89;
++	spec->old_pin_detect = 1;
+ 
+ 	if (hdmi_parse_codec(codec) < 0) {
+ 		codec->spec = NULL;
+@@ -508,6 +509,7 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
+ 	spec->multiout.max_channels = 8;
+ 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
+ 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
++	spec->old_pin_detect = 1;
+ 
+ 	codec->patch_ops = nvhdmi_patch_ops_8ch_7x;
+ 
+@@ -528,6 +530,7 @@ static int patch_nvhdmi_2ch(struct hda_codec *codec)
+ 	spec->multiout.max_channels = 2;
+ 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
+ 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
++	spec->old_pin_detect = 1;
+ 
+ 	codec->patch_ops = nvhdmi_patch_ops_2ch;
+ 
+-----------------------------------------------------------------------------------
+This email message is for the sole use of the intended recipient(s) and may contain
+confidential information.  Any unauthorized review, use, disclosure or distribution
+is prohibited.  If you are not the intended recipient, please contact the sender by
+reply email and destroy all copies of the original message.
+-----------------------------------------------------------------------------------
