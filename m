@@ -1,62 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab0GWFDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 01:03:32 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58440 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751863Ab0GWFDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 01:03:30 -0400
-Date: Fri, 23 Jul 2010 15:03:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Sven Eckelmann <sven.eckelmann@gmx.de>
-Subject: linux-next: manual merge of the staging-next tree with the net tree
-Message-Id: <20100723150323.daa04d5f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__23_Jul_2010_15_03_23_+1000_sEdJulbjqN_KzaZL"
+	id S1752747Ab0GWFOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 01:14:09 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59712 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab0GWFOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 01:14:07 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Subject: Re: [PATCH 2/7] memcg: mem_cgroup_shrink_node_zone() doesn't need sc.nodemask
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+In-Reply-To: <20100722044911.GK14369@balbir.in.ibm.com>
+References: <20100716191334.736F.A69D9226@jp.fujitsu.com> <20100722044911.GK14369@balbir.in.ibm.com>
+Message-Id: <20100723141111.88A8.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 23 Jul 2010 14:14:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__23_Jul_2010_15_03_23_+1000_sEdJulbjqN_KzaZL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> * KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-07-16 19:14:15]:
+> 
+> > Currently mem_cgroup_shrink_node_zone() call shrink_zone() directly.
+> > thus it doesn't need to initialize sc.nodemask. shrink_zone() doesn't
+> > use it at all.
+> > 
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > ---
+> >  include/linux/swap.h |    3 +--
+> >  mm/memcontrol.c      |    3 +--
+> >  mm/vmscan.c          |    8 ++------
+> >  3 files changed, 4 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index ff4acea..bf4eb62 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -244,8 +244,7 @@ extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
+> >  extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> >  						gfp_t gfp_mask, bool noswap,
+> >  						unsigned int swappiness,
+> > -						struct zone *zone,
+> > -						int nid);
+> > +						struct zone *zone);
+> >  extern int __isolate_lru_page(struct page *page, int mode, int file);
+> >  extern unsigned long shrink_all_memory(unsigned long nr_pages);
+> >  extern int vm_swappiness;
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index aba4310..01f38ff 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1307,8 +1307,7 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+> >  		/* we use swappiness of local cgroup */
+> >  		if (check_soft)
+> >  			ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
+> > -				noswap, get_swappiness(victim), zone,
+> > -				zone->zone_pgdat->node_id);
+> > +				noswap, get_swappiness(victim), zone);
+> >  		else
+> >  			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
+> >  						noswap, get_swappiness(victim));
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index bd1d035..be860a0 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1929,7 +1929,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> >  unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> >  						gfp_t gfp_mask, bool noswap,
+> >  						unsigned int swappiness,
+> > -						struct zone *zone, int nid)
+> > +						struct zone *zone)
+> >  {
+> >  	struct scan_control sc = {
+> >  		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+> > @@ -1940,13 +1940,9 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> >  		.order = 0,
+> >  		.mem_cgroup = mem,
+> >  	};
+> > -	nodemask_t nm  = nodemask_of_node(nid);
+> > -
+> >  	sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
+> >  			(GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
+> > -	sc.nodemask = &nm;
+> > -	sc.nr_reclaimed = 0;
+> > -	sc.nr_scanned = 0;
+> 
+> We need the initialization to 0, is there a reason why it was removed?
 
-Hi Greg,
+please reread C spec and other scan_control user.
+sc_nr_* were already initialized in struct scan_control sc = { } line.
 
-Today's linux-next merge of the staging-next tree got a conflict in
-drivers/staging/batman-adv/hard-interface.c between commit
-28172739f0a276eb8d6ca917b3974c2edb036da3 ("net: fix 64 bit counters on 32
-bit arches") from the net tree and commit
-a1a38cad4c71bc08403b204fbe0ba98b4447f8bf ("Staging: batman-adv: Don't
-increment stats of foreign device") from the staging-next tree.
 
-The latter just removes the code fixed by the former, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__23_Jul_2010_15_03_23_+1000_sEdJulbjqN_KzaZL
-Content-Type: application/pgp-signature
+> What happens when we compare or increment sc.nr_*?
+> 
+> Can we keep this indepedent of the tracing patches?
+> 
+> > +
+> >  	/*
+> >  	 * NOTE: Although we can get the priority field, using it
+> >  	 * here is not a good idea, since it limits the pages we can scan.
+> > -- 
+> > 1.6.5.2
+> > 
+> > 
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> 	Three Cheers,
+> 	Balbir
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMSSKbAAoJEDMEi1NhKgbslIwH/1WTpz2zwBRKXsRXqAFi9odl
-u6up4/NAXhZe9R974iILL37diIiO1hCQjKfql5mMCtWqqXhCNkWZ9yLIdLJmmrgG
-NwLKpaCprS1p+vMRLkHyKhGar5YeGvMAPRrQt17w0ZhuUAe0jsNrLOQcdyttOqCm
-jNKkCvUzloreTsZM2hdOLwGWPuFEDi4+9/YQbjtxTHI021zi6R/9QTGOe7vEauuG
-+x1Ms7MQzfw+986tBeYsxirurT0PJN3GsURNpz9smcSE19WMAutbErkLSYfe8YJU
-ccspHrsDrodBsniUgZ/sWIezUVjEGo740UhyTQc60cumVyGOsS9j+acOQWfd2VQ=
-=urUy
------END PGP SIGNATURE-----
 
---Signature=_Fri__23_Jul_2010_15_03_23_+1000_sEdJulbjqN_KzaZL--
