@@ -1,249 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759500Ab0GWML3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:11:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43073 "EHLO hera.kernel.org"
+	id S1759515Ab0GWMLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:11:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43085 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab0GWML1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 08:11:27 -0400
-Date: Fri, 23 Jul 2010 12:11:01 GMT
-From: tip-bot for Mike Frysinger <vapier@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, vapier@gentoo.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, vapier@gentoo.org, tglx@linutronix.de
-In-Reply-To: <1279610015-10250-1-git-send-email-vapier@gentoo.org>
-References: <1279610015-10250-1-git-send-email-vapier@gentoo.org>
+	id S1753600Ab0GWMLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 08:11:43 -0400
+Date: Fri, 23 Jul 2010 12:11:20 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
+        gleb@redhat.com, fweisbec@gmail.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, efault@gmx.de, peterz@infradead.org,
+        gleb@redhat.com, fweisbec@gmail.com, tglx@linutronix.de
+In-Reply-To: <20100722170541.GF17631@ghostprotocols.net>
+References: <20100722170541.GF17631@ghostprotocols.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing/documentation: Document dynamic ftracer internals
-Message-ID: <tip-9849ed4d72251d273524efb8b70be0be9aecb1df@git.kernel.org>
-Git-Commit-ID: 9849ed4d72251d273524efb8b70be0be9aecb1df
+Subject: [tip:perf/urgent] perf annotate: Fix handling of goto labels that are valid hex numbers
+Message-ID: <tip-70a7cb3b39994ff366ff100b46f9dc97b1510c0f@git.kernel.org>
+Git-Commit-ID: 70a7cb3b39994ff366ff100b46f9dc97b1510c0f
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:11:02 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:11:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9849ed4d72251d273524efb8b70be0be9aecb1df
-Gitweb:     http://git.kernel.org/tip/9849ed4d72251d273524efb8b70be0be9aecb1df
-Author:     Mike Frysinger <vapier@gentoo.org>
-AuthorDate: Tue, 20 Jul 2010 03:13:35 -0400
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Wed, 21 Jul 2010 11:00:25 -0400
+Commit-ID:  70a7cb3b39994ff366ff100b46f9dc97b1510c0f
+Gitweb:     http://git.kernel.org/tip/70a7cb3b39994ff366ff100b46f9dc97b1510c0f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 22 Jul 2010 14:04:13 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 22 Jul 2010 14:04:13 -0300
 
-tracing/documentation: Document dynamic ftracer internals
+perf annotate: Fix handling of goto labels that are valid hex numbers
 
-Add more details to the dynamic function tracing design implementation.
+When parsing the objdump disassembly output we can have goto labels that
+are valid hex numbers and thus get confused with lines with machine
+code.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-LKML-Reference: <1279610015-10250-1-git-send-email-vapier@gentoo.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Handle the common case of a label that has nothing after it and other
+cases where there is just source code by validating the resulting "ip".
+
+It is still possible that we find goto labels that are in the function
+address range, but only if they are located before the real address we
+should be OK.
+
+A change in the objdump output to have a clear marker separating
+addresses from the disassembly would come handy, but we would still have
+to deal with older versions.
+
+Reported-by: Gleb Natapov <gleb@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <20100722170541.GF17631@ghostprotocols.net>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- Documentation/trace/ftrace-design.txt |  153 +++++++++++++++++++++++++++++++-
- include/linux/ftrace.h                |    5 +
- 2 files changed, 153 insertions(+), 5 deletions(-)
+ tools/perf/util/hist.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
-index f1f81af..dc52bd4 100644
---- a/Documentation/trace/ftrace-design.txt
-+++ b/Documentation/trace/ftrace-design.txt
-@@ -13,6 +13,9 @@ Note that this focuses on architecture implementation details only.  If you
- want more explanation of a feature in terms of common code, review the common
- ftrace.txt file.
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 699cf81..784ee0b 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -976,13 +976,17 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
+ 		 * Parse hexa addresses followed by ':'
+ 		 */
+ 		line_ip = strtoull(tmp, &tmp2, 16);
+-		if (*tmp2 != ':' || tmp == tmp2)
++		if (*tmp2 != ':' || tmp == tmp2 || tmp2[1] == '\0')
+ 			line_ip = -1;
+ 	}
  
-+Ideally, everyone who wishes to retain performance while supporting tracing in
-+their kernel should make it all the way to dynamic ftrace support.
+ 	if (line_ip != -1) {
+-		u64 start = map__rip_2objdump(self->ms.map, sym->start);
++		u64 start = map__rip_2objdump(self->ms.map, sym->start),
++		    end = map__rip_2objdump(self->ms.map, sym->end);
 +
+ 		offset = line_ip - start;
++		if (offset < 0 || (u64)line_ip > end)
++			offset = -1;
+ 	}
  
- Prerequisites
- -------------
-@@ -215,7 +218,7 @@ An arch may pass in a unique value (frame pointer) to both the entering and
- exiting of a function.  On exit, the value is compared and if it does not
- match, then it will panic the kernel.  This is largely a sanity check for bad
- code generation with gcc.  If gcc for your port sanely updates the frame
--pointer under different opitmization levels, then ignore this option.
-+pointer under different optimization levels, then ignore this option.
- 
- However, adding support for it isn't terribly difficult.  In your assembly code
- that calls prepare_ftrace_return(), pass the frame pointer as the 3rd argument.
-@@ -234,7 +237,7 @@ If you can't trace NMI functions, then skip this option.
- 
- 
- HAVE_SYSCALL_TRACEPOINTS
-----------------------
-+------------------------
- 
- You need very few things to get the syscalls tracing in an arch.
- 
-@@ -250,12 +253,152 @@ You need very few things to get the syscalls tracing in an arch.
- HAVE_FTRACE_MCOUNT_RECORD
- -------------------------
- 
--See scripts/recordmcount.pl for more info.
-+See scripts/recordmcount.pl for more info.  Just fill in the arch-specific
-+details for how to locate the addresses of mcount call sites via objdump.
-+This option doesn't make much sense without also implementing dynamic ftrace.
- 
-+
-+HAVE_DYNAMIC_FTRACE
-+-------------------
-+
-+You will first need HAVE_FTRACE_MCOUNT_RECORD and HAVE_FUNCTION_TRACER, so
-+scroll your reader back up if you got over eager.
-+
-+Once those are out of the way, you will need to implement:
-+	- asm/ftrace.h:
-+		- MCOUNT_ADDR
-+		- ftrace_call_adjust()
-+		- struct dyn_arch_ftrace{}
-+	- asm code:
-+		- mcount() (new stub)
-+		- ftrace_caller()
-+		- ftrace_call()
-+		- ftrace_stub()
-+	- C code:
-+		- ftrace_dyn_arch_init()
-+		- ftrace_make_nop()
-+		- ftrace_make_call()
-+		- ftrace_update_ftrace_func()
-+
-+First you will need to fill out some arch details in your asm/ftrace.h.
-+
-+Define MCOUNT_ADDR as the address of your mcount symbol similar to:
-+	#define MCOUNT_ADDR ((unsigned long)mcount)
-+Since no one else will have a decl for that function, you will need to:
-+	extern void mcount(void);
-+
-+You will also need the helper function ftrace_call_adjust().  Most people
-+will be able to stub it out like so:
-+	static inline unsigned long ftrace_call_adjust(unsigned long addr)
-+	{
-+		return addr;
-+	}
- <details to be filled>
- 
-+Lastly you will need the custom dyn_arch_ftrace structure.  If you need
-+some extra state when runtime patching arbitrary call sites, this is the
-+place.  For now though, create an empty struct:
-+	struct dyn_arch_ftrace {
-+		/* No extra data needed */
-+	};
-+
-+With the header out of the way, we can fill out the assembly code.  While we
-+did already create a mcount() function earlier, dynamic ftrace only wants a
-+stub function.  This is because the mcount() will only be used during boot
-+and then all references to it will be patched out never to return.  Instead,
-+the guts of the old mcount() will be used to create a new ftrace_caller()
-+function.  Because the two are hard to merge, it will most likely be a lot
-+easier to have two separate definitions split up by #ifdefs.  Same goes for
-+the ftrace_stub() as that will now be inlined in ftrace_caller().
-+
-+Before we get confused anymore, let's check out some pseudo code so you can
-+implement your own stuff in assembly:
- 
--HAVE_DYNAMIC_FTRACE
-----------------------
-+void mcount(void)
-+{
-+	return;
-+}
-+
-+void ftrace_caller(void)
-+{
-+	/* implement HAVE_FUNCTION_TRACE_MCOUNT_TEST if you desire */
-+
-+	/* save all state needed by the ABI (see paragraph above) */
-+
-+	unsigned long frompc = ...;
-+	unsigned long selfpc = <return address> - MCOUNT_INSN_SIZE;
-+
-+ftrace_call:
-+	ftrace_stub(frompc, selfpc);
-+
-+	/* restore all state needed by the ABI */
-+
-+ftrace_stub:
-+	return;
-+}
-+
-+This might look a little odd at first, but keep in mind that we will be runtime
-+patching multiple things.  First, only functions that we actually want to trace
-+will be patched to call ftrace_caller().  Second, since we only have one tracer
-+active at a time, we will patch the ftrace_caller() function itself to call the
-+specific tracer in question.  That is the point of the ftrace_call label.
-+
-+With that in mind, let's move on to the C code that will actually be doing the
-+runtime patching.  You'll need a little knowledge of your arch's opcodes in
-+order to make it through the next section.
-+
-+Every arch has an init callback function.  If you need to do something early on
-+to initialize some state, this is the time to do that.  Otherwise, this simple
-+function below should be sufficient for most people:
-+
-+int __init ftrace_dyn_arch_init(void *data)
-+{
-+	/* return value is done indirectly via data */
-+	*(unsigned long *)data = 0;
-+
-+	return 0;
-+}
-+
-+There are two functions that are used to do runtime patching of arbitrary
-+functions.  The first is used to turn the mcount call site into a nop (which
-+is what helps us retain runtime performance when not tracing).  The second is
-+used to turn the mcount call site into a call to an arbitrary location (but
-+typically that is ftracer_caller()).  See the general function definition in
-+linux/ftrace.h for the functions:
-+	ftrace_make_nop()
-+	ftrace_make_call()
-+The rec->ip value is the address of the mcount call site that was collected
-+by the scripts/recordmcount.pl during build time.
-+
-+The last function is used to do runtime patching of the active tracer.  This
-+will be modifying the assembly code at the location of the ftrace_call symbol
-+inside of the ftrace_caller() function.  So you should have sufficient padding
-+at that location to support the new function calls you'll be inserting.  Some
-+people will be using a "call" type instruction while others will be using a
-+"branch" type instruction.  Specifically, the function is:
-+	ftrace_update_ftrace_func()
-+
-+
-+HAVE_DYNAMIC_FTRACE + HAVE_FUNCTION_GRAPH_TRACER
-+------------------------------------------------
-+
-+The function grapher needs a few tweaks in order to work with dynamic ftrace.
-+Basically, you will need to:
-+	- update:
-+		- ftrace_caller()
-+		- ftrace_graph_call()
-+		- ftrace_graph_caller()
-+	- implement:
-+		- ftrace_enable_ftrace_graph_caller()
-+		- ftrace_disable_ftrace_graph_caller()
- 
- <details to be filled>
-+Quick notes:
-+	- add a nop stub after the ftrace_call location named ftrace_graph_call;
-+	  stub needs to be large enough to support a call to ftrace_graph_caller()
-+	- update ftrace_graph_caller() to work with being called by the new
-+	  ftrace_caller() since some semantics may have changed
-+	- ftrace_enable_ftrace_graph_caller() will runtime patch the
-+	  ftrace_graph_call location with a call to ftrace_graph_caller()
-+	- ftrace_disable_ftrace_graph_caller() will runtime patch the
-+	  ftrace_graph_call location with nops
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 41e4633..dcd6a7c 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -1,3 +1,8 @@
-+/*
-+ * Ftrace header.  For implementation details beyond the random comments
-+ * scattered below, see: Documentation/trace/ftrace-design.txt
-+ */
-+
- #ifndef _LINUX_FTRACE_H
- #define _LINUX_FTRACE_H
- 
+ 	objdump_line = objdump_line__new(offset, line);
