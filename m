@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab0GWUgR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 16:36:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48088 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab0GWUgO convert rfc822-to-8bit (ORCPT
+	id S1757383Ab0GWUst (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 16:48:49 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:35942 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021Ab0GWUsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 16:36:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=U8hisP7e5K5I3TRygScBnv8+VxsIbA/fRIwssT5S2HPDINEOQYznM52F+Ag0IDsXmU
-         /Puj3uw2veEThvGPWJXO8VRRHoUyIuL618CvAo3+y8GruvOXBB6vPf8OCXMS+mv5uCrR
-         S+iNW1vS1x/S6AnGrR3cguWPelNJ8M/hYvYNo=
+	Fri, 23 Jul 2010 16:48:47 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6052"; a="48471038"
+Message-ID: <4C4A002E.6020100@codeaurora.org>
+Date: Fri, 23 Jul 2010 14:48:46 -0600
+From: Kenneth Heitke <kheitke@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
-References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
-Date: Fri, 23 Jul 2010 22:36:12 +0200
-Message-ID: <AANLkTimK4XaXLNJtSFEsy3wygRK02BcLK=OZDJfAW63t@mail.gmail.com>
-Subject: Re: 2.6.35-rc6: Reported regressions from 2.6.34
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: =?ISO-8859-15?Q?Daniel_Gl=F6ckner?= <dg@emlix.com>
+CC: khali@linux-fr.org, ben-linux@fluff.org, linux-arm-msm@vger.kernel.org,
+        sdharia@codeaurora.org, Crane Cai <crane.cai@amd.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: Single-wire Serial Bus Interface for Qualcomm MSM
+ chipsets
+References: <1279734768-8436-1-git-send-email-kheitke@codeaurora.org> <4C496C58.1080806@emlix.com>
+In-Reply-To: <4C496C58.1080806@emlix.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 1:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16372
-> Subject         : Regression 2.6.34->2.6.35-rc4: radeaon KMS an RS690 broken
-> Submitter       : Torsten Kaiser <just.for.lkml@googlemail.com>
-> Date            : 2010-07-11 19:56 (13 days old)
-> Message-ID      : <AANLkTimkNg81yzxSHTcAa1QlTE9SYmvzL4eOTVHApWq3@mail.gmail.com>
-> References      : http://marc.info/?l=linux-kernel&m=127887822407672&w=2
+Daniel Glöckner wrote:
+> On 07/21/2010 07:52 PM, Kenneth Heitke wrote:
+>> Unlike I2C, SSBI is a point-to-point connection, and therefore there is no
+>> need to specify a slave device address. The SSBI implementation
+>> overrides the slave device address to be a device register address
+>> instead.  This restricts the client drivers from using the SMBus
+>> communication APIs unless they update the address field (addr) of the
+>> i2c_client structure prior to every SMBus function call.
+> 
+> Is it just me who is uncomfortable with this?
+> 
+> If I am not mistaken, you still have to update the i2c_client structure
+> when using the SMBus API.
 
-I just installed 2.6.35-rc6 and can confirm, that this bug is fixed.
+Yes, you are correct if the SMBus API is being used.
 
-Thanks!
+Each SSBI transaction consists of an address and a data word.  I need to 
+get the address information somehow and I didn't want to have to fetch 
+this information from the data buffer passed in for the clients.
 
-Torsten
+> 
+> And how do you intend to bind a driver to an SSBI device if there is not a
+> single address to bind to?
+
+There is only one device per controller therefore the binding is done 
+using the bus number.  If I have 3 devices, then I have 3 independent buses.
+
+> 
+> The Qualcomm SSBI patent mentiones the possibility of adding logic to chips
+> to be accessible over both SSBI and the three wire SBI interface. The SBI
+> interface on the other hand is even closer to I2C and requires the use of
+> a slave ID byte. If you didn't abuse the address field, you could write
+> drivers that work on both interfaces.
+
+The driver doesn't support the three wire SBI interface.  That interface 
+   has been replaced with the single wire interface and won't be support 
+under Linux.
+
+> 
+> Why not use one of the special addresses mentioned in the I2C specification
+> for SSBI? 0x02 might be appropriate.
+> 
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
