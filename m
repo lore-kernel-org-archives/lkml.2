@@ -1,151 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0GWBEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:04:01 -0400
-Received: from fn.samba.org ([216.83.154.106]:42940 "EHLO lists.samba.org"
+	id S1755250Ab0GWBKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:10:25 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50627 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab0GWBD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 21:03:59 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19528.60019.28495.655512@samba.org>
-Date: Fri, 23 Jul 2010 11:03:47 +1000
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeremy Allison <jra@samba.org>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Volker.Lendecke@sernet.de,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        Jan Engelhardt <jengelh@medozas.de>,
-        David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
-	file stats available [ver #6]
-In-Reply-To: <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	<20100722162712.GB10352@jeremy-laptop>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-X-Mailer: VM 8.0.13 under 23.1.1 (x86_64-pc-linux-gnu)
-Reply-To: tridge@samba.org
-From: tridge@samba.org
+	id S1752401Ab0GWBKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 21:10:24 -0400
+Date: Fri, 23 Jul 2010 11:10:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: New branches for linux-next
+Message-Id: <20100723111018.f250c0f5.sfr@canb.auug.org.au>
+In-Reply-To: <4C48D9C8.3090701@goop.org>
+References: <4C48D9C8.3090701@goop.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- > My point is that we have three timestamps, and
- > windows wants three timestamps (somebody claims that NTFS has four
- > timestamps, but the Windows file time access functions certainly only
- > shows three times, so any potential extra on-disk times have no
- > relevance because they are invisible to pretty much everybody).
+Hi Jeremy,
 
-Not quite. The underlying structure available to Windows programmers
-is this one:
+On Thu, 22 Jul 2010 16:52:40 -0700 Jeremy Fitzhardinge <jeremy@goop.org> wr=
+ote:
+>
+> Could you add:
+>=20
+>     git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git
+>     upstream/xen
 
-typedef struct _FILE_BASIC_INFORMATION {
-  LARGE_INTEGER CreationTime;
-  LARGE_INTEGER LastAccessTime;
-  LARGE_INTEGER LastWriteTime;
-  LARGE_INTEGER ChangeTime;
-  ULONG         FileAttributes;
-} FILE_BASIC_INFORMATION, *PFILE_BASIC_INFORMATION;
+Added starting today.  I put just you as the contact - I can add more
+people/lists if you like.
 
-See http://msdn.microsoft.com/en-us/library/ff545762%28v=VS.85%29.aspx
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-These are the definitions:
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
-CreationTime
-    Specifies the time that the file was created. 
-LastAccessTime
-    Specifies the time that the file was last accessed. 
-LastWriteTime
-    Specifies the time that the file was last written to. 
-ChangeTime
-    Specifies the last time the file was changed. 
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-You are right that the more commonly used APIs (such as
-GetFileInformationByHandle()) omit the ChangeTime field in the return
-value. The ChangeTime is also not visible via the normal Windows GUI
-or command line tools.
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
-But there are APIs that are used by quite a few programs that do get
-all 4 timestamps. For example, GetFileInformationByHandleEx() returns
-all 4 fields. I include an example program that uses that API to show
-all the timestamps below.
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
 
-and yes, we think that real applications (such as Excel), look at
-these values separately.
+--Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb
+Content-Type: application/pgp-signature
 
-The other big difference from POSIX timestamps is that the
-CreationTime is settable on Windows, and some of the windows UI
-behaviour relies on this.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Cheers, Tridge
+iQEcBAEBAgAGBQJMSOv6AAoJEDMEi1NhKgbsZ2EH/11bhTEFe+ZbikLcooqS2zmf
+Fmgv0XppQc4ylLQGX7ptioP2F8jSHAms9qe+moR4HU0vBx8AtaAaaVXSI/8SOVKu
+yHoPupkN6XF6QLvC301mYwMrpKYMdh5tKDnCsfiR5IaN7TEi2M+FpiZdn8wbJPbO
+jPqhfZ+VwVUdzXdtadFN5TOX3h54k+IoleH74LMCjdAEFrtRTu3qVDuUB2IIaSjA
+wDnpaz4Q/v8TT8e8isSZ2KGa0Lfq9AiVElXGtUJssroCIWFHWkm0T/BUODt+M4Ow
+OI6fmpy7MIC2PJkVdtJubSgp5rL4QZ6hSW2VcPxGcSoLSJqr98mwSoC+ndasvqI=
+=t/DU
+-----END PGP SIGNATURE-----
 
-PS: Sorry for coming into this discussion so late
-
-
-/* 
-   show all 4 file times
-   tridge@samba.org, July 2010
-*/
-
-#define _WIN32_WINNT 0x0600
-
-#include <stdio.h>
-#include <stdlib.h>
-#include "windows.h"
-#include "winbase.h"
-
-
-static void FileTime(const char *fname)
-{
-	HANDLE h;
-	FILE_BASIC_INFO info;
-	BOOL ret;
-
-        h = CreateFile(
-                fname, GENERIC_READ, 
-                FILE_SHARE_READ,
-                NULL,           
-                OPEN_EXISTING,  
-                0,
-                NULL
-        );
-	if (h == INVALID_HANDLE_VALUE) {
-		printf("Unable to open %s\n", fname);
-		exit(1);
-	}
-
-	ret = GetFileInformationByHandleEx(h, FileBasicInfo, &info, sizeof(info));
-
-	if (!ret) {
-		printf("Unable to get file information\n");
-		exit(1);
-	}
-
-	printf("CreationTime:   %llu\n", (unsigned long long)info.CreationTime.QuadPart);
-	printf("LastAccessTime: %llu\n", (unsigned long long)info.LastAccessTime.QuadPart);
-	printf("LastWriteTime:  %llu\n", (unsigned long long)info.LastWriteTime.QuadPart);
-	printf("ChangeTime:     %llu\n", (unsigned long long)info.ChangeTime.QuadPart);
-
-	CloseHandle(h);
-}
-
-int main(int argc, char* argv[])
-{
-	if (argc < 2) {
-		printf("Usage: filetime FILENAME\n");
-		exit(1);
-	}
-
-	FileTime(argv[1]);
-	return 0;
-}
+--Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb--
