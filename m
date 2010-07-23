@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab0GWHIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 03:08:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38939 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751990Ab0GWHIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 03:08:51 -0400
-Date: Fri, 23 Jul 2010 17:08:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the kgdb tree with Linus' tree
-Message-Id: <20100723170847.0020e7f2.sfr@canb.auug.org.au>
-In-Reply-To: <4C490EB0.2030007@windriver.com>
-References: <20100723122646.a788fc86.sfr@canb.auug.org.au>
-	<4C490EB0.2030007@windriver.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__23_Jul_2010_17_08_47_+1000_nHKlbRkRJ_rZKThH"
+	id S1753429Ab0GWHJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 03:09:37 -0400
+Received: from mail.gmx.net ([213.165.64.20]:48834 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753027Ab0GWHJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 03:09:35 -0400
+X-Authenticated: #15668376
+X-Provags-ID: V01U2FsdGVkX1/o88NIsJPoN3e5nRvwi8/0/Hu+XFSxz6HiD7l2mV
+	XA8yM6EnhTFVRs
+From: Sven Eckelmann <sven.eckelmann@gmx.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the staging-next tree with the net tree
+Date: Fri, 23 Jul 2010 09:09:31 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-1-amd64; KDE/4.4.5; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+References: <20100723150323.daa04d5f.sfr@canb.auug.org.au>
+In-Reply-To: <20100723150323.daa04d5f.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart2161160.qE1jM2RogY";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha512
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007230909.32763.sven.eckelmann@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__23_Jul_2010_17_08_47_+1000_nHKlbRkRJ_rZKThH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+--nextPart2161160.qE1jM2RogY
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Jason,
+Stephen Rothwell wrote:
+> Hi Greg,
+>=20
+> Today's linux-next merge of the staging-next tree got a conflict in
+> drivers/staging/batman-adv/hard-interface.c between commit
+> 28172739f0a276eb8d6ca917b3974c2edb036da3 ("net: fix 64 bit counters on 32
+> bit arches") from the net tree and commit
+> a1a38cad4c71bc08403b204fbe0ba98b4447f8bf ("Staging: batman-adv: Don't
+> increment stats of foreign device") from the staging-next tree.
+>=20
+> The latter just removes the code fixed by the former, so I did that.
 
-On Thu, 22 Jul 2010 22:38:24 -0500 Jason Wessel <jason.wessel@windriver.com=
-> wrote:
->
-> This already fixed.  The problem was caused by the for_linus pull branch
-> being out of sync with kgdb-next.
+That is absolutely correct. The netdev guys noticed that the commits around=
+=20
+"net: fix 64 bit counters on 32 bit arches" made those lines a real bug=20
+(casting stuff around, writing on memory it should only read, probably writ=
+ing=20
+on unrelated memory). We reviewed those lines again and noticed that they m=
+ake=20
+no sense at all and removed them to fix that bug and another minor bug.
 
-Yeah, I guessed :-)
+I am sorry that this created a merge conflict for you, but only those commi=
+ts=20
+by the netdev guys made us aware that there is something going wrong in the=
+=20
+batman-adv receive code.
 
-Thanks
+Thanks a lot for your linux-next repository and your work on it. It is a bi=
+g=20
+help to see what is going on elsewhere and how it may affect our code.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Best regards,
+	Sven
 
---Signature=_Fri__23_Jul_2010_17_08_47_+1000_nHKlbRkRJ_rZKThH
-Content-Type: application/pgp-signature
+--nextPart2161160.qE1jM2RogY
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMST//AAoJEDMEi1NhKgbsmokIAKFAfYDXkQg/QmeomFRJS9l2
-ijb6dIikpPzN1qWyyjnPE77yo5fvdUBRLrTn77XKMhLvrg9u1uEnjr4/GqXBCpY9
-v+re4/Ovhz2JPEJ8yA00z4TScrnHjHPetrbH4XdbbMIlIYb7sW9loEHIz1MluPOA
-NHyMMB6DN/BOFv/hIvG4pswNUL2lBmbRw+HHQWKK3GjHwXd3bsFtibF1JoXklbz5
-2g47crXD9bIu1UfAlm8JT8FA3MMymidgbgslFt+gcsF9GTAu0ZGv+waB7D3m9GSp
-GadQcwP6WPT0EHo3tQOgUFrlL5wwODUBoCYcdSbjLn8DHASUx1FMAjaEP6Yi4+I=
-=b7KZ
+iQIcBAABCgAGBQJMSUAsAAoJEF2HCgfBJntG7t0QAM1hMVp1TEf7i9xr11wTgO/N
+ck+ALLNL5X9OSIblPwAWwwDtrPKPfImgg2U00CQbvsw4p3we3Ap/7oa31+778LJt
+4QwfVxX5WrwXwAF/mKerm1y1kyhJ6W2eMsrwF/HvKYoP7zvz2xZVMjxg8H8kO7Jk
+ZXpzssjscbKkNGkBnAm0dbICzfEtL41NlmUNHz9NBp5SMJEBe+d7O5T1/D0BtmN4
+TAQcjLEYZdn340YkzbhBLLXowI3ytkiLETfYBqWfKUpedBfXGrHraL+SRQjQ4PHS
+aTrQescsDykWhyAOq+X7BxxO01q8mhRZBpOOP7z9oEprdJ3DcilARN8Oz/sl9rH3
+mMJuMt7xljiAGZqo2fpXWWMEt2SiRoMhwc16OWL1tIlIe7OXLMQr9ONkuDiJHWVL
+yC8WuprrJOTHZLYun+nBfrJaWwEvSn/k+atZx8zxNkOqt/z9N/aFjXzqQxGFqflR
+Wh3Cs6ZxmdXXgwDV5CrhCS/zvM8eTiBTOUZb5W9MuvZf9MFyyFBzBGCHPjjg7c8m
+y+nHFWvCoUbYoGGnY1ZNa8nSKoxTSGJ5+yofUQz+0JIRWh08iLFBabNgYkzyMtiS
+hjLFKAjHfOIMeVy2xMEgDiwWtAQFFSU8xbptm3usuAUMIXygo+kFfVhrfASYykov
+p2mgLN5jfr5BHq5q2O1b
+=30hq
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__23_Jul_2010_17_08_47_+1000_nHKlbRkRJ_rZKThH--
+--nextPart2161160.qE1jM2RogY--
