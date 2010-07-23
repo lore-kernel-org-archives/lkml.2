@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab0GWA03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 20:26:29 -0400
-Received: from stargate.chelsio.com ([67.207.112.58]:12881 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754994Ab0GWA02 convert rfc822-to-8bit (ORCPT
+	id S1756583Ab0GWAqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 20:46:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39298 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808Ab0GWAqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 20:26:28 -0400
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces with random MAC address
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=windows-1252
-From: Casey Leedom <leedom@chelsio.com>
-In-Reply-To: <4C47EAF3.3080602@redhat.com>
-Date: Thu, 22 Jul 2010 17:26:09 -0700
-Cc: "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        andy@greyhouse.net, harald@redhat.com, bhutchings@solarflare.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2408F875-69BE-45D3-8605-4AE5CDA4601C@chelsio.com>
-References: <20100721150732.GR7497@gospo.rdu.redhat.com> <20100721102816.4bef5ada@nehalam> <20100721.103249.107094774.davem@davemloft.net> <201007211129.48288.leedom@chelsio.com> <43F901BD926A4E43B106BF17856F0755F184620A@orsmsx508.amr.corp.intel.com> <4C47EAF3.3080602@redhat.com>
-To: Stefan Assmann <sassmann@redhat.com>
-X-Mailer: Apple Mail (2.1081)
+	Thu, 22 Jul 2010 20:46:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type;
+        b=u9cURnrjOB6Df04RHEBhFltApko/9PoSbDwOU5zmUanuONsDRAWsbXl/4sTDos4CqT
+         NY5Zv4nXNXUyX8aUemMEyk1fTswf6AW6gAJDTU75q0ACJJY4L3jSn4k8GO0Jynu2f9Mh
+         9DKuxwM0vMQvs3XamcCGK0UC2DoNwTfAbMLeY=
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20100722151106.GD25002@srcf.ucam.org>
+References: <1278897325.6563.7.camel@mola> <20100722151106.GD25002@srcf.ucam.org>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 23 Jul 2010 08:45:39 +0800
+Message-ID: <AANLkTingKYmfwx9ASUCvxn08OAEjnhyLFGUHHxgRBNBw@mail.gmail.com>
+Subject: Re: [PATCH] eeepc-laptop: fix hotplug_disabled module_param 
+	permissions
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 21, 2010, at 11:53 PM, Stefan Assmann wrote:
+2010/7/22 Matthew Garrett <mjg59@srcf.ucam.org>:
+> I think I've got all of your patches merged now, but let me know if I've
+> missed any. They should be in my linux-next branch.
 
-> Using the VF in the host is a feature and I'm sure people will think of
-> ways to make good use of it. However the actual problem we've seen is a
-> more practical one. So to pass-through a VF to a VM the host has to be
-> aware that the VF exists. Therefore you usually have to enable the VF in
-> the host (i.e. specify the max_vfs parameter). The device will be
-> discovered by the system and because of the random MAC address udev
-> ignores the new device. With the additional information we provide with
-> our solution udev will be able to recognize the device by it's "device
-> path" and handle it properly (until you decide to pass it to a VM or
-> just be happy with it in the host).
+hi Matthew,
+Thanks for merging the patches.
 
- Or you simply don't have the VF Driver loaded in the "Domain 0" Control OS.  When we install the cxgb4 PF Driver with "num_vf=..." this enables the PCI-E SR-IOV Capabilities within the various PFs and the corresponding VF PCI Devices are instantiated and discovered by the Domain 0 Linux OS.  But without a cxgb4vf VF Driver loaded, those devices just sit there – available for "Device Assignment" to VMs.
+Below 3 patches are missing:
+[PATCH] asus-laptop: fix asus_input_init error path
+        http://lkml.org/lkml/2010/7/5/21
+[PATCH] dell-laptop: make dell_laptop_i8042_filter() static
+        http://lkml.org/lkml/2010/7/5/69
+[PATCH] msi-wmi: make needlessly global symbols static
+        http://lkml.org/lkml/2010/7/8/66
 
-> Remember the issue that lead to the proposal of renaming VFs to vfeth?
-> That's exactly the problem we try to fix. Additional benefit of an
-> "address assignment type" as Ben likes to call it would be the handling
-> of MAC address stealing NICs.
-
- The above was mostly to cope with some SR-IOV Drivers using random MAC addresses for the VFs.
-
-Casey
+Regards,
+Axel
