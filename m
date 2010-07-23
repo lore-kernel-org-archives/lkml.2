@@ -1,49 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab0GWOE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 10:04:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42683 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760053Ab0GWOEw (ORCPT
+	id S1759191Ab0GWOHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 10:07:53 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53569 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab0GWOHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 10:04:52 -0400
-Date: Fri, 23 Jul 2010 10:04:40 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: ngupta@vflare.org, Christoph Hellwig <hch@infradead.org>,
-        akpm@linux-foundation.org, Chris Mason <chris.mason@oracle.com>,
-        viro@zeniv.linux.org.uk, adilger@sun.com, tytso@mit.edu,
-        mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH V3 0/8] Cleancache: overview
-Message-ID: <20100723140440.GA12423@infradead.org>
-References: <20100621231809.GA11111@ca-server1.us.oracle.com4C49468B.40307@vflare.org>
- <840b32ff-a303-468e-9d4e-30fc92f629f8@default>
+	Fri, 23 Jul 2010 10:07:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=x+wCS+gzIzHjnOg4K2zXs1fLIZKX+t2FxBgi3GOvHIAUG3fD1OFAaEmt81LBsxgbja
+         RhVO5Bo1sr70srM7DFNaP4prEVFvuSUGM084vBY+cFUFBBcgJ93kD6h8jxR3o5gHwGMz
+         T6X4rcN8ZGbjEskENtdouVrwfOfL6PRGX5N4Y=
+Date: Fri, 23 Jul 2010 16:07:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: "Deng, Dongdong" <dongdong.deng@windriver.com>, will.deacon@arm.com,
+        lethal@linux-sh.org, mahesh@linux.vnet.ibm.com,
+        prasad@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org,
+        mingo@elte.hu, kgdb-bugreport@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] hw-breakpoints, kgdb, x86: add a flag to
+	passDIE_DEBUG notification
+Message-ID: <20100723140745.GB5255@nowhere>
+References: <1279851361-32604-1-git-send-email-dongdong.deng@windriver.com> <20100723130430.GA5255@nowhere> <4C4996FA.2010301@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <840b32ff-a303-468e-9d4e-30fc92f629f8@default>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4C4996FA.2010301@windriver.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 06:58:03AM -0700, Dan Magenheimer wrote:
-> CHRISTOPH AND ANDREW, if you disagree and your concerns have
-> not been resolved, please speak up.
+On Fri, Jul 23, 2010 at 08:19:54AM -0500, Jason Wessel wrote:
+> On 07/23/2010 08:04 AM, Frederic Weisbecker wrote:
+> > On Fri, Jul 23, 2010 at 10:16:01AM +0800, Dongdong Deng wrote:
+> >   
+> >> The hw_breakpoint subsystem consumes all the hardware
+> >> breakpoint exceptions since it hooks the notify_die
+> >> handlers first, this means that kgdb doesn't get the
+> >> opportunity to handle hw breakpoint exceptions generated
+> >> by kgdb itself.
+> >>
+> >> This patch adds an extend flag to perf_event_attr for
+> >> hw_breakpoint_handler() to decide to pass or stop the
+> >> DIE_DEBUG notification.
+> >>
+> >> As KGDB set that flag, hw_breakpoint_handler() will pass
+> >> the DIE_DEBUG notification, thus kgdb have the chance
+> >> to take DIE_DEBUG notification.
+> >>
+> >> Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+> >> Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+> >> ---
+> >>  arch/x86/kernel/hw_breakpoint.c |   14 ++++++++++++++
+> >>  arch/x86/kernel/kgdb.c          |    2 ++
+> >>  include/linux/perf_event.h      |    9 +++++++++
+> >>  3 files changed, 25 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+> >> index a8f1b80..b38f786 100644
+> >> --- a/arch/x86/kernel/hw_breakpoint.c
+> >> +++ b/arch/x86/kernel/hw_breakpoint.c
+> >> @@ -406,6 +406,8 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
+> >>   * ii) When there are more bits than trap<n> set in DR6 register (such
+> >>   * as BD, BS or BT) indicating that more than one debug condition is
+> >>   * met and requires some more action in do_debug().
+> >> + * iii) The source of hw breakpoint event want to handle the event
+> >> + * by itself, currently just KGDB have this notion.
+> >>   *
+> >>   * NOTIFY_STOP returned for all other cases
+> >>   *
+> >> @@ -464,6 +466,18 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
+> >>  			break;
+> >>  		}
+> >>  
+> >> +		if (bp->attr.flag == SKIP_HWBP_EVENT_PERF_FLAG) {
+> >> +			/*
+> >> +			 * when attr.flag is set to SKIP_HWBP_EVENT_PERF_FLAG
+> >> +			 * it indicates currently hw breakpoint event
+> >> +			 * source want to handle this event by itself.
+> >> +			 * thus return NOTIFY_DONE here.
+> >> +			 */
+> >> +			rc = NOTIFY_DONE;
+> >> +			rcu_read_unlock();
+> >> +			break;
+> >> +		}
+> >> +
+> >>     
+> >
+> >
+> >
+> > No. We really shouldn't make a user ABI change (adding attr.flag) just
+> > to solve an in-kernel-only problem.
+> >
+> > And moreover we probably don't need flags at all. Why not just turning kgdb handler
+> > into a higher priority?
+> >
+> > I don't even remember why kgdb has its own handler instead of using the
+> > struct perf_event:overflow_handler. May be that's because of the early breakpoints.
+> >
+> >   
+> 
+> 
+> The patch may or may not be the right way to solve the problem.   It is
+> worth noting that early breakpoints are handled separately with a direct
+> writes to the debug registers so this API does not apply.
 
-Anything that need modification of a normal non-shared fs is utterly
-broken and you'll get a clear NAK, so the propsal before is a good
-one.  There's a couple more issues like the still weird prototypes,
-e.g. and i_ino might not be enoug to uniquely identify an inode
-on serveral filesystems that use 64-bit inode inode numbers on 32-bit
-systems.  Also making the ops vector global is just a bad idea.
-There is nothing making this sort of caching inherently global.
+
+
+But you still need to handle them on the debug exception, right?
+
+
+ 
+> This patch effectively causes the events to get passed to the normal
+> handlers.
+> 
+> The source of the original problem (which was merged in 2.6.35) is
+> commit: 018cbffe6819f6f8db20a0a3acd9bab9bfd667e4 -     Merge commit
+> 'v2.6.33' into perf/core
+> 
+> Specifically this line right here:
+> @@@ -502,6 -486,8 +486,6 @@@ static int __kprobes hw_breakpoint_hand
+>           rcu_read_lock();
+>  
+>           bp = per_cpu(bp_per_reg[i], cpu);
+>  -        if (bp)
+>  -            rc = NOTIFY_DONE;
+> 
+> Because the NOTIFY_DONE is never set, a default value of NOTIFY_STOP is
+> passed at the end and kgdb never gets to see the break point even that
+> was never intended for the perf handler in the first place.
+> 
+> It is not as easy of course to just revert this patch because it changed
+> other logic.
+> 
+> Jason.
+
+
+
+Right.
+
+Actually NOTIFY_DONE is returned when there is more work to do: handling
+another exception than breakpoint, or sending a signal. Otherwise yeah,
+we return NOTIFY_STOP as we assume there is more work to do.
+
+So the following alternatives appear to me:
+
+- Moving the breakpoint exception handling into the
+  struct perf_event:overflow_handler. In fact I can't find the breakpoint
+  handling in kgdb.c
+
+- Have a higher priority in kgdb notifier (which means decreasing the one
+  of hw_breakpoint.c)
+
+- Always returning NOTIFY_DONE from the breakpoint path.
+
+
+Is this a regression BTW?
 
