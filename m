@@ -1,150 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760531Ab0GWPHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:07:01 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:52449 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760288Ab0GWPGF (ORCPT
+	id S932266Ab0GWPH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:07:58 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:29625 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760266Ab0GWPGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:06:05 -0400
+	Fri, 23 Jul 2010 11:06:04 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv4 07/14] writeback: do not remove bdi from bdi_list
-Date: Fri, 23 Jul 2010 18:05:47 +0300
-Message-Id: <1279897554-1526-8-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv4 00/14] kill unnecessary bdi wakeups + cleanups
+Date: Fri, 23 Jul 2010 18:05:40 +0300
+Message-Id: <1279897554-1526-1-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1279897554-1526-1-git-send-email-dedekind1@gmail.com>
-References: <1279897554-1526-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 23 Jul 2010 15:05:50.0238 (UTC) FILETIME=[898D6BE0:01CB2A78]
+X-OriginalArrivalTime: 23 Jul 2010 15:05:48.0191 (UTC) FILETIME=[885512F0:01CB2A78]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Hi,
 
-The forker thread removes bdis from 'bdi_list' before forking the bdi thread.
-But this is wrong for at least 2 reasons.
+here is v4 of the patch series which clean-ups bdi threads and substantially
+lessens amount of unnecessary kernel wake-ups, which is very important on
+battery-powered devices.
 
-Reason #1: if we temporary remove a bdi from the list, we may miss works which
-           would otherwise be given to us.
+Changes since v3:
+Tested more internally and found problems in bdi shutdown path. Namely, I forgot
+to move the code which wakes up processes waiting on BDI_pending bit to the
+forker thread. I also spotted few other things. Only patch N10 was changed.
 
-Reason #2: this is racy; indeed, 'bdi_wb_shutdown()' expects that bdis are
-           always in the 'bdi_list' (see 'bdi_remove_from_list()'), and when
-           it races with the forker thread, it can shut down the bdi thread
-           at the same time as the forker creates it.
+1. Removed "Reviewed-by: Christoph Hellwig <hch@lst.de>" tag from patch 10
+   "writeback: move bdi threads exiting logic to the forker thread" in this
+   patch-set, because it was changed substantialy, and needs new review.
+2. Move 'clear_bit()' and 'wake_up_bit()' bit to bdi forker
+3. Add 'smp_wmb()' and 'smp_rmb()' in bdi forker and 'bdi_wb_shutdown()'
+4. In 'bdi_wb_shutdown()' first remove the bdi from 'bdi_list', and then wait
+   on the 'BDI_pending' bit, not vise-versa.
 
-This patch makes sure the forker thread never removes bdis from 'bdi_list'
-(which was suggested by Christoph Hellwig).
+Changes since v2:
+Basically, added patches 12, 13, 14. Other patches are almost identical to v2,
+but I fixed few warnings about mixing tabs and spaces were fixed there. Also,
+tweaked them as described in item 6 below.
+1. Delay bdi thread wake-up as suggested by Nick Piggin, see patch N12
+2. Do not invoke init_timer unnecessarily - spotted and fixed an imperfection,
+   see patch N13
+3. Introduce tracepoints to the code path which wakes up bdi threads for
+   periodic write-back, suggested by Dave Chinner, see patch N14
+4. Fix few checkpatch.pl warnings
+5. Add more "Reviewed-by" tags
+6. Amend patches so that we would check the optimistic case first
+   (http://lkml.org/lkml/2010/7/22/112)
 
-In order to make sure that we do not race with 'bdi_wb_shutdown()', we have to
-hold the 'bdi_lock' while walking the 'bdi_list' and setting the 'BDI_pending'
-flag.
+Changes since v1
+Basically, address all requests from Christoph except of 2.
+1.  Drop "[PATCH 01/16] writeback: do not self-wakeup"
+2.  Add all "Reviewed-by"
+3.  Rebase to the latest "linux-2.6-block / for-2.6.36"
+4.  Re-order patches so that the independent ones would go first and could
+    be picked independently
+5.  Do not remove comment about "temporary measure" in the forker thread.
+6.  Drop "[PATCH 01/13] writeback: remove redundant list initialization"
+    because one of later patches will kill whole function, so this small
+    patch is pointless
+7.  Merge "[PATCH 03/13] writeback: clean-up the warning about non-registered
+    bdi" with the patch which adds bdi threads wake-ups to
+    '__mark_inode_dirty()'.
+9.  Do not remove bdis from the bdi_list
+8.  Drop "[PATCH 09/13] writeback: add to bdi_list in the forker thread"
+    because we do not remove bdis from the bdi_list anymore
+10. Use less local variables which are not strictly needed
 
-NOTE! The error path is interesting. Currently, when we fail to create a bdi
-thread, we move the bdi to the tail of 'bdi_list'. But if we never remove the
-bdi from the list, we cannot move it to the tail either, because then we can
-mess up the RCU readers which walk the list. And also, we'll have the race
-described above in "Reason #2".
+The following Christoph's requests were *not* addressed:
 
-But I not think that adding to the tail is any important so I just do not do
-that.
+1. Restructure the loop in bdi forker, because we have to drop spinlock
+   before forking a thread, see my answer here:
+   http://lkml.org/lkml/2010/7/20/92
+2. Get rid of 'BDI_pending' and use a per-bdi mutex. We cannot easily
+   use a per-bdi mutex, because we would have to take it while holding
+   the 'bdi_lock' spinlock. We could turn 'bdi_lock' into a mutex, though,
+   and avoid dropping it before the task is created. This would eliminate
+   the need in the 'BDI_pending' flag. I can do this change, if needed.
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
----
- fs/fs-writeback.c |    7 -------
- mm/backing-dev.c  |   31 ++++++++++---------------------
- 2 files changed, 10 insertions(+), 28 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 8cf53ba..eaef5c9 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -804,13 +804,6 @@ int bdi_writeback_thread(void *data)
- 	unsigned long wait_jiffies = -1UL;
- 	long pages_written;
- 
--	/*
--	 * Add us to the active bdi_list
--	 */
--	spin_lock_bh(&bdi_lock);
--	list_add_rcu(&bdi->bdi_list, &bdi_list);
--	spin_unlock_bh(&bdi_lock);
--
- 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
- 	set_freezable();
- 
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index dbc6681..672c17b 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -331,7 +331,7 @@ static int bdi_forker_thread(void *ptr)
- 	for (;;) {
- 		bool fork = false;
- 		struct task_struct *task;
--		struct backing_dev_info *bdi, *tmp;
-+		struct backing_dev_info *bdi;
- 
- 		/*
- 		 * Temporary measure, we want to make sure we don't see
-@@ -347,7 +347,7 @@ static int bdi_forker_thread(void *ptr)
- 		 * Check if any existing bdi's have dirty data without
- 		 * a thread registered. If so, set that up.
- 		 */
--		list_for_each_entry_safe(bdi, tmp, &bdi_list, bdi_list) {
-+		list_for_each_entry(bdi, &bdi_list, bdi_list) {
- 			if (!bdi_cap_writeback_dirty(bdi))
- 				continue;
- 			if (bdi->wb.task)
-@@ -359,8 +359,13 @@ static int bdi_forker_thread(void *ptr)
- 			WARN(!test_bit(BDI_registered, &bdi->state),
- 			     "bdi %p/%s is not registered!\n", bdi, bdi->name);
- 
--			list_del_rcu(&bdi->bdi_list);
- 			fork = true;
-+
-+			/*
-+			 * Set the pending bit - if someone will try to
-+			 * unregister this bdi - it'll wait on this bit.
-+			 */
-+			set_bit(BDI_pending, &bdi->state);
- 			break;
- 		}
- 		spin_unlock_bh(&bdi_lock);
-@@ -383,29 +388,13 @@ static int bdi_forker_thread(void *ptr)
- 
- 		__set_current_state(TASK_RUNNING);
- 
--		/*
--		 * Set the pending bit - if someone will try to unregister this
--		 * bdi - it'll wait on this bit.
--		 */
--		set_bit(BDI_pending, &bdi->state);
--
--		/* Make sure no one uses the picked bdi */
--		synchronize_rcu();
--
- 		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
- 				   dev_name(bdi->dev));
- 		if (IS_ERR(task)) {
- 			/*
--			 * If thread creation fails, then readd the bdi back to
--			 * the list and force writeout of the bdi from this
--			 * forker thread. That will free some memory and we can
--			 * try again. Add it to the tail so we get a chance to
--			 * flush other bdi's to free memory.
-+			 * If thread creation fails, force writeout of the bdi
-+			 * from the thread.
- 			 */
--			spin_lock_bh(&bdi_lock);
--			list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
--			spin_unlock_bh(&bdi_lock);
--
- 			bdi_flush_io(bdi);
- 		} else
- 			bdi->wb.task = task;
--- 
-1.7.1.1
+THE PROBLEM
+~~~~~~~~~~~
 
+Each block device has corresponding "flusher" thread, which is usually seen as
+"flusher-x:y" in your 'ps' output. Flusher threads are responsible for
+background write-back and are used in various kernel code paths like memory
+reclamation as well as the periodic background write-out.
+
+The flusher threads wake up every 5 seconds and check whether they have to
+write anything back or not. In idle systems with good dynamic power-management
+this means that they force the system to wake up from deep sleep, find out that
+there is nothing to do, and waste power. This hurts small battery-powered
+devices, e.g., linux-based phones.
+
+Idle bdi thread wake-ups do not last forever: the threads kill themselves if
+nothing useful has been done for 5 minutes.
+
+However, there is the bdi forker thread, seen as 'bdi-default' in your 'ps'
+output. This thread also wakes up every 5 seconds and checks whether it has to
+fork a bdi flusher thread, in case there is dirty data on the bdi, but bdi
+thread was killed. This thread never kills itself, and disturbs the system all
+the time. Again, this is bad for battery-powered devices.
+
+THE SOLUTION
+~~~~~~~~~~~~
+
+This patch-set makes bdi threads and the forker thread wake-up only if there is
+job to do, otherwise they just sleep. The main idea is to wake-up the needed
+thread when adding dirty data to the bdi.
+
+To implement this:
+
+1. I address various race conditions in the current bdi code.
+2. I move the killing logic from bdi threads to the forker thread, so that we
+   would have one central place where we make decisions about killing inactive
+   bdi threads. The reason I do this is because otherwise it is difficult to
+   kill inactive threads - they never wake-up, so would never kill themselves.
+   There are other technical reasons, too.
+3. I add a small piece of code to '__mark_inode_dirt()' which wakes up the bdi
+   thread when dirty inodes arrive.
+4. There are also clean-up patches and nicification patches which I found to be
+   good for better code readability.
+5. Some patches are just preparations which make the following real patches
+   simpler and easier to review.
+6. Some patches are just simplifications of current code.
+
+With this patch-set bdi threads wake up considerably less.
+
+v1 can be found here:
+http://thread.gmane.org/gmane.linux.file-systems/43306
+v2 can be found here:
+http://thread.gmane.org/gmane.linux.kernel/1012439
+v3 can be found here:
+http://thread.gmane.org/gmane.linux.kernel/1013009
+
+Artem.
