@@ -1,170 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759959Ab0GWUwE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 16:52:04 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64362 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177Ab0GWUv7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 16:51:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ORuD2BXp/o9nJJVpSXA4WJjJhet4d+1heiQR1a3EEIqAky+svJD5J77/VYJ2zEqZmA
-         4AC1Tf6CcLJLvWH1QYUJQftsEYOaiPyp08trlNQLuhi4Nch5Mmbbeax8nr2B1edDkUlB
-         ZZtWnW4Blk+RfNOu7bXaDO6ZFuU6D2dwDPMwM=
+	id S1753210Ab0GWVBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 17:01:07 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54015 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab0GWVBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 17:01:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH] ACPI / Sleep: Allow the NVS saving to be skipped during suspend to RAM
+Date: Fri, 23 Jul 2010 22:59:09 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <len.brown@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org, Matthew Garrett <mjg@redhat.com>,
+        "Linux-kernel" <linux-kernel@vger.kernel.org>,
+        tomas m <tmezzadra@gmail.com>
+References: <201007210035.02688.rjw@sisk.pl>
+In-Reply-To: <201007210035.02688.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <4C49EA91.3060908@vlnb.net>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
-	<yq1iq64kv9f.fsf@sermon.lab.mkp.net>
-	<1275318102.2823.47.camel@mulgrave.site>
-	<4C03D5FD.3000202@panasas.com>
-	<20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-	<1275398876.21962.6.camel@mulgrave.site>
-	<4C078FE2.9000804@vlnb.net>
-	<AANLkTinnrsFZ=nkX4QpG2eKOk05uNe5HpV-pP3kd7OF=@mail.gmail.com>
-	<4C49EA91.3060908@vlnb.net>
-Date: Fri, 23 Jul 2010 16:51:58 -0400
-Message-ID: <AANLkTi=OhopP4qud6EVffrNU3jLrA2KzRca=a4T9GhHx@mail.gmail.com>
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: Gennadiy Nerubayev <parakie@gmail.com>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        Boaz Harrosh <bharrosh@panasas.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007232259.09783.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 3:16 PM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
-> Gennadiy Nerubayev, on 07/23/2010 09:59 PM wrote:
->>
->> On Thu, Jun 3, 2010 at 7:20 AM, Vladislav Bolkhovitin<vst@vlnb.net>
->>  wrote:
->>>
->>> James Bottomley, on 06/01/2010 05:27 PM wrote:
->>>>
->>>> On Tue, 2010-06-01 at 12:30 +0200, Christof Schmitt wrote:
->>>>>
->>>>> What is the best strategy to continue with the invalid guard tags on
->>>>> write requests? Should this be fixed in the filesystems?
->>>>
->>>> For write requests, as long as the page dirty bit is still set, it's
->>>> safe to drop the request, since it's already going to be repeated.  What
->>>> we probably want is an error code we can return that the layer that sees
->>>> both the request and the page flags can make the call.
->>>>
->>>>> Another idea would be to pass invalid guard tags on write requests
->>>>> down to the hardware, expect an "invalid guard tag" error and report
->>>>> it to the block layer where a new checksum is generated and the
->>>>> request is issued again. Basically implement a retry through the whole
->>>>> I/O stack. But this also sounds complicated.
->>>>
->>>> No, no ... as long as the guard tag is wrong because the fs changed the
->>>> page, the write request for the updated page will already be queued or
->>>> in-flight, so there's no need to retry.
->>>
->>> There's one interesting problem here, at least theoretically, with SCSI
->>> or similar transports which allow to have commands queue depth>1 and allowed
->>> to internally reorder queued requests. I don't know the FS/block layers
->>> sufficiently well to tell if sending several requests for the same page
->>> really possible or not, but we can see a real life problem, which can be
->>> well explained if it's possible.
->>>
->>> The problem could be if the second (rewrite) request (SCSI command) for
->>> the same page queued to the corresponding device before the original request
->>> finished. Since the device allowed to freely reorder requests, there's a
->>> probability that the original write request would hit the permanent storage
->>> *AFTER* the retry request, hence the data changes it's carrying would be
->>> lost, hence welcome data corruption.
->>>
->>> For single parallel SCSI or SAS devices such race may look practically
->>> impossible, but for sophisticated clusters when many nodes pretending to be
->>> a single SCSI device in a load balancing configuration, it becomes very
->>> real.
->>>
->>> The real life problem we can see in an active-active DRBD-setup. In this
->>> configuration 2 nodes act as a single SCST-powered SCSI device and they both
->>> run DRBD to keep their backstorage in-sync. The initiator uses them as a
->>> single multipath device in an active-active round-robin load-balancing
->>> configuration, i.e. sends requests to both nodes in parallel, then DRBD
->>> takes care to replicate the requests to the other node.
->>>
->>> The problem is that sometimes DRBD complies about concurrent local
->>> writes, like:
->>>
->>> kernel: drbd0: scsi_tgt0[12503] Concurrent local write detected! [DISCARD
->>> L] new: 144072784s +8192; pending: 144072784s +8192
->>>
->>> This message means that DRBD detected that both nodes received
->>> overlapping writes on the same block(s) and DRBD can't figure out which one
->>> to store. This is possible only if the initiator sent the second write
->>> request before the first one completed.
->>>
->>> The topic of the discussion could well explain the cause of that. But,
->>> unfortunately, people who reported it forgot to note which OS they run on
->>> the initiator, i.e. I can't say for sure it's Linux.
->>
->> Sorry for the late chime in, but here's some more information of
->> potential interest as I've previously inquired about this to the drbd
->> mailing list:
->>
->> 1. It only happens when using blockio mode in IET or SCST. Fileio,
->> nv_cache, and write_through do not generate the warnings.
->
-> Some explanations for those who not familiar with the terminology:
->
->  - "Fileio" means Linux IO stack on the target receives IO via
-> vfs_readv()/vfs_writev()
->
->  - "NV_CACHE" means all the cache synchronization requests
-> (SYNCHRONIZE_CACHE, FUA) from the initiator are ignored
->
->  - "WRITE_THROUGH" means write through, i.e. the corresponding backend file
-> for the device open with O_SYNC flag.
->
->> 2. It happens on active/passive drbd clusters (on the active node
->> obviously), NOT active/active. In fact, I've found that doing round
->> robin on active/active is a Bad Idea (tm) even with a clustered
->> filesystem, until at least the target software is able to synchronize
->> the command state of either node.
->> 3. Linux and ESX initiators can generate the warning, but I've so far
->> only been able to reliably reproduce it using a Windows initiator and
->> sqlio or iometer benchmarks. I'll be trying again using iometer when I
->> have the time.
->> 4. It only happens using a random write io workload (any block size),
->> with initiator threads>1, OR initiator queue depth>1. The higher
->> either of those is, the more spammy the warnings become.
->> 5. The transport does not matter (reproduced with iSCSI and SRP)
->> 6. If DRBD is disconnected (primary/unknown), the warnings are not
->> generated. As soon as it's reconnected (primary/secondary), the
->> warnings will reappear.
->
-> It would be great if you prove or disprove our suspicions that Linux can
-> produce several write requests for the same blocks simultaneously. To be
-> sure we need:
->
-> 1. The initiator is Linux. Windows and ESX are not needed for this
-> particular case.
->
-> 2. If you are able to reproduce it, we will need full description of which
-> application used on the initiator to generate the load and in which mode.
->
-> Target and DRBD configuration doesn't matter, you can use any.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-I just tried, and this particular DRBD warning is not reproducible
-with io (iometer) coming from a Linux initiator (2.6.30.10) The same
-iometer parameters were used as on windows, and both the base device
-as well as filesystem (ext3) were tested, both negative. I'll try a
-few more tests, but it seems that this is a nonissue with a Linux
-initiator.
+Commit 2a6b69765ad794389f2fc3e14a0afa1a995221c2
+(ACPI: Store NVS state even when entering suspend to RAM) caused the
+ACPI suspend code save the NVS area during suspend and restore it
+during resume unconditionally, although it is known that some systems
+need to use acpi_sleep=s4_nonvs for hibernation to work.  To allow
+the affected systems to avoid saving and restoring the NVS area
+during suspend to RAM and resume, introduce kernel command line
+option acpi_sleep=nonvs and make acpi_sleep=s4_nonvs work as its
+alias temporarily (add acpi_sleep=s4_nonvs to the feature removal
+file).
 
-Hope that helps,
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16396 .
 
--Gennadiy
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-and-tested-by: tomas m <tmezzadra@gmail.com>
+---
+
+Hi Len,
+
+As requested, I made a warning message be printed when s4_nonvs is used.
+
+Please apply.
+
+Rafael
+
+---
+ Documentation/feature-removal-schedule.txt |    8 ++++++
+ Documentation/kernel-parameters.txt        |    4 +--
+ arch/x86/kernel/acpi/sleep.c               |    9 +++++--
+ drivers/acpi/sleep.c                       |   35 ++++++++++++++---------------
+ include/linux/acpi.h                       |    2 -
+ 5 files changed, 35 insertions(+), 23 deletions(-)
+
+Index: linux-2.6/drivers/acpi/sleep.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/sleep.c
++++ linux-2.6/drivers/acpi/sleep.c
+@@ -82,6 +82,20 @@ static int acpi_sleep_prepare(u32 acpi_s
+ static u32 acpi_target_sleep_state = ACPI_STATE_S0;
+ 
+ /*
++ * The ACPI specification wants us to save NVS memory regions during hibernation
++ * and to restore them during the subsequent resume.  Windows does that also for
++ * suspend to RAM.  However, it is known that this mechanism does not work on
++ * all machines, so we allow the user to disable it with the help of the
++ * 'acpi_sleep=nonvs' kernel command line option.
++ */
++static bool nvs_nosave;
++
++void __init acpi_nvs_nosave(void)
++{
++	nvs_nosave = true;
++}
++
++/*
+  * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
+  * user to request that behavior by using the 'acpi_old_suspend_ordering'
+  * kernel command line option that causes the following variable to be set.
+@@ -204,8 +218,7 @@ static int acpi_suspend_begin(suspend_st
+ 	u32 acpi_state = acpi_suspend_states[pm_state];
+ 	int error = 0;
+ 
+-	error = suspend_nvs_alloc();
+-
++	error = nvs_nosave ? 0 : suspend_nvs_alloc();
+ 	if (error)
+ 		return error;
+ 
+@@ -389,20 +402,6 @@ static struct dmi_system_id __initdata a
+ #endif /* CONFIG_SUSPEND */
+ 
+ #ifdef CONFIG_HIBERNATION
+-/*
+- * The ACPI specification wants us to save NVS memory regions during hibernation
+- * and to restore them during the subsequent resume.  However, it is not certain
+- * if this mechanism is going to work on all machines, so we allow the user to
+- * disable this mechanism using the 'acpi_sleep=s4_nonvs' kernel command line
+- * option.
+- */
+-static bool s4_no_nvs;
+-
+-void __init acpi_s4_no_nvs(void)
+-{
+-	s4_no_nvs = true;
+-}
+-
+ static unsigned long s4_hardware_signature;
+ static struct acpi_table_facs *facs;
+ static bool nosigcheck;
+@@ -416,7 +415,7 @@ static int acpi_hibernation_begin(void)
+ {
+ 	int error;
+ 
+-	error = s4_no_nvs ? 0 : suspend_nvs_alloc();
++	error = nvs_nosave ? 0 : suspend_nvs_alloc();
+ 	if (!error) {
+ 		acpi_target_sleep_state = ACPI_STATE_S4;
+ 		acpi_sleep_tts_switch(acpi_target_sleep_state);
+@@ -500,7 +499,7 @@ static int acpi_hibernation_begin_old(vo
+ 	error = acpi_sleep_prepare(ACPI_STATE_S4);
+ 
+ 	if (!error) {
+-		if (!s4_no_nvs)
++		if (!nvs_nosave)
+ 			error = suspend_nvs_alloc();
+ 		if (!error)
+ 			acpi_target_sleep_state = ACPI_STATE_S4;
+Index: linux-2.6/arch/x86/kernel/acpi/sleep.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/acpi/sleep.c
++++ linux-2.6/arch/x86/kernel/acpi/sleep.c
+@@ -157,9 +157,14 @@ static int __init acpi_sleep_setup(char 
+ #ifdef CONFIG_HIBERNATION
+ 		if (strncmp(str, "s4_nohwsig", 10) == 0)
+ 			acpi_no_s4_hw_signature();
+-		if (strncmp(str, "s4_nonvs", 8) == 0)
+-			acpi_s4_no_nvs();
++		if (strncmp(str, "s4_nonvs", 8) == 0) {
++			pr_warning("ACPI: acpi_sleep=s4_nonvs is deprecated, "
++					"please use acpi_sleep=nonvs instead");
++			acpi_nvs_nosave();
++		}
+ #endif
++		if (strncmp(str, "nonvs", 5) == 0)
++			acpi_nvs_nosave();
+ 		if (strncmp(str, "old_ordering", 12) == 0)
+ 			acpi_old_suspend_ordering();
+ 		str = strchr(str, ',');
+Index: linux-2.6/include/linux/acpi.h
+===================================================================
+--- linux-2.6.orig/include/linux/acpi.h
++++ linux-2.6/include/linux/acpi.h
+@@ -253,7 +253,7 @@ int acpi_resources_are_enforced(void);
+ #ifdef CONFIG_PM_SLEEP
+ void __init acpi_no_s4_hw_signature(void);
+ void __init acpi_old_suspend_ordering(void);
+-void __init acpi_s4_no_nvs(void);
++void __init acpi_nvs_nosave(void);
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ struct acpi_osc_context {
+Index: linux-2.6/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6.orig/Documentation/kernel-parameters.txt
++++ linux-2.6/Documentation/kernel-parameters.txt
+@@ -254,8 +254,8 @@ and is between 256 and 4096 characters. 
+ 			control method, with respect to putting devices into
+ 			low power states, to be enforced (the ACPI 2.0 ordering
+ 			of _PTS is used by default).
+-			s4_nonvs prevents the kernel from saving/restoring the
+-			ACPI NVS memory during hibernation.
++			nonvs prevents the kernel from saving/restoring the
++			ACPI NVS memory during suspend/hibernation and resume.
+ 			sci_force_enable causes the kernel to set SCI_EN directly
+ 			on resume from S1/S3 (which is against the ACPI spec,
+ 			but some broken systems don't work without it).
+Index: linux-2.6/Documentation/feature-removal-schedule.txt
+===================================================================
+--- linux-2.6.orig/Documentation/feature-removal-schedule.txt
++++ linux-2.6/Documentation/feature-removal-schedule.txt
+@@ -647,3 +647,11 @@ Who:	Stefan Richter <stefanr@s5r6.in-ber
+ 
+ ----------------------------
+ 
++What:	The acpi_sleep=s4_nonvs command line option
++When:	2.6.37
++Files:	arch/x86/kernel/acpi/sleep.c
++Why:	superseded by acpi_sleep=nonvs
++Who:	Rafael J. Wysocki <rjw@sisk.pl>
++
++----------------------------
++
+
