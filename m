@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab0GWKgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 06:36:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56972 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab0GWKgs (ORCPT
+	id S1756203Ab0GWKnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 06:43:19 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:55015 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755808Ab0GWKnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 06:36:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=b2WwhToFDlxHCm9dcwpdDdjw7LiW6T+LZFKv5b1uvHgNs1Cqmj5+HdMf1b25LxfD/L
-         evcS20Ug9Ca9yz2fSIOI9/f4BEuyHuy0dvHJtxX4BJEq177Y+I0tZKlrfwlTfA21F06K
-         peWGXKxHyvwLdK/j5MLNWLO7GNrgp7JOAkrEo=
-Message-ID: <4C4970BC.1070901@gmail.com>
-Date: Fri, 23 Jul 2010 12:36:44 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+	Fri, 23 Jul 2010 06:43:16 -0400
+Date: Fri, 23 Jul 2010 12:43:14 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35-r5 ext3 corruptions
+Message-ID: <20100723104313.GA6431@atrey.karlin.mff.cuni.cz>
+References: <20100715105745.GI30737@dastard> <20100719224512.GD32635@dastard> <20100721063222.GW32635@dastard>
 MIME-Version: 1.0
-To: Michael Jensen <emjay1988@gmail.com>
-CC: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: comedidev: Fixed a macro definition
- code style issue
-References: <1279865467-16522-1-git-send-email-emjay1988@gmail.com>	<4C495880.2090705@gmail.com> <AANLkTi=KTEtA57aTHEd_tzXAmK_WsX+P4jO_3TedFGFk@mail.gmail.com>
-In-Reply-To: <AANLkTi=KTEtA57aTHEd_tzXAmK_WsX+P4jO_3TedFGFk@mail.gmail.com>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100721063222.GW32635@dastard>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 11:17 AM, Michael Jensen wrote:
-> On Fri, Jul 23, 2010 at 6:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->>
-> <snip>
->> Hmm, does this compile?
->>
-> I did build the comedi directory (as per Greg's "Write and submit your
-> first kernel patch" video), and didn't get any errors (once I'd done
-> the configuration)...
+> On Tue, Jul 20, 2010 at 08:45:12AM +1000, Dave Chinner wrote:
+> > On Thu, Jul 15, 2010 at 08:57:45PM +1000, Dave Chinner wrote:
+> > > Upgrading my test vms from 2.6.35-rc3 to 2.6.35-rc5 is resulting in
+> > > repeated errors on the root drive of a test VM:
+> > > 
+> > > { 1532.368808] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
+> > > [ 1532.370859] Aborting journal on device sda1.
+> > > [ 1532.376957] EXT3-fs (sda1): 
+> > > [ 1532.376976] EXT3-fs (sda1): error: ext3_journal_start_sb: Detected aborted journal
+> > > [ 1532.376980] EXT3-fs (sda1): error: remounting filesystem read-only
+> > > [ 1532.420361] error: remounting filesystem read-only
+> > > [ 1532.621209] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
+> > > 
+> > > The filesysetm is a mess when checked on reboot - lots of illegal
+> > > references to blocks, multiply linked blocks, etc, but repairs.
+> > > Files are lots, truncated, etc, so there is visible filesystem
+> > > damage.
+> > > 
+> > > I did lots of testing on 2.6.35-rc3 and came across no problems;
+> > > problems only seemed to start with 2.6.35-rc5, and I've reproduced
+> > > the problem on a vanilla 2.6.35-rc4.
+> > > 
+> > > The problem seems to occur randomly - sometimes during boot or when
+> > > idle after boot, sometimes a while after boot. I haven't done any
+> > > digging at all for the cause - all I've done so far is confirm that
+> > > it is reproducable and it's not my code causing the problem.
+> > 
+> > Looks like this problem was isolated to a single VM and root
+> > filesystem. I could not reproduce it on anything other than the
+> > one filesystem that was failing.
 > 
-> Did I miss something?
+> Ok, so now I know *why* that one filesystem got busted - I built a
+> kernel without CONFIG_EXT3_DEFAULTS_TO_ORDERED set and it got a
+> forced reboot (echo b > proc/sysrq-trigger). That'll teach me for
+> trying to reproduce bugs Andrew is tripping over with his config
+> files.
+> 
+> Quite frankly, data=writeback mode for ext3 is a dangerous,
+> dangerous configuration to run by default. IMO, it shouldn't be the
+> default. Patch below.
+  data=writeback can cause larger data loss and stale data exposure but it
+actually shouldn't cause filesystem corruption about which you write in the
+changelog below. I'd much rather attribute the metadata corruption to a missing
+barrier option or barrier support in the virtualization stack. But I guess it's
+hard to tell now.
+  Anyways, I agree with you that data=ordered is a saner default so I'll
+push your change.
 
-Then the macro is probably unused (or unused in your configuration).
-Either way, the macro seems to be intended for use in the top-level
-scope, so do { } while (0) cannot be used there.
-
+								Honza
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> 
+> ext3: default to ordered mode
+> 
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> data=writeback mode is dangerous and is leads to filesystem
+> corruption, data loss and stale data exposure when systems crash. It
+> should not be the default, especially when all major distros ensure
+> their ext3 filesystems default to ordered mode. Change the default
+> mode to the safer data=ordered mode, because we should be caring
+> far more about avoiding corruption than performance.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/ext3/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/ext3/Kconfig b/fs/ext3/Kconfig
+> index 522b154..e8c6ba0 100644
+> --- a/fs/ext3/Kconfig
+> +++ b/fs/ext3/Kconfig
+> @@ -31,6 +31,7 @@ config EXT3_FS
+>  config EXT3_DEFAULTS_TO_ORDERED
+>  	bool "Default to 'data=ordered' in ext3"
+>  	depends on EXT3_FS
+> +	default y
+>  	help
+>  	  The journal mode options for ext3 have different tradeoffs
+>  	  between when data is guaranteed to be on disk and
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-js
+Jan Kara <jack@suse.cz>
+SuSE CR Labs
