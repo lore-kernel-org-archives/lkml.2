@@ -1,128 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab0GWPHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:07:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39661 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760246Ab0GWPHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:07:16 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq-iosched: don't allow aliased requests to starve others
-References: <x49zkxuaymb.fsf@segfault.boston.devel.redhat.com>
-	<20100723042530.GD11236@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 23 Jul 2010 11:07:11 -0400
-In-Reply-To: <20100723042530.GD11236@redhat.com> (Vivek Goyal's message of
-	"Fri, 23 Jul 2010 00:25:30 -0400")
-Message-ID: <x49pqyejkyo.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1760531Ab0GWPHB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:07:01 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:52449 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760288Ab0GWPGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 11:06:05 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv4 07/14] writeback: do not remove bdi from bdi_list
+Date: Fri, 23 Jul 2010 18:05:47 +0300
+Message-Id: <1279897554-1526-8-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279897554-1526-1-git-send-email-dedekind1@gmail.com>
+References: <1279897554-1526-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 23 Jul 2010 15:05:50.0238 (UTC) FILETIME=[898D6BE0:01CB2A78]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-> On Wed, Jul 14, 2010 at 11:09:48AM -0400, Jeff Moyer wrote:
->> Hi,
->> 
->> In running a test case that tries to trip up the kernel's AIO
->> implementation, we ran into a situation where no other I/O to the device
->> under test would be completed.  The test program spawned (in this case)
->> 100 threads, each of which performed the following in a loop:
->> 
->> open file O_DIRECT
->> queue 1MB of read I/O from file using 16 iocbs
->> close file
->> repeat
->> 
->> The program does NOT wait for the I/O to complete.  The file length is
->> only 4MB, meaning that you have 25 threads performing I/O on each of the
->> 4 1MB regions.
->> 
->> Both deadline and cfq check for aliased requests in the sorted list of
->> I/Os, and when an alias is found, the request in the rb tree is moved to
->> the dispatch list.  So, what happens is that, with this workload, only
->> requests from this program are moved to the dispatch list, starving out
->> all other I/O.
->> 
->> The attached patch fixes this problem by issuing all expired requests in
->> the aliased request handling code.  The reason I opted to issue all
->> expired requsts is because if we only service a single one, I still see
->> really awful interactivity;  an ls would take over 5 minutes to
->> complete.  With the attached patch, the ls took about 7 seconds to
->> complete.
->> 
->> Comments, as always, are welcome.
->> 
->> Cheers,
->> Jeff
->> 
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index 7982b83..0d8d2cd 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -417,6 +417,7 @@ static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
->>  }
->>  
->>  static void cfq_dispatch_insert(struct request_queue *, struct request *);
->> +static struct request *cfq_check_fifo(struct cfq_queue *cfqq);
->>  static struct cfq_queue *cfq_get_queue(struct cfq_data *, bool,
->>  				       struct io_context *, gfp_t);
->>  static struct cfq_io_context *cfq_cic_lookup(struct cfq_data *,
->> @@ -1394,10 +1395,22 @@ static void cfq_add_rq_rb(struct request *rq)
->>  
->>  	/*
->>  	 * looks a little odd, but the first insert might return an alias.
->> -	 * if that happens, put the alias on the dispatch list
->> +	 * If that happens, put the alias on the dispatch list, but don't
->> +	 * allow issuing of aliased requests to starve out the queue.
->>  	 */
->> -	while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL)
->> +	while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL) {
->> +		int fifo_checked = cfq_cfqq_fifo_expire(cfqq);
->> +		struct request *__rq;
->> +
->>  		cfq_dispatch_insert(cfqd->queue, __alias);
->> +		cfq_clear_cfqq_fifo_expire(cfqq);
->> +		while ((__rq = cfq_check_fifo(cfqq))) {
->> +			cfq_dispatch_insert(cfqd->queue, __rq);
->> +			cfq_clear_cfqq_fifo_expire(cfqq);
->> +		}
->> +		if (fifo_checked)
->> +			cfq_mark_cfqq_fifo_expire(cfqq);
->> +	}
->
-> Jeff,
->
-> IIUC correctly upon receiving an alias, you are checking fifo of same
-> cfqq and not the fifo of other cfqqs which are blocked. So dispatching
-> more expired requests from the cfqq which is generating lots of aliases
-> can at best only worsen the problem. I am wondering how does this patch
-> help in dispatching requests from other cfqqs. 
+The forker thread removes bdis from 'bdi_list' before forking the bdi thread.
+But this is wrong for at least 2 reasons.
 
-I think you're missing a key element, here.  Let's assume some harmless
-process has the I/O scheduler.  Then, your pathological alias generator
-process comes in and inserts a request into the queue.  If that request
-is an alias, then it gets moved to the dispatch list immediately, even
-though the cfqq for that process is not currently being served.
+Reason #1: if we temporary remove a bdi from the list, we may miss works which
+           would otherwise be given to us.
 
-Now, I'm not sure why we ever get back into select_queue if the request
-queue is always full of these aliases.  I didn't dig down that far, but
-I did verify that progress was made in my simple reproducer.
+Reason #2: this is racy; indeed, 'bdi_wb_shutdown()' expects that bdis are
+           always in the 'bdi_list' (see 'bdi_remove_from_list()'), and when
+           it races with the forker thread, it can shut down the bdi thread
+           at the same time as the forker creates it.
 
-> Also for my education purposes I was curious to know that why can't
-> we keep aliased requests in the service tree. 
+This patch makes sure the forker thread never removes bdis from 'bdi_list'
+(which was suggested by Christoph Hellwig).
 
-You know, I dug back through the logs, and I didn't find any mention of
-that.  The anticipatory scheduler used to allow such aliases, but then
-that support was removed in favor of a simpler approach.  So, the reason
-may just be out of convenience.
+In order to make sure that we do not race with 'bdi_wb_shutdown()', we have to
+hold the 'bdi_lock' while walking the 'bdi_list' and setting the 'BDI_pending'
+flag.
 
-Cheers,
-Jeff
+NOTE! The error path is interesting. Currently, when we fail to create a bdi
+thread, we move the bdi to the tail of 'bdi_list'. But if we never remove the
+bdi from the list, we cannot move it to the tail either, because then we can
+mess up the RCU readers which walk the list. And also, we'll have the race
+described above in "Reason #2".
+
+But I not think that adding to the tail is any important so I just do not do
+that.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ fs/fs-writeback.c |    7 -------
+ mm/backing-dev.c  |   31 ++++++++++---------------------
+ 2 files changed, 10 insertions(+), 28 deletions(-)
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 8cf53ba..eaef5c9 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -804,13 +804,6 @@ int bdi_writeback_thread(void *data)
+ 	unsigned long wait_jiffies = -1UL;
+ 	long pages_written;
+ 
+-	/*
+-	 * Add us to the active bdi_list
+-	 */
+-	spin_lock_bh(&bdi_lock);
+-	list_add_rcu(&bdi->bdi_list, &bdi_list);
+-	spin_unlock_bh(&bdi_lock);
+-
+ 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
+ 	set_freezable();
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index dbc6681..672c17b 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -331,7 +331,7 @@ static int bdi_forker_thread(void *ptr)
+ 	for (;;) {
+ 		bool fork = false;
+ 		struct task_struct *task;
+-		struct backing_dev_info *bdi, *tmp;
++		struct backing_dev_info *bdi;
+ 
+ 		/*
+ 		 * Temporary measure, we want to make sure we don't see
+@@ -347,7 +347,7 @@ static int bdi_forker_thread(void *ptr)
+ 		 * Check if any existing bdi's have dirty data without
+ 		 * a thread registered. If so, set that up.
+ 		 */
+-		list_for_each_entry_safe(bdi, tmp, &bdi_list, bdi_list) {
++		list_for_each_entry(bdi, &bdi_list, bdi_list) {
+ 			if (!bdi_cap_writeback_dirty(bdi))
+ 				continue;
+ 			if (bdi->wb.task)
+@@ -359,8 +359,13 @@ static int bdi_forker_thread(void *ptr)
+ 			WARN(!test_bit(BDI_registered, &bdi->state),
+ 			     "bdi %p/%s is not registered!\n", bdi, bdi->name);
+ 
+-			list_del_rcu(&bdi->bdi_list);
+ 			fork = true;
++
++			/*
++			 * Set the pending bit - if someone will try to
++			 * unregister this bdi - it'll wait on this bit.
++			 */
++			set_bit(BDI_pending, &bdi->state);
+ 			break;
+ 		}
+ 		spin_unlock_bh(&bdi_lock);
+@@ -383,29 +388,13 @@ static int bdi_forker_thread(void *ptr)
+ 
+ 		__set_current_state(TASK_RUNNING);
+ 
+-		/*
+-		 * Set the pending bit - if someone will try to unregister this
+-		 * bdi - it'll wait on this bit.
+-		 */
+-		set_bit(BDI_pending, &bdi->state);
+-
+-		/* Make sure no one uses the picked bdi */
+-		synchronize_rcu();
+-
+ 		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
+ 				   dev_name(bdi->dev));
+ 		if (IS_ERR(task)) {
+ 			/*
+-			 * If thread creation fails, then readd the bdi back to
+-			 * the list and force writeout of the bdi from this
+-			 * forker thread. That will free some memory and we can
+-			 * try again. Add it to the tail so we get a chance to
+-			 * flush other bdi's to free memory.
++			 * If thread creation fails, force writeout of the bdi
++			 * from the thread.
+ 			 */
+-			spin_lock_bh(&bdi_lock);
+-			list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
+-			spin_unlock_bh(&bdi_lock);
+-
+ 			bdi_flush_io(bdi);
+ 		} else
+ 			bdi->wb.task = task;
+-- 
+1.7.1.1
+
