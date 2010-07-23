@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0GWHXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 03:23:52 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54995 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065Ab0GWHXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 03:23:50 -0400
-Date: Fri, 23 Jul 2010 09:23:01 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: ykzhao <yakui.zhao@intel.com>
-Cc: Jack Steiner <steiner@sgi.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-Message-ID: <20100723072301.GC23461@elte.hu>
-References: <20100722152220.GA18290@sgi.com>
- <1279849573.13929.28.camel@localhost.localdomain>
+	id S1753139Ab0GWHdT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 03:33:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37046 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab0GWHdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 03:33:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/7] memcg: sc.nr_to_reclaim should be initialized
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+In-Reply-To: <20100722053113.GL14369@balbir.in.ibm.com>
+References: <20100716191256.736C.A69D9226@jp.fujitsu.com> <20100722053113.GL14369@balbir.in.ibm.com>
+Message-Id: <20100723154638.88C8.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279849573.13929.28.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 1.0
-X-ELTE-SpamLevel: s
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
-	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
-	[score: 0.4665]
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 23 Jul 2010 16:33:13 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> * KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-07-16 19:13:31]:
+> 
+> > Currently, mem_cgroup_shrink_node_zone() initialize sc.nr_to_reclaim as 0.
+> > It mean shrink_zone() only scan 32 pages and immediately return even if
+> > it doesn't reclaim any pages.
+> > 
+> > This patch fixes it.
+> > 
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > ---
+> >  mm/vmscan.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 1691ad0..bd1d035 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1932,6 +1932,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
+> >  						struct zone *zone, int nid)
+> >  {
+> >  	struct scan_control sc = {
+> > +		.nr_to_reclaim = SWAP_CLUSTER_MAX,
+> >  		.may_writepage = !laptop_mode,
+> >  		.may_unmap = 1,
+> >  		.may_swap = !noswap,
+> 
+> Could you please do some additional testing on
+> 
+> 1. How far does this push pages (in terms of when limit is hit)?
 
-* ykzhao <yakui.zhao@intel.com> wrote:
+32 pages per mem_cgroup_shrink_node_zone().
 
-> From the above description maybe the E820_ACPI region can be mapped as 
-> cached. But this still depends on the BIOS. If the some shared data resides 
-> in the E820_ACPI region on some BIOS, maybe we can't map the E820_ACPI 
-> region as cached again.
+That said, the algorithm is here.
 
-I dont think we can do this safely unless some other OS (Windows) does it as 
-well. (the reason is that if some BIOS messes this up then it will cause nasty 
-bugs/problems only on Linux.)
+1. call mem_cgroup_largest_soft_limit_node()
+   calculate largest cgroup
+2. call mem_cgroup_shrink_node_zone() and shrink 32 pages
+3. goto 1 if limit is still exceed.
 
-But the benefits of caching are very clear and well measured by Jack, so we 
-want the feature. What we can do is to add an exception for 'known good' hw 
-vendors - i.e. something quite close to Jack's RFC patch, but implemented a 
-bit more cleanly:
+If it's not your intention, can you please your intended algorithm?
 
-Exposing x86_platform and e820 details to generic ACPI code isnt particularly 
-clean - there should be an ACPI accessor function for that or so: a new 
-acpi_table_can_be_cached(table) function or so.
 
-In fact since __acpi_map_table(addr,size) is defined by architectures already, 
-this could be done purely within x86 code.
+> 2. Did you hit a problem with the current setting or is it a review
+> fix?
 
-Thanks,
+I've found this by review. and my patch works fine on my test environment.
+Of cource, if you do _not_ run the code on heavy pressure, your original code
+works too.
 
-	Ingo
+
