@@ -1,209 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab0GWSSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 14:18:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47625 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756649Ab0GWSSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 14:18:17 -0400
-Date: Fri, 23 Jul 2010 20:17:51 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
-        Chris Mason <chris.mason@oracle.com>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 2/6] writeback: the kupdate expire timestamp should be
- a moving target
-Message-ID: <20100723181751.GE20540@quack.suse.cz>
-References: <20100722050928.653312535@intel.com>
- <20100722061822.630779474@intel.com>
+	id S1756896Ab0GWSVb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 14:21:31 -0400
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:44058 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341Ab0GWSVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 14:21:30 -0400
+Date: Fri, 23 Jul 2010 20:21:16 +0200
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: b43 wireless driver inhibits access to /dev/hwrng
+Message-ID: <20100723182116.GB12795@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	linux-kernel@vger.kernel.org
+References: <20100722225212.GA19361@darkside.kls.lan>
+ <20100723143219.GA2426@tuxdriver.com>
+ <20100723153101.GA12795@darkside.kls.lan>
+ <20100723173246.GC2426@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cvVnyQ+4j833TQvp"
 Content-Disposition: inline
-In-Reply-To: <20100722061822.630779474@intel.com>
+In-Reply-To: <20100723173246.GC2426@tuxdriver.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 22-07-10 13:09:30, Wu Fengguang wrote:
-> Dynamicly compute the dirty expire timestamp at queue_io() time.
-> Also remove writeback_control.older_than_this which is no longer used.
-> 
-> writeback_control.older_than_this used to be determined at entrance to
-> the kupdate writeback work. This _static_ timestamp may go stale if the
-> kupdate work runs on and on. The flusher may then stuck with some old
-> busy inodes, never considering newly expired inodes thereafter.
-  This seems to make sense. The patch looks fine as well.
 
-Acked-by: Jan Kara <jack@suse.cz>
+--cvVnyQ+4j833TQvp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-								Honza
-> 
-> This has two possible problems:
-> 
-> - It is unfair for a large dirty inode to delay (for a long time) the
->   writeback of small dirty inodes.
-> 
-> - As time goes by, the large and busy dirty inode may contain only
->   _freshly_ dirtied pages. Ignoring newly expired dirty inodes risks
->   delaying the expired dirty pages to the end of LRU lists, triggering
->   the very bad pageout(). Neverthless this patch merely addresses part
->   of the problem.
-> 
-> CC: Jan Kara <jack@suse.cz>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  fs/fs-writeback.c                |   24 +++++++++---------------
->  include/linux/writeback.h        |    2 --
->  include/trace/events/writeback.h |    6 +-----
->  mm/backing-dev.c                 |    1 -
->  mm/page-writeback.c              |    1 -
->  5 files changed, 10 insertions(+), 24 deletions(-)
-> 
-> --- linux-next.orig/fs/fs-writeback.c	2010-07-21 22:20:01.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c	2010-07-22 11:23:27.000000000 +0800
-> @@ -216,16 +216,23 @@ static void move_expired_inodes(struct l
->  				struct list_head *dispatch_queue,
->  				struct writeback_control *wbc)
->  {
-> +	unsigned long expire_interval = 0;
-> +	unsigned long older_than_this;
->  	LIST_HEAD(tmp);
->  	struct list_head *pos, *node;
->  	struct super_block *sb = NULL;
->  	struct inode *inode;
->  	int do_sb_sort = 0;
->  
-> +	if (wbc->for_kupdate) {
-> +		expire_interval = msecs_to_jiffies(dirty_expire_interval * 10);
-> +		older_than_this = jiffies - expire_interval;
-> +	}
-> +
->  	while (!list_empty(delaying_queue)) {
->  		inode = list_entry(delaying_queue->prev, struct inode, i_list);
-> -		if (wbc->older_than_this &&
-> -		    inode_dirtied_after(inode, *wbc->older_than_this))
-> +		if (expire_interval &&
-> +		    inode_dirtied_after(inode, older_than_this))
->  			break;
->  		if (sb && sb != inode->i_sb)
->  			do_sb_sort = 1;
-> @@ -583,29 +590,19 @@ static inline bool over_bground_thresh(v
->   * Try to run once per dirty_writeback_interval.  But if a writeback event
->   * takes longer than a dirty_writeback_interval interval, then leave a
->   * one-second gap.
-> - *
-> - * older_than_this takes precedence over nr_to_write.  So we'll only write back
-> - * all dirty pages if they are all attached to "old" mappings.
->   */
->  static long wb_writeback(struct bdi_writeback *wb,
->  			 struct wb_writeback_work *work)
->  {
->  	struct writeback_control wbc = {
->  		.sync_mode		= work->sync_mode,
-> -		.older_than_this	= NULL,
->  		.for_kupdate		= work->for_kupdate,
->  		.for_background		= work->for_background,
->  		.range_cyclic		= work->range_cyclic,
->  	};
-> -	unsigned long oldest_jif;
->  	long wrote = 0;
->  	struct inode *inode;
->  
-> -	if (wbc.for_kupdate) {
-> -		wbc.older_than_this = &oldest_jif;
-> -		oldest_jif = jiffies -
-> -				msecs_to_jiffies(dirty_expire_interval * 10);
-> -	}
->  	if (!wbc.range_cyclic) {
->  		wbc.range_start = 0;
->  		wbc.range_end = LLONG_MAX;
-> @@ -998,9 +995,6 @@ EXPORT_SYMBOL(__mark_inode_dirty);
->   * Write out a superblock's list of dirty inodes.  A wait will be performed
->   * upon no inodes, all inodes or the final one, depending upon sync_mode.
->   *
-> - * If older_than_this is non-NULL, then only write out inodes which
-> - * had their first dirtying at a time earlier than *older_than_this.
-> - *
->   * If `bdi' is non-zero then we're being asked to writeback a specific queue.
->   * This function assumes that the blockdev superblock's inodes are backed by
->   * a variety of queues, so all inodes are searched.  For other superblocks,
-> --- linux-next.orig/include/linux/writeback.h	2010-07-21 22:20:02.000000000 +0800
-> +++ linux-next/include/linux/writeback.h	2010-07-22 11:23:27.000000000 +0800
-> @@ -28,8 +28,6 @@ enum writeback_sync_modes {
->   */
->  struct writeback_control {
->  	enum writeback_sync_modes sync_mode;
-> -	unsigned long *older_than_this;	/* If !NULL, only write back inodes
-> -					   older than this */
->  	unsigned long wb_start;         /* Time writeback_inodes_wb was
->  					   called. This is needed to avoid
->  					   extra jobs and livelock */
-> --- linux-next.orig/include/trace/events/writeback.h	2010-07-21 22:20:02.000000000 +0800
-> +++ linux-next/include/trace/events/writeback.h	2010-07-22 11:23:27.000000000 +0800
-> @@ -100,7 +100,6 @@ DECLARE_EVENT_CLASS(wbc_class,
->  		__field(int, for_reclaim)
->  		__field(int, range_cyclic)
->  		__field(int, more_io)
-> -		__field(unsigned long, older_than_this)
->  		__field(long, range_start)
->  		__field(long, range_end)
->  	),
-> @@ -115,14 +114,12 @@ DECLARE_EVENT_CLASS(wbc_class,
->  		__entry->for_reclaim	= wbc->for_reclaim;
->  		__entry->range_cyclic	= wbc->range_cyclic;
->  		__entry->more_io	= wbc->more_io;
-> -		__entry->older_than_this = wbc->older_than_this ?
-> -						*wbc->older_than_this : 0;
->  		__entry->range_start	= (long)wbc->range_start;
->  		__entry->range_end	= (long)wbc->range_end;
->  	),
->  
->  	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
-> -		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
-> +		"bgrd=%d reclm=%d cyclic=%d more=%d "
->  		"start=0x%lx end=0x%lx",
->  		__entry->name,
->  		__entry->nr_to_write,
-> @@ -133,7 +130,6 @@ DECLARE_EVENT_CLASS(wbc_class,
->  		__entry->for_reclaim,
->  		__entry->range_cyclic,
->  		__entry->more_io,
-> -		__entry->older_than_this,
->  		__entry->range_start,
->  		__entry->range_end)
->  )
-> --- linux-next.orig/mm/page-writeback.c	2010-07-21 22:20:02.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2010-07-21 22:20:03.000000000 +0800
-> @@ -482,7 +482,6 @@ static void balance_dirty_pages(struct a
->  	for (;;) {
->  		struct writeback_control wbc = {
->  			.sync_mode	= WB_SYNC_NONE,
-> -			.older_than_this = NULL,
->  			.nr_to_write	= write_chunk,
->  			.range_cyclic	= 1,
->  		};
-> --- linux-next.orig/mm/backing-dev.c	2010-07-22 11:23:34.000000000 +0800
-> +++ linux-next/mm/backing-dev.c	2010-07-22 11:23:39.000000000 +0800
-> @@ -271,7 +271,6 @@ static void bdi_flush_io(struct backing_
->  {
->  	struct writeback_control wbc = {
->  		.sync_mode		= WB_SYNC_NONE,
-> -		.older_than_this	= NULL,
->  		.range_cyclic		= 1,
->  		.nr_to_write		= 1024,
->  	};
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Fri, Jul 23, 2010 at 01:32:46PM -0400, John W. Linville wrote:
+> Alright, sorry I overlooked that.  Although it still looks to me like
+> your current_rng must be the b43-provided one, or else you wouldn't
+> be experiencing this issue.
+
+Yes. Unfortunately, the b43 module is loaded earlier than the via-rng
+module: the former gets loaded via udev autodetection, the latter gets
+loaded via my /etc/modules. Thus, the rng core selects b43 as the
+"current" RNG.
+
+> > I guess, b43 just stops delivering data through b43_rng_read() when the
+> > hardware is shut down and instead returns ENODEV (which is btw. what I
+> > get when I'm trying to read /dev/hwrng while b43 is down), and the rng
+> Yes, I believe this is what the b43 hwrng is doing.  I suspect you
+> need/want a way to influence current_rng to favor via-rng.  You may
+
+Yes, once knowing what happens it was easy to find a work-around:
+
+root@ideapad ~ # cat /etc/modprobe.d/local-b43-workaround.conf
+# Work-around: b43 provides a Hardware RNG as well, but returns ENODEV
+# on read() when the BCM4312 hardware is down.
+# Ensure via-rng is loaded before this module. This way hw_random/core
+# delivers read()s on /dev/hwrng to via-rng.
+install b43 modprobe via-rng; modprobe --ignore-install b43 $CMDLINE_OPTS
+
+> want to reference Documentation/hw_random.txt for further information.
+
+Indeed, setting /sys/devices/virtual/misc/hw_random/rng_current would
+probably be a cleaner solution :) Thanks for that.
+
+However, I still somehow feel like this is a bug - either in the rng
+core or in b43. One of both should IMHO be changed: either the rng core
+to respect drivers not currently delivering data or (probably cleaner)
+to provide an interface to suspend a driver, or the b43 driver to
+unregister its rng when the hardware is shut down (or power it up when
+the rng is accessed? probably a bit oversized :)).
+
+Unfortunately, Documentation/hw_random.txt has no usage guidelines for
+the rng core, i.e. how drivers should behave when no data is available.
+It talks about a `hardware "has-data" flag', but I cannot find such a
+thing in the code.
+
+
+Thanks for your help and patience
+   Mario
+--=20
+File names are infinite in length where infinity is set to 255 characters.
+                                -- Peter Collinson, "The Unix File System"
+
+--cvVnyQ+4j833TQvp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEVAwUBTEndnBS+e2HeSPbpAQLNZwf+O0vyBcWKRTA2IdwiHUG8BCWiW/2WO87b
+mqbdcDHGs8mhMh+g0wf3/Lz+5M3GUhlYuyp1n+QxeriOe7g0Q5AglQQmTlU6tWoi
+U2veOqPtPRGNrM6W/fxZjx3eNW37QF05AfsDFrZt1zF944Vc8AT524PC7z3/VHgE
+lxq5KGbr0n6thrua1sEo92Ivk8gmqXpEdP5ScA03janwkZRTPFZuaKc4l5zJOPcn
+2ul4jsKMaavMz8n4ze467+IRNzmcHfdSAtbT+UWR5ZfjISRz0gUWSJhwUWrglEQI
+tjFPTIEoDTAthOq/UBOi7wZC5fOPDc9ul/GondvKmJtABwdU4DXAGw==
+=84C9
+-----END PGP SIGNATURE-----
+
+--cvVnyQ+4j833TQvp--
