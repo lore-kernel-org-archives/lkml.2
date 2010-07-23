@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab0GWJR2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 05:17:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45247 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab0GWJR0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 05:17:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lLt2qXUhajMqDDY70rNi9vDNWla5a3gqeZ2eC7BF76sqZgroLSzBInfd4A/nIFxDns
-         zc41CBO9Tr0z2NBnCsBLLa4F+nnfcKL30/pTTB9G2eXsmJIL+jqPk03WE2r0Xa+K/z9d
-         4p2KdYhDqYmOJ+ZBCqHW4gXkkfyAFROrhaqIA=
+	id S1755261Ab0GWJWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 05:22:16 -0400
+Received: from mail.SerNet.de ([193.175.80.2]:39012 "EHLO mail.SerNet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753033Ab0GWJWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 05:22:13 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jul 2010 05:22:13 EDT
+Date: Fri, 23 Jul 2010 11:14:53 +0200
+From: =?iso-8859-1?Q?Bj=F6rn?= Jacke <bj@SerNet.DE>
+To: "Ted Ts'o" <tytso@mit.edu>, tridge@samba.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeremy Allison <jra@samba.org>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Volker.Lendecke@SerNet.DE,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        Jan Engelhardt <jengelh@medozas.de>,
+        David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended file stats available [ver #6]
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, tridge@samba.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Jeremy Allison <jra@samba.org>, linux-cifs@vger.kernel.org,
+	linux-nfs@vger.kernel.org, Volker.Lendecke@sernet.de,
+	samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+	Jan Engelhardt <jengelh@medozas.de>,
+	David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+References: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+ <30448.1279800887@redhat.com>
+ <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+ <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+ <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+ <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+ <20100722162712.GB10352@jeremy-laptop>
+ <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+ <19528.60019.28495.655512@samba.org>
+ <20100723012130.GD16373@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <4C495880.2090705@gmail.com>
-References: <1279865467-16522-1-git-send-email-emjay1988@gmail.com>
-	<4C495880.2090705@gmail.com>
-Date: Fri, 23 Jul 2010 19:17:21 +1000
-Message-ID: <AANLkTi=KTEtA57aTHEd_tzXAmK_WsX+P4jO_3TedFGFk@mail.gmail.com>
-Subject: Re: [PATCH] Staging: comedi: comedidev: Fixed a macro definition code 
-	style issue
-From: Michael Jensen <emjay1988@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100723012130.GD16373@thunk.org>
+X-Q: Sprechen und Hoeren ist Befruchten und Empfangen. (Novalis)
+Message-Id: <E1OcEL8-00DP7W-V3@intern.SerNet.DE>
+Organization: SerNet GmbH, Goettingen, Germany
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 6:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->
-<snip>
-> Hmm, does this compile?
->
-> --
-> js
+On 2010-07-22 at 21:21 -0400 Ted Ts'o sent off:
+> Well, not POSIX, because POSIX doesn't have CreationTime at all.
+> BSD's birthtime doesn't allow it to be set, and the question here is
+> largely philosophical.
 
-I did build the comedi directory (as per Greg's "Write and submit your
-first kernel patch" video), and didn't get any errors (once I'd done
-the configuration)...
+actually, it can (partly :). But the way it can be done is an insane hack:
 
-Did I miss something?
+<quote "http://ace.delos.com/kirk/">
+To provide a sensible birth time for applications that are unaware of the birth
+time attribute, we changed the semantics of the "utimes" system call so that if
+the birth time was newer than the value of the modification time that it was
+setting, it sets the birth time to the same time as the modification time. An
+application that is aware of the birth time attribute can set both the birth
+time and the modification time by doing two calls to "utimes". First it calls
+"utimes" with a modification time equal to the saved birth time, then it calls
+"utimes" a second time with a modification time equal to the (presumably newer)
+saved modification time.
+</quote>
 
-[apologies, resending because gmail sent HTML versions to the mailing
-lists (ack!)]
+Thus it can also be only be set more in the past.
 
---
-Regards,
-
-Michael Jensen
+Cheers
+Björn
+-- 
+SerNet GmbH, Bahnhofsallee 1b, 37081 Göttingen
+phone: +49-551-370000-0, fax: +49-551-370000-9
+AG Göttingen, HRB 2816, GF: Dr. Johannes Loxen
