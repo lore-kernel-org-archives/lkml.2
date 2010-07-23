@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0GWIdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 04:33:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44893 "EHLO mga03.intel.com"
+	id S1754411Ab0GWIia (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 04:38:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55293 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab0GWIdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 04:33:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,246,1278313200"; 
-   d="scan'208";a="303495896"
-Date: Fri, 23 Jul 2010 16:33:15 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
- writeback
-Message-ID: <20100723083315.GC5043@localhost>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
- <20100719142145.GD12510@infradead.org>
- <20100719144046.GR13117@csn.ul.ie>
- <20100722085210.GA26714@localhost>
- <20100722094208.GE13117@csn.ul.ie>
+	id S1752090Ab0GWIi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 04:38:27 -0400
+Date: Fri, 23 Jul 2010 10:37:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: shenghui <crosslonelyover@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] check name_len before down_read xattr_sem and sb_read
+ in ext2_xattr_get
+Message-ID: <20100723083759.GA3305@quack.suse.cz>
+References: <201007122229025316610@gmail.com>
+ <20100721174457.GE1215@atrey.karlin.mff.cuni.cz>
+ <AANLkTikXSOHrIw0SVJMYqsQy1aG5sCXkvvOFU4XLDNGv@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100722094208.GE13117@csn.ul.ie>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikXSOHrIw0SVJMYqsQy1aG5sCXkvvOFU4XLDNGv@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
-
-On Thu, Jul 22, 2010 at 05:42:09PM +0800, Mel Gorman wrote:
-> On Thu, Jul 22, 2010 at 04:52:10PM +0800, Wu Fengguang wrote:
-> > > Some insight on how the other writeback changes that are being floated
-> > > around might affect the number of dirty pages reclaim encounters would also
-> > > be helpful.
-> > 
-> > Here is an interesting related problem about the wait_on_page_writeback() call
-> > inside shrink_page_list():
-> > 
-> >         http://lkml.org/lkml/2010/4/4/86
-
-I guess you've got the answers from the above thread, anyway here is
-the brief answers to your questions.
-
-> > 
-> > The problem is, wait_on_page_writeback() is called too early in the
-> > direct reclaim path, which blocks many random/unrelated processes when
-> > some slow (USB stick) writeback is on the way.
-> > 
-> > A simple dd can easily create a big range of dirty pages in the LRU
-> > list. Therefore priority can easily go below (DEF_PRIORITY - 2) in a
-> > typical desktop, which triggers the lumpy reclaim mode and hence
-> > wait_on_page_writeback().
-> > 
+On Thu 22-07-10 08:03:18, shenghui wrote:
+> 2010/7/22 Jan Kara <jack@suse.cz>:
+> >> Hi,
+> >>        I walked through ext2_xattr_get, and felt that we can
+> >> do some optimization on it. For name_len check, it's done
+> >> after down xattr_sem and sb_read, both of which are time
+> >> consuming operation compared with strlen:
+> >>          down_read(&EXT2_I(inode)->xattr_sem);
+> >>  ...
+> >>          bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
+> >>  ...
+> >>          /* find named attribute */
+> >>          name_len = strlen(name);
+> >>
+> >>          error = -ERANGE;
+> >>          if (name_len > 255)
+> >>                  goto cleanup;
+> >>
+> >>        Most of the case, you'll get one valid block, but if the
+> >> name len > 255, then the xattr_sem down and sb_bread operation
+> >> can be seen as a waste of time. So I think we'd better do
+> >> name len check as early as possible.
+> >>        Following is my patch, and it's against 2.6.35-rc4.
+> >> Please check it.
+> >>
+> >> Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
+> >> ---
+> >>  fs/ext2/xattr.c |   12 +++++++-----
+> >>  1 files changed, 7 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
+> >> index 7c39157..0b94d61 100644
+> >> --- a/fs/ext2/xattr.c
+> >> +++ b/fs/ext2/xattr.c
+> >> @@ -161,6 +161,13 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
+> >>
+> >>       if (name == NULL)
+> >>               return -EINVAL;
+> >> +
+> >> +     /* find named attribute */
+> >> +     name_len = strlen(name);
+> >> +     error = -ERANGE;
+> >> +     if (name_len > 255)
+> >> +             goto cleanup;
+> >  But you cannot go to cleanup here because you don't hold xattr_sem...
+> >
 > 
-> Lumpy reclaim is for high-order allocations. A simple dd should not be
-> triggering it regularly unless there was a lot of forking going on at the
-> same time.
+> Sorry, I'm a little confused by your words.
+> The patch just checks name_len, and it
+> doesn't need xattr_sem.
+  Checking of name_len is fine as you did it. But I wanted to point out
+that if name_len is greater than 255, you then go to 'cleanup' label which
+tries to do up_read(&EXT2_I(inode)->xattr_sem). But that's a bug because
+after you moved the code, we don't hold xattr_sem at the moment we check
+name_len.
 
-dd could create the dirty file fast enough, so that no other processes 
-are injecting pages into the LRU lists besides dd itself. So it's
-creating a large range of hard-to-reclaim LRU pages which will trigger
-this code
-
-+       else if (sc->order && priority < DEF_PRIORITY - 2)
-+               lumpy_reclaim = 1;
-
-
-> Also, how would a random or unrelated process get blocked on
-> writeback unless they were also doing high-order allocations?  What was the
-> source of the high-order allocations?
-
-sc->order is 1 on fork().
-
-Thanks,
-Fengguang
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
