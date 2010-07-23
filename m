@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760092Ab0GWMWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:22:23 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52042 "EHLO ogre.sisk.pl"
+	id S1760149Ab0GWMW7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:22:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52041 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759561Ab0GWMUT convert rfc822-to-8bit (ORCPT
+	id S1759539Ab0GWMUT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Jul 2010 08:20:19 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Jan De Luyck" <mailinglists+linuxkernel_20080830@kcore.org>
+        "Jean-Francois Moine" <moinejf@free.fr>, "Vish" <drkvi-a@yahoo.com>
 References: <wQMMFC59mnE.A.v-E.iUYSMB@chimera>
 In-Reply-To: <wQMMFC59mnE.A.v-E.iUYSMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <PRbv8sgxY6G.A.hvF.YVYSMB@chimera>
-Subject: [Bug #16233] Fwd: [2.6.34] INFO: task rsync:20019 blocked for more than 120 seconds.
+Message-ID: <PRbv8sgxY6G.A.apF.UVYSMB@chimera>
+Subject: [Bug #16270] Image is a hit-or-a-miss. Often displayed green+purple
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 23 Jul 2010 14:15:52 +0200 (CEST)
+Date: Fri, 23 Jul 2010 14:15:53 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,11 @@ introduced between 2.6.33 and 2.6.34.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16233
-Subject		: Fwd: [2.6.34] INFO: task rsync:20019 blocked for more than 120 seconds.
-Submitter	: Jan De Luyck <mailinglists+linuxkernel_20080830@kcore.org>
-Date		: 2010-06-14 19:49 (40 days old)
-Message-ID	: <AANLkTimutyh3WIALv3NIxA8Xt5JtU6tp4EWOnuSqhdyD@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=127654498016377&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16270
+Subject		: Image is a hit-or-a-miss. Often displayed green+purple
+Submitter	: Vish <drkvi-a@yahoo.com>
+Date		: 2010-06-22 10:47 (32 days old)
+First-Bad-Commit: http://git.kernel.org/linus/acef4a407ed6e0a9ed87a2747be592fe49e64bdd
+Handled-By	: Jean-Francois Moine <moinejf@free.fr>
 
 
