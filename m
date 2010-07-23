@@ -1,96 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab0GXQH0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 12:07:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33623 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab0GXQHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 12:07:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=LiWJSq9FzCgkFnSjC6JlOmmD/+kuFIKYdIKo+lYsAR8sLzRQ3eVfkel1METtjzV8+p
-         qy3vqvyIQaJ6qbe2HTrQOGi9kKmdmKZ5fgqxl/b4RXHix7zzuDIqwaySevjzR/Go2Bch
-         AKzMFeBJCyw/gaKRRwEeraDNYkQO3Ow+wnr28=
-Date: Sat, 24 Jul 2010 20:07:01 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: check capabilities in open()
-Message-ID: <20100724160701.GA4907@albatros>
+	id S1755856Ab0GXQO0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 12:14:26 -0400
+Received: from smtp2e.orange.fr ([80.12.242.113]:40999 "EHLO smtp2e.orange.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755444Ab0GXQOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 12:14:25 -0400
+X-ME-UUID: 20100724161345758.B933E80052F8@mwinf2e21.orange.fr
+Reply-To: <woodsonloanagency@kkwl.ac.th>
+From: "Woodson Heather" <strub.thierry@sfr.fr>
+To: mail1@yahoo.com
+Subject: Financial Solution.
+Date: Fri, 23 Jul 2010 05:10:05 -1200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <SRVukF0tu6krmDInPYP000752ba@esperancevar.fr>
+X-OriginalArrivalTime: 24 Jul 2010 16:13:41.0720 (UTC) FILETIME=[2EC20580:01CB2B4B]
+X-TM-AS-Product-Ver: SMEX-8.1.0.1122-6.000.1038-17524.002
+X-TM-AS-Result: Yes-10.288900-4.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I've found that some drivers check process capabilities via capable() in
-open(), not in ioctl()/write()/etc.
-
-I cannot find answer in POSIX, but IMO process expects that file
-descriptors of priviledged user and file descriptors of the same
-file/device are the same in priviledge aspect. Driver should deny/allow
-open() and deny/allow ioctl() based on user priviledges. The path how
-the process gained this fd doesn't matter.
-
-So I think these 2 examples should be equal:
-
-1) root process opened the file and then dropped its priviledges
-
-2) nonroot process opened the file
-
-Currently gained fds are different in priviledge aspect.
-
-
-If you think these are bugs, I can move capable() checking down to
-ioctl()/write()/read()/etc.
+An opportunity is here for your financial advancement this year.With Woodson Loan Agency, your thirst for cheap and legitimate loan is over.We give loan at the lowest percentage rate of 2.5% annually. We offer all kinds of loan to anybody who is interested. Send the following information to (woodsonloanagency@kkwl.ac.th) Name.... Address... Amount needed.... Duration... Regards, Woodson Heather
 
 
 
-This is the full list of such drivers:
-
-drivers/staging/comedi/comedi_fops.c
-drivers/oprofile/event_buffer.c
-drivers/s390/char/vmcp.c
-drivers/s390/char/zcore.c
-drivers/net/ppp_generic.c
-drivers/scsi/3w-sas.c
-drivers/scsi/pmcraid.c
-drivers/scsi/megaraid.c
-drivers/scsi/megaraid/megaraid_sas.c
-drivers/scsi/megaraid/megaraid_mm.c
-drivers/char/mem.c
-drivers/char/tty_io.c
-drivers/char/agp/frontend.c
-drivers/char/apm-emulation.c
-
-
-This is coccinelle script to find that:
-
-@ r1 @
-identifier fops;
-identifier openx;
-@@
-
-struct file_operations fops = {
-...
-.open       = openx,
-...
-};
-
-
-@@
-identifier r1.openx;
-@@
-
-openx(...)
-{
-...
-*capable(...)
-...
-}
