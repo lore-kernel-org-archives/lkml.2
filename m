@@ -1,28 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab0GWEYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 00:24:52 -0400
-Received: from aa013msr.fastwebnet.it ([85.18.95.73]:51813 "EHLO
-	aa013msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab0GWEYv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 00:24:51 -0400
-X-Greylist: delayed 1306 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jul 2010 00:24:51 EDT
-Message-ID: <12915022.1104421279856735978.JavaMail.defaultUser@defaultHost>
-Date: Fri, 23 Jul 2010 05:45:35 +0200 (CEST)
-From: Lee Banabas <emporiomaglia@fastwebnet.it>
-Reply-To: leebanas@w.cn
-Subject: Business Proposal
+	id S1752051Ab0GWEZf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 00:25:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab0GWEZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 00:25:33 -0400
+Date: Fri, 23 Jul 2010 00:25:30 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cfq-iosched: don't allow aliased requests to starve
+ others
+Message-ID: <20100723042530.GD11236@redhat.com>
+References: <x49zkxuaymb.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 118.101.7.124
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49zkxuaymb.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Barrister Lee Banabas an attorney at law.I have a business proposal for you
- valued at ($10,600,000.00 USD)More information contact me via my email leebanas
-@w.cn
+On Wed, Jul 14, 2010 at 11:09:48AM -0400, Jeff Moyer wrote:
+> Hi,
+> 
+> In running a test case that tries to trip up the kernel's AIO
+> implementation, we ran into a situation where no other I/O to the device
+> under test would be completed.  The test program spawned (in this case)
+> 100 threads, each of which performed the following in a loop:
+> 
+> open file O_DIRECT
+> queue 1MB of read I/O from file using 16 iocbs
+> close file
+> repeat
+> 
+> The program does NOT wait for the I/O to complete.  The file length is
+> only 4MB, meaning that you have 25 threads performing I/O on each of the
+> 4 1MB regions.
+> 
+> Both deadline and cfq check for aliased requests in the sorted list of
+> I/Os, and when an alias is found, the request in the rb tree is moved to
+> the dispatch list.  So, what happens is that, with this workload, only
+> requests from this program are moved to the dispatch list, starving out
+> all other I/O.
+> 
+> The attached patch fixes this problem by issuing all expired requests in
+> the aliased request handling code.  The reason I opted to issue all
+> expired requsts is because if we only service a single one, I still see
+> really awful interactivity;  an ls would take over 5 minutes to
+> complete.  With the attached patch, the ls took about 7 seconds to
+> complete.
+> 
+> Comments, as always, are welcome.
+> 
+> Cheers,
+> Jeff
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 7982b83..0d8d2cd 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -417,6 +417,7 @@ static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
+>  }
+>  
+>  static void cfq_dispatch_insert(struct request_queue *, struct request *);
+> +static struct request *cfq_check_fifo(struct cfq_queue *cfqq);
+>  static struct cfq_queue *cfq_get_queue(struct cfq_data *, bool,
+>  				       struct io_context *, gfp_t);
+>  static struct cfq_io_context *cfq_cic_lookup(struct cfq_data *,
+> @@ -1394,10 +1395,22 @@ static void cfq_add_rq_rb(struct request *rq)
+>  
+>  	/*
+>  	 * looks a little odd, but the first insert might return an alias.
+> -	 * if that happens, put the alias on the dispatch list
+> +	 * If that happens, put the alias on the dispatch list, but don't
+> +	 * allow issuing of aliased requests to starve out the queue.
+>  	 */
+> -	while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL)
+> +	while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL) {
+> +		int fifo_checked = cfq_cfqq_fifo_expire(cfqq);
+> +		struct request *__rq;
+> +
+>  		cfq_dispatch_insert(cfqd->queue, __alias);
+> +		cfq_clear_cfqq_fifo_expire(cfqq);
+> +		while ((__rq = cfq_check_fifo(cfqq))) {
+> +			cfq_dispatch_insert(cfqd->queue, __rq);
+> +			cfq_clear_cfqq_fifo_expire(cfqq);
+> +		}
+> +		if (fifo_checked)
+> +			cfq_mark_cfqq_fifo_expire(cfqq);
+> +	}
 
+Jeff,
+
+IIUC correctly upon receiving an alias, you are checking fifo of same
+cfqq and not the fifo of other cfqqs which are blocked. So dispatching
+more expired requests from the cfqq which is generating lots of aliases
+can at best only worsen the problem. I am wondering how does this patch
+help in dispatching requests from other cfqqs. 
+
+Also for my education purposes I was curious to know that why can't
+we keep aliased requests in the service tree. 
+
+Thanks
+Vivek
