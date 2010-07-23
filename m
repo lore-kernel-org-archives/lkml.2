@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab0GWUWB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 16:22:01 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42489 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab0GWUWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 16:22:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=bJbLRHON7QKIPh4MncWneVhdmgB0Y6zX4g/5GJp8pMLZ9LlKkKEjE0LXjRvMHcpBNi
-         TtjlfmfhvkJCsznk2bNNtFBsar8Brv9RxAAAEW+LMRWkrISHjRU6W6gR+VuH2JcJdnCO
-         LUlquEYxoJy4RxMWK/g//NnbYGV+fhrMGohSQ=
-Date: Fri, 23 Jul 2010 22:23:50 +0200
-From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] ARM: sa1111: move __sa1111_probe() to
- .devinit.text
-Message-ID: <20100723202350.GD976@boggieman>
-Reply-To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <1279915120-4373-3-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1759917Ab0GWUWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 16:22:36 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:44512 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758372Ab0GWUWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 16:22:34 -0400
+Date: Fri, 23 Jul 2010 13:21:48 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Ben Blum <bblum@andrew.cmu.edu>,
+        containers@lists.linux-foundation.org, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Paul Menage <menage@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+Message-ID: <20100723202148.GA5216@count0.beaverton.ibm.com>
+References: <20100722182638.GA12712@kroah.com>
+ <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+ <20100722183614.GA5443@suse.de>
+ <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
+ <20100722185301.GA528@suse.de>
+ <AANLkTik07hZot_x0p7xJuY8s4f8pGRd2Mn1+jYfHH2iq@mail.gmail.com>
+ <20100722191200.GA5609@suse.de>
+ <20100722214821.GB14303@count0.beaverton.ibm.com>
+ <AANLkTikluqTBi3XsU-OT_IJuBdkURkHpM3ut-8ratnzr@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1279915120-4373-3-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <AANLkTikluqTBi3XsU-OT_IJuBdkURkHpM3ut-8ratnzr@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-you beat me to it :)
-
-Acked-by: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-
-On Fri, Jul 23, 2010 at 09:58:26PM +0200, Uwe Kleine-König wrote:
-> __sa1111_probe is only called by sa1111_probe that lives in .devinit.text.
-> So it's save to move the former to .devinit.text, too.
+On Fri, Jul 23, 2010 at 01:10:43AM +0200, Kay Sievers wrote:
+> On Thu, Jul 22, 2010 at 23:48, Matt Helsley <matthltc@us.ibm.com> wrote:
+> > So I'd suggest
+> > those cgroup mounts go in /var/run/systemd/cgroup or something like that.
 > 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  arch/arm/common/sa1111.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Impossible, we need it at bootup, and / is usually read-only, and /var
+> might even be behind the network we need to bring up.
 > 
-> diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
-> index 6f80665..97c5bc9 100644
-> --- a/arch/arm/common/sa1111.c
-> +++ b/arch/arm/common/sa1111.c
-> @@ -681,7 +681,7 @@ out:
->   *	%-EBUSY		physical address already marked in-use.
->   *	%0		successful.
->   */
-> -static int
-> +static int __devinit
->  __sa1111_probe(struct device *me, struct resource *mem, int irq)
->  {
->  	struct sa1111 *sachip;
-> -- 
-> 1.7.1
+> It needs to be on tmpfs mounted on the rootsfs, or in any of the
+> virtual fss we have to mount anyway, so /sys/fs seems a good place.
+
+Ahh, excellent point. Indeed, /sys/fs seems fine then.
+
+Cheers,
+	-Matt Helsley
+
