@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab0GWBNs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:13:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48702 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab0GWBMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757726Ab0GWBNv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:13:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42107 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756971Ab0GWBMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Jul 2010 21:12:54 -0400
 From: Armando Uribe <x0095078@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
@@ -14,11 +15,11 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Rene Sapiens <rene.sapiens@ti.com>,
         Felipe Contreras <felipe.contreras@gmail.com>,
         Armando Uribe <x0095078@ti.com>
-Subject: [PATCH 7/9] staging: tidspbridge: Remove macros used as cast
-Date: Thu, 22 Jul 2010 20:25:32 -0500
-Message-Id: <1279848334-4043-8-git-send-email-x0095078@ti.com>
+Subject: [PATCH 8/9] staging: tidspbridge: Change macros to static inline functions
+Date: Thu, 22 Jul 2010 20:25:33 -0500
+Message-Id: <1279848334-4043-9-git-send-email-x0095078@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1279848334-4043-7-git-send-email-x0095078@ti.com>
+In-Reply-To: <1279848334-4043-8-git-send-email-x0095078@ti.com>
 References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
  <1279848334-4043-2-git-send-email-x0095078@ti.com>
  <1279848334-4043-3-git-send-email-x0095078@ti.com>
@@ -26,218 +27,132 @@ References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
  <1279848334-4043-5-git-send-email-x0095078@ti.com>
  <1279848334-4043-6-git-send-email-x0095078@ti.com>
  <1279848334-4043-7-git-send-email-x0095078@ti.com>
+ <1279848334-4043-8-git-send-email-x0095078@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes those macros that are used to
-perform casts
+This patch changes preprocesing macros to static inline
+funcions. Also the function is_equal_uuid (IS_EQUAL_UUID) now uses the
+memcmp function.
 
 Signed-off-by: Armando Uribe <x0095078@ti.com>
 ---
- drivers/staging/tidspbridge/dynload/cload.c        |   19 ++++++-------------
- drivers/staging/tidspbridge/dynload/doff.h         |    7 ++-----
- drivers/staging/tidspbridge/dynload/getsection.c   |   16 ++++------------
- drivers/staging/tidspbridge/dynload/reloc.c        |    2 +-
- .../tidspbridge/dynload/reloc_table_c6000.c        |    2 +-
- .../tidspbridge/dynload/tramp_table_c6000.c        |    2 +-
- drivers/staging/tidspbridge/pmgr/dbll.c            |    5 +----
- 7 files changed, 16 insertions(+), 37 deletions(-)
+ .../staging/tidspbridge/include/dspbridge/dbdefs.h |   32 +++++--------------
+ drivers/staging/tidspbridge/rmgr/nldr.c            |   20 +++++-------
+ drivers/staging/tidspbridge/rmgr/proc.c            |    4 +-
+ 3 files changed, 20 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
-index 32150f0..c85a5e8 100644
---- a/drivers/staging/tidspbridge/dynload/cload.c
-+++ b/drivers/staging/tidspbridge/dynload/cload.c
-@@ -20,13 +20,6 @@
- #define LINKER_MODULES_HEADER ("_" MODULES_HEADER)
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
+index 8f84735..ffcc326 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
+@@ -110,29 +110,15 @@
+ #define DSPTYPE64	0x99
  
- /*
-- * we use the fact that DOFF section records are shaped just like
-- * ldr_section_info to reduce our section storage usage.  This macro marks
-- * the places where that assumption is made
-- */
--#define DOFFSEC_IS_LDRSEC(pdoffsec) ((struct ldr_section_info *)(pdoffsec))
--
--/*
-  * forward references
-  */
- static void dload_symbols(struct dload_state *dlthis);
-@@ -519,17 +512,17 @@ static void allocate_sections(struct dload_state *dlthis)
- #if BITS_PER_AU <= BITS_PER_BYTE
- 		/* attempt to insert the name of this section */
- 		if (soffset < dlthis->dfile_hdr.df_strtab_size)
--			DOFFSEC_IS_LDRSEC(shp)->name = dlthis->str_head +
--			    soffset;
-+			((struct ldr_section_info *)shp)->name =
-+				dlthis->str_head + soffset;
- 		else {
- 			dload_error(dlthis, "Bad name offset in section %d",
- 				    curr_sect);
--			DOFFSEC_IS_LDRSEC(shp)->name = NULL;
-+			((struct ldr_section_info *)shp)->name = NULL;
- 		}
- #endif
- 		/* allocate target storage for sections that require it */
- 		if (ds_needs_allocation(shp)) {
--			*asecs = *DOFFSEC_IS_LDRSEC(shp);
-+			*asecs = *(struct ldr_section_info *)shp;
- 			asecs->context = 0;	/* zero the context field */
- #if BITS_PER_AU > BITS_PER_BYTE
- 			asecs->name = unpack_name(dlthis, soffset);
-@@ -1162,7 +1155,7 @@ static void dload_data(struct dload_state *dlthis)
- 			if (curr_sect < dlthis->allocated_secn_count)
- 				dlthis->delta_runaddr = sptr->ds_paddr;
- 			else {
--				lptr = DOFFSEC_IS_LDRSEC(sptr);
-+				lptr = (struct ldr_section_info *)sptr;
- 				dlthis->delta_runaddr = 0;
- 			}
- 			dlthis->image_secn = lptr;
-@@ -1337,7 +1330,7 @@ static void dload_data(struct dload_state *dlthis)
- 			goto loop_cont;
+ /* Handy Macros */
+-#define IS_VALID_PROC_EVENT(x) (((x) == 0) || (((x) & \
+-				(DSP_PROCESSORSTATECHANGE | \
+-				    DSP_PROCESSORATTACH | \
+-				    DSP_PROCESSORDETACH | \
+-				    DSP_PROCESSORRESTART | \
+-				    DSP_NODESTATECHANGE | \
+-				    DSP_STREAMDONE | \
+-				    DSP_STREAMIOCOMPLETION | \
+-				    DSP_MMUFAULT | \
+-				    DSP_SYSERROR | \
+-				    DSP_WDTOVERFLOW | \
+-				    DSP_PWRERROR)) && \
+-				!((x) & ~(DSP_PROCESSORSTATECHANGE | \
+-				    DSP_PROCESSORATTACH | \
+-				    DSP_PROCESSORDETACH | \
+-				    DSP_PROCESSORRESTART | \
+-				    DSP_NODESTATECHANGE | \
+-				    DSP_STREAMDONE | \
+-				    DSP_STREAMIOCOMPLETION | \
+-				    DSP_MMUFAULT | \
+-				    DSP_SYSERROR | \
+-				    DSP_WDTOVERFLOW | \
+-				    DSP_PWRERROR))))
++#define VALID_PROC_EVENT (DSP_PROCESSORSTATECHANGE | DSP_PROCESSORATTACH | \
++	DSP_PROCESSORDETACH | DSP_PROCESSORRESTART | DSP_NODESTATECHANGE | \
++	DSP_STREAMDONE | DSP_STREAMIOCOMPLETION | DSP_MMUFAULT | \
++	DSP_SYSERROR | DSP_WDTOVERFLOW | DSP_PWRERROR)
++
++static inline bool is_valid_proc_event(u32 x)
++{
++	return (x == 0 || (x & VALID_PROC_EVENT && !(x & ~VALID_PROC_EVENT)));
++}
  
- 		if (curr_sect >= dlthis->allocated_secn_count)
--			lptr = DOFFSEC_IS_LDRSEC(sptr);
-+			lptr = (struct ldr_section_info *)sptr;
+ #define IS_VALID_NODE_EVENT(x)    (((x) == 0) || \
+ 	(((x) & (DSP_NODESTATECHANGE | DSP_NODEMESSAGEREADY)) && \
+diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
+index 6cf0be9..33d2872 100644
+--- a/drivers/staging/tidspbridge/rmgr/nldr.c
++++ b/drivers/staging/tidspbridge/rmgr/nldr.c
+@@ -135,13 +135,11 @@
+ #define PDELETE	 "delete"
+ #define PEXECUTE	"execute"
  
- 		if (cinit_processed) {
- 			/*Don't clear BSS after load-time initialization */
-diff --git a/drivers/staging/tidspbridge/dynload/doff.h b/drivers/staging/tidspbridge/dynload/doff.h
-index c00d189..a7c3145 100644
---- a/drivers/staging/tidspbridge/dynload/doff.h
-+++ b/drivers/staging/tidspbridge/dynload/doff.h
-@@ -24,11 +24,8 @@
- #ifndef _DOFF_H
- #define _DOFF_H
+-#define IS_EQUAL_UUID(uuid1, uuid2) (\
+-	((uuid1).ul_data1 == (uuid2).ul_data1) && \
+-	((uuid1).us_data2 == (uuid2).us_data2) && \
+-	((uuid1).us_data3 == (uuid2).us_data3) && \
+-	((uuid1).uc_data4 == (uuid2).uc_data4) && \
+-	((uuid1).uc_data5 == (uuid2).uc_data5) && \
+-	(strncmp((void *)(uuid1).uc_data6, (void *)(uuid2).uc_data6, 6)) == 0)
++static inline bool is_equal_uuid(struct dsp_uuid *uuid1,
++							struct dsp_uuid *uuid2)
++{
++	return !memcmp(uuid1, uuid2, sizeof(struct dsp_uuid));
++}
  
--#ifndef UINT32_C
--#define UINT32_C(zzz) ((u32)zzz)
--#endif
+     /*
+      *  ======== mem_seg_info ========
+@@ -1487,8 +1485,8 @@ static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
  
--#define BYTE_RESHUFFLE_VALUE UINT32_C(0x00010203)
-+#define BYTE_RESHUFFLE_VALUE 0x00010203
+ 	/* Find the node in the table */
+ 	for (i = 0; i < nldr_obj->ovly_nodes; i++) {
+-		if (IS_EQUAL_UUID
+-		    (nldr_node_obj->uuid, nldr_obj->ovly_table[i].uuid)) {
++		if (is_equal_uuid
++		    (&nldr_node_obj->uuid, &nldr_obj->ovly_table[i].uuid)) {
+ 			/* Found it */
+ 			po_node = &(nldr_obj->ovly_table[i]);
+ 			break;
+@@ -1825,8 +1823,8 @@ static void unload_ovly(struct nldr_nodeobject *nldr_node_obj,
  
- /* DOFF file header containing fields categorizing the remainder of the file */
- struct doff_filehdr_t {
-@@ -312,7 +309,7 @@ struct reloc_record_t {
+ 	/* Find the node in the table */
+ 	for (i = 0; i < nldr_obj->ovly_nodes; i++) {
+-		if (IS_EQUAL_UUID
+-		    (nldr_node_obj->uuid, nldr_obj->ovly_table[i].uuid)) {
++		if (is_equal_uuid
++		    (&nldr_node_obj->uuid, &nldr_obj->ovly_table[i].uuid)) {
+ 			/* Found it */
+ 			po_node = &(nldr_obj->ovly_table[i]);
+ 			break;
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+index 4d3db7e..5f189dc 100644
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -1879,7 +1879,7 @@ int proc_notify_clients(void *proc, u32 events)
+ 	struct proc_object *p_proc_object = (struct proc_object *)proc;
  
- /* Return the address/size >= to addr that is at a 32-bit boundary */
- /* This assumes that a byte is 8 bits */
--#define         DOFF_ALIGN(addr)            (((addr) + 3) & ~UINT32_C(3))
-+#define         DOFF_ALIGN(addr)            (((addr) + 3) & ~3UL)
+ 	DBC_REQUIRE(p_proc_object);
+-	DBC_REQUIRE(IS_VALID_PROC_EVENT(events));
++	DBC_REQUIRE(is_valid_proc_event(events));
+ 	DBC_REQUIRE(refs > 0);
+ 	if (!p_proc_object) {
+ 		status = -EFAULT;
+@@ -1902,7 +1902,7 @@ int proc_notify_all_clients(void *proc, u32 events)
+ 	int status = 0;
+ 	struct proc_object *p_proc_object = (struct proc_object *)proc;
  
- /**************************************************************************** */
- /* */
-diff --git a/drivers/staging/tidspbridge/dynload/getsection.c b/drivers/staging/tidspbridge/dynload/getsection.c
-index 3086118..51a7167 100644
---- a/drivers/staging/tidspbridge/dynload/getsection.c
-+++ b/drivers/staging/tidspbridge/dynload/getsection.c
-@@ -34,14 +34,6 @@ static const char err_alloc[] = { "Syms->dload_allocate( %d ) failed" };
- static const char stbl[] = { "Bad string table offset " FMT_UI32 };
- #endif
+-	DBC_REQUIRE(IS_VALID_PROC_EVENT(events));
++	DBC_REQUIRE(is_valid_proc_event(events));
+ 	DBC_REQUIRE(refs > 0);
  
--/*
-- * we use the fact that DOFF section records are shaped just like
-- * ldr_section_info to reduce our section storage usage.  These macros
-- * marks the places where that assumption is made
-- */
--#define DOFFSEC_IS_LDRSEC(pdoffsec) ((struct ldr_section_info *)(pdoffsec))
--#define LDRSEC_IS_DOFFSEC(ldrsec) ((struct doff_scnhdr_t *)(ldrsec))
--
- /************************************************************** */
- /********************* SUPPORT FUNCTIONS ********************** */
- /************************************************************** */
-@@ -110,7 +102,7 @@ static void expand_sec_names(struct dload_state *dlthis)
- 	/* For each sec, copy and expand its name */
- 	curr = xstrings;
- 	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
--		shp = DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
-+		shp = (struct ldr_section_info *)&dlthis->sect_hdrs[sec];
- 		next = unpack_sec_name(dlthis, *(u32 *) &shp->name, curr);
- 		if (next == NULL)
- 			break;	/* error */
-@@ -213,7 +205,7 @@ void *dload_module_open(struct dynamic_loader_stream *module,
- 	/* to a pointer into the string table. */
- 	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
- 		struct ldr_section_info *shp =
--		    DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
-+		    (struct ldr_section_info *)&dlthis->sect_hdrs[sec];
- 		shp->name = dlthis->str_head + *(u32 *) &shp->name;
- 	}
- #endif
-@@ -249,7 +241,7 @@ int dload_get_section_info(void *minfo, const char *section_name,
- 		return false;
- 
- 	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
--		shp = DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
-+		shp = (struct ldr_section_info *)&dlthis->sect_hdrs[sec];
- 		if (strcmp(section_name, shp->name) == 0) {
- 			*section_info = shp;
- 			return true;
-@@ -294,7 +286,7 @@ int dload_get_section(void *minfo,
- 	dlthis = (struct dload_state *)minfo;
- 	if (!dlthis)
- 		return false;
--	sptr = LDRSEC_IS_DOFFSEC(section_info);
-+	sptr = (struct doff_scnhdr_t *)section_info;
- 	if (sptr == NULL)
- 		return false;
- 
-diff --git a/drivers/staging/tidspbridge/dynload/reloc.c b/drivers/staging/tidspbridge/dynload/reloc.c
-index ec59777..7b28c07 100644
---- a/drivers/staging/tidspbridge/dynload/reloc.c
-+++ b/drivers/staging/tidspbridge/dynload/reloc.c
-@@ -107,7 +107,7 @@ int dload_repack(struct dload_state *dlthis, rvalue val, tgt_au_t * data,
- 
- 	fieldsz -= 1;	/* avoid nastiness with 32-bit shift of 32-bit value */
- 	/* clip the bits */
--	mask = ((UINT32_C(2) << fieldsz) - 1);
-+	mask = (2UL << fieldsz) - 1;
- 	objval = (val & mask);
- 	/* * store the bits through the specified mask */
- 	if (TARGET_BIG_ENDIAN) {
-diff --git a/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c b/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
-index 8ae3b38..a28bc04 100644
---- a/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
-+++ b/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
-@@ -16,7 +16,7 @@
- 
- /* Tables generated for c6000 */
- 
--#define HASH_FUNC(zz) (((((zz) + 1) * UINT32_C(1845)) >> 11) & 63)
-+#define HASH_FUNC(zz) (((((zz) + 1) * 1845UL) >> 11) & 63)
- #define HASH_L(zz) ((zz) >> 8)
- #define HASH_I(zz) ((zz) & 0xFF)
- 
-diff --git a/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c b/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
-index 47b7492..09cc64f 100644
---- a/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
-+++ b/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
-@@ -27,7 +27,7 @@
- #define C6X_TRAMP_MAX_RELOS			 8
- 
- /*  THIS HASH FUNCTION MUST MATCH THE ONE reloc_table_c6000.c */
--#define HASH_FUNC(zz) (((((zz) + 1) * UINT32_C(1845)) >> 11) & 63)
-+#define HASH_FUNC(zz) (((((zz) + 1) * 1845UL) >> 11) & 63)
- 
- /*  THIS MUST MATCH reloc_record_t FOR A SYMBOL BASED RELO */
- struct c6000_relo_record {
-diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
-index e8da030..d1806aa 100644
---- a/drivers/staging/tidspbridge/pmgr/dbll.c
-+++ b/drivers/staging/tidspbridge/pmgr/dbll.c
-@@ -41,10 +41,7 @@
- /* Max buffer length */
- #define MAXEXPR 128
- 
--#ifndef UINT32_C
--#define UINT32_C(zzz) ((uint32_t)zzz)
--#endif
--#define DOFF_ALIGN(x) (((x) + 3) & ~UINT32_C(3))
-+#define DOFF_ALIGN(x) (((x) + 3) & ~3UL)
- 
- /*
-  *  ======== struct dbll_tar_obj* ========
+ 	if (!p_proc_object) {
 -- 
 1.6.3.3
 
