@@ -1,254 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab0GWMLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:11:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43042 "EHLO hera.kernel.org"
+	id S1759500Ab0GWML3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:11:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43073 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586Ab0GWMLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 08:11:01 -0400
-Date: Fri, 23 Jul 2010 12:10:42 GMT
-From: tip-bot for KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+	id S1753600Ab0GWML1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 08:11:27 -0400
+Date: Fri, 23 Jul 2010 12:11:01 GMT
+From: tip-bot for Mike Frysinger <vapier@gentoo.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, tglx@linutronix.de,
-        kosaki.motohiro@jp.fujitsu.com
+        rostedt@goodmis.org, vapier@gentoo.org, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de,
-        kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100701104554.DA2D.A69D9226@jp.fujitsu.com>
-References: <20100701104554.DA2D.A69D9226@jp.fujitsu.com>
+        rostedt@goodmis.org, vapier@gentoo.org, tglx@linutronix.de
+In-Reply-To: <1279610015-10250-1-git-send-email-vapier@gentoo.org>
+References: <1279610015-10250-1-git-send-email-vapier@gentoo.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Shrink max latency ringbuffer if unnecessary
-Message-ID: <tip-ef710e100c1068d3dd5774d2b34c5485219e06ce@git.kernel.org>
-Git-Commit-ID: ef710e100c1068d3dd5774d2b34c5485219e06ce
+Subject: [tip:perf/core] tracing/documentation: Document dynamic ftracer internals
+Message-ID: <tip-9849ed4d72251d273524efb8b70be0be9aecb1df@git.kernel.org>
+Git-Commit-ID: 9849ed4d72251d273524efb8b70be0be9aecb1df
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:10:43 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:11:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ef710e100c1068d3dd5774d2b34c5485219e06ce
-Gitweb:     http://git.kernel.org/tip/ef710e100c1068d3dd5774d2b34c5485219e06ce
-Author:     KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-AuthorDate: Thu, 1 Jul 2010 14:34:35 +0900
+Commit-ID:  9849ed4d72251d273524efb8b70be0be9aecb1df
+Gitweb:     http://git.kernel.org/tip/9849ed4d72251d273524efb8b70be0be9aecb1df
+Author:     Mike Frysinger <vapier@gentoo.org>
+AuthorDate: Tue, 20 Jul 2010 03:13:35 -0400
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Wed, 21 Jul 2010 10:20:17 -0400
+CommitDate: Wed, 21 Jul 2010 11:00:25 -0400
 
-tracing: Shrink max latency ringbuffer if unnecessary
+tracing/documentation: Document dynamic ftracer internals
 
-Documentation/trace/ftrace.txt says
+Add more details to the dynamic function tracing design implementation.
 
-  buffer_size_kb:
-
-        This sets or displays the number of kilobytes each CPU
-        buffer can hold. The tracer buffers are the same size
-        for each CPU. The displayed number is the size of the
-        CPU buffer and not total size of all buffers. The
-        trace buffers are allocated in pages (blocks of memory
-        that the kernel uses for allocation, usually 4 KB in size).
-        If the last page allocated has room for more bytes
-        than requested, the rest of the page will be used,
-        making the actual allocation bigger than requested.
-        ( Note, the size may not be a multiple of the page size
-          due to buffer management overhead. )
-
-        This can only be updated when the current_tracer
-        is set to "nop".
-
-But it's incorrect. currently total memory consumption is
-'buffer_size_kb x CPUs x 2'.
-
-Why two times difference is there? because ftrace implicitly allocate
-the buffer for max latency too.
-
-That makes sad result when admin want to use large buffer. (If admin
-want full logging and makes detail analysis). example, If admin
-have 24 CPUs machine and write 200MB to buffer_size_kb, the system
-consume ~10GB memory (200MB x 24 x 2). umm.. 5GB memory waste is
-usually unacceptable.
-
-Fortunatelly, almost all users don't use max latency feature.
-The max latency buffer can be disabled easily.
-
-This patch shrink buffer size of the max latency buffer if
-unnecessary.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-LKML-Reference: <20100701104554.DA2D.A69D9226@jp.fujitsu.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+LKML-Reference: <1279610015-10250-1-git-send-email-vapier@gentoo.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c              |   38 +++++++++++++++++++++++++++++++-----
- kernel/trace/trace.h              |    1 +
- kernel/trace/trace_irqsoff.c      |    3 ++
- kernel/trace/trace_sched_wakeup.c |    2 +
- 4 files changed, 38 insertions(+), 6 deletions(-)
+ Documentation/trace/ftrace-design.txt |  153 +++++++++++++++++++++++++++++++-
+ include/linux/ftrace.h                |    5 +
+ 2 files changed, 153 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index af90429..f7488f4 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -660,6 +660,10 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 		return;
+diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
+index f1f81af..dc52bd4 100644
+--- a/Documentation/trace/ftrace-design.txt
++++ b/Documentation/trace/ftrace-design.txt
+@@ -13,6 +13,9 @@ Note that this focuses on architecture implementation details only.  If you
+ want more explanation of a feature in terms of common code, review the common
+ ftrace.txt file.
  
- 	WARN_ON_ONCE(!irqs_disabled());
-+	if (!current_trace->use_max_tr) {
-+		WARN_ON_ONCE(1);
-+		return;
-+	}
- 	arch_spin_lock(&ftrace_max_lock);
- 
- 	tr->buffer = max_tr.buffer;
-@@ -686,6 +690,11 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 		return;
- 
- 	WARN_ON_ONCE(!irqs_disabled());
-+	if (!current_trace->use_max_tr) {
-+		WARN_ON_ONCE(1);
-+		return;
-+	}
++Ideally, everyone who wishes to retain performance while supporting tracing in
++their kernel should make it all the way to dynamic ftrace support.
 +
- 	arch_spin_lock(&ftrace_max_lock);
  
- 	ftrace_disable_cpu();
-@@ -2801,6 +2810,9 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 	if (ret < 0)
- 		return ret;
+ Prerequisites
+ -------------
+@@ -215,7 +218,7 @@ An arch may pass in a unique value (frame pointer) to both the entering and
+ exiting of a function.  On exit, the value is compared and if it does not
+ match, then it will panic the kernel.  This is largely a sanity check for bad
+ code generation with gcc.  If gcc for your port sanely updates the frame
+-pointer under different opitmization levels, then ignore this option.
++pointer under different optimization levels, then ignore this option.
  
-+	if (!current_trace->use_max_tr)
-+		goto out;
-+
- 	ret = ring_buffer_resize(max_tr.buffer, size);
- 	if (ret < 0) {
- 		int r;
-@@ -2828,11 +2840,14 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 		return ret;
- 	}
+ However, adding support for it isn't terribly difficult.  In your assembly code
+ that calls prepare_ftrace_return(), pass the frame pointer as the 3rd argument.
+@@ -234,7 +237,7 @@ If you can't trace NMI functions, then skip this option.
  
-+	max_tr.entries = size;
-+ out:
- 	global_trace.entries = size;
  
- 	return ret;
- }
+ HAVE_SYSCALL_TRACEPOINTS
+----------------------
++------------------------
+ 
+ You need very few things to get the syscalls tracing in an arch.
+ 
+@@ -250,12 +253,152 @@ You need very few things to get the syscalls tracing in an arch.
+ HAVE_FTRACE_MCOUNT_RECORD
+ -------------------------
+ 
+-See scripts/recordmcount.pl for more info.
++See scripts/recordmcount.pl for more info.  Just fill in the arch-specific
++details for how to locate the addresses of mcount call sites via objdump.
++This option doesn't make much sense without also implementing dynamic ftrace.
  
 +
- /**
-  * tracing_update_buffers - used by tracing facility to expand ring buffers
-  *
-@@ -2893,12 +2908,26 @@ static int tracing_set_tracer(const char *buf)
- 	trace_branch_disable();
- 	if (current_trace && current_trace->reset)
- 		current_trace->reset(tr);
--
-+	if (current_trace && current_trace->use_max_tr) {
-+		/*
-+		 * We don't free the ring buffer. instead, resize it because
-+		 * The max_tr ring buffer has some state (e.g. ring->clock) and
-+		 * we want preserve it.
-+		 */
-+		ring_buffer_resize(max_tr.buffer, 1);
-+		max_tr.entries = 1;
++HAVE_DYNAMIC_FTRACE
++-------------------
++
++You will first need HAVE_FTRACE_MCOUNT_RECORD and HAVE_FUNCTION_TRACER, so
++scroll your reader back up if you got over eager.
++
++Once those are out of the way, you will need to implement:
++	- asm/ftrace.h:
++		- MCOUNT_ADDR
++		- ftrace_call_adjust()
++		- struct dyn_arch_ftrace{}
++	- asm code:
++		- mcount() (new stub)
++		- ftrace_caller()
++		- ftrace_call()
++		- ftrace_stub()
++	- C code:
++		- ftrace_dyn_arch_init()
++		- ftrace_make_nop()
++		- ftrace_make_call()
++		- ftrace_update_ftrace_func()
++
++First you will need to fill out some arch details in your asm/ftrace.h.
++
++Define MCOUNT_ADDR as the address of your mcount symbol similar to:
++	#define MCOUNT_ADDR ((unsigned long)mcount)
++Since no one else will have a decl for that function, you will need to:
++	extern void mcount(void);
++
++You will also need the helper function ftrace_call_adjust().  Most people
++will be able to stub it out like so:
++	static inline unsigned long ftrace_call_adjust(unsigned long addr)
++	{
++		return addr;
 +	}
- 	destroy_trace_option_files(topts);
+ <details to be filled>
  
- 	current_trace = t;
++Lastly you will need the custom dyn_arch_ftrace structure.  If you need
++some extra state when runtime patching arbitrary call sites, this is the
++place.  For now though, create an empty struct:
++	struct dyn_arch_ftrace {
++		/* No extra data needed */
++	};
++
++With the header out of the way, we can fill out the assembly code.  While we
++did already create a mcount() function earlier, dynamic ftrace only wants a
++stub function.  This is because the mcount() will only be used during boot
++and then all references to it will be patched out never to return.  Instead,
++the guts of the old mcount() will be used to create a new ftrace_caller()
++function.  Because the two are hard to merge, it will most likely be a lot
++easier to have two separate definitions split up by #ifdefs.  Same goes for
++the ftrace_stub() as that will now be inlined in ftrace_caller().
++
++Before we get confused anymore, let's check out some pseudo code so you can
++implement your own stuff in assembly:
  
- 	topts = create_trace_option_files(current_trace);
-+	if (current_trace->use_max_tr) {
-+		ret = ring_buffer_resize(max_tr.buffer, global_trace.entries);
-+		if (ret < 0)
-+			goto out;
-+		max_tr.entries = global_trace.entries;
-+	}
+-HAVE_DYNAMIC_FTRACE
+----------------------
++void mcount(void)
++{
++	return;
++}
++
++void ftrace_caller(void)
++{
++	/* implement HAVE_FUNCTION_TRACE_MCOUNT_TEST if you desire */
++
++	/* save all state needed by the ABI (see paragraph above) */
++
++	unsigned long frompc = ...;
++	unsigned long selfpc = <return address> - MCOUNT_INSN_SIZE;
++
++ftrace_call:
++	ftrace_stub(frompc, selfpc);
++
++	/* restore all state needed by the ABI */
++
++ftrace_stub:
++	return;
++}
++
++This might look a little odd at first, but keep in mind that we will be runtime
++patching multiple things.  First, only functions that we actually want to trace
++will be patched to call ftrace_caller().  Second, since we only have one tracer
++active at a time, we will patch the ftrace_caller() function itself to call the
++specific tracer in question.  That is the point of the ftrace_call label.
++
++With that in mind, let's move on to the C code that will actually be doing the
++runtime patching.  You'll need a little knowledge of your arch's opcodes in
++order to make it through the next section.
++
++Every arch has an init callback function.  If you need to do something early on
++to initialize some state, this is the time to do that.  Otherwise, this simple
++function below should be sufficient for most people:
++
++int __init ftrace_dyn_arch_init(void *data)
++{
++	/* return value is done indirectly via data */
++	*(unsigned long *)data = 0;
++
++	return 0;
++}
++
++There are two functions that are used to do runtime patching of arbitrary
++functions.  The first is used to turn the mcount call site into a nop (which
++is what helps us retain runtime performance when not tracing).  The second is
++used to turn the mcount call site into a call to an arbitrary location (but
++typically that is ftracer_caller()).  See the general function definition in
++linux/ftrace.h for the functions:
++	ftrace_make_nop()
++	ftrace_make_call()
++The rec->ip value is the address of the mcount call site that was collected
++by the scripts/recordmcount.pl during build time.
++
++The last function is used to do runtime patching of the active tracer.  This
++will be modifying the assembly code at the location of the ftrace_call symbol
++inside of the ftrace_caller() function.  So you should have sufficient padding
++at that location to support the new function calls you'll be inserting.  Some
++people will be using a "call" type instruction while others will be using a
++"branch" type instruction.  Specifically, the function is:
++	ftrace_update_ftrace_func()
++
++
++HAVE_DYNAMIC_FTRACE + HAVE_FUNCTION_GRAPH_TRACER
++------------------------------------------------
++
++The function grapher needs a few tweaks in order to work with dynamic ftrace.
++Basically, you will need to:
++	- update:
++		- ftrace_caller()
++		- ftrace_graph_call()
++		- ftrace_graph_caller()
++	- implement:
++		- ftrace_enable_ftrace_graph_caller()
++		- ftrace_disable_ftrace_graph_caller()
  
- 	if (t->init) {
- 		ret = tracer_init(t, tr);
-@@ -3480,7 +3509,6 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	}
+ <details to be filled>
++Quick notes:
++	- add a nop stub after the ftrace_call location named ftrace_graph_call;
++	  stub needs to be large enough to support a call to ftrace_graph_caller()
++	- update ftrace_graph_caller() to work with being called by the new
++	  ftrace_caller() since some semantics may have changed
++	- ftrace_enable_ftrace_graph_caller() will runtime patch the
++	  ftrace_graph_call location with a call to ftrace_graph_caller()
++	- ftrace_disable_ftrace_graph_caller() will runtime patch the
++	  ftrace_graph_call location with nops
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 41e4633..dcd6a7c 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -1,3 +1,8 @@
++/*
++ * Ftrace header.  For implementation details beyond the random comments
++ * scattered below, see: Documentation/trace/ftrace-design.txt
++ */
++
+ #ifndef _LINUX_FTRACE_H
+ #define _LINUX_FTRACE_H
  
- 	tracing_start();
--	max_tr.entries = global_trace.entries;
- 	mutex_unlock(&trace_types_lock);
- 
- 	return cnt;
-@@ -4578,16 +4606,14 @@ __init static int tracer_alloc_buffers(void)
- 
- 
- #ifdef CONFIG_TRACER_MAX_TRACE
--	max_tr.buffer = ring_buffer_alloc(ring_buf_size,
--					     TRACE_BUFFER_FLAGS);
-+	max_tr.buffer = ring_buffer_alloc(1, TRACE_BUFFER_FLAGS);
- 	if (!max_tr.buffer) {
- 		printk(KERN_ERR "tracer: failed to allocate max ring buffer!\n");
- 		WARN_ON(1);
- 		ring_buffer_free(global_trace.buffer);
- 		goto out_free_cpumask;
- 	}
--	max_tr.entries = ring_buffer_size(max_tr.buffer);
--	WARN_ON(max_tr.entries != global_trace.entries);
-+	max_tr.entries = 1;
- #endif
- 
- 	/* Allocate the first page for all buffers */
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 7778f06..cb629b3 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -276,6 +276,7 @@ struct tracer {
- 	struct tracer		*next;
- 	int			print_max;
- 	struct tracer_flags	*flags;
-+	int			use_max_tr;
- };
- 
- 
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 6fd486e..73a6b06 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -649,6 +649,7 @@ static struct tracer irqsoff_tracer __read_mostly =
- #endif
- 	.open           = irqsoff_trace_open,
- 	.close          = irqsoff_trace_close,
-+	.use_max_tr	= 1,
- };
- # define register_irqsoff(trace) register_tracer(&trace)
- #else
-@@ -681,6 +682,7 @@ static struct tracer preemptoff_tracer __read_mostly =
- #endif
- 	.open		= irqsoff_trace_open,
- 	.close		= irqsoff_trace_close,
-+	.use_max_tr	= 1,
- };
- # define register_preemptoff(trace) register_tracer(&trace)
- #else
-@@ -715,6 +717,7 @@ static struct tracer preemptirqsoff_tracer __read_mostly =
- #endif
- 	.open		= irqsoff_trace_open,
- 	.close		= irqsoff_trace_close,
-+	.use_max_tr	= 1,
- };
- 
- # define register_preemptirqsoff(trace) register_tracer(&trace)
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index c9fd5bd..4086eae 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -382,6 +382,7 @@ static struct tracer wakeup_tracer __read_mostly =
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-+	.use_max_tr	= 1,
- };
- 
- static struct tracer wakeup_rt_tracer __read_mostly =
-@@ -396,6 +397,7 @@ static struct tracer wakeup_rt_tracer __read_mostly =
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-+	.use_max_tr	= 1,
- };
- 
- __init static int init_wakeup_tracer(void)
