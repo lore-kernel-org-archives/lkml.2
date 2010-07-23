@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab0GWBMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:12:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:32909 "EHLO comal.ext.ti.com"
+	id S1757175Ab0GWBM6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:12:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32908 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab0GWBMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752307Ab0GWBMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Jul 2010 21:12:50 -0400
 From: Armando Uribe <x0095078@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
@@ -14,204 +14,158 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Rene Sapiens <rene.sapiens@ti.com>,
         Felipe Contreras <felipe.contreras@gmail.com>,
         Armando Uribe <x0095078@ti.com>
-Subject: [PATCH 1/9] staging: tidspbridge: Remove Redundant wrappers
-Date: Thu, 22 Jul 2010 20:25:26 -0500
-Message-Id: <1279848334-4043-2-git-send-email-x0095078@ti.com>
+Subject: [PATCH 4/9] staging: tidspbridge: Change macros to static inline functions used in cload
+Date: Thu, 22 Jul 2010 20:25:29 -0500
+Message-Id: <1279848334-4043-5-git-send-email-x0095078@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1279848334-4043-1-git-send-email-x0095078@ti.com>
+In-Reply-To: <1279848334-4043-4-git-send-email-x0095078@ti.com>
 References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
+ <1279848334-4043-2-git-send-email-x0095078@ti.com>
+ <1279848334-4043-3-git-send-email-x0095078@ti.com>
+ <1279848334-4043-4-git-send-email-x0095078@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes redundant wrappers from io_sm.c file
+This patch changes the macros to static inline function used
+in cload as well adds two definition of const to avoid using magic
+numbers
 
 Signed-off-by: Armando Uribe <x0095078@ti.com>
 ---
- drivers/staging/tidspbridge/core/chnl_sm.c         |    2 +-
- drivers/staging/tidspbridge/core/io_sm.c           |   98 +++----------------
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |    2 -
- 3 files changed, 17 insertions(+), 85 deletions(-)
+ drivers/staging/tidspbridge/dynload/cload.c |   16 +++++++-------
+ drivers/staging/tidspbridge/dynload/doff.h  |   31 +++++++++++++++++++-------
+ drivers/staging/tidspbridge/dynload/tramp.c |    2 +-
+ 3 files changed, 31 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
-index 6074bff..69c4784 100644
---- a/drivers/staging/tidspbridge/core/chnl_sm.c
-+++ b/drivers/staging/tidspbridge/core/chnl_sm.c
-@@ -230,7 +230,7 @@ func_cont:
- 	omap_mbox_enable_irq(dev_ctxt->mbox, IRQ_RX);
- 	spin_unlock_bh(&chnl_mgr_obj->chnl_mgr_lock);
- 	if (mb_val != 0)
--		io_intr_dsp2(chnl_mgr_obj->hio_mgr, mb_val);
-+		sm_interrupt_dsp(dev_ctxt, mb_val);
- 
- 	/* Schedule a DPC, to do the actual data transfer */
- 	if (sched_dpc)
-diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index ba2e6bd..b115cb3 100644
---- a/drivers/staging/tidspbridge/core/io_sm.c
-+++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -132,10 +132,6 @@ struct io_mgr {
- };
- 
- /* Function Prototypes */
--static void io_dispatch_chnl(struct io_mgr *pio_mgr,
--				struct chnl_object *pchnl, u8 io_mode);
--static void io_dispatch_msg(struct io_mgr *pio_mgr,
--			    struct msg_mgr *hmsg_mgr);
- static void io_dispatch_pm(struct io_mgr *pio_mgr);
- static void notify_chnl_complete(struct chnl_object *pchnl,
- 				 struct chnl_irp *chnl_packet_obj);
-@@ -147,10 +143,6 @@ static void input_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr);
- static void output_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr);
- static u32 find_ready_output(struct chnl_mgr *chnl_mgr_obj,
- 			     struct chnl_object *pchnl, u32 mask);
--static u32 read_data(struct bridge_dev_context *dev_ctxt, void *dest,
--		     void *src, u32 usize);
--static u32 write_data(struct bridge_dev_context *dev_ctxt, void *dest,
--		      void *src, u32 usize);
- 
- /* Bus Addr (cached kernel) */
- static int register_shm_segs(struct io_mgr *hio_mgr,
-@@ -834,42 +826,6 @@ func_end:
- 	return;
- }
- 
--/*
-- *  ======== io_dispatch_chnl ========
-- *      Proc-copy chanl dispatch.
-- */
--static void io_dispatch_chnl(struct io_mgr *pio_mgr,
--				struct chnl_object *pchnl, u8 io_mode)
--{
--	if (!pio_mgr)
--		goto func_end;
--
--	/* See if there is any data available for transfer */
--	if (io_mode != IO_SERVICE)
--		goto func_end;
--
--	/* Any channel will do for this mode */
--	input_chnl(pio_mgr, pchnl, io_mode);
--	output_chnl(pio_mgr, pchnl, io_mode);
--func_end:
--	return;
--}
--
--/*
-- *  ======== io_dispatch_msg ========
-- *      Performs I/O dispatch on message queues.
-- */
--static void io_dispatch_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
--{
--	if (!pio_mgr)
--		goto func_end;
--
--	/* We are performing both input and output processing. */
--	input_msg(pio_mgr, hmsg_mgr);
--	output_msg(pio_mgr, hmsg_mgr);
--func_end:
--	return;
--}
- 
- /*
-  *  ======== io_dispatch_pm ========
-@@ -956,10 +912,17 @@ void io_dpc(unsigned long ref_data)
- 						  pio_mgr->intr_val);
- 			}
+diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
+index e48e91b..32150f0 100644
+--- a/drivers/staging/tidspbridge/dynload/cload.c
++++ b/drivers/staging/tidspbridge/dynload/cload.c
+@@ -528,7 +528,7 @@ static void allocate_sections(struct dload_state *dlthis)
  		}
--		io_dispatch_chnl(pio_mgr, NULL, IO_SERVICE);
-+		/* Proc-copy chanel dispatch */
-+		input_chnl(pio_mgr, NULL, IO_SERVICE);
-+		output_chnl(pio_mgr, NULL, IO_SERVICE);
-+
- #ifdef CHNL_MESSAGES
--		if (msg_mgr_obj)
--			io_dispatch_msg(pio_mgr, msg_mgr_obj);
-+		if (msg_mgr_obj) {
-+			/* Perform I/O dispatch on message queues */
-+			input_msg(pio_mgr, msg_mgr_obj);
-+			output_msg(pio_mgr, msg_mgr_obj);
-+		}
-+
  #endif
- #ifdef CONFIG_TIDSPBRIDGE_DEBUG
- 		if (pio_mgr->intr_val & MBX_DBG_SYSPRINTF) {
-@@ -1162,10 +1125,8 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 				 * buffer.
- 				 */
- 				bytes = min(bytes, chnl_packet_obj->byte_size);
--				/* Transfer buffer from DSP side */
--				bytes = read_data(pio_mgr->hbridge_context,
--						  chnl_packet_obj->host_sys_buf,
--						  pio_mgr->input, bytes);
-+				memcpy(chnl_packet_obj->host_sys_buf,
-+						pio_mgr->input, bytes);
- 				pchnl->bytes_moved += bytes;
- 				chnl_packet_obj->byte_size = bytes;
- 				chnl_packet_obj->dw_arg = dw_arg;
-@@ -1448,10 +1409,10 @@ static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 		chnl_mgr_obj->dw_output_mask &= ~(1 << chnl_id);
+ 		/* allocate target storage for sections that require it */
+-		if (DS_NEEDS_ALLOCATION(shp)) {
++		if (ds_needs_allocation(shp)) {
+ 			*asecs = *DOFFSEC_IS_LDRSEC(shp);
+ 			asecs->context = 0;	/* zero the context field */
+ #if BITS_PER_AU > BITS_PER_BYTE
+@@ -540,7 +540,7 @@ static void allocate_sections(struct dload_state *dlthis)
+ 			if (dlthis->myalloc != NULL) {
+ 				if (!dlthis->myalloc->
+ 				    dload_allocate(dlthis->myalloc, asecs,
+-						   DS_ALIGNMENT(asecs->type))) {
++						   ds_alignment(asecs->type))) {
+ 					dload_error(dlthis, tgtalloc,
+ 						    asecs->name, asecs->size);
+ 					return;
+@@ -1155,7 +1155,7 @@ static void dload_data(struct dload_state *dlthis)
+ 	 */
+ 	for (curr_sect = 0; curr_sect < dlthis->dfile_hdr.df_no_scns;
+ 	     curr_sect += 1) {
+-		if (DS_NEEDS_DOWNLOAD(sptr)) {
++		if (ds_needs_download(sptr)) {
+ 			s32 nip;
+ 			ldr_addr image_offset = 0;
+ 			/* set relocation info for this section */
+@@ -1201,7 +1201,7 @@ static void dload_data(struct dload_state *dlthis)
+ 				dest = ibuf.bufr;
+ #ifdef OPT_ZERO_COPY_LOADER
+ 				zero_copy = false;
+-				if (DLOAD_SECT_TYPE(sptr) != DLOAD_CINIT) {
++				if (!dload_check_type(sptr, DLOAD_CINIT) {
+ 					dlthis->myio->writemem(dlthis->myio,
+ 							       &dest,
+ 							       lptr->load_addr +
+@@ -1267,8 +1267,8 @@ static void dload_data(struct dload_state *dlthis)
  
- 	/* Transfer buffer to DSP side */
--	chnl_packet_obj->byte_size =
--	    write_data(pio_mgr->hbridge_context, pio_mgr->output,
--		       chnl_packet_obj->host_sys_buf, min(pio_mgr->usm_buf_size,
--						  chnl_packet_obj->byte_size));
-+	chnl_packet_obj->byte_size = min(pio_mgr->usm_buf_size,
-+					chnl_packet_obj->byte_size);
-+	memcpy(pio_mgr->output,	chnl_packet_obj->host_sys_buf,
-+					chnl_packet_obj->byte_size);
- 	pchnl->bytes_moved += chnl_packet_obj->byte_size;
- 	/* Write all 32 bits of arg */
- 	IO_SET_LONG(pio_mgr->hbridge_context, struct shm, sm, arg,
-@@ -1697,34 +1658,7 @@ func_end:
- 	return status;
- }
+ 					/* stuff the result into target
+ 					 * memory */
+-					if (DLOAD_SECT_TYPE(sptr) ==
+-					    DLOAD_CINIT) {
++					if (dload_check_type(sptr,
++						DLOAD_CINIT)) {
+ 						cload_cinit(dlthis,
+ 							    &ibuf.ipacket);
+ 						cinit_processed = true;
+@@ -1306,7 +1306,7 @@ static void dload_data(struct dload_state *dlthis)
+ 				    BYTE_TO_TADDR(ibuf.ipacket.packet_size);
+ 			}	/* process packets */
+ 			/* if this is a BSS section, we may want to fill it */
+-			if (DLOAD_SECT_TYPE(sptr) != DLOAD_BSS)
++			if (!dload_check_type(sptr, DLOAD_BSS))
+ 				goto loop_cont;
  
--/*
-- *  ======== read_data ========
-- *      Copies buffers from the shared memory to the host buffer.
-- */
--static u32 read_data(struct bridge_dev_context *dev_ctxt, void *dest,
--		     void *src, u32 usize)
--{
--	memcpy(dest, src, usize);
--	return usize;
--}
--
--/*
-- *  ======== write_data ========
-- *      Copies buffers from the host side buffer to the shared memory.
-- */
--static u32 write_data(struct bridge_dev_context *dev_ctxt, void *dest,
--		      void *src, u32 usize)
--{
--	memcpy(dest, src, usize);
--	return usize;
--}
--
- /* ZCPY IO routines. */
--void io_intr_dsp2(struct io_mgr *pio_mgr, u16 mb_val)
--{
--	sm_interrupt_dsp(pio_mgr->hbridge_context, mb_val);
--}
--
- /*
-  *  ======== IO_SHMcontrol ========
-  *      Sets the requested shm setting.
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index e9a6c19..8b51c37 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -287,8 +287,6 @@ extern void io_or_set_value(struct bridge_dev_context *dev_ctxt,
- extern void io_and_set_value(struct bridge_dev_context *dev_ctxt,
- 			     u32 dsp_addr, u32 value);
+ 			if (!(dlthis->myoptions & DLOAD_INITBSS))
+@@ -1330,7 +1330,7 @@ static void dload_data(struct dload_state *dlthis)
+ 		}
+ 		/* if DS_DOWNLOAD_MASK */
+ 		/* If not loading, but BSS, zero initialize */
+-		if (DLOAD_SECT_TYPE(sptr) != DLOAD_BSS)
++		if (!dload_check_type(sptr, DLOAD_BSS))
+ 			goto loop_cont;
  
--extern void io_intr_dsp2(struct io_mgr *pio_mgr, u16 mb_val);
--
- extern void io_sm_init(void);
+ 		if (!(dlthis->myoptions & DLOAD_INITBSS))
+diff --git a/drivers/staging/tidspbridge/dynload/doff.h b/drivers/staging/tidspbridge/dynload/doff.h
+index 5bf9924..c00d189 100644
+--- a/drivers/staging/tidspbridge/dynload/doff.h
++++ b/drivers/staging/tidspbridge/dynload/doff.h
+@@ -326,19 +326,32 @@ struct reloc_record_t {
+ /**************************************************************************** */
  
- #ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
+ /* Enum for DOFF section types (bits 0-3 of flag): See dynamic_loader.h */
+-
+-/* Macros to help processing of sections */
+-#define DLOAD_SECT_TYPE(s_hdr)      ((s_hdr)->ds_flags & 0xF)
+-
++#define DS_SECTION_TYPE_MASK	0xF
+ /* DS_ALLOCATE indicates whether a section needs space on the target */
+ #define DS_ALLOCATE_MASK            0x10
+-#define DS_NEEDS_ALLOCATION(s_hdr)  ((s_hdr)->ds_flags & DS_ALLOCATE_MASK)
+-
+ /* DS_DOWNLOAD indicates that the loader needs to copy bits */
+ #define DS_DOWNLOAD_MASK            0x20
+-#define DS_NEEDS_DOWNLOAD(s_hdr)    ((s_hdr)->ds_flags & DS_DOWNLOAD_MASK)
+-
+ /* Section alignment requirement in AUs */
+-#define DS_ALIGNMENT(ds_flags) (1 << (((ds_flags) >> 8) & 0xF))
++#define DS_ALIGNMENT_SHIFT	8
++
++static inline bool dload_check_type(struct doff_scnhdr_t *sptr, u32 flag)
++{
++	return (sptr->ds_flags & DS_SECTION_TYPE_MASK) == flag;
++}
++static inline bool ds_needs_allocation(struct doff_scnhdr_t *sptr)
++{
++	return sptr->ds_flags & DS_ALLOCATE_MASK;
++}
++
++static inline bool ds_needs_download(struct doff_scnhdr_t *sptr)
++{
++	return sptr->ds_flags & DS_DOWNLOAD_MASK;
++}
++
++static inline int ds_alignment(u16 ds_flags)
++{
++	return 1 << ((ds_flags >> DS_ALIGNMENT_SHIFT) & DS_SECTION_TYPE_MASK);
++}
++
+ 
+ #endif /* _DOFF_H */
+diff --git a/drivers/staging/tidspbridge/dynload/tramp.c b/drivers/staging/tidspbridge/dynload/tramp.c
+index 7b593fc..81314d2 100644
+--- a/drivers/staging/tidspbridge/dynload/tramp.c
++++ b/drivers/staging/tidspbridge/dynload/tramp.c
+@@ -48,7 +48,7 @@ static int priv_tramp_sect_tgt_alloc(struct dload_state *dlthis)
+ 	sect_info->load_addr = 0;
+ 	ret_val = dlthis->myalloc->dload_allocate(dlthis->myalloc,
+ 						  sect_info,
+-						  DS_ALIGNMENT
++						  ds_alignment
+ 						  (sect_info->type));
+ 
+ 	if (ret_val == 0)
 -- 
 1.6.3.3
 
