@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab0GWLWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 07:22:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57429 "EHLO hera.kernel.org"
+	id S1754265Ab0GWL2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 07:28:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51607 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558Ab0GWLWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 07:22:22 -0400
-Message-ID: <4C497B5C.7000704@kernel.org>
-Date: Fri, 23 Jul 2010 13:22:04 +0200
+	id S1753055Ab0GWL2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 07:28:40 -0400
+Message-ID: <4C497CD5.5010908@kernel.org>
+Date: Fri, 23 Jul 2010 13:28:21 +0200
 From: Tejun Heo <tj@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, dhowells@redhat.com, sfrench@samba.org,
-        anton@samba.org, swhiteho@redhat.com, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCHSET wq#for-next] workqueue: replace slow-work with workqueue
-References: <1279658102-20069-1-git-send-email-tj@kernel.org> <4C48B16B.2070605@kernel.org>
-In-Reply-To: <4C48B16B.2070605@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Steve French <smfrench@gmail.com>,
+        linux-cifs@vger.kernel.org
+Subject: Re: linux-next: manual merge of the workqueues tree with the Linus'
+ tree
+References: <20100723144600.dd4da992.sfr@canb.auug.org.au>
+In-Reply-To: <20100723144600.dd4da992.sfr@canb.auug.org.au>
 X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 11:22:06 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 11:28:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 11:00 PM, Tejun Heo wrote:
-> On 07/20/2010 10:34 PM, Tejun Heo wrote:
->>  0001-fscache-convert-object-to-use-workqueue-instead-of-s.patch
->>  0002-fscache-convert-operation-to-use-workqueue-instead-o.patch
->>  0003-fscache-drop-references-to-slow-work.patch
->>  0004-cifs-use-workqueue-instead-of-slow-work.patch
+Hello, Stephen.
+
+On 07/23/2010 06:46 AM, Stephen Rothwell wrote:
+> Hi Tejun,
 > 
-> 0001-0004 now pushed out to wq#for-next w/ acks added.
+> Today's linux-next merge of the workqueues tree got a conflict in
+> fs/cifs/cifsfs.c between commit 4c0c03ca54f72fdd5912516ad0a23ec5cf01bda7
+> ("CIFS: Fix a malicious redirect problem in the DNS lookup code") from
+> Linus' tree and commit 9b646972467fb5fdc677f9e4251875db20bdbb64 ("cifs:
+> use workqueue instead of slow-work") from the workqueues tree.
+> 
+> I fixed it up (I think - I removed the call to cifs_exit_dns_resolver()
+> as there is no way to get to that code any more) and can carry the fix
+> for a while.
 
-The rest of the series pushed out to wq#for-next.
-
-Thanks.
+Yes, one failure case is removed, so that would be correct.  Thank you
+very much for taking care of the conflict.
 
 -- 
 tejun
