@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab0GWS7H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 14:59:07 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:39068 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779Ab0GWS6h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 14:58:37 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6052"; a="48450454"
-X-IronPort-AV: E=Sophos;i="4.55,247,1278313200"; 
-   d="scan'208";a="69829415"
-From: Jeff Ohlstein <johlstei@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Tony Lindgren <tony@atomide.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 2/3] arm: mm: do not set missing flags on ScorpionMP
-Date: Fri, 23 Jul 2010 11:58:02 -0700
-Message-Id: <1279911483-7039-3-git-send-email-johlstei@codeaurora.org>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1279911483-7039-1-git-send-email-johlstei@codeaurora.org>
-References: <1279911483-7039-1-git-send-email-johlstei@codeaurora.org>
+	id S1757361Ab0GWS6x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 14:58:53 -0400
+Received: from mail.perches.com ([173.55.12.10]:2076 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756290Ab0GWS6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 14:58:50 -0400
+Subject: Re: [PATCH] Staging: dt3155: make local variables static
+From: Joe Perches <joe@perches.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        ss@aao.gov.au, gregkh@suse.de
+In-Reply-To: <201007231145.50239.hartleys@visionengravers.com>
+References: <201007231145.50239.hartleys@visionengravers.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Jul 2010 11:58:48 -0700
+Message-ID: <1279911528.24768.1689.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steve Muckle <smuckle@codeaurora.org>
+On Fri, 2010-07-23 at 11:45 -0700, H Hartley Sweeten wrote:
+> The symbols dt3155_dev_open, unique_tag, and allocatorAddr are only used in
+> the file dt3155_drv.c and should be static.
+> diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+> index 9e7b880..49924d0 100644
+> --- a/drivers/staging/dt3155/dt3155_drv.c
+> +++ b/drivers/staging/dt3155/dt3155_drv.c
+> @@ -118,14 +118,14 @@ static void __iomem *dt3155_lbase[MAXBOARDS] = { NULL
+[]
+> -u32  dt3155_dev_open[MAXBOARDS] = {0
+> +static u32  dt3155_dev_open[MAXBOARDS] = {0
+[]
+> -u32 unique_tag = 0;;
+> +static u32 unique_tag = 0;;
 
-ScorpionMP does not have the SMP/nAMP mode and TLB ops
-broadcasting bits in the ACTLR.
+Statics don't need initialization and could you fix
+the style issues ("{0", ";;") at the same time please?
 
-Signed-off-by: Steve Muckle <smuckle@codeaurora.org>
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
----
- arch/arm/mm/proc-v7.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+static u32 dt3155_dev_open[MAXBOARDS];
+static u32 unique_tag;
 
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index 7aaf88a..6bddf5d 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -190,7 +190,7 @@ cpu_v7_name:
-  *	- cache type register is implemented
-  */
- __v7_setup:
--#ifdef CONFIG_SMP
-+#if defined(CONFIG_SMP) && !defined(CONFIG_ARCH_MSM_SCORPIONMP)
- 	mrc	p15, 0, r0, c1, c0, 1
- 	tst	r0, #(1 << 6)			@ SMP/nAMP mode enabled?
- 	orreq	r0, r0, #(1 << 6) | (1 << 0)	@ Enable SMP/nAMP mode and
--- 
-1.7.1.1
 
