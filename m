@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab0GWE2Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 00:28:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:42673 "EHLO mga01.intel.com"
+	id S1752318Ab0GWEqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 00:46:08 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42726 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab0GWE2W convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 00:28:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,245,1278313200"; 
-   d="scan'208";a="820845889"
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.ml.walleij@gmail.com" <linus.ml.walleij@gmail.com>
-CC: Alan Cox <alan@linux.intel.com>
-Date: Fri, 23 Jul 2010 09:57:27 +0530
-Subject: RE: Resend [PATCH] intel_mid: Add Mrst & Mfld DMA Drivers
-Thread-Topic: Resend [PATCH] intel_mid: Add Mrst & Mfld DMA Drivers
-Thread-Index: Acsoqq90mP7DpZeBRNKtPIU5n4V9QgBdGcsA
-Message-ID: <438BB0150E931F4B9CE701519A44630104A39147D8@bgsmsx502.gar.corp.intel.com>
-References: <1279699090-26032-1-git-send-email-vinod.koul@intel.com>
-In-Reply-To: <1279699090-26032-1-git-send-email-vinod.koul@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752075Ab0GWEqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 00:46:06 -0400
+Date: Fri, 23 Jul 2010 14:46:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Suresh Jayaraman <sjayaraman@suse.de>,
+        Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
+Subject: linux-next: manual merge of the workqueues tree with the cifs tree
+Message-Id: <20100723144604.fe57e4bd.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello Dan,
-> 
-> The second rev of patch fixes the comments recieved last time.
-> I have also cleaned up the driver and few more cosmetic changes
-> 
-> This patch add DMA drivers for DMA controllers in Langwell chipset
-> of Intel(R) Moorestown platform and DMA controllers in Penwell of
-> Intel(R) Medfield platfrom
+Hi Tejun,
 
-Dan, 
+Today's linux-next merge of the workqueues tree got a conflict in
+fs/cifs/cifsglob.h between commit
+1626bccfc79b354aa47cbfc5c8d39f7be8823eb4 ("cifs: guard cifsglob.h against
+multiple inclusion") from the cifs tree and commit
+9b646972467fb5fdc677f9e4251875db20bdbb64 ("cifs: use workqueue instead of
+slow-work") from the workqueues tree.
 
-Do you have any more comments on this patch. How do you want this to be
-coordinated wrt DMA engine patch by Linus.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--Vinod
+diff --cc fs/cifs/cifsglob.h
+index 9b7cf9a,f5a1f9b..0000000
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@@ -727,6 -732,6 +727,8 @@@ GLOBAL_EXTERN unsigned int cifs_min_rcv
+  GLOBAL_EXTERN unsigned int cifs_min_small;  /* min size of small buf pool */
+  GLOBAL_EXTERN unsigned int cifs_max_pending; /* MAX requests at once to server*/
+  
+- extern const struct slow_work_ops cifs_oplock_break_ops;
++ void cifs_oplock_break(struct work_struct *work);
++ void cifs_oplock_break_get(struct cifsFileInfo *cfile);
++ void cifs_oplock_break_put(struct cifsFileInfo *cfile);
+ +
+ +#endif	/* _CIFS_GLOB_H */
