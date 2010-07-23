@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab0GWUst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 16:48:49 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:35942 "EHLO
+	id S1758897Ab0GWUuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 16:50:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31481 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab0GWUsr (ORCPT
+	with ESMTP id S1755021Ab0GWUuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 16:48:47 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6052"; a="48471038"
-Message-ID: <4C4A002E.6020100@codeaurora.org>
-Date: Fri, 23 Jul 2010 14:48:46 -0600
+	Fri, 23 Jul 2010 16:50:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6052"; a="48471247"
+Message-ID: <4C4A0086.3040009@codeaurora.org>
+Date: Fri, 23 Jul 2010 14:50:14 -0600
 From: Kenneth Heitke <kheitke@codeaurora.org>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
