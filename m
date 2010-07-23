@@ -1,206 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab0GWBM4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:12:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:32910 "EHLO comal.ext.ti.com"
+	id S1757394Ab0GWBN3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:13:29 -0400
+Received: from thunk.org ([69.25.196.29]:40040 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756706Ab0GWBMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 21:12:50 -0400
-From: Armando Uribe <x0095078@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Ameya Palande <ameya.palande@nokia.com>,
-        <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>,
-        Rene Sapiens <rene.sapiens@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Armando Uribe <x0095078@ti.com>
-Subject: [PATCH 9/9] staging: tidspbridge: Remove unused macros
-Date: Thu, 22 Jul 2010 20:25:34 -0500
-Message-Id: <1279848334-4043-10-git-send-email-x0095078@ti.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1279848334-4043-9-git-send-email-x0095078@ti.com>
-References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
- <1279848334-4043-2-git-send-email-x0095078@ti.com>
- <1279848334-4043-3-git-send-email-x0095078@ti.com>
- <1279848334-4043-4-git-send-email-x0095078@ti.com>
- <1279848334-4043-5-git-send-email-x0095078@ti.com>
- <1279848334-4043-6-git-send-email-x0095078@ti.com>
- <1279848334-4043-7-git-send-email-x0095078@ti.com>
- <1279848334-4043-8-git-send-email-x0095078@ti.com>
- <1279848334-4043-9-git-send-email-x0095078@ti.com>
+	id S1757291Ab0GWBNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 21:13:25 -0400
+Date: Thu, 22 Jul 2010 21:13:15 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
+Message-ID: <20100723011315.GC16373@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Christoph Hellwig <hch@infradead.org>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Li Zefan <lizf@cn.fujitsu.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+	Frederic Weisbecker <fweisbec@gmail.com>
+References: <4C401CE3.7010004@cn.fujitsu.com>
+ <20100721222508.8704.A69D9226@jp.fujitsu.com>
+ <20100722054957.GA11670@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722054957.GA11670@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a couple of macros that are not
-being used
+On Thu, Jul 22, 2010 at 01:49:57AM -0400, Christoph Hellwig wrote:
+> 
+> I think ext4 is simply using an incorrectly typed tracepoint here.
+> If you want it to be useful in any way it needs a sb paramter and
+> an optional inode paramter, not the allocation context.
 
-Signed-off-by: Armando Uribe <x0095078@ti.com>
+I agree; this is the patch that I had whipped up to fix the problem.
+(See below)
+
+> Also the whole ext4_mb_release_group_pa function seems to be a bit
+> misdesigned.  The code using ac is a totally separate block at the
+> end of the function and does work that's unrelated to the rest
+> of the function.  Just making it a separate helper can calling it
+> only from those places that have the allocation context would make
+> the code more clear.
+
+I need to look more closely at this.  If I had time there would be a
+lot of things that I'd be refactoring and cleaning up in mballoc.c....
+
+       	      	       	  	      	  	   - Ted
+
+
+>From 52f9a0d80ccdb1b23e364221167bb55b2886cc18 Mon Sep 17 00:00:00 2001
+From: Theodore Ts'o <tytso@mit.edu>
+Date: Thu, 22 Jul 2010 21:09:44 -0400
+Subject: [PATCH] ext4: fix potential NULL dereference while tracing
+
+The allocation_context pointer can be NULL.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 ---
- .../staging/tidspbridge/dynload/dload_internal.h   |    4 ----
- drivers/staging/tidspbridge/dynload/getsection.c   |    1 -
- .../tidspbridge/include/dspbridge/chnldefs.h       |    1 -
- .../tidspbridge/include/dspbridge/chnlpriv.h       |    3 ---
- .../staging/tidspbridge/include/dspbridge/dbdefs.h |   11 -----------
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |    3 ---
- .../staging/tidspbridge/include/dspbridge/mbx_sh.h |   14 --------------
- drivers/staging/tidspbridge/rmgr/disp.c            |    2 --
- drivers/staging/tidspbridge/rmgr/nldr.c            |   13 -------------
- 9 files changed, 0 insertions(+), 52 deletions(-)
+ fs/ext4/mballoc.c           |    4 ++--
+ include/trace/events/ext4.h |   20 ++++++++++++--------
+ 2 files changed, 14 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/dynload/dload_internal.h b/drivers/staging/tidspbridge/dynload/dload_internal.h
-index 5a17e6c..302a7c5 100644
---- a/drivers/staging/tidspbridge/dynload/dload_internal.h
-+++ b/drivers/staging/tidspbridge/dynload/dload_internal.h
-@@ -310,10 +310,6 @@ extern uint32_t dload_reverse_checksum16(void *data, unsigned siz);
- #endif
- #endif
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 3dfad95..8b3b934 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3575,7 +3575,7 @@ ext4_mb_release_inode_pa(struct ext4_buddy *e4b, struct buffer_head *bitmap_bh,
+ 			trace_ext4_mballoc_discard(ac);
+ 		}
  
--#define IS_DATA_SCN(zzz) (DLOAD_SECTION_TYPE((zzz)->type) != DLOAD_TEXT)
--#define IS_DATA_SCN_NUM(zzz) \
--		(DLOAD_SECT_TYPE(&dlthis->sect_hdrs[(zzz)-1]) != DLOAD_TEXT)
--
- /*
-  * exported by reloc.c
-  */
-diff --git a/drivers/staging/tidspbridge/dynload/getsection.c b/drivers/staging/tidspbridge/dynload/getsection.c
-index 51a7167..e0b3771 100644
---- a/drivers/staging/tidspbridge/dynload/getsection.c
-+++ b/drivers/staging/tidspbridge/dynload/getsection.c
-@@ -252,7 +252,6 @@ int dload_get_section_info(void *minfo, const char *section_name,
- }
+-		trace_ext4_mb_release_inode_pa(ac, pa, grp_blk_start + bit,
++		trace_ext4_mb_release_inode_pa(sb, ac, pa, grp_blk_start + bit,
+ 					       next - bit);
+ 		mb_free_blocks(pa->pa_inode, e4b, bit, next - bit);
+ 		bit = next + 1;
+@@ -3606,7 +3606,7 @@ ext4_mb_release_group_pa(struct ext4_buddy *e4b,
+ 	ext4_group_t group;
+ 	ext4_grpblk_t bit;
  
- #define IPH_SIZE (sizeof(struct image_packet_t) - sizeof(u32))
--#define REVERSE_REORDER_MAP(rawmap) ((rawmap) ^ 0x3030303)
+-	trace_ext4_mb_release_group_pa(ac, pa);
++	trace_ext4_mb_release_group_pa(sb, ac, pa);
+ 	BUG_ON(pa->pa_deleted == 0);
+ 	ext4_get_group_no_and_offset(sb, pa->pa_pstart, &group, &bit);
+ 	BUG_ON(group != e4b->bd_group && pa->pa_len != 0);
+diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+index f3865c7..01e9e00 100644
+--- a/include/trace/events/ext4.h
++++ b/include/trace/events/ext4.h
+@@ -395,11 +395,12 @@ DEFINE_EVENT(ext4__mb_new_pa, ext4_mb_new_group_pa,
+ );
  
- /**************************************************************************
-  * Procedure dload_get_section
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h b/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h
-index 0fe3824..5bf5f6b 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/chnldefs.h
-@@ -40,7 +40,6 @@
- #define CHNL_IOCSTATEOS      0x8000	/* End Of Stream reached. */
+ TRACE_EVENT(ext4_mb_release_inode_pa,
+-	TP_PROTO(struct ext4_allocation_context *ac,
++	TP_PROTO(struct super_block *sb,
++		 struct ext4_allocation_context *ac,
+ 		 struct ext4_prealloc_space *pa,
+ 		 unsigned long long block, unsigned int count),
  
- /* Macros for checking I/O Completion status: */
--#define CHNL_IS_EOS(ioc)         (ioc.status & CHNL_IOCSTATEOS)
- #define CHNL_IS_IO_COMPLETE(ioc)  (!(ioc.status & ~CHNL_IOCSTATEOS))
- #define CHNL_IS_IO_CANCELLED(ioc) (ioc.status & CHNL_IOCSTATCANCEL)
- #define CHNL_IS_TIMED_OUT(ioc)    (ioc.status & CHNL_IOCSTATTIMEOUT)
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h b/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-index fce5ebd..9292100 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/chnlpriv.h
-@@ -50,9 +50,6 @@
- #define CHNL_STATECANCEL	1	/* I/O was cancelled. */
- #define CHNL_STATEEOS		2	/* End Of Stream reached. */
+-	TP_ARGS(ac, pa, block, count),
++	TP_ARGS(sb, ac, pa, block, count),
  
--/* Determine if user supplied an event for this channel: */
--#define CHNL_IS_USER_EVENT(mode)  (mode & CHNL_MODEUSEREVENT)
--
- /* Macros for checking mode: */
- #define CHNL_IS_INPUT(mode)      (mode & CHNL_MODEFROMDSP)
- #define CHNL_IS_OUTPUT(mode)     (!CHNL_IS_INPUT(mode))
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-index ffcc326..397e2cb 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-@@ -120,17 +120,6 @@ static inline bool is_valid_proc_event(u32 x)
- 	return (x == 0 || (x & VALID_PROC_EVENT && !(x & ~VALID_PROC_EVENT)));
- }
+ 	TP_STRUCT__entry(
+ 		__field(	dev_t,	dev			)
+@@ -410,8 +411,9 @@ TRACE_EVENT(ext4_mb_release_inode_pa,
+ 	),
  
--#define IS_VALID_NODE_EVENT(x)    (((x) == 0) || \
--	(((x) & (DSP_NODESTATECHANGE | DSP_NODEMESSAGEREADY)) && \
--	!((x) & ~(DSP_NODESTATECHANGE | DSP_NODEMESSAGEREADY))))
--
--#define IS_VALID_STRM_EVENT(x)     (((x) == 0) || (((x) & (DSP_STREAMDONE | \
--				DSP_STREAMIOCOMPLETION)) && \
--				!((x) & ~(DSP_STREAMDONE | \
--				DSP_STREAMIOCOMPLETION))))
--
--#define IS_VALID_NOTIFY_MASK(x)   ((x) & DSP_SIGNALEVENT)
--
- /* The Node UUID structure */
- struct dsp_uuid {
- 	u32 ul_data1;
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index 841ff94..18aec55 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -30,9 +30,6 @@
- #define IO_SERVICE          2
- #define IO_MAXSERVICE       IO_SERVICE
+ 	TP_fast_assign(
+-		__entry->dev		= ac->ac_sb->s_dev;
+-		__entry->ino		= ac->ac_inode->i_ino;
++		__entry->dev		= sb->s_dev;
++		__entry->ino		= (ac && ac->ac_inode) ? 
++						ac->ac_inode->i_ino : 0;
+ 		__entry->block		= block;
+ 		__entry->count		= count;
+ 	),
+@@ -422,10 +424,11 @@ TRACE_EVENT(ext4_mb_release_inode_pa,
+ );
  
--#define DSP_FIELD_ADDR(type, field, base, wordsize) \
--    ((((s32)&(((type *)0)->field)) / wordsize) + (u32)base)
--
- #ifdef CONFIG_TIDSPBRIDGE_DVFS
- /* The maximum number of OPPs that are supported */
- extern s32 dsp_max_opps;
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h b/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-index 289f6f3..5d165cd 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/mbx_sh.h
-@@ -177,22 +177,8 @@
- #define MBX_PM_OPP2 1
- #define MBX_PM_OPP3 2
- #define MBX_PM_OPP4 3
--#define MBX_OLDOPP_EXTRACT(OPPMSG) ((0x00F0 & (OPPMSG)) >> 4)
--#define MBX_NEWOPP_EXTRACT(OPPMSG) (0x000F & (OPPMSG))
--#define MBX_PREVOPP_EXTRACT(OPPMSG) ((0x00F0 & (OPPMSG)) >> 4)
--#define MBX_CUROPP_EXTRACT(OPPMSG) (0x000F & (OPPMSG))
+ TRACE_EVENT(ext4_mb_release_group_pa,
+-	TP_PROTO(struct ext4_allocation_context *ac,
++	TP_PROTO(struct super_block *sb,
++		 struct ext4_allocation_context *ac,
+ 		 struct ext4_prealloc_space *pa),
  
- /* Bridge Debug Commands */
- #define MBX_DBG_SYSPRINTF       (MBX_DBG_CLASS + 0x0)
+-	TP_ARGS(ac, pa),
++	TP_ARGS(sb, ac, pa),
  
--/*
-- * Useful macros
-- */
--/* DSP-DMA channel */
--#define MBX_SETDDMAVAL(x, y)  (MBX_DDMA_CLASS | (x << MBX_DDMA_BUFSHIFT) | \
--	(y << MBX_DDMA_CHNLSHIFT))
--
--/* Zero-Copy channel */
--#define MBX_SETZCPYVAL(x)  (MBX_ZCPY_CLASS | (x << MBX_ZCPY_CHNLSHIFT))
--
- #endif /* _MBX_SH_H */
-diff --git a/drivers/staging/tidspbridge/rmgr/disp.c b/drivers/staging/tidspbridge/rmgr/disp.c
-index 29cf6cd..417faeb 100644
---- a/drivers/staging/tidspbridge/rmgr/disp.c
-+++ b/drivers/staging/tidspbridge/rmgr/disp.c
-@@ -54,8 +54,6 @@
+ 	TP_STRUCT__entry(
+ 		__field(	dev_t,	dev			)
+@@ -436,8 +439,9 @@ TRACE_EVENT(ext4_mb_release_group_pa,
+ 	),
  
- #define CHNLIOREQS      1
- 
--#define SWAP_WORD(x)     (((u32)(x) >> 16) | ((u32)(x) << 16))
--
- /*
-  *  ======== disp_object ========
-  */
-diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
-index 33d2872..23b44cf 100644
---- a/drivers/staging/tidspbridge/rmgr/nldr.c
-+++ b/drivers/staging/tidspbridge/rmgr/nldr.c
-@@ -114,19 +114,6 @@
- #define DELETECODEFLAGBIT   5
- #define MAXFLAGS	    6
- 
--#define IS_INTERNAL(nldr_obj, segid) (((segid) <= MAXSEGID && \
--	    nldr_obj->seg_table[(segid)] & DYNM_INTERNAL) || \
--	    (segid) == MEMINTERNALID)
--
--#define IS_EXTERNAL(nldr_obj, segid) (((segid) <= MAXSEGID && \
--	    nldr_obj->seg_table[(segid)] & DYNM_EXTERNAL) || \
--	    (segid) == MEMEXTERNALID)
--
--#define SWAPLONG(x) ((((x) << 24) & 0xFF000000) | (((x) << 8) & 0xFF0000L) | \
--	(((x) >> 8) & 0xFF00L) | (((x) >> 24) & 0xFF))
--
--#define SWAPWORD(x) ((((x) << 8) & 0xFF00) | (((x) >> 8) & 0xFF))
--
-     /*
-      *  These names may be embedded in overlay sections to identify which
-      *  node phase the section should be overlayed.
+ 	TP_fast_assign(
+-		__entry->dev		= ac->ac_sb->s_dev;
+-		__entry->ino		= ac->ac_inode->i_ino;
++		__entry->dev		= sb->s_dev;
++		__entry->ino		= (ac && ac->ac_inode) ?
++						ac->ac_inode->i_ino : 0;
+ 		__entry->pa_pstart	= pa->pa_pstart;
+ 		__entry->pa_len		= pa->pa_len;
+ 	),
 -- 
-1.6.3.3
+1.7.0.4
 
