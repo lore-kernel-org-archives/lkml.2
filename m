@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835Ab0GWBOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:14:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42104 "EHLO
+	id S1757154Ab0GWBOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:14:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42103 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab0GWBMx (ORCPT
+	with ESMTP id S1756941Ab0GWBMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Jul 2010 21:12:53 -0400
 From: Armando Uribe <x0095078@ti.com>
@@ -15,95 +15,150 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Rene Sapiens <rene.sapiens@ti.com>,
         Felipe Contreras <felipe.contreras@gmail.com>,
         Armando Uribe <x0095078@ti.com>
-Subject: [PATCH 3/9] staging: tidspbridge: Change macros to static inline functions in io_sm
-Date: Thu, 22 Jul 2010 20:25:28 -0500
-Message-Id: <1279848334-4043-4-git-send-email-x0095078@ti.com>
+Subject: [PATCH 5/9] staging: tidspbridge: Remove redundant macro from cod.c
+Date: Thu, 22 Jul 2010 20:25:30 -0500
+Message-Id: <1279848334-4043-6-git-send-email-x0095078@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1279848334-4043-3-git-send-email-x0095078@ti.com>
+In-Reply-To: <1279848334-4043-5-git-send-email-x0095078@ti.com>
 References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
  <1279848334-4043-2-git-send-email-x0095078@ti.com>
  <1279848334-4043-3-git-send-email-x0095078@ti.com>
+ <1279848334-4043-4-git-send-email-x0095078@ti.com>
+ <1279848334-4043-5-git-send-email-x0095078@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch change to macros to static inline functions, these
-macros are used to perform write/read operations in shared memory
+This patch removes a redundant macro from cod.c simply used
+to verify that a field was not NULL
 
 Signed-off-by: Armando Uribe <x0095078@ti.com>
 ---
- drivers/staging/tidspbridge/core/io_sm.c           |   22 ++++++++++++-------
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |    3 --
- 2 files changed, 14 insertions(+), 11 deletions(-)
+ drivers/staging/tidspbridge/pmgr/cod.c |   27 ++++++++++++---------------
+ 1 files changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index 03960bd..e5e3684 100644
---- a/drivers/staging/tidspbridge/core/io_sm.c
-+++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -149,6 +149,17 @@ static int register_shm_segs(struct io_mgr *hio_mgr,
- 				    struct cod_manager *cod_man,
- 				    u32 dw_gpp_base_pa);
+diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
+index 10db8cf..0cbe6e5 100644
+--- a/drivers/staging/tidspbridge/pmgr/cod.c
++++ b/drivers/staging/tidspbridge/pmgr/cod.c
+@@ -46,9 +46,6 @@
+ /* magic number for handle validation */
+ #define MAGIC	 0xc001beef
  
-+static inline void set_chnl_free(struct shm *sm, u32 chnl)
-+{
-+	sm->host_free_mask &= ~(1 << chnl);
-+}
-+
-+static inline void set_chnl_busy(struct shm *sm, u32 chnl)
-+{
-+	sm->host_free_mask |= 1 << chnl;
-+}
-+
-+
- /*
-  *  ======== bridge_io_create ========
-  *      Create an IO manager object.
-@@ -818,8 +829,7 @@ void io_cancel_chnl(struct io_mgr *hio_mgr, u32 chnl)
- 	sm = hio_mgr->shared_mem;
- 
- 	/* Inform DSP that we have no more buffers on this channel */
--	IO_AND_VALUE(pio_mgr->hbridge_context, struct shm, sm, host_free_mask,
--		     (~(1 << chnl)));
-+	set_chnl_free(sm, chnl);
- 
- 	sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
- func_end:
-@@ -994,8 +1004,7 @@ void io_request_chnl(struct io_mgr *io_manager, struct chnl_object *pchnl,
- 		DBC_ASSERT((pchnl->dw_state == CHNL_STATEREADY) ||
- 			   (pchnl->dw_state == CHNL_STATEEOS));
- 		/* Indicate to the DSP we have a buffer available for input */
--		IO_OR_VALUE(io_manager->hbridge_context, struct shm, sm,
--			    host_free_mask, (1 << pchnl->chnl_id));
-+		set_chnl_busy(sm, pchnl->chnl_id);
- 		*mbx_val = MBX_PCPY_CLASS;
- 	} else if (io_mode == IO_OUTPUT) {
- 		/*
-@@ -1156,10 +1165,7 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 				if (!pchnl->pio_requests)
- 					goto func_end;
- 				if (LST_IS_EMPTY(pchnl->pio_requests)) {
--					IO_AND_VALUE(pio_mgr->hbridge_context,
--						     struct shm, sm,
--						     host_free_mask,
--						     ~(1 << pchnl->chnl_id));
-+					set_chnl_free(sm, pchnl->chnl_id);
- 				}
- 				clear_chnl = true;
- 				notify_client = true;
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index f1c44f8..841ff94 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -33,9 +33,6 @@
- #define DSP_FIELD_ADDR(type, field, base, wordsize) \
-     ((((s32)&(((type *)0)->field)) / wordsize) + (u32)base)
- 
--#define IO_OR_VALUE(context, type, base, field, value)  (base->field |= value)
--#define IO_AND_VALUE(context, type, base, field, value) (base->field &= value)
+-/* macro to validate COD manager handles */
+-#define IS_VALID(h)    ((h) != NULL && (h)->ul_magic == MAGIC)
 -
- #ifdef CONFIG_TIDSPBRIDGE_DVFS
- /* The maximum number of OPPs that are supported */
- extern s32 dsp_max_opps;
+ /*
+  *  ======== cod_manager ========
+  */
+@@ -199,7 +196,7 @@ void cod_close(struct cod_libraryobj *lib)
+ 
+ 	DBC_REQUIRE(refs > 0);
+ 	DBC_REQUIRE(lib != NULL);
+-	DBC_REQUIRE(IS_VALID(((struct cod_libraryobj *)lib)->cod_mgr));
++	DBC_REQUIRE(lib->cod_mgr);
+ 
+ 	hmgr = lib->cod_mgr;
+ 	hmgr->fxns.close_fxn(lib->dbll_lib);
+@@ -285,7 +282,7 @@ int cod_create(struct cod_manager **mgr, char *str_zl_file,
+ void cod_delete(struct cod_manager *cod_mgr_obj)
+ {
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
++	DBC_REQUIRE(cod_mgr_obj);
+ 
+ 	if (cod_mgr_obj->base_lib) {
+ 		if (cod_mgr_obj->loaded)
+@@ -328,7 +325,7 @@ int cod_get_base_lib(struct cod_manager *cod_mgr_obj,
+ 	int status = 0;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
++	DBC_REQUIRE(cod_mgr_obj);
+ 	DBC_REQUIRE(plib != NULL);
+ 
+ 	*plib = (struct dbll_library_obj *)cod_mgr_obj->base_lib;
+@@ -345,7 +342,7 @@ int cod_get_base_name(struct cod_manager *cod_mgr_obj, char *sz_name,
+ 	int status = 0;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
++	DBC_REQUIRE(cod_mgr_obj);
+ 	DBC_REQUIRE(sz_name != NULL);
+ 
+ 	if (usize <= COD_MAXPATHLENGTH)
+@@ -365,7 +362,7 @@ int cod_get_base_name(struct cod_manager *cod_mgr_obj, char *sz_name,
+ int cod_get_entry(struct cod_manager *cod_mgr_obj, u32 *entry_pt)
+ {
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
++	DBC_REQUIRE(cod_mgr_obj);
+ 	DBC_REQUIRE(entry_pt != NULL);
+ 
+ 	*entry_pt = cod_mgr_obj->ul_entry;
+@@ -384,7 +381,7 @@ int cod_get_loader(struct cod_manager *cod_mgr_obj,
+ 	int status = 0;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
++	DBC_REQUIRE(cod_mgr_obj);
+ 	DBC_REQUIRE(loader != NULL);
+ 
+ 	*loader = (struct dbll_tar_obj *)cod_mgr_obj->target;
+@@ -406,7 +403,7 @@ int cod_get_section(struct cod_libraryobj *lib, char *str_sect,
+ 
+ 	DBC_REQUIRE(refs > 0);
+ 	DBC_REQUIRE(lib != NULL);
+-	DBC_REQUIRE(IS_VALID(lib->cod_mgr));
++	DBC_REQUIRE(lib->cod_mgr);
+ 	DBC_REQUIRE(str_sect != NULL);
+ 	DBC_REQUIRE(addr != NULL);
+ 	DBC_REQUIRE(len != NULL);
+@@ -440,7 +437,7 @@ int cod_get_sym_value(struct cod_manager *cod_mgr_obj, char *str_sym,
+ 	struct dbll_sym_val *dbll_sym;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
++	DBC_REQUIRE(cod_mgr_obj);
+ 	DBC_REQUIRE(str_sym != NULL);
+ 	DBC_REQUIRE(pul_value != NULL);
+ 
+@@ -505,7 +502,7 @@ int cod_load_base(struct cod_manager *cod_mgr_obj, u32 num_argc, char *args[],
+ 	u32 i;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
++	DBC_REQUIRE(cod_mgr_obj);
+ 	DBC_REQUIRE(num_argc > 0);
+ 	DBC_REQUIRE(args != NULL);
+ 	DBC_REQUIRE(args[0] != NULL);
+@@ -561,7 +558,7 @@ int cod_open(struct cod_manager *hmgr, char *sz_coff_path,
+ 	struct cod_libraryobj *lib = NULL;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(hmgr));
++	DBC_REQUIRE(hmgr);
+ 	DBC_REQUIRE(sz_coff_path != NULL);
+ 	DBC_REQUIRE(flags == COD_NOLOAD || flags == COD_SYMB);
+ 	DBC_REQUIRE(lib_obj != NULL);
+@@ -598,7 +595,7 @@ int cod_open_base(struct cod_manager *hmgr, char *sz_coff_path,
+ 	struct dbll_library_obj *lib;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(IS_VALID(hmgr));
++	DBC_REQUIRE(hmgr);
+ 	DBC_REQUIRE(sz_coff_path != NULL);
+ 
+ 	/* if we previously opened a base image, close it now */
+@@ -636,7 +633,7 @@ int cod_read_section(struct cod_libraryobj *lib, char *str_sect,
+ 
+ 	DBC_REQUIRE(refs > 0);
+ 	DBC_REQUIRE(lib != NULL);
+-	DBC_REQUIRE(IS_VALID(lib->cod_mgr));
++	DBC_REQUIRE(lib->cod_mgr);
+ 	DBC_REQUIRE(str_sect != NULL);
+ 	DBC_REQUIRE(str_content != NULL);
+ 
 -- 
 1.6.3.3
 
