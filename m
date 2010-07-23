@@ -1,104 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760950Ab0GWUCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 16:02:34 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:49423 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760361Ab0GWUCc (ORCPT
+	id S1760914Ab0GWUCX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 16:02:23 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42770 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758631Ab0GWUCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 16:02:32 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Greg Edwards <greg.edwards@hp.com>
-cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        bonding-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next-2.6] bonding: set device in RLB ARP packet handler
-In-reply-to: <20100722195240.GA25359@w-gedwards.lhn.com>
-References: <20100722195240.GA25359@w-gedwards.lhn.com>
-Comments: In-reply-to Greg Edwards <greg.edwards@hp.com>
-   message dated "Thu, 22 Jul 2010 13:52:40 -0600."
-X-Mailer: MH-E 8.2; nmh 1.3-RC3; GNU Emacs 23.2.1
-Date: Fri, 23 Jul 2010 13:02:04 -0700
-Message-ID: <28252.1279915324@death>
+	Fri, 23 Jul 2010 16:02:20 -0400
+Subject: [PATCH] of: make of_find_device_by_node generic
+To: jonas@southpole.se, monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        benh@kernel.crashing.org, sparclinux@vger.kernel.org,
+        davem@davemloft.net
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 23 Jul 2010 14:02:17 -0600
+Message-ID: <20100723200217.18363.48627.stgit@angua>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jonas Bonn <jonas@southpole.se>
 
-From: Greg Edwards <greg.edwards@hp.com>
+There's no need for this function to be architecture specific and all four
+architectures defining it had the same definition.  The function has been
+moved to drivers/of/platform.c.
 
-After:
-
-commit 6146b1a4da98377e4abddc91ba5856bef8f23f1e
-Author: Jay Vosburgh <fubar@us.ibm.com>
-Date:   Tue Nov 4 17:51:15 2008 -0800
-
-    bonding: Fix ALB mode to balance traffic on VLANs
-
-the dev field in the RLB ARP packet handler was set to NULL to wildcard
-and accommodate balancing VLANs on top of bonds.
-
-This has the side-effect of the packet handler being called against
-other, non RLB-enabled bonds, and a kernel oops results when it tries to
-dereference rx_hashtbl in rlb_update_entry_from_arp(), which won't be
-set for those bonds, e.g. active-backup.
-
-With the __netif_receive_skb() changes from:
-
-commit 1f3c8804acba841b5573b953f5560d2683d2db0d
-Author: Andy Gospodarek <andy@greyhouse.net>
-Date:   Mon Dec 14 10:48:58 2009 +0000
-
-    bonding: allow arp_ip_targets on separate vlans to use arp validation
-
-frames received on VLANs correctly make their way to the bond's handler,
-so we no longer need to wildcard the device.
-
-The oops can be reproduced by:
-
-modprobe bonding
-
-echo active-backup > /sys/class/net/bond0/bonding/mode
-echo 100 > /sys/class/net/bond0/bonding/miimon
-ifconfig bond0 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
-echo +eth0 > /sys/class/net/bond0/bonding/slaves
-echo +eth1 > /sys/class/net/bond0/bonding/slaves
-
-echo +bond1 > /sys/class/net/bonding_masters
-echo balance-alb > /sys/class/net/bond1/bonding/mode
-echo 100 > /sys/class/net/bond1/bonding/miimon
-ifconfig bond1 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
-echo +eth2 > /sys/class/net/bond1/bonding/slaves
-echo +eth3 > /sys/class/net/bond1/bonding/slaves
-
-Pass some traffic on bond0.  Boom.
-
-[ Tested, behaves as advertised.  I do not believe a test of the bonding
-mode is necessary, as there is no race between the packet handler and
-the bonding mode changing (the mode can only change when the device is
-closed).  Also updated the log message to include the reproduction and
-full commit ids.  -J ]
-	
-Signed-off-by: Greg Edwards <greg.edwards@hp.com>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
-
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
+[grant.likely@secretlab.ca: moved to drivers/of/platform.c, simplified code, and added kerneldoc comment]
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
+ arch/microblaze/kernel/of_platform.c |   16 ----------------
+ arch/powerpc/kernel/of_platform.c    |   16 ----------------
+ arch/sparc/kernel/of_device_common.c |   20 --------------------
+ drivers/of/platform.c                |   20 ++++++++++++++++++++
+ 4 files changed, 20 insertions(+), 52 deletions(-)
 
- drivers/net/bonding/bond_alb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
-index df48307..8d7dfd2 100644
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -822,7 +822,7 @@ static int rlb_initialize(struct bonding *bond)
-
- 	/*initialize packet type*/
- 	pk_type->type = cpu_to_be16(ETH_P_ARP);
--	pk_type->dev = NULL;
-+	pk_type->dev = bond->dev;
- 	pk_type->func = rlb_arp_recv;
-
- 	/* register to receive ARPs */
--- 
-1.7.0.4
+diff --git a/arch/microblaze/kernel/of_platform.c b/arch/microblaze/kernel/of_platform.c
+index c664b27..6cffadb 100644
+--- a/arch/microblaze/kernel/of_platform.c
++++ b/arch/microblaze/kernel/of_platform.c
+@@ -47,19 +47,3 @@ const struct of_device_id of_default_bus_ids[] = {
+ 	{ .type = "simple", },
+ 	{},
+ };
+-
+-static int of_dev_node_match(struct device *dev, void *data)
+-{
+-	return to_platform_device(dev)->dev.of_node == data;
+-}
+-
+-struct platform_device *of_find_device_by_node(struct device_node *np)
+-{
+-	struct device *dev;
+-
+-	dev = bus_find_device(&platform_bus_type, NULL, np, of_dev_node_match);
+-	if (dev)
+-		return to_platform_device(dev);
+-	return NULL;
+-}
+-EXPORT_SYMBOL(of_find_device_by_node);
+diff --git a/arch/powerpc/kernel/of_platform.c b/arch/powerpc/kernel/of_platform.c
+index 84439d1..760a7af 100644
+--- a/arch/powerpc/kernel/of_platform.c
++++ b/arch/powerpc/kernel/of_platform.c
+@@ -52,22 +52,6 @@ const struct of_device_id of_default_bus_ids[] = {
+ 	{},
+ };
+ 
+-static int of_dev_node_match(struct device *dev, void *data)
+-{
+-	return to_platform_device(dev)->dev.of_node == data;
+-}
+-
+-struct platform_device *of_find_device_by_node(struct device_node *np)
+-{
+-	struct device *dev;
+-
+-	dev = bus_find_device(&platform_bus_type, NULL, np, of_dev_node_match);
+-	if (dev)
+-		return to_platform_device(dev);
+-	return NULL;
+-}
+-EXPORT_SYMBOL(of_find_device_by_node);
+-
+ #ifdef CONFIG_PPC_OF_PLATFORM_PCI
+ 
+ /* The probing of PCI controllers from of_platform is currently
+diff --git a/arch/sparc/kernel/of_device_common.c b/arch/sparc/kernel/of_device_common.c
+index e80729b..49ddff5 100644
+--- a/arch/sparc/kernel/of_device_common.c
++++ b/arch/sparc/kernel/of_device_common.c
+@@ -11,26 +11,6 @@
+ 
+ #include "of_device_common.h"
+ 
+-static int node_match(struct device *dev, void *data)
+-{
+-	struct platform_device *op = to_platform_device(dev);
+-	struct device_node *dp = data;
+-
+-	return (op->dev.of_node == dp);
+-}
+-
+-struct platform_device *of_find_device_by_node(struct device_node *dp)
+-{
+-	struct device *dev = bus_find_device(&platform_bus_type, NULL,
+-					     dp, node_match);
+-
+-	if (dev)
+-		return to_platform_device(dev);
+-
+-	return NULL;
+-}
+-EXPORT_SYMBOL(of_find_device_by_node);
+-
+ unsigned int irq_of_parse_and_map(struct device_node *node, int index)
+ {
+ 	struct platform_device *op = of_find_device_by_node(node);
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 9b2d5b1..9126064 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -22,6 +22,26 @@
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
+ 
++static int of_dev_node_match(struct device *dev, void *data)
++{
++	return dev->of_node == data;
++}
++
++/**
++ * of_find_device_by_node - Find the platform_device associated with a node
++ * @np: Pointer to device tree node
++ *
++ * Returns platform_device pointer, or NULL if not found
++ */
++struct platform_device *of_find_device_by_node(struct device_node *np)
++{
++	struct device *dev;
++
++	dev = bus_find_device(&platform_bus_type, NULL, np, of_dev_node_match);
++	return dev ? to_platform_device(dev) : NULL;
++}
++EXPORT_SYMBOL(of_find_device_by_node);
++
+ static int platform_driver_probe_shim(struct platform_device *pdev)
+ {
+ 	struct platform_driver *pdrv;
 
