@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760740Ab0GWRp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 13:45:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31497 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756896Ab0GWRpT convert rfc822-to-8bit (ORCPT
+	id S1756043Ab0GWRsF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 13:48:05 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54784 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab0GWRsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 13:45:19 -0400
-MIME-Version: 1.0
-Message-ID: <537098fb-f049-482a-97cf-b3695bf2c340@default>
-Date: Fri, 23 Jul 2010 10:43:17 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: ngupta@vflare.org
-Cc: Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
-        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        adilger@Sun.COM, tytso@mit.edu, mfasheh@suse.com,
-        Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: RE: [PATCH V3 0/8] Cleancache: overview
-References: <20100621231809.GA11111@ca-server1.us.oracle.com4C49468B.40307@vflare.org>
- <840b32ff-a303-468e-9d4e-30fc92f629f8@default>
- <20100723140440.GA12423@infradead.org>
- <364c83bd-ccb2-48cc-920d-ffcf9ca7df19@default 4C49AFAE.1070300@vflare.org>
-In-Reply-To: <4C49AFAE.1070300@vflare.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6535.5005]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C49D4F8.0075:SCFMA4539814,ss=1,fgs=0
+	Fri, 23 Jul 2010 13:48:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:content-type:date:message-id
+         :mime-version:x-mailer:content-transfer-encoding;
+        b=Qq+qQExEB2fPTOrYSnssm5rRHG/R/Q8DBaJ7vYkai2JWmRCqRM/vo/QqO1te19Wkds
+         GrMEPwL/ie9rJiodfrtjVFOMYSirglnBPOUOxAQ4F6Kva6jKgKUKs9YwDZzYLus6jZkp
+         h5/HAGFkUDiFkQ5jvEayajQIYPp2LyiqUXABg=
+Subject: [RFC] [PATCH procfs] Add process age
+From: Davidlohr Bueso <dave.bueso@gmail.com>
+Reply-To: dave.bueso@gmail.com
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Jul 2010 13:47:51 -0400
+Message-ID: <1279907271.4335.3.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Nitin Gupta [mailto:ngupta@vflare.org]
-> Sent: Friday, July 23, 2010 9:05 AM
-> To: Dan Magenheimer
-> Cc: Christoph Hellwig; akpm@linux-foundation.org; Chris Mason;
-> viro@zeniv.linux.org.uk; adilger@sun.com; tytso@mit.edu;
-> mfasheh@suse.com; Joel Becker; matthew@wil.cx; linux-
-> btrfs@vger.kernel.org; linux-kernel@vger.kernel.org; linux-
-> fsdevel@vger.kernel.org; linux-ext4@vger.kernel.org; ocfs2-
-> devel@oss.oracle.com; linux-mm@kvack.org; jeremy@goop.org;
-> JBeulich@novell.com; Kurt Hackel; npiggin@suse.de; Dave Mccracken;
-> riel@redhat.com; avi@redhat.com; Konrad Wilk
-> Subject: Re: [PATCH V3 0/8] Cleancache: overview
-> 
-> On 07/23/2010 08:14 PM, Dan Magenheimer wrote:
-> >> From: Christoph Hellwig [mailto:hch@infradead.org]
-> 
-> 
-> >> Also making the ops vector global is just a bad idea.
-> >> There is nothing making this sort of caching inherently global.
-> >
-> > I'm not sure I understand your point, but two very different
-> > users of cleancache have been provided, and more will be
-> > discussed at the MM summit next month.
-> >
-> > Do you have a suggestion on how to avoid a global ops
-> > vector while still serving the needs of both existing
-> > users?
-> 
-> Maybe introduce cleancache_register(struct cleancache_ops *ops)?
-> This will allow making cleancache_ops non-global. No value add
-> but maybe that's cleaner?
+Hi,
 
-Oh, OK, that seems reasonable.
+This patch exports a process's age, in seconds, adding a /proc/#/age file.
 
-Dan
+Thanks,
+Davidlohr
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ fs/proc/base.c |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index acb7ef8..a5a4832 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -38,13 +38,16 @@
+  *  ChangeLog:
+  *  10-Mar-2005
+  *  10LE Instituto Nokia de Tecnologia - INdT:
+- *  A better way to walks through the page table as suggested by Hugh Dickins.
++ *  A better way to walk through the page table as suggested by Hugh Dickins.
+  *
+  *  Simo Piiroinen <simo.piiroinen@nokia.com>:
+  *  Smaps information related to shared, private, clean and dirty pages.
+  *
+  *  Paul Mundt <paul.mundt@nokia.com>:
+  *  Overall revision about smaps.
++ *
++ *  2010 - Davidlohr Bueso <dave@gnu.org>:
++ *  Added process age (/proc/#/age), in seconds.
+  */
+ 
+ #include <asm/uaccess.h>
+@@ -2558,6 +2561,18 @@ static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
+ 	return 0;
+ }
+ 
++static int proc_pid_age(struct seq_file *m, struct pid_namespace *ns,
++			struct pid *pid, struct task_struct *task)
++{
++	struct timespec uptime;
++
++	do_posix_clock_monotonic_gettime(&uptime);
++	monotonic_to_bootbased(&uptime);
++	seq_printf(m, "%lu\n", uptime.tv_sec - task->real_start_time.tv_sec);
++
++	return 0;
++}
++
+ /*
+  * Thread groups
+  */
+@@ -2575,6 +2590,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("auxv",       S_IRUSR, proc_pid_auxv),
+ 	ONE("status",     S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
++	ONE("age",        S_IRUSR, proc_pid_age),
+ 	INF("limits",	  S_IRUSR, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+@@ -2910,6 +2926,7 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	INF("auxv",      S_IRUSR, proc_pid_auxv),
+ 	ONE("status",    S_IRUGO, proc_pid_status),
+ 	ONE("personality", S_IRUSR, proc_pid_personality),
++	ONE("age",        S_IRUSR, proc_pid_age),
+ 	INF("limits",	 S_IRUSR, proc_pid_limits),
+ #ifdef CONFIG_SCHED_DEBUG
+ 	REG("sched",     S_IRUGO|S_IWUSR, proc_pid_sched_operations),
+-- 
+1.7.0.4
+
