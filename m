@@ -1,47 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab0GWS6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 14:58:53 -0400
-Received: from mail.perches.com ([173.55.12.10]:2076 "EHLO mail.perches.com"
+	id S1756496Ab0GWTC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 15:02:58 -0400
+Received: from dns.diesa.com.py ([201.217.15.35]:46628 "EHLO dns.diesa.com.py"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756290Ab0GWS6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 14:58:50 -0400
-Subject: Re: [PATCH] Staging: dt3155: make local variables static
-From: Joe Perches <joe@perches.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
-        ss@aao.gov.au, gregkh@suse.de
-In-Reply-To: <201007231145.50239.hartleys@visionengravers.com>
-References: <201007231145.50239.hartleys@visionengravers.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Jul 2010 11:58:48 -0700
-Message-ID: <1279911528.24768.1689.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1751735Ab0GWTC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 15:02:56 -0400
+X-Greylist: delayed 1143 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jul 2010 15:02:54 EDT
+Message-ID: <16372.77.92.92.156.1279910529.squirrel@webmail.diesa.com.py>
+Date: Fri, 23 Jul 2010 14:42:09 -0400 (PYT)
+Subject: 
+From: "DEUTCH SOL AGENCY" <ajara@diesa.com.py>
+Reply-To: center.management03@w.cn
+User-Agent: SquirrelMail/1.4.8-5.el4.centos.8
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Diesa-MailScanner-Information: Please contact the ISP for more information
+X-Diesa-MailScanner-ID: o6NIgbWw007484
+X-Diesa-MailScanner: Found to be clean
+X-Diesa-MailScanner-From: ajara@diesa.com.py
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-23 at 11:45 -0700, H Hartley Sweeten wrote:
-> The symbols dt3155_dev_open, unique_tag, and allocatorAddr are only used in
-> the file dt3155_drv.c and should be static.
-> diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-> index 9e7b880..49924d0 100644
-> --- a/drivers/staging/dt3155/dt3155_drv.c
-> +++ b/drivers/staging/dt3155/dt3155_drv.c
-> @@ -118,14 +118,14 @@ static void __iomem *dt3155_lbase[MAXBOARDS] = { NULL
-[]
-> -u32  dt3155_dev_open[MAXBOARDS] = {0
-> +static u32  dt3155_dev_open[MAXBOARDS] = {0
-[]
-> -u32 unique_tag = 0;;
-> +static u32 unique_tag = 0;;
-
-Statics don't need initialization and could you fix
-the style issues ("{0", ";;") at the same time please?
-
-static u32 dt3155_dev_open[MAXBOARDS];
-static u32 unique_tag;
 
 
+
+You have £500,934.00 .Confirm this receipt by replying the due process
+unit officer:Fill the details:Full Name,Address,Tel,Occupation,etc,Reply
