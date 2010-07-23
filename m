@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab0GWIEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 04:04:38 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:65443 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624Ab0GWIEd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 04:04:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Hpv+dQrO9bzNphHvfuehceOY1WqK3emL+fuwLrAvOtfPfpl+GmWsvERI/rXL1wGvIL
-         tpIIAyxFDxHMiaNulwYfvEua1y7XmKGB9zw8n3e+m7RMyQI65Hk8RHsKKtzJuqdmZqzO
-         MNrS7VPCv49qUFFpqaIfSwzMr8ohRv5+QKRHE=
+	id S1754039Ab0GWIIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 04:08:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39209 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750877Ab0GWIIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 04:08:47 -0400
+Message-ID: <4C494DEE.3010101@redhat.com>
+Date: Fri, 23 Jul 2010 10:08:14 +0200
+From: Stefan Assmann <sassmann@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <4C3D5F3F.7070901@odi.ch>
-References: <4C3D5F3F.7070901@odi.ch>
-Date: Fri, 23 Jul 2010 16:04:32 +0800
-Message-ID: <AANLkTimn7Z3LqhLOt4_6ggFgjdzIZQPd_CznOIW-6D1N@mail.gmail.com>
-Subject: Re: BUG at arch/x86/mm/physaddr.c:5
-From: Jike Song <albcamus@gmail.com>
-To: =?UTF-8?Q?Ortwin_Gl=C3=BCck?= <odi@odi.ch>
-Cc: linux-kernel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Casey Leedom <leedom@chelsio.com>
+CC: "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        andy@greyhouse.net, harald@redhat.com, bhutchings@solarflare.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces
+ with random MAC address
+References: <20100721150732.GR7497@gospo.rdu.redhat.com> <20100721102816.4bef5ada@nehalam> <20100721.103249.107094774.davem@davemloft.net> <201007211129.48288.leedom@chelsio.com> <43F901BD926A4E43B106BF17856F0755F184620A@orsmsx508.amr.corp.intel.com> <4C47EAF3.3080602@redhat.com> <2408F875-69BE-45D3-8605-4AE5CDA4601C@chelsio.com>
+In-Reply-To: <2408F875-69BE-45D3-8605-4AE5CDA4601C@chelsio.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/14 Ortwin Glück <odi@odi.ch>:
-> There is also a DMA warning later on.
->
+On 23.07.2010 02:26, Casey Leedom wrote:
+> 
+>  Or you simply don't have the VF Driver loaded in the "Domain 0" Control OS.  When we install the cxgb4 PF Driver with "num_vf=..." this enables the PCI-E SR-IOV Capabilities within the various PFs and the corresponding VF PCI Devices are instantiated and discovered by the Domain 0 Linux OS.  But without a cxgb4vf VF Driver loaded, those devices just sit there  available for "Device Assignment" to VMs.
+> 
 
-Seems to be a logical error?  Does the following patch remove your Oops?
+Just out of curiosity, how do you prevent the VF driver from getting
+loaded in the host? Except from blacklisting it.
 
-
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c
-b/drivers/net/wireless/ath/ath9k/recv.c
-index ca6065b..e3e5291 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -844,9 +844,9 @@ int ath_rx_tasklet(struct ath_softc *sc, int flush, bool hp)
- 	int dma_type;
-
- 	if (edma)
--		dma_type = DMA_FROM_DEVICE;
--	else
- 		dma_type = DMA_BIDIRECTIONAL;
-+	else
-+		dma_type = DMA_FROM_DEVICE;
-
- 	qtype = hp ? ATH9K_RX_QUEUE_HP : ATH9K_RX_QUEUE_LP;
- 	spin_lock_bh(&sc->rx.rxbuflock);
+  Stefan
+--
+Stefan Assmann         | Red Hat GmbH
+Software Engineer      | Otto-Hahn-Strasse 20, 85609 Dornach
+                       | HR: Amtsgericht Muenchen HRB 153243
+                       | GF: Brendan Lane, Charlie Peters,
+sassmann at redhat.com |     Michael Cunningham, Charles Cachera
