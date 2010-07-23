@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759515Ab0GWMLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:11:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43085 "EHLO hera.kernel.org"
+	id S1759478Ab0GWMML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:12:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43114 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab0GWMLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 08:11:43 -0400
-Date: Fri, 23 Jul 2010 12:11:20 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        gleb@redhat.com, fweisbec@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, efault@gmx.de, peterz@infradead.org,
-        gleb@redhat.com, fweisbec@gmail.com, tglx@linutronix.de
-In-Reply-To: <20100722170541.GF17631@ghostprotocols.net>
-References: <20100722170541.GF17631@ghostprotocols.net>
+	id S1759341Ab0GWMMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 08:12:08 -0400
+Date: Fri, 23 Jul 2010 12:11:38 GMT
+From: tip-bot for David Daney <ddaney@caviumnetworks.com>
+Cc: lihong.hi@gmail.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, wuzhangjin@gmail.com, rostedt@goodmis.org,
+        ralf@linux-mips.org, matt@console-pimps.org, ddaney@caviumnetworks.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        lihong.hi@gmail.com, wuzhangjin@gmail.com, ralf@linux-mips.org,
+        rostedt@goodmis.org, matt@console-pimps.org, ddaney@caviumnetworks.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1278712325-12050-1-git-send-email-ddaney@caviumnetworks.com>
+References: <1278712325-12050-1-git-send-email-ddaney@caviumnetworks.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf annotate: Fix handling of goto labels that are valid hex numbers
-Message-ID: <tip-70a7cb3b39994ff366ff100b46f9dc97b1510c0f@git.kernel.org>
-Git-Commit-ID: 70a7cb3b39994ff366ff100b46f9dc97b1510c0f
+Subject: [tip:perf/core] tracing: Fix $mcount_regex for MIPS in recordmcount.pl
+Message-ID: <tip-a484e54fae891703cbe1c9ec1b536605f11f5482@git.kernel.org>
+Git-Commit-ID: a484e54fae891703cbe1c9ec1b536605f11f5482
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:11:21 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:11:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  70a7cb3b39994ff366ff100b46f9dc97b1510c0f
-Gitweb:     http://git.kernel.org/tip/70a7cb3b39994ff366ff100b46f9dc97b1510c0f
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 22 Jul 2010 14:04:13 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 22 Jul 2010 14:04:13 -0300
+Commit-ID:  a484e54fae891703cbe1c9ec1b536605f11f5482
+Gitweb:     http://git.kernel.org/tip/a484e54fae891703cbe1c9ec1b536605f11f5482
+Author:     David Daney <ddaney@caviumnetworks.com>
+AuthorDate: Fri, 9 Jul 2010 14:52:05 -0700
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 22 Jul 2010 14:55:43 -0400
 
-perf annotate: Fix handling of goto labels that are valid hex numbers
+tracing: Fix $mcount_regex for MIPS in recordmcount.pl
 
-When parsing the objdump disassembly output we can have goto labels that
-are valid hex numbers and thus get confused with lines with machine
+I found this issue in a locally patched 2.6.32.x, current kernels have
+moved the offending code to an __init function which is skipped by
+recordmcount.pl, so the bug is not currently being exercised.
+However, I think the patch is still a good idea, to avoid future
+problems if _mcount were to ever have its address taken in normal
 code.
 
-Handle the common case of a label that has nothing after it and other
-cases where there is just source code by validating the resulting "ip".
+This is what I originally saw:
 
-It is still possible that we find goto labels that are in the function
-address range, but only if they are located before the real address we
-should be OK.
+    Although arch/mips/kernel/ftrace.c is built without -pg, and thus
+    contains no calls to _mcount, it does use the address of _mcount
+    in ftrace_make_nop().  This was causing relocations to be emitted
+    for _mcount which recordmcount.pl erronously took to be _mcount
+    call sites.  The result was that the text of ftrace_make_nop()
+    would be patched with garbage leading to a system crash.
 
-A change in the objdump output to have a clear marker separating
-addresses from the disassembly would come handy, but we would still have
-to deal with older versions.
+In non-module code, all _mcount call sites will have R_MIPS_26
+relocations, so we restrict $mcount_regex to only match on these.
 
-Reported-by: Gleb Natapov <gleb@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <20100722170541.GF17631@ghostprotocols.net>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
+Acked-by: Wu Zhangjin <wuzhangjin@gmail.com>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+LKML-Reference: <1278712325-12050-1-git-send-email-ddaney@caviumnetworks.com>
+Cc: Li Hong <lihong.hi@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Matt Fleming <matt@console-pimps.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/perf/util/hist.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ scripts/recordmcount.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 699cf81..784ee0b 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -976,13 +976,17 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
- 		 * Parse hexa addresses followed by ':'
- 		 */
- 		line_ip = strtoull(tmp, &tmp2, 16);
--		if (*tmp2 != ':' || tmp == tmp2)
-+		if (*tmp2 != ':' || tmp == tmp2 || tmp2[1] == '\0')
- 			line_ip = -1;
- 	}
- 
- 	if (line_ip != -1) {
--		u64 start = map__rip_2objdump(self->ms.map, sym->start);
-+		u64 start = map__rip_2objdump(self->ms.map, sym->start),
-+		    end = map__rip_2objdump(self->ms.map, sym->end);
-+
- 		offset = line_ip - start;
-+		if (offset < 0 || (u64)line_ip > end)
-+			offset = -1;
- 	}
- 
- 	objdump_line = objdump_line__new(offset, line);
+diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+index f3c9c0a..0171060 100755
+--- a/scripts/recordmcount.pl
++++ b/scripts/recordmcount.pl
+@@ -326,7 +326,7 @@ if ($arch eq "x86_64") {
+     #                    14: R_MIPS_NONE *ABS*
+     #	 18:   00020021        nop
+     if ($is_module eq "0") {
+-	    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s_mcount\$";
++	    $mcount_regex = "^\\s*([0-9a-fA-F]+): R_MIPS_26\\s+_mcount\$";
+     } else {
+ 	    $mcount_regex = "^\\s*([0-9a-fA-F]+): R_MIPS_HI16\\s+_mcount\$";
+     }
