@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab0GWMjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:39:53 -0400
-Received: from kroah.org ([198.145.64.141]:38066 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906Ab0GWMjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 08:39:52 -0400
-Date: Fri, 23 Jul 2010 05:40:40 -0700
-From: Greg KH <greg@kroah.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, alsa-devel@alsa-project.org,
-        Jens Axboe <axboe@kernel.dk>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
-Message-ID: <20100723124040.GA2281@kroah.com>
-References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org>
+	id S1757969Ab0GWMk5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:40:57 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62820 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab0GWMkz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 08:40:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kut1lHqKDA7SrZSlYBm6YSsuRGGan3U7oDWAt0KsYH6Uhxe1N1gsZYm4N6W4hAWwF5
+         6/q94AZ6lQOXEEjMRN1zT+T5oLQ6s246goGVLQ5WTbar6iDN0D65hy76cCI49idYPDK7
+         Ua7KGAClPZpkfwXaO7pZhj5ss+5YAi2E1WOyw=
+Message-ID: <4C498DD2.1040002@gmail.com>
+Date: Fri, 23 Jul 2010 13:40:50 +0100
+From: Iain <selsinork@gmail.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090302)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100714163852.b3c09930.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Len Brown <lenb@kernel.org>
+CC: Andi Kleen <andi@firstfloor.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Yu, Luming" <luming.yu@intel.com>,
+        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "venki@google.com" <venki@google.com>
+Subject: Re: [PATCH] ACPI: make acpi_idle Nehalem-aware
+References: <20100427124703.GA16706@jgarrett.org> <alpine.LFD.2.00.1004301218280.2489@sony> <20100430174447.GA14889@srcf.ucam.org> <d7f2dd35a4361e5156079278543769a0@localhost> <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain> <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com> <20100525124325.GC7876@srcf.ucam.org> <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain> <20100525185507.GA15997@srcf.ucam.org> <alpine.LFD.2.00.1007211729550.409@localhost.localdomain> <20100722074750.GA22520@one.firstfloor.org> <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain> <4C48B730.30708@gmail.com> <alpine.LFD.2.00.1007221751550.13016@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1007221751550.13016@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 04:38:52PM -0700, Andrew Morton wrote:
-> On Fri, 9 Jul 2010 11:54:50 -0700
-> Greg Kroah-Hartman <gregkh@suse.de> wrote:
-> 
-> > This is no longer needed by any userspace tools, so it's safe to
-> > remove.
-> 
-> Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
-> back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
-> .config change sticks:
-> 
-> @@ -106,8 +106,7 @@
->  CONFIG_LOG_BUF_SHIFT=17
->  CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
->  # CONFIG_CGROUPS is not set
-> -CONFIG_SYSFS_DEPRECATED=y
-> -CONFIG_SYSFS_DEPRECATED_V2=y
-> +# CONFIG_SYSFS_DEPRECATED_V2 is not set
->  CONFIG_RELAY=y
->  CONFIG_NAMESPACES=y
->  # CONFIG_UTS_NS is not set
-> 
-> and the box still won't boot.
+Len Brown wrote:
+> You read it correctly, your BIOS does not request BM_STS, mjg59's does.
 
-Ok, for now, I've removed this patch from my tree, so you should not
-have any problem.
+Right, and on a DL360 G6 with the 07-24-2009 bios version I saw the same.
 
-I'll go work on this later next week when I have some more time.
+> I expect that is to enable PCC, which would change P-states,
+> but unlikely would have an effect on C-states.
 
-thanks,
+I found another option in the bios to limit or disable the C-states today, so plenty of opportunity to configure the system into an 
+odd state.
 
-greg k-h
+> If you can try it both ways that might be good to know.
+> (include powertop display once again)
+> Of course, the default setting is what 99% of customers use...
+
+I'll upload an archive to the bugzilla entry with the details. What seems to happen is that when you set the default Balanced Power 
+and Performance mode the CST code vanishes completely and the processor manages to get to c6 some of the time. Enable OS Control 
+mode and the bad CST code appears.
+
+> This is BIOS writer "value add".
+> Unclear how it migh be an improvement over what Linux has been shipping 
+> for years.
+
+Well yes, having Linux and the bios fighting for control probably isn't going to help.
+
+> Please upload the output from dmidecode to the bug report.
+> I am hopeful that you have a current BIOS and that
+> Matthew may have an pre-production BIOS.
+
+I've uploaded an archive with dmidecode, turbostat and powertop dumps. There are dumps with the bios set to the default, and to OS 
+Control mode.
+The original bios on my DL360G6 was 07-24-2009 and has the same issue as Matthew. I upgraded the machine to the latest 2010.05.15 
+and repeated the tests.
+Good news is that the new bios has fixed the CST code so that the Access length values are all 0x01 when they're present and the 
+dumps show the processor getting into c6 much more.
+
+So you were correct, bios fix was needed.
+
+Iain
