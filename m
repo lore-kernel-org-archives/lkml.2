@@ -1,96 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571Ab0GWTWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 15:22:55 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60391 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758035Ab0GWTWx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 15:22:53 -0400
-Message-ID: <4C49EC29.4070202@vflare.org>
-Date: Sat, 24 Jul 2010 00:53:21 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1753996Ab0GWTfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 15:35:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42065 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752694Ab0GWTfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 15:35:42 -0400
+Date: Fri, 23 Jul 2010 15:34:56 -0400
+From: Andy Gospodarek <andy@greyhouse.net>
+To: Greg Edwards <greg.edwards@hp.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>, bonding-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] bonding: set device in RLB ARP packet handler
+Message-ID: <20100723193456.GS7497@gospo.rdu.redhat.com>
 MIME-Version: 1.0
-To: Ed Tomlinson <edt@aei.ca>
-CC: Minchan Kim <minchan.kim@gmail.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/8] Shrink zcache based on memlimit
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org> <AANLkTinaX-huEMGP-k4mCSr0USQhJp68AUgOf4FHqr5Q@mail.gmail.com> <4C467D18.4050901@vflare.org> <201007210732.03909.edt@aei.ca>
-In-Reply-To: <201007210732.03909.edt@aei.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2010 05:02 PM, Ed Tomlinson wrote:
-> On Wednesday 21 July 2010 00:52:40 Nitin Gupta wrote:
->> On 07/21/2010 04:33 AM, Minchan Kim wrote:
->>> On Fri, Jul 16, 2010 at 9:37 PM, Nitin Gupta <ngupta@vflare.org> wrote:
->>>> User can change (per-pool) memlimit using sysfs node:
->>>> /sys/kernel/mm/zcache/pool<id>/memlimit
->>>>
->>>> When memlimit is set to a value smaller than current
->>>> number of pages allocated for that pool, excess pages
->>>> are now freed immediately instead of waiting for get/
->>>> flush for these pages.
->>>>
->>>> Currently, victim page selection is essentially random.
->>>> Automatic cache resizing and better page replacement
->>>> policies will be implemented later.
->>>
->>> Okay. I know this isn't end. I just want to give a concern before you end up.
->>> I don't know how you implement reclaim policy.
->>> In current implementation, you use memlimit for determining when reclaim happen.
->>> But i think we also should follow global reclaim policy of VM.
->>> I means although memlimit doen't meet, we should reclaim zcache if
->>> system has a trouble to reclaim memory.
->>
->> Yes, we should have a way to do reclaim depending on system memory pressure
->> and also when user explicitly wants so i.e. when memlimit is lowered manually.
->>
->>> AFAIK, cleancache doesn't give any hint for that. so we should
->>> implement it in zcache itself.
->>
->> I think cleancache should be kept minimal so yes, all reclaim policies should
->> go in zcache layer only.
->>
->>> At first glance, we can use shrink_slab or oom_notifier. But both
->>> doesn't give any information of zone although global reclaim do it by
->>> per-zone.
->>> AFAIK, Nick try to implement zone-aware shrink slab. Also if we need
->>> it, we can change oom_notifier with zone-aware oom_notifier. Now it
->>> seems anyone doesn't use oom_notifier so I am not sure it's useful.
->>>
->>
->> I don't think we need these notifiers as we can simply create a thread
->> to monitor cache hit rate, system memory pressure etc. and shrink/expand
->> the cache accordingly.
-> 
-> Nitin,
-> 
-> Based on experience gained when adding the shrinker callbacks, I would 
-> strongly recommend you use them.  I tried several hacks along the lines of
-> what you are proposing before moving settling on the callbacks.  They 
-> are effective and make sure that memory is released when its required.
-> What would happen with the other methods is that memory would either 
-> not be released or would be released when it was not needed.
-> 
+On Thu, Jul 22, 2010 at 3:52 PM, Greg Edwards <greg.edwards@hp.com> wrote:
+> With commit 6146b1a4, the dev field in the RLB ARP packet handler was
+> set to NULL to wildcard and accommodate balancing VLANs on top of
+> bonds.
+>
+> This has the side-effect of the packet handler being called against
+> other, non RLB-enabled bonds, and a kernel oops results when it tries
+> to
+> dereference rx_hashtbl in rlb_update_entry_from_arp(), which won't be
+> set for those bonds, e.g. active-backup.
+>
+> With the __netif_receive_skb() changes from commit 1f3c8804, frames
+> received on VLANs correctly make their way to the bond's handler,
+> so we no longer need to wildcard the device.
+>
+
+I see this problem as well, but I would propose to fix it another way to
+not alter the receive path so close to the release of 2.6.35 and to
+catch this for 802.3ad bonds as well.
+
+> Signed-off-by: Greg Edwards <greg.edwards@hp.com>
+> ---
+> Jay,
+>
+> The oops can be reproduced by:
+>
+> modprobe bonding
+>
+> echo active-backup > /sys/class/net/bond0/bonding/mode
+> echo 100 > /sys/class/net/bond0/bonding/miimon
+> ifconfig bond0 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
+> echo +eth0 > /sys/class/net/bond0/bonding/slaves
+> echo +eth1 > /sys/class/net/bond0/bonding/slaves
+>
+> echo +bond1 > /sys/class/net/bonding_masters
+> echo balance-alb > /sys/class/net/bond1/bonding/mode
+> echo 100 > /sys/class/net/bond1/bonding/miimon
+> ifconfig bond1 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
+> echo +eth2 > /sys/class/net/bond1/bonding/slaves
+> echo +eth3 > /sys/class/net/bond1/bonding/slaves
+>
+> Pass some traffic on bond0.  Boom.
+>
+
+bonding: make sure mode-specific handlers handle appropriate frames
+
+This patch will exit out of rlb_arp_recv and bond_3ad_lacpdu_recv early
+if the bond receiving the frame isn't using that mode.
+
+Fixes problem reported by Greg Edwards <greg.edwards@hp.com>.
+
+Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
+
+---
+ drivers/net/bonding/bond_3ad.c |    3 ++-
+ drivers/net/bonding/bond_alb.c |    6 +++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 822f586..cf7b08d 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -2463,7 +2463,8 @@ int bond_3ad_lacpdu_recv(struct sk_buff *skb, struct net_device *dev, struct pac
+ 	struct slave *slave = NULL;
+ 	int ret = NET_RX_DROP;
+ 
+-	if (!(dev->flags & IFF_MASTER))
++	if (!(dev->flags & IFF_MASTER) ||
++	    (bond->params.mode != BOND_MODE_8023AD))
+ 		goto out;
+ 
+ 	read_lock(&bond->lock);
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index df48307..a82e38c 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -353,7 +353,7 @@ static void rlb_update_entry_from_arp(struct bonding *bond, struct arp_pkt *arp)
+ 
+ static int rlb_arp_recv(struct sk_buff *skb, struct net_device *bond_dev, struct packet_type *ptype, struct net_device *orig_dev)
+ {
+-	struct bonding *bond;
++	struct bonding *bond = netdev_priv(bond_dev);
+ 	struct arp_pkt *arp = (struct arp_pkt *)skb->data;
+ 	int res = NET_RX_DROP;
+ 
+@@ -361,7 +361,8 @@ static int rlb_arp_recv(struct sk_buff *skb, struct net_device *bond_dev, struct
+ 		bond_dev = vlan_dev_real_dev(bond_dev);
+ 
+ 	if (!(bond_dev->priv_flags & IFF_BONDING) ||
+-	    !(bond_dev->flags & IFF_MASTER))
++	    !(bond_dev->flags & IFF_MASTER) ||
++	    (bond->params.mode != BOND_MODE_ALB))
+ 		goto out;
+ 
+ 	if (!arp) {
+@@ -376,7 +377,6 @@ static int rlb_arp_recv(struct sk_buff *skb, struct net_device *bond_dev, struct
+ 
+ 	if (arp->op_code == htons(ARPOP_REPLY)) {
+ 		/* update rx hash table for this ARP */
+-		bond = netdev_priv(bond_dev);
+ 		rlb_update_entry_from_arp(bond, arp);
+ 		pr_debug("Server received an ARP Reply from client\n");
+ 	}
+-- 
+1.6.2.5
 
 
-I had similar experience with "swap notify callback" -- yes, things
-don't seem to work without a proper callback. I will check if some
-callback already exists for OOM like condition or if new one can
-be added easily.
 
-Thanks,
-Nitin
