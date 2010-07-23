@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab0GWGSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 02:18:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:34030 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab0GWGSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 02:18:39 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] virtio: fix oops on OOM
-Date: Fri, 23 Jul 2010 15:48:37 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; i686; ; )
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>
+	id S1752289Ab0GWGpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 02:45:41 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57501 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286Ab0GWGpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 02:45:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iFouLzUmrB3TDvTV4krRNDvcjzbp+3rLEU43RvRUbOKVvdZcz2jATlBvr3amysRmMU
+         7/VNrLHyf7jSDXtId+TaFpuenxHRzZVcab39Vux1MXPCZOgHN0H9G31Kqa39kqtprp4Y
+         Rf2yYx5ywmPINjHOaSzlDhQCctwfnSV3N5Ogg=
+Date: Thu, 22 Jul 2010 23:45:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        Matthew Garrett <mjg@redhat.com>,
+        Elliott Sales de Andrade <quantum.analyst@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-input@vger.kernel.org
+Subject: Re: [PATCH] i8042: add Gigabyte Spring Peak to dmi_noloop_table
+Message-ID: <20100723064534.GD20532@core.coreip.homeip.net>
+References: <1279561534-3551-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007231548.38037.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279561534-3551-1-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+On Mon, Jul 19, 2010 at 10:45:34AM -0700, Kamal Mostafa wrote:
+> Gigabyte "Spring Peak" notebook indicates wrong chassis-type, tripping up
+> i8042 and breaking the touchpad.  Add this model to i8042_dmi_noloop_table[]
+> to resolve.
+> 
+> BugLink: https://bugs.launchpad.net/bugs/580664
+> 
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> Cc: <stable@kernel.org>
 
-virtio ring was changed to return an error code on OOM,
-but one caller was missed and still checks for vq->vring.num.
-The fix is just to check for <0 error code.
+Applied, thanks Kamal.
 
-Long term it might make sense to change goto add_head to
-just return an error on oom instead, but let's apply
-a minimal fix for 2.6.35.
+> ---
+>  drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+> index 6168469..d953d65 100644
+> --- a/drivers/input/serio/i8042-x86ia64io.h
+> +++ b/drivers/input/serio/i8042-x86ia64io.h
+> @@ -166,6 +166,13 @@ static const struct dmi_system_id __initconst i8042_dmi_noloop_table[] = {
+>  		},
+>  	},
+>  	{
+> +		/* Gigabyte Spring Peak */
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Spring Peak"),
+> +		},
+> +	},
+> +	{
+>  		.matches = {
+>  			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+>  			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv9700"),
+> -- 
+> 1.7.0.4
+> 
 
-Reported-by: Chris Mason <chris.mason@oracle.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Tested-by: Chris Mason <chris.mason@oracle.com>
----
-
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index dd35b34..bffec32 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -164,7 +164,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
- 			  gfp_t gfp)
- {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
--	unsigned int i, avail, head, uninitialized_var(prev);
-+	unsigned int i, avail, uninitialized_var(prev);
-+	int head;
- 
- 	START_USE(vq);
- 
-@@ -174,8 +175,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
- 	 * buffers, then go indirect. FIXME: tune this threshold */
- 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
- 		head = vring_add_indirect(vq, sg, out, in, gfp);
--		if (head != vq->vring.num)
-+		if (likely(head >= 0))
- 			goto add_head;
- 	}
- 
- 	BUG_ON(out + in > vq->vring.num);
+-- 
+Dmitry
