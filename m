@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462Ab0GWNSw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 09:18:52 -0400
+	id S1759040Ab0GWNSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 09:18:47 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:52671 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757727Ab0GWNSr (ORCPT
+	with ESMTP id S1753569Ab0GWNSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 09:18:47 -0400
+	Fri, 23 Jul 2010 09:18:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=pX8LZsG+zMUp9J//4yUGFyvCD68pFFK503GM+gwAupbrph2jFQs9hMALWTz/92373H
-         RxMEk+7gJ5HrWfjbeYhocE6RD6nGRgo+jkHtMCs+60Db3RcBfhmzzdY7K0kuIVi1JTza
-         Aj9YJ5hPxffa+8dVGikEh39i5PLG3I0qSpX2E=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IycJptrtgnsO52suJB3CHL3oU0au+51qLCstl4QysDsf0mbekVsZ4gbup2a8l/S5ZU
+         PIGp5fwWVPDTzX/cjijJ6u+9SvryqgADdZ0Mr5pA7rbTp2HVXy1zXEiBXqH9BfL/7JEU
+         ne9HoTTd8uwUhpR/mrKlayxOTHwkEqPWO2ek8=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCH 2/5] drivers: net: use newly introduced hex_to_bin()
-Date: Fri, 23 Jul 2010 16:18:07 +0300
-Message-Id: <3f9b9040fd8614141d4d7df59fbccf32d50e997d.1279890832.git.andy.shevchenko@gmail.com>
+Subject: [PATCH 0/5] remove custom implementation of hex_to_bin()
+Date: Fri, 23 Jul 2010 16:18:05 +0300
+Message-Id: <cover.1279890832.git.andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
-References: <cover.1279890832.git.andy.shevchenko@gmail.com>
-In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
-References: <cover.1279890832.git.andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
----
- drivers/net/ksz884x.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+Remove custom implementation of recently introduced hex_to_bin() method. All
+changes related to the network subsystem in the kernel.
 
-diff --git a/drivers/net/ksz884x.c b/drivers/net/ksz884x.c
-index 1d998e1..37504a3 100644
---- a/drivers/net/ksz884x.c
-+++ b/drivers/net/ksz884x.c
-@@ -6894,13 +6894,12 @@ static void get_mac_addr(struct dev_info *hw_priv, u8 *macaddr, int port)
- 	i = j = num = got_num = 0;
- 	while (j < MAC_ADDR_LEN) {
- 		if (macaddr[i]) {
-+			int digit;
-+
- 			got_num = 1;
--			if ('0' <= macaddr[i] && macaddr[i] <= '9')
--				num = num * 16 + macaddr[i] - '0';
--			else if ('A' <= macaddr[i] && macaddr[i] <= 'F')
--				num = num * 16 + 10 + macaddr[i] - 'A';
--			else if ('a' <= macaddr[i] && macaddr[i] <= 'f')
--				num = num * 16 + 10 + macaddr[i] - 'a';
-+			digit = hex_to_bin(macaddr[i]);
-+			if (digit >= 0)
-+				num = num * 16 + digit;
- 			else if (':' == macaddr[i])
- 				got_num = 2;
- 			else
--- 
-1.7.1.1
+Andy Shevchenko (5):
+  drivers: atm: don't use private copy of hex_to_bin()
+  drivers: net: use newly introduced hex_to_bin()
+  usb: usbnet: use newly introduced hex_to_bin()
+  wireless: use newly introduced hex_to_bin()
+  net: core: don't use own hex_to_bin() method
+
+ drivers/atm/nicstar.c         |   15 ++-------------
+ drivers/net/ksz884x.c         |   11 +++++------
+ drivers/net/usb/usbnet.c      |   13 ++-----------
+ drivers/net/wireless/ray_cs.c |   23 ++---------------------
+ net/core/pktgen.c             |   36 ++++++++++++------------------------
+ 5 files changed, 23 insertions(+), 75 deletions(-)
 
