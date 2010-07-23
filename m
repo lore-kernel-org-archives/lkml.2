@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab0GWAEi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 20:04:38 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48460 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756194Ab0GWAEg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 20:04:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 23 Jul 2010 08:59:44 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Nauman Rafique <nauman@google.com>,
-        Munehiro Ikeda <m-ikeda@ds.jp.nec.com>, linux-kernel@vger.kernel.org,
-        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
-        Andrea Righi <righi.andrea@gmail.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-        balbir@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH 00/11] blkiocg async support
-Message-Id: <20100723085944.9fb9cb8b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTin9TCziHU-AX42aVWpaFDX5=4NwojGxFSFnRFAq@mail.gmail.com>
-References: <4C369009.80503@ds.jp.nec.com>
-	<20100709134546.GC3672@redhat.com>
-	<4C37BC1A.20102@ds.jp.nec.com>
-	<AANLkTikECHfrksrk3QnD3X07pmgXdpo5-fv7hDLm2Zxw@mail.gmail.com>
-	<20100710132417.GA2752@redhat.com>
-	<20100712092004.3b27e13e.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTin9TCziHU-AX42aVWpaFDX5=4NwojGxFSFnRFAq@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756240Ab0GWAMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 20:12:33 -0400
+Received: from claw.goop.org ([74.207.240.146]:53216 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755618Ab0GWAMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 20:12:32 -0400
+Message-ID: <4C48DE6F.2080703@goop.org>
+Date: Thu, 22 Jul 2010 17:12:31 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@redhat.com>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH] x86: Do not try to disable hpet if it hasn't been initialized
+ before
+References: <4C48D2C2.20303@goop.org> <4C48D62E.50405@zytor.com>
+In-Reply-To: <4C48D62E.50405@zytor.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 12:28:50 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On 07/22/2010 04:37 PM, H. Peter Anvin wrote:
+> On 07/22/2010 04:22 PM, Jeremy Fitzhardinge wrote:
+>> [ x86 folk: While this patch is just a generic x86 bugfix, it really
+>> only affects
+>>    the Xen pv-on-hvm patch series that I'm going to post shortly.  Do
+>> you want to
+>>    commit it separately via tip.git, or are you OK with me sending it
+>> to Linus
+>>    directly? - J ]
+>>
+>
+> I think it would be best if we took it via tip:x86/urgent, if that is
+> okay with you.
 
-> > I've just waited for dirty-ratio patches because I know someone is working on.
-> > But, hmm, I'll consider to start work by myself.
-> 
-> I have some patches that I have to address the dirty-ratios.  I will post them.
-> 
-
-please wait until my proposal to implement a light-weight lock-less update_stat()
-I'll handle FILE_MAPPED in it and add a generic interface for updating statistics
-in mem_cgroup via page_cgroup.
-(I'll post it today if I can, IOW, I'm lucky.)
-
-If not, we have to discuss the same thing again in a hell.
+Sure.
 
 Thanks,
--Kame
-
+    J
