@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0GXKl1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 06:41:27 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:38555 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307Ab0GXKl0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 06:41:26 -0400
-Date: Sat, 24 Jul 2010 06:41:18 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@lynx
-To: ceph-devel@vger.kernel.org
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] CEPH: Correct obvious typo of Kconfig variable
- "CRYPTO_AES"
-Message-ID: <alpine.DEB.2.00.1007240639590.10227@lynx>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1755101Ab0GXKtY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 06:49:24 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:56532 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754812Ab0GXKtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 06:49:23 -0400
+Date: Sat, 24 Jul 2010 12:49:13 +0200
+From: Florian Mickler <florian@mickler.org>
+To: trapdoor6@gmail.com, LKML <linux-kernel@vger.kernel.org>
+Cc: Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: 2.6.35-rc[1-5] + Radeon-kms: 3D graphic performance
+Message-ID: <20100724124913.0bbd9a06@schatten.dmk.lab>
+In-Reply-To: <AANLkTin1vGdodjhqbckGpVtfScslb7d0KX0h4wPa54Yh@mail.gmail.com>
+References: <AANLkTin1vGdodjhqbckGpVtfScslb7d0KX0h4wPa54Yh@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 23 Jul 2010 01:21:24 +0100
+trapDoor <trapdoor6@gmail.com> wrote:
 
-Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
+> Hi Alex,
+> This is with regard to thread 'Blank (disconnected) screen during boot
+> with latest 2.6.35-rcX kernels'.
+> 
+> You asked me in your last e-mail if I could do a bisect to find out
+> what caused a regression I mentioned about - in 3D graphic performance
+> in kernels 2.6.35-rc + radeoon-kms. I started the bisect but
+> unfortunately I haven't finished due to some problems I came across
+> and I'm not sure if I can continue it. I'm pointing below how the
+> bisect went and - if you'd like to take a look - at the last point I
+> explained why I stopped.
+> 
+> I did notice some pattern during this unfinished bisect though. And I
+> think it may narrow down the regression to its source.
+> 
+> 
+> 
 
----
+Hi Alex!
 
-diff --git a/fs/ceph/Kconfig b/fs/ceph/Kconfig
-index 04b8280..bc87b9c 100644
---- a/fs/ceph/Kconfig
-+++ b/fs/ceph/Kconfig
-@@ -2,7 +2,7 @@ config CEPH_FS
-         tristate "Ceph distributed file system (EXPERIMENTAL)"
- 	depends on INET && EXPERIMENTAL
- 	select LIBCRC32C
--	select CONFIG_CRYPTO_AES
-+	select CRYPTO_AES
- 	help
- 	  Choose Y or M here to include support for mounting the
- 	  experimental Ceph distributed file system.  Ceph is an extremely
+I just pasted your good/bad results in my git and did look at it with
 
--- 
+git bisect visualize
 
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
 
-        Top-notch, inexpensive online Linux/OSS/kernel courses
-                        http://crashcourse.ca
+What I would do in your case is to try
+612e06ce9c7884 radeon: Fix locking in power management paths
 
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+as that is the one just before your suspected bad commit. 
+
+Definitely(well 98% certainty) you can skip any powerpc-commits that
+are left as undecided... just try some commits in the drm/radeon range
+there to either validate or invalidate your suspicion about f81f202402
+(one of the vblank ones)
+
+You can just do 'git reset --hard [commit you like to try]' to change
+the commit you want to try next. (or use git bisect skip) 
+
+Cheers,
+Flo
+
+p.s.: oh and of course trying the patches suggested by alex in the
+other mail first is probably a wise thing to do...
