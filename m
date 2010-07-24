@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab0GXCKj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 22:10:39 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:40058 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab0GXCKY convert rfc822-to-8bit (ORCPT
+	id S1757029Ab0GXCQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 22:16:43 -0400
+Received: from host1.efn.uncor.edu ([200.16.19.1]:37931 "EHLO
+	gtwing.efn.uncor.edu" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab0GXCQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 22:10:24 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jul 2010 22:10:23 EDT
-Message-ID: <20100724050256.6l6nxoqgv4kow84s@webmail.welho.com>
-Date: Sat, 24 Jul 2010 05:02:56 +0300
-From: MICROSOFT CUSTOMER SERVICE <info@msl.com>
-Reply-to: msldept10@w.cn
+	Fri, 23 Jul 2010 22:16:42 -0400
+X-Greylist: delayed 645 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jul 2010 22:16:42 EDT
+Message-ID: <20100723230555.18605yorvq4uqhs0@gtwing.efn.uncor.edu>
+Date: Fri, 23 Jul 2010 23:05:55 -0300
+From: FDJEUX LOTTO GROUP <fgomez@efn.uncor.edu>
+Reply-to: dpu@fdjeuxlotgroup.com
 To: undisclosed-recipients:;
-Subject: Dear E-mail Owner
+Subject: wheel E-game 2010
 MIME-Version: 1.0
 Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
--- 
-MICROSOFT CUSTOMER SERVICE
-REFNO.:MS/75-A08055161/2010
-Batch: 044/05/ZY369
+ADDRESS: NOVA-ZEMBLASTRAAT 10
+10 16 RP AMSTERDAM
+THE NEDERLANDS.
 
-Dear E-mail Owner,
+TEL: 0031-617-211-126
+FAX: 0031-84 717 1925
+www.fdjeux.com
 
-You are a winner of the just conclude Microsoft Online Email Promo. You have
-therefore been approved to claim a total sum Five Hundred Thousand Great
-Britain Pounds (£500,000.00). Please this informations are required for
-verification.
+Date: 24th- July -2010
+Ref Nr: FDJ/CN/6654/WG
+Coupon No.FDJ2348974321
 
-Name:...................
-Address:...............
-Country:...............
-Age:..................
-Gender:................
-Occupation:..............
-Phone and Fax:...............
-Winning E-mail Address:................
+Your email ID emerged among recipients of ?1,000, 000.00 (One million  
+Euro) only from our promotional program held on the 10th July-2010.  
+The FDJEUX GROUP Netherlands in collaboration with Fdjeux France have  
+approved a payout of your ?1,000, 000.00 to you.You can reach us to  
+have your claim via email/fax below also details of this promotional  
+program.
+Remember all prize money should be claim within 10 days from the day  
+of receipt of this notification.
 
-Please contact:
-Owens Gibson
-Email: msldept10@w.cn
-
-Telephone: +44-704-570-7201
-
-Crosswhite Anita
-Annoucer For Microsoft Online Email Promo
+Contact: Manton Smith files Officer.
+TEL: 0031-617-211-126
+FAX: 0031-84 717 1925
+E-mail:dpu@fdjeuxlotgroup.com
+info@fdjeuxlotgroup.com
+fdfileofficer@aol.com
 
 
+Regards,
+Melissa Williams (Mrs.)
+(Group Coordinator)
+===============================================
 
+
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
 
