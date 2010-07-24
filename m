@@ -1,45 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab0GXSsR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 14:48:17 -0400
-Received: from snt0-omc3-s3.snt0.hotmail.com ([65.55.90.142]:30961 "EHLO
-	snt0-omc3-s3.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754368Ab0GXSsK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 14:48:10 -0400
-Message-ID: <SNT125-W449B3ACDB36B8BF9EBE145C3A40@phx.gbl>
-X-Originating-IP: [96.253.143.208]
-From: Yuhong Bao <yuhongbao_386@hotmail.com>
-To: <tj@kernel.org>, <jeff@garzik.org>, <ben.collins@ubuntu.com>,
-        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hmh@debian.org>
-Subject: RE: support for drives larger than 2TiB
-Date: Sat, 24 Jul 2010 11:48:09 -0700
-Importance: Normal
-In-Reply-To: <4C4AB952.9030705@kernel.org>
-References: <4C4AB952.9030705@kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1756230Ab0GXTVU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 15:21:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40988 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755852Ab0GXTVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 15:21:16 -0400
+Date: Sat, 24 Jul 2010 22:14:47 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
+ per-vhost kthread
+Message-ID: <20100724191447.GA4972@redhat.com>
+References: <4BFFE742.2060205@kernel.org>
+ <20100530112925.GB27611@redhat.com>
+ <4C02C961.9050606@kernel.org>
+ <20100531152221.GB2987@redhat.com>
+ <4C03D983.9010905@kernel.org>
+ <20100531160020.GC3067@redhat.com>
+ <4C04D41B.4050704@kernel.org>
+ <4C06A580.9060300@kernel.org>
+ <20100722155840.GA1743@redhat.com>
+ <4C48B664.9000109@kernel.org>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 24 Jul 2010 18:48:09.0994 (UTC) FILETIME=[C31466A0:01CB2B60]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C48B664.9000109@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 22, 2010 at 11:21:40PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 07/22/2010 05:58 PM, Michael S. Tsirkin wrote:
+> > All the tricky barrier pairing made me uncomfortable.  So I came up with
+> > this on top (untested): if we do all operations under the spinlock, we
+> > can get by without barriers and atomics.  And since we need the lock for
+> > list operations anyway, this should have no paerformance impact.
+> > 
+> > What do you think?
+> 
+> I've created kthread_worker in wq#for-next tree and already converted
+> ivtv to use it.  Once this lands in mainline, I think converting vhost
+> to use it would be better choice.  kthread worker code uses basically
+> the same logic used in the vhost_workqueue code but is better
+> organized and documented.  So, I think it would be better to stick
+> with the original implementation, as otherwise we're likely to just
+> decrease test coverage without much gain.
+> 
+>   http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=b56c0d8937e665a27d90517ee7a746d0aa05af46;hp=53c5f5ba42c194cb13dd3083ed425f2c5b1ec439
 
-> I've been playing with a SATA 2.5T drive and things don't look too
-> bad. All four controllers I've tested worked fine and the driver and
-> kernel worked just fine. Even BIOSes don't seem too bad. At least
-> the two boards I tested (both about three years old) didn't have much
-> problem recognizing upto 2TiB and could access and boot fine although
-> I'm fairly sure there will be BIOSes which would behave erratically.
+Sure, if we keep using workqueue. But I'd like to investigate this
+direction a bit more because there's discussion to switching from kthread to
+regular threads altogether.
 
-In fact, Seagate is already selling 3TB external drives and CrunchGear
-was already able to get the internal 3TB drive inside out:
-http://techcrunch.com/2010/07/01/hands-on-the-seagate-freeagent-goflex-desk-3tb-external-hard-drive/
+> > @@ -151,37 +161,37 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+> >  static int vhost_worker(void *data)
+> >  {
+> >  	struct vhost_dev *dev = data;
+> > -	struct vhost_work *work;
+> > +	struct vhost_work *work = NULL;
+> >  
+> > -repeat:
+> > -	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+> > +	for (;;) {
+> > +		set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+> >  
+> > -	if (kthread_should_stop()) {
+> > -		__set_current_state(TASK_RUNNING);
+> > -		return 0;
+> > -	}
+> > +		if (kthread_should_stop()) {
+> > +			__set_current_state(TASK_RUNNING);
+> > +			return 0;
+> > +		}
+> >  
+> > -	work = NULL;
+> > -	spin_lock_irq(&dev->work_lock);
+> > -	if (!list_empty(&dev->work_list)) {
+> > -		work = list_first_entry(&dev->work_list,
+> > -					struct vhost_work, node);
+> > -		list_del_init(&work->node);
+> > -	}
+> > -	spin_unlock_irq(&dev->work_lock);
+> > +		spin_lock_irq(&dev->work_lock);
+> > +		if (work) {
+> > +			work->done_seq = work->queue_seq;
+> > +			if (work->flushing)
+> > +				wake_up_all(&work->done);
+> 
+> I don't think doing this before executing the function is correct,
 
-Yuhong Bao
- 		 	   		  
-_________________________________________________________________
-Hotmail has tools for the New Busy. Search, chat and e-mail from your inbox.
-http://www.windowslive.com/campaign/thenewbusy?ocid=PID28326::T:WLMTAGL:ON:WL:en-US:WM_HMP:042010_1
+Well, before I execute the function work is NULL, so this is skipped.
+Correct?
+
+> so
+> you'll have to release the lock, execute the function, regrab the lock
+> and then do the flush processing.
+> 
+> Thanks.
+
+It's done in the loop, so I thought we can reuse the locking
+done for the sake of processing the next work item.
+Makes sense?
+
+
+> -- 
+> tejun
