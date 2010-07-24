@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab0GXJO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 05:14:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36763 "EHLO hera.kernel.org"
+	id S1754244Ab0GXJU2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 05:20:28 -0400
+Received: from postin.uv.es ([147.156.1.90]:49389 "EHLO postin.uv.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753577Ab0GXJO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 05:14:26 -0400
-Message-ID: <4C4AAEE9.8050903@kernel.org>
-Date: Sat, 24 Jul 2010 11:14:17 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1753577Ab0GXJU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 05:20:27 -0400
+Message-ID: <4C4AB036.3060003@postal.uv.es>
+Date: Sat, 24 Jul 2010 11:19:50 +0200
+From: Enrico Bandiello <enban@postal.uv.es>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.22) Gecko/20091109 Thunderbird/2.0.0.22 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH wq#for-next] fscache: fix build on !CONFIG_SYSCTL
-References: <20100723164931.7bf2160f.sfr@canb.auug.org.au> <20100723090831.6af4a288.randy.dunlap@oracle.com>
-In-Reply-To: <20100723090831.6af4a288.randy.dunlap@oracle.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Enrico Bandiello <enban@alumni.uv.es>
+Subject: Re: [Bug #16307] i915 in kernel 2.6.35-rc3, high number of wakeups
+References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>	<tneGvaw1wLL.A.mXB.p3XSMB@chimera> <20100723102532.6bfade32@virtuousgeek.org>
+In-Reply-To: <20100723102532.6bfade32@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 24 Jul 2010 09:14:19 +0000 (UTC)
+X-Userflux: Whitelisted rcpt enban@alumni.uv.es. User email not accounted
+X-RelayDelay-Mem: Whitelisted relay grajo.ci.uv.es [147.156.0.253]. Not delayed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 8b8edefa (fscache: convert object to use workqueue instead of
-slow-work) made fscache_exit() call unregister_sysctl_table()
-unconditionally breaking build when sysctl is disabled.  Fix it by
-putting it inside CONFIG_SYSCTL.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: David Howells <dhowells@redhat.com>
----
-This should fix it.  Thanks.
-
- fs/fscache/main.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/fs/fscache/main.c b/fs/fscache/main.c
-index 500936d..f9d8567 100644
---- a/fs/fscache/main.c
-+++ b/fs/fscache/main.c
-@@ -186,7 +186,9 @@ static void __exit fscache_exit(void)
-
- 	kobject_put(fscache_root);
- 	kmem_cache_destroy(fscache_cookie_jar);
-+#ifdef CONFIG_SYSCTL
- 	unregister_sysctl_table(fscache_sysctl_header);
-+#endif
- 	fscache_proc_cleanup();
- 	destroy_workqueue(fscache_op_wq);
- 	destroy_workqueue(fscache_object_wq);
--- 
-1.7.1
-
+On 07/23/2010 07:25 PM, Jesse Barnes wrote:
+> On Fri, 23 Jul 2010 13:47:31 +0200 (CEST)
+> "Rafael J. Wysocki"<rjw@sisk.pl>  wrote:
+>
+>> This message has been generated automatically as a part of a summary report
+>> of recent regressions.
+>>
+>> The following bug entry is on the current list of known regressions
+>> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+>> know (either way).
+>>
+>>
+>> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16307
+>> Subject		: i915 in kernel 2.6.35-rc3, high number of wakeups
+>> Submitter	: Enrico Bandiello<enban@postal.uv.es>
+>> Date		: 2010-06-26 16:57 (28 days old)
+>> Message-ID	:<4C26317A.5070309@postal.uv.es>
+>> References	: http://marc.info/?l=linux-kernel&m=127757403404259&w=2
+>
+> Just updated the bug for this one.  Enrico, you say this behavior is
+> recent.  Can you bisect between 2.6.34 and when the problem started?
+>
+Hi. I just tried, but can't find anything useful until now (surely it's 
+my fault: it was my first attempt at bisection). Please let me try again 
+in the next days.
