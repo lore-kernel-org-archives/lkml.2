@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab0GXJHM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 05:07:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46838 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab0GXJHJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 05:07:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=hhvBr+BVLxvoRmrFhDHjvLbHDW3lhV91Vx9DLcmnXzI7ljJo9+jlAcaccM1iZ1mMTs
-         hOFvYWE/z/yvSqUZE354joD/h97vCTr21XsHD7wBuX6T8gTTt3dcsGdOVY/XrBLFNQkw
-         0ou2b9+ICR7KCI+UfWeuFt81NW+SHolbu6q9E=
+	id S1754189Ab0GXJO2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 05:14:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36763 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753577Ab0GXJO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 05:14:26 -0400
+Message-ID: <4C4AAEE9.8050903@kernel.org>
+Date: Sat, 24 Jul 2010 11:14:17 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-In-Reply-To: <20100724085135.GB32006@infradead.org>
-References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
-	<20100722055602.GA18566@infradead.org>
-	<20100722140044.GA28684@redhat.com>
-	<20100724085135.GB32006@infradead.org>
-Date: Sat, 24 Jul 2010 11:07:07 +0200
-Message-ID: <AANLkTi=d-2-1R_Bpk_1J7AXhTc2Kv3p8S7tE0ZsFKFDe@mail.gmail.com>
-Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle 
-	tunable V3
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, nauman@google.com, dpshah@google.com,
-        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH wq#for-next] fscache: fix build on !CONFIG_SYSCTL
+References: <20100723164931.7bf2160f.sfr@canb.auug.org.au> <20100723090831.6af4a288.randy.dunlap@oracle.com>
+In-Reply-To: <20100723090831.6af4a288.randy.dunlap@oracle.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 24 Jul 2010 09:14:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 24, 2010 at 10:51 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> To me this sounds like slice_idle=0 is the right default then, as it
-> gives useful behaviour for all systems linux runs on.
-No, it will give bad performance on single disks, possibly worse than
-deadline (deadline at least sorts the requests between different
-queues, while CFQ with slice_idle=0 doesn't even do this for readers).
-Setting slice_idle to 0 should be considered only when a single
-sequential reader cannot saturate the disk bandwidth, and this happens
-only on smart enough hardware with large number of spindles.
->  Setups with
-> more than a few spindles are for sure more common than setups making
-> use of cgroups.  Especially given that cgroups are more of a high end
-> feature you'd rarely use on a single SATA spindle anyway.  So setting
-> a paramter to make this useful sounds like the much better option.
->
-> Especially given that the block cgroup code doesn't work particularly
-> well in presence of barriers, which are on for any kind of real life
-> production setup anyway.
->
->
+Commit 8b8edefa (fscache: convert object to use workqueue instead of
+slow-work) made fscache_exit() call unregister_sysctl_table()
+unconditionally breaking build when sysctl is disabled.  Fix it by
+putting it inside CONFIG_SYSCTL.
 
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: David Howells <dhowells@redhat.com>
+---
+This should fix it.  Thanks.
 
+ fs/fscache/main.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/fs/fscache/main.c b/fs/fscache/main.c
+index 500936d..f9d8567 100644
+--- a/fs/fscache/main.c
++++ b/fs/fscache/main.c
+@@ -186,7 +186,9 @@ static void __exit fscache_exit(void)
+
+ 	kobject_put(fscache_root);
+ 	kmem_cache_destroy(fscache_cookie_jar);
++#ifdef CONFIG_SYSCTL
+ 	unregister_sysctl_table(fscache_sysctl_header);
++#endif
+ 	fscache_proc_cleanup();
+ 	destroy_workqueue(fscache_op_wq);
+ 	destroy_workqueue(fscache_object_wq);
 -- 
-__________________________________________________________________________
+1.7.1
 
-dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-PhD - Department of Computer Science - University of Pisa, Italy
---------------------------------------------------------------------------
-The self-confidence of a warrior is not the self-confidence of the average
-man. The average man seeks certainty in the eyes of the onlooker and calls
-that self-confidence. The warrior seeks impeccability in his own eyes and
-calls that humbleness.
-                               Tales of Power - C. Castaneda
