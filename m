@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab0GXNvd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 09:51:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43720 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab0GXNvb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 09:51:31 -0400
-Date: Sat, 24 Jul 2010 14:51:28 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Lubomir Rintel <lkundrak@v3.sk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] [fs/sysv] V7: Add support for non-PDP11 v7
- filesystems
-Message-ID: <20100724135128.GA11645@ZenIV.linux.org.uk>
-References: <1279559802-19154-1-git-send-email-lkundrak@v3.sk>
- <1279559802-19154-2-git-send-email-lkundrak@v3.sk>
- <1279559802-19154-3-git-send-email-lkundrak@v3.sk>
- <1279559802-19154-4-git-send-email-lkundrak@v3.sk>
- <20100719145851.GD25279@lst.de>
+	id S1753778Ab0GXOPK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 10:15:10 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35752 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753272Ab0GXOPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 10:15:07 -0400
+Date: Sat, 24 Jul 2010 19:45:00 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Greg KH <gregkh@suse.de>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Jan Safranek <jsafrane@redhat.com>
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+Message-ID: <20100724141500.GO14369@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100722182638.GA12712@kroah.com>
+ <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+ <20100722183614.GA5443@suse.de>
+ <20100722193741.GA2688@redhat.com>
+ <20100722211856.GA1297@suse.de>
+ <20100722212634.GC2688@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100719145851.GD25279@lst.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100722212634.GC2688@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 04:58:51PM +0200, Christoph Hellwig wrote:
-> On Mon, Jul 19, 2010 at 07:16:42PM +0200, Lubomir Rintel wrote:
-> > A mount-time option was added that makes it possible to override the
-> > endianness and an attempt is made to autodetect it (which seems easy,
-> > given the disk addresses are 3-byte.
+* Vivek Goyal <vgoyal@redhat.com> [2010-07-22 17:26:34]:
+
+> On Thu, Jul 22, 2010 at 02:18:56PM -0700, Greg KH wrote:
+> > On Thu, Jul 22, 2010 at 03:37:41PM -0400, Vivek Goyal wrote:
+> > > On Thu, Jul 22, 2010 at 11:36:15AM -0700, Greg KH wrote:
+> > > > On Thu, Jul 22, 2010 at 11:31:07AM -0700, Paul Menage wrote:
+> > > > > On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
+> > > > > > We really shouldn't be asking userspace to create new root filesystems.
+> > > > > > So follow along with all of the other in-kernel filesystems, and provide
+> > > > > > a mount point in sysfs.
+> > > > > >
+> > > > > > For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
+> > > > > > that mount point when the cgroup filesystem is registered in the kernel.
+> > > > > 
+> > > > > But cgroups will typically have multiple mounts, with different
+> > > > > resource controllers/options on each mount. That doesn't really fit in
+> > > > > with this scheme.
+> > > > 
+> > > > Really?  I see systems mounting it at /cgroups/ in the filesystem today.
+> > > > Where are you expecting it to be mounted at?
+> > > > 
+> > > 
+> > > Greg,
+> > > 
+> > > [CCing few more folks who might be interested in this dicussion ]
+> > > 
+> > > We do want to retain facility to mount different controllers at different
+> > > mount points. We were discussing the other day that in libvirt we might
+> > > want to mount block IO controller and network controller separately as
+> > > by default we will not put a new virtual machine in a cgroup of its own
+> > > because of the penatly involved.
 > > 
-> > No attempt is made to detect big-endian filesystems -- were there any?
-> > Tested with PDP-11 v7 filesystems and PC-IX maintenance floppy.
+> > That's fine, I'm not changing that ability at all.  We just need a
+> > "default" mount point for "normal" users.
+> > 
+> > > For other controllers like cpu, memory etc, libvirt automatically puts
+> > > each new virtual machine in a cgroup of own. So this is one use case
+> > > where we might want to mount different controllers at different mount
+> > > points.
+> > > 
+> > > For my testing I now always use /cgroup/ and create directories under it
+> > > /cgroup/blkio /cgroup/cpu etc and mount controllers on respective
+> > > directories.
+> > 
+> > Lennart and Kay, is this what systemd is doing?  I really don't think we
+> > should be adding a root /cgroup/ mount point to the system for something
+> > like this.
+> > 
+> > Maybe /dev/cgroup/ is better to use, as that way users can create
+> > sub-mount points easier.  They can't do that in /sys/fs/cgroup/
 > 
-> Do you actually need the mount option?  We get away just fine with
-> it for sysv filesystems.  And if not I'd be consistent and accept the
-> options for both sysv and v7 filesystems.
+> The only problem with /dev/cgroup seems to be that it seems little
+> unintutive. To me, we have devices under /dev/ dir and cgroups are not
+> devices.
+> 
+> I think people have floated similar threads in the past on lkml with
+> various opinions and everybody had their own choices but nothing was
+> conclusive. 
+> 
+> Polluting / definitely sounds odd but it does not look that bad once
+> we can't find any other good choices.
+>
 
-Actually, it shouldn't be too hard to detect the damn thing even without magic.
-Look - we always have the inode table starting at block 2, so on-disk root
-inode is guaranteed to be found correctly.  Now, suppose we'd mistaken
-l-e for pdp or vice versa; the half-words of i_size would get swapped.
-What could pass both tests?  Suppose the right size is a * 65536 + b;
-then we have: a and b are both multiples of 16 and at least one is non-zero.
-So all we need is to reject root directories bigger than 1Mb.  And posted
-patches do reject that (and lower than that, actually).
+I think it breaks the filesystem hierarchy standard and I've seen
+bugzilla's around it. I'd prefer /sys/fs/cgroup. 
 
-So I'd rather see a variant without that option.  Simply get both bh, then
-try the same sanity checks with LE and PDP used for s_bytesex.  And use
-one that works - we _know_ that it's impossible to have both pass at the
-same time.
-
-I'm fine with the rest of patch series as is; Lubomir, could you redo the
-last one that way and resend?
+-- 
+	Three Cheers,
+	Balbir
