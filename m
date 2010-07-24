@@ -1,99 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab0GXKvK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 06:51:10 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:39165 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754945Ab0GXKvH (ORCPT
+	id S1755319Ab0GXKyt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 06:54:49 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50400 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754479Ab0GXKys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 06:51:07 -0400
-Date: Sat, 24 Jul 2010 06:50:53 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@lynx
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: (short) list of non-existent "select" Kconfig variables
-Message-ID: <alpine.DEB.2.00.1007240647380.10337@lynx>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 24 Jul 2010 06:54:48 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Subject: Re: VFS scalability git tree
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
+In-Reply-To: <20100724174038.3C96.A69D9226@jp.fujitsu.com>
+References: <20100722190100.GA22269@amd> <20100724174038.3C96.A69D9226@jp.fujitsu.com>
+Message-Id: <20100724174648.3C9F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sat, 24 Jul 2010 19:54:43 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > At this point, I would be very interested in reviewing, correctness
+> > testing on different configurations, and of course benchmarking.
+> 
+> I haven't review this series so long time. but I've found one misterious
+> shrink_slab() usage. can you please see my patch? (I will send it as
+> another mail)
 
-  since this is such a short list, i'll just post it -- the list of
-Kconfig "select" directives that refer to undefined variables.
-harmless, of course, but superfluous.  (didn't we have a discussion
-about HAVE_READQ and HAVE_WRITEQ some time back?)
+Plus, I have one question. upstream shrink_slab() calculation and your
+calculation have bigger change rather than your patch description explained.
 
+upstream:
 
-===== CRYPTO_SHASH
-crypto/Kconfig:318:	select CRYPTO_SHASH
-crypto/Kconfig:456:	select CRYPTO_SHASH
-===== GCD
-arch/arm/plat-pxa/include/plat/i2c.h:39:*  7.  GCD      1 (Disables i2c unit response to general call messages as a slave)
-arch/mips/Kconfig:45:	select GCD
-drivers/staging/cxt1e1/musycc.h:35: * musycc reg&bits namings. Use PORTMAP_0 GCD grouping.
-drivers/i2c/busses/i2c-pxa.c:185:	PXA_BIT(ICR_GCD,    "GCD",	NULL),
-fs/jffs2/background.c:98:		/* Problem - immediately after bootup, the GCD spends a lot
-fs/jffs2/background.c:102:		 * doesn't help, either (presumably because userspace and GCD
-fs/jffs2/background.c:105:		 * This forces the GCD to slow the hell down.   Pulling an
-net/netfilter/ipvs/Kconfig:127:	select GCD
-sound/core/Kconfig:8:	select GCD
-===== GENERIC_HAS_IOMAP
-arch/score/Kconfig:16:	select GENERIC_HAS_IOMAP
-arch/score/Kconfig:22:	select GENERIC_HAS_IOMAP
-arch/score/Kconfig:28:	select GENERIC_HAS_IOMAP
-===== HAVE_READQ
-arch/x86/Kconfig:22:	select HAVE_READQ
-===== HAVE_WRITEQ
-arch/x86/Kconfig:23:	select HAVE_WRITEQ
-===== MACH_NEO1973
-arch/arm/mach-s3c2440/Kconfig:101:	select MACH_NEO1973
-===== MPC5121_ADS_CPLD
-arch/powerpc/platforms/512x/Kconfig:18:	select MPC5121_ADS_CPLD
-===== MSM_REMOTE_SPINLOCK_DEKKERS
-arch/arm/mach-msm/Kconfig:20:	select MSM_REMOTE_SPINLOCK_DEKKERS
-===== MSM_REMOTE_SPINLOCK_LDREX
-arch/arm/mach-msm/Kconfig:28:	select MSM_REMOTE_SPINLOCK_LDREX
-===== PPC_FSL_BOOK3E
-arch/powerpc/platforms/85xx/Kconfig:151:	select PPC_FSL_BOOK3E
-===== S3C2410_PWM
-arch/arm/mach-s3c2440/Kconfig:102:	select S3C2410_PWM
-arch/arm/mach-s3c2440/Kconfig:197:	select S3C2410_PWM
-===== S3C_DEVICE_NAND
-arch/arm/plat-s3c24xx/Kconfig:11:	select S3C_DEVICE_NAND
-===== SFFSDR_FPGA
-sound/soc/davinci/Kconfig:63:	select SFFSDR_FPGA
-===== SIBYTE_CFE
-arch/mips/sibyte/Kconfig:74:	select SIBYTE_CFE
-===== SPI_MASTER_OF
-drivers/spi/Kconfig:166:	select SPI_MASTER_OF
-===== USB_GADGET_S3C_HSOTG_PIO
-drivers/usb/gadget/Kconfig:297:	select USB_GADGET_S3C_HSOTG_PIO
-===== XEN_XENBUS_FRONTEND
-drivers/input/Kconfig:168:	select XEN_XENBUS_FRONTEND
-drivers/video/Kconfig:2135:	select XEN_XENBUS_FRONTEND
+  shrink_slab()
+
+                                lru_scanned        max_pass
+      basic_scan_objects = 4 x -------------  x -----------------------------
+                                lru_pages        shrinker->seeks (default:2)
+
+      scan_objects = min(basic_scan_objects, max_pass * 2)
+
+  shrink_icache_memory()
+
+                                          sysctl_vfs_cache_pressure
+      max_pass = inodes_stat.nr_unused x --------------------------
+                                                   100
 
 
-rday
+That said, higher sysctl_vfs_cache_pressure makes higher slab reclaim.
 
+
+In the other hand, your code: 
+  shrinker_add_scan()
+
+                           scanned          objects
+      scan_objects = 4 x -------------  x -----------  x SHRINK_FACTOR x SHRINK_FACTOR
+                           total            ratio
+
+  shrink_icache_memory()
+
+     ratio = DEFAULT_SEEKS * sysctl_vfs_cache_pressure / 100
+
+That said, higher sysctl_vfs_cache_pressure makes smaller slab reclaim.
+
+
+So, I guess following change honorly refrect your original intention.
+
+New calculation is, 
+
+  shrinker_add_scan()
+
+                       scanned          
+      scan_objects = -------------  x objects x ratio
+                        total            
+
+  shrink_icache_memory()
+
+     ratio = DEFAULT_SEEKS * sysctl_vfs_cache_pressure / 100
+
+This has the same behavior as upstream. because upstream's 4/shrinker->seeks = 2.
+also the above has DEFAULT_SEEKS = SHRINK_FACTORx2.
+
+
+
+===============
+o move 'ratio' from denominator to numerator
+o adapt kvm/mmu_shrink
+o SHRINK_FACTOR / 2 (default seek) x 4 (unknown shrink slab modifier)
+    -> (SHRINK_FACTOR*2) == DEFAULT_SEEKS
+
+---
+ arch/x86/kvm/mmu.c |    2 +-
+ mm/vmscan.c        |   10 ++--------
+ 2 files changed, 3 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index ae5a038..cea1e92 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2942,7 +2942,7 @@ static int mmu_shrink(struct shrinker *shrink,
+ 	}
+ 
+ 	shrinker_add_scan(&nr_to_scan, scanned, global, cache_count,
+-			DEFAULT_SEEKS*10);
++			DEFAULT_SEEKS/10);
+ 
+ done:
+ 	cache_count = shrinker_do_scan(&nr_to_scan, SHRINK_BATCH);
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 89b593e..2d8e9ab 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -208,14 +208,8 @@ void shrinker_add_scan(unsigned long *dst,
+ {
+ 	unsigned long long delta;
+ 
+-	/*
+-	 * The constant 4 comes from old code. Who knows why.
+-	 * This could all use a good tune up with some decent
+-	 * benchmarks and numbers.
+-	 */
+-	delta = (unsigned long long)scanned * objects
+-			* SHRINK_FACTOR * SHRINK_FACTOR * 4UL;
+-	do_div(delta, (ratio * total + 1));
++	delta = (unsigned long long)scanned * objects * ratio;
++	do_div(delta, total+ 1);
+ 
+ 	/*
+ 	 * Avoid risking looping forever due to too large nr value:
 -- 
+1.6.5.2
 
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
 
-        Top-notch, inexpensive online Linux/OSS/kernel courses
-                        http://crashcourse.ca
 
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+
