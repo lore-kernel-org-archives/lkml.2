@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab0GWXQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 19:16:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61301 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab0GWXQr (ORCPT
+	id S1753391Ab0GXAO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 20:14:56 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:33546 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751422Ab0GXAOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 19:16:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=NFpQSRLyD6i8HZHdWIu8GBeLh27jzudIzCd7NS58Y50EV+YYu91gHPe178Dk4fLUtR
-         VuYeCKDyGbyIwhbaWqCBVVKOK9/xHvQz83qUDdUqzXXcZ5dwYJ+vLIwvcu+RZ2umWlV0
-         D2ZgLAFqqi4p2tYdYM/FwsdVQVzyjkhvFqH5k=
-From: "Sergey V." <sftp.mtuci@gmail.com>
-To: dave.bueso@gmail.com
-Subject: Re: [RFC] [PATCH procfs] Add process age
-Date: Sat, 24 Jul 2010 03:16:30 +0400
-User-Agent: KMail/1.13.3 (Linux/2.6.33.6-rt; KDE/4.4.3; x86_64; ; )
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <1279907271.4335.3.camel@cowboy> <20100723183549.GA10518@x200> <1279910830.1851.5.camel@cowboy>
-In-Reply-To: <1279910830.1851.5.camel@cowboy>
+	Fri, 23 Jul 2010 20:14:54 -0400
+X-Sasl-enc: aRrETHpiRbuHSoxI29NZA84xqLRoPiT/NbsyqUipDJkb 1279930493
+Date: Fri, 23 Jul 2010 21:14:50 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jack Steiner <steiner@sgi.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] - Mapping ACPI tables as CACHED
+Message-ID: <20100724001449.GA9618@khazad-dum.debian.net>
+References: <20100722152220.GA18290@sgi.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007240316.30892.sftp.mtuci@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722152220.GA18290@sgi.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 23 of July 2010 22:47:10 Davidlohr Bueso wrote:
-> On Fri, 2010-07-23 at 21:35 +0300, Alexey Dobriyan wrote:
-> > On Fri, Jul 23, 2010 at 01:47:51PM -0400, Davidlohr Bueso wrote:
-> > > This patch exports a process's age, in seconds, adding a /proc/#/age 
-file.
-> > 
-> > What for?
+On Thu, 22 Jul 2010, Jack Steiner wrote:
+> Large SGI UV systems (3072p, 5TB) take a long time to boot. A significant
+> part of the boot time is scanning ACPI tables. ACPI tables on UV systems
+> are located in RAM memory that is physically attached to node 0.
 > 
-> I have not found any straight way to get the run time of a processes,
-> without having to interpret the start_time entry in /proc/#/stat and
-> manually subtract the uptime from it.
+> User programs (ex., acpidump) read the ACPI tables by mapping them thru
+> /dev/mem.  Although mmap tries to map the tables as CACHED, there are
+> existing kernel UNCACHED mapping that conflict and the tables end up as
+> being mapped UNCACHED.  (See the call to track_pfn_vma_new() in
+> remap_pfn_range()).
 
-Agree. I thing this feature can be useful in some cases.
+Well, as it was raised in this thread, ACPI tables are likely to be near RAM
+regions used for IPC with the firmware or SMBIOS, and we have no idea of the
+kind of crap that could happen if we enable caching on those areas.
 
-I have not found better than run something like this:
+OTOH, we *know* of systems that force us to copy the ACPI tables to regular
+RAM, otherwise, the utterly broken BIOS corrupts the ACPI tables after the
+kernel has loaded.
 
-echo `cat /proc/uptime | awk '{print $1}'` - \
-     `cat /proc/$PID/stat | awk '{print $22}'`/100 | bc
+Couldn't we simply always copy all tables to regular RAM and mark THAT as
+cacheable (since there will be no IPC regions in it)?  For the tables that
+are only used once, we can free the RAM later.
 
-> This small file simply aids the users to obtain the information easier
-> and quicker. Another alternative would be to add an entry
-> in /proc/#/status.
-> 
-> Davidlohr
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
