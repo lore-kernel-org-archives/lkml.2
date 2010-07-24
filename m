@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab0GXI5b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 04:57:31 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:44374 "EHLO mx01.d-labs.de"
+	id S1753759Ab0GXJF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 05:05:28 -0400
+Received: from mail.idngh.com ([41.204.36.5]:48309 "EHLO idngh.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751625Ab0GXI53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 04:57:29 -0400
-Date: Sat, 24 Jul 2010 10:57:17 +0200
-From: Florian Mickler <florian@mickler.org>
-To: florian@mickler.org
-Cc: linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix warning: us_to_pm_timer_ticks defined but not used
-Message-ID: <20100724105717.430d0ae6@schatten.dmk.lab>
-In-Reply-To: <1279900743-4733-1-git-send-email-florian@mickler.org>
-References: <1279900743-4733-1-git-send-email-florian@mickler.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752619Ab0GXJF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 05:05:26 -0400
+Message-ID: <20100724074838.2baw9d6syoggkcws@mail.idngh.com>
+Date: Sat, 24 Jul 2010 07:48:38 +0000
+From: "Mr.COOK ADAMS" <mrcookadamsinvestment4@gmail.com>
+To: undisclosed-recipients:;
+Subject: 
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+X-idngh-MailScanner-Information: Please contact the ISP for more information
+X-idngh-MailScanner-ID: 1OcZTS-0001nM-Le
+X-idngh-MailScanner: Found to be clean
+X-idngh-MailScanner-SpamCheck: not spam, SpamAssassin (cached, score=-0.155,
+	required 4, autolearn=disabled, ALL_TRUSTED -1.44,
+	MISSING_SUBJECT 1.28)
+X-idngh-MailScanner-From: mrcookadamsinvestment4@gmail.com
+Subject: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 17:59:02 +0200
-florian@mickler.org wrote:
 
-> Move it under the same ifdef as its sole caller is.
-> 
-> Signed-off-by: Florian Mickler <florian@mickler.org>
-> ---
->  drivers/acpi/processor_idle.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index b1b3856..8525070 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -80,10 +80,6 @@ module_param(nocst, uint, 0000);
->  static unsigned int latency_factor __read_mostly = 2;
->  module_param(latency_factor, uint, 0644);
->  
-> -static u64 us_to_pm_timer_ticks(s64 t)
-> -{
-> -	return div64_u64(t * PM_TIMER_FREQUENCY, 1000000);
-> -}
->  /*
->   * IBM ThinkPad R40e crashes mysteriously when going into C2 or C3.
->   * For now disable this. Probably a bug somewhere else.
-> @@ -685,6 +681,12 @@ static int acpi_processor_get_power_info(struct acpi_processor *pr)
->  }
->  
->  #ifdef CONFIG_ACPI_PROCFS
-> +
-> +static u64 us_to_pm_timer_ticks(s64 t)
-> +{
-> +	return div64_u64(t * PM_TIMER_FREQUENCY, 1000000);
-> +}
-> +
->  static int acpi_processor_power_seq_show(struct seq_file *seq, void *offset)
->  {
->  	struct acpi_processor *pr = seq->private;
 
-Ah, I just saw the Patch from KOSAKI Motohiro ([patch 1/2] acpi: fix
-unused function warning) to the same effect. 
-I should have checked the mailinglist before sending this :)
+I am Mr Cook Adams,I gives out loans at low interest rate of 3% to
+student,individuals,business men and woman with low credit all over
+the globe.Sound lending is base on the promise that the borrowers will
+repay.contact us via Email:mrcookadamsinvestment4@gmail.com
+Below are the loan Applications:
+*Applicant's Full Names:
+*Applicant's Contact Address:.
+*Phone No:
+*Country:
+*Age:
+*Marital Status:
+*Amount Required As Loan:
+*Proposed Terms/Duration Of Loan:
+*Annual Income:
+*Occupation:
 
-Sorry for the noise,
+Mode of Payment:
+* Payment by bank to bank transfer
+* Payment by bank certified check(courier
 
-Flo
+Mr.COOK ADAMS
+Managing Director.
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
+
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
