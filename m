@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab0GXOov (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 10:44:51 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:44631 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab0GXOot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 10:44:49 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Bob Tracy <rct@gherkin.frus.com>
-Cc: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org
-Subject: Re: [BUG] dm9601 driver won't init device properly
-In-Reply-To: Your message of "Fri, 23 Jul 2010 14:57:36 CDT."
-             <20100723195736.GA4321@gherkin.frus.com>
-From: Valdis.Kletnieks@vt.edu
-References: <20100723195736.GA4321@gherkin.frus.com>
+	id S1755047Ab0GXOpN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 10:45:13 -0400
+Received: from lo.gmane.org ([80.91.229.12]:39183 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754870Ab0GXOpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 10:45:11 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: Re: Introducing the LCD-Linux project
+Date: Sat, 24 Jul 2010 14:43:31 +0000 (UTC)
+Message-ID: <loom.20100724T155117-833@post.gmane.org>
+References: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com> <20100722122111.4cf4ca2f@lxorguk.ukuu.org.uk> <AANLkTilKJx18oyc815DhKfPv-Yjdv8UmfJ4WTDxZxaab@mail.gmail.com> <AANLkTimnxkn5eLRHOAs6v_TJE0hM5=dQ3OWaiQP6tPJd@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1279982681_3953P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Date: Sat, 24 Jul 2010 10:44:41 -0400
-Message-ID: <93420.1279982681@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020207.4C4AFC5A.0203,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 92.74.233.170 (Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.0.19) Gecko/2010033100 Iceweasel/3.0.6 (Debian-3.0.6-3))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1279982681_3953P
-Content-Type: text/plain; charset=us-ascii
+Hi,
 
-On Fri, 23 Jul 2010 14:57:36 CDT, Bob Tracy said:
-> I've got one of the inexpensive Davicom DM9601 USB to fast Ethernet
-> devices, commonly available on eBay for under $10 including shipping.
-> It works fairly well in a WinXP environment with a MTU of 1000: 1500
-> and 1492 are confirmed not working, and values between 1000 and 1492
-> have not been tested at this point.
+Mattia Jona-Lasinio <mattia.jona <at> gmail.com> writes:
+> Moreover I wanted something that COULD be used as a console but not
+> necessarily, that is
+> something that could run happily in the presence of a normal monitor
+> as well. It seems to me, but I may be
+> wrong, that through the standard console system only the current
+> visible console is actually updated
+> while other consoles are just "software" updated. An external LCD
+> would therefore be updated
+> only when you "switch" to it, so it would not be possible to use it to
+> display diagnostics.
 
-Wow. An "ethernet" card that won't do an MTU of 1500 even under Windows.  May I
-add this to my gallery of examples I use when people say "no vendor could
-*possibly* ship hardware that fscked up"? :)
+True, that's a general problem one has when multiple framebuffers exist.
+Therefore I'd be very happy if someone could come up with a general solution.
+The problem I see is as follows:
+If multiple framebuffers exist there is no finegrained control which
+applications draws to which framebuffer. Common practice seems to be to only
+draw from the application running in the active vt. But that's not always what
+is wanted so a little extension to the kernel deciding whether an application
+may or may not draw would be helpful (of course such a thing would require
+changes in userspace as well for applications that directly access the
+framebuffer).
+
+Example:
+Having two framebuffers (fb0, fb1) and three applications (a0, a1, a2) where a0
+wants to draw to fb0, a1 to fb1 and a2 to fb0 & fb1.
+At first only a0 is running so only fb0 is used. You than start a1:
+current: only fb1 is updated by a1
+desired (?): fb0 is updated by a0 and fb1 is updated by a1
+After you start a2
+current = desired: fb0 & fb1 are updated by fb2
+You than switch back to a0:
+current: only fb0 is updated by a0
+desired (?): fb0 is updated by a0 and fb1 is updated by a2
+
+At least that's how I see the problem. So what must a solution provide:
+- keep the old interface consistent to not break old applications
+- avoid race-conditions while providing direct graphic access
+So for each applications that does not know about this interface it has to
+behave as if this application draws to all framebuffers. But if the active
+application knows it it can allow the last application updating the "unused"
+framebuffers as long as the current application does not request access to it.
+But I'm unsure how to implement a clean, race-free and efficient solution.
+
+Any suggestions?
 
 
---==_Exmh_1279982681_3953P
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMSvxZcC3lWbTT17ARAtqfAJ46dE663dJ8GlPy6eROzqDk1f1wFwCg0SXR
-DwzKDSP9yrzniqb3o54e8/8=
-=P9l9
------END PGP SIGNATURE-----
-
---==_Exmh_1279982681_3953P--
+Florian Tobias Schandinat
 
