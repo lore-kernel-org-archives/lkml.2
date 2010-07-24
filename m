@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab0GXIq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 04:46:27 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47502 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab0GXIqZ (ORCPT
+	id S1753625Ab0GXIvX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 04:51:23 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36116 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab0GXIvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 04:46:25 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
-Subject: [PATCH 2/2] vmscan: change shrink_slab() return tyep with void
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100724174038.3C96.A69D9226@jp.fujitsu.com>
-References: <20100722190100.GA22269@amd> <20100724174038.3C96.A69D9226@jp.fujitsu.com>
-Message-Id: <20100724174455.3C9C.A69D9226@jp.fujitsu.com>
+	Sat, 24 Jul 2010 04:51:21 -0400
+Date: Sat, 24 Jul 2010 10:51:12 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
+        linux-kernel@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 06/11] ARM: omap: move omapfb_reserve_sdram() to
+	.init.text
+Message-ID: <20100724085112.GA694@pengutronix.de>
+References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de> <1279915120-4373-6-git-send-email-u.kleine-koenig@pengutronix.de> <20100723211535.GD750@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sat, 24 Jul 2010 17:46:23 +0900 (JST)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100723211535.GD750@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, no caller use the return value of shrink_slab(). Thus we can change
-it with void.
+On Fri, Jul 23, 2010 at 10:15:35PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Jul 23, 2010 at 09:58:29PM +0200, Uwe Kleine-König wrote:
+> > omapfb_reserve_sdram() is only called by omap1_map_common_io() and
+> > _omap2_map_common_io() that both live in .init.text.  So this is save
+> > for omapfb_reserve_sdram(), too.
+> 
+> NAK.  This clashes with the memblock stuff.
+OK, I will recheck after .36-rc1.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmscan.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+Thanks
+Uwe
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index bfa1975..89b593e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -277,24 +277,23 @@ EXPORT_SYMBOL(shrinker_do_scan);
-  *
-  * Returns the number of slab objects which we shrunk.
-  */
--static unsigned long shrink_slab(struct zone *zone, unsigned long scanned, unsigned long total,
-+static void shrink_slab(struct zone *zone, unsigned long scanned, unsigned long total,
- 			unsigned long global, gfp_t gfp_mask)
- {
- 	struct shrinker *shrinker;
--	unsigned long ret = 0;
- 
- 	if (scanned == 0)
- 		scanned = SWAP_CLUSTER_MAX;
- 
- 	if (!down_read_trylock(&shrinker_rwsem))
--		return 1;	/* Assume we'll be able to shrink next time */
-+		return;
- 
- 	list_for_each_entry(shrinker, &shrinker_list, list) {
- 		(*shrinker->shrink)(shrinker, zone, scanned,
- 					total, global, gfp_mask);
- 	}
- 	up_read(&shrinker_rwsem);
--	return ret;
-+	return;
- }
- 
- void shrink_all_slab(void)
 -- 
-1.6.5.2
-
-
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
