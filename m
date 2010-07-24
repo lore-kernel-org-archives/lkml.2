@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab0GXApw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 20:45:52 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:48803 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab0GXApv (ORCPT
+	id S1756902Ab0GXBEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 21:04:12 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:54297 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756489Ab0GXBEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 20:45:51 -0400
-Date: Sat, 24 Jul 2010 01:45:32 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Jack Steiner <steiner@sgi.com>, mingo@elte.hu, tglx@linutronix.de,
-        lenb@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-Message-ID: <20100724004532.GA9240@srcf.ucam.org>
-References: <20100722152220.GA18290@sgi.com> <20100724001449.GA9618@khazad-dum.debian.net>
+	Fri, 23 Jul 2010 21:04:10 -0400
+Date: Sat, 24 Jul 2010 11:03:59 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: Gennadiy Nerubayev <parakie@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100724010358.GO32635@dastard>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <1275398876.21962.6.camel@mulgrave.site>
+ <4C078FE2.9000804@vlnb.net>
+ <AANLkTinnrsFZ=nkX4QpG2eKOk05uNe5HpV-pP3kd7OF=@mail.gmail.com>
+ <4C49EA91.3060908@vlnb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100724001449.GA9618@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4C49EA91.3060908@vlnb.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 09:14:50PM -0300, Henrique de Moraes Holschuh wrote:
-> Well, as it was raised in this thread, ACPI tables are likely to be near RAM
-> regions used for IPC with the firmware or SMBIOS, and we have no idea of the
-> kind of crap that could happen if we enable caching on those areas.
-> 
-> OTOH, we *know* of systems that force us to copy the ACPI tables to regular
-> RAM, otherwise, the utterly broken BIOS corrupts the ACPI tables after the
-> kernel has loaded.
->
-> Couldn't we simply always copy all tables to regular RAM and mark THAT as
-> cacheable (since there will be no IPC regions in it)?  For the tables that
-> are only used once, we can free the RAM later.
+On Fri, Jul 23, 2010 at 11:16:33PM +0400, Vladislav Bolkhovitin wrote:
+> It would be great if you prove or disprove our suspicions that Linux
+> can produce several write requests for the same blocks
+> simultaneously. To be sure we need:
 
-I think this is reasonable. There's an argument that we shouldn't cache 
-operation regions that may be sitting next to the ACPI tables, but I 
-can't see any problems being caused by copying the tables to RAM.
+Just use direct IO. Case in point is the concurrent sub-block
+AIO-DIO data corruption we're chasing on XFS and ext4 at the moment
+where we have two concurrent unaligned write IOs to the same
+filesystem block:
 
+http://oss.sgi.com/archives/xfs/2010-07/msg00278.html
+
+Cheers,
+
+Dave.
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Dave Chinner
+david@fromorbit.com
