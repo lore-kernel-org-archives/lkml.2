@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab0GXTVU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 15:21:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755852Ab0GXTVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 15:21:16 -0400
-Date: Sat, 24 Jul 2010 22:14:47 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
- per-vhost kthread
-Message-ID: <20100724191447.GA4972@redhat.com>
-References: <4BFFE742.2060205@kernel.org>
- <20100530112925.GB27611@redhat.com>
- <4C02C961.9050606@kernel.org>
- <20100531152221.GB2987@redhat.com>
- <4C03D983.9010905@kernel.org>
- <20100531160020.GC3067@redhat.com>
- <4C04D41B.4050704@kernel.org>
- <4C06A580.9060300@kernel.org>
- <20100722155840.GA1743@redhat.com>
- <4C48B664.9000109@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756650Ab0GXU7Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 16:59:16 -0400
+Received: from outbound3.messaging.lotuslive.com ([8.12.152.112]:47084 "EHLO
+	outbound3-nonen.messaging.lotuslive.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756324Ab0GXU7N convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 16:59:13 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Jul 2010 16:59:13 EDT
 Content-Disposition: inline
-In-Reply-To: <4C48B664.9000109@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+From: "teddy williams" <teddyassociates12@operamail.com>
+Date: Sat, 24 Jul 2010 21:54:07 +0100
+Subject: ATTENTION:READ THIS CAREFULLY!!
+X-Originating-Ip: 77.209.2.221
+X-Originating-Server: c-in3ws--03-04.sv2.lotusliveops.com
+X-Ob-Auth: teddyassociates12:operamail.com@operamail.com
+Message-Id: <20100724205407.8B2911F6904@c-in3ws--03-04.sv2.lotuslive.com>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 11:21:40PM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 07/22/2010 05:58 PM, Michael S. Tsirkin wrote:
-> > All the tricky barrier pairing made me uncomfortable.  So I came up with
-> > this on top (untested): if we do all operations under the spinlock, we
-> > can get by without barriers and atomics.  And since we need the lock for
-> > list operations anyway, this should have no paerformance impact.
-> > 
-> > What do you think?
-> 
-> I've created kthread_worker in wq#for-next tree and already converted
-> ivtv to use it.  Once this lands in mainline, I think converting vhost
-> to use it would be better choice.  kthread worker code uses basically
-> the same logic used in the vhost_workqueue code but is better
-> organized and documented.  So, I think it would be better to stick
-> with the original implementation, as otherwise we're likely to just
-> decrease test coverage without much gain.
-> 
->   http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=b56c0d8937e665a27d90517ee7a746d0aa05af46;hp=53c5f5ba42c194cb13dd3083ed425f2c5b1ec439
-
-Sure, if we keep using workqueue. But I'd like to investigate this
-direction a bit more because there's discussion to switching from kthread to
-regular threads altogether.
-
-> > @@ -151,37 +161,37 @@ static void vhost_vq_reset(struct vhost_dev *dev,
-> >  static int vhost_worker(void *data)
-> >  {
-> >  	struct vhost_dev *dev = data;
-> > -	struct vhost_work *work;
-> > +	struct vhost_work *work = NULL;
-> >  
-> > -repeat:
-> > -	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
-> > +	for (;;) {
-> > +		set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
-> >  
-> > -	if (kthread_should_stop()) {
-> > -		__set_current_state(TASK_RUNNING);
-> > -		return 0;
-> > -	}
-> > +		if (kthread_should_stop()) {
-> > +			__set_current_state(TASK_RUNNING);
-> > +			return 0;
-> > +		}
-> >  
-> > -	work = NULL;
-> > -	spin_lock_irq(&dev->work_lock);
-> > -	if (!list_empty(&dev->work_list)) {
-> > -		work = list_first_entry(&dev->work_list,
-> > -					struct vhost_work, node);
-> > -		list_del_init(&work->node);
-> > -	}
-> > -	spin_unlock_irq(&dev->work_lock);
-> > +		spin_lock_irq(&dev->work_lock);
-> > +		if (work) {
-> > +			work->done_seq = work->queue_seq;
-> > +			if (work->flushing)
-> > +				wake_up_all(&work->done);
-> 
-> I don't think doing this before executing the function is correct,
-
-Well, before I execute the function work is NULL, so this is skipped.
-Correct?
-
-> so
-> you'll have to release the lock, execute the function, regrab the lock
-> and then do the flush processing.
-> 
-> Thanks.
-
-It's done in the loop, so I thought we can reuse the locking
-done for the sake of processing the next work item.
-Makes sense?
+Attention: 
 
 
-> -- 
-> tejun
+On behalf of the Trustees and Executor of the estate of Late Eng. Jüîrgen Krüîgger. I once again try to notify you as my earlier letter was
+returned undelivered. I hereby attempt to reach you again by this same email address on the WILL. I wish to notify you  that late Eng. Jürgen 
+Krügger made you a beneficiary to his WILL. He left the sum of Thirty Million, One Hundred Thousand Dollars (USD$30, 100.000.00) to you in
+the Codicil and last testament to his WILL.
+
+
+This may sound strange and unbelievable to you, but it is real and true. Being a widely traveled man, he must have been in contact with
+you in the past or simply you were nominated to him by one of his numerous friends abroad who wished you good. Eng. Jürgen Krügger until his
+death was a member of the Helicopter Society and the Institute of Electronic &  Electrical Engineers. He was a very dedicated Christian who loved to
+give out. His great philanthropy earned him numerous awards during hislife time. Late Engr. Jurgen Krugger died on the 13th day of December,
+2004 at the age  of 80 years, and his WILL is now ready for execution.According to him this money is to support your humanitarian activities
+and to help the poor and the needy in our society. Please if I reachyou as I am hopeful, endeavor to get back to me as soon as possible to
+enable me conclude my job. I hope to hear from you in no distant time.Note:You are advise to contact me with my personal email 
+address:teddy.chambers2009@yahoo.com.hk 
+
+I await your prompt response.
+Yours in Service,
+
+
+BARRISTER TEDDY WILLIAMS ESQ.PRINCIPAL PARTNERS: Barrister Aidan Walsh.Esq Markus Wolfgang,Smith Esq 
+
+Tel+34-603-131-235 
+Fax:+34-911-414-351
+E-mail:teddy.chambers2009@yahoo.com.hk 
+
+
+-- 
+_______________________________________________
+Surf the Web in a faster, safer and easier way:
+Download Opera 9 at http://www.opera.com
+
