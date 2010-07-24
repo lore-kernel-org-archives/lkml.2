@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab0GXOPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 10:15:10 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:35752 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272Ab0GXOPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 10:15:07 -0400
-Date: Sat, 24 Jul 2010 19:45:00 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Greg KH <gregkh@suse.de>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Jan Safranek <jsafrane@redhat.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-Message-ID: <20100724141500.GO14369@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100722182638.GA12712@kroah.com>
- <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
- <20100722183614.GA5443@suse.de>
- <20100722193741.GA2688@redhat.com>
- <20100722211856.GA1297@suse.de>
- <20100722212634.GC2688@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100722212634.GC2688@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754242Ab0GXOnW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 10:43:22 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:44567 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab0GXOnV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 10:43:21 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: CAI Qian <caiqian@redhat.com>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH 0/8] zcache: page cache compression support
+In-Reply-To: Your message of "Fri, 23 Jul 2010 14:02:16 EDT."
+             <1507379750.1116011279908136772.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1507379750.1116011279908136772.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1279982510_3953P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Sat, 24 Jul 2010 10:41:50 -0400
+Message-ID: <93365.1279982510@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020205.4C4AFBB0.011B,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Vivek Goyal <vgoyal@redhat.com> [2010-07-22 17:26:34]:
+--==_Exmh_1279982510_3953P
+Content-Type: text/plain; charset=us-ascii
 
-> On Thu, Jul 22, 2010 at 02:18:56PM -0700, Greg KH wrote:
-> > On Thu, Jul 22, 2010 at 03:37:41PM -0400, Vivek Goyal wrote:
-> > > On Thu, Jul 22, 2010 at 11:36:15AM -0700, Greg KH wrote:
-> > > > On Thu, Jul 22, 2010 at 11:31:07AM -0700, Paul Menage wrote:
-> > > > > On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
-> > > > > > We really shouldn't be asking userspace to create new root filesystems.
-> > > > > > So follow along with all of the other in-kernel filesystems, and provide
-> > > > > > a mount point in sysfs.
-> > > > > >
-> > > > > > For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
-> > > > > > that mount point when the cgroup filesystem is registered in the kernel.
-> > > > > 
-> > > > > But cgroups will typically have multiple mounts, with different
-> > > > > resource controllers/options on each mount. That doesn't really fit in
-> > > > > with this scheme.
-> > > > 
-> > > > Really?  I see systems mounting it at /cgroups/ in the filesystem today.
-> > > > Where are you expecting it to be mounted at?
-> > > > 
-> > > 
-> > > Greg,
-> > > 
-> > > [CCing few more folks who might be interested in this dicussion ]
-> > > 
-> > > We do want to retain facility to mount different controllers at different
-> > > mount points. We were discussing the other day that in libvirt we might
-> > > want to mount block IO controller and network controller separately as
-> > > by default we will not put a new virtual machine in a cgroup of its own
-> > > because of the penatly involved.
-> > 
-> > That's fine, I'm not changing that ability at all.  We just need a
-> > "default" mount point for "normal" users.
-> > 
-> > > For other controllers like cpu, memory etc, libvirt automatically puts
-> > > each new virtual machine in a cgroup of own. So this is one use case
-> > > where we might want to mount different controllers at different mount
-> > > points.
-> > > 
-> > > For my testing I now always use /cgroup/ and create directories under it
-> > > /cgroup/blkio /cgroup/cpu etc and mount controllers on respective
-> > > directories.
-> > 
-> > Lennart and Kay, is this what systemd is doing?  I really don't think we
-> > should be adding a root /cgroup/ mount point to the system for something
-> > like this.
-> > 
-> > Maybe /dev/cgroup/ is better to use, as that way users can create
-> > sub-mount points easier.  They can't do that in /sys/fs/cgroup/
-> 
-> The only problem with /dev/cgroup seems to be that it seems little
-> unintutive. To me, we have devices under /dev/ dir and cgroups are not
-> devices.
-> 
-> I think people have floated similar threads in the past on lkml with
-> various opinions and everybody had their own choices but nothing was
-> conclusive. 
-> 
-> Polluting / definitely sounds odd but it does not look that bad once
-> we can't find any other good choices.
->
+On Fri, 23 Jul 2010 14:02:16 EDT, CAI Qian said:
+> Ignore me. The test case should not be using mlockall()!
 
-I think it breaks the filesystem hierarchy standard and I've seen
-bugzilla's around it. I'd prefer /sys/fs/cgroup. 
+I'm confused. I don't see any mlockall() call in the usemem.c you posted? Or
+was what you posted not what you actually ran?
 
--- 
-	Three Cheers,
-	Balbir
+
+--==_Exmh_1279982510_3953P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMSvuucC3lWbTT17ARAseaAJ4gxpD4bi6+Z3dxvD3HUlTZsmEf2wCeLeQ3
+CUr9ficK5W80YcjwJPStvlQ=
+=4r0W
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1279982510_3953P--
+
