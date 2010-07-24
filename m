@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab0GXSX7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 14:23:59 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42124 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153Ab0GXSX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 14:23:57 -0400
-Date: Sat, 24 Jul 2010 19:23:56 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: check capabilities in open()
-Message-ID: <20100724182355.GA9134@ZenIV.linux.org.uk>
-References: <20100724160701.GA4907@albatros>
+	id S1755468Ab0GXSqS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 14:46:18 -0400
+Received: from snt0-omc3-s1.snt0.hotmail.com ([65.55.90.140]:29058 "EHLO
+	snt0-omc3-s1.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754368Ab0GXSqO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 14:46:14 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Jul 2010 14:46:14 EDT
+Message-ID: <SNT125-W4469FAC3FE110BB4882949C3A40@phx.gbl>
+X-Originating-IP: [96.253.143.208]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <tj@kernel.org>, <jeff@garzik.org>, <ben.collins@ubuntu.com>,
+        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <hmh@debian.org>
+Subject: RE: support for drives larger than 2TiB
+Date: Sat, 24 Jul 2010 11:40:02 -0700
+Importance: Normal
+In-Reply-To: <4C4AB952.9030705@kernel.org>
+References: <4C4AB952.9030705@kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100724160701.GA4907@albatros>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-OriginalArrivalTime: 24 Jul 2010 18:40:02.0272 (UTC) FILETIME=[A05FEE00:01CB2B5F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 24, 2010 at 08:07:01PM +0400, Vasiliy Kulikov wrote:
-> Hi,
-> 
-> I've found that some drivers check process capabilities via capable() in
-> open(), not in ioctl()/write()/etc.
-> 
-> I cannot find answer in POSIX, but IMO process expects that file
-> descriptors of priviledged user and file descriptors of the same
-> file/device are the same in priviledge aspect. Driver should deny/allow
-> open() and deny/allow ioctl() based on user priviledges. The path how
-> the process gained this fd doesn't matter.
-> 
-> So I think these 2 examples should be equal:
-> 
-> 1) root process opened the file and then dropped its priviledges
-> 
-> 2) nonroot process opened the file
 
-They most certainly should _not_.  Consider the following mechanism:
-	process A authenticates itself to process B
-	B is convinced to open a file that wouldn't be readable for A.
-	B passes descriptor to A.
-	A reads from it.
-You are breaking that.
+> However, 2TiB limit is
+> inherent in the BIOS programming interface and currently the only way
+> to overcome it is using a completely different BIOS interface (EFI,
+> that is).
+Nope, look at the Int13 extensions, it already support 64-bit LBA.
+
+Yuhong Bao
+ 		 	   		  
+_________________________________________________________________
+The New Busy is not the too busy. Combine all your e-mail accounts with Hotmail.
+http://www.windowslive.com/campaign/thenewbusy?tile=multiaccount&ocid=PID28326::T:WLMTAGL:ON:WL:en-US:WM_HMP:042010_4
