@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab0GXIG1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 04:06:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:63632 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab0GXIGU (ORCPT
+	id S1752902Ab0GXIGZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 04:06:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53656 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752008Ab0GXIGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 04:06:20 -0400
-Date: Sat, 24 Jul 2010 10:06:13 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, nauman@google.com,
-        dpshah@google.com, guijianfeng@cn.fujitsu.com, jmoyer@redhat.com,
-        czoccolo@gmail.com
-Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
- group_idle tunable
-Message-ID: <20100724080613.GA6554@fancy-poultry.org>
-References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
- <20100723140343.GA8478@fancy-poultry.org>
- <20100723141303.GB13104@redhat.com>
- <20100723145631.GA8844@fancy-poultry.org>
- <20100723183720.GD13104@redhat.com>
+	Sat, 24 Jul 2010 04:06:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=OgQBC+A7cpIT9iZeKmXSDIpSkqCt/wGao8gLIK7ejwV26+svG1RYdK+UvW/Hbw4mZ5
+         RljpSioE/MWS/OskyYhXxyMdqj23ofbfSTqLeg8/7NfOHVRDJpqjwiNwMiQksVYqp6zM
+         SF/ql7zdEcPHK55lDD4bU0X+QTn2kObGV2kWg=
+Message-ID: <4C4A9EF8.6030409@gmail.com>
+Date: Sat, 24 Jul 2010 10:06:16 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100723183720.GD13104@redhat.com>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
-X-Provags-ID: V02:K0:N/sDTPK2gI0x0CQnGJauEko1wgo3318ohtbiODwyCrp
- rsXXrYvZP0BAYNVwwGE3Wf5hL8q/ZRoLAqzC1HFKzvu7dcCXkv
- ZPhGg32rolMN86a3+EzIQTykoXn8isaZwbbx92IICE/CdsrNEM
- MOyj2PA5fYq7JUpwePlDew6rcZ5quyZTyTuFh5SeKBBG0e2xwd
- 8bWonotAyXuxkn3JdQ6Fg==
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Michal Marek <mmarek@suse.cz>, Greg KH <greg@kroah.com>
+Subject: Re: Linux 2.6.35-rc6
+References: <AANLkTinJe-oHpgQqnTPQyKUtmKhg2oUJmylkBPALuzGh@mail.gmail.com> <20100723112142.f698394e.sfr@canb.auug.org.au>
+In-Reply-To: <20100723112142.f698394e.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.07.2010, Vivek Goyal wrote: 
+On 07/23/2010 03:21 AM, Stephen Rothwell wrote:
+> On Thu, 22 Jul 2010 12:26:13 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>
+>  I actually hope/think that this is going to be the last -rc. Things
+>> have been pretty quiet, and while this -rc has more commits than -rc5
+>> had, it's not by a large amount, nor does it look scary to me. So
+>> there doesn't seem to be any point in dragging out the release any
+>> more, unless we find something new that calls for it.
+> 
+> I have no idea how important this stuff is, but I still have the
+> following in linux-next that are (in theory) destined for v2.6.35:
 
-> Anyway, for fs_mark problem, can you give following patch a try.
-> https://patchwork.kernel.org/patch/113061/
+Hi, and probably this one as well (introduced in rc1):
+http://lkml.org/lkml/2010/7/9/287
 
-Ported it to 2.6.35-rc6, and these are my results using the same fs_mark
-call as before:
+Tim Gardner
+  i915: Use the correct mask to detect i830 aperture size.
 
-slice_idle = 0
-
-FSUse%        Count         Size    Files/sec     App Overhead
-    28         1000        65536        241.6            39574
-    28         2000        65536        231.1            39939
-    28         3000        65536        230.4            39722
-    28         4000        65536        243.2            39646
-    28         5000        65536        227.0            39892
-    28         6000        65536        224.1            39555
-    28         7000        65536        228.2            39761
-    28         8000        65536        235.3            39766
-    28         9000        65536        237.3            40518
-    28        10000        65536        225.7            39861
-    28        11000        65536        227.2            39441
-
-
-slice_idle = 8
-
-FSUse%        Count         Size    Files/sec     App Overhead
-    28         1000        65536        502.2            30545
-    28         2000        65536        407.6            29406
-    28         3000        65536        381.8            30152
-    28         4000        65536        438.1            30038
-    28         5000        65536        447.5            30477
-    28         6000        65536        422.0            29610
-    28         7000        65536        383.1            30327
-    28         8000        65536        415.3            30102
-    28         9000        65536        397.6            31013
-    28        10000        65536        401.4            29201
-    28        11000        65536        408.8            29720
-    28        12000        65536        391.2            29157
-
-Huh...there's quite a difference! It's definitely the slice_idle settings
-which affect the results here. Besides, this patch gives noticeably bad
-desktop interactivity on my system.
-
-Don't know if this is related, but I'm not quite shure if XFS (which I use
-exclusively) uses the jbd/jbd2 journaling layer at all.
-
-Thanks,
-Heinz.
+-- 
+js
