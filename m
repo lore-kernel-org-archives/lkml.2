@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab0GXMFK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 08:05:10 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49298 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab0GXMFI convert rfc822-to-8bit (ORCPT
+	id S1755508Ab0GXMSf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 08:18:35 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:47275 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab0GXMSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 08:05:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Y3f+aDQ2EI8DjjyZQtkiAMm9xVSmP1UonkpUYOMCul75gzH80/p+RYNnuPa7rxvChP
-         l7c+ytiM9EtnIfeCC3Al3gZWuBJ9RpmsRvLJwOzuaANf3m4pbPoY9IEnrwD7LmOc3QI+
-         9bj6DdHF+ZPUD87dGqLDdjkbXpKiw0q5+BUzo=
+	Sat, 24 Jul 2010 08:18:33 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C4ADA02.1050704@s5r6.in-berlin.de>
+Date: Sat, 24 Jul 2010 14:18:10 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-In-Reply-To: <20100724174405.3C99.A69D9226@jp.fujitsu.com>
-References: <20100722190100.GA22269@amd>
-	<20100724174038.3C96.A69D9226@jp.fujitsu.com>
-	<20100724174405.3C99.A69D9226@jp.fujitsu.com>
-Date: Sat, 24 Jul 2010 21:05:05 +0900
-X-Google-Sender-Auth: OQ-e6yS5dAudwLYzmNZVHpoJOTI
-Message-ID: <AANLkTimno0L3_6VmF11XavxLpQ1BibQ=kZUzFyF7axdb@mail.gmail.com>
-Subject: Re: [PATCH 1/2] vmscan: shrink_all_slab() use reclaim_state instead 
-	the return value of shrink_slab()
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
-Cc: kosaki.motohiro@jp.fujitsu.com
+To: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
+CC: Jay Fenlason <fenlason@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux1394-devel@lists.sourceforge.net
+Subject: Re: 2.6.35-rc6 to 2.6.32.16: JuJu firewire issues
+References: <4C49A291.20001@ribosome.natur.cuni.cz> <20100723180807.GA32319@redhat.com> <4C49E1A2.7050606@ribosome.natur.cuni.cz> <4C4A074D.4050305@s5r6.in-berlin.de> <4C4A9DD8.9080200@s5r6.in-berlin.de> <4C4AD65D.5090008@ribosome.natur.cuni.cz>
+In-Reply-To: <4C4AD65D.5090008@ribosome.natur.cuni.cz>
+X-Enigmail-Version: 0.96.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/24 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
-> Now, shrink_slab() doesn't return number of reclaimed objects. IOW,
-> current shrink_all_slab() is broken. Thus instead we use reclaim_state
-> to detect no reclaimable slab objects.
->
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |   20 +++++++++-----------
->  1 files changed, 9 insertions(+), 11 deletions(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index d7256e0..bfa1975 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -300,18 +300,16 @@ static unsigned long shrink_slab(struct zone *zone, unsigned long scanned, unsig
->  void shrink_all_slab(void)
->  {
->        struct zone *zone;
-> -       unsigned long nr;
-> +       struct reclaim_state reclaim_state;
->
-> -again:
-> -       nr = 0;
-> -       for_each_zone(zone)
-> -               nr += shrink_slab(zone, 1, 1, 1, GFP_KERNEL);
-> -       /*
-> -        * If we reclaimed less than 10 objects, might as well call
-> -        * it a day. Nothing special about the number 10.
-> -        */
-> -       if (nr >= 10)
-> -               goto again;
-> +       current->reclaim_state = &reclaim_state;
-> +       do {
-> +               reclaim_state.reclaimed_slab = 0;
-> +               for_each_zone(zone)
+Martin Mokrejs wrote:
+>   I tried in the morning to connect the IcyBox to this laptops internal
+> Ricoh Co Ltd R5C552 IEEE 1394 Controller but had issues to power-up the drive
+> at all. Not even using USB hub to supply power to it. I connected it to
+> the ricoh chip via a 6 to 4 pin cable but also tried the not very good
+> Kouwell 7004 PCMCIA card (which does not supply enough power unless I
+> buy external, optional power supply of unknown specs and plug it into the
+> PCMCIA card).
 
-Oops, this should be for_each_populated_zone().
+FireWire CardBus cards do not (or more precisely, must not) provide bus
+power at all, unless if they have a power input port and a fitting PSU
+is connected to it.  If a CardBus card puts power onto the FireWire bus
+without any extra PSU connected, then this card is miswired and not spec
+compliant.  A FireWire bus power provider is required to be able to
+deliver 1.5 A current or more, at 8 V or more.  That can't be done via
+CardBus.
 
+4-pin FireWire ports OTOH do not provide bus power of course; they lack
+the respective pins.
 
-> +                       shrink_slab(zone, 1, 1, 1, GFP_KERNEL);
-> +       } while (reclaim_state.reclaimed_slab);
-> +
-> +       current->reclaim_state = NULL;
->  }
->
->  static inline int is_page_cache_freeable(struct page *page)
-> --
-> 1.6.5.2
->
->
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+Some FireWire disk enclosures can optionally be powered via USB, but we
+all know how unreliable USB bus power is.  Prefer either a dedicated PSU
+or regular FireWire bus power.
+-- 
+Stefan Richter
+-=====-==-=- -=== ==---
+http://arcgraph.de/sr/
