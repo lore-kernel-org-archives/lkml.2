@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab0GXIvX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 04:51:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36116 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab0GXIvV (ORCPT
+	id S1754125Ab0GXIvj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 04:51:39 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52165 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab0GXIvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 04:51:21 -0400
-Date: Sat, 24 Jul 2010 10:51:12 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
-        linux-kernel@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 06/11] ARM: omap: move omapfb_reserve_sdram() to
-	.init.text
-Message-ID: <20100724085112.GA694@pengutronix.de>
-References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de> <1279915120-4373-6-git-send-email-u.kleine-koenig@pengutronix.de> <20100723211535.GD750@n2100.arm.linux.org.uk>
+	Sat, 24 Jul 2010 04:51:37 -0400
+Date: Sat, 24 Jul 2010 04:51:35 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, nauman@google.com, dpshah@google.com,
+        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com, czoccolo@gmail.com
+Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle
+ tunable V3
+Message-ID: <20100724085135.GB32006@infradead.org>
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+ <20100722055602.GA18566@infradead.org>
+ <20100722140044.GA28684@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100723211535.GD750@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20100722140044.GA28684@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 10:15:35PM +0100, Russell King - ARM Linux wrote:
-> On Fri, Jul 23, 2010 at 09:58:29PM +0200, Uwe Kleine-König wrote:
-> > omapfb_reserve_sdram() is only called by omap1_map_common_io() and
-> > _omap2_map_common_io() that both live in .init.text.  So this is save
-> > for omapfb_reserve_sdram(), too.
-> 
-> NAK.  This clashes with the memblock stuff.
-OK, I will recheck after .36-rc1.
+To me this sounds like slice_idle=0 is the right default then, as it
+gives useful behaviour for all systems linux runs on.  Setups with
+more than a few spindles are for sure more common than setups making
+use of cgroups.  Especially given that cgroups are more of a high end
+feature you'd rarely use on a single SATA spindle anyway.  So setting
+a paramter to make this useful sounds like the much better option.
 
-Thanks
-Uwe
+Especially given that the block cgroup code doesn't work particularly
+well in presence of barriers, which are on for any kind of real life
+production setup anyway.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
