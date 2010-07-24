@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab0GXJwt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 05:52:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53100 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0GXJws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 05:52:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=tO3dzl9E6BFfKim9t8aSWdovz7SN1kPzAE04lTNMBxcUTwchYhk1VvUfQeiCPW3gjw
-         v/oOVlhBjDS1creeLNX3f/xYA5WzXlxG3zXf91TNDPFjg0GmvE7Wm0NJgFcfsqe06pLl
-         jum+iLnZw/WZrB1uJ7QBCkJR0KvsqugVl3oOI=
+	id S1753775Ab0GXJ7L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 05:59:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50777 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606Ab0GXJ7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 05:59:09 -0400
+Message-ID: <4C4AB952.9030705@kernel.org>
+Date: Sat, 24 Jul 2010 11:58:42 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinxNlCSBqBggTIlVqyyn4NLy4LbZU8SFAlqPLow@mail.gmail.com>
-References: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com>
-	<AANLkTinxNlCSBqBggTIlVqyyn4NLy4LbZU8SFAlqPLow@mail.gmail.com>
-Date: Sat, 24 Jul 2010 11:52:47 +0200
-Message-ID: <AANLkTi=PkFZTuEujN4X8hJR-5YZf1Kz=9DW-XUFrPY0m@mail.gmail.com>
-Subject: Re: Introducing the LCD-Linux project
-From: Mattia Jona-Lasinio <mattia.jona@gmail.com>
-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <triad@df.lth.se>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>, ivan.kuten@promwad.com,
-        lcd-linux-users@lists.sourceforge.net,
-        Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
+To: Jeff Garzik <jeff@garzik.org>, ben.collins@ubuntu.com,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, hmh@debian.org
+Subject: support for drives larger than 2TiB
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 24 Jul 2010 09:58:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 9:19 PM, Miguel Ojeda
-<miguel.ojeda.sandonis@gmail.com> wrote:
-> Someone told me once ago, when I submitted the cfag12864b/ks0108
-> drivers, to make them use a framebuffer, so we could get a console on
-> it using a program like con2fb program in an independent manner. It
-> worked flawlessly and the console was quite usable!
->
-> I see that you want to implement something more complex, but maybe
-> someone/you can make a use of that idea. Check it out : )
+Hello,
 
-Hi,
+I've been playing with a SATA 2.5T drive and things don't look too
+bad.  All four controllers I've tested worked fine and the driver and
+kernel worked just fine.  Even BIOSes don't seem too bad.  At least
+the two boards I tested (both about three years old) didn't have much
+problem recognizing upto 2TiB and could access and boot fine although
+I'm fairly sure there will be BIOSes which would behave erratically.
 
-thanks for pointing this out. I'll certainly check it! :)
+I also tested installing w/ openSUSE 11.3 and it worked fine.  It
+automatically chose GPT and alignment and everything just worked (tm).
+I think the situation shouldn't be too different for any distro which
+uses up-to-date parted.
 
-Regards,
+The only problem is that everything which is necessary for booting
+needs to be located below 2TiB limit.  Please note that this is much
+stricter restriction than the 128GiB limit we had due to LBA28.  That
+limit was caused by BIOSes using LBA28 and vendors could and did
+update and be done with it in many cases.  However, 2TiB limit is
+inherent in the BIOS programming interface and currently the only way
+to overcome it is using a completely different BIOS interface (EFI,
+that is).  Vendors are not likely to introduce EFI for already
+released products although they're much more likely to release updates
+so that BIOSes can access upto 2TiB if they don't work already.  We'll
+be stuck with 2TiB limit on much more configurations for longer period
+of time.
 
-Mattia
+So, distro installers need to try to locate everything needed for
+bootstrapping below 2TiB limit (ie. a dedicated boot partition below
+the limit).  Drives > 2TiB aren't on the market yet but aren't too far
+away.  Let's make sure things will be ready by the next distro release
+cycle.
+
+Thanks.
+
+-- 
+tejun
