@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab0GXPJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 11:09:29 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38883 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab0GXPJ1 (ORCPT
+	id S1753685Ab0GXPc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 11:32:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42633 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab0GXPc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 11:09:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6052"; a="48435728"
-Message-ID: <4C4B0201.9060106@codeaurora.org>
-Date: Sat, 24 Jul 2010 20:38:49 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	Sat, 24 Jul 2010 11:32:27 -0400
+Message-ID: <4C4B07A6.4050009@infradead.org>
+Date: Sat, 24 Jul 2010 12:32:54 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Kenneth Heitke <kheitke@codeaurora.org>
-CC: khali@linux-fr.org, ben-linux@fluff.org, linux-arm-msm@vger.kernel.org,
-        Crane Cai <crane.cai@amd.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: QUP based bus driver for Qualcomm MSM chipsets
-References: <1279853264-16311-1-git-send-email-kheitke@codeaurora.org> <4C494086.5080408@codeaurora.org> <4C49E5EE.2070103@codeaurora.org>
-In-Reply-To: <4C49E5EE.2070103@codeaurora.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the usb tree with the v4l-dvb tree
+References: <20100706175332.952fec90.sfr@canb.auug.org.au> <20100707151355.GB2121@kroah.com> <4C3C876A.5090005@infradead.org> <201007131923.31877.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201007131923.31877.laurent.pinchart@ideasonboard.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ken,
-
+Em 13-07-2010 14:23, Laurent Pinchart escreveu:
+> Hi Mauro,
 > 
+> On Tuesday 13 July 2010 17:34:02 Mauro Carvalho Chehab wrote:
+>> Em 07-07-2010 12:13, Greg KH escreveu:
+>>> On Tue, Jul 06, 2010 at 09:34:51AM -0300, Mauro Carvalho Chehab wrote:
+>>>> Em 06-07-2010 08:10, Laurent Pinchart escreveu:
+> 
+> [snip]
+> 
+>>>>> Mauro, can the uvc-gadget patches go through the linux-media tree ?
 >>
->>> +
->>> +    if (!pdata->msm_i2c_config_gpio) {
->>> +        dev_err(&pdev->dev, "config_gpio function not initialized\n");
->>> +        ret = -ENOSYS;
->>> +        goto err_config_failed;
->>> +    }
+>> It will not be simple to fix this conflict from my tree. I tried to apply
+>> them against a 2.6.35-rc5, but it failed:
+>> |diff --git a/drivers/media/video/uvc/uvcvideo.h
+>> |b/drivers/media/video/uvc/uvcvideo.h index 47b20e7..ac27245 100644
+>> |--- a/drivers/media/video/uvc/uvcvideo.h
+>> |+++ b/drivers/media/video/uvc/uvcvideo.h
 >>
->> I don't agree here. What if I do all the gpio configuration from the bootloader itself,
->> because I know that the device I am working on is production device and don't change
->> its configuration, then why I should provide the pdata hooks from the board files?
+>> --------------------------
+>> No file to patch.  Skipping patch.
+>> 1 out of 1 hunk ignored
+>> can't find file to patch at input line 73
+>> Perhaps you used the wrong -p or --strip option?
 > 
-> The reason that this hook is required is so that the driver can enable and disable the GPIOs as needed (although we currently only enable them).
+> drivers/media/video/uvc/uvcvideo.h has been there for years. Perhaps you used 
+> the wrong -p or --strip option? :-)
+
+Doubtful. My scripts apply the patches using -p1. Not sure what happened.
+
+> [snip]
 > 
+>>>>> Patch
+>>>>> patches/lmml_111238_for_2_6_36_uvc_move_constants_and_structures_defin
+>>>>> itions_to_linux_usb_video_h.patch doesn't apply
 >>
->> Please also specify what are the operations we are doing in the msm_i2c_config_gpio?
+>> It seems that the files you're patching at include/linux/usb & cia are not
+>> upstream yet. So, just adding this patch won't solve it.
+>>
+>>>> If Greg is ok, that's fine for me.
+>>>
+>>> That's fine with me.  Let me know when you have them and then I'll drop
+>>> them from my tree.
+>>
+>> I'll be out for vacations for some days. Greg/Laurent, it seems that the
+>> better is to keep Stephen workaround for now, eventually applying it at
+>> Greg's tree.
 > 
-> Takes ownership of the GPIOs that are needed and assigns the ownership to the i2c controller.  The drive strength is also set.
+> If it's not too late, can you retry with the right -p option ?
+> 
+It were too late... I just returned from vacations, and started to dig my long
+list of emails...
 
-Right, so due to these reasons I prefer not to have __must__ have check for pdata->msm_i2c_config_gpio hook's unavailability. It
-might happen that some of the systems do all these ownership and pad muxing into the bootloader itself.
+Could you please re-send the patch, being sure that it will apply against a
+-rc kernel?
 
----Trilok Soni
-
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Cheers,
+Mauro
