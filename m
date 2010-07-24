@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab0GXM2I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 08:28:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59079 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab0GXM2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 08:28:06 -0400
-Date: Sat, 24 Jul 2010 13:27:50 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jan Kara <jack@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: linux-next: OOPS at boot time
-Message-ID: <20100724122750.GA10675@ZenIV.linux.org.uk>
-References: <20100720164145.e06242b3.sfr@canb.auug.org.au>
- <20100720033656.0ce6356f.akpm@linux-foundation.org>
- <20100720224525.GO32635@dastard>
- <20100720174424.12a4bf64.akpm@linux-foundation.org>
- <20100721052007.GT32635@dastard>
- <20100721002907.639802cd.akpm@linux-foundation.org>
- <20100721174809.4781c244.sfr@canb.auug.org.au>
- <20100721121116.GD3447@quack.suse.cz>
- <20100721214016.GA903@ZenIV.linux.org.uk>
- <20100723100408.GB3305@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100723100408.GB3305@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1755905Ab0GXMho (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 08:37:44 -0400
+Received: from v-smtp-auth-relay-3.gradwell.net ([79.135.125.42]:44151 "EHLO
+	v-smtp-auth-relay-3.gradwell.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752415Ab0GXMhm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 08:37:42 -0400
+Subject: Re: support for drives larger than 2TiB
+From: Alex Buell <alex.buell@munted.org.uk>
+Reply-To: alex.buell@munted.org.uk
+To: Tejun Heo <tj@kernel.org>
+Cc: Jeff Garzik <jeff@garzik.org>, ben.collins@ubuntu.com,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, hmh@debian.org
+In-Reply-To: <4C4AB952.9030705@kernel.org>
+References: <4C4AB952.9030705@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: One very high maintenance cat for company
+Date: Sat, 24 Jul 2010 13:36:06 +0100
+Message-ID: <1279974966.11927.26.camel@lithium.local.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 12:04:08PM +0200, Jan Kara wrote:
+On Sat, 2010-07-24 at 11:58 +0200, Tejun Heo wrote:
+> The only problem is that everything which is necessary for booting
+> needs to be located below 2TiB limit.  Please note that this is much
+> stricter restriction than the 128GiB limit we had due to LBA28.  That
+> limit was caused by BIOSes using LBA28 and vendors could and did
+> update and be done with it in many cases.  However, 2TiB limit is
+> inherent in the BIOS programming interface and currently the only way
+> to overcome it is using a completely different BIOS interface (EFI,
+> that is).  Vendors are not likely to introduce EFI for already
+> released products although they're much more likely to release updates
+> so that BIOSes can access upto 2TiB if they don't work already.  We'll
+> be stuck with 2TiB limit on much more configurations for longer period
+> of time. 
 
-> > @@ -1428,8 +1429,10 @@ out:
-> >  	/*
-> >  	 * Undo the block allocation
-> >  	 */
-> > -	if (!performed_allocation)
-> > -		dquot_free_block(inode, *count);
-> > +	if (!performed_allocation) {
-> > +		dquot_free_block_nodirty(inode, *count);
-> > +		mark_inode_dirty(inode);
-> > +	}
-> >  	brelse(bitmap_bh);
-> >  	return 0;
-> >  }
->   Sorry, but the above two changes look stupid... Why call _nodirty variant
-> and dirty the inode immediately after that? It happens in two other places
-> in your patch as well...
+The only thing that would please me no end with newer replacements for
+BIOS is the ability to have 4k boot sectors. Imagine what we can do with
+4k what we can't do with 512 bytes. 
+-- 
+http://www.munted.org.uk
 
-Frankly, I don't believe that dquot_free_block() is _ever_ the right interface;
-please, leave dirtying the inode to the filesystem and let it be explicit.
+One very high maintenance cat living here.
