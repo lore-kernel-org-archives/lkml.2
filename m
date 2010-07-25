@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab0GYQLg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 12:11:36 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:50047 "EHLO
+	id S1751979Ab0GYQLx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 12:11:53 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:50032 "EHLO
 	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab0GYQLT (ORCPT
+	with ESMTP id S1751264Ab0GYQLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 12:11:19 -0400
-Date: Sun, 25 Jul 2010 17:56:14 +0200
+	Sun, 25 Jul 2010 12:11:18 -0400
+Date: Sun, 25 Jul 2010 17:48:16 +0200
 From: Nils Radtke <lkml@Think-Future.de>
 To: linux-kernel@vger.kernel.org
-Subject: Xorg invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0
-Message-ID: <20100725155614.GH31966@localhost>
+Subject: ata_port_flush_task, BUG: unable to handle kernel paging request
+Message-ID: <20100725154816.GF31966@localhost>
 Reply-To: Nils Radtke <lkml@Think-Future.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,63 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
   Hi,
 
- IRC, there was plenty of RAM available but this happened nevertheless.
+Ideas, anybody?
 
-  Maybe someone can tell what did really happen?
+BUG: unable to handle kernel paging request at 10ec83c6
+IP: [<c13b8880>] ata_port_flush_task+0x0/0x50
+*pde = 00000000 
+Oops: 0002 [#1] PREEMPT 
+last sysfs file: /sys/devices/pci0000:00/0000:00:1c.0/0000:02:00.0/net/eth0/carrier
+Modules linked in: snd_usb_audio snd_usb_lib snd_seq_midi snd_rawmidi uvcvideo option usbserial usb_storage video1394 raw1394 dv1394 firewire_ohci firewire_core ohci1394 ieee1394 tg3 libphy
 
-  Cheers,
+Pid: 1298, comm: scsi_eh_0 Not tainted 2.6.33 #6 Columbia                       /Extensa 5220                   
+EIP: 0060:[<c13b8880>] EFLAGS: 00010292 CPU: 0
+EIP is at ata_port_flush_task+0x0/0x50
+EAX: f6878000 EBX: 00000246 ECX: 00000003 EDX: c13c7ab0
+ESI: f6813800 EDI: f6813844 EBP: 00000000 ESP: f6877f48
+ DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+Process scsi_eh_0 (pid: 1298, ti=f6876000 task=f70603f0 task.ti=f6876000)
+Stack:
+ c13c7aca c1852b50 f6acbc80 f6acbc80 c102fb3e f6acbc80 f70603f0 c184a5a0
+<0> f6813800 c184a400 f6878000 f70603f0 00000246 f6813800 f6813844 00000000
+<0> c138a5af 00000000 c13897b0 c102bd97 f70603f0 f70603f0 f6813834 f6813844
+Call Trace:
+ [<c13c7aca>] ? ata_scsi_error+0x1a/0x870
+ [<c102fb3e>] ? finish_task_switch+0x2e/0xa0
+ [<c138a5af>] ? scsi_error_handler+0x9f/0x3a0
+ [<c13897b0>] ? eh_lock_door_done+0x0/0x10
+ [<c102bd97>] ? pick_next_task_fair+0x97/0xe0
+ [<c1671f0a>] ? schedule+0x28a/0x3b0
+ [<c138a510>] ? scsi_error_handler+0x0/0x3a0
+ [<c104f3f4>] ? kthread+0x74/0x80
+ [<c104f380>] ? kthread+0x0/0x80
+ [<c1003236>] ? kernel_thread_helper+0x6/0x10
+Code: 18 00 00 b8 a5 f7 7b c1 e8 2e b8 c7 ff eb 81 8d b6 00 00 00 00 8d bf 00 00 00 00 83 c0 5c e8 48 d3 fb ff e9 43 ff ff ff 8d 76 00 <ff> 89 c3 83 ec 10 8d 80 75 1e 00 00 e8 bf 3d c9 ff f6 83 c4 1e 
+EIP: [<c13b8880>] ata_port_flush_task+0x0/0x50 SS:ESP 0068:f6877f48
+CR2: 0000000010ec83c6
+---[ end trace 2f757ea4d01bedcf ]---
+
+
+  Thanks,
 
     Nils
-
-762.224601] Xorg invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0
-762.224612] Xorg cpuset=/ mems_allowed=0
-762.224621] Pid: 5905, comm: Xorg Tainted: G        W  2.6.32.7 #8
-762.224626] Call Trace:
-762.224643]  [<c10b85d0>] ? oom_kill_process+0xa0/0x290
-762.224652]  [<c10b8bee>] ? select_bad_process+0x9e/0xc0
-762.224660]  [<c10b8c5e>] ? __out_of_memory+0x4e/0xb0
-762.224668]  [<c10b8dc3>] ? pagefault_out_of_memory+0x53/0x90
-762.224679]  [<c1024d69>] ? mm_fault_error+0x39/0xc0
-762.224689]  [<c10d00fa>] ? handle_mm_fault+0x17a/0x8a0
-762.224700]  [<c1065e4e>] ? hrtimer_interrupt+0xee/0x230
-762.224709]  [<c10250dc>] ? do_page_fault+0x2ec/0x300
-762.224718]  [<c1024df0>] ? do_page_fault+0x0/0x300
-762.224727]  [<c1746d56>] ? error_code+0x66/0x6c
-762.224736]  [<c1024df0>] ? do_page_fault+0x0/0x300
-762.224741] Mem-Info:
-762.224746] DMA per-cpu:
-762.224751] CPU    0: hi:    0, btch:   1 usd:   0
-762.224756] CPU    1: hi:    0, btch:   1 usd:   0
-762.224760] Normal per-cpu:
-762.224765] CPU    0: hi:  186, btch:  31 usd: 160
-762.224770] CPU    1: hi:  186, btch:  31 usd:  50
-762.224774] HighMem per-cpu:
-762.224779] CPU    0: hi:  186, btch:  31 usd:  76
-762.224784] CPU    1: hi:  186, btch:  31 usd:  94
-762.224796] active_anon:537763 inactive_anon:149804 isolated_anon:32
-762.224799]  active_file:62383 inactive_file:57654 isolated_file:0
-762.224801]  unevictable:105232 dirty:12 writeback:7215 unstable:0
-762.224804]  free:26914 slab_reclaimable:8147 slab_unreclaimable:28974
-762.224806]  mapped:43883 shmem:334718 pagetables:3487 bounce:0
-762.224821] DMA free:4356kB min:64kB low:80kB high:96kB active_anon:0kB inacti
-762.224833] lowmem_reserve[]: 0 867 3967 3967
-762.224854] Normal free:102904kB min:3732kB low:4664kB high:5596kB active_anon
-762.224867] lowmem_reserve[]: 0 0 24801 24801
-762.224887] HighMem free:396kB min:512kB low:3848kB high:7184kB active_anon:19
-762.224900] lowmem_reserve[]: 0 0 0 0
-762.224909] DMA: 165*4kB 133*8kB 164*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512k
-762.224934] Normal: 25206*4kB 4*8kB 42*16kB 5*32kB 3*64kB 0*128kB 0*256kB 0*51
-762.224958] HighMem: 99*4kB 0*8kB 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB
-762.224982] 527234 total pagecache pages
-762.224986] 71142 pages in swap cache
-762.224992] Swap cache stats: add 340259, delete 269117, find 18318349/1832953
-762.224997] Free swap  = 1406684kB
-762.225000] Total swap = 1951856kB
-762.258668] 1294336 pages RAM
-762.258674] 1066498 pages HighMem
-762.258678] 304794 pages reserved
-762.258681] 325984 pages shared
-762.258685] 758050 pages non-shared
-762.258692] Out of memory: kill process 10323 (sh) score 261759 or a child
-
 
