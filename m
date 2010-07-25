@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0GYRLj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 13:11:39 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:53116 "EHLO
+	id S1752346Ab0GYRLn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 13:11:43 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:53133 "EHLO
 	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab0GYRLR (ORCPT
+	with ESMTP id S1752096Ab0GYRLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 13:11:17 -0400
+	Sun, 25 Jul 2010 13:11:25 -0400
 From: Alexander Shishkin <virtuoso@slind.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Alexander Shishkin <virtuoso@slind.org>, Tony Lindgren <tony@atomide.com>,
         Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] omap3: move EMU peripheral addresses to a platform header
-Date: Sun, 25 Jul 2010 20:05:18 +0300
-Message-Id: <1280077520-7538-6-git-send-email-virtuoso@slind.org>
+Subject: [PATCH 7/7] omap3: make coresight register save across OFF modes a sysfs option
+Date: Sun, 25 Jul 2010 20:05:20 +0300
+Message-Id: <1280077520-7538-8-git-send-email-virtuoso@slind.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
 References: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
@@ -24,91 +23,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These addresses are also needed for the OFF code to save/restore the
-contexts of the EMU peripherals correctly.
+This adds a sysfs file at /sys/power/coresight_save which is used to
+control if the ETM and debug components' states should be saved and
+restored across OFF modes.
 
 Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
 Cc: Tony Lindgren <tony@atomide.com>
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Cc: Kevin Hilman <khilman@deeprootsystems.com>
 Cc: linux-omap@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-omap2/emu.c            |   14 ++++----------
- arch/arm/plat-omap/include/plat/io.h |   20 ++++++++++++++++++++
- 2 files changed, 24 insertions(+), 10 deletions(-)
+ arch/arm/mach-omap2/Makefile    |    1 +
+ arch/arm/mach-omap2/debug34xx.c |   66 +++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/pm.h        |    6 +++
+ arch/arm/mach-omap2/pm34xx.c    |    3 ++
+ 4 files changed, 76 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/debug34xx.c
 
-diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
-index 9c442e2..6b41745 100644
---- a/arch/arm/mach-omap2/emu.c
-+++ b/arch/arm/mach-omap2/emu.c
-@@ -24,19 +24,13 @@
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Alexander Shishkin");
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index f5b4ff4..3a64ce4 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -49,6 +49,7 @@ ifeq ($(CONFIG_PM),y)
+ obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
+ obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
+ obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o cpuidle34xx.o
++obj-$(CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG) += debug34xx.o
+ obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
  
--/* Cortex CoreSight components within omap3xxx EMU */
--#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
--#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
--#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
--#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
--
- static struct amba_device omap3_etb_device = {
- 	.dev		= {
- 		.init_name = "etb",
- 	},
- 	.res		= {
--		.start	= ETB_BASE,
--		.end	= ETB_BASE + SZ_4K - 1,
-+		.start	= OMAP34XX_ETB_PHYS,
-+		.end	= OMAP34XX_ETB_PHYS + OMAP34XX_ETB_SIZE - 1,
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	.periphid	= 0x000bb907,
-@@ -47,8 +41,8 @@ static struct amba_device omap3_etm_device = {
- 		.init_name = "etm",
- 	},
- 	.res		= {
--		.start	= ETM_BASE,
--		.end	= ETM_BASE + SZ_4K - 1,
-+		.start	= OMAP34XX_ETM_PHYS,
-+		.end	= OMAP34XX_ETM_PHYS + OMAP34XX_ETM_SIZE - 1,
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	.periphid	= 0x102bb921,
-diff --git a/arch/arm/plat-omap/include/plat/io.h b/arch/arm/plat-omap/include/plat/io.h
-index 128b549..81f736a 100644
---- a/arch/arm/plat-omap/include/plat/io.h
-+++ b/arch/arm/plat-omap/include/plat/io.h
-@@ -185,6 +185,26 @@
+ AFLAGS_sleep24xx.o			:=-Wa,-march=armv6
+diff --git a/arch/arm/mach-omap2/debug34xx.c b/arch/arm/mach-omap2/debug34xx.c
+new file mode 100644
+index 0000000..698e83a
+--- /dev/null
++++ b/arch/arm/mach-omap2/debug34xx.c
+@@ -0,0 +1,66 @@
++/*
++ * Control saving and restoring of coresight components' state during
++ * OFF mode.
++ *
++ * Copyright (C) 2010 Nokia Corporation
++ * Alexander Shishkin
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/sysfs.h>
++#include <linux/kobject.h>
++
++#include "pm.h"
++
++/*
++ * Pointer to a place in sram where the ETM/debug state save
++ * flag is. It can be calculated after the omap_sram_idle is
++ * pushed to sram.
++ */
++static unsigned int *_etm_save;
++
++/*
++ * sysfs file /sys/power/coresight_save controls whether the
++ * state of coresight components should be saved and restored
++ * across OFF modes.
++ */
++static ssize_t coresight_save_show(struct kobject *kobj,
++				  struct kobj_attribute *attr,
++				  char *buf)
++{
++	return sprintf(buf, "%u\n", *_etm_save);
++}
++
++static ssize_t coresight_save_store(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   const char *buf, size_t n)
++{
++	unsigned int value;
++
++	if (sscanf(buf, "%u", &value) != 1)
++		return -EINVAL;
++
++	*_etm_save = !!value;
++
++	return n;
++}
++
++static struct kobj_attribute coresight_save_attr =
++	__ATTR(coresight_save, 0644, coresight_save_show, coresight_save_store);
++
++int omap3_coresight_pm_init(void *sram_addr)
++{
++	int ret;
++
++	/* the last word from the top of omap_sram_idle */
++	_etm_save = (unsigned *)((u8 *)sram_addr + omap34xx_cpu_suspend_sz - 4);
++
++	ret = sysfs_create_file(power_kobj, &coresight_save_attr.attr);
++
++	return ret;
++}
++
+diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
+index 3de6ece..0321834 100644
+--- a/arch/arm/mach-omap2/pm.h
++++ b/arch/arm/mach-omap2/pm.h
+@@ -76,6 +76,12 @@ extern void omap34xx_cpu_suspend(u32 *addr, int save_state);
+ extern void save_secure_ram_context(u32 *addr);
+ extern void omap3_save_scratchpad_contents(void);
  
- /* 3430 IVA - currently unmapped */
++#ifdef CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG
++int omap3_coresight_pm_init(void *sram_addr);
++#else
++#define omap3_coresight_pm_init(x) do {} while (0)
++#endif
++
+ extern unsigned int omap24xx_idle_loop_suspend_sz;
+ extern unsigned int omap34xx_suspend_sz;
+ extern unsigned int save_secure_ram_context_sz;
+diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
+index fb4994a..c389e65 100644
+--- a/arch/arm/mach-omap2/pm34xx.c
++++ b/arch/arm/mach-omap2/pm34xx.c
+@@ -1096,6 +1096,9 @@ static int __init omap3_pm_init(void)
+ 	core_clkdm = clkdm_lookup("core_clkdm");
  
-+#define OMAP34XX_DBG_OFFSET	(0x00011000)
-+#define OMAP34XX_DBG_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_DBG_OFFSET)
-+#define OMAP34XX_DBG_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_DBG_OFFSET)
-+#define OMAP34XX_DBG_SIZE	SZ_4K
+ 	omap_push_sram_idle();
 +
-+#define OMAP34XX_ETM_OFFSET	(0x00010000)
-+#define OMAP34XX_ETM_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_ETM_OFFSET)
-+#define OMAP34XX_ETM_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_ETM_OFFSET)
-+#define OMAP34XX_ETM_SIZE	SZ_4K
++	omap3_coresight_pm_init(_omap_sram_idle);
 +
-+#define OMAP34XX_ETB_OFFSET	(0x0001b000)
-+#define OMAP34XX_ETB_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_ETB_OFFSET)
-+#define OMAP34XX_ETB_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_ETB_OFFSET)
-+#define OMAP34XX_ETB_SIZE	SZ_4K
-+
-+#define OMAP34XX_DAP_OFFSET	(0x0001d000)
-+#define OMAP34XX_DAP_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_DAP_OFFSET)
-+#define OMAP34XX_DAP_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_DAP_OFFSET)
-+#define OMAP34XX_DAP_SIZE	SZ_4K
-+
- /*
-  * ----------------------------------------------------------------------------
-  * Omap4 specific IO mapping
+ #ifdef CONFIG_SUSPEND
+ 	suspend_set_ops(&omap_pm_ops);
+ #endif /* CONFIG_SUSPEND */
 -- 
 1.7.1
 
