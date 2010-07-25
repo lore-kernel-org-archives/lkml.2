@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0GYL5Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 07:57:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38463 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab0GYL5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 07:57:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=VFAJKgAC+UkzNivGsyZxVR+b0r84Dwbqbx3lZrUjibI8mahXW+YJ+JcIfqGbQXuyYN
-         xEuxW2SgVir1YCeyAKNv4cJNszIBIS1w2GEvUHiUurubPw/JvKGAPhhOMGbNi4m6a6iA
-         J7oOoS44l29C4pzwkjmlP+AK+AkQQE1V2HVws=
-Date: Sun, 25 Jul 2010 13:54:24 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, nouveau@lists.freedesktop.org,
-        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Nouveau] [PATCH v2] vga16fb: refuse to load in face of other
- driver controlling primary card
-Message-ID: <20100725115424.GA2837@joi.lan>
-References: <20100720191923.GA11056@joi.lan>
- <20100722172039.e935c67d.akpm@linux-foundation.org>
- <20100723131034.GA6618@joi.lan>
- <AANLkTimQZ6_+o=3pGa6hGbeFU99RMPFRmO+ndMZDHZMS@mail.gmail.com>
+	id S1752855Ab0GYMCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 08:02:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61906 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab0GYMCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 08:02:38 -0400
+Message-ID: <4C4C27D4.1010607@redhat.com>
+Date: Sun, 25 Jul 2010 15:02:28 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimQZ6_+o=3pGa6hGbeFU99RMPFRmO+ndMZDHZMS@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] KVM fixes for 2.6.35-rc6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 25, 2010 at 06:42:48PM +1000, Dave Airlie wrote:
-> On Fri, Jul 23, 2010 at 11:10 PM, Marcin Slusarz
-> <marcin.slusarz@gmail.com> wrote:
-> > On Thu, Jul 22, 2010 at 05:20:39PM -0700, Andrew Morton wrote:
-> >> On Tue, 20 Jul 2010 21:19:23 +0200
-> >> Marcin Slusarz <marcin.slusarz@gmail.com> wrote:
-> >>
-> >> > We don't want vga16fb to mess with hardware initialized by other driver.
-> >> > Detect it and refuse to load.
-> >> > It fixes nouveau interrupt storm on some machines.
-> 
-> Can't we keep this all inside vga16fb? 
+  Linus, please pull from
 
-That's what v1 did (*), but Andrew didn't like it.
+   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.35
 
-> just have it walk PCI tree
-> looking for a primary VGA card, and if it has a driver bound, just
-> refuse to bind.
-> 
-> Dave.
+to get a couple of fairly critical fixes for 2.6.35-rc6.  One works 
+around the vmalloc() performance regression, the fix for which did not 
+make it into 2.6.35, and the other fixes failures of the RHEL 6 beta as 
+a guest, which has been frequently reported.
 
-(*) http://lkml.org/lkml/2010/7/20/244
+Avi Kivity (1):
+       KVM: Use kmalloc() instead of vmalloc() for KVM_[GS]ET_MSR
+
+Xiao Guangrong (1):
+       KVM: MMU: fix conflict access permissions in direct sp
+
+  arch/x86/kvm/paging_tmpl.h |    1 +
+  arch/x86/kvm/x86.c         |    4 ++--
+  2 files changed, 3 insertions(+), 2 deletions(-)
+
+-- 
+error compiling committee.c: too many arguments to function
 
