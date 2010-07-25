@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab0GYKsf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 06:48:35 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:63724 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab0GYKse (ORCPT
+	id S1752688Ab0GYL3h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 07:29:37 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:43491 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab0GYL3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 06:48:34 -0400
-Subject: Re: [PATCHv5 12/15] writeback: optimize periodic bdi thread wakeups
+	Sun, 25 Jul 2010 07:29:33 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1280046581-23623-13-git-send-email-dedekind1@gmail.com>
-References: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
-	 <1280046581-23623-13-git-send-email-dedekind1@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 25 Jul 2010 13:41:09 +0300
-Message-ID: <1280054469.9990.16.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 25 Jul 2010 10:48:26.0479 (UTC) FILETIME=[E92E4FF0:01CB2BE6]
+Subject: [PATCHv6 08/15] writeback: move last_active to bdi
+Date: Sun, 25 Jul 2010 14:29:18 +0300
+Message-Id: <1280057365-10297-9-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1280057365-10297-1-git-send-email-dedekind1@gmail.com>
+References: <1280057365-10297-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 25 Jul 2010 11:29:28.0391 (UTC) FILETIME=[A4984570:01CB2BEC]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-25 at 11:29 +0300, Artem Bityutskiy wrote:
-> +static void wakeup_timer_fn(unsigned long data)
-> +{
-> +	struct backing_dev_info *bdi = (struct backing_dev_info *)data;
-> +
-> +	spin_lock(&bdi->wb_lock);
-> +	if (bdi->wb.task) {
-> +		wake_up_process(bdi->wb.task);
-> +	} else {
-> +		/*
-> +		 * When bdi tasks are inactive for long time, they are killed.
-> +		 * In this case we have to wake-up the forker thread which
-> +		 * should create and run the bdi thread.
-> +		 */
-> +		wake_up_process(default_backing_dev_info.wb.task);
-> +	}
-> +	spin_unlock(&bdi->wb_lock);
-> +}
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-OK, since now we use this lock in a timer, this should become a
-spin_lock_bh().
+Currently bdi threads use local variable 'last_active' which stores last time
+when the bdi thread did some useful work. Move this local variable to 'struct
+bdi_writeback'. This is just a preparation for the further patches which will
+make the forker thread decide when bdi threads should be killed.
 
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ fs/fs-writeback.c           |    6 +++---
+ include/linux/backing-dev.h |   13 +++++++------
+ 2 files changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index eaef5c9..53e1028 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -800,12 +800,12 @@ int bdi_writeback_thread(void *data)
+ {
+ 	struct bdi_writeback *wb = data;
+ 	struct backing_dev_info *bdi = wb->bdi;
+-	unsigned long last_active = jiffies;
+ 	unsigned long wait_jiffies = -1UL;
+ 	long pages_written;
+ 
+ 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
+ 	set_freezable();
++	wb->last_active = jiffies;
+ 
+ 	/*
+ 	 * Our parent may run at a different priority, just set us to normal
+@@ -827,7 +827,7 @@ int bdi_writeback_thread(void *data)
+ 		trace_writeback_pages_written(pages_written);
+ 
+ 		if (pages_written)
+-			last_active = jiffies;
++			wb->last_active = jiffies;
+ 		else if (wait_jiffies != -1UL) {
+ 			unsigned long max_idle;
+ 
+@@ -837,7 +837,7 @@ int bdi_writeback_thread(void *data)
+ 			 * recreated automatically.
+ 			 */
+ 			max_idle = max(5UL * 60 * HZ, wait_jiffies);
+-			if (time_after(jiffies, max_idle + last_active))
++			if (time_after(jiffies, max_idle + wb->last_active))
+ 				break;
+ 		}
+ 
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 95ecb2b..71b6223 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -45,15 +45,16 @@ enum bdi_stat_item {
+ #define BDI_STAT_BATCH (8*(1+ilog2(nr_cpu_ids)))
+ 
+ struct bdi_writeback {
+-	struct backing_dev_info *bdi;		/* our parent bdi */
++	struct backing_dev_info *bdi;	/* our parent bdi */
+ 	unsigned int nr;
+ 
+-	unsigned long last_old_flush;		/* last old data flush */
++	unsigned long last_old_flush;	/* last old data flush */
++	unsigned long last_active;	/* last time bdi thread was active */
+ 
+-	struct task_struct	*task;		/* writeback thread */
+-	struct list_head	b_dirty;	/* dirty inodes */
+-	struct list_head	b_io;		/* parked for writeback */
+-	struct list_head	b_more_io;	/* parked for more writeback */
++	struct task_struct *task;	/* writeback thread */
++	struct list_head b_dirty;	/* dirty inodes */
++	struct list_head b_io;		/* parked for writeback */
++	struct list_head b_more_io;	/* parked for more writeback */
+ };
+ 
+ struct backing_dev_info {
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.7.1.1
 
