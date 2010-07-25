@@ -1,321 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab0GYQqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 12:46:09 -0400
-Received: from borg.medozas.de ([188.40.89.202]:39460 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab0GYQqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 12:46:05 -0400
-Date: Sun, 25 Jul 2010 18:46:02 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: "Neco.F" <necofang@gmail.com>
-cc: linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: about conntrack for oracle tns
-In-Reply-To: <AANLkTiknJ6FJvwaJrFL0q1StodFfaVrtu807JLqgz7sU@mail.gmail.com>
-Message-ID: <alpine.LSU.2.01.1007251838040.14790@obet.zrqbmnf.qr>
-References: <AANLkTiknJ6FJvwaJrFL0q1StodFfaVrtu807JLqgz7sU@mail.gmail.com>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1751702Ab0GYQwn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 12:52:43 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:49130 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751105Ab0GYQwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 12:52:41 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] cyber2000fb: fix machine hang on module load
+Date: Sun, 25 Jul 2010 18:52:30 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201007251852.32397.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
+I was testing two CyberPro 2000 based PCI cards on x86 and the machine always
+hanged completely when the cyber2000fb module was loaded. It seems that the
+card hangs when some registers are accessed too quickly after writing RAMDAC
+control register. With this patch, both card work.
 
-On Thursday 2010-07-08 09:56, Neco.F wrote:
+Add delay after RAMDAC control register write to prevent hangs on module load.
 
->hi,
->  I have a conntrack module for oracle tns. the kernel version is 2.6.26.5.
-> sometimes when I use this module to access the oracle server, the kernel panic.
-> panic info: EIP:[xxx] get_next_timer_interrupt...........
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-The panic info usually includes more info, which you should post.
+--- linux-2.6.35-rc2/drivers/video/cyber2000fb.c	2010-06-06 05:43:24.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-07-25 18:20:47.000000000 +0200
+@@ -436,6 +436,7 @@ static void cyber2000fb_write_ramdac_ctr
+ 	cyber2000fb_writeb(i | 4, 0x3cf, cfb);
+ 	cyber2000fb_writeb(val, 0x3c6, cfb);
+ 	cyber2000fb_writeb(i, 0x3cf, cfb);
++	udelay(1);
+ }
+ 
+ static void cyber2000fb_set_timing(struct cfb_info *cfb, struct par_info *hw)
 
 
->static int mangle_packet (struct sk_buff *skb,
->			  __be32 newip,
->			  u_int16_t port,
->			  unsigned int matchoff,
->			  unsigned int matchlen,
->			  struct nf_conn *ct,
->			  enum ip_conntrack_info ctinfo)
->{
->  char buffer[128];
->  struct tnshdr_redirect * ptnshdr = (struct tnshdr_redirect * )buffer;
->
->  sprintf (ptnshdr->datas,
->"(ADDRESS=(PROTOCOL=tcp)(HOST=%u.%u.%u.%u)(PORT=%u))", NIPQUAD(newip),
->port);
-
-Questionable whether this is safe without a length limit. But you tell me.
-
->  ptnshdr->pkt_len = htons (sizeof (struct tnshdr_redirect) +
->strlen(ptnshdr->datas) - 1);
->  ptnshdr->pkt_checksum = 0x00;
->  ptnshdr->tns_type = NF_CT_TNS_REDIRECT;
->  ptnshdr->pkt_flags = 0;
->  ptnshdr->head_checksum = 0x00;
->  ptnshdr->data_len = htons (strlen(ptnshdr->datas));
->
->  TNS_PRINT ("calling nf_nat_mangle_tcp_packet (%s) matchoff: %u
->matchlen: %u", ptnshdr->datas, matchoff, matchlen);
-
-Use pr_debug instead.
-
->  return (nf_nat_mangle_tcp_packet (skb, ct, ctinfo, matchoff,
->matchlen, buffer, sizeof (struct
->tnshdr_redirect)+strlen(ptnshdr->datas)-1));
->}
->
->static u_int nf_nat_tns (struct sk_buff *skb,
->			 enum ip_conntrack_info ctinfo,
->			 unsigned int matchoff,
->			 unsigned int matchlen,
->			 struct nf_conntrack_expect *exp)
->{
->  __be32 newip;
->  u_int16_t port;
->  struct nf_conn *ct = exp->master;
->  enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
->
->  newip = ct->tuplehash[!dir].tuple.dst.u3.ip;
->  exp->saved_proto.tcp.port = exp->tuple.dst.u.tcp.port;
->
->  exp->dir = !dir;
->
->  exp->expectfn = nf_nat_follow_master;
->
->  TNS_PRINT ("exp->saved_proto.tcp.port: %u exp->tuple.src.u.tcp.port:
->%u exp->tuple.dst.u.tcp.port: %u exp->dir: %u",
->                 ntohs (exp->saved_proto.tcp.port),
->                 ntohs (exp->tuple.src.u.tcp.port),
->                 ntohs (exp->tuple.dst.u.tcp.port),
->                 exp->dir);
->
->  for (port = ntohs(exp->saved_proto.tcp.port); port != 0; port++) {
->    exp->tuple.dst.u.tcp.port = htons(port);
->    TNS_PRINT ("tuple %p: %u " NIPQUAD_FMT ":%hu -> " NIPQUAD_FMT ":%hu",
->		   &exp->tuple, exp->tuple.dst.protonum,
->		   NIPQUAD(exp->tuple.src.u3.ip), ntohs(exp->tuple.src.u.all),
->		   NIPQUAD(exp->tuple.dst.u3.ip), ntohs(exp->tuple.dst.u.all));
->
->    if (0 == nf_ct_expect_related(exp)) {TNS_PRINT
->("nf_ct_expect_related succ"); break;}
->  }
->
->  if (0 == port) return NF_DROP;
->
->  if (!mangle_packet (skb, newip, port, matchoff, matchlen, ct, ctinfo)) {
->    TNS_PRINT ("mangle packet failed, nf_ct_unexpect_related");
->    nf_ct_unexpect_related(exp);
->    return NF_DROP;
->  }
->  return NF_ACCEPT;
->}
->
->/* Return 1 for match, 0 for accept*/
->static int find_pattern (const char *data, size_t dlen, struct
->nf_conntrack_man *cmd, u_int * matchoff, u_int * matchlen)
->{
->  struct tnshdr_redirect * ptnshdr = (struct tnshdr_redirect*) data;
-
-You also want const here.
-
->  int len = 0;
->  int level = 1;
->  __be16 port = 0;
->  char * data_ptr = NULL;
->
->  //check TNS TYPE
->  if (NF_CT_TNS_REDIRECT != ptnshdr->tns_type) {
->    TNS_PRINT ("current data is not tns packet");
->    return (0);
->  }
->
->  *matchoff = 0;
->  *matchlen = ntohs (ptnshdr->pkt_len);
->
->  data_ptr =  (char*)data + dlen - 1;
-
-Drop the cast, it seems to serve no purpose.
-
->  port = 0;
->  for (len = 0; len < dlen; len++, data_ptr--) {
->    if ('=' == *data_ptr) break;
->    if (*data_ptr >= '0' && *data_ptr <= '9') {
->      port = port + (*data_ptr -'0') * level;
->      level *= 10;
->    }
->  }
-
-You could be using simple_strtoul here.
-
->
->  cmd->u.tcp.port = htons (port);
->
->  TNS_PRINT ("ip = "NIPQUAD_FMT" port = %u", NIPQUAD(cmd->u3.ip), port);
->  return ((0==port) ? 0 : 1);
-
-"return port != 0;" is sufficient.
-
->}
->
->static int help (struct sk_buff *skb,
->		 unsigned int protoff,
->		 struct nf_conn *ct,
->		 enum ip_conntrack_info ctinfo)
->{
->  u_int dataoff = 0, datalen = 0;
->  const struct tcphdr *th = NULL;
->  struct tcphdr _tcph;
->  const char *buf_ptr = NULL;
->  int ret = NF_ACCEPT;
->  int found = 0;
->  struct nf_conntrack_expect * exp = NULL;
->  u_int matchlen = 0, matchoff = 0;
->  enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
->  struct nf_conntrack_man cmd = {};
->  union nf_inet_addr *daddr = NULL;
->
->  if (ctinfo != IP_CT_ESTABLISHED && ctinfo !=
->IP_CT_ESTABLISHED+IP_CT_IS_REPLY) {
->    TNS_PRINT ("tns: Conntrackinfo = %u", ctinfo);
->    return NF_ACCEPT;
->  }
->
->  th = skb_header_pointer(skb, protoff, sizeof(_tcph), &_tcph);
->  if (th == NULL) return (NF_ACCEPT);
->
->  dataoff = protoff + th->doff * 4;
->  /* No data? */
->  if (dataoff >= skb->len) {
->    TNS_PRINT ("tns: dataoff(%u) >= skblen(%u)", dataoff, skb->len);
->    return NF_ACCEPT;
->  }
->  datalen = skb->len - dataoff;
->
->  spin_lock_bh (&nf_tns_lock);
->
->  TNS_PRINT ("skb_headlen(skb)= %u offset: %u datalen: %u",
->skb_headlen(skb), dataoff, datalen);
->  buf_ptr = skb_header_pointer (skb, dataoff, datalen, tns_buffer);
->  BUG_ON(buf_ptr == NULL);
-
-Don't use BUG_ON, handle the problem correctly and return from the
-function.
-
->  //tns_dump_block ("buf_ptr", (caddr_t)buf_ptr, datalen);
->  //tns_dump_block ("tns_buffer", (caddr_t)tns_buffer, datalen);
->
->  cmd.l3num = nf_ct_l3num(ct);
->  memcpy (cmd.u3.all, &ct->tuplehash[dir].tuple.src.u3.all, sizeof(cmd.u3.all));
->
->  found = find_pattern (buf_ptr, datalen, &cmd, &matchoff, &matchlen);
->
->  /*no match */
->  if (0 == found) {ret = NF_ACCEPT; TNS_PRINT ("unfound pattern"); goto out;}
->
->  //proto: 2 192.168.100.100-> 192.168.100.103 port: 3747
->  TNS_PRINT ("proto: %u " NIPQUAD_FMT "-> " NIPQUAD_FMT " port: %u",
->		 nf_ct_l3num (ct),
->		 NIPQUAD(ct->tuplehash[!dir].tuple.src.u3.ip),
->		 NIPQUAD (ct->tuplehash[!dir].tuple.dst.u3.ip),
->		 ntohs(cmd.u.tcp.port ));
->
->  daddr = &ct->tuplehash[!dir].tuple.dst.u3;
->
->  /* Update the tns info */
->  if ((cmd.l3num == nf_ct_l3num(ct)) && memcmp(&cmd.u3.all,
->&ct->tuplehash[dir].tuple.src.u3.all, sizeof(cmd.u3.all))) {
->    if (cmd.l3num == PF_INET) {
-
-==NFPROTO_IPV4.
-
->      TNS_PRINT ("NOT RECORDING: " NIPQUAD_FMT " != " NIPQUAD_FMT,
->		     NIPQUAD(cmd.u3.ip),
->		     NIPQUAD(ct->tuplehash[dir].tuple.src.u3.ip));
->    }
->    TNS_PRINT ("update the tns info");
->    daddr = &cmd.u3;
->  }
->
->#if 1
->  exp = nf_ct_expect_alloc (ct);
->  if (NULL == exp) {
->    ret = NF_DROP;
->    TNS_PRINT ("nf_ct_expect_alloc failed");
->    goto out;
->  }
->
->  nf_ct_expect_init (exp, NF_CT_EXPECT_CLASS_DEFAULT, cmd.l3num,
->		     &ct->tuplehash[!dir].tuple.src.u3, daddr,
->		     IPPROTO_TCP, NULL, &cmd.u.tcp.port);
->
->  if (ct->status & IPS_NAT_MASK) {
->    TNS_PRINT ("match nat mask");
->    ret = nf_nat_tns (skb, ctinfo, matchoff, matchlen, exp);
->  } else {
->    TNS_PRINT ("no nat");
->    if (0 != nf_ct_expect_related (exp)) {
->     ret = NF_DROP;
->     TNS_PRINT ("nf_ct_expect_related failed");
->    } else {
->      ret = NF_ACCEPT;
->     TNS_PRINT ("nf_ct_expect_related succ");
->    }
->  }
->
->  nf_ct_expect_put (exp);
->#endif
-> out:
->  spin_unlock_bh (&nf_tns_lock);
->  return (ret);
->}
->
->static struct nf_conntrack_helper tns[MAX_PORTS] __read_mostly;
->static char tns_names[MAX_PORTS][sizeof("tns-65535")] __read_mostly;
->
->static const struct nf_conntrack_expect_policy tns_exp_policy = {
->  .max_expected	= 1,
->  .timeout	= 5 * 60,
->};
->
->/* don't make this __exit, since it's called from __init ! */
->static void nf_conntrack_tns_fini(void)
->{
->  int i = 0;
->
->  for (i = 0; i < ports_c; i++) {
->    if (tns[i].me == NULL) continue;
->    TNS_PRINT ("nf_ct_tns: unregistering helper for pf: %d port: %d",
->tns[i].tuple.src.l3num, ports[i]);
->    nf_conntrack_helper_unregister(&tns[i]);
->  }
->
->  if (NULL != tns_buffer) kfree(tns_buffer);
->}
->
->static int __init nf_conntrack_tns_init(void)
->{
->  int i = 0, ret = 0;
->  char *tmpname;
->
->  tns_buffer = kmalloc(65536, GFP_KERNEL);
->
->  if (!tns_buffer) return -ENOMEM;
->
->  if (ports_c == 0) ports[ports_c++] = TNS_PORT;
->
->  for (i = 0; i < ports_c; i++) {
->    tns[i].tuple.src.l3num = PF_INET;
-
-NFPROTO_IPV4.
-
->...
->}
->
->module_init(nf_conntrack_tns_init);
->module_exit(nf_conntrack_tns_fini);
-
-You need to do something about the coding style, this is hard to read.
+-- 
+Ondrej Zary
