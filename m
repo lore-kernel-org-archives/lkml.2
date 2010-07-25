@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab0GXXWx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 19:22:53 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:37412 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751408Ab0GXXWv (ORCPT
+	id S1753728Ab0GYAnb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 20:43:31 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:27816 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751972Ab0GYAna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 19:22:51 -0400
-X-Sasl-enc: zlALlkp7fIOf4sayk/n2yyv5HK2DvnEJTmzUFUDkZq6t 1280013770
-Date: Sat, 24 Jul 2010 20:22:47 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Greg Freemyer <greg.freemyer@gmail.com>
-Cc: Yuhong Bao <yuhongbao_386@hotmail.com>, tj@kernel.org, jeff@garzik.org,
-        ben.collins@ubuntu.com, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: support for drives larger than 2TiB
-Message-ID: <20100724232247.GA2129@khazad-dum.debian.net>
-References: <4C4AB952.9030705@kernel.org>
- <SNT125-W4469FAC3FE110BB4882949C3A40@phx.gbl>
- <AANLkTi=-0Hdp2dfK_RB=w-W8Qm8O42dDM0ybEcRtEMdn@mail.gmail.com>
+	Sat, 24 Jul 2010 20:43:30 -0400
+Date: Sat, 24 Jul 2010 17:43:29 -0700
+From: Bhavesh Davda <bhavesh@vmware.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2.6.35-rc1] net-next: Fix an overflow bug in vmxnet3 Tx
+ descriptor
+Message-ID: <20100725004329.GB6680@bhavesh-lx1.eng.vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=-0Hdp2dfK_RB=w-W8Qm8O42dDM0ybEcRtEMdn@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Jul 2010, Greg Freemyer wrote:
-> Secondly, if you look at the table on the right of
-> http://en.wikipedia.org/wiki/Master_boot_record#Disk_partitioning you
-> see that the starting sector of a partition is defined with a 32-bit
-> value.
-> 
-> ie. 2TB with 512 byte sectors.
-> 
-> The normal solution is to move to a GPT which requires EFI if you want
-> to boot from it.
+---
+Fix an overflow bug in vmxnet3 Tx descriptor
 
-Can't one have a GPT with a guard boot sector which can read the real
-partition table?
+This patch fixes a bug where a 16K buffer on a Tx descriptor was overflowing
+into the 'gen' bit in the descriptor thereby corrupting the descriptor and
+stalling the transmit ring.
 
-I think Tejun must mean some big problem at the BIOS APIs required for the
-bootloader.  Tejun, what exactly croaks at the 2TB boundary (with 512KiB
-sectors)?
+Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+Signed-off-by: Matthew Delco <delcoM@vmware.com>
+Signed-off-by: Ronghua Zhang <ronghua@vmware.com>
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+---
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 9d64186..abe0ff5 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -664,8 +664,13 @@ vmxnet3_map_pkt(struct sk_buff *skb, struct vmxnet3_tx_ctx *ctx,
+ 	while (len) {
+ 		u32 buf_size;
+ 
+-		buf_size = len > VMXNET3_MAX_TX_BUF_SIZE ?
+-			   VMXNET3_MAX_TX_BUF_SIZE : len;
++		if (len < VMXNET3_MAX_TX_BUF_SIZE) {
++			buf_size = len;
++			dw2 |= len;
++		} else {
++			buf_size = VMXNET3_MAX_TX_BUF_SIZE;
++			/* spec says that for TxDesc.len, 0 == 2^14 */
++		}
+ 
+ 		tbi = tq->buf_info + tq->tx_ring.next2fill;
+ 		tbi->map_type = VMXNET3_MAP_SINGLE;
+@@ -673,13 +678,13 @@ vmxnet3_map_pkt(struct sk_buff *skb, struct vmxnet3_tx_ctx *ctx,
+ 				skb->data + buf_offset, buf_size,
+ 				PCI_DMA_TODEVICE);
+ 
+-		tbi->len = buf_size; /* this automatically convert 2^14 to 0 */
++		tbi->len = buf_size;
+ 
+ 		gdesc = tq->tx_ring.base + tq->tx_ring.next2fill;
+ 		BUG_ON(gdesc->txd.gen == tq->tx_ring.gen);
+ 
+ 		gdesc->txd.addr = cpu_to_le64(tbi->dma_addr);
+-		gdesc->dword[2] = cpu_to_le32(dw2 | buf_size);
++		gdesc->dword[2] = cpu_to_le32(dw2);
+ 		gdesc->dword[3] = 0;
+ 
+ 		dev_dbg(&adapter->netdev->dev,
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 762a6a7..2121c73 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -68,10 +68,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.0.13.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.0.14.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01000B00
++#define VMXNET3_DRIVER_VERSION_NUM      0x01000E00
+ 
+ 
+ /*
