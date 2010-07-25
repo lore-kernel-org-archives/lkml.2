@@ -1,162 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab0GYIax (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 04:30:53 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:33039 "EHLO
+	id S1752346Ab0GYIaq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 04:30:46 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:33041 "EHLO
 	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab0GYIak (ORCPT
+	with ESMTP id S1752020Ab0GYIak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 25 Jul 2010 04:30:40 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCHv5 00/15] kill unnecessary bdi wakeups + cleanups
-Date: Sun, 25 Jul 2010 11:29:26 +0300
-Message-Id: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv5 02/15] writeback: fix possible race when creating bdi threads
+Date: Sun, 25 Jul 2010 11:29:28 +0300
+Message-Id: <1280046581-23623-3-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
-X-OriginalArrivalTime: 25 Jul 2010 08:29:44.0159 (UTC) FILETIME=[88B10EF0:01CB2BD3]
+In-Reply-To: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
+References: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 25 Jul 2010 08:29:44.0648 (UTC) FILETIME=[88FBAC80:01CB2BD3]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-here is v5 of the patch series which clean-ups bdi threads and substantially
-lessens amount of unnecessary kernel wake-ups, which is very important on
-battery-powered devices.
+This patch fixes a very unlikely race condition on the bdi forker thread error
+path: when bdi thread creation fails, 'bdi->wb.task' may contain the error code
+for a short period of time. If at the same time someone submits a work to this
+bdi, we can end up with an oops 'bdi_queue_work()' while executing
+'wake_up_process(wb->task)'.
 
-This patch-set is also available at:
-git://git.infradead.org/users/dedekind/misc-2.6.git flushers_v5
+This patch fixes the issue by introducing a temporary variable 'task' and
+storing the possible error code there, so that 'wb->task' would never take
+erroneous values.
 
-Changes since v4
-Most patches are intact. Only patches N9, N10 and N14 were changed. And patch
-N15 was added. Also, now I tested the patch-set much better.
+Note, this race is very unlikely and I never hit it, so it is theoretical, but
+nevertheless worth fixing.
 
-1. Fix a bug found while testing: in the forker thread, when we create a bdi
-   task and then assign it to 'bdi->wb.task', we need to take the
-   'bdi->work_lock'. Otherwise we can lose a wake-up. Changed this in patch
-   N10.
-2. Add patch 15 which fixes a warning and cleans up 'bdi_register()'.
-3. Use "switch" in the main forker thread loop. Patch N9 was changed and now it
-   also introduces the "switch".
-4. Stick with Christoph's version of tracepoint names and positions -> changed
-   patch N14.
-5. Add a couple of "Reviewed-by" tags.
+This patch also merges 2 comments which were previously separate.
 
-Changes since v3:
-Tested more internally and found problems in bdi shutdown path. Namely, I forgot
-to move the code which wakes up processes waiting on BDI_pending bit to the
-forker thread. I also spotted few other things. Only patch N10 was changed.
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ mm/backing-dev.c |   28 +++++++++++-----------------
+ 1 files changed, 11 insertions(+), 17 deletions(-)
 
-1. Removed "Reviewed-by: Christoph Hellwig <hch@lst.de>" tag from patch 10
-   "writeback: move bdi threads exiting logic to the forker thread" in this
-   patch-set, because it was changed substantialy, and needs new review.
-2. Move 'clear_bit()' and 'wake_up_bit()' bit to bdi forker
-3. Add 'smp_wmb()' and 'smp_rmb()' in bdi forker and 'bdi_wb_shutdown()'
-4. In 'bdi_wb_shutdown()' first remove the bdi from 'bdi_list', and then wait
-   on the 'BDI_pending' bit, not vise-versa.
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 4e9ed2a..327e36d 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -331,8 +331,8 @@ static int bdi_forker_thread(void *ptr)
+ 	set_user_nice(current, 0);
+ 
+ 	for (;;) {
++		struct task_struct *task;
+ 		struct backing_dev_info *bdi, *tmp;
+-		struct bdi_writeback *wb;
+ 
+ 		/*
+ 		 * Temporary measure, we want to make sure we don't see
+@@ -383,29 +383,23 @@ static int bdi_forker_thread(void *ptr)
+ 		list_del_init(&bdi->bdi_list);
+ 		spin_unlock_bh(&bdi_lock);
+ 
+-		wb = &bdi->wb;
+-		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
+-					dev_name(bdi->dev));
+-		/*
+-		 * If thread creation fails, then readd the bdi to
+-		 * the pending list and force writeout of the bdi
+-		 * from this forker thread. That will free some memory
+-		 * and we can try again.
+-		 */
+-		if (IS_ERR(wb->task)) {
+-			wb->task = NULL;
+-
++		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
++				   dev_name(bdi->dev));
++		if (IS_ERR(task)) {
+ 			/*
+-			 * Add this 'bdi' to the back, so we get
+-			 * a chance to flush other bdi's to free
+-			 * memory.
++			 * If thread creation fails, then readd the bdi back to
++			 * the list and force writeout of the bdi from this
++			 * forker thread. That will free some memory and we can
++			 * try again. Add it to the tail so we get a chance to
++			 * flush other bdi's to free memory.
+ 			 */
+ 			spin_lock_bh(&bdi_lock);
+ 			list_add_tail(&bdi->bdi_list, &bdi_pending_list);
+ 			spin_unlock_bh(&bdi_lock);
+ 
+ 			bdi_flush_io(bdi);
+-		}
++		} else
++			bdi->wb.task = task;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.1.1
 
-Changes since v2:
-Basically, added patches 12, 13, 14. Other patches are almost identical to v2,
-but I fixed few warnings about mixing tabs and spaces were fixed there. Also,
-tweaked them as described in item 6 below.
-1. Delay bdi thread wake-up as suggested by Nick Piggin, see patch N12
-2. Do not invoke init_timer unnecessarily - spotted and fixed an imperfection,
-   see patch N13
-3. Introduce tracepoints to the code path which wakes up bdi threads for
-   periodic write-back, suggested by Dave Chinner, see patch N14
-4. Fix few checkpatch.pl warnings
-5. Add more "Reviewed-by" tags
-6. Amend patches so that we would check the optimistic case first
-   (http://lkml.org/lkml/2010/7/22/112)
-
-Changes since v1
-Basically, address all requests from Christoph except of 2.
-1.  Drop "[PATCH 01/16] writeback: do not self-wakeup"
-2.  Add all "Reviewed-by"
-3.  Rebase to the latest "linux-2.6-block / for-2.6.36"
-4.  Re-order patches so that the independent ones would go first and could
-    be picked independently
-5.  Do not remove comment about "temporary measure" in the forker thread.
-6.  Drop "[PATCH 01/13] writeback: remove redundant list initialization"
-    because one of later patches will kill whole function, so this small
-    patch is pointless
-7.  Merge "[PATCH 03/13] writeback: clean-up the warning about non-registered
-    bdi" with the patch which adds bdi threads wake-ups to
-    '__mark_inode_dirty()'.
-9.  Do not remove bdis from the bdi_list
-8.  Drop "[PATCH 09/13] writeback: add to bdi_list in the forker thread"
-    because we do not remove bdis from the bdi_list anymore
-10. Use less local variables which are not strictly needed
-
-The following Christoph's requests were *not* addressed:
-
-1. Restructure the loop in bdi forker, because we have to drop spinlock
-   before forking a thread, see my answer here:
-   http://lkml.org/lkml/2010/7/20/92
-2. Get rid of 'BDI_pending' and use a per-bdi mutex. We cannot easily
-   use a per-bdi mutex, because we would have to take it while holding
-   the 'bdi_lock' spinlock. We could turn 'bdi_lock' into a mutex, though,
-   and avoid dropping it before the task is created. This would eliminate
-   the need in the 'BDI_pending' flag. I can do this change, if needed.
-
-
-THE PROBLEM
-~~~~~~~~~~~
-
-Each block device has corresponding "flusher" thread, which is usually seen as
-"flusher-x:y" in your 'ps' output. Flusher threads are responsible for
-background write-back and are used in various kernel code paths like memory
-reclamation as well as the periodic background write-out.
-
-The flusher threads wake up every 5 seconds and check whether they have to
-write anything back or not. In idle systems with good dynamic power-management
-this means that they force the system to wake up from deep sleep, find out that
-there is nothing to do, and waste power. This hurts small battery-powered
-devices, e.g., linux-based phones.
-
-Idle bdi thread wake-ups do not last forever: the threads kill themselves if
-nothing useful has been done for 5 minutes.
-
-However, there is the bdi forker thread, seen as 'bdi-default' in your 'ps'
-output. This thread also wakes up every 5 seconds and checks whether it has to
-fork a bdi flusher thread, in case there is dirty data on the bdi, but bdi
-thread was killed. This thread never kills itself, and disturbs the system all
-the time. Again, this is bad for battery-powered devices.
-
-THE SOLUTION
-~~~~~~~~~~~~
-
-This patch-set makes bdi threads and the forker thread wake-up only if there is
-job to do, otherwise they just sleep. The main idea is to wake-up the needed
-thread when adding dirty data to the bdi.
-
-To implement this:
-
-1. I address various race conditions in the current bdi code.
-2. I move the killing logic from bdi threads to the forker thread, so that we
-   would have one central place where we make decisions about killing inactive
-   bdi threads. The reason I do this is because otherwise it is difficult to
-   kill inactive threads - they never wake-up, so would never kill themselves.
-   There are other technical reasons, too.
-3. I add a small piece of code to '__mark_inode_dirt()' which wakes up the bdi
-   thread when dirty inodes arrive.
-4. There are also clean-up patches and nicification patches which I found to be
-   good for better code readability.
-5. Some patches are just preparations which make the following real patches
-   simpler and easier to review.
-6. Some patches are just simplifications of current code.
-
-With this patch-set bdi threads wake up considerably less.
-
-v1 can be found here:
-http://thread.gmane.org/gmane.linux.file-systems/43306
-v2 can be found here:
-http://thread.gmane.org/gmane.linux.kernel/1012439
-v3 can be found here:
-http://thread.gmane.org/gmane.linux.kernel/1013009
-v4 can be found here:
-http://thread.gmane.org/gmane.linux.kernel/1013682
-
-Artem.
