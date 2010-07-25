@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab0GYDuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 23:50:16 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44489
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751162Ab0GYDuN (ORCPT
+	id S1751205Ab0GYEKA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 00:10:00 -0400
+Received: from x35.xmailserver.org ([64.71.152.41]:39325 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab0GYEJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 23:50:13 -0400
-Date: Sat, 24 Jul 2010 20:50:29 -0700 (PDT)
-Message-Id: <20100724.205029.183042907.davem@davemloft.net>
-To: sassmann@redhat.com
-Cc: bhutchings@solarflare.com, abadea@ixiacom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
-        leedom@chelsio.com, harald@redhat.com
-Subject: Re: [PATCH net-next] sysfs: add attribute to indicate hw address
- assignment type
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4C485A0C.7020500@redhat.com>
-References: <4C483E8D.4080300@redhat.com>
-	<1279807643.2104.1.camel@achroite.uk.solarflarecom.com>
-	<4C485A0C.7020500@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 25 Jul 2010 00:09:59 -0400
+X-AuthUser: davidel@xmailserver.org
+Date: Sat, 24 Jul 2010 21:09:21 -0700 (PDT)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@davide-laptop
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Nathan Lynch <ntl@pobox.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable@kernel.org
+Subject: Re: [PATCH] signalfd: fill in ssi_int for posix timers and message
+ queues
+In-Reply-To: <20100720211018.e586c7ce.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1007242104060.1470@davide-laptop>
+References: <1278117528.21917.354.camel@localhost> <20100720154205.667e95aa.akpm@linux-foundation.org> <1279683859.3030.121.camel@localhost> <20100720211018.e586c7ce.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Assmann <sassmann@redhat.com>
-Date: Thu, 22 Jul 2010 16:47:40 +0200
+On Tue, 20 Jul 2010, Andrew Morton wrote:
 
-> On 22.07.2010 16:07, Ben Hutchings wrote:
->> On Thu, 2010-07-22 at 14:50 +0200, Stefan Assmann wrote:
->>> On 21.07.2010 15:54, Ben Hutchings wrote:
->>>> On Wed, 2010-07-21 at 10:10 +0200, Stefan Assmann wrote:
->>>>> I put Alex' idea into code for further discussion, keeping the names
->>>>> mentioned here until we agree on the scope of this attribute. When we
->>>>> have settled I'll post a patch with proper patch description.
->>>> [...]
->>>>
->>>> Just a little nitpick: I think it would be clearer to use a more
->>>> specific term like 'address source' or 'address assignment type' rather
->>>> than 'address type'.
->>>
->>> Here's a proposal for the final patch.
->> 
->> Looks good, but...
- ...
->> ...why '|=' and not '='?
+> It's not a matter of a current application depending on current
+> behaviour!  The problem is that an application written in 2018 which
+> depends on the _new_ behaviour will not work on 2.6.34.
 > 
-> The intention is to use addr_assign_type as a bit field.
-> 
-> Okay it it might not make too much sense to 'steal' a random MAC
-> address but in case we add more types later it might get useful.
+> It wouldn't be the worst thing we've ever done to our long-suffering
+> users, but it is a permanent cost of having screwed things up :(
 
-I think the patch is good enough to go into net-next-2.6 as-is, anything
-remaining is a refinement or one sort or another.
+While I agree it is a problem with the kernel compatibility handling, 
+every time we add new features to an existing interface we end up in 
+similar scenarios.
+Nowadays a "require kernel >= X.Y.Z" is all but an uncommon case for 
+userspace code.
 
-So applied to net-next-2.6, thanks.
+
+- Davide
+
