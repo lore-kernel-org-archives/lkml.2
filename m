@@ -1,72 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab0GYTn6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 15:43:58 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:32830 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab0GYTn5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 15:43:57 -0400
-Date: Sun, 25 Jul 2010 22:38:51 +0300
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Hari Kanigeri <hari.kanigeri@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Richard Woodruff <r-woodruff2@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] save and restore etm state across core OFF modes
-Message-ID: <20100725193851.GA14399@shisha.kicks-ass.net>
-Mail-Followup-To: Hari Kanigeri <hari.kanigeri@gmail.com>,
-	linux-arm-kernel@lists.infradead.org,
-	Richard Woodruff <r-woodruff2@ti.com>,
-	Tony Lindgren <tony@atomide.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	Paul Walmsley <paul@pwsan.com>,
-	Kevin Hilman <khilman@deeprootsystems.com>,
-	linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
- <1280077520-7538-7-git-send-email-virtuoso@slind.org>
- <AANLkTinmSJ6dtgqmyuk9CArniPEvEp7TrXauvGxLxv7x@mail.gmail.com>
+	id S1752676Ab0GYUXr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 16:23:47 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:18017
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752579Ab0GYUXp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 16:23:45 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz154dM1432Nzz1202hzzz2fh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+From: =?iso-8859-1?Q?Penttil=E4_Mika?= <mika.penttila@ixonos.com>
+To: "minchan.kim@gmail.com" <minchan.kim@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH] Tight check of pfn_valid on sparsemem - v3
+Thread-Topic: [PATCH] Tight check of pfn_valid on sparsemem - v3
+Thread-Index: AQHLLDcjZGfBHnE440ef9zuY8YEwQQ==
+Date: Sun, 25 Jul 2010 20:22:51 +0000
+Message-ID: <1A61D8EA6755AF458F06EA669A4EC818013896@JKLMAIL02.ixonos.local>
+References: <1A61D8EA6755AF458F06EA669A4EC81801387C@JKLMAIL02.ixonos.local>
+In-Reply-To: <1A61D8EA6755AF458F06EA669A4EC81801387C@JKLMAIL02.ixonos.local>
+Accept-Language: en-US, fi-FI
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinmSJ6dtgqmyuk9CArniPEvEp7TrXauvGxLxv7x@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: po02.ixonos.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 25, 2010 at 12:34:22 -0600, Hari Kanigeri wrote:
-> > +config ENABLE_OFF_MODE_JTAG_ETM_DEBUG
-> > + š š š bool "Enable hardware emulation context save and restore"
-> > + š š š depends on ARCH_OMAP3
+> Changelog since v2
+>  o Change some function names
+>  o Remove mark_memmap_hole in memmap bring up
+>  o Change CONFIG_SPARSEMEM with CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
 > 
-> -- Shouldn't this be depends on OMAP3_EMU instead ?
-
-Not really. OMAP3_EMU will enable ETM/ETB drivers within omap, but this
-particular patch is also needed if you're using an external hardware
-debugger to debug code across OFF modes.
-
-> > + š š š default y
+> I have a plan following as after this patch is acked.
 > 
-> -- As this is debug option, can you keep this "n" by default ?
+> TODO:
+> 1) expand pfn_valid to FALTMEM in ARM
+> I think we can enhance pfn_valid of FLATMEM in ARM.
+> Now it is doing binary search and it's expesive.
+> First of all, After we merge this patch, I expand it to FALTMEM of ARM.
+> 
+> 2) remove memmap_valid_within
+> We can remove memmap_valid_within by strict pfn_valid's tight check.
+> 
+> 3) Optimize hole check in sparsemem
+> In case of spasemem, we can optimize pfn_valid through defining new
+> flag
+> like SECTION_HAS_HOLE of hole mem_section.
+> 
+> == CUT HERE ==
+> 
+> Kukjin reported oops happen while he change min_free_kbytes
+> http://www.spinics.net/lists/arm-kernel/msg92894.html
+> It happen by memory map on sparsemem.
+> 
+> The system has a memory map following as.
+>      section 0             section 1              section 2
+> 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
+> SECTION_SIZE_BITS 28(256M)
+> 
+> It means section 0 is an incompletely filled section.
+> Nontheless, current pfn_valid of sparsemem checks pfn loosely.
+> It checks only mem_section's validation but ARM can free mem_map on
+> hole
+> to save memory space. So in above case, pfn on 0x25000000 can pass
+> pfn_valid's
+> validation check. It's not what we want.
+> 
+> We can match section size to smallest valid size.(ex, above case, 16M)
+> But Russell doesn't like it due to mem_section's memory overhead with
+> different
+> configuration(ex, 512K section).
+> 
+> I tried to add valid pfn range in mem_section but everyone doesn't like
+> it
+> due to size overhead. This patch is suggested by KAMEZAWA-san.
+> I just fixed compile error and change some naming.
+> 
+> This patch registers address of mem_section to memmap itself's page
+> struct's
+> pg->private field. This means the page is used for memmap of the
+> section.
+> Otherwise, the page is used for other purpose and memmap has a hole.
+> 
+> This patch is based on mmotm-2010-07-19
+> 
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Reported-by: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> ---
+>  arch/arm/mm/init.c                  |    4 +++-
+>  include/linux/mmzone.h              |   22 +++++++++++++++++++++-
+>  mm/mmzone.c                         |   34
+> ++++++++++++++++++++++++++++++++++
+>  5 files changed, 58 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index f6a9994..25e2670 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -482,8 +482,10 @@ free_memmap(int node, unsigned long start_pfn,
+> unsigned long end_pfn)
+>  	 * If there are free pages between these,
+>  	 * free the section of the memmap array.
+>  	 */
+> -	if (pg < pgend)
+> +	if (pg < pgend) {
+> + 		mark_invalid_memmap(pg >> PAGE_SHIFT, pgend >> PAGE_SHIFT);
+>  		free_bootmem_node(NODE_DATA(node), pg, pgend - pg);
+> +	}
+>  }
+> 
+>  /*
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index b4d109e..a3195bd 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -15,6 +15,7 @@
+>  #include <linux/seqlock.h>
+>  #include <linux/nodemask.h>
+>  #include <linux/pageblock-flags.h>
+> +#include <linux/mm_types.h>
+>  #include <generated/bounds.h>
+>  #include <asm/atomic.h>
+>  #include <asm/page.h>
+> @@ -1049,11 +1050,30 @@ static inline struct mem_section
+> *__pfn_to_section(unsigned long pfn)
+>  	return __nr_to_section(pfn_to_section_nr(pfn));
+>  }
+> 
+> +void mark_invalid_memmap(unsigned long start, unsigned long end);
+> +
+> +#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
+> +#define MEMMAP_HOLE	(0x1UL)
+> +static inline int memmap_valid(unsigned long pfn)
+> +{
+> +	struct page *page = pfn_to_page(pfn);
+> +	struct page *__pg = virt_to_page(page);
+> +	return !(__pg->private & MEMMAP_HOLE);
+> +}
+> +#else
+> +static inline int memmap_valid(unsigned long pfn)
+> +{
+> +	return 1;
+> +}
+> +#endif
+> +
+>  static inline int pfn_valid(unsigned long pfn)
+>  {
+> +	struct mem_section *ms;
+>  	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+>  		return 0;
+> -	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+> +	ms = __nr_to_section(pfn_to_section_nr(pfn));
+> +	return valid_section(ms) && memmap_valid(pfn);
+>  }
+> 
+>  static inline int pfn_present(unsigned long pfn)
+> diff --git a/mm/mmzone.c b/mm/mmzone.c
+> index f5b7d17..7c84e5e 100644
+> --- a/mm/mmzone.c
+> +++ b/mm/mmzone.c
+> @@ -86,4 +86,38 @@ int memmap_valid_within(unsigned long pfn,
+> 
+>  	return 1;
+>  }
+> +
+> +/*
+> + * Fill pg->private on hole memmap with MEMMAP_HOLE.
+> + * pfn_valid() will check this later. (see include/linux/mmzone.h)
+> + * Evenry arch should call
+> + * 	mark_invalid_memmap(start, end) # for all holes in mem_map.
+> + * please see usage in ARM.
+> + */
+> +void mark_invalid_memmap(unsigned long start, unsigned long end)
+> +{
+> +	struct mem_section *ms;
+> +	unsigned long pos, next;
+> +	struct page *pg;
+> +	void *memmap, *mapend;
+> +
+> +	for (pos = start; pos < end; pos = next) {
+> +		next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
+> +		ms = __pfn_to_section(pos);
+> +		if (!valid_section(ms))
+> +			continue;
+> +
+> +		for (memmap = (void*)pfn_to_page(pos),
+> +			/* The last page in section */
+> +			mapend = pfn_to_page(next-1);
+> +			memmap < mapend; memmap += PAGE_SIZE) {
+> +			pg = virt_to_page(memmap);
+> +			pg->private = MEMMAP_HOLE;
+> +		}
+> +	}
+> +}
+> +#else
+> +void mark_invalid_memmap(unsigned long start, unsigned long end)
+> +{
+> +}
+>  #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
+> --
 
-This option allows for enabling certain debugging functionality in runtime
-(via a sysfs file), which is turned off by default. It is debatable whether
-this option should default to 'y' or 'n', seeing as it doesn't add much
-overhead to the normal usecase.
 
-> > + š š š help
-> > + š š š š This option enables JTAG & ETM debugging across power states.
-> > + š š š š With out this option emulation features are reset across OFF
-> > + š š š š mode state changes.
 
-But I see that the wording is misleading and unclear, so I'll try to come
-up with something more descriptive.
+I don't think this works because if the memmap pages get reused, the corresponding struct page->private could be used by chance in such a way that it has the value of MEMMAP_HOLE. Of course unlikely but possible. And after all the whole point of freeing part of the memmap is that it could be reused.
 
-Regards,
---
-Alex
+--Mika
+
+
+
