@@ -1,40 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab0GYKnV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 06:43:21 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43089 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751922Ab0GYKnU (ORCPT
+	id S1752576Ab0GYKna (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 06:43:30 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44650 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab0GYKnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 06:43:20 -0400
-Date: Sun, 25 Jul 2010 11:54:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, mrst: remove unused mrst_identify_cpu()
-Message-ID: <20100725115414.67301a66@lxorguk.ukuu.org.uk>
-In-Reply-To: <1280033438.2419.5.camel@lenovo>
-References: <1280033438.2419.5.camel@lenovo>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 25 Jul 2010 06:43:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background writeback
+Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+In-Reply-To: <20100723105719.GE5300@csn.ul.ie>
+References: <20100723094515.GD5043@localhost> <20100723105719.GE5300@csn.ul.ie>
+Message-Id: <20100725192955.40D5.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sun, 25 Jul 2010 19:43:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Jul 2010 00:50:38 -0400
-Javier Martinez Canillas <martinez.javier@gmail.com> wrote:
+Hi
 
-> mrst_identify_cpu() function is not been used anymore (at today linux-next). This patch removes it.
+sorry for the delay.
 
-NAK
+> Will you be picking it up or should I? The changelog should be more or less
+> the same as yours and consider it
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> 
+> It'd be nice if the original tester is still knocking around and willing
+> to confirm the patch resolves his/her problem. I am running this patch on
+> my desktop at the moment and it does feel a little smoother but it might be
+> my imagination. I had trouble with odd stalls that I never pinned down and
+> was attributing to the machine being commonly heavily loaded but I haven't
+> noticed them today.
+> 
+> It also needs an Acked-by or Reviewed-by from Kosaki Motohiro as it alters
+> logic he introduced in commit [78dc583: vmscan: low order lumpy reclaim also
+> should use PAGEOUT_IO_SYNC]
 
-This is stuff being merged.
+My reviewing doesn't found any bug. however I think original thread have too many guess
+and we need to know reproduce way and confirm it.
 
-If you are going to try and remove stuff, -next is not the place to
-track !
+At least, we need three confirms.
+ o original issue is still there?
+ o DEF_PRIORITY/3 is best value?
+ o Current approach have better performance than Wu's original proposal? (below)
+
+
+Anyway, please feel free to use my reviewed-by tag.
+
+Thanks.
+
+
+
+--- linux-next.orig/mm/vmscan.c	2010-06-24 14:32:03.000000000 +0800
++++ linux-next/mm/vmscan.c	2010-07-22 16:12:34.000000000 +0800
+@@ -1650,7 +1650,7 @@ static void set_lumpy_reclaim_mode(int p
+ 	 */
+ 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+ 		sc->lumpy_reclaim_mode = 1;
+-	else if (sc->order && priority < DEF_PRIORITY - 2)
++	else if (sc->order && priority < DEF_PRIORITY / 2)
+ 		sc->lumpy_reclaim_mode = 1;
+ 	else
+ 		sc->lumpy_reclaim_mode = 0;
+
