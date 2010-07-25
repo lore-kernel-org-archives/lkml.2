@@ -1,183 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab0GYIdd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 04:33:33 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:49900 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab0GYI3u (ORCPT
+	id S1752505Ab0GYImu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 04:42:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61462 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab0GYIms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 04:29:50 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCHv5 01/15] writeback: harmonize writeback threads naming
-Date: Sun, 25 Jul 2010 11:29:27 +0300
-Message-Id: <1280046581-23623-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
-References: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 Jul 2010 08:29:44.0335 (UTC) FILETIME=[88CBE9F0:01CB2BD3]
-X-Nokia-AV: Clean
+	Sun, 25 Jul 2010 04:42:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=j7IWnmg7ltiKumTpcfAGYNGlUhlDCOn3vzvvZBqz5Dl9nLTteiKyDbUUgklf11ugHs
+         m7Qc/UzO4CccQsNMn3YEA+nEVqtmG0SvgOrUa+CLaNpqQaSMESGxXL9v+6wXuFTvCj9b
+         ubxKfbmkbvNVO7I6a4Of6RIKynPPTD6SAedTE=
+MIME-Version: 1.0
+In-Reply-To: <20100723131034.GA6618@joi.lan>
+References: <20100720191923.GA11056@joi.lan>
+	<20100722172039.e935c67d.akpm@linux-foundation.org>
+	<20100723131034.GA6618@joi.lan>
+Date: Sun, 25 Jul 2010 18:42:48 +1000
+Message-ID: <AANLkTimQZ6_+o=3pGa6hGbeFU99RMPFRmO+ndMZDHZMS@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH v2] vga16fb: refuse to load in face of other 
+	driver controlling primary card
+From: Dave Airlie <airlied@gmail.com>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, nouveau@lists.freedesktop.org,
+        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Fri, Jul 23, 2010 at 11:10 PM, Marcin Slusarz
+<marcin.slusarz@gmail.com> wrote:
+> On Thu, Jul 22, 2010 at 05:20:39PM -0700, Andrew Morton wrote:
+>> On Tue, 20 Jul 2010 21:19:23 +0200
+>> Marcin Slusarz <marcin.slusarz@gmail.com> wrote:
+>>
+>> > We don't want vga16fb to mess with hardware initialized by other driver.
+>> > Detect it and refuse to load.
+>> > It fixes nouveau interrupt storm on some machines.
 
-The write-back code mixes words "thread" and "task" for the same things. This
-is not a big deal, but still an inconsistency.
+Can't we keep this all inside vga16fb? just have it walk PCI tree
+looking for a primary VGA card, and if it has a driver bound, just
+refuse to bind.
 
-hch: a convention I tend to use and I've seen in various places
-is to always use _task for the storage of the task_struct pointer,
-and thread everywhere else.  This especially helps with having
-foo_thread for the actual thread and foo_task for a global
-variable keeping the task_struct pointer
-
-This patch renames:
-* 'bdi_add_default_flusher_task()' -> 'bdi_add_default_flusher_thread()'
-* 'bdi_forker_task()'              -> 'bdi_forker_thread()'
-
-because bdi threads are 'bdi_writeback_thread()', so these names are more
-consistent.
-
-This patch also amends commentaries and makes them refer the forker and bdi
-threads as "thread", not "task".
-
-Also, while on it, make 'bdi_add_default_flusher_thread()' declaration use
-'static void' instead of 'void static' and make checkpatch.pl happy.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
----
- fs/fs-writeback.c           |    2 +-
- include/linux/backing-dev.h |    2 +-
- mm/backing-dev.c            |   26 +++++++++++++-------------
- 3 files changed, 15 insertions(+), 15 deletions(-)
-
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index bf10cbf..5e6b7fc 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -840,7 +840,7 @@ int bdi_writeback_thread(void *data)
- 
- 			/*
- 			 * Longest period of inactivity that we tolerate. If we
--			 * see dirty data again later, the task will get
-+			 * see dirty data again later, the thread will get
- 			 * recreated automatically.
- 			 */
- 			max_idle = max(5UL * 60 * HZ, wait_jiffies);
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index e536f3a..f0936f5 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -50,7 +50,7 @@ struct bdi_writeback {
- 
- 	unsigned long last_old_flush;		/* last old data flush */
- 
--	struct task_struct	*task;		/* writeback task */
-+	struct task_struct	*task;		/* writeback thread */
- 	struct list_head	b_dirty;	/* dirty inodes */
- 	struct list_head	b_io;		/* parked for writeback */
- 	struct list_head	b_more_io;	/* parked for more writeback */
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index ac78a33..4e9ed2a 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -50,7 +50,7 @@ static struct timer_list sync_supers_timer;
- static int bdi_sync_supers(void *);
- static void sync_supers_timer_fn(unsigned long);
- 
--static void bdi_add_default_flusher_task(struct backing_dev_info *bdi);
-+static void bdi_add_default_flusher_thread(struct backing_dev_info *bdi);
- 
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
-@@ -279,10 +279,10 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
- }
- 
- /*
-- * kupdated() used to do this. We cannot do it from the bdi_forker_task()
-+ * kupdated() used to do this. We cannot do it from the bdi_forker_thread()
-  * or we risk deadlocking on ->s_umount. The longer term solution would be
-  * to implement sync_supers_bdi() or similar and simply do it from the
-- * bdi writeback tasks individually.
-+ * bdi writeback thread individually.
-  */
- static int bdi_sync_supers(void *unused)
- {
-@@ -318,7 +318,7 @@ static void sync_supers_timer_fn(unsigned long unused)
- 	bdi_arm_supers_timer();
- }
- 
--static int bdi_forker_task(void *ptr)
-+static int bdi_forker_thread(void *ptr)
- {
- 	struct bdi_writeback *me = ptr;
- 
-@@ -354,7 +354,7 @@ static int bdi_forker_task(void *ptr)
- 			    !bdi_has_dirty_io(bdi))
- 				continue;
- 
--			bdi_add_default_flusher_task(bdi);
-+			bdi_add_default_flusher_thread(bdi);
- 		}
- 
- 		set_current_state(TASK_INTERRUPTIBLE);
-@@ -376,7 +376,7 @@ static int bdi_forker_task(void *ptr)
- 
- 		/*
- 		 * This is our real job - check for pending entries in
--		 * bdi_pending_list, and create the tasks that got added
-+		 * bdi_pending_list, and create the threads that got added
- 		 */
- 		bdi = list_entry(bdi_pending_list.next, struct backing_dev_info,
- 				 bdi_list);
-@@ -387,7 +387,7 @@ static int bdi_forker_task(void *ptr)
- 		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
- 					dev_name(bdi->dev));
- 		/*
--		 * If task creation fails, then readd the bdi to
-+		 * If thread creation fails, then readd the bdi to
- 		 * the pending list and force writeout of the bdi
- 		 * from this forker thread. That will free some memory
- 		 * and we can try again.
-@@ -430,10 +430,10 @@ static void bdi_add_to_pending(struct rcu_head *head)
- }
- 
- /*
-- * Add the default flusher task that gets created for any bdi
-+ * Add the default flusher thread that gets created for any bdi
-  * that has dirty data pending writeout
-  */
--void static bdi_add_default_flusher_task(struct backing_dev_info *bdi)
-+static void bdi_add_default_flusher_thread(struct backing_dev_info *bdi)
- {
- 	if (!bdi_cap_writeback_dirty(bdi))
- 		return;
-@@ -445,10 +445,10 @@ void static bdi_add_default_flusher_task(struct backing_dev_info *bdi)
- 	}
- 
- 	/*
--	 * Check with the helper whether to proceed adding a task. Will only
-+	 * Check with the helper whether to proceed adding a thread. Will only
- 	 * abort if we two or more simultanous calls to
--	 * bdi_add_default_flusher_task() occured, further additions will block
--	 * waiting for previous additions to finish.
-+	 * bdi_add_default_flusher_thread() occured, further additions will
-+	 * block waiting for previous additions to finish.
- 	 */
- 	if (!test_and_set_bit(BDI_pending, &bdi->state)) {
- 		list_del_rcu(&bdi->bdi_list);
-@@ -506,7 +506,7 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
- 	if (bdi_cap_flush_forker(bdi)) {
- 		struct bdi_writeback *wb = &bdi->wb;
- 
--		wb->task = kthread_run(bdi_forker_task, wb, "bdi-%s",
-+		wb->task = kthread_run(bdi_forker_thread, wb, "bdi-%s",
- 						dev_name(dev));
- 		if (IS_ERR(wb->task)) {
- 			wb->task = NULL;
--- 
-1.7.1.1
-
+Dave.
