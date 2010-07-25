@@ -1,221 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab0GYUXr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 16:23:47 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:18017
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752579Ab0GYUXp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 16:23:45 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz154dM1432Nzz1202hzzz2fh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-From: =?iso-8859-1?Q?Penttil=E4_Mika?= <mika.penttila@ixonos.com>
-To: "minchan.kim@gmail.com" <minchan.kim@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: RE: [PATCH] Tight check of pfn_valid on sparsemem - v3
-Thread-Topic: [PATCH] Tight check of pfn_valid on sparsemem - v3
-Thread-Index: AQHLLDcjZGfBHnE440ef9zuY8YEwQQ==
-Date: Sun, 25 Jul 2010 20:22:51 +0000
-Message-ID: <1A61D8EA6755AF458F06EA669A4EC818013896@JKLMAIL02.ixonos.local>
-References: <1A61D8EA6755AF458F06EA669A4EC81801387C@JKLMAIL02.ixonos.local>
-In-Reply-To: <1A61D8EA6755AF458F06EA669A4EC81801387C@JKLMAIL02.ixonos.local>
-Accept-Language: en-US, fi-FI
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752205Ab0GYUdR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 16:33:17 -0400
+Received: from mx02.infracom.it ([62.196.48.11]:50868 "EHLO mx02.infracom.it"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750804Ab0GYUdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 16:33:15 -0400
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Jul 2010 16:33:15 EDT
+Message-ID: <4C4C9E40.7070209@infracom.it>
+Date: Sun, 25 Jul 2010 22:27:44 +0200
+From: Roberto Oppedisano <roberto.oppedisano@infracom.it>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100710 Thunderbird/3.1
 MIME-Version: 1.0
-X-Reverse-DNS: po02.ixonos.com
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: 2.6.35 suspend regression (bisected)
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Changelog since v2
->  o Change some function names
->  o Remove mark_memmap_hole in memmap bring up
->  o Change CONFIG_SPARSEMEM with CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
-> 
-> I have a plan following as after this patch is acked.
-> 
-> TODO:
-> 1) expand pfn_valid to FALTMEM in ARM
-> I think we can enhance pfn_valid of FLATMEM in ARM.
-> Now it is doing binary search and it's expesive.
-> First of all, After we merge this patch, I expand it to FALTMEM of ARM.
-> 
-> 2) remove memmap_valid_within
-> We can remove memmap_valid_within by strict pfn_valid's tight check.
-> 
-> 3) Optimize hole check in sparsemem
-> In case of spasemem, we can optimize pfn_valid through defining new
-> flag
-> like SECTION_HAS_HOLE of hole mem_section.
-> 
-> == CUT HERE ==
-> 
-> Kukjin reported oops happen while he change min_free_kbytes
-> http://www.spinics.net/lists/arm-kernel/msg92894.html
-> It happen by memory map on sparsemem.
-> 
-> The system has a memory map following as.
->      section 0             section 1              section 2
-> 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
-> SECTION_SIZE_BITS 28(256M)
-> 
-> It means section 0 is an incompletely filled section.
-> Nontheless, current pfn_valid of sparsemem checks pfn loosely.
-> It checks only mem_section's validation but ARM can free mem_map on
-> hole
-> to save memory space. So in above case, pfn on 0x25000000 can pass
-> pfn_valid's
-> validation check. It's not what we want.
-> 
-> We can match section size to smallest valid size.(ex, above case, 16M)
-> But Russell doesn't like it due to mem_section's memory overhead with
-> different
-> configuration(ex, 512K section).
-> 
-> I tried to add valid pfn range in mem_section but everyone doesn't like
-> it
-> due to size overhead. This patch is suggested by KAMEZAWA-san.
-> I just fixed compile error and change some naming.
-> 
-> This patch registers address of mem_section to memmap itself's page
-> struct's
-> pg->private field. This means the page is used for memmap of the
-> section.
-> Otherwise, the page is used for other purpose and memmap has a hole.
-> 
-> This patch is based on mmotm-2010-07-19
-> 
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Reported-by: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> ---
->  arch/arm/mm/init.c                  |    4 +++-
->  include/linux/mmzone.h              |   22 +++++++++++++++++++++-
->  mm/mmzone.c                         |   34
-> ++++++++++++++++++++++++++++++++++
->  5 files changed, 58 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index f6a9994..25e2670 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -482,8 +482,10 @@ free_memmap(int node, unsigned long start_pfn,
-> unsigned long end_pfn)
->  	 * If there are free pages between these,
->  	 * free the section of the memmap array.
->  	 */
-> -	if (pg < pgend)
-> +	if (pg < pgend) {
-> + 		mark_invalid_memmap(pg >> PAGE_SHIFT, pgend >> PAGE_SHIFT);
->  		free_bootmem_node(NODE_DATA(node), pg, pgend - pg);
-> +	}
->  }
-> 
->  /*
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index b4d109e..a3195bd 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -15,6 +15,7 @@
->  #include <linux/seqlock.h>
->  #include <linux/nodemask.h>
->  #include <linux/pageblock-flags.h>
-> +#include <linux/mm_types.h>
->  #include <generated/bounds.h>
->  #include <asm/atomic.h>
->  #include <asm/page.h>
-> @@ -1049,11 +1050,30 @@ static inline struct mem_section
-> *__pfn_to_section(unsigned long pfn)
->  	return __nr_to_section(pfn_to_section_nr(pfn));
->  }
-> 
-> +void mark_invalid_memmap(unsigned long start, unsigned long end);
-> +
-> +#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
-> +#define MEMMAP_HOLE	(0x1UL)
-> +static inline int memmap_valid(unsigned long pfn)
-> +{
-> +	struct page *page = pfn_to_page(pfn);
-> +	struct page *__pg = virt_to_page(page);
-> +	return !(__pg->private & MEMMAP_HOLE);
-> +}
-> +#else
-> +static inline int memmap_valid(unsigned long pfn)
-> +{
-> +	return 1;
-> +}
-> +#endif
-> +
->  static inline int pfn_valid(unsigned long pfn)
->  {
-> +	struct mem_section *ms;
->  	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
->  		return 0;
-> -	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
-> +	ms = __nr_to_section(pfn_to_section_nr(pfn));
-> +	return valid_section(ms) && memmap_valid(pfn);
->  }
-> 
->  static inline int pfn_present(unsigned long pfn)
-> diff --git a/mm/mmzone.c b/mm/mmzone.c
-> index f5b7d17..7c84e5e 100644
-> --- a/mm/mmzone.c
-> +++ b/mm/mmzone.c
-> @@ -86,4 +86,38 @@ int memmap_valid_within(unsigned long pfn,
-> 
->  	return 1;
->  }
-> +
-> +/*
-> + * Fill pg->private on hole memmap with MEMMAP_HOLE.
-> + * pfn_valid() will check this later. (see include/linux/mmzone.h)
-> + * Evenry arch should call
-> + * 	mark_invalid_memmap(start, end) # for all holes in mem_map.
-> + * please see usage in ARM.
-> + */
-> +void mark_invalid_memmap(unsigned long start, unsigned long end)
-> +{
-> +	struct mem_section *ms;
-> +	unsigned long pos, next;
-> +	struct page *pg;
-> +	void *memmap, *mapend;
-> +
-> +	for (pos = start; pos < end; pos = next) {
-> +		next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
-> +		ms = __pfn_to_section(pos);
-> +		if (!valid_section(ms))
-> +			continue;
-> +
-> +		for (memmap = (void*)pfn_to_page(pos),
-> +			/* The last page in section */
-> +			mapend = pfn_to_page(next-1);
-> +			memmap < mapend; memmap += PAGE_SIZE) {
-> +			pg = virt_to_page(memmap);
-> +			pg->private = MEMMAP_HOLE;
-> +		}
-> +	}
-> +}
-> +#else
-> +void mark_invalid_memmap(unsigned long start, unsigned long end)
-> +{
-> +}
->  #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
-> --
 
 
+My HP6730B (x86_64 kernel, uptodate lubuntu Lucid installed) fails to suspend
+on recent git kernels, the screen goes black (backlight on) and stays there forever.
 
-I don't think this works because if the memmap pages get reused, the corresponding struct page->private could be used by chance in such a way that it has the value of MEMMAP_HOLE. Of course unlikely but possible. And after all the whole point of freeing part of the memmap is that it could be reused.
+Here's what I found from a bisect.
 
---Mika
+Alas reverting that single commit on current linux/master does not
+solve the issue so it could be that I did something wrong... anyway
+here the log of the bisect:
+
+git bisect start
+# good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
+git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
+# bad: [815c4163b6c8ebf8152f42b0a5fd015cfdcedc78] Linux 2.6.35-rc4
+git bisect bad 815c4163b6c8ebf8152f42b0a5fd015cfdcedc78
+# good: [c316ba3b518bc35ce5aef5421135220389f4eb98] Merge branch 'linux-next' of git://git.infradead.org/ubi-2.6
+git bisect good c316ba3b518bc35ce5aef5421135220389f4eb98
+# good: [6d94d4081048756df78444a07201156f4930fe48] lis3: interrupt handlers for 8bit wakeup and click events
+git bisect good 6d94d4081048756df78444a07201156f4930fe48
+# good: [d8d326dc7ae6bec2a999d674c5babb6bf490587a] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6
+git bisect good d8d326dc7ae6bec2a999d674c5babb6bf490587a
+# bad: [9a9620db07b27700a4de9e86985735fffb78e2f8] Merge branch 'linux_next' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core
+git bisect bad 9a9620db07b27700a4de9e86985735fffb78e2f8
+# bad: [c2572b78aa0447244a38e555ebb1b3b48a0088a5] USB: cdc-acm: fix resource reclaim in error path of acm_probe
+git bisect bad c2572b78aa0447244a38e555ebb1b3b48a0088a5
+# good: [aef4b9aaae1decc775778903922bd0075cce7a88] Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc
+git bisect good aef4b9aaae1decc775778903922bd0075cce7a88
+# bad: [95619be590638bd48469ac81c0f6236f349f5640] Merge git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6
+git bisect bad 95619be590638bd48469ac81c0f6236f349f5640
+# good: [92645879d07a48897fe8888c2e37607aa1189cc9] drm/radeon/kms/pm: radeon_set_power_state fixes
+git bisect good 92645879d07a48897fe8888c2e37607aa1189cc9
+# good: [ee227c577cde47f78e2df359f9c32ba047060767] of/powerpc: fix fsl_msi device node pointer
+git bisect good ee227c577cde47f78e2df359f9c32ba047060767
+# good: [d8dcaa1dc50f5aecd38d34180cd99d6af8566c88] drm/radeon/kms: make sure display hw is disabled when suspending
+git bisect good d8dcaa1dc50f5aecd38d34180cd99d6af8566c88
+# good: [03cd3739818d3fa7f973d0fb6d3aa63122ea00a0] Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6
+git bisect good 03cd3739818d3fa7f973d0fb6d3aa63122ea00a0
+# good: [527b9525256f97ad8d092bbfc8fdc3c5409f4a4d] n2_crypto: Fix MAU kmem_cache name.
+git bisect good 527b9525256f97ad8d092bbfc8fdc3c5409f4a4d
+# bad: [0f0a8fa735bbde4b0bc3e96e4bb2e5b380a324db] crypto: crypto4xx - Fix build breakage
+git bisect bad 0f0a8fa735bbde4b0bc3e96e4bb2e5b380a324db
+
+Bisecting: 0 revisions left to test after this (roughly 0 steps)
+[c9aa55e5271a53d28e93fa58759d318b403c15ba] n2_crypto: Plumb fallback ahash requests properly.
+$ lcpci
+
+00:00.0 Host bridge: Intel Corporation Mobile 4 Series Chipset Memory Controller Hub (rev 07)
+00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
+00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
+00:1a.0 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #4 (rev 03)
+00:1a.1 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #5 (rev 03)
+00:1a.2 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #6 (rev 03)
+00:1a.7 USB Controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI Controller #2 (rev 03)
+00:1b.0 Audio device: Intel Corporation 82801I (ICH9 Family) HD Audio Controller (rev 03)
+00:1c.0 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 1 (rev 03)
+00:1c.1 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 2 (rev 03)
+00:1c.2 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 3 (rev 03)
+00:1c.4 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 5 (rev 03)
+00:1c.5 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express Port 6 (rev 03)
+00:1d.0 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #1 (rev 03)
+00:1d.1 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #2 (rev 03)
+00:1d.2 USB Controller: Intel Corporation 82801I (ICH9 Family) USB UHCI Controller #3 (rev 03)
+00:1d.7 USB Controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI Controller #1 (rev 03)
+00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev 93)
+00:1f.0 ISA bridge: Intel Corporation ICH9M LPC Interface Controller (rev 03)
+00:1f.2 SATA controller: Intel Corporation ICH9M/M-E SATA AHCI Controller (rev 03)
+02:00.0 Network controller: Intel Corporation PRO/Wireless 5100 AGN [Shiloh] Network Connection
+85:00.0 Ethernet controller: Broadcom Corporation NetLink BCM5787M Gigabit Ethernet PCI Express (rev 02)
+86:02.0 FireWire (IEEE 1394): Agere Systems FW322/323 (rev 70)
+
+$ uname -a
+Linux poppero4 2.6.35-rc6+ #40 SMP Sun Jul 25 18:25:50 CEST 2010 x86_64 GNU/Linux
+
+R
 
 
+-- 
+Roberto Oppedisano [RO2480-RIPE]
+Infracom Italia S.p.A.                    IM, OSS and LIR Services
+Tel. +39 045 9692691   Fax  +39 045 8271499   Mob. +39 348 7419534
 
