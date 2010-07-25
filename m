@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab0GYIbu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 04:31:50 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:49931 "EHLO
+	id S1752625Ab0GYIc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 04:32:58 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:49899 "EHLO
 	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab0GYI34 (ORCPT
+	with ESMTP id S1751961Ab0GYI3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 04:29:56 -0400
+	Sun, 25 Jul 2010 04:29:50 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCHv5 13/15] writeback: remove unnecessary init_timer call
-Date: Sun, 25 Jul 2010 11:29:39 +0300
-Message-Id: <1280046581-23623-14-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv5 03/15] writeback: do not lose wake-ups in the forker thread - 1
+Date: Sun, 25 Jul 2010 11:29:29 +0300
+Message-Id: <1280046581-23623-4-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
 References: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 Jul 2010 08:29:47.0820 (UTC) FILETIME=[8ADFAEC0:01CB2BD3]
+X-OriginalArrivalTime: 25 Jul 2010 08:29:44.0929 (UTC) FILETIME=[89268D10:01CB2BD3]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,27 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-The 'setup_timer()' function also calls 'init_timer()', so the extra
-'init_timer()' call is not needed. Indeed, 'setup_timer()' is basically
-'init_timer()' plus callback function and data pointers initialization.
+Currently the forker thread can lose wake-ups which may lead to unnecessary
+delays in processing bdi works. E.g., consider the following scenario.
+
+1. 'bdi_forker_thread()' walks the 'bdi_list', finds out there is nothing to
+   do, and is about to finish the loop.
+2. A bdi thread decides to exit because it was inactive for long time.
+3. 'bdi_queue_work()' adds a work to the bdi which just exited, so it wakes up
+   the forker thread.
+4. but 'bdi_forker_thread()' executes 'set_current_state(TASK_INTERRUPTIBLE)'
+   and goes sleep. We lose a wake-up.
+
+Losing the wake-up is not fatal, but this means that the bdi work processing
+will be delayed by up to 5 sec. This race is theoretical, I never hit it, but
+it is worth fixing.
+
+The fix is to execute 'set_current_state(TASK_INTERRUPTIBLE)' _before_ walking
+'bdi_list', not after.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- mm/backing-dev.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ mm/backing-dev.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
 diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index c2def00..7cef95e 100644
+index 327e36d..b1dc2d4 100644
 --- a/mm/backing-dev.c
 +++ b/mm/backing-dev.c
-@@ -236,7 +236,6 @@ static int __init default_bdi_init(void)
- 	sync_supers_tsk = kthread_run(bdi_sync_supers, NULL, "sync_supers");
- 	BUG_ON(IS_ERR(sync_supers_tsk));
+@@ -342,6 +342,7 @@ static int bdi_forker_thread(void *ptr)
+ 			wb_do_writeback(me, 0);
  
--	init_timer(&sync_supers_timer);
- 	setup_timer(&sync_supers_timer, sync_supers_timer_fn, 0);
- 	bdi_arm_supers_timer();
+ 		spin_lock_bh(&bdi_lock);
++		set_current_state(TASK_INTERRUPTIBLE);
+ 
+ 		/*
+ 		 * Check if any existing bdi's have dirty data without
+@@ -357,8 +358,6 @@ static int bdi_forker_thread(void *ptr)
+ 			bdi_add_default_flusher_thread(bdi);
+ 		}
+ 
+-		set_current_state(TASK_INTERRUPTIBLE);
+-
+ 		if (list_empty(&bdi_pending_list)) {
+ 			unsigned long wait;
  
 -- 
 1.7.1.1
