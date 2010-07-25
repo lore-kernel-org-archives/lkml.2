@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab0GYImu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 04:42:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61462 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab0GYIms (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 04:42:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=j7IWnmg7ltiKumTpcfAGYNGlUhlDCOn3vzvvZBqz5Dl9nLTteiKyDbUUgklf11ugHs
-         m7Qc/UzO4CccQsNMn3YEA+nEVqtmG0SvgOrUa+CLaNpqQaSMESGxXL9v+6wXuFTvCj9b
-         ubxKfbmkbvNVO7I6a4Of6RIKynPPTD6SAedTE=
+	id S1752253Ab0GYIrJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 04:47:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59578 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492Ab0GYIrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 04:47:06 -0400
+Message-ID: <4C4BFA03.8020604@redhat.com>
+Date: Sun, 25 Jul 2010 11:46:59 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <20100723131034.GA6618@joi.lan>
-References: <20100720191923.GA11056@joi.lan>
-	<20100722172039.e935c67d.akpm@linux-foundation.org>
-	<20100723131034.GA6618@joi.lan>
-Date: Sun, 25 Jul 2010 18:42:48 +1000
-Message-ID: <AANLkTimQZ6_+o=3pGa6hGbeFU99RMPFRmO+ndMZDHZMS@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH v2] vga16fb: refuse to load in face of other 
-	driver controlling primary card
-From: Dave Airlie <airlied@gmail.com>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, nouveau@lists.freedesktop.org,
-        linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/6] KVM: MMU: fix forgot reserved bits check in speculative
+ path
+References: <4C3FCFD7.5070005@cn.fujitsu.com> <4C464102.8020205@cn.fujitsu.com> <4C473EDB.6030906@redhat.com> <4C479C75.9000501@cn.fujitsu.com>
+In-Reply-To: <4C479C75.9000501@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 11:10 PM, Marcin Slusarz
-<marcin.slusarz@gmail.com> wrote:
-> On Thu, Jul 22, 2010 at 05:20:39PM -0700, Andrew Morton wrote:
->> On Tue, 20 Jul 2010 21:19:23 +0200
->> Marcin Slusarz <marcin.slusarz@gmail.com> wrote:
->>
->> > We don't want vga16fb to mess with hardware initialized by other driver.
->> > Detect it and refuse to load.
->> > It fixes nouveau interrupt storm on some machines.
+  On 07/22/2010 04:18 AM, Xiao Guangrong wrote:
+>
+> Avi Kivity wrote:
+>> On 07/21/2010 03:36 AM, Xiao Guangrong wrote:
+>>> Xiao Guangrong wrote:
+>>>
+>>>> In the speculative path, we should check guest pte's reserved bits
+>>>> just as
+>>>> the real processor does
+>>>>
+>>>>
+>>> Ping......?
+>>>
+>> Sorry.  All looks good.  I think no change is needed to patch 3, if we
+>> agree on this I'll apply it as is.
+> Yeah, i agree, thanks, Avi.
 
-Can't we keep this all inside vga16fb? just have it walk PCI tree
-looking for a primary VGA card, and if it has a driver bound, just
-refuse to bind.
+Now applied.
 
-Dave.
+-- 
+error compiling committee.c: too many arguments to function
+
