@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab0GYQwn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 12:52:43 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:49130 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751105Ab0GYQwl (ORCPT
+	id S1751694Ab0GYRDL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 13:03:11 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36052 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab0GYRDJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 12:52:41 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] cyber2000fb: fix machine hang on module load
-Date: Sun, 25 Jul 2010 18:52:30 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
+	Sun, 25 Jul 2010 13:03:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=KllC+vYmvh6ZefZw48PptjdLr1O30HbrByKBfhIJN8unksoNtvy3it/sIj7IyuE6ty
+         49neyZggHz29a3ZBWhlvC0xcp2pFo/Y6QJJNcOw6cuzz/AyNhbKRvJatwWkV17sV9r0d
+         6yTg7sSglJ48yP4Cm5b3AEaKmMfXdDxHIqnXA=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201007251852.32397.linux@rainbow-software.org>
+In-Reply-To: <1280066561-8543-1-git-send-email-minchan.kim@gmail.com>
+References: <1280066561-8543-1-git-send-email-minchan.kim@gmail.com>
+Date: Sun, 25 Jul 2010 22:33:08 +0530
+X-Google-Sender-Auth: e6JpihvtdBHiG6FY2W_Mo7GkNvc
+Message-ID: <AANLkTimtN9PuvwrB2PAUZMajWzg=TbEP1jeseVM3MST3@mail.gmail.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v3
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I was testing two CyberPro 2000 based PCI cards on x86 and the machine always
-hanged completely when the cyber2000fb module was loaded. It seems that the
-card hangs when some registers are accessed too quickly after writing RAMDAC
-control register. With this patch, both card work.
+On Sun, Jul 25, 2010 at 7:32 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> Changelog since v2
+>  o Change some function names
+>  o Remove mark_memmap_hole in memmap bring up
+>  o Change CONFIG_SPARSEMEM with CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
+>
+> I have a plan following as after this patch is acked.
+>
+> TODO:
+> 1) expand pfn_valid to FALTMEM in ARM
+> I think we can enhance pfn_valid of FLATMEM in ARM.
+> Now it is doing binary search and it's expesive.
+> First of all, After we merge this patch, I expand it to FALTMEM of ARM.
+>
+> 2) remove memmap_valid_within
+> We can remove memmap_valid_within by strict pfn_valid's tight check.
+>
+> 3) Optimize hole check in sparsemem
+> In case of spasemem, we can optimize pfn_valid through defining new flag
+> like SECTION_HAS_HOLE of hole mem_section.
+>
 
-Add delay after RAMDAC control register write to prevent hangs on module load.
+Is there an assumption somewhere that assumes that page->private will
+always have MEMMAP_HOLE set when the pfn is invalid, independent of
+the context in which it is invoked? BTW, I'd also recommend moving
+over to using set_page_private() and page_private() wrappers (makes
+the code easier to search)
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-
---- linux-2.6.35-rc2/drivers/video/cyber2000fb.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-07-25 18:20:47.000000000 +0200
-@@ -436,6 +436,7 @@ static void cyber2000fb_write_ramdac_ctr
- 	cyber2000fb_writeb(i | 4, 0x3cf, cfb);
- 	cyber2000fb_writeb(val, 0x3c6, cfb);
- 	cyber2000fb_writeb(i, 0x3cf, cfb);
-+	udelay(1);
- }
- 
- static void cyber2000fb_set_timing(struct cfb_info *cfb, struct par_info *hw)
-
-
--- 
-Ondrej Zary
+Balbir
