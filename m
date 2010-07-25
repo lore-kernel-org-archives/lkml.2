@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab0GYUiA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 16:38:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64122 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab0GYUh7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 16:37:59 -0400
+	id S1752005Ab0GYVAy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 17:00:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804Ab0GYVAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 17:00:53 -0400
+Message-ID: <4C4CA601.6020201@redhat.com>
+Date: Sun, 25 Jul 2010 23:00:49 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <20100725130723.a5192793.sfr@canb.auug.org.au>
-References: <20100724154331.22701.3409.stgit@angua> <20100725130723.a5192793.sfr@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 25 Jul 2010 14:37:38 -0600
-X-Google-Sender-Auth: mGRRWS6F1Tq-oCgwasPaq_MEMdg
-Message-ID: <AANLkTinE4X0iAJAiatc7Qtj2QP6dhyBKo9fqxqUt40Y6@mail.gmail.com>
-Subject: Re: [PATCH] of: Provide default of_node_to_nid() when CONFIG_NUMA is 
-	not set
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
-        sparclinux@vger.kernel.org, davem@davemloft.net
+To: Nils Radtke <lkml@Think-Future.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: cryptsetup + lvm on usb disk, unusable /dev/dm-* after suspend/resume
+ cycle
+References: <20100725160641.GK31966@localhost>
+In-Reply-To: <20100725160641.GK31966@localhost>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 24, 2010 at 9:07 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Grant,
->
-> On Sat, 24 Jul 2010 09:43:31 -0600 Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->> of_node_to_nid() is only relevant for NUMA.  Don't force architectures to
->> implement it if CONFIG_NUMA is not set.
->
-> Why not just do:
->
-> #ifndef of_node_to_nid
-> static inline int of_node_to_nid(struct device_node *device) { return 0; }
-> #define of_node_to_nid  of_node_to_nid
-> #endif
->
-> in include/linux/of.h
->
-> and then add:
->
-> #define of_node_to_nid  of_node_to_nid
->
-> Where it is declared/defined for each arch ...
-> (it would be nice if all the archs were consistent in where it was
-> declared).
+On 07/25/2010 06:06 PM, Nils Radtke wrote:
 
-Two reasons; I had started doing that in topology.h, but it caused a
-bunch of collateral damage with files missing the include, so I punted
-and took the easy way out.  Also, I didn't know if that was an
-acceptable or safe pattern for override symbols.
+>   Using an external usb 2 hdd with recent kernels with cryptsetup containers that
+>   contain lvm volumes. 
+> 
+>   After a suspend/resume cycle, with active lvm volumes, the mounted fs is "offline", 
+>   the dm-* devices don't respond to commands issued. No more access possible.
+>   
+>   Have to reboot to free the devices.
 
-I'll spin it again with this pattern and see what it looks.
+I guess it is not dm/block layer problem but USB related - can you check syslog if
+the device is not attached after resume with another major:minor?
 
-g.
+If this happens - you can free the mappings using dmsetup:
+- try to force umount fs (if mounted), then run "dmsetup table" and manually remove
+orphaned mappings using "dmsetup remove".
 
-
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Milan
