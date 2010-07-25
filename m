@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab0GYLaU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 07:30:20 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:18916 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab0GYLaI (ORCPT
+	id S1752762Ab0GYLaE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 07:30:04 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:43499 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab0GYL3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 07:30:08 -0400
+	Sun, 25 Jul 2010 07:29:36 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCHv6 05/15] writeback: do not lose wake-ups in bdi threads
-Date: Sun, 25 Jul 2010 14:29:15 +0300
-Message-Id: <1280057365-10297-6-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv6 15/15] writeback: cleanup bdi_register
+Date: Sun, 25 Jul 2010 14:29:25 +0300
+Message-Id: <1280057365-10297-16-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1280057365-10297-1-git-send-email-dedekind1@gmail.com>
 References: <1280057365-10297-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 Jul 2010 11:29:27.0291 (UTC) FILETIME=[A3F06CB0:01CB2BEC]
+X-OriginalArrivalTime: 25 Jul 2010 11:29:30.0532 (UTC) FILETIME=[A5DEF640:01CB2BEC]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,55 +24,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Currently, bdi threads ('bdi_writeback_thread()') can lose wake-ups. For
-example, if 'bdi_queue_work()' is executed after the bdi thread have had
-finished 'wb_do_writeback()' but before it called
-'schedule_timeout_interruptible()'.
+This patch makes sure we first initialize everything and set the BDI_registered
+flag, and only after this we add the bdi to 'bdi_list'. Current code adds the
+bdi to the list too early, and as a result I the
 
-To fix this issue, we have to check whether we have works to process after we
-have changed the task state to 'TASK_INTERRUPTIBLE'.
+WARN(!test_bit(BDI_registered, &bdi->state)
 
-This patch also clean-ups handling of the cases when 'dirty_writeback_interval'
-is zero or non-zero.
+in bdi forker is triggered. Also, it is in general good practice to make things
+visible only when they are fully initialized.
 
-Additionally, this patch also removes unneeded 'list_empty_careful()' call.
+Also, this patch does few micro clean-ups:
+1. Removes the 'exit' label which does not do anything, just returns. This
+   allows to get rid of few braces and 'ret' variable and make the code smaller.
+2. If 'kthread_run()' fails, remove the error code it returns, not hard-coded
+   '-ENOMEM'. Theoretically, some day 'kthread_run()' can return something
+   else. Also, in case of failure it is not necessary to set 'bdi->wb.task' to
+   NULL.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+ mm/backing-dev.c |   30 +++++++++++-------------------
+ 1 files changed, 11 insertions(+), 19 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 5e6b7fc..8cf53ba 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -848,17 +848,18 @@ int bdi_writeback_thread(void *data)
- 				break;
- 		}
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 9008c4e..0b8ee66 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -511,23 +511,16 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+ 		const char *fmt, ...)
+ {
+ 	va_list args;
+-	int ret = 0;
+ 	struct device *dev;
  
--		if (dirty_writeback_interval) {
--			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
--			schedule_timeout_interruptible(wait_jiffies);
--		} else {
--			set_current_state(TASK_INTERRUPTIBLE);
--			if (list_empty_careful(&wb->bdi->work_list) &&
--			    !kthread_should_stop())
--				schedule();
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (!list_empty(&bdi->work_list)) {
- 			__set_current_state(TASK_RUNNING);
-+			continue;
- 		}
+ 	if (bdi->dev)	/* The driver needs to use separate queues per device */
+-		goto exit;
++		return 0;
  
-+		if (dirty_writeback_interval) {
-+			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
-+			schedule_timeout(wait_jiffies);
-+		} else
-+			schedule();
-+
- 		try_to_freeze();
+ 	va_start(args, fmt);
+ 	dev = device_create_vargs(bdi_class, parent, MKDEV(0, 0), bdi, fmt, args);
+ 	va_end(args);
+-	if (IS_ERR(dev)) {
+-		ret = PTR_ERR(dev);
+-		goto exit;
+-	}
+-
+-	spin_lock_bh(&bdi_lock);
+-	list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
+-	spin_unlock_bh(&bdi_lock);
++	if (IS_ERR(dev))
++		return PTR_ERR(dev);
+ 
+ 	bdi->dev = dev;
+ 
+@@ -541,20 +534,19 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+ 
+ 		wb->task = kthread_run(bdi_forker_thread, wb, "bdi-%s",
+ 						dev_name(dev));
+-		if (IS_ERR(wb->task)) {
+-			wb->task = NULL;
+-			ret = -ENOMEM;
+-
+-			bdi_remove_from_list(bdi);
+-			goto exit;
+-		}
++		if (IS_ERR(wb->task))
++			return PTR_ERR(wb->task);
  	}
+ 
+ 	bdi_debug_register(bdi, dev_name(dev));
+ 	set_bit(BDI_registered, &bdi->state);
++
++	spin_lock_bh(&bdi_lock);
++	list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
++	spin_unlock_bh(&bdi_lock);
++
+ 	trace_writeback_bdi_register(bdi);
+-exit:
+-	return ret;
++	return 0;
+ }
+ EXPORT_SYMBOL(bdi_register);
  
 -- 
 1.7.1.1
