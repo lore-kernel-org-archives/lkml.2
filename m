@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab0GYW03 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 18:26:29 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59355 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab0GYW02 convert rfc822-to-8bit (ORCPT
+	id S1752023Ab0GYWfL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 18:35:11 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:60854 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab0GYWfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 18:26:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jKRqKhC2rCfcnAkL+Gc22dJfSKsiEUHlPrKRr9Xpwy+GZmc6dH8n45XRg+dQgQRrNw
-         mGJ9L2JthtokLO6Cz1VAUJ9EYIPNI8FziVB97zNiRX4JPdoStf3Z11OOeL3EpXpBY/Kb
-         dhhAs/3T5vLOHYqCp5WM2tA67RM1/UHkQO/Ew=
+	Sun, 25 Jul 2010 18:35:10 -0400
+Date: Mon, 26 Jul 2010 00:35:08 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Roberto Oppedisano <roberto.oppedisano@infracom.it>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.35 suspend regression (bisected)
+Message-ID: <20100725223508.GA9885@merkur.ravnborg.org>
+References: <4C4C9E40.7070209@infracom.it> <201007260018.14300.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1A61D8EA6755AF458F06EA669A4EC818013896@JKLMAIL02.ixonos.local>
-References: <1A61D8EA6755AF458F06EA669A4EC81801387C@JKLMAIL02.ixonos.local>
-	<1A61D8EA6755AF458F06EA669A4EC818013896@JKLMAIL02.ixonos.local>
-Date: Mon, 26 Jul 2010 07:26:27 +0900
-Message-ID: <AANLkTim9eEcfszuYz0RnPs4K3U_t4z7XdQjsNZpE+kkf@mail.gmail.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v3
-From: Minchan Kim <minchan.kim@gmail.com>
-To: =?ISO-8859-1?Q?Penttil=E4_Mika?= <mika.penttila@ixonos.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007260018.14300.rjw@sisk.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/26 Penttilä Mika <mika.penttila@ixonos.com>:
-> I don't think this works because if the memmap pages get reused, the corresponding struct page->private could be used by chance in such a way that it has the value of MEMMAP_HOLE. Of course unlikely but possible. And after all the whole point of freeing part of the memmap is that it could be reused.
->
+On Mon, Jul 26, 2010 at 12:18:14AM +0200, Rafael J. Wysocki wrote:
+> On Sunday, July 25, 2010, Roberto Oppedisano wrote:
+> > 
+> > My HP6730B (x86_64 kernel, uptodate lubuntu Lucid installed) fails to suspend
+> > on recent git kernels, the screen goes black (backlight on) and stays there forever.
+> > 
+> > Here's what I found from a bisect.
+> > 
 
-You're absolutely right.
-Previous version, I didn't do such as.
-In this version, I wanted to remove dependency of page->private and
-mem_section to identify hole memmap for using it in FLATMEM of ARM but
-make mistake.
-I will resend the patch
+> Does it work if you revert that commit?
 
-Thanks for careful review.
+Roberto wrote:
 
-> --Mika
->
->
->
->
+> > Alas reverting that single commit on current linux/master does not
+> > solve the issue so it could be that I did something wrong... anyway
+> > here the log of the bisect:
 
+So I guess not...
 
-
--- 
-Kind regards,
-Minchan Kim
+	Sam
