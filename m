@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab0GYLbn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 07:31:43 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:43497 "EHLO
+	id S1752881Ab0GYLbu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 07:31:50 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:43592 "EHLO
 	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab0GYL3f (ORCPT
+	with ESMTP id S1752725Ab0GYLbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 07:29:35 -0400
+	Sun, 25 Jul 2010 07:31:42 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCHv6 14/15] writeback: add new tracepoints
-Date: Sun, 25 Jul 2010 14:29:24 +0300
-Message-Id: <1280057365-10297-15-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv6 09/15] writeback: restructure bdi forker loop a little
+Date: Sun, 25 Jul 2010 14:29:19 +0300
+Message-Id: <1280057365-10297-10-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1280057365-10297-1-git-send-email-dedekind1@gmail.com>
 References: <1280057365-10297-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 Jul 2010 11:29:30.0219 (UTC) FILETIME=[A5AF33B0:01CB2BEC]
+X-OriginalArrivalTime: 25 Jul 2010 11:29:28.0525 (UTC) FILETIME=[A4ACB7D0:01CB2BEC]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,57 +24,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Add 2 new trace points to the periodic write-back wake up case, just like we do
-in the 'bdi_queue_work()' function. Namely, introduce:
+This patch re-structures the bdi forker a little:
+1. Add 'bdi_cap_flush_forker(bdi)' condition check to the bdi loop. The reason
+   for this is that the forker thread can start _before_ the 'BDI_registered'
+   flag is set (see 'bdi_register()'), so the WARN() statement will fire for
+   the default bdi. I observed this warning at boot-up.
 
-1. trace_writeback_wake_thread(bdi)
-2. trace_writeback_wake_forker_thread(bdi)
+2. Introduce an enum 'action' and use "switch" statement in the outer loop.
+   This is a preparation to the further patch which will teach the forker
+   thread killing bdi threads, so we'll have another case in the "switch"
+   statement. This change was suggested by Christoph Hellwig.
 
-The first event is triggered every time we wake up a bdi thread to start
-periodic background write-out. The second event is triggered only when the bdi
-thread does not exist and should be created by the forker thread.
+This patch is just a small step towards the coming change where the forker
+thread will kill the bdi threads. It should simplify reviewing the following
+changes, which would otherwise be larger.
 
-This patch was suggested by Dave Chinner and Christoph Hellwig.
+This patch also amends comments a little.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- include/trace/events/writeback.h |    2 ++
- mm/backing-dev.c                 |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+ mm/backing-dev.c |   69 ++++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 39 insertions(+), 30 deletions(-)
 
-diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
-index 84ab72d..f345f66 100644
---- a/include/trace/events/writeback.h
-+++ b/include/trace/events/writeback.h
-@@ -81,6 +81,8 @@ DEFINE_EVENT(writeback_class, name, \
- 	TP_ARGS(bdi))
- 
- DEFINE_WRITEBACK_EVENT(writeback_nowork);
-+DEFINE_WRITEBACK_EVENT(writeback_wake_thread);
-+DEFINE_WRITEBACK_EVENT(writeback_wake_forker_thread);
- DEFINE_WRITEBACK_EVENT(writeback_bdi_register);
- DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister);
- DEFINE_WRITEBACK_EVENT(writeback_thread_start);
 diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 9989083..9008c4e 100644
+index 672c17b..e104e32 100644
 --- a/mm/backing-dev.c
 +++ b/mm/backing-dev.c
-@@ -310,6 +310,7 @@ static void wakeup_timer_fn(unsigned long data)
+@@ -329,9 +329,12 @@ static int bdi_forker_thread(void *ptr)
+ 	set_user_nice(current, 0);
  
- 	spin_lock_bh(&bdi->wb_lock);
- 	if (bdi->wb.task) {
-+		trace_writeback_wake_thread(bdi);
- 		wake_up_process(bdi->wb.task);
- 	} else {
+ 	for (;;) {
+-		bool fork = false;
+ 		struct task_struct *task;
+ 		struct backing_dev_info *bdi;
++		enum {
++			NO_ACTION,   /* Nothing to do */
++			FORK_THREAD, /* Fork bdi thread */
++		} action = NO_ACTION;
+ 
  		/*
-@@ -317,6 +318,7 @@ static void wakeup_timer_fn(unsigned long data)
- 		 * In this case we have to wake-up the forker thread which
- 		 * should create and run the bdi thread.
+ 		 * Temporary measure, we want to make sure we don't see
+@@ -348,25 +351,31 @@ static int bdi_forker_thread(void *ptr)
+ 		 * a thread registered. If so, set that up.
  		 */
-+		trace_writeback_wake_forker_thread(bdi);
- 		wake_up_process(default_backing_dev_info.wb.task);
+ 		list_for_each_entry(bdi, &bdi_list, bdi_list) {
+-			if (!bdi_cap_writeback_dirty(bdi))
+-				continue;
+-			if (bdi->wb.task)
+-				continue;
+-			if (list_empty(&bdi->work_list) &&
+-			    !bdi_has_dirty_io(bdi))
++			bool have_dirty_io;
++
++			if (!bdi_cap_writeback_dirty(bdi) ||
++			     bdi_cap_flush_forker(bdi))
+ 				continue;
+ 
+ 			WARN(!test_bit(BDI_registered, &bdi->state),
+ 			     "bdi %p/%s is not registered!\n", bdi, bdi->name);
+ 
+-			fork = true;
++			have_dirty_io = !list_empty(&bdi->work_list) ||
++					wb_has_dirty_io(&bdi->wb);
+ 
+ 			/*
+-			 * Set the pending bit - if someone will try to
+-			 * unregister this bdi - it'll wait on this bit.
++			 * If the bdi has work to do, but the thread does not
++			 * exist - create it.
+ 			 */
+-			set_bit(BDI_pending, &bdi->state);
+-			break;
++			if (!bdi->wb.task && have_dirty_io) {
++				/*
++				 * Set the pending bit - if someone will try to
++				 * unregister this bdi - it'll wait on this bit.
++				 */
++				set_bit(BDI_pending, &bdi->state);
++				action = FORK_THREAD;
++				break;
++			}
+ 		}
+ 		spin_unlock_bh(&bdi_lock);
+ 
+@@ -374,30 +383,30 @@ static int bdi_forker_thread(void *ptr)
+ 		if (!list_empty(&me->bdi->work_list))
+ 			__set_current_state(TASK_RUNNING);
+ 
+-		if (!fork) {
+-			unsigned long wait;
++		switch (action) {
++		case FORK_THREAD:
++			__set_current_state(TASK_RUNNING);
++			task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
++					   dev_name(bdi->dev));
++			if (IS_ERR(task)) {
++				/*
++				 * If thread creation fails, force writeout of
++				 * the bdi from the thread.
++				 */
++				bdi_flush_io(bdi);
++			} else
++				bdi->wb.task = task;
++			break;
+ 
+-			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
+-			if (wait)
+-				schedule_timeout(wait);
++		case NO_ACTION:
++			if (dirty_writeback_interval)
++				schedule_timeout(msecs_to_jiffies(dirty_writeback_interval * 10));
+ 			else
+ 				schedule();
+ 			try_to_freeze();
++			/* Back to the main loop */
+ 			continue;
+ 		}
+-
+-		__set_current_state(TASK_RUNNING);
+-
+-		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
+-				   dev_name(bdi->dev));
+-		if (IS_ERR(task)) {
+-			/*
+-			 * If thread creation fails, force writeout of the bdi
+-			 * from the thread.
+-			 */
+-			bdi_flush_io(bdi);
+-		} else
+-			bdi->wb.task = task;
  	}
- 	spin_unlock_bh(&bdi->wb_lock);
+ 
+ 	return 0;
 -- 
 1.7.1.1
 
