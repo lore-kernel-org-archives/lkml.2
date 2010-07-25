@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab0GYCyb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 22:54:31 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:42990 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab0GYCy3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 22:54:29 -0400
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        nhorman@redhat.com, akpm@linux-foundation.org
-Subject: Re: [Patch] kexec: increase max of kexec segments and use dynamic  allocation
-References: <20100722061810.5659.87609.sendpatchset@localhost.localdomain>
-	<m1wrso2foi.fsf@fess.ebiederm.org> <4C47E7C9.60608@redhat.com>
-	<m1iq482duy.fsf@fess.ebiederm.org>
-	<AANLkTikZTGYl2NIFzcTCG2DAaMefhnJAkSHIoJN22QoI@mail.gmail.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sat, 24 Jul 2010 19:54:22 -0700
-In-Reply-To: <AANLkTikZTGYl2NIFzcTCG2DAaMefhnJAkSHIoJN22QoI@mail.gmail.com> (huang ying's message of "Fri\, 23 Jul 2010 10\:57\:33 +0800")
-Message-ID: <m1lj90p8yp.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	id S1751338Ab0GYDHd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 23:07:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48811 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab0GYDHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 23:07:32 -0400
+Date: Sun, 25 Jul 2010 13:07:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
+        sparclinux@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH] of: Provide default of_node_to_nid() when CONFIG_NUMA
+ is not set
+Message-Id: <20100725130723.a5192793.sfr@canb.auug.org.au>
+In-Reply-To: <20100724154331.22701.3409.stgit@angua>
+References: <20100724154331.22701.3409.stgit@angua>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sun__25_Jul_2010_13_07_23_+1000_RD.pz8Eexz.QQVh="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-huang ying <huang.ying.caritas@gmail.com> writes:
+--Signature=_Sun__25_Jul_2010_13_07_23_+1000_RD.pz8Eexz.QQVh=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Jul 22, 2010 at 3:08 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Cong Wang <amwang@redhat.com> writes:
->>
->>> On 07/22/10 14:28, Eric W. Biederman wrote:
->>>> Amerigo Wang<amwang@redhat.com>  writes:
->>>>
->>>>> Currently KEXEC_SEGMENT_MAX is only 16 which is too small for machine with
->>>>> many memory ranges. Increase this hard limit to 1024 which is reasonably large,
->>>>> and change ->segment from a static array to a dynamically allocated memory.
->>>>
->>>> ???
->>>>
->>>> This should be about segments in the executable being loaded.  What
->>>> executable has one segment for each range of physical memory?
->>>>
->>>> Not that generalizing this is a bad idea but with a comment that
->>>> seems entirely wrong I am wondering what the problem really is.
->>>>
->>>
->>> Ah, I think Neil should explain this.
->>>
->>> He made a patch which includes many memory ranges, caused kexec
->>> fails to load the kernel. Increasing this limit and the corresponding
->>> one in kexec-tools fixes the problem. His patch is not in upstream
->>> kexec-tools, AFAIK.
->>>
->>> However, even if we don't consider that patch, isn't 16 too small too?
->>
->> Generally you just need one physical hunk for the code, maybe a second
->> for the initrd.
->>
->> It is perfectly fine to raise the number of segments as it doesn't
->> affect the ABI, but it wants a good explanation of what kind of weird
->> application wants to write to all over memory when it is loaded.
+Hi Grant,
+
+On Sat, 24 Jul 2010 09:43:31 -0600 Grant Likely <grant.likely@secretlab.ca>=
+ wrote:
 >
-> kexec can be used to load not only the kernel images, but also more
-> complex images such as hibernation image. So I think it is good to
-> raise the number of segments.
+> of_node_to_nid() is only relevant for NUMA.  Don't force architectures to
+> implement it if CONFIG_NUMA is not set.
 
-Totally reasonable.
+Why not just do:
 
-And in all fairness the patch does a good job of raising the limit.
+#ifndef of_node_to_nid
+static inline int of_node_to_nid(struct device_node *device) { return 0; }
+#define of_node_to_nid	of_node_to_nid
+#endif
 
-However if that is the goal 1024 is probably a bit low as I believe
-SGI has built machines with that many nodes.  Still after the patch
-under discussion 1024 was only a limit in a header file so it can
-be trivially changed.
+in include/linux/of.h
 
-Eric
+and then add:
+
+#define of_node_to_nid	of_node_to_nid
+
+Where it is declared/defined for each arch ...
+(it would be nice if all the archs were consistent in where it was
+declared).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Sun__25_Jul_2010_13_07_23_+1000_RD.pz8Eexz.QQVh=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMS6prAAoJEDMEi1NhKgbshFMH/i8Aj76EKx/9C5bPwVVHExHD
+pYd2B3ivu0HASm+xvMsZE+8AAsRmRrfHczhyLgQDw0SbxsvWmZKAP6bJg8KscMSF
+s73yV3tvEzCZpgTtCks/PxjVjkt/MHdSgyzaD+vcW62ZKyuNFXnGOEBbnC8d/v5G
+G7aQ5gFrLMLUbdoGL+C1aSRr283ur2Wdukfe5ooVgoao3EayDvZOhlxr5aF2r4nq
+WsZf5is1JQqwzcDiM2PykD8ReTtE+ZG/IUBzaOUi1OsxYhOMCEJsOm+egr93++lW
+HKqd/qgvyKwL2tlTAnYttTsgtQCWtA2zX16ef/Ea9kLgVeOd935Plk2pcfG6XXA=
+=FG69
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__25_Jul_2010_13_07_23_+1000_RD.pz8Eexz.QQVh=--
