@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab0GYDiB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 23:38:01 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40612
+	id S1751695Ab0GYDuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 23:50:16 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44489
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750912Ab0GYDiA (ORCPT
+	by vger.kernel.org with ESMTP id S1751162Ab0GYDuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 23:38:00 -0400
-Date: Sat, 24 Jul 2010 20:38:16 -0700 (PDT)
-Message-Id: <20100724.203816.226785255.davem@davemloft.net>
-To: andy@greyhouse.net
-Cc: fubar@us.ibm.com, greg.edwards@hp.com, netdev@vger.kernel.org,
-        bonding-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6] bonding: set device in RLB ARP packet
- handler
+	Sat, 24 Jul 2010 23:50:13 -0400
+Date: Sat, 24 Jul 2010 20:50:29 -0700 (PDT)
+Message-Id: <20100724.205029.183042907.davem@davemloft.net>
+To: sassmann@redhat.com
+Cc: bhutchings@solarflare.com, abadea@ixiacom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        leedom@chelsio.com, harald@redhat.com
+Subject: Re: [PATCH net-next] sysfs: add attribute to indicate hw address
+ assignment type
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100723202648.GU7497@gospo.rdu.redhat.com>
-References: <20100722195240.GA25359@w-gedwards.lhn.com>
-	<28252.1279915324@death>
-	<20100723202648.GU7497@gospo.rdu.redhat.com>
+In-Reply-To: <4C485A0C.7020500@redhat.com>
+References: <4C483E8D.4080300@redhat.com>
+	<1279807643.2104.1.camel@achroite.uk.solarflarecom.com>
+	<4C485A0C.7020500@redhat.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -27,71 +29,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Gospodarek <andy@greyhouse.net>
-Date: Fri, 23 Jul 2010 16:26:48 -0400
+From: Stefan Assmann <sassmann@redhat.com>
+Date: Thu, 22 Jul 2010 16:47:40 +0200
 
-> On Fri, Jul 23, 2010 at 01:02:04PM -0700, Jay Vosburgh wrote:
+> On 22.07.2010 16:07, Ben Hutchings wrote:
+>> On Thu, 2010-07-22 at 14:50 +0200, Stefan Assmann wrote:
+>>> On 21.07.2010 15:54, Ben Hutchings wrote:
+>>>> On Wed, 2010-07-21 at 10:10 +0200, Stefan Assmann wrote:
+>>>>> I put Alex' idea into code for further discussion, keeping the names
+>>>>> mentioned here until we agree on the scope of this attribute. When we
+>>>>> have settled I'll post a patch with proper patch description.
+>>>> [...]
+>>>>
+>>>> Just a little nitpick: I think it would be clearer to use a more
+>>>> specific term like 'address source' or 'address assignment type' rather
+>>>> than 'address type'.
+>>>
+>>> Here's a proposal for the final patch.
 >> 
->> From: Greg Edwards <greg.edwards@hp.com>
->> 
->> After:
->> 
->> commit 6146b1a4da98377e4abddc91ba5856bef8f23f1e
->> Author: Jay Vosburgh <fubar@us.ibm.com>
->> Date:   Tue Nov 4 17:51:15 2008 -0800
->> 
->>     bonding: Fix ALB mode to balance traffic on VLANs
->> 
->> the dev field in the RLB ARP packet handler was set to NULL to wildcard
->> and accommodate balancing VLANs on top of bonds.
->> 
->> This has the side-effect of the packet handler being called against
->> other, non RLB-enabled bonds, and a kernel oops results when it tries to
->> dereference rx_hashtbl in rlb_update_entry_from_arp(), which won't be
->> set for those bonds, e.g. active-backup.
->> 
->> With the __netif_receive_skb() changes from:
->> 
->> commit 1f3c8804acba841b5573b953f5560d2683d2db0d
->> Author: Andy Gospodarek <andy@greyhouse.net>
->> Date:   Mon Dec 14 10:48:58 2009 +0000
->> 
->>     bonding: allow arp_ip_targets on separate vlans to use arp validation
->> 
->> frames received on VLANs correctly make their way to the bond's handler,
->> so we no longer need to wildcard the device.
->> 
->> The oops can be reproduced by:
->> 
->> modprobe bonding
->> 
->> echo active-backup > /sys/class/net/bond0/bonding/mode
->> echo 100 > /sys/class/net/bond0/bonding/miimon
->> ifconfig bond0 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
->> echo +eth0 > /sys/class/net/bond0/bonding/slaves
->> echo +eth1 > /sys/class/net/bond0/bonding/slaves
->> 
->> echo +bond1 > /sys/class/net/bonding_masters
->> echo balance-alb > /sys/class/net/bond1/bonding/mode
->> echo 100 > /sys/class/net/bond1/bonding/miimon
->> ifconfig bond1 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
->> echo +eth2 > /sys/class/net/bond1/bonding/slaves
->> echo +eth3 > /sys/class/net/bond1/bonding/slaves
->> 
->> Pass some traffic on bond0.  Boom.
->> 
->> [ Tested, behaves as advertised.  I do not believe a test of the bonding
->> mode is necessary, as there is no race between the packet handler and
->> the bonding mode changing (the mode can only change when the device is
->> closed).  Also updated the log message to include the reproduction and
->> full commit ids.  -J ]
->> 	
->> Signed-off-by: Greg Edwards <greg.edwards@hp.com>
->> Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+>> Looks good, but...
+ ...
+>> ...why '|=' and not '='?
 > 
-> Acked-by: Andy Gospodarek <andy@greyhouse.net>
+> The intention is to use addr_assign_type as a bit field.
+> 
+> Okay it it might not make too much sense to 'steal' a random MAC
+> address but in case we add more types later it might get useful.
 
-This seems serious enough to put into net-2.6, so that's where I applied
-it.
+I think the patch is good enough to go into net-next-2.6 as-is, anything
+remaining is a refinement or one sort or another.
 
-Thanks!
+So applied to net-next-2.6, thanks.
