@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab0GYDei (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 23:34:38 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34891 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab0GYDeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 23:34:36 -0400
-Date: Sun, 25 Jul 2010 13:34:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/device: Make of_device_make_bus_id() usable by other
- code.
-Message-Id: <20100725133430.4c1d38a3.sfr@canb.auug.org.au>
-In-Reply-To: <20100724160111.7072.68144.stgit@angua>
-References: <20100724160111.7072.68144.stgit@angua>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1751471Ab0GYDiB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 23:38:01 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40612
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750912Ab0GYDiA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 23:38:00 -0400
+Date: Sat, 24 Jul 2010 20:38:16 -0700 (PDT)
+Message-Id: <20100724.203816.226785255.davem@davemloft.net>
+To: andy@greyhouse.net
+Cc: fubar@us.ibm.com, greg.edwards@hp.com, netdev@vger.kernel.org,
+        bonding-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next-2.6] bonding: set device in RLB ARP packet
+ handler
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100723202648.GU7497@gospo.rdu.redhat.com>
+References: <20100722195240.GA25359@w-gedwards.lhn.com>
+	<28252.1279915324@death>
+	<20100723202648.GU7497@gospo.rdu.redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__25_Jul_2010_13_34_30_+1000_nXz58B.vnmxVYCYw"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__25_Jul_2010_13_34_30_+1000_nXz58B.vnmxVYCYw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Andy Gospodarek <andy@greyhouse.net>
+Date: Fri, 23 Jul 2010 16:26:48 -0400
 
-Hi Grant,
+> On Fri, Jul 23, 2010 at 01:02:04PM -0700, Jay Vosburgh wrote:
+>> 
+>> From: Greg Edwards <greg.edwards@hp.com>
+>> 
+>> After:
+>> 
+>> commit 6146b1a4da98377e4abddc91ba5856bef8f23f1e
+>> Author: Jay Vosburgh <fubar@us.ibm.com>
+>> Date:   Tue Nov 4 17:51:15 2008 -0800
+>> 
+>>     bonding: Fix ALB mode to balance traffic on VLANs
+>> 
+>> the dev field in the RLB ARP packet handler was set to NULL to wildcard
+>> and accommodate balancing VLANs on top of bonds.
+>> 
+>> This has the side-effect of the packet handler being called against
+>> other, non RLB-enabled bonds, and a kernel oops results when it tries to
+>> dereference rx_hashtbl in rlb_update_entry_from_arp(), which won't be
+>> set for those bonds, e.g. active-backup.
+>> 
+>> With the __netif_receive_skb() changes from:
+>> 
+>> commit 1f3c8804acba841b5573b953f5560d2683d2db0d
+>> Author: Andy Gospodarek <andy@greyhouse.net>
+>> Date:   Mon Dec 14 10:48:58 2009 +0000
+>> 
+>>     bonding: allow arp_ip_targets on separate vlans to use arp validation
+>> 
+>> frames received on VLANs correctly make their way to the bond's handler,
+>> so we no longer need to wildcard the device.
+>> 
+>> The oops can be reproduced by:
+>> 
+>> modprobe bonding
+>> 
+>> echo active-backup > /sys/class/net/bond0/bonding/mode
+>> echo 100 > /sys/class/net/bond0/bonding/miimon
+>> ifconfig bond0 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
+>> echo +eth0 > /sys/class/net/bond0/bonding/slaves
+>> echo +eth1 > /sys/class/net/bond0/bonding/slaves
+>> 
+>> echo +bond1 > /sys/class/net/bonding_masters
+>> echo balance-alb > /sys/class/net/bond1/bonding/mode
+>> echo 100 > /sys/class/net/bond1/bonding/miimon
+>> ifconfig bond1 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
+>> echo +eth2 > /sys/class/net/bond1/bonding/slaves
+>> echo +eth3 > /sys/class/net/bond1/bonding/slaves
+>> 
+>> Pass some traffic on bond0.  Boom.
+>> 
+>> [ Tested, behaves as advertised.  I do not believe a test of the bonding
+>> mode is necessary, as there is no race between the packet handler and
+>> the bonding mode changing (the mode can only change when the device is
+>> closed).  Also updated the log message to include the reproduction and
+>> full commit ids.  -J ]
+>> 	
+>> Signed-off-by: Greg Edwards <greg.edwards@hp.com>
+>> Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+> 
+> Acked-by: Andy Gospodarek <andy@greyhouse.net>
 
-On Sat, 24 Jul 2010 10:01:11 -0600 Grant Likely <grant.likely@secretlab.ca>=
- wrote:
->
-> diff --git a/include/linux/of_device.h b/include/linux/of_device.h
-> index e11a0be..249bc11 100644
-> --- a/include/linux/of_device.h
-> +++ b/include/linux/of_device.h
-> @@ -27,6 +27,9 @@
-> =20
->  extern const struct of_device_id *of_match_device(
->  	const struct of_device_id *matches, const struct device *dev);
-> +#if !defined(CONFIG_SPARC)
-> +extern void of_device_make_bus_id(struct device *dev);
-> +#endif
+This seems serious enough to put into net-2.6, so that's where I applied
+it.
 
-You don't really need the protection here - it does not clash with
-anything on SPARC, right?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sun__25_Jul_2010_13_34_30_+1000_nXz58B.vnmxVYCYw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMS7DGAAoJEDMEi1NhKgbs5VMH/RerPDpTw5xiodVs8cJl3aiP
-X4Nwxd2naa0Xh6ZXlbSVhRNo8zvR+N6CMFEaEOrR2aWOgvWidRwkhlZ61kugDIl2
-lbhEGmmtopBQe9M06p2Lr50HaJy3kLTQ6H2ZwGC7J8GwheKPEyG5RdZRQzY1oRb3
-zFdYDhyXgX6UcPE7S4OMNuD96Z5dvXJKlXnKgukz91TwwbhmJGKZLZIpLuY5K1eJ
-0dL8HzRWD59PEbs0d92Z1ozVKYdAXrrK+8xWcQXDbBlFi8e+gOeyRjIFK+N6+PZa
-l3SKQwpZOFauypOomiy4hB0g3bwGoHYpuD4x80MMEAKq/P0u9KzsS4j2xkAJ1Pg=
-=z+b/
------END PGP SIGNATURE-----
-
---Signature=_Sun__25_Jul_2010_13_34_30_+1000_nXz58B.vnmxVYCYw--
+Thanks!
