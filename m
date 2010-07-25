@@ -1,40 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199Ab0GYCZa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Jul 2010 22:25:30 -0400
-Received: from snt0-omc3-s29.snt0.hotmail.com ([65.55.90.168]:54756 "EHLO
-	snt0-omc3-s29.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750982Ab0GYCZ3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Jul 2010 22:25:29 -0400
-Message-ID: <SNT125-W2517DC4443F08A6B394802C3A50@phx.gbl>
-X-Originating-IP: [96.253.143.208]
-From: Yuhong Bao <yuhongbao_386@hotmail.com>
-To: <greg.freemyer@gmail.com>
-CC: <tj@kernel.org>, <jeff@garzik.org>, <ben.collins@ubuntu.com>,
-        <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hmh@debian.org>
-Subject: RE: support for drives larger than 2TiB
-Date: Sat, 24 Jul 2010 19:25:28 -0700
-Importance: Normal
-In-Reply-To: <AANLkTi=-0Hdp2dfK_RB=w-W8Qm8O42dDM0ybEcRtEMdn@mail.gmail.com>
-References: <4C4AB952.9030705@kernel.org>,<SNT125-W4469FAC3FE110BB4882949C3A40@phx.gbl>,<AANLkTi=-0Hdp2dfK_RB=w-W8Qm8O42dDM0ybEcRtEMdn@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1751293Ab0GYCno (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Jul 2010 22:43:44 -0400
+Received: from vps.beldisplaytech.com ([69.162.134.24]:33589 "EHLO
+	vps.beldisplaytech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab0GYCnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Jul 2010 22:43:42 -0400
+X-Greylist: delayed 1155 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Jul 2010 22:43:42 EDT
+From: "Andrew O. Shadoura" <andrew@beldisplaytech.com>
+Reply-To: "Andrew O. Shadoura" <bugzilla@tut.by>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] 3c59x: Add ethtool WOL support
+Date: Sun, 25 Jul 2010 05:24:17 +0300
+User-Agent: KMail/1.12.4 (Linux/2.6.26-1-686; KDE/4.3.4; i686; ; )
+Cc: Netdev mailing list <netdev@vger.kernel.org>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Organization: BelDisplayTech, Ltd.
 MIME-Version: 1.0
-X-OriginalArrivalTime: 25 Jul 2010 02:25:28.0506 (UTC) FILETIME=[A5B511A0:01CB2BA0]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007250524.18911.andrew@beldisplaytech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds wrappers for ethtool to get or set wake-on-LAN 
+setting without re-inserting the kernel module.
 
-> 64-bit LBA? I assume you meant 48-bit LBA from ATA-7. It will
-> address up to PBs I believe. (KB, MB, GB, TB, PB, ....)
-Yes, the sector number in Int13 extensions really is 64-bit.
-Look at the Ralf Brown Interrupt List, for example.
+Signed-off-by: Andrew O. Shadoura <andrew@beldisplaytech.com>
+---
+Hello.
 
-Yuhong Bao
- 		 	   		  
-_________________________________________________________________
-The New Busy is not the old busy. Search, chat and e-mail from your inbox.
-http://www.windowslive.com/campaign/thenewbusy?ocid=PID28326::T:WLMTAGL:ON:WL:en-US:WM_HMP:042010_3
+I've actually tested this patch on a machine with a network 
+card that's idenfied by lsusb as "3c905C-TX/TX-M", and it seems 
+to work.
+
+---
+diff --git a/drivers/net/3c59x.c b/drivers/net/3c59x.c
+index d75803e..a452dfe 100644
+--- a/drivers/net/3c59x.c
++++ b/drivers/net/3c59x.c
+@@ -2909,6 +2909,36 @@ static void vortex_get_drvinfo(struct net_device *dev,
+ 	}
+ }
+ 
++static void vortex_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
++{
++	struct vortex_private *vp = netdev_priv(dev);
++
++	spin_lock_irq(&vp->lock);
++	wol->supported = WAKE_MAGIC;
++
++	wol->wolopts = 0;
++	if (vp->enable_wol)
++		wol->wolopts |= WAKE_MAGIC;
++	spin_unlock_irq(&vp->lock);
++}
++
++static int vortex_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
++{
++	struct vortex_private *vp = netdev_priv(dev);
++	if (wol->wolopts & ~WAKE_MAGIC)
++		return -EINVAL;
++
++	spin_lock_irq(&vp->lock);
++	if (wol->wolopts & WAKE_MAGIC)
++		vp->enable_wol = 1;
++	else
++		vp->enable_wol = 0;
++	acpi_set_WOL(dev);
++	spin_unlock_irq(&vp->lock);
++
++	return 0;
++}
++
+ static const struct ethtool_ops vortex_ethtool_ops = {
+ 	.get_drvinfo		= vortex_get_drvinfo,
+ 	.get_strings            = vortex_get_strings,
+@@ -2920,6 +2950,8 @@ static const struct ethtool_ops vortex_ethtool_ops = {
+ 	.set_settings           = vortex_set_settings,
+ 	.get_link               = ethtool_op_get_link,
+ 	.nway_reset             = vortex_nway_reset,
++	.get_wol                = vortex_get_wol,
++	.set_wol                = vortex_set_wol,
+ };
+ 
+ #ifdef CONFIG_PCI
+
+-- 
+WBR, Andrew
