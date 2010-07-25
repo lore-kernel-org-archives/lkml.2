@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751205Ab0GYEKA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 00:10:00 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:39325 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab0GYEJ7 (ORCPT
+	id S1751637Ab0GYEuq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 00:50:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63204 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab0GYEuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 00:09:59 -0400
-X-AuthUser: davidel@xmailserver.org
-Date: Sat, 24 Jul 2010 21:09:21 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-laptop
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Nathan Lynch <ntl@pobox.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Subject: Re: [PATCH] signalfd: fill in ssi_int for posix timers and message
- queues
-In-Reply-To: <20100720211018.e586c7ce.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1007242104060.1470@davide-laptop>
-References: <1278117528.21917.354.camel@localhost> <20100720154205.667e95aa.akpm@linux-foundation.org> <1279683859.3030.121.camel@localhost> <20100720211018.e586c7ce.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 25 Jul 2010 00:50:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=C6NIx0pcZv/XNqcsWgkD6+fZX29Kn0wJuen+gVi7mWgPHfj9Doa5EksuLk3rZvqZ8K
+         EibJsREiWcACIkjd3NDZ02M5+Q8Uvli6U5ifYGgdOU9mOnfdvztV5L8ozZvgAkC7KJIk
+         z+Uh07TljrPUc49Z4r5w9ufkcex+ZDkQnXCb0=
+Subject: [PATCH] x86, mrst: remove unused mrst_identify_cpu()
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Feng Tang <feng.tang@intel.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 25 Jul 2010 00:50:38 -0400
+Message-ID: <1280033438.2419.5.camel@lenovo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010, Andrew Morton wrote:
+mrst_identify_cpu() function is not been used anymore (at today linux-next). This patch removes it.
 
-> It's not a matter of a current application depending on current
-> behaviour!  The problem is that an application written in 2018 which
-> depends on the _new_ behaviour will not work on 2.6.34.
-> 
-> It wouldn't be the worst thing we've ever done to our long-suffering
-> users, but it is a permanent cost of having screwed things up :(
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ arch/x86/include/asm/mrst.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-While I agree it is a problem with the kernel compatibility handling, 
-every time we add new features to an existing interface we end up in 
-similar scenarios.
-Nowadays a "require kernel >= X.Y.Z" is all but an uncommon case for 
-userspace code.
+diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/mrst.h
+index 1635074..0d0e702 100644
+--- a/arch/x86/include/asm/mrst.h
++++ b/arch/x86/include/asm/mrst.h
+@@ -26,10 +26,6 @@ enum mrst_cpu_type {
+ };
+ 
+ extern enum mrst_cpu_type __mrst_cpu_chip;
+-static enum mrst_cpu_type mrst_identify_cpu(void)
+-{
+-	return __mrst_cpu_chip;
+-}
+ 
+ enum mrst_timer_options {
+ 	MRST_TIMER_DEFAULT,
+-- 
+1.7.0.4
 
 
-- Davide
 
