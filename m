@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab0GYRLh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 13:11:37 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:40778 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab0GYRLK (ORCPT
+	id S1752245Ab0GYRLj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 13:11:39 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:53116 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab0GYRLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 13:11:10 -0400
+	Sun, 25 Jul 2010 13:11:17 -0400
 From: Alexander Shishkin <virtuoso@slind.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] etm: do a dummy read from OSSRR during initialization
-Date: Sun, 25 Jul 2010 20:05:17 +0300
-Message-Id: <1280077520-7538-5-git-send-email-virtuoso@slind.org>
+Cc: Alexander Shishkin <virtuoso@slind.org>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] omap3: move EMU peripheral addresses to a platform header
+Date: Sun, 25 Jul 2010 20:05:18 +0300
+Message-Id: <1280077520-7538-6-git-send-email-virtuoso@slind.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
 References: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
@@ -21,32 +24,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first read from ETM OS save and restore register after the power
-down bit deassertion returns garbage.
+These addresses are also needed for the OFF code to save/restore the
+contexts of the EMU peripherals correctly.
 
 Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+Cc: Tony Lindgren <tony@atomide.com>
 Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-omap@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/kernel/etm.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ arch/arm/mach-omap2/emu.c            |   14 ++++----------
+ arch/arm/plat-omap/include/plat/io.h |   20 ++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index d08062b..73b824a 100644
---- a/arch/arm/kernel/etm.c
-+++ b/arch/arm/kernel/etm.c
-@@ -558,7 +558,9 @@ static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
- 	t->etm_portsz = 1;
+diff --git a/arch/arm/mach-omap2/emu.c b/arch/arm/mach-omap2/emu.c
+index 9c442e2..6b41745 100644
+--- a/arch/arm/mach-omap2/emu.c
++++ b/arch/arm/mach-omap2/emu.c
+@@ -24,19 +24,13 @@
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Alexander Shishkin");
  
- 	etm_unlock(t);
--	ret = etm_readl(t, ETMMR_PDSR);
-+	(void)etm_readl(t, ETMMR_PDSR);
-+	/* dummy first read */
-+	(void)etm_readl(&tracer, ETMMR_OSSRR);
+-/* Cortex CoreSight components within omap3xxx EMU */
+-#define ETM_BASE	(L4_EMU_34XX_PHYS + 0x10000)
+-#define DBG_BASE	(L4_EMU_34XX_PHYS + 0x11000)
+-#define ETB_BASE	(L4_EMU_34XX_PHYS + 0x1b000)
+-#define DAPCTL		(L4_EMU_34XX_PHYS + 0x1d000)
+-
+ static struct amba_device omap3_etb_device = {
+ 	.dev		= {
+ 		.init_name = "etb",
+ 	},
+ 	.res		= {
+-		.start	= ETB_BASE,
+-		.end	= ETB_BASE + SZ_4K - 1,
++		.start	= OMAP34XX_ETB_PHYS,
++		.end	= OMAP34XX_ETB_PHYS + OMAP34XX_ETB_SIZE - 1,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	.periphid	= 0x000bb907,
+@@ -47,8 +41,8 @@ static struct amba_device omap3_etm_device = {
+ 		.init_name = "etm",
+ 	},
+ 	.res		= {
+-		.start	= ETM_BASE,
+-		.end	= ETM_BASE + SZ_4K - 1,
++		.start	= OMAP34XX_ETM_PHYS,
++		.end	= OMAP34XX_ETM_PHYS + OMAP34XX_ETM_SIZE - 1,
+ 		.flags	= IORESOURCE_MEM,
+ 	},
+ 	.periphid	= 0x102bb921,
+diff --git a/arch/arm/plat-omap/include/plat/io.h b/arch/arm/plat-omap/include/plat/io.h
+index 128b549..81f736a 100644
+--- a/arch/arm/plat-omap/include/plat/io.h
++++ b/arch/arm/plat-omap/include/plat/io.h
+@@ -185,6 +185,26 @@
  
- 	t->ncmppairs = etm_readl(t, ETMR_CONFCODE) & 0xf;
- 	etm_writel(t, 0x440, ETMR_CTRL);
+ /* 3430 IVA - currently unmapped */
+ 
++#define OMAP34XX_DBG_OFFSET	(0x00011000)
++#define OMAP34XX_DBG_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_DBG_OFFSET)
++#define OMAP34XX_DBG_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_DBG_OFFSET)
++#define OMAP34XX_DBG_SIZE	SZ_4K
++
++#define OMAP34XX_ETM_OFFSET	(0x00010000)
++#define OMAP34XX_ETM_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_ETM_OFFSET)
++#define OMAP34XX_ETM_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_ETM_OFFSET)
++#define OMAP34XX_ETM_SIZE	SZ_4K
++
++#define OMAP34XX_ETB_OFFSET	(0x0001b000)
++#define OMAP34XX_ETB_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_ETB_OFFSET)
++#define OMAP34XX_ETB_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_ETB_OFFSET)
++#define OMAP34XX_ETB_SIZE	SZ_4K
++
++#define OMAP34XX_DAP_OFFSET	(0x0001d000)
++#define OMAP34XX_DAP_VIRT	(L4_EMU_34XX_VIRT + OMAP34XX_DAP_OFFSET)
++#define OMAP34XX_DAP_PHYS	(L4_EMU_34XX_PHYS + OMAP34XX_DAP_OFFSET)
++#define OMAP34XX_DAP_SIZE	SZ_4K
++
+ /*
+  * ----------------------------------------------------------------------------
+  * Omap4 specific IO mapping
 -- 
 1.7.1
 
