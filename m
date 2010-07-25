@@ -1,97 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab0GYWi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 18:38:26 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8809 "EHLO mga01.intel.com"
+	id S1752288Ab0GYWvA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 18:51:00 -0400
+Received: from norkia.v3.sk ([91.210.183.14]:41935 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069Ab0GYWiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 18:38:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,259,1278313200"; 
-   d="scan'208";a="821476443"
-Date: Mon, 26 Jul 2010 00:38:26 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: Add WM8321 support
-Message-ID: <20100725223825.GF2613@sortiz-mobl>
-References: <1279718617-13453-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279718617-13453-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751783Ab0GYWu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 18:50:59 -0400
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Lubomir Rintel <lkundrak@v3.sk>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH] V7: Add support for non-PDP11 v7 filesystems
+Date: Mon, 26 Jul 2010 00:50:46 +0200
+Message-Id: <1280098246-26293-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+A mount-time option was added that makes it possible to override the
+endianness and an attempt is made to autodetect it (which seems easy,
+given the disk addresses are 3-byte.
 
-On Wed, Jul 21, 2010 at 02:23:37PM +0100, Mark Brown wrote:
-> The WM8321 is a PMIC for low power, high performance applications. From a
-> software point of view the device is identical to the WM8320, all the
-> differences between the two devices are visible only in hardware.
-Patch applied, many thanks.
+No attempt is made to detect big-endian filesystems -- were there any?
+Tested with PDP-11 v7 filesystems and PC-IX maintenance floppy.
 
-Cheers,
-Samuel.
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+---
+ fs/sysv/super.c |   74 +++++++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 50 insertions(+), 24 deletions(-)
 
-
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm831x-core.c |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-> index 1a968f3..cb94e7e 100644
-> --- a/drivers/mfd/wm831x-core.c
-> +++ b/drivers/mfd/wm831x-core.c
-> @@ -95,6 +95,7 @@ enum wm831x_parent {
->  	WM8311 = 0x8311,
->  	WM8312 = 0x8312,
->  	WM8320 = 0x8320,
-> +	WM8321 = 0x8321,
->  };
->  
->  static int wm831x_reg_locked(struct wm831x *wm831x, unsigned short reg)
-> @@ -1533,6 +1534,12 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
->  		dev_info(wm831x->dev, "WM8320 revision %c\n", 'A' + rev);
->  		break;
->  
-> +	case WM8321:
-> +		parent = WM8321;
-> +		wm831x->num_gpio = 12;
-> +		dev_info(wm831x->dev, "WM8321 revision %c\n", 'A' + rev);
-> +		break;
-> +
->  	default:
->  		dev_err(wm831x->dev, "Unknown WM831x device %04x\n", ret);
->  		ret = -EINVAL;
-> @@ -1607,6 +1614,12 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
->  				      NULL, 0);
->  		break;
->  
-> +	case WM8321:
-> +		ret = mfd_add_devices(wm831x->dev, -1,
-> +				      wm8320_devs, ARRAY_SIZE(wm8320_devs),
-> +				      NULL, 0);
-> +		break;
-> +
->  	default:
->  		/* If this happens the bus probe function is buggy */
->  		BUG();
-> @@ -1779,6 +1792,7 @@ static const struct i2c_device_id wm831x_i2c_id[] = {
->  	{ "wm8311", WM8311 },
->  	{ "wm8312", WM8312 },
->  	{ "wm8320", WM8320 },
-> +	{ "wm8321", WM8321 },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(i2c, wm831x_i2c_id);
-> -- 
-> 1.7.1
-> 
-
+diff --git a/fs/sysv/super.c b/fs/sysv/super.c
+index ac7b008..0433f23 100644
+--- a/fs/sysv/super.c
++++ b/fs/sysv/super.c
+@@ -24,6 +24,7 @@
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/buffer_head.h>
++#include <linux/parser.h>
+ #include "sysv.h"
+ 
+ /*
+@@ -435,12 +436,46 @@ Ebadsize:
+ 	goto failed;
+ }
+ 
+-static int v7_fill_super(struct super_block *sb, void *data, int silent)
++static int v7_sanity_check(struct super_block *sb, struct buffer_head *bh)
+ {
+-	struct sysv_sb_info *sbi;
+-	struct buffer_head *bh, *bh2 = NULL;
+ 	struct v7_super_block *v7sb;
+ 	struct sysv_inode *v7i;
++	struct buffer_head *bh2;
++	struct sysv_sb_info *sbi;
++
++	sbi = sb->s_fs_info;
++
++	/* plausibility check on superblock */
++	v7sb = (struct v7_super_block *) bh->b_data;
++	if (fs16_to_cpu(sbi, v7sb->s_nfree) > V7_NICFREE ||
++	    fs16_to_cpu(sbi, v7sb->s_ninode) > V7_NICINOD ||
++	    fs32_to_cpu(sbi, v7sb->s_fsize) > V7_MAXSIZE)
++		return 0;
++
++	/* plausibility check on root inode: it is a directory,
++	   with a nonzero size that is a multiple of 16 */
++	if ((bh2 = sb_bread(sb, 2)) == NULL) {
++		return 0;
++	}
++
++	v7i = (struct sysv_inode *)(bh2->b_data + 64);
++	if ((fs16_to_cpu(sbi, v7i->i_mode) & ~0777) != S_IFDIR ||
++	    (fs32_to_cpu(sbi, v7i->i_size) == 0) ||
++	    (fs32_to_cpu(sbi, v7i->i_size) & 017) ||
++	    (fs32_to_cpu(sbi, v7i->i_size) > V7_NFILES *
++             sizeof (struct sysv_dir_entry))) {
++		brelse(bh2);
++		return 0;
++	}
++
++	brelse(bh2);
++	return 1;
++}
++
++static int v7_fill_super(struct super_block *sb, void *data, int silent)
++{
++	struct sysv_sb_info *sbi;
++	struct buffer_head *bh;
+ 
+ 	if (440 != sizeof (struct v7_super_block))
+ 		panic("V7 FS: bad super-block size");
+@@ -454,7 +489,6 @@ static int v7_fill_super(struct super_block *sb, void *data, int silent)
+ 	sbi->s_sb = sb;
+ 	sbi->s_block_base = 0;
+ 	sbi->s_type = FSTYPE_V7;
+-	sbi->s_bytesex = BYTESEX_PDP;
+ 	sb->s_fs_info = sbi;
+ 	
+ 	sb_set_blocksize(sb, 512);
+@@ -466,34 +500,26 @@ static int v7_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto failed;
+ 	}
+ 
+-	/* plausibility check on superblock */
+-	v7sb = (struct v7_super_block *) bh->b_data;
+-	if (fs16_to_cpu(sbi, v7sb->s_nfree) > V7_NICFREE ||
+-	    fs16_to_cpu(sbi, v7sb->s_ninode) > V7_NICINOD ||
+-	    fs32_to_cpu(sbi, v7sb->s_fsize) > V7_MAXSIZE)
+-		goto failed;
++	/* Try PDP-11 UNIX */
++	sbi->s_bytesex = BYTESEX_PDP;
++	if (v7_sanity_check (sb, bh))
++		goto detected;
+ 
+-	/* plausibility check on root inode: it is a directory,
+-	   with a nonzero size that is a multiple of 16 */
+-	if ((bh2 = sb_bread(sb, 2)) == NULL)
+-		goto failed;
+-	v7i = (struct sysv_inode *)(bh2->b_data + 64);
+-	if ((fs16_to_cpu(sbi, v7i->i_mode) & ~0777) != S_IFDIR ||
+-	    (fs32_to_cpu(sbi, v7i->i_size) == 0) ||
+-	    (fs32_to_cpu(sbi, v7i->i_size) & 017) ||
+-	    (fs32_to_cpu(sbi, v7i->i_size) > V7_NFILES *
+-	     sizeof (struct sysv_dir_entry)))
+-		goto failed;
+-	brelse(bh2);
+-	bh2 = NULL;
++	/* Try PC/IX, v7/x86 */
++	sbi->s_bytesex = BYTESEX_LE;
++	if (v7_sanity_check (sb, bh))
++		goto detected;
+ 
++	goto failed;
++
++detected:
+ 	sbi->s_bh1 = bh;
+ 	sbi->s_bh2 = bh;
+ 	if (complete_read_super(sb, silent, 1))
+ 		return 0;
+ 
+ failed:
+-	brelse(bh2);
++	printk("VFS: could not find a valid V7 on %s.\n", sb->s_id);
+ 	brelse(bh);
+ 	kfree(sbi);
+ 	return -EINVAL;
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.2
+
