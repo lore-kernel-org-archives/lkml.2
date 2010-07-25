@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab0GYRu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 13:50:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10180 "EHLO mx1.redhat.com"
+	id S1752271Ab0GYR7v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 13:59:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105Ab0GYRu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 13:50:26 -0400
-Message-ID: <4C4C7966.2000003@redhat.com>
-Date: Sun, 25 Jul 2010 14:50:30 -0300
+	id S1752115Ab0GYR7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 13:59:49 -0400
+Message-ID: <4C4C7BA5.3050709@redhat.com>
+Date: Sun, 25 Jul 2010 15:00:05 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Daniel J Blueman <daniel.blueman@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.35-rc6] quiesce EDAC initialisation on desktop/mobile i7
-References: <AANLkTin5f_mfe+Jjo7Uv0mLyoQzM3KR3FK5=ejjTg=7D@mail.gmail.com> <20100724105642.GA8059@liondog.tnic>
-In-Reply-To: <20100724105642.GA8059@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: Jarod Wilson <jarod@redhat.com>
+CC: Valdis.Kletnieks@vt.edu, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: mmotm 2010-07-19-16-37 uploaded
+References: <201007200007.o6K07Xbg028863@imap1.linux-foundation.org> <6434.1279658492@localhost> <201007201350.28961.dmitry.torokhov@gmail.com> <4825.1279660300@localhost> <20100720214112.GM13176@redhat.com>
+In-Reply-To: <20100720214112.GM13176@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 24-07-2010 07:56, Borislav Petkov escreveu:
-> From: Daniel J Blueman <daniel.blueman@gmail.com>
-> Date: Fri, Jul 23, 2010 at 11:16:52PM +0100
+Em 20-07-2010 18:41, Jarod Wilson escreveu:
+> On Tue, Jul 20, 2010 at 05:11:40PM -0400, Valdis.Kletnieks@vt.edu wrote:
+>> On Tue, 20 Jul 2010 13:50:27 PDT, Dmitry Torokhov said:
+>>
+>>>> And things go downhill from there...
+>>>
+>>> I guess you need these 2 from Jarod...
+>>
+>> Hmm. I seem to remember 2 similar patches from the last time I reported it. :)
+>>
+>> System boots fine after applying those two patches.  I'll let somebody else
+>> worry about making sure they end up in linux-next in time for the next merge
+>> window...
 > 
->> Hi Linus,
->>
->> A small fixlet for 2.6.35-rc7/final.
->>
->> ---
->>
->> Don't print failure to detect Core i7 EDAC facilities to the console at boot
->> time, most often occurring on Core i7 desktops and laptops.
->>
->> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> I believe Mauro's on vacation at the moment, but due back Real Soon Now,
+> and I'd expect him to pick up both fixes shortly after he settles back in
+> at his desk, so they should be in next before much longer, and definitely
+> before the merge window.
 
-Seems ok to me.
+I just arrived from vacations. I'll be testing this patch and applying it if OK.
+Just give me some days, since I have a huge backlog due to vacations.
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
->>
->> diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
->> index cc9357d..e0187d1 100644
->> --- a/drivers/edac/i7core_edac.c
->> +++ b/drivers/edac/i7core_edac.c
->> @@ -1300,7 +1300,7 @@ int i7core_get_onedevice(struct pci_dev **prev, int devno,
->>  		if (devno == 0)
->>  			return -ENODEV;
->>
->> -		i7core_printk(KERN_ERR,
->> +		i7core_printk(KERN_INFO,
->>  			"Device not found: dev %02x.%d PCI ID %04x:%04x\n",
->>  			dev_descr->dev, dev_descr->func,
->>  			PCI_VENDOR_ID_INTEL, dev_descr->dev_id);
->>
-> 
-> Adding the driver maintainer to CC. Please, try doing that in the
-> future,
-> 
-> Thanks.
-> 
+Cheers,
+Mauro.
 
