@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab0GYIaK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 04:30:10 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:49910 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab0GYI3v (ORCPT
+	id S1752377Ab0GYIav (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 04:30:51 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:33043 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab0GYIam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 04:29:51 -0400
+	Sun, 25 Jul 2010 04:30:42 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCHv5 09/15] writeback: restructure bdi forker loop a little
-Date: Sun, 25 Jul 2010 11:29:35 +0300
-Message-Id: <1280046581-23623-10-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv5 07/15] writeback: do not remove bdi from bdi_list
+Date: Sun, 25 Jul 2010 11:29:33 +0300
+Message-Id: <1280046581-23623-8-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
 References: <1280046581-23623-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 Jul 2010 08:29:46.0784 (UTC) FILETIME=[8A419A00:01CB2BD3]
+X-OriginalArrivalTime: 25 Jul 2010 08:29:46.0190 (UTC) FILETIME=[89E6F6E0:01CB2BD3]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,139 +24,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-This patch re-structures the bdi forker a little:
-1. Add 'bdi_cap_flush_forker(bdi)' condition check to the bdi loop. The reason
-   for this is that the forker thread can start _before_ the 'BDI_registered'
-   flag is set (see 'bdi_register()'), so the WARN() statement will fire for
-   the default bdi. I observed this warning at boot-up.
+The forker thread removes bdis from 'bdi_list' before forking the bdi thread.
+But this is wrong for at least 2 reasons.
 
-2. Introduce an enum 'action' and use "switch" statement in the outer loop.
-   This is a preparation to the further patch which will teach the forker
-   thread killing bdi threads, so we'll have another case in the "switch"
-   statement. This change was suggested by Christoph Hellwig.
+Reason #1: if we temporary remove a bdi from the list, we may miss works which
+           would otherwise be given to us.
 
-This patch is just a small step towards the coming change where the forker
-thread will kill the bdi threads. It should simplify reviewing the following
-changes, which would otherwise be larger.
+Reason #2: this is racy; indeed, 'bdi_wb_shutdown()' expects that bdis are
+           always in the 'bdi_list' (see 'bdi_remove_from_list()'), and when
+           it races with the forker thread, it can shut down the bdi thread
+           at the same time as the forker creates it.
 
-This patch also amends comments a little.
+This patch makes sure the forker thread never removes bdis from 'bdi_list'
+(which was suggested by Christoph Hellwig).
+
+In order to make sure that we do not race with 'bdi_wb_shutdown()', we have to
+hold the 'bdi_lock' while walking the 'bdi_list' and setting the 'BDI_pending'
+flag.
+
+NOTE! The error path is interesting. Currently, when we fail to create a bdi
+thread, we move the bdi to the tail of 'bdi_list'. But if we never remove the
+bdi from the list, we cannot move it to the tail either, because then we can
+mess up the RCU readers which walk the list. And also, we'll have the race
+described above in "Reason #2".
+
+But I not think that adding to the tail is any important so I just do not do
+that.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- mm/backing-dev.c |   69 ++++++++++++++++++++++++++++++-----------------------
- 1 files changed, 39 insertions(+), 30 deletions(-)
+ fs/fs-writeback.c |    7 -------
+ mm/backing-dev.c  |   31 ++++++++++---------------------
+ 2 files changed, 10 insertions(+), 28 deletions(-)
 
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 8cf53ba..eaef5c9 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -804,13 +804,6 @@ int bdi_writeback_thread(void *data)
+ 	unsigned long wait_jiffies = -1UL;
+ 	long pages_written;
+ 
+-	/*
+-	 * Add us to the active bdi_list
+-	 */
+-	spin_lock_bh(&bdi_lock);
+-	list_add_rcu(&bdi->bdi_list, &bdi_list);
+-	spin_unlock_bh(&bdi_lock);
+-
+ 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
+ 	set_freezable();
+ 
 diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 672c17b..e104e32 100644
+index dbc6681..672c17b 100644
 --- a/mm/backing-dev.c
 +++ b/mm/backing-dev.c
-@@ -329,9 +329,12 @@ static int bdi_forker_thread(void *ptr)
- 	set_user_nice(current, 0);
- 
+@@ -331,7 +331,7 @@ static int bdi_forker_thread(void *ptr)
  	for (;;) {
--		bool fork = false;
+ 		bool fork = false;
  		struct task_struct *task;
- 		struct backing_dev_info *bdi;
-+		enum {
-+			NO_ACTION,   /* Nothing to do */
-+			FORK_THREAD, /* Fork bdi thread */
-+		} action = NO_ACTION;
+-		struct backing_dev_info *bdi, *tmp;
++		struct backing_dev_info *bdi;
  
  		/*
  		 * Temporary measure, we want to make sure we don't see
-@@ -348,25 +351,31 @@ static int bdi_forker_thread(void *ptr)
+@@ -347,7 +347,7 @@ static int bdi_forker_thread(void *ptr)
+ 		 * Check if any existing bdi's have dirty data without
  		 * a thread registered. If so, set that up.
  		 */
- 		list_for_each_entry(bdi, &bdi_list, bdi_list) {
--			if (!bdi_cap_writeback_dirty(bdi))
--				continue;
--			if (bdi->wb.task)
--				continue;
--			if (list_empty(&bdi->work_list) &&
--			    !bdi_has_dirty_io(bdi))
-+			bool have_dirty_io;
-+
-+			if (!bdi_cap_writeback_dirty(bdi) ||
-+			     bdi_cap_flush_forker(bdi))
+-		list_for_each_entry_safe(bdi, tmp, &bdi_list, bdi_list) {
++		list_for_each_entry(bdi, &bdi_list, bdi_list) {
+ 			if (!bdi_cap_writeback_dirty(bdi))
  				continue;
- 
+ 			if (bdi->wb.task)
+@@ -359,8 +359,13 @@ static int bdi_forker_thread(void *ptr)
  			WARN(!test_bit(BDI_registered, &bdi->state),
  			     "bdi %p/%s is not registered!\n", bdi, bdi->name);
  
--			fork = true;
-+			have_dirty_io = !list_empty(&bdi->work_list) ||
-+					wb_has_dirty_io(&bdi->wb);
- 
- 			/*
--			 * Set the pending bit - if someone will try to
--			 * unregister this bdi - it'll wait on this bit.
-+			 * If the bdi has work to do, but the thread does not
-+			 * exist - create it.
- 			 */
--			set_bit(BDI_pending, &bdi->state);
--			break;
-+			if (!bdi->wb.task && have_dirty_io) {
-+				/*
-+				 * Set the pending bit - if someone will try to
-+				 * unregister this bdi - it'll wait on this bit.
-+				 */
-+				set_bit(BDI_pending, &bdi->state);
-+				action = FORK_THREAD;
-+				break;
-+			}
+-			list_del_rcu(&bdi->bdi_list);
+ 			fork = true;
++
++			/*
++			 * Set the pending bit - if someone will try to
++			 * unregister this bdi - it'll wait on this bit.
++			 */
++			set_bit(BDI_pending, &bdi->state);
+ 			break;
  		}
  		spin_unlock_bh(&bdi_lock);
+@@ -383,29 +388,13 @@ static int bdi_forker_thread(void *ptr)
  
-@@ -374,30 +383,30 @@ static int bdi_forker_thread(void *ptr)
- 		if (!list_empty(&me->bdi->work_list))
- 			__set_current_state(TASK_RUNNING);
+ 		__set_current_state(TASK_RUNNING);
  
--		if (!fork) {
--			unsigned long wait;
-+		switch (action) {
-+		case FORK_THREAD:
-+			__set_current_state(TASK_RUNNING);
-+			task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
-+					   dev_name(bdi->dev));
-+			if (IS_ERR(task)) {
-+				/*
-+				 * If thread creation fails, force writeout of
-+				 * the bdi from the thread.
-+				 */
-+				bdi_flush_io(bdi);
-+			} else
-+				bdi->wb.task = task;
-+			break;
- 
--			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
--			if (wait)
--				schedule_timeout(wait);
-+		case NO_ACTION:
-+			if (dirty_writeback_interval)
-+				schedule_timeout(msecs_to_jiffies(dirty_writeback_interval * 10));
- 			else
- 				schedule();
- 			try_to_freeze();
-+			/* Back to the main loop */
- 			continue;
- 		}
+-		/*
+-		 * Set the pending bit - if someone will try to unregister this
+-		 * bdi - it'll wait on this bit.
+-		 */
+-		set_bit(BDI_pending, &bdi->state);
 -
--		__set_current_state(TASK_RUNNING);
+-		/* Make sure no one uses the picked bdi */
+-		synchronize_rcu();
 -
--		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
--				   dev_name(bdi->dev));
--		if (IS_ERR(task)) {
--			/*
--			 * If thread creation fails, force writeout of the bdi
--			 * from the thread.
--			 */
--			bdi_flush_io(bdi);
--		} else
--			bdi->wb.task = task;
- 	}
- 
- 	return 0;
+ 		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
+ 				   dev_name(bdi->dev));
+ 		if (IS_ERR(task)) {
+ 			/*
+-			 * If thread creation fails, then readd the bdi back to
+-			 * the list and force writeout of the bdi from this
+-			 * forker thread. That will free some memory and we can
+-			 * try again. Add it to the tail so we get a chance to
+-			 * flush other bdi's to free memory.
++			 * If thread creation fails, force writeout of the bdi
++			 * from the thread.
+ 			 */
+-			spin_lock_bh(&bdi_lock);
+-			list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
+-			spin_unlock_bh(&bdi_lock);
+-
+ 			bdi_flush_io(bdi);
+ 		} else
+ 			bdi->wb.task = task;
 -- 
 1.7.1.1
 
