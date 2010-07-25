@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab0GYJsO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 05:48:14 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:43305 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab0GYJsJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 05:48:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/7] memcg: sc.nr_to_reclaim should be initialized
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-In-Reply-To: <AANLkTikpZ8iH1oO1k84kvo2qYYS96LYuNmmw6xJL-1QV@mail.gmail.com>
-References: <20100723154638.88C8.A69D9226@jp.fujitsu.com> <AANLkTikpZ8iH1oO1k84kvo2qYYS96LYuNmmw6xJL-1QV@mail.gmail.com>
-Message-Id: <20100725184322.40CF.A69D9226@jp.fujitsu.com>
+	id S1752115Ab0GYKKf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 06:10:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57424 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974Ab0GYKKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 06:10:33 -0400
+Date: Sun, 25 Jul 2010 13:04:33 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
+ per-vhost kthread
+Message-ID: <20100725100433.GA13268@redhat.com>
+References: <4C02C961.9050606@kernel.org>
+ <20100531152221.GB2987@redhat.com>
+ <4C03D983.9010905@kernel.org>
+ <20100531160020.GC3067@redhat.com>
+ <4C04D41B.4050704@kernel.org>
+ <4C06A580.9060300@kernel.org>
+ <20100722155840.GA1743@redhat.com>
+ <4C48B664.9000109@kernel.org>
+ <20100724191447.GA4972@redhat.com>
+ <4C4BEAA2.6040301@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun, 25 Jul 2010 18:48:06 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4BEAA2.6040301@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> 1. How far does this push pages (in terms of when limit is hit)?
-> >
-> > 32 pages per mem_cgroup_shrink_node_zone().
-> >
-> > That said, the algorithm is here.
-> >
-> > 1. call mem_cgroup_largest_soft_limit_node()
-> >   calculate largest cgroup
-> > 2. call mem_cgroup_shrink_node_zone() and shrink 32 pages
-> > 3. goto 1 if limit is still exceed.
-> >
-> > If it's not your intention, can you please your intended algorithm?
+On Sun, Jul 25, 2010 at 09:41:22AM +0200, Tejun Heo wrote:
+> Hello,
 > 
-> We set it to 0, since we care only about a single page reclaim on
-> hitting the limit. IIRC, in the past we saw an excessive pushback on
-> reclaiming SWAP_CLUSTER_MAX pages, just wanted to check if you are
-> seeing the same behaviour even now after your changes.
+> On 07/24/2010 09:14 PM, Michael S. Tsirkin wrote:
+> >> I've created kthread_worker in wq#for-next tree and already converted
+> >> ivtv to use it.  Once this lands in mainline, I think converting vhost
+> >> to use it would be better choice.  kthread worker code uses basically
+> >> the same logic used in the vhost_workqueue code but is better
+> >> organized and documented.  So, I think it would be better to stick
+> >> with the original implementation, as otherwise we're likely to just
+> >> decrease test coverage without much gain.
+> >>
+> >>   http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=b56c0d8937e665a27d90517ee7a746d0aa05af46;hp=53c5f5ba42c194cb13dd3083ed425f2c5b1ec439
+> > 
+> > Sure, if we keep using workqueue. But I'd like to investigate this
+> > direction a bit more because there's discussion to switching from kthread to
+> > regular threads altogether.
+> 
+> Hmmm? It doesn't have much to do with workqueue.  kthread_worker is a
+> simple wrapper around kthread.  It now assumes kthread but changing it
+> to be useable with any thread shouldn't be too hard.  Wouldn't that be
+> better?
 
-Actually, we have 32 pages reclaim batch size. (see nr_scan_try_batch() and related functions)
-thus <32 value doesn't works as your intended.
+Yes, of course, when common code becomes available we should
+switch to that.
 
-But, If you run your test again, and (if there is) report any bugs. I'm very glad and fix it soon.
-
-Thanks.
-
-
-
+> >> I don't think doing this before executing the function is correct,
+> > 
+> > Well, before I execute the function work is NULL, so this is skipped.
+> > Correct?
+> >
+> >> so
+> >> you'll have to release the lock, execute the function, regrab the lock
+> >> and then do the flush processing.
+> >>
+> >> Thanks.
+> > 
+> > It's done in the loop, so I thought we can reuse the locking
+> > done for the sake of processing the next work item.
+> > Makes sense?
+> 
+> Yeap, right.  I think it would make much more sense to use common code
+> when it becomes available but if you think the posted change is
+> necessary till then, please feel free to go ahead.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
