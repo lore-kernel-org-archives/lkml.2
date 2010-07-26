@@ -1,155 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab0GZIrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 04:47:35 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:50642 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab0GZIre (ORCPT
+	id S1753451Ab0GZIxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 04:53:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61844 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab0GZIxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 04:47:34 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: TEXT/PLAIN; CHARSET=EUC-KR
-Date: Mon, 26 Jul 2010 10:48:45 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB: gadget: file_storage: serial parameter even if not test
- mode
-In-reply-to: <5A47E75E594F054BAF48C5E4FC4B92AB0323C3F5D1@dbde02.ent.ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Anand Gadiyar <gadiyar@ti.com>
-Cc: linux-usb@vger.kernel.org, Yann Cantin <yann.cantin@laposte.net>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org
-Message-id: <111d87fe40811e385a56992567b0a6be1911e2fe.1280133527.git.m.nazarewicz@samsung.com>
-X-Mailer: git-send-email 1.7.1
-References: <5A47E75E594F054BAF48C5E4FC4B92AB0323C3F5D1@dbde02.ent.ti.com>
+	Mon, 26 Jul 2010 04:53:18 -0400
+Message-ID: <4C4D4C2E.8010103@monstr.eu>
+Date: Mon, 26 Jul 2010 10:49:50 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: rostedt@goodmis.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        mingo@elte.hu
+Subject: Re: [PATCH] asm-generic: Use raw_local_irq_save/restore instead local_irq_save/restore
+References: <1274863724-14906-1-git-send-email-monstr@monstr.eu>	<1274863724-14906-2-git-send-email-monstr@monstr.eu>	<1274884963.22648.245.camel@gandalf.stny.rr.com> <20100526100805.171b3c48.akpm@linux-foundation.org>
+In-Reply-To: <20100526100805.171b3c48.akpm@linux-foundation.org>
+Content-Type: multipart/mixed;
+ boundary="------------060002050301040704000104"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moved the serial parameter handling code out of "#ifdef
-CONFIG_USB_FILE_STORAGE_TEST".  This fixes the bug where
-serial was not set if CONFIG_USB_FILE_STORAGE_TEST was not
-defined.  It also makes the serial module parameter work
-without this option.
+This is a multi-part message in MIME format.
+--------------060002050301040704000104
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-This modifies Yann Cantin's commit "USB: Add a serial number
-parameter to g_file_storage" module as per Alan Stern's request.
-
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Anand Gadiyar <gadiyar@ti.com>
-Cc: Yann Cantin <yann.cantin@laposte.net>
----
-Alan Stern wrote:
-> I have only one objection to this [Yann Cantin's] patch: The new
-> parameter's name should be "serial", not "serial_parm".
-
-Alan Stern wrote:
-> The serial number parameter is important enough that it should be
-> available even on builds without CONFIG_USB_FILE_STORAGE_TEST.
-
-
->> Anand Gadiyar wrote:
->>> The following patch from the gregkh-07-usb-2.6.35-rc5.patch patchset
->>> breaks g_file_storage, at least on omap3/4 boards.
+Andrew Morton wrote:
+> On Wed, 26 May 2010 10:42:43 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+>> On Wed, 2010-05-26 at 10:48 +0200, monstr@monstr.eu wrote:
+>>> From: Michal Simek <monstr@monstr.eu>
 >>>
->>> <http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/usb/usb-add-a-serial-number-parameter-to-g_file_storage-module.patch>
+>>> start/stop_critical_timing function for preemptirqsoff, preemptoff
+>>> and irqsoff tracers contains atomic_inc and atomic_dec operations.
+>>>
+>>> Atomic operations used local_irq_save/restore macros to ensure
+>>> atomic access but they are traced by the same function which is causing
+>>> recursion problem.
+>>>
+>>> The reason is when these tracers are turn ON then local_irq_save/restore
+>>> macros are changed in include/linux/irqflags.h to call trace_hardirqs_on/off
+>>> which call start/stop_critical_timing.
+>>>
+>>> Microblaze was affected because use generic atomic implementation.
+>>>
+>>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+>> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>>
+> 
+> Sighed-at-by: me.
+> 
+>>> diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+>>> index 058129e..6c190fd 100644
+>>> --- a/include/asm-generic/atomic.h
+>>> +++ b/include/asm-generic/atomic.h
+>>> @@ -57,11 +57,11 @@ static inline int atomic_add_return(int i, atomic_t *v)
+>>>  	unsigned long flags;
+>>>  	int temp;
+>>>  
+>>> -	local_irq_save(flags);
+>>> +	raw_local_irq_save(flags);
+>>>  	temp = v->counter;
+>>>  	temp += i;
+>>>  	v->counter = temp;
+>>> -	local_irq_restore(flags);
+>>> +	raw_local_irq_restore(flags);
+>>>  
+>>>  	return temp;
+>>>  }
+> 
+> If a developer looks at atomic_add_return() and asks himself "why did
+> this use raw_local_irq_save()", the only way of answering that question
+> is to go groveling through the git logs, which is a right PITA if
+> you're trying to get some coding work done.
+> 
+> Guys, any time you add code which is non-obvious at the raw C level, it
+> *needs* a comment!
 
-> Michał Nazarewicz wrote:
->> Try applying <https://patchwork.kernel.org/patch/113580/>
+Andrew: Can you please add this patch to your tree? I have it in 
+microblaze next branch but should go through different tree.
 
-Anand Gadiyar wrote:
-> Thanks! This patch makes g_file_storage work again. It applies on
-> top of greg's queue, but with some offsets.
->
-> If you're re-submitting it, feel free to add my
->
-> Tested-by: Anand Gadiyar <gadiyar@ti.com>
+Thanks,
+Michal
 
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
 
-Resending version rebased on Friday's -next.
+--------------060002050301040704000104
+Content-Type: text/x-patch;
+ name="0001-asm-generic-Use-raw_local_irq_save-restore-instead.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename*0="0001-asm-generic-Use-raw_local_irq_save-restore-instead.patc";
+ filename*1="h"
 
+>From 06c2447c8939227b4c4d3340fba1c712f03e70ca Mon Sep 17 00:00:00 2001
+From: Michal Simek <monstr@monstr.eu>
+Date: Wed, 26 May 2010 08:57:36 +0200
+Subject: [PATCH] asm-generic: Use raw_local_irq_save/restore instead local_irq_save/restore
 
- drivers/usb/gadget/file_storage.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+start/stop_critical_timing function for preemptirqsoff, preemptoff
+and irqsoff tracers contains atomic_inc and atomic_dec operations.
 
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index 88e5ad2..a857b7a 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -321,7 +321,7 @@ static struct {
- 	unsigned short	vendor;
- 	unsigned short	product;
- 	unsigned short	release;
--	char		*serial_parm;
-+	char		*serial;
- 	unsigned int	buflen;
+Atomic operations used local_irq_save/restore macros to ensure
+atomic access but they are traced by the same function which is causing
+recursion problem.
+
+The reason is when these tracers are turn ON then local_irq_save/restore
+macros are changed in include/linux/irqflags.h to call trace_hardirqs_on/off
+which call start/stop_critical_timing.
+
+Microblaze was affected because use generic atomic implementation.
+
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/asm-generic/atomic.h |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+index 058129e..e53347f 100644
+--- a/include/asm-generic/atomic.h
++++ b/include/asm-generic/atomic.h
+@@ -57,11 +57,11 @@ static inline int atomic_add_return(int i, atomic_t *v)
+ 	unsigned long flags;
+ 	int temp;
  
- 	int		transport_type;
-@@ -365,6 +365,8 @@ MODULE_PARM_DESC(stall, "false to prevent bulk stalls");
- module_param_named(cdrom, mod_data.cdrom, bool, S_IRUGO);
- MODULE_PARM_DESC(cdrom, "true to emulate cdrom instead of disk");
+-	local_irq_save(flags);
++	raw_local_irq_save(flags); /* Don't trace it in a irqsoff handler */
+ 	temp = v->counter;
+ 	temp += i;
+ 	v->counter = temp;
+-	local_irq_restore(flags);
++	raw_local_irq_restore(flags);
  
-+module_param_named(serial, mod_data.serial, charp, S_IRUGO);
-+MODULE_PARM_DESC(serial, "USB serial number");
+ 	return temp;
+ }
+@@ -78,11 +78,11 @@ static inline int atomic_sub_return(int i, atomic_t *v)
+ 	unsigned long flags;
+ 	int temp;
  
- /* In the non-TEST version, only the module parameters listed above
-  * are available. */
-@@ -386,9 +388,6 @@ MODULE_PARM_DESC(product, "USB Product ID");
- module_param_named(release, mod_data.release, ushort, S_IRUGO);
- MODULE_PARM_DESC(release, "USB release number");
+-	local_irq_save(flags);
++	raw_local_irq_save(flags); /* Don't trace it in a irqsoff handler */
+ 	temp = v->counter;
+ 	temp -= i;
+ 	v->counter = temp;
+-	local_irq_restore(flags);
++	raw_local_irq_restore(flags);
  
--module_param_named(serial, mod_data.serial_parm, charp, S_IRUGO);
--MODULE_PARM_DESC(serial, "USB serial number");
--
- module_param_named(buflen, mod_data.buflen, uint, S_IRUGO);
- MODULE_PARM_DESC(buflen, "I/O buffer size");
+ 	return temp;
+ }
+@@ -135,9 +135,9 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
+ 	unsigned long flags;
  
-@@ -3291,10 +3290,12 @@ static int __init check_parameters(struct fsg_dev *fsg)
- 		return -ETOOSMALL;
- 	}
- 
-+#endif /* CONFIG_USB_FILE_STORAGE_TEST */
-+
- 	/* Serial string handling.
- 	 * On a real device, the serial string would be loaded
- 	 * from permanent storage. */
--	if (mod_data.serial_parm) {
-+	if (mod_data.serial) {
- 		const char *ch;
- 		unsigned len = 0;
- 
-@@ -3303,7 +3304,7 @@ static int __init check_parameters(struct fsg_dev *fsg)
- 		 * 12 uppercase hexadecimal characters.
- 		 * BBB need at least 12 uppercase hexadecimal characters,
- 		 * with a maximum of 126. */
--		for (ch = mod_data.serial_parm; *ch; ++ch) {
-+		for (ch = mod_data.serial; *ch; ++ch) {
- 			++len;
- 			if ((*ch < '0' || *ch > '9') &&
- 			    (*ch < 'A' || *ch > 'F')) { /* not uppercase hex */
-@@ -3322,8 +3323,11 @@ static int __init check_parameters(struct fsg_dev *fsg)
- 				"Failing back to default\n");
- 			goto fill_serial;
- 		}
--		fsg_strings[FSG_STRING_SERIAL - 1].s = mod_data.serial_parm;
-+		fsg_strings[FSG_STRING_SERIAL - 1].s = mod_data.serial;
- 	} else {
-+		WARNING(fsg,
-+			"Userspace failed to provide serial number; "
-+			"Failing back to default\n");
- fill_serial:
- 		/* Serial number not specified or invalid, make our own.
- 		 * We just encode it from the driver version string,
-@@ -3339,8 +3343,6 @@ fill_serial:
- 		}
- 	}
- 
--#endif /* CONFIG_USB_FILE_STORAGE_TEST */
--
- 	return 0;
+ 	mask = ~mask;
+-	local_irq_save(flags);
++	raw_local_irq_save(flags); /* Don't trace it in a irqsoff handler */
+ 	*addr &= mask;
+-	local_irq_restore(flags);
++	raw_local_irq_restore(flags);
  }
  
+ #define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
 -- 
-1.7.1
+1.5.5.6
 
+
+--------------060002050301040704000104--
