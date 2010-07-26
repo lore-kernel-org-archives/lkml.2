@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab0GZNrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 09:47:23 -0400
-Received: from web52904.mail.re2.yahoo.com ([206.190.49.14]:36570 "HELO
-	web52904.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751851Ab0GZNrV (ORCPT
+	id S1754005Ab0GZNsV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 09:48:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51055 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab0GZNsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 09:47:21 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jul 2010 09:47:21 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=16h4iS2YHDfkkPx4iYE+36M2KvOFusC23vQRFi6Rkf2X77YEh52XSn3hur5mQhEPOKLjn5zB3BEogWYx/rO7HG84OxcmF0K72ogOL5DCzY3nrhG996qOekUFIXzRobimc7ALH3laO1Lm92ZIoxNGgZXDnUzkaHACJHDlDhN4h5k=;
-Message-ID: <426324.26150.qm@web52904.mail.re2.yahoo.com>
-X-YMail-OSG: 51dmoQIVM1lN.zmOmdkfeec7VG46Ld4FTQQZM53tWwiaxbB
- a_QfST2F4ZbuySZkdS9Vlkvq9OE8NLpGOr.bVjQoQL15m7oB4sQ7Ll2Brx1Q
- 8i6jWxE40n41yYgXOT16ufCoVdfrtg.3hBZQJyFpnI9Wz_0mN8E3s8T34bQ7
- HB2ppq3ZhaL.IdAeBXfJ3edgchm_ii3KwRcmb1pm.eg4rCpE5xmqQkG9ftud
- ixUWsOfkJ.9qyroqvbgtIF6PyeuDCIsk1Bbcvoqyy5ACsYlHggFsFpXNTiQl
- vDt294McFD904TaXOTjkSk0jucHIihOHVZ6xWmrLigS2meODoXEFYHA--
-X-Mailer: YahooMailWebService/0.8.104.276605
-Date: Mon, 26 Jul 2010 06:40:40 -0700 (PDT)
-From: Resmi Surendran <resmi_surendran@yahoo.com>
-To: lekshmym@yahoo.com, linxu@mail.utexas.edu, linux-kernel@vger.kernel.org,
-        lixy_cet@yahoo.com, grady@mail.utexas.edu, madhulika@mail.utexas.edu,
-        madhusankars@hotmail.com, madhukidu@yahoo.com, madhusankars@gmail.com,
-        mail2radhav@yahoo.com
+	Mon, 26 Jul 2010 09:48:20 -0400
+Date: Mon, 26 Jul 2010 09:48:18 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
+        jaxboe@fusionio.com, nauman@google.com, dpshah@google.com,
+        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com, czoccolo@gmail.com,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
+ group_idle tunable
+Message-ID: <20100726134818.GA26544@infradead.org>
+References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+ <20100723140343.GA8478@fancy-poultry.org>
+ <20100723141303.GB13104@redhat.com>
+ <20100723145631.GA8844@fancy-poultry.org>
+ <20100723183720.GD13104@redhat.com>
+ <20100724080613.GA6554@fancy-poultry.org>
+ <20100726134329.GB12449@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726134329.GB12449@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://bo8.fast-man.com
+On Mon, Jul 26, 2010 at 09:43:29AM -0400, Vivek Goyal wrote:
+> > Don't know if this is related, but I'm not quite shure if XFS (which I use
+> > exclusively) uses the jbd/jbd2 journaling layer at all.
+> 
+> I also don't know. But because this patch is making a difference with your
+> XFS file system performance, may be it does use.
+> 
+> CCing Christoph, he can tell us.
 
+No, of course XFS doesn't use jbd.
 
-      
