@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab0GZP0p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 11:26:45 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:54275 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab0GZP0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 11:26:44 -0400
-Date: Mon, 26 Jul 2010 11:23:15 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, vgoyal@redhat.com,
-        hbabu@us.ibm.com, benh@kernel.crashing.org, paulus@samba.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH] powerpc: Add vmcoreinfo symbols to allow makdumpfile to
- filter core files properly
-Message-ID: <20100726152315.GA18789@hmsreliant.think-freely.org>
-References: <20100713134609.GA14514@hmsreliant.think-freely.org>
+	id S1754815Ab0GZPbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 11:31:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5235 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754566Ab0GZPbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 11:31:35 -0400
+Date: Mon, 26 Jul 2010 18:25:10 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
+ per-vhost kthread
+Message-ID: <20100726152510.GA26223@redhat.com>
+References: <4C02C961.9050606@kernel.org>
+ <20100531152221.GB2987@redhat.com>
+ <4C03D983.9010905@kernel.org>
+ <20100531160020.GC3067@redhat.com>
+ <4C04D41B.4050704@kernel.org>
+ <4C06A580.9060300@kernel.org>
+ <20100722155840.GA1743@redhat.com>
+ <4C48B664.9000109@kernel.org>
+ <20100724191447.GA4972@redhat.com>
+ <4C4BEAA2.6040301@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100713134609.GA14514@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+In-Reply-To: <4C4BEAA2.6040301@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 09:46:09AM -0400, Neil Horman wrote:
-> Hey all-
-> 	About 2 years ago now, I sent this patch upstream to allow makedumpfile
-> to properly filter cores on ppc64:
-> http://www.mail-archive.com/kexec@lists.infradead.org/msg02426.html
-> It got acks from the kexec folks so I pulled it into RHEL, but I never checked
-> back here to make sure it ever made it in, which apparently it didn't.  It still
-> needs to be included, so I'm reposting it here, making sure to copy all the ppc
-> folks this time.  I've retested it on the latest linus kernel and it works fine,
-> allowing makedumpfile to find all the symbols it needs to properly strip a
-> vmcore on ppc64.
+On Sun, Jul 25, 2010 at 09:41:22AM +0200, Tejun Heo wrote:
+> Hello,
 > 
-> Neil
+> On 07/24/2010 09:14 PM, Michael S. Tsirkin wrote:
+> >> I've created kthread_worker in wq#for-next tree and already converted
+> >> ivtv to use it.  Once this lands in mainline, I think converting vhost
+> >> to use it would be better choice.  kthread worker code uses basically
+> >> the same logic used in the vhost_workqueue code but is better
+> >> organized and documented.  So, I think it would be better to stick
+> >> with the original implementation, as otherwise we're likely to just
+> >> decrease test coverage without much gain.
+> >>
+> >>   http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=b56c0d8937e665a27d90517ee7a746d0aa05af46;hp=53c5f5ba42c194cb13dd3083ed425f2c5b1ec439
+> > 
+> > Sure, if we keep using workqueue. But I'd like to investigate this
+> > direction a bit more because there's discussion to switching from kthread to
+> > regular threads altogether.
 > 
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> 
-Ping, anyone want to chime in on this, its needed for dump filtering to work
-properly on ppc64
-Neil
+> Hmmm? It doesn't have much to do with workqueue.  kthread_worker is a
+> simple wrapper around kthread.  It now assumes kthread but changing it
+> to be useable with any thread shouldn't be too hard.  Wouldn't that be
+> better?
 
-> 
->  machine_kexec.c |   12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> 
-> diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
-> index bb3d893..0df7031 100644
-> --- a/arch/powerpc/kernel/machine_kexec.c
-> +++ b/arch/powerpc/kernel/machine_kexec.c
-> @@ -45,6 +45,18 @@ void machine_kexec_cleanup(struct kimage *image)
->  		ppc_md.machine_kexec_cleanup(image);
->  }
->  
-> +void arch_crash_save_vmcoreinfo(void)
-> +{
-> +
-> +#ifdef CONFIG_NEED_MULTIPLE_NODES
-> +	VMCOREINFO_SYMBOL(node_data);
-> +	VMCOREINFO_LENGTH(node_data, MAX_NUMNODES);
-> +#endif
-> +#ifndef CONFIG_NEED_MULTIPLE_NODES
-> +	VMCOREINFO_SYMBOL(contig_page_data);
-> +#endif
-> +}
-> +
->  /*
->   * Do not allocate memory (or fail in any way) in machine_kexec().
->   * We are past the point of no return, committed to rebooting now.
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
-> 
+BTW, kthread_worker would benefit from the optimization I implemented
+here as well.
+
+-- 
+MST
