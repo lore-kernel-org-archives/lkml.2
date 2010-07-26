@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab0GZKhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 06:37:13 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:55565 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192Ab0GZKhL (ORCPT
+	id S1754233Ab0GZKk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 06:40:26 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44091 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899Ab0GZKkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 06:37:11 -0400
-Date: Mon, 26 Jul 2010 12:37:08 +0200
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: GCOV doesn't seem to work on ARM with kernel 2.6.35-rc6
-In-reply-to: <4C4D6458.6040402@samsung.com>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Message-id: <4C4D6554.30707@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10)
- Gecko/20100620 Icedove/3.0.5
-References: <4C4D6458.6040402@samsung.com>
+	Mon, 26 Jul 2010 06:40:25 -0400
+Date: Mon, 26 Jul 2010 12:40:20 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Andre Przywara <andre.przywara@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] Fix off-by-one bug in mbind() syscall implementation
+Message-ID: <20100726104020.GB17756@basil.fritz.box>
+References: <1280136498-28219-1-git-send-email-andre.przywara@amd.com>
+ <20100726094931.GA17756@basil.fritz.box>
+ <4C4D620E.9010008@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4D620E.9010008@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2010 12:32 PM, Karol Lewandowski wrote:
-> Hello,
->
-> I'm trying to use code coverage measurements with mainline Linux kernel
-> 2.6.35-rc6 on ARM platform (specifically on Samsung's S5PC110 board).
->
-> I've enabled following in my .config:
->
-> CONFIG_GCOV_KERNEL=y
-> CONFIG_DEBUG_FS=y
->
-> After successful boot I see no gcov-related files other than
-> /sys/kernel/debug/gcov/reset.
->
->  From my knowledge (and from my previous experience with out-of-tree
-> gcov patchset) whole directory structure shall be created along with
-> .gcda files and various symlinks.
+On Mon, Jul 26, 2010 at 12:23:10PM +0200, Andre Przywara wrote:
+> Andi Kleen wrote:
+> >On Mon, Jul 26, 2010 at 11:28:18AM +0200, Andre Przywara wrote:
+> >>When the mbind() syscall implementation processes the node mask
+> >>provided by the user, the last node is accidentally masked out.
+> >>This is present since the dawn of time (aka Before Git), I guess
+> >>nobody realized that because libnuma as the most prominent user of
+> >>mbind() uses large masks (sizeof(long)) and nobody cared if the
+> >>64th node is not handled properly. But if the user application
+> >>defers the masking to the kernel and provides the number of valid bits
+> >>in maxnodes, there is always the last node missing.
+> >>However this also affect the special case with maxnodes=0, the manpage
+> >>reads that mbind(ptr, len, MPOL_DEFAULT, &some_long, 0, 0); should
+> >>reset the policy to the default one, but in fact it returns EINVAL.
+> >>This patch just removes the decrease-by-one statement, I hope that
+> >>there is no workaround code in the wild that relies on the bogus
+> >>behavior.
+> >
+> >Actually libnuma and likely most existing users rely on it.
+> If grep didn't fool me, then the only users in libnuma aware of that
+> bug are the test implementations in numactl-2.0.3/test, namely
+> /test/tshm.c (NUMA_MAX_NODES+1) and test/mbind_mig_pages.c
+> (old_nodes->size + 1).
 
-I forgot to add that I've added "GCOV_PROFILE := y" to at least
+At least libnuma 1 (which is the libnuma most distributions use today)
+explicitely knows about it and will break if you change it.
 
-   fs/Makefile
-   kernel/Makefile
+> 
+> Has this bug been known before?
 
-and few others.  Thus, I expect to find something more than just
-./reset file.
+Yes (and you can argue whether it's a problem or not)
+
+-Andi
