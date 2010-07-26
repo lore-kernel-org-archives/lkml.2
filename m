@@ -1,91 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab0GZHXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 03:23:55 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:39092 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab0GZHXx (ORCPT
+	id S1753716Ab0GZHYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 03:24:12 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44314 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753591Ab0GZHYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 03:23:53 -0400
-Date: Mon, 26 Jul 2010 09:23:50 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tim Abbott <tabbott@ksplice.com>, Tim Bird <tim.bird@am.sony.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
-        linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Michal Marek <mmarek@suse.cz>,
-        Parisc List <linux-parisc@vger.kernel.org>
-Subject: Re: Testing of function/data-sections on linux-2.6.35-rc4
-Message-ID: <20100726072350.GA10061@merkur.ravnborg.org>
-References: <201007181703.17022.vda.linux@googlemail.com> <20100723191055.GA27054@merkur.ravnborg.org> <201007260252.57477.vda.linux@googlemail.com>
+	Mon, 26 Jul 2010 03:24:10 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Yu\, Luming" <luming.yu@intel.com>,
+        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-acpi\@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "venki\@google.com" <venki@google.com>
+Subject: Re: [PATCH] ACPI: create "processor.bm_check_disable" boot param
+References: <20100427124703.GA16706@jgarrett.org>
+	<alpine.LFD.2.00.1004301218280.2489@sony>
+	<20100430174447.GA14889@srcf.ucam.org>
+	<d7f2dd35a4361e5156079278543769a0@localhost>
+	<alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
+	<CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com>
+	<20100525124325.GC7876@srcf.ucam.org>
+	<alpine.LFD.2.00.1005251114420.4114@localhost.localdomain>
+	<20100525185507.GA15997@srcf.ucam.org>
+	<alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
+	<20100722074750.GA22520@one.firstfloor.org>
+	<alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
+	<alpine.LFD.2.00.1007221720270.7970@localhost.localdomain>
+	<alpine.LFD.2.00.1007221739260.7970@localhost.localdomain>
+Date: Mon, 26 Jul 2010 09:24:02 +0200
+In-Reply-To: <alpine.LFD.2.00.1007221739260.7970@localhost.localdomain> (Len
+	Brown's message of "Thu, 22 Jul 2010 17:40:02 -0400 (EDT)")
+Message-ID: <87k4oiiu3x.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007260252.57477.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 02:52:57AM +0200, Denys Vlasenko wrote:
-> On Friday 23 July 2010 21:10, Sam Ravnborg wrote:
-> > > 
-> > > * modpost fix for 64k+ sections: linux-2.6.35-rc4-fs.modpost.patch
-> > >   This patch is in -mm, it still not reach mainline...
-> > > 
-> > 
-> > Some comments below - but noting fundamental.
-> >
-> > +	/* Fixup for more than 64k sections */
-> > +	info->num_sections = hdr->e_shnum;
-> > +	if (info->num_sections == 0) { /* more than 64k sections? */
-> > +		/* note: it doesn't need shndx2secindex() */
-> > +		info->num_sections = TO_NATIVE(sechdrs[0].sh_size);
-> > +	}
-> > I had to read the above twice to get it.
-> > How about something like this:
-> > 
-> > 	/* Fixup for more than 64k sections */
-> > 	if (hdr->e_shnum == 0) {
-> > 		/*
-> > 		 * There are more than 64k sections,
-> > 		 * read count from .sh_size.
-> > 		 * note: it doesn't need shndx2secindex()
-> > 		 */
-> > 		info->num_sections = TO_NATIVE(sechdrs[0].sh_size);
-> > 	}
-> > 	else {
-> > 		info->num_sections = hdr->e_shnum;
-> > 	}
-> > 
-> > 
-> > +	info->secindex_strings = hdr->e_shstrndx;
-> > +	if (info->secindex_strings == SHN_XINDEX)
-> > +		info->secindex_strings =
-> > +		    shndx2secindex(TO_NATIVE(sechdrs[0].sh_link));
-> > 
-> > Likewise here...
-> 
-> Done both.
-> 
-> ...
-> > -	for (i = 1; i < hdr->e_shnum; i++) {
-> > -		const char *secstrings
-> > -			= (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
-> > +	secstrings = (void *)hdr + sechdrs[info->secindex_strings].sh_offset;
-> > 
-> > Moving this assignnet out of the loop is an unrelated
-> > but welcome change.
-> 
-> I take you are ok with it?
-> 
-> Please find updated patch below.
-> 
-> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+Len Brown <lenb@kernel.org> writes:
+>
+> Note also that an alternative for newer systems
+> is to use the intel_idle driver, which always
+> ignores BM_STS, relying Linux device drivers
+> to register constraints explicitly via PM_QOS.
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=15886
 
-If the patch get a proper changelog then it has my:
+Thanks.  I don't fully understand why the check for this option
+is in a different place than the register check in the earlier patch? 
 
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
+This needs to be also documented in Documentation/kernel-parameters.txt
 
-	Sam
+Other than that it looks good.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
