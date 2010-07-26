@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab0GZXbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 19:31:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63128 "EHLO mx1.redhat.com"
+	id S1755879Ab0GZXcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 19:32:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39144 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755377Ab0GZXbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 19:31:47 -0400
-Date: Mon, 26 Jul 2010 19:31:45 -0400
+	id S1755824Ab0GZXcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 19:32:05 -0400
+Date: Mon, 26 Jul 2010 19:32:03 -0400
 From: Jarod Wilson <jarod@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 10/15] staging/lirc: add lirc_serial driver
-Message-ID: <20100726233145.GK21225@redhat.com>
+Subject: [PATCH 11/15] staging/lirc: add lirc_sir driver
+Message-ID: <20100726233203.GL21225@redhat.com>
 References: <20100726232546.GA21225@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,27 +24,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jarod Wilson <jarod@redhat.com>
 ---
- drivers/staging/lirc/lirc_serial.c | 1313 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 1313 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/lirc/lirc_serial.c
+ drivers/staging/lirc/lirc_sir.c | 1282 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 1282 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/lirc/lirc_sir.c
 
-diff --git a/drivers/staging/lirc/lirc_serial.c b/drivers/staging/lirc/lirc_serial.c
+diff --git a/drivers/staging/lirc/lirc_sir.c b/drivers/staging/lirc/lirc_sir.c
 new file mode 100644
-index 0000000..d2ea3f0
+index 0000000..97146d1
 --- /dev/null
-+++ b/drivers/staging/lirc/lirc_serial.c
-@@ -0,0 +1,1313 @@
++++ b/drivers/staging/lirc/lirc_sir.c
+@@ -0,0 +1,1282 @@
 +/*
-+ * lirc_serial.c
++ * LIRC SIR driver, (C) 2000 Milan Pikula <www@fornax.sk>
 + *
-+ * lirc_serial - Device driver that records pulse- and pause-lengths
-+ *	       (space-lengths) between DDCD event on a serial port.
++ * lirc_sir - Device driver for use with SIR (serial infra red)
++ * mode of IrDA on many notebooks.
 + *
-+ * Copyright (C) 1996,97 Ralph Metzler <rjkm@thp.uni-koeln.de>
-+ * Copyright (C) 1998 Trent Piepho <xyzzy@u.washington.edu>
-+ * Copyright (C) 1998 Ben Pfaff <blp@gnu.org>
-+ * Copyright (C) 1999 Christoph Bartelmus <lirc@bartelmus.de>
-+ * Copyright (C) 2007 Andrei Tanas <andrei@tanas.ca> (suspend/resume support)
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License as published by
 + *  the Free Software Foundation; either version 2 of the License, or
@@ -59,35 +54,25 @@ index 0000000..d2ea3f0
 + *  along with this program; if not, write to the Free Software
 + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + *
-+ */
-+
-+/*
-+ * Steve's changes to improve transmission fidelity:
-+ *   - for systems with the rdtsc instruction and the clock counter, a
-+ *     send_pule that times the pulses directly using the counter.
-+ *     This means that the LIRC_SERIAL_TRANSMITTER_LATENCY fudge is
-+ *     not needed. Measurement shows very stable waveform, even where
-+ *     PCI activity slows the access to the UART, which trips up other
-+ *     versions.
-+ *   - For other system, non-integer-microsecond pulse/space lengths,
-+ *     done using fixed point binary. So, much more accurate carrier
-+ *     frequency.
-+ *   - fine tuned transmitter latency, taking advantage of fractional
-+ *     microseconds in previous change
-+ *   - Fixed bug in the way transmitter latency was accounted for by
-+ *     tuning the pulse lengths down - the send_pulse routine ignored
-+ *     this overhead as it timed the overall pulse length - so the
-+ *     pulse frequency was right but overall pulse length was too
-+ *     long. Fixed by accounting for latency on each pulse/space
-+ *     iteration.
 + *
-+ * Steve Davies <steve@daviesfam.org>  July 2001
++ * 2000/09/16 Frank Przybylski <mail@frankprzybylski.de> :
++ *  added timeout and relaxed pulse detection, removed gap bug
++ *
++ * 2000/12/15 Christoph Bartelmus <lirc@bartelmus.de> :
++ *   added support for Tekram Irmate 210 (sending does not work yet,
++ *   kind of disappointing that nobody was able to implement that
++ *   before),
++ *   major clean-up
++ *
++ * 2001/02/27 Christoph Bartelmus <lirc@bartelmus.de> :
++ *   added support for StrongARM SA1100 embedded microprocessor
++ *   parts cut'n'pasted from sa1100_ir.c (C) 2000 Russell King
 + */
 +
 +#include <linux/module.h>
++#include <linux/sched.h>
 +#include <linux/errno.h>
 +#include <linux/signal.h>
-+#include <linux/sched.h>
 +#include <linux/fs.h>
 +#include <linux/interrupt.h>
 +#include <linux/ioport.h>
@@ -100,279 +85,181 @@ index 0000000..d2ea3f0
 +#include <linux/mm.h>
 +#include <linux/delay.h>
 +#include <linux/poll.h>
-+#include <linux/platform_device.h>
-+
 +#include <asm/system.h>
 +#include <linux/io.h>
-+#include <linux/irq.h>
++#include <asm/irq.h>
 +#include <linux/fcntl.h>
-+#include <linux/spinlock.h>
-+
-+#ifdef CONFIG_LIRC_SERIAL_NSLU2
++#ifdef LIRC_ON_SA1100
 +#include <asm/hardware.h>
++#ifdef CONFIG_SA1100_COLLIE
++#include <asm/arch/tc35143.h>
++#include <asm/ucb1200.h>
 +#endif
-+/* From Intel IXP42X Developer's Manual (#252480-005): */
-+/* ftp://download.intel.com/design/network/manuals/25248005.pdf */
-+#define UART_IE_IXP42X_UUE   0x40 /* IXP42X UART Unit enable */
-+#define UART_IE_IXP42X_RTOIE 0x10 /* IXP42X Receiver Data Timeout int.enable */
++#endif
++
++#include <linux/timer.h>
 +
 +#include <media/lirc.h>
 +#include <media/lirc_dev.h>
 +
-+#define LIRC_DRIVER_NAME "lirc_serial"
++/* SECTION: Definitions */
 +
-+struct lirc_serial {
-+	int signal_pin;
-+	int signal_pin_change;
-+	u8 on;
-+	u8 off;
-+	long (*send_pulse)(unsigned long length);
-+	void (*send_space)(long length);
-+	int features;
-+	spinlock_t lock;
-+};
++/*** Tekram dongle ***/
++#ifdef LIRC_SIR_TEKRAM
++/* stolen from kernel source */
++/* definitions for Tekram dongle */
++#define TEKRAM_115200 0x00
++#define TEKRAM_57600  0x01
++#define TEKRAM_38400  0x02
++#define TEKRAM_19200  0x03
++#define TEKRAM_9600   0x04
++#define TEKRAM_2400   0x08
 +
-+#define LIRC_HOMEBREW		0
-+#define LIRC_IRDEO		1
-+#define LIRC_IRDEO_REMOTE	2
-+#define LIRC_ANIMAX		3
-+#define LIRC_IGOR		4
-+#define LIRC_NSLU2		5
++#define TEKRAM_PW 0x10 /* Pulse select bit */
 +
-+/*** module parameters ***/
-+static int type;
-+static int io;
-+static int irq;
-+static int iommap;
-+static int ioshift;
-+static int softcarrier = 1;
-+static int share_irq;
++/* 10bit * 1s/115200bit in milliseconds = 87ms*/
++#define TIME_CONST (10000000ul/115200ul)
++
++#endif
++
++#ifdef LIRC_SIR_ACTISYS_ACT200L
++static void init_act200(void);
++#elif defined(LIRC_SIR_ACTISYS_ACT220L)
++static void init_act220(void);
++#endif
++
++/*** SA1100 ***/
++#ifdef LIRC_ON_SA1100
++struct sa1100_ser2_registers {
++	/* HSSP control register */
++	unsigned char hscr0;
++	/* UART registers */
++	unsigned char utcr0;
++	unsigned char utcr1;
++	unsigned char utcr2;
++	unsigned char utcr3;
++	unsigned char utcr4;
++	unsigned char utdr;
++	unsigned char utsr0;
++	unsigned char utsr1;
++} sr;
++
++static int irq = IRQ_Ser2ICP;
++
++#define LIRC_ON_SA1100_TRANSMITTER_LATENCY 0
++
++/* pulse/space ratio of 50/50 */
++static unsigned long pulse_width = (13-LIRC_ON_SA1100_TRANSMITTER_LATENCY);
++/* 1000000/freq-pulse_width */
++static unsigned long space_width = (13-LIRC_ON_SA1100_TRANSMITTER_LATENCY);
++static unsigned int freq = 38000;      /* modulation frequency */
++static unsigned int duty_cycle = 50;   /* duty cycle of 50% */
++
++#endif
++
++#define RBUF_LEN 1024
++#define WBUF_LEN 1024
++
++#define LIRC_DRIVER_NAME "lirc_sir"
++
++#define PULSE '['
++
++#ifndef LIRC_SIR_TEKRAM
++/* 9bit * 1s/115200bit in milli seconds = 78.125ms*/
++#define TIME_CONST (9000000ul/115200ul)
++#endif
++
++
++/* timeout for sequences in jiffies (=5/100s), must be longer than TIME_CONST */
++#define SIR_TIMEOUT	(HZ*5/100)
++
++#ifndef LIRC_ON_SA1100
++#ifndef LIRC_IRQ
++#define LIRC_IRQ 4
++#endif
++#ifndef LIRC_PORT
++/* for external dongles, default to com1 */
++#if defined(LIRC_SIR_ACTISYS_ACT200L) || \
++    defined(LIRC_SIR_ACTISYS_ACT220L) || \
++    defined(LIRC_SIR_TEKRAM)
++#define LIRC_PORT 0x3f8
++#else
++/* onboard sir ports are typically com3 */
++#define LIRC_PORT 0x3e8
++#endif
++#endif
++
++static int io = LIRC_PORT;
++static int irq = LIRC_IRQ;
++static int threshold = 3;
++#endif
++
++static DEFINE_SPINLOCK(timer_lock);
++static struct timer_list timerlist;
++/* time of last signal change detected */
++static struct timeval last_tv = {0, 0};
++/* time of last UART data ready interrupt */
++static struct timeval last_intr_tv = {0, 0};
++static int last_value;
++
++static DECLARE_WAIT_QUEUE_HEAD(lirc_read_queue);
++
++static DEFINE_SPINLOCK(hardware_lock);
++
++static int rx_buf[RBUF_LEN];
++static unsigned int rx_tail, rx_head;
++
 +static int debug;
-+static int sense = -1;	/* -1 = auto, 0 = active high, 1 = active low */
-+static int txsense;	/* 0 = active high, 1 = active low */
-+
-+#define dprintk(fmt, args...)					\
-+	do {							\
-+		if (debug)					\
-+			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "	\
-+			       fmt, ## args);			\
++#define dprintk(fmt, args...)						\
++	do {								\
++		if (debug)						\
++			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "		\
++				fmt, ## args);				\
 +	} while (0)
 +
-+/* forward declarations */
-+static long send_pulse_irdeo(unsigned long length);
-+static long send_pulse_homebrew(unsigned long length);
-+static void send_space_irdeo(long length);
-+static void send_space_homebrew(long length);
++/* SECTION: Prototypes */
 +
-+static struct lirc_serial hardware[] = {
-+	[LIRC_HOMEBREW] = {
-+		.signal_pin        = UART_MSR_DCD,
-+		.signal_pin_change = UART_MSR_DDCD,
-+		.on  = (UART_MCR_RTS | UART_MCR_OUT2 | UART_MCR_DTR),
-+		.off = (UART_MCR_RTS | UART_MCR_OUT2),
-+		.send_pulse = send_pulse_homebrew,
-+		.send_space = send_space_homebrew,
-+#ifdef CONFIG_LIRC_SERIAL_TRANSMITTER
-+		.features    = (LIRC_CAN_SET_SEND_DUTY_CYCLE |
-+				LIRC_CAN_SET_SEND_CARRIER |
-+				LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2)
-+#else
-+		.features    = LIRC_CAN_REC_MODE2
-+#endif
-+	},
++/* Communication with user-space */
++static unsigned int lirc_poll(struct file *file, poll_table *wait);
++static ssize_t lirc_read(struct file *file, char *buf, size_t count,
++		loff_t *ppos);
++static ssize_t lirc_write(struct file *file, const char *buf, size_t n,
++		loff_t *pos);
++static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg);
++static void add_read_queue(int flag, unsigned long val);
++static int init_chrdev(void);
++static void drop_chrdev(void);
++/* Hardware */
++static irqreturn_t sir_interrupt(int irq, void *dev_id);
++static void send_space(unsigned long len);
++static void send_pulse(unsigned long len);
++static int init_hardware(void);
++static void drop_hardware(void);
++/* Initialisation */
++static int init_port(void);
++static void drop_port(void);
 +
-+	[LIRC_IRDEO] = {
-+		.signal_pin        = UART_MSR_DSR,
-+		.signal_pin_change = UART_MSR_DDSR,
-+		.on  = UART_MCR_OUT2,
-+		.off = (UART_MCR_RTS | UART_MCR_DTR | UART_MCR_OUT2),
-+		.send_pulse  = send_pulse_irdeo,
-+		.send_space  = send_space_irdeo,
-+		.features    = (LIRC_CAN_SET_SEND_DUTY_CYCLE |
-+				LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2)
-+	},
-+
-+	[LIRC_IRDEO_REMOTE] = {
-+		.signal_pin        = UART_MSR_DSR,
-+		.signal_pin_change = UART_MSR_DDSR,
-+		.on  = (UART_MCR_RTS | UART_MCR_DTR | UART_MCR_OUT2),
-+		.off = (UART_MCR_RTS | UART_MCR_DTR | UART_MCR_OUT2),
-+		.send_pulse  = send_pulse_irdeo,
-+		.send_space  = send_space_irdeo,
-+		.features    = (LIRC_CAN_SET_SEND_DUTY_CYCLE |
-+				LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2)
-+	},
-+
-+	[LIRC_ANIMAX] = {
-+		.signal_pin        = UART_MSR_DCD,
-+		.signal_pin_change = UART_MSR_DDCD,
-+		.on  = 0,
-+		.off = (UART_MCR_RTS | UART_MCR_DTR | UART_MCR_OUT2),
-+		.send_pulse = NULL,
-+		.send_space = NULL,
-+		.features   = LIRC_CAN_REC_MODE2
-+	},
-+
-+	[LIRC_IGOR] = {
-+		.signal_pin        = UART_MSR_DSR,
-+		.signal_pin_change = UART_MSR_DDSR,
-+		.on  = (UART_MCR_RTS | UART_MCR_OUT2 | UART_MCR_DTR),
-+		.off = (UART_MCR_RTS | UART_MCR_OUT2),
-+		.send_pulse = send_pulse_homebrew,
-+		.send_space = send_space_homebrew,
-+#ifdef CONFIG_LIRC_SERIAL_TRANSMITTER
-+		.features    = (LIRC_CAN_SET_SEND_DUTY_CYCLE |
-+				LIRC_CAN_SET_SEND_CARRIER |
-+				LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2)
-+#else
-+		.features    = LIRC_CAN_REC_MODE2
-+#endif
-+	},
-+
-+#ifdef CONFIG_LIRC_SERIAL_NSLU2
-+	/*
-+	 * Modified Linksys Network Storage Link USB 2.0 (NSLU2):
-+	 * We receive on CTS of the 2nd serial port (R142,LHS), we
-+	 * transmit with a IR diode between GPIO[1] (green status LED),
-+	 * and ground (Matthias Goebl <matthias.goebl@goebl.net>).
-+	 * See also http://www.nslu2-linux.org for this device
-+	 */
-+	[LIRC_NSLU2] = {
-+		.signal_pin        = UART_MSR_CTS,
-+		.signal_pin_change = UART_MSR_DCTS,
-+		.on  = (UART_MCR_RTS | UART_MCR_OUT2 | UART_MCR_DTR),
-+		.off = (UART_MCR_RTS | UART_MCR_OUT2),
-+		.send_pulse = send_pulse_homebrew,
-+		.send_space = send_space_homebrew,
-+#ifdef CONFIG_LIRC_SERIAL_TRANSMITTER
-+		.features    = (LIRC_CAN_SET_SEND_DUTY_CYCLE |
-+				LIRC_CAN_SET_SEND_CARRIER |
-+				LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2)
-+#else
-+		.features    = LIRC_CAN_REC_MODE2
-+#endif
-+	},
-+#endif
-+
-+};
-+
-+#define RS_ISR_PASS_LIMIT 256
-+
-+/*
-+ * A long pulse code from a remote might take up to 300 bytes.  The
-+ * daemon should read the bytes as soon as they are generated, so take
-+ * the number of keys you think you can push before the daemon runs
-+ * and multiply by 300.  The driver will warn you if you overrun this
-+ * buffer.  If you have a slow computer or non-busmastering IDE disks,
-+ * maybe you will need to increase this.
-+ */
-+
-+/* This MUST be a power of two!  It has to be larger than 1 as well. */
-+
-+#define RBUF_LEN 256
-+
-+static struct timeval lasttv = {0, 0};
-+
-+static struct lirc_buffer rbuf;
-+
-+static unsigned int freq = 38000;
-+static unsigned int duty_cycle = 50;
-+
-+/* Initialized in init_timing_params() */
-+static unsigned long period;
-+static unsigned long pulse_width;
-+static unsigned long space_width;
-+
-+#if defined(__i386__)
-+/*
-+ * From:
-+ * Linux I/O port programming mini-HOWTO
-+ * Author: Riku Saikkonen <Riku.Saikkonen@hut.fi>
-+ * v, 28 December 1997
-+ *
-+ * [...]
-+ * Actually, a port I/O instruction on most ports in the 0-0x3ff range
-+ * takes almost exactly 1 microsecond, so if you're, for example, using
-+ * the parallel port directly, just do additional inb()s from that port
-+ * to delay.
-+ * [...]
-+ */
-+/* transmitter latency 1.5625us 0x1.90 - this figure arrived at from
-+ * comment above plus trimming to match actual measured frequency.
-+ * This will be sensitive to cpu speed, though hopefully most of the 1.5us
-+ * is spent in the uart access.  Still - for reference test machine was a
-+ * 1.13GHz Athlon system - Steve
-+ */
-+
-+/*
-+ * changed from 400 to 450 as this works better on slower machines;
-+ * faster machines will use the rdtsc code anyway
-+ */
-+#define LIRC_SERIAL_TRANSMITTER_LATENCY 450
-+
-+#else
-+
-+/* does anybody have information on other platforms ? */
-+/* 256 = 1<<8 */
-+#define LIRC_SERIAL_TRANSMITTER_LATENCY 256
-+
-+#endif  /* __i386__ */
-+/*
-+ * FIXME: should we be using hrtimers instead of this
-+ * LIRC_SERIAL_TRANSMITTER_LATENCY nonsense?
-+ */
-+
-+/* fetch serial input packet (1 byte) from register offset */
-+static u8 sinp(int offset)
-+{
-+	if (iommap != 0)
-+		/* the register is memory-mapped */
-+		offset <<= ioshift;
-+
-+	return inb(io + offset);
-+}
-+
-+/* write serial output packet (1 byte) of value to register offset */
-+static void soutp(int offset, u8 value)
-+{
-+	if (iommap != 0)
-+		/* the register is memory-mapped */
-+		offset <<= ioshift;
-+
-+	outb(value, io + offset);
-+}
-+
++#ifdef LIRC_ON_SA1100
 +static void on(void)
 +{
-+#ifdef CONFIG_LIRC_SERIAL_NSLU2
-+	/*
-+	 * On NSLU2, we put the transmit diode between the output of the green
-+	 * status LED and ground
-+	 */
-+	if (type == LIRC_NSLU2) {
-+		gpio_line_set(NSLU2_LED_GRN, IXP4XX_GPIO_LOW);
-+		return;
-+	}
-+#endif
-+	if (txsense)
-+		soutp(UART_MCR, hardware[type].off);
-+	else
-+		soutp(UART_MCR, hardware[type].on);
++	PPSR |= PPC_TXD2;
 +}
 +
 +static void off(void)
 +{
-+#ifdef CONFIG_LIRC_SERIAL_NSLU2
-+	if (type == LIRC_NSLU2) {
-+		gpio_line_set(NSLU2_LED_GRN, IXP4XX_GPIO_HIGH);
-+		return;
-+	}
-+#endif
-+	if (txsense)
-+		soutp(UART_MCR, hardware[type].on);
-+	else
-+		soutp(UART_MCR, hardware[type].off);
++	PPSR &= ~PPC_TXD2;
 +}
++#else
++static inline unsigned int sinp(int offset)
++{
++	return inb(io + offset);
++}
++
++static inline void soutp(int offset, int value)
++{
++	outb(value, io + offset);
++}
++#endif
 +
 +#ifndef MAX_UDELAY_MS
 +#define MAX_UDELAY_US 5000
@@ -389,961 +276,1043 @@ index 0000000..d2ea3f0
 +	udelay(usecs);
 +}
 +
-+#ifdef USE_RDTSC
-+/*
-+ * This is an overflow/precision juggle, complicated in that we can't
-+ * do long long divide in the kernel
-+ */
++/* SECTION: Communication with user-space */
 +
-+/*
-+ * When we use the rdtsc instruction to measure clocks, we keep the
-+ * pulse and space widths as clock cycles.  As this is CPU speed
-+ * dependent, the widths must be calculated in init_port and ioctl
-+ * time
-+ */
-+
-+/* So send_pulse can quickly convert microseconds to clocks */
-+static unsigned long conv_us_to_clocks;
-+
-+static int init_timing_params(unsigned int new_duty_cycle,
-+		unsigned int new_freq)
++static unsigned int lirc_poll(struct file *file, poll_table *wait)
 +{
-+	unsigned long long loops_per_sec, work;
-+
-+	duty_cycle = new_duty_cycle;
-+	freq = new_freq;
-+
-+	loops_per_sec = current_cpu_data.loops_per_jiffy;
-+	loops_per_sec *= HZ;
-+
-+	/* How many clocks in a microsecond?, avoiding long long divide */
-+	work = loops_per_sec;
-+	work *= 4295;  /* 4295 = 2^32 / 1e6 */
-+	conv_us_to_clocks = (work >> 32);
-+
-+	/*
-+	 * Carrier period in clocks, approach good up to 32GHz clock,
-+	 * gets carrier frequency within 8Hz
-+	 */
-+	period = loops_per_sec >> 3;
-+	period /= (freq >> 3);
-+
-+	/* Derive pulse and space from the period */
-+	pulse_width = period * duty_cycle / 100;
-+	space_width = period - pulse_width;
-+	dprintk("in init_timing_params, freq=%d, duty_cycle=%d, "
-+		"clk/jiffy=%ld, pulse=%ld, space=%ld, "
-+		"conv_us_to_clocks=%ld\n",
-+		freq, duty_cycle, current_cpu_data.loops_per_jiffy,
-+		pulse_width, space_width, conv_us_to_clocks);
++	poll_wait(file, &lirc_read_queue, wait);
++	if (rx_head != rx_tail)
++		return POLLIN | POLLRDNORM;
 +	return 0;
 +}
-+#else /* ! USE_RDTSC */
-+static int init_timing_params(unsigned int new_duty_cycle,
-+		unsigned int new_freq)
++
++static ssize_t lirc_read(struct file *file, char *buf, size_t count,
++		loff_t *ppos)
 +{
-+/*
-+ * period, pulse/space width are kept with 8 binary places -
-+ * IE multiplied by 256.
-+ */
-+	if (256 * 1000000L / new_freq * new_duty_cycle / 100 <=
-+	    LIRC_SERIAL_TRANSMITTER_LATENCY)
++	int n = 0;
++	int retval = 0;
++	DECLARE_WAITQUEUE(wait, current);
++
++	if (count % sizeof(int))
 +		return -EINVAL;
-+	if (256 * 1000000L / new_freq * (100 - new_duty_cycle) / 100 <=
-+	    LIRC_SERIAL_TRANSMITTER_LATENCY)
-+		return -EINVAL;
-+	duty_cycle = new_duty_cycle;
-+	freq = new_freq;
-+	period = 256 * 1000000L / freq;
-+	pulse_width = period * duty_cycle / 100;
-+	space_width = period - pulse_width;
-+	dprintk("in init_timing_params, freq=%d pulse=%ld, "
-+		"space=%ld\n", freq, pulse_width, space_width);
-+	return 0;
-+}
-+#endif /* USE_RDTSC */
 +
-+
-+/* return value: space length delta */
-+
-+static long send_pulse_irdeo(unsigned long length)
-+{
-+	long rawbits, ret;
-+	int i;
-+	unsigned char output;
-+	unsigned char chunk, shifted;
-+
-+	/* how many bits have to be sent ? */
-+	rawbits = length * 1152 / 10000;
-+	if (duty_cycle > 50)
-+		chunk = 3;
-+	else
-+		chunk = 1;
-+	for (i = 0, output = 0x7f; rawbits > 0; rawbits -= 3) {
-+		shifted = chunk << (i * 3);
-+		shifted >>= 1;
-+		output &= (~shifted);
-+		i++;
-+		if (i == 3) {
-+			soutp(UART_TX, output);
-+			while (!(sinp(UART_LSR) & UART_LSR_THRE))
-+				;
-+			output = 0x7f;
-+			i = 0;
-+		}
-+	}
-+	if (i != 0) {
-+		soutp(UART_TX, output);
-+		while (!(sinp(UART_LSR) & UART_LSR_TEMT))
-+			;
-+	}
-+
-+	if (i == 0)
-+		ret = (-rawbits) * 10000 / 1152;
-+	else
-+		ret = (3 - i) * 3 * 10000 / 1152 + (-rawbits) * 10000 / 1152;
-+
-+	return ret;
-+}
-+
-+#ifdef USE_RDTSC
-+/* Version that uses Pentium rdtsc instruction to measure clocks */
-+
-+/*
-+ * This version does sub-microsecond timing using rdtsc instruction,
-+ * and does away with the fudged LIRC_SERIAL_TRANSMITTER_LATENCY
-+ * Implicitly i586 architecture...  - Steve
-+ */
-+
-+static long send_pulse_homebrew_softcarrier(unsigned long length)
-+{
-+	int flag;
-+	unsigned long target, start, now;
-+
-+	/* Get going quick as we can */
-+	rdtscl(start);
-+	on();
-+	/* Convert length from microseconds to clocks */
-+	length *= conv_us_to_clocks;
-+	/* And loop till time is up - flipping at right intervals */
-+	now = start;
-+	target = pulse_width;
-+	flag = 1;
-+	/*
-+	 * FIXME: This looks like a hard busy wait, without even an occasional,
-+	 * polite, cpu_relax() call.  There's got to be a better way?
-+	 *
-+	 * The i2c code has the result of a lot of bit-banging work, I wonder if
-+	 * there's something there which could be helpful here.
-+	 */
-+	while ((now - start) < length) {
-+		/* Delay till flip time */
-+		do {
-+			rdtscl(now);
-+		} while ((now - start) < target);
-+
-+		/* flip */
-+		if (flag) {
-+			rdtscl(now);
-+			off();
-+			target += space_width;
-+		} else {
-+			rdtscl(now); on();
-+			target += pulse_width;
-+		}
-+		flag = !flag;
-+	}
-+	rdtscl(now);
-+	return ((now - start) - length) / conv_us_to_clocks;
-+}
-+#else /* ! USE_RDTSC */
-+/* Version using udelay() */
-+
-+/*
-+ * here we use fixed point arithmetic, with 8
-+ * fractional bits.  that gets us within 0.1% or so of the right average
-+ * frequency, albeit with some jitter in pulse length - Steve
-+ */
-+
-+/* To match 8 fractional bits used for pulse/space length */
-+
-+static long send_pulse_homebrew_softcarrier(unsigned long length)
-+{
-+	int flag;
-+	unsigned long actual, target, d;
-+	length <<= 8;
-+
-+	actual = 0; target = 0; flag = 0;
-+	while (actual < length) {
-+		if (flag) {
-+			off();
-+			target += space_width;
-+		} else {
-+			on();
-+			target += pulse_width;
-+		}
-+		d = (target - actual -
-+		     LIRC_SERIAL_TRANSMITTER_LATENCY + 128) >> 8;
-+		/*
-+		 * Note - we've checked in ioctl that the pulse/space
-+		 * widths are big enough so that d is > 0
-+		 */
-+		udelay(d);
-+		actual += (d << 8) + LIRC_SERIAL_TRANSMITTER_LATENCY;
-+		flag = !flag;
-+	}
-+	return (actual-length) >> 8;
-+}
-+#endif /* USE_RDTSC */
-+
-+static long send_pulse_homebrew(unsigned long length)
-+{
-+	if (length <= 0)
-+		return 0;
-+
-+	if (softcarrier)
-+		return send_pulse_homebrew_softcarrier(length);
-+	else {
-+		on();
-+		safe_udelay(length);
-+		return 0;
-+	}
-+}
-+
-+static void send_space_irdeo(long length)
-+{
-+	if (length <= 0)
-+		return;
-+
-+	safe_udelay(length);
-+}
-+
-+static void send_space_homebrew(long length)
-+{
-+	off();
-+	if (length <= 0)
-+		return;
-+	safe_udelay(length);
-+}
-+
-+static void rbwrite(int l)
-+{
-+	if (lirc_buffer_full(&rbuf)) {
-+		/* no new signals will be accepted */
-+		dprintk("Buffer overrun\n");
-+		return;
-+	}
-+	lirc_buffer_write(&rbuf, (void *)&l);
-+}
-+
-+static void frbwrite(int l)
-+{
-+	/* simple noise filter */
-+	static int pulse, space;
-+	static unsigned int ptr;
-+
-+	if (ptr > 0 && (l & PULSE_BIT)) {
-+		pulse += l & PULSE_MASK;
-+		if (pulse > 250) {
-+			rbwrite(space);
-+			rbwrite(pulse | PULSE_BIT);
-+			ptr = 0;
-+			pulse = 0;
-+		}
-+		return;
-+	}
-+	if (!(l & PULSE_BIT)) {
-+		if (ptr == 0) {
-+			if (l > 20000) {
-+				space = l;
-+				ptr++;
-+				return;
++	add_wait_queue(&lirc_read_queue, &wait);
++	set_current_state(TASK_INTERRUPTIBLE);
++	while (n < count) {
++		if (rx_head != rx_tail) {
++			if (copy_to_user((void *) buf + n,
++					(void *) (rx_buf + rx_head),
++					sizeof(int))) {
++				retval = -EFAULT;
++				break;
 +			}
++			rx_head = (rx_head + 1) & (RBUF_LEN - 1);
++			n += sizeof(int);
 +		} else {
-+			if (l > 20000) {
-+				space += pulse;
-+				if (space > PULSE_MASK)
-+					space = PULSE_MASK;
-+				space += l;
-+				if (space > PULSE_MASK)
-+					space = PULSE_MASK;
-+				pulse = 0;
-+				return;
++			if (file->f_flags & O_NONBLOCK) {
++				retval = -EAGAIN;
++				break;
 +			}
-+			rbwrite(space);
-+			rbwrite(pulse | PULSE_BIT);
-+			ptr = 0;
-+			pulse = 0;
-+		}
-+	}
-+	rbwrite(l);
-+}
-+
-+static irqreturn_t irq_handler(int i, void *blah)
-+{
-+	struct timeval tv;
-+	int counter, dcd;
-+	u8 status;
-+	long deltv;
-+	int data;
-+	static int last_dcd = -1;
-+
-+	if ((sinp(UART_IIR) & UART_IIR_NO_INT)) {
-+		/* not our interrupt */
-+		return IRQ_NONE;
-+	}
-+
-+	counter = 0;
-+	do {
-+		counter++;
-+		status = sinp(UART_MSR);
-+		if (counter > RS_ISR_PASS_LIMIT) {
-+			printk(KERN_WARNING LIRC_DRIVER_NAME ": AIEEEE: "
-+			       "We're caught!\n");
-+			break;
-+		}
-+		if ((status & hardware[type].signal_pin_change)
-+		    && sense != -1) {
-+			/* get current time */
-+			do_gettimeofday(&tv);
-+
-+			/* New mode, written by Trent Piepho
-+			   <xyzzy@u.washington.edu>. */
-+
-+			/*
-+			 * The old format was not very portable.
-+			 * We now use an int to pass pulses
-+			 * and spaces to user space.
-+			 *
-+			 * If PULSE_BIT is set a pulse has been
-+			 * received, otherwise a space has been
-+			 * received.  The driver needs to know if your
-+			 * receiver is active high or active low, or
-+			 * the space/pulse sense could be
-+			 * inverted. The bits denoted by PULSE_MASK are
-+			 * the length in microseconds. Lengths greater
-+			 * than or equal to 16 seconds are clamped to
-+			 * PULSE_MASK.  All other bits are unused.
-+			 * This is a much simpler interface for user
-+			 * programs, as well as eliminating "out of
-+			 * phase" errors with space/pulse
-+			 * autodetection.
-+			 */
-+
-+			/* calc time since last interrupt in microseconds */
-+			dcd = (status & hardware[type].signal_pin) ? 1 : 0;
-+
-+			if (dcd == last_dcd) {
-+				printk(KERN_WARNING LIRC_DRIVER_NAME
-+				": ignoring spike: %d %d %lx %lx %lx %lx\n",
-+				dcd, sense,
-+				tv.tv_sec, lasttv.tv_sec,
-+				tv.tv_usec, lasttv.tv_usec);
-+				continue;
++			if (signal_pending(current)) {
++				retval = -ERESTARTSYS;
++				break;
 +			}
-+
-+			deltv = tv.tv_sec-lasttv.tv_sec;
-+			if (tv.tv_sec < lasttv.tv_sec ||
-+			    (tv.tv_sec == lasttv.tv_sec &&
-+			     tv.tv_usec < lasttv.tv_usec)) {
-+				printk(KERN_WARNING LIRC_DRIVER_NAME
-+				       ": AIEEEE: your clock just jumped "
-+				       "backwards\n");
-+				printk(KERN_WARNING LIRC_DRIVER_NAME
-+				       ": %d %d %lx %lx %lx %lx\n",
-+				       dcd, sense,
-+				       tv.tv_sec, lasttv.tv_sec,
-+				       tv.tv_usec, lasttv.tv_usec);
-+				data = PULSE_MASK;
-+			} else if (deltv > 15) {
-+				data = PULSE_MASK; /* really long time */
-+				if (!(dcd^sense)) {
-+					/* sanity check */
-+					printk(KERN_WARNING LIRC_DRIVER_NAME
-+					       ": AIEEEE: "
-+					       "%d %d %lx %lx %lx %lx\n",
-+					       dcd, sense,
-+					       tv.tv_sec, lasttv.tv_sec,
-+					       tv.tv_usec, lasttv.tv_usec);
-+					/*
-+					 * detecting pulse while this
-+					 * MUST be a space!
-+					 */
-+					sense = sense ? 0 : 1;
-+				}
-+			} else
-+				data = (int) (deltv*1000000 +
-+					       tv.tv_usec -
-+					       lasttv.tv_usec);
-+			frbwrite(dcd^sense ? data : (data|PULSE_BIT));
-+			lasttv = tv;
-+			last_dcd = dcd;
-+			wake_up_interruptible(&rbuf.wait_poll);
++			schedule();
++			set_current_state(TASK_INTERRUPTIBLE);
 +		}
-+	} while (!(sinp(UART_IIR) & UART_IIR_NO_INT)); /* still pending ? */
-+	return IRQ_HANDLED;
++	}
++	remove_wait_queue(&lirc_read_queue, &wait);
++	set_current_state(TASK_RUNNING);
++	return n ? n : retval;
 +}
-+
-+
-+static int hardware_init_port(void)
++static ssize_t lirc_write(struct file *file, const char *buf, size_t n,
++				loff_t *pos)
 +{
-+	u8 scratch, scratch2, scratch3;
-+
-+	/*
-+	 * This is a simple port existence test, borrowed from the autoconfig
-+	 * function in drivers/serial/8250.c
-+	 */
-+	scratch = sinp(UART_IER);
-+	soutp(UART_IER, 0);
-+#ifdef __i386__
-+	outb(0xff, 0x080);
-+#endif
-+	scratch2 = sinp(UART_IER) & 0x0f;
-+	soutp(UART_IER, 0x0f);
-+#ifdef __i386__
-+	outb(0x00, 0x080);
-+#endif
-+	scratch3 = sinp(UART_IER) & 0x0f;
-+	soutp(UART_IER, scratch);
-+	if (scratch2 != 0 || scratch3 != 0x0f) {
-+		/* we fail, there's nothing here */
-+		printk(KERN_ERR LIRC_DRIVER_NAME ": port existence test "
-+		       "failed, cannot continue\n");
-+		return -EINVAL;
-+	}
-+
-+
-+
-+	/* Set DLAB 0. */
-+	soutp(UART_LCR, sinp(UART_LCR) & (~UART_LCR_DLAB));
-+
-+	/* First of all, disable all interrupts */
-+	soutp(UART_IER, sinp(UART_IER) &
-+	      (~(UART_IER_MSI|UART_IER_RLSI|UART_IER_THRI|UART_IER_RDI)));
-+
-+	/* Clear registers. */
-+	sinp(UART_LSR);
-+	sinp(UART_RX);
-+	sinp(UART_IIR);
-+	sinp(UART_MSR);
-+
-+#ifdef CONFIG_LIRC_SERIAL_NSLU2
-+	if (type == LIRC_NSLU2) {
-+		/* Setup NSLU2 UART */
-+
-+		/* Enable UART */
-+		soutp(UART_IER, sinp(UART_IER) | UART_IE_IXP42X_UUE);
-+		/* Disable Receiver data Time out interrupt */
-+		soutp(UART_IER, sinp(UART_IER) & ~UART_IE_IXP42X_RTOIE);
-+		/* set out2 = interrupt unmask; off() doesn't set MCR
-+		   on NSLU2 */
-+		soutp(UART_MCR, UART_MCR_RTS|UART_MCR_OUT2);
-+	}
-+#endif
-+
-+	/* Set line for power source */
-+	off();
-+
-+	/* Clear registers again to be sure. */
-+	sinp(UART_LSR);
-+	sinp(UART_RX);
-+	sinp(UART_IIR);
-+	sinp(UART_MSR);
-+
-+	switch (type) {
-+	case LIRC_IRDEO:
-+	case LIRC_IRDEO_REMOTE:
-+		/* setup port to 7N1 @ 115200 Baud */
-+		/* 7N1+start = 9 bits at 115200 ~ 3 bits at 38kHz */
-+
-+		/* Set DLAB 1. */
-+		soutp(UART_LCR, sinp(UART_LCR) | UART_LCR_DLAB);
-+		/* Set divisor to 1 => 115200 Baud */
-+		soutp(UART_DLM, 0);
-+		soutp(UART_DLL, 1);
-+		/* Set DLAB 0 +  7N1 */
-+		soutp(UART_LCR, UART_LCR_WLEN7);
-+		/* THR interrupt already disabled at this point */
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static int init_port(void)
-+{
-+	int i, nlow, nhigh;
-+
-+	/* Reserve io region. */
-+	/*
-+	 * Future MMAP-Developers: Attention!
-+	 * For memory mapped I/O you *might* need to use ioremap() first,
-+	 * for the NSLU2 it's done in boot code.
-+	 */
-+	if (((iommap != 0)
-+	     && (request_mem_region(iommap, 8 << ioshift,
-+				    LIRC_DRIVER_NAME) == NULL))
-+	   || ((iommap == 0)
-+	       && (request_region(io, 8, LIRC_DRIVER_NAME) == NULL))) {
-+		printk(KERN_ERR  LIRC_DRIVER_NAME
-+		       ": port %04x already in use\n", io);
-+		printk(KERN_WARNING LIRC_DRIVER_NAME
-+		       ": use 'setserial /dev/ttySX uart none'\n");
-+		printk(KERN_WARNING LIRC_DRIVER_NAME
-+		       ": or compile the serial port driver as module and\n");
-+		printk(KERN_WARNING LIRC_DRIVER_NAME
-+		       ": make sure this module is loaded first\n");
-+		return -EBUSY;
-+	}
-+
-+	if (hardware_init_port() < 0)
-+		return -EINVAL;
-+
-+	/* Initialize pulse/space widths */
-+	init_timing_params(duty_cycle, freq);
-+
-+	/* If pin is high, then this must be an active low receiver. */
-+	if (sense == -1) {
-+		/* wait 1/2 sec for the power supply */
-+		msleep(500);
-+
-+		/*
-+		 * probe 9 times every 0.04s, collect "votes" for
-+		 * active high/low
-+		 */
-+		nlow = 0;
-+		nhigh = 0;
-+		for (i = 0; i < 9; i++) {
-+			if (sinp(UART_MSR) & hardware[type].signal_pin)
-+				nlow++;
-+			else
-+				nhigh++;
-+			msleep(40);
-+		}
-+		sense = (nlow >= nhigh ? 1 : 0);
-+		printk(KERN_INFO LIRC_DRIVER_NAME  ": auto-detected active "
-+		       "%s receiver\n", sense ? "low" : "high");
-+	} else
-+		printk(KERN_INFO LIRC_DRIVER_NAME  ": Manually using active "
-+		       "%s receiver\n", sense ? "low" : "high");
-+
-+	return 0;
-+}
-+
-+static int set_use_inc(void *data)
-+{
-+	int result;
 +	unsigned long flags;
-+
-+	/* initialize timestamp */
-+	do_gettimeofday(&lasttv);
-+
-+	result = request_irq(irq, irq_handler,
-+			     IRQF_DISABLED | (share_irq ? IRQF_SHARED : 0),
-+			     LIRC_DRIVER_NAME, (void *)&hardware);
-+
-+	switch (result) {
-+	case -EBUSY:
-+		printk(KERN_ERR LIRC_DRIVER_NAME ": IRQ %d busy\n", irq);
-+		return -EBUSY;
-+	case -EINVAL:
-+		printk(KERN_ERR LIRC_DRIVER_NAME
-+		       ": Bad irq number or handler\n");
-+		return -EINVAL;
-+	default:
-+		dprintk("Interrupt %d, port %04x obtained\n", irq, io);
-+		break;
-+	};
-+
-+	spin_lock_irqsave(&hardware[type].lock, flags);
-+
-+	/* Set DLAB 0. */
-+	soutp(UART_LCR, sinp(UART_LCR) & (~UART_LCR_DLAB));
-+
-+	soutp(UART_IER, sinp(UART_IER)|UART_IER_MSI);
-+
-+	spin_unlock_irqrestore(&hardware[type].lock, flags);
-+
-+	return 0;
-+}
-+
-+static void set_use_dec(void *data)
-+{	unsigned long flags;
-+
-+	spin_lock_irqsave(&hardware[type].lock, flags);
-+
-+	/* Set DLAB 0. */
-+	soutp(UART_LCR, sinp(UART_LCR) & (~UART_LCR_DLAB));
-+
-+	/* First of all, disable all interrupts */
-+	soutp(UART_IER, sinp(UART_IER) &
-+	      (~(UART_IER_MSI|UART_IER_RLSI|UART_IER_THRI|UART_IER_RDI)));
-+	spin_unlock_irqrestore(&hardware[type].lock, flags);
-+
-+	free_irq(irq, (void *)&hardware);
-+
-+	dprintk("freed IRQ %d\n", irq);
-+}
-+
-+static ssize_t lirc_write(struct file *file, const char *buf,
-+			 size_t n, loff_t *ppos)
-+{
 +	int i, count;
-+	unsigned long flags;
-+	long delta = 0;
-+	int *wbuf;
-+
-+	if (!(hardware[type].features & LIRC_CAN_SEND_PULSE))
-+		return -EBADF;
++	int *tx_buf;
 +
 +	count = n / sizeof(int);
 +	if (n % sizeof(int) || count % 2 == 0)
 +		return -EINVAL;
-+	wbuf = memdup_user(buf, n);
-+	if (PTR_ERR(wbuf))
-+		return PTR_ERR(wbuf);
-+	spin_lock_irqsave(&hardware[type].lock, flags);
-+	if (type == LIRC_IRDEO) {
-+		/* DTR, RTS down */
-+		on();
++	tx_buf = memdup_user(buf, n);
++	if (IS_ERR(tx_buf))
++		return PTR_ERR(tx_buf);
++	i = 0;
++#ifdef LIRC_ON_SA1100
++	/* disable receiver */
++	Ser2UTCR3 = 0;
++#endif
++	local_irq_save(flags);
++	while (1) {
++		if (i >= count)
++			break;
++		if (tx_buf[i])
++			send_pulse(tx_buf[i]);
++		i++;
++		if (i >= count)
++			break;
++		if (tx_buf[i])
++			send_space(tx_buf[i]);
++		i++;
 +	}
-+	for (i = 0; i < count; i++) {
-+		if (i%2)
-+			hardware[type].send_space(wbuf[i] - delta);
-+		else
-+			delta = hardware[type].send_pulse(wbuf[i]);
-+	}
++	local_irq_restore(flags);
++#ifdef LIRC_ON_SA1100
 +	off();
-+	spin_unlock_irqrestore(&hardware[type].lock, flags);
-+	return n;
++	udelay(1000); /* wait 1ms for IR diode to recover */
++	Ser2UTCR3 = 0;
++	/* clear status register to prevent unwanted interrupts */
++	Ser2UTSR0 &= (UTSR0_RID | UTSR0_RBB | UTSR0_REB);
++	/* enable receiver */
++	Ser2UTCR3 = UTCR3_RXE|UTCR3_RIE;
++#endif
++	return count;
 +}
 +
 +static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 +{
-+	int result;
-+	unsigned long value;
++	int retval = 0;
++	unsigned long value = 0;
++#ifdef LIRC_ON_SA1100
 +	unsigned int ivalue;
 +
-+	switch (cmd) {
-+	case LIRC_GET_SEND_MODE:
-+		if (!(hardware[type].features&LIRC_CAN_SEND_MASK))
-+			return -ENOIOCTLCMD;
++	if (cmd == LIRC_GET_FEATURES)
++		value = LIRC_CAN_SEND_PULSE |
++			LIRC_CAN_SET_SEND_DUTY_CYCLE |
++			LIRC_CAN_SET_SEND_CARRIER |
++			LIRC_CAN_REC_MODE2;
++	else if (cmd == LIRC_GET_SEND_MODE)
++		value = LIRC_MODE_PULSE;
++	else if (cmd == LIRC_GET_REC_MODE)
++		value = LIRC_MODE_MODE2;
++#else
++	if (cmd == LIRC_GET_FEATURES)
++		value = LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2;
++	else if (cmd == LIRC_GET_SEND_MODE)
++		value = LIRC_MODE_PULSE;
++	else if (cmd == LIRC_GET_REC_MODE)
++		value = LIRC_MODE_MODE2;
++#endif
 +
-+		result = put_user(LIRC_SEND2MODE
-+				  (hardware[type].features&LIRC_CAN_SEND_MASK),
-+				  (unsigned long *) arg);
-+		if (result)
-+			return result;
++	switch (cmd) {
++	case LIRC_GET_FEATURES:
++	case LIRC_GET_SEND_MODE:
++	case LIRC_GET_REC_MODE:
++		retval = put_user(value, (unsigned long *) arg);
 +		break;
 +
 +	case LIRC_SET_SEND_MODE:
-+		if (!(hardware[type].features&LIRC_CAN_SEND_MASK))
-+			return -ENOIOCTLCMD;
-+
-+		result = get_user(value, (unsigned long *) arg);
-+		if (result)
-+			return result;
-+		/* only LIRC_MODE_PULSE supported */
-+		if (value != LIRC_MODE_PULSE)
-+			return -ENOSYS;
++	case LIRC_SET_REC_MODE:
++		retval = get_user(value, (unsigned long *) arg);
 +		break;
-+
-+	case LIRC_GET_LENGTH:
-+		return -ENOSYS;
-+		break;
-+
++#ifdef LIRC_ON_SA1100
 +	case LIRC_SET_SEND_DUTY_CYCLE:
-+		dprintk("SET_SEND_DUTY_CYCLE\n");
-+		if (!(hardware[type].features&LIRC_CAN_SET_SEND_DUTY_CYCLE))
-+			return -ENOIOCTLCMD;
-+
-+		result = get_user(ivalue, (unsigned int *) arg);
-+		if (result)
-+			return result;
++		retval = get_user(ivalue, (unsigned int *) arg);
++		if (retval)
++			return retval;
 +		if (ivalue <= 0 || ivalue > 100)
 +			return -EINVAL;
-+		return init_timing_params(ivalue, freq);
++		/* (ivalue/100)*(1000000/freq) */
++		duty_cycle = ivalue;
++		pulse_width = (unsigned long) duty_cycle*10000/freq;
++		space_width = (unsigned long) 1000000L/freq-pulse_width;
++		if (pulse_width >= LIRC_ON_SA1100_TRANSMITTER_LATENCY)
++			pulse_width -= LIRC_ON_SA1100_TRANSMITTER_LATENCY;
++		if (space_width >= LIRC_ON_SA1100_TRANSMITTER_LATENCY)
++			space_width -= LIRC_ON_SA1100_TRANSMITTER_LATENCY;
 +		break;
-+
 +	case LIRC_SET_SEND_CARRIER:
-+		dprintk("SET_SEND_CARRIER\n");
-+		if (!(hardware[type].features&LIRC_CAN_SET_SEND_CARRIER))
-+			return -ENOIOCTLCMD;
-+
-+		result = get_user(ivalue, (unsigned int *) arg);
-+		if (result)
-+			return result;
++		retval = get_user(ivalue, (unsigned int *) arg);
++		if (retval)
++			return retval;
 +		if (ivalue > 500000 || ivalue < 20000)
 +			return -EINVAL;
-+		return init_timing_params(duty_cycle, ivalue);
++		freq = ivalue;
++		pulse_width = (unsigned long) duty_cycle*10000/freq;
++		space_width = (unsigned long) 1000000L/freq-pulse_width;
++		if (pulse_width >= LIRC_ON_SA1100_TRANSMITTER_LATENCY)
++			pulse_width -= LIRC_ON_SA1100_TRANSMITTER_LATENCY;
++		if (space_width >= LIRC_ON_SA1100_TRANSMITTER_LATENCY)
++			space_width -= LIRC_ON_SA1100_TRANSMITTER_LATENCY;
 +		break;
-+
++#endif
 +	default:
-+		return lirc_dev_fop_ioctl(filep, cmd, arg);
++		retval = -ENOIOCTLCMD;
++
 +	}
-+	return 0;
++
++	if (retval)
++		return retval;
++	if (cmd == LIRC_SET_REC_MODE) {
++		if (value != LIRC_MODE_MODE2)
++			retval = -ENOSYS;
++	} else if (cmd == LIRC_SET_SEND_MODE) {
++		if (value != LIRC_MODE_PULSE)
++			retval = -ENOSYS;
++	}
++
++	return retval;
++}
++
++static void add_read_queue(int flag, unsigned long val)
++{
++	unsigned int new_rx_tail;
++	int newval;
++
++	dprintk("add flag %d with val %lu\n", flag, val);
++
++	newval = val & PULSE_MASK;
++
++	/*
++	 * statistically, pulses are ~TIME_CONST/2 too long. we could
++	 * maybe make this more exact, but this is good enough
++	 */
++	if (flag) {
++		/* pulse */
++		if (newval > TIME_CONST/2)
++			newval -= TIME_CONST/2;
++		else /* should not ever happen */
++			newval = 1;
++		newval |= PULSE_BIT;
++	} else {
++		newval += TIME_CONST/2;
++	}
++	new_rx_tail = (rx_tail + 1) & (RBUF_LEN - 1);
++	if (new_rx_tail == rx_head) {
++		dprintk("Buffer overrun.\n");
++		return;
++	}
++	rx_buf[rx_tail] = newval;
++	rx_tail = new_rx_tail;
++	wake_up_interruptible(&lirc_read_queue);
 +}
 +
 +static struct file_operations lirc_fops = {
 +	.owner		= THIS_MODULE,
++	.read		= lirc_read,
 +	.write		= lirc_write,
++	.poll		= lirc_poll,
 +	.unlocked_ioctl	= lirc_ioctl,
-+	.read		= lirc_dev_fop_read,
-+	.poll		= lirc_dev_fop_poll,
 +	.open		= lirc_dev_fop_open,
 +	.release	= lirc_dev_fop_close,
 +};
 +
++static int set_use_inc(void *data)
++{
++       return 0;
++}
++
++static void set_use_dec(void *data)
++{
++}
++
 +static struct lirc_driver driver = {
-+	.name		= LIRC_DRIVER_NAME,
-+	.minor		= -1,
-+	.code_length	= 1,
-+	.sample_rate	= 0,
-+	.data		= NULL,
-+	.add_to_buf	= NULL,
-+	.rbuf		= &rbuf,
-+	.set_use_inc	= set_use_inc,
-+	.set_use_dec	= set_use_dec,
-+	.fops		= &lirc_fops,
-+	.dev		= NULL,
-+	.owner		= THIS_MODULE,
++       .name		= LIRC_DRIVER_NAME,
++       .minor		= -1,
++       .code_length	= 1,
++       .sample_rate	= 0,
++       .data		= NULL,
++       .add_to_buf	= NULL,
++       .set_use_inc	= set_use_inc,
++       .set_use_dec	= set_use_dec,
++       .fops		= &lirc_fops,
++       .dev		= NULL,
++       .owner		= THIS_MODULE,
 +};
 +
-+static struct platform_device *lirc_serial_dev;
 +
-+static int __devinit lirc_serial_probe(struct platform_device *dev)
++static int init_chrdev(void)
 +{
++	driver.minor = lirc_register_driver(&driver);
++	if (driver.minor < 0) {
++		printk(KERN_ERR LIRC_DRIVER_NAME ": init_chrdev() failed.\n");
++		return -EIO;
++	}
 +	return 0;
 +}
 +
-+static int __devexit lirc_serial_remove(struct platform_device *dev)
++static void drop_chrdev(void)
 +{
-+	return 0;
++	lirc_unregister_driver(driver.minor);
 +}
 +
-+static int lirc_serial_suspend(struct platform_device *dev,
-+			       pm_message_t state)
++/* SECTION: Hardware */
++static long delta(struct timeval *tv1, struct timeval *tv2)
 +{
-+	/* Set DLAB 0. */
-+	soutp(UART_LCR, sinp(UART_LCR) & (~UART_LCR_DLAB));
++	unsigned long deltv;
 +
-+	/* Disable all interrupts */
-+	soutp(UART_IER, sinp(UART_IER) &
-+	      (~(UART_IER_MSI|UART_IER_RLSI|UART_IER_THRI|UART_IER_RDI)));
-+
-+	/* Clear registers. */
-+	sinp(UART_LSR);
-+	sinp(UART_RX);
-+	sinp(UART_IIR);
-+	sinp(UART_MSR);
-+
-+	return 0;
++	deltv = tv2->tv_sec - tv1->tv_sec;
++	if (deltv > 15)
++		deltv = 0xFFFFFF;
++	else
++		deltv = deltv*1000000 +
++			tv2->tv_usec -
++			tv1->tv_usec;
++	return deltv;
 +}
 +
-+/* twisty maze... need a forward-declaration here... */
-+static void lirc_serial_exit(void);
-+
-+static int lirc_serial_resume(struct platform_device *dev)
++static void sir_timeout(unsigned long data)
 +{
++	/*
++	 * if last received signal was a pulse, but receiving stopped
++	 * within the 9 bit frame, we need to finish this pulse and
++	 * simulate a signal change to from pulse to space. Otherwise
++	 * upper layers will receive two sequences next time.
++	 */
++
 +	unsigned long flags;
++	unsigned long pulse_end;
 +
-+	if (hardware_init_port() < 0) {
-+		lirc_serial_exit();
-+		return -EINVAL;
-+	}
-+
-+	spin_lock_irqsave(&hardware[type].lock, flags);
-+	/* Enable Interrupt */
-+	do_gettimeofday(&lasttv);
-+	soutp(UART_IER, sinp(UART_IER)|UART_IER_MSI);
-+	off();
-+
-+	lirc_buffer_clear(&rbuf);
-+
-+	spin_unlock_irqrestore(&hardware[type].lock, flags);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver lirc_serial_driver = {
-+	.probe		= lirc_serial_probe,
-+	.remove		= __devexit_p(lirc_serial_remove),
-+	.suspend	= lirc_serial_suspend,
-+	.resume		= lirc_serial_resume,
-+	.driver		= {
-+		.name	= "lirc_serial",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init lirc_serial_init(void)
-+{
-+	int result;
-+
-+	/* Init read buffer. */
-+	result = lirc_buffer_init(&rbuf, sizeof(int), RBUF_LEN);
-+	if (result < 0)
-+		return -ENOMEM;
-+
-+	result = platform_driver_register(&lirc_serial_driver);
-+	if (result) {
-+		printk("lirc register returned %d\n", result);
-+		goto exit_buffer_free;
-+	}
-+
-+	lirc_serial_dev = platform_device_alloc("lirc_serial", 0);
-+	if (!lirc_serial_dev) {
-+		result = -ENOMEM;
-+		goto exit_driver_unregister;
-+	}
-+
-+	result = platform_device_add(lirc_serial_dev);
-+	if (result)
-+		goto exit_device_put;
-+
-+	return 0;
-+
-+exit_device_put:
-+	platform_device_put(lirc_serial_dev);
-+exit_driver_unregister:
-+	platform_driver_unregister(&lirc_serial_driver);
-+exit_buffer_free:
-+	lirc_buffer_free(&rbuf);
-+	return result;
-+}
-+
-+static void lirc_serial_exit(void)
-+{
-+	platform_device_unregister(lirc_serial_dev);
-+	platform_driver_unregister(&lirc_serial_driver);
-+	lirc_buffer_free(&rbuf);
-+}
-+
-+static int __init lirc_serial_init_module(void)
-+{
-+	int result;
-+
-+	result = lirc_serial_init();
-+	if (result)
-+		return result;
-+
-+	switch (type) {
-+	case LIRC_HOMEBREW:
-+	case LIRC_IRDEO:
-+	case LIRC_IRDEO_REMOTE:
-+	case LIRC_ANIMAX:
-+	case LIRC_IGOR:
-+		/* if nothing specified, use ttyS0/com1 and irq 4 */
-+		io = io ? io : 0x3f8;
-+		irq = irq ? irq : 4;
-+		break;
-+#ifdef CONFIG_LIRC_SERIAL_NSLU2
-+	case LIRC_NSLU2:
-+		io = io ? io : IRQ_IXP4XX_UART2;
-+		irq = irq ? irq : (IXP4XX_UART2_BASE_VIRT + REG_OFFSET);
-+		iommap = iommap ? iommap : IXP4XX_UART2_BASE_PHYS;
-+		ioshift = ioshift ? ioshift : 2;
-+		break;
++	/* avoid interference with interrupt */
++	spin_lock_irqsave(&timer_lock, flags);
++	if (last_value) {
++#ifndef LIRC_ON_SA1100
++		/* clear unread bits in UART and restart */
++		outb(UART_FCR_CLEAR_RCVR, io + UART_FCR);
 +#endif
-+	default:
-+		result = -EINVAL;
-+		goto exit_serial_exit;
++		/* determine 'virtual' pulse end: */
++		pulse_end = delta(&last_tv, &last_intr_tv);
++		dprintk("timeout add %d for %lu usec\n", last_value, pulse_end);
++		add_read_queue(last_value, pulse_end);
++		last_value = 0;
++		last_tv = last_intr_tv;
 +	}
-+	if (!softcarrier) {
-+		switch (type) {
-+		case LIRC_HOMEBREW:
-+		case LIRC_IGOR:
-+#ifdef CONFIG_LIRC_SERIAL_NSLU2
-+		case LIRC_NSLU2:
-+#endif
-+			hardware[type].features &=
-+				~(LIRC_CAN_SET_SEND_DUTY_CYCLE|
-+				  LIRC_CAN_SET_SEND_CARRIER);
-+			break;
++	spin_unlock_irqrestore(&timer_lock, flags);
++}
++
++static irqreturn_t sir_interrupt(int irq, void *dev_id)
++{
++	unsigned char data;
++	struct timeval curr_tv;
++	static unsigned long deltv;
++#ifdef LIRC_ON_SA1100
++	int status;
++	static int n;
++
++	status = Ser2UTSR0;
++	/*
++	 * Deal with any receive errors first.  The bytes in error may be
++	 * the only bytes in the receive FIFO, so we do this first.
++	 */
++	while (status & UTSR0_EIF) {
++		int bstat;
++
++		if (debug) {
++			dprintk("EIF\n");
++			bstat = Ser2UTSR1;
++
++			if (bstat & UTSR1_FRE)
++				dprintk("frame error\n");
++			if (bstat & UTSR1_ROR)
++				dprintk("receive fifo overrun\n");
++			if (bstat & UTSR1_PRE)
++				dprintk("parity error\n");
++		}
++
++		bstat = Ser2UTDR;
++		n++;
++		status = Ser2UTSR0;
++	}
++
++	if (status & (UTSR0_RFS | UTSR0_RID)) {
++		do_gettimeofday(&curr_tv);
++		deltv = delta(&last_tv, &curr_tv);
++		do {
++			data = Ser2UTDR;
++			dprintk("%d data: %u\n", n, (unsigned int) data);
++			n++;
++		} while (status & UTSR0_RID && /* do not empty fifo in order to
++						* get UTSR0_RID in any case */
++		      Ser2UTSR1 & UTSR1_RNE); /* data ready */
++
++		if (status&UTSR0_RID) {
++			add_read_queue(0 , deltv - n * TIME_CONST); /*space*/
++			add_read_queue(1, n * TIME_CONST); /*pulse*/
++			n = 0;
++			last_tv = curr_tv;
 +		}
 +	}
 +
-+	result = init_port();
-+	if (result < 0)
-+		goto exit_serial_exit;
-+	driver.features = hardware[type].features;
-+	driver.dev = &lirc_serial_dev->dev;
-+	driver.minor = lirc_register_driver(&driver);
-+	if (driver.minor < 0) {
-+		printk(KERN_ERR  LIRC_DRIVER_NAME
-+		       ": register_chrdev failed!\n");
-+		result = -EIO;
-+		goto exit_release;
++	if (status & UTSR0_TFS)
++		printk(KERN_ERR "transmit fifo not full, shouldn't happen\n");
++
++	/* We must clear certain bits. */
++	status &= (UTSR0_RID | UTSR0_RBB | UTSR0_REB);
++	if (status)
++		Ser2UTSR0 = status;
++#else
++	unsigned long deltintrtv;
++	unsigned long flags;
++	int iir, lsr;
++
++	while ((iir = inb(io + UART_IIR) & UART_IIR_ID)) {
++		switch (iir&UART_IIR_ID) { /* FIXME toto treba preriedit */
++		case UART_IIR_MSI:
++			(void) inb(io + UART_MSR);
++			break;
++		case UART_IIR_RLSI:
++			(void) inb(io + UART_LSR);
++			break;
++		case UART_IIR_THRI:
++#if 0
++			if (lsr & UART_LSR_THRE) /* FIFO is empty */
++				outb(data, io + UART_TX)
++#endif
++			break;
++		case UART_IIR_RDI:
++			/* avoid interference with timer */
++			spin_lock_irqsave(&timer_lock, flags);
++			do {
++				del_timer(&timerlist);
++				data = inb(io + UART_RX);
++				do_gettimeofday(&curr_tv);
++				deltv = delta(&last_tv, &curr_tv);
++				deltintrtv = delta(&last_intr_tv, &curr_tv);
++				dprintk("t %lu, d %d\n", deltintrtv, (int)data);
++				/*
++				 * if nothing came in last X cycles,
++				 * it was gap
++				 */
++				if (deltintrtv > TIME_CONST * threshold) {
++					if (last_value) {
++						dprintk("GAP\n");
++						/* simulate signal change */
++						add_read_queue(last_value,
++							       deltv -
++							       deltintrtv);
++						last_value = 0;
++						last_tv.tv_sec =
++							last_intr_tv.tv_sec;
++						last_tv.tv_usec =
++							last_intr_tv.tv_usec;
++						deltv = deltintrtv;
++					}
++				}
++				data = 1;
++				if (data ^ last_value) {
++					/*
++					 * deltintrtv > 2*TIME_CONST, remember?
++					 * the other case is timeout
++					 */
++					add_read_queue(last_value,
++						       deltv-TIME_CONST);
++					last_value = data;
++					last_tv = curr_tv;
++					if (last_tv.tv_usec >= TIME_CONST) {
++						last_tv.tv_usec -= TIME_CONST;
++					} else {
++						last_tv.tv_sec--;
++						last_tv.tv_usec += 1000000 -
++							TIME_CONST;
++					}
++				}
++				last_intr_tv = curr_tv;
++				if (data) {
++					/*
++					 * start timer for end of
++					 * sequence detection
++					 */
++					timerlist.expires = jiffies +
++								SIR_TIMEOUT;
++					add_timer(&timerlist);
++				}
++
++				lsr = inb(io + UART_LSR);
++			} while (lsr & UART_LSR_DR); /* data ready */
++			spin_unlock_irqrestore(&timer_lock, flags);
++			break;
++		default:
++			break;
++		}
++	}
++#endif
++	return IRQ_RETVAL(IRQ_HANDLED);
++}
++
++#ifdef LIRC_ON_SA1100
++static void send_pulse(unsigned long length)
++{
++	unsigned long k, delay;
++	int flag;
++
++	if (length == 0)
++		return;
++	/*
++	 * this won't give us the carrier frequency we really want
++	 * due to integer arithmetic, but we can accept this inaccuracy
++	 */
++
++	for (k = flag = 0; k < length; k += delay, flag = !flag) {
++		if (flag) {
++			off();
++			delay = space_width;
++		} else {
++			on();
++			delay = pulse_width;
++		}
++		safe_udelay(delay);
++	}
++	off();
++}
++
++static void send_space(unsigned long length)
++{
++	if (length == 0)
++		return;
++	off();
++	safe_udelay(length);
++}
++#else
++static void send_space(unsigned long len)
++{
++	safe_udelay(len);
++}
++
++static void send_pulse(unsigned long len)
++{
++	long bytes_out = len / TIME_CONST;
++	long time_left;
++
++	time_left = (long)len - (long)bytes_out * (long)TIME_CONST;
++	if (bytes_out == 0) {
++		bytes_out++;
++		time_left = 0;
++	}
++	while (bytes_out--) {
++		outb(PULSE, io + UART_TX);
++		/* FIXME treba seriozne cakanie z char/serial.c */
++		while (!(inb(io + UART_LSR) & UART_LSR_THRE))
++			;
++	}
++#if 0
++	if (time_left > 0)
++		safe_udelay(time_left);
++#endif
++}
++#endif
++
++#ifdef CONFIG_SA1100_COLLIE
++static int sa1100_irda_set_power_collie(int state)
++{
++	if (state) {
++		/*
++		 *  0 - off
++		 *  1 - short range, lowest power
++		 *  2 - medium range, medium power
++		 *  3 - maximum range, high power
++		 */
++		ucb1200_set_io_direction(TC35143_GPIO_IR_ON,
++					 TC35143_IODIR_OUTPUT);
++		ucb1200_set_io(TC35143_GPIO_IR_ON, TC35143_IODAT_LOW);
++		udelay(100);
++	} else {
++		/* OFF */
++		ucb1200_set_io_direction(TC35143_GPIO_IR_ON,
++					 TC35143_IODIR_OUTPUT);
++		ucb1200_set_io(TC35143_GPIO_IR_ON, TC35143_IODAT_HIGH);
 +	}
 +	return 0;
-+exit_release:
-+	release_region(io, 8);
-+exit_serial_exit:
-+	lirc_serial_exit();
-+	return result;
 +}
++#endif
 +
-+static void __exit lirc_serial_exit_module(void)
++static int init_hardware(void)
 +{
-+	lirc_serial_exit();
-+	if (iommap != 0)
-+		release_mem_region(iommap, 8 << ioshift);
-+	else
++	unsigned long flags;
++
++	spin_lock_irqsave(&hardware_lock, flags);
++	/* reset UART */
++#ifdef LIRC_ON_SA1100
++#ifdef CONFIG_SA1100_BITSY
++	if (machine_is_bitsy()) {
++		printk(KERN_INFO "Power on IR module\n");
++		set_bitsy_egpio(EGPIO_BITSY_IR_ON);
++	}
++#endif
++#ifdef CONFIG_SA1100_COLLIE
++	sa1100_irda_set_power_collie(3);	/* power on */
++#endif
++	sr.hscr0 = Ser2HSCR0;
++
++	sr.utcr0 = Ser2UTCR0;
++	sr.utcr1 = Ser2UTCR1;
++	sr.utcr2 = Ser2UTCR2;
++	sr.utcr3 = Ser2UTCR3;
++	sr.utcr4 = Ser2UTCR4;
++
++	sr.utdr = Ser2UTDR;
++	sr.utsr0 = Ser2UTSR0;
++	sr.utsr1 = Ser2UTSR1;
++
++	/* configure GPIO */
++	/* output */
++	PPDR |= PPC_TXD2;
++	PSDR |= PPC_TXD2;
++	/* set output to 0 */
++	off();
++
++	/* Enable HP-SIR modulation, and ensure that the port is disabled. */
++	Ser2UTCR3 = 0;
++	Ser2HSCR0 = sr.hscr0 & (~HSCR0_HSSP);
++
++	/* clear status register to prevent unwanted interrupts */
++	Ser2UTSR0 &= (UTSR0_RID | UTSR0_RBB | UTSR0_REB);
++
++	/* 7N1 */
++	Ser2UTCR0 = UTCR0_1StpBit|UTCR0_7BitData;
++	/* 115200 */
++	Ser2UTCR1 = 0;
++	Ser2UTCR2 = 1;
++	/* use HPSIR, 1.6 usec pulses */
++	Ser2UTCR4 = UTCR4_HPSIR|UTCR4_Z1_6us;
++
++	/* enable receiver, receive fifo interrupt */
++	Ser2UTCR3 = UTCR3_RXE|UTCR3_RIE;
++
++	/* clear status register to prevent unwanted interrupts */
++	Ser2UTSR0 &= (UTSR0_RID | UTSR0_RBB | UTSR0_REB);
++
++#elif defined(LIRC_SIR_TEKRAM)
++	/* disable FIFO */
++	soutp(UART_FCR,
++	      UART_FCR_CLEAR_RCVR|
++	      UART_FCR_CLEAR_XMIT|
++	      UART_FCR_TRIGGER_1);
++
++	/* Set DLAB 0. */
++	soutp(UART_LCR, sinp(UART_LCR) & (~UART_LCR_DLAB));
++
++	/* First of all, disable all interrupts */
++	soutp(UART_IER, sinp(UART_IER) &
++	      (~(UART_IER_MSI|UART_IER_RLSI|UART_IER_THRI|UART_IER_RDI)));
++
++	/* Set DLAB 1. */
++	soutp(UART_LCR, sinp(UART_LCR) | UART_LCR_DLAB);
++
++	/* Set divisor to 12 => 9600 Baud */
++	soutp(UART_DLM, 0);
++	soutp(UART_DLL, 12);
++
++	/* Set DLAB 0. */
++	soutp(UART_LCR, sinp(UART_LCR) & (~UART_LCR_DLAB));
++
++	/* power supply */
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_DTR|UART_MCR_OUT2);
++	safe_udelay(50*1000);
++
++	/* -DTR low -> reset PIC */
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_OUT2);
++	udelay(1*1000);
++
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_DTR|UART_MCR_OUT2);
++	udelay(100);
++
++
++	/* -RTS low -> send control byte */
++	soutp(UART_MCR, UART_MCR_DTR|UART_MCR_OUT2);
++	udelay(7);
++	soutp(UART_TX, TEKRAM_115200|TEKRAM_PW);
++
++	/* one byte takes ~1042 usec to transmit at 9600,8N1 */
++	udelay(1500);
++
++	/* back to normal operation */
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_DTR|UART_MCR_OUT2);
++	udelay(50);
++
++	udelay(1500);
++
++	/* read previous control byte */
++	printk(KERN_INFO LIRC_DRIVER_NAME
++	       ": 0x%02x\n", sinp(UART_RX));
++
++	/* Set DLAB 1. */
++	soutp(UART_LCR, sinp(UART_LCR) | UART_LCR_DLAB);
++
++	/* Set divisor to 1 => 115200 Baud */
++	soutp(UART_DLM, 0);
++	soutp(UART_DLL, 1);
++
++	/* Set DLAB 0, 8 Bit */
++	soutp(UART_LCR, UART_LCR_WLEN8);
++	/* enable interrupts */
++	soutp(UART_IER, sinp(UART_IER)|UART_IER_RDI);
++#else
++	outb(0, io + UART_MCR);
++	outb(0, io + UART_IER);
++	/* init UART */
++	/* set DLAB, speed = 115200 */
++	outb(UART_LCR_DLAB | UART_LCR_WLEN7, io + UART_LCR);
++	outb(1, io + UART_DLL); outb(0, io + UART_DLM);
++	/* 7N1+start = 9 bits at 115200 ~ 3 bits at 44000 */
++	outb(UART_LCR_WLEN7, io + UART_LCR);
++	/* FIFO operation */
++	outb(UART_FCR_ENABLE_FIFO, io + UART_FCR);
++	/* interrupts */
++	/* outb(UART_IER_RLSI|UART_IER_RDI|UART_IER_THRI, io + UART_IER); */
++	outb(UART_IER_RDI, io + UART_IER);
++	/* turn on UART */
++	outb(UART_MCR_DTR|UART_MCR_RTS|UART_MCR_OUT2, io + UART_MCR);
++#ifdef LIRC_SIR_ACTISYS_ACT200L
++	init_act200();
++#elif defined(LIRC_SIR_ACTISYS_ACT220L)
++	init_act220();
++#endif
++#endif
++	spin_unlock_irqrestore(&hardware_lock, flags);
++	return 0;
++}
++
++static void drop_hardware(void)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&hardware_lock, flags);
++
++#ifdef LIRC_ON_SA1100
++	Ser2UTCR3 = 0;
++
++	Ser2UTCR0 = sr.utcr0;
++	Ser2UTCR1 = sr.utcr1;
++	Ser2UTCR2 = sr.utcr2;
++	Ser2UTCR4 = sr.utcr4;
++	Ser2UTCR3 = sr.utcr3;
++
++	Ser2HSCR0 = sr.hscr0;
++#ifdef CONFIG_SA1100_BITSY
++	if (machine_is_bitsy())
++		clr_bitsy_egpio(EGPIO_BITSY_IR_ON);
++#endif
++#ifdef CONFIG_SA1100_COLLIE
++	sa1100_irda_set_power_collie(0);	/* power off */
++#endif
++#else
++	/* turn off interrupts */
++	outb(0, io + UART_IER);
++#endif
++	spin_unlock_irqrestore(&hardware_lock, flags);
++}
++
++/* SECTION: Initialisation */
++
++static int init_port(void)
++{
++	int retval;
++
++	/* get I/O port access and IRQ line */
++#ifndef LIRC_ON_SA1100
++	if (request_region(io, 8, LIRC_DRIVER_NAME) == NULL) {
++		printk(KERN_ERR LIRC_DRIVER_NAME
++		       ": i/o port 0x%.4x already in use.\n", io);
++		return -EBUSY;
++	}
++#endif
++	retval = request_irq(irq, sir_interrupt, IRQF_DISABLED,
++			     LIRC_DRIVER_NAME, NULL);
++	if (retval < 0) {
++#               ifndef LIRC_ON_SA1100
 +		release_region(io, 8);
-+	lirc_unregister_driver(driver.minor);
-+	dprintk("cleaned up module\n");
++#               endif
++		printk(KERN_ERR LIRC_DRIVER_NAME
++			": IRQ %d already in use.\n",
++			irq);
++		return retval;
++	}
++#ifndef LIRC_ON_SA1100
++	printk(KERN_INFO LIRC_DRIVER_NAME
++		": I/O port 0x%.4x, IRQ %d.\n",
++		io, irq);
++#endif
++
++	init_timer(&timerlist);
++	timerlist.function = sir_timeout;
++	timerlist.data = 0xabadcafe;
++
++	return 0;
++}
++
++static void drop_port(void)
++{
++	free_irq(irq, NULL);
++	del_timer_sync(&timerlist);
++#ifndef LIRC_ON_SA1100
++	release_region(io, 8);
++#endif
++}
++
++#ifdef LIRC_SIR_ACTISYS_ACT200L
++/* Crystal/Cirrus CS8130 IR transceiver, used in Actisys Act200L dongle */
++/* some code borrowed from Linux IRDA driver */
++
++/* Register 0: Control register #1 */
++#define ACT200L_REG0    0x00
++#define ACT200L_TXEN    0x01 /* Enable transmitter */
++#define ACT200L_RXEN    0x02 /* Enable receiver */
++#define ACT200L_ECHO    0x08 /* Echo control chars */
++
++/* Register 1: Control register #2 */
++#define ACT200L_REG1    0x10
++#define ACT200L_LODB    0x01 /* Load new baud rate count value */
++#define ACT200L_WIDE    0x04 /* Expand the maximum allowable pulse */
++
++/* Register 3: Transmit mode register #2 */
++#define ACT200L_REG3    0x30
++#define ACT200L_B0      0x01 /* DataBits, 0=6, 1=7, 2=8, 3=9(8P)  */
++#define ACT200L_B1      0x02 /* DataBits, 0=6, 1=7, 2=8, 3=9(8P)  */
++#define ACT200L_CHSY    0x04 /* StartBit Synced 0=bittime, 1=startbit */
++
++/* Register 4: Output Power register */
++#define ACT200L_REG4    0x40
++#define ACT200L_OP0     0x01 /* Enable LED1C output */
++#define ACT200L_OP1     0x02 /* Enable LED2C output */
++#define ACT200L_BLKR    0x04
++
++/* Register 5: Receive Mode register */
++#define ACT200L_REG5    0x50
++#define ACT200L_RWIDL   0x01 /* fixed 1.6us pulse mode */
++    /*.. other various IRDA bit modes, and TV remote modes..*/
++
++/* Register 6: Receive Sensitivity register #1 */
++#define ACT200L_REG6    0x60
++#define ACT200L_RS0     0x01 /* receive threshold bit 0 */
++#define ACT200L_RS1     0x02 /* receive threshold bit 1 */
++
++/* Register 7: Receive Sensitivity register #2 */
++#define ACT200L_REG7    0x70
++#define ACT200L_ENPOS   0x04 /* Ignore the falling edge */
++
++/* Register 8,9: Baud Rate Divider register #1,#2 */
++#define ACT200L_REG8    0x80
++#define ACT200L_REG9    0x90
++
++#define ACT200L_2400    0x5f
++#define ACT200L_9600    0x17
++#define ACT200L_19200   0x0b
++#define ACT200L_38400   0x05
++#define ACT200L_57600   0x03
++#define ACT200L_115200  0x01
++
++/* Register 13: Control register #3 */
++#define ACT200L_REG13   0xd0
++#define ACT200L_SHDW    0x01 /* Enable access to shadow registers */
++
++/* Register 15: Status register */
++#define ACT200L_REG15   0xf0
++
++/* Register 21: Control register #4 */
++#define ACT200L_REG21   0x50
++#define ACT200L_EXCK    0x02 /* Disable clock output driver */
++#define ACT200L_OSCL    0x04 /* oscillator in low power, medium accuracy mode */
++
++static void init_act200(void)
++{
++	int i;
++	__u8 control[] = {
++		ACT200L_REG15,
++		ACT200L_REG13 | ACT200L_SHDW,
++		ACT200L_REG21 | ACT200L_EXCK | ACT200L_OSCL,
++		ACT200L_REG13,
++		ACT200L_REG7  | ACT200L_ENPOS,
++		ACT200L_REG6  | ACT200L_RS0  | ACT200L_RS1,
++		ACT200L_REG5  | ACT200L_RWIDL,
++		ACT200L_REG4  | ACT200L_OP0  | ACT200L_OP1 | ACT200L_BLKR,
++		ACT200L_REG3  | ACT200L_B0,
++		ACT200L_REG0  | ACT200L_TXEN | ACT200L_RXEN,
++		ACT200L_REG8 |  (ACT200L_115200       & 0x0f),
++		ACT200L_REG9 | ((ACT200L_115200 >> 4) & 0x0f),
++		ACT200L_REG1 | ACT200L_LODB | ACT200L_WIDE
++	};
++
++	/* Set DLAB 1. */
++	soutp(UART_LCR, UART_LCR_DLAB | UART_LCR_WLEN8);
++
++	/* Set divisor to 12 => 9600 Baud */
++	soutp(UART_DLM, 0);
++	soutp(UART_DLL, 12);
++
++	/* Set DLAB 0. */
++	soutp(UART_LCR, UART_LCR_WLEN8);
++	/* Set divisor to 12 => 9600 Baud */
++
++	/* power supply */
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_DTR|UART_MCR_OUT2);
++	for (i = 0; i < 50; i++)
++		safe_udelay(1000);
++
++		/* Reset the dongle : set RTS low for 25 ms */
++	soutp(UART_MCR, UART_MCR_DTR|UART_MCR_OUT2);
++	for (i = 0; i < 25; i++)
++		udelay(1000);
++
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_DTR|UART_MCR_OUT2);
++	udelay(100);
++
++	/* Clear DTR and set RTS to enter command mode */
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_OUT2);
++	udelay(7);
++
++	/* send out the control register settings for 115K 7N1 SIR operation */
++	for (i = 0; i < sizeof(control); i++) {
++		soutp(UART_TX, control[i]);
++		/* one byte takes ~1042 usec to transmit at 9600,8N1 */
++		udelay(1500);
++	}
++
++	/* back to normal operation */
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_DTR|UART_MCR_OUT2);
++	udelay(50);
++
++	udelay(1500);
++	soutp(UART_LCR, sinp(UART_LCR) | UART_LCR_DLAB);
++
++	/* Set DLAB 1. */
++	soutp(UART_LCR, UART_LCR_DLAB | UART_LCR_WLEN7);
++
++	/* Set divisor to 1 => 115200 Baud */
++	soutp(UART_DLM, 0);
++	soutp(UART_DLL, 1);
++
++	/* Set DLAB 0. */
++	soutp(UART_LCR, sinp(UART_LCR) & (~UART_LCR_DLAB));
++
++	/* Set DLAB 0, 7 Bit */
++	soutp(UART_LCR, UART_LCR_WLEN7);
++
++	/* enable interrupts */
++	soutp(UART_IER, sinp(UART_IER)|UART_IER_RDI);
++}
++#endif
++
++#ifdef LIRC_SIR_ACTISYS_ACT220L
++/*
++ * Derived from linux IrDA driver (net/irda/actisys.c)
++ * Drop me a mail for any kind of comment: maxx@spaceboyz.net
++ */
++
++void init_act220(void)
++{
++	int i;
++
++	/* DLAB 1 */
++	soutp(UART_LCR, UART_LCR_DLAB|UART_LCR_WLEN7);
++
++	/* 9600 baud */
++	soutp(UART_DLM, 0);
++	soutp(UART_DLL, 12);
++
++	/* DLAB 0 */
++	soutp(UART_LCR, UART_LCR_WLEN7);
++
++	/* reset the dongle, set DTR low for 10us */
++	soutp(UART_MCR, UART_MCR_RTS|UART_MCR_OUT2);
++	udelay(10);
++
++	/* back to normal (still 9600) */
++	soutp(UART_MCR, UART_MCR_DTR|UART_MCR_RTS|UART_MCR_OUT2);
++
++	/*
++	 * send RTS pulses until we reach 115200
++	 * i hope this is really the same for act220l/act220l+
++	 */
++	for (i = 0; i < 3; i++) {
++		udelay(10);
++		/* set RTS low for 10 us */
++		soutp(UART_MCR, UART_MCR_DTR|UART_MCR_OUT2);
++		udelay(10);
++		/* set RTS high for 10 us */
++		soutp(UART_MCR, UART_MCR_RTS|UART_MCR_DTR|UART_MCR_OUT2);
++	}
++
++	/* back to normal operation */
++	udelay(1500); /* better safe than sorry ;) */
++
++	/* Set DLAB 1. */
++	soutp(UART_LCR, UART_LCR_DLAB | UART_LCR_WLEN7);
++
++	/* Set divisor to 1 => 115200 Baud */
++	soutp(UART_DLM, 0);
++	soutp(UART_DLL, 1);
++
++	/* Set DLAB 0, 7 Bit */
++	/* The dongle doesn't seem to have any problems with operation at 7N1 */
++	soutp(UART_LCR, UART_LCR_WLEN7);
++
++	/* enable interrupts */
++	soutp(UART_IER, UART_IER_RDI);
++}
++#endif
++
++static int init_lirc_sir(void)
++{
++	int retval;
++
++	init_waitqueue_head(&lirc_read_queue);
++	retval = init_port();
++	if (retval < 0)
++		return retval;
++	init_hardware();
++	printk(KERN_INFO LIRC_DRIVER_NAME
++		": Installed.\n");
++	return 0;
 +}
 +
 +
-+module_init(lirc_serial_init_module);
-+module_exit(lirc_serial_exit_module);
++static int __init lirc_sir_init(void)
++{
++	int retval;
 +
-+MODULE_DESCRIPTION("Infra-red receiver driver for serial ports.");
-+MODULE_AUTHOR("Ralph Metzler, Trent Piepho, Ben Pfaff, "
-+	      "Christoph Bartelmus, Andrei Tanas");
++	retval = init_chrdev();
++	if (retval < 0)
++		return retval;
++	retval = init_lirc_sir();
++	if (retval) {
++		drop_chrdev();
++		return retval;
++	}
++	return 0;
++}
++
++static void __exit lirc_sir_exit(void)
++{
++	drop_hardware();
++	drop_chrdev();
++	drop_port();
++	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
++}
++
++module_init(lirc_sir_init);
++module_exit(lirc_sir_exit);
++
++#ifdef LIRC_SIR_TEKRAM
++MODULE_DESCRIPTION("Infrared receiver driver for Tekram Irmate 210");
++MODULE_AUTHOR("Christoph Bartelmus");
++#elif defined(LIRC_ON_SA1100)
++MODULE_DESCRIPTION("LIRC driver for StrongARM SA1100 embedded microprocessor");
++MODULE_AUTHOR("Christoph Bartelmus");
++#elif defined(LIRC_SIR_ACTISYS_ACT200L)
++MODULE_DESCRIPTION("LIRC driver for Actisys Act200L");
++MODULE_AUTHOR("Karl Bongers");
++#elif defined(LIRC_SIR_ACTISYS_ACT220L)
++MODULE_DESCRIPTION("LIRC driver for Actisys Act220L(+)");
++MODULE_AUTHOR("Jan Roemisch");
++#else
++MODULE_DESCRIPTION("Infrared receiver driver for SIR type serial ports");
++MODULE_AUTHOR("Milan Pikula");
++#endif
 +MODULE_LICENSE("GPL");
 +
-+module_param(type, int, S_IRUGO);
-+MODULE_PARM_DESC(type, "Hardware type (0 = home-brew, 1 = IRdeo,"
-+		 " 2 = IRdeo Remote, 3 = AnimaX, 4 = IgorPlug,"
-+		 " 5 = NSLU2 RX:CTS2/TX:GreenLED)");
-+
++#ifdef LIRC_ON_SA1100
++module_param(irq, int, S_IRUGO);
++MODULE_PARM_DESC(irq, "Interrupt (16)");
++#else
 +module_param(io, int, S_IRUGO);
 +MODULE_PARM_DESC(io, "I/O address base (0x3f8 or 0x2f8)");
-+
-+/* some architectures (e.g. intel xscale) have memory mapped registers */
-+module_param(iommap, bool, S_IRUGO);
-+MODULE_PARM_DESC(iommap, "physical base for memory mapped I/O"
-+		" (0 = no memory mapped io)");
-+
-+/*
-+ * some architectures (e.g. intel xscale) align the 8bit serial registers
-+ * on 32bit word boundaries.
-+ * See linux-kernel/serial/8250.c serial_in()/out()
-+ */
-+module_param(ioshift, int, S_IRUGO);
-+MODULE_PARM_DESC(ioshift, "shift I/O register offset (0 = no shift)");
 +
 +module_param(irq, int, S_IRUGO);
 +MODULE_PARM_DESC(irq, "Interrupt (4 or 3)");
 +
-+module_param(share_irq, bool, S_IRUGO);
-+MODULE_PARM_DESC(share_irq, "Share interrupts (0 = off, 1 = on)");
-+
-+module_param(sense, bool, S_IRUGO);
-+MODULE_PARM_DESC(sense, "Override autodetection of IR receiver circuit"
-+		 " (0 = active high, 1 = active low )");
-+
-+#ifdef CONFIG_LIRC_SERIAL_TRANSMITTER
-+module_param(txsense, bool, S_IRUGO);
-+MODULE_PARM_DESC(txsense, "Sense of transmitter circuit"
-+		 " (0 = active high, 1 = active low )");
++module_param(threshold, int, S_IRUGO);
++MODULE_PARM_DESC(threshold, "space detection threshold (3)");
 +#endif
-+
-+module_param(softcarrier, bool, S_IRUGO);
-+MODULE_PARM_DESC(softcarrier, "Software carrier (0 = off, 1 = on, default on)");
 +
 +module_param(debug, bool, S_IRUGO | S_IWUSR);
 +MODULE_PARM_DESC(debug, "Enable debugging messages");
