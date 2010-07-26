@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab0GZQrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 12:47:31 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:42027 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752658Ab0GZQra (ORCPT
+	id S1754416Ab0GZQwn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 12:52:43 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36262 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241Ab0GZQwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 12:47:30 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jul 2010 12:47:30 EDT
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 3O.vMUkVM1lA313gTdB0xOX9oRQfjc_DEntgtu_d.rQaErZ
- cJLAzUQsKfTlsWL6BVN7zNIxcw_ZjY1zZZGBl.5XkdWBP7SYDtajzABDWjCP
- mU4VghIwG_VB3YrDLJr6xsE15Yzm2ZI9eNY4KwdZgUWIEzSTTT_Fi3hnXXbW
- qSfq2RO90GnLgHLDT53Bu_VdQSSC4fGBcZrf2C7H_.ndcIPWQY.zJAidK9Xy
- ZEOKh657RDtIsuQw5sL2uAAxEVTVvFROvjQZhmDBAZn9lvd1h
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 26 Jul 2010 11:40:44 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-mm <linux-mm@kvack.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-In-Reply-To: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
-Message-ID: <alpine.DEB.2.00.1007261136160.5438@router.home>
-References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 26 Jul 2010 12:52:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PC2CXqqQuIs2yjKSfPJ9uR7eJrHF98N1H7EpNEceZTqe6hScDT5Cbi5WLRYUqBjvSr
+         EeLjmue961D1Ed8zPbM2csk7+qQ0s5djryyqGydv21rd0p70p9o4l4916xcWuWSUw37X
+         rUOfNMK24urerDPPiJ4NIoasxGnLM+LwibXnY=
+Date: Mon, 26 Jul 2010 20:52:35 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: check capabilities in open()
+Message-ID: <20100726165235.GA3485@albatros>
+References: <20100724160701.GA4907@albatros>
+ <20100724182355.GA9134@ZenIV.linux.org.uk>
+ <20100725054511.GB9018@albatros>
+ <20100726112317.GB9185@thunk.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726112317.GB9185@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010, Minchan Kim wrote:
+On Mon, Jul 26, 2010 at 07:23 -0400, Ted Ts'o wrote:
+> The reason why the apm device needed to sample the suser() bit is that
+> it can be opened by root and non-root processes, but it wanted to
+> extend the Unix/Linux paradigm that privileges are tested at open()
+> time.
+Yes, it's exactly that I mean, check at open() time and grand high or
+less priviledges.
 
-> This patch registers address of mem_section to memmap itself's page struct's
-> pg->private field. This means the page is used for memmap of the section.
-> Otherwise, the page is used for other purpose and memmap has a hole.
+> 
+> So this is a not a bug, but quite deliberately, by design.
+If it is explicitly designed to check UID at open() time and to have 2
+kinds of file descriptors - priviledged and nonpriviledged, I'm fine
+with this.
 
-What if page->private just happens to be the value of the page struct?
-Even if that is not possible today, someday someone may add new
-functionality to the kernel where page->pivage == page is used for some
-reason.
-
-Checking for PG_reserved wont work?
-
-> +void mark_valid_memmap(unsigned long start, unsigned long end);
-> +
-> +#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
-> +static inline int memmap_valid(unsigned long pfn)
-> +{
-> +	struct page *page = pfn_to_page(pfn);
-> +	struct page *__pg = virt_to_page(page);
-> +	return page_private(__pg) == (unsigned long)__pg;
-
-Hmmm.. hmmm....
+I wanted kernel community to draw attention because this moment was
+not obviously for me and I thought it was a design flaw. Now I'm pleased
+with your explanation, thank you.
