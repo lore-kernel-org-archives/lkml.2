@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab0GZUhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:37:53 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44563 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab0GZUhw (ORCPT
+	id S1755339Ab0GZUiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:38:05 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:14744 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab0GZUiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:37:52 -0400
-Date: Mon, 26 Jul 2010 16:34:20 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC PATCH] sysrq: don't hold the sysrq_key_table_lock during
- the handler
-Message-ID: <20100726203420.GB18789@hmsreliant.think-freely.org>
-References: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
- <20100726105148.GB14198@hmsreliant.think-freely.org>
- <20100726174153.GD14609@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100726174153.GD14609@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+	Mon, 26 Jul 2010 16:38:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6055"; a="48698757"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH] msm: complete implementation of gpio utility functions.
+Date: Mon, 26 Jul 2010 13:37:58 -0700
+Message-Id: <1280176678-18855-1-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 10:41:54AM -0700, Dmitry Torokhov wrote:
-> On Mon, Jul 26, 2010 at 06:51:48AM -0400, Neil Horman wrote:
-> > On Mon, Jul 26, 2010 at 05:54:02PM +0800, Xiaotian Feng wrote:
-> > > sysrq_key_table_lock is used to protect the sysrq_key_table, make sure
-> > > we get/replace the right operation for the sysrq. But in __handle_sysrq,
-> > > kernel will hold this lock and disable irqs until we finished op_p->handler().
-> > > This may cause false positive watchdog alert when we're doing "show-task-states"
-> > > on a system with many tasks.
-> > > 
-> > > Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-> > > Cc: Ingo Molnar <mingo@elte.hu>
-> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > Cc: Neil Horman <nhorman@tuxdriver.com>
-> > > Cc: "David S. Miller" <davem@davemloft.net>
-> > > ---
-> > >  drivers/char/sysrq.c |    4 +++-
-> > >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-> > > index 878ac0c..0856e2e 100644
-> > > --- a/drivers/char/sysrq.c
-> > > +++ b/drivers/char/sysrq.c
-> > > @@ -520,9 +520,11 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
-> > >  		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
-> > >  			printk("%s\n", op_p->action_msg);
-> > >  			console_loglevel = orig_log_level;
-> > > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> > >  			op_p->handler(key, tty);
-> > >  		} else {
-> > >  			printk("This sysrq operation is disabled.\n");
-> > > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> > >  		}
-> > >  	} else {
-> > >  		printk("HELP : ");
-> > > @@ -541,8 +543,8 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
-> > >  		}
-> > >  		printk("\n");
-> > >  		console_loglevel = orig_log_level;
-> > > +		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> > >  	}
-> > > -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> > >  }
-> > >  
-> > >  void handle_sysrq(int key, struct tty_struct *tty)
-> > > -- 
-> > > 1.7.2
-> > > 
-> > > 
-> > 
-> > This creates the possibility of a race in the handler.  Not that it happens
-> > often, but sysrq keys can be registered and unregistered dynamically.  If that
-> > lock isn't held while we call the keys handler, the code implementing that
-> > handler can live in a module that gets removed while its executing, leading to
-> > an oops, etc.  I think the better solution would be to use an rcu lock here.
-> 
-> I'd simply changed spinlock to a mutex.
-> 
-I don't think you can do that safely in this path, as sysrqs will be looked up
-in both process (echo t > /proc/sysrq-trigger) context and in interrupt
-(alt-sysrq-t) context.  If a mutex is locked and you try to take it in interrupt
-context, you get a sleeping-in-interrupt panic IIRC
+Implement the second half of the gpio_request_enable and
+gpio_disable_free gpio/tlmm utility functions, now that gpiolib
+has found its way to the MSM/QSD.  Now these functions
+actually request and free, like they claim to.
 
-Neil
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ arch/arm/mach-msm/gpio.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-> -- 
-> Dmitry
-> 
+diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
+index bc32c84..796990f 100644
+--- a/arch/arm/mach-msm/gpio.c
++++ b/arch/arm/mach-msm/gpio.c
+@@ -71,15 +71,47 @@ void msm_gpios_disable(const struct msm_gpio *table, int size)
+ }
+ EXPORT_SYMBOL(msm_gpios_disable);
+ 
++int msm_gpios_request(const struct msm_gpio *table, int size)
++{
++	int i, result;
++
++	for (i = 0; i < size; ++i) {
++		result = gpio_request(GPIO_PIN(table[i].gpio_cfg),
++				      table[i].label);
++		if (result < 0)
++			goto err;
++	}
++
++	return 0;
++err:
++	msm_gpios_free(table, i);
++	return result;
++}
++EXPORT_SYMBOL(msm_gpios_request);
++
++void msm_gpios_free(const struct msm_gpio *table, int size)
++{
++	int i;
++
++	for (i = 0; i < size; ++i)
++		gpio_free(GPIO_PIN(table[i].gpio_cfg));
++}
++EXPORT_SYMBOL(msm_gpios_free);
++
+ int msm_gpios_request_enable(const struct msm_gpio *table, int size)
+ {
+ 	int rc = msm_gpios_enable(table, size);
++
++	if (rc == 0)
++		rc = msm_gpios_request(table, size);
++
+ 	return rc;
+ }
+ EXPORT_SYMBOL(msm_gpios_request_enable);
+ 
+ void msm_gpios_disable_free(const struct msm_gpio *table, int size)
+ {
++	msm_gpios_free(table, size);
+ 	msm_gpios_disable(table, size);
+ }
+ EXPORT_SYMBOL(msm_gpios_disable_free);
+-- 
+1.7.0.4
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
