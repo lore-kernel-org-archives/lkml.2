@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab0GZUdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:33:38 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:51588 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752131Ab0GZUdg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:33:36 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=RJcLbu7hVp+bOaYGYlaoEWLJhDa68BqnDwzh9MO8bJWLbtP/GtUUvWfDeD/3WbhM2BTb8oisFsY3tGZVsOPikCLLpsHl4GxmOiA4Jj+4S/QPVwezxkTYDBXy+9tRoE2j;
-Date: Mon, 26 Jul 2010 13:33:33 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Anholt <eric@anholt.net>, linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm-intel fixes since 2.6.35-rc4
-Message-ID: <20100726133333.2e540e50@virtuousgeek.org>
-In-Reply-To: <AANLkTi=T90D3KNpsVCkyLgEQK4XZ2D6YA6U7pjFNdCUK@mail.gmail.com>
-References: <87eieqf453.fsf@pollan.anholt.net>
-	<AANLkTi=T90D3KNpsVCkyLgEQK4XZ2D6YA6U7pjFNdCUK@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	id S1755332Ab0GZUds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:33:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753134Ab0GZUdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 16:33:46 -0400
+Date: Mon, 26 Jul 2010 23:27:49 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100726202749.GA30388@redhat.com>
+References: <4C2CA5C5.4040402@kernel.org>
+ <20100701144624.GA11171@redhat.com>
+ <4C2CABF2.2020801@kernel.org>
+ <1277996135.1917.198.camel@laptop>
+ <4C2E2987.9040702@us.ibm.com>
+ <1278094270.1917.288.camel@laptop>
+ <20100702210637.GA12433@redhat.com>
+ <20100726171230.GA27644@redhat.com>
+ <1280166688.3375.5.camel@localhost>
+ <20100726180834.GA26988@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726180834.GA26988@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jul 2010 13:19:14 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Mon, Jul 26, 2010 at 12:13 PM, Eric Anholt <eric@anholt.net> wrote:
-> > The following changes since commit 815c4163b6c8ebf8152f42b0a5fd015cfdcedc78:
+On Mon, Jul 26, 2010 at 08:08:34PM +0200, Oleg Nesterov wrote:
+> On 07/26, Sridhar Samudrala wrote:
 > >
-> >  Linux 2.6.35-rc4 (2010-07-04 20:22:50 -0700)
-> >
-> > are available in the git repository at:
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/anholt/drm-intel for-linus
+> > I have been testing out a similar patch that uses kernel_thread() without CLONE_FILES
+> > flag rather than create_kthread() and then closing the files.
 > 
-> Hmm. This seems to introduce a new warning:
+> !CLONE_FILES can't help. copy_files() does dup_fd() in this case.
+> The child still inherits the files.
 > 
->   drivers/gpu/drm/i915/intel_dp.c:744: warning:
-> ‘ironlake_edp_panel_off’ defined but not used
+> > Either version should be fine.
 > 
-> when I pulled it.
+> I think neither version is fine ;)
 > 
-> And the warning appears to be due to a real bug: instead of calling
-> ironlake_edp_panel_off(), the code calls ironlake_edp_backlight_off()
-> twice. I assume that the _intention_ was to call both the backlight
-> and panel "off" routines, rather than making doubly sure that just the
-> backlight is off by turning it off twice.
+> exit_files() is not enough too. How about the signals, reparenting?
 > 
-> Tssk, tssk. Sadly, I noticed this too late, so now it's pulled and pushed out.
+> 
+> I already forgot all details, probably I missed somethig. But it
+> seems to me that it is better to just export get/set affinity and
+> forget about all complications.
+> 
+> Oleg.
 
-Arg.  Well at least the patch has been tested and is confirmed
-working.  Fix for the warning on its way now (just going to test it to
-make extra sure it still works when the panel actually gets shut off!)
+Almost forgot, we need the same for priority.
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+MST
