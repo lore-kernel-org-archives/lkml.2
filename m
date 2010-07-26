@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab0GZXab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 19:30:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12153 "EHLO mx1.redhat.com"
+	id S1755833Ab0GZXa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 19:30:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39737 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755784Ab0GZXa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 19:30:28 -0400
-Date: Mon, 26 Jul 2010 19:30:25 -0400
+	id S1755812Ab0GZXaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 19:30:55 -0400
+Date: Mon, 26 Jul 2010 19:30:51 -0400
 From: Jarod Wilson <jarod@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 07/15] staging/lirc: add lirc_ite8709 driver
-Message-ID: <20100726233025.GH21225@redhat.com>
+Subject: [PATCH 08/15] staging/lirc: add lirc_parallel driver
+Message-ID: <20100726233051.GI21225@redhat.com>
 References: <20100726232546.GA21225@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 In-Reply-To: <20100726232546.GA21225@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,558 +24,755 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jarod Wilson <jarod@redhat.com>
 ---
- drivers/staging/lirc/lirc_ite8709.c |  542 +++++++++++++++++++++++++++++++++++
- 1 files changed, 542 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/lirc/lirc_ite8709.c
+ drivers/staging/lirc/lirc_parallel.c |  705 ++++++++++++++++++++++++++++++++++
+ drivers/staging/lirc/lirc_parallel.h |   26 ++
+ 2 files changed, 731 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/lirc/lirc_parallel.c
+ create mode 100644 drivers/staging/lirc/lirc_parallel.h
 
-diff --git a/drivers/staging/lirc/lirc_ite8709.c b/drivers/staging/lirc/lirc_ite8709.c
+diff --git a/drivers/staging/lirc/lirc_parallel.c b/drivers/staging/lirc/lirc_parallel.c
 new file mode 100644
-index 0000000..9352f45
+index 0000000..df12e7b
 --- /dev/null
-+++ b/drivers/staging/lirc/lirc_ite8709.c
-@@ -0,0 +1,542 @@
++++ b/drivers/staging/lirc/lirc_parallel.c
+@@ -0,0 +1,705 @@
 +/*
-+ * LIRC driver for ITE8709 CIR port
++ * lirc_parallel.c
 + *
-+ * Copyright (C) 2008 Grégory Lardière <spmf2004-lirc@yahoo.fr>
++ * lirc_parallel - device driver for infra-red signal receiving and
++ *                 transmitting unit built by the author
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of the
-+ * License, or (at your option) any later version.
++ * Copyright (C) 1998 Christoph Bartelmus <lirc@bartelmus.de>
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
 + *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-+ * USA
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
 + */
 +
++/*** Includes ***/
++
++#ifdef CONFIG_SMP
++#error "--- Sorry, this driver is not SMP safe. ---"
++#endif
++
 +#include <linux/module.h>
-+#include <linux/interrupt.h>
 +#include <linux/sched.h>
++#include <linux/errno.h>
++#include <linux/signal.h>
++#include <linux/fs.h>
++#include <linux/kernel.h>
++#include <linux/ioport.h>
++#include <linux/time.h>
++#include <linux/mm.h>
 +#include <linux/delay.h>
-+#include <linux/pnp.h>
++
 +#include <linux/io.h>
++#include <linux/signal.h>
++#include <linux/irq.h>
++#include <linux/uaccess.h>
++#include <asm/div64.h>
++
++#include <linux/poll.h>
++#include <linux/parport.h>
 +
 +#include <media/lirc.h>
 +#include <media/lirc_dev.h>
 +
-+#define LIRC_DRIVER_NAME "lirc_ite8709"
-+
-+#define BUF_CHUNK_SIZE	sizeof(int)
-+#define BUF_SIZE	(128*BUF_CHUNK_SIZE)
-+
-+/*
-+ * The ITE8709 device seems to be the combination of IT8512 superIO chip and
-+ * a specific firmware running on the IT8512's embedded micro-controller.
-+ * In addition of the embedded micro-controller, the IT8512 chip contains a
-+ * CIR module and several other modules. A few modules are directly accessible
-+ * by the host CPU, but most of them are only accessible by the
-+ * micro-controller. The CIR module is only accessible by the micro-controller.
-+ * The battery-backed SRAM module is accessible by the host CPU and the
-+ * micro-controller. So one of the MC's firmware role is to act as a bridge
-+ * between the host CPU and the CIR module. The firmware implements a kind of
-+ * communication protocol using the SRAM module as a shared memory. The IT8512
-+ * specification is publicly available on ITE's web site, but the communication
-+ * protocol is not, so it was reverse-engineered.
-+ */
-+
-+/* ITE8709 Registers addresses and values (reverse-engineered) */
-+#define ITE8709_MODE		0x1a
-+#define ITE8709_REG_ADR		0x1b
-+#define ITE8709_REG_VAL		0x1c
-+#define ITE8709_IIR		0x1e  /* Interrupt identification register */
-+#define ITE8709_RFSR		0x1f  /* Receiver FIFO status register */
-+#define ITE8709_FIFO_START	0x20
-+
-+#define ITE8709_MODE_READY	0X00
-+#define ITE8709_MODE_WRITE	0X01
-+#define ITE8709_MODE_READ	0X02
-+#define ITE8709_IIR_RDAI	0x02  /* Receiver data available interrupt */
-+#define ITE8709_IIR_RFOI	0x04  /* Receiver FIFO overrun interrupt */
-+#define ITE8709_RFSR_MASK	0x3f  /* FIFO byte count mask */
-+
-+/*
-+ * IT8512 CIR-module registers addresses and values
-+ * (from IT8512 E/F specification v0.4.1)
-+ */
-+#define IT8512_REG_MSTCR	0x01  /* Master control register */
-+#define IT8512_REG_IER		0x02  /* Interrupt enable register */
-+#define IT8512_REG_CFR		0x04  /* Carrier frequency register */
-+#define IT8512_REG_RCR		0x05  /* Receive control register */
-+#define IT8512_REG_BDLR		0x08  /* Baud rate divisor low byte register */
-+#define IT8512_REG_BDHR		0x09  /* Baud rate divisor high byte register */
-+
-+#define IT8512_MSTCR_RESET	0x01  /* Reset registers to default value */
-+#define IT8512_MSTCR_FIFOCLR	0x02  /* Clear FIFO */
-+#define IT8512_MSTCR_FIFOTL_7	0x04  /* FIFO threshold level : 7 */
-+#define IT8512_MSTCR_FIFOTL_25	0x0c  /* FIFO threshold level : 25 */
-+#define IT8512_IER_RDAIE	0x02  /* Enable data interrupt request */
-+#define IT8512_IER_RFOIE	0x04  /* Enable FIFO overrun interrupt req */
-+#define IT8512_IER_IEC		0x80  /* Enable interrupt request */
-+#define IT8512_CFR_CF_36KHZ	0x09  /* Carrier freq : low speed, 36kHz */
-+#define IT8512_RCR_RXDCR_1	0x01  /* Demodulation carrier range : 1 */
-+#define IT8512_RCR_RXACT	0x08  /* Receiver active */
-+#define IT8512_RCR_RXEN		0x80  /* Receiver enable */
-+#define IT8512_BDR_6		6     /* Baud rate divisor : 6 */
-+
-+/* Actual values used by this driver */
-+#define CFG_FIFOTL	IT8512_MSTCR_FIFOTL_25
-+#define CFG_CR_FREQ	IT8512_CFR_CF_36KHZ
-+#define CFG_DCR		IT8512_RCR_RXDCR_1
-+#define CFG_BDR		IT8512_BDR_6
-+#define CFG_TIMEOUT	100000 /* Rearm interrupt when a space is > 100 ms */
-+
-+static int debug;
-+
-+struct ite8709_device {
-+	int use_count;
-+	int io;
-+	int irq;
-+	spinlock_t hardware_lock;
-+	unsigned long long acc_pulse;
-+	unsigned long long acc_space;
-+	char lastbit;
-+	struct timeval last_tv;
-+	struct lirc_driver driver;
-+	struct tasklet_struct tasklet;
-+	char force_rearm;
-+	char rearmed;
-+	char device_busy;
-+};
-+
-+#define dprintk(fmt, args...)					\
-+	do {							\
-+		if (debug)					\
-+			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "	\
-+				fmt, ## args);			\
-+	} while (0)
-+
-+
-+static unsigned char ite8709_read(struct ite8709_device *dev,
-+					unsigned char port)
-+{
-+	outb(port, dev->io);
-+	return inb(dev->io+1);
-+}
-+
-+static void ite8709_write(struct ite8709_device *dev, unsigned char port,
-+				unsigned char data)
-+{
-+	outb(port, dev->io);
-+	outb(data, dev->io+1);
-+}
-+
-+static void ite8709_wait_device(struct ite8709_device *dev)
-+{
-+	int i = 0;
-+	/*
-+	 * loop until device tells it's ready to continue
-+	 * iterations count is usually ~750 but can sometimes achieve 13000
-+	 */
-+	for (i = 0; i < 15000; i++) {
-+		udelay(2);
-+		if (ite8709_read(dev, ITE8709_MODE) == ITE8709_MODE_READY)
-+			break;
-+	}
-+}
-+
-+static void ite8709_write_register(struct ite8709_device *dev,
-+				unsigned char reg_adr, unsigned char reg_value)
-+{
-+	ite8709_wait_device(dev);
-+
-+	ite8709_write(dev, ITE8709_REG_VAL, reg_value);
-+	ite8709_write(dev, ITE8709_REG_ADR, reg_adr);
-+	ite8709_write(dev, ITE8709_MODE, ITE8709_MODE_WRITE);
-+}
-+
-+static void ite8709_init_hardware(struct ite8709_device *dev)
-+{
-+	spin_lock_irq(&dev->hardware_lock);
-+	dev->device_busy = 1;
-+	spin_unlock_irq(&dev->hardware_lock);
-+
-+	ite8709_write_register(dev, IT8512_REG_BDHR, (CFG_BDR >> 8) & 0xff);
-+	ite8709_write_register(dev, IT8512_REG_BDLR, CFG_BDR & 0xff);
-+	ite8709_write_register(dev, IT8512_REG_CFR, CFG_CR_FREQ);
-+	ite8709_write_register(dev, IT8512_REG_IER,
-+			IT8512_IER_IEC | IT8512_IER_RFOIE | IT8512_IER_RDAIE);
-+	ite8709_write_register(dev, IT8512_REG_RCR, CFG_DCR);
-+	ite8709_write_register(dev, IT8512_REG_MSTCR,
-+					CFG_FIFOTL | IT8512_MSTCR_FIFOCLR);
-+	ite8709_write_register(dev, IT8512_REG_RCR,
-+				IT8512_RCR_RXEN | IT8512_RCR_RXACT | CFG_DCR);
-+
-+	spin_lock_irq(&dev->hardware_lock);
-+	dev->device_busy = 0;
-+	spin_unlock_irq(&dev->hardware_lock);
-+
-+	tasklet_enable(&dev->tasklet);
-+}
-+
-+static void ite8709_drop_hardware(struct ite8709_device *dev)
-+{
-+	tasklet_disable(&dev->tasklet);
-+
-+	spin_lock_irq(&dev->hardware_lock);
-+	dev->device_busy = 1;
-+	spin_unlock_irq(&dev->hardware_lock);
-+
-+	ite8709_write_register(dev, IT8512_REG_RCR, 0);
-+	ite8709_write_register(dev, IT8512_REG_MSTCR,
-+				IT8512_MSTCR_RESET | IT8512_MSTCR_FIFOCLR);
-+
-+	spin_lock_irq(&dev->hardware_lock);
-+	dev->device_busy = 0;
-+	spin_unlock_irq(&dev->hardware_lock);
-+}
-+
-+static int ite8709_set_use_inc(void *data)
-+{
-+	struct ite8709_device *dev;
-+	dev = data;
-+	if (dev->use_count == 0)
-+		ite8709_init_hardware(dev);
-+	dev->use_count++;
-+	return 0;
-+}
-+
-+static void ite8709_set_use_dec(void *data)
-+{
-+	struct ite8709_device *dev;
-+	dev = data;
-+	dev->use_count--;
-+	if (dev->use_count == 0)
-+		ite8709_drop_hardware(dev);
-+}
-+
-+static void ite8709_add_read_queue(struct ite8709_device *dev, int flag,
-+					unsigned long long val)
-+{
-+	int value;
-+
-+	dprintk("add a %llu usec %s\n", val, flag ? "pulse" : "space");
-+
-+	value = (val > PULSE_MASK) ? PULSE_MASK : val;
-+	if (flag)
-+		value |= PULSE_BIT;
-+
-+	if (!lirc_buffer_full(dev->driver.rbuf)) {
-+		lirc_buffer_write(dev->driver.rbuf, (void *) &value);
-+		wake_up(&dev->driver.rbuf->wait_poll);
-+	}
-+}
-+
-+static irqreturn_t ite8709_interrupt(int irq, void *dev_id)
-+{
-+	unsigned char data;
-+	int iir, rfsr, i;
-+	int fifo = 0;
-+	char bit;
-+	struct timeval curr_tv;
-+
-+	/* Bit duration in microseconds */
-+	const unsigned long bit_duration = 1000000ul / (115200 / CFG_BDR);
-+
-+	struct ite8709_device *dev;
-+	dev = dev_id;
-+
-+	/*
-+	 * If device is busy, we simply discard data because we are in one of
-+	 * these two cases : shutting down or rearming the device, so this
-+	 * doesn't really matter and this avoids waiting too long in IRQ ctx
-+	 */
-+	spin_lock(&dev->hardware_lock);
-+	if (dev->device_busy) {
-+		spin_unlock(&dev->hardware_lock);
-+		return IRQ_RETVAL(IRQ_HANDLED);
-+	}
-+
-+	iir = ite8709_read(dev, ITE8709_IIR);
-+
-+	switch (iir) {
-+	case ITE8709_IIR_RFOI:
-+		dprintk("fifo overrun, scheduling forced rearm just in case\n");
-+		dev->force_rearm = 1;
-+		tasklet_schedule(&dev->tasklet);
-+		spin_unlock(&dev->hardware_lock);
-+		return IRQ_RETVAL(IRQ_HANDLED);
-+
-+	case ITE8709_IIR_RDAI:
-+		rfsr = ite8709_read(dev, ITE8709_RFSR);
-+		fifo = rfsr & ITE8709_RFSR_MASK;
-+		if (fifo > 32)
-+			fifo = 32;
-+		dprintk("iir: 0x%x rfsr: 0x%x fifo: %d\n", iir, rfsr, fifo);
-+
-+		if (dev->rearmed) {
-+			do_gettimeofday(&curr_tv);
-+			dev->acc_space += 1000000ull
-+				* (curr_tv.tv_sec - dev->last_tv.tv_sec)
-+				+ (curr_tv.tv_usec - dev->last_tv.tv_usec);
-+			dev->rearmed = 0;
-+		}
-+		for (i = 0; i < fifo; i++) {
-+			data = ite8709_read(dev, i+ITE8709_FIFO_START);
-+			data = ~data;
-+			/* Loop through */
-+			for (bit = 0; bit < 8; ++bit) {
-+				if ((data >> bit) & 1) {
-+					dev->acc_pulse += bit_duration;
-+					if (dev->lastbit == 0) {
-+						ite8709_add_read_queue(dev, 0,
-+							dev->acc_space);
-+						dev->acc_space = 0;
-+					}
-+				} else {
-+					dev->acc_space += bit_duration;
-+					if (dev->lastbit == 1) {
-+						ite8709_add_read_queue(dev, 1,
-+							dev->acc_pulse);
-+						dev->acc_pulse = 0;
-+					}
-+				}
-+				dev->lastbit = (data >> bit) & 1;
-+			}
-+		}
-+		ite8709_write(dev, ITE8709_RFSR, 0);
-+
-+		if (dev->acc_space > CFG_TIMEOUT) {
-+			dprintk("scheduling rearm IRQ\n");
-+			do_gettimeofday(&dev->last_tv);
-+			dev->force_rearm = 0;
-+			tasklet_schedule(&dev->tasklet);
-+		}
-+
-+		spin_unlock(&dev->hardware_lock);
-+		return IRQ_RETVAL(IRQ_HANDLED);
-+
-+	default:
-+		/* not our irq */
-+		dprintk("unknown IRQ (shouldn't happen) !!\n");
-+		spin_unlock(&dev->hardware_lock);
-+		return IRQ_RETVAL(IRQ_NONE);
-+	}
-+}
-+
-+static void ite8709_rearm_irq(unsigned long data)
-+{
-+	struct ite8709_device *dev;
-+	unsigned long flags;
-+	dev = (struct ite8709_device *) data;
-+
-+	spin_lock_irqsave(&dev->hardware_lock, flags);
-+	dev->device_busy = 1;
-+	spin_unlock_irqrestore(&dev->hardware_lock, flags);
-+
-+	if (dev->force_rearm || dev->acc_space > CFG_TIMEOUT) {
-+		dprintk("rearming IRQ\n");
-+		ite8709_write_register(dev, IT8512_REG_RCR,
-+						IT8512_RCR_RXACT | CFG_DCR);
-+		ite8709_write_register(dev, IT8512_REG_MSTCR,
-+					CFG_FIFOTL | IT8512_MSTCR_FIFOCLR);
-+		ite8709_write_register(dev, IT8512_REG_RCR,
-+				IT8512_RCR_RXEN | IT8512_RCR_RXACT | CFG_DCR);
-+		if (!dev->force_rearm)
-+			dev->rearmed = 1;
-+		dev->force_rearm = 0;
-+	}
-+
-+	spin_lock_irqsave(&dev->hardware_lock, flags);
-+	dev->device_busy = 0;
-+	spin_unlock_irqrestore(&dev->hardware_lock, flags);
-+}
-+
-+static int ite8709_cleanup(struct ite8709_device *dev, int stage, int errno,
-+				char *msg)
-+{
-+	if (msg != NULL)
-+		printk(KERN_ERR LIRC_DRIVER_NAME ": %s\n", msg);
-+
-+	switch (stage) {
-+	case 6:
-+		if (dev->use_count > 0)
-+			ite8709_drop_hardware(dev);
-+	case 5:
-+		free_irq(dev->irq, dev);
-+	case 4:
-+		release_region(dev->io, 2);
-+	case 3:
-+		lirc_unregister_driver(dev->driver.minor);
-+	case 2:
-+		lirc_buffer_free(dev->driver.rbuf);
-+		kfree(dev->driver.rbuf);
-+	case 1:
-+		kfree(dev);
-+	case 0:
-+		;
-+	}
-+
-+	return errno;
-+}
-+
-+static int __devinit ite8709_pnp_probe(struct pnp_dev *dev,
-+					const struct pnp_device_id *dev_id)
-+{
-+	struct lirc_driver *driver;
-+	struct ite8709_device *ite8709_dev;
-+	int ret;
-+
-+	/* Check resources validity */
-+	if (!pnp_irq_valid(dev, 0))
-+		return ite8709_cleanup(NULL, 0, -ENODEV, "invalid IRQ");
-+	if (!pnp_port_valid(dev, 2))
-+		return ite8709_cleanup(NULL, 0, -ENODEV, "invalid IO port");
-+
-+	/* Allocate memory for device struct */
-+	ite8709_dev = kzalloc(sizeof(struct ite8709_device), GFP_KERNEL);
-+	if (ite8709_dev == NULL)
-+		return ite8709_cleanup(NULL, 0, -ENOMEM, "kzalloc failed");
-+	pnp_set_drvdata(dev, ite8709_dev);
-+
-+	/* Initialize device struct */
-+	ite8709_dev->use_count = 0;
-+	ite8709_dev->irq = pnp_irq(dev, 0);
-+	ite8709_dev->io = pnp_port_start(dev, 2);
-+	ite8709_dev->hardware_lock =
-+		__SPIN_LOCK_UNLOCKED(ite8709_dev->hardware_lock);
-+	ite8709_dev->acc_pulse = 0;
-+	ite8709_dev->acc_space = 0;
-+	ite8709_dev->lastbit = 0;
-+	do_gettimeofday(&ite8709_dev->last_tv);
-+	tasklet_init(&ite8709_dev->tasklet, ite8709_rearm_irq,
-+							(long) ite8709_dev);
-+	ite8709_dev->force_rearm = 0;
-+	ite8709_dev->rearmed = 0;
-+	ite8709_dev->device_busy = 0;
-+
-+	/* Initialize driver struct */
-+	driver = &ite8709_dev->driver;
-+	strcpy(driver->name, LIRC_DRIVER_NAME);
-+	driver->minor = -1;
-+	driver->code_length = sizeof(int) * 8;
-+	driver->sample_rate = 0;
-+	driver->features = LIRC_CAN_REC_MODE2;
-+	driver->data = ite8709_dev;
-+	driver->add_to_buf = NULL;
-+	driver->set_use_inc = ite8709_set_use_inc;
-+	driver->set_use_dec = ite8709_set_use_dec;
-+	driver->dev = &dev->dev;
-+	driver->owner = THIS_MODULE;
-+
-+	/* Initialize LIRC buffer */
-+	driver->rbuf = kmalloc(sizeof(struct lirc_buffer), GFP_KERNEL);
-+	if (!driver->rbuf)
-+		return ite8709_cleanup(ite8709_dev, 1, -ENOMEM,
-+				       "can't allocate lirc_buffer");
-+	if (lirc_buffer_init(driver->rbuf, BUF_CHUNK_SIZE, BUF_SIZE))
-+		return ite8709_cleanup(ite8709_dev, 1, -ENOMEM,
-+				       "lirc_buffer_init() failed");
-+
-+	/* Register LIRC driver */
-+	ret = lirc_register_driver(driver);
-+	if (ret < 0)
-+		return ite8709_cleanup(ite8709_dev, 2, ret,
-+					"lirc_register_driver() failed");
-+
-+	/* Reserve I/O port access */
-+	if (!request_region(ite8709_dev->io, 2, LIRC_DRIVER_NAME))
-+		return ite8709_cleanup(ite8709_dev, 3, -EBUSY,
-+						"i/o port already in use");
-+
-+	/* Reserve IRQ line */
-+	ret = request_irq(ite8709_dev->irq, ite8709_interrupt, 0,
-+					LIRC_DRIVER_NAME, ite8709_dev);
-+	if (ret < 0)
-+		return ite8709_cleanup(ite8709_dev, 4, ret,
-+						"IRQ already in use");
-+
-+	/* Initialize hardware */
-+	ite8709_drop_hardware(ite8709_dev); /* Shutdown hw until first use */
-+
-+	printk(KERN_INFO LIRC_DRIVER_NAME ": device found : irq=%d io=0x%x\n",
-+					ite8709_dev->irq, ite8709_dev->io);
-+
-+	return 0;
-+}
-+
-+static void __devexit ite8709_pnp_remove(struct pnp_dev *dev)
-+{
-+	struct ite8709_device *ite8709_dev;
-+	ite8709_dev = pnp_get_drvdata(dev);
-+
-+	ite8709_cleanup(ite8709_dev, 6, 0, NULL);
-+
-+	printk(KERN_INFO LIRC_DRIVER_NAME ": device removed\n");
-+}
-+
-+#ifdef CONFIG_PM
-+static int ite8709_pnp_suspend(struct pnp_dev *dev, pm_message_t state)
-+{
-+	struct ite8709_device *ite8709_dev;
-+	ite8709_dev = pnp_get_drvdata(dev);
-+
-+	if (ite8709_dev->use_count > 0)
-+		ite8709_drop_hardware(ite8709_dev);
-+
-+	return 0;
-+}
-+
-+static int ite8709_pnp_resume(struct pnp_dev *dev)
-+{
-+	struct ite8709_device *ite8709_dev;
-+	ite8709_dev = pnp_get_drvdata(dev);
-+
-+	if (ite8709_dev->use_count > 0)
-+		ite8709_init_hardware(ite8709_dev);
-+
-+	return 0;
-+}
-+#else
-+#define ite8709_pnp_suspend NULL
-+#define ite8709_pnp_resume NULL
++#include "lirc_parallel.h"
++
++#define LIRC_DRIVER_NAME "lirc_parallel"
++
++#ifndef LIRC_IRQ
++#define LIRC_IRQ 7
++#endif
++#ifndef LIRC_PORT
++#define LIRC_PORT 0x378
++#endif
++#ifndef LIRC_TIMER
++#define LIRC_TIMER 65536
 +#endif
 +
-+static const struct pnp_device_id pnp_dev_table[] = {
-+	{"ITE8709", 0},
-+	{}
++/*** Global Variables ***/
++
++static int debug;
++static int check_pselecd;
++
++unsigned int irq = LIRC_IRQ;
++unsigned int io = LIRC_PORT;
++#ifdef LIRC_TIMER
++unsigned int timer;
++unsigned int default_timer = LIRC_TIMER;
++#endif
++
++#define RBUF_SIZE (256) /* this must be a power of 2 larger than 1 */
++
++static int rbuf[RBUF_SIZE];
++
++DECLARE_WAIT_QUEUE_HEAD(lirc_wait);
++
++unsigned int rptr;
++unsigned int wptr;
++unsigned int lost_irqs;
++int is_open;
++
++struct parport *pport;
++struct pardevice *ppdevice;
++int is_claimed;
++
++unsigned int tx_mask = 1;
++
++/*** Internal Functions ***/
++
++static unsigned int in(int offset)
++{
++	switch (offset) {
++	case LIRC_LP_BASE:
++		return parport_read_data(pport);
++	case LIRC_LP_STATUS:
++		return parport_read_status(pport);
++	case LIRC_LP_CONTROL:
++		return parport_read_control(pport);
++	}
++	return 0; /* make compiler happy */
++}
++
++static void out(int offset, int value)
++{
++	switch (offset) {
++	case LIRC_LP_BASE:
++		parport_write_data(pport, value);
++		break;
++	case LIRC_LP_CONTROL:
++		parport_write_control(pport, value);
++		break;
++	case LIRC_LP_STATUS:
++		printk(KERN_INFO "%s: attempt to write to status register\n",
++		       LIRC_DRIVER_NAME);
++		break;
++	}
++}
++
++static unsigned int lirc_get_timer(void)
++{
++	return in(LIRC_PORT_TIMER) & LIRC_PORT_TIMER_BIT;
++}
++
++static unsigned int lirc_get_signal(void)
++{
++	return in(LIRC_PORT_SIGNAL) & LIRC_PORT_SIGNAL_BIT;
++}
++
++static void lirc_on(void)
++{
++	out(LIRC_PORT_DATA, tx_mask);
++}
++
++static void lirc_off(void)
++{
++	out(LIRC_PORT_DATA, 0);
++}
++
++static unsigned int init_lirc_timer(void)
++{
++	struct timeval tv, now;
++	unsigned int level, newlevel, timeelapsed, newtimer;
++	int count = 0;
++
++	do_gettimeofday(&tv);
++	tv.tv_sec++;                     /* wait max. 1 sec. */
++	level = lirc_get_timer();
++	do {
++		newlevel = lirc_get_timer();
++		if (level == 0 && newlevel != 0)
++			count++;
++		level = newlevel;
++		do_gettimeofday(&now);
++	} while (count < 1000 && (now.tv_sec < tv.tv_sec
++			     || (now.tv_sec == tv.tv_sec
++				 && now.tv_usec < tv.tv_usec)));
++
++	timeelapsed = ((now.tv_sec + 1 - tv.tv_sec)*1000000
++		     + (now.tv_usec - tv.tv_usec));
++	if (count >= 1000 && timeelapsed > 0) {
++		if (default_timer == 0) {
++			/* autodetect timer */
++			newtimer = (1000000*count)/timeelapsed;
++			printk(KERN_INFO "%s: %u Hz timer detected\n",
++			       LIRC_DRIVER_NAME, newtimer);
++			return newtimer;
++		}  else {
++			newtimer = (1000000*count)/timeelapsed;
++			if (abs(newtimer - default_timer) > default_timer/10) {
++				/* bad timer */
++				printk(KERN_NOTICE "%s: bad timer: %u Hz\n",
++				       LIRC_DRIVER_NAME, newtimer);
++				printk(KERN_NOTICE "%s: using default timer: "
++				       "%u Hz\n",
++				       LIRC_DRIVER_NAME, default_timer);
++				return default_timer;
++			} else {
++				printk(KERN_INFO "%s: %u Hz timer detected\n",
++				       LIRC_DRIVER_NAME, newtimer);
++				return newtimer; /* use detected value */
++			}
++		}
++	} else {
++		printk(KERN_NOTICE "%s: no timer detected\n", LIRC_DRIVER_NAME);
++		return 0;
++	}
++}
++
++static int lirc_claim(void)
++{
++	if (parport_claim(ppdevice) != 0) {
++		printk(KERN_WARNING "%s: could not claim port\n",
++		       LIRC_DRIVER_NAME);
++		printk(KERN_WARNING "%s: waiting for port becoming available"
++		       "\n", LIRC_DRIVER_NAME);
++		if (parport_claim_or_block(ppdevice) < 0) {
++			printk(KERN_NOTICE "%s: could not claim port, giving"
++			       " up\n", LIRC_DRIVER_NAME);
++			return 0;
++		}
++	}
++	out(LIRC_LP_CONTROL, LP_PSELECP|LP_PINITP);
++	is_claimed = 1;
++	return 1;
++}
++
++/*** interrupt handler ***/
++
++static void rbuf_write(int signal)
++{
++	unsigned int nwptr;
++
++	nwptr = (wptr + 1) & (RBUF_SIZE - 1);
++	if (nwptr == rptr) {
++		/* no new signals will be accepted */
++		lost_irqs++;
++		printk(KERN_NOTICE "%s: buffer overrun\n", LIRC_DRIVER_NAME);
++		return;
++	}
++	rbuf[wptr] = signal;
++	wptr = nwptr;
++}
++
++static void irq_handler(void *blah)
++{
++	struct timeval tv;
++	static struct timeval lasttv;
++	static int init;
++	long signal;
++	int data;
++	unsigned int level, newlevel;
++	unsigned int timeout;
++
++	if (!module_refcount(THIS_MODULE))
++		return;
++
++	if (!is_claimed)
++		return;
++
++#if 0
++	/* disable interrupt */
++	  disable_irq(irq);
++	  out(LIRC_PORT_IRQ, in(LIRC_PORT_IRQ) & (~LP_PINTEN));
++#endif
++	if (check_pselecd && (in(1) & LP_PSELECD))
++		return;
++
++#ifdef LIRC_TIMER
++	if (init) {
++		do_gettimeofday(&tv);
++
++		signal = tv.tv_sec - lasttv.tv_sec;
++		if (signal > 15)
++			/* really long time */
++			data = PULSE_MASK;
++		else
++			data = (int) (signal*1000000 +
++					 tv.tv_usec - lasttv.tv_usec +
++					 LIRC_SFH506_DELAY);
++
++		rbuf_write(data); /* space */
++	} else {
++		if (timer == 0) {
++			/*
++			 * wake up; we'll lose this signal, but it will be
++			 * garbage if the device is turned on anyway
++			 */
++			timer = init_lirc_timer();
++			/* enable_irq(irq); */
++			return;
++		}
++		init = 1;
++	}
++
++	timeout = timer/10;	/* timeout after 1/10 sec. */
++	signal = 1;
++	level = lirc_get_timer();
++	do {
++		newlevel = lirc_get_timer();
++		if (level == 0 && newlevel != 0)
++			signal++;
++		level = newlevel;
++
++		/* giving up */
++		if (signal > timeout
++		    || (check_pselecd && (in(1) & LP_PSELECD))) {
++			signal = 0;
++			printk(KERN_NOTICE "%s: timeout\n", LIRC_DRIVER_NAME);
++			break;
++		}
++	} while (lirc_get_signal());
++
++	if (signal != 0) {
++		/* ajust value to usecs */
++		unsigned long long helper;
++
++		helper = ((unsigned long long) signal)*1000000;
++		do_div(helper, timer);
++		signal = (long) helper;
++
++		if (signal > LIRC_SFH506_DELAY)
++			data = signal - LIRC_SFH506_DELAY;
++		else
++			data = 1;
++		rbuf_write(PULSE_BIT|data); /* pulse */
++	}
++	do_gettimeofday(&lasttv);
++#else
++	/* add your code here */
++#endif
++
++	wake_up_interruptible(&lirc_wait);
++
++	/* enable interrupt */
++	/*
++	  enable_irq(irq);
++	  out(LIRC_PORT_IRQ, in(LIRC_PORT_IRQ)|LP_PINTEN);
++	*/
++}
++
++/*** file operations ***/
++
++static loff_t lirc_lseek(struct file *filep, loff_t offset, int orig)
++{
++	return -ESPIPE;
++}
++
++static ssize_t lirc_read(struct file *filep, char *buf, size_t n, loff_t *ppos)
++{
++	int result = 0;
++	int count = 0;
++	DECLARE_WAITQUEUE(wait, current);
++
++	if (n % sizeof(int))
++		return -EINVAL;
++
++	add_wait_queue(&lirc_wait, &wait);
++	set_current_state(TASK_INTERRUPTIBLE);
++	while (count < n) {
++		if (rptr != wptr) {
++			if (copy_to_user(buf+count, (char *) &rbuf[rptr],
++					 sizeof(int))) {
++				result = -EFAULT;
++				break;
++			}
++			rptr = (rptr + 1) & (RBUF_SIZE - 1);
++			count += sizeof(int);
++		} else {
++			if (filep->f_flags & O_NONBLOCK) {
++				result = -EAGAIN;
++				break;
++			}
++			if (signal_pending(current)) {
++				result = -ERESTARTSYS;
++				break;
++			}
++			schedule();
++			set_current_state(TASK_INTERRUPTIBLE);
++		}
++	}
++	remove_wait_queue(&lirc_wait, &wait);
++	set_current_state(TASK_RUNNING);
++	return count ? count : result;
++}
++
++static ssize_t lirc_write(struct file *filep, const char *buf, size_t n,
++			  loff_t *ppos)
++{
++	int count;
++	unsigned int i;
++	unsigned int level, newlevel;
++	unsigned long flags;
++	int counttimer;
++	int *wbuf;
++
++	if (!is_claimed)
++		return -EBUSY;
++
++	count = n / sizeof(int);
++
++	if (n % sizeof(int) || count % 2 == 0)
++		return -EINVAL;
++
++	wbuf = memdup_user(buf, n);
++	if (IS_ERR(wbuf))
++		return PTR_ERR(wbuf);
++
++#ifdef LIRC_TIMER
++	if (timer == 0) {
++		/* try again if device is ready */
++		timer = init_lirc_timer();
++		if (timer == 0)
++			return -EIO;
++	}
++
++	/* adjust values from usecs */
++	for (i = 0; i < count; i++) {
++		unsigned long long helper;
++
++		helper = ((unsigned long long) wbuf[i])*timer;
++		do_div(helper, 1000000);
++		wbuf[i] = (int) helper;
++	}
++
++	local_irq_save(flags);
++	i = 0;
++	while (i < count) {
++		level = lirc_get_timer();
++		counttimer = 0;
++		lirc_on();
++		do {
++			newlevel = lirc_get_timer();
++			if (level == 0 && newlevel != 0)
++				counttimer++;
++			level = newlevel;
++			if (check_pselecd && (in(1) & LP_PSELECD)) {
++				lirc_off();
++				local_irq_restore(flags);
++				return -EIO;
++			}
++		} while (counttimer < wbuf[i]);
++		i++;
++
++		lirc_off();
++		if (i == count)
++			break;
++		counttimer = 0;
++		do {
++			newlevel = lirc_get_timer();
++			if (level == 0 && newlevel != 0)
++				counttimer++;
++			level = newlevel;
++			if (check_pselecd && (in(1) & LP_PSELECD)) {
++				local_irq_restore(flags);
++				return -EIO;
++			}
++		} while (counttimer < wbuf[i]);
++		i++;
++	}
++	local_irq_restore(flags);
++#else
++	/* place code that handles write without external timer here */
++#endif
++	return n;
++}
++
++static unsigned int lirc_poll(struct file *file, poll_table *wait)
++{
++	poll_wait(file, &lirc_wait, wait);
++	if (rptr != wptr)
++		return POLLIN | POLLRDNORM;
++	return 0;
++}
++
++static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
++{
++	int result;
++	unsigned long features = LIRC_CAN_SET_TRANSMITTER_MASK |
++				 LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2;
++	unsigned long mode;
++	unsigned int ivalue;
++
++	switch (cmd) {
++	case LIRC_GET_FEATURES:
++		result = put_user(features, (unsigned long *) arg);
++		if (result)
++			return result;
++		break;
++	case LIRC_GET_SEND_MODE:
++		result = put_user(LIRC_MODE_PULSE, (unsigned long *) arg);
++		if (result)
++			return result;
++		break;
++	case LIRC_GET_REC_MODE:
++		result = put_user(LIRC_MODE_MODE2, (unsigned long *) arg);
++		if (result)
++			return result;
++		break;
++	case LIRC_SET_SEND_MODE:
++		result = get_user(mode, (unsigned long *) arg);
++		if (result)
++			return result;
++		if (mode != LIRC_MODE_PULSE)
++			return -EINVAL;
++		break;
++	case LIRC_SET_REC_MODE:
++		result = get_user(mode, (unsigned long *) arg);
++		if (result)
++			return result;
++		if (mode != LIRC_MODE_MODE2)
++			return -ENOSYS;
++		break;
++	case LIRC_SET_TRANSMITTER_MASK:
++		result = get_user(ivalue, (unsigned int *) arg);
++		if (result)
++			return result;
++		if ((ivalue & LIRC_PARALLEL_TRANSMITTER_MASK) != ivalue)
++			return LIRC_PARALLEL_MAX_TRANSMITTERS;
++		tx_mask = ivalue;
++		break;
++	default:
++		return -ENOIOCTLCMD;
++	}
++	return 0;
++}
++
++static int lirc_open(struct inode *node, struct file *filep)
++{
++	if (module_refcount(THIS_MODULE) || !lirc_claim())
++		return -EBUSY;
++
++	parport_enable_irq(pport);
++
++	/* init read ptr */
++	rptr = 0;
++	wptr = 0;
++	lost_irqs = 0;
++
++	is_open = 1;
++	return 0;
++}
++
++static int lirc_close(struct inode *node, struct file *filep)
++{
++	if (is_claimed) {
++		is_claimed = 0;
++		parport_release(ppdevice);
++	}
++	is_open = 0;
++	return 0;
++}
++
++static struct file_operations lirc_fops = {
++	.owner		= THIS_MODULE,
++	.llseek		= lirc_lseek,
++	.read		= lirc_read,
++	.write		= lirc_write,
++	.poll		= lirc_poll,
++	.unlocked_ioctl	= lirc_ioctl,
++	.open		= lirc_open,
++	.release	= lirc_close
 +};
 +
-+MODULE_DEVICE_TABLE(pnp, pnp_dev_table);
++static int set_use_inc(void *data)
++{
++	return 0;
++}
 +
-+static struct pnp_driver ite8709_pnp_driver = {
-+	.name           = LIRC_DRIVER_NAME,
-+	.probe          = ite8709_pnp_probe,
-+	.remove         = __devexit_p(ite8709_pnp_remove),
-+	.suspend        = ite8709_pnp_suspend,
-+	.resume         = ite8709_pnp_resume,
-+	.id_table       = pnp_dev_table,
++static void set_use_dec(void *data)
++{
++}
++
++static struct lirc_driver driver = {
++       .name		= LIRC_DRIVER_NAME,
++       .minor		= -1,
++       .code_length	= 1,
++       .sample_rate	= 0,
++       .data		= NULL,
++       .add_to_buf	= NULL,
++       .set_use_inc	= set_use_inc,
++       .set_use_dec	= set_use_dec,
++       .fops		= &lirc_fops,
++       .dev		= NULL,
++       .owner		= THIS_MODULE,
 +};
 +
-+static int __init ite8709_init_module(void)
-+{
-+	return pnp_register_driver(&ite8709_pnp_driver);
-+}
-+module_init(ite8709_init_module);
++static int pf(void *handle);
++static void kf(void *handle);
 +
-+static void __exit ite8709_cleanup_module(void)
-+{
-+	pnp_unregister_driver(&ite8709_pnp_driver);
-+}
-+module_exit(ite8709_cleanup_module);
++static struct timer_list poll_timer;
++static void poll_state(unsigned long ignored);
 +
-+MODULE_DESCRIPTION("LIRC driver for ITE8709 CIR port");
-+MODULE_AUTHOR("Grégory Lardière");
++static void poll_state(unsigned long ignored)
++{
++	printk(KERN_NOTICE "%s: time\n",
++	       LIRC_DRIVER_NAME);
++	del_timer(&poll_timer);
++	if (is_claimed)
++		return;
++	kf(NULL);
++	if (!is_claimed) {
++		printk(KERN_NOTICE "%s: could not claim port, giving up\n",
++		       LIRC_DRIVER_NAME);
++		init_timer(&poll_timer);
++		poll_timer.expires = jiffies + HZ;
++		poll_timer.data = (unsigned long)current;
++		poll_timer.function = poll_state;
++		add_timer(&poll_timer);
++	}
++}
++
++static int pf(void *handle)
++{
++	parport_disable_irq(pport);
++	is_claimed = 0;
++	return 0;
++}
++
++static void kf(void *handle)
++{
++	if (!is_open)
++		return;
++	if (!lirc_claim())
++		return;
++	parport_enable_irq(pport);
++	lirc_off();
++	/* this is a bit annoying when you actually print...*/
++	/*
++	printk(KERN_INFO "%s: reclaimed port\n", LIRC_DRIVER_NAME);
++	*/
++}
++
++/*** module initialization and cleanup ***/
++
++static int __init lirc_parallel_init(void)
++{
++	pport = parport_find_base(io);
++	if (pport == NULL) {
++		printk(KERN_NOTICE "%s: no port at %x found\n",
++		       LIRC_DRIVER_NAME, io);
++		return -ENXIO;
++	}
++	ppdevice = parport_register_device(pport, LIRC_DRIVER_NAME,
++					   pf, kf, irq_handler, 0, NULL);
++	parport_put_port(pport);
++	if (ppdevice == NULL) {
++		printk(KERN_NOTICE "%s: parport_register_device() failed\n",
++		       LIRC_DRIVER_NAME);
++		return -ENXIO;
++	}
++	if (parport_claim(ppdevice) != 0)
++		goto skip_init;
++	is_claimed = 1;
++	out(LIRC_LP_CONTROL, LP_PSELECP|LP_PINITP);
++
++#ifdef LIRC_TIMER
++	if (debug)
++		out(LIRC_PORT_DATA, tx_mask);
++
++	timer = init_lirc_timer();
++
++#if 0	/* continue even if device is offline */
++	if (timer == 0) {
++		is_claimed = 0;
++		parport_release(pport);
++		parport_unregister_device(ppdevice);
++		return -EIO;
++	}
++
++#endif
++	if (debug)
++		out(LIRC_PORT_DATA, 0);
++#endif
++
++	is_claimed = 0;
++	parport_release(ppdevice);
++ skip_init:
++	driver.minor = lirc_register_driver(&driver);
++	if (driver.minor < 0) {
++		printk(KERN_NOTICE "%s: register_chrdev() failed\n",
++		       LIRC_DRIVER_NAME);
++		parport_unregister_device(ppdevice);
++		return -EIO;
++	}
++	printk(KERN_INFO "%s: installed using port 0x%04x irq %d\n",
++	       LIRC_DRIVER_NAME, io, irq);
++	return 0;
++}
++
++static void __exit lirc_parallel_exit(void)
++{
++	parport_unregister_device(ppdevice);
++	lirc_unregister_driver(driver.minor);
++}
++
++module_init(lirc_parallel_init);
++module_exit(lirc_parallel_exit);
++
++MODULE_DESCRIPTION("Infrared receiver driver for parallel ports.");
++MODULE_AUTHOR("Christoph Bartelmus");
 +MODULE_LICENSE("GPL");
++
++module_param(io, int, S_IRUGO);
++MODULE_PARM_DESC(io, "I/O address base (0x3bc, 0x378 or 0x278)");
++
++module_param(irq, int, S_IRUGO);
++MODULE_PARM_DESC(irq, "Interrupt (7 or 5)");
++
++module_param(tx_mask, int, S_IRUGO);
++MODULE_PARM_DESC(tx_maxk, "Transmitter mask (default: 0x01)");
 +
 +module_param(debug, bool, S_IRUGO | S_IWUSR);
 +MODULE_PARM_DESC(debug, "Enable debugging messages");
++
++module_param(check_pselecd, bool, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(debug, "Check for printer (default: 0)");
+diff --git a/drivers/staging/lirc/lirc_parallel.h b/drivers/staging/lirc/lirc_parallel.h
+new file mode 100644
+index 0000000..4bed6af
+--- /dev/null
++++ b/drivers/staging/lirc/lirc_parallel.h
+@@ -0,0 +1,26 @@
++/* lirc_parallel.h */
++
++#ifndef _LIRC_PARALLEL_H
++#define _LIRC_PARALLEL_H
++
++#include <linux/lp.h>
++
++#define LIRC_PORT_LEN 3
++
++#define LIRC_LP_BASE    0
++#define LIRC_LP_STATUS  1
++#define LIRC_LP_CONTROL 2
++
++#define LIRC_PORT_DATA           LIRC_LP_BASE    /* base */
++#define LIRC_PORT_TIMER        LIRC_LP_STATUS    /* status port */
++#define LIRC_PORT_TIMER_BIT          LP_PBUSY    /* busy signal */
++#define LIRC_PORT_SIGNAL       LIRC_LP_STATUS    /* status port */
++#define LIRC_PORT_SIGNAL_BIT          LP_PACK    /* ack signal */
++#define LIRC_PORT_IRQ         LIRC_LP_CONTROL    /* control port */
++
++#define LIRC_SFH506_DELAY 0             /* delay t_phl in usecs */
++
++#define LIRC_PARALLEL_MAX_TRANSMITTERS 8
++#define LIRC_PARALLEL_TRANSMITTER_MASK ((1<<LIRC_PARALLEL_MAX_TRANSMITTERS) - 1)
++
++#endif
 -- 
 1.7.1.1
 
