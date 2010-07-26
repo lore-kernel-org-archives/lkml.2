@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab0GZCle (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 22:41:34 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:46162 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab0GZCld (ORCPT
+	id S1753283Ab0GZDCR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 23:02:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53319 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab0GZDCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 22:41:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=IKRNv1tygJOK1CWxTd2/s8MJ/bYDPME4/HWHeWXM5/+DCz+gePkjVgRMZGVfAXXwRZ
-         GeE/jsILV/a40jpBQUzPFTmYW66Qo2/vzDgE91oJVZN8ENOWISQU6RnBavtDm9zzQviS
-         /BTik6DgyiQVidJqpi9wV1ikaxS1t9yre1NBk=
-Subject: [PATCH] wm8350-regulator: fix wm8350_register_regulator error
-	handling
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain
-Date: Mon, 26 Jul 2010 10:41:58 +0800
-Message-Id: <1280112118.14256.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Sun, 25 Jul 2010 23:02:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: [PATCH 0/4] memcg reclaim tracepoint v2
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100726120107.2EEE.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 26 Jul 2010 12:02:13 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case of platform_device_add() fail, we should call
-platform_device_put() instead of platform_device_del()
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/wm8350-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Recently, Mel Gorman added some vmscan tracepoint. but they can't
+trace memcg. So, This patch series does.
 
-diff --git a/drivers/regulator/wm8350-regulator.c b/drivers/regulator/wm8350-regulator.c
-index 723cd1f..0e6ed7d 100644
---- a/drivers/regulator/wm8350-regulator.c
-+++ b/drivers/regulator/wm8350-regulator.c
-@@ -1495,7 +1495,7 @@ int wm8350_register_regulator(struct wm8350 *wm8350, int reg,
- 	if (ret != 0) {
- 		dev_err(wm8350->dev, "Failed to register regulator %d: %d\n",
- 			reg, ret);
--		platform_device_del(pdev);
-+		platform_device_put(pdev);
- 		wm8350->pmic.pdev[reg] = NULL;
- 	}
- 
--- 
-1.5.4.3
+
+Changelog since v1
+ o drop all memcg bugfix and cleanups
+
+
+diffstat
+=========================
+KOSAKI Motohiro (4):
+  vmscan: convert direct reclaim tracepoint to DEFINE_TRACE
+  memcg, vmscan: add memcg reclaim tracepoint
+  vmscan: convert mm_vmscan_lru_isolate to DEFINE_EVENT
+  memcg: add mm_vmscan_memcg_isolate tracepoint
+
+ include/trace/events/vmscan.h |   79 +++++++++++++++++++++++++++++++++++++++--
+ mm/memcontrol.c               |    6 +++
+ mm/vmscan.c                   |   20 ++++++++++-
+ 3 files changed, 101 insertions(+), 4 deletions(-)
+
+Sameple output is here.
+=========================
+
+              dd-1851  [001]   158.837763: mm_vmscan_memcg_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
+              dd-1851  [001]   158.837783: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+              dd-1851  [001]   158.837860: mm_vmscan_memcg_reclaim_end: nr_reclaimed=32
+  (...)
+              dd-1970  [000]   266.608235: mm_vmscan_wakeup_kswapd: nid=0 zid=1 order=0
+              dd-1970  [000]   266.608239: mm_vmscan_wakeup_kswapd: nid=1 zid=1 order=0
+              dd-1970  [000]   266.608248: mm_vmscan_wakeup_kswapd: nid=2 zid=1 order=0
+         kswapd1-348   [001]   266.608254: mm_vmscan_kswapd_wake: nid=1 order=0
+              dd-1970  [000]   266.608254: mm_vmscan_wakeup_kswapd: nid=3 zid=1 order=0
+         kswapd3-350   [000]   266.608266: mm_vmscan_kswapd_wake: nid=3 order=0
+  (...)
+         kswapd0-347   [001]   267.328891: mm_vmscan_memcg_softlimit_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
+         kswapd0-347   [001]   267.328897: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+         kswapd0-347   [001]   267.328915: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+         kswapd0-347   [001]   267.328989: mm_vmscan_memcg_softlimit_reclaim_end: nr_reclaimed=32
+         kswapd0-347   [001]   267.329019: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+         kswapd0-347   [001]   267.330562: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+  (...)
+         kswapd2-349   [001]   267.407081: mm_vmscan_kswapd_sleep: nid=2
+         kswapd3-350   [001]   267.408077: mm_vmscan_kswapd_sleep: nid=3
+         kswapd1-348   [000]   267.427858: mm_vmscan_kswapd_sleep: nid=1
+         kswapd0-347   [001]   267.430064: mm_vmscan_kswapd_sleep: nid=0
+
+
+
+
 
 
 
