@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab0GZDpw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 23:45:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60781 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab0GZDpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 23:45:51 -0400
-Message-ID: <4C4CF0EA.2080104@cn.fujitsu.com>
-Date: Mon, 26 Jul 2010 10:20:26 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1753503Ab0GZDzP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 23:55:15 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:56131 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753353Ab0GZDzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 23:55:12 -0400
+Date: Mon, 26 Jul 2010 13:54:42 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: xfs-masters@oss.sgi.com, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: linux-next: build failure after merge of the xfs tree
+Message-ID: <20100726035442.GD7362@dastard>
+References: <20100726115107.3c3b7303.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Theodore Tso <tytso@mit.edu>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
-References: <20100722054957.GA11670@infradead.org> <20100723011315.GC16373@thunk.org> <20100723144549.88BA.A69D9226@jp.fujitsu.com> <4E28BC9A-BB77-45BC-862A-29601EF4AE2C@mit.edu>
-In-Reply-To: <4E28BC9A-BB77-45BC-862A-29601EF4AE2C@mit.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726115107.3c3b7303.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theodore Tso wrote:
-> On Jul 23, 2010, at 1:47 AM, KOSAKI Motohiro wrote:
+On Mon, Jul 26, 2010 at 11:51:07AM +1000, Stephen Rothwell wrote:
+> Hi David,
 > 
->> I'm not familiar ext4 so much. but you patch seems very nice!
->> thank you :)
+> After merging the xfs tree, today's linux-next build (powerpc ppc64_defconfig)
+> failed like this:
 > 
-> So, can someone confirm that this fixes the NULL pointer dereference?  The patch itself makes sense, and it doesn't change the tracepoint output, so I'm inclined to include it, but I haven't been able to reproduce the failure myself using the reproduction recipe given at the beginning of this thread --- and I'd feel much better if someone who has been able to reproduce the crash can confirm this fixes things for them.
+> fs/xfs/xfs_inode_item.c: In function 'xfs_inode_item_format':
+> fs/xfs/xfs_inode_item.c:319: error: 'nrecs' undeclared (first use in this function)
 > 
+> Caused by commit 0fd7275cc42ab734eaa1a2c747e65479bd1e42af ("xfs: fix gcc
+> 4.6 set but not read and unused statement warnings").
 
-The patch works!
+Can you check the following patch fixes the problem?
 
-Tested-by: Li Zefan <lizf@cn.fujitsu.com>
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
+
+xfs: fix big endian build
+
+From: Dave Chinner <dchinner@redhat.com>
+
+Commit 0fd7275cc42ab734eaa1a2c747e65479bd1e42af ("xfs: fix gcc 4.6
+set but not read and unused statement warnings") failed to convert
+some code inside XFS_NATIVE_HOST (big endian host code only) and
+hence fails to build on such machines. Fix it.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/xfs_inode_item.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/fs/xfs/xfs_inode_item.c b/fs/xfs/xfs_inode_item.c
+index 2d6fcfd..016b60d 100644
+--- a/fs/xfs/xfs_inode_item.c
++++ b/fs/xfs/xfs_inode_item.c
+@@ -316,7 +316,8 @@ xfs_inode_item_format(
+ 			ASSERT((ip->i_df.if_bytes /
+ 				(uint)sizeof(xfs_bmbt_rec_t)) > 0);
+ #ifdef XFS_NATIVE_HOST
+-			if (nrecs == ip->i_d.di_nextents) {
++			if (ip->i_d.di_nextents == ip->i_df.if_bytes /
++						(uint)sizeof(xfs_bmbt_rec_t)) {
+ 				/*
+ 				 * There are no delayed allocation
+ 				 * extents, so just point to the
+
