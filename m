@@ -1,65 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab0GZFEJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 01:04:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52729 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab0GZFEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 01:04:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,260,1278313200"; 
-   d="scan'208";a="589627674"
-Subject: Re: [PATCH] Don't apply for write lock on tasklist_lock if parent
- doesn't ptrace other processes
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, andi.kleen@intel.com,
-        stable@kernel.org
-In-Reply-To: <20100723173453.GA29831@redhat.com>
-References: <1279176663.2096.1264.camel@ymzhang.sh.intel.com>
-	 <20100721144944.5351c741.akpm@linux-foundation.org>
-	 <20100721222529.EFBAA400B6@magilla.sf.frob.com>
-	 <20100722090524.GA6647@redhat.com>
-	 <1279874705.2096.1274.camel@ymzhang.sh.intel.com>
-	 <20100723173453.GA29831@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 26 Jul 2010 13:05:31 +0800
-Message-Id: <1280120732.2085.3.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753419Ab0GZFHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 01:07:07 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44468 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab0GZFHD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 01:07:03 -0400
+MIME-Version: 1.0
+X-Originating-IP: [192.163.20.231]
+In-Reply-To: <4C49B2A2.8080100@oracle.com>
+References: <1279794727-7669-1-git-send-email-pavan_savoy@ti.com>
+	<20100722125348.e4cd696f.randy.dunlap@oracle.com>
+	<AANLkTil64PBJ4FNNSftkXvy6ZjhoDc96rTH0csqAfU34@mail.gmail.com>
+	<4C49B2A2.8080100@oracle.com>
+Date: Mon, 26 Jul 2010 10:37:02 +0530
+X-Google-Sender-Auth: 0vJ7nY3K29JFdhot2h-ZnYoZTaU
+Message-ID: <AANLkTik7bzRMfko0sqgVuJh-dkb_LMz4dcnK2UvLiek=@mail.gmail.com>
+Subject: Re: [PATCH 0/3] drivers:staging:ti-st: patches
+From: Pavan Savoy <pavan_savoy@ti.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-23 at 19:34 +0200, Oleg Nesterov wrote:
-> On 07/23, Zhang, Yanmin wrote:
-> >
-> > On Thu, 2010-07-22 at 11:05 +0200, Oleg Nesterov wrote:
-> > > I am not surpized perf blaims tasklist, but I am really surpized this patch
-> > > adds 10% improvement...
-> > I changed aim7 workfile to focus on fork/exec and other a couple of sub-cases.
-> > And this behavior is clear on 8-socket machines. 
-> 
-> Thanks...
-> 
-> > After applying my patch (although it's incorrect as there is a race with TRACEME),
-> > perf shows write_lock_irq in forget_original_parent consumes less than 40% cpu time on
-> > 8-socket machine.
-> 
-> Any chance you can test the patch I sent? It should have the same effect,
-> otherwise there is something interesting.
-1) with my patch, we got about 13% improvement;
-2) With your patch, we got about 11% improvement;
+On Fri, Jul 23, 2010 at 8:47 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On 07/22/10 21:56, Pavan Savoy wrote:
+>> Randy,
+>>
+>> On Fri, Jul 23, 2010 at 1:23 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>> On Thu, 22 Jul 2010 05:32:04 -0500 pavan_savoy@ti.com wrote:
+>>>
+>>>> From: Pavan Savoy <pavan_savoy@ti.com>
+>>>>
+>>>> The following patches cleanup bit of a mess and also adds functionality to protocol drivers.
+>>>> with the 3rd patch now providing context to even the protocol drivers, the single device limit
+>>>> or support for multiple devices would be easier to implement.
+>>>>
+>>>> These patches depend on the previously submitted
+>>>> 0001-drivers-staging-ti-st-make-use-of-linux-err-codes.patch
+>>>> commit d39d49b393d94f4137cee4f64526a4695352f183
+>>>>
+>>>> Pavan Savoy (3):
+>>>>   drivers:staging:ti-st: smarten, reduce logs
+>>>>   drivers:staging:ti-st: cleanup code comments
+>>>>   drivers:staging:ti-st: give proto drivers context
+>>>>
+>>>>  drivers/staging/ti-st/bt_drv.c  |   23 +++++---
+>>>>  drivers/staging/ti-st/st.h      |   52 +++++++++--------
+>>>>  drivers/staging/ti-st/st_core.c |  118 +++++++++++++++++++--------------------
+>>>>  drivers/staging/ti-st/st_core.h |   74 +++++++++++++++++--------
+>>>>  drivers/staging/ti-st/st_kim.c  |   73 ++++++++++++++----------
+>>>>  drivers/staging/ti-st/st_kim.h  |   77 ++++++++++++++++---------
+>>>>  drivers/staging/ti-st/st_ll.c   |    4 +-
+>>>>  drivers/staging/ti-st/st_ll.h   |    9 +++-
+>>>>  8 files changed, 255 insertions(+), 175 deletions(-)
+>>>
+>>> Hi,
+>>>
+>>> I have reported this error a few times.  Where is the patch for it??
+>>>
+>>> ERROR: "st_get_plat_device" [drivers/staging/ti-st/st_drv.ko] undefined!
+>>
+>>
+>> Yes, on one of the earlier patch sets, I had mentioned that the ST
+>> driver being a platform device, needs definition in any of the
+>> arch/XX/mach-XX/board-XX.c or devices.c or somewhere...
+>>
+>> and hence it is in that board-XX.c file that the symbol
+>> st_get_plat_device needs to be exported, the reason for that being,
+>>
+>> ST driver being both a TTY ldisc driver and platform driver, in TTY
+>> contexts it would need to refer to platform driver's data. So it does
+>> a st_get_plat_device which returns the platform device structure, and
+>> then does a dev_getdrvdata from it.
+>>
+>> here's a snippet of code ...
+>> /*
+>>  * ST related functions related functions
+>>  */
+>> #include <linux/platform_device.h>
+>>
+>> long gpios[] = { 55, -1, -1 };
+>> static struct platform_device ti_st_device = {
+>>         .name           = "kim",
+>>         .id             = -1,
+>>         .dev.platform_data      = &gpios,
+>> };
+>>
+>> struct platform_device *st_get_plat_device(void)
+>> {
+>>         return &ti_st_device;
+>> }
+>> EXPORT_SYMBOL(st_get_plat_device);
+>>
+>> static __init int add_ti_st_device(void)
+>> {
+>>         platform_device_register(&ti_st_device);
+>>         dev_info(&ti_st_device.dev,"registered platform TI ST device\n");
+>>
+>>         return 0;
+>> }
+>> device_initcall(add_ti_st_device);
+>>
+>>
+>> We have that in our local trees in arch/arm/mach-omap2/board-sdp4430.c
+>
+> Thanks for the explanation.
+>
+> Is the driver platform-specific?
+> E.g., should it not even be built on x86?
 
-Performance is very sensitive to spinlock contention on large machines.
- 
-> 
-> > Is it possible to optimize it to use finer locks instead of the global tasklist_lock?
-> 
-> Heh. We must optimize it. But it is not clear when ;)
-Thanks. It's better to remove the big lock.
+Yes. Requirement of the hardware is very much a must.
+However it is a separate peripheral (WiLink 7 - uart interfaced), may
+be there is a x86 platform with this - but certainly not desktops.
 
+on linux-next, I generally put in that st_dev.c file for x86 - verify
+whether it builds as a module, inserts/rmmod, basic other
+functionalities (which doesn't involve response from chip..)
+But verify full functionality on board which constitutes that.
 
+> --
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
