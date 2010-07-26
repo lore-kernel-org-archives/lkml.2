@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab0GZXa7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 19:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39737 "EHLO mx1.redhat.com"
+	id S1755854Ab0GZXbR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 19:31:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8502 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755812Ab0GZXaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 19:30:55 -0400
-Date: Mon, 26 Jul 2010 19:30:51 -0400
+	id S1755396Ab0GZXbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 19:31:13 -0400
+Date: Mon, 26 Jul 2010 19:31:11 -0400
 From: Jarod Wilson <jarod@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 08/15] staging/lirc: add lirc_parallel driver
-Message-ID: <20100726233051.GI21225@redhat.com>
+Subject: [PATCH 09/15] staging/lirc: add lirc_sasem driver
+Message-ID: <20100726233111.GJ21225@redhat.com>
 References: <20100726232546.GA21225@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,26 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jarod Wilson <jarod@redhat.com>
 ---
- drivers/staging/lirc/lirc_parallel.c |  705 ++++++++++++++++++++++++++++++++++
- drivers/staging/lirc/lirc_parallel.h |   26 ++
- 2 files changed, 731 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/lirc/lirc_parallel.c
- create mode 100644 drivers/staging/lirc/lirc_parallel.h
+ drivers/staging/lirc/lirc_sasem.c |  933 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 933 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/lirc/lirc_sasem.c
 
-diff --git a/drivers/staging/lirc/lirc_parallel.c b/drivers/staging/lirc/lirc_parallel.c
+diff --git a/drivers/staging/lirc/lirc_sasem.c b/drivers/staging/lirc/lirc_sasem.c
 new file mode 100644
-index 0000000..df12e7b
+index 0000000..9e516a1
 --- /dev/null
-+++ b/drivers/staging/lirc/lirc_parallel.c
-@@ -0,0 +1,705 @@
++++ b/drivers/staging/lirc/lirc_sasem.c
+@@ -0,0 +1,933 @@
 +/*
-+ * lirc_parallel.c
++ * lirc_sasem.c - USB remote support for LIRC
++ * Version 0.5
 + *
-+ * lirc_parallel - device driver for infra-red signal receiving and
-+ *                 transmitting unit built by the author
++ * Copyright (C) 2004-2005 Oliver Stabel <oliver.stabel@gmx.de>
++ *			 Tim Davies <tim@opensystems.net.au>
 + *
-+ * Copyright (C) 1998 Christoph Bartelmus <lirc@bartelmus.de>
++ * This driver was derived from:
++ *   Venky Raju <dev@venky.ws>
++ *      "lirc_imon - "LIRC/VFD driver for Ahanix/Soundgraph IMON IR/VFD"
++ *   Paul Miller <pmiller9@users.sourceforge.net>'s 2003-2004
++ *      "lirc_atiusb - USB remote support for LIRC"
++ *   Culver Consulting Services <henry@culcon.com>'s 2003
++ *      "Sasem OnAir VFD/IR USB driver"
 + *
++ *
++ * NOTE - The LCDproc iMon driver should work with this module.  More info at
++ *	http://www.frogstorm.info/sasem
++ */
++
++/*
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License as published by
 + *  the Free Software Foundation; either version 2 of the License, or
@@ -57,722 +68,905 @@ index 0000000..df12e7b
 + *  You should have received a copy of the GNU General Public License
 + *  along with this program; if not, write to the Free Software
 + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
 + */
 +
-+/*** Includes ***/
-+
-+#ifdef CONFIG_SMP
-+#error "--- Sorry, this driver is not SMP safe. ---"
-+#endif
-+
-+#include <linux/module.h>
-+#include <linux/sched.h>
 +#include <linux/errno.h>
-+#include <linux/signal.h>
-+#include <linux/fs.h>
++#include <linux/init.h>
 +#include <linux/kernel.h>
-+#include <linux/ioport.h>
-+#include <linux/time.h>
-+#include <linux/mm.h>
-+#include <linux/delay.h>
-+
-+#include <linux/io.h>
-+#include <linux/signal.h>
-+#include <linux/irq.h>
++#include <linux/module.h>
++#include <linux/slab.h>
 +#include <linux/uaccess.h>
-+#include <asm/div64.h>
-+
-+#include <linux/poll.h>
-+#include <linux/parport.h>
++#include <linux/usb.h>
 +
 +#include <media/lirc.h>
 +#include <media/lirc_dev.h>
 +
-+#include "lirc_parallel.h"
 +
-+#define LIRC_DRIVER_NAME "lirc_parallel"
++#define MOD_AUTHOR	"Oliver Stabel <oliver.stabel@gmx.de>, " \
++			"Tim Davies <tim@opensystems.net.au>"
++#define MOD_DESC	"USB Driver for Sasem Remote Controller V1.1"
++#define MOD_NAME	"lirc_sasem"
++#define MOD_VERSION	"0.5"
 +
-+#ifndef LIRC_IRQ
-+#define LIRC_IRQ 7
-+#endif
-+#ifndef LIRC_PORT
-+#define LIRC_PORT 0x378
-+#endif
-+#ifndef LIRC_TIMER
-+#define LIRC_TIMER 65536
-+#endif
++#define VFD_MINOR_BASE	144	/* Same as LCD */
++#define DEVICE_NAME	"lcd%d"
 +
-+/*** Global Variables ***/
++#define BUF_CHUNK_SIZE	8
++#define BUF_SIZE	128
++
++#define IOCTL_LCD_CONTRAST 1
++
++/*** P R O T O T Y P E S ***/
++
++/* USB Callback prototypes */
++static int sasem_probe(struct usb_interface *interface,
++			const struct usb_device_id *id);
++static void sasem_disconnect(struct usb_interface *interface);
++static void usb_rx_callback(struct urb *urb);
++static void usb_tx_callback(struct urb *urb);
++
++/* VFD file_operations function prototypes */
++static int vfd_open(struct inode *inode, struct file *file);
++static long vfd_ioctl(struct file *file, unsigned cmd, unsigned long arg);
++static int vfd_close(struct inode *inode, struct file *file);
++static ssize_t vfd_write(struct file *file, const char *buf,
++				size_t n_bytes, loff_t *pos);
++
++/* LIRC driver function prototypes */
++static int ir_open(void *data);
++static void ir_close(void *data);
++
++/* Driver init/exit prototypes */
++static int __init sasem_init(void);
++static void __exit sasem_exit(void);
++
++/*** G L O B A L S ***/
++#define SASEM_DATA_BUF_SZ	32
++
++struct sasem_context {
++
++	struct usb_device *dev;
++	int vfd_isopen;			/* VFD port has been opened       */
++	unsigned int vfd_contrast;	/* VFD contrast		   */
++	int ir_isopen;			/* IR port has been opened	*/
++	int dev_present;		/* USB device presence	    */
++	struct mutex ctx_lock;		/* to lock this object	    */
++	wait_queue_head_t remove_ok;	/* For unexpected USB disconnects */
++
++	struct lirc_driver *driver;
++	struct usb_endpoint_descriptor *rx_endpoint;
++	struct usb_endpoint_descriptor *tx_endpoint;
++	struct urb *rx_urb;
++	struct urb *tx_urb;
++	unsigned char usb_rx_buf[8];
++	unsigned char usb_tx_buf[8];
++
++	struct tx_t {
++		unsigned char data_buf[SASEM_DATA_BUF_SZ]; /* user data buffer */
++		struct completion finished;  /* wait for write to finish  */
++		atomic_t busy;		     /* write in progress	 */
++		int status;		     /* status of tx completion   */
++	} tx;
++
++	/* for dealing with repeat codes (wish there was a toggle bit!) */
++	struct timeval presstime;
++	char lastcode[8];
++	int codesaved;
++};
++
++/* VFD file operations */
++static struct file_operations vfd_fops = {
++	.owner		= THIS_MODULE,
++	.open		= &vfd_open,
++	.write		= &vfd_write,
++	.unlocked_ioctl	= &vfd_ioctl,
++	.release	= &vfd_close,
++};
++
++/* USB Device ID for Sasem USB Control Board */
++static struct usb_device_id sasem_usb_id_table[] = {
++	/* Sasem USB Control Board */
++	{ USB_DEVICE(0x11ba, 0x0101) },
++	/* Terminating entry */
++	{}
++};
++
++/* USB Device data */
++static struct usb_driver sasem_driver = {
++	.name		= MOD_NAME,
++	.probe		= sasem_probe,
++	.disconnect	= sasem_disconnect,
++	.id_table	= sasem_usb_id_table,
++};
++
++static struct usb_class_driver sasem_class = {
++	.name		= DEVICE_NAME,
++	.fops		= &vfd_fops,
++	.minor_base	= VFD_MINOR_BASE,
++};
++
++/* to prevent races between open() and disconnect() */
++static DEFINE_MUTEX(disconnect_lock);
 +
 +static int debug;
-+static int check_pselecd;
 +
-+unsigned int irq = LIRC_IRQ;
-+unsigned int io = LIRC_PORT;
-+#ifdef LIRC_TIMER
-+unsigned int timer;
-+unsigned int default_timer = LIRC_TIMER;
-+#endif
 +
-+#define RBUF_SIZE (256) /* this must be a power of 2 larger than 1 */
++/*** M O D U L E   C O D E ***/
 +
-+static int rbuf[RBUF_SIZE];
++MODULE_AUTHOR(MOD_AUTHOR);
++MODULE_DESCRIPTION(MOD_DESC);
++MODULE_LICENSE("GPL");
++module_param(debug, int, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(debug, "Debug messages: 0=no, 1=yes (default: no)");
 +
-+DECLARE_WAIT_QUEUE_HEAD(lirc_wait);
-+
-+unsigned int rptr;
-+unsigned int wptr;
-+unsigned int lost_irqs;
-+int is_open;
-+
-+struct parport *pport;
-+struct pardevice *ppdevice;
-+int is_claimed;
-+
-+unsigned int tx_mask = 1;
-+
-+/*** Internal Functions ***/
-+
-+static unsigned int in(int offset)
++static void delete_context(struct sasem_context *context)
 +{
-+	switch (offset) {
-+	case LIRC_LP_BASE:
-+		return parport_read_data(pport);
-+	case LIRC_LP_STATUS:
-+		return parport_read_status(pport);
-+	case LIRC_LP_CONTROL:
-+		return parport_read_control(pport);
++	usb_free_urb(context->tx_urb);  /* VFD */
++	usb_free_urb(context->rx_urb);  /* IR */
++	lirc_buffer_free(context->driver->rbuf);
++	kfree(context->driver->rbuf);
++	kfree(context->driver);
++	kfree(context);
++
++	if (debug)
++		printk(KERN_INFO "%s: context deleted\n", __func__);
++}
++
++static void deregister_from_lirc(struct sasem_context *context)
++{
++	int retval;
++	int minor = context->driver->minor;
++
++	retval = lirc_unregister_driver(minor);
++	if (retval)
++		err("%s: unable to deregister from lirc (%d)",
++			__func__, retval);
++	else
++		printk(KERN_INFO "Deregistered Sasem driver (minor:%d)\n",
++		       minor);
++
++}
++
++/**
++ * Called when the VFD device (e.g. /dev/usb/lcd)
++ * is opened by the application.
++ */
++static int vfd_open(struct inode *inode, struct file *file)
++{
++	struct usb_interface *interface;
++	struct sasem_context *context = NULL;
++	int subminor;
++	int retval = 0;
++
++	/* prevent races with disconnect */
++	mutex_lock(&disconnect_lock);
++
++	subminor = iminor(inode);
++	interface = usb_find_interface(&sasem_driver, subminor);
++	if (!interface) {
++		err("%s: could not find interface for minor %d",
++		    __func__, subminor);
++		retval = -ENODEV;
++		goto exit;
 +	}
-+	return 0; /* make compiler happy */
-+}
++	context = usb_get_intfdata(interface);
 +
-+static void out(int offset, int value)
-+{
-+	switch (offset) {
-+	case LIRC_LP_BASE:
-+		parport_write_data(pport, value);
-+		break;
-+	case LIRC_LP_CONTROL:
-+		parport_write_control(pport, value);
-+		break;
-+	case LIRC_LP_STATUS:
-+		printk(KERN_INFO "%s: attempt to write to status register\n",
-+		       LIRC_DRIVER_NAME);
-+		break;
++	if (!context) {
++		err("%s: no context found for minor %d",
++					__func__, subminor);
++		retval = -ENODEV;
++		goto exit;
 +	}
-+}
 +
-+static unsigned int lirc_get_timer(void)
-+{
-+	return in(LIRC_PORT_TIMER) & LIRC_PORT_TIMER_BIT;
-+}
++	mutex_lock(&context->ctx_lock);
 +
-+static unsigned int lirc_get_signal(void)
-+{
-+	return in(LIRC_PORT_SIGNAL) & LIRC_PORT_SIGNAL_BIT;
-+}
-+
-+static void lirc_on(void)
-+{
-+	out(LIRC_PORT_DATA, tx_mask);
-+}
-+
-+static void lirc_off(void)
-+{
-+	out(LIRC_PORT_DATA, 0);
-+}
-+
-+static unsigned int init_lirc_timer(void)
-+{
-+	struct timeval tv, now;
-+	unsigned int level, newlevel, timeelapsed, newtimer;
-+	int count = 0;
-+
-+	do_gettimeofday(&tv);
-+	tv.tv_sec++;                     /* wait max. 1 sec. */
-+	level = lirc_get_timer();
-+	do {
-+		newlevel = lirc_get_timer();
-+		if (level == 0 && newlevel != 0)
-+			count++;
-+		level = newlevel;
-+		do_gettimeofday(&now);
-+	} while (count < 1000 && (now.tv_sec < tv.tv_sec
-+			     || (now.tv_sec == tv.tv_sec
-+				 && now.tv_usec < tv.tv_usec)));
-+
-+	timeelapsed = ((now.tv_sec + 1 - tv.tv_sec)*1000000
-+		     + (now.tv_usec - tv.tv_usec));
-+	if (count >= 1000 && timeelapsed > 0) {
-+		if (default_timer == 0) {
-+			/* autodetect timer */
-+			newtimer = (1000000*count)/timeelapsed;
-+			printk(KERN_INFO "%s: %u Hz timer detected\n",
-+			       LIRC_DRIVER_NAME, newtimer);
-+			return newtimer;
-+		}  else {
-+			newtimer = (1000000*count)/timeelapsed;
-+			if (abs(newtimer - default_timer) > default_timer/10) {
-+				/* bad timer */
-+				printk(KERN_NOTICE "%s: bad timer: %u Hz\n",
-+				       LIRC_DRIVER_NAME, newtimer);
-+				printk(KERN_NOTICE "%s: using default timer: "
-+				       "%u Hz\n",
-+				       LIRC_DRIVER_NAME, default_timer);
-+				return default_timer;
-+			} else {
-+				printk(KERN_INFO "%s: %u Hz timer detected\n",
-+				       LIRC_DRIVER_NAME, newtimer);
-+				return newtimer; /* use detected value */
-+			}
-+		}
++	if (context->vfd_isopen) {
++		err("%s: VFD port is already open", __func__);
++		retval = -EBUSY;
 +	} else {
-+		printk(KERN_NOTICE "%s: no timer detected\n", LIRC_DRIVER_NAME);
-+		return 0;
++		context->vfd_isopen = 1;
++		file->private_data = context;
++		printk(KERN_INFO "VFD port opened\n");
 +	}
++
++	mutex_unlock(&context->ctx_lock);
++
++exit:
++	mutex_unlock(&disconnect_lock);
++	return retval;
 +}
 +
-+static int lirc_claim(void)
++/**
++ * Called when the VFD device (e.g. /dev/usb/lcd)
++ * is closed by the application.
++ */
++static long vfd_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 +{
-+	if (parport_claim(ppdevice) != 0) {
-+		printk(KERN_WARNING "%s: could not claim port\n",
-+		       LIRC_DRIVER_NAME);
-+		printk(KERN_WARNING "%s: waiting for port becoming available"
-+		       "\n", LIRC_DRIVER_NAME);
-+		if (parport_claim_or_block(ppdevice) < 0) {
-+			printk(KERN_NOTICE "%s: could not claim port, giving"
-+			       " up\n", LIRC_DRIVER_NAME);
-+			return 0;
-+		}
-+	}
-+	out(LIRC_LP_CONTROL, LP_PSELECP|LP_PINITP);
-+	is_claimed = 1;
-+	return 1;
-+}
++	struct sasem_context *context = NULL;
 +
-+/*** interrupt handler ***/
++	context = (struct sasem_context *) file->private_data;
 +
-+static void rbuf_write(int signal)
-+{
-+	unsigned int nwptr;
-+
-+	nwptr = (wptr + 1) & (RBUF_SIZE - 1);
-+	if (nwptr == rptr) {
-+		/* no new signals will be accepted */
-+		lost_irqs++;
-+		printk(KERN_NOTICE "%s: buffer overrun\n", LIRC_DRIVER_NAME);
-+		return;
-+	}
-+	rbuf[wptr] = signal;
-+	wptr = nwptr;
-+}
-+
-+static void irq_handler(void *blah)
-+{
-+	struct timeval tv;
-+	static struct timeval lasttv;
-+	static int init;
-+	long signal;
-+	int data;
-+	unsigned int level, newlevel;
-+	unsigned int timeout;
-+
-+	if (!module_refcount(THIS_MODULE))
-+		return;
-+
-+	if (!is_claimed)
-+		return;
-+
-+#if 0
-+	/* disable interrupt */
-+	  disable_irq(irq);
-+	  out(LIRC_PORT_IRQ, in(LIRC_PORT_IRQ) & (~LP_PINTEN));
-+#endif
-+	if (check_pselecd && (in(1) & LP_PSELECD))
-+		return;
-+
-+#ifdef LIRC_TIMER
-+	if (init) {
-+		do_gettimeofday(&tv);
-+
-+		signal = tv.tv_sec - lasttv.tv_sec;
-+		if (signal > 15)
-+			/* really long time */
-+			data = PULSE_MASK;
-+		else
-+			data = (int) (signal*1000000 +
-+					 tv.tv_usec - lasttv.tv_usec +
-+					 LIRC_SFH506_DELAY);
-+
-+		rbuf_write(data); /* space */
-+	} else {
-+		if (timer == 0) {
-+			/*
-+			 * wake up; we'll lose this signal, but it will be
-+			 * garbage if the device is turned on anyway
-+			 */
-+			timer = init_lirc_timer();
-+			/* enable_irq(irq); */
-+			return;
-+		}
-+		init = 1;
++	if (!context) {
++		err("%s: no context for device", __func__);
++		return -ENODEV;
 +	}
 +
-+	timeout = timer/10;	/* timeout after 1/10 sec. */
-+	signal = 1;
-+	level = lirc_get_timer();
-+	do {
-+		newlevel = lirc_get_timer();
-+		if (level == 0 && newlevel != 0)
-+			signal++;
-+		level = newlevel;
-+
-+		/* giving up */
-+		if (signal > timeout
-+		    || (check_pselecd && (in(1) & LP_PSELECD))) {
-+			signal = 0;
-+			printk(KERN_NOTICE "%s: timeout\n", LIRC_DRIVER_NAME);
-+			break;
-+		}
-+	} while (lirc_get_signal());
-+
-+	if (signal != 0) {
-+		/* ajust value to usecs */
-+		unsigned long long helper;
-+
-+		helper = ((unsigned long long) signal)*1000000;
-+		do_div(helper, timer);
-+		signal = (long) helper;
-+
-+		if (signal > LIRC_SFH506_DELAY)
-+			data = signal - LIRC_SFH506_DELAY;
-+		else
-+			data = 1;
-+		rbuf_write(PULSE_BIT|data); /* pulse */
-+	}
-+	do_gettimeofday(&lasttv);
-+#else
-+	/* add your code here */
-+#endif
-+
-+	wake_up_interruptible(&lirc_wait);
-+
-+	/* enable interrupt */
-+	/*
-+	  enable_irq(irq);
-+	  out(LIRC_PORT_IRQ, in(LIRC_PORT_IRQ)|LP_PINTEN);
-+	*/
-+}
-+
-+/*** file operations ***/
-+
-+static loff_t lirc_lseek(struct file *filep, loff_t offset, int orig)
-+{
-+	return -ESPIPE;
-+}
-+
-+static ssize_t lirc_read(struct file *filep, char *buf, size_t n, loff_t *ppos)
-+{
-+	int result = 0;
-+	int count = 0;
-+	DECLARE_WAITQUEUE(wait, current);
-+
-+	if (n % sizeof(int))
-+		return -EINVAL;
-+
-+	add_wait_queue(&lirc_wait, &wait);
-+	set_current_state(TASK_INTERRUPTIBLE);
-+	while (count < n) {
-+		if (rptr != wptr) {
-+			if (copy_to_user(buf+count, (char *) &rbuf[rptr],
-+					 sizeof(int))) {
-+				result = -EFAULT;
-+				break;
-+			}
-+			rptr = (rptr + 1) & (RBUF_SIZE - 1);
-+			count += sizeof(int);
-+		} else {
-+			if (filep->f_flags & O_NONBLOCK) {
-+				result = -EAGAIN;
-+				break;
-+			}
-+			if (signal_pending(current)) {
-+				result = -ERESTARTSYS;
-+				break;
-+			}
-+			schedule();
-+			set_current_state(TASK_INTERRUPTIBLE);
-+		}
-+	}
-+	remove_wait_queue(&lirc_wait, &wait);
-+	set_current_state(TASK_RUNNING);
-+	return count ? count : result;
-+}
-+
-+static ssize_t lirc_write(struct file *filep, const char *buf, size_t n,
-+			  loff_t *ppos)
-+{
-+	int count;
-+	unsigned int i;
-+	unsigned int level, newlevel;
-+	unsigned long flags;
-+	int counttimer;
-+	int *wbuf;
-+
-+	if (!is_claimed)
-+		return -EBUSY;
-+
-+	count = n / sizeof(int);
-+
-+	if (n % sizeof(int) || count % 2 == 0)
-+		return -EINVAL;
-+
-+	wbuf = memdup_user(buf, n);
-+	if (IS_ERR(wbuf))
-+		return PTR_ERR(wbuf);
-+
-+#ifdef LIRC_TIMER
-+	if (timer == 0) {
-+		/* try again if device is ready */
-+		timer = init_lirc_timer();
-+		if (timer == 0)
-+			return -EIO;
-+	}
-+
-+	/* adjust values from usecs */
-+	for (i = 0; i < count; i++) {
-+		unsigned long long helper;
-+
-+		helper = ((unsigned long long) wbuf[i])*timer;
-+		do_div(helper, 1000000);
-+		wbuf[i] = (int) helper;
-+	}
-+
-+	local_irq_save(flags);
-+	i = 0;
-+	while (i < count) {
-+		level = lirc_get_timer();
-+		counttimer = 0;
-+		lirc_on();
-+		do {
-+			newlevel = lirc_get_timer();
-+			if (level == 0 && newlevel != 0)
-+				counttimer++;
-+			level = newlevel;
-+			if (check_pselecd && (in(1) & LP_PSELECD)) {
-+				lirc_off();
-+				local_irq_restore(flags);
-+				return -EIO;
-+			}
-+		} while (counttimer < wbuf[i]);
-+		i++;
-+
-+		lirc_off();
-+		if (i == count)
-+			break;
-+		counttimer = 0;
-+		do {
-+			newlevel = lirc_get_timer();
-+			if (level == 0 && newlevel != 0)
-+				counttimer++;
-+			level = newlevel;
-+			if (check_pselecd && (in(1) & LP_PSELECD)) {
-+				local_irq_restore(flags);
-+				return -EIO;
-+			}
-+		} while (counttimer < wbuf[i]);
-+		i++;
-+	}
-+	local_irq_restore(flags);
-+#else
-+	/* place code that handles write without external timer here */
-+#endif
-+	return n;
-+}
-+
-+static unsigned int lirc_poll(struct file *file, poll_table *wait)
-+{
-+	poll_wait(file, &lirc_wait, wait);
-+	if (rptr != wptr)
-+		return POLLIN | POLLRDNORM;
-+	return 0;
-+}
-+
-+static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
-+{
-+	int result;
-+	unsigned long features = LIRC_CAN_SET_TRANSMITTER_MASK |
-+				 LIRC_CAN_SEND_PULSE | LIRC_CAN_REC_MODE2;
-+	unsigned long mode;
-+	unsigned int ivalue;
++	mutex_lock(&context->ctx_lock);
 +
 +	switch (cmd) {
-+	case LIRC_GET_FEATURES:
-+		result = put_user(features, (unsigned long *) arg);
-+		if (result)
-+			return result;
-+		break;
-+	case LIRC_GET_SEND_MODE:
-+		result = put_user(LIRC_MODE_PULSE, (unsigned long *) arg);
-+		if (result)
-+			return result;
-+		break;
-+	case LIRC_GET_REC_MODE:
-+		result = put_user(LIRC_MODE_MODE2, (unsigned long *) arg);
-+		if (result)
-+			return result;
-+		break;
-+	case LIRC_SET_SEND_MODE:
-+		result = get_user(mode, (unsigned long *) arg);
-+		if (result)
-+			return result;
-+		if (mode != LIRC_MODE_PULSE)
-+			return -EINVAL;
-+		break;
-+	case LIRC_SET_REC_MODE:
-+		result = get_user(mode, (unsigned long *) arg);
-+		if (result)
-+			return result;
-+		if (mode != LIRC_MODE_MODE2)
-+			return -ENOSYS;
-+		break;
-+	case LIRC_SET_TRANSMITTER_MASK:
-+		result = get_user(ivalue, (unsigned int *) arg);
-+		if (result)
-+			return result;
-+		if ((ivalue & LIRC_PARALLEL_TRANSMITTER_MASK) != ivalue)
-+			return LIRC_PARALLEL_MAX_TRANSMITTERS;
-+		tx_mask = ivalue;
++	case IOCTL_LCD_CONTRAST:
++		if (arg > 1000)
++			arg = 1000;
++		context->vfd_contrast = (unsigned int)arg;
 +		break;
 +	default:
-+		return -ENOIOCTLCMD;
++		printk(KERN_INFO "Unknown IOCTL command\n");
++		mutex_unlock(&context->ctx_lock);
++		return -ENOIOCTLCMD;  /* not supported */
 +	}
++
++	mutex_unlock(&context->ctx_lock);
 +	return 0;
 +}
 +
-+static int lirc_open(struct inode *node, struct file *filep)
++/**
++ * Called when the VFD device (e.g. /dev/usb/lcd)
++ * is closed by the application.
++ */
++static int vfd_close(struct inode *inode, struct file *file)
 +{
-+	if (module_refcount(THIS_MODULE) || !lirc_claim())
-+		return -EBUSY;
++	struct sasem_context *context = NULL;
++	int retval = 0;
 +
-+	parport_enable_irq(pport);
++	context = (struct sasem_context *) file->private_data;
 +
-+	/* init read ptr */
-+	rptr = 0;
-+	wptr = 0;
-+	lost_irqs = 0;
-+
-+	is_open = 1;
-+	return 0;
-+}
-+
-+static int lirc_close(struct inode *node, struct file *filep)
-+{
-+	if (is_claimed) {
-+		is_claimed = 0;
-+		parport_release(ppdevice);
++	if (!context) {
++		err("%s: no context for device", __func__);
++		return -ENODEV;
 +	}
-+	is_open = 0;
-+	return 0;
-+}
 +
-+static struct file_operations lirc_fops = {
-+	.owner		= THIS_MODULE,
-+	.llseek		= lirc_lseek,
-+	.read		= lirc_read,
-+	.write		= lirc_write,
-+	.poll		= lirc_poll,
-+	.unlocked_ioctl	= lirc_ioctl,
-+	.open		= lirc_open,
-+	.release	= lirc_close
-+};
++	mutex_lock(&context->ctx_lock);
 +
-+static int set_use_inc(void *data)
-+{
-+	return 0;
-+}
++	if (!context->vfd_isopen) {
++		err("%s: VFD is not open", __func__);
++		retval = -EIO;
++	} else {
++		context->vfd_isopen = 0;
++		printk(KERN_INFO "VFD port closed\n");
++		if (!context->dev_present && !context->ir_isopen) {
 +
-+static void set_use_dec(void *data)
-+{
-+}
-+
-+static struct lirc_driver driver = {
-+       .name		= LIRC_DRIVER_NAME,
-+       .minor		= -1,
-+       .code_length	= 1,
-+       .sample_rate	= 0,
-+       .data		= NULL,
-+       .add_to_buf	= NULL,
-+       .set_use_inc	= set_use_inc,
-+       .set_use_dec	= set_use_dec,
-+       .fops		= &lirc_fops,
-+       .dev		= NULL,
-+       .owner		= THIS_MODULE,
-+};
-+
-+static int pf(void *handle);
-+static void kf(void *handle);
-+
-+static struct timer_list poll_timer;
-+static void poll_state(unsigned long ignored);
-+
-+static void poll_state(unsigned long ignored)
-+{
-+	printk(KERN_NOTICE "%s: time\n",
-+	       LIRC_DRIVER_NAME);
-+	del_timer(&poll_timer);
-+	if (is_claimed)
-+		return;
-+	kf(NULL);
-+	if (!is_claimed) {
-+		printk(KERN_NOTICE "%s: could not claim port, giving up\n",
-+		       LIRC_DRIVER_NAME);
-+		init_timer(&poll_timer);
-+		poll_timer.expires = jiffies + HZ;
-+		poll_timer.data = (unsigned long)current;
-+		poll_timer.function = poll_state;
-+		add_timer(&poll_timer);
++			/* Device disconnected before close and IR port is
++			 * not open. If IR port is open, context will be
++			 * deleted by ir_close. */
++			mutex_unlock(&context->ctx_lock);
++			delete_context(context);
++			return retval;
++		}
 +	}
++
++	mutex_unlock(&context->ctx_lock);
++	return retval;
 +}
 +
-+static int pf(void *handle)
++/**
++ * Sends a packet to the VFD.
++ */
++static int send_packet(struct sasem_context *context)
 +{
-+	parport_disable_irq(pport);
-+	is_claimed = 0;
++	unsigned int pipe;
++	int interval = 0;
++	int retval = 0;
++
++	pipe = usb_sndintpipe(context->dev,
++			context->tx_endpoint->bEndpointAddress);
++	interval = context->tx_endpoint->bInterval;
++
++	usb_fill_int_urb(context->tx_urb, context->dev, pipe,
++		context->usb_tx_buf, sizeof(context->usb_tx_buf),
++		usb_tx_callback, context, interval);
++
++	context->tx_urb->actual_length = 0;
++
++	init_completion(&context->tx.finished);
++	atomic_set(&(context->tx.busy), 1);
++
++	retval =  usb_submit_urb(context->tx_urb, GFP_KERNEL);
++	if (retval) {
++		atomic_set(&(context->tx.busy), 0);
++		err("%s: error submitting urb (%d)", __func__, retval);
++	} else {
++		/* Wait for transmission to complete (or abort) */
++		mutex_unlock(&context->ctx_lock);
++		wait_for_completion(&context->tx.finished);
++		mutex_lock(&context->ctx_lock);
++
++		retval = context->tx.status;
++		if (retval)
++			err("%s: packet tx failed (%d)", __func__, retval);
++	}
++
++	return retval;
++}
++
++/**
++ * Writes data to the VFD.  The Sasem VFD is 2x16 characters
++ * and requires data in 9 consecutive USB interrupt packets,
++ * each packet carrying 8 bytes.
++ */
++static ssize_t vfd_write(struct file *file, const char *buf,
++				size_t n_bytes, loff_t *pos)
++{
++	int i;
++	int retval = 0;
++	struct sasem_context *context;
++	int *data_buf;
++
++	context = (struct sasem_context *) file->private_data;
++	if (!context) {
++		err("%s: no context for device", __func__);
++		return -ENODEV;
++	}
++
++	mutex_lock(&context->ctx_lock);
++
++	if (!context->dev_present) {
++		err("%s: no Sasem device present", __func__);
++		retval = -ENODEV;
++		goto exit;
++	}
++
++	if (n_bytes <= 0 || n_bytes > SASEM_DATA_BUF_SZ) {
++		err("%s: invalid payload size", __func__);
++		retval = -EINVAL;
++		goto exit;
++	}
++
++	data_buf = memdup_user(buf, n_bytes);
++	if (PTR_ERR(data_buf))
++		return PTR_ERR(data_buf);
++
++	memcpy(context->tx.data_buf, data_buf, n_bytes);
++
++	/* Pad with spaces */
++	for (i = n_bytes; i < SASEM_DATA_BUF_SZ; ++i)
++		context->tx.data_buf[i] = ' ';
++
++	/* Nine 8 byte packets to be sent */
++	/* NOTE: "\x07\x01\0\0\0\0\0\0" or "\x0c\0\0\0\0\0\0\0"
++	 *       will clear the VFD */
++	for (i = 0; i < 9; i++) {
++		switch (i) {
++		case 0:
++			memcpy(context->usb_tx_buf, "\x07\0\0\0\0\0\0\0", 8);
++			context->usb_tx_buf[1] = (context->vfd_contrast) ?
++				(0x2B - (context->vfd_contrast - 1) / 250)
++				: 0x2B;
++			break;
++		case 1:
++			memcpy(context->usb_tx_buf, "\x09\x01\0\0\0\0\0\0", 8);
++			break;
++		case 2:
++			memcpy(context->usb_tx_buf, "\x0b\x01\0\0\0\0\0\0", 8);
++			break;
++		case 3:
++			memcpy(context->usb_tx_buf, context->tx.data_buf, 8);
++			break;
++		case 4:
++			memcpy(context->usb_tx_buf,
++			       context->tx.data_buf + 8, 8);
++			break;
++		case 5:
++			memcpy(context->usb_tx_buf, "\x09\x01\0\0\0\0\0\0", 8);
++			break;
++		case 6:
++			memcpy(context->usb_tx_buf, "\x0b\x02\0\0\0\0\0\0", 8);
++			break;
++		case 7:
++			memcpy(context->usb_tx_buf,
++			       context->tx.data_buf + 16, 8);
++			break;
++		case 8:
++			memcpy(context->usb_tx_buf,
++			       context->tx.data_buf + 24, 8);
++			break;
++		}
++		retval = send_packet(context);
++		if (retval) {
++
++			err("%s: send packet failed for packet #%d",
++					__func__, i);
++			goto exit;
++		}
++	}
++exit:
++
++	mutex_unlock(&context->ctx_lock);
++
++	return (!retval) ? n_bytes : retval;
++}
++
++/**
++ * Callback function for USB core API: transmit data
++ */
++static void usb_tx_callback(struct urb *urb)
++{
++	struct sasem_context *context;
++
++	if (!urb)
++		return;
++	context = (struct sasem_context *) urb->context;
++	if (!context)
++		return;
++
++	context->tx.status = urb->status;
++
++	/* notify waiters that write has finished */
++	atomic_set(&context->tx.busy, 0);
++	complete(&context->tx.finished);
++
++	return;
++}
++
++/**
++ * Called by lirc_dev when the application opens /dev/lirc
++ */
++static int ir_open(void *data)
++{
++	int retval = 0;
++	struct sasem_context *context;
++
++	/* prevent races with disconnect */
++	mutex_lock(&disconnect_lock);
++
++	context = (struct sasem_context *) data;
++
++	mutex_lock(&context->ctx_lock);
++
++	if (context->ir_isopen) {
++		err("%s: IR port is already open", __func__);
++		retval = -EBUSY;
++		goto exit;
++	}
++
++	usb_fill_int_urb(context->rx_urb, context->dev,
++		usb_rcvintpipe(context->dev,
++				context->rx_endpoint->bEndpointAddress),
++		context->usb_rx_buf, sizeof(context->usb_rx_buf),
++		usb_rx_callback, context, context->rx_endpoint->bInterval);
++
++	retval = usb_submit_urb(context->rx_urb, GFP_KERNEL);
++
++	if (retval)
++		err("%s: usb_submit_urb failed for ir_open (%d)",
++		    __func__, retval);
++	else {
++		context->ir_isopen = 1;
++		printk(KERN_INFO "IR port opened\n");
++	}
++
++exit:
++	mutex_unlock(&context->ctx_lock);
++
++	mutex_unlock(&disconnect_lock);
 +	return 0;
 +}
 +
-+static void kf(void *handle)
++/**
++ * Called by lirc_dev when the application closes /dev/lirc
++ */
++static void ir_close(void *data)
 +{
-+	if (!is_open)
++	struct sasem_context *context;
++
++	context = (struct sasem_context *)data;
++	if (!context) {
++		err("%s: no context for device", __func__);
 +		return;
-+	if (!lirc_claim())
++	}
++
++	mutex_lock(&context->ctx_lock);
++
++	usb_kill_urb(context->rx_urb);
++	context->ir_isopen = 0;
++	printk(KERN_INFO "IR port closed\n");
++
++	if (!context->dev_present) {
++
++		/*
++		 * Device disconnected while IR port was
++		 * still open. Driver was not deregistered
++		 * at disconnect time, so do it now.
++		 */
++		deregister_from_lirc(context);
++
++		if (!context->vfd_isopen) {
++
++			mutex_unlock(&context->ctx_lock);
++			delete_context(context);
++			return;
++		}
++		/* If VFD port is open, context will be deleted by vfd_close */
++	}
++
++	mutex_unlock(&context->ctx_lock);
++	return;
++}
++
++/**
++ * Process the incoming packet
++ */
++static void incoming_packet(struct sasem_context *context,
++				   struct urb *urb)
++{
++	int len = urb->actual_length;
++	unsigned char *buf = urb->transfer_buffer;
++	long ms;
++	struct timeval tv;
++
++	if (len != 8) {
++		printk(KERN_WARNING "%s: invalid incoming packet size (%d)\n",
++		     __func__, len);
 +		return;
-+	parport_enable_irq(pport);
-+	lirc_off();
-+	/* this is a bit annoying when you actually print...*/
++	}
++
++#ifdef DEBUG
++	int i;
++	for (i = 0; i < 8; ++i)
++		printk(KERN_INFO "%02x ", buf[i]);
++	printk(KERN_INFO "\n");
++#endif
++
 +	/*
-+	printk(KERN_INFO "%s: reclaimed port\n", LIRC_DRIVER_NAME);
-+	*/
++	 * Lirc could deal with the repeat code, but we really need to block it
++	 * if it arrives too late.  Otherwise we could repeat the wrong code.
++	 */
++
++	/* get the time since the last button press */
++	do_gettimeofday(&tv);
++	ms = (tv.tv_sec - context->presstime.tv_sec) * 1000 +
++	     (tv.tv_usec - context->presstime.tv_usec) / 1000;
++
++	if (memcmp(buf, "\x08\0\0\0\0\0\0\0", 8) == 0) {
++		/*
++		 * the repeat code is being sent, so we copy
++		 * the old code to LIRC
++		 */
++
++		/*
++		 * NOTE: Only if the last code was less than 250ms ago
++		 * - no one should be able to push another (undetected) button
++		 *   in that time and then get a false repeat of the previous
++		 *   press but it is long enough for a genuine repeat
++		 */
++		if ((ms < 250) && (context->codesaved != 0)) {
++			memcpy(buf, &context->lastcode, 8);
++			context->presstime.tv_sec = tv.tv_sec;
++			context->presstime.tv_usec = tv.tv_usec;
++		}
++	} else {
++		/* save the current valid code for repeats */
++		memcpy(&context->lastcode, buf, 8);
++		/*
++		 * set flag to signal a valid code was save;
++		 * just for safety reasons
++		 */
++		context->codesaved = 1;
++		context->presstime.tv_sec = tv.tv_sec;
++		context->presstime.tv_usec = tv.tv_usec;
++	}
++
++	lirc_buffer_write(context->driver->rbuf, buf);
++	wake_up(&context->driver->rbuf->wait_poll);
 +}
 +
-+/*** module initialization and cleanup ***/
-+
-+static int __init lirc_parallel_init(void)
++/**
++ * Callback function for USB core API: receive data
++ */
++static void usb_rx_callback(struct urb *urb)
 +{
-+	pport = parport_find_base(io);
-+	if (pport == NULL) {
-+		printk(KERN_NOTICE "%s: no port at %x found\n",
-+		       LIRC_DRIVER_NAME, io);
-+		return -ENXIO;
-+	}
-+	ppdevice = parport_register_device(pport, LIRC_DRIVER_NAME,
-+					   pf, kf, irq_handler, 0, NULL);
-+	parport_put_port(pport);
-+	if (ppdevice == NULL) {
-+		printk(KERN_NOTICE "%s: parport_register_device() failed\n",
-+		       LIRC_DRIVER_NAME);
-+		return -ENXIO;
-+	}
-+	if (parport_claim(ppdevice) != 0)
-+		goto skip_init;
-+	is_claimed = 1;
-+	out(LIRC_LP_CONTROL, LP_PSELECP|LP_PINITP);
++	struct sasem_context *context;
 +
-+#ifdef LIRC_TIMER
-+	if (debug)
-+		out(LIRC_PORT_DATA, tx_mask);
++	if (!urb)
++		return;
++	context = (struct sasem_context *) urb->context;
++	if (!context)
++		return;
 +
-+	timer = init_lirc_timer();
++	switch (urb->status) {
 +
-+#if 0	/* continue even if device is offline */
-+	if (timer == 0) {
-+		is_claimed = 0;
-+		parport_release(pport);
-+		parport_unregister_device(ppdevice);
-+		return -EIO;
++	case -ENOENT:		/* usbcore unlink successful! */
++		return;
++
++	case 0:
++		if (context->ir_isopen)
++			incoming_packet(context, urb);
++		break;
++
++	default:
++		printk(KERN_WARNING "%s: status (%d): ignored",
++			 __func__, urb->status);
++		break;
 +	}
 +
-+#endif
-+	if (debug)
-+		out(LIRC_PORT_DATA, 0);
-+#endif
++	usb_submit_urb(context->rx_urb, GFP_ATOMIC);
++	return;
++}
 +
-+	is_claimed = 0;
-+	parport_release(ppdevice);
-+ skip_init:
-+	driver.minor = lirc_register_driver(&driver);
-+	if (driver.minor < 0) {
-+		printk(KERN_NOTICE "%s: register_chrdev() failed\n",
-+		       LIRC_DRIVER_NAME);
-+		parport_unregister_device(ppdevice);
-+		return -EIO;
++
++
++/**
++ * Callback function for USB core API: Probe
++ */
++static int sasem_probe(struct usb_interface *interface,
++			const struct usb_device_id *id)
++{
++	struct usb_device *dev = NULL;
++	struct usb_host_interface *iface_desc = NULL;
++	struct usb_endpoint_descriptor *rx_endpoint = NULL;
++	struct usb_endpoint_descriptor *tx_endpoint = NULL;
++	struct urb *rx_urb = NULL;
++	struct urb *tx_urb = NULL;
++	struct lirc_driver *driver = NULL;
++	struct lirc_buffer *rbuf = NULL;
++	int lirc_minor = 0;
++	int num_endpoints;
++	int retval = 0;
++	int vfd_ep_found;
++	int ir_ep_found;
++	int alloc_status;
++	struct sasem_context *context = NULL;
++	int i;
++
++	printk(KERN_INFO "%s: found Sasem device\n", __func__);
++
++
++	dev = usb_get_dev(interface_to_usbdev(interface));
++	iface_desc = interface->cur_altsetting;
++	num_endpoints = iface_desc->desc.bNumEndpoints;
++
++	/*
++	 * Scan the endpoint list and set:
++	 *	first input endpoint = IR endpoint
++	 *	first output endpoint = VFD endpoint
++	 */
++
++	ir_ep_found = 0;
++	vfd_ep_found = 0;
++
++	for (i = 0; i < num_endpoints && !(ir_ep_found && vfd_ep_found); ++i) {
++
++		struct usb_endpoint_descriptor *ep;
++		int ep_dir;
++		int ep_type;
++		ep = &iface_desc->endpoint [i].desc;
++		ep_dir = ep->bEndpointAddress & USB_ENDPOINT_DIR_MASK;
++		ep_type = ep->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
++
++		if (!ir_ep_found &&
++			ep_dir == USB_DIR_IN &&
++			ep_type == USB_ENDPOINT_XFER_INT) {
++
++			rx_endpoint = ep;
++			ir_ep_found = 1;
++			if (debug)
++				printk(KERN_INFO "%s: found IR endpoint\n",
++				       __func__);
++
++		} else if (!vfd_ep_found &&
++			ep_dir == USB_DIR_OUT &&
++			ep_type == USB_ENDPOINT_XFER_INT) {
++
++			tx_endpoint = ep;
++			vfd_ep_found = 1;
++			if (debug)
++				printk(KERN_INFO "%s: found VFD endpoint\n",
++				       __func__);
++		}
 +	}
-+	printk(KERN_INFO "%s: installed using port 0x%04x irq %d\n",
-+	       LIRC_DRIVER_NAME, io, irq);
++
++	/* Input endpoint is mandatory */
++	if (!ir_ep_found) {
++
++		err("%s: no valid input (IR) endpoint found.", __func__);
++		retval = -ENODEV;
++		goto exit;
++	}
++
++	if (!vfd_ep_found)
++		printk(KERN_INFO "%s: no valid output (VFD) endpoint found.\n",
++		       __func__);
++
++
++	/* Allocate memory */
++	alloc_status = 0;
++
++	context = kzalloc(sizeof(struct sasem_context), GFP_KERNEL);
++	if (!context) {
++		err("%s: kzalloc failed for context", __func__);
++		alloc_status = 1;
++		goto alloc_status_switch;
++	}
++	driver = kzalloc(sizeof(struct lirc_driver), GFP_KERNEL);
++	if (!driver) {
++		err("%s: kzalloc failed for lirc_driver", __func__);
++		alloc_status = 2;
++		goto alloc_status_switch;
++	}
++	rbuf = kmalloc(sizeof(struct lirc_buffer), GFP_KERNEL);
++	if (!rbuf) {
++		err("%s: kmalloc failed for lirc_buffer", __func__);
++		alloc_status = 3;
++		goto alloc_status_switch;
++	}
++	if (lirc_buffer_init(rbuf, BUF_CHUNK_SIZE, BUF_SIZE)) {
++		err("%s: lirc_buffer_init failed", __func__);
++		alloc_status = 4;
++		goto alloc_status_switch;
++	}
++	rx_urb = usb_alloc_urb(0, GFP_KERNEL);
++	if (!rx_urb) {
++		err("%s: usb_alloc_urb failed for IR urb", __func__);
++		alloc_status = 5;
++		goto alloc_status_switch;
++	}
++	if (vfd_ep_found) {
++		tx_urb = usb_alloc_urb(0, GFP_KERNEL);
++		if (!tx_urb) {
++			err("%s: usb_alloc_urb failed for VFD urb",
++			    __func__);
++			alloc_status = 6;
++			goto alloc_status_switch;
++		}
++	}
++
++	mutex_init(&context->ctx_lock);
++
++	strcpy(driver->name, MOD_NAME);
++	driver->minor = -1;
++	driver->code_length = 64;
++	driver->sample_rate = 0;
++	driver->features = LIRC_CAN_REC_LIRCCODE;
++	driver->data = context;
++	driver->rbuf = rbuf;
++	driver->set_use_inc = ir_open;
++	driver->set_use_dec = ir_close;
++	driver->dev   = &interface->dev;
++	driver->owner = THIS_MODULE;
++
++	mutex_lock(&context->ctx_lock);
++
++	lirc_minor = lirc_register_driver(driver);
++	if (lirc_minor < 0) {
++		err("%s: lirc_register_driver failed", __func__);
++		alloc_status = 7;
++		mutex_unlock(&context->ctx_lock);
++	} else
++		printk(KERN_INFO "%s: Registered Sasem driver (minor:%d)\n",
++			__func__, lirc_minor);
++
++alloc_status_switch:
++
++	switch (alloc_status) {
++
++	case 7:
++		if (vfd_ep_found)
++			usb_free_urb(tx_urb);
++	case 6:
++		usb_free_urb(rx_urb);
++	case 5:
++		lirc_buffer_free(rbuf);
++	case 4:
++		kfree(rbuf);
++	case 3:
++		kfree(driver);
++	case 2:
++		kfree(context);
++		context = NULL;
++	case 1:
++		retval = -ENOMEM;
++		goto exit;
++	}
++
++	/* Needed while unregistering! */
++	driver->minor = lirc_minor;
++
++	context->dev = dev;
++	context->dev_present = 1;
++	context->rx_endpoint = rx_endpoint;
++	context->rx_urb = rx_urb;
++	if (vfd_ep_found) {
++		context->tx_endpoint = tx_endpoint;
++		context->tx_urb = tx_urb;
++		context->vfd_contrast = 1000;   /* range 0 - 1000 */
++	}
++	context->driver = driver;
++
++	usb_set_intfdata(interface, context);
++
++	if (vfd_ep_found) {
++
++		if (debug)
++			printk(KERN_INFO "Registering VFD with sysfs\n");
++		if (usb_register_dev(interface, &sasem_class))
++			/* Not a fatal error, so ignore */
++			printk(KERN_INFO "%s: could not get a minor number "
++			       "for VFD\n", __func__);
++	}
++
++	printk(KERN_INFO "%s: Sasem device on usb<%d:%d> initialized\n",
++			__func__, dev->bus->busnum, dev->devnum);
++
++	mutex_unlock(&context->ctx_lock);
++exit:
++	return retval;
++}
++
++/**
++ * Callback function for USB core API: disonnect
++ */
++static void sasem_disconnect(struct usb_interface *interface)
++{
++	struct sasem_context *context;
++
++	/* prevent races with ir_open()/vfd_open() */
++	mutex_lock(&disconnect_lock);
++
++	context = usb_get_intfdata(interface);
++	mutex_lock(&context->ctx_lock);
++
++	printk(KERN_INFO "%s: Sasem device disconnected\n", __func__);
++
++	usb_set_intfdata(interface, NULL);
++	context->dev_present = 0;
++
++	/* Stop reception */
++	usb_kill_urb(context->rx_urb);
++
++	/* Abort ongoing write */
++	if (atomic_read(&context->tx.busy)) {
++
++		usb_kill_urb(context->tx_urb);
++		wait_for_completion(&context->tx.finished);
++	}
++
++	/* De-register from lirc_dev if IR port is not open */
++	if (!context->ir_isopen)
++		deregister_from_lirc(context);
++
++	usb_deregister_dev(interface, &sasem_class);
++
++	mutex_unlock(&context->ctx_lock);
++
++	if (!context->ir_isopen && !context->vfd_isopen)
++		delete_context(context);
++
++	mutex_unlock(&disconnect_lock);
++}
++
++static int __init sasem_init(void)
++{
++	int rc;
++
++	printk(KERN_INFO MOD_DESC ", v" MOD_VERSION "\n");
++	printk(KERN_INFO MOD_AUTHOR "\n");
++
++	rc = usb_register(&sasem_driver);
++	if (rc < 0) {
++		err("%s: usb register failed (%d)", __func__, rc);
++		return -ENODEV;
++	}
 +	return 0;
 +}
 +
-+static void __exit lirc_parallel_exit(void)
++static void __exit sasem_exit(void)
 +{
-+	parport_unregister_device(ppdevice);
-+	lirc_unregister_driver(driver.minor);
++	usb_deregister(&sasem_driver);
++	printk(KERN_INFO "module removed. Goodbye!\n");
 +}
 +
-+module_init(lirc_parallel_init);
-+module_exit(lirc_parallel_exit);
 +
-+MODULE_DESCRIPTION("Infrared receiver driver for parallel ports.");
-+MODULE_AUTHOR("Christoph Bartelmus");
-+MODULE_LICENSE("GPL");
-+
-+module_param(io, int, S_IRUGO);
-+MODULE_PARM_DESC(io, "I/O address base (0x3bc, 0x378 or 0x278)");
-+
-+module_param(irq, int, S_IRUGO);
-+MODULE_PARM_DESC(irq, "Interrupt (7 or 5)");
-+
-+module_param(tx_mask, int, S_IRUGO);
-+MODULE_PARM_DESC(tx_maxk, "Transmitter mask (default: 0x01)");
-+
-+module_param(debug, bool, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(debug, "Enable debugging messages");
-+
-+module_param(check_pselecd, bool, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(debug, "Check for printer (default: 0)");
-diff --git a/drivers/staging/lirc/lirc_parallel.h b/drivers/staging/lirc/lirc_parallel.h
-new file mode 100644
-index 0000000..4bed6af
---- /dev/null
-+++ b/drivers/staging/lirc/lirc_parallel.h
-@@ -0,0 +1,26 @@
-+/* lirc_parallel.h */
-+
-+#ifndef _LIRC_PARALLEL_H
-+#define _LIRC_PARALLEL_H
-+
-+#include <linux/lp.h>
-+
-+#define LIRC_PORT_LEN 3
-+
-+#define LIRC_LP_BASE    0
-+#define LIRC_LP_STATUS  1
-+#define LIRC_LP_CONTROL 2
-+
-+#define LIRC_PORT_DATA           LIRC_LP_BASE    /* base */
-+#define LIRC_PORT_TIMER        LIRC_LP_STATUS    /* status port */
-+#define LIRC_PORT_TIMER_BIT          LP_PBUSY    /* busy signal */
-+#define LIRC_PORT_SIGNAL       LIRC_LP_STATUS    /* status port */
-+#define LIRC_PORT_SIGNAL_BIT          LP_PACK    /* ack signal */
-+#define LIRC_PORT_IRQ         LIRC_LP_CONTROL    /* control port */
-+
-+#define LIRC_SFH506_DELAY 0             /* delay t_phl in usecs */
-+
-+#define LIRC_PARALLEL_MAX_TRANSMITTERS 8
-+#define LIRC_PARALLEL_TRANSMITTER_MASK ((1<<LIRC_PARALLEL_MAX_TRANSMITTERS) - 1)
-+
-+#endif
++module_init(sasem_init);
++module_exit(sasem_exit);
 -- 
 1.7.1.1
 
