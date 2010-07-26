@@ -1,82 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab0GZPLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 11:11:46 -0400
-Received: from www17.your-server.de ([213.133.104.17]:36408 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260Ab0GZPLp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 11:11:45 -0400
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 2.6.35-rc6: S2R hangs + WARNING: at net/mac80211/scan.c
-Date: Mon, 26 Jul 2010 17:10:37 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6; KDE/4.4.5; i686; ; )
+	id S1754663Ab0GZPUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 11:20:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57326 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754396Ab0GZPUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 11:20:15 -0400
+Date: Mon, 26 Jul 2010 17:19:46 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] writeback: reduce calls to global_page_state in
+ balance_dirty_pages()
+Message-ID: <20100726151946.GH3280@quack.suse.cz>
+References: <20100711020656.340075560@intel.com>
+ <20100711021748.735126772@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007261710.38000.thomas@m3y3r.de>
-X-Authenticated-Sender: thomas@m3y3r.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100711021748.735126772@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-config can be found here: 
-https://bugzilla.kernel.org/show_bug.cgi?id=15673
+On Sun 11-07-10 10:06:58, Wu Fengguang wrote:
+> Reducing the number of times balance_dirty_pages calls global_page_state
+> reduces the cache references and so improves write performance on a
+> variety of workloads.
+> 
+> 'perf stats' of simple fio write tests shows the reduction in cache
+> access.  Where the test is fio 'write,mmap,600Mb,pre_read' on AMD
+> AthlonX2 with 3Gb memory (dirty_threshold approx 600 Mb) running each
+> test 10 times, dropping the fasted & slowest values then taking the
+> average & standard deviation
+> 
+> 		average (s.d.) in millions (10^6)
+> 2.6.31-rc8	648.6 (14.6)
+> +patch		620.1 (16.5)
+> 
+> Achieving this reduction is by dropping clip_bdi_dirty_limit as it
+> rereads the counters to apply the dirty_threshold and moving this check
+> up into balance_dirty_pages where it has already read the counters.
+> 
+> Also by rearrange the for loop to only contain one copy of the limit
+> tests allows the pdflush test after the loop to use the local copies of
+> the counters rather than rereading them.
+> 
+> In the common case with no throttling it now calls global_page_state 5
+> fewer times and bdi_stat 2 fewer.
+> 
+> Fengguang:
+> 
+> This patch slightly changes behavior by replacing clip_bdi_dirty_limit()
+> with the explicit check (nr_reclaimable + nr_writeback >= dirty_thresh)
+> to avoid exceeding the dirty limit. Since the bdi dirty limit is mostly
+> accurate we don't need to do routinely clip. A simple dirty limit check
+> would be enough.
+> 
+> The check is necessary because, in principle we should throttle
+> everything calling balance_dirty_pages() when we're over the total
+> limit, as said by Peter.
+> 
+> We now set and clear dirty_exceeded not only based on bdi dirty limits,
+> but also on the global dirty limits. This is a bit counterintuitive, but
+> the global limits are the ultimate goal and shall be always imposed.
+  Thinking about this again - what you did is rather big change for systems
+with more active BDIs. For example if I have two disks sda and sdb and
+write for some time to sda, then dirty limit for sdb gets scaled down.
+So when we start writing to sbd we'll heavily throttle the threads until
+the dirty limit for sdb ramps up regardless of how far are we to reach the
+global limit...
 
-1.) suspend to ram very often does not work in 2.6.35-rc6 (but sometimes it does work!).
-S2R very often results in a black screen with backlight on.
-a dmesg of a successful S2R cycle can be found in above bug report.
+> We may now start background writeback work based on outdated conditions.
+> That's safe because the bdi flush thread will (and have to) double check
+> the states. It reduces overall overheads because the test based on old
+> states still have good chance to be right.
 
-this is a regression against 2.6.34.x that did survive tens of S2R cycles.
-
-2.) Also I found this in dmesg:
-
-[16150.615478] ------------[ cut here ]------------
-[16150.615511] WARNING: at net/mac80211/scan.c:262 ieee80211_scan_completed+0x10c/0x190 [mac80211]()
-[16150.615516] Hardware name: Aspire 1810T
-[16150.615520] Modules linked in: tcp_lp fuse cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables ipv6 kvm_intel kvm uinput arc4 ecb snd_hda_codec_intelhdmi snd_hda_codec_realtek snd_hda_intel iwlagn iwlcore snd_hda_codec 
-snd_hwdep mac80211 snd_seq snd_seq_device snd_pcm snd_timer cfg80211 snd iTCO_wdt iTCO_vendor_support uvcvideo soundcore rfkill pcspkr wmi videodev v4l1_compat serio_raw joydev snd_page_alloc i2c_i801 sha256_generic aes_i586 aes_generic cbc dm_crypt [last 
-unloaded: scsi_wait_scan]
-[16150.615593] Pid: 870, comm: iwlagn Tainted: G          I 2.6.35-rc6 #112
-[16150.615598] Call Trace:
-[16150.615614]  [<c0430e42>] warn_slowpath_common+0x72/0xa0
-[16150.615631]  [<f9b06eac>] ? ieee80211_scan_completed+0x10c/0x190 [mac80211]
-[16150.615648]  [<f9b06eac>] ? ieee80211_scan_completed+0x10c/0x190 [mac80211]
-[16150.615657]  [<c0430e92>] warn_slowpath_null+0x22/0x30
-[16150.615673]  [<f9b06eac>] ieee80211_scan_completed+0x10c/0x190 [mac80211]
-[16150.615694]  [<f9bc3b44>] iwl_bg_scan_completed+0xd4/0x1b0 [iwlcore]
-[16150.615704]  [<c0445fd3>] worker_thread+0xf3/0x1f0
-[16150.615713]  [<c042c492>] ? finish_task_switch.clone.0+0x32/0xa0
-[16150.615731]  [<f9bc3a70>] ? iwl_bg_scan_completed+0x0/0x1b0 [iwlcore]
-[16150.615740]  [<c0449900>] ? autoremove_wake_function+0x0/0x40
-[16150.615748]  [<c0445ee0>] ? worker_thread+0x0/0x1f0
-[16150.615755]  [<c0449504>] kthread+0x74/0x80
-[16150.615762]  [<c0449490>] ? kthread+0x0/0x80
-[16150.615770]  [<c040347e>] kernel_thread_helper+0x6/0x10
-[16150.615775] ---[ end trace a7919e7f17c0a727 ]---
-[16150.615779] ------------[ cut here ]------------
-[16150.615797] WARNING: at net/mac80211/scan.c:265 ieee80211_scan_completed+0x181/0x190 [mac80211]()
-[16150.615802] Hardware name: Aspire 1810T
-[16150.615805] Modules linked in: tcp_lp fuse cpufreq_ondemand acpi_cpufreq mperf ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables ipv6 kvm_intel kvm uinput arc4 ecb snd_hda_codec_intelhdmi snd_hda_codec_realtek snd_hda_intel iwlagn iwlcore snd_hda_codec 
-snd_hwdep mac80211 snd_seq snd_seq_device snd_pcm snd_timer cfg80211 snd iTCO_wdt iTCO_vendor_support uvcvideo soundcore rfkill pcspkr wmi videodev v4l1_compat serio_raw joydev snd_page_alloc i2c_i801 sha256_generic aes_i586 aes_generic cbc dm_crypt [last 
-unloaded: scsi_wait_scan]
-[16150.615871] Pid: 870, comm: iwlagn Tainted: G        W I 2.6.35-rc6 #112
-[16150.615875] Call Trace:
-[16150.615884]  [<c0430e42>] warn_slowpath_common+0x72/0xa0
-[16150.615901]  [<f9b06f21>] ? ieee80211_scan_completed+0x181/0x190 [mac80211]
-[16150.615916]  [<f9b06f21>] ? ieee80211_scan_completed+0x181/0x190 [mac80211]
-[16150.615925]  [<c0430e92>] warn_slowpath_null+0x22/0x30
-[16150.615941]  [<f9b06f21>] ieee80211_scan_completed+0x181/0x190 [mac80211]
-[16150.615959]  [<f9bc3b44>] iwl_bg_scan_completed+0xd4/0x1b0 [iwlcore]
-[16150.615968]  [<c0445fd3>] worker_thread+0xf3/0x1f0
-[16150.615976]  [<c042c492>] ? finish_task_switch.clone.0+0x32/0xa0
-[16150.615995]  [<f9bc3a70>] ? iwl_bg_scan_completed+0x0/0x1b0 [iwlcore]
-[16150.616003]  [<c0449900>] ? autoremove_wake_function+0x0/0x40
-[16150.616011]  [<c0445ee0>] ? worker_thread+0x0/0x1f0
-[16150.616018]  [<c0449504>] kthread+0x74/0x80
-[16150.616024]  [<c0449490>] ? kthread+0x0/0x80
-[16150.616031]  [<c040347e>] kernel_thread_helper+0x6/0x10
-[16150.616037] ---[ end trace a7919e7f17c0a728 ]---
-[17435.271312] npviewer.bin[3805]: segfault at b492e04c ip b6ffb057 sp bff1be60 error 4 in libflashplayer.so[b6c5c000+b04000]
+									Honza
+> 
+> CC: Jan Kara <jack@suse.cz>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/page-writeback.c |   95 ++++++++++++++----------------------------
+>  1 file changed, 33 insertions(+), 62 deletions(-)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2010-07-11 08:42:14.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2010-07-11 08:44:49.000000000 +0800
+> @@ -253,32 +253,6 @@ static void bdi_writeout_fraction(struct
+>  	}
+>  }
+>  
+> -/*
+> - * Clip the earned share of dirty pages to that which is actually available.
+> - * This avoids exceeding the total dirty_limit when the floating averages
+> - * fluctuate too quickly.
+> - */
+> -static void clip_bdi_dirty_limit(struct backing_dev_info *bdi,
+> -		unsigned long dirty, unsigned long *pbdi_dirty)
+> -{
+> -	unsigned long avail_dirty;
+> -
+> -	avail_dirty = global_page_state(NR_FILE_DIRTY) +
+> -		 global_page_state(NR_WRITEBACK) +
+> -		 global_page_state(NR_UNSTABLE_NFS) +
+> -		 global_page_state(NR_WRITEBACK_TEMP);
+> -
+> -	if (avail_dirty < dirty)
+> -		avail_dirty = dirty - avail_dirty;
+> -	else
+> -		avail_dirty = 0;
+> -
+> -	avail_dirty += bdi_stat(bdi, BDI_RECLAIMABLE) +
+> -		bdi_stat(bdi, BDI_WRITEBACK);
+> -
+> -	*pbdi_dirty = min(*pbdi_dirty, avail_dirty);
+> -}
+> -
+>  static inline void task_dirties_fraction(struct task_struct *tsk,
+>  		long *numerator, long *denominator)
+>  {
+> @@ -469,7 +443,6 @@ get_dirty_limits(unsigned long *pbackgro
+>  			bdi_dirty = dirty * bdi->max_ratio / 100;
+>  
+>  		*pbdi_dirty = bdi_dirty;
+> -		clip_bdi_dirty_limit(bdi, dirty, pbdi_dirty);
+>  		task_dirty_limit(current, pbdi_dirty);
+>  	}
+>  }
+> @@ -491,7 +464,7 @@ static void balance_dirty_pages(struct a
+>  	unsigned long bdi_thresh;
+>  	unsigned long pages_written = 0;
+>  	unsigned long pause = 1;
+> -
+> +	int dirty_exceeded;
+>  	struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  
+>  	for (;;) {
+> @@ -510,10 +483,35 @@ static void balance_dirty_pages(struct a
+>  		nr_writeback = global_page_state(NR_WRITEBACK) +
+>  			       global_page_state(NR_WRITEBACK_TEMP);
+>  
+> -		bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
+> -		bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
+> +		/*
+> +		 * In order to avoid the stacked BDI deadlock we need
+> +		 * to ensure we accurately count the 'dirty' pages when
+> +		 * the threshold is low.
+> +		 *
+> +		 * Otherwise it would be possible to get thresh+n pages
+> +		 * reported dirty, even though there are thresh-m pages
+> +		 * actually dirty; with m+n sitting in the percpu
+> +		 * deltas.
+> +		 */
+> +		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
+> +			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
+> +			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
+> +		} else {
+> +			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
+> +			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
+> +		}
+> +
+> +		/*
+> +		 * The bdi thresh is somehow "soft" limit derived from the
+> +		 * global "hard" limit. The former helps to prevent heavy IO
+> +		 * bdi or process from holding back light ones; The latter is
+> +		 * the last resort safeguard.
+> +		 */
+> +		dirty_exceeded =
+> +			(bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh)
+> +			|| (nr_reclaimable + nr_writeback >= dirty_thresh);
+>  
+> -		if (bdi_nr_reclaimable + bdi_nr_writeback <= bdi_thresh)
+> +		if (!dirty_exceeded)
+>  			break;
+>  
+>  		/*
+> @@ -541,34 +539,10 @@ static void balance_dirty_pages(struct a
+>  		if (bdi_nr_reclaimable > bdi_thresh) {
+>  			writeback_inodes_wb(&bdi->wb, &wbc);
+>  			pages_written += write_chunk - wbc.nr_to_write;
+> -			get_dirty_limits(&background_thresh, &dirty_thresh,
+> -				       &bdi_thresh, bdi);
+>  			trace_wbc_balance_dirty_written(&wbc, bdi);
+> +			if (pages_written >= write_chunk)
+> +				break;		/* We've done our duty */
+>  		}
+> -
+> -		/*
+> -		 * In order to avoid the stacked BDI deadlock we need
+> -		 * to ensure we accurately count the 'dirty' pages when
+> -		 * the threshold is low.
+> -		 *
+> -		 * Otherwise it would be possible to get thresh+n pages
+> -		 * reported dirty, even though there are thresh-m pages
+> -		 * actually dirty; with m+n sitting in the percpu
+> -		 * deltas.
+> -		 */
+> -		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
+> -			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
+> -			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
+> -		} else if (bdi_nr_reclaimable) {
+> -			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
+> -			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
+> -		}
+> -
+> -		if (bdi_nr_reclaimable + bdi_nr_writeback <= bdi_thresh)
+> -			break;
+> -		if (pages_written >= write_chunk)
+> -			break;		/* We've done our duty */
+> -
+>  		trace_wbc_balance_dirty_wait(&wbc, bdi);
+>  		__set_current_state(TASK_INTERRUPTIBLE);
+>  		io_schedule_timeout(pause);
+> @@ -582,8 +556,7 @@ static void balance_dirty_pages(struct a
+>  			pause = HZ / 10;
+>  	}
+>  
+> -	if (bdi_nr_reclaimable + bdi_nr_writeback < bdi_thresh &&
+> -			bdi->dirty_exceeded)
+> +	if (!dirty_exceeded && bdi->dirty_exceeded)
+>  		bdi->dirty_exceeded = 0;
+>  
+>  	if (writeback_in_progress(bdi))
+> @@ -598,9 +571,7 @@ static void balance_dirty_pages(struct a
+>  	 * background_thresh, to keep the amount of dirty memory low.
+>  	 */
+>  	if ((laptop_mode && pages_written) ||
+> -	    (!laptop_mode && ((global_page_state(NR_FILE_DIRTY)
+> -			       + global_page_state(NR_UNSTABLE_NFS))
+> -					  > background_thresh)))
+> +	    (!laptop_mode && (nr_reclaimable > background_thresh)))
+>  		bdi_start_background_writeback(bdi);
+>  }
+>  
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
