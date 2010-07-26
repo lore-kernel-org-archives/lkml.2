@@ -1,127 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab0GZEMD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 00:12:03 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57882 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab0GZEMA convert rfc822-to-8bit (ORCPT
+	id S1751457Ab0GZEXS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 00:23:18 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:23589 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab0GZEXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 00:12:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GT3HQLECfQDdqxyphHNcwPZoW90dGiopjOaLKQU1Za1ep1rS6xfihmWYIXsfTZgPXp
-         mQTojsgNfKcH3422y+J5rgOMbo5c1FJBd7jm87bDe5NagSf1dRs4+4EIcvcsMvQXOdBr
-         DNdoS05RSUhHo6Vead8UbbQZcabBklp8JzRhQ=
+	Mon, 26 Jul 2010 00:23:15 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] acpi: fix apei related table size checking
+Date: Sun, 25 Jul 2010 22:23:32 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; i686; ; )
+Cc: Len Brown <lenb@kernel.org>, Huang Ying <ying.huang@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
+        Daniel J Blueman <daniel.blueman@gmail.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <4C49D3C5.4000007@kernel.org>
+In-Reply-To: <4C49D3C5.4000007@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100726032755.GB7668@localhost>
-References: <20100723094515.GD5043@localhost>
-	<20100723105719.GE5300@csn.ul.ie>
-	<20100725192955.40D5.A69D9226@jp.fujitsu.com>
-	<20100725120345.GA1817@barrios-desktop>
-	<20100726032755.GB7668@localhost>
-Date: Mon, 26 Jul 2010 13:11:59 +0900
-Message-ID: <AANLkTinL-K-Ky1NFWQPvH5XASj9MnZJicFtqDYhdje6R@mail.gmail.com>
-Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background 
-	writeback
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007252223.32671.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 12:27 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Sun, Jul 25, 2010 at 08:03:45PM +0800, Minchan Kim wrote:
->> On Sun, Jul 25, 2010 at 07:43:20PM +0900, KOSAKI Motohiro wrote:
->> > Hi
->> >
->> > sorry for the delay.
->> >
->> > > Will you be picking it up or should I? The changelog should be more or less
->> > > the same as yours and consider it
->> > >
->> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
->> > >
->> > > It'd be nice if the original tester is still knocking around and willing
->> > > to confirm the patch resolves his/her problem. I am running this patch on
->> > > my desktop at the moment and it does feel a little smoother but it might be
->> > > my imagination. I had trouble with odd stalls that I never pinned down and
->> > > was attributing to the machine being commonly heavily loaded but I haven't
->> > > noticed them today.
->> > >
->> > > It also needs an Acked-by or Reviewed-by from Kosaki Motohiro as it alters
->> > > logic he introduced in commit [78dc583: vmscan: low order lumpy reclaim also
->> > > should use PAGEOUT_IO_SYNC]
->> >
->> > My reviewing doesn't found any bug. however I think original thread have too many guess
->> > and we need to know reproduce way and confirm it.
->> >
->> > At least, we need three confirms.
->> >  o original issue is still there?
->> >  o DEF_PRIORITY/3 is best value?
->>
->> I agree. Wu, how do you determine DEF_PRIORITY/3 of LRU?
->> I guess system has 512M and 22M writeback pages.
->> So you may determine it for skipping max 32M writeback pages.
->> Is right?
->
-> For 512M mem, DEF_PRIORITY/3 means 32M dirty _or_ writeback pages.
-> Because shrink_inactive_list() first calls
-> shrink_page_list(PAGEOUT_IO_ASYNC) then optionally
-> shrink_page_list(PAGEOUT_IO_SYNC), so dirty pages will first be
-> converted to writeback pages and then optionally be waited on.
->
-> The dirty/writeback pages may go up to 512M*20% = 100M. So 32M looks
-> a reasonable value.
+On Friday, July 23, 2010 11:39:17 am Yinghai Lu wrote:
+> 
+> also check if we can find right action in apei.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Why do you think it's a reasonable value?
-I mean why isn't it good 12.5% or 3.125%? Why do you select 6.25%?
-I am not against you. Just out of curiosity and requires more explanation.
-It might be thing _only I_ don't know. :(
+This should be split into two patches that each fix one thing.
 
->
->> And I have a question of your below comment.
->>
->> "As the default dirty throttle ratio is 20%, sync write&wait
->> will hardly be triggered by pure dirty pages"
->>
->> I am not sure exactly what you mean but at least DEF_PRIOIRTY/3 seems to be
->> related to dirty_ratio. It always can be changed by admin.
->> Then do we have to determine magic value(DEF_PRIORITY/3)  proportional to dirty_ratio?
->
-> Yes DEF_PRIORITY/3 is already proportional to the _default_
-> dirty_ratio. We could do explicit comparison with dirty_ratio
-> just in case dirty_ratio get changed by user. It's mainly a question
-> of whether deserving to add such overheads and complexity. I'd prefer
-> to keep the current simple form :)
-
-What I suggest is that couldn't we use recent_writeback/recent_scanned ratio?
-I think scan_control's new filed and counting wouldn't be a big
-overhead and complexity.
-I am not sure which ratio is best. but at least, it would make the
-logic scalable and sense to me. :)
-
->
-> Thanks,
-> Fengguang
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+> ---
+>  drivers/acpi/apei/apei-base.c |    5 +++++
+>  drivers/acpi/apei/einj.c      |    3 ++-
+>  drivers/acpi/apei/erst.c      |    3 ++-
+>  3 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/drivers/acpi/apei/einj.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/apei/einj.c
+> +++ linux-2.6/drivers/acpi/apei/einj.c
+> @@ -426,7 +426,8 @@ DEFINE_SIMPLE_ATTRIBUTE(error_inject_fop
+>  
+>  static int einj_check_table(struct acpi_table_einj *einj_tab)
+>  {
+> -	if (einj_tab->header_length != sizeof(struct acpi_table_einj))
+> +	if (einj_tab->header_length !=
+> +	    (sizeof(struct acpi_table_einj) - sizeof(einj_tab->header)))
+>  		return -EINVAL;
+>  	if (einj_tab->header.length < sizeof(struct acpi_table_einj))
+>  		return -EINVAL;
+> Index: linux-2.6/drivers/acpi/apei/erst.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/apei/erst.c
+> +++ linux-2.6/drivers/acpi/apei/erst.c
+> @@ -749,7 +749,8 @@ __setup("erst_disable", setup_erst_disab
+>  
+>  static int erst_check_table(struct acpi_table_erst *erst_tab)
+>  {
+> -	if (erst_tab->header_length != sizeof(struct acpi_table_erst))
+> +	if (erst_tab->header_length !=
+> +	    (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
+>  		return -EINVAL;
+>  	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
+>  		return -EINVAL;
+> Index: linux-2.6/drivers/acpi/apei/apei-base.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/apei/apei-base.c
+> +++ linux-2.6/drivers/acpi/apei/apei-base.c
+> @@ -163,6 +163,7 @@ int apei_exec_run(struct apei_exec_conte
+>  	u32 i, ip;
+>  	struct acpi_whea_header *entry;
+>  	apei_exec_ins_func_t run;
+> +	bool found_action = false;
+>  
+>  	ctx->ip = 0;
+>  
+> @@ -178,6 +179,7 @@ rewind:
+>  		entry = &ctx->action_table[i];
+>  		if (entry->action != action)
+>  			continue;
+> +		found_action = true;
+>  		if (ip == ctx->ip) {
+>  			if (entry->instruction >= ctx->instructions ||
+>  			    !ctx->ins_table[entry->instruction].run) {
+> @@ -198,6 +200,9 @@ rewind:
+>  			goto rewind;
+>  	}
+>  
+> +	if (!found_action)
+> +		return -ENODEV;
+> +
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(apei_exec_run);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
