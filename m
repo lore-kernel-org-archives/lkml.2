@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab0GZWPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 18:15:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63050 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab0GZWPx (ORCPT
+	id S1755550Ab0GZWRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 18:17:23 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:59167 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab0GZWRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 18:15:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=wImAq2WV1mG01jyyE6hjWSg1mJHf0nNMQucv85C1hsfsZrf5gR4EhINeCLN4oLKiw6
-         BMoX8KYARMgHyHxc4/+2DhhVe2yFISxA9/A4gWH+tMwEc+HDKLZ+LRoyQZbxi88opJUU
-         /tj1yPhwjoKoLN8zDgZVcmKjez/Wa49AJtRrs=
+	Mon, 26 Jul 2010 18:17:21 -0400
+Date: Tue, 27 Jul 2010 00:17:17 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kbuild@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Francis Galiegue <fgaliegue@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andi Kleen <ak@linux.intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Nir Tzachar <nir.tzachar@gmail.com>,
+        Vadim Bendebury <vbendeb@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Cheng Renquan <crquan@gmail.com>, Trevor Keith <tsrk@tsrk.net>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC][PATCH] kconfig: implement select with values
+Message-ID: <20100726221717.GA22439@merkur.ravnborg.org>
+References: <20100720043706.3813715a.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20100726212543.GA5424@srcf.ucam.org>
-References: <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com> 
-	<1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> 
-	<20100619123841.GA31838@hash.localnet> <1276952554.3332.3.camel@maxim-laptop> 
-	<1276961564.5173.12.camel@maxim-laptop> <20100726201322.GI14855@tux> 
-	<1280177362.3721.7.camel@maxim-laptop> <20100726210651.GJ14855@tux> 
-	<1280179033.3721.15.camel@maxim-laptop> <20100726212543.GA5424@srcf.ucam.org>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Mon, 26 Jul 2010 15:15:32 -0700
-Message-ID: <AANLkTi=5_Dc8SumPi7cr8u7=DmnOHgSo6C76w9b0E4Kj@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH v3] ath5k: disable ASPM
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        David Quan <David.Quan@atheros.com>,
-        "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "tim.gardner@canonical.com" <tim.gardner@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100720043706.3813715a.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 2:25 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Tue, Jul 27, 2010 at 12:17:13AM +0300, Maxim Levitsky wrote:
->
->> However, it is possible, (and that what I asked you) that some ath5k
->> devices aren't 'pre 1.1 pcie devices' so linux won't disable ASPM L0s
->> for them.
->> So indeed for 'good feeling' it is ok to disable L0s from ath5k
->> explicitly, but most of the time (or always) it will be no-op.
->>
->> In *addition* to that, since you said that ASPM L1 *does* work, and is
->> enabled by BIOS, but linux disables it, that it might be worthy to
->> enable it again from ath5k driver explicitly.
->> As long as wireless works I don't really care if this done or not.
->
-> This may need to be done on a chip by chip basis. Take a look at
-> http://www.atheros.cz/inffile.php?inf=68&bit=32&atheros=AR5002G&system=4
-> and some of the other inf files on that site to see which devices
-> provide the PciASPMOptIn flag - those should support ASPM states even if
-> they're pre-1.1 devices.
+On Tue, Jul 20, 2010 at 04:37:06AM +1000, Stephen Rothwell wrote:
+> This is a fairly brute force approach to allowing a Kconfig "select"
+> to specify an excplicit value for the selected config sybmol.
+> 
+> The syntax of select is changed to:
+> 
+> 	"select" <symbol> [<expr>] ["if" expr]
+> 
+> The approach taken is to add a list of <value, dependency expression>
+> pairs to the symbol and check them whenever the reverse depends (from
+> a current-style select) are checked.
 
-I rather we not bother with these, lets simply follow the kernel's
-lead here for its rule matching.
+I do not see the need for this feature.
+I have read most of the postings in the defconfig battle and
+I saw Linus' select suggestion.
 
-  Luis
+But we can do almost all of this today (or tomorrow).
+
+Consider following Kconfig file:
+
+    config USB_SUPPORT
+            def_bool n
+
+    config NET
+            def_bool y
+
+    source arch/x86/Kconfig
+
+We use the feature that we can specify the same
+config option several times.
+And the first default value that is "visible"
+will be used.
+
+So it allows us to enable and disable any option.
+
+And if we for example want to set a specific LOG_BUF_SHIFT
+we use the same trick:
+
+    config LOG_BUF_SHIFT
+            int
+            default 14
+
+
+Now in the original suggestion of Linus he used:
+
+    KBUILD_KCONFIG=Mykconfig make allnoconfig
+
+And "allnoconfig" would make the modified defaults useless.
+
+But the soon-to-be-introduced alldefconfig is more sensible.
+
+alldefconfig uses default values for everything.
+
+So with alldefconfig I think we have all the features we need
+to create sensible default configs in the Kconfig language.
+
+And therefore I do not see the need for the extension to select.
+For the same reason I did not look closer at the implementation.
+
+	Sam
+
