@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0GZMjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 08:39:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35232 "EHLO mx1.suse.de"
+	id S1752807Ab0GZMj7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 08:39:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12461 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab0GZMjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 08:39:35 -0400
-Date: Mon, 26 Jul 2010 14:39:07 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1752658Ab0GZMj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 08:39:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,261,1278313200"; 
+   d="scan'208";a="589720006"
+Date: Mon, 26 Jul 2010 20:39:37 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
         Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
         Chris Mason <chris.mason@oracle.com>,
         Jens Axboe <jens.axboe@oracle.com>,
         LKML <linux-kernel@vger.kernel.org>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20100726123907.GG3280@quack.suse.cz>
+Subject: Re: [PATCH 5/6] writeback: try more writeback as long as something
+ was written
+Message-ID: <20100726123937.GB11947@localhost>
 References: <20100722050928.653312535@intel.com>
- <20100722061822.906037624@intel.com>
- <20100726105736.GM5300@csn.ul.ie>
- <20100726120011.GG6284@localhost>
- <20100726122054.GF3280@quack.suse.cz>
- <20100726123141.GA13146@localhost>
+ <20100722061823.050523298@intel.com>
+ <20100723173953.GB20540@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100726123141.GA13146@localhost>
+In-Reply-To: <20100723173953.GB20540@quack.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-07-10 20:31:41, Wu Fengguang wrote:
-> On Mon, Jul 26, 2010 at 08:20:54PM +0800, Jan Kara wrote:
-> > On Mon 26-07-10 20:00:11, Wu Fengguang wrote:
-> > > On Mon, Jul 26, 2010 at 06:57:37PM +0800, Mel Gorman wrote:
-> > > > On Thu, Jul 22, 2010 at 01:09:32PM +0800, Wu Fengguang wrote:
-> > > > > A background flush work may run for ever. So it's reasonable for it to
-> > > > > mimic the kupdate behavior of syncing old/expired inodes first.
-> > > > > 
-> > > > > The policy is
-> > > > > - enqueue all newly expired inodes at each queue_io() time
-> > > > > - retry with halfed expire interval until get some inodes to sync
-> > > > > 
-> > > > > CC: Jan Kara <jack@suse.cz>
-> > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > 
-> > > > Ok, intuitively this would appear to tie into pageout where we want
-> > > > older inodes to be cleaned first by background flushers to limit the
-> > > > number of dirty pages encountered by page reclaim. If this is accurate,
-> > > > it should be detailed in the changelog.
-> > > 
-> > > Good suggestion. I'll add these lines:
-> > > 
-> > > This is to help reduce the number of dirty pages encountered by page
-> > > reclaim, eg. the pageout() calls. Normally older inodes contain older
-> > > dirty pages, which are more close to the end of the LRU lists. So
-> >   Well, this kind of implicitely assumes that once page is written, it
-> > doesn't get accessed anymore, right?
-> 
-> No, this patch is not evicting the page :)
-  Sorry, I probably wasn't clear enough :) I meant: The claim that "older
-inodes contain older dirty pages, which are more close to the end of the
-LRU lists" assumes that once page is written it doesn't get accessed
-again. For example files which get continual random access (like DB files)
-can have rather old dirtied_when but some of their pages are accessed quite
-often...
+On Sat, Jul 24, 2010 at 01:39:54AM +0800, Jan Kara wrote:
+> On Thu 22-07-10 13:09:33, Wu Fengguang wrote:
+> > writeback_inodes_wb()/__writeback_inodes_sb() are not agressive in that
+> > they only populate b_io when necessary at entrance time. When the queued
+> > set of inodes are all synced, they just return, possibly with
+> > wbc.nr_to_write > 0.
+> > 
+> > For kupdate and background writeback, there may be more eligible inodes
+> > sitting in b_dirty when the current set of b_io inodes are completed. So
+> > it is necessary to try another round of writeback as long as we made some
+> > progress in this round. When there are no more eligible inodes, no more
+> > inodes will be enqueued in queue_io(), hence nothing could/will be
+> > synced and we may safely bail.
+> > 
+> > This will livelock sync when there are heavy dirtiers. However in that case
+> > sync will already be livelocked w/o this patch, as the current livelock
+> > avoidance code is virtually a no-op (for one thing, wb_time should be
+> > set statically at sync start time and be used in move_expired_inodes()).
+> > The sync livelock problem will be addressed in other patches.
+>   Hmm, any reason why you don't solve this problem by just removing the
+> condition before queue_io()? It would also make the logic simpler - always
 
-> > Which I imagine is often true but
-> > not for all workloads... Anyway I think this behavior is a good start
-> > also because it is kind of natural to users to see "old" files written
-> > first.
+Yeah I'll remove queue_io() in the coming sync livelock patchset.
+This patchset does the below. Though awkward, it avoids unnecessary
+behavior changes for non-background cases.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+-       if (!wbc->for_kupdate || list_empty(&wb->b_io))
++       if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
+                queue_io(wb, wbc);
+
+
+> queue all inodes that are eligible for writeback...
+
+Thanks,
+Fengguang
