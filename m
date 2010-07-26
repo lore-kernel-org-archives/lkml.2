@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab0GZSqH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 14:46:07 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:3817 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751809Ab0GZSqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 14:46:04 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGlzTUxXQa45/2dsb2JhbACfYHLDSw2FKQQ
-Date: Mon, 26 Jul 2010 20:46:02 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Viresh KUMAR <viresh.kumar@st.com>, armando.visconti@st.com,
-        shiraz.hashim@st.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH resend] Watchdog: Adding support for ARM Primecell
-	SP805 Watchdog
-Message-ID: <20100726184601.GS11857@infomag.iguana.be>
-References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com> <4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be> <4C285A72.7030303@st.com> <20100628162430.GN3788@infomag.iguana.be> <20100718193425.GD24707@n2100.arm.linux.org.uk>
+	id S1755046Ab0GZSwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 14:52:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54650 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632Ab0GZSwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 14:52:31 -0400
+Message-ID: <4C4DD946.2080502@kernel.org>
+Date: Mon, 26 Jul 2010 20:51:50 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100718193425.GD24707@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
+ kthread
+References: <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com> <4C48B664.9000109@kernel.org> <20100724191447.GA4972@redhat.com> <4C4BEAA2.6040301@kernel.org> <20100726152510.GA26223@redhat.com> <4C4DAB14.5050809@kernel.org> <20100726155014.GA26412@redhat.com> <4C4DB247.9060709@kernel.org> <4C4DB466.6000409@kernel.org> <20100726163108.GE26412@redhat.com>
+In-Reply-To: <20100726163108.GE26412@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Jul 2010 18:51:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hello,
 
-> > > Have you reviewed this patch or still need to look at it?
-> > 
-> > I'm chasing another bug and must admit I almost forgot about this one.
-> > So, yes, I still need to look at this one.
+On 07/26/2010 06:31 PM, Michael S. Tsirkin wrote:
+>> On 07/26/2010 06:05 PM, Tejun Heo wrote:
+>>> * Placing try_to_freeze() could be a bit annoying.  It shouldn't be
+>>>   executed when there's a work to flush.
 > 
-> Any news on this - its still sitting in the patch system since May 31st...
-> What do I do about it?
+> BTW why is this important?
+> We could always get another work and flush right after
+> try_to_freeze, and then flush would block for a long time.
+> 
+> BTW the vhost patch you sent does not do this at all.
+> I am guessing it is because our thread is not freezable?
 
-Patch looks OK. Will add it to my linux-2.6-watchdog-next tree this week.
+Yeap, I think so.
 
-Kind regards,
-Wim.
+>> * Similar issue exists for kthread_stop().  The kthread shouldn't exit
+>>   while there's a work to flush (please note that kthread_worker
+>>   interface allows detaching / attaching worker kthread during
+>>   operation, so it should remain in consistent state with regard to
+>>   flushing).
+> 
+> Not sure I agree here. Users must synchronise flush and stop calls.
+> Otherwise a work might get queued after stop is called, and
+> you won't be able to flush it.
 
+For freeze, it probably is okay but for stop, I think it's better to
+keep the semantics straight forward.  It may be okay to do otherwise
+but having such oddity in generic interface is nasty and may lead to
+surprises which can be pretty difficult to track down later on.  It's
+just a bit more of annoyance while writing the generic code, so...
+
+Thanks.
+
+-- 
+tejun
