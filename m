@@ -1,31 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab0GZTKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 15:10:14 -0400
-Received: from web82706.mail.mud.yahoo.com ([68.142.201.87]:46546 "HELO
-	web82706.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752235Ab0GZTKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 15:10:12 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
-  b=VvhiN5T5wurevg2ZUhaxkghvci5u0jueBsbMBeyN8GWIpkJ3adZI+gtNaPrsR0pWC1bVJ5AZAnKrMLizBN/D3FHoW4iGdG8N9t0McqqzhREST7jdGPo0ea5rcu01zGN3f8jYLsSegSNDkddh0GX+bP0SIca7VRH7tW+NR4R6fkQ=;
-Message-ID: <573697.93825.qm@web82706.mail.mud.yahoo.com>
-X-YMail-OSG: m7ILcVoVM1nFV0VNsk2xpMYHY.g3NeVn7I.VLoSllzaR7TE
- TWBujJYwTEf8VOk7RO1PpCXufZ6VmwEkz6qysb9h4cSfLO7r5YJZCgizQ7tQ
- TgaWNzWEBd8AuJQSsbCxapTxNj4Dkdz9wYf9DR43oLlF6mv5V7j4h.T3qSOb
- CbNe6dOB3W.nW.saT68_vaKBdOjNv.sMGuW2VSHF.kXwgYg835mapiYMwwso
- IgygrtxCwcDq.7.LKqAmi9AZvRpefLa2Rb1Uvl06SG64lZ9jjVdZNugzo
-X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.276605
-Date: Mon, 26 Jul 2010 12:10:07 -0700 (PDT)
-From: Janssens <tom-coffey@sbcglobal.net>
-To: undisclosed recipients:;
+	id S1755153Ab0GZTKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 15:10:37 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:43191 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755133Ab0GZTKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 15:10:35 -0400
+Message-ID: <4C4DDDA7.2000302@austin.ibm.com>
+Date: Mon, 26 Jul 2010 14:10:31 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
+Subject: Re: [PATCH 4/8] v3 Allow memory_block to span multiple memory sections
+References: <4C451BF5.50304@austin.ibm.com>	 <4C451E1C.8070907@austin.ibm.com> <1279653481.9785.4.camel@nimitz>
+In-Reply-To: <1279653481.9785.4.camel@nimitz>
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/20/2010 02:18 PM, Dave Hansen wrote:
+> On Mon, 2010-07-19 at 22:55 -0500, Nathan Fontenot wrote:
+>> +static int add_memory_section(int nid, struct mem_section *section,
+>> +                       unsigned long state, enum mem_add_context context)
+>> +{
+>> +       struct memory_block *mem;
+>> +       int ret = 0;
+>> +
+>> +       mem = find_memory_block(section);
+>> +       if (mem) {
+>> +               atomic_inc(&mem->section_count);
+>> +               kobject_put(&mem->sysdev.kobj);
+>> +       } else
+>> +               ret = init_memory_block(&mem, section, state);
+>> +
+>>         if (!ret) {
+>> -               if (context == HOTPLUG)
+>> +               if (context == HOTPLUG &&
+>> +                   atomic_read(&mem->section_count) == sections_per_block)
+>>                         ret = register_mem_sect_under_node(mem, nid);
+>>         } 
+> 
+> I think the atomic_inc() can race with the atomic_dec_and_test() in
+> remove_memory_block().
+> 
+> Thread 1 does:
+> 
+> 	mem = find_memory_block(section);
+> 
+> Thread 2 does 
+> 
+> 	atomic_dec_and_test(&mem->section_count);
+> 
+> and destroys the memory block,  Thread 1 runs again:
+> 	
+>        if (mem) {
+>                atomic_inc(&mem->section_count);
+>                kobject_put(&mem->sysdev.kobj);
+>        } else
+> 
+> but now mem got destroyed by Thread 2.  You probably need to change
+> find_memory_block() to itself take a reference, and to use
+> atomic_inc_unless().
+> 
 
-You have been Awarded 750,000.00 Pounds in the Toyota CASH SPLASH 2010. Send your. Name: Address:
+I'm not sure I like that for a couple of reasons.  I think there may still be a
+path through the find_memory_block() code that this race condition can occur.
+We could take a time sslice after the kobject_get and before getting the
+memory_block pointer.
+
+The second reason is that the node sysfs code calls find_memory_block() and it
+may be a bit kludgy to have callers of find_memory_block have to reduce the
+section_count after using it.
+
+With the way the memory_block structs are kept, retrieved via a kobject_get()
+call instead maintained on a local list, there may not be a solution that is
+foolproof without changing this.
+
+-Nathan 
+> -- Dave
+> 
+
