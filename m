@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab0GZVzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 17:55:23 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:17460 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab0GZVzW (ORCPT
+	id S1754902Ab0GZV5u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 17:57:50 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43010 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab0GZV5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 17:55:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=rmFKBYLz7Z03hxudCAV8QAfchvQu1IHIQp0mUlhhIreJCOpNxhCX4esrr+G6moNNC
-	Dj2LEMrBOD35N+muqcrPA==
+	Mon, 26 Jul 2010 17:57:49 -0400
+Date: Mon, 26 Jul 2010 22:57:07 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Corey Minyard <minyard@acm.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>, Myron Stowe <myron.stowe@hp.com>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Fix ACPI detecting with regspacing
+Message-ID: <20100726215707.GA6007@srcf.ucam.org>
+References: <4C4E0292.4010004@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100726212858.GA15904@suse.de>
-References: <20100722182638.GA12712@kroah.com>
-	<AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
-	<20100722183614.GA5443@suse.de>
-	<AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
-	<AANLkTimm9XGvK2H55V7N76JPU05iHk_dY5JjOLifQTsr@mail.gmail.com>
-	<AANLkTi=OMaKuk+ReeqCfBGes76BjKYyUdqxPOQfH8EcZ@mail.gmail.com>
-	<20100726212858.GA15904@suse.de>
-Date: Mon, 26 Jul 2010 14:55:18 -0700
-Message-ID: <AANLkTimmAfhw7WhPHHU6d4izkzvp2oxOSzNN8JjNu_nU@mail.gmail.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-From: Paul Menage <menage@google.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4E0292.4010004@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 2:28 PM, Greg KH <gregkh@suse.de> wrote:
->
-> Ok, again, after all of this, who is going to be applying this patch to
-> their tree for the .36 merge window?
+On Mon, Jul 26, 2010 at 02:48:02PM -0700, Yinghai Lu wrote:
+> 
+> after the commint that change ipmi_si detecting sequence from SMBIOS/ACPI to ACPI/SMBIOS,
+> 
+> | commit 754d453185275951d39792865927ec494fa1ebd8
+> | Author: Matthew Garrett <mjg@redhat.com>
+> | Date:   Wed May 26 14:43:47 2010 -0700
+> |
+> |    ipmi: change device discovery order
+> |
+> |    The ipmi spec provides an ordering for si discovery.  Change the driver to
+> |    match, with the exception of preferring smbios to SPMI as HPs (at least)
+> |    contain accurate information in the former but not the latter.
+> 
+> ipmi_si can not be initialized.
+> 
+> [  138.799739] calling  init_ipmi_devintf+0x0/0x109 @ 1
+> [  138.805050] ipmi device interface
+> [  138.818131] initcall init_ipmi_devintf+0x0/0x109 returned 0 after 12797 usecs
+> [  138.822998] calling  init_ipmi_si+0x0/0xa90 @ 1
+> [  138.840276] IPMI System Interface driver.
+> [  138.846137] ipmi_si: probing via ACPI
+> [  138.849225] ipmi_si 00:09: [io  0x0ca2] regsize 1 spacing 1 irq 0
+> [  138.864438] ipmi_si: Adding ACPI-specified kcs state machine
+> [  138.870893] ipmi_si: probing via SMBIOS
+> [  138.880945] ipmi_si: Adding SMBIOS-specified kcs state machineipmi_si: duplicate interface
+> [  138.896511] ipmi_si: probing via SPMI
+> [  138.899861] ipmi_si: Adding SPMI-specified kcs state machineipmi_si: duplicate interface
+> [  138.917095] ipmi_si: Trying ACPI-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+> [  138.928658] ipmi_si: Interface detection failed
+> [  138.953411] initcall init_ipmi_si+0x0/0xa90 returned 0 after 110847 usecs
+> 
+> in smbios has
+> DMI/SMBIOS
+> Handle 0x00C5, DMI type 38, 18 bytes
+> IPMI Device Information
+>         Interface Type: KCS (Keyboard Control Style)
+>         Specification Version: 2.0
+>         I2C Slave Address: 0x00
+>         NV Storage Device: Not Present
+>         Base Address: 0x0000000000000CA2 (I/O)
+>         Register Spacing: 32-bit Boundaries
+> in DSDT has
+>                     Device (BMC)
+>                     {
+> 
+>                         Name (_HID, EisaId ("IPI0001"))
+>                         Method (_STA, 0, NotSerialized)
+>                         {
+>                             If (LEqual (OSN, Zero))
+>                             {
+>                                 Return (Zero)
+>                             }
+> 
+>                             Return (0x0F)
+>                         }
+> 
+>                         Name (_STR, Unicode ("IPMI_KCS"))
+>                         Name (_UID, Zero)
+>                         Name (_CRS, ResourceTemplate ()
+>                         {
+>                             IO (Decode16,
+>                                 0x0CA2,             // Range Minimum
+>                                 0x0CA2,             // Range Maximum
+>                                 0x00,               // Alignment
+>                                 0x01,               // Length
+>                                 )
+>                             IO (Decode16,
+>                                 0x0CA6,             // Range Minimum
+>                                 0x0CA6,             // Range Maximum
+>                                 0x00,               // Alignment
+>                                 0x01,               // Length
+>                                 )
+>                         })
+>                         Method (_IFT, 0, NotSerialized)
+>                         {
+>                             Return (One)
+>                         }
+> 
+>                         Method (_SRV, 0, NotSerialized)
+>                         {
+>                             Return (0x0200)
+>                         }
+>                     }
+> so the reg spacing should be 4 instead of 1.
+> 
+> Try to calculate regspacing for this kind of system.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-There's no specific cgroups tree - cgroups patches generally go via akpm.
+Acked-by: Matthew Garrett <mjg@redhat.com>
 
->
-> Or should I apply it to my driver-core one?
->
-
-That sounds like an OK option too.
-
-Paul
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
