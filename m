@@ -1,37 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab0GZUgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:36:46 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57277 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab0GZUgp (ORCPT
+	id S1755298Ab0GZUhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:37:53 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44563 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab0GZUhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:36:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=RttOtAnWg9j8r4Vii/X/Q7MLRyRH3ml1uuRUW7lLREgtOf9fuZ5sYxPJkBeCgYbDGs
-         4cibG4gngkbwqQj/F56Tkuk1f/NyWRtITK1F1GD/HJQJxNr5IzGvpODoqiP4CdRTCH2a
-         VvEkAiIlMs3J6v3/PLiRS9p8QcANS70iLeiyE=
+	Mon, 26 Jul 2010 16:37:52 -0400
+Date: Mon, 26 Jul 2010 16:34:20 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC PATCH] sysrq: don't hold the sysrq_key_table_lock during
+ the handler
+Message-ID: <20100726203420.GB18789@hmsreliant.think-freely.org>
+References: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
+ <20100726105148.GB14198@hmsreliant.think-freely.org>
+ <20100726174153.GD14609@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1007231500180.2616@localhost.localdomain>
-References: <201007202223.o6KMNDZl021345@imap1.linux-foundation.org>
-	<alpine.LFD.2.00.1007231500180.2616@localhost.localdomain>
-Date: Mon, 26 Jul 2010 13:36:44 -0700
-Message-ID: <AANLkTimo29pr8=st+5TWt5xNExrFmE7SCk-ZHqeTgq43@mail.gmail.com>
-Subject: Re: [patch 1/3] hpet: factor timer allocate from open
-From: Mag <maglyx@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: akpm@linux-foundation.org, John Stultz <johnstul@us.ibm.com>,
-        clemens@ladisch.de, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726174153.GD14609@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 6:07 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> And how exactly does this patch provide such functionality ? There is
-> no interface which allows you to access the counter itself.
+On Mon, Jul 26, 2010 at 10:41:54AM -0700, Dmitry Torokhov wrote:
+> On Mon, Jul 26, 2010 at 06:51:48AM -0400, Neil Horman wrote:
+> > On Mon, Jul 26, 2010 at 05:54:02PM +0800, Xiaotian Feng wrote:
+> > > sysrq_key_table_lock is used to protect the sysrq_key_table, make sure
+> > > we get/replace the right operation for the sysrq. But in __handle_sysrq,
+> > > kernel will hold this lock and disable irqs until we finished op_p->handler().
+> > > This may cause false positive watchdog alert when we're doing "show-task-states"
+> > > on a system with many tasks.
+> > > 
+> > > Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> > > Cc: Ingo Molnar <mingo@elte.hu>
+> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Cc: Neil Horman <nhorman@tuxdriver.com>
+> > > Cc: "David S. Miller" <davem@davemloft.net>
+> > > ---
+> > >  drivers/char/sysrq.c |    4 +++-
+> > >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+> > > index 878ac0c..0856e2e 100644
+> > > --- a/drivers/char/sysrq.c
+> > > +++ b/drivers/char/sysrq.c
+> > > @@ -520,9 +520,11 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
+> > >  		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
+> > >  			printk("%s\n", op_p->action_msg);
+> > >  			console_loglevel = orig_log_level;
+> > > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > >  			op_p->handler(key, tty);
+> > >  		} else {
+> > >  			printk("This sysrq operation is disabled.\n");
+> > > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > >  		}
+> > >  	} else {
+> > >  		printk("HELP : ");
+> > > @@ -541,8 +543,8 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
+> > >  		}
+> > >  		printk("\n");
+> > >  		console_loglevel = orig_log_level;
+> > > +		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > >  	}
+> > > -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > >  }
+> > >  
+> > >  void handle_sysrq(int key, struct tty_struct *tty)
+> > > -- 
+> > > 1.7.2
+> > > 
+> > > 
+> > 
+> > This creates the possibility of a race in the handler.  Not that it happens
+> > often, but sysrq keys can be registered and unregistered dynamically.  If that
+> > lock isn't held while we call the keys handler, the code implementing that
+> > handler can live in a module that gets removed while its executing, leading to
+> > an oops, etc.  I think the better solution would be to use an rcu lock here.
+> 
+> I'd simply changed spinlock to a mutex.
+> 
+I don't think you can do that safely in this path, as sysrqs will be looked up
+in both process (echo t > /proc/sysrq-trigger) context and in interrupt
+(alt-sysrq-t) context.  If a mutex is locked and you try to take it in interrupt
+context, you get a sleeping-in-interrupt panic IIRC
 
-Yes there is, mmap allows you access the registers.
+Neil
+
+> -- 
+> Dmitry
+> 
