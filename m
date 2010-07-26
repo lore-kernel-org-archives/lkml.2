@@ -1,239 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab0GZNDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 09:03:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14846 "EHLO mga03.intel.com"
+	id S1753540Ab0GZNEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 09:04:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36967 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753205Ab0GZNDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 09:03:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,261,1278313200"; 
-   d="scan'208";a="304366468"
-Date: Mon, 26 Jul 2010 21:03:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-ID: <20100726130304.GD11947@localhost>
-References: <20100719221420.GA16031@cmpxchg.org>
- <20100720134555.GU13117@csn.ul.ie>
- <20100720220218.GE16031@cmpxchg.org>
- <20100721115250.GX13117@csn.ul.ie>
- <20100721130435.GH16031@cmpxchg.org>
- <20100721133857.GY13117@csn.ul.ie>
- <20100726082935.GC13076@localhost>
- <20100726091227.GF5300@csn.ul.ie>
- <20100726111952.GA6284@localhost>
- <20100726125326.GR5300@csn.ul.ie>
+	id S1753373Ab0GZNEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 09:04:47 -0400
+Message-ID: <4C4D87D2.3090805@suse.cz>
+Date: Mon, 26 Jul 2010 15:04:18 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100726125326.GR5300@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Mikael Pettersson <mikpe@it.uu.se>,
+        Robert Nelson <robertcnelson@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: Build with -fno-dwarf2-cfi-asm
+References: <1278710019-3667-1-git-send-email-mmarek@suse.cz> <19512.28505.216012.603468@pilspetsen.it.uu.se>
+In-Reply-To: <19512.28505.216012.603468@pilspetsen.it.uu.se>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 08:53:26PM +0800, Mel Gorman wrote:
-> On Mon, Jul 26, 2010 at 07:19:53PM +0800, Wu Fengguang wrote:
-> > On Mon, Jul 26, 2010 at 05:12:27PM +0800, Mel Gorman wrote:
-> > > On Mon, Jul 26, 2010 at 04:29:35PM +0800, Wu Fengguang wrote:
-> > > > > ==== CUT HERE ====
-> > > > > vmscan: Do not writeback filesystem pages in direct reclaim
-> > > > > 
-> > > > > When memory is under enough pressure, a process may enter direct
-> > > > > reclaim to free pages in the same manner kswapd does. If a dirty page is
-> > > > > encountered during the scan, this page is written to backing storage using
-> > > > > mapping->writepage. This can result in very deep call stacks, particularly
-> > > > > if the target storage or filesystem are complex. It has already been observed
-> > > > > on XFS that the stack overflows but the problem is not XFS-specific.
-> > > > > 
-> > > > > This patch prevents direct reclaim writing back filesystem pages by checking
-> > > > > if current is kswapd or the page is anonymous before writing back.  If the
-> > > > > dirty pages cannot be written back, they are placed back on the LRU lists
-> > > > > for either background writing by the BDI threads or kswapd. If in direct
-> > > > > lumpy reclaim and dirty pages are encountered, the process will stall for
-> > > > > the background flusher before trying to reclaim the pages again.
-> > > > > 
-> > > > > As the call-chain for writing anonymous pages is not expected to be deep
-> > > > > and they are not cleaned by flusher threads, anonymous pages are still
-> > > > > written back in direct reclaim.
-> > > > 
-> > > > This is also a good step towards reducing pageout() calls. For better
-> > > > IO performance the flusher threads should take more work from pageout().
-> > > > 
-> > > 
-> > > This is true for better IO performance all right but reclaim does require
-> > > specific pages cleaned. The strict requirement is when lumpy reclaim is
-> > > involved but a looser requirement is when any pages within a zone be cleaned.
-> > 
-> > Good point, I missed the lumpy reclaim requirement. It seems necessary
-> > to add a call to the flusher thread to writeback a specific inode range
-> > (that contains the current dirty page). This is a more reliable way to
-> > ensure both the strict and looser requirements: the current dirty page
-> > will guaranteed to be synced, and the inode will have good opportunity 
-> > to contain more dirty pages in the zone, which can be freed quickly if
-> > tagged PG_reclaim.
-> > 
+On 10.7.2010 15:02, Mikael Pettersson wrote:
+> Michal Marek writes:
+>  > Commit d0679c7 restricted this workaround to powerpc only, but it turns
+>  > out that ARM needs it as well. Fixes
+>  > https://bugzilla.kernel.org/show_bug.cgi?id=16310 .
+>  > 
+>  > Reported-and-Tested-by: Robert Nelson <robertcnelson@gmail.com>
+>  > Signed-off-by: Michal Marek <mmarek@suse.cz>
+>  > ---
+>  >  arch/arm/Makefile |    5 +++++
+>  >  1 files changed, 5 insertions(+), 0 deletions(-)
+>  > 
+>  > diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+>  > index 64ba313..862d4ba 100644
+>  > --- a/arch/arm/Makefile
+>  > +++ b/arch/arm/Makefile
+>  > @@ -21,6 +21,11 @@ GZFLAGS		:=-9
+>  >  # Explicitly specifiy 32-bit ARM ISA since toolchain default can be -mthumb:
+>  >  KBUILD_CFLAGS	+=$(call cc-option,-marm,)
+>  >  
+>  > +# FIXME: the module load should be taught about the additional relocs
+>  > +# generated by this.
+>  > +# revert to pre-gcc-4.4 behaviour of .eh_frame
+>  > +KBUILD_CFLAGS	+= $(call cc-option,-fno-dwarf2-cfi-asm)
 > 
-> I'm not sure about an inode range. The window being considered is quite small
-> and we might select ranges that are too small to be useful.  However, taking
+> Appears related to gcc PR40521, which should be fixed in gcc-4.4.3,
+> though it may have been re-broken in gcc-4.5.0 for in a corner case
+> <http://gcc.gnu.org/bugzilla/show_bug.cgi?id=40521#c24> that may or
+> may not apply to the kernel.  There's also a related binutils issue.
+> 
+> The above fix seems appropriate, but the FIXME comment seems wrong:
+> this is about getting the right kind of exception unwind tables in
+> the entire kernel, not just relocs in modules.
+> 
+> The comment should just say:
+> # Never generate .eh_frame:
+> 
+> So for the fix without the comment part:
+> 
+> Acked-by: Mikael Pettersson <mikpe@it.uu.se>
 
-We don't need to pass the range. We only pass the page offset, and let
-the flusher thread select the approach range that covers our target page.
+Hi Russell,
 
-This guarantees the target page will be served.
-
-> the inodes into account makes sense. If wakeup_flusher_thread took a list
-> of unique inodes that own dirty pages encountered by reclaim, it would then
-> move inodes to the head of the queue rather than depending just on expired.
-
-The flusher thread may internally queue all older inodes than this one for IO. 
-But sure it'd better serve the target inode first to avoid adding delays.
-
-> 
-> > > > > <SNIP>
-> > > > >
-> > > > > @@ -1293,26 +1308,34 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
-> > > > > 
-> > > > >         spin_unlock_irq(&zone->lru_lock);
-> > > > > 
-> > > > > -       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-> > > > > +       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
-> > > > > +                                                               &nr_dirty);
-> > > > > 
-> > > > >         /*
-> > > > > -        * If we are direct reclaiming for contiguous pages and we do
-> > > > > +        * If specific pages are needed such as with direct reclaiming
-> > > > > +        * for contiguous pages or for memory containers and we do
-> > > > >          * not reclaim everything in the list, try again and wait
-> > > > > -        * for IO to complete. This will stall high-order allocations
-> > > > > -        * but that should be acceptable to the caller
-> > > > > +        * for IO to complete. This will stall callers that require
-> > > > > +        * specific pages but it should be acceptable to the caller
-> > > > >          */
-> > > > > -       if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
-> > > > > -                       sc->lumpy_reclaim_mode) {
-> > > > > -               congestion_wait(BLK_RW_ASYNC, HZ/10);
-> > > > > +       if (sc->may_writepage && !current_is_kswapd() &&
-> > > > > +                       (sc->lumpy_reclaim_mode || sc->mem_cgroup)) {
-> > > > > +               int dirty_retry = MAX_SWAP_CLEAN_WAIT;
-> > > > > 
-> > > > > -               /*
-> > > > > -                * The attempt at page out may have made some
-> > > > > -                * of the pages active, mark them inactive again.
-> > > > > -                */
-> > > > > -               nr_active = clear_active_flags(&page_list, NULL);
-> > > > > -               count_vm_events(PGDEACTIVATE, nr_active);
-> > > > > +               while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
-> > > > > +                       wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
-> > > > > +                       congestion_wait(BLK_RW_ASYNC, HZ/10);
-> > > > 
-> > > > It needs good luck for the flusher threads to "happen to" sync the
-> > > > dirty pages in our page_list.
-> > > 
-> > > That is why I'm expecting the "shrink oldest inode" patchset to help. It
-> > > still requires a certain amount of luck but callers that encounter dirty
-> > > pages will be delayed.
-> > > 
-> > > It's also because a certain amount of luck is required that the last patch
-> > > in the series aims at reducing the number of dirty pages encountered by
-> > > reclaim. The closer that is to 0, the less important the timing of flusher
-> > > threads is.
-> > 
-> > OK.
-> > 
-> > > > I'd rather take the logic as "there are
-> > > > too many dirty pages, shrink them to avoid some future pageout() calls
-> > > > and/or congestion_wait() stalls".
-> > > > 
-> > > 
-> > > What do you mean by shrink them? They cannot be reclaimed until they are
-> > > clean.
-> > 
-> > I mean we are freeing much more than nr_dirty pages. In this sense we
-> > are shrinking the number of dirty pages. Note that we are calling
-> > wakeup_flusher_threads(nr_dirty), however the real synced pages will
-> > be much more than nr_dirty, that is reasonable good behavior.
-> > 
-> 
-> Ok.
-> 
-> > > > So the loop is likely to repeat MAX_SWAP_CLEAN_WAIT times.  Let's remove it?
-> > > > 
-> > > 
-> > > This loop only applies to direct reclaimers in lumpy reclaim mode and
-> > > memory containers. Both need specific pages to be cleaned and freed.
-> > > Hence, the loop is to stall them and wait on flusher threads up to a
-> > > point. Otherwise they can cause a reclaim storm of clean pages that
-> > > can't be used.
-> > 
-> > Agreed. We could call the flusher to sync the inode explicitly, as
-> > recommended above. This will clean and free (with PG_reclaim) the page
-> > in seconds. With reasonable waits here we may avoid reclaim storm
-> > effectively.
-> > 
-> 
-> I'll follow this suggestion as a new patch.
-> 
-> > > Current tests have not indicated MAX_SWAP_CLEAN_WAIT is regularly reached
-> > > but I am inferring this from timing data rather than a direct measurement.
-> > > 
-> > > > > -               nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-> > > > > +                       /*
-> > > > > +                        * The attempt at page out may have made some
-> > > > > +                        * of the pages active, mark them inactive again.
-> > > > > +                        */
-> > > > > +                       nr_active = clear_active_flags(&page_list, NULL);
-> > > > > +                       count_vm_events(PGDEACTIVATE, nr_active);
-> > > > > +
-> > > > > +                       nr_reclaimed += shrink_page_list(&page_list, sc,
-> > > > > +                                               PAGEOUT_IO_SYNC, &nr_dirty);
-> > > > 
-> > > > This shrink_page_list() won't be called at all if nr_dirty==0 and
-> > > > pageout() was called. This is a change of behavior. It can also be
-> > > > fixed by removing the loop.
-> > > > 
-> > > 
-> > > The whole patch is a change of behaviour but in this case it also makes
-> > > sense to focus on just the dirty pages. The first shrink_page_list
-> > > decided that the pages could not be unmapped and reclaimed - probably
-> > > because it was referenced. This is not likely to change during the loop.
-> > 
-> > Agreed.
-> > 
-> > > Testing with a version of the patch that processed the full list added
-> > > significant stalls when sync writeback was involved. Testing time length
-> > > was tripled in one case implying that this loop was continually reaching
-> > > MAX_SWAP_CLEAN_WAIT.
-> > 
-> > I'm OK with the change actually, this removes one not-that-user-friendly
-> > wait_on_page_writeback().
-> > 
-> > > The intention of this loop is "wait on dirty pages to be cleaned" and
-> > > it's a change of behaviour, but one that makes sense and testing
-> > > indicates it's a good idea.
-> > 
-> > I mean, this loop may be unwinded. And we may need another loop to
-> > sync the inodes that contains the dirty pages.
-> > 
-> 
-> I'm not quite sure what you mean here but I think it might tie into the
-> idea of passing a list of inodes to the flusher threads. Lets see what
-> that ends up looking like.
-
-OK.
+should I resend the patch with the comment by Mikael?
 
 Thanks,
-Fengguang
+Michal
