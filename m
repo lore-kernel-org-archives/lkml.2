@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab0GYX5Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 19:57:16 -0400
-Received: from 9.204-13-211.reverse.enterhost.com ([204.13.211.9]:4640 "EHLO
-	mail.rapidpat.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751438Ab0GYX5P (ORCPT
+	id S1752955Ab0GZAFz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 20:05:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48787
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752787Ab0GZAFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 19:57:15 -0400
-X-Greylist: delayed 991 seconds by postgrey-1.27 at vger.kernel.org; Sun, 25 Jul 2010 19:57:14 EDT
-From: "info@rapidpat.com" <info@rapidpat.com>
-Subject: Re: Property inquiry
-Date: Sun, 25 Jul 2010 19:29:18 -0400
-Reply-To: captjstoner@gmail.com
-Message-ID: <1ec09a49$52c0b9d4$52c55bdb$@com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Sun, 25 Jul 2010 20:05:53 -0400
+Date: Sun, 25 Jul 2010 17:06:11 -0700 (PDT)
+Message-Id: <20100725.170611.71132252.davem@davemloft.net>
+To: bhavesh@vmware.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.35-rc1] net-next: Fix an overflow bug in vmxnet3 Tx
+ descriptor
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100725004329.GB6680@bhavesh-lx1.eng.vmware.com>
+References: <20100725004329.GB6680@bhavesh-lx1.eng.vmware.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [41.138.170.251]
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Bhavesh Davda <bhavesh@vmware.com>
+Date: Sat, 24 Jul 2010 17:43:29 -0700
 
+> ---
 
-Hello,
+If you put the "---" there are the beginning of your message,
+the whole commit message is discarded by GIT.
 
-I am Capt. Jeremy and I would like to buy a Property in your country.
+I said you should put "---" at the end of the commit message,
+when you want to add more side commentary that should not appear
+in the commit message but is for people in this thread to read.
 
-Can you be of any assistance to me?
+I fixed this up when adding your patch, but I have no idea why
+you did this.  Please don't do it again.
 
-You can write me on my Email address: captjstoner@gmail.com
+> Fix an overflow bug in vmxnet3 Tx descriptor
+> 
+> This patch fixes a bug where a 16K buffer on a Tx descriptor was overflowing
+> into the 'gen' bit in the descriptor thereby corrupting the descriptor and
+> stalling the transmit ring.
+> 
+> Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
+> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+> Signed-off-by: Matthew Delco <delcoM@vmware.com>
+> Signed-off-by: Ronghua Zhang <ronghua@vmware.com>
 
-Waiting for your response ASAP.
-
-Best Regards,
-Capt. Jeremy.
-
+Applied, thanks.
