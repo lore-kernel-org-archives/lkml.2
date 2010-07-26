@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab0GZNRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 09:17:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41930 "EHLO mx1.redhat.com"
+	id S1753579Ab0GZNWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 09:22:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6598 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913Ab0GZNRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 09:17:47 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq-iosched: don't allow aliased requests to starve  others
-References: <x49zkxuaymb.fsf@segfault.boston.devel.redhat.com>
-	<20100724080459.GA6500@fancy-poultry.org> <4C4ABA55.2000204@kernel.dk>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 26 Jul 2010 09:17:38 -0400
-In-Reply-To: <4C4ABA55.2000204@kernel.dk> (Jens Axboe's message of "Sat, 24
-	Jul 2010 12:03:01 +0200")
-Message-ID: <x49iq42gz65.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751418Ab0GZNWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 09:22:49 -0400
+Message-ID: <4C4D8C25.8040704@redhat.com>
+Date: Mon, 26 Jul 2010 15:22:45 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Nils Radtke <lkml@Think-Future.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: cryptsetup + lvm on usb disk, unusable /dev/dm-* after suspend/resume
+  cycle
+References: <20100725160641.GK31966@localhost> <4C4CA601.6020201@redhat.com> <20100726130605.GL31966@localhost>
+In-Reply-To: <20100726130605.GL31966@localhost>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <axboe@kernel.dk> writes:
+On 07/26/2010 03:06 PM, Nils Radtke wrote:
+> That's what I tried and failed gloriously. I'm trying to revive my memory about the 
+> situation: fs could be unmounted, however, the cryptsetup luksClose failed (IRC) and 
+> therefore the dmsetup remove consequently failed also.
 
-> On 07/24/2010 10:04 AM, Heinz Diehl wrote:
->> On 14.07.2010, Jeff Moyer wrote: 
->> 
->>> Comments, as always, are welcome.
->> 
->> This patch, applied to 2.6.35-rc6, increases desktop interactivity
->> _NOTICEABLY_ on my quadcore machine, and the machine stays rock-stable.
->> I have now tested this patch with the latest 2.6.35-rc kernels over 
->> 1 week.
->> 
->> Unfortunately, I can't provide some testing results which makes this
->> statement more objective, but I'll do some synthetic testing in the next
->> days.
->
-> It is extremely unlikely that this patch will have any impact on
-> "normal" workloads. To even hit a code path where it would make a
-> difference, you would need to use O_DIRECT IO, otherwise you cannot have
-> aliases in the IO scheduler.
+So instead of "cryptsetup luksClose" use dmsetup remove for crypt device too
+(There was a bug in some version of cryptsetup which failed close if underlying device
+disappeared, should be fixed in >=1.1.2, anyway "dmsetup remove" is low-level equivalent.)
 
-I agree that it shouldn't help normal workloads at all.  I do think
-there is one other case where you can get aliases: doing I/O both
-through the file system and the underlying device.  However, that's
-obviously a bad idea (and maybe open_bdev_exclusive will keep that from
-happening?).
+Also see man page and "dmsetup remove -f" flag.
 
-Cheers,
-Jeff
+The usb device reinitialization is separate problem, maybe someone can help if you provide
+more logs.
+
+Milan
