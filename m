@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0GZUZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:25:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab0GZUZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:25:29 -0400
-Date: Mon, 26 Jul 2010 23:19:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
- per-vhost kthread
-Message-ID: <20100726201907.GF27644@redhat.com>
-References: <20100722155840.GA1743@redhat.com>
- <4C48B664.9000109@kernel.org>
- <20100724191447.GA4972@redhat.com>
- <4C4BEAA2.6040301@kernel.org>
- <20100726152510.GA26223@redhat.com>
- <4C4DAB14.5050809@kernel.org>
- <20100726155014.GA26412@redhat.com>
- <4C4DB247.9060709@kernel.org>
- <20100726162346.GD26412@redhat.com>
- <4C4DDC31.9070206@kernel.org>
+	id S1755262Ab0GZU2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:28:33 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:49558 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918Ab0GZU2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 16:28:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=om4saOtENo+3wsptRWI8AGjrIX1Xi5YiML4OuOuORMLkbHz/WcsKfwkx90ejlPMxk/
+         8SsOWG8+0nR332mfkvgvceX8R2XbACrn2p7r9wPnKDBLlqHSlBSQK3wKtwylMY2cJZCD
+         FqcHE3QRyeCyfAN0xgcCw4Qgf933nn8/fGHVQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4DDC31.9070206@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Mon, 26 Jul 2010 13:28:28 -0700
+Message-ID: <AANLkTi=zMuMaRtM8R7TLC8Y82aN7Fbc__E=NOK6_6TzH@mail.gmail.com>
+Subject: Perle SX card support
+From: "Paul G. Allen" <pgallen@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 09:04:17PM +0200, Tejun Heo wrote:
-> On 07/26/2010 06:23 PM, Michael S. Tsirkin wrote:
-> >> * Can you please keep the outer goto repeat loop?  I just don't like
-> >>   outermost for (;;).
-> > 
-> > Okay ... can we put the code in a {} scope to make it clear
-> > where does the loop starts and ends?
-> 
-> If we're gonna do that, it would be better to put it inside a loop
-> construct.  The reason why I don't like it is that loops like that
-> don't really help read/writeability much while indenting the whole
-> logic unnecessarily and look more like a result of obsession against
-> goto rather than any practical reason.  It's just a cosmetic
-> preference and I might as well be the weirdo here, so if you feel
-> strong about it, please feel free to put everything in a loop.
-> 
-> >> * Placing try_to_freeze() could be a bit annoying.  It shouldn't be
-> >>   executed when there's a work to flush.
-> > 
-> > It currently seems to be executed when there is work to flush.
-> > Is this wrong?
-> 
-> Oh, does it?  As I wrote in the other mail, things like that wouldn't
-> necessarily break correctness but I think it would be better to avoid
-> surprises in the generic code if not too difficult.
+I am running CentOS 5.5 with kernel 2.6.18-194-EL-PAE-i686. I have a
+Perle SX card in the box that works on the same box in Windows XP
+(though the serial ports randomly stop working on occasion, which
+seems to happen no matter what serial IO device I use in XP), but it
+will not work in Linux. I see that the driver is supposedly included
+in the kernel, but we can't seem to get it to work.
 
-Let's try to define what do we want to achieve then.
-Do you want code that flushes workers not to block
-when workers are frozen? How will we handle work
-submitted when worker is frozen?
+Will this card work at all with kernel 2.6.18-194 or 2.6.18-194.8.1?
+If so, what do we need to do to get it working?
 
+TIA,
 
-> >> * I think A - B <= 0 test would be more familiar.  At least
-> >>   time_before/after() are implemented that way.
-> > 
-> > I am concerned that this overflows a signed integer -
-> > which I seem to remeber that C99 disallows.
-> 
-> Really?  Overflows of pointer isn't expected and that's why we have
-> weird RELOC_HIDE() macro for such calculations but integers not
-> expected to overflow is a news to me.  Are you sure?  That basically
-> means time_before/after() aren't safe either.
-
-As I said, in C99.
-However,  the kernel is built with -fno-strict-overflow, so it will work.
-
-> > timer macros are on data path so might be worth the risk there,
-> > but flush is slow path so better be safe?
-> 
-> I don't think performance matters much here.  I just think the sign
-> test is clearer / more familiar for the logic.
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+PGA
+-- 
+Paul G. Allen, BSIT/SE
+Owner, Sr. Engineer
+Random Logic Consulting
+www.randomlogic.net
