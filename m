@@ -1,48 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab0GZTPS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 15:15:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57100 "EHLO hera.kernel.org"
+	id S1754109Ab0GZTRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 15:17:21 -0400
+Received: from kroah.org ([198.145.64.141]:45682 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754752Ab0GZTPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 15:15:15 -0400
-Message-ID: <4C4DDE7E.8030406@kernel.org>
-Date: Mon, 26 Jul 2010 21:14:06 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
- kthread
-References: <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com> <4C48B664.9000109@kernel.org> <20100724191447.GA4972@redhat.com> <4C4BEAA2.6040301@kernel.org> <20100726152510.GA26223@redhat.com> <4C4DAB14.5050809@kernel.org> <20100726155014.GA26412@redhat.com> <4C4DB247.9060709@kernel.org> <4C4DB466.6000409@kernel.org> <20100726165114.GA27353@redhat.com>
-In-Reply-To: <20100726165114.GA27353@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Jul 2010 19:14:08 +0000 (UTC)
+	id S1751418Ab0GZTRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 15:17:20 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Huewe <peterhuewe@gmx.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 1/1] serial: fix rs485 for atmel_serial on avr32
+Date: Mon, 26 Jul 2010 12:17:17 -0700
+Message-Id: <1280171837-13049-1-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100726190900.GB12683@kroah.com>
+References: <20100726190900.GB12683@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2010 06:51 PM, Michael S. Tsirkin wrote:
-> On Mon, Jul 26, 2010 at 06:14:30PM +0200, Tejun Heo wrote:
->> Just one more thing.
-> 
-> I noticed that with vhost, flush_work was getting the worker
-> pointer as well. Can we live with this API change?
+From: Peter Huewe <peterhuewe@gmx.de>
 
-Yeah, the flushing mechanism wouldn't work reliably if the work is
-queued to a different worker without flushing, so yeah passing in
-@worker might actually be better.
+This patch fixes a build failure [1-4] in the atmel_serial code introduced by
+patch the patch ARM: 6092/1: atmel_serial: support for RS485
+communications (e8faff7330a3501eafc9bfe5f4f15af444be29f5)
 
-Thanks.
+The build failure was caused by missing struct field and missing defines
+for the avr32 board - the patch fixes this.
 
+[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2575242/ - first failure in linux-next, may 11th
+[2] http://kisskb.ellerman.id.au/kisskb/buildresult/2816418/ - still exists as of today
+[3] http://kisskb.ellerman.id.au/kisskb/buildresult/2617511/ - first failure in Linus' tree - May 20th - did really no one notice this?!
+[4] http://kisskb.ellerman.id.au/kisskb/buildresult/2813956/ - still exists in Linus' tree as of today
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ arch/avr32/include/asm/ioctls.h             |    3 +++
+ arch/avr32/mach-at32ap/include/mach/board.h |    2 ++
+ drivers/serial/atmel_serial.c               |    1 +
+ 3 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/avr32/include/asm/ioctls.h b/arch/avr32/include/asm/ioctls.h
+index 0cf2c0a..e6ac0b6 100644
+--- a/arch/avr32/include/asm/ioctls.h
++++ b/arch/avr32/include/asm/ioctls.h
+@@ -54,6 +54,9 @@
+ #define TIOCGPTN	_IOR('T',0x30, unsigned int) /* Get Pty Number (of pty-mux device) */
+ #define TIOCSPTLCK	_IOW('T',0x31, int)  /* Lock/unlock Pty */
+ 
++#define TIOCGRS485      0x542E
++#define TIOCSRS485      0x542F
++
+ #define FIONCLEX	0x5450
+ #define FIOCLEX		0x5451
+ #define FIOASYNC	0x5452
+diff --git a/arch/avr32/mach-at32ap/include/mach/board.h b/arch/avr32/mach-at32ap/include/mach/board.h
+index c7f25bb..6174020 100644
+--- a/arch/avr32/mach-at32ap/include/mach/board.h
++++ b/arch/avr32/mach-at32ap/include/mach/board.h
+@@ -5,6 +5,7 @@
+ #define __ASM_ARCH_BOARD_H
+ 
+ #include <linux/types.h>
++#include <linux/serial.h>
+ 
+ #define GPIO_PIN_NONE	(-1)
+ 
+@@ -35,6 +36,7 @@ struct atmel_uart_data {
+ 	short		use_dma_tx;	/* use transmit DMA? */
+ 	short		use_dma_rx;	/* use receive DMA? */
+ 	void __iomem	*regs;		/* virtual base address, if any */
++	struct serial_rs485	rs485;		/* rs485 settings */
+ };
+ void at32_map_usart(unsigned int hw_id, unsigned int line, int flags);
+ struct platform_device *at32_add_device_usart(unsigned int id);
+diff --git a/drivers/serial/atmel_serial.c b/drivers/serial/atmel_serial.c
+index eed3c2d..a182def 100644
+--- a/drivers/serial/atmel_serial.c
++++ b/drivers/serial/atmel_serial.c
+@@ -41,6 +41,7 @@
+ #include <linux/uaccess.h>
+ 
+ #include <asm/io.h>
++#include <asm/ioctls.h>
+ 
+ #include <asm/mach/serial_at91.h>
+ #include <mach/board.h>
 -- 
-tejun
+1.7.2
+
