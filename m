@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab0GZPXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 11:23:06 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:48823 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754396Ab0GZPXA (ORCPT
+	id S1754756Ab0GZP0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 11:26:45 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:54275 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753918Ab0GZP0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 11:23:00 -0400
-X-Sasl-enc: FgoQKJ+HuaeSoaSZVVZUc4hyWKAsWk+7RBfCPFfgqq1J 1280157776
-Subject: Re: [PATCH 1/6] Add a dentry op to handle automounting rather than
- abusing follow_link() [ver #2]
-From: Ian Kent <raven@themaw.net>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <9168.1280153997@redhat.com>
-References: <1279944664.2944.8.camel@localhost>
-	 <20100722175847.5552.11520.stgit@warthog.procyon.org.uk>
-	 <17723.1279897759@redhat.com>  <9168.1280153997@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Jul 2010 23:22:48 +0800
-Message-ID: <1280157768.3569.14.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Mon, 26 Jul 2010 11:26:44 -0400
+Date: Mon, 26 Jul 2010 11:23:15 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, vgoyal@redhat.com,
+        hbabu@us.ibm.com, benh@kernel.crashing.org, paulus@samba.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] powerpc: Add vmcoreinfo symbols to allow makdumpfile to
+ filter core files properly
+Message-ID: <20100726152315.GA18789@hmsreliant.think-freely.org>
+References: <20100713134609.GA14514@hmsreliant.think-freely.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713134609.GA14514@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-26 at 15:19 +0100, David Howells wrote:
-> Ian Kent <raven@themaw.net> wrote:
+On Tue, Jul 13, 2010 at 09:46:09AM -0400, Neil Horman wrote:
+> Hey all-
+> 	About 2 years ago now, I sent this patch upstream to allow makedumpfile
+> to properly filter cores on ppc64:
+> http://www.mail-archive.com/kexec@lists.infradead.org/msg02426.html
+> It got acks from the kexec folks so I pulled it into RHEL, but I never checked
+> back here to make sure it ever made it in, which apparently it didn't.  It still
+> needs to be included, so I'm reposting it here, making sure to copy all the ppc
+> folks this time.  I've retested it on the latest linus kernel and it works fine,
+> allowing makedumpfile to find all the symbols it needs to properly strip a
+> vmcore on ppc64.
 > 
-> > >  (4) Stops pathwalk at the automount point and returns that point in the fs
-> > >      tree if it decides not to automount rather than reporting ELOOP (see its
-> > >      use of EXDEV for this).
+> Neil
 > 
-> Does it make autofs easier if d_op->d_automount() is allowed to return -EXDEV
-> to request this?  Then you can return it in Oz mode to allow the daemon to
-> see/use the underlying mountpoint without recursing back into d_automount().
-
-Yes, it's really useful.
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> 
+Ping, anyone want to chime in on this, its needed for dump filtering to work
+properly on ppc64
+Neil
 
 > 
-> Ideally, the daemon would use AT_NO_AUTOMOUNT, but there's no way to pass that
-> to sys_mount() or sys_umount().
-
-The use of EXDEV, and if we had a way of saying we want a negative
-dentry to trigger a mount, allows this mechanism to work for autofs
-without any user space changes for direct and indirect mounts, at least
-to match the current function.
-
-Having said that though I've only just begun to test the various cases.
-
-I know this was originally meant to deal with just the follow_link abuse
-but the approach as it is appears to be able to resolve a long standing
-deadlock bug autofs has with indirect mounts and affords a huge amount
-of simplification to the autofs module code. I really hope we can work
-out a suitable way to change the implementation to allow for negative
-dentrys to trigger mounts. Of course it's quite possible I'll hit a snag
-during testing but I hope not as I've spent a lot of time on alternate
-approaches in the last few years.
-
-Ian
-
+>  machine_kexec.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> 
+> diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
+> index bb3d893..0df7031 100644
+> --- a/arch/powerpc/kernel/machine_kexec.c
+> +++ b/arch/powerpc/kernel/machine_kexec.c
+> @@ -45,6 +45,18 @@ void machine_kexec_cleanup(struct kimage *image)
+>  		ppc_md.machine_kexec_cleanup(image);
+>  }
+>  
+> +void arch_crash_save_vmcoreinfo(void)
+> +{
+> +
+> +#ifdef CONFIG_NEED_MULTIPLE_NODES
+> +	VMCOREINFO_SYMBOL(node_data);
+> +	VMCOREINFO_LENGTH(node_data, MAX_NUMNODES);
+> +#endif
+> +#ifndef CONFIG_NEED_MULTIPLE_NODES
+> +	VMCOREINFO_SYMBOL(contig_page_data);
+> +#endif
+> +}
+> +
+>  /*
+>   * Do not allocate memory (or fail in any way) in machine_kexec().
+>   * We are past the point of no return, committed to rebooting now.
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
