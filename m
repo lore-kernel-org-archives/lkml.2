@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab0GZX2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 19:28:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3149 "EHLO mx1.redhat.com"
+	id S1755387Ab0GZX3H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 19:29:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29655 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747Ab0GZX2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 19:28:39 -0400
-Date: Mon, 26 Jul 2010 19:28:37 -0400
+	id S1752747Ab0GZX3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 19:29:01 -0400
+Date: Mon, 26 Jul 2010 19:29:00 -0400
 From: Jarod Wilson <jarod@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 03/15] staging/lirc: add lirc_i2c driver
-Message-ID: <20100726232837.GD21225@redhat.com>
+Subject: [PATCH 04/15] staging/lirc: add lirc_igorplugusb driver
+Message-ID: <20100726232900.GE21225@redhat.com>
 References: <20100726232546.GA21225@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,552 +24,571 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jarod Wilson <jarod@redhat.com>
 ---
- drivers/staging/lirc/lirc_i2c.c |  536 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 536 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/lirc/lirc_i2c.c
+ drivers/staging/lirc/lirc_igorplugusb.c |  555 +++++++++++++++++++++++++++++++
+ 1 files changed, 555 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/lirc/lirc_igorplugusb.c
 
-diff --git a/drivers/staging/lirc/lirc_i2c.c b/drivers/staging/lirc/lirc_i2c.c
+diff --git a/drivers/staging/lirc/lirc_igorplugusb.c b/drivers/staging/lirc/lirc_igorplugusb.c
 new file mode 100644
-index 0000000..6df2c0e
+index 0000000..bce600e
 --- /dev/null
-+++ b/drivers/staging/lirc/lirc_i2c.c
-@@ -0,0 +1,536 @@
++++ b/drivers/staging/lirc/lirc_igorplugusb.c
+@@ -0,0 +1,555 @@
 +/*
-+ * lirc_i2c.c
++ * lirc_igorplugusb - USB remote support for LIRC
 + *
-+ * i2c IR driver for the onboard IR port on many TV tuner cards, including:
-+ *  -Flavors of the Hauppauge PVR-150/250/350
-+ *  -Hauppauge HVR-1300
-+ *  -PixelView (BT878P+W/FM)
-+ *  -KNC ONE TV Station/Anubis Typhoon TView Tuner
-+ *  -Asus TV-Box and Creative/VisionTek BreakOut-Box
-+ *  -Leadtek Winfast PVR2000
++ * Supports the standard homebrew IgorPlugUSB receiver with Igor's firmware.
++ * See http://www.cesko.host.sk/IgorPlugUSB/IgorPlug-USB%20(AVR)_eng.htm
 + *
-+ * Copyright (c) 2000 Gerd Knorr <kraxel@goldbach.in-berlin.de>
-+ * modified for PixelView (BT878P+W/FM) by
-+ *      Michal Kochanowicz <mkochano@pld.org.pl>
-+ *      Christoph Bartelmus <lirc@bartelmus.de>
-+ * modified for KNC ONE TV Station/Anubis Typhoon TView Tuner by
-+ *      Ulrich Mueller <ulrich.mueller42@web.de>
-+ * modified for Asus TV-Box and Creative/VisionTek BreakOut-Box by
-+ *      Stefan Jahn <stefan@lkcc.org>
-+ * modified for inclusion into kernel sources by
-+ *      Jerome Brock <jbrock@users.sourceforge.net>
-+ * modified for Leadtek Winfast PVR2000 by
-+ *      Thomas Reitmayr (treitmayr@yahoo.com)
-+ * modified for Hauppauge HVR-1300 by
-+ *      Jan Frey (jfrey@gmx.de)
++ * The device can only record bursts of up to 36 pulses/spaces.
++ * Works fine with RC5. Longer commands lead to device buffer overrun.
++ * (Maybe a better firmware or a microcontroller with more ram can help?)
 + *
-+ * parts are cut&pasted from the old lirc_haup.c driver
++ * Version 0.1  [beta status]
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
++ * Copyright (C) 2004 Jan M. Hochstein
++ *	<hochstein@algo.informatik.tu-darmstadt.de>
 + *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
++ * This driver was derived from:
++ *   Paul Miller <pmiller9@users.sourceforge.net>
++ *      "lirc_atiusb" module
++ *   Vladimir Dergachev <volodya@minspring.com>'s 2002
++ *      "USB ATI Remote support" (input device)
++ *   Adrian Dewhurst <sailor-lk@sailorfrag.net>'s 2002
++ *      "USB StreamZap remote driver" (LIRC)
++ *   Artur Lipowski <alipowski@kki.net.pl>'s 2002
++ *      "lirc_dev" and "lirc_gpio" LIRC modules
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/kmod.h>
++#include <linux/sched.h>
++#include <linux/errno.h>
++#include <linux/fs.h>
++#include <linux/usb.h>
++#include <linux/time.h>
++
++#include <media/lirc.h>
++#include <media/lirc_dev.h>
++
++
++/* module identification */
++#define DRIVER_VERSION		"0.1"
++#define DRIVER_AUTHOR		\
++	"Jan M. Hochstein <hochstein@algo.informatik.tu-darmstadt.de>"
++#define DRIVER_DESC		"USB remote driver for LIRC"
++#define DRIVER_NAME		"lirc_igorplugusb"
++
++/* debugging support */
++#ifdef CONFIG_USB_DEBUG
++static int debug = 1;
++#else
++static int debug;
++#endif
++
++#define dprintk(fmt, args...)					\
++	do {							\
++		if (debug)					\
++			printk(KERN_DEBUG fmt, ## args);	\
++	} while (0)
++
++/* One mode2 pulse/space has 4 bytes. */
++#define CODE_LENGTH	     sizeof(int)
++
++/* Igor's firmware cannot record bursts longer than 36. */
++#define DEVICE_BUFLEN	   36
++
++/*
++ * Header at the beginning of the device's buffer:
++ *	unsigned char data_length
++ *	unsigned char data_start    (!=0 means ring-buffer overrun)
++ *	unsigned char counter       (incremented by each burst)
++ */
++#define DEVICE_HEADERLEN	3
++
++/* This is for the gap */
++#define ADDITIONAL_LIRC_BYTES   2
++
++/* times to poll per second */
++#define SAMPLE_RATE	     100
++static int sample_rate = SAMPLE_RATE;
++
++
++/**** Igor's USB Request Codes */
++
++#define SET_INFRABUFFER_EMPTY   1
++/**
++ * Params: none
++ * Answer: empty
++ */
++
++#define GET_INFRACODE	   2
++/**
++ * Params:
++ *   wValue: offset to begin reading infra buffer
++ *
++ * Answer: infra data
++ */
++
++#define SET_DATAPORT_DIRECTION  3
++/**
++ * Params:
++ *   wValue: (byte) 1 bit for each data port pin (0=in, 1=out)
++ *
++ * Answer: empty
++ */
++
++#define GET_DATAPORT_DIRECTION  4
++/**
++ * Params: none
++ *
++ * Answer: (byte) 1 bit for each data port pin (0=in, 1=out)
++ */
++
++#define SET_OUT_DATAPORT	5
++/**
++ * Params:
++ *   wValue: byte to write to output data port
++ *
++ * Answer: empty
++ */
++
++#define GET_OUT_DATAPORT	6
++/**
++ * Params: none
++ *
++ * Answer: least significant 3 bits read from output data port
++ */
++
++#define GET_IN_DATAPORT	 7
++/**
++ * Params: none
++ *
++ * Answer: least significant 3 bits read from input data port
++ */
++
++#define READ_EEPROM	     8
++/**
++ * Params:
++ *   wValue: offset to begin reading EEPROM
++ *
++ * Answer: EEPROM bytes
++ */
++
++#define WRITE_EEPROM	    9
++/**
++ * Params:
++ *   wValue: offset to EEPROM byte
++ *   wIndex: byte to write
++ *
++ * Answer: empty
++ */
++
++#define SEND_RS232	      10
++/**
++ * Params:
++ *   wValue: byte to send
++ *
++ * Answer: empty
++ */
++
++#define RECV_RS232	      11
++/**
++ * Params: none
++ *
++ * Answer: byte received
++ */
++
++#define SET_RS232_BAUD	  12
++/**
++ * Params:
++ *   wValue: byte to write to UART bit rate register (UBRR)
++ *
++ * Answer: empty
++ */
++
++#define GET_RS232_BAUD	  13
++/**
++ * Params: none
++ *
++ * Answer: byte read from UART bit rate register (UBRR)
 + */
 +
 +
-+#include <linux/version.h>
-+#include <linux/module.h>
-+#include <linux/kmod.h>
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/string.h>
-+#include <linux/timer.h>
-+#include <linux/delay.h>
-+#include <linux/errno.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/i2c-algo-bit.h>
++/* data structure for each usb remote */
++struct igorplug {
 +
-+#include <media/lirc_dev.h>
++	/* usb */
++	struct usb_device *usbdev;
++	struct urb *urb_in;
++	int devnum;
 +
-+struct IR {
-+	struct lirc_driver l;
-+	struct i2c_client  c;
-+	int nextkey;
-+	unsigned char b[3];
-+	unsigned char bits;
-+	unsigned char flag;
++	unsigned char *buf_in;
++	unsigned int len_in;
++	int in_space;
++	struct timeval last_time;
++
++	dma_addr_t dma_in;
++
++	/* lirc */
++	struct lirc_driver *d;
++
++	/* handle sending (init strings) */
++	int send_flags;
++	wait_queue_head_t wait_out;
 +};
 +
-+#define DEVICE_NAME "lirc_i2c"
-+
-+/* module parameters */
-+static int debug;	/* debug output */
-+static int minor = -1;	/* minor number */
-+
-+#define dprintk(fmt, args...)						\
-+	do {								\
-+		if (debug)						\
-+			printk(KERN_DEBUG DEVICE_NAME ": " fmt,		\
-+			       ## args);				\
-+	} while (0)
-+
-+static int reverse(int data, int bits)
++static int unregister_from_lirc(struct igorplug *ir)
 +{
-+	int i;
-+	int c;
++	struct lirc_driver *d = ir->d;
++	int devnum;
 +
-+	for (c = 0, i = 0; i < bits; i++)
-+		c |= ((data & (1<<i)) ? 1 : 0) << (bits-1-i);
++	if (!ir->d)
++		return -EINVAL;
 +
-+	return c;
-+}
++	devnum = ir->devnum;
++	dprintk(DRIVER_NAME "[%d]: unregister from lirc called\n", devnum);
 +
-+static int add_to_buf_adap(void *data, struct lirc_buffer *buf)
-+{
-+	struct IR *ir = data;
-+	unsigned char keybuf[4];
++	lirc_unregister_driver(d->minor);
 +
-+	keybuf[0] = 0x00;
-+	i2c_master_send(&ir->c, keybuf, 1);
-+	/* poll IR chip */
-+	if (i2c_master_recv(&ir->c, keybuf, sizeof(keybuf)) != sizeof(keybuf)) {
-+		dprintk("read error\n");
-+		return -EIO;
-+	}
++	printk(DRIVER_NAME "[%d]: usb remote disconnected\n", devnum);
 +
-+	dprintk("key (0x%02x%02x%02x%02x)\n",
-+		keybuf[0], keybuf[1], keybuf[2], keybuf[3]);
-+
-+	/* key pressed ? */
-+	if (keybuf[2] == 0xff)
-+		return -ENODATA;
-+
-+	/* remove repeat bit */
-+	keybuf[2] &= 0x7f;
-+	keybuf[3] |= 0x80;
-+
-+	lirc_buffer_write(buf, keybuf);
-+	return 0;
-+}
-+
-+static int add_to_buf_pcf8574(void *data, struct lirc_buffer *buf)
-+{
-+	struct IR *ir = data;
-+	int rc;
-+	unsigned char all, mask;
-+	unsigned char key;
-+
-+	/* compute all valid bits (key code + pressed/release flag) */
-+	all = ir->bits | ir->flag;
-+
-+	/* save IR writable mask bits */
-+	mask = i2c_smbus_read_byte(&ir->c) & ~all;
-+
-+	/* send bit mask */
-+	rc = i2c_smbus_write_byte(&ir->c, (0xff & all) | mask);
-+
-+	/* receive scan code */
-+	rc = i2c_smbus_read_byte(&ir->c);
-+
-+	if (rc == -1) {
-+		dprintk("%s read error\n", ir->c.name);
-+		return -EIO;
-+	}
-+
-+	/* drop duplicate polls */
-+	if (ir->b[0] == (rc & all))
-+		return -ENODATA;
-+
-+	ir->b[0] = rc & all;
-+
-+	dprintk("%s key 0x%02X %s\n", ir->c.name, rc & ir->bits,
-+		(rc & ir->flag) ? "released" : "pressed");
-+
-+	/* ignore released buttons */
-+	if (rc & ir->flag)
-+		return -ENODATA;
-+
-+	/* set valid key code */
-+	key  = rc & ir->bits;
-+	lirc_buffer_write(buf, &key);
-+	return 0;
-+}
-+
-+/* common for Hauppauge IR receivers */
-+static int add_to_buf_haup_common(void *data, struct lirc_buffer *buf,
-+		unsigned char *keybuf, int size, int offset)
-+{
-+	struct IR *ir = data;
-+	__u16 code;
-+	unsigned char codes[2];
-+	int ret;
-+
-+	/* poll IR chip */
-+	ret = i2c_master_recv(&ir->c, keybuf, size);
-+	if (ret == size) {
-+		ir->b[0] = keybuf[offset];
-+		ir->b[1] = keybuf[offset+1];
-+		ir->b[2] = keybuf[offset+2];
-+		if (ir->b[0] != 0x00 && ir->b[1] != 0x00)
-+			dprintk("key (0x%02x/0x%02x)\n", ir->b[0], ir->b[1]);
-+	} else {
-+		dprintk("read error (ret=%d)\n", ret);
-+		/* keep last successful read buffer */
-+	}
-+
-+	/* key pressed ? */
-+	if ((ir->b[0] & 0x80) == 0)
-+		return -ENODATA;
-+
-+	/* look what we have */
-+	code = (((__u16)ir->b[0]&0x7f)<<6) | (ir->b[1]>>2);
-+
-+	codes[0] = (code >> 8) & 0xff;
-+	codes[1] = code & 0xff;
-+
-+	/* return it */
-+	dprintk("sending code 0x%02x%02x to lirc\n", codes[0], codes[1]);
-+	lirc_buffer_write(buf, codes);
-+	return 0;
-+}
-+
-+/* specific for the Hauppauge PVR150 IR receiver */
-+static int add_to_buf_haup_pvr150(void *data, struct lirc_buffer *buf)
-+{
-+	unsigned char keybuf[6];
-+	/* fetch 6 bytes, first relevant is at offset 3 */
-+	return add_to_buf_haup_common(data, buf, keybuf, 6, 3);
-+}
-+
-+/* used for all Hauppauge IR receivers but the PVR150 */
-+static int add_to_buf_haup(void *data, struct lirc_buffer *buf)
-+{
-+	unsigned char keybuf[3];
-+	/* fetch 3 bytes, first relevant is at offset 0 */
-+	return add_to_buf_haup_common(data, buf, keybuf, 3, 0);
-+}
-+
-+
-+static int add_to_buf_pvr2000(void *data, struct lirc_buffer *buf)
-+{
-+	struct IR *ir = data;
-+	unsigned char key;
-+	s32 flags;
-+	s32 code;
-+
-+	/* poll IR chip */
-+	flags = i2c_smbus_read_byte_data(&ir->c, 0x10);
-+	if (-1 == flags) {
-+		dprintk("read error\n");
-+		return -ENODATA;
-+	}
-+	/* key pressed ? */
-+	if (0 == (flags & 0x80))
-+		return -ENODATA;
-+
-+	/* read actual key code */
-+	code = i2c_smbus_read_byte_data(&ir->c, 0x00);
-+	if (-1 == code) {
-+		dprintk("read error\n");
-+		return -ENODATA;
-+	}
-+
-+	key = code & 0xFF;
-+
-+	dprintk("IR Key/Flags: (0x%02x/0x%02x)\n", key, flags & 0xFF);
-+
-+	/* return it */
-+	lirc_buffer_write(buf, &key);
-+	return 0;
-+}
-+
-+static int add_to_buf_pixelview(void *data, struct lirc_buffer *buf)
-+{
-+	struct IR *ir = data;
-+	unsigned char key;
-+
-+	/* poll IR chip */
-+	if (1 != i2c_master_recv(&ir->c, &key, 1)) {
-+		dprintk("read error\n");
-+		return -1;
-+	}
-+	dprintk("key %02x\n", key);
-+
-+	/* return it */
-+	lirc_buffer_write(buf, &key);
-+	return 0;
-+}
-+
-+static int add_to_buf_pv951(void *data, struct lirc_buffer *buf)
-+{
-+	struct IR *ir = data;
-+	unsigned char key;
-+	unsigned char codes[4];
-+
-+	/* poll IR chip */
-+	if (1 != i2c_master_recv(&ir->c, &key, 1)) {
-+		dprintk("read error\n");
-+		return -ENODATA;
-+	}
-+	/* ignore 0xaa */
-+	if (key == 0xaa)
-+		return -ENODATA;
-+	dprintk("key %02x\n", key);
-+
-+	codes[0] = 0x61;
-+	codes[1] = 0xD6;
-+	codes[2] = reverse(key, 8);
-+	codes[3] = (~codes[2])&0xff;
-+
-+	lirc_buffer_write(buf, codes);
-+	return 0;
-+}
-+
-+static int add_to_buf_knc1(void *data, struct lirc_buffer *buf)
-+{
-+	static unsigned char last_key = 0xFF;
-+	struct IR *ir = data;
-+	unsigned char key;
-+
-+	/* poll IR chip */
-+	if (1 != i2c_master_recv(&ir->c, &key, 1)) {
-+		dprintk("read error\n");
-+		return -ENODATA;
-+	}
-+
-+	/*
-+	 * it seems that 0xFE indicates that a button is still held
-+	 * down, while 0xFF indicates that no button is held
-+	 * down. 0xFE sequences are sometimes interrupted by 0xFF
-+	 */
-+
-+	dprintk("key %02x\n", key);
-+
-+	if (key == 0xFF)
-+		return -ENODATA;
-+
-+	if (key == 0xFE)
-+		key = last_key;
-+
-+	last_key = key;
-+	lirc_buffer_write(buf, &key);
-+
++	kfree(d);
++	ir->d = NULL;
++	kfree(ir);
 +	return 0;
 +}
 +
 +static int set_use_inc(void *data)
 +{
-+	struct IR *ir = data;
++	struct igorplug *ir = data;
 +
-+	dprintk("%s called\n", __func__);
++	if (!ir) {
++		printk(DRIVER_NAME "[?]: set_use_inc called with no context\n");
++		return -EIO;
++	}
++	dprintk(DRIVER_NAME "[%d]: set use inc\n", ir->devnum);
 +
-+	/* lock bttv in memory while /dev/lirc is in use  */
-+	i2c_use_client(&ir->c);
++	if (!ir->usbdev)
++		return -ENODEV;
 +
 +	return 0;
 +}
 +
 +static void set_use_dec(void *data)
 +{
-+	struct IR *ir = data;
++	struct igorplug *ir = data;
 +
-+	dprintk("%s called\n", __func__);
-+
-+	i2c_release_client(&ir->c);
++	if (!ir) {
++		printk(DRIVER_NAME "[?]: set_use_dec called with no context\n");
++		return;
++	}
++	dprintk(DRIVER_NAME "[%d]: set use dec\n", ir->devnum);
 +}
 +
-+static struct lirc_driver lirc_template = {
-+	.name		= "lirc_i2c",
-+	.set_use_inc	= set_use_inc,
-+	.set_use_dec	= set_use_dec,
-+	.dev		= NULL,
-+	.owner		= THIS_MODULE,
-+};
 +
-+static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id);
-+static int ir_remove(struct i2c_client *client);
-+static int ir_command(struct i2c_client *client, unsigned int cmd, void *arg);
++/**
++ * Called in user context.
++ * return 0 if data was added to the buffer and
++ * -ENODATA if none was available. This should add some number of bits
++ * evenly divisible by code_length to the buffer
++ */
++static int usb_remote_poll(void *data, struct lirc_buffer *buf)
++{
++	int ret;
++	struct igorplug *ir = (struct igorplug *)data;
 +
-+static const struct i2c_device_id ir_receiver_id[] = {
-+	/* Generic entry for any IR receiver */
-+	{ "ir_video", 0 },
-+	/* IR device specific entries could be added here */
++	if (!ir->usbdev)  /* Has the device been removed? */
++		return -ENODEV;
++
++	memset(ir->buf_in, 0, ir->len_in);
++
++	ret = usb_control_msg(
++	      ir->usbdev, usb_rcvctrlpipe(ir->usbdev, 0),
++	      GET_INFRACODE, USB_TYPE_VENDOR|USB_DIR_IN,
++	      0/* offset */, /*unused*/0,
++	      ir->buf_in, ir->len_in,
++	      /*timeout*/HZ * USB_CTRL_GET_TIMEOUT);
++	if (ret > 0) {
++		int i = DEVICE_HEADERLEN;
++		int code, timediff;
++		struct timeval now;
++
++		if (ret <= 1)  /* ACK packet has 1 byte --> ignore */
++			return -ENODATA;
++
++		dprintk(DRIVER_NAME ": Got %d bytes. Header: %02x %02x %02x\n",
++			ret, ir->buf_in[0], ir->buf_in[1], ir->buf_in[2]);
++
++		if (ir->buf_in[2] != 0) {
++			printk(DRIVER_NAME "[%d]: Device buffer overrun.\n",
++				ir->devnum);
++			/* start at earliest byte */
++			i = DEVICE_HEADERLEN + ir->buf_in[2];
++			/* where are we now? space, gap or pulse? */
++		}
++
++		do_gettimeofday(&now);
++		timediff = now.tv_sec - ir->last_time.tv_sec;
++		if (timediff + 1 > PULSE_MASK / 1000000)
++			timediff = PULSE_MASK;
++		else {
++			timediff *= 1000000;
++			timediff += now.tv_usec - ir->last_time.tv_usec;
++		}
++		ir->last_time.tv_sec = now.tv_sec;
++		ir->last_time.tv_usec = now.tv_usec;
++
++		/* create leading gap  */
++		code = timediff;
++		lirc_buffer_write(buf, (unsigned char *)&code);
++		ir->in_space = 1;   /* next comes a pulse */
++
++		/* MODE2: pulse/space (PULSE_BIT) in 1us units */
++
++		while (i < ret) {
++			/* 1 Igor-tick = 85.333333 us */
++			code = (unsigned int)ir->buf_in[i] * 85
++				+ (unsigned int)ir->buf_in[i] / 3;
++			if (ir->in_space)
++				code |= PULSE_BIT;
++			lirc_buffer_write(buf, (unsigned char *)&code);
++			/* 1 chunk = CODE_LENGTH bytes */
++			ir->in_space ^= 1;
++			++i;
++		}
++
++		ret = usb_control_msg(
++		      ir->usbdev, usb_rcvctrlpipe(ir->usbdev, 0),
++		      SET_INFRABUFFER_EMPTY, USB_TYPE_VENDOR|USB_DIR_IN,
++		      /*unused*/0, /*unused*/0,
++		      /*dummy*/ir->buf_in, /*dummy*/ir->len_in,
++		      /*timeout*/HZ * USB_CTRL_GET_TIMEOUT);
++		if (ret < 0)
++			printk(DRIVER_NAME "[%d]: SET_INFRABUFFER_EMPTY: "
++			       "error %d\n", ir->devnum, ret);
++		return 0;
++	} else if (ret < 0)
++		printk(DRIVER_NAME "[%d]: GET_INFRACODE: error %d\n",
++			ir->devnum, ret);
++
++	return -ENODATA;
++}
++
++
++
++static int usb_remote_probe(struct usb_interface *intf,
++				const struct usb_device_id *id)
++{
++	struct usb_device *dev = NULL;
++	struct usb_host_interface *idesc = NULL;
++	struct usb_host_endpoint *ep_ctl2;
++	struct igorplug *ir = NULL;
++	struct lirc_driver *driver = NULL;
++	int devnum, pipe, maxp;
++	int minor = 0;
++	char buf[63], name[128] = "";
++	int mem_failure = 0;
++	int ret;
++
++	dprintk(DRIVER_NAME ": usb probe called.\n");
++
++	dev = interface_to_usbdev(intf);
++
++	idesc = intf->cur_altsetting;
++
++	if (idesc->desc.bNumEndpoints != 1)
++		return -ENODEV;
++	ep_ctl2 = idesc->endpoint;
++	if (((ep_ctl2->desc.bEndpointAddress & USB_ENDPOINT_DIR_MASK)
++	    != USB_DIR_IN)
++	    || (ep_ctl2->desc.bmAttributes & USB_ENDPOINT_XFERTYPE_MASK)
++	    != USB_ENDPOINT_XFER_CONTROL)
++		return -ENODEV;
++	pipe = usb_rcvctrlpipe(dev, ep_ctl2->desc.bEndpointAddress);
++	devnum = dev->devnum;
++	maxp = usb_maxpacket(dev, pipe, usb_pipeout(pipe));
++
++	dprintk(DRIVER_NAME "[%d]: bytes_in_key=%lu maxp=%d\n",
++		devnum, CODE_LENGTH, maxp);
++
++
++	mem_failure = 0;
++	ir = kzalloc(sizeof(struct igorplug), GFP_KERNEL);
++	if (!ir) {
++		mem_failure = 1;
++		goto mem_failure_switch;
++	}
++	driver = kzalloc(sizeof(struct lirc_driver), GFP_KERNEL);
++	if (!driver) {
++		mem_failure = 2;
++		goto mem_failure_switch;
++	}
++
++	ir->buf_in = usb_alloc_coherent(dev,
++			      DEVICE_BUFLEN+DEVICE_HEADERLEN,
++			      GFP_ATOMIC, &ir->dma_in);
++	if (!ir->buf_in) {
++		mem_failure = 3;
++		goto mem_failure_switch;
++	}
++
++	strcpy(driver->name, DRIVER_NAME " ");
++	driver->minor = -1;
++	driver->code_length = CODE_LENGTH * 8; /* in bits */
++	driver->features = LIRC_CAN_REC_MODE2;
++	driver->data = ir;
++	driver->chunk_size = CODE_LENGTH;
++	driver->buffer_size = DEVICE_BUFLEN + ADDITIONAL_LIRC_BYTES;
++	driver->set_use_inc = &set_use_inc;
++	driver->set_use_dec = &set_use_dec;
++	driver->sample_rate = sample_rate;    /* per second */
++	driver->add_to_buf = &usb_remote_poll;
++	driver->dev = &intf->dev;
++	driver->owner = THIS_MODULE;
++
++	init_waitqueue_head(&ir->wait_out);
++
++	minor = lirc_register_driver(driver);
++	if (minor < 0)
++		mem_failure = 9;
++
++mem_failure_switch:
++
++	switch (mem_failure) {
++	case 9:
++		usb_free_coherent(dev, DEVICE_BUFLEN+DEVICE_HEADERLEN,
++			ir->buf_in, ir->dma_in);
++	case 3:
++		kfree(driver);
++	case 2:
++		kfree(ir);
++	case 1:
++		printk(DRIVER_NAME "[%d]: out of memory (code=%d)\n",
++			devnum, mem_failure);
++		return -ENOMEM;
++	}
++
++	driver->minor = minor;
++	ir->d = driver;
++	ir->devnum = devnum;
++	ir->usbdev = dev;
++	ir->len_in = DEVICE_BUFLEN+DEVICE_HEADERLEN;
++	ir->in_space = 1; /* First mode2 event is a space. */
++	do_gettimeofday(&ir->last_time);
++
++	if (dev->descriptor.iManufacturer
++	    && usb_string(dev, dev->descriptor.iManufacturer,
++			  buf, sizeof(buf)) > 0)
++		strlcpy(name, buf, sizeof(name));
++	if (dev->descriptor.iProduct
++	    && usb_string(dev, dev->descriptor.iProduct, buf, sizeof(buf)) > 0)
++		snprintf(name + strlen(name), sizeof(name) - strlen(name),
++			 " %s", buf);
++	printk(DRIVER_NAME "[%d]: %s on usb%d:%d\n", devnum, name,
++	       dev->bus->busnum, devnum);
++
++	/* clear device buffer */
++	ret = usb_control_msg(ir->usbdev, usb_rcvctrlpipe(ir->usbdev, 0),
++		SET_INFRABUFFER_EMPTY, USB_TYPE_VENDOR|USB_DIR_IN,
++		/*unused*/0, /*unused*/0,
++		/*dummy*/ir->buf_in, /*dummy*/ir->len_in,
++		/*timeout*/HZ * USB_CTRL_GET_TIMEOUT);
++	if (ret < 0)
++		printk(DRIVER_NAME "[%d]: SET_INFRABUFFER_EMPTY: error %d\n",
++			devnum, ret);
++
++	usb_set_intfdata(intf, ir);
++	return 0;
++}
++
++
++static void usb_remote_disconnect(struct usb_interface *intf)
++{
++	struct usb_device *dev = interface_to_usbdev(intf);
++	struct igorplug *ir = usb_get_intfdata(intf);
++	usb_set_intfdata(intf, NULL);
++
++	if (!ir || !ir->d)
++		return;
++
++	ir->usbdev = NULL;
++	wake_up_all(&ir->wait_out);
++
++	usb_free_coherent(dev, ir->len_in, ir->buf_in, ir->dma_in);
++
++	unregister_from_lirc(ir);
++}
++
++static struct usb_device_id usb_remote_id_table[] = {
++	/* Igor Plug USB (Atmel's Manufact. ID) */
++	{ USB_DEVICE(0x03eb, 0x0002) },
++
++	/* Terminating entry */
 +	{ }
 +};
 +
-+static struct i2c_driver driver = {
-+	.driver = {
-+		.owner	= THIS_MODULE,
-+		.name	= "i2c ir driver",
-+	},
-+	.probe		= ir_probe,
-+	.remove		= ir_remove,
-+	.id_table	= ir_receiver_id,
-+	.command	= ir_command,
++static struct usb_driver usb_remote_driver = {
++	.name =		DRIVER_NAME,
++	.probe =	usb_remote_probe,
++	.disconnect =	usb_remote_disconnect,
++	.id_table =	usb_remote_id_table
 +};
 +
-+static void pcf_probe(struct i2c_client *client, struct IR *ir)
++static int __init usb_remote_init(void)
 +{
-+	int ret1, ret2, ret3, ret4;
++	int i;
 +
-+	ret1 = i2c_smbus_write_byte(client, 0xff);
-+	ret2 = i2c_smbus_read_byte(client);
-+	ret3 = i2c_smbus_write_byte(client, 0x00);
-+	ret4 = i2c_smbus_read_byte(client);
++	printk(KERN_INFO "\n"
++	       DRIVER_NAME ": " DRIVER_DESC " v" DRIVER_VERSION "\n");
++	printk(DRIVER_NAME ": " DRIVER_AUTHOR "\n");
++	dprintk(DRIVER_NAME ": debug mode enabled\n");
 +
-+	/* in the Asus TV-Box: bit 1-0 */
-+	if (((ret2 & 0x03) == 0x03) && ((ret4 & 0x03) == 0x00)) {
-+		ir->bits = (unsigned char) ~0x07;
-+		ir->flag = 0x04;
-+	/* in the Creative/VisionTek BreakOut-Box: bit 7-6 */
-+	} else if (((ret2 & 0xc0) == 0xc0) && ((ret4 & 0xc0) == 0x00)) {
-+		ir->bits = (unsigned char) ~0xe0;
-+		ir->flag = 0x20;
++	i = usb_register(&usb_remote_driver);
++	if (i < 0) {
++		printk(DRIVER_NAME ": usb register failed, result = %d\n", i);
++		return -ENODEV;
 +	}
 +
-+	return;
-+}
-+
-+static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
-+{
-+	struct IR *ir;
-+	struct i2c_adapter *adap = client->adapter;
-+	unsigned short addr = client->addr;
-+	int retval;
-+
-+	ir = kzalloc(sizeof(struct IR), GFP_KERNEL);
-+	if (!ir)
-+		return -ENOMEM;
-+	memcpy(&ir->l, &lirc_template, sizeof(struct lirc_driver));
-+	memcpy(&ir->c, client, sizeof(struct i2c_client));
-+
-+	i2c_set_clientdata(client, ir);
-+	ir->l.data    = ir;
-+	ir->l.minor   = minor;
-+	ir->l.sample_rate = 10;
-+	ir->l.dev     = &ir->c.dev;
-+	ir->nextkey   = -1;
-+
-+	switch (addr) {
-+	case 0x64:
-+		strlcpy(ir->c.name, "Pixelview IR", I2C_NAME_SIZE);
-+		ir->l.code_length = 8;
-+		ir->l.add_to_buf = add_to_buf_pixelview;
-+		break;
-+	case 0x4b:
-+		strlcpy(ir->c.name, "PV951 IR", I2C_NAME_SIZE);
-+		ir->l.code_length = 32;
-+		ir->l.add_to_buf = add_to_buf_pv951;
-+		break;
-+	case 0x71:
-+		if (adap->id == I2C_HW_B_CX2388x)
-+			strlcpy(ir->c.name, "Hauppauge HVR1300", I2C_NAME_SIZE);
-+		else /* bt8xx or cx2341x */
-+			/*
-+			 * The PVR150 IR receiver uses the same protocol as
-+			 * other Hauppauge cards, but the data flow is
-+			 * different, so we need to deal with it by its own.
-+			 */
-+			strlcpy(ir->c.name, "Hauppauge PVR150", I2C_NAME_SIZE);
-+		ir->l.code_length = 13;
-+		ir->l.add_to_buf = add_to_buf_haup_pvr150;
-+		break;
-+	case 0x6b:
-+		strlcpy(ir->c.name, "Adaptec IR", I2C_NAME_SIZE);
-+		ir->l.code_length = 32;
-+		ir->l.add_to_buf = add_to_buf_adap;
-+		break;
-+	case 0x18:
-+	case 0x1a:
-+		if (adap->id == I2C_HW_B_CX2388x) {
-+			strlcpy(ir->c.name, "Leadtek IR", I2C_NAME_SIZE);
-+			ir->l.code_length = 8;
-+			ir->l.add_to_buf = add_to_buf_pvr2000;
-+		} else { /* bt8xx or cx2341x */
-+			strlcpy(ir->c.name, "Hauppauge IR", I2C_NAME_SIZE);
-+			ir->l.code_length = 13;
-+			ir->l.add_to_buf = add_to_buf_haup;
-+		}
-+		break;
-+	case 0x30:
-+		strlcpy(ir->c.name, "KNC ONE IR", I2C_NAME_SIZE);
-+		ir->l.code_length = 8;
-+		ir->l.add_to_buf = add_to_buf_knc1;
-+		break;
-+	case 0x21:
-+	case 0x23:
-+		pcf_probe(client, ir);
-+		strlcpy(ir->c.name, "TV-Box IR", I2C_NAME_SIZE);
-+		ir->l.code_length = 8;
-+		ir->l.add_to_buf = add_to_buf_pcf8574;
-+		break;
-+	default:
-+		/* shouldn't happen */
-+		printk("lirc_i2c: Huh? unknown i2c address (0x%02x)?\n", addr);
-+		kfree(ir);
-+		return -EINVAL;
-+	}
-+	printk(KERN_INFO "lirc_i2c: chip 0x%x found @ 0x%02x (%s)\n",
-+	       adap->id, addr, ir->c.name);
-+
-+	retval = lirc_register_driver(&ir->l);
-+
-+	if (retval < 0) {
-+		printk(KERN_ERR "lirc_i2c: failed to register driver!\n");
-+		kfree(ir);
-+		return retval;
-+	}
-+
-+	ir->l.minor = retval;
-+
 +	return 0;
 +}
 +
-+static int ir_remove(struct i2c_client *client)
++static void __exit usb_remote_exit(void)
 +{
-+	struct IR *ir = i2c_get_clientdata(client);
-+
-+	/* unregister device */
-+	lirc_unregister_driver(ir->l.minor);
-+
-+	/* free memory */
-+	kfree(ir);
-+	return 0;
++	usb_deregister(&usb_remote_driver);
 +}
 +
-+static int ir_command(struct i2c_client *client, unsigned int cmd, void *arg)
-+{
-+	/* nothing */
-+	return 0;
-+}
++module_init(usb_remote_init);
++module_exit(usb_remote_exit);
 +
-+static int __init lirc_i2c_init(void)
-+{
-+	i2c_add_driver(&driver);
-+	return 0;
-+}
++#include <linux/vermagic.h>
++MODULE_INFO(vermagic, VERMAGIC_STRING);
 +
-+static void __exit lirc_i2c_exit(void)
-+{
-+	i2c_del_driver(&driver);
-+}
-+
-+MODULE_DESCRIPTION("Infrared receiver driver for Hauppauge and "
-+		   "Pixelview cards (i2c stack)");
-+MODULE_AUTHOR("Gerd Knorr, Michal Kochanowicz, Christoph Bartelmus, "
-+	      "Ulrich Mueller, Stefan Jahn, Jerome Brock");
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_AUTHOR(DRIVER_AUTHOR);
 +MODULE_LICENSE("GPL");
++MODULE_DEVICE_TABLE(usb, usb_remote_id_table);
 +
-+module_param(minor, int, S_IRUGO);
-+MODULE_PARM_DESC(minor, "Preferred minor device number");
++module_param(sample_rate, int, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(sample_rate, "Sampling rate in Hz (default: 100)");
 +
-+module_param(debug, bool, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(debug, "Enable debugging messages");
-+
-+module_init(lirc_i2c_init);
-+module_exit(lirc_i2c_exit);
 -- 
 1.7.1.1
 
