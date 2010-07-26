@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0GZJNT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 05:13:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43506 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab0GZJNR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 05:13:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=dkim-signature:domainkey-signature:mime-version:in-reply-to
-         :references:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=VaYFad7iPvX6dSKi6H7xrwUt0X1641wFVHjCV/0+zk8cq36PNpVztx4LgSNDsy0Ae7
-         WqGFPuzI5nF8MOqTquxiOeioluffW0spp1kofweoLcO/YRIVJ5TvS1heauj9twotpXKC
-         4ygPMxidXTyUdV9dPC/Y0MNGH8bwALt9zmVpM=
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AbrDaOzvdmb72F+Kye0Znyk3OW2liDRdnO4vBvurlOq+m3KAmjJac+TnjXQ5CbUHsy
-         XummhGaTKESDJ4XSwesixggXf4zEB1ljtW23KShf3wMxQcMrNf5JFW88SkFcfn6OwE7T
-         RwHM34L8LDK9CcuWFBSytnTrkL/AUNh3BpJ6s=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimm9XGvK2H55V7N76JPU05iHk_dY5JjOLifQTsr@mail.gmail.com>
-References: <20100722182638.GA12712@kroah.com>
-	<AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
-	<20100722183614.GA5443@suse.de>
-	<AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
-	<AANLkTimm9XGvK2H55V7N76JPU05iHk_dY5JjOLifQTsr@mail.gmail.com>
-Date: Mon, 26 Jul 2010 11:13:14 +0200
-Message-ID: <AANLkTi=OMaKuk+ReeqCfBGes76BjKYyUdqxPOQfH8EcZ@mail.gmail.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <gregkh@suse.de>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753961Ab0GZJTK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 05:19:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42808 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752006Ab0GZJTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 05:19:09 -0400
+Date: Mon, 26 Jul 2010 19:19:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: michal.simek@petalogix.com
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for July 26
+Message-Id: <20100726191902.5ebe1030.sfr@canb.auug.org.au>
+In-Reply-To: <4C4D4D00.30304@petalogix.com>
+References: <20100726154809.7f42c137.sfr@canb.auug.org.au>
+	<4C4D4D00.30304@petalogix.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__26_Jul_2010_19_19_02_+1000_N7UCA4zptlApcS4x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 11:12 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Mon, Jul 26, 2010 at 11:08, Dhaval Giani <dhaval.lists@thegianis.in> wrote:
->> On Thu, Jul 22, 2010 at 8:36 PM, Greg KH <gregkh@suse.de> wrote:
->>> On Thu, Jul 22, 2010 at 11:31:07AM -0700, Paul Menage wrote:
->>>> On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
->>>> > We really shouldn't be asking userspace to create new root filesystems.
->>>> > So follow along with all of the other in-kernel filesystems, and provide
->>>> > a mount point in sysfs.
->>>> >
->>>> > For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
->>>> > that mount point when the cgroup filesystem is registered in the kernel.
->>>>
->>>> But cgroups will typically have multiple mounts, with different
->>>> resource controllers/options on each mount. That doesn't really fit in
->>>> with this scheme.
->>>
->>> Really?  I see systems mounting it at /cgroups/ in the filesystem today.
->>> Where are you expecting it to be mounted at?
->>>
->>
->> Not really. It is getting mounted at /cgroups/<name of resource
->> controller>/ at a number of places. Keeping it in sysfs loses us a lot
->> of this flexibility. Unless you are ready to keep adding a new
->> mountpoint for each subsystem, it will not really work out in the long
->> term.
->
-> As mentioned earlier in this thread, systemd already mounts a tmpfs at
-> the cgroup mountpoint. We need only a single directory. This should
-> not be an issue.
->
+--Signature=_Mon__26_Jul_2010_19_19_02_+1000_N7UCA4zptlApcS4x
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ah ok. I am catching up with email after over 3 weeks :-). Missed all
-this discussion. My apologies!
+Hi Michal,
 
-Dhaval
+On Mon, 26 Jul 2010 10:53:20 +0200 Michal Simek <michal.simek@petalogix.com=
+> wrote:
+>
+> Merging microblaze/next
+> CONFLICT (content): Merge conflict in arch/microblaze/mm/init.c
+>=20
+> Fixed.
+
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__26_Jul_2010_19_19_02_+1000_N7UCA4zptlApcS4x
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMTVMGAAoJEDMEi1NhKgbsHMUH/iuHBd7nYzJ1A6JihXQ/k2T+
+mX7f6hecpxCDEJ9/hVO1N/lk2GJ658oVwbWEyGB4J16cd2ZYnhhHCTqHd1c47hKW
+ebI43Yw39rL1negCU6eTnCp2so7bh8y5Z3OsZvtS94EMSHY5IJL3FjfbPB/b4Q8k
+s+cuOwMwzYhz93BdgD4PX2yoNKoHQRbKvglNrX7qkPZLF8lMWB5j/Msa5Bk9GR7u
+sKhVNo1ha3oHRD2ZuFpv4QSITCxaJwA4idkSIB+zaqf2DiqUlZfvfwD06A2gEaX7
+dbYCH7lzU5cB2jyKfoGLLyrq9qal9sgfZglTTGWvXQHMYs//mMX80zJfNh9MgyE=
+=Ks9m
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__26_Jul_2010_19_19_02_+1000_N7UCA4zptlApcS4x--
