@@ -1,41 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab0GZWsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 18:48:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58146
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755684Ab0GZWsh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 18:48:37 -0400
-Date: Mon, 26 Jul 2010 15:48:54 -0700 (PDT)
-Message-Id: <20100726.154854.35052662.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: sam@ravnborg.org, sfr@canb.auug.org.au, monstr@monstr.eu,
-        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        benh@kernel.crashing.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v3] of: Create asm-generic/of.h and provide default
- of_node_to_nid()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com>
-References: <20100726220405.1550.63442.stgit@angua>
-	<20100726222627.GA23501@merkur.ravnborg.org>
-	<AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755714Ab0GZWtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 18:49:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59566 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752395Ab0GZWtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 18:49:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,264,1278313200"; 
+   d="scan'208";a="589901875"
+Date: Tue, 27 Jul 2010 06:48:53 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
+ writeback
+Message-ID: <20100726224853.GA7229@localhost>
+References: <20100723094515.GD5043@localhost>
+ <20100723105719.GE5300@csn.ul.ie>
+ <20100725192955.40D5.A69D9226@jp.fujitsu.com>
+ <20100725120345.GA1817@barrios-desktop>
+ <20100726032755.GB7668@localhost>
+ <AANLkTinL-K-Ky1NFWQPvH5XASj9MnZJicFtqDYhdje6R@mail.gmail.com>
+ <20100726043709.GC7668@localhost>
+ <20100726163011.GA23467@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100726163011.GA23467@barrios-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 26 Jul 2010 16:42:20 -0600
+On Tue, Jul 27, 2010 at 12:30:11AM +0800, Minchan Kim wrote:
+> On Mon, Jul 26, 2010 at 12:37:09PM +0800, Wu Fengguang wrote:
+> > On Mon, Jul 26, 2010 at 12:11:59PM +0800, Minchan Kim wrote:
+> > > On Mon, Jul 26, 2010 at 12:27 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > > > On Sun, Jul 25, 2010 at 08:03:45PM +0800, Minchan Kim wrote:
+> > > >> On Sun, Jul 25, 2010 at 07:43:20PM +0900, KOSAKI Motohiro wrote:
+> > > >> > Hi
+> > > >> >
+> > > >> > sorry for the delay.
+> > > >> >
+> > > >> > > Will you be picking it up or should I? The changelog should be more or less
+> > > >> > > the same as yours and consider it
+> > > >> > >
+> > > >> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > >> > >
+> > > >> > > It'd be nice if the original tester is still knocking around and willing
+> > > >> > > to confirm the patch resolves his/her problem. I am running this patch on
+> > > >> > > my desktop at the moment and it does feel a little smoother but it might be
+> > > >> > > my imagination. I had trouble with odd stalls that I never pinned down and
+> > > >> > > was attributing to the machine being commonly heavily loaded but I haven't
+> > > >> > > noticed them today.
+> > > >> > >
+> > > >> > > It also needs an Acked-by or Reviewed-by from Kosaki Motohiro as it alters
+> > > >> > > logic he introduced in commit [78dc583: vmscan: low order lumpy reclaim also
+> > > >> > > should use PAGEOUT_IO_SYNC]
+> > > >> >
+> > > >> > My reviewing doesn't found any bug. however I think original thread have too many guess
+> > > >> > and we need to know reproduce way and confirm it.
+> > > >> >
+> > > >> > At least, we need three confirms.
+> > > >> >  o original issue is still there?
+> > > >> >  o DEF_PRIORITY/3 is best value?
+> > > >>
+> > > >> I agree. Wu, how do you determine DEF_PRIORITY/3 of LRU?
+> > > >> I guess system has 512M and 22M writeback pages.
+> > > >> So you may determine it for skipping max 32M writeback pages.
+> > > >> Is right?
+> > > >
+> > > > For 512M mem, DEF_PRIORITY/3 means 32M dirty _or_ writeback pages.
+> > > > Because shrink_inactive_list() first calls
+> > > > shrink_page_list(PAGEOUT_IO_ASYNC) then optionally
+> > > > shrink_page_list(PAGEOUT_IO_SYNC), so dirty pages will first be
+> > > > converted to writeback pages and then optionally be waited on.
+> > > >
+> > > > The dirty/writeback pages may go up to 512M*20% = 100M. So 32M looks
+> > > > a reasonable value.
+> > > 
+> > > Why do you think it's a reasonable value?
+> > > I mean why isn't it good 12.5% or 3.125%? Why do you select 6.25%?
+> > > I am not against you. Just out of curiosity and requires more explanation.
+> > > It might be thing _only I_ don't know. :(
+> > 
+> > It's more or less random selected. I'm also OK with 3.125%. It's an
+> > threshold to turn on some _last resort_ mechanism, so don't need to be
+> > optimal..
+> 
+> Okay. Why I had a question is that I don't want to add new magic value in 
+> VM without detailed comment. 
+> While I review the source code, I always suffer form it. :(
+> Now we have a great tool called 'git'. 
+> Please write down why we select that number detaily when we add new 
+> magic value. :)
 
-> It protects against some later include file doing a #define
-> of_node_to_nid and thus resulting in an inconsistent definition.  If
-> some code tries to do this then the preprocessor will complain.  This
-> is the pattern that Stephen suggested.
+Good point. I'll do that :)
 
-Also, it would be nice to unravel the "0" vs. "-1" default
-inconsistency.
+Thanks,
+Fengguang
