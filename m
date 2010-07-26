@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab0GZKYL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 06:24:11 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44450 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab0GZKYI (ORCPT
+	id S1754178Ab0GZKYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 06:24:40 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:35429
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753884Ab0GZKYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 06:24:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=K+NSj4Frkf5EU1GPwfRr82QJarBPPhzFJGSgB6lGGEelJgKqljpIPLSvHDuevU4wiV
-         2eTF7jww5ISUsI5hI7FrMspKuxS5r8r9KGy+Y7moJXRs2fII68Cb1A36eCnZMCQNQkbO
-         Py5C1fTTAQA3agjjCpRNXro/1sfufWLha17yM=
+	Mon, 26 Jul 2010 06:24:39 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L65U8P-01-1HL-02
+X-M-MSG: 
+Message-ID: <4C4D620E.9010008@amd.com>
+Date: Mon, 26 Jul 2010 12:23:10 +0200
+From: Andre Przywara <andre.przywara@amd.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090820)
 MIME-Version: 1.0
-In-Reply-To: <20100726120224.2EF1.A69D9226@jp.fujitsu.com>
-References: <20100726120107.2EEE.A69D9226@jp.fujitsu.com>
-	<20100726120224.2EF1.A69D9226@jp.fujitsu.com>
-Date: Mon, 26 Jul 2010 15:54:06 +0530
-X-Google-Sender-Auth: eT-JWnZjVEijbI2NBzepu5V-vEg
-Message-ID: <AANLkTi=Eou4UVgYN2JY_AWnCj+Lcbv6MkMmUpn94SRYK@mail.gmail.com>
-Subject: Re: [PATCH 1/4] vmscan: convert direct reclaim tracepoint to 
-	DEFINE_TRACE
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] Fix off-by-one bug in mbind() syscall implementation
+References: <1280136498-28219-1-git-send-email-andre.przywara@amd.com> <20100726094931.GA17756@basil.fritz.box>
+In-Reply-To: <20100726094931.GA17756@basil.fritz.box>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 8:33 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> Mel Gorman recently added some vmscan tracepoints. Unfortunately they are
-> covered only global reclaim. But we want to trace memcg reclaim too.
->
-> Thus, this patch convert them to DEFINE_TRACE macro. it help to reuse
-> tracepoint definition for other similar usage (i.e. memcg).
-> This patch have no functionally change.
->
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
+Andi Kleen wrote:
+> On Mon, Jul 26, 2010 at 11:28:18AM +0200, Andre Przywara wrote:
+>> When the mbind() syscall implementation processes the node mask
+>> provided by the user, the last node is accidentally masked out.
+>> This is present since the dawn of time (aka Before Git), I guess
+>> nobody realized that because libnuma as the most prominent user of
+>> mbind() uses large masks (sizeof(long)) and nobody cared if the
+>> 64th node is not handled properly. But if the user application
+>> defers the masking to the kernel and provides the number of valid bits
+>> in maxnodes, there is always the last node missing.
+>> However this also affect the special case with maxnodes=0, the manpage
+>> reads that mbind(ptr, len, MPOL_DEFAULT, &some_long, 0, 0); should
+>> reset the policy to the default one, but in fact it returns EINVAL.
+>> This patch just removes the decrease-by-one statement, I hope that
+>> there is no workaround code in the wild that relies on the bogus
+>> behavior.
+> 
+> Actually libnuma and likely most existing users rely on it.
+If grep didn't fool me, then the only users in libnuma aware of that bug 
+are the test implementations in numactl-2.0.3/test, namely /test/tshm.c 
+(NUMA_MAX_NODES+1) and test/mbind_mig_pages.c (old_nodes->size + 1).
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Has this bug been known before?
+> 
+> The only way to change it would be to add new system calls.
+That would probably be overkill, but if this behavior is now fixed, it 
+should be documented (in the manpage and in the kernel code).
+Also the actual libnuma code should be adjusted, then.
 
-Balbir
+Regards,
+Andre.
+
+-- 
+Andre Przywara
+AMD-Operating System Research Center (OSRC), Dresden, Germany
+Tel: +49 351 448-3567-12
+
