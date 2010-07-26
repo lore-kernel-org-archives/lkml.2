@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab0GZRTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 13:19:44 -0400
-Received: from claw.goop.org ([74.207.240.146]:49514 "EHLO claw.goop.org"
+	id S1754882Ab0GZRWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 13:22:17 -0400
+Received: from nbd.name ([88.198.39.176]:60781 "EHLO ds10.nbd.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754613Ab0GZRTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 13:19:43 -0400
-Message-ID: <4C4DC3AD.7010404@goop.org>
-Date: Mon, 26 Jul 2010 10:19:41 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1750848Ab0GZRWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 13:22:16 -0400
+Message-ID: <4C4DC43E.2060608@openwrt.org>
+Date: Mon, 26 Jul 2010 19:22:06 +0200
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: vatsa@linux.vnet.ibm.com
-CC: avi@redhat.com, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-        npiggin@suse.de, kvm@vger.kernel.org, bharata@in.ibm.com,
-        Balbir Singh <balbir@in.ibm.com>, Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH RFC 2/4] Add yield hypercall for KVM guests
-References: <20100726061150.GB21699@linux.vnet.ibm.com> <20100726061445.GB8402@linux.vnet.ibm.com>
-In-Reply-To: <20100726061445.GB8402@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+CC: Jike Song <albcamus@gmail.com>,
+        =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>,
+        linux-kernel@vger.kernel.org,
+        Vasanthakumar Thiagarajan <vasanth@atheros.com>, jmalinen@atheros.com,
+        Sujith.Manoharan@atheros.com, senthilkumar@atheros.com,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: BUG at arch/x86/mm/physaddr.c:5
+References: <4C3D5F3F.7070901@odi.ch> <AANLkTimn7Z3LqhLOt4_6ggFgjdzIZQPd_CznOIW-6D1N@mail.gmail.com> 	<4C499E6F.8030507@odi.ch> <AANLkTikrmM0pwBLLMWTCO-stRnoCxwQf0M3ZByc7=8_b@mail.gmail.com> <AANLkTi=Ga2Sy60=wXKQT3nv_PRYw-og7279bD9LTWENE@mail.gmail.com>
+In-Reply-To: <AANLkTi=Ga2Sy60=wXKQT3nv_PRYw-og7279bD9LTWENE@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/25/2010 11:14 PM, Srivatsa Vaddagiri wrote:
-> Add KVM hypercall for yielding vcpu timeslice.
+On 2010-07-26 6:55 PM, Luis R. Rodriguez wrote:
+> 2010/7/25 Jike Song <albcamus@gmail.com>:
+>> 2010/7/23 Ortwin Glück <odi@odi.ch>:
+>>> On 23.07.2010 10:04, Jike Song wrote:
+>>>> Seems to be a logical error?  Does the following patch remove your Oops?
+>>>
+>>> Looking at the init code I agree. Yes, the patch fixes the OOPS. I am sure
+>>> because the OOPS occurred at every boot and now it's gone.
+>>>
+>>> Thanks!
+>>>
+>>> Ortwin
+>>
+>> Hi Maintainers,
+>>
+>>  Since Ortwin has confirmed this patch , would you give me an ACK/NAK please?
+>>
+> I'll let Felix chime in on this one as he last reviewed this path.
+> There were some serious issues with MIPs and DMA that at this point I
+> think only he grocked.
 
-Can you do a directed yield?
+A patch exactly like that was already posted and merged into the
+wireless-testing tree a while ago, it apparently just hasn't made it to
+Linus' tree. John, could we get this one into 2.6.35?
 
-     J
+http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commitdiff;h=56824223ac97ca845652c59bed9ce139e100261b
 
-> Signed-off-by: Srivatsa Vaddagiri<vatsa@linux.vnet.ibm.com>
->
-> ---
->   arch/x86/include/asm/kvm_para.h |    1 +
->   arch/x86/kvm/x86.c              |    7 ++++++-
->   include/linux/kvm.h             |    1 +
->   include/linux/kvm_para.h        |    1 +
->   4 files changed, 9 insertions(+), 1 deletion(-)
->
-> Index: current/arch/x86/include/asm/kvm_para.h
-> ===================================================================
-> --- current.orig/arch/x86/include/asm/kvm_para.h
-> +++ current/arch/x86/include/asm/kvm_para.h
-> @@ -16,6 +16,7 @@
->   #define KVM_FEATURE_CLOCKSOURCE		0
->   #define KVM_FEATURE_NOP_IO_DELAY	1
->   #define KVM_FEATURE_MMU_OP		2
-> +#define KVM_FEATURE_YIELD		4
->   /* This indicates that the new set of kvmclock msrs
->    * are available. The use of 0x11 and 0x12 is deprecated
->    */
-> Index: current/arch/x86/kvm/x86.c
-> ===================================================================
-> --- current.orig/arch/x86/kvm/x86.c
-> +++ current/arch/x86/kvm/x86.c
-> @@ -1618,6 +1618,7 @@ int kvm_dev_ioctl_check_extension(long e
->   	case KVM_CAP_PCI_SEGMENT:
->   	case KVM_CAP_DEBUGREGS:
->   	case KVM_CAP_X86_ROBUST_SINGLESTEP:
-> +	case KVM_CAP_YIELD_HYPERCALL:
->   		r = 1;
->   		break;
->   	case KVM_CAP_COALESCED_MMIO:
-> @@ -1993,7 +1994,8 @@ static void do_cpuid_ent(struct kvm_cpui
->   		entry->eax = (1<<  KVM_FEATURE_CLOCKSOURCE) |
->   			     (1<<  KVM_FEATURE_NOP_IO_DELAY) |
->   			     (1<<  KVM_FEATURE_CLOCKSOURCE2) |
-> -			     (1<<  KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
-> +			     (1<<  KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-> +			     (1<<  KVM_FEATURE_YIELD);
->   		entry->ebx = 0;
->   		entry->ecx = 0;
->   		entry->edx = 0;
-> @@ -4245,6 +4247,9 @@ int kvm_emulate_hypercall(struct kvm_vcp
->   	case KVM_HC_MMU_OP:
->   		r = kvm_pv_mmu_op(vcpu, a0, hc_gpa(vcpu, a1, a2),&ret);
->   		break;
-> +	case KVM_HC_YIELD:
-> +		ret = 0;
-> +		yield();
->   	default:
->   		ret = -KVM_ENOSYS;
->   		break;
-> Index: current/include/linux/kvm.h
-> ===================================================================
-> --- current.orig/include/linux/kvm.h
-> +++ current/include/linux/kvm.h
-> @@ -524,6 +524,7 @@ struct kvm_enable_cap {
->   #define KVM_CAP_PPC_OSI 52
->   #define KVM_CAP_PPC_UNSET_IRQ 53
->   #define KVM_CAP_ENABLE_CAP 54
-> +#define KVM_CAP_YIELD_HYPERCALL	55
->
->   #ifdef KVM_CAP_IRQ_ROUTING
->
-> Index: current/include/linux/kvm_para.h
-> ===================================================================
-> --- current.orig/include/linux/kvm_para.h
-> +++ current/include/linux/kvm_para.h
-> @@ -17,6 +17,7 @@
->
->   #define KVM_HC_VAPIC_POLL_IRQ		1
->   #define KVM_HC_MMU_OP			2
-> +#define KVM_HC_YIELD                    3
->
->   /*
->    * hypercalls use architecture specific
->
+commit 56824223ac97ca845652c59bed9ce139e100261b
+Author: Ming Lei <tom.leiming@gmail.com>
+Date:   Fri May 14 21:15:38 2010 +0800
+
+    ath9k: fix dma direction for map/unmap in ath_rx_tasklet
+    
+    For edma, we should use DMA_BIDIRECTIONAL, or else use
+    DMA_FROM_DEVICE.
+    
+    Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
