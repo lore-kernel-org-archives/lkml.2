@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab0GZGUG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 02:20:06 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:52209 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752443Ab0GZGUE (ORCPT
+	id S1753146Ab0GZGl6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 02:41:58 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43291 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab0GZGl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 02:20:04 -0400
-X-Sasl-enc: ZxAprgNAnIfqWGM2vtBZj8zo7wjmOuTfw0MWINg6KfTT 1280125203
-Message-ID: <4C4D2913.8020200@ladisch.de>
-Date: Mon, 26 Jul 2010 08:20:03 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Mon, 26 Jul 2010 02:41:57 -0400
+Date: Mon, 26 Jul 2010 12:11:49 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+        Vivek Goyal <vgoyal@redhat.com>, Ryo Tsuruta <ryov@valinux.co.jp>,
+        taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+        Andrea Righi <righi.andrea@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org
+Subject: Re: [RFC][PATCH 00/11] blkiocg async support
+Message-ID: <20100726064149.GP14369@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <4C369009.80503@ds.jp.nec.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: akpm@linux-foundation.org, John Stultz <johnstul@us.ibm.com>,
-        maglyx@gmail.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/3] hpet: factor timer allocate from open
-References: <201007202223.o6KMNDZl021345@imap1.linux-foundation.org> <alpine.LFD.2.00.1007231500180.2616@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1007231500180.2616@localhost.localdomain>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4C369009.80503@ds.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote:
-> On Tue, 20 Jul 2010, akpm@linux-foundation.org wrote:
-> > From: Magnus Lynch <maglyx@gmail.com>
-> > 
-> > The current implementation of the /dev/hpet driver couples opening the
-> > device with allocating one of the (scarce) timers (aka comparators).  This
-> > is a limitation in that the main counter may be valuable to applications
-> > seeking a high-resolution timer who have no use for the interrupt
-> > generating functionality of the comparators.
+* Munihiro Ikeda <m-ikeda@ds.jp.nec.com> [2010-07-08 22:57:13]:
+
+> These RFC patches are trial to add async (cached) write support on blkio
+> controller.
 > 
-> And how exactly does this patch provide such functionality ? There is
-> no interface which allows you to access the counter itself.
+> Only test which has been done is to compile, boot, and that write bandwidth
+> seems prioritized when pages which were dirtied by two different processes in
+> different cgroups are written back to a device simultaneously.  I know this
+> is the minimum (or less) test but I posted this as RFC because I would like
+> to hear your opinions about the design direction in the early stage.
+> 
+> Patches are for 2.6.35-rc4.
+> 
+> This patch series consists of two chunks.
+> 
+> (1) iotrack (patch 01/11 -- 06/11)
+> 
+> This is a functionality to track who dirtied a page, in exact which cgroup a
+> process which dirtied a page belongs to.  Blkio controller will read the info
+> later and prioritize when the page is actually written to a block device.
+> This work is originated from Ryo Tsuruta and Hirokazu Takahashi and includes
+> Andrea Righi's idea.  It was posted as a part of dm-ioband which was one of
+> proposals for IO controller.
+>
 
-Through mmap(); this is the only interface of /dev/hpet that is actually
-used in practice.
+Does this reuse the memcg infrastructure, if so could you please add a
+summary of the changes here.
+ 
+> 
+> (2) blkio controller modification (07/11 -- 11/11)
+> 
+> The main part of blkio controller async write support.
+> Currently async queues are device-wide and async write IOs are always treated
+> as root group.
+> These patches make async queues per a cfq_group per a device to control them.
+> Async write is handled by flush kernel thread.  Because queue pointers are
+> stored in cfq_io_context, io_context of the thread has to have multiple
+> cfq_io_contexts per a device.  So these patches make cfq_io_context per an
+> io_context per a cfq_group, which means per an io_context per a cgroup per a
+> device.
+> 
+> 
+> This might be a piece of puzzle for complete async write support of blkio
+> controller.  One of other pieces in my head is page dirtying ratio control.
+> I believe Andrea Righi was working on it...how about the situation?
+> 
 
-> Cc: Clemens Ladisch <clemens@ladisch.de>
+Greg posted the last set of patches, we are yet to see another
+iteration.
 
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
+> And also, I'm thinking that async write support is required by bandwidth
+> capping policy of blkio controller.  Bandwidth capping can be done in upper
+> layer than elevator.  However I think it should be also done in elevator layer
+> in my opinion.  Elevator buffers and sort requests.  If there is another
+> buffering functionality in upper layer, it is doubled buffering and it can be
+> harmful for elevator's prediction.
+>
 
 
-Regards,
-Clemens
+-- 
+	Three Cheers,
+	Balbir
