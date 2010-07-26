@@ -1,204 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab0GZG7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 02:59:06 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34776 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753373Ab0GZG7E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 02:59:04 -0400
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-To: Alexander Shishkin <virtuoso@slind.org>,
-        Hari Kanigeri <hari.kanigeri@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 26 Jul 2010 12:28:38 +0530
-Subject: RE: [PATCH] omap3: make coresight register save across OFF modes a
- sysfs option
-Thread-Topic: [PATCH] omap3: make coresight register save across OFF modes a
- sysfs option
-Thread-Index: AcssPetw4X/OJgFrSJ6Cry7jXTx2qwAUavtQ
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02C625569B@dbde02.ent.ti.com>
-References: <AANLkTinmSJ6dtgqmyuk9CArniPEvEp7TrXauvGxLxv7x@mail.gmail.com>
- <1280091863-8891-1-git-send-email-virtuoso@slind.org>
-In-Reply-To: <1280091863-8891-1-git-send-email-virtuoso@slind.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753551Ab0GZHAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 03:00:51 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59310 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753373Ab0GZHAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 03:00:49 -0400
+Message-ID: <4C4D3208.7090703@cn.fujitsu.com>
+Date: Mon, 26 Jul 2010 14:58:16 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, jmoyer@redhat.com, czoccolo@gmail.com
+Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle tunable
+ V3
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> owner@vger.kernel.org] On Behalf Of Alexander Shishkin
-> Sent: Monday, July 26, 2010 2:34 AM
-> To: Hari Kanigeri
-> Cc: Alexander Shishkin; linux-arm-kernel@lists.infradead.org; Tony
-> Lindgren; Russell King; Paul Walmsley; Kevin Hilman; linux-
-> omap@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH] omap3: make coresight register save across OFF modes a
-> sysfs option
+Vivek Goyal wrote:
+> Hi,
 > 
-> This adds a sysfs file at /sys/power/coresight_save which is used to
-> control if the ETM and debug components' states should be saved and
-> restored across OFF modes.
+> This is V3 of the group_idle and CFQ IOPS mode implementation patchset. Since V2
+> I have cleaned up the code a bit to clarify the confusion lingering around in
+> what cases do we charge time slice and in what cases do we charge number of
+> requests.
 > 
-> Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Paul Walmsley <paul@pwsan.com>
-> Cc: Kevin Hilman <khilman@deeprootsystems.com>
-> Cc: linux-omap@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/arm/mach-omap2/Makefile    |    1 +
->  arch/arm/mach-omap2/debug34xx.c |   66
-> +++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-omap2/pm.h        |    6 +++
->  arch/arm/mach-omap2/pm34xx.c    |    3 ++
->  4 files changed, 76 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/mach-omap2/debug34xx.c
+> What's the problem
+> ------------------
+> On high end storage (I got on HP EVA storage array with 12 SATA disks in 
+> RAID 5), CFQ's model of dispatching requests from a single queue at a
+> time (sequential readers/write sync writers etc), becomes a bottleneck.
+> Often we don't drive enough request queue depth to keep all the disks busy
+> and suffer a lot in terms of overall throughput.
 > 
-> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-> index f5b4ff4..3a64ce4 100644
-> --- a/arch/arm/mach-omap2/Makefile
-> +++ b/arch/arm/mach-omap2/Makefile
-> @@ -49,6 +49,7 @@ ifeq ($(CONFIG_PM),y)
->  obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
->  obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
->  obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o cpuidle34xx.o
-> +obj-$(CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG) += debug34xx.o
->  obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
+> All these problems primarily originate from two things. Idling on per
+> cfq queue and quantum (dispatching limited number of requests from a
+> single queue) and till then not allowing dispatch from other queues. Once
+> you set the slice_idle=0 and quantum to higher value, most of the CFQ's
+> problem on higher end storage disappear.
 > 
->  AFLAGS_sleep24xx.o			:=-Wa,-march=armv6
-> diff --git a/arch/arm/mach-omap2/debug34xx.c b/arch/arm/mach-
-> omap2/debug34xx.c
-> new file mode 100644
-> index 0000000..698e83a
-> --- /dev/null
-> +++ b/arch/arm/mach-omap2/debug34xx.c
+> This problem also becomes visible in IO controller where one creates
+> multiple groups and gets the fairness but overall throughput is less. In
+> the following table, I am running increasing number of sequential readers
+> (1,2,4,8) in 8 groups of weight 100 to 800.
+> 
+> Kernel=2.6.35-rc5-iops+
+> GROUPMODE=1          NRGRP=8
+> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
+> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
+> group_isolation=1 slice_idle=8    group_idle=8    quantum=8
+> =========================================================================
+> AVERAGE[bsr]    [bw in KB/s]
+> -------
+> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
+> ---     --- --  ---------------------------------------------------------------
+> bsr     3   1   6186   12752  16568  23068  28608  35785  42322  48409  213701
+> bsr     3   2   5396   10902  16959  23471  25099  30643  37168  42820  192461
+> bsr     3   4   4655   9463   14042  20537  24074  28499  34679  37895  173847
+> bsr     3   8   4418   8783   12625  19015  21933  26354  29830  36290  159249
+> 
+> Notice that overall throughput is just around 160MB/s with 8 sequential reader
+> in each group.
+> 
+> With this patch set, I have set slice_idle=0 and re-ran same test.
+> 
+> Kernel=2.6.35-rc5-iops+
+> GROUPMODE=1          NRGRP=8
+> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
+> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
+> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
+> =========================================================================
+> AVERAGE[bsr]    [bw in KB/s]
+> -------
+> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
+> ---     --- --  ---------------------------------------------------------------
+> bsr     3   1   6523   12399  18116  24752  30481  36144  42185  48894  219496
+> bsr     3   2   10072  20078  29614  38378  46354  52513  58315  64833  320159
+> bsr     3   4   11045  22340  33013  44330  52663  58254  63883  70990  356520
+> bsr     3   8   12362  25860  37920  47486  61415  47292  45581  70828  348747
+> 
+> Notice how overall throughput has shot upto 348MB/s while retaining the ability
+> to do the IO control.
+> 
+> So this is not the default mode. This new tunable group_idle, allows one to
+> set slice_idle=0 to disable some of the CFQ features and and use primarily
+> group service differentation feature.
+> 
+> If you have thoughts on other ways of solving the problem, I am all ears
+> to it.
 
-> @@ -0,0 +1,66 @@
-> +/*
-> + * Control saving and restoring of coresight components' state during
-> + * OFF mode.
-> + *
-> + * Copyright (C) 2010 Nokia Corporation
-> + * Alexander Shishkin
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/sysfs.h>
-> +#include <linux/kobject.h>
-> +
-> +#include "pm.h"
-> +
-> +/*
-> + * Pointer to a place in sram where the ETM/debug state save
-> + * flag is. It can be calculated after the omap_sram_idle is
-> + * pushed to sram.
-> + */
-> +static unsigned int *_etm_save;
-> +
-> +/*
-> + * sysfs file /sys/power/coresight_save controls whether the
-> + * state of coresight components should be saved and restored
-> + * across OFF modes.
-> + */
-> +static ssize_t coresight_save_show(struct kobject *kobj,
-> +				  struct kobj_attribute *attr,
-> +				  char *buf)
-> +{
-> +	return sprintf(buf, "%u\n", *_etm_save);
-> +}
-> +
-> +static ssize_t coresight_save_store(struct kobject *kobj,
-> +				   struct kobj_attribute *attr,
-> +				   const char *buf, size_t n)
-> +{
-> +	unsigned int value;
-> +
-> +	if (sscanf(buf, "%u", &value) != 1)
-> +		return -EINVAL;
-> +
-> +	*_etm_save = !!value;
-> +
-> +	return n;
-> +}
-> +
-> +static struct kobj_attribute coresight_save_attr =
-> +	__ATTR(coresight_save, 0644, coresight_save_show,
-> coresight_save_store);
-> +
-> +int omap3_coresight_pm_init(void *sram_addr)
-> +{
-> +	int ret;
-> +
-> +	/* the last word from the top of omap_sram_idle */
-> +	_etm_save = (unsigned *)((u8 *)sram_addr + omap34xx_cpu_suspend_sz -
-> 4);
-> +
-> +	ret = sysfs_create_file(power_kobj, &coresight_save_attr.attr);
-> +
-> +	return ret;
-> +}
+Hi Vivek,
 
-Looking at content of this file, I think you can keep this under common 
-pm-debug.c file. 
-Any problems with that ?
-> +
-> diff --git a/arch/arm/mach-omap2/pm.h b/arch/arm/mach-omap2/pm.h
-> index 3de6ece..0321834 100644
-> --- a/arch/arm/mach-omap2/pm.h
-> +++ b/arch/arm/mach-omap2/pm.h
-> @@ -76,6 +76,12 @@ extern void omap34xx_cpu_suspend(u32 *addr, int
-> save_state);
->  extern void save_secure_ram_context(u32 *addr);
->  extern void omap3_save_scratchpad_contents(void);
+I did some tests on single SATA disk on my desktop. With patches applied, seems no
+regression occurs till now, and have some performance improvement in case of 
+"Direct Random Reader" mode. Here're some numbers on my box.
+
+Vallina kernel:
+
+Blkio is already mounted at /cgroup/blkio. Unmounting it
+DIR=/mnt/iostestmnt/fio                 DEV=/dev/sdb2
+GROUPMODE=1                             NRGRP=4
+Will run workloads for increasing number of threads upto a max of 4
+Starting test for [drr] with set=1 numjobs=1 filesz=512M bs=32k runtime=30
+Starting test for [drr] with set=1 numjobs=2 filesz=512M bs=32k runtime=30
+Starting test for [drr] with set=1 numjobs=4 filesz=512M bs=32k runtime=30
+Finished test for workload [drr]
+Host=localhost.localdomain     Kernel=2.6.35-rc4-Vivek-+
+GROUPMODE=1          NRGRP=4
+DIR=/mnt/iostestmnt/fio        DEV=/dev/sdb2
+Workload=drr      iosched=cfq     Filesz=512M bs=32k
+group_isolation=1 slice_idle=0    group_idle=8    quantum=8
+=========================================================================
+AVERAGE[drr]    [bw in KB/s]
+-------
+job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total
+---     --- --  -----------------------------------
+drr     1   1   761    761    762    760    3044
+drr     1   2   185    420    727    1256   2588
+drr     1   4   180    371    588    863    2002
+
+
+Patched kernel:
+
+Blkio is already mounted at /cgroup/blkio. Unmounting it
+DIR=/mnt/iostestmnt/fio                 DEV=/dev/sdb2
+GROUPMODE=1                             NRGRP=4
+Will run workloads for increasing number of threads upto a max of 4
+Starting test for [drr] with set=1 numjobs=1 filesz=512M bs=32k runtime=30
+Starting test for [drr] with set=1 numjobs=2 filesz=512M bs=32k runtime=30
+Starting test for [drr] with set=1 numjobs=4 filesz=512M bs=32k runtime=30
+Finished test for workload [drr]
+Host=localhost.localdomain     Kernel=2.6.35-rc4-Vivek-+
+GROUPMODE=1          NRGRP=4
+DIR=/mnt/iostestmnt/fio        DEV=/dev/sdb2
+Workload=drr      iosched=cfq     Filesz=512M bs=32k
+group_isolation=1 slice_idle=0    group_idle=8    quantum=8
+=========================================================================
+AVERAGE[drr]    [bw in KB/s]
+-------
+job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total
+---     --- --  -----------------------------------
+drr     1   1   323    671    1030   1378   3402
+drr     1   2   165    391    686    1144   2386
+drr     1   4   185    373    612    873    2043
+
+Thanks
+Gui
+
 > 
-> +#ifdef CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG
-> +int omap3_coresight_pm_init(void *sram_addr);
-> +#else
-> +#define omap3_coresight_pm_init(x) do {} while (0)
-> +#endif
-> +
->  extern unsigned int omap24xx_idle_loop_suspend_sz;
->  extern unsigned int omap34xx_suspend_sz;
->  extern unsigned int save_secure_ram_context_sz;
-> diff --git a/arch/arm/mach-omap2/pm34xx.c b/arch/arm/mach-omap2/pm34xx.c
-> index fb4994a..c389e65 100644
-> --- a/arch/arm/mach-omap2/pm34xx.c
-> +++ b/arch/arm/mach-omap2/pm34xx.c
-> @@ -1096,6 +1096,9 @@ static int __init omap3_pm_init(void)
->  	core_clkdm = clkdm_lookup("core_clkdm");
+> Thanks
+> Vivek
 > 
->  	omap_push_sram_idle();
-> +
-> +	omap3_coresight_pm_init(_omap_sram_idle);
-> +
->  #ifdef CONFIG_SUSPEND
->  	suspend_set_ops(&omap_pm_ops);
->  #endif /* CONFIG_SUSPEND */
-> --
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
