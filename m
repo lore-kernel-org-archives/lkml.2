@@ -1,139 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab0GZMN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 08:13:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33233 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754476Ab0GZMN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 08:13:26 -0400
-Date: Mon, 26 Jul 2010 14:12:59 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
-        Chris Mason <chris.mason@oracle.com>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20100726121258.GE3280@quack.suse.cz>
-References: <20100722050928.653312535@intel.com>
- <20100722061822.906037624@intel.com>
- <20100723181521.GC20540@quack.suse.cz>
- <20100726115153.GF6284@localhost>
+	id S1754588Ab0GZMTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 08:19:55 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:34528 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754152Ab0GZMTy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 08:19:54 -0400
+To: Cong Wang <amwang@redhat.com>
+Cc: huang ying <huang.ying.caritas@gmail.com>, linux-kernel@vger.kernel.org,
+        nhorman@redhat.com, akpm@linux-foundation.org
+Subject: Re: [Patch] kexec: increase max of kexec segments and use dynamic allocation
+References: <20100722061810.5659.87609.sendpatchset@localhost.localdomain>
+	<m1wrso2foi.fsf@fess.ebiederm.org> <4C47E7C9.60608@redhat.com>
+	<m1iq482duy.fsf@fess.ebiederm.org>
+	<AANLkTikZTGYl2NIFzcTCG2DAaMefhnJAkSHIoJN22QoI@mail.gmail.com>
+	<m1lj90p8yp.fsf@fess.ebiederm.org> <4C4D5F4F.8080002@redhat.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 26 Jul 2010 05:19:49 -0700
+In-Reply-To: <4C4D5F4F.8080002@redhat.com> (Cong Wang's message of "Mon\, 26 Jul 2010 18\:11\:27 +0800")
+Message-ID: <m1iq425tay.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100726115153.GF6284@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-07-10 19:51:53, Wu Fengguang wrote:
-> On Sat, Jul 24, 2010 at 02:15:21AM +0800, Jan Kara wrote:
-> > On Thu 22-07-10 13:09:32, Wu Fengguang wrote:
-> > > A background flush work may run for ever. So it's reasonable for it to
-> > > mimic the kupdate behavior of syncing old/expired inodes first.
-> > > 
-> > > The policy is
-> > > - enqueue all newly expired inodes at each queue_io() time
-> > > - retry with halfed expire interval until get some inodes to sync
-> >   Hmm, this logic looks a bit arbitrary to me. What I actually don't like
-> > very much about this that when there aren't inodes older than say 2
-> > seconds, you'll end up queueing just inodes between 2s and 1s. So I'd
-> > rather just queue inodes older than the limit and if there are none, just
-> > queue all other dirty inodes.
-> 
-> You are proposing
-> 
-> -				expire_interval >>= 1;
-> +				expire_interval = 0;
-> 
-> IMO this does not really simplify code or concept. If we can get the
-> "smoother" behavior in original patch without extra cost, why not? 
-  I agree there's no substantial code simplification. But I see a
-substantial "behavior" simplification (just two sweeps instead of 10 or
-so). But I don't really insist on the two sweeps, it's just that I don't
-see a justification for the exponencial back off here... I mean what's the
-point if the interval we queue gets really small? Why not just use
-expire_interval/2 as a step if you want a smoother behavior?
+Cong Wang <amwang@redhat.com> writes:
 
-								Honza
-> > > CC: Jan Kara <jack@suse.cz>
-> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > ---
-> > >  fs/fs-writeback.c |   20 ++++++++++++++------
-> > >  1 file changed, 14 insertions(+), 6 deletions(-)
-> > > 
-> > > --- linux-next.orig/fs/fs-writeback.c	2010-07-22 12:56:42.000000000 +0800
-> > > +++ linux-next/fs/fs-writeback.c	2010-07-22 13:07:51.000000000 +0800
-> > > @@ -217,14 +217,14 @@ static void move_expired_inodes(struct l
-> > >  				struct writeback_control *wbc)
-> > >  {
-> > >  	unsigned long expire_interval = 0;
-> > > -	unsigned long older_than_this;
-> > > +	unsigned long older_than_this = 0; /* reset to kill gcc warning */
-> > >  	LIST_HEAD(tmp);
-> > >  	struct list_head *pos, *node;
-> > >  	struct super_block *sb = NULL;
-> > >  	struct inode *inode;
-> > >  	int do_sb_sort = 0;
-> > >  
-> > > -	if (wbc->for_kupdate) {
-> > > +	if (wbc->for_kupdate || wbc->for_background) {
-> > >  		expire_interval = msecs_to_jiffies(dirty_expire_interval * 10);
-> > >  		older_than_this = jiffies - expire_interval;
-> > >  	}
-> > > @@ -232,8 +232,15 @@ static void move_expired_inodes(struct l
-> > >  	while (!list_empty(delaying_queue)) {
-> > >  		inode = list_entry(delaying_queue->prev, struct inode, i_list);
-> > >  		if (expire_interval &&
-> > > -		    inode_dirtied_after(inode, older_than_this))
-> > > -			break;
-> > > +		    inode_dirtied_after(inode, older_than_this)) {
-> > > +			if (wbc->for_background &&
-> > > +			    list_empty(dispatch_queue) && list_empty(&tmp)) {
-> > > +				expire_interval >>= 1;
-> > > +				older_than_this = jiffies - expire_interval;
-> > > +				continue;
-> > > +			} else
-> > > +				break;
-> > > +		}
-> > >  		if (sb && sb != inode->i_sb)
-> > >  			do_sb_sort = 1;
-> > >  		sb = inode->i_sb;
-> > > @@ -521,7 +528,8 @@ void writeback_inodes_wb(struct bdi_writ
-> > >  
-> > >  	wbc->wb_start = jiffies; /* livelock avoidance */
-> > >  	spin_lock(&inode_lock);
-> > > -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
-> > > +
-> > > +	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
-> > >  		queue_io(wb, wbc);
-> > >  
-> > >  	while (!list_empty(&wb->b_io)) {
-> > > @@ -550,7 +558,7 @@ static void __writeback_inodes_sb(struct
-> > >  
-> > >  	wbc->wb_start = jiffies; /* livelock avoidance */
-> > >  	spin_lock(&inode_lock);
-> > > -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
-> > > +	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
-> > >  		queue_io(wb, wbc);
-> > >  	writeback_sb_inodes(sb, wb, wbc, true);
-> > >  	spin_unlock(&inode_lock);
-> > > 
-> > > 
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > -- 
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> So, what is a better number? 2048? :)
+
+I was thinking something a little ridiculous like 10K or 64K.
+
+Assuming the usage you care about is something like hibernate on a
+machine with disjoint memory where you truly need one segment for
+each memory region.
+
+The only point of a limit at all once we introduce dynamic allocation
+is to catch buggy apps.
+
+Eric
