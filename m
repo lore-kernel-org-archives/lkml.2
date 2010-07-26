@@ -1,203 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab0GZNkZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 09:40:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51974 "EHLO mx2.suse.de"
+	id S1753954Ab0GZNns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 09:43:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781Ab0GZNkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 09:40:24 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH] Dynamic Debug: Introduce global fake module param module.ddebug
-Date: Mon, 26 Jul 2010 15:42:32 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
-Cc: yehuda@hq.newdream.net, LKML <linux-kernel@vger.kernel.org>
-References: <201007261414.30718.trenn@suse.de>
-In-Reply-To: <201007261414.30718.trenn@suse.de>
+	id S1752811Ab0GZNnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 09:43:47 -0400
+Date: Mon, 26 Jul 2010 09:43:29 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Heinz Diehl <htd@fancy-poultry.org>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, jmoyer@redhat.com,
+        czoccolo@gmail.com, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
+ group_idle tunable
+Message-ID: <20100726134329.GB12449@redhat.com>
+References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+ <20100723140343.GA8478@fancy-poultry.org>
+ <20100723141303.GB13104@redhat.com>
+ <20100723145631.GA8844@fancy-poultry.org>
+ <20100723183720.GD13104@redhat.com>
+ <20100724080613.GA6554@fancy-poultry.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007261542.32811.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100724080613.GA6554@fancy-poultry.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 July 2010 14:14:30 Thomas Renninger wrote:
-> This patch is based on 2.6.35-rc5 + this patchset I posted recently:                                                           
-> [patch 0/3] Dynamic Debug providing early boot debug messages via boot parameter
+On Sat, Jul 24, 2010 at 10:06:13AM +0200, Heinz Diehl wrote:
+> On 23.07.2010, Vivek Goyal wrote: 
 > 
-> It would be great to see these getting merged into 2.6.36...
-and this time with some Documentation added...
-Please use this patch instead of my first post.
+> > Anyway, for fs_mark problem, can you give following patch a try.
+> > https://patchwork.kernel.org/patch/113061/
+> 
+> Ported it to 2.6.35-rc6, and these are my results using the same fs_mark
+> call as before:
+> 
+> slice_idle = 0
+> 
+> FSUse%        Count         Size    Files/sec     App Overhead
+>     28         1000        65536        241.6            39574
+>     28         2000        65536        231.1            39939
+>     28         3000        65536        230.4            39722
+>     28         4000        65536        243.2            39646
+>     28         5000        65536        227.0            39892
+>     28         6000        65536        224.1            39555
+>     28         7000        65536        228.2            39761
+>     28         8000        65536        235.3            39766
+>     28         9000        65536        237.3            40518
+>     28        10000        65536        225.7            39861
+>     28        11000        65536        227.2            39441
+> 
+> 
+> slice_idle = 8
+> 
+> FSUse%        Count         Size    Files/sec     App Overhead
+>     28         1000        65536        502.2            30545
+>     28         2000        65536        407.6            29406
+>     28         3000        65536        381.8            30152
+>     28         4000        65536        438.1            30038
+>     28         5000        65536        447.5            30477
+>     28         6000        65536        422.0            29610
+>     28         7000        65536        383.1            30327
+>     28         8000        65536        415.3            30102
+>     28         9000        65536        397.6            31013
+>     28        10000        65536        401.4            29201
+>     28        11000        65536        408.8            29720
+>     28        12000        65536        391.2            29157
+> 
+> Huh...there's quite a difference! It's definitely the slice_idle settings
+> which affect the results here.
 
-Thanks,
+In this case it is not slice_idle. This patch puts both fsync writer and
+jbd thread on same service tree. That way once fsync writer is done there
+is no idling after that and jbd thread almost immediately gets to dispatch
+requests to disk hence we see improved throughput.
 
-         Thomas
+> Besides, this patch gives noticeably bad desktop interactivity on my system.
+> 
 
-----------
+How do you measure it? IOW, are you running something else also on the
+desktop in the background. Like a heavy writer etc and then measuring
+how interactive desktop feels?
 
-Dynamic Debug: Introduce global fake module param module.ddebug
+> Don't know if this is related, but I'm not quite shure if XFS (which I use
+> exclusively) uses the jbd/jbd2 journaling layer at all.
 
-Dynamic Debug allows enabling of pr_debug or KERN_DEBUG messages at runtime.
-This is controlled via /sys/kernel/debug/dynamic_debug/control.
-One major drawback is that the whole initialization of a module cannot be
-tracked, because ddebug is only aware of debug strings of loaded modules.
-But this is the most interesting part...
+I also don't know. But because this patch is making a difference with your
+XFS file system performance, may be it does use.
 
-This patch introduces a fake module parameter module.ddebug(not shown in
-/sys/module/*/parameters, thus it does not use any resources/memory).
+CCing Christoph, he can tell us.
 
-If a module passes ddebug as a module parameter (e.g. via module.ddebug
-kernel boot param or via "modprobe module ddebug"), all debug strings of this
-module get activated by issuing "module module_name +p" internally
-(not via sysfs) when the module gets loaded.
-
-Possible enhancements for the future if ddebug might get extended with
-further flags:
-module.ddebug=flags
-Then module.ddebug="p" would be the same as module.ddebug, but if there
-is a "x" ddebug flag added, one could pass:
-module.ddebug="xp"
-which would result in such a dynamic debug query:
-module module_name +xp
-
-One not handled side-effect of this patch:
-Modules must not use "ddebug" module parameter or it will get ignored.
-I tried to find a compile time check, but I could not see how that
-is possible. Possibly a run-time check or at least documentation (where?)
-should get added, that "ddebug" must not get used as a module parameter.
-
-Tested with:
-options hp-wmi ddebug
-in modprobe.conf
--> works and pr_debug messages issued at module initialization time show
-up. Also "p" flag gets set for the whole hp-wmi module:
-grep hp-wmi /sys/../dynamic_debug/control
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-
----
- Documentation/dynamic-debug-howto.txt |   28 +++++++++++++++++++++++++++-
- include/linux/dynamic_debug.h         |    5 +++++
- kernel/params.c                       |    9 ++++++++-
- lib/dynamic_debug.c                   |    2 +-
- 4 files changed, 41 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index 58ea64a..ebbbbdd 100644
---- a/Documentation/dynamic-debug-howto.txt
-+++ b/Documentation/dynamic-debug-howto.txt
-@@ -213,7 +213,7 @@ Note also that there is no convenient syntax to remove all
- the flags at once, you need to use "-psc".
- 
- 
--Debug messages during boot process
-+Debug Messages during Boot Process
- ==================================
- 
- To be able to activate debug messages during the boot process,
-@@ -232,6 +232,32 @@ PCI (or other devices) initialization also is a hot candidate for using
- this boot parameter for debugging purposes.
- 
- 
-+Debug Messages at Module Initialization Time
-+============================================
-+
-+Enabling debug messages inside a module is only possible if the module itself
-+is loaded already. If you unload a module, the dynamic debug flags associated
-+to its debug messages are lost.
-+Therefore, enabling debug messages that get processed at module initialization
-+time through the <debugfs>/dynamic_debug/control interface is not possible.
-+Instead, a "ddebug" module paramter can be passed:
-+
-+	- via kernel boot parameter:
-+	  module.ddebug
-+
-+	- as an ordinary module parameter via modprobe
-+	  modprobe module ddebug
-+
-+	- or the parameter can be used permanently via modprobe.conf(.local)
-+	  options module ddebug
-+
-+The ddebug option is not implemented as an ordinary module parameter and thus
-+will not show up in /sys/module/module_name/parameters/ddebug
-+The settings can get reverted through the sysfs interface again when the
-+module got loaded as soon as debug messages are not needed anymore:
-+echo "module module_name -p" > <debugfs>/dynamic_debug/control
-+as described in the "Command Language Reference" chapter above.
-+
- Examples
- ========
- 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 52c0da4..095adf6 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -41,6 +41,7 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
- 
- #if defined(CONFIG_DYNAMIC_DEBUG)
- extern int ddebug_remove_module(const char *mod_name);
-+extern int ddebug_exec_query(char *query_string);
- 
- #define __dynamic_dbg_enabled(dd)  ({	     \
- 	int __ret = 0;							     \
-@@ -77,6 +78,10 @@ static inline int ddebug_remove_module(const char *mod)
- {
- 	return 0;
- }
-+static inline int ddebug_exec_query(char *query_string)
-+{
-+	return 0;
-+}
- 
- #define dynamic_pr_debug(fmt, ...)					\
- 	do { if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); } while (0)
-diff --git a/kernel/params.c b/kernel/params.c
-index 0b30ecd..85d58e9 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -24,6 +24,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/ctype.h>
-+#include <linux/dynamic_debug.h>
- 
- #if 0
- #define DEBUGP printk
-@@ -132,7 +133,7 @@ int parse_args(const char *name,
- 	       unsigned num,
- 	       int (*unknown)(char *param, char *val))
- {
--	char *param, *val;
-+	char *param, *val, ddebug[1024];
- 
- 	DEBUGP("Parsing ARGS: %s\n", args);
- 
-@@ -144,6 +145,12 @@ int parse_args(const char *name,
- 		int irq_was_disabled;
- 
- 		args = next_arg(args, &param, &val);
-+		if (parameq(param, "ddebug")) {
-+			sprintf(ddebug, "module %s +p", name);
-+			ddebug_exec_query(ddebug);
-+			continue;
-+		}
-+
- 		irq_was_disabled = irqs_disabled();
- 		ret = parse_one(param, val, params, num, unknown);
- 		if (irq_was_disabled && !irqs_disabled()) {
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index a687d90..7f8ba5f 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -429,7 +429,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
- 	return 0;
- }
- 
--static int ddebug_exec_query(char *query_string)
-+int ddebug_exec_query(char *query_string)
- {
- 	unsigned int flags = 0, mask = 0;
- 	struct ddebug_query query;
+Thanks
+Vivek
