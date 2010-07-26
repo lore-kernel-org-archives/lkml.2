@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab0GZPrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 11:47:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36165 "EHLO hera.kernel.org"
+	id S1754794Ab0GZPzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 11:55:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17988 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754461Ab0GZPre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 11:47:34 -0400
-Message-ID: <4C4DADD6.90507@kernel.org>
-Date: Mon, 26 Jul 2010 17:46:30 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
- kthread
-References: <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com> <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com> <4C04D41B.4050704@kernel.org> <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com> <4C48B664.9000109@kernel.org> <20100724191447.GA4972@redhat.com> <4C4BEAA2.6040301@kernel.org> <20100726152510.GA26223@redhat.com> <4C4DAB14.5050809@kernel.org>
-In-Reply-To: <4C4DAB14.5050809@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Jul 2010 15:46:32 +0000 (UTC)
+	id S1753377Ab0GZPzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 11:55:09 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1280157768.3569.14.camel@localhost>
+References: <1280157768.3569.14.camel@localhost> <1279944664.2944.8.camel@localhost> <20100722175847.5552.11520.stgit@warthog.procyon.org.uk> <17723.1279897759@redhat.com> <9168.1280153997@redhat.com>
+To: Ian Kent <raven@themaw.net>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] Add a dentry op to handle automounting rather than abusing follow_link() [ver #2]
+Date: Mon, 26 Jul 2010 16:54:55 +0100
+Message-ID: <30118.1280159695@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2010 05:34 PM, Tejun Heo wrote:
-> Hello,
+Ian Kent <raven@themaw.net> wrote:
+
+> > Does it make autofs easier if d_op->d_automount() is allowed to return
+> > -EXDEV to request this?  Then you can return it in Oz mode to allow the
+> > daemon to see/use the underlying mountpoint without recursing back into
+> > d_automount().
 > 
-> On 07/26/2010 05:25 PM, Michael S. Tsirkin wrote:
->> BTW, kthread_worker would benefit from the optimization I implemented
->> here as well.
-> 
-> Hmmm... I'm not quite sure whether it's an optimization.  I thought
-> the patch was due to feeling uncomfortable about using barriers?  Is
-> it an optimization?
+> Yes, it's really useful.
 
-Yeah, one less smp_mb() in execution path.  The lock dancing in
-flush() is ugly but then again mucking with barriers could be harder
-to understand.  Care to send a patch against wq#for-next tree?
+I think what's required, then, is if d_automount() returns -EXDEV then:
 
-Thanks.
+ (1) If the dentry is terminal in the lookup path, then we just return -EXDEV
+     to indicate to __follow_mount() that we really do want to stop there.
 
--- 
-tejun
+ (2) If the dentry is not terminal, then we convert the error to -EREMOTE to
+     indicate that we can't complete the pathwalk as one of the earlier
+     components is inaccessible.
+
+See the attached patch.
+
+David
+---
+diff --git a/fs/namei.c b/fs/namei.c
+index c154112..6c385d4 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -653,8 +653,20 @@ static int follow_automount(struct path *path, unsigned flags, int res)
+ 		return -ELOOP;
+ 
+ 	mnt = path->dentry->d_op->d_automount(path);
+-	if (IS_ERR(mnt))
++	if (IS_ERR(mnt)) {
++		/*
++		 * The filesystem is allowed to return -EXDEV here to indicate
++		 * they don't want to automount.  For instance, autofs would do
++		 * this so that its userspace daemon can mount on this dentry.
++		 *
++		 * However, we can only permit this if it's a terminal point in
++		 * the path being looked up; if it wasn't then the remainder of
++		 * the path is inaccessible and we should say so.
++		 */
++		if (PTR_ERR(mnt) == -EXDEV && (flags & LOOKUP_CONTINUE))
++			return -EREMOTE;
+ 		return PTR_ERR(mnt);
++	}
+ 	if (!mnt) /* mount collision */
+ 		return 0;
+ 
+
