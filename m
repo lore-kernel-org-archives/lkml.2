@@ -1,177 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab0GZVRV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 17:17:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46902 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab0GZVRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 17:17:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=grw7HVwEhyj9TV/FNTMoq25airWoVPWR3XAW0NvcpQpq8cWXoFB1EbF8qvihWjE5/w
-         d1zIPcVg9e/v+IRHJ/wRI2PfcNpc3tHFdcc6e+KwvlMOLQD78cGhRoUXJbJRPQ9gQaeM
-         xp0/k3YXm8KxI4yYBfzurbZrfugaohPRKwCU4=
-Subject: Re: [ath5k-devel] [PATCH v3] ath5k: disable ASPM
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>,
-        "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        "tim.gardner@canonical.com" <tim.gardner@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Quan <David.Quan@atheros.com>
-In-Reply-To: <20100726210651.GJ14855@tux>
-References: <20100618134930.124225d4fsi8w1fk@naisho.dyndns.info>
-	 <1276859156.19554.2.camel@maxim-laptop>
-	 <AANLkTimdTjedtoeKAp5tcTqefrUB6k373Kx9EacuYFcO@mail.gmail.com>
-	 <1276870309.23783.3.camel@maxim-laptop>
-	 <1276933774.16697.11.camel@maxim-laptop>
-	 <20100619123841.GA31838@hash.localnet>
-	 <1276952554.3332.3.camel@maxim-laptop>
-	 <1276961564.5173.12.camel@maxim-laptop> <20100726201322.GI14855@tux>
-	 <1280177362.3721.7.camel@maxim-laptop>  <20100726210651.GJ14855@tux>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Jul 2010 00:17:13 +0300
-Message-ID: <1280179033.3721.15.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755062Ab0GZVWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 17:22:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49653 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab0GZVWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 17:22:16 -0400
+Date: Mon, 26 Jul 2010 17:21:58 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, nauman@google.com, dpshah@google.com,
+        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com
+Subject: Tuning IO scheduler (Was: Re: [RFC PATCH] cfq-iosced: Implement IOPS
+ mode and group_idle tunable V3)
+Message-ID: <20100726212158.GQ12449@redhat.com>
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+ <20100722055602.GA18566@infradead.org>
+ <20100722140044.GA28684@redhat.com>
+ <20100724085135.GB32006@infradead.org>
+ <AANLkTi=d-2-1R_Bpk_1J7AXhTc2Kv3p8S7tE0ZsFKFDe@mail.gmail.com>
+ <20100726143023.GF12449@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="82I3+IH0IqGh5yIs"
+Content-Disposition: inline
+In-Reply-To: <20100726143023.GF12449@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-26 at 14:06 -0700, Luis R. Rodriguez wrote: 
-> On Mon, Jul 26, 2010 at 01:49:22PM -0700, Maxim Levitsky wrote:
-> > On Mon, 2010-07-26 at 13:13 -0700, Luis R. Rodriguez wrote: 
-> > > On Sat, Jun 19, 2010 at 08:32:44AM -0700, Maxim Levitsky wrote:
-> > > > On Sat, 2010-06-19 at 16:02 +0300, Maxim Levitsky wrote: 
-> > > > > On Sat, 2010-06-19 at 08:38 -0400, Bob Copeland wrote: 
-> > > > > > On Sat, Jun 19, 2010 at 10:49:34AM +0300, Maxim Levitsky wrote:
-> > > > > > > How this patch?
-> > > > > > 
-> > > > > > Looks fine to me.  Some nitpicking below but feel free to add my
-> > > > > > 
-> > > > > > Acked-by: Bob Copeland <me@bobcopeland.com>
-> > > > > > 
-> > > > Done.
-> > > > 
-> > > > Best regards,
-> > > > Maxim Levitsky
-> > > > 
-> > > > --- 
-> > > > 
-> > > > commit 616afa397b3e843f2aba06be12a30e72dfff7740
-> > > > Author: Maxim Levitsky <maximlevitsky@gmail.com>
-> > > > Date:   Thu Jun 17 23:21:42 2010 +0300
-> > > > 
-> > > >     ath5k: disable ASPM
-> > > >     
-> > > >     Atheros card on Acer Aspire One (AOA150, Atheros Communications Inc. AR5001
-> > > >     Wireless Network Adapter [168c:001c] (rev 01)) doesn't work well with ASPM
-> > > >     enabled. With ASPM ath5k will eventually stall on heavy traffic with often
-> > > >     'unsupported jumbo' warnings appearing. Disabling ASPM L0s in ath5k fixes
-> > > >     these problems.
-> > > >     Also card sends a storm of RXORN interrupts even though medium is idle.
-> > > >     
-> > > >     Reproduced with pcie_aspm=force and by using 'nc < /dev/zero > /dev/null' at
-> > > >     both ends (usually stalls within seconds).
-> > > >     
-> > > >     Unfortunately BIOS enables ASPM on this card by default on these machines
-> > > >     This means that, problem shows up (less often) without pcie_aspm=force too. 
-> > > >     Therefore to benefit from this fix you need to _enable_ CONFIG_PCIEASPM
-> > > >     
-> > > > 
-> > > >     All credit for this patch goes to Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-> > > >     for finding and fixing this bug.
-> > > >     
-> > > >     Based on patch that is
-> > > >     From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-> > > >     
-> > > >     
-> > > >     Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-> > > >     Acked-by: Bob Copeland <me@bobcopeland.com>
-> > > 
-> > > Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-> > > 
-> > > But please resubmit and completley modify the commit log to indicate
-> > > ath5k cards support ASPM but L0s must be disabled, only L1
-> > > works correctly.
-> > > 
-> > > The comments about ASPM force should be removed as it would
-> > > lead others to try to use the same and the fact of the matter is
-> > > that ASPM force should never be used. As was clarified out of
-> > > some of these discussions worth noting also is that in newer
-> > > kernels CONFIG_PCIEASPM=y will always become the default, for
-> > > older kernels this was never the default and some distributions
-> > > (Ubunutu) do not have this enabled, the benefit of having it
-> > > enabled is it will disable ASPM for these cases:
-> > > 
-> > > (a) the PCIE device is pre PCIE 1.1
-> > > (b) the firmware has the FADT flag set to tell you not to and
-> > > (c) the firmware doesn't grant control via _OSC. The powersave policy will
-> > > enable ASPM even if the BIOS didn't, but only if something else doesn't
-> > > tell us not to.
-> > > 
-> > > The last two checks were only recently added by Mathew and forcing
-> > > CONFIG_PCIEASPM=y was also only recently made default.
-> > > 
-> > > In short, Linux distributions should also start enabling
-> > > CONFIG_PCIEASPM=y on older kernels.
-> > 
-> > 
-> > Just one note that since at least my ath5k device is pre 1.1, and you
-> > say that L1 can be enabled, and should, I probably need to enable L1
-> > explicitly in the driver.
-> > 
-> > OK?
+
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Jul 26, 2010 at 10:30:23AM -0400, Vivek Goyal wrote:
+> On Sat, Jul 24, 2010 at 11:07:07AM +0200, Corrado Zoccolo wrote:
+> > On Sat, Jul 24, 2010 at 10:51 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> > > To me this sounds like slice_idle=0 is the right default then, as it
+> > > gives useful behaviour for all systems linux runs on.
+> > No, it will give bad performance on single disks, possibly worse than
+> > deadline (deadline at least sorts the requests between different
+> > queues, while CFQ with slice_idle=0 doesn't even do this for readers).
 > 
-> No, ASPM must be enabled by the Systems Integrator through the BIOS, there are
-> other settings that have to be taken care of like modifying some PCI entrance and
-> exit latency timers, the number of FTS packets we send to exit L0s, amongst
-> other things. If a user selectively enables L1 but the BIOS had it disabled on
-> the device it may not work correctly.
+> > Setting slice_idle to 0 should be considered only when a single
+> > sequential reader cannot saturate the disk bandwidth, and this happens
+> > only on smart enough hardware with large number of spindles.
 > 
-> In other words leave the settings as-is on your card unless you developing
-> for a company to enable ASPM yourself or you are willing to take the risks.
-> Tweaks like force enabling a device to use ASPM should only then be done in
-> userspace and by an end user. This is not something Linux distributions should
-> let users tweak. Its a hacker task.
+> I was thinking of writting a user space utility which can launch
+> increasing number of parallel direct/buffered reads from device and if
+> device can sustain more than 1 parallel reads with increasing throughput,
+> then it probably is good indicator that one might be better off with
+> slice_idle=0.
 > 
-> However, it is reasonable to force disable L0s, for example, completley on
-> the driver if it is known that L0s does not work for all chisets supported
-> on that driver.
+> Will try that today...
 
-You didn't understand me.
+Ok, here is a small hackish bash script which takes a block device as
+input. It runs multiple parallel sequential readers in raw mode (dd on
+block device) and measures the total throughput. I run readers on 
+different areas of disks so that readers don't overlap and don't end up
+reading same block.
+
+The idea is to write a simple script which can run bunch of tests and
+suggest to user what IO scheduler to run or what IO scheduler tunable to
+use. At this point of time I am only looking to identify if we should
+use slice_idle or not in CFQ on a given block device.
+
+Here are some results of various runs. First column reporesents number of
+processes run in paralle, second column is total BW and third column is
+bandwidth of individual dd processes. Throughputs are in MB/s.
+
+SATA disk
+=========
+Noop
+----
+1       63.3      63.3
+2       18.7      9.4 9.3
+4       21.6      5.5 5.4 5.4 5.3
+8       29.6      5.9 4.5 3.6 3.5 3.3 3.0 3.0 2.8
+
+CFQ
+---
+1       63.2      63.2
+2       54.8      29.2 25.6
+4       50.3      13.9 12.8 12.1 11.5
+8       42.9      6.0 5.8 5.5 5.4 5.2 5.1 5.0 4.9
+
+Storage Array (12 disks in RAID 5 configuration)
+================================================
+Noop
+----
+1       62.5      62.5
+2       86.5      46.1 40.4
+4       98.7      32.4 24.3 21.9 20.1
+8       112.5     15.8 15.5 15.3 13.6 13.6 13.3 13.2 12.2
+
+CFQ
+---
+1       56.9      56.9
+2       34.8      18.0 16.8
+4       38.8      10.4 10.3 9.4 8.7
+8       44.4      6.1 6.1 5.9 5.9 5.7 5.0 4.9 4.8
+
+SSD
+===
+Noop
+----
+1       243       243
+2       231       122 109
+4       270.6     73.8 73.5 65.1 58.2
+8       262.9     33.3 33.2 33.2 33.2 33.2 33.2 33.2 30.4
+
+CFQ
+---
+1       244       244
+2       228       120 108
+4       260.6     67.1 67.0 67.0 59.5
+8       266.0     35.0 33.4 33.4 33.4 33.4 33.4 33.4 30.6
+
+Summary:
+
+- On SATA disk with single spindle as number of processes increase (2),
+  disk starts experiencing seeks and throughput drops dramatically. Here
+  CFQ idling helps.
+
+- On storage array, with noop, total throughput increases as number of
+  dd processes increase. That means underlying storage can support
+  multiple parallel readers without getting seek bound. In this probably
+  one should set slice_idle=0
+
+- With SSD throughput does not deteriorate as number of readers are
+  incrased. CFQ also performs well because internally idling is disabled
+  as SSD is marked as non-rotational device.
+
+So bottom line, if device can support multiple parallel read stream
+without significant drop in throughput, one can set slice_idle=0 in CFQ
+to achieve better overall throughput.
+
+This will primarily be true for data disks and not root disk as it does not
+gurantee better latencies in presence of buffered WRITES.
+
+Thanks
+Vivek
 
 
-On my notebook, the AR5001 device is marked as pre 1.1 PCIE device.
+--82I3+IH0IqGh5yIs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=iostune
 
-ASPM *is* enabled for both L0s and L1 by BIOS.
-
-Linux disables ASPM because the device is pre 1.1, and things work fine
-with no more patching (assuming that CONFIG_PCIEASPM is set)
-
-
-However, it is possible, (and that what I asked you) that some ath5k
-devices aren't 'pre 1.1 pcie devices' so linux won't disable ASPM L0s
-for them.
-So indeed for 'good feeling' it is ok to disable L0s from ath5k
-explicitly, but most of the time (or always) it will be no-op.
-
-In *addition* to that, since you said that ASPM L1 *does* work, and is
-enabled by BIOS, but linux disables it, that it might be worthy to
-enable it again from ath5k driver explicitly.
-As long as wireless works I don't really care if this done or not.
+#!/bin/bash
+#
+# A script intended to provide help with characterizing a block device and
+# provide help with setting IO scheduler tunbales accordingly.
+#
+# Author: Vivek Goyal <vgoyal@redhat.com>
 
 
-Best regards,
-Maxim Levitsky
+generate_report_nr_procs () {
+	local nr_procs=$1
+	local individual_bw
+	local individual_bw_copy
+	local bw
+	local total_bw=0
 
+	individual_bw=`cat $TEMPFILE | sed -n "/BEGIN NR_PROCESSES=$nr_procs/,/END NR_PROCESSES=$nr_procs/p" | grep "bytes.*copied" | awk -F ',' '{print $3}' | awk '{print $1}' | sed -e :a -e '$!N;s/\n/ /;ta'`
+
+#	echo "individual bw is $individual_bw"
+
+	for bw in $individual_bw;do
+		total_bw=`echo "$total_bw + $bw" | bc`
+	done
+
+	printf "%-8s%-10s%-60s\n" $nr_procs $total_bw "$individual_bw"
+}
+
+generate_report () {
+	local i
+
+	for ((i=1; i<=$MAX_NR_PROCESSES; i=$i*2)) {
+		generate_report_nr_procs $i
+	}
+}
+
+# Run the test for nr processes
+run_test_nr_processes () {
+	local nr_processes=$1
+	local bdev_size_bytes=`blockdev --getsize64 $BLOCKDEV`
+	local bdev_nr_ibs=$(($bdev_size_bytes/$BS))
+	local nr_ibs_per_process=$(($bdev_nr_ibs/$nr_processes))
+	local j
+
+	# disk might be big. By default read 512MB of data per process
+	local nr_blocks_to_read=$(((512*1024*1024)/$BS))
+
+	# Run processes
+	for((j=1; j<=$nr_processes; j++)) {
+		local skip_mult=$(($j-1))
+		local skip_blocks=$(($nr_ibs_per_process*$skip_mult))
+
+		dd if=$BLOCKDEV of=/dev/null ibs=$BS count=$nr_blocks_to_read skip=$skip_blocks >> $TEMPFILE 2>&1 &
+	}
+
+}
+
+start_test () {
+	local i
+
+	# Launch increasing number of dd threads. Determine device capacity
+	# divide the total capacity by number of threads and let different
+	# threads work on different area of block device.
+
+	echo "Will Run up to $MAX_NR_PROCESSES readers"
+
+	for((i=1; i<=$MAX_NR_PROCESSES; i=$i*2)) {
+		echo "Running test with $i readers"
+		echo "BEGIN NR_PROCESSES=$i" >> $TEMPFILE
+		run_test_nr_processes $i
+		wait
+		echo "END NR_PROCESSES=$i" >> $TEMPFILE
+	}
+}
+
+Usage () {
+	echo "Usage: $0 DEVICE"
+}
+
+# Main script
+if [ $# -lt 1 ];then
+	Usage
+	exit 1
+fi
+
+BLOCKDEV=$1
+# default block size
+BS=4096
+TEMPFILE=`mktemp /tmp/iostune.XXXXX`
+MAX_NR_PROCESSES=8
+
+if [ ! -b "$BLOCKDEV" ];then
+	echo "Error: $BLOCKDEV is not a block device."
+	exit 1
+fi
+
+start_test
+wait
+generate_report
+
+--82I3+IH0IqGh5yIs--
