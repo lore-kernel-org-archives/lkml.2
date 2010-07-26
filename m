@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab0GZUy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:54:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40923 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab0GZUy2 (ORCPT
+	id S1755354Ab0GZU4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:56:05 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50897 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751847Ab0GZU4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:54:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=ZZJ4ZhlB/ukOqYI90DDcSBuoSaictaOFVPfyajmXnjrayoDVs2jr6y5Unj3Tw2ozKs
-         xkA8u/vf4H2/+Lq62408FtsQ4XYwQccYvdDosRTERbDNkLbafeefDBjtIsv690g+lgkk
-         jICjwcbB8AsUIIt5WICuQQrta8VjNGWltefU0=
-MIME-Version: 1.0
-In-Reply-To: <20100726204432.GC18853@merkur.ravnborg.org>
-References: <20100726203814.GA18828@merkur.ravnborg.org> <20100726204432.GC18853@merkur.ravnborg.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 26 Jul 2010 16:54:05 -0400
-Message-ID: <AANLkTimrZwE+_awxxoQtdkeS7OVY+jDMawyfkYUas58G@mail.gmail.com>
-Subject: Re: [PATCH 3/3] kbuild: allow user to assign LDFLAGS_MODULE
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 26 Jul 2010 16:56:03 -0400
+Subject: Re: [PATCH] lib/scatterlist: Hook sg_kmalloc into kmemleak
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <jens.axboe@oracle.com>
+In-Reply-To: <1280067675-7610-1-git-send-email-chris@chris-wilson.co.uk>
+References: <1280067675-7610-1-git-send-email-chris@chris-wilson.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Mon, 26 Jul 2010 21:55:44 +0100
+Message-ID: <1280177744.27682.2.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Jul 2010 20:55:45.0457 (UTC) FILETIME=[EAEADA10:01CB2D04]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 16:44, Sam Ravnborg wrote:
-> From ce765a28adeb8878413a49ce62f442022d6a5b6a Mon Sep 17 00:00:00 2001
-> From: Sam Ravnborg <sam@ravnborg.org>
-> Date: Mon, 26 Jul 2010 22:20:12 +0200
-> Subject: [PATCH 3/3] kbuild: allow user to assign LDFLAGS_MODULE
->
-> Do not use LDFLAGS_MODULE in the top-level Makefile.
-> So if user assign a value to LDFALGS_MODULE the
-> original value is not lost.
->
-> Use a kbuild internal variable that archs can use,
-> and update all archs that used LDFALGS_MODULE.
+On Sun, 2010-07-25 at 15:21 +0100, Chris Wilson wrote:
+> kmemleak ignores page_alloc() and so believes the final sub-page
+> allocation using the plain kmalloc is decoupled and lost. This leads to
+> lots of false-positives with code that uses scatterlists.
+> 
+> The options seem to be either to tell kmemleak that the kmalloc is not
+> leaked or to notify kmemleak of the page allocations. The danger of the
+> first approach is that we may hide a real leak, so choose the latter
+> approach (of which I am not sure of the downsides).
 
-assuming end behavior is the same, the Blackfin part is:
-Acked-by: Mike Frysinger <vapier@gentoo.org>
+The patch looks fine to me. It would be useful to have some comment
+where kmemleak_*() functions are called so that people reading the code
+know why they are needed.
 
-also, could you say the same thing for CFLAGS_MODULE ?
--mike
+Thanks.
+
+-- 
+Catalin
+
