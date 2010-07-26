@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab0GZDRt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 23:17:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15634 "EHLO mga01.intel.com"
+	id S1753410Ab0GZD2C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 23:28:02 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7566 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753288Ab0GZDRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 23:17:48 -0400
+	id S1753288Ab0GZD17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Jul 2010 23:27:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,259,1278313200"; 
-   d="scan'208";a="589612824"
-Date: Mon, 26 Jul 2010 11:17:44 +0800
+   d="scan'208";a="641575507"
+Date: Mon, 26 Jul 2010 11:27:55 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
-To: Rik van Riel <riel@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -19,50 +19,83 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Dave Chinner <david@fromorbit.com>,
         Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>
+        Andrea Arcangeli <aarcange@redhat.com>
 Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
  writeback
-Message-ID: <20100726031744.GA9489@localhost>
+Message-ID: <20100726032755.GB7668@localhost>
 References: <20100723094515.GD5043@localhost>
  <20100723105719.GE5300@csn.ul.ie>
  <20100725192955.40D5.A69D9226@jp.fujitsu.com>
- <20100726030813.GA7668@localhost>
- <4C4CFCE9.8070303@redhat.com>
+ <20100725120345.GA1817@barrios-desktop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C4CFCE9.8070303@redhat.com>
+In-Reply-To: <20100725120345.GA1817@barrios-desktop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 11:11:37AM +0800, Rik van Riel wrote:
-> On 07/25/2010 11:08 PM, Wu Fengguang wrote:
+On Sun, Jul 25, 2010 at 08:03:45PM +0800, Minchan Kim wrote:
+> On Sun, Jul 25, 2010 at 07:43:20PM +0900, KOSAKI Motohiro wrote:
+> > Hi
+> > 
+> > sorry for the delay.
+> > 
+> > > Will you be picking it up or should I? The changelog should be more or less
+> > > the same as yours and consider it
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > 
+> > > It'd be nice if the original tester is still knocking around and willing
+> > > to confirm the patch resolves his/her problem. I am running this patch on
+> > > my desktop at the moment and it does feel a little smoother but it might be
+> > > my imagination. I had trouble with odd stalls that I never pinned down and
+> > > was attributing to the machine being commonly heavily loaded but I haven't
+> > > noticed them today.
+> > > 
+> > > It also needs an Acked-by or Reviewed-by from Kosaki Motohiro as it alters
+> > > logic he introduced in commit [78dc583: vmscan: low order lumpy reclaim also
+> > > should use PAGEOUT_IO_SYNC]
+> > 
+> > My reviewing doesn't found any bug. however I think original thread have too many guess
+> > and we need to know reproduce way and confirm it.
+> > 
+> > At least, we need three confirms.
+> >  o original issue is still there?
+> >  o DEF_PRIORITY/3 is best value?
 > 
-> > We do need some throttling under memory pressure. However stall time
-> > more than 1s is not acceptable. A simple congestion_wait() may be
-> > better, since it waits on _any_ IO completion (which will likely
-> > release a set of PG_reclaim pages) rather than one specific IO
-> > completion. This makes much smoother stall time.
-> > wait_on_page_writeback() shall really be the last resort.
-> > DEF_PRIORITY/3 means 1/16=6.25%, which is closer.
+> I agree. Wu, how do you determine DEF_PRIORITY/3 of LRU?
+> I guess system has 512M and 22M writeback pages. 
+> So you may determine it for skipping max 32M writeback pages.
+> Is right?
+
+For 512M mem, DEF_PRIORITY/3 means 32M dirty _or_ writeback pages.
+Because shrink_inactive_list() first calls
+shrink_page_list(PAGEOUT_IO_ASYNC) then optionally 
+shrink_page_list(PAGEOUT_IO_SYNC), so dirty pages will first be
+converted to writeback pages and then optionally be waited on.
+
+The dirty/writeback pages may go up to 512M*20% = 100M. So 32M looks
+a reasonable value.
+
+> And I have a question of your below comment. 
 > 
-> I agree with the max 1 second stall time, but 6.25% of
-> memory could be an awful lot of pages to scan on a system
-> with 1TB of memory :)
+> "As the default dirty throttle ratio is 20%, sync write&wait
+> will hardly be triggered by pure dirty pages"
+> 
+> I am not sure exactly what you mean but at least DEF_PRIOIRTY/3 seems to be
+> related to dirty_ratio. It always can be changed by admin.
+> Then do we have to determine magic value(DEF_PRIORITY/3)  proportional to dirty_ratio?
 
-I totally ignored the 1TB systems out of this topic, because in such
-systems, <PAGE_ALLOC_COSTLY_ORDER pages are easily available? :)
-
-> Not sure what the best approach is, just pointing out
-> that DEF_PRIORITY/3 may be too much for large systems...
-
-What if DEF_PRIORITY/3 is used under PAGE_ALLOC_COSTLY_ORDER?
+Yes DEF_PRIORITY/3 is already proportional to the _default_
+dirty_ratio. We could do explicit comparison with dirty_ratio
+just in case dirty_ratio get changed by user. It's mainly a question
+of whether deserving to add such overheads and complexity. I'd prefer
+to keep the current simple form :)
 
 Thanks,
 Fengguang
