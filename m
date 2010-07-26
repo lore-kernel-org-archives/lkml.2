@@ -1,231 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0GZRZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 13:25:29 -0400
-Received: from claw.goop.org ([74.207.240.146]:52178 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753690Ab0GZRZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 13:25:27 -0400
-Message-ID: <4C4DC505.9040202@goop.org>
-Date: Mon, 26 Jul 2010 10:25:25 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1754848Ab0GZRmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 13:42:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60246 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab0GZRmC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 13:42:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Wu6poyBh3hXqF1WdLHXhHxJVnnesJw7na16FMpv/8gYAiupcyhUa2Pews/iRpAS9hp
+         wJyk7mJtWTeNXCmbnKriV1s6OmdYzYtY3+7M/Icdwwdn/GMSNbuO665zHvq3iomyUkl4
+         P9SfFLG2Rq9KkqTnKZg0U+sOjla1TzGSAt+Jo=
+Date: Mon, 26 Jul 2010 10:41:54 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC PATCH] sysrq: don't hold the sysrq_key_table_lock during
+ the handler
+Message-ID: <20100726174153.GD14609@core.coreip.homeip.net>
+References: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
+ <20100726105148.GB14198@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sheng Yang <sheng@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the final tree (xen
- tree related)
-References: <20100726152908.951a95b7.sfr@canb.auug.org.au> <alpine.DEB.2.00.1007261132180.22235@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1007261132180.22235@kaball-desktop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726105148.GB14198@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/26/2010 03:43 AM, Stefano Stabellini wrote:
-> On Mon, 26 Jul 2010, Stephen Rothwell wrote:
->> Hi all,
->>
->> After merging the final tree, today's linux-next build (i386 defconfig)
->> failed like this:
->>
->> arch/x86/built-in.o: In function `init_hypervisor_platform':
->> (.init.text+0x3ca4): undefined reference to `x86_hyper_xen_hvm'
->> arch/x86/built-in.o: In function `init_hypervisor_platform':
->> (.init.text+0x3cad): undefined reference to `x86_hyper_xen_hvm'
->>
->> Caused by commit bee6ab53e652a414af20392899879b58cd80d033 ("x86: early PV
->> on HVM features initialization").
->>
->> I reverted commit 4b9100d12d15c0eaf23d9edc86228e1bdf452dc2 ("Merge branch
->> 'upstream/pvhvm' into upstream/xen") for today (since there were
->> dependencies on the above commit).
-> The problem is that x86_hyper_xen_hvm is in arch/x86/xen/enlighten.c,
-> that is compiled only when CONFIG_XEN is enabled.
-> The appended patch fixes the issue moving x86_hyper_xen_hvm to
-> arch/x86/kernel/cpu/xen.c that is always compiled.
->
-> An shorter alternative solution would be just to ifdef CONFIG_XEN
-> x86_hyper_xen_hvm in arch/x86/kernel/cpu/hypervisor.c.
+On Mon, Jul 26, 2010 at 06:51:48AM -0400, Neil Horman wrote:
+> On Mon, Jul 26, 2010 at 05:54:02PM +0800, Xiaotian Feng wrote:
+> > sysrq_key_table_lock is used to protect the sysrq_key_table, make sure
+> > we get/replace the right operation for the sysrq. But in __handle_sysrq,
+> > kernel will hold this lock and disable irqs until we finished op_p->handler().
+> > This may cause false positive watchdog alert when we're doing "show-task-states"
+> > on a system with many tasks.
+> > 
+> > Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Neil Horman <nhorman@tuxdriver.com>
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > ---
+> >  drivers/char/sysrq.c |    4 +++-
+> >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+> > index 878ac0c..0856e2e 100644
+> > --- a/drivers/char/sysrq.c
+> > +++ b/drivers/char/sysrq.c
+> > @@ -520,9 +520,11 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
+> >  		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
+> >  			printk("%s\n", op_p->action_msg);
+> >  			console_loglevel = orig_log_level;
+> > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> >  			op_p->handler(key, tty);
+> >  		} else {
+> >  			printk("This sysrq operation is disabled.\n");
+> > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> >  		}
+> >  	} else {
+> >  		printk("HELP : ");
+> > @@ -541,8 +543,8 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
+> >  		}
+> >  		printk("\n");
+> >  		console_loglevel = orig_log_level;
+> > +		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> >  	}
+> > -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> >  }
+> >  
+> >  void handle_sysrq(int key, struct tty_struct *tty)
+> > -- 
+> > 1.7.2
+> > 
+> > 
+> 
+> This creates the possibility of a race in the handler.  Not that it happens
+> often, but sysrq keys can be registered and unregistered dynamically.  If that
+> lock isn't held while we call the keys handler, the code implementing that
+> handler can live in a module that gets removed while its executing, leading to
+> an oops, etc.  I think the better solution would be to use an rcu lock here.
 
-Seems like the most sensible thing to do.  What's the point in detecting 
-Xen if we don't have CONFIG_XEN enabled?
+I'd simply changed spinlock to a mutex.
 
-     J
-
->
-> Signed-off-by: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
->
-> ---
->
-> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-> index 5e3a351..25d2e82 100644
-> --- a/arch/x86/kernel/cpu/Makefile
-> +++ b/arch/x86/kernel/cpu/Makefile
-> @@ -15,6 +15,7 @@ CFLAGS_common.o		:= $(nostackp)
->   obj-y			:= intel_cacheinfo.o scattered.o topology.o
->   obj-y			+= proc.o capflags.o powerflags.o common.o
->   obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
-> +obj-y			+= xen.o
->
->   obj-$(CONFIG_X86_32)	+= bugs.o cmpxchg.o
->   obj-$(CONFIG_X86_64)	+= bugs_64.o
-> diff --git a/arch/x86/kernel/cpu/xen.c b/arch/x86/kernel/cpu/xen.c
-> new file mode 100644
-> index 0000000..b879de5
-> --- /dev/null
-> +++ b/arch/x86/kernel/cpu/xen.c
-> @@ -0,0 +1,68 @@
-> +/*
-> + * Copyright (C) 2010, Citrix Systems
-> + * Author : Stefano Stabellini<stefano.stabellini@eu.citrix.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-> + * NON INFRINGEMENT.  See the GNU General Public License for more
-> + * details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-> + *
-> + */
-> +
-> +#include<linux/init.h>
-> +#include<asm/x86_init.h>
-> +#include<asm/hypervisor.h>
-> +#include<asm/processor.h>
-> +#include<xen/xen.h>
-> +
-> +uint32_t xen_cpuid_base(void)
-> +{
-> +	uint32_t base, eax, ebx, ecx, edx;
-> +	char signature[13];
-> +
-> +	for (base = 0x40000000; base<  0x40010000; base += 0x100) {
-> +		cpuid(base,&eax,&ebx,&ecx,&edx);
-> +		*(uint32_t *)(signature + 0) = ebx;
-> +		*(uint32_t *)(signature + 4) = ecx;
-> +		*(uint32_t *)(signature + 8) = edx;
-> +		signature[12] = 0;
-> +
-> +		if (!strcmp("XenVMMXenVMM", signature)&&  ((eax - base)>= 2))
-> +			return base;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static void __init __xen_hvm_guest_init(void)
-> +{
-> +	xen_hvm_guest_init();
-> +}
-> +
-> +static bool __init xen_hvm_platform(void)
-> +{
-> +	if (xen_pv_domain())
-> +		return false;
-> +
-> +	if (!xen_cpuid_base())
-> +		return false;
-> +
-> +	return true;
-> +}
-> +
-> +const __refconst struct hypervisor_x86 x86_hyper_xen_hvm = {
-> +	.name			= "Xen HVM",
-> +	.detect			= xen_hvm_platform,
-> +	.init_platform		= __xen_hvm_guest_init,
-> +};
-> +EXPORT_SYMBOL(x86_hyper_xen_hvm);
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 75b479a..06f954d 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1205,25 +1205,6 @@ asmlinkage void __init xen_start_kernel(void)
->   #endif
->   }
->
-> -static uint32_t xen_cpuid_base(void)
-> -{
-> -	uint32_t base, eax, ebx, ecx, edx;
-> -	char signature[13];
-> -
-> -	for (base = 0x40000000; base<  0x40010000; base += 0x100) {
-> -		cpuid(base,&eax,&ebx,&ecx,&edx);
-> -		*(uint32_t *)(signature + 0) = ebx;
-> -		*(uint32_t *)(signature + 4) = ecx;
-> -		*(uint32_t *)(signature + 8) = edx;
-> -		signature[12] = 0;
-> -
-> -		if (!strcmp("XenVMMXenVMM", signature)&&  ((eax - base)>= 2))
-> -			return base;
-> -	}
-> -
-> -	return 0;
-> -}
-> -
->   static int init_hvm_pv_info(int *major, int *minor)
->   {
->   	uint32_t eax, ebx, ecx, edx, pages, msr, base;
-> @@ -1300,7 +1281,7 @@ static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
->   	.notifier_call	= xen_hvm_cpu_notify,
->   };
->
-> -static void __init xen_hvm_guest_init(void)
-> +void __init xen_hvm_guest_init(void)
->   {
->   	int r;
->   	int major, minor;
-> @@ -1320,21 +1301,3 @@ static void __init xen_hvm_guest_init(void)
->   	xen_hvm_init_time_ops();
->   	xen_hvm_init_mmu_ops();
->   }
-> -
-> -static bool __init xen_hvm_platform(void)
-> -{
-> -	if (xen_pv_domain())
-> -		return false;
-> -
-> -	if (!xen_cpuid_base())
-> -		return false;
-> -
-> -	return true;
-> -}
-> -
-> -const __refconst struct hypervisor_x86 x86_hyper_xen_hvm = {
-> -	.name			= "Xen HVM",
-> -	.detect			= xen_hvm_platform,
-> -	.init_platform		= xen_hvm_guest_init,
-> -};
-> -EXPORT_SYMBOL(x86_hyper_xen_hvm);
-> diff --git a/include/xen/xen.h b/include/xen/xen.h
-> index a164024..dfc2784 100644
-> --- a/include/xen/xen.h
-> +++ b/include/xen/xen.h
-> @@ -9,9 +9,12 @@ enum xen_domain_type {
->
->   #ifdef CONFIG_XEN
->   extern enum xen_domain_type xen_domain_type;
-> +extern void __init xen_hvm_guest_init(void);
->   #else
->   #define xen_domain_type		XEN_NATIVE
-> +#define xen_hvm_guest_init() do { } while (0)
->   #endif
-> +extern uint32_t xen_cpuid_base(void);
->
->   #define xen_domain()		(xen_domain_type != XEN_NATIVE)
->   #define xen_pv_domain()		(xen_domain()&&			\
->
-
+-- 
+Dmitry
