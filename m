@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab0GZJGX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 05:06:23 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:43984
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751488Ab0GZJGW (ORCPT
+	id S1753870Ab0GZJI4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 05:08:56 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42194 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab0GZJIz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 05:06:22 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L65QM7-01-AV1-02
-X-M-MSG: 
-Date: Mon, 26 Jul 2010 11:06:07 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Kacur <jkacur@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Hellwig <hch@lst.de>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>
-Subject: Re: [PATCH 11/18] oprofile: make event buffer nonseekable
-Message-ID: <20100726090607.GC26154@erda.amd.com>
-References: <1278538820-1392-1-git-send-email-arnd@arndb.de>
- <1278538820-1392-12-git-send-email-arnd@arndb.de>
+	Mon, 26 Jul 2010 05:08:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1278538820-1392-12-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <20100722183614.GA5443@suse.de>
+References: <20100722182638.GA12712@kroah.com>
+	<AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+	<20100722183614.GA5443@suse.de>
+Date: Mon, 26 Jul 2010 11:08:53 +0200
+Message-ID: <AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+From: Dhaval Giani <dhaval.lists@thegianis.in>
+To: Greg KH <gregkh@suse.de>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.07.10 17:40:13, Arnd Bergmann wrote:
-> The event buffer cannot deal with seeks, so
-> we should forbid that outright.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Robert Richter <robert.richter@amd.com>
-> Cc: oprofile-list@lists.sf.net
+On Thu, Jul 22, 2010 at 8:36 PM, Greg KH <gregkh@suse.de> wrote:
+> On Thu, Jul 22, 2010 at 11:31:07AM -0700, Paul Menage wrote:
+>> On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
+>> > We really shouldn't be asking userspace to create new root filesystems.
+>> > So follow along with all of the other in-kernel filesystems, and provide
+>> > a mount point in sysfs.
+>> >
+>> > For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
+>> > that mount point when the cgroup filesystem is registered in the kernel.
+>>
+>> But cgroups will typically have multiple mounts, with different
+>> resource controllers/options on each mount. That doesn't really fit in
+>> with this scheme.
+>
+> Really?  I see systems mounting it at /cgroups/ in the filesystem today.
+> Where are you expecting it to be mounted at?
+>
 
-Applied to:
+Not really. It is getting mounted at /cgroups/<name of resource
+controller>/ at a number of places. Keeping it in sysfs loses us a lot
+of this flexibility. Unless you are ready to keep adding a new
+mountpoint for each subsystem, it will not really work out in the long
+term.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
-
-Thanks Arnd.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Dhaval
