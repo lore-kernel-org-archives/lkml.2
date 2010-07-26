@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab0GZQpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 12:45:09 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35571 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab0GZQpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 12:45:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,262,1278313200"; 
-   d="scan'208";a="304458381"
-Date: Mon, 26 Jul 2010 09:45:06 -0700 (Pacific Daylight Time)
-From: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-To: Andrey Panin <pazke@centrinvest.ru>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>
-Subject: Re: Problem with e1000e, 802.1Q VLAN's and IPMI
-In-Reply-To: <20100726073920.GD30155@centrinvest.ru>
-Message-ID: <alpine.WNT.2.00.1007260936160.4488@jbrandeb-desk1.amr.corp.intel.com>
-References: <20100726073920.GD30155@centrinvest.ru>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
-ReplyTo: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-X-X-Sender: amrjbrandeb@imapmail.glb.intel.com
+	id S1754365Ab0GZQrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 12:47:31 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:42027 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752658Ab0GZQra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 12:47:30 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 26 Jul 2010 12:47:30 EDT
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 3O.vMUkVM1lA313gTdB0xOX9oRQfjc_DEntgtu_d.rQaErZ
+ cJLAzUQsKfTlsWL6BVN7zNIxcw_ZjY1zZZGBl.5XkdWBP7SYDtajzABDWjCP
+ mU4VghIwG_VB3YrDLJr6xsE15Yzm2ZI9eNY4KwdZgUWIEzSTTT_Fi3hnXXbW
+ qSfq2RO90GnLgHLDT53Bu_VdQSSC4fGBcZrf2C7H_.ndcIPWQY.zJAidK9Xy
+ ZEOKh657RDtIsuQw5sL2uAAxEVTVvFROvjQZhmDBAZn9lvd1h
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 26 Jul 2010 11:40:44 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-mm <linux-mm@kvack.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+In-Reply-To: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
+Message-ID: <alpine.DEB.2.00.1007261136160.5438@router.home>
+References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 27 Jul 2010, Minchan Kim wrote:
 
+> This patch registers address of mem_section to memmap itself's page struct's
+> pg->private field. This means the page is used for memmap of the section.
+> Otherwise, the page is used for other purpose and memmap has a hole.
 
-On Mon, 26 Jul 2010, Andrey Panin wrote:
-> I have a problem using IPMI on Super Micro X7SBL motherboard (AOC-IPMI20-E BMC).
-> BMC shares ethernet port with onboard e1000e. It works when IPMI traffic is 
-> untagged (CrcStripping=0 module option used), but if I try to use 802.1Q vlan
-> for IPMI traffic BMC stops responding right after "ifup eth0". 
+What if page->private just happens to be the value of the page struct?
+Even if that is not possible today, someday someone may add new
+functionality to the kernel where page->pivage == page is used for some
+reason.
 
-We've heard of this issue (or similar) before.  I believe for the other 
-guys they had to run IPMI traffic untagged, if your main network is 
-running untagged.  The problem in this case is that the tags are being 
-stripped in hardware even for the SMBUS packets, at which point the BMC 
-that is stupid and doesn't understand offloading hardware gets confused 
-that the traffic it is receiving doesn't have a vlan tag.
+Checking for PG_reserved wont work?
 
-> I tested 2.6.26 (debian stable kernel) and 2.6.35-rc6.
-> Looks like there is some problem with 802.1Q tags stripping/inserting.
+> +void mark_valid_memmap(unsigned long start, unsigned long end);
+> +
+> +#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
+> +static inline int memmap_valid(unsigned long pfn)
+> +{
+> +	struct page *page = pfn_to_page(pfn);
+> +	struct page *__pg = virt_to_page(page);
+> +	return page_private(__pg) == (unsigned long)__pg;
 
-Thanks for testing the latest kernel.
-
-> There was no such problem with e1000 driver from 2.6.18.
-
-Hm, that is an interesting statement.  The major changes to the driver 
-include stripping tags all the time when not in promisc mode, and there 
-have been some fixes and attempts to fix the ipmi issues some 
-(particularly supermicro) BMCs have.  I'm quite surprised it worked for 
-you at all (there have been quite a few issues in this area)
-
-> Unfortunately I can't provide additional info right now, but I can provide
-> it slightly later and I'm ready to test patches.
-
-I can send you a patch to disable vlan stripping in hardware which will 
-probably get you working, but I don't think it is production worthy.
-
-Jesse
+Hmmm.. hmmm....
