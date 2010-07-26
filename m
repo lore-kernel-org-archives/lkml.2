@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab0GZJVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 05:21:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63953 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab0GZJVN (ORCPT
+	id S1754113Ab0GZJWK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 05:22:10 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41047 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab0GZJWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 05:21:13 -0400
+	Mon, 26 Jul 2010 05:22:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MWVV0oJQgd85T8RBsR0cHjAIOu3BTQTkKch+XrPvRsPe4DoyphhxyvpZjkcZOPJOXx
-         guMmgWAQzT4Qs2ar1qfXmF6JLlJU2nTykLawRhyfifroiL2fkLuaMGDr9v6GyYa6GsRc
-         Steky+TN2o+rRGFvrRi7C8uHV6Gnhj6Z7uzi0=
+        b=GoMTIZumFM6X8wTiMlontgrJd3CGR2P6Ryfq45TkK3LdZvE+n2OCxHJQ8WrKrPjwAb
+         qHz2FdL+2PhXWl9ywJJ2gmQdQOOJEeNOS5bIezvT+kkrxKxwIhOIpHeeNI7GusRc/SFS
+         57AGhcE9KhxNOFVWTuSbDnBVGeYKtHF4ERCnI=
 From: Changli Gao <xiaosuo@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH] genetlink: use genl_register_family_with_ops()
-Date: Mon, 26 Jul 2010 17:21:05 +0800
-Message-Id: <1280136065-17566-1-git-send-email-xiaosuo@gmail.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH] taskstats: use genl_register_family_with_ops()
+Date: Mon, 26 Jul 2010 17:22:03 +0800
+Message-Id: <1280136123-17605-1-git-send-email-xiaosuo@gmail.com>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,22 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Changli Gao <xiaosuo@gmail.com>
 ----
- net/netlink/genetlink.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
-index aa4308a..2a2bcc8 100644
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -873,11 +873,7 @@ static int __init genl_init(void)
- 	for (i = 0; i < GENL_FAM_TAB_SIZE; i++)
- 		INIT_LIST_HEAD(&family_ht[i]);
+ kernel/taskstats.c |   37 +++++++++++++------------------------
+ 1 file changed, 13 insertions(+), 24 deletions(-)
+diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+index 11281d5..d637a12 100644
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -578,16 +578,17 @@ err:
+ 	nlmsg_free(rep_skb);
+ }
  
--	err = genl_register_family(&genl_ctrl);
--	if (err < 0)
--		goto problem;
+-static struct genl_ops taskstats_ops = {
+-	.cmd		= TASKSTATS_CMD_GET,
+-	.doit		= taskstats_user_cmd,
+-	.policy		= taskstats_cmd_get_policy,
+-};
 -
--	err = genl_register_ops(&genl_ctrl, &genl_ctrl_ops);
-+	err = genl_register_family_with_ops(&genl_ctrl, &genl_ctrl_ops, 1);
- 	if (err < 0)
- 		goto problem;
+-static struct genl_ops cgroupstats_ops = {
+-	.cmd		= CGROUPSTATS_CMD_GET,
+-	.doit		= cgroupstats_user_cmd,
+-	.policy		= cgroupstats_cmd_get_policy,
++static struct genl_ops taskstats_ops[] = {
++	{
++		.cmd		= TASKSTATS_CMD_GET,
++		.doit		= taskstats_user_cmd,
++		.policy		= taskstats_cmd_get_policy,
++	},
++	{
++		.cmd		= CGROUPSTATS_CMD_GET,
++		.doit		= cgroupstats_user_cmd,
++		.policy		= cgroupstats_cmd_get_policy,
++	},
+ };
  
+ /* Needed early in initialization */
+@@ -606,26 +607,14 @@ static int __init taskstats_init(void)
+ {
+ 	int rc;
+ 
+-	rc = genl_register_family(&family);
++	rc = genl_register_family_with_ops(&family, taskstats_ops,
++					   ARRAY_SIZE(taskstats_ops));
+ 	if (rc)
+ 		return rc;
+ 
+-	rc = genl_register_ops(&family, &taskstats_ops);
+-	if (rc < 0)
+-		goto err;
+-
+-	rc = genl_register_ops(&family, &cgroupstats_ops);
+-	if (rc < 0)
+-		goto err_cgroup_ops;
+-
+ 	family_registered = 1;
+ 	printk("registered taskstats version %d\n", TASKSTATS_GENL_VERSION);
+ 	return 0;
+-err_cgroup_ops:
+-	genl_unregister_ops(&family, &taskstats_ops);
+-err:
+-	genl_unregister_family(&family);
+-	return rc;
+ }
+ 
+ /*
