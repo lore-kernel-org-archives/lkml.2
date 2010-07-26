@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab0GZRmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 13:42:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60246 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320Ab0GZRmC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 13:42:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Wu6poyBh3hXqF1WdLHXhHxJVnnesJw7na16FMpv/8gYAiupcyhUa2Pews/iRpAS9hp
-         wJyk7mJtWTeNXCmbnKriV1s6OmdYzYtY3+7M/Icdwwdn/GMSNbuO665zHvq3iomyUkl4
-         P9SfFLG2Rq9KkqTnKZg0U+sOjla1TzGSAt+Jo=
-Date: Mon, 26 Jul 2010 10:41:54 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC PATCH] sysrq: don't hold the sysrq_key_table_lock during
- the handler
-Message-ID: <20100726174153.GD14609@core.coreip.homeip.net>
-References: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
- <20100726105148.GB14198@hmsreliant.think-freely.org>
+	id S1754662Ab0GZRsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 13:48:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34703 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751428Ab0GZRsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 13:48:37 -0400
+Date: Mon, 26 Jul 2010 10:43:14 -0700
+From: Greg KH <gregkh@suse.de>
+To: "David A. Ranch" <dranch@trinnet.net>
+Cc: Greg KH <greg@kroah.com>, bryder@sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] small FTDI USB serial driver update
+Message-ID: <20100726174314.GC17741@suse.de>
+References: <4C4B826E.8050009@trinnet.net>
+ <20100725045859.GA7631@kroah.com>
+ <4C4C4BD8.7040008@trinnet.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100726105148.GB14198@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C4C4BD8.7040008@trinnet.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 06:51:48AM -0400, Neil Horman wrote:
-> On Mon, Jul 26, 2010 at 05:54:02PM +0800, Xiaotian Feng wrote:
-> > sysrq_key_table_lock is used to protect the sysrq_key_table, make sure
-> > we get/replace the right operation for the sysrq. But in __handle_sysrq,
-> > kernel will hold this lock and disable irqs until we finished op_p->handler().
-> > This may cause false positive watchdog alert when we're doing "show-task-states"
-> > on a system with many tasks.
-> > 
-> > Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Neil Horman <nhorman@tuxdriver.com>
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > ---
-> >  drivers/char/sysrq.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-> > index 878ac0c..0856e2e 100644
-> > --- a/drivers/char/sysrq.c
-> > +++ b/drivers/char/sysrq.c
-> > @@ -520,9 +520,11 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
-> >  		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
-> >  			printk("%s\n", op_p->action_msg);
-> >  			console_loglevel = orig_log_level;
-> > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> >  			op_p->handler(key, tty);
-> >  		} else {
-> >  			printk("This sysrq operation is disabled.\n");
-> > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> >  		}
-> >  	} else {
-> >  		printk("HELP : ");
-> > @@ -541,8 +543,8 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
-> >  		}
-> >  		printk("\n");
-> >  		console_loglevel = orig_log_level;
-> > +		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> >  	}
-> > -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
-> >  }
-> >  
-> >  void handle_sysrq(int key, struct tty_struct *tty)
-> > -- 
-> > 1.7.2
-> > 
-> > 
+On Sun, Jul 25, 2010 at 07:36:08AM -0700, David A. Ranch wrote:
 > 
-> This creates the possibility of a race in the handler.  Not that it happens
-> often, but sysrq keys can be registered and unregistered dynamically.  If that
-> lock isn't held while we call the keys handler, the code implementing that
-> handler can live in a module that gets removed while its executing, leading to
-> an oops, etc.  I think the better solution would be to use an rcu lock here.
+> Hello Greg,
+> 
+> Thanks for getting back to me!  I didn't know what you meant by
+> "Sign-off" but I just researched it per
+> http://lwn.net/Articles/139918 (please let me know if that post
+> doesn't apply anymore).  This will be my first kernel patch.  Let's
+> try again:
 
-I'd simply changed spinlock to a mutex.
+Close, but it's a bit off.  Try looking at the version in the kernel
+tree that you are patching against (should be 2.6.34 or newer).
 
--- 
-Dmitry
+> 
+> Reason for patch:
+> -----------------
+> This patch is for a US Interface, Inc. "Navigator" USB device.
+> Specifically, it's a HAM Radio USB sound modem that also
+> incorporates three pairs of unique FTDI serial ports.  The standard
+> Linux FTDI serial driver will only recognize the first two serial
+> ports of an unknown FDTI derived device and this patch adds in
+> recognition to these specific new IDs.
+> 
+> 
+> Diffs are against a vanilla 2.6.34
+
+The Signed-off-by: line should go here.
+
+> 
+> 
+> --- ftdi_sio_ids.h.orig 2010-07-25 07:17:44.000000000 -0700
+> +++ ftdi_sio_ids.h      2010-07-25 07:20:46.000000000 -0700
+
+ need a full path to the driver, something like:
+ 	a/drivers/usb/serial/ftdi_sio_ids.h.orig
+
+
+> @@ -40,6 +40,13 @@
+> 
+>  #define FTDI_NXTCAM_PID                0xABB8 /* NXTCam for
+> Mindstorms NXT */
+> 
+> +/* US Interface Navigator (http://www.usinterface.com/). */
+> +/* Submitted by David Ranch */
+> +#define FTDI_USINT_CAT_PID     0xB810  /* Navigator CAT and 2nd PTT
+> lines */
+
+The patch is line-wrapped and can't be applied.
+
+> +#define FTDI_USINT_WKEY_PID    0xB811  /* Navigator WKEY and FSK lines */
+> +#define FTDI_USINT_RS232_PID   0xB812  /* Navigator RS232 and
+> CONFIG lines */
+> +
+> +
+>  /* OOCDlink by Joern Kaipf <joernk@web.de>
+>   * (http://www.joernonline.de/dw/doku.php?id=start&idx=projects:oocdlink)
+> */
+>  #define FTDI_OOCDLINK_PID      0xbaf8  /* Amontec JTAGkey */
+> 
+> 
+> 
+> --- ftdi_sio.c.orig     2010-07-25 07:21:10.000000000 -0700
+> +++ ftdi_sio.c  2010-07-25 07:24:21.000000000 -0700
+> @@ -162,6 +162,9 @@ static struct usb_device_id id_table_com
+>         { USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_5_PID) },
+>         { USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_6_PID) },
+
+Your email client stripped off the tabs and converted them to spaces,
+making the patch impossible to apply.
+
+Care to redo it all and try again?
+
+thanks,
+
+greg k-h
