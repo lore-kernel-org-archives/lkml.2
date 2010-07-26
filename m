@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0GZDCR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Jul 2010 23:02:17 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53319 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab0GZDCQ (ORCPT
+	id S1753304Ab0GZDDW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Jul 2010 23:03:22 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45804 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab0GZDDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Jul 2010 23:02:16 -0400
+	Sun, 25 Jul 2010 23:03:21 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 1/4] vmscan: convert direct reclaim tracepoint to DEFINE_TRACE
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>,
         Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH 0/4] memcg reclaim tracepoint v2
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100726120107.2EEE.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100726120107.2EEE.A69D9226@jp.fujitsu.com>
+References: <20100726120107.2EEE.A69D9226@jp.fujitsu.com>
+Message-Id: <20100726120224.2EF1.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 26 Jul 2010 12:02:13 +0900 (JST)
+Date: Mon, 26 Jul 2010 12:03:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mel Gorman recently added some vmscan tracepoints. Unfortunately they are
+covered only global reclaim. But we want to trace memcg reclaim too.
 
-Recently, Mel Gorman added some vmscan tracepoint. but they can't
-trace memcg. So, This patch series does.
+Thus, this patch convert them to DEFINE_TRACE macro. it help to reuse
+tracepoint definition for other similar usage (i.e. memcg).
+This patch have no functionally change.
 
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+---
+ include/trace/events/vmscan.h |   19 +++++++++++++++++--
+ 1 files changed, 17 insertions(+), 2 deletions(-)
 
-Changelog since v1
- o drop all memcg bugfix and cleanups
-
-
-diffstat
-=========================
-KOSAKI Motohiro (4):
-  vmscan: convert direct reclaim tracepoint to DEFINE_TRACE
-  memcg, vmscan: add memcg reclaim tracepoint
-  vmscan: convert mm_vmscan_lru_isolate to DEFINE_EVENT
-  memcg: add mm_vmscan_memcg_isolate tracepoint
-
- include/trace/events/vmscan.h |   79 +++++++++++++++++++++++++++++++++++++++--
- mm/memcontrol.c               |    6 +++
- mm/vmscan.c                   |   20 ++++++++++-
- 3 files changed, 101 insertions(+), 4 deletions(-)
-
-Sameple output is here.
-=========================
-
-              dd-1851  [001]   158.837763: mm_vmscan_memcg_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
-              dd-1851  [001]   158.837783: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
-              dd-1851  [001]   158.837860: mm_vmscan_memcg_reclaim_end: nr_reclaimed=32
-  (...)
-              dd-1970  [000]   266.608235: mm_vmscan_wakeup_kswapd: nid=0 zid=1 order=0
-              dd-1970  [000]   266.608239: mm_vmscan_wakeup_kswapd: nid=1 zid=1 order=0
-              dd-1970  [000]   266.608248: mm_vmscan_wakeup_kswapd: nid=2 zid=1 order=0
-         kswapd1-348   [001]   266.608254: mm_vmscan_kswapd_wake: nid=1 order=0
-              dd-1970  [000]   266.608254: mm_vmscan_wakeup_kswapd: nid=3 zid=1 order=0
-         kswapd3-350   [000]   266.608266: mm_vmscan_kswapd_wake: nid=3 order=0
-  (...)
-         kswapd0-347   [001]   267.328891: mm_vmscan_memcg_softlimit_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
-         kswapd0-347   [001]   267.328897: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
-         kswapd0-347   [001]   267.328915: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
-         kswapd0-347   [001]   267.328989: mm_vmscan_memcg_softlimit_reclaim_end: nr_reclaimed=32
-         kswapd0-347   [001]   267.329019: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
-         kswapd0-347   [001]   267.330562: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
-  (...)
-         kswapd2-349   [001]   267.407081: mm_vmscan_kswapd_sleep: nid=2
-         kswapd3-350   [001]   267.408077: mm_vmscan_kswapd_sleep: nid=3
-         kswapd1-348   [000]   267.427858: mm_vmscan_kswapd_sleep: nid=1
-         kswapd0-347   [001]   267.430064: mm_vmscan_kswapd_sleep: nid=0
-
-
-
-
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index f2da66a..a601763 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -68,7 +68,7 @@ TRACE_EVENT(mm_vmscan_wakeup_kswapd,
+ 		__entry->order)
+ );
+ 
+-TRACE_EVENT(mm_vmscan_direct_reclaim_begin,
++DECLARE_EVENT_CLASS(mm_vmscan_direct_reclaim_begin_template,
+ 
+ 	TP_PROTO(int order, int may_writepage, gfp_t gfp_flags),
+ 
+@@ -92,7 +92,15 @@ TRACE_EVENT(mm_vmscan_direct_reclaim_begin,
+ 		show_gfp_flags(__entry->gfp_flags))
+ );
+ 
+-TRACE_EVENT(mm_vmscan_direct_reclaim_end,
++DEFINE_EVENT(mm_vmscan_direct_reclaim_begin_template, mm_vmscan_direct_reclaim_begin,
++
++	TP_PROTO(int order, int may_writepage, gfp_t gfp_flags),
++
++	TP_ARGS(order, may_writepage, gfp_flags)
++);
++
++
++DECLARE_EVENT_CLASS(mm_vmscan_direct_reclaim_end_template,
+ 
+ 	TP_PROTO(unsigned long nr_reclaimed),
+ 
+@@ -109,6 +117,13 @@ TRACE_EVENT(mm_vmscan_direct_reclaim_end,
+ 	TP_printk("nr_reclaimed=%lu", __entry->nr_reclaimed)
+ );
+ 
++DEFINE_EVENT(mm_vmscan_direct_reclaim_end_template, mm_vmscan_direct_reclaim_end,
++
++	TP_PROTO(unsigned long nr_reclaimed),
++
++	TP_ARGS(nr_reclaimed)
++);
++
+ TRACE_EVENT(mm_vmscan_lru_isolate,
+ 
+ 	TP_PROTO(int order,
+-- 
+1.6.5.2
 
 
 
