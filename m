@@ -1,151 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0GZMMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 08:12:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45726 "EHLO mx2.suse.de"
+	id S1754595Ab0GZMN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 08:13:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33233 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab0GZMMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 08:12:24 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Jason Baron <jbaron@redhat.com>
-Subject: [PATCH] Dynamic Debug: Introduce global fake module param module.ddebug
-Date: Mon, 26 Jul 2010 14:14:30 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
-Cc: yehuda@hq.newdream.net, LKML <linux-kernel@vger.kernel.org>
+	id S1754476Ab0GZMN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 08:13:26 -0400
+Date: Mon, 26 Jul 2010 14:12:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20100726121258.GE3280@quack.suse.cz>
+References: <20100722050928.653312535@intel.com>
+ <20100722061822.906037624@intel.com>
+ <20100723181521.GC20540@quack.suse.cz>
+ <20100726115153.GF6284@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007261414.30718.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726115153.GF6284@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is based on 2.6.35-rc5 + this patchset I posted recently:                                                           
-[patch 0/3] Dynamic Debug providing early boot debug messages via boot parameter
+On Mon 26-07-10 19:51:53, Wu Fengguang wrote:
+> On Sat, Jul 24, 2010 at 02:15:21AM +0800, Jan Kara wrote:
+> > On Thu 22-07-10 13:09:32, Wu Fengguang wrote:
+> > > A background flush work may run for ever. So it's reasonable for it to
+> > > mimic the kupdate behavior of syncing old/expired inodes first.
+> > > 
+> > > The policy is
+> > > - enqueue all newly expired inodes at each queue_io() time
+> > > - retry with halfed expire interval until get some inodes to sync
+> >   Hmm, this logic looks a bit arbitrary to me. What I actually don't like
+> > very much about this that when there aren't inodes older than say 2
+> > seconds, you'll end up queueing just inodes between 2s and 1s. So I'd
+> > rather just queue inodes older than the limit and if there are none, just
+> > queue all other dirty inodes.
+> 
+> You are proposing
+> 
+> -				expire_interval >>= 1;
+> +				expire_interval = 0;
+> 
+> IMO this does not really simplify code or concept. If we can get the
+> "smoother" behavior in original patch without extra cost, why not? 
+  I agree there's no substantial code simplification. But I see a
+substantial "behavior" simplification (just two sweeps instead of 10 or
+so). But I don't really insist on the two sweeps, it's just that I don't
+see a justification for the exponencial back off here... I mean what's the
+point if the interval we queue gets really small? Why not just use
+expire_interval/2 as a step if you want a smoother behavior?
 
-It would be great to see these getting merged into 2.6.36...
-
-Thanks,
-
-        Thomas
-
------
-
-Dynamic Debug: Introduce global fake module param module.ddebug
-
-Dynamic Debug allows enabling of pr_debug or KERN_DEBUG messages at runtime.
-This is controlled via /sys/kernel/debug/dynamic_debug/control.
-One major drawback is that the whole initialization of a module cannot be
-tracked, because ddebug is only aware of debug strings of loaded modules.
-But this is the most interesting part...
-
-This patch introduces a fake module parameter module.ddebug(not shown in
-/sys/module/*/parameters, thus it does not use any resources/memory).
-
-If a module gets ddebug passed as a module parameter (e.g. via module.ddebug
-kernel boot param or via "modprobe module ddebug"), all debug strings of this
-module get activated by issuing "module module_name +p" internally
-(not via sysfs) when the module gets loaded.
-
-Possible enhancements for the future if ddebug might get extended with
-further flags:
-module.ddebug=flags
-Then module.ddebug="p" would be the same as module.ddebug, but if there
-is a "x" ddebug flag added, one could pass:
-module.ddebug="xp"
-which would result in such a dynamic debug query:
-module module_name +xp
-
-One not handled side-effect of this patch:
-Modules must not use "ddebug" module parameter or it will get ignored.
-I tried to find a compile time check, but I could not see how that
-is possible. Possibly a run-time check or at least documentation (where?)
-should get added, that "ddebug" must not get used as a module parameter.
-
-Tested with:
-options hp-wmi ddebug
-in modprobe.conf.local
--> works and pr_debug messages issued at module initialization time show
-up. Also "p" flag gets set for the whole hp-wmi module debug strings:
-grep hp-wmi /sys/../dynamic_debug/control
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-
----
- include/linux/dynamic_debug.h |    5 +++++
- kernel/params.c               |    9 ++++++++-
- lib/dynamic_debug.c           |    2 +-
- 3 files changed, 14 insertions(+), 2 deletions(-)
-
-Index: linux-platform_drivers/kernel/params.c
-===================================================================
---- linux-platform_drivers.orig/kernel/params.c
-+++ linux-platform_drivers/kernel/params.c
-@@ -24,6 +24,7 @@
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/ctype.h>
-+#include <linux/dynamic_debug.h>
- 
- #if 0
- #define DEBUGP printk
-@@ -132,7 +133,7 @@ int parse_args(const char *name,
- 	       unsigned num,
- 	       int (*unknown)(char *param, char *val))
- {
--	char *param, *val;
-+	char *param, *val, ddebug[1024];
- 
- 	DEBUGP("Parsing ARGS: %s\n", args);
- 
-@@ -144,6 +145,12 @@ int parse_args(const char *name,
- 		int irq_was_disabled;
- 
- 		args = next_arg(args, &param, &val);
-+		if (parameq(param, "ddebug")) {
-+			sprintf(ddebug, "module %s +p", name);
-+			ddebug_exec_query(ddebug);
-+			continue;
-+		}
-+
- 		irq_was_disabled = irqs_disabled();
- 		ret = parse_one(param, val, params, num, unknown);
- 		if (irq_was_disabled && !irqs_disabled()) {
-Index: linux-platform_drivers/include/linux/dynamic_debug.h
-===================================================================
---- linux-platform_drivers.orig/include/linux/dynamic_debug.h
-+++ linux-platform_drivers/include/linux/dynamic_debug.h
-@@ -41,6 +41,7 @@ int ddebug_add_module(struct _ddebug *ta
- 
- #if defined(CONFIG_DYNAMIC_DEBUG)
- extern int ddebug_remove_module(const char *mod_name);
-+extern int ddebug_exec_query(char *query_string);
- 
- #define __dynamic_dbg_enabled(dd)  ({	     \
- 	int __ret = 0;							     \
-@@ -77,6 +78,10 @@ static inline int ddebug_remove_module(c
- {
- 	return 0;
- }
-+static inline int ddebug_exec_query(char *query_string)
-+{
-+	return 0;
-+}
- 
- #define dynamic_pr_debug(fmt, ...)					\
- 	do { if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); } while (0)
-Index: linux-platform_drivers/lib/dynamic_debug.c
-===================================================================
---- linux-platform_drivers.orig/lib/dynamic_debug.c
-+++ linux-platform_drivers/lib/dynamic_debug.c
-@@ -429,7 +429,7 @@ static int ddebug_parse_flags(const char
- 	return 0;
- }
- 
--static int ddebug_exec_query(char *query_string)
-+int ddebug_exec_query(char *query_string)
- {
- 	unsigned int flags = 0, mask = 0;
- 	struct ddebug_query query;
+								Honza
+> > > CC: Jan Kara <jack@suse.cz>
+> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > ---
+> > >  fs/fs-writeback.c |   20 ++++++++++++++------
+> > >  1 file changed, 14 insertions(+), 6 deletions(-)
+> > > 
+> > > --- linux-next.orig/fs/fs-writeback.c	2010-07-22 12:56:42.000000000 +0800
+> > > +++ linux-next/fs/fs-writeback.c	2010-07-22 13:07:51.000000000 +0800
+> > > @@ -217,14 +217,14 @@ static void move_expired_inodes(struct l
+> > >  				struct writeback_control *wbc)
+> > >  {
+> > >  	unsigned long expire_interval = 0;
+> > > -	unsigned long older_than_this;
+> > > +	unsigned long older_than_this = 0; /* reset to kill gcc warning */
+> > >  	LIST_HEAD(tmp);
+> > >  	struct list_head *pos, *node;
+> > >  	struct super_block *sb = NULL;
+> > >  	struct inode *inode;
+> > >  	int do_sb_sort = 0;
+> > >  
+> > > -	if (wbc->for_kupdate) {
+> > > +	if (wbc->for_kupdate || wbc->for_background) {
+> > >  		expire_interval = msecs_to_jiffies(dirty_expire_interval * 10);
+> > >  		older_than_this = jiffies - expire_interval;
+> > >  	}
+> > > @@ -232,8 +232,15 @@ static void move_expired_inodes(struct l
+> > >  	while (!list_empty(delaying_queue)) {
+> > >  		inode = list_entry(delaying_queue->prev, struct inode, i_list);
+> > >  		if (expire_interval &&
+> > > -		    inode_dirtied_after(inode, older_than_this))
+> > > -			break;
+> > > +		    inode_dirtied_after(inode, older_than_this)) {
+> > > +			if (wbc->for_background &&
+> > > +			    list_empty(dispatch_queue) && list_empty(&tmp)) {
+> > > +				expire_interval >>= 1;
+> > > +				older_than_this = jiffies - expire_interval;
+> > > +				continue;
+> > > +			} else
+> > > +				break;
+> > > +		}
+> > >  		if (sb && sb != inode->i_sb)
+> > >  			do_sb_sort = 1;
+> > >  		sb = inode->i_sb;
+> > > @@ -521,7 +528,8 @@ void writeback_inodes_wb(struct bdi_writ
+> > >  
+> > >  	wbc->wb_start = jiffies; /* livelock avoidance */
+> > >  	spin_lock(&inode_lock);
+> > > -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> > > +
+> > > +	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
+> > >  		queue_io(wb, wbc);
+> > >  
+> > >  	while (!list_empty(&wb->b_io)) {
+> > > @@ -550,7 +558,7 @@ static void __writeback_inodes_sb(struct
+> > >  
+> > >  	wbc->wb_start = jiffies; /* livelock avoidance */
+> > >  	spin_lock(&inode_lock);
+> > > -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> > > +	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
+> > >  		queue_io(wb, wbc);
+> > >  	writeback_sb_inodes(sb, wb, wbc, true);
+> > >  	spin_unlock(&inode_lock);
+> > > 
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > -- 
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
