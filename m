@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0GZNyZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 09:54:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134Ab0GZNyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 09:54:23 -0400
-Date: Mon, 26 Jul 2010 09:54:11 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
-        jaxboe@fusionio.com, nauman@google.com, dpshah@google.com,
-        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com, czoccolo@gmail.com
-Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
- group_idle tunable
-Message-ID: <20100726135410.GD12449@redhat.com>
-References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
- <20100723140343.GA8478@fancy-poultry.org>
- <20100723141303.GB13104@redhat.com>
- <20100723145631.GA8844@fancy-poultry.org>
- <20100723183720.GD13104@redhat.com>
- <20100724080613.GA6554@fancy-poultry.org>
- <20100726134329.GB12449@redhat.com>
- <20100726134818.GA26544@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100726134818.GA26544@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753969Ab0GZOAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 10:00:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37772 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab0GZOAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 10:00:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=o17+IcbXocHOEIwR1rOL7oHwZomfMc5ESZndC8p0SBNIP999W/lQygO7t/VrvjEDlx
+         IObM7MhJLdOOpYhRQbF0tL2f0YItecQcgOOcAd2l/sJtBANXbMB1qG7tDV/N+cCjBdkC
+         jofZ9yyX/cZT31jtxQ7YDDbZPYuG6udPgF+Jc=
+Subject: Re: [RFC] [PATCH procfs] Add process age
+From: Davidlohr Bueso <dave.bueso@gmail.com>
+Reply-To: dave.bueso@gmail.com
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <87fwz6it0e.fsf@basil.nowhere.org>
+References: <1279907271.4335.3.camel@cowboy> <20100723183549.GA10518@x200>
+	 <1279910830.1851.5.camel@cowboy>  <87fwz6it0e.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 26 Jul 2010 09:57:48 -0400
+Message-ID: <1280152668.2212.1.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 09:48:18AM -0400, Christoph Hellwig wrote:
-> On Mon, Jul 26, 2010 at 09:43:29AM -0400, Vivek Goyal wrote:
-> > > Don't know if this is related, but I'm not quite shure if XFS (which I use
-> > > exclusively) uses the jbd/jbd2 journaling layer at all.
-> > 
-> > I also don't know. But because this patch is making a difference with your
-> > XFS file system performance, may be it does use.
-> > 
-> > CCing Christoph, he can tell us.
+On Mon, 2010-07-26 at 09:47 +0200, Andi Kleen wrote:
+> Davidlohr Bueso <dave.bueso@gmail.com> writes:
 > 
-> No, of course XFS doesn't use jbd.
+> > On Fri, 2010-07-23 at 21:35 +0300, Alexey Dobriyan wrote:
+> >> On Fri, Jul 23, 2010 at 01:47:51PM -0400, Davidlohr Bueso wrote:
+> >> > This patch exports a process's age, in seconds, adding a /proc/#/age file.
+> >> 
+> >> What for?
+> >
+> > I have not found any straight way to get the run time of a processes,
+> > without having to interpret the start_time entry in /proc/#/stat and
+> > manually subtract the uptime from it.
+> 
+> That sounds like something an user space program should simply do.
+> Perhaps you can add it as a new optional "-o" field in "ps" ?
+> 
+True, but there are also many other no-so-useful files under /proc that
+can also be replaced by userspace apps.
 
-Hmm.., interesting. So somewhere WRITE_SYNC idling in CFQ is hurting XFS
-performance also. This time for some other reason and not jbd/jbd2.
-
-Vivek
-
+Davidlohr
 
