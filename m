@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab0GZIYi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 04:24:38 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59735 "EHLO
+	id S1753807Ab0GZIZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 04:25:44 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44416 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab0GZIYh (ORCPT
+	with ESMTP id S1752121Ab0GZIZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 04:24:37 -0400
+	Mon, 26 Jul 2010 04:25:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=m9EDtr2QDQKU3v7y1eQz0OEsoHNG0w21KEQ9L9yedVeGQqp4S/mcNVJV8m4wRxR0tY
-         JGFW9HO+NMiVuon0L2BE34DpGFCOOeNgKgQvnF9Q23Q/Jy+bECDXp42D4oRFCnx0qYAw
-         kPjonmSB9htcpqnBxU8qfvW3L1Bten3lnSPuA=
+        b=AdMsSOWTozOuNjSlIZi4br3IATNMQ46dmkmKn4JmJQgeKPM7ISG3wH2vqB/2afskBQ
+         j2BKNNtT7htP0/VN6FIEPpV8YzJkp5caI2HjAGian62RdFdLpzMwys3KUl43pxpJ7ear
+         C+3C1Azj9bcsR9da25vaRmzfbeaxUY4P01hz4=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Francisco Jerez <currojerez@riseup.net>,
-        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org,
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Tejun Heo <tj@kernel.org>, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] drm: nouveau: set TASK_(UN)INTERRUPTIBLE before schedule_timeout()
-Date: Mon, 26 Jul 2010 12:23:54 +0400
-Message-Id: <1280132635-7961-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH] i2c-davinci: use schedule_timeout_uninterruptible()
+Date: Mon, 26 Jul 2010 12:24:42 +0400
+Message-Id: <1280132682-8055-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-set_current_state() is called only once before the first iteration.
-After return from schedule_timeout() current state is TASK_RUNNING. If
-we are going to wait again, set_current_state() must be called.
+i2c_davinci_wait_bus_not_busy() uses schedule_timeout() without setting
+state to STATE_(UN)INTERRUPTIBLE. As it is called in cycle without
+checking of pending signals, use schedule_timeout_uninterruptible().
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_fence.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/i2c/busses/i2c-davinci.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_fence.c b/drivers/gpu/drm/nouveau/nouveau_fence.c
-index 813d853..b7777ae 100644
---- a/drivers/gpu/drm/nouveau/nouveau_fence.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_fence.c
-@@ -186,7 +186,6 @@ nouveau_fence_wait(void *sync_obj, void *sync_arg, bool lazy, bool intr)
- 	unsigned long timeout = jiffies + (3 * DRM_HZ);
- 	int ret = 0;
- 
--	__set_current_state(intr ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE);
- 
- 	while (1) {
- 		if (nouveau_fence_signalled(sync_obj, sync_arg))
-@@ -197,6 +196,8 @@ nouveau_fence_wait(void *sync_obj, void *sync_arg, bool lazy, bool intr)
- 			break;
+diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+index 4523364..1d376a5 100644
+--- a/drivers/i2c/busses/i2c-davinci.c
++++ b/drivers/i2c/busses/i2c-davinci.c
+@@ -231,7 +231,7 @@ static int i2c_davinci_wait_bus_not_busy(struct davinci_i2c_dev *dev,
+ 			return -ETIMEDOUT;
  		}
+ 		if (allow_sleep)
+-			schedule_timeout(1);
++			schedule_timeout_uninterruptible(1);
+ 	}
  
-+		__set_current_state(intr ? TASK_INTERRUPTIBLE
-+			: TASK_UNINTERRUPTIBLE);
- 		if (lazy)
- 			schedule_timeout(1);
- 
+ 	return 0;
 -- 
 1.7.0.4
 
