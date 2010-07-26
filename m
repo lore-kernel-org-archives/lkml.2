@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab0GZQPR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 12:15:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55370 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab0GZQPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 12:15:12 -0400
-Date: Mon, 26 Jul 2010 18:15:00 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, nauman@google.com,
-        dpshah@google.com, guijianfeng@cn.fujitsu.com, jmoyer@redhat.com,
-        czoccolo@gmail.com, Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
- group_idle tunable
-Message-ID: <20100726161500.GA8721@fritha.org>
-References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
- <20100723140343.GA8478@fancy-poultry.org>
- <20100723141303.GB13104@redhat.com>
- <20100723145631.GA8844@fancy-poultry.org>
- <20100723183720.GD13104@redhat.com>
- <20100724080613.GA6554@fancy-poultry.org>
- <20100726134329.GB12449@redhat.com>
+	id S1754055Ab0GZQPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 12:15:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45359 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753298Ab0GZQP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 12:15:27 -0400
+Message-ID: <4C4DB466.6000409@kernel.org>
+Date: Mon, 26 Jul 2010 18:14:30 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100726134329.GB12449@redhat.com>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
-X-Provags-ID: V02:K0:DLwHuB/2A6qDl8sEy7y+RvwGuoebIt4somkzFRFJZSz
- VjmA0bhjEq/ygoN82hFCKPyauhAIJgAZT5AQfgBXi2ApLhQi6E
- QqGhvcAjQGsmndVpm4+EIzZe+su3F9a6mQoN5rf5UdcfOSTVIv
- KMDwgEYfZpvj5kYTn2HVCgCzss+Bz3fh5pqetWssmPkc9j1cPO
- d5I8I33kUZBYnnkv3hF4A==
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
+ kthread
+References: <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com> <4C04D41B.4050704@kernel.org> <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com> <4C48B664.9000109@kernel.org> <20100724191447.GA4972@redhat.com> <4C4BEAA2.6040301@kernel.org> <20100726152510.GA26223@redhat.com> <4C4DAB14.5050809@kernel.org> <20100726155014.GA26412@redhat.com> <4C4DB247.9060709@kernel.org>
+In-Reply-To: <4C4DB247.9060709@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Jul 2010 16:14:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.07.2010, Vivek Goyal wrote: 
+Just one more thing.
 
-> How do you measure it? IOW, are you running something else also on the
-> desktop in the background. Like a heavy writer etc and then measuring
-> how interactive desktop feels?
+On 07/26/2010 06:05 PM, Tejun Heo wrote:
+> * Placing try_to_freeze() could be a bit annoying.  It shouldn't be
+>   executed when there's a work to flush.
 
-I used Linus' "bigfile torture test" in the background:
+* Similar issue exists for kthread_stop().  The kthread shouldn't exit
+  while there's a work to flush (please note that kthread_worker
+  interface allows detaching / attaching worker kthread during
+  operation, so it should remain in consistent state with regard to
+  flushing).
 
- while : ; do time sh -c "dd if=/dev/zero of=bigfile bs=8M count=256 ;
- sync; rm bigfile"; done
+Thanks.
 
-and Theodore Tso's "fsync-tester" to benchmark interactivity. 
-
-Didn't save any results, wasn't expecting that this could be of any
-further interest (but can run the tests one more time, if desired).
-
-Thanks,
-Heinz.
+-- 
+tejun
