@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab0GZVpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 17:45:05 -0400
-Received: from kroah.org ([198.145.64.141]:35101 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752922Ab0GZVpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 17:45:01 -0400
-Date: Mon, 26 Jul 2010 14:42:09 -0700
-From: Greg KH <greg@kroah.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the usb tree with the v4l-dvb tree
-Message-ID: <20100726214209.GB21158@kroah.com>
-References: <20100706175332.952fec90.sfr@canb.auug.org.au>
- <201007131923.31877.laurent.pinchart@ideasonboard.com>
- <4C4B07A6.4050009@infradead.org>
- <201007261024.05863.laurent.pinchart@ideasonboard.com>
- <4C4D953F.4050700@infradead.org>
+	id S1754978Ab0GZVsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 17:48:39 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:56734 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab0GZVsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 17:48:37 -0400
+Date: Mon, 26 Jul 2010 23:48:36 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 3/3] kbuild: allow user to assign LDFLAGS_MODULE
+Message-ID: <20100726214836.GA22433@merkur.ravnborg.org>
+References: <20100726203814.GA18828@merkur.ravnborg.org> <20100726204432.GC18853@merkur.ravnborg.org> <AANLkTimrZwE+_awxxoQtdkeS7OVY+jDMawyfkYUas58G@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C4D953F.4050700@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimrZwE+_awxxoQtdkeS7OVY+jDMawyfkYUas58G@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 11:01:35AM -0300, Mauro Carvalho Chehab wrote:
-> Em 26-07-2010 05:24, Laurent Pinchart escreveu:
-> > Hi Mauro,
-> > 
-> > On Saturday 24 July 2010 17:32:54 Mauro Carvalho Chehab wrote:
-> >> Em 13-07-2010 14:23, Laurent Pinchart escreveu:
-> >>> On Tuesday 13 July 2010 17:34:02 Mauro Carvalho Chehab wrote:
-> >>>> Em 07-07-2010 12:13, Greg KH escreveu:
-> >>>>> On Tue, Jul 06, 2010 at 09:34:51AM -0300, Mauro Carvalho Chehab wrote:
-> >>>>>> Em 06-07-2010 08:10, Laurent Pinchart escreveu:
-> >>> [snip]
-> >>>
-> >>>>>>> Mauro, can the uvc-gadget patches go through the linux-media tree ?
-> >>>>
-> >>>> It will not be simple to fix this conflict from my tree. I tried to
-> >>>> apply
-> >>>>
-> >>>> them against a 2.6.35-rc5, but it failed:
-> >>>> |diff --git a/drivers/media/video/uvc/uvcvideo.h
-> >>>> |b/drivers/media/video/uvc/uvcvideo.h index 47b20e7..ac27245 100644
-> >>>> |--- a/drivers/media/video/uvc/uvcvideo.h
-> >>>> |+++ b/drivers/media/video/uvc/uvcvideo.h
-> >>>>
-> >>>> --------------------------
-> >>>> No file to patch.  Skipping patch.
-> >>>> 1 out of 1 hunk ignored
-> >>>> can't find file to patch at input line 73
-> >>>> Perhaps you used the wrong -p or --strip option?
-> >>>
-> >>> drivers/media/video/uvc/uvcvideo.h has been there for years. Perhaps you
-> >>> used the wrong -p or --strip option? :-)
-> >>
-> >> Doubtful. My scripts apply the patches using -p1. Not sure what happened.
-> > 
-> > [snip]
-> > 
-> >> Could you please re-send the patch, being sure that it will apply against a
-> >> -rc kernel?
-> > 
-> > The patch I've sent you applies unmodified against 2.6.35-rc6. I'm pretty sure 
-> > you made a mistake somewhere.
+On Mon, Jul 26, 2010 at 04:54:05PM -0400, Mike Frysinger wrote:
+> On Mon, Jul 26, 2010 at 16:44, Sam Ravnborg wrote:
+> > From ce765a28adeb8878413a49ce62f442022d6a5b6a Mon Sep 17 00:00:00 2001
+> > From: Sam Ravnborg <sam@ravnborg.org>
+> > Date: Mon, 26 Jul 2010 22:20:12 +0200
+> > Subject: [PATCH 3/3] kbuild: allow user to assign LDFLAGS_MODULE
+> >
+> > Do not use LDFLAGS_MODULE in the top-level Makefile.
+> > So if user assign a value to LDFALGS_MODULE the
+> > original value is not lost.
+> >
+> > Use a kbuild internal variable that archs can use,
+> > and update all archs that used LDFALGS_MODULE.
 > 
-> Likely. I've just applied it to my trees. This time, it applied fine.
+> assuming end behavior is the same, the Blackfin part is:
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
 
-Ok, I've dropped the patch from my usb tree right now.
+It is :-)
 
-thanks,
+> 
+> also, could you say the same thing for CFLAGS_MODULE ?
 
-greg k-h
+Good point. Need to do the same here.
+I also realised I need to update Documentation/kbuild/makefiles.txt
+
+Michal - I will send an updated serie tomorrow.
+
+	Sam
