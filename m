@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab0GZVkL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 17:40:11 -0400
-Received: from mail.perches.com ([173.55.12.10]:2098 "EHLO mail.perches.com"
+	id S1755421Ab0GZVkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 17:40:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:2099 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab0GZVkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752877Ab0GZVkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 26 Jul 2010 17:40:03 -0400
 From: Joe Perches <joe@perches.com>
 To: "John W. Linville" <linville@tuxdriver.com>
 Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 3/4] drivers/net/wireless/at76c50x-usb.c: Neaten macros
-Date: Mon, 26 Jul 2010 14:39:59 -0700
-Message-Id: <4d2eea02d3f58e2291205199788f4a0dedba5e64.1280177971.git.joe@perches.com>
+Subject: [PATCH net-next 4/4] wireless: Convert wiphy_debug macro to function
+Date: Mon, 26 Jul 2010 14:40:00 -0700
+Message-Id: <8e7aa541ec8fb92e1166920a4eb704aa5f851b71.1280177971.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.2.19.g9a302
 In-Reply-To: <cover.1280177971.git.joe@perches.com>
 References: <cover.1280177971.git.joe@perches.com>
@@ -20,51 +20,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Save a few bytes of text
+
+(allyesconfig)
+$ size drivers/net/wireless/built-in.o*
+   text	   data	    bss	    dec	    hex	filename
+3924568	 100548	 871056	4896172	 4ab5ac	drivers/net/wireless/built-in.o.new
+3926520	 100548	 871464	4898532	 4abee4	drivers/net/wireless/built-in.o.old
+
+$ size net/wireless/core.o*
+   text	   data	    bss	    dec	    hex	filename
+  12843	    216	   3768	  16827	   41bb	net/wireless/core.o.new
+  12328	    216	   3656	  16200	   3f48	net/wireless/core.o
+
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wireless/at76c50x-usb.c |   27 ++++++++++++---------------
- 1 files changed, 12 insertions(+), 15 deletions(-)
+ include/net/cfg80211.h |    5 ++-
+ net/wireless/core.c    |   53 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/at76c50x-usb.c b/drivers/net/wireless/at76c50x-usb.c
-index 9b0f055..d5140a8 100644
---- a/drivers/net/wireless/at76c50x-usb.c
-+++ b/drivers/net/wireless/at76c50x-usb.c
-@@ -89,22 +89,19 @@
- #define DBG_DEFAULTS		0
- 
- /* Use our own dbg macro */
--#define at76_dbg(bits, format, arg...) \
--	do { \
--		if (at76_debug & (bits))				 \
--			printk(KERN_DEBUG DRIVER_NAME ": " format "\n" , \
--			       ## arg);					 \
--	} while (0)
--
--#define at76_dbg_dump(bits, buf, len, format, arg...)	\
--	do { \
--		if (at76_debug & (bits)) { \
--			printk(KERN_DEBUG DRIVER_NAME ": " format "\n" , \
--			       ## arg);					 \
--			print_hex_dump_bytes("", DUMP_PREFIX_OFFSET,     \
--					     buf, len);			 \
--		}							 \
--	} while (0)
-+#define at76_dbg(bits, format, arg...)					\
-+do {									\
-+	if (at76_debug & (bits))					\
-+		printk(KERN_DEBUG DRIVER_NAME ": " format "\n", ##arg);	\
-+} while (0)
+diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+index 7fe774c..ae80f8f 100644
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -2442,8 +2442,9 @@ void cfg80211_cqm_rssi_notify(struct net_device *dev,
+ 	wiphy_printk(KERN_NOTICE, wiphy, format, ##args)
+ #define wiphy_info(wiphy, format, args...)			\
+ 	wiphy_printk(KERN_INFO, wiphy, format, ##args)
+-#define wiphy_debug(wiphy, format, args...)			\
+-	wiphy_printk(KERN_DEBUG, wiphy, format, ##args)
 +
-+#define at76_dbg_dump(bits, buf, len, format, arg...)			\
-+do {									\
-+	if (at76_debug & (bits)) {					\
-+		printk(KERN_DEBUG DRIVER_NAME ": " format "\n", ##arg);	\
-+		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, buf, len);	\
-+	}								\
-+} while (0)
++int wiphy_debug(const struct wiphy *wiphy, const char *format, ...)
++	__attribute__ ((format (printf, 2, 3)));
  
- static uint at76_debug = DBG_DEFAULTS;
- 
+ #if defined(DEBUG)
+ #define wiphy_dbg(wiphy, format, args...)			\
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index f65c649..1f9de8a 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -907,3 +907,56 @@ static void __exit cfg80211_exit(void)
+ 	destroy_workqueue(cfg80211_wq);
+ }
+ module_exit(cfg80211_exit);
++
++#ifdef __KERNEL__
++
++static int ___wiphy_printk(const char *level, const struct wiphy *wiphy,
++			   struct va_format *vaf)
++{
++	if (!wiphy)
++		return printk("%s(NULL wiphy *): %pV", level, vaf);
++
++	return printk("%s%s: %pV", level, wiphy_name(wiphy), vaf);
++}
++
++int __wiphy_printk(const char *level, const struct wiphy *wiphy,
++		   const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++	int r;
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	r = ___wiphy_printk(level, wiphy, &vaf);
++	va_end(args);
++
++	return r;
++}
++EXPORT_SYMBOL(__wiphy_printk);
++
++#define define_wiphy_printk_level(func, kern_level)		\
++int func(const struct wiphy *wiphy, const char *fmt, ...)	\
++{								\
++	struct va_format vaf;					\
++	va_list args;						\
++	int r;							\
++								\
++	va_start(args, fmt);					\
++								\
++	vaf.fmt = fmt;						\
++	vaf.va = &args;						\
++								\
++	r = ___wiphy_printk(kern_level, wiphy, &vaf);		\
++	va_end(args);						\
++								\
++	return r;						\
++}								\
++EXPORT_SYMBOL(func);
++
++define_wiphy_printk_level(wiphy_debug, KERN_DEBUG);
++
++#endif
 -- 
 1.7.1
 
