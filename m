@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab0GZPbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 11:31:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5235 "EHLO mx1.redhat.com"
+	id S1754838Ab0GZPfy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 11:35:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34764 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754566Ab0GZPbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 11:31:35 -0400
-Date: Mon, 26 Jul 2010 18:25:10 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+	id S1754543Ab0GZPfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 11:35:53 -0400
+Message-ID: <4C4DAB14.5050809@kernel.org>
+Date: Mon, 26 Jul 2010 17:34:44 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
         netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
         Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
- per-vhost kthread
-Message-ID: <20100726152510.GA26223@redhat.com>
-References: <4C02C961.9050606@kernel.org>
- <20100531152221.GB2987@redhat.com>
- <4C03D983.9010905@kernel.org>
- <20100531160020.GC3067@redhat.com>
- <4C04D41B.4050704@kernel.org>
- <4C06A580.9060300@kernel.org>
- <20100722155840.GA1743@redhat.com>
- <4C48B664.9000109@kernel.org>
- <20100724191447.GA4972@redhat.com>
- <4C4BEAA2.6040301@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4BEAA2.6040301@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
+ kthread
+References: <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com> <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com> <4C04D41B.4050704@kernel.org> <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com> <4C48B664.9000109@kernel.org> <20100724191447.GA4972@redhat.com> <4C4BEAA2.6040301@kernel.org> <20100726152510.GA26223@redhat.com>
+In-Reply-To: <20100726152510.GA26223@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Jul 2010 15:34:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 25, 2010 at 09:41:22AM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 07/24/2010 09:14 PM, Michael S. Tsirkin wrote:
-> >> I've created kthread_worker in wq#for-next tree and already converted
-> >> ivtv to use it.  Once this lands in mainline, I think converting vhost
-> >> to use it would be better choice.  kthread worker code uses basically
-> >> the same logic used in the vhost_workqueue code but is better
-> >> organized and documented.  So, I think it would be better to stick
-> >> with the original implementation, as otherwise we're likely to just
-> >> decrease test coverage without much gain.
-> >>
-> >>   http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=b56c0d8937e665a27d90517ee7a746d0aa05af46;hp=53c5f5ba42c194cb13dd3083ed425f2c5b1ec439
-> > 
-> > Sure, if we keep using workqueue. But I'd like to investigate this
-> > direction a bit more because there's discussion to switching from kthread to
-> > regular threads altogether.
-> 
-> Hmmm? It doesn't have much to do with workqueue.  kthread_worker is a
-> simple wrapper around kthread.  It now assumes kthread but changing it
-> to be useable with any thread shouldn't be too hard.  Wouldn't that be
-> better?
+Hello,
 
-BTW, kthread_worker would benefit from the optimization I implemented
-here as well.
+On 07/26/2010 05:25 PM, Michael S. Tsirkin wrote:
+> BTW, kthread_worker would benefit from the optimization I implemented
+> here as well.
+
+Hmmm... I'm not quite sure whether it's an optimization.  I thought
+the patch was due to feeling uncomfortable about using barriers?  Is
+it an optimization?
+
+Thanks.
 
 -- 
-MST
+tejun
