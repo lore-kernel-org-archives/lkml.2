@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab0GZLX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 07:23:26 -0400
-Received: from THUNK.ORG ([69.25.196.29]:55975 "EHLO thunker.thunk.org"
+	id S1754502Ab0GZL13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 07:27:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:22981 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018Ab0GZLXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 07:23:24 -0400
-Date: Mon, 26 Jul 2010 07:23:17 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: check capabilities in open()
-Message-ID: <20100726112317.GB9185@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Vasiliy Kulikov <segooon@gmail.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>, kernel-janitors@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <20100724160701.GA4907@albatros>
- <20100724182355.GA9134@ZenIV.linux.org.uk>
- <20100725054511.GB9018@albatros>
+	id S1754113Ab0GZL12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 07:27:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,261,1278313200"; 
+   d="scan'208";a="589705026"
+Date: Mon, 26 Jul 2010 19:27:09 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100726112709.GB6284@localhost>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-9-git-send-email-mel@csn.ul.ie>
+ <20100726072832.GB13076@localhost>
+ <20100726092616.GG5300@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100725054511.GB9018@albatros>
+In-Reply-To: <20100726092616.GG5300@csn.ul.ie>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 25, 2010 at 09:45:11AM +0400, Vasiliy Kulikov wrote:
+> > > @@ -933,13 +934,16 @@ keep_dirty:
+> > >  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+> > >  	}
+> > >  
+> > > +	/*
+> > > +	 * If reclaim is encountering dirty pages, it may be because
+> > > +	 * dirty pages are reaching the end of the LRU even though
+> > > +	 * the dirty_ratio may be satisified. In this case, wake
+> > > +	 * flusher threads to pro-actively clean some pages
+> > > +	 */
+> > > +	wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty + nr_dirty / 2);
+> > 
+> > Ah it's very possible that nr_dirty==0 here! Then you are hitting the
+> > number of dirty pages down to 0 whether or not pageout() is called.
+> > 
 > 
-> Root can open apm file (as->suser would be true), pass it to
-> unpriviledged process and it would be able to suspend the system
-> (as->suser would be still true).
+> True, this has been fixed to only wakeup flusher threads when this is
+> the file LRU, dirty pages have been encountered and the caller has
+> sc->may_writepage.
 
-The flip side of this --- and why these devices were deliberately
-coded that way, is a setuid root program can open the apm file, and
-then drop its root privileges for safety, so that if there is a buffer
-overrun in the program, the attacker doesn't get root privileges.
-This is quite common in Unix/Linux implementation pattern; let a
-setuid program do wha it needs to do as root in terms of opening
-specific file descriptors, and then have it drop its privileges.
+OK.
 
-So the way they are written is quite correct.  And it's consistent
-with a device file which is owned by root, mode 600.  A setuid root
-program can open the device, but once it is opened, the file
-descriptor continues to have access to the program even if its
-privileges are dropped, or the file descriptor is passed to another
-program.  (This is also sometimes done, deliberately; for example the
-original Berkely lpr/lpd program was written where the user would run
-lpr, and pass a file descriptor to the lpd daemon, which was not
-running as root, but as an unprivileged system process.  This allowed
-the lpd daemon to have access to the file, even though it might not be
-allowed to open a file that was mode 600.)
+> > Another minor issue is, the passed (nr_dirty + nr_dirty / 2) is
+> > normally a small number, much smaller than MAX_WRITEBACK_PAGES.
+> > The flusher will sync at least MAX_WRITEBACK_PAGES pages, this is good
+> > for efficiency.
+> > And it seems good to let the flusher write much more
+> > than nr_dirty pages to safeguard a reasonable large
+> > vmscan-head-to-first-dirty-LRU-page margin. So it would be enough to
+> > update the comments.
+> > 
+> 
+> Ok, the reasoning had been to flush a number of pages that was related
+> to the scanning rate but if that is inefficient for the flusher, I'll
+> use MAX_WRITEBACK_PAGES.
 
-The reason why the apm device needed to sample the suser() bit is that
-it can be opened by root and non-root processes, but it wanted to
-extend the Unix/Linux paradigm that privileges are tested at open()
-time.
+It would be better to pass something like (nr_dirty * N).
+MAX_WRITEBACK_PAGES may be increased to 128MB in the future, which is
+obviously too large as a parameter. When the batch size is increased
+to 128MB, the writeback code may be improved somehow to not exceed the
+nr_pages limit too much.
 
-So this is a not a bug, but quite deliberately, by design.
-
-Regards,
-
-						- Ted
+Thanks,
+Fengguang
