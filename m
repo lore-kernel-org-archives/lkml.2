@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab0GZTdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 15:33:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36511 "EHLO hera.kernel.org"
+	id S1755029Ab0GZTpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 15:45:07 -0400
+Received: from claw.goop.org ([74.207.240.146]:35785 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074Ab0GZTdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 15:33:10 -0400
-Message-ID: <4C4DE2AE.40302@kernel.org>
-Date: Mon, 26 Jul 2010 21:31:58 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1754822Ab0GZTpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 15:45:05 -0400
+Message-ID: <4C4DE5BF.1030603@goop.org>
+Date: Mon, 26 Jul 2010 12:45:03 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
- kthread
-References: <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com> <4C48B664.9000109@kernel.org> <20100724191447.GA4972@redhat.com> <4C4BEAA2.6040301@kernel.org> <20100726152510.GA26223@redhat.com> <4C4DAB14.5050809@kernel.org> <20100726155014.GA26412@redhat.com> <4C4DB247.9060709@kernel.org> <4C4DB466.6000409@kernel.org> <20100726165114.GA27353@redhat.com> <4C4DDE7E.8030406@kernel.org>
-In-Reply-To: <4C4DDE7E.8030406@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave McCracken <dcm@mccr.org>
+Subject: [PATCH] x86/hugetlb: use set_pmd for huge pte operations
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 26 Jul 2010 19:32:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 07/26/2010 09:14 PM, Tejun Heo wrote:
-> On 07/26/2010 06:51 PM, Michael S. Tsirkin wrote:
->> I noticed that with vhost, flush_work was getting the worker
->> pointer as well. Can we live with this API change?
-> 
-> Yeah, the flushing mechanism wouldn't work reliably if the work is
-> queued to a different worker without flushing, so yeah passing in
-> @worker might actually be better.
 
-Thinking a bit more about it, it kind of sucks that queueing to
-another worker from worker->func() breaks flush.  Maybe the right
-thing to do there is using atomic_t for done_seq?  It pays a bit more
-overhead but maybe that's justifiable to keep the API saner?  It would
-be great if it can be fixed somehow even if it means that the work has
-to be separately flushed for each worker it has been on before being
-destroyed.
+On x86, a huge pte is logically a pte, but structurally a pmd.  Among
+other issues, pmds and ptes overload some flags for multiple uses (PAT
+vs PSE), so it is necessary to know which structural level a pagetable
+entry is in order interpret it properly.
 
-Or, if flushing has to be associated with a specific worker anyway,
-maybe it would be better to move the sequence counter to
-kthread_worker and do it similarly with the original workqueue so that
-work can be destroyed once execution starts?  Then, it can at least
-remain semantically identical to the original workqueue.
+When huge pages are used within a paravirtualized system, it is therefore
+appropriate to use the pmd set of function to operate on them, so that
+the hypervisor can correctly validate the update.
 
-Thanks.
+[ Add fix for 32-bit non-PAE with two-level pagetable - Jeremy ]
 
--- 
-tejun
+Signed-off-by: Dave McCracken<dave.mccracken@oracle.com>
+Signed-off-by: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
+
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index 439a9ac..bf88684 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -36,16 +36,28 @@ static inline void hugetlb_free_pgd_range(struct mmu_gather *tlb,
+  	free_pgd_range(tlb, addr, end, floor, ceiling);
+  }
+
++static inline pte_t huge_ptep_get(pte_t *ptep)
++{
++	return *ptep;
++}
++
+  static inline void set_huge_pte_at(struct mm_struct *mm, unsigned long addr,
+  				   pte_t *ptep, pte_t pte)
+  {
+-	set_pte_at(mm, addr, ptep, pte);
++#if PAGETABLE_LEVELS>= 3
++	set_pmd((pmd_t *)ptep, native_make_pmd(native_pte_val(pte)));
++#else
++	set_pgd((pgd_t *)ptep, native_make_pgd(native_pte_val(pte)));
++#endif
+  }
+
+  static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
+  					    unsigned long addr, pte_t *ptep)
+  {
+-	return ptep_get_and_clear(mm, addr, ptep);
++	pte_t pte = huge_ptep_get(ptep);
++
++	set_huge_pte_at(mm, addr, ptep, __pte(0));
++	return pte;
+  }
+
+  static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
+@@ -66,19 +78,25 @@ static inline pte_t huge_pte_wrprotect(pte_t pte)
+  static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+  					   unsigned long addr, pte_t *ptep)
+  {
+-	ptep_set_wrprotect(mm, addr, ptep);
++	pte_t pte = huge_ptep_get(ptep);
++
++	pte = pte_wrprotect(pte);
++	set_huge_pte_at(mm, addr, ptep, pte);
+  }
+
+  static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
+  					     unsigned long addr, pte_t *ptep,
+  					     pte_t pte, int dirty)
+  {
+-	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
+-}
++	pte_t oldpte = huge_ptep_get(ptep);
++	int changed = !pte_same(oldpte, pte);
+
+-static inline pte_t huge_ptep_get(pte_t *ptep)
+-{
+-	return *ptep;
++	if (changed&&  dirty) {
++		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
++		flush_tlb_page(vma, addr);
++	}
++
++	return changed;
+  }
+
+  static inline int arch_prepare_hugepage(struct page *page)
+
+
