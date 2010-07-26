@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab0GZHZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 03:25:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:59385 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753576Ab0GZHZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 03:25:43 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: virtualization@lists.linux-foundation.org
-Subject: [PATCH] virtio: fix oops on OOM
-Date: Mon, 26 Jul 2010 16:55:30 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; i686; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>
-References: <201007231548.38037.rusty@rustcorp.com.au>
-In-Reply-To: <201007231548.38037.rusty@rustcorp.com.au>
+	id S1753718Ab0GZH1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 03:27:13 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:45567 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373Ab0GZH1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 03:27:12 -0400
+Date: Mon, 26 Jul 2010 09:27:10 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tim Abbott <tabbott@ksplice.com>, Tim Bird <tim.bird@am.sony.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+        linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Michal Marek <mmarek@suse.cz>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Subject: Re: Testing of function/data-sections on linux-2.6.35-rc4
+Message-ID: <20100726072710.GB10061@merkur.ravnborg.org>
+References: <201007181703.17022.vda.linux@googlemail.com> <20100723202448.GB27054@merkur.ravnborg.org> <201007260329.09913.vda.linux@googlemail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007261655.31257.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007260329.09913.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+On Mon, Jul 26, 2010 at 03:29:09AM +0200, Denys Vlasenko wrote:
+> On Friday 23 July 2010 22:24, Sam Ravnborg wrote:
+> > > * fix for kernel linker stripts: linux-2.6.35-rc4-fs.fix-kernel-linker-scripts.patch
+> > >   It makes _all_ linker scripts -ffunction/data-sections safe via:
+> > >   -       *(.data)
+> > >   +       *(.data .data.*)
+> > >   
+> > 
+> > This patch touches both the regular kernel linker scripts and the
+> > boot linker scripts.
+> > I would strongly prefer a split so you touched the boot linker
+> > scripts in a separate patch.
+> 
+> No problem.
+> 
+> > In addition the patch handles more sections than
+> > documented: rodata, bss, text.
+> 
+> Yes, that was assumed.
+> 
+> > The patch introduce the following syntax for input sections:
+> > 
+> >     *(.bss .bss.*)
+> >
+> > Where the kernel linker script would have one input
+> > section per line.
+> > Can we stick to the "layout" used in the kernel linker scripts?
+> 
+> Sure.
+> 
+> 
+> > The patch in addition in several places changes linker
+> > scripts that already uses the two-lines layout to a single line approach.
+> > These "fixes" should be omitted.
+> 
+> Reverted.
+> 
+> > Why do we need *(.bss .bss.*)?
+> > Does -fdata-sections introduce special .bss sectiosn too?
+> 
+> Yes, it does.
+> 
+> Please take a look at attached updated patches.
+> 
+> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
 
-virtio ring was changed to return an error code on OOM,
-but one caller was missed and still checks for vq->vring.num.
-The fix is just to check for <0 error code.
+Looks better now - thanks.
 
-Long term it might make sense to change goto add_head to
-just return an error on oom instead, but let's apply
-a minimal fix for 2.6.35.
+With proper changelogs both patches has my:
 
-Reported-by: Chris Mason <chris.mason@oracle.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Tested-by: Chris Mason <chris.mason@oracle.com>
-Cc: stable@kernel.org # .34.x
----
- drivers/virtio/virtio_ring.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index dd35b34..bffec32 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -164,7 +164,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
- 			  gfp_t gfp)
- {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
--	unsigned int i, avail, head, uninitialized_var(prev);
-+	unsigned int i, avail, uninitialized_var(prev);
-+	int head;
- 
- 	START_USE(vq);
- 
-@@ -174,8 +175,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
- 	 * buffers, then go indirect. FIXME: tune this threshold */
- 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
- 		head = vring_add_indirect(vq, sg, out, in, gfp);
--		if (head != vq->vring.num)
-+		if (likely(head >= 0))
- 			goto add_head;
- 	}
- 
- 	BUG_ON(out + in > vq->vring.num);
+	Sam
