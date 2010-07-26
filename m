@@ -1,198 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab0GZJL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 05:11:28 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:40425 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab0GZJL1 (ORCPT
+	id S1753928Ab0GZJMZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 05:12:25 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:35880 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab0GZJMY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 05:11:27 -0400
-Date: Mon, 26 Jul 2010 12:04:21 +0300
-From: Alexander Shishkin <virtuoso@slind.org>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: Hari Kanigeri <hari.kanigeri@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] omap3: make coresight register save across OFF modes a
- sysfs option
-Message-ID: <20100726090421.GD14399@shisha.kicks-ass.net>
-Mail-Followup-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-	Hari Kanigeri <hari.kanigeri@gmail.com>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	Tony Lindgren <tony@atomide.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	Paul Walmsley <paul@pwsan.com>,
-	Kevin Hilman <khilman@deeprootsystems.com>,
-	"linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <AANLkTinmSJ6dtgqmyuk9CArniPEvEp7TrXauvGxLxv7x@mail.gmail.com>
- <1280091863-8891-1-git-send-email-virtuoso@slind.org>
- <EAF47CD23C76F840A9E7FCE10091EFAB02C625569B@dbde02.ent.ti.com>
- <20100726073215.GC14399@shisha.kicks-ass.net>
- <EAF47CD23C76F840A9E7FCE10091EFAB02C625578A@dbde02.ent.ti.com>
+	Mon, 26 Jul 2010 05:12:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB02C625578A@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
+References: <20100722182638.GA12712@kroah.com> <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com> 
+	<20100722183614.GA5443@suse.de> <AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Mon, 26 Jul 2010 11:12:08 +0200
+Message-ID: <AANLkTimm9XGvK2H55V7N76JPU05iHk_dY5JjOLifQTsr@mail.gmail.com>
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+To: Dhaval Giani <dhaval.lists@thegianis.in>
+Cc: Greg KH <gregkh@suse.de>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 02:01:14 +0530, Shilimkar, Santosh wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Alexander Shishkin [mailto:virtuoso@slind.org]
-> > Sent: Monday, July 26, 2010 1:02 PM
-> > To: Shilimkar, Santosh
-> > Cc: Hari Kanigeri; linux-arm-kernel@lists.infradead.org; Tony Lindgren;
-> > Russell King; Paul Walmsley; Kevin Hilman; linux-omap@vger.kernel.org;
-> > linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH] omap3: make coresight register save across OFF modes
-> > a sysfs option
-> > 
-> > On Mon, Jul 26, 2010 at 12:28:38 +0530, Shilimkar, Santosh wrote:
-> > > > -----Original Message-----
-> > > > From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> > > > owner@vger.kernel.org] On Behalf Of Alexander Shishkin
-> > > > Sent: Monday, July 26, 2010 2:34 AM
-> > > > To: Hari Kanigeri
-> > > > Cc: Alexander Shishkin; linux-arm-kernel@lists.infradead.org; Tony
-> > > > Lindgren; Russell King; Paul Walmsley; Kevin Hilman; linux-
-> > > > omap@vger.kernel.org; linux-kernel@vger.kernel.org
-> > > > Subject: [PATCH] omap3: make coresight register save across OFF modes
-> > a
-> > > > sysfs option
-> > > >
-> > > > This adds a sysfs file at /sys/power/coresight_save which is used to
-> > > > control if the ETM and debug components' states should be saved and
-> > > > restored across OFF modes.
-> > > >
-> > > > Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-> > > > Cc: Tony Lindgren <tony@atomide.com>
-> > > > Cc: Russell King <linux@arm.linux.org.uk>
-> > > > Cc: Paul Walmsley <paul@pwsan.com>
-> > > > Cc: Kevin Hilman <khilman@deeprootsystems.com>
-> > > > Cc: linux-omap@vger.kernel.org
-> > > > Cc: linux-arm-kernel@lists.infradead.org
-> > > > Cc: linux-kernel@vger.kernel.org
-> > > > ---
-> > > >  arch/arm/mach-omap2/Makefile    |    1 +
-> > > >  arch/arm/mach-omap2/debug34xx.c |   66
-> > > > +++++++++++++++++++++++++++++++++++++++
-> > > >  arch/arm/mach-omap2/pm.h        |    6 +++
-> > > >  arch/arm/mach-omap2/pm34xx.c    |    3 ++
-> > > >  4 files changed, 76 insertions(+), 0 deletions(-)
-> > > >  create mode 100644 arch/arm/mach-omap2/debug34xx.c
-> > > >
-> > > > diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-
-> > omap2/Makefile
-> > > > index f5b4ff4..3a64ce4 100644
-> > > > --- a/arch/arm/mach-omap2/Makefile
-> > > > +++ b/arch/arm/mach-omap2/Makefile
-> > > > @@ -49,6 +49,7 @@ ifeq ($(CONFIG_PM),y)
-> > > >  obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
-> > > >  obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
-> > > >  obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o cpuidle34xx.o
-> > > > +obj-$(CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG) += debug34xx.o
-> > > >  obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
-> > > >
-> > > >  AFLAGS_sleep24xx.o			:=-Wa,-march=armv6
-> > > > diff --git a/arch/arm/mach-omap2/debug34xx.c b/arch/arm/mach-
-> > > > omap2/debug34xx.c
-> > > > new file mode 100644
-> > > > index 0000000..698e83a
-> > > > --- /dev/null
-> > > > +++ b/arch/arm/mach-omap2/debug34xx.c
-> > >
-> > > > @@ -0,0 +1,66 @@
-> > > > +/*
-> > > > + * Control saving and restoring of coresight components' state during
-> > > > + * OFF mode.
-> > > > + *
-> > > > + * Copyright (C) 2010 Nokia Corporation
-> > > > + * Alexander Shishkin
-> > > > + *
-> > > > + * This program is free software; you can redistribute it and/or
-> > modify
-> > > > + * it under the terms of the GNU General Public License version 2 as
-> > > > + * published by the Free Software Foundation.
-> > > > + */
-> > > > +
-> > > > +#include <linux/kernel.h>
-> > > > +#include <linux/sysfs.h>
-> > > > +#include <linux/kobject.h>
-> > > > +
-> > > > +#include "pm.h"
-> > > > +
-> > > > +/*
-> > > > + * Pointer to a place in sram where the ETM/debug state save
-> > > > + * flag is. It can be calculated after the omap_sram_idle is
-> > > > + * pushed to sram.
-> > > > + */
-> > > > +static unsigned int *_etm_save;
-> > > > +
-> > > > +/*
-> > > > + * sysfs file /sys/power/coresight_save controls whether the
-> > > > + * state of coresight components should be saved and restored
-> > > > + * across OFF modes.
-> > > > + */
-> > > > +static ssize_t coresight_save_show(struct kobject *kobj,
-> > > > +				  struct kobj_attribute *attr,
-> > > > +				  char *buf)
-> > > > +{
-> > > > +	return sprintf(buf, "%u\n", *_etm_save);
-> > > > +}
-> > > > +
-> > > > +static ssize_t coresight_save_store(struct kobject *kobj,
-> > > > +				   struct kobj_attribute *attr,
-> > > > +				   const char *buf, size_t n)
-> > > > +{
-> > > > +	unsigned int value;
-> > > > +
-> > > > +	if (sscanf(buf, "%u", &value) != 1)
-> > > > +		return -EINVAL;
-> > > > +
-> > > > +	*_etm_save = !!value;
-> > > > +
-> > > > +	return n;
-> > > > +}
-> > > > +
-> > > > +static struct kobj_attribute coresight_save_attr =
-> > > > +	__ATTR(coresight_save, 0644, coresight_save_show,
-> > > > coresight_save_store);
-> > > > +
-> > > > +int omap3_coresight_pm_init(void *sram_addr)
-> > > > +{
-> > > > +	int ret;
-> > > > +
-> > > > +	/* the last word from the top of omap_sram_idle */
-> > > > +	_etm_save = (unsigned *)((u8 *)sram_addr + omap34xx_cpu_suspend_sz -
-> > > > 4);
-> > > > +
-> > > > +	ret = sysfs_create_file(power_kobj, &coresight_save_attr.attr);
-> > > > +
-> > > > +	return ret;
-> > > > +}
-> > >
-> > > Looking at content of this file, I think you can keep this under common
-> > > pm-debug.c file.
-> > > Any problems with that ?
-> > 
-> > I was trying to avoid #ifdeffing too much and I didn't want this code to
-> > compile at all when CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG is not set.
-> > Otherwise, no problems.
-> > 
-> Ok. 
+On Mon, Jul 26, 2010 at 11:08, Dhaval Giani <dhaval.lists@thegianis.in> wrote:
+> On Thu, Jul 22, 2010 at 8:36 PM, Greg KH <gregkh@suse.de> wrote:
+>> On Thu, Jul 22, 2010 at 11:31:07AM -0700, Paul Menage wrote:
+>>> On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
+>>> > We really shouldn't be asking userspace to create new root filesystems.
+>>> > So follow along with all of the other in-kernel filesystems, and provide
+>>> > a mount point in sysfs.
+>>> >
+>>> > For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
+>>> > that mount point when the cgroup filesystem is registered in the kernel.
+>>>
+>>> But cgroups will typically have multiple mounts, with different
+>>> resource controllers/options on each mount. That doesn't really fit in
+>>> with this scheme.
+>>
+>> Really?  I see systems mounting it at /cgroups/ in the filesystem today.
+>> Where are you expecting it to be mounted at?
+>>
+>
+> Not really. It is getting mounted at /cgroups/<name of resource
+> controller>/ at a number of places. Keeping it in sysfs loses us a lot
+> of this flexibility. Unless you are ready to keep adding a new
+> mountpoint for each subsystem, it will not really work out in the long
+> term.
 
-But feel free to ack, all the same. :)
+As mentioned earlier in this thread, systemd already mounts a tmpfs at
+the cgroup mountpoint. We need only a single directory. This should
+not be an issue.
 
-Regards,
---
-Alex
+Kay
