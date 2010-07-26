@@ -1,196 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab0GZI3l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 04:29:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26612 "EHLO mga09.intel.com"
+	id S1754066Ab0GZIbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 04:31:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34284 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753888Ab0GZI3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 04:29:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,260,1278313200"; 
-   d="scan'208";a="538741396"
-Date: Mon, 26 Jul 2010 16:29:35 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-ID: <20100726082935.GC13076@localhost>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
- <20100719221420.GA16031@cmpxchg.org>
- <20100720134555.GU13117@csn.ul.ie>
- <20100720220218.GE16031@cmpxchg.org>
- <20100721115250.GX13117@csn.ul.ie>
- <20100721130435.GH16031@cmpxchg.org>
- <20100721133857.GY13117@csn.ul.ie>
+	id S1753954Ab0GZIbh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 04:31:37 -0400
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+To: Alexander Shishkin <virtuoso@slind.org>
+CC: Hari Kanigeri <hari.kanigeri@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 26 Jul 2010 14:01:14 +0530
+Subject: RE: [PATCH] omap3: make coresight register save across OFF modes a
+ sysfs option
+Thread-Topic: [PATCH] omap3: make coresight register save across OFF modes a
+ sysfs option
+Thread-Index: AcsslaMIR0x0/bSsRjOy10IY2ibdbwABxvOg
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02C625578A@dbde02.ent.ti.com>
+References: <AANLkTinmSJ6dtgqmyuk9CArniPEvEp7TrXauvGxLxv7x@mail.gmail.com>
+ <1280091863-8891-1-git-send-email-virtuoso@slind.org>
+ <EAF47CD23C76F840A9E7FCE10091EFAB02C625569B@dbde02.ent.ti.com>
+ <20100726073215.GC14399@shisha.kicks-ass.net>
+In-Reply-To: <20100726073215.GC14399@shisha.kicks-ass.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721133857.GY13117@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ==== CUT HERE ====
-> vmscan: Do not writeback filesystem pages in direct reclaim
-> 
-> When memory is under enough pressure, a process may enter direct
-> reclaim to free pages in the same manner kswapd does. If a dirty page is
-> encountered during the scan, this page is written to backing storage using
-> mapping->writepage. This can result in very deep call stacks, particularly
-> if the target storage or filesystem are complex. It has already been observed
-> on XFS that the stack overflows but the problem is not XFS-specific.
-> 
-> This patch prevents direct reclaim writing back filesystem pages by checking
-> if current is kswapd or the page is anonymous before writing back.  If the
-> dirty pages cannot be written back, they are placed back on the LRU lists
-> for either background writing by the BDI threads or kswapd. If in direct
-> lumpy reclaim and dirty pages are encountered, the process will stall for
-> the background flusher before trying to reclaim the pages again.
-> 
-> As the call-chain for writing anonymous pages is not expected to be deep
-> and they are not cleaned by flusher threads, anonymous pages are still
-> written back in direct reclaim.
 
-This is also a good step towards reducing pageout() calls. For better
-IO performance the flusher threads should take more work from pageout().
 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
->  mm/vmscan.c |   55 +++++++++++++++++++++++++++++++++++++++----------------
->  1 files changed, 39 insertions(+), 16 deletions(-)
+> -----Original Message-----
+> From: Alexander Shishkin [mailto:virtuoso@slind.org]
+> Sent: Monday, July 26, 2010 1:02 PM
+> To: Shilimkar, Santosh
+> Cc: Hari Kanigeri; linux-arm-kernel@lists.infradead.org; Tony Lindgren;
+> Russell King; Paul Walmsley; Kevin Hilman; linux-omap@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] omap3: make coresight register save across OFF modes
+> a sysfs option
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6587155..45d9934 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -139,6 +139,9 @@ static DECLARE_RWSEM(shrinker_rwsem);
->  #define scanning_global_lru(sc)        (1)
->  #endif
+> On Mon, Jul 26, 2010 at 12:28:38 +0530, Shilimkar, Santosh wrote:
+> > > -----Original Message-----
+> > > From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
+> > > owner@vger.kernel.org] On Behalf Of Alexander Shishkin
+> > > Sent: Monday, July 26, 2010 2:34 AM
+> > > To: Hari Kanigeri
+> > > Cc: Alexander Shishkin; linux-arm-kernel@lists.infradead.org; Tony
+> > > Lindgren; Russell King; Paul Walmsley; Kevin Hilman; linux-
+> > > omap@vger.kernel.org; linux-kernel@vger.kernel.org
+> > > Subject: [PATCH] omap3: make coresight register save across OFF modes
+> a
+> > > sysfs option
+> > >
+> > > This adds a sysfs file at /sys/power/coresight_save which is used to
+> > > control if the ETM and debug components' states should be saved and
+> > > restored across OFF modes.
+> > >
+> > > Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+> > > Cc: Tony Lindgren <tony@atomide.com>
+> > > Cc: Russell King <linux@arm.linux.org.uk>
+> > > Cc: Paul Walmsley <paul@pwsan.com>
+> > > Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> > > Cc: linux-omap@vger.kernel.org
+> > > Cc: linux-arm-kernel@lists.infradead.org
+> > > Cc: linux-kernel@vger.kernel.org
+> > > ---
+> > >  arch/arm/mach-omap2/Makefile    |    1 +
+> > >  arch/arm/mach-omap2/debug34xx.c |   66
+> > > +++++++++++++++++++++++++++++++++++++++
+> > >  arch/arm/mach-omap2/pm.h        |    6 +++
+> > >  arch/arm/mach-omap2/pm34xx.c    |    3 ++
+> > >  4 files changed, 76 insertions(+), 0 deletions(-)
+> > >  create mode 100644 arch/arm/mach-omap2/debug34xx.c
+> > >
+> > > diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-
+> omap2/Makefile
+> > > index f5b4ff4..3a64ce4 100644
+> > > --- a/arch/arm/mach-omap2/Makefile
+> > > +++ b/arch/arm/mach-omap2/Makefile
+> > > @@ -49,6 +49,7 @@ ifeq ($(CONFIG_PM),y)
+> > >  obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
+> > >  obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
+> > >  obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o cpuidle34xx.o
+> > > +obj-$(CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG) += debug34xx.o
+> > >  obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
+> > >
+> > >  AFLAGS_sleep24xx.o			:=-Wa,-march=armv6
+> > > diff --git a/arch/arm/mach-omap2/debug34xx.c b/arch/arm/mach-
+> > > omap2/debug34xx.c
+> > > new file mode 100644
+> > > index 0000000..698e83a
+> > > --- /dev/null
+> > > +++ b/arch/arm/mach-omap2/debug34xx.c
+> >
+> > > @@ -0,0 +1,66 @@
+> > > +/*
+> > > + * Control saving and restoring of coresight components' state during
+> > > + * OFF mode.
+> > > + *
+> > > + * Copyright (C) 2010 Nokia Corporation
+> > > + * Alexander Shishkin
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or
+> modify
+> > > + * it under the terms of the GNU General Public License version 2 as
+> > > + * published by the Free Software Foundation.
+> > > + */
+> > > +
+> > > +#include <linux/kernel.h>
+> > > +#include <linux/sysfs.h>
+> > > +#include <linux/kobject.h>
+> > > +
+> > > +#include "pm.h"
+> > > +
+> > > +/*
+> > > + * Pointer to a place in sram where the ETM/debug state save
+> > > + * flag is. It can be calculated after the omap_sram_idle is
+> > > + * pushed to sram.
+> > > + */
+> > > +static unsigned int *_etm_save;
+> > > +
+> > > +/*
+> > > + * sysfs file /sys/power/coresight_save controls whether the
+> > > + * state of coresight components should be saved and restored
+> > > + * across OFF modes.
+> > > + */
+> > > +static ssize_t coresight_save_show(struct kobject *kobj,
+> > > +				  struct kobj_attribute *attr,
+> > > +				  char *buf)
+> > > +{
+> > > +	return sprintf(buf, "%u\n", *_etm_save);
+> > > +}
+> > > +
+> > > +static ssize_t coresight_save_store(struct kobject *kobj,
+> > > +				   struct kobj_attribute *attr,
+> > > +				   const char *buf, size_t n)
+> > > +{
+> > > +	unsigned int value;
+> > > +
+> > > +	if (sscanf(buf, "%u", &value) != 1)
+> > > +		return -EINVAL;
+> > > +
+> > > +	*_etm_save = !!value;
+> > > +
+> > > +	return n;
+> > > +}
+> > > +
+> > > +static struct kobj_attribute coresight_save_attr =
+> > > +	__ATTR(coresight_save, 0644, coresight_save_show,
+> > > coresight_save_store);
+> > > +
+> > > +int omap3_coresight_pm_init(void *sram_addr)
+> > > +{
+> > > +	int ret;
+> > > +
+> > > +	/* the last word from the top of omap_sram_idle */
+> > > +	_etm_save = (unsigned *)((u8 *)sram_addr + omap34xx_cpu_suspend_sz -
+> > > 4);
+> > > +
+> > > +	ret = sysfs_create_file(power_kobj, &coresight_save_attr.attr);
+> > > +
+> > > +	return ret;
+> > > +}
+> >
+> > Looking at content of this file, I think you can keep this under common
+> > pm-debug.c file.
+> > Any problems with that ?
 > 
-> +/* Direct lumpy reclaim waits up to 5 seconds for background cleaning */
-> +#define MAX_SWAP_CLEAN_WAIT 50
-> +
->  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
->                                                   struct scan_control *sc)
->  {
-> @@ -644,11 +647,13 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->   */
->  static unsigned long shrink_page_list(struct list_head *page_list,
->                                         struct scan_control *sc,
-> -                                       enum pageout_io sync_writeback)
-> +                                       enum pageout_io sync_writeback,
-> +                                       unsigned long *nr_still_dirty)
->  {
->         LIST_HEAD(ret_pages);
->         LIST_HEAD(free_pages);
->         int pgactivate = 0;
-> +       unsigned long nr_dirty = 0;
->         unsigned long nr_reclaimed = 0;
+> I was trying to avoid #ifdeffing too much and I didn't want this code to
+> compile at all when CONFIG_ENABLE_OFF_MODE_JTAG_ETM_DEBUG is not set.
+> Otherwise, no problems.
 > 
->         cond_resched();
-> @@ -742,6 +747,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->                 }
-> 
->                 if (PageDirty(page)) {
-> +                       /*
-> +                        * Only kswapd can writeback filesystem pages to
-> +                        * avoid risk of stack overflow
-> +                        */
-> +                       if (page_is_file_cache(page) && !current_is_kswapd()) {
-> +                               nr_dirty++;
-> +                               goto keep_locked;
-> +                       }
-> +
->                         if (references == PAGEREF_RECLAIM_CLEAN)
->                                 goto keep_locked;
->                         if (!may_enter_fs)
-> @@ -858,7 +872,7 @@ keep:
-> 
->         free_page_list(&free_pages);
-> 
-> -       list_splice(&ret_pages, page_list);
-> +       *nr_still_dirty = nr_dirty;
->         count_vm_events(PGACTIVATE, pgactivate);
->         return nr_reclaimed;
->  }
-> @@ -1245,6 +1259,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->         unsigned long nr_active;
->         unsigned long nr_anon;
->         unsigned long nr_file;
-> +       unsigned long nr_dirty;
-> 
->         while (unlikely(too_many_isolated(zone, file, sc))) {
->                 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> @@ -1293,26 +1308,34 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
-> 
->         spin_unlock_irq(&zone->lru_lock);
-> 
-> -       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-> +       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
-> +                                                               &nr_dirty);
-> 
->         /*
-> -        * If we are direct reclaiming for contiguous pages and we do
-> +        * If specific pages are needed such as with direct reclaiming
-> +        * for contiguous pages or for memory containers and we do
->          * not reclaim everything in the list, try again and wait
-> -        * for IO to complete. This will stall high-order allocations
-> -        * but that should be acceptable to the caller
-> +        * for IO to complete. This will stall callers that require
-> +        * specific pages but it should be acceptable to the caller
->          */
-> -       if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
-> -                       sc->lumpy_reclaim_mode) {
-> -               congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +       if (sc->may_writepage && !current_is_kswapd() &&
-> +                       (sc->lumpy_reclaim_mode || sc->mem_cgroup)) {
-> +               int dirty_retry = MAX_SWAP_CLEAN_WAIT;
-> 
-> -               /*
-> -                * The attempt at page out may have made some
-> -                * of the pages active, mark them inactive again.
-> -                */
-> -               nr_active = clear_active_flags(&page_list, NULL);
-> -               count_vm_events(PGDEACTIVATE, nr_active);
-> +               while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
-> +                       wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
-> +                       congestion_wait(BLK_RW_ASYNC, HZ/10);
-
-It needs good luck for the flusher threads to "happen to" sync the
-dirty pages in our page_list. I'd rather take the logic as "there are
-too many dirty pages, shrink them to avoid some future pageout() calls
-and/or congestion_wait() stalls".
-
-So the loop is likely to repeat MAX_SWAP_CLEAN_WAIT times.  Let's remove it?
-
-> -               nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-> +                       /*
-> +                        * The attempt at page out may have made some
-> +                        * of the pages active, mark them inactive again.
-> +                        */
-> +                       nr_active = clear_active_flags(&page_list, NULL);
-> +                       count_vm_events(PGDEACTIVATE, nr_active);
-> +
-> +                       nr_reclaimed += shrink_page_list(&page_list, sc,
-> +                                               PAGEOUT_IO_SYNC, &nr_dirty);
-
-This shrink_page_list() won't be called at all if nr_dirty==0 and
-pageout() was called. This is a change of behavior. It can also be
-fixed by removing the loop.
-
-Thanks,
-Fengguang
+Ok. 
