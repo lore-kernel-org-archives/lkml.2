@@ -1,61 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab0GZJMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 05:12:25 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:35880 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab0GZJMY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 05:12:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
-References: <20100722182638.GA12712@kroah.com> <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com> 
-	<20100722183614.GA5443@suse.de> <AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 26 Jul 2010 11:12:08 +0200
-Message-ID: <AANLkTimm9XGvK2H55V7N76JPU05iHk_dY5JjOLifQTsr@mail.gmail.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-To: Dhaval Giani <dhaval.lists@thegianis.in>
-Cc: Greg KH <gregkh@suse.de>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1753991Ab0GZJMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 05:12:46 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49266 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753851Ab0GZJMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 05:12:44 -0400
+Date: Mon, 26 Jul 2010 10:12:27 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in
+	direct reclaim
+Message-ID: <20100726091227.GF5300@csn.ul.ie>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-5-git-send-email-mel@csn.ul.ie> <20100719221420.GA16031@cmpxchg.org> <20100720134555.GU13117@csn.ul.ie> <20100720220218.GE16031@cmpxchg.org> <20100721115250.GX13117@csn.ul.ie> <20100721130435.GH16031@cmpxchg.org> <20100721133857.GY13117@csn.ul.ie> <20100726082935.GC13076@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100726082935.GC13076@localhost>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 11:08, Dhaval Giani <dhaval.lists@thegianis.in> wrote:
-> On Thu, Jul 22, 2010 at 8:36 PM, Greg KH <gregkh@suse.de> wrote:
->> On Thu, Jul 22, 2010 at 11:31:07AM -0700, Paul Menage wrote:
->>> On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
->>> > We really shouldn't be asking userspace to create new root filesystems.
->>> > So follow along with all of the other in-kernel filesystems, and provide
->>> > a mount point in sysfs.
->>> >
->>> > For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
->>> > that mount point when the cgroup filesystem is registered in the kernel.
->>>
->>> But cgroups will typically have multiple mounts, with different
->>> resource controllers/options on each mount. That doesn't really fit in
->>> with this scheme.
->>
->> Really?  I see systems mounting it at /cgroups/ in the filesystem today.
->> Where are you expecting it to be mounted at?
->>
->
-> Not really. It is getting mounted at /cgroups/<name of resource
-> controller>/ at a number of places. Keeping it in sysfs loses us a lot
-> of this flexibility. Unless you are ready to keep adding a new
-> mountpoint for each subsystem, it will not really work out in the long
-> term.
+On Mon, Jul 26, 2010 at 04:29:35PM +0800, Wu Fengguang wrote:
+> > ==== CUT HERE ====
+> > vmscan: Do not writeback filesystem pages in direct reclaim
+> > 
+> > When memory is under enough pressure, a process may enter direct
+> > reclaim to free pages in the same manner kswapd does. If a dirty page is
+> > encountered during the scan, this page is written to backing storage using
+> > mapping->writepage. This can result in very deep call stacks, particularly
+> > if the target storage or filesystem are complex. It has already been observed
+> > on XFS that the stack overflows but the problem is not XFS-specific.
+> > 
+> > This patch prevents direct reclaim writing back filesystem pages by checking
+> > if current is kswapd or the page is anonymous before writing back.  If the
+> > dirty pages cannot be written back, they are placed back on the LRU lists
+> > for either background writing by the BDI threads or kswapd. If in direct
+> > lumpy reclaim and dirty pages are encountered, the process will stall for
+> > the background flusher before trying to reclaim the pages again.
+> > 
+> > As the call-chain for writing anonymous pages is not expected to be deep
+> > and they are not cleaned by flusher threads, anonymous pages are still
+> > written back in direct reclaim.
+> 
+> This is also a good step towards reducing pageout() calls. For better
+> IO performance the flusher threads should take more work from pageout().
+> 
 
-As mentioned earlier in this thread, systemd already mounts a tmpfs at
-the cgroup mountpoint. We need only a single directory. This should
-not be an issue.
+This is true for better IO performance all right but reclaim does require
+specific pages cleaned. The strict requirement is when lumpy reclaim is
+involved but a looser requirement is when any pages within a zone be cleaned.
 
-Kay
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > ---
+> >  mm/vmscan.c |   55 +++++++++++++++++++++++++++++++++++++++----------------
+> >  1 files changed, 39 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 6587155..45d9934 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -139,6 +139,9 @@ static DECLARE_RWSEM(shrinker_rwsem);
+> >  #define scanning_global_lru(sc)        (1)
+> >  #endif
+> > 
+> > +/* Direct lumpy reclaim waits up to 5 seconds for background cleaning */
+> > +#define MAX_SWAP_CLEAN_WAIT 50
+> > +
+> >  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+> >                                                   struct scan_control *sc)
+> >  {
+> > @@ -644,11 +647,13 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
+> >   */
+> >  static unsigned long shrink_page_list(struct list_head *page_list,
+> >                                         struct scan_control *sc,
+> > -                                       enum pageout_io sync_writeback)
+> > +                                       enum pageout_io sync_writeback,
+> > +                                       unsigned long *nr_still_dirty)
+> >  {
+> >         LIST_HEAD(ret_pages);
+> >         LIST_HEAD(free_pages);
+> >         int pgactivate = 0;
+> > +       unsigned long nr_dirty = 0;
+> >         unsigned long nr_reclaimed = 0;
+> > 
+> >         cond_resched();
+> > @@ -742,6 +747,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >                 }
+> > 
+> >                 if (PageDirty(page)) {
+> > +                       /*
+> > +                        * Only kswapd can writeback filesystem pages to
+> > +                        * avoid risk of stack overflow
+> > +                        */
+> > +                       if (page_is_file_cache(page) && !current_is_kswapd()) {
+> > +                               nr_dirty++;
+> > +                               goto keep_locked;
+> > +                       }
+> > +
+> >                         if (references == PAGEREF_RECLAIM_CLEAN)
+> >                                 goto keep_locked;
+> >                         if (!may_enter_fs)
+> > @@ -858,7 +872,7 @@ keep:
+> > 
+> >         free_page_list(&free_pages);
+> > 
+> > -       list_splice(&ret_pages, page_list);
+> > +       *nr_still_dirty = nr_dirty;
+> >         count_vm_events(PGACTIVATE, pgactivate);
+> >         return nr_reclaimed;
+> >  }
+> > @@ -1245,6 +1259,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> >         unsigned long nr_active;
+> >         unsigned long nr_anon;
+> >         unsigned long nr_file;
+> > +       unsigned long nr_dirty;
+> > 
+> >         while (unlikely(too_many_isolated(zone, file, sc))) {
+> >                 congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > @@ -1293,26 +1308,34 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> > 
+> >         spin_unlock_irq(&zone->lru_lock);
+> > 
+> > -       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+> > +       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
+> > +                                                               &nr_dirty);
+> > 
+> >         /*
+> > -        * If we are direct reclaiming for contiguous pages and we do
+> > +        * If specific pages are needed such as with direct reclaiming
+> > +        * for contiguous pages or for memory containers and we do
+> >          * not reclaim everything in the list, try again and wait
+> > -        * for IO to complete. This will stall high-order allocations
+> > -        * but that should be acceptable to the caller
+> > +        * for IO to complete. This will stall callers that require
+> > +        * specific pages but it should be acceptable to the caller
+> >          */
+> > -       if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
+> > -                       sc->lumpy_reclaim_mode) {
+> > -               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > +       if (sc->may_writepage && !current_is_kswapd() &&
+> > +                       (sc->lumpy_reclaim_mode || sc->mem_cgroup)) {
+> > +               int dirty_retry = MAX_SWAP_CLEAN_WAIT;
+> > 
+> > -               /*
+> > -                * The attempt at page out may have made some
+> > -                * of the pages active, mark them inactive again.
+> > -                */
+> > -               nr_active = clear_active_flags(&page_list, NULL);
+> > -               count_vm_events(PGDEACTIVATE, nr_active);
+> > +               while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
+> > +                       wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
+> > +                       congestion_wait(BLK_RW_ASYNC, HZ/10);
+> 
+> It needs good luck for the flusher threads to "happen to" sync the
+> dirty pages in our page_list.
+
+That is why I'm expecting the "shrink oldest inode" patchset to help. It
+still requires a certain amount of luck but callers that encounter dirty
+pages will be delayed.
+
+It's also because a certain amount of luck is required that the last patch
+in the series aims at reducing the number of dirty pages encountered by
+reclaim. The closer that is to 0, the less important the timing of flusher
+threads is.
+
+> I'd rather take the logic as "there are
+> too many dirty pages, shrink them to avoid some future pageout() calls
+> and/or congestion_wait() stalls".
+> 
+
+What do you mean by shrink them? They cannot be reclaimed until they are
+clean.
+
+> So the loop is likely to repeat MAX_SWAP_CLEAN_WAIT times.  Let's remove it?
+> 
+
+This loop only applies to direct reclaimers in lumpy reclaim mode and
+memory containers. Both need specific pages to be cleaned and freed.
+Hence, the loop is to stall them and wait on flusher threads up to a
+point. Otherwise they can cause a reclaim storm of clean pages that
+can't be used.
+
+Current tests have not indicated MAX_SWAP_CLEAN_WAIT is regularly reached
+but I am inferring this from timing data rather than a direct measurement.
+
+> > -               nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
+> > +                       /*
+> > +                        * The attempt at page out may have made some
+> > +                        * of the pages active, mark them inactive again.
+> > +                        */
+> > +                       nr_active = clear_active_flags(&page_list, NULL);
+> > +                       count_vm_events(PGDEACTIVATE, nr_active);
+> > +
+> > +                       nr_reclaimed += shrink_page_list(&page_list, sc,
+> > +                                               PAGEOUT_IO_SYNC, &nr_dirty);
+> 
+> This shrink_page_list() won't be called at all if nr_dirty==0 and
+> pageout() was called. This is a change of behavior. It can also be
+> fixed by removing the loop.
+> 
+
+The whole patch is a change of behaviour but in this case it also makes
+sense to focus on just the dirty pages. The first shrink_page_list
+decided that the pages could not be unmapped and reclaimed - probably
+because it was referenced. This is not likely to change during the loop.
+
+Testing with a version of the patch that processed the full list added
+significant stalls when sync writeback was involved. Testing time length
+was tripled in one case implying that this loop was continually reaching
+MAX_SWAP_CLEAN_WAIT.
+
+The intention of this loop is "wait on dirty pages to be cleaned" and
+it's a change of behaviour, but one that makes sense and testing
+indicates it's a good idea.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
