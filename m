@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab0GZNGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 09:06:13 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:38816 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337Ab0GZNGM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 09:06:12 -0400
-Date: Mon, 26 Jul 2010 15:06:05 +0200
-From: Nils Radtke <lkml@Think-Future.de>
-To: Milan Broz <mbroz@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: cryptsetup + lvm on usb disk, unusable /dev/dm-* after
- suspend/resume  cycle
-Message-ID: <20100726130605.GL31966@localhost>
-Reply-To: Nils Radtke <lkml@Think-Future.de>
-References: <20100725160641.GK31966@localhost>
- <4C4CA601.6020201@redhat.com>
+	id S1753388Ab0GZNKf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 09:10:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37400 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789Ab0GZNKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 09:10:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,261,1278313200"; 
+   d="scan'208";a="538798661"
+Date: Mon, 26 Jul 2010 21:10:08 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100726131008.GE11947@localhost>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-9-git-send-email-mel@csn.ul.ie>
+ <20100726072832.GB13076@localhost>
+ <20100726092616.GG5300@csn.ul.ie>
+ <20100726112709.GB6284@localhost>
+ <20100726125717.GS5300@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C4CA601.6020201@redhat.com>
-X-Url: http://www.Think-Future.de
-X-Editor: Vi it! http://www.vim.org
-X-Bkp: p2mi
+In-Reply-To: <20100726125717.GS5300@csn.ul.ie>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On Mon, Jul 26, 2010 at 08:57:17PM +0800, Mel Gorman wrote:
+> On Mon, Jul 26, 2010 at 07:27:09PM +0800, Wu Fengguang wrote:
+> > > > > @@ -933,13 +934,16 @@ keep_dirty:
+> > > > >  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+> > > > >  	}
+> > > > >  
+> > > > > +	/*
+> > > > > +	 * If reclaim is encountering dirty pages, it may be because
+> > > > > +	 * dirty pages are reaching the end of the LRU even though
+> > > > > +	 * the dirty_ratio may be satisified. In this case, wake
+> > > > > +	 * flusher threads to pro-actively clean some pages
+> > > > > +	 */
+> > > > > +	wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty + nr_dirty / 2);
+> > > > 
+> > > > Ah it's very possible that nr_dirty==0 here! Then you are hitting the
+> > > > number of dirty pages down to 0 whether or not pageout() is called.
+> > > > 
+> > > 
+> > > True, this has been fixed to only wakeup flusher threads when this is
+> > > the file LRU, dirty pages have been encountered and the caller has
+> > > sc->may_writepage.
+> > 
+> > OK.
+> > 
+> > > > Another minor issue is, the passed (nr_dirty + nr_dirty / 2) is
+> > > > normally a small number, much smaller than MAX_WRITEBACK_PAGES.
+> > > > The flusher will sync at least MAX_WRITEBACK_PAGES pages, this is good
+> > > > for efficiency.
+> > > > And it seems good to let the flusher write much more
+> > > > than nr_dirty pages to safeguard a reasonable large
+> > > > vmscan-head-to-first-dirty-LRU-page margin. So it would be enough to
+> > > > update the comments.
+> > > > 
+> > > 
+> > > Ok, the reasoning had been to flush a number of pages that was related
+> > > to the scanning rate but if that is inefficient for the flusher, I'll
+> > > use MAX_WRITEBACK_PAGES.
+> > 
+> > It would be better to pass something like (nr_dirty * N).
+> > MAX_WRITEBACK_PAGES may be increased to 128MB in the future, which is
+> > obviously too large as a parameter. When the batch size is increased
+> > to 128MB, the writeback code may be improved somehow to not exceed the
+> > nr_pages limit too much.
+> > 
+> 
+> What might be a useful value for N? 1.5 appears to work reasonably well
+> to create a window of writeback ahead of the scanner but it's a bit
+> arbitrary.
 
-  Thanks for your answer.
+I'd recommend N to be a large value. It's no longer relevant now since
+we'll call the flusher to sync some range containing the target page.
+The flusher will then choose an N large enough (eg. 4MB) for efficient
+IO. It needs to be a large value, otherwise the vmscan code will
+quickly run into dirty pages again..
 
-On Sun 2010-07-25 @ 11-00-49PM +0200, Milan Broz wrote: 
-# On 07/25/2010 06:06 PM, Nils Radtke wrote:
-# 
-# >   Using an external usb 2 hdd with recent kernels with cryptsetup containers that
-# >   contain lvm volumes. 
-# > 
-# >   After a suspend/resume cycle, with active lvm volumes, the mounted fs is "offline", 
-# >   the dm-* devices don't respond to commands issued. No more access possible.
-# >   
-# >   Have to reboot to free the devices.
-# 
-# I guess it is not dm/block layer problem but USB related - can you check syslog if
-# the device is not attached after resume with another major:minor?
-I'm not sure I can map this to what happened here. 
-
-What I can tell is, a plain usb conn survives nowadays (there were kernels in the days
-of 200x where x < 8 when usb didn't survive) suspend/resume cycles.
-
-It is as well working with a usb + cryptsetup (w/o lvm): survives suspend/resume.
-
-However usb + cryptsetup + lvm does not survive as of these days.
-
-# If this happens - you can free the mappings using dmsetup:
-# - try to force umount fs (if mounted), then run "dmsetup table" and manually remove
-# orphaned mappings using "dmsetup remove".
-That's what I tried and failed gloriously. I'm trying to revive my memory about the 
-situation: fs could be unmounted, however, the cryptsetup luksClose failed (IRC) and 
-therefore the dmsetup remove consequently failed also.
-
-These experiences let me to the conclusion that there might be some issue
-regarding dmsetup in the ensemble of usb + cryptsetup + lvm.
-
-    Thanks for your opinion,
-
-
-                  Nils
-
+Thanks,
+Fengguang
