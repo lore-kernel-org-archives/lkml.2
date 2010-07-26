@@ -1,165 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0GZPpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 11:45:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36406 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab0GZPpT (ORCPT
+	id S1754834Ab0GZPrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 11:47:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32773 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754461Ab0GZPrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 11:45:19 -0400
+	Mon, 26 Jul 2010 11:47:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NS4s8b8Py5miPn0PpgG0HPn5jsqJfdmRoyhj9+/ZE9gi0BKcjfGKFjuTp1HCFVdABj
-         LmrOY0IvliiQvDC5Ue7mH/4rUsZpypjTwHcA8mW+prtpkKb5dpslSE2BfCEzvJpinRIC
-         jCvFfBqVTqxwSqXdl2nzTHkKZbd9SGbw2an50=
-Date: Mon, 26 Jul 2010 18:50:31 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [Bug #15704] [r8169] WARNING: at net/sched/sch_generic.c
-Message-ID: <20100726155031.GB3997@swordfish.minsk.epam.com>
-References: <wQMMFC59mnE.A.v-E.iUYSMB@chimera>
- <PRbv8sgxY6G.A.UEH.mYYSMB@chimera>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LyciRD1jyfeSSjG0"
-Content-Disposition: inline
-In-Reply-To: <PRbv8sgxY6G.A.UEH.mYYSMB@chimera>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=frfwS+beu+e+AGtZAQPRpa41QaMAcrb46XylDzVZcrj6Rt7zkZP7CzMO3+1jY9eaL+
+         KaGYzzNqw/NG13Dil4dioe65V8uiEa4pUJTGFpxVU7Z5Oh/eMNgJPg5GStQ/V3LrDQeA
+         dOc6bjB96rYQDhe56V/Pt7ZNRRAwB3B+/gVwo=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-mm <linux-mm@kvack.org>, Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH] Tight check of pfn_valid on sparsemem - v4
+Date: Tue, 27 Jul 2010 00:46:03 +0900
+Message-Id: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changelog since v3
+ o fix my totally mistake in v3
+ o use set_page_private and page_private
 
---LyciRD1jyfeSSjG0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Changelog since v2
+ o Change some function names
+ o Remove mark_memmap_hole in memmap bring up
+ o Change CONFIG_SPARSEMEM with CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
 
+I have a plan following as after this patch is acked.
 
+TODO:
+1) expand pfn_valid to FALTMEM in ARM
+I think we can enhance pfn_valid of FLATMEM in ARM.
+Now it is doing binary search and it's expesive.
+First of all, After we merge this patch, I expand it to FALTMEM of ARM.
 
-DELAY 3000
+2) remove memmap_valid_within
+We can remove memmap_valid_within by strict pfn_valid's tight check.
 
-[  302.735684] pktgen 2.73: Packet Generator for packet performance testing.
-[  345.008016] ------------[ cut here ]------------                        =
-=20
-[  345.008028] WARNING: at net/sched/sch_generic.c:258
-dev_watchdog+0xc1/0x129()
-[  345.008032] Hardware name: F3JC               =20
-[  345.008035] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-[  345.008038] Modules linked in: pktgen ipv6 arc4 ecb iwl3945 snd_seq_dummy
-iwlcore mac80211 snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device
-sdhci_pci sdhci mmc_core asus_laptop sparse_keymap led_class cfg
-snd_mixer_oss snd_hda_codec_si3054 snd_hda_codec_realtek sg rng_core psmouse
-snd_hda_intel evdev snd_hda_codec snd_pcm snd_timer i2c_i801 snd_page_alloc
-serio_raw snd soundcore r8169 mii uhci_hcd ehci_hcd sr_mod
-ata_piix
-[  345.008109] Pid: 4013, comm: kpktgend_0 Not tainted
-2.6.35-rc6-dbg-git1-00136-g459ab2a-dirty #75
-[  345.008113] Call Trace:
-[  345.008121]  [<c102e3ae>] warn_slowpath_common+0x65/0x7a
-[  345.008127]  [<c12695f3>] ? dev_watchdog+0xc1/0x129    =20
-[  345.008132]  [<c102e427>] warn_slowpath_fmt+0x26/0x2a
-[  345.008137]  [<c12695f3>] dev_watchdog+0xc1/0x129
-[  345.008145]  [<c10370b3>] ? run_timer_softirq+0x136/0x22b
-[  345.008150]  [<c103710c>] run_timer_softirq+0x18f/0x22b =20
-[  345.008155]  [<c10370b3>] ? run_timer_softirq+0x136/0x22b
-[  345.008161]  [<c1269532>] ? dev_watchdog+0x0/0x129      =20
-[  345.008167]  [<c1032c35>] __do_softirq+0x88/0x10c=20
-[  345.008173]  [<c1032ce8>] do_softirq+0x2f/0x47   =20
-[  345.008180]  [<f80555e4>] ? pktgen_xmit+0xda2/0xe6f [pktgen]
-[  345.008185]  [<c1032ecb>] _local_bh_enable_ip+0x8b/0xb3    =20
-[  345.008191]  [<c1032efb>] local_bh_enable_ip+0x8/0xa     =20
-[  345.008197]  [<c12c6aaa>] _raw_spin_unlock_bh+0x2f/0x32  =20
-[  345.008203]  [<f80555e4>] pktgen_xmit+0xda2/0xe6f [pktgen]
-[  345.008213]  [<f91707b8>] ? rtl8169_start_xmit+0x0/0x307 [r8169]
-[  345.008220]  [<c12c007b>] ? early_init_amd+0x49/0xad
-[  345.008227]  [<f80558ac>] ? pktgen_thread_worker+0x96/0x5c3 [pktgen]
-[  345.008233]  [<c1029096>] ? get_parent_ip+0xb/0x31
-[  345.008239]  [<c1029138>] ? sub_preempt_count+0x7c/0x89
-[  345.008245]  [<f8055986>] pktgen_thread_worker+0x170/0x5c3 [pktgen]
-[  345.008250]  [<c12c52bb>] ? schedule+0x535/0x545
-[  345.008256]  [<c103fd96>] ? autoremove_wake_function+0x0/0x2f
-[  345.008262]  [<c103fd96>] ? autoremove_wake_function+0x0/0x2f
-[  345.008268]  [<f8055816>] ? pktgen_thread_worker+0x0/0x5c3 [pktgen]
-[  345.008273]  [<c103faa6>] kthread+0x6a/0x6f                       =20
-[  345.008279]  [<c103fa3c>] ? kthread+0x0/0x6f
-[  345.008284]  [<c1002d82>] kernel_thread_helper+0x6/0x10
-[  345.008289] ---[ end trace 12f779451dc46abe ]---
-[  345.024502] r8169 0000:02:00.0: eth0: link up
+3) Optimize hole check in sparsemem
+In case of spasemem, we can optimize pfn_valid through defining new flag
+like SECTION_HAS_HOLE of hole mem_section.
 
+== CUT HERE ==
 
+Kukjin reported oops happen while he change min_free_kbytes
+http://www.spinics.net/lists/arm-kernel/msg92894.html
+It happen by memory map on sparsemem.
 
+The system has a memory map following as.
+     section 0             section 1              section 2
+0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
+SECTION_SIZE_BITS 28(256M)
 
-DELAY 5000
+It means section 0 is an incompletely filled section.
+Nontheless, current pfn_valid of sparsemem checks pfn loosely.
+It checks only mem_section's validation but ARM can free mem_map on hole
+to save memory space. So in above case, pfn on 0x25000000 can pass pfn_valid's
+validation check. It's not what we want.
 
-[   72.186395] pktgen 2.73: Packet Generator for packet performance testing.
-[  102.817029] ------------[ cut here ]------------                        =
-=20
-[  102.817040] WARNING: at net/sched/sch_generic.c:258
-dev_watchdog+0xc1/0x129()
-[  102.817044] Hardware name: F3JC               =20
-[  102.817047] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out  =
-=20
-[  102.817050] Modules linked in: pktgen ipv6 snd_seq_dummy snd_seq_oss   =
-=20
-snd_seq_midi_event snd_seq snd_seq_device arc4 ecb snd_hwdep iwl3945      =
-=20
-snd_hda_codec_si3054 snd_pcm_oss snd_mixer_oss iwlcore asus_laptop        =
-=20
-sparse_keymap sdhci_pci sdhci snd_hda_codec_realtek mac80211 mmc_core     =
-=20
-led_class cfg80211 snd_hda_intel psmouse snd_hda_codec rng_core i2c_i801  =
-=20
-snd_pcm snd_timer snd_page_alloc evdev sg serio_raw snd soundcore r8169 mii
-uhci_hcd ehci_hcd sr_mod usbcore cdrom sd_mod ata_piix
-[  102.817121] Pid: 0, comm: swapper Not tainted
-2.6.35-rc6-dbg-git1-00136-g459ab2a-dirty #75
-[  102.817125] Call Trace:
-[  102.817133]  [<c102e3ae>] warn_slowpath_common+0x65/0x7a
-[  102.817138]  [<c12695f3>] ? dev_watchdog+0xc1/0x129    =20
-[  102.817144]  [<c102e427>] warn_slowpath_fmt+0x26/0x2a
-[  102.817149]  [<c12695f3>] dev_watchdog+0xc1/0x129
-[  102.817156]  [<c10370b3>] ? run_timer_softirq+0x136/0x22b
-[  102.817162]  [<c103710c>] run_timer_softirq+0x18f/0x22b =20
-[  102.817167]  [<c10370b3>] ? run_timer_softirq+0x136/0x22b
-[  102.817173]  [<c1269532>] ? dev_watchdog+0x0/0x129      =20
-[  102.817179]  [<c1032c35>] __do_softirq+0x88/0x10c=20
-[  102.817185]  [<c1032ce8>] do_softirq+0x2f/0x47  =20
-[  102.817190]  [<c1032fa5>] irq_exit+0x38/0x75
-[  102.817195]  [<c10159b8>] smp_apic_timer_interrupt+0x5f/0x6d
-[  102.817202]  [<c12c75a2>] apic_timer_interrupt+0x36/0x3c   =20
-[  102.817209]  [<c104007b>] ? __kfifo_peek_n+0x13/0x2b
-[  102.817215]  [<c11dd72e>] ? acpi_idle_enter_simple+0x117/0x14b
-[  102.817222]  [<c1246a21>] cpuidle_idle_call+0x6a/0xa0        =20
-[  102.817227]  [<c100170d>] cpu_idle+0x89/0xbe
-[  102.817234]  [<c12c2085>] start_secondary+0x1f4/0x1fb
-[  102.817239] ---[ end trace 6b1be7ded90fe937 ]---
-[  102.833500] r8169 0000:02:00.0: eth0: link up
+We can match section size to smallest valid size.(ex, above case, 16M)
+But Russell doesn't like it due to mem_section's memory overhead with different
+configuration(ex, 512K section).
 
+I tried to add valid pfn range in mem_section but everyone doesn't like it
+due to size overhead. This patch is suggested by KAMEZAWA-san.
+I just fixed compile error and change some naming.
 
-As for ethtool -a/-A, I have an "Cannot get device pause settings: Operatio=
-n not supported" error.
+This patch registers address of mem_section to memmap itself's page struct's
+pg->private field. This means the page is used for memmap of the section.
+Otherwise, the page is used for other purpose and memmap has a hole.
 
+This patch is based on mmotm-2010-07-19
 
-	Sergey
---LyciRD1jyfeSSjG0
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reported-by: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+---
+ arch/arm/mm/init.c     |    9 +++++++++
+ include/linux/mmzone.h |   21 ++++++++++++++++++++-
+ mm/mmzone.c            |   33 +++++++++++++++++++++++++++++++++
+ 3 files changed, 62 insertions(+), 1 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index bc98d5d..18b255d 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -238,6 +238,15 @@ static void __init arm_bootmem_free(struct meminfo *mi, unsigned long min,
+ 	arch_adjust_zones(zone_size, zhole_size);
+ 
+ 	free_area_init_node(0, zone_size, min, zhole_size);
++
++	/*
++	 * mark pages on mem_map with valid using pg->private.
++	 * mem_map on hole will be freed free_memmap later.
++	 */
++	for_each_bank(i, mi) {
++		mark_valid_memmap(bank_pfn_start(&mi->bank[i]),
++					bank_pfn_end(&mi->bank[i]));
++	}
+ }
+ 
+ #ifndef CONFIG_SPARSEMEM
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 6e6e626..3b4d16f 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -15,6 +15,7 @@
+ #include <linux/seqlock.h>
+ #include <linux/nodemask.h>
+ #include <linux/pageblock-flags.h>
++#include <linux/mm_types.h>
+ #include <generated/bounds.h>
+ #include <asm/atomic.h>
+ #include <asm/page.h>
+@@ -1032,11 +1033,29 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
+ 	return __nr_to_section(pfn_to_section_nr(pfn));
+ }
+ 
++void mark_valid_memmap(unsigned long start, unsigned long end);
++
++#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
++static inline int memmap_valid(unsigned long pfn)
++{
++	struct page *page = pfn_to_page(pfn);
++	struct page *__pg = virt_to_page(page);
++	return page_private(__pg) == (unsigned long)__pg;
++}
++#else
++static inline int memmap_valid(unsigned long pfn)
++{
++	return 1;
++}
++#endif
++
+ static inline int pfn_valid(unsigned long pfn)
+ {
++	struct mem_section *ms;
+ 	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+ 		return 0;
+-	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
++	ms = __nr_to_section(pfn_to_section_nr(pfn));
++	return valid_section(ms) && memmap_valid(pfn);
+ }
+ 
+ static inline int pfn_present(unsigned long pfn)
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index f5b7d17..8c3cf57 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -86,4 +86,37 @@ int memmap_valid_within(unsigned long pfn,
+ 
+ 	return 1;
+ }
++
++/*
++ * Fill pg->private on valid mem_map with page itself.
++ * pfn_valid() will check this later. (see include/linux/mmzone.h)
++ * Every arch for supporting hole of mem_map should call
++ * mark_valid_memmap(start, end). please see usage in ARM.
++ */
++void mark_valid_memmap(unsigned long start, unsigned long end)
++{
++	struct mem_section *ms;
++	unsigned long pos, next;
++	struct page *pg;
++	void *memmap, *mapend;
++
++	for (pos = start; pos < end; pos = next) {
++		next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
++		ms = __pfn_to_section(pos);
++		if (!valid_section(ms))
++			continue;
++
++		for (memmap = (void*)pfn_to_page(pos),
++			/* The last page in section */
++			mapend = pfn_to_page(next-1);
++			memmap < mapend; memmap += PAGE_SIZE) {
++			pg = virt_to_page(memmap);
++			set_page_private(pg, (unsigned long)pg);
++		}
++	}
++}
++#else
++void mark_valid_memmap(unsigned long start, unsigned long end)
++{
++}
+ #endif /* CONFIG_ARCH_HAS_HOLES_MEMORYMODEL */
+-- 
+1.7.0.5
 
-iJwEAQECAAYFAkxNrscACgkQfKHnntdSXjRbggQA2VVS0npoQIPWP2yb2bKfmgyP
-hZjjbp6yz0O3+Zrr+pVuVyj0CKDFnaIvNGOTzn6VGMX9ejmzUM3NXqT3GYQ5J+mG
-6FhbFEdkZ4QYmEmRKNBFKqG0hqDr3ebHqyw0CUJ9NVdA8rO7bts79ZLPgeuKww7K
-GMlUeBwIc84q43rRJMs=
-=OsJd
------END PGP SIGNATURE-----
-
---LyciRD1jyfeSSjG0--
