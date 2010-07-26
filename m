@@ -1,70 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab0GZRWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 13:22:17 -0400
-Received: from nbd.name ([88.198.39.176]:60781 "EHLO ds10.nbd.name"
+	id S1754899Ab0GZRZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 13:25:29 -0400
+Received: from claw.goop.org ([74.207.240.146]:52178 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848Ab0GZRWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 13:22:16 -0400
-Message-ID: <4C4DC43E.2060608@openwrt.org>
-Date: Mon, 26 Jul 2010 19:22:06 +0200
-From: Felix Fietkau <nbd@openwrt.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	id S1753690Ab0GZRZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 13:25:27 -0400
+Message-ID: <4C4DC505.9040202@goop.org>
+Date: Mon, 26 Jul 2010 10:25:25 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-CC: Jike Song <albcamus@gmail.com>,
-        =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>,
-        linux-kernel@vger.kernel.org,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>, jmalinen@atheros.com,
-        Sujith.Manoharan@atheros.com, senthilkumar@atheros.com,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: BUG at arch/x86/mm/physaddr.c:5
-References: <4C3D5F3F.7070901@odi.ch> <AANLkTimn7Z3LqhLOt4_6ggFgjdzIZQPd_CznOIW-6D1N@mail.gmail.com> 	<4C499E6F.8030507@odi.ch> <AANLkTikrmM0pwBLLMWTCO-stRnoCxwQf0M3ZByc7=8_b@mail.gmail.com> <AANLkTi=Ga2Sy60=wXKQT3nv_PRYw-og7279bD9LTWENE@mail.gmail.com>
-In-Reply-To: <AANLkTi=Ga2Sy60=wXKQT3nv_PRYw-og7279bD9LTWENE@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sheng Yang <sheng@linux.intel.com>
+Subject: Re: linux-next: build failure after merge of the final tree (xen
+ tree related)
+References: <20100726152908.951a95b7.sfr@canb.auug.org.au> <alpine.DEB.2.00.1007261132180.22235@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1007261132180.22235@kaball-desktop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-26 6:55 PM, Luis R. Rodriguez wrote:
-> 2010/7/25 Jike Song <albcamus@gmail.com>:
->> 2010/7/23 Ortwin Glück <odi@odi.ch>:
->>> On 23.07.2010 10:04, Jike Song wrote:
->>>> Seems to be a logical error?  Does the following patch remove your Oops?
->>>
->>> Looking at the init code I agree. Yes, the patch fixes the OOPS. I am sure
->>> because the OOPS occurred at every boot and now it's gone.
->>>
->>> Thanks!
->>>
->>> Ortwin
+  On 07/26/2010 03:43 AM, Stefano Stabellini wrote:
+> On Mon, 26 Jul 2010, Stephen Rothwell wrote:
+>> Hi all,
 >>
->> Hi Maintainers,
+>> After merging the final tree, today's linux-next build (i386 defconfig)
+>> failed like this:
 >>
->>  Since Ortwin has confirmed this patch , would you give me an ACK/NAK please?
+>> arch/x86/built-in.o: In function `init_hypervisor_platform':
+>> (.init.text+0x3ca4): undefined reference to `x86_hyper_xen_hvm'
+>> arch/x86/built-in.o: In function `init_hypervisor_platform':
+>> (.init.text+0x3cad): undefined reference to `x86_hyper_xen_hvm'
 >>
-> I'll let Felix chime in on this one as he last reviewed this path.
-> There were some serious issues with MIPs and DMA that at this point I
-> think only he grocked.
+>> Caused by commit bee6ab53e652a414af20392899879b58cd80d033 ("x86: early PV
+>> on HVM features initialization").
+>>
+>> I reverted commit 4b9100d12d15c0eaf23d9edc86228e1bdf452dc2 ("Merge branch
+>> 'upstream/pvhvm' into upstream/xen") for today (since there were
+>> dependencies on the above commit).
+> The problem is that x86_hyper_xen_hvm is in arch/x86/xen/enlighten.c,
+> that is compiled only when CONFIG_XEN is enabled.
+> The appended patch fixes the issue moving x86_hyper_xen_hvm to
+> arch/x86/kernel/cpu/xen.c that is always compiled.
+>
+> An shorter alternative solution would be just to ifdef CONFIG_XEN
+> x86_hyper_xen_hvm in arch/x86/kernel/cpu/hypervisor.c.
 
-A patch exactly like that was already posted and merged into the
-wireless-testing tree a while ago, it apparently just hasn't made it to
-Linus' tree. John, could we get this one into 2.6.35?
+Seems like the most sensible thing to do.  What's the point in detecting 
+Xen if we don't have CONFIG_XEN enabled?
 
-http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commitdiff;h=56824223ac97ca845652c59bed9ce139e100261b
+     J
 
-commit 56824223ac97ca845652c59bed9ce139e100261b
-Author: Ming Lei <tom.leiming@gmail.com>
-Date:   Fri May 14 21:15:38 2010 +0800
-
-    ath9k: fix dma direction for map/unmap in ath_rx_tasklet
-    
-    For edma, we should use DMA_BIDIRECTIONAL, or else use
-    DMA_FROM_DEVICE.
-    
-    Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
+>
+> Signed-off-by: Stefano Stabellini<stefano.stabellini@eu.citrix.com>
+>
+> ---
+>
+> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> index 5e3a351..25d2e82 100644
+> --- a/arch/x86/kernel/cpu/Makefile
+> +++ b/arch/x86/kernel/cpu/Makefile
+> @@ -15,6 +15,7 @@ CFLAGS_common.o		:= $(nostackp)
+>   obj-y			:= intel_cacheinfo.o scattered.o topology.o
+>   obj-y			+= proc.o capflags.o powerflags.o common.o
+>   obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
+> +obj-y			+= xen.o
+>
+>   obj-$(CONFIG_X86_32)	+= bugs.o cmpxchg.o
+>   obj-$(CONFIG_X86_64)	+= bugs_64.o
+> diff --git a/arch/x86/kernel/cpu/xen.c b/arch/x86/kernel/cpu/xen.c
+> new file mode 100644
+> index 0000000..b879de5
+> --- /dev/null
+> +++ b/arch/x86/kernel/cpu/xen.c
+> @@ -0,0 +1,68 @@
+> +/*
+> + * Copyright (C) 2010, Citrix Systems
+> + * Author : Stefano Stabellini<stefano.stabellini@eu.citrix.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + * NON INFRINGEMENT.  See the GNU General Public License for more
+> + * details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+> + *
+> + */
+> +
+> +#include<linux/init.h>
+> +#include<asm/x86_init.h>
+> +#include<asm/hypervisor.h>
+> +#include<asm/processor.h>
+> +#include<xen/xen.h>
+> +
+> +uint32_t xen_cpuid_base(void)
+> +{
+> +	uint32_t base, eax, ebx, ecx, edx;
+> +	char signature[13];
+> +
+> +	for (base = 0x40000000; base<  0x40010000; base += 0x100) {
+> +		cpuid(base,&eax,&ebx,&ecx,&edx);
+> +		*(uint32_t *)(signature + 0) = ebx;
+> +		*(uint32_t *)(signature + 4) = ecx;
+> +		*(uint32_t *)(signature + 8) = edx;
+> +		signature[12] = 0;
+> +
+> +		if (!strcmp("XenVMMXenVMM", signature)&&  ((eax - base)>= 2))
+> +			return base;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void __init __xen_hvm_guest_init(void)
+> +{
+> +	xen_hvm_guest_init();
+> +}
+> +
+> +static bool __init xen_hvm_platform(void)
+> +{
+> +	if (xen_pv_domain())
+> +		return false;
+> +
+> +	if (!xen_cpuid_base())
+> +		return false;
+> +
+> +	return true;
+> +}
+> +
+> +const __refconst struct hypervisor_x86 x86_hyper_xen_hvm = {
+> +	.name			= "Xen HVM",
+> +	.detect			= xen_hvm_platform,
+> +	.init_platform		= __xen_hvm_guest_init,
+> +};
+> +EXPORT_SYMBOL(x86_hyper_xen_hvm);
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 75b479a..06f954d 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1205,25 +1205,6 @@ asmlinkage void __init xen_start_kernel(void)
+>   #endif
+>   }
+>
+> -static uint32_t xen_cpuid_base(void)
+> -{
+> -	uint32_t base, eax, ebx, ecx, edx;
+> -	char signature[13];
+> -
+> -	for (base = 0x40000000; base<  0x40010000; base += 0x100) {
+> -		cpuid(base,&eax,&ebx,&ecx,&edx);
+> -		*(uint32_t *)(signature + 0) = ebx;
+> -		*(uint32_t *)(signature + 4) = ecx;
+> -		*(uint32_t *)(signature + 8) = edx;
+> -		signature[12] = 0;
+> -
+> -		if (!strcmp("XenVMMXenVMM", signature)&&  ((eax - base)>= 2))
+> -			return base;
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+>   static int init_hvm_pv_info(int *major, int *minor)
+>   {
+>   	uint32_t eax, ebx, ecx, edx, pages, msr, base;
+> @@ -1300,7 +1281,7 @@ static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
+>   	.notifier_call	= xen_hvm_cpu_notify,
+>   };
+>
+> -static void __init xen_hvm_guest_init(void)
+> +void __init xen_hvm_guest_init(void)
+>   {
+>   	int r;
+>   	int major, minor;
+> @@ -1320,21 +1301,3 @@ static void __init xen_hvm_guest_init(void)
+>   	xen_hvm_init_time_ops();
+>   	xen_hvm_init_mmu_ops();
+>   }
+> -
+> -static bool __init xen_hvm_platform(void)
+> -{
+> -	if (xen_pv_domain())
+> -		return false;
+> -
+> -	if (!xen_cpuid_base())
+> -		return false;
+> -
+> -	return true;
+> -}
+> -
+> -const __refconst struct hypervisor_x86 x86_hyper_xen_hvm = {
+> -	.name			= "Xen HVM",
+> -	.detect			= xen_hvm_platform,
+> -	.init_platform		= xen_hvm_guest_init,
+> -};
+> -EXPORT_SYMBOL(x86_hyper_xen_hvm);
+> diff --git a/include/xen/xen.h b/include/xen/xen.h
+> index a164024..dfc2784 100644
+> --- a/include/xen/xen.h
+> +++ b/include/xen/xen.h
+> @@ -9,9 +9,12 @@ enum xen_domain_type {
+>
+>   #ifdef CONFIG_XEN
+>   extern enum xen_domain_type xen_domain_type;
+> +extern void __init xen_hvm_guest_init(void);
+>   #else
+>   #define xen_domain_type		XEN_NATIVE
+> +#define xen_hvm_guest_init() do { } while (0)
+>   #endif
+> +extern uint32_t xen_cpuid_base(void);
+>
+>   #define xen_domain()		(xen_domain_type != XEN_NATIVE)
+>   #define xen_pv_domain()		(xen_domain()&&			\
+>
 
