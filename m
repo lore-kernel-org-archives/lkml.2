@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab0GZHlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 03:41:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21852 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752727Ab0GZHlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 03:41:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,260,1278313200"; 
-   d="scan'208";a="538731463"
-Subject: Re: [PATCH] acpi: fix apei related table size checking
-From: Huang Ying <ying.huang@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
-        Daniel J Blueman <daniel.blueman@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C49D3C5.4000007@kernel.org>
-References: <4C49D3C5.4000007@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 26 Jul 2010 15:41:39 +0800
-Message-ID: <1280130099.2771.150.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1753723Ab0GZHrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 03:47:48 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53916 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab0GZHrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 03:47:47 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: dave.bueso@gmail.com
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC] [PATCH procfs] Add process age
+References: <1279907271.4335.3.camel@cowboy> <20100723183549.GA10518@x200>
+	<1279910830.1851.5.camel@cowboy>
+Date: Mon, 26 Jul 2010 09:47:45 +0200
+In-Reply-To: <1279910830.1851.5.camel@cowboy> (Davidlohr Bueso's message of
+	"Fri, 23 Jul 2010 14:47:10 -0400")
+Message-ID: <87fwz6it0e.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-07-24 at 01:39 +0800, Yinghai Lu wrote: 
-> also check if we can find right action in apei.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  drivers/acpi/apei/apei-base.c |    5 +++++
->  drivers/acpi/apei/einj.c      |    3 ++-
->  drivers/acpi/apei/erst.c      |    3 ++-
->  3 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6/drivers/acpi/apei/einj.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/apei/einj.c
-> +++ linux-2.6/drivers/acpi/apei/einj.c
-> @@ -426,7 +426,8 @@ DEFINE_SIMPLE_ATTRIBUTE(error_inject_fop
->  
->  static int einj_check_table(struct acpi_table_einj *einj_tab)
->  {
-> -	if (einj_tab->header_length != sizeof(struct acpi_table_einj))
-> +	if (einj_tab->header_length !=
-> +	    (sizeof(struct acpi_table_einj) - sizeof(einj_tab->header)))
->  		return -EINVAL;
+Davidlohr Bueso <dave.bueso@gmail.com> writes:
 
-It seems that the header_length field is not set properly by BIOS on my
-testing machine which I used to develop the original code. Will try to
-contact BIOS guys to make sure.
+> On Fri, 2010-07-23 at 21:35 +0300, Alexey Dobriyan wrote:
+>> On Fri, Jul 23, 2010 at 01:47:51PM -0400, Davidlohr Bueso wrote:
+>> > This patch exports a process's age, in seconds, adding a /proc/#/age file.
+>> 
+>> What for?
+>
+> I have not found any straight way to get the run time of a processes,
+> without having to interpret the start_time entry in /proc/#/stat and
+> manually subtract the uptime from it.
 
-> Index: linux-2.6/drivers/acpi/apei/apei-base.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/apei/apei-base.c
-> +++ linux-2.6/drivers/acpi/apei/apei-base.c
-> @@ -163,6 +163,7 @@ int apei_exec_run(struct apei_exec_conte
->  	u32 i, ip;
->  	struct acpi_whea_header *entry;
->  	apei_exec_ins_func_t run;
-> +	bool found_action = false;
->  
->  	ctx->ip = 0;
->  
-> @@ -178,6 +179,7 @@ rewind:
->  		entry = &ctx->action_table[i];
->  		if (entry->action != action)
->  			continue;
-> +		found_action = true;
->  		if (ip == ctx->ip) {
->  			if (entry->instruction >= ctx->instructions ||
->  			    !ctx->ins_table[entry->instruction].run) {
-> @@ -198,6 +200,9 @@ rewind:
->  			goto rewind;
->  	}
->  
-> +	if (!found_action)
-> +		return -ENODEV;
+That sounds like something an user space program should simply do.
+Perhaps you can add it as a new optional "-o" field in "ps" ?
 
--ENOENT is better here?
+-Andi
 
-Best Regards,
-Huang Ying
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
