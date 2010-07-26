@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab0GZUTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:19:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37507 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752538Ab0GZUTh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:19:37 -0400
+	id S1754988Ab0GZUYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:24:53 -0400
+Received: from claw.goop.org ([74.207.240.146]:53894 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751847Ab0GZUYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 16:24:52 -0400
+Message-ID: <4C4DEF13.1030403@goop.org>
+Date: Mon, 26 Jul 2010 13:24:51 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <87eieqf453.fsf@pollan.anholt.net>
-References: <87eieqf453.fsf@pollan.anholt.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 26 Jul 2010 13:19:14 -0700
-Message-ID: <AANLkTi=T90D3KNpsVCkyLgEQK4XZ2D6YA6U7pjFNdCUK@mail.gmail.com>
-Subject: Re: [git pull] drm-intel fixes since 2.6.35-rc4
-To: Eric Anholt <eric@anholt.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Nick Piggin <npiggin@suse.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] vmap: add flag to allow lazy unmap to be disabled at runtime
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 12:13 PM, Eric Anholt <eric@anholt.net> wrote:
-> The following changes since commit 815c4163b6c8ebf8152f42b0a5fd015cfdcedc78:
->
->  Linux 2.6.35-rc4 (2010-07-04 20:22:50 -0700)
->
-> are available in the git repository at:
->  git://git.kernel.org/pub/scm/linux/kernel/git/anholt/drm-intel for-linus
 
-Hmm. This seems to introduce a new warning:
 
-  drivers/gpu/drm/i915/intel_dp.c:744: warning:
-‘ironlake_edp_panel_off’ defined but not used
+[ Nick, I forget if I sent this to you before.  Could you Ack it if it looks OK? Thanks, J ]
 
-when I pulled it.
+Add a flag to force lazy_max_pages() to zero to prevent any outstanding
+mapped pages.  We'll need this for Xen.
 
-And the warning appears to be due to a real bug: instead of calling
-ironlake_edp_panel_off(), the code calls ironlake_edp_backlight_off()
-twice. I assume that the _intention_ was to call both the backlight
-and panel "off" routines, rather than making doubly sure that just the
-backlight is off by turning it off twice.
+Signed-off-by: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
 
-Tssk, tssk. Sadly, I noticed this too late, so now it's pulled and pushed out.
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 227c2a5..b840fda 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -7,6 +7,8 @@
 
-            Linus
+  struct vm_area_struct;		/* vma defining user mapping in mm_types.h */
+
++extern bool vmap_lazy_unmap;
++
+  /* bits in flags of vmalloc's vm_struct below */
+  #define VM_IOREMAP	0x00000001	/* ioremap() and friends */
+  #define VM_ALLOC	0x00000002	/* vmalloc() */
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index ae00746..7f35fe2 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -31,6 +31,7 @@
+  #include<asm/tlbflush.h>
+  #include<asm/shmparam.h>
+
++bool vmap_lazy_unmap __read_mostly = true;
+
+  /*** Page table manipulation functions ***/
+
+@@ -502,6 +503,9 @@ static unsigned long lazy_max_pages(void)
+  {
+  	unsigned int log;
+
++	if (!vmap_lazy_unmap)
++		return 0;
++
+  	log = fls(num_online_cpus());
+
+  	return log * (32UL * 1024 * 1024 / PAGE_SIZE);
+
+
