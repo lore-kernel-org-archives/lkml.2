@@ -1,35 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab0GZGRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 02:17:07 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:37217 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab0GZGRF (ORCPT
+	id S1753541Ab0GZGUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 02:20:06 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:52209 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752443Ab0GZGUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 02:17:05 -0400
-Date: Mon, 26 Jul 2010 14:16:53 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Dan Kruchinin <dkruchinin@acm.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] padata/pcrypt: fixes
-Message-ID: <20100726061653.GA27848@gondor.apana.org.au>
-References: <20100714142951.22817d0c@leibniz> <20100719060426.GA19696@gondor.apana.org.au> <20100719064050.GA11081@secunet.com> <20100719073255.GA20403@gondor.apana.org.au> <20100720064736.GB11081@secunet.com>
+	Mon, 26 Jul 2010 02:20:04 -0400
+X-Sasl-enc: ZxAprgNAnIfqWGM2vtBZj8zo7wjmOuTfw0MWINg6KfTT 1280125203
+Message-ID: <4C4D2913.8020200@ladisch.de>
+Date: Mon, 26 Jul 2010 08:20:03 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: akpm@linux-foundation.org, John Stultz <johnstul@us.ibm.com>,
+        maglyx@gmail.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/3] hpet: factor timer allocate from open
+References: <201007202223.o6KMNDZl021345@imap1.linux-foundation.org> <alpine.LFD.2.00.1007231500180.2616@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1007231500180.2616@localhost.localdomain>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100720064736.GB11081@secunet.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 08:47:36AM +0200, Steffen Klassert wrote:
-> This patchset contains the following fixes:
+Thomas Gleixner wrote:
+> On Tue, 20 Jul 2010, akpm@linux-foundation.org wrote:
+> > From: Magnus Lynch <maglyx@gmail.com>
+> > 
+> > The current implementation of the /dev/hpet driver couples opening the
+> > device with allocating one of the (scarce) timers (aka comparators).  This
+> > is a limitation in that the main counter may be valuable to applications
+> > seeking a high-resolution timer who have no use for the interrupt
+> > generating functionality of the comparators.
+> 
+> And how exactly does this patch provide such functionality ? There is
+> no interface which allows you to access the counter itself.
 
-All applied.  Thanks Steffen!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Through mmap(); this is the only interface of /dev/hpet that is actually
+used in practice.
+
+> Cc: Clemens Ladisch <clemens@ladisch.de>
+
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+
+
+Regards,
+Clemens
