@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab0GZUDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:03:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48232 "EHLO mx1.redhat.com"
+	id S1755242Ab0GZUFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:05:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35045 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab0GZUDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:03:44 -0400
-Date: Mon, 26 Jul 2010 22:57:14 +0300
+	id S1754780Ab0GZUFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 16:05:17 -0400
+Date: Mon, 26 Jul 2010 22:59:04 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
@@ -18,65 +18,55 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
 Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
  per-vhost kthread
-Message-ID: <20100726195714.GD27644@redhat.com>
-References: <4C48B664.9000109@kernel.org>
- <20100724191447.GA4972@redhat.com>
+Message-ID: <20100726195904.GE27644@redhat.com>
+References: <20100724191447.GA4972@redhat.com>
  <4C4BEAA2.6040301@kernel.org>
  <20100726152510.GA26223@redhat.com>
  <4C4DAB14.5050809@kernel.org>
  <20100726155014.GA26412@redhat.com>
  <4C4DB247.9060709@kernel.org>
  <4C4DB466.6000409@kernel.org>
- <20100726163108.GE26412@redhat.com>
- <4C4DD946.2080502@kernel.org>
+ <20100726165114.GA27353@redhat.com>
+ <4C4DDE7E.8030406@kernel.org>
+ <4C4DE2AE.40302@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C4DD946.2080502@kernel.org>
+In-Reply-To: <4C4DE2AE.40302@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 08:51:50PM +0200, Tejun Heo wrote:
+On Mon, Jul 26, 2010 at 09:31:58PM +0200, Tejun Heo wrote:
 > Hello,
 > 
-> On 07/26/2010 06:31 PM, Michael S. Tsirkin wrote:
-> >> On 07/26/2010 06:05 PM, Tejun Heo wrote:
-> >>> * Placing try_to_freeze() could be a bit annoying.  It shouldn't be
-> >>>   executed when there's a work to flush.
+> On 07/26/2010 09:14 PM, Tejun Heo wrote:
+> > On 07/26/2010 06:51 PM, Michael S. Tsirkin wrote:
+> >> I noticed that with vhost, flush_work was getting the worker
+> >> pointer as well. Can we live with this API change?
 > > 
-> > BTW why is this important?
-> > We could always get another work and flush right after
-> > try_to_freeze, and then flush would block for a long time.
-> > 
-> > BTW the vhost patch you sent does not do this at all.
-> > I am guessing it is because our thread is not freezable?
+> > Yeah, the flushing mechanism wouldn't work reliably if the work is
+> > queued to a different worker without flushing, so yeah passing in
+> > @worker might actually be better.
 > 
-> Yeap, I think so.
+> Thinking a bit more about it, it kind of sucks that queueing to
+> another worker from worker->func() breaks flush.  Maybe the right
+> thing to do there is using atomic_t for done_seq?  It pays a bit more
+> overhead but maybe that's justifiable to keep the API saner?  It would
+> be great if it can be fixed somehow even if it means that the work has
+> to be separately flushed for each worker it has been on before being
+> destroyed.
 > 
-> >> * Similar issue exists for kthread_stop().  The kthread shouldn't exit
-> >>   while there's a work to flush (please note that kthread_worker
-> >>   interface allows detaching / attaching worker kthread during
-> >>   operation, so it should remain in consistent state with regard to
-> >>   flushing).
-> > 
-> > Not sure I agree here. Users must synchronise flush and stop calls.
-> > Otherwise a work might get queued after stop is called, and
-> > you won't be able to flush it.
-> 
-> For freeze, it probably is okay but for stop, I think it's better to
-> keep the semantics straight forward.
-
-What are the semantics then? What do we want stop followed
-by queue and flush to do?
-
->  It may be okay to do otherwise
-> but having such oddity in generic interface is nasty and may lead to
-> surprises which can be pretty difficult to track down later on.  It's
-> just a bit more of annoyance while writing the generic code, so...
+> Or, if flushing has to be associated with a specific worker anyway,
+> maybe it would be better to move the sequence counter to
+> kthread_worker and do it similarly with the original workqueue so that
+> work can be destroyed once execution starts?  Then, it can at least
+> remain semantically identical to the original workqueue.
 > 
 > Thanks.
-> 
+
+This last sounds sane: in fact I didn't know there is any difference.
+
 > -- 
 > tejun
