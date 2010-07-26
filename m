@@ -1,110 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab0GZMtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 08:49:13 -0400
-Received: from THUNK.ORG ([69.25.196.29]:45262 "EHLO thunker.thunk.org"
+	id S1753116Ab0GZMxo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 08:53:44 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:33583 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436Ab0GZMtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 08:49:11 -0400
-Date: Mon, 26 Jul 2010 08:49:08 -0400
-Message-Id: <E1OdN7E-0000L2-7G@tytso-glaptop>
-To: linux-kernel@vger.kernel.org
-Subject: Kickoff for Kernel Summit 2010 Planning
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1751457Ab0GZMxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 08:53:43 -0400
+Date: Mon, 26 Jul 2010 13:53:26 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in
+	direct reclaim
+Message-ID: <20100726125326.GR5300@csn.ul.ie>
+References: <1279545090-19169-5-git-send-email-mel@csn.ul.ie> <20100719221420.GA16031@cmpxchg.org> <20100720134555.GU13117@csn.ul.ie> <20100720220218.GE16031@cmpxchg.org> <20100721115250.GX13117@csn.ul.ie> <20100721130435.GH16031@cmpxchg.org> <20100721133857.GY13117@csn.ul.ie> <20100726082935.GC13076@localhost> <20100726091227.GF5300@csn.ul.ie> <20100726111952.GA6284@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100726111952.GA6284@localhost>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 26, 2010 at 07:19:53PM +0800, Wu Fengguang wrote:
+> On Mon, Jul 26, 2010 at 05:12:27PM +0800, Mel Gorman wrote:
+> > On Mon, Jul 26, 2010 at 04:29:35PM +0800, Wu Fengguang wrote:
+> > > > ==== CUT HERE ====
+> > > > vmscan: Do not writeback filesystem pages in direct reclaim
+> > > > 
+> > > > When memory is under enough pressure, a process may enter direct
+> > > > reclaim to free pages in the same manner kswapd does. If a dirty page is
+> > > > encountered during the scan, this page is written to backing storage using
+> > > > mapping->writepage. This can result in very deep call stacks, particularly
+> > > > if the target storage or filesystem are complex. It has already been observed
+> > > > on XFS that the stack overflows but the problem is not XFS-specific.
+> > > > 
+> > > > This patch prevents direct reclaim writing back filesystem pages by checking
+> > > > if current is kswapd or the page is anonymous before writing back.  If the
+> > > > dirty pages cannot be written back, they are placed back on the LRU lists
+> > > > for either background writing by the BDI threads or kswapd. If in direct
+> > > > lumpy reclaim and dirty pages are encountered, the process will stall for
+> > > > the background flusher before trying to reclaim the pages again.
+> > > > 
+> > > > As the call-chain for writing anonymous pages is not expected to be deep
+> > > > and they are not cleaned by flusher threads, anonymous pages are still
+> > > > written back in direct reclaim.
+> > > 
+> > > This is also a good step towards reducing pageout() calls. For better
+> > > IO performance the flusher threads should take more work from pageout().
+> > > 
+> > 
+> > This is true for better IO performance all right but reclaim does require
+> > specific pages cleaned. The strict requirement is when lumpy reclaim is
+> > involved but a looser requirement is when any pages within a zone be cleaned.
+> 
+> Good point, I missed the lumpy reclaim requirement. It seems necessary
+> to add a call to the flusher thread to writeback a specific inode range
+> (that contains the current dirty page). This is a more reliable way to
+> ensure both the strict and looser requirements: the current dirty page
+> will guaranteed to be synced, and the inode will have good opportunity 
+> to contain more dirty pages in the zone, which can be freed quickly if
+> tagged PG_reclaim.
+> 
 
-Hi all,
+I'm not sure about an inode range. The window being considered is quite small
+and we might select ranges that are too small to be useful.  However, taking
+the inodes into account makes sense. If wakeup_flusher_thread took a list
+of unique inodes that own dirty pages encountered by reclaim, it would then
+move inodes to the head of the queue rather than depending just on expired.
 
-It's time to start the planning process for the 2010 Kernel Summit!
-This year, the kernel summit will be held in Cambridge, Massachusetts
-on November 1-2, immediately preceding the Linux Plumbers Conference.
+> > > > <SNIP>
+> > > >
+> > > > @@ -1293,26 +1308,34 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> > > > 
+> > > >         spin_unlock_irq(&zone->lru_lock);
+> > > > 
+> > > > -       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+> > > > +       nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
+> > > > +                                                               &nr_dirty);
+> > > > 
+> > > >         /*
+> > > > -        * If we are direct reclaiming for contiguous pages and we do
+> > > > +        * If specific pages are needed such as with direct reclaiming
+> > > > +        * for contiguous pages or for memory containers and we do
+> > > >          * not reclaim everything in the list, try again and wait
+> > > > -        * for IO to complete. This will stall high-order allocations
+> > > > -        * but that should be acceptable to the caller
+> > > > +        * for IO to complete. This will stall callers that require
+> > > > +        * specific pages but it should be acceptable to the caller
+> > > >          */
+> > > > -       if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
+> > > > -                       sc->lumpy_reclaim_mode) {
+> > > > -               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > > > +       if (sc->may_writepage && !current_is_kswapd() &&
+> > > > +                       (sc->lumpy_reclaim_mode || sc->mem_cgroup)) {
+> > > > +               int dirty_retry = MAX_SWAP_CLEAN_WAIT;
+> > > > 
+> > > > -               /*
+> > > > -                * The attempt at page out may have made some
+> > > > -                * of the pages active, mark them inactive again.
+> > > > -                */
+> > > > -               nr_active = clear_active_flags(&page_list, NULL);
+> > > > -               count_vm_events(PGDEACTIVATE, nr_active);
+> > > > +               while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
+> > > > +                       wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
+> > > > +                       congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > > 
+> > > It needs good luck for the flusher threads to "happen to" sync the
+> > > dirty pages in our page_list.
+> > 
+> > That is why I'm expecting the "shrink oldest inode" patchset to help. It
+> > still requires a certain amount of luck but callers that encounter dirty
+> > pages will be delayed.
+> > 
+> > It's also because a certain amount of luck is required that the last patch
+> > in the series aims at reducing the number of dirty pages encountered by
+> > reclaim. The closer that is to 0, the less important the timing of flusher
+> > threads is.
+> 
+> OK.
+> 
+> > > I'd rather take the logic as "there are
+> > > too many dirty pages, shrink them to avoid some future pageout() calls
+> > > and/or congestion_wait() stalls".
+> > > 
+> > 
+> > What do you mean by shrink them? They cannot be reclaimed until they are
+> > clean.
+> 
+> I mean we are freeing much more than nr_dirty pages. In this sense we
+> are shrinking the number of dirty pages. Note that we are calling
+> wakeup_flusher_threads(nr_dirty), however the real synced pages will
+> be much more than nr_dirty, that is reasonable good behavior.
+> 
 
-The kernel summit is organized by a program committee, but it could
-just as easily said that it is organized by the whole Linux Kernel
-development community.  Which is to say, its goals are to make Linux
-kernel development flow more smoothly, and what we talk about is
-driven by the work that is going on in the development community at
-large.  So to that end, we need your help!
+Ok.
 
-First off, please see the Kernel Summit 2010 web site, which can be
-reached at http://ksummit2010.kernel.org.  This announcement, an
-explanation of the process[1] by which we decide which the program
-committee decides who is issued invitations to attend the kernel
-summit, and much more information, can be found at this web site.
+> > > So the loop is likely to repeat MAX_SWAP_CLEAN_WAIT times.  Let's remove it?
+> > > 
+> > 
+> > This loop only applies to direct reclaimers in lumpy reclaim mode and
+> > memory containers. Both need specific pages to be cleaned and freed.
+> > Hence, the loop is to stall them and wait on flusher threads up to a
+> > point. Otherwise they can cause a reclaim storm of clean pages that
+> > can't be used.
+> 
+> Agreed. We could call the flusher to sync the inode explicitly, as
+> recommended above. This will clean and free (with PG_reclaim) the page
+> in seconds. With reasonable waits here we may avoid reclaim storm
+> effectively.
+> 
 
-[1] http://ksummit2010.kernel.org/process
+I'll follow this suggestion as a new patch.
 
-Secondly, please join the ksummit-2010-discuss mailing list[2] and
-submit suggestions for topics that you think should be discussed at
-the kernel summit --- either specific technical issues which impact
-the entire kernel (topics that are specific to a single subsystem are
-probably better discussed at the various workshops that are held for a
-particular subsystem, such as the Linux Storage and File System
-workshop, or the Power Management Summit, etc.), or ideas for process
-improvements to how we do our development.  (Hint: if you suggest a
-topic which the program committee agrees is an important and vital
-area for discussion at the Kernel Summit, and you happen to be a good
-person to lead or participate in that discussion, that's one of the
-ways you can wangle an invite to the Kernel Summit.  The other way, of
-course, is to write a lot of good code and/or take on the
-responsibilities of being a subsystem or architecture maintainer.  :-)
-In addition, for those of you who have attended the kernel summit in
-the past, if you have suggestions for how we can make the kernel
-summit run more smoothly, please drop a note to the
-ksummit-2010-discuss list.  We're always looking for ways we can
-improve the kernel summit.
+> > Current tests have not indicated MAX_SWAP_CLEAN_WAIT is regularly reached
+> > but I am inferring this from timing data rather than a direct measurement.
+> > 
+> > > > -               nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
+> > > > +                       /*
+> > > > +                        * The attempt at page out may have made some
+> > > > +                        * of the pages active, mark them inactive again.
+> > > > +                        */
+> > > > +                       nr_active = clear_active_flags(&page_list, NULL);
+> > > > +                       count_vm_events(PGDEACTIVATE, nr_active);
+> > > > +
+> > > > +                       nr_reclaimed += shrink_page_list(&page_list, sc,
+> > > > +                                               PAGEOUT_IO_SYNC, &nr_dirty);
+> > > 
+> > > This shrink_page_list() won't be called at all if nr_dirty==0 and
+> > > pageout() was called. This is a change of behavior. It can also be
+> > > fixed by removing the loop.
+> > > 
+> > 
+> > The whole patch is a change of behaviour but in this case it also makes
+> > sense to focus on just the dirty pages. The first shrink_page_list
+> > decided that the pages could not be unmapped and reclaimed - probably
+> > because it was referenced. This is not likely to change during the loop.
+> 
+> Agreed.
+> 
+> > Testing with a version of the patch that processed the full list added
+> > significant stalls when sync writeback was involved. Testing time length
+> > was tripled in one case implying that this loop was continually reaching
+> > MAX_SWAP_CLEAN_WAIT.
+> 
+> I'm OK with the change actually, this removes one not-that-user-friendly
+> wait_on_page_writeback().
+> 
+> > The intention of this loop is "wait on dirty pages to be cleaned" and
+> > it's a change of behaviour, but one that makes sense and testing
+> > indicates it's a good idea.
+> 
+> I mean, this loop may be unwinded. And we may need another loop to
+> sync the inodes that contains the dirty pages.
+> 
 
-[2] http://lists.linux-foundation.org/mailman/listinfo/ksummit-2010-discuss
+I'm not quite sure what you mean here but I think it might tie into the
+idea of passing a list of inodes to the flusher threads. Lets see what
+that ends up looking like.
 
-Third of all, please examine the list of names[3] which the program
-committee will consider for receiving kernel summit invitations.  As
-detailed in the description of the invitation process, the list is
-compiled mechanically using a script which pulls information from the
-git source code repository for the kernel.  It is used only as a
-starting point; if you can think of people (including yourself) that
-you think should be considered by the program committee, please let us
-know, either by filling out the nominations form, or by sending e-mail
-to the program committee at ksummit-2010-pc.  NOTE: We plan to start
-working on winnowing down the list starting in a week, so please send
-us any nominations/suggestions by this Friday, July 30th.
-
-[3] http://ksummit2010.kernel.org/nominated-list
-
-In addition, if you are on the list, please check to make sure there aren't
-any typos in your name and that the e-mail address is the one you would
-prefer to use for kernel summit related e-mails.  We sometimes have trouble
-contacting people that we have chosen to receive an invitation, and you can
-make our lives much easier by checking to make sure we have your correct
-contact information.
-
-Finally, one of the primary reasons why I started the kernel summit
-ten years ago was because I've found that people work better after
-they have had a chance to meet each other face to face.  If you only
-know someone via e-mail, it's lot easier to get into flame wars.  But
-after you've met someone, broken bread and drunk beer with them, it's
-easier to work with them as a colleague and fellow developer.  While
-the Linux Kernel development community has grown significantly since
-March, 2001, this principle still holds true.  So even if you don't
-end up getting an invitation to the kernel summit, your participation
-and suggestions are incredibly helpful and are an important
-contribution to the community.  And either way, I hope we will see you
-at some of the upcoming Linux developer conferences and workshops,
-such as the LinuxCon event[4] next month in August, and the Linux
-Plumbers Conference[5] in November (right after the Kernel Summit).
-
-[4] http://events.linuxfoundation.org/events/linuxcon
-[5] http://www.linuxplumbersconf.org/2010/
-
-Thanks, and I look forward to working with you to make Kernel Summit,
-and Linux Kernel development in general, even more successful this year
-and in the future.
-
-				Theodore Ts'o
-				Chair, Kernel Summit Program Committee
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
