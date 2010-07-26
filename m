@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab0GZI0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 04:26:05 -0400
-Received: from perceval.irobotique.be ([92.243.18.41]:32849 "EHLO
-	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896Ab0GZI0D (ORCPT
+	id S1753946Ab0GZI0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 04:26:25 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50806 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab0GZI0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 04:26:03 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: linux-next: manual merge of the usb tree with the v4l-dvb tree
-Date: Mon, 26 Jul 2010 10:24:05 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100706175332.952fec90.sfr@canb.auug.org.au> <201007131923.31877.laurent.pinchart@ideasonboard.com> <4C4B07A6.4050009@infradead.org>
-In-Reply-To: <4C4B07A6.4050009@infradead.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007261024.05863.laurent.pinchart@ideasonboard.com>
+	Mon, 26 Jul 2010 04:26:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LgWO93Xq+fHGh5gJtC2lGBYdJGbV8EfcFz+KPqWLuofMNllf1pRTkZ/0QOJ7hs2+Ls
+         PJdanblS4TKnfKUWMRXk3UJXbxoWYMEJBhLaPPKCeo4L4L/smGtAtbGlnduqX9LdVwHl
+         6ZCEjzy7hNoMY2NOYUWAq+4B3Kszqznpx0Z3s=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>, Joe Perches <joe@perches.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usbnet: use jiffies in schedule_timeout(), not msecs
+Date: Mon, 26 Jul 2010 12:25:42 +0400
+Message-Id: <1280132742-8126-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+usbnet_terminate_urbs() uses schedule_timeout() with argument 3 msecs.
+schedule_timeout() uses jiffies as argument, so convert msecs to jiffies
+with msecs_to_jiffies().
 
-On Saturday 24 July 2010 17:32:54 Mauro Carvalho Chehab wrote:
-> Em 13-07-2010 14:23, Laurent Pinchart escreveu:
-> > On Tuesday 13 July 2010 17:34:02 Mauro Carvalho Chehab wrote:
-> >> Em 07-07-2010 12:13, Greg KH escreveu:
-> >>> On Tue, Jul 06, 2010 at 09:34:51AM -0300, Mauro Carvalho Chehab wrote:
-> >>>> Em 06-07-2010 08:10, Laurent Pinchart escreveu:
-> > [snip]
-> > 
-> >>>>> Mauro, can the uvc-gadget patches go through the linux-media tree ?
-> >> 
-> >> It will not be simple to fix this conflict from my tree. I tried to
-> >> apply
-> >> 
-> >> them against a 2.6.35-rc5, but it failed:
-> >> |diff --git a/drivers/media/video/uvc/uvcvideo.h
-> >> |b/drivers/media/video/uvc/uvcvideo.h index 47b20e7..ac27245 100644
-> >> |--- a/drivers/media/video/uvc/uvcvideo.h
-> >> |+++ b/drivers/media/video/uvc/uvcvideo.h
-> >> 
-> >> --------------------------
-> >> No file to patch.  Skipping patch.
-> >> 1 out of 1 hunk ignored
-> >> can't find file to patch at input line 73
-> >> Perhaps you used the wrong -p or --strip option?
-> > 
-> > drivers/media/video/uvc/uvcvideo.h has been there for years. Perhaps you
-> > used the wrong -p or --strip option? :-)
-> 
-> Doubtful. My scripts apply the patches using -p1. Not sure what happened.
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/net/usb/usbnet.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-[snip]
-
-> Could you please re-send the patch, being sure that it will apply against a
-> -rc kernel?
-
-The patch I've sent you applies unmodified against 2.6.35-rc6. I'm pretty sure 
-you made a mistake somewhere.
-
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 7eab407..b243386 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -624,7 +624,7 @@ static void usbnet_terminate_urbs(struct usbnet *dev)
+ 	while (!skb_queue_empty(&dev->rxq)
+ 		&& !skb_queue_empty(&dev->txq)
+ 		&& !skb_queue_empty(&dev->done)) {
+-			schedule_timeout(UNLINK_TIMEOUT_MS);
++			schedule_timeout(msecs_to_jiffies(UNLINK_TIMEOUT_MS));
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			netif_dbg(dev, ifdown, dev->net,
+ 				  "waited for %d urb completions\n", temp);
 -- 
-Regards,
+1.7.0.4
 
-Laurent Pinchart
