@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab0GZSkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 14:40:15 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:46094 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab0GZSkN (ORCPT
+	id S1755029Ab0GZSqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 14:46:07 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:3817 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751809Ab0GZSqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 14:40:13 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jiri Slaby <jirislaby@gmail.com>, alsa-devel@alsa-project.org,
-        Jaroslav Kysela <perex@perex.cz>, fengguang.wu@intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hda_intel: too quiet sound (regression)
-In-Reply-To: Your message of "Mon, 26 Jul 2010 17:04:43 +0200."
-             <s5htynmuvw4.wl%tiwai@suse.de>
-From: Valdis.Kletnieks@vt.edu
-References: <4C4D9EDA.3060505@gmail.com>
-            <s5htynmuvw4.wl%tiwai@suse.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1280169601_4182P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 26 Jul 2010 14:40:01 -0400
-Message-ID: <7512.1280169601@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020208.4C4DD681.02B1,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 26 Jul 2010 14:46:04 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAGlzTUxXQa45/2dsb2JhbACfYHLDSw2FKQQ
+Date: Mon, 26 Jul 2010 20:46:02 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Viresh KUMAR <viresh.kumar@st.com>, armando.visconti@st.com,
+        shiraz.hashim@st.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH resend] Watchdog: Adding support for ARM Primecell
+	SP805 Watchdog
+Message-ID: <20100726184601.GS11857@infomag.iguana.be>
+References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com> <4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be> <4C285A72.7030303@st.com> <20100628162430.GN3788@infomag.iguana.be> <20100718193425.GD24707@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100718193425.GD24707@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1280169601_4182P
-Content-Type: text/plain; charset=us-ascii
+Hi All,
 
-On Mon, 26 Jul 2010 17:04:43 +0200, Takashi Iwai said:
-> At Mon, 26 Jul 2010 16:42:34 +0200, Jiri Slaby wrote:
-> > after I upgraded from 2.6.34-rc5-mm1 to 2.6.35-rc5-mm1 (there were other
-> > issues in between them), the sound from my soundcard is very very quiet.
+> > > Have you reviewed this patch or still need to look at it?
 > > 
-> > alsa-info:
-> > http://www.alsa-project.org/db/?f=dcadb29a2d5d047ecf5545792ac3239dc0c8c7f0
-> > 
-> > Any ideas?
+> > I'm chasing another bug and must admit I almost forgot about this one.
+> > So, yes, I still need to look at this one.
 > 
-> Looks like a regression by the amp max value check.
-> The following patch should fix the problem.
+> Any news on this - its still sitting in the patch system since May 31st...
+> What do I do about it?
 
-> ---
-> From 7ccc3eface57b6e1773fce009dac8a3da081b8b1 Mon Sep 17 00:00:00 2001
-> From: Takashi Iwai <tiwai@suse.de>
-> Date: Mon, 26 Jul 2010 17:00:15 +0200
-> Subject: [PATCH] ALSA: hda - Fix max amp cap calculation for IDT/STAC codecs
+Patch looks OK. Will add it to my linux-2.6-watchdog-next tree this week.
 
-Confirming - I saw the same issue but didn't get a chance to track it down. This patch fixes it.
-Feel free to stick a Tested-By: on it on its way upstream...
-
---==_Exmh_1280169601_4182P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMTdaBcC3lWbTT17ARAviKAJ9GXkE6huFJqYgdSaIZh+VTYb+t2QCfZ+Ra
-W49Zu5bFkYGqxDMb7lS6CeI=
-=n14r
------END PGP SIGNATURE-----
-
---==_Exmh_1280169601_4182P--
+Kind regards,
+Wim.
 
