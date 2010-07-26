@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab0GZMAc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 08:00:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62538 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab0GZMAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 08:00:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,261,1278313200"; 
-   d="scan'208";a="304344458"
-Date: Mon, 26 Jul 2010 20:00:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
- writeback
-Message-ID: <20100726120011.GG6284@localhost>
-References: <20100722050928.653312535@intel.com>
- <20100722061822.906037624@intel.com>
- <20100726105736.GM5300@csn.ul.ie>
+	id S1754560Ab0GZMMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 08:12:19 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:8266 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754152Ab0GZMMR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 08:12:17 -0400
+From: Bhavesh Davda <bhavesh@vmware.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 26 Jul 2010 05:10:55 -0700
+Subject: Re: [PATCH 2.6.35-rc1] net-next: Fix an overflow bug in vmxnet3 Tx
+ descriptor
+Thread-Topic: [PATCH 2.6.35-rc1] net-next: Fix an overflow bug in vmxnet3 Tx
+ descriptor
+Thread-Index: Acssu8oElgHcNcgIST2rkwXFvfSVLA==
+Message-ID: <FE86E729-1744-4D87-BEDA-68453C7F8B09@vmware.com>
+References: <20100725004329.GB6680@bhavesh-lx1.eng.vmware.com>
+ <20100725.170611.71132252.davem@davemloft.net>
+In-Reply-To: <20100725.170611.71132252.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100726105736.GM5300@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 06:57:37PM +0800, Mel Gorman wrote:
-> On Thu, Jul 22, 2010 at 01:09:32PM +0800, Wu Fengguang wrote:
-> > A background flush work may run for ever. So it's reasonable for it to
-> > mimic the kupdate behavior of syncing old/expired inodes first.
-> > 
-> > The policy is
-> > - enqueue all newly expired inodes at each queue_io() time
-> > - retry with halfed expire interval until get some inodes to sync
-> > 
-> > CC: Jan Kara <jack@suse.cz>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Sorry about that. I'll keep that in mind for future patches. Thanks for fixing up and commiting this patch.
+
+Regards
+
+- Bhavesh
+
+(From my iPhone)
+
+
+On Jul 25, 2010, at 5:05 PM, "David Miller" <davem@davemloft.net> wrote:
+
+> From: Bhavesh Davda <bhavesh@vmware.com>
+> Date: Sat, 24 Jul 2010 17:43:29 -0700
 > 
-> Ok, intuitively this would appear to tie into pageout where we want
-> older inodes to be cleaned first by background flushers to limit the
-> number of dirty pages encountered by page reclaim. If this is accurate,
-> it should be detailed in the changelog.
-
-Good suggestion. I'll add these lines:
-
-This is to help reduce the number of dirty pages encountered by page
-reclaim, eg. the pageout() calls. Normally older inodes contain older
-dirty pages, which are more close to the end of the LRU lists. So
-syncing older inodes first helps reducing the dirty pages reached by
-the page reclaim code.
-
-Thanks,
-Fengguang
+>> ---
+> 
+> If you put the "---" there are the beginning of your message,
+> the whole commit message is discarded by GIT.
+> 
+> I said you should put "---" at the end of the commit message,
+> when you want to add more side commentary that should not appear
+> in the commit message but is for people in this thread to read.
+> 
+> I fixed this up when adding your patch, but I have no idea why
+> you did this.  Please don't do it again.
+> 
+>> Fix an overflow bug in vmxnet3 Tx descriptor
+>> 
+>> This patch fixes a bug where a 16K buffer on a Tx descriptor was overflowing
+>> into the 'gen' bit in the descriptor thereby corrupting the descriptor and
+>> stalling the transmit ring.
+>> 
+>> Signed-off-by: Bhavesh Davda <bhavesh@vmware.com>
+>> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+>> Signed-off-by: Matthew Delco <delcoM@vmware.com>
+>> Signed-off-by: Ronghua Zhang <ronghua@vmware.com>
+> 
+> Applied, thanks.
