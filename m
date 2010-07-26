@@ -1,85 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab0GZKzN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 06:55:13 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55018 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab0GZKzL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 06:55:11 -0400
-Date: Mon, 26 Jul 2010 06:51:48 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Xiaotian Feng <dfeng@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC PATCH] sysrq: don't hold the sysrq_key_table_lock during
- the handler
-Message-ID: <20100726105148.GB14198@hmsreliant.think-freely.org>
-References: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
+	id S1754429Ab0GZK5y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 06:57:54 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:37265 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754402Ab0GZK5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 06:57:53 -0400
+Date: Mon, 26 Jul 2010 11:57:37 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
+	writeback
+Message-ID: <20100726105736.GM5300@csn.ul.ie>
+References: <20100722050928.653312535@intel.com> <20100722061822.906037624@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+In-Reply-To: <20100722061822.906037624@intel.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 05:54:02PM +0800, Xiaotian Feng wrote:
-> sysrq_key_table_lock is used to protect the sysrq_key_table, make sure
-> we get/replace the right operation for the sysrq. But in __handle_sysrq,
-> kernel will hold this lock and disable irqs until we finished op_p->handler().
-> This may cause false positive watchdog alert when we're doing "show-task-states"
-> on a system with many tasks.
+On Thu, Jul 22, 2010 at 01:09:32PM +0800, Wu Fengguang wrote:
+> A background flush work may run for ever. So it's reasonable for it to
+> mimic the kupdate behavior of syncing old/expired inodes first.
 > 
-> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
+> The policy is
+> - enqueue all newly expired inodes at each queue_io() time
+> - retry with halfed expire interval until get some inodes to sync
+> 
+> CC: Jan Kara <jack@suse.cz>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+
+Ok, intuitively this would appear to tie into pageout where we want
+older inodes to be cleaned first by background flushers to limit the
+number of dirty pages encountered by page reclaim. If this is accurate,
+it should be detailed in the changelog.
+
 > ---
->  drivers/char/sysrq.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+>  fs/fs-writeback.c |   20 ++++++++++++++------
+>  1 file changed, 14 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-> index 878ac0c..0856e2e 100644
-> --- a/drivers/char/sysrq.c
-> +++ b/drivers/char/sysrq.c
-> @@ -520,9 +520,11 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
->  		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
->  			printk("%s\n", op_p->action_msg);
->  			console_loglevel = orig_log_level;
-> +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
->  			op_p->handler(key, tty);
->  		} else {
->  			printk("This sysrq operation is disabled.\n");
-> +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
->  		}
->  	} else {
->  		printk("HELP : ");
-> @@ -541,8 +543,8 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
->  		}
->  		printk("\n");
->  		console_loglevel = orig_log_level;
-> +		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
->  	}
-> -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
->  }
+> --- linux-next.orig/fs/fs-writeback.c	2010-07-22 12:56:42.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2010-07-22 13:07:51.000000000 +0800
+> @@ -217,14 +217,14 @@ static void move_expired_inodes(struct l
+>  				struct writeback_control *wbc)
+>  {
+>  	unsigned long expire_interval = 0;
+> -	unsigned long older_than_this;
+> +	unsigned long older_than_this = 0; /* reset to kill gcc warning */
+>  	LIST_HEAD(tmp);
+>  	struct list_head *pos, *node;
+>  	struct super_block *sb = NULL;
+>  	struct inode *inode;
+>  	int do_sb_sort = 0;
 >  
->  void handle_sysrq(int key, struct tty_struct *tty)
-> -- 
-> 1.7.2
+> -	if (wbc->for_kupdate) {
+> +	if (wbc->for_kupdate || wbc->for_background) {
+>  		expire_interval = msecs_to_jiffies(dirty_expire_interval * 10);
+>  		older_than_this = jiffies - expire_interval;
+>  	}
+> @@ -232,8 +232,15 @@ static void move_expired_inodes(struct l
+>  	while (!list_empty(delaying_queue)) {
+>  		inode = list_entry(delaying_queue->prev, struct inode, i_list);
+>  		if (expire_interval &&
+> -		    inode_dirtied_after(inode, older_than_this))
+> -			break;
+> +		    inode_dirtied_after(inode, older_than_this)) {
+> +			if (wbc->for_background &&
+> +			    list_empty(dispatch_queue) && list_empty(&tmp)) {
+> +				expire_interval >>= 1;
+> +				older_than_this = jiffies - expire_interval;
+> +				continue;
+> +			} else
+> +				break;
+> +		}
+
+This needs a comment.
+
+I think what it is saying is that if background flush is active but no
+inodes are old enough, consider newer inodes. This is on the assumption
+that page reclaim has encountered dirty pages and the dirty inodes are
+still too young.
+
+>  		if (sb && sb != inode->i_sb)
+>  			do_sb_sort = 1;
+>  		sb = inode->i_sb;
+> @@ -521,7 +528,8 @@ void writeback_inodes_wb(struct bdi_writ
+>  
+>  	wbc->wb_start = jiffies; /* livelock avoidance */
+>  	spin_lock(&inode_lock);
+> -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> +
+> +	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
+>  		queue_io(wb, wbc);
+>  
+>  	while (!list_empty(&wb->b_io)) {
+> @@ -550,7 +558,7 @@ static void __writeback_inodes_sb(struct
+>  
+>  	wbc->wb_start = jiffies; /* livelock avoidance */
+>  	spin_lock(&inode_lock);
+> -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+> +	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
+>  		queue_io(wb, wbc);
+>  	writeback_sb_inodes(sb, wb, wbc, true);
+>  	spin_unlock(&inode_lock);
 > 
 > 
 
-This creates the possibility of a race in the handler.  Not that it happens
-often, but sysrq keys can be registered and unregistered dynamically.  If that
-lock isn't held while we call the keys handler, the code implementing that
-handler can live in a module that gets removed while its executing, leading to
-an oops, etc.  I think the better solution would be to use an rcu lock here.
-Neil
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
