@@ -1,124 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab0GZEhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 00:37:17 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54442 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab0GZEhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 00:37:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,259,1278313200"; 
-   d="scan'208";a="589623468"
-Date: Mon, 26 Jul 2010 12:37:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
- writeback
-Message-ID: <20100726043709.GC7668@localhost>
-References: <20100723094515.GD5043@localhost>
- <20100723105719.GE5300@csn.ul.ie>
- <20100725192955.40D5.A69D9226@jp.fujitsu.com>
- <20100725120345.GA1817@barrios-desktop>
- <20100726032755.GB7668@localhost>
- <AANLkTinL-K-Ky1NFWQPvH5XASj9MnZJicFtqDYhdje6R@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinL-K-Ky1NFWQPvH5XASj9MnZJicFtqDYhdje6R@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752794Ab0GZEyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 00:54:23 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46416
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751045Ab0GZEyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 00:54:22 -0400
+Date: Sun, 25 Jul 2010 21:54:38 -0700 (PDT)
+Message-Id: <20100725.215438.189694767.davem@davemloft.net>
+To: mditto@google.com
+Cc: netdev@vger.kernel.org, adobriyan@gmail.com, shemminger@vyatta.com,
+        ben@decadent.org.uk, stas@lvk.cs.msu.su, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] forcedeth: Fix different hardware statistics versions.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100722220252.E46C7182B00@starthinker.mtv.corp.google.com>
+References: <20100722220252.E46C7182B00@starthinker.mtv.corp.google.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 12:11:59PM +0800, Minchan Kim wrote:
-> On Mon, Jul 26, 2010 at 12:27 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > On Sun, Jul 25, 2010 at 08:03:45PM +0800, Minchan Kim wrote:
-> >> On Sun, Jul 25, 2010 at 07:43:20PM +0900, KOSAKI Motohiro wrote:
-> >> > Hi
-> >> >
-> >> > sorry for the delay.
-> >> >
-> >> > > Will you be picking it up or should I? The changelog should be more or less
-> >> > > the same as yours and consider it
-> >> > >
-> >> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> >> > >
-> >> > > It'd be nice if the original tester is still knocking around and willing
-> >> > > to confirm the patch resolves his/her problem. I am running this patch on
-> >> > > my desktop at the moment and it does feel a little smoother but it might be
-> >> > > my imagination. I had trouble with odd stalls that I never pinned down and
-> >> > > was attributing to the machine being commonly heavily loaded but I haven't
-> >> > > noticed them today.
-> >> > >
-> >> > > It also needs an Acked-by or Reviewed-by from Kosaki Motohiro as it alters
-> >> > > logic he introduced in commit [78dc583: vmscan: low order lumpy reclaim also
-> >> > > should use PAGEOUT_IO_SYNC]
-> >> >
-> >> > My reviewing doesn't found any bug. however I think original thread have too many guess
-> >> > and we need to know reproduce way and confirm it.
-> >> >
-> >> > At least, we need three confirms.
-> >> >  o original issue is still there?
-> >> >  o DEF_PRIORITY/3 is best value?
-> >>
-> >> I agree. Wu, how do you determine DEF_PRIORITY/3 of LRU?
-> >> I guess system has 512M and 22M writeback pages.
-> >> So you may determine it for skipping max 32M writeback pages.
-> >> Is right?
-> >
-> > For 512M mem, DEF_PRIORITY/3 means 32M dirty _or_ writeback pages.
-> > Because shrink_inactive_list() first calls
-> > shrink_page_list(PAGEOUT_IO_ASYNC) then optionally
-> > shrink_page_list(PAGEOUT_IO_SYNC), so dirty pages will first be
-> > converted to writeback pages and then optionally be waited on.
-> >
-> > The dirty/writeback pages may go up to 512M*20% = 100M. So 32M looks
-> > a reasonable value.
+From: mditto@google.com (Mike Ditto)
+Date: Thu, 22 Jul 2010 15:02:52 -0700 (PDT)
+
+> The macros for the values of the bit field describing the four
+> different versions of statistics supported by different hardware
+> variants were being misused.  Where the code was trying to test if the
+> hardware implements V3, it was actually testing whether it implements
+> any of V1, V2, or V3, causing the driver to report statistics that
+> don't really exist in the hardware, with bogus values.
 > 
-> Why do you think it's a reasonable value?
-> I mean why isn't it good 12.5% or 3.125%? Why do you select 6.25%?
-> I am not against you. Just out of curiosity and requires more explanation.
-> It might be thing _only I_ don't know. :(
+> Signed-off-by: Mike Ditto <mditto@google.com>
 
-It's more or less random selected. I'm also OK with 3.125%. It's an
-threshold to turn on some _last resort_ mechanism, so don't need to be
-optimal..
-
-> >
-> >> And I have a question of your below comment.
-> >>
-> >> "As the default dirty throttle ratio is 20%, sync write&wait
-> >> will hardly be triggered by pure dirty pages"
-> >>
-> >> I am not sure exactly what you mean but at least DEF_PRIOIRTY/3 seems to be
-> >> related to dirty_ratio. It always can be changed by admin.
-> >> Then do we have to determine magic value(DEF_PRIORITY/3)  proportional to dirty_ratio?
-> >
-> > Yes DEF_PRIORITY/3 is already proportional to the _default_
-> > dirty_ratio. We could do explicit comparison with dirty_ratio
-> > just in case dirty_ratio get changed by user. It's mainly a question
-> > of whether deserving to add such overheads and complexity. I'd prefer
-> > to keep the current simple form :)
-> 
-> What I suggest is that couldn't we use recent_writeback/recent_scanned ratio?
-> I think scan_control's new filed and counting wouldn't be a big
-> overhead and complexity.
-> I am not sure which ratio is best. but at least, it would make the
-> logic scalable and sense to me. :)
-
-..and don't need to be elaborated :)
-
-Thanks,
-Fengguang
+Applied to net-next-2.6, thanks.
