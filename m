@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab0GZUYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:24:53 -0400
-Received: from claw.goop.org ([74.207.240.146]:53894 "EHLO claw.goop.org"
+	id S1755266Ab0GZUZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:25:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30038 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab0GZUYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:24:52 -0400
-Message-ID: <4C4DEF13.1030403@goop.org>
-Date: Mon, 26 Jul 2010 13:24:51 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1752383Ab0GZUZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 16:25:29 -0400
+Date: Mon, 26 Jul 2010 23:19:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
+ per-vhost kthread
+Message-ID: <20100726201907.GF27644@redhat.com>
+References: <20100722155840.GA1743@redhat.com>
+ <4C48B664.9000109@kernel.org>
+ <20100724191447.GA4972@redhat.com>
+ <4C4BEAA2.6040301@kernel.org>
+ <20100726152510.GA26223@redhat.com>
+ <4C4DAB14.5050809@kernel.org>
+ <20100726155014.GA26412@redhat.com>
+ <4C4DB247.9060709@kernel.org>
+ <20100726162346.GD26412@redhat.com>
+ <4C4DDC31.9070206@kernel.org>
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] vmap: add flag to allow lazy unmap to be disabled at runtime
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4DDC31.9070206@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 26, 2010 at 09:04:17PM +0200, Tejun Heo wrote:
+> On 07/26/2010 06:23 PM, Michael S. Tsirkin wrote:
+> >> * Can you please keep the outer goto repeat loop?  I just don't like
+> >>   outermost for (;;).
+> > 
+> > Okay ... can we put the code in a {} scope to make it clear
+> > where does the loop starts and ends?
+> 
+> If we're gonna do that, it would be better to put it inside a loop
+> construct.  The reason why I don't like it is that loops like that
+> don't really help read/writeability much while indenting the whole
+> logic unnecessarily and look more like a result of obsession against
+> goto rather than any practical reason.  It's just a cosmetic
+> preference and I might as well be the weirdo here, so if you feel
+> strong about it, please feel free to put everything in a loop.
+> 
+> >> * Placing try_to_freeze() could be a bit annoying.  It shouldn't be
+> >>   executed when there's a work to flush.
+> > 
+> > It currently seems to be executed when there is work to flush.
+> > Is this wrong?
+> 
+> Oh, does it?  As I wrote in the other mail, things like that wouldn't
+> necessarily break correctness but I think it would be better to avoid
+> surprises in the generic code if not too difficult.
+
+Let's try to define what do we want to achieve then.
+Do you want code that flushes workers not to block
+when workers are frozen? How will we handle work
+submitted when worker is frozen?
 
 
-[ Nick, I forget if I sent this to you before.  Could you Ack it if it looks OK? Thanks, J ]
+> >> * I think A - B <= 0 test would be more familiar.  At least
+> >>   time_before/after() are implemented that way.
+> > 
+> > I am concerned that this overflows a signed integer -
+> > which I seem to remeber that C99 disallows.
+> 
+> Really?  Overflows of pointer isn't expected and that's why we have
+> weird RELOC_HIDE() macro for such calculations but integers not
+> expected to overflow is a news to me.  Are you sure?  That basically
+> means time_before/after() aren't safe either.
 
-Add a flag to force lazy_max_pages() to zero to prevent any outstanding
-mapped pages.  We'll need this for Xen.
+As I said, in C99.
+However,  the kernel is built with -fno-strict-overflow, so it will work.
 
-Signed-off-by: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 227c2a5..b840fda 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -7,6 +7,8 @@
-
-  struct vm_area_struct;		/* vma defining user mapping in mm_types.h */
-
-+extern bool vmap_lazy_unmap;
-+
-  /* bits in flags of vmalloc's vm_struct below */
-  #define VM_IOREMAP	0x00000001	/* ioremap() and friends */
-  #define VM_ALLOC	0x00000002	/* vmalloc() */
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index ae00746..7f35fe2 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -31,6 +31,7 @@
-  #include<asm/tlbflush.h>
-  #include<asm/shmparam.h>
-
-+bool vmap_lazy_unmap __read_mostly = true;
-
-  /*** Page table manipulation functions ***/
-
-@@ -502,6 +503,9 @@ static unsigned long lazy_max_pages(void)
-  {
-  	unsigned int log;
-
-+	if (!vmap_lazy_unmap)
-+		return 0;
-+
-  	log = fls(num_online_cpus());
-
-  	return log * (32UL * 1024 * 1024 / PAGE_SIZE);
-
-
+> > timer macros are on data path so might be worth the risk there,
+> > but flush is slow path so better be safe?
+> 
+> I don't think performance matters much here.  I just think the sign
+> test is clearer / more familiar for the logic.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
