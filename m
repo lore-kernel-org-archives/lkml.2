@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab0GZWaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 18:30:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51214 "EHLO
+	id S1755641Ab0GZWbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 18:31:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60758 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab0GZWaP convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752953Ab0GZWbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 18:30:15 -0400
+	Mon, 26 Jul 2010 18:31:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=iXyac1gs9Cgab4vDIDD2H6vmYVf5eo7myDzLxpAWRFiIZvgD2PvVbSpBXDSfe0qaAt
-         Pd4mtxjOmjyNCpxawyNNm8DHThRIO2YhV5SxNxWdlCamaDbOHpv8KsjHz2EVwvhUPGIx
-         Q3iKcdJjw9QJm9YdEDDJiVvP4mqkjYSXYcDUI=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=qK6576hF1HMcDFq6ERkyMMOTxbkuoSKo2HVbfxCd/0x3BJ8J617PmIzuoB65OvCQgL
+         iGh3fbwQvqZBJh0TMXxAcQ6yVny6TPzVDWw7VfWQKjUAMKxQmPrEI9ctAUT0qGOejuM1
+         DBX9fOiGxa/NEnOO8/c2tfKEXxmlGcfE4QDKM=
 MIME-Version: 1.0
-In-Reply-To: <20100726222451.GB6487@srcf.ucam.org>
-References: <1276870309.23783.3.camel@maxim-laptop> <1276933774.16697.11.camel@maxim-laptop> 
-	<20100619123841.GA31838@hash.localnet> <1276952554.3332.3.camel@maxim-laptop> 
-	<1276961564.5173.12.camel@maxim-laptop> <20100726201322.GI14855@tux> 
-	<1280177362.3721.7.camel@maxim-laptop> <20100726210651.GJ14855@tux> 
-	<20100726211424.GA5197@srcf.ucam.org> <AANLkTimn1XvpfUrgdgkO-E3kX55fz7N8w+_24Lz1ySLn@mail.gmail.com> 
-	<20100726222451.GB6487@srcf.ucam.org>
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Date: Mon, 26 Jul 2010 15:29:55 -0700
-X-Google-Sender-Auth: y_XK-EW2mdNzg74J-gTyCzzhuaQ
-Message-ID: <AANLkTi=WdWshDx2t0X1oLpZ1WweCJNYxgH8o71BDOOYc@mail.gmail.com>
+In-Reply-To: <20100726222909.GA6773@srcf.ucam.org>
+References: <1276952554.3332.3.camel@maxim-laptop> <1276961564.5173.12.camel@maxim-laptop> 
+	<20100726201322.GI14855@tux> <1280177362.3721.7.camel@maxim-laptop> 
+	<20100726210651.GJ14855@tux> <1280179033.3721.15.camel@maxim-laptop> 
+	<20100726212543.GA5424@srcf.ucam.org> <AANLkTi=5_Dc8SumPi7cr8u7=DmnOHgSo6C76w9b0E4Kj@mail.gmail.com> 
+	<20100726222113.GA6487@srcf.ucam.org> <AANLkTinq-SxMHTrJM23WaeRMkU-2cySiVrkwCjDRS_o+@mail.gmail.com> 
+	<20100726222909.GA6773@srcf.ucam.org>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Mon, 26 Jul 2010 15:31:28 -0700
+Message-ID: <AANLkTinysGjYS7RKN4X_7T2q+rw_-OWdn-UJYM0poWXu@mail.gmail.com>
 Subject: Re: [ath5k-devel] [PATCH v3] ath5k: disable ASPM
 To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
+        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
         "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
         David Quan <David.Quan@atheros.com>,
-        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
+        "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
         Luis Rodriguez <Luis.Rodriguez@atheros.com>,
         Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
         "tim.gardner@canonical.com" <tim.gardner@canonical.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 3:24 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Mon, Jul 26, 2010 at 03:20:23PM -0700, Luis R. Rodriguez wrote:
->> On Mon, Jul 26, 2010 at 2:14 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->> > On Mon, Jul 26, 2010 at 02:06:51PM -0700, Luis R. Rodriguez wrote:
->> >
->> >> No, ASPM must be enabled by the Systems Integrator through the BIOS, there are
->> >> other settings that have to be taken care of like modifying some PCI entrance and
->> >> exit latency timers, the number of FTS packets we send to exit L0s, amongst
->> >> other things. If a user selectively enables L1 but the BIOS had it disabled on
->> >> the device it may not work correctly.
->> >
->> > That's really the job of the driver.
->>
->> The problem is that sometimes tweaks need to be done on the PCI
->> controller/root complex, not the PCIE device/endpoint. Today these
->> sort of changes *are* handled by the respective  systems
->> integrator/BIOS team and varies depending on the root complex used.
->> Atheros does not handle these at all in the driver.
+On Mon, Jul 26, 2010 at 3:29 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Mon, Jul 26, 2010 at 03:26:37PM -0700, Luis R. Rodriguez wrote:
 >
-> Really? Your Windows drivers declare that they support ASPM for some
-> parts, which will trigger Vista and later to program L0s and L1
-> (depending on system config) without further reference to the driver. If
-> we need hooks in the kernel for drivers to provide further feedback to
-> make sure this works correctly then we can certainly provide them...
-
-Sure, agreed, I'm just pointing out today there are other changes made
-and even Microsoft does not get involved with them, so it is the same
-for us. However I do agree if the kernel can expose API to tweak
-things then great.
-
->> > If the ASPM policy is set to
->> > powersave, the fadt doesn't indicate that ASPM should be disabled and
->> > the bus's _OSC method grants full control then the kernel will enable
->> > whatever combination of L states meet the latency constraints. If the
->> > hardware has additional constraints then the hardware-specific driver
->> > needs to handle them.
->>
->> This makes sense but Is there an API for this?
+>> What I meant was that the PCI config space would already have L1
+>> enabled if L1 worked, so I don't see why we would need to nitpick out
+>> specifics here. All Atheros PCIE chips should work with L1. The advise
+>> given is to disable L0s though. I believe AR2425 would be one which
+>> likely had L0s enabled but requires it to be disabled. Not sure of
+>> others. But this is why I am saying this can be done globally for all
+>> ath5k chipsets.
 >
-> Right now, no. What do you need?
+> If L1 is set but the chip is pre-PCIe 1.1 then we'll disable L1 unless
+> the driver tells us that it's functional. The .inf from the Windows
+> driver seemed to suggest that only a subset of the chips re-enabled L1
+> there, but if it's ok in general then that's a straightforward one-line
+> patch.
 
-Not sure, let me check internally and see if I can get the exact details.
-
->> > We don't rely on the BIOS to set up ASPM states. Nor does Windows.
->>
->> Understood, but today some tweaks seem to be done on the BIOS
->> depending on the endpoint / root complex.
->
-> The current situation is that we won't modify anything that the BIOS has
-> done, other than the link and clock pm bits. So if the BIOS has done
-> something for us, we won't (currently) step on it.
-
-Sure, understood.
+But why can't we just rely on what the device already has on its PCI
+config space and only ensure to disable L0s?
 
   Luis
