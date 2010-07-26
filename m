@@ -1,168 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab0GZKfg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 06:35:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55660 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677Ab0GZKff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 06:35:35 -0400
-Message-ID: <4C4D64DB.3090707@suse.cz>
-Date: Mon, 26 Jul 2010 12:35:07 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Takashi Iwai <tiwai@suse.de>,
+	id S1754248Ab0GZKhN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 06:37:13 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:55565 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192Ab0GZKhL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 06:37:11 -0400
+Date: Mon, 26 Jul 2010 12:37:08 +0200
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: GCOV doesn't seem to work on ARM with kernel 2.6.35-rc6
+In-reply-to: <4C4D6458.6040402@samsung.com>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: Modpost error after changing CONFIG_SOUND from m to y
-References: <201007120554.16459.vda.linux@googlemail.com> <20100712100301.db1d3980.randy.dunlap@oracle.com> <AANLkTin88f83UV4HcqKtaXS7F2hMTe8YVJPpE-XLmo5J@mail.gmail.com> <20100712172847.GA17423@merkur.ravnborg.org> <AANLkTimTdQRCoWzCYZ7yBLYsKr4P812n8UR678hktJbO@mail.gmail.com> <20100712174114.GA17431@merkur.ravnborg.org> <AANLkTik8WV6kRwDK2N5M_hg7Opi0agLdIERK06GwhU0o@mail.gmail.com> <20100712182622.GA17551@merkur.ravnborg.org>
-In-Reply-To: <20100712182622.GA17551@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-id: <4C4D6554.30707@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10)
+ Gecko/20100620 Icedove/3.0.5
+References: <4C4D6458.6040402@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.7.2010 20:26, Sam Ravnborg wrote:
-> Use CFLAGS_KERNEL, CFLAGS_MODULE :-)
-> But you then need to add "-DMODULE" to CLFAGS_MODULE because that
-> is lost when you override these variables.
-> 
-> Maybe we should fix this...
-> Relying on the user to add "-DMODULE" to CFLAGS_MODULE is just broken.
-> 
-> Following patch fixes it so we free up CFLAGS_MODULE to
-> be used by the user.
-> It drops the potentially user visible "MODFLAGS".
-> But alas I do not know of it being used...
+On 07/26/2010 12:32 PM, Karol Lewandowski wrote:
+> Hello,
+>
+> I'm trying to use code coverage measurements with mainline Linux kernel
+> 2.6.35-rc6 on ARM platform (specifically on Samsung's S5PC110 board).
+>
+> I've enabled following in my .config:
+>
+> CONFIG_GCOV_KERNEL=y
+> CONFIG_DEBUG_FS=y
+>
+> After successful boot I see no gcov-related files other than
+> /sys/kernel/debug/gcov/reset.
+>
+>  From my knowledge (and from my previous experience with out-of-tree
+> gcov patchset) whole directory structure shall be created along with
+> .gcda files and various symlinks.
 
-I think it makes sense to do it. Unlike CFLAGS_MODULE, the MODFLAGS
-variable isn't documented anywhere, so we will have a good alibi if the
-change breaks someone's custom build script ;). Please send a proper
-patch and I'll add it for 2.6.36.
+I forgot to add that I've added "GCOV_PROFILE := y" to at least
 
-Thanks,
-Michal
+   fs/Makefile
+   kernel/Makefile
 
-> 
-> Comments?
-> 
-> 	Sam
-> 
-> diff --git a/Makefile b/Makefile
-> index f9835c8..c7c6fdd 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -332,9 +332,8 @@ CHECK		= sparse
->  
->  CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
->  		  -Wbitwise -Wno-return-void $(CF)
-> -MODFLAGS	= -DMODULE
-> -CFLAGS_MODULE   = $(MODFLAGS)
-> -AFLAGS_MODULE   = $(MODFLAGS)
-> +CFLAGS_MODULE   =
-> +AFLAGS_MODULE   =
->  LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
->  CFLAGS_KERNEL	=
->  AFLAGS_KERNEL	=
-> @@ -355,6 +354,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
->  		   -Wno-format-security \
->  		   -fno-delete-null-pointer-checks
->  KBUILD_AFLAGS   := -D__ASSEMBLY__
-> +KBUILD_MODFLAGS := -DMODULE
->  
->  # Read KERNELRELEASE from include/config/kernel.release (if it exists)
->  KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
-> @@ -368,7 +368,7 @@ export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
->  
->  export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
->  export KBUILD_CFLAGS CFLAGS_KERNEL CFLAGS_MODULE CFLAGS_GCOV
-> -export KBUILD_AFLAGS AFLAGS_KERNEL AFLAGS_MODULE
-> +export KBUILD_AFLAGS AFLAGS_KERNEL AFLAGS_MODULE KBUILD_MODFLAGS
->  
->  # When compiling out-of-tree modules, put MODVERDIR in the module
->  # tree rather than in the kernel tree. The kernel tree might
-> diff --git a/arch/mips/Makefile b/arch/mips/Makefile
-> index 0b9c01a..2d77a2d 100644
-> --- a/arch/mips/Makefile
-> +++ b/arch/mips/Makefile
-> @@ -93,7 +93,7 @@ all-$(CONFIG_SYS_SUPPORTS_ZBOOT)+= vmlinuz
->  cflags-y			+= -G 0 -mno-abicalls -fno-pic -pipe
->  cflags-y			+= -msoft-float
->  LDFLAGS_vmlinux			+= -G 0 -static -n -nostdlib
-> -MODFLAGS			+= -mlong-calls
-> +KBUILD_MODFLAGS			+= -mlong-calls
->  
->  cflags-y += -ffreestanding
->  
-> @@ -185,7 +185,7 @@ cflags-$(CONFIG_CPU_DADDI_WORKAROUNDS)	+= $(call cc-option,-mno-daddi,)
->  
->  ifdef CONFIG_CPU_SB1
->  ifdef CONFIG_SB1_PASS_1_WORKAROUNDS
-> -MODFLAGS	+= -msb1-pass1-workarounds
-> +KBUILD_MODFLAGS	+= -msb1-pass1-workarounds
->  endif
->  endif
->  
-> diff --git a/arch/s390/Makefile b/arch/s390/Makefile
-> index 30c5f01..16a3ef9 100644
-> --- a/arch/s390/Makefile
-> +++ b/arch/s390/Makefile
-> @@ -24,7 +24,7 @@ CHECKFLAGS	+= -D__s390__ -msize-long
->  else
->  LD_BFD		:= elf64-s390
->  LDFLAGS		:= -m elf64_s390
-> -MODFLAGS	+= -fpic -D__PIC__
-> +KBUILD_MODFLAGS	+= -fpic -D__PIC__
->  KBUILD_CFLAGS	+= -m64
->  KBUILD_AFLAGS	+= -m64
->  UTS_MACHINE	:= s390x
-> diff --git a/arch/score/Makefile b/arch/score/Makefile
-> index 68e0cd0..c667f1d 100644
-> --- a/arch/score/Makefile
-> +++ b/arch/score/Makefile
-> @@ -20,7 +20,7 @@ cflags-y += -G0 -pipe -mel -mnhwloop -D__SCOREEL__ \
->  #
->  KBUILD_AFLAGS += $(cflags-y)
->  KBUILD_CFLAGS += $(cflags-y)
-> -MODFLAGS += -mlong-calls
-> +KBUILD_MODFLAGS += -mlong-calls
->  LDFLAGS += --oformat elf32-littlescore
->  LDFLAGS_vmlinux	+= -G0 -static -nostdlib
->  
-> diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> index e4deb73..c538f81 100644
-> --- a/scripts/Makefile.build
-> +++ b/scripts/Makefile.build
-> @@ -115,7 +115,10 @@ endif
->  # ---------------------------------------------------------------------------
->  
->  # Default is built-in, unless we know otherwise
-> -modkern_cflags = $(if $(part-of-module), $(CFLAGS_MODULE), $(CFLAGS_KERNEL))
-> +modkern_cflags =                                     \
-> +	$(if $(part-of-module),                      \
-> +		$(KBUILD_MODFLAGS) $(CFLAGS_MODULE), \
-> +		$(CFLAGS_KERNEL))
->  quiet_modtag := $(empty)   $(empty)
->  
->  $(real-objs-m)        : part-of-module := y
-> @@ -250,8 +253,8 @@ $(obj)/%.lst: $(src)/%.c FORCE
->  
->  modkern_aflags := $(AFLAGS_KERNEL)
->  
-> -$(real-objs-m)      : modkern_aflags := $(AFLAGS_MODULE)
-> -$(real-objs-m:.o=.s): modkern_aflags := $(AFLAGS_MODULE)
-> +$(real-objs-m)      : modkern_aflags := $(KBUILD_MODFLAGS) $(AFLAGS_MODULE)
-> +$(real-objs-m:.o=.s): modkern_aflags := $(KBUILD_MODFLAGS) $(AFLAGS_MODULE)
->  
->  quiet_cmd_as_s_S = CPP $(quiet_modtag) $@
->  cmd_as_s_S       = $(CPP) $(a_flags)   -o $@ $< 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+and few others.  Thus, I expect to find something more than just
+./reset file.
