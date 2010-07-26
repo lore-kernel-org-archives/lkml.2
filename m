@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab0GZP4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 11:56:34 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:57683 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab0GZP4d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 11:56:33 -0400
-Date: Mon, 26 Jul 2010 17:56:27 +0200
-From: Nils Radtke <Nils.Radtke@Think-Future.de>
-To: Milan Broz <mbroz@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: cryptsetup + lvm on usb disk, unusable /dev/dm-* after
- suspend/resume   cycle
-Message-ID: <20100726155627.GN31966@localhost>
-Reply-To: Nils Radtke <Nils.Radtke@Think-Future.de>
-References: <20100725160641.GK31966@localhost>
- <4C4CA601.6020201@redhat.com>
- <20100726130605.GL31966@localhost>
- <4C4D8C25.8040704@redhat.com>
+	id S1754892Ab0GZP4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 11:56:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49821 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab0GZP4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 11:56:50 -0400
+Date: Mon, 26 Jul 2010 18:50:15 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
+ per-vhost kthread
+Message-ID: <20100726155014.GA26412@redhat.com>
+References: <4C03D983.9010905@kernel.org>
+ <20100531160020.GC3067@redhat.com>
+ <4C04D41B.4050704@kernel.org>
+ <4C06A580.9060300@kernel.org>
+ <20100722155840.GA1743@redhat.com>
+ <4C48B664.9000109@kernel.org>
+ <20100724191447.GA4972@redhat.com>
+ <4C4BEAA2.6040301@kernel.org>
+ <20100726152510.GA26223@redhat.com>
+ <4C4DAB14.5050809@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C4D8C25.8040704@redhat.com>
-X-Url: http://www.Think-Future.de
-X-Editor: Vi it! http://www.vim.org
-X-Bkp: p2mi
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C4DAB14.5050809@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Milan,
+On Mon, Jul 26, 2010 at 05:34:44PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 07/26/2010 05:25 PM, Michael S. Tsirkin wrote:
+> > BTW, kthread_worker would benefit from the optimization I implemented
+> > here as well.
+> 
+> Hmmm... I'm not quite sure whether it's an optimization.  I thought
+> the patch was due to feeling uncomfortable about using barriers?
 
-  Thank you for your explanation.
+Oh yes. But getting rid of barriers is what motivated me originally.
 
-  So I'll try to find logs regarding this issue (won't be easy though..).
+>  Is it an optimization?
+> 
+> Thanks.
 
-  On the other hand, the usb device survives suspend/resume normally, that is,
-  when using a plain disk, std partition etc.
-
-  Ok, I'm going for the logs and if found be back.
-
-  Thank you again for your help.
-
-
-                  Nils
+Yes, sure. This removes atomic read and 2 barrier operations on data path.  And
+it does not add any new synchronization: instead, we reuse the lock that we
+take anyway.  The relevant part is:
 
 
++               if (work) {
++                       __set_current_state(TASK_RUNNING);
++                       work->fn(work);
++               } else
++                       schedule();
 
-On Mon 2010-07-26 @ 03-22-45PM +0200, Milan Broz wrote: 
-# On 07/26/2010 03:06 PM, Nils Radtke wrote:
-# > That's what I tried and failed gloriously. I'm trying to revive my memory about the 
-# > situation: fs could be unmounted, however, the cryptsetup luksClose failed (IRC) and 
-# > therefore the dmsetup remove consequently failed also.
-# 
-# So instead of "cryptsetup luksClose" use dmsetup remove for crypt device too
-# (There was a bug in some version of cryptsetup which failed close if underlying device
-# disappeared, should be fixed in >=1.1.2, anyway "dmsetup remove" is low-level equivalent.)
-# 
-# Also see man page and "dmsetup remove -f" flag.
-# 
-# The usb device reinitialization is separate problem, maybe someone can help if you provide
-# more logs.
-# 
-# Milan
+-       if (work) {
+-               __set_current_state(TASK_RUNNING);
+-               work->fn(work);
+-               smp_wmb();      /* wmb worker-b0 paired with flush-b1 */
+-               work->done_seq = work->queue_seq;
+-               smp_mb();       /* mb worker-b1 paired with flush-b0 */
+-               if (atomic_read(&work->flushing))
+-                       wake_up_all(&work->done);
+-       } else
+-               schedule();
+-
+-       goto repeat;
 
+Is there a git tree with kthread_worker applied?
+I might do this just for fun ...
+
+
+> -- 
+> tejun
