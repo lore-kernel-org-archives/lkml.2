@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab0GZUiF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 16:38:05 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:14744 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab0GZUiB (ORCPT
+	id S1755361Ab0GZUiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 16:38:23 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:50214 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755219Ab0GZUiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 16:38:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6055"; a="48698757"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH] msm: complete implementation of gpio utility functions.
-Date: Mon, 26 Jul 2010 13:37:58 -0700
-Message-Id: <1280176678-18855-1-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 26 Jul 2010 16:38:19 -0400
+Date: Mon, 26 Jul 2010 22:38:14 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, David Howells <dhowells@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>, Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH 0/3] update of various kbuild flags to allow user settings 
+Message-ID: <20100726203814.GA18828@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the second half of the gpio_request_enable and
-gpio_disable_free gpio/tlmm utility functions, now that gpiolib
-has found its way to the MSM/QSD.  Now these functions
-actually request and free, like they claim to.
+Denys Vlasenko complained that he could not set
+a moduel specific linker flags on the command line.
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
----
- arch/arm/mach-msm/gpio.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+It turned out that the cause of this was kbuild
+that assigned a value to a variables that
+may be modified by the user.
+So any user supplied value would overwrite
+the kbuild assigned value.
 
-diff --git a/arch/arm/mach-msm/gpio.c b/arch/arm/mach-msm/gpio.c
-index bc32c84..796990f 100644
---- a/arch/arm/mach-msm/gpio.c
-+++ b/arch/arm/mach-msm/gpio.c
-@@ -71,15 +71,47 @@ void msm_gpios_disable(const struct msm_gpio *table, int size)
- }
- EXPORT_SYMBOL(msm_gpios_disable);
- 
-+int msm_gpios_request(const struct msm_gpio *table, int size)
-+{
-+	int i, result;
-+
-+	for (i = 0; i < size; ++i) {
-+		result = gpio_request(GPIO_PIN(table[i].gpio_cfg),
-+				      table[i].label);
-+		if (result < 0)
-+			goto err;
-+	}
-+
-+	return 0;
-+err:
-+	msm_gpios_free(table, i);
-+	return result;
-+}
-+EXPORT_SYMBOL(msm_gpios_request);
-+
-+void msm_gpios_free(const struct msm_gpio *table, int size)
-+{
-+	int i;
-+
-+	for (i = 0; i < size; ++i)
-+		gpio_free(GPIO_PIN(table[i].gpio_cfg));
-+}
-+EXPORT_SYMBOL(msm_gpios_free);
-+
- int msm_gpios_request_enable(const struct msm_gpio *table, int size)
- {
- 	int rc = msm_gpios_enable(table, size);
-+
-+	if (rc == 0)
-+		rc = msm_gpios_request(table, size);
-+
- 	return rc;
- }
- EXPORT_SYMBOL(msm_gpios_request_enable);
- 
- void msm_gpios_disable_free(const struct msm_gpio *table, int size)
- {
-+	msm_gpios_free(table, size);
- 	msm_gpios_disable(table, size);
- }
- EXPORT_SYMBOL(msm_gpios_disable_free);
--- 
-1.7.0.4
+Fix this so we use internal variables for kbuild
+feering up the official variables for use by
+the user.
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+To do so some trivial modifications was done
+in various arch Makefile.
+
+Respective arch maintainers are copied
+on the patches.
+
+[Patches are on top of for-next of kbuild.git]
+
+	Sam
+
+Sam Ravnborg (3):
+      kbuild: allow user to assign {A,C}FLAGS_MODULE
+      frv: remove useless ARCHMODFLAGS assignment
+      kbuild: allow user to assign LDFLAGS_MODULE
+
+ Makefile                 |   12 +++++++-----
+ arch/blackfin/Makefile   |    2 +-
+ arch/frv/Makefile        |    2 --
+ arch/ia64/Makefile       |    2 +-
+ arch/m68k/Makefile       |    2 +-
+ arch/mips/Makefile       |    4 ++--
+ arch/powerpc/Makefile    |    2 +-
+ arch/s390/Makefile       |    2 +-
+ arch/score/Makefile      |    2 +-
+ scripts/Makefile.build   |    9 ++++++---
+ scripts/Makefile.modpost |    5 +++--
+ 11 files changed, 24 insertions(+), 20 deletions(-)
+
