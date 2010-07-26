@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab0GZQhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 12:37:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10616 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab0GZQhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 12:37:12 -0400
-Date: Mon, 26 Jul 2010 19:31:08 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
- per-vhost kthread
-Message-ID: <20100726163108.GE26412@redhat.com>
-References: <4C06A580.9060300@kernel.org>
- <20100722155840.GA1743@redhat.com>
- <4C48B664.9000109@kernel.org>
- <20100724191447.GA4972@redhat.com>
- <4C4BEAA2.6040301@kernel.org>
- <20100726152510.GA26223@redhat.com>
- <4C4DAB14.5050809@kernel.org>
- <20100726155014.GA26412@redhat.com>
- <4C4DB247.9060709@kernel.org>
- <4C4DB466.6000409@kernel.org>
+	id S1754485Ab0GZQnI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 12:43:08 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:13026
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754365Ab0GZQnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 12:43:06 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(zz98dN936eMzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L66BR3-02-8JR-02
+X-M-MSG: 
+Date: Mon, 26 Jul 2010 18:42:06 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] x86, xsave: disable xsave in i387 emulation mode
+Message-ID: <20100726164206.GJ26154@erda.amd.com>
+References: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
+ <1279731838-1522-7-git-send-email-robert.richter@amd.com>
+ <1279736162.2812.3.camel@sbs-t61.sc.intel.com>
+ <20100722123603.GU26154@erda.amd.com>
+ <1279907405.2718.6.camel@sbs-t61>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4C4DB466.6000409@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1279907405.2718.6.camel@sbs-t61>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 06:14:30PM +0200, Tejun Heo wrote:
-> Just one more thing.
-> 
-> On 07/26/2010 06:05 PM, Tejun Heo wrote:
-> > * Placing try_to_freeze() could be a bit annoying.  It shouldn't be
-> >   executed when there's a work to flush.
+On 23.07.10 13:50:05, Suresh Siddha wrote:
 
-BTW why is this important?
-We could always get another work and flush right after
-try_to_freeze, and then flush would block for a long time.
+> Then the more appropriate place for this is to check at the beginning of
+> the xsave init code.
 
+No it isn't, HAVE_HWFP is an fpu implementation and the soft fpu check
+would be duplicate in xsave.c. Also, the HAVE_HWFP macro is local in
+i387.c and would have to be exported in a header file then, which
+somehow taints the api.
 
-BTW the vhost patch you sent does not do this at all.
-I am guessing it is because our thread is not freezable?
+So I rather tend to this patch than implementing fpu code in xsave for
+a small or no benefit.
 
-> * Similar issue exists for kthread_stop().  The kthread shouldn't exit
->   while there's a work to flush (please note that kthread_worker
->   interface allows detaching / attaching worker kthread during
->   operation, so it should remain in consistent state with regard to
->   flushing).
-> 
-> Thanks.
+-Robert
 
-Not sure I agree here. Users must synchronise flush and stop calls.
-Otherwise a work might get queued after stop is called, and
-you won't be able to flush it.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-
-> -- 
-> tejun
