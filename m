@@ -1,775 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab0GZMrz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 08:47:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35896 "EHLO mx1.suse.de"
+	id S1753241Ab0GZMsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 08:48:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43900 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752427Ab0GZMrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 08:47:53 -0400
-Date: Mon, 26 Jul 2010 14:47:24 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Cc: linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kconfig qconf: port to QT4
-Message-ID: <20100726124724.GA13232@sepie.suse.cz>
-References: <4C0D64A2.9020701@suse.cz>
- <1279049216-22480-1-git-send-email-alexander.stein@informatik.tu-chemnitz.de>
- <4C4D8348.5040802@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4D8348.5040802@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753122Ab0GZMsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 08:48:06 -0400
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, alan@lxorguk.ukuu.org.uk
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        pavan_savoy@sify.com, Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH] RFC: drivers:staging:ti-st: netlink for kim/uim
+Date: Mon, 26 Jul 2010 07:47:49 -0500
+Message-Id: <1280148469-14886-1-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 02:44:56PM +0200, Michal Marek wrote:
-> Other than that, I haven't found other issues with *your* patch, but
-> when I merge it with 39a4897 (xconfig: add support to show hidden
-> options which have prompts) and work around the above Makefile issue, I get
-> [...]
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-For reference, here is the resulting patch I used:
+Greg, Alan,
 
->From 99913f21e95a4da1b58a50321564c10ca567d498 Mon Sep 17 00:00:00 2001
-From: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Date: Tue, 13 Jul 2010 21:26:56 +0200
-Subject: [PATCH] kconfig qconf: port to QT4
+(please do not merge
+&
+long mail warning, please have a look..)
 
-A straight forward port to QT4 using qt3to4 and compiling against
-  qt3support
+I hope the driver is close to being good enough to be moved out of
+staging, as one of the last major TODOs which was multiple device
+support is being handled here.
+However, please comment as to how desperately is this required to get
+this out of staging, the reason is mentioned below..
 
-* rewritten makefile rules to detect QT4 by using qmake which is hopefully
-  portable enough
-* If no QT4, QT3 will by tried instead
-* Classes renamed using qt3to4
-  * If build using QT3 renamed to QT3 class names using defines
-* ConfigInfoView::menu has to be renamed as QT4 moc strips struct from
-  struct menu and creates a name conflict
+The per-device context to driver is already provided however, there is
+this small catch in support for multiple devices.
+The kernel space needs to communicate to user-space about the device
+which needs to be used.
+say:-
+	ST_O platform device is on ttyS0
+	ST_1 platform device is on ttyS1
+and
+	ST_2 platform device is on ttySPI0
 
-Signed-off-by: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-[mmarek: merged with 39a4897]
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+each protocol drivers such as BT, FM would be only able to tell which
+platform device they want to bind to, but that device needs to be
+opened/ldisc installtion needs to happen from user-space/UIM.
+
+background :-
+UIM is the user-space initialization manager for the TI WL7 chipsets
+which is responsible for :-
+	* opening the tty ONLY when absolutely necessary
+	* set the baud-rate agreed upon between BT, FM and GPS
+	(usually the max baud-rate)
+	* installing/tiocsetd the N_TI_WL ldisc
+	* un-installing ldisc
+	* closing the device when not being used.
+
+KIM is the kernel-space initialization manager for the TI WL7 chipsets
+which is responsible for :-
+	* enabling the chip-enable GPIO
+	* communicate to UIM that the tty needs to be used
+	(it gets to know via the one of the BT/FM/GPS drivers..)
+	* wait for UIM to install ldisc
+	* download firmware once tty context is available
+	* communicate to UIM about the releasing the tty when no-one's
+	using (again when protos_registered becomes 0)
+	* disable the chip enable GPIO.
+
+So, as of now these were being interfaced earlier over /sys/uim/pid and
+signal mechanism, which was then changed to /dev/rfkill and
+rfkill_events over it.
+
+However,
+Since with multiple device support is required the KIM somehow needs to
+inform the UIM to open a particular tty interface - by sending an id or
+the exact device name itself, this is what this patch does.
+
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- scripts/kconfig/Makefile |   78 ++++++++++++---------
- scripts/kconfig/qconf.cc |  167 +++++++++++++++++++++++++---------------------
- scripts/kconfig/qconf.h  |   83 +++++++++++------------
- 3 files changed, 177 insertions(+), 151 deletions(-)
+ drivers/staging/ti-st/TODO     |    4 ++-
+ drivers/staging/ti-st/st.h     |   28 +++++++++++++++++++++++
+ drivers/staging/ti-st/st_kim.c |   47 ++++++++++++++++++++++++++++++++++++++-
+ drivers/staging/ti-st/st_kim.h |    6 ++++-
+ 4 files changed, 81 insertions(+), 4 deletions(-)
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index f8d1ee3..755e7b3 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -233,40 +233,52 @@ $(obj)/.tmp_qtcheck: $(src)/Makefile
- # QT needs some extra effort...
- $(obj)/.tmp_qtcheck:
- 	@set -e; echo "  CHECK   qt"; dir=""; pkg=""; \
--	pkg-config --exists qt 2> /dev/null && pkg=qt; \
--	pkg-config --exists qt-mt 2> /dev/null && pkg=qt-mt; \
--	if [ -n "$$pkg" ]; then \
--	  cflags="\$$(shell pkg-config $$pkg --cflags)"; \
--	  libs="\$$(shell pkg-config $$pkg --libs)"; \
--	  moc="\$$(shell pkg-config $$pkg --variable=prefix)/bin/moc"; \
--	  dir="$$(pkg-config $$pkg --variable=prefix)"; \
-+	qmake=$(shell which qmake); \
-+	if [ -z $$qmake ]; then \
-+	    echo "* Unable to find the QT4 tool qmake. Trying to use QT3"; \
-+	    pkg-config --exists qt 2> /dev/null && pkg=qt; \
-+	    pkg-config --exists qt-mt 2> /dev/null && pkg=qt-mt; \
-+	    if [ -n "$$pkg" ]; then \
-+	      cflags="\$$(shell pkg-config $$pkg --cflags)"; \
-+	      libs="\$$(shell pkg-config $$pkg --libs)"; \
-+	      moc="\$$(shell pkg-config $$pkg --variable=prefix)/bin/moc"; \
-+	      dir="$$(pkg-config $$pkg --variable=prefix)"; \
-+	    else \
-+	      for d in $$QTDIR /usr/share/qt* /usr/lib/qt*; do \
-+	        if [ -f $$d/include/qconfig.h ]; then dir=$$d; break; fi; \
-+	      done; \
-+	      if [ -z "$$dir" ]; then \
-+	        echo "*"; \
-+	        echo "* Unable to find any QT installation. Please make sure that"; \
-+	        echo "* the QT4 or QT3 development package is correctly installed and"; \
-+	        echo "* either qmake can be found or install pkg-config or set"; \
-+	        echo "* the QTDIR environment variable to the correct location."; \
-+	        echo "*"; \
-+	        false; \
-+	      fi; \
-+	      libpath=$$dir/lib; lib=qt; osdir=""; \
-+	      $(HOSTCXX) -print-multi-os-directory > /dev/null 2>&1 && \
-+	        osdir=x$$($(HOSTCXX) -print-multi-os-directory); \
-+	      test -d $$libpath/$$osdir && libpath=$$libpath/$$osdir; \
-+	      test -f $$libpath/libqt-mt.so && lib=qt-mt; \
-+	      cflags="-I$$dir/include"; \
-+	      libs="-L$$libpath -Wl,-rpath,$$libpath -l$$lib"; \
-+	      moc="$$dir/bin/moc"; \
-+	    fi; \
-+	    if [ ! -x $$dir/bin/moc -a -x /usr/bin/moc ]; then \
-+	      echo "*"; \
-+	      echo "* Unable to find $$dir/bin/moc, using /usr/bin/moc instead."; \
-+	      echo "*"; \
-+	      moc="/usr/bin/moc"; \
-+	    fi; \
-+	    cflags="$$cflags -DUSE_QT3"; \
- 	else \
--	  for d in $$QTDIR /usr/share/qt* /usr/lib/qt*; do \
--	    if [ -f $$d/include/qconfig.h ]; then dir=$$d; break; fi; \
--	  done; \
--	  if [ -z "$$dir" ]; then \
--	    echo "*"; \
--	    echo "* Unable to find the QT3 installation. Please make sure that"; \
--	    echo "* the QT3 development package is correctly installed and"; \
--	    echo "* either install pkg-config or set the QTDIR environment"; \
--	    echo "* variable to the correct location."; \
--	    echo "*"; \
--	    false; \
--	  fi; \
--	  libpath=$$dir/lib; lib=qt; osdir=""; \
--	  $(HOSTCXX) -print-multi-os-directory > /dev/null 2>&1 && \
--	    osdir=x$$($(HOSTCXX) -print-multi-os-directory); \
--	  test -d $$libpath/$$osdir && libpath=$$libpath/$$osdir; \
--	  test -f $$libpath/libqt-mt.so && lib=qt-mt; \
--	  cflags="-I$$dir/include"; \
--	  libs="-L$$libpath -Wl,-rpath,$$libpath -l$$lib"; \
--	  moc="$$dir/bin/moc"; \
--	fi; \
--	if [ ! -x $$dir/bin/moc -a -x /usr/bin/moc ]; then \
--	  echo "*"; \
--	  echo "* Unable to find $$dir/bin/moc, using /usr/bin/moc instead."; \
--	  echo "*"; \
--	  moc="/usr/bin/moc"; \
-+	  headerpath="\$$(shell $$qmake -query QT_INSTALL_HEADERS)"; \
-+	  libpath="\$$(shell $$qmake -query QT_INSTALL_LIBS)"; \
-+	  binpath="\$$(shell $$qmake -query QT_INSTALL_BINS)"; \
-+	  cflags="-I$$headerpath -I$$headerpath/QtCore -I$$headerpath/QtGui -I$$headerpath/Qt3Support -DQT3_SUPPORT"; \
-+	  libs="-L$$libpath -Wl,-rpath,$$libpath -lQtCore -lQtGui -lQt3Support"; \
-+	  moc="$$binpath/moc"; \
- 	fi; \
- 	echo "KC_QT_CFLAGS=$$cflags" > $@; \
- 	echo "KC_QT_LIBS=$$libs" >> $@; \
-diff --git a/scripts/kconfig/qconf.cc b/scripts/kconfig/qconf.cc
-index 820df2d..781da27 100644
---- a/scripts/kconfig/qconf.cc
-+++ b/scripts/kconfig/qconf.cc
-@@ -3,25 +3,40 @@
-  * Released under the terms of the GNU GPL v2.0.
-  */
+diff --git a/drivers/staging/ti-st/TODO b/drivers/staging/ti-st/TODO
+index 3f68ea1..94533fb 100644
+--- a/drivers/staging/ti-st/TODO
++++ b/drivers/staging/ti-st/TODO
+@@ -11,7 +11,9 @@ a st_register() would know whether the registration from BT/FM or GPS was intend
+ 2. Improve upon the way requirement of line discipline is communicated to
+ user-space, The current user-space application which open/installs ldisc
+ as and when required can be found at,
+-http://git.omapzoom.org/?pÿatform/hardware/ti/omap3.git;aÿob;fÿ_st/uim/uim.c;ha16c2c2b5085eb54a1bbc7096d779d7594eb11;hbìlair
++git://dev.omapzoom.org/pub/scm/jsistla/L23-btfm.git
++branch: UIM
++sources at uim.c and uim.h.
  
--#include <qapplication.h>
-+#ifdef USE_QT3
- #include <qmainwindow.h>
-+#include <qvbox.h>
-+#include <qvaluelist.h>
-+#include <qtextbrowser.h>
-+#include <qaction.h>
-+#include <qheader.h>
-+#include <qfiledialog.h>
-+#include <qdragobject.h>
-+#include <qpopupmenu.h>
-+#else
-+#include <q3mainwindow.h>
-+#include <q3vbox.h>
-+#include <q3valuelist.h>
-+#include <q3textbrowser.h>
-+#include <q3action.h>
-+#include <q3header.h>
-+#include <q3filedialog.h>
-+#include <q3dragobject.h>
-+#include <q3popupmenu.h>
-+#endif
+ 3. Re-view/Re-work on the locking.
+ 
+diff --git a/drivers/staging/ti-st/st.h b/drivers/staging/ti-st/st.h
+index 9952579..49fc4d5 100644
+--- a/drivers/staging/ti-st/st.h
++++ b/drivers/staging/ti-st/st.h
+@@ -31,6 +31,33 @@
+ #define N_TI_WL	20	/* Ldisc for TI's WL BT, FM, GPS combo chips */
+ 
+ /**
++ * enum action_e - action that needs to be executed from UIM when
++ *	requested by KIM.
++ * @INSTALL: this is to suggest UIM to open tty and install this ldisc
++ * @UN_INSTALL: this is to suggest UIM to close tty since no other
++ *	protocols use the ldisc.
++ */
++enum action_e {
++	INSTALL = 1,
++	UN_INSTALL
++};
 +
-+#include <qapplication.h>
- #include <qdesktopwidget.h>
- #include <qtoolbar.h>
- #include <qlayout.h>
--#include <qvbox.h>
- #include <qsplitter.h>
--#include <qlistview.h>
--#include <qtextbrowser.h>
- #include <qlineedit.h>
- #include <qlabel.h>
- #include <qpushbutton.h>
- #include <qmenubar.h>
- #include <qmessagebox.h>
--#include <qaction.h>
--#include <qheader.h>
--#include <qfiledialog.h>
--#include <qdragobject.h>
- #include <qregexp.h>
-+#include <qevent.h>
- 
- #include <stdlib.h>
- 
-@@ -39,7 +54,7 @@
- static QApplication *configApp;
- static ConfigSettings *configSettings;
- 
--QAction *ConfigMainWindow::saveAction;
-+Q3Action *ConfigMainWindow::saveAction;
- 
- static inline QString qgettext(const char* str)
- {
-@@ -54,9 +69,9 @@ static inline QString qgettext(const QString& str)
- /**
-  * Reads a list of integer values from the application settings.
++/**
++ * struct link_data_s - data exchanged between UIM and KIM
++ * @dev_name: the device name which needs to be opened by UIM
++ * @action: the action which needs to be performed open/install
++ *	or close/un-install
++ * @ldisc_num: an extra param - reserved for future use
++ */
++struct link_data_s {
++	unsigned char dev_name[10];
++	enum action_e action;
++	unsigned char ldisc_num;
++};
++
++
++#ifdef __KERNEL__
++/**
+  * enum kim_gpio_state - Few protocols such as FM have ACTIVE LOW
+  *	gpio states for their chip/core enable gpios
   */
--QValueList<int> ConfigSettings::readSizes(const QString& key, bool *ok)
-+Q3ValueList<int> ConfigSettings::readSizes(const QString& key, bool *ok)
- {
--	QValueList<int> result;
-+	Q3ValueList<int> result;
- 	QStringList entryList = readListEntry(key, ok);
- 	QStringList::Iterator it;
+@@ -81,4 +108,5 @@ extern long st_register(struct st_proto_s *);
+ extern long st_unregister(enum proto_type);
  
-@@ -69,10 +84,10 @@ QValueList<int> ConfigSettings::readSizes(const QString& key, bool *ok)
- /**
-  * Writes a list of integer values to the application settings.
-  */
--bool ConfigSettings::writeSizes(const QString& key, const QValueList<int>& value)
-+bool ConfigSettings::writeSizes(const QString& key, const Q3ValueList<int>& value)
- {
- 	QStringList stringList;
--	QValueList<int>::ConstIterator it;
-+	Q3ValueList<int>::ConstIterator it;
+ extern struct platform_device *st_get_plat_device(void);
++#endif	/* __KERNEL__ */
+ #endif /* ST_H */
+diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
+index 7e34e4d..70563be 100644
+--- a/drivers/staging/ti-st/st_kim.c
++++ b/drivers/staging/ti-st/st_kim.c
+@@ -461,6 +461,7 @@ long st_kim_start(void *kim_data)
+ 	long err = 0;
+ 	long retry = POR_RETRY_COUNT;
+ 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
++	struct sk_buff *skb;
  
- 	for (it = value.begin(); it != value.end(); ++it)
- 		stringList.push_back(QString::number(*it));
-@@ -432,7 +447,7 @@ void ConfigList::updateList(ConfigItem* item)
- 	if (!rootEntry) {
- 		if (mode != listMode)
- 			goto update;
--		QListViewItemIterator it(this);
-+		Q3ListViewItemIterator it(this);
- 		ConfigItem* item;
+ 	pr_info(" %s", __func__);
  
- 		for (; it.current(); ++it) {
-@@ -563,7 +578,7 @@ void ConfigList::setParentMenu(void)
- 		return;
- 	setRootMenu(menu_get_parent_menu(rootEntry->parent));
- 
--	QListViewItemIterator it(this);
-+	Q3ListViewItemIterator it(this);
- 	for (; (item = (ConfigItem*)it.current()); it++) {
- 		if (item->menu == oldroot) {
- 			setCurrentItem(item);
-@@ -645,7 +660,7 @@ void ConfigList::updateMenuList(P* parent, struct menu* menu)
- 
- void ConfigList::keyPressEvent(QKeyEvent* ev)
- {
--	QListViewItem* i = currentItem();
-+	Q3ListViewItem* i = currentItem();
- 	ConfigItem* item;
- 	struct menu *menu;
- 	enum prop_type type;
-@@ -811,10 +826,10 @@ void ConfigList::contextMenuEvent(QContextMenuEvent *e)
- {
- 	if (e->y() <= header()->geometry().bottom()) {
- 		if (!headerPopup) {
--			QAction *action;
-+			Q3Action *action;
- 
--			headerPopup = new QPopupMenu(this);
--			action = new QAction(NULL, _("Show Name"), 0, this);
-+			headerPopup = new Q3PopupMenu(this);
-+			action = new Q3Action(NULL, _("Show Name"), 0, this);
- 			  action->setToggleAction(TRUE);
- 			  connect(action, SIGNAL(toggled(bool)),
- 				  parent(), SLOT(setShowName(bool)));
-@@ -822,7 +837,7 @@ void ConfigList::contextMenuEvent(QContextMenuEvent *e)
- 				  action, SLOT(setOn(bool)));
- 			  action->setOn(showName);
- 			  action->addTo(headerPopup);
--			action = new QAction(NULL, _("Show Range"), 0, this);
-+			action = new Q3Action(NULL, _("Show Range"), 0, this);
- 			  action->setToggleAction(TRUE);
- 			  connect(action, SIGNAL(toggled(bool)),
- 				  parent(), SLOT(setShowRange(bool)));
-@@ -830,7 +845,7 @@ void ConfigList::contextMenuEvent(QContextMenuEvent *e)
- 				  action, SLOT(setOn(bool)));
- 			  action->setOn(showRange);
- 			  action->addTo(headerPopup);
--			action = new QAction(NULL, _("Show Data"), 0, this);
-+			action = new Q3Action(NULL, _("Show Data"), 0, this);
- 			  action->setToggleAction(TRUE);
- 			  connect(action, SIGNAL(toggled(bool)),
- 				  parent(), SLOT(setShowData(bool)));
-@@ -846,9 +861,9 @@ void ConfigList::contextMenuEvent(QContextMenuEvent *e)
- }
- 
- ConfigView*ConfigView::viewList;
--QAction *ConfigView::showNormalAction;
--QAction *ConfigView::showAllAction;
--QAction *ConfigView::showPromptAction;
-+Q3Action *ConfigView::showNormalAction;
-+Q3Action *ConfigView::showAllAction;
-+Q3Action *ConfigView::showPromptAction;
- 
- ConfigView::ConfigView(QWidget* parent, const char *name)
- 	: Parent(parent, name)
-@@ -873,7 +888,7 @@ ConfigView::~ConfigView(void)
- 	}
- }
- 
--void ConfigView::setOptionMode(QAction *act)
-+void ConfigView::setOptionMode(Q3Action *act)
- {
- 	if (act == showNormalAction)
- 		list->optMode = normalOpt;
-@@ -914,7 +929,7 @@ void ConfigView::setShowData(bool b)
- 
- void ConfigList::setAllOpen(bool open)
- {
--	QListViewItemIterator it(this);
-+	Q3ListViewItemIterator it(this);
- 
- 	for (; it.current(); it++)
- 		it.current()->setOpen(open);
-@@ -937,7 +952,7 @@ void ConfigView::updateListAll(void)
- }
- 
- ConfigInfoView::ConfigInfoView(QWidget* parent, const char *name)
--	: Parent(parent, name), sym(0), menu(0)
-+	: Parent(parent, name), sym(0), _menu(0)
- {
- 	if (name) {
- 		configSettings->beginGroup(name);
-@@ -960,7 +975,7 @@ void ConfigInfoView::setShowDebug(bool b)
- {
- 	if (_showDebug != b) {
- 		_showDebug = b;
--		if (menu)
-+		if (_menu)
- 			menuInfo();
- 		else if (sym)
- 			symbolInfo();
-@@ -970,11 +985,11 @@ void ConfigInfoView::setShowDebug(bool b)
- 
- void ConfigInfoView::setInfo(struct menu *m)
- {
--	if (menu == m)
-+	if (_menu == m)
- 		return;
--	menu = m;
-+	_menu = m;
- 	sym = NULL;
--	if (!menu)
-+	if (!_menu)
- 		clear();
- 	else
- 		menuInfo();
-@@ -1001,11 +1016,11 @@ void ConfigInfoView::menuInfo(void)
- 	struct symbol* sym;
- 	QString head, debug, help;
- 
--	sym = menu->sym;
-+	sym = _menu->sym;
- 	if (sym) {
--		if (menu->prompt) {
-+		if (_menu->prompt) {
- 			head += "<big><b>";
--			head += print_filter(_(menu->prompt->text));
-+			head += print_filter(_(_menu->prompt->text));
- 			head += "</b></big>";
- 			if (sym->name) {
- 				head += " (";
-@@ -1031,23 +1046,23 @@ void ConfigInfoView::menuInfo(void)
- 			debug = debug_info(sym);
- 
- 		struct gstr help_gstr = str_new();
--		menu_get_ext_help(menu, &help_gstr);
-+		menu_get_ext_help(_menu, &help_gstr);
- 		help = print_filter(str_get(&help_gstr));
- 		str_free(&help_gstr);
--	} else if (menu->prompt) {
-+	} else if (_menu->prompt) {
- 		head += "<big><b>";
--		head += print_filter(_(menu->prompt->text));
-+		head += print_filter(_(_menu->prompt->text));
- 		head += "</b></big><br><br>";
- 		if (showDebug()) {
--			if (menu->prompt->visible.expr) {
-+			if (_menu->prompt->visible.expr) {
- 				debug += "&nbsp;&nbsp;dep: ";
--				expr_print(menu->prompt->visible.expr, expr_print_help, &debug, E_NONE);
-+				expr_print(_menu->prompt->visible.expr, expr_print_help, &debug, E_NONE);
- 				debug += "<br><br>";
- 			}
+@@ -475,6 +476,15 @@ long st_kim_start(void *kim_data)
+ 		mdelay(5);	/* FIXME: a proper toggle */
+ 		gpio_set_value(kim_gdata->gpios[ST_BT], GPIO_HIGH);
+ 		mdelay(100);
++
++		skb = alloc_skb(sizeof(struct link_data_s), GFP_KERNEL);
++		strncpy(kim_gdata->link_data.dev_name, "ttyS1",
++			strlen("ttyS1"));
++		kim_gdata->link_data.action = INSTALL;
++		kim_gdata->link_data.ldisc_num = N_TI_WL;
++		memcpy(skb_put(skb, sizeof(kim_gdata->link_data)),
++			&kim_gdata->link_data, sizeof(kim_gdata->link_data));
++
+ 		/* re-initialize the completion */
+ 		INIT_COMPLETION(kim_gdata->ldisc_installed);
+ #if 0 /* older way of signalling user-space UIM */
+@@ -485,9 +495,12 @@ long st_kim_start(void *kim_data)
+ 			err = -1;
+ 			continue;
  		}
- 	}
- 	if (showDebug())
--		debug += QString().sprintf("defined at %s:%d<br><br>", menu->file->name, menu->lineno);
-+		debug += QString().sprintf("defined at %s:%d<br><br>", _menu->file->name, _menu->lineno);
- 
- 	setText(head + debug + help);
- }
-@@ -1150,10 +1165,10 @@ void ConfigInfoView::expr_print_help(void *data, struct symbol *sym, const char
- 		*text += str2;
- }
- 
--QPopupMenu* ConfigInfoView::createPopupMenu(const QPoint& pos)
-+Q3PopupMenu* ConfigInfoView::createPopupMenu(const QPoint& pos)
- {
--	QPopupMenu* popup = Parent::createPopupMenu(pos);
--	QAction* action = new QAction(NULL, _("Show Debug Info"), 0, popup);
-+	Q3PopupMenu* popup = Parent::createPopupMenu(pos);
-+	Q3Action* action = new Q3Action(NULL, _("Show Debug Info"), 0, popup);
- 	  action->setToggleAction(TRUE);
- 	  connect(action, SIGNAL(toggled(bool)), SLOT(setShowDebug(bool)));
- 	  connect(this, SIGNAL(showDebugChanged(bool)), action, SLOT(setOn(bool)));
-@@ -1210,7 +1225,7 @@ ConfigSearchWindow::ConfigSearchWindow(ConfigMainWindow* parent, const char *nam
- 			y = configSettings->readNumEntry("/window y", 0, &ok);
- 		if (ok)
- 			move(x, y);
--		QValueList<int> sizes = configSettings->readSizes("/split", &ok);
-+		Q3ValueList<int> sizes = configSettings->readSizes("/split", &ok);
- 		if (ok)
- 			split->setSizes(sizes);
- 		configSettings->endGroup();
-@@ -1297,57 +1312,57 @@ ConfigMainWindow::ConfigMainWindow(void)
- 	configList->setFocus();
- 
- 	menu = menuBar();
--	toolBar = new QToolBar("Tools", this);
-+	toolBar = new Q3ToolBar("Tools", this);
- 
--	backAction = new QAction("Back", QPixmap(xpm_back), _("Back"), 0, this);
-+	backAction = new Q3Action("Back", QPixmap(xpm_back), _("Back"), 0, this);
- 	  connect(backAction, SIGNAL(activated()), SLOT(goBack()));
- 	  backAction->setEnabled(FALSE);
--	QAction *quitAction = new QAction("Quit", _("&Quit"), Qt::CTRL + Qt::Key_Q, this);
-+	Q3Action *quitAction = new Q3Action("Quit", _("&Quit"), Qt::CTRL + Qt::Key_Q, this);
- 	  connect(quitAction, SIGNAL(activated()), SLOT(close()));
--	QAction *loadAction = new QAction("Load", QPixmap(xpm_load), _("&Load"), Qt::CTRL + Qt::Key_L, this);
-+	Q3Action *loadAction = new Q3Action("Load", QPixmap(xpm_load), _("&Load"), Qt::CTRL + Qt::Key_L, this);
- 	  connect(loadAction, SIGNAL(activated()), SLOT(loadConfig()));
--	saveAction = new QAction("Save", QPixmap(xpm_save), _("&Save"), Qt::CTRL + Qt::Key_S, this);
-+	saveAction = new Q3Action("Save", QPixmap(xpm_save), _("&Save"), Qt::CTRL + Qt::Key_S, this);
- 	  connect(saveAction, SIGNAL(activated()), SLOT(saveConfig()));
- 	conf_set_changed_callback(conf_changed);
- 	// Set saveAction's initial state
- 	conf_changed();
--	QAction *saveAsAction = new QAction("Save As...", _("Save &As..."), 0, this);
-+	Q3Action *saveAsAction = new Q3Action("Save As...", _("Save &As..."), 0, this);
- 	  connect(saveAsAction, SIGNAL(activated()), SLOT(saveConfigAs()));
--	QAction *searchAction = new QAction("Find", _("&Find"), Qt::CTRL + Qt::Key_F, this);
-+	Q3Action *searchAction = new Q3Action("Find", _("&Find"), Qt::CTRL + Qt::Key_F, this);
- 	  connect(searchAction, SIGNAL(activated()), SLOT(searchConfig()));
--	QAction *singleViewAction = new QAction("Single View", QPixmap(xpm_single_view), _("Single View"), 0, this);
-+	Q3Action *singleViewAction = new Q3Action("Single View", QPixmap(xpm_single_view), _("Single View"), 0, this);
- 	  connect(singleViewAction, SIGNAL(activated()), SLOT(showSingleView()));
--	QAction *splitViewAction = new QAction("Split View", QPixmap(xpm_split_view), _("Split View"), 0, this);
-+	Q3Action *splitViewAction = new Q3Action("Split View", QPixmap(xpm_split_view), _("Split View"), 0, this);
- 	  connect(splitViewAction, SIGNAL(activated()), SLOT(showSplitView()));
--	QAction *fullViewAction = new QAction("Full View", QPixmap(xpm_tree_view), _("Full View"), 0, this);
-+	Q3Action *fullViewAction = new Q3Action("Full View", QPixmap(xpm_tree_view), _("Full View"), 0, this);
- 	  connect(fullViewAction, SIGNAL(activated()), SLOT(showFullView()));
- 
--	QAction *showNameAction = new QAction(NULL, _("Show Name"), 0, this);
-+	Q3Action *showNameAction = new Q3Action(NULL, _("Show Name"), 0, this);
- 	  showNameAction->setToggleAction(TRUE);
- 	  connect(showNameAction, SIGNAL(toggled(bool)), configView, SLOT(setShowName(bool)));
- 	  connect(configView, SIGNAL(showNameChanged(bool)), showNameAction, SLOT(setOn(bool)));
- 	  showNameAction->setOn(configView->showName());
--	QAction *showRangeAction = new QAction(NULL, _("Show Range"), 0, this);
-+	Q3Action *showRangeAction = new Q3Action(NULL, _("Show Range"), 0, this);
- 	  showRangeAction->setToggleAction(TRUE);
- 	  connect(showRangeAction, SIGNAL(toggled(bool)), configView, SLOT(setShowRange(bool)));
- 	  connect(configView, SIGNAL(showRangeChanged(bool)), showRangeAction, SLOT(setOn(bool)));
- 	  showRangeAction->setOn(configList->showRange);
--	QAction *showDataAction = new QAction(NULL, _("Show Data"), 0, this);
-+	Q3Action *showDataAction = new Q3Action(NULL, _("Show Data"), 0, this);
- 	  showDataAction->setToggleAction(TRUE);
- 	  connect(showDataAction, SIGNAL(toggled(bool)), configView, SLOT(setShowData(bool)));
- 	  connect(configView, SIGNAL(showDataChanged(bool)), showDataAction, SLOT(setOn(bool)));
- 	  showDataAction->setOn(configList->showData);
- 
--	QActionGroup *optGroup = new QActionGroup(this);
-+	Q3ActionGroup *optGroup = new Q3ActionGroup(this);
- 	optGroup->setExclusive(TRUE);
--	connect(optGroup, SIGNAL(selected(QAction *)), configView,
--		SLOT(setOptionMode(QAction *)));
--	connect(optGroup, SIGNAL(selected(QAction *)), menuView,
--		SLOT(setOptionMode(QAction *)));
--
--	configView->showNormalAction = new QAction(NULL, _("Show Normal Options"), 0, optGroup);
--	configView->showAllAction = new QAction(NULL, _("Show All Options"), 0, optGroup);
--	configView->showPromptAction = new QAction(NULL, _("Show Prompt Options"), 0, optGroup);
-+	connect(optGroup, SIGNAL(selected(Q3Action *)), configView,
-+		SLOT(setOptionMode(Q3Action *)));
-+	connect(optGroup, SIGNAL(selected(Q3Action *)), menuView,
-+		SLOT(setOptionMode(Q3Action *)));
-+
-+	configView->showNormalAction = new Q3Action(NULL, _("Show Normal Options"), 0, optGroup);
-+	configView->showAllAction = new Q3Action(NULL, _("Show All Options"), 0, optGroup);
-+	configView->showPromptAction = new Q3Action(NULL, _("Show Prompt Options"), 0, optGroup);
- 	configView->showNormalAction->setToggleAction(TRUE);
- 	configView->showNormalAction->setOn(configList->optMode == normalOpt);
- 	configView->showAllAction->setToggleAction(TRUE);
-@@ -1355,15 +1370,15 @@ ConfigMainWindow::ConfigMainWindow(void)
- 	configView->showPromptAction->setToggleAction(TRUE);
- 	configView->showPromptAction->setOn(configList->optMode == promptOpt);
- 
--	QAction *showDebugAction = new QAction(NULL, _("Show Debug Info"), 0, this);
-+	Q3Action *showDebugAction = new Q3Action(NULL, _("Show Debug Info"), 0, this);
- 	  showDebugAction->setToggleAction(TRUE);
- 	  connect(showDebugAction, SIGNAL(toggled(bool)), helpText, SLOT(setShowDebug(bool)));
- 	  connect(helpText, SIGNAL(showDebugChanged(bool)), showDebugAction, SLOT(setOn(bool)));
- 	  showDebugAction->setOn(helpText->showDebug());
- 
--	QAction *showIntroAction = new QAction(NULL, _("Introduction"), 0, this);
-+	Q3Action *showIntroAction = new Q3Action(NULL, _("Introduction"), 0, this);
- 	  connect(showIntroAction, SIGNAL(activated()), SLOT(showIntro()));
--	QAction *showAboutAction = new QAction(NULL, _("About"), 0, this);
-+	Q3Action *showAboutAction = new Q3Action(NULL, _("About"), 0, this);
- 	  connect(showAboutAction, SIGNAL(activated()), SLOT(showAbout()));
- 
- 	// init tool bar
-@@ -1377,7 +1392,7 @@ ConfigMainWindow::ConfigMainWindow(void)
- 	fullViewAction->addTo(toolBar);
- 
- 	// create config menu
--	QPopupMenu* config = new QPopupMenu(this);
-+	Q3PopupMenu* config = new Q3PopupMenu(this);
- 	menu->insertItem(_("&File"), config);
- 	loadAction->addTo(config);
- 	saveAction->addTo(config);
-@@ -1386,12 +1401,12 @@ ConfigMainWindow::ConfigMainWindow(void)
- 	quitAction->addTo(config);
- 
- 	// create edit menu
--	QPopupMenu* editMenu = new QPopupMenu(this);
-+	Q3PopupMenu* editMenu = new Q3PopupMenu(this);
- 	menu->insertItem(_("&Edit"), editMenu);
- 	searchAction->addTo(editMenu);
- 
- 	// create options menu
--	QPopupMenu* optionMenu = new QPopupMenu(this);
-+	Q3PopupMenu* optionMenu = new Q3PopupMenu(this);
- 	menu->insertItem(_("&Option"), optionMenu);
- 	showNameAction->addTo(optionMenu);
- 	showRangeAction->addTo(optionMenu);
-@@ -1402,7 +1417,7 @@ ConfigMainWindow::ConfigMainWindow(void)
- 	showDebugAction->addTo(optionMenu);
- 
- 	// create help menu
--	QPopupMenu* helpMenu = new QPopupMenu(this);
-+	Q3PopupMenu* helpMenu = new Q3PopupMenu(this);
- 	menu->insertSeparator();
- 	menu->insertItem(_("&Help"), helpMenu);
- 	showIntroAction->addTo(helpMenu);
-@@ -1437,7 +1452,7 @@ ConfigMainWindow::ConfigMainWindow(void)
- 		showSplitView();
- 
- 	// UI setup done, restore splitter positions
--	QValueList<int> sizes = configSettings->readSizes("/split1", &ok);
-+	Q3ValueList<int> sizes = configSettings->readSizes("/split1", &ok);
- 	if (ok)
- 		split1->setSizes(sizes);
- 
-@@ -1448,7 +1463,7 @@ ConfigMainWindow::ConfigMainWindow(void)
- 
- void ConfigMainWindow::loadConfig(void)
- {
--	QString s = QFileDialog::getOpenFileName(conf_get_configname(), NULL, this);
-+	QString s = Q3FileDialog::getOpenFileName(conf_get_configname(), NULL, this);
- 	if (s.isNull())
- 		return;
- 	if (conf_read(QFile::encodeName(s)))
-@@ -1464,7 +1479,7 @@ void ConfigMainWindow::saveConfig(void)
- 
- void ConfigMainWindow::saveConfigAs(void)
- {
--	QString s = QFileDialog::getSaveFileName(conf_get_configname(), NULL, this);
-+	QString s = Q3FileDialog::getSaveFileName(conf_get_configname(), NULL, this);
- 	if (s.isNull())
- 		return;
- 	if (conf_write(QFile::encodeName(s)))
-diff --git a/scripts/kconfig/qconf.h b/scripts/kconfig/qconf.h
-index 636a74b..3a441e7 100644
---- a/scripts/kconfig/qconf.h
-+++ b/scripts/kconfig/qconf.h
-@@ -3,26 +3,26 @@
-  * Released under the terms of the GNU GPL v2.0.
-  */
- 
-+#ifdef USE_QT3
- #include <qlistview.h>
--#if QT_VERSION >= 300
--#include <qsettings.h>
- #else
--class QSettings {
--public:
--	void beginGroup(const QString& group) { }
--	void endGroup(void) { }
--	bool readBoolEntry(const QString& key, bool def = FALSE, bool* ok = 0) const
--	{ if (ok) *ok = FALSE; return def; }
--	int readNumEntry(const QString& key, int def = 0, bool* ok = 0) const
--	{ if (ok) *ok = FALSE; return def; }
--	QString readEntry(const QString& key, const QString& def = QString::null, bool* ok = 0) const
--	{ if (ok) *ok = FALSE; return def; }
--	QStringList readListEntry(const QString& key, bool* ok = 0) const
--	{ if (ok) *ok = FALSE; return QStringList(); }
--	template <class t>
--	bool writeEntry(const QString& key, t value)
--	{ return TRUE; }
--};
-+#include <q3listview.h>
+-#endif
+ 		/* unblock and send event to UIM via /dev/rfkill */
+ 		rfkill_set_hw_state(kim_gdata->rfkill[ST_BT], 0);
 +#endif
-+#include <qsettings.h>
 +
-+#ifdef USE_QT3
-+#define Q3ValueList             QValueList
-+#define Q3PopupMenu             QPopupMenu
-+#define Q3ListView              QListView
-+#define Q3ListViewItem          QListViewItem
-+#define Q3VBox                  QVBox
-+#define Q3TextBrowser           QTextBrowser
-+#define Q3MainWindow            QMainWindow
-+#define Q3Action                QAction
-+#define Q3ActionGroup           QActionGroup
-+#define Q3ToolBar               QToolBar
-+#define Q3ListViewItemIterator  QListViewItemIterator
-+#define Q3FileDialog            QFileDialog
- #endif
++		netlink_broadcast(kim_gdata->uim_nlink, skb, 0, 1, GFP_KERNEL);
++
+ 		/* wait for ldisc to be installed */
+ 		err = wait_for_completion_timeout(&kim_gdata->ldisc_installed,
+ 				msecs_to_jiffies(LDISC_TIME));
+@@ -518,6 +531,15 @@ long st_kim_stop(void *kim_data)
+ {
+ 	long err = 0;
+ 	struct kim_data_s	*kim_gdata = (struct kim_data_s *)kim_data;
++	struct sk_buff *skb;
++
++	skb = alloc_skb(sizeof(struct link_data_s), GFP_KERNEL);
++	strncpy(kim_gdata->link_data.dev_name, "ttyS1",
++		strlen("ttyS1"));
++	kim_gdata->link_data.action = UN_INSTALL;
++	kim_gdata->link_data.ldisc_num = N_TI_WL;
++	memcpy(skb_put(skb, sizeof(kim_gdata->link_data)),
++		&kim_gdata->link_data, sizeof(kim_gdata->link_data));
  
- class ConfigView;
-@@ -31,11 +31,10 @@ class ConfigItem;
- class ConfigLineEdit;
- class ConfigMainWindow;
- 
--
- class ConfigSettings : public QSettings {
- public:
--	QValueList<int> readSizes(const QString& key, bool *ok);
--	bool writeSizes(const QString& key, const QValueList<int>& value);
-+	Q3ValueList<int> readSizes(const QString& key, bool *ok);
-+	bool writeSizes(const QString& key, const Q3ValueList<int>& value);
- };
- 
- enum colIdx {
-@@ -48,9 +47,9 @@ enum optionMode {
- 	normalOpt = 0, allOpt, promptOpt
- };
- 
--class ConfigList : public QListView {
-+class ConfigList : public Q3ListView {
- 	Q_OBJECT
--	typedef class QListView Parent;
-+	typedef class Q3ListView Parent;
- public:
- 	ConfigList(ConfigView* p, const char *name = 0);
- 	void reinit(void);
-@@ -135,17 +134,17 @@ public:
- 	struct menu *rootEntry;
- 	QColorGroup disabledColorGroup;
- 	QColorGroup inactivedColorGroup;
--	QPopupMenu* headerPopup;
-+	Q3PopupMenu* headerPopup;
- 
- private:
- 	int colMap[colNr];
- 	int colRevMap[colNr];
- };
- 
--class ConfigItem : public QListViewItem {
--	typedef class QListViewItem Parent;
-+class ConfigItem : public Q3ListViewItem {
-+	typedef class Q3ListViewItem Parent;
- public:
--	ConfigItem(QListView *parent, ConfigItem *after, struct menu *m, bool v)
-+	ConfigItem(Q3ListView *parent, ConfigItem *after, struct menu *m, bool v)
- 	: Parent(parent, after), menu(m), visible(v), goParent(false)
- 	{
- 		init();
-@@ -155,7 +154,7 @@ public:
- 	{
- 		init();
+ 	INIT_COMPLETION(kim_gdata->ldisc_installed);
+ #if 0 /* older way of signalling user-space UIM */
+@@ -527,9 +549,11 @@ long st_kim_stop(void *kim_data)
+ 		pr_err("sending SIGUSR2 to uim failed %ld", err);
+ 		return -1;
  	}
--	ConfigItem(QListView *parent, ConfigItem *after, bool v)
-+	ConfigItem(Q3ListView *parent, ConfigItem *after, bool v)
- 	: Parent(parent, after), menu(0), visible(v), goParent(true)
- 	{
- 		init();
-@@ -219,9 +218,9 @@ public:
- 	ConfigItem *item;
+-#endif
+ 	/* set BT rfkill to be blocked */
+ 	err = rfkill_set_hw_state(kim_gdata->rfkill[ST_BT], 1);
++#endif
++
++	netlink_broadcast(kim_gdata->uim_nlink, skb, 0, 1, GFP_KERNEL);
+ 
+ 	/* wait for ldisc to be un-installed */
+ 	err = wait_for_completion_timeout(&kim_gdata->ldisc_installed,
+@@ -545,6 +569,8 @@ long st_kim_stop(void *kim_data)
+ 	gpio_set_value(kim_gdata->gpios[ST_BT], GPIO_HIGH);
+ 	mdelay(1);
+ 	gpio_set_value(kim_gdata->gpios[ST_BT], GPIO_LOW);
++	kfree_skb(skb);
++
+ 	return err;
+ }
+ 
+@@ -635,6 +661,15 @@ void st_kim_ref(struct st_data_s **core_data)
+ 	*core_data = kim_gdata->core_data;
+ }
+ 
++/**
++ * kim_nlink_callback - callback called when UIM sends comes calling
++ *	Don't do anything as of yet
++ */
++void kim_nlink_callback(struct sk_buff *skb)
++{
++	pr_info(" %s ", __func__);
++}
++
+ /**********************************************************************/
+ /* functions called from platform device driver subsystem
+  * need to have a relevant platform device entry in the platform's
+@@ -703,6 +738,14 @@ static int kim_probe(struct platform_device *pdev)
+ 	init_completion(&kim_gdata->kim_rcvd);
+ 	init_completion(&kim_gdata->ldisc_installed);
+ 
++	/* create netlink connection - reuse N_TI_WL for protocol */
++	kim_gdata->uim_nlink = netlink_kernel_create(&init_net, N_TI_WL, 0,
++				kim_nlink_callback, NULL, THIS_MODULE);
++	if (kim_gdata->uim_nlink == NULL) {
++		pr_err("can't setup netlink socket");
++		return -1;
++	}
++
+ 	for (proto = 0; (proto < ST_MAX) && (gpios[proto] != -1); proto++) {
+ 		/* TODO: should all types be rfkill_type_bt ? */
+ 		kim_gdata->rf_protos[proto] = proto;
+diff --git a/drivers/staging/ti-st/st_kim.h b/drivers/staging/ti-st/st_kim.h
+index 225cacd..8743ba4 100644
+--- a/drivers/staging/ti-st/st_kim.h
++++ b/drivers/staging/ti-st/st_kim.h
+@@ -79,7 +79,9 @@ struct chip_version {
+  * @rf_protos: proto types of the data registered with rfkill sub-system.
+  * @core_data: ST core's data, which mainly is the tty's disc_data
+  * @version: chip version available via a sysfs entry.
+- *
++ * @uim_nlink: the netlink connection between UIM and KIM.
++ * @link_data: the data to be exchanged between KIM and UIM via the netlink
++ *	socket.
+  */
+ struct kim_data_s {
+ 	long uim_pid;
+@@ -95,6 +97,8 @@ struct kim_data_s {
+ 	enum proto_type rf_protos[ST_MAX];
+ 	struct st_data_s *core_data;
+ 	struct chip_version version;
++	struct sock *uim_nlink;
++	struct link_data_s link_data;
  };
  
--class ConfigView : public QVBox {
-+class ConfigView : public Q3VBox {
- 	Q_OBJECT
--	typedef class QVBox Parent;
-+	typedef class Q3VBox Parent;
- public:
- 	ConfigView(QWidget* parent, const char *name = 0);
- 	~ConfigView(void);
-@@ -235,7 +234,7 @@ public slots:
- 	void setShowName(bool);
- 	void setShowRange(bool);
- 	void setShowData(bool);
--	void setOptionMode(QAction *);
-+	void setOptionMode(Q3Action *);
- signals:
- 	void showNameChanged(bool);
- 	void showRangeChanged(bool);
-@@ -247,14 +246,14 @@ public:
- 	static ConfigView* viewList;
- 	ConfigView* nextView;
- 
--	static QAction *showNormalAction;
--	static QAction *showAllAction;
--	static QAction *showPromptAction;
-+	static Q3Action *showNormalAction;
-+	static Q3Action *showAllAction;
-+	static Q3Action *showPromptAction;
- };
- 
--class ConfigInfoView : public QTextBrowser {
-+class ConfigInfoView : public Q3TextBrowser {
- 	Q_OBJECT
--	typedef class QTextBrowser Parent;
-+	typedef class Q3TextBrowser Parent;
- public:
- 	ConfigInfoView(QWidget* parent, const char *name = 0);
- 	bool showDebug(void) const { return _showDebug; }
-@@ -274,11 +273,11 @@ protected:
- 	QString debug_info(struct symbol *sym);
- 	static QString print_filter(const QString &str);
- 	static void expr_print_help(void *data, struct symbol *sym, const char *str);
--	QPopupMenu* createPopupMenu(const QPoint& pos);
-+	Q3PopupMenu* createPopupMenu(const QPoint& pos);
- 	void contentsContextMenuEvent(QContextMenuEvent *e);
- 
- 	struct symbol *sym;
--	struct menu *menu;
-+	struct menu *_menu;
- 	bool _showDebug;
- };
- 
-@@ -302,10 +301,10 @@ protected:
- 	struct symbol **result;
- };
- 
--class ConfigMainWindow : public QMainWindow {
-+class ConfigMainWindow : public Q3MainWindow {
- 	Q_OBJECT
- 
--	static QAction *saveAction;
-+	static Q3Action *saveAction;
- 	static void conf_changed(void);
- public:
- 	ConfigMainWindow(void);
-@@ -334,8 +333,8 @@ protected:
- 	ConfigView *configView;
- 	ConfigList *configList;
- 	ConfigInfoView *helpText;
--	QToolBar *toolBar;
--	QAction *backAction;
-+	Q3ToolBar *toolBar;
-+	Q3Action *backAction;
- 	QSplitter* split1;
- 	QSplitter* split2;
- };
+ /**
 -- 
-1.7.1
+1.5.6.3
 
