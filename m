@@ -1,54 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab0GZWJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 18:09:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:1854 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab0GZWJO convert rfc822-to-8bit (ORCPT
+	id S1755514Ab0GZWKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 18:10:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49220 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab0GZWKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 18:09:14 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=MPsMKFw5Y9030C67vx/wd5O5mWkimZNjoi0KMMcpUbLualNPz65iORCXexg6Ub+B+
-	lBf8hDxaR2bip6pT22/jg==
+	Mon, 26 Jul 2010 18:10:05 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Enable kdump with EFI boot
+Date: Mon, 26 Jul 2010 18:09:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100726220546.GB9671@suse.de>
-References: <20100722182638.GA12712@kroah.com>
-	<AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
-	<20100722183614.GA5443@suse.de>
-	<AANLkTinsd2gWOHb3w9gzvKO5vdwLBT7DZOY+2xCUz_5_@mail.gmail.com>
-	<AANLkTimm9XGvK2H55V7N76JPU05iHk_dY5JjOLifQTsr@mail.gmail.com>
-	<AANLkTi=OMaKuk+ReeqCfBGes76BjKYyUdqxPOQfH8EcZ@mail.gmail.com>
-	<20100726212858.GA15904@suse.de>
-	<AANLkTimmAfhw7WhPHHU6d4izkzvp2oxOSzNN8JjNu_nU@mail.gmail.com>
-	<20100726220546.GB9671@suse.de>
-Date: Mon, 26 Jul 2010 15:09:09 -0700
-Message-ID: <AANLkTi=Vrax+ob87uiDzeMxOmuDNYUWnDKG0jpfQppAp@mail.gmail.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-From: Paul Menage <menage@google.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Mailer: HidemaruMail 5.38 (WinNT,501)
+Message-Id: <C0CB2D0F31868Bindou.takao@jp.fujitsu.com>
+X-Antivirus: avast! (VPS 100726-0, 2010/07/26), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 3:05 PM, Greg KH <gregkh@suse.de> wrote:
->
-> Wonderful, can I get some acks from the cgroups maintainers?  I'll
-> gladly take it through my tree.
+Hi all,
 
-Sure.
+The attached patch enables kdump on EFI-boot machine.
 
-Acked-by: Paul Menage <menage@google.com>
+[Background]
+Current kdump does not work on EFI-boot system because 2nd kernel cannot
+find ACPI Table(RSDP). The URL below explains this problem.
+http://lists.infradead.org/pipermail/kexec/2010-March/003889.html
 
-Paul
+This problem can be solved by fixing kexec-tools so that it can set up
+struct efi_info correctly in the boot_params for 2nd kernel. However
+there is another problem.
+
+When the 1st kernel boots, EFI system table(efi_system_table_t) is
+modified by SetVirtualAddressMap, which is one of EFI runtime service.
+This runtime changes physical address in EFI system table to virtual
+address.
+
+When the 2nd kernel boots, it also receives the same EFI system table,
+and the address included in it is already virtual address(1st kernel
+rewrote it).  But 2nd kernel does not know that, 2nd kernel thinks it is
+a physical address. This causes problems.
+
+For example, the following is a part of efi_init().
+
+c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
+if (c16) {
+    for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+        vendor[i] = *c16++;
+    vendor[i] = '\0';
+} else
+    printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
+
+2nd kernel thinks efi.systab->fw_vendor has a physical address and tries
+to change it to virtual address, but it is already virtual address, so
+this code fails and 2nd kernel hangs up.
+
+[How to fix]
+My solution is as follows.
+1) Export physical address of each EFI system table entry via debugfs
+/sys/kernel/debug/efi/systab/fw_vendor
+/sys/kernel/debug/efi/systab/tables
+/sys/kernel/debug/efi/systab/runtime
+
+Kexec-tools can get physical address of each entry in EFI system table
+via these entries. Kexec tools adds these physical addresses to boot
+parameters
+ex.)
+efi_systab_fw_vendor=0x7a6a1398 efi_systab_tables=0x7a6a2e18 \
+efi_systab_runtime=0x7a6a3e18
+
+2) Kernel parses these parameters and use them in efi_init()
+
+
+So, what this patch is doing is:
+- Add debugfs interface for each EFI system table entry
+- eif_init() gets physical address of each EFI system table entry from
+  boot paramteter instead of the table
+- Don't call SetVirtualAddressMap in 2nd kernel because panic occurred
+  when SetVirtualAddressMap is called in 2nd kernel. This is called in
+  1st kernel, and doesn't need to be called again.
+
+Any comments would be appreciated!
+
+Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+---
+ arch/x86/kernel/efi.c |  132 +++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 123 insertions(+), 9 deletions(-)
+
+diff -Nurp linux-2.6.35-rc6.org/arch/x86/kernel/efi.c linux-2.6.35-rc6/arch/x86/kernel/efi.c
+--- linux-2.6.35-rc6.org/arch/x86/kernel/efi.c	2010-07-26 12:02:31.216675044 -0400
++++ linux-2.6.35-rc6/arch/x86/kernel/efi.c	2010-07-26 12:17:24.486677191 -0400
+@@ -36,6 +36,8 @@
+ #include <linux/io.h>
+ #include <linux/reboot.h>
+ #include <linux/bcd.h>
++#include <linux/crash_dump.h>
++#include <linux/debugfs.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/efi.h>
+@@ -314,6 +316,97 @@ static void __init print_efi_memmap(void
+ }
+ #endif  /*  EFI_DEBUG  */
+ 
++unsigned long systab_fw_vendor_paddr;
++unsigned long systab_runtime_paddr;
++unsigned long systab_tables_paddr;
++
++static struct debugfs_blob_wrapper fw_vendor_blob = {
++	.data		= &systab_fw_vendor_paddr,
++	.size		= sizeof(systab_fw_vendor_paddr),
++};
++
++static struct debugfs_blob_wrapper runtime_blob = {
++	.data		= &systab_runtime_paddr,
++	.size		= sizeof(systab_runtime_paddr),
++};
++
++static struct debugfs_blob_wrapper tables_blob = {
++	.data		= &systab_tables_paddr,
++	.size		= sizeof(systab_tables_paddr),
++};
++
++static int __init setup_systab_fw_vendor_paddr(char *arg)
++{
++	systab_fw_vendor_paddr = simple_strtoul(arg, NULL, 16);
++	return 0;
++}
++early_param("efi_systab_fw_vendor", setup_systab_fw_vendor_paddr);
++
++static int __init setup_systab_runtime_paddr(char *arg)
++{
++	systab_runtime_paddr = simple_strtoul(arg, NULL, 16);
++	return 0;
++}
++early_param("efi_systab_runtime", setup_systab_runtime_paddr);
++
++static int __init setup_systab_tables_paddr(char *arg)
++{
++	systab_tables_paddr = simple_strtoul(arg, NULL, 16);
++	return 0;
++}
++early_param("efi_systab_tables", setup_systab_tables_paddr);
++
++static int create_debug_files_systab (struct dentry *root)
++{
++	struct dentry *systab_dir, *fw_vendor, *runtime, *tables;
++
++	systab_dir = debugfs_create_dir("systab", root);
++	if (!systab_dir)
++		return -1;
++
++	fw_vendor = debugfs_create_blob("fw_vendor", S_IRUGO, systab_dir,
++				            &fw_vendor_blob);
++	if (!fw_vendor)
++		goto err_fw;
++
++	runtime = debugfs_create_blob("runtime", S_IRUGO, systab_dir,
++				            &runtime_blob);
++	if (!runtime)
++		goto err_runtime;
++
++	tables = debugfs_create_blob("tables", S_IRUGO, systab_dir,
++				            &tables_blob);
++	if (tables)
++		return 0;
++
++	debugfs_remove(runtime);
++err_runtime:
++	debugfs_remove(fw_vendor);
++err_fw:
++	debugfs_remove(systab_dir);
++	return -1;
++}
++
++static int crate_debug_files (void)
++{
++	int error;
++	struct dentry *efi_dir;
++
++	efi_dir = debugfs_create_dir("efi", NULL);
++	if (!efi_dir)
++		return -1;
++
++	error = create_debug_files_systab(efi_dir);
++	if (error) {
++		debugfs_remove(efi_dir);
++		return -1;
++	}
++
++	return 0;
++}
++
++late_initcall(crate_debug_files);
++
+ void __init efi_init(void)
+ {
+ 	efi_config_table_t *config_tables;
+@@ -322,6 +415,7 @@ void __init efi_init(void)
+ 	char vendor[100] = "unknown";
+ 	int i = 0;
+ 	void *tmp;
++	resource_size_t phys_addr;
+ 
+ #ifdef CONFIG_X86_32
+ 	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
+@@ -353,7 +447,11 @@ void __init efi_init(void)
+ 	/*
+ 	 * Show what we know for posterity
+ 	 */
+-	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
++	if (is_kdump_kernel() && systab_fw_vendor_paddr != 0)
++		phys_addr = systab_fw_vendor_paddr;
++	else
++		phys_addr = efi.systab->fw_vendor;
++	c16 = tmp = early_ioremap(phys_addr, 2);
+ 	if (c16) {
+ 		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+ 			vendor[i] = *c16++;
+@@ -369,8 +467,12 @@ void __init efi_init(void)
+ 	/*
+ 	 * Let's see what config tables the firmware passed to us.
+ 	 */
++	if (is_kdump_kernel() && systab_tables_paddr != 0)
++		phys_addr = systab_tables_paddr;
++	else
++		phys_addr = efi.systab->tables;
+ 	config_tables = early_ioremap(
+-		efi.systab->tables,
++		phys_addr,
+ 		efi.systab->nr_tables * sizeof(efi_config_table_t));
+ 	if (config_tables == NULL)
+ 		printk(KERN_ERR "Could not map EFI Configuration Table!\n");
+@@ -418,8 +520,11 @@ void __init efi_init(void)
+ 	 * address of several of the EFI runtime functions, needed to
+ 	 * set the firmware into virtual mode.
+ 	 */
+-	runtime = early_ioremap((unsigned long)efi.systab->runtime,
+-				sizeof(efi_runtime_services_t));
++	if (is_kdump_kernel() && systab_runtime_paddr != 0)
++		phys_addr = systab_runtime_paddr;
++	else
++		phys_addr = (unsigned long)efi.systab->runtime;
++	runtime = early_ioremap(phys_addr, sizeof(efi_runtime_services_t));
+ 	if (runtime != NULL) {
+ 		/*
+ 		 * We will only need *early* access to the following
+@@ -465,6 +570,12 @@ void __init efi_init(void)
+ #if EFI_DEBUG
+ 	print_efi_memmap();
+ #endif
++	/* Save original physical address */
++	if (!is_kdump_kernel()) {
++		systab_fw_vendor_paddr = efi.systab->fw_vendor;
++		systab_tables_paddr = efi.systab->tables;
++		systab_runtime_paddr = (unsigned long)efi.systab->runtime;
++	}
+ }
+ 
+ static void __init runtime_code_page_mkexec(void)
+@@ -544,11 +655,14 @@ void __init efi_enter_virtual_mode(void)
+ 
+ 	BUG_ON(!efi.systab);
+ 
+-	status = phys_efi_set_virtual_address_map(
+-		memmap.desc_size * memmap.nr_map,
+-		memmap.desc_size,
+-		memmap.desc_version,
+-		memmap.phys_map);
++	if (!is_kdump_kernel())
++		status = phys_efi_set_virtual_address_map(
++			memmap.desc_size * memmap.nr_map,
++			memmap.desc_size,
++			memmap.desc_version,
++			memmap.phys_map);
++	else
++		status = EFI_SUCCESS;
+ 
+ 	if (status != EFI_SUCCESS) {
+ 		printk(KERN_ALERT "Unable to switch EFI into virtual mode "
+
