@@ -1,141 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab0GZMp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 08:45:26 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35749 "EHLO mx1.suse.de"
+	id S1752769Ab0GZMrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 08:47:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11115 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751228Ab0GZMpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 08:45:24 -0400
-Message-ID: <4C4D8348.5040802@suse.cz>
-Date: Mon, 26 Jul 2010 14:44:56 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1751027Ab0GZMrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 08:47:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,261,1278313200"; 
+   d="scan'208";a="538792309"
+Date: Mon, 26 Jul 2010 20:47:23 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20100726124723.GA14937@localhost>
+References: <20100722050928.653312535@intel.com>
+ <20100722061822.906037624@intel.com>
+ <20100726105736.GM5300@csn.ul.ie>
+ <20100726120011.GG6284@localhost>
+ <20100726122054.GF3280@quack.suse.cz>
+ <20100726123141.GA13146@localhost>
+ <20100726123907.GG3280@quack.suse.cz>
 MIME-Version: 1.0
-To: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Cc: linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kconfig qconf: port to QT4
-References: <4C0D64A2.9020701@suse.cz> <1279049216-22480-1-git-send-email-alexander.stein@informatik.tu-chemnitz.de>
-In-Reply-To: <1279049216-22480-1-git-send-email-alexander.stein@informatik.tu-chemnitz.de>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726123907.GG3280@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.7.2010 21:26, Alexander Stein wrote:
-> A straight forward port to QT4 using qt3to4 and compiling against
->   qt3support
-> 
-> * rewritten makefile rules to detect QT4 by using qmake which is hopefully
->   portable enough
-> * If no QT4, QT3 will by tried instead
-> * Classes renamed using qt3to4
->   * If build using QT3 renamed to QT3 class names using defines
-> * ConfigInfoView::menu has to be renamed as QT4 moc strips struct from
->   struct menu and creates a name conflict
+On Mon, Jul 26, 2010 at 08:39:07PM +0800, Jan Kara wrote:
+> On Mon 26-07-10 20:31:41, Wu Fengguang wrote:
+> > On Mon, Jul 26, 2010 at 08:20:54PM +0800, Jan Kara wrote:
+> > > On Mon 26-07-10 20:00:11, Wu Fengguang wrote:
+> > > > On Mon, Jul 26, 2010 at 06:57:37PM +0800, Mel Gorman wrote:
+> > > > > On Thu, Jul 22, 2010 at 01:09:32PM +0800, Wu Fengguang wrote:
+> > > > > > A background flush work may run for ever. So it's reasonable for it to
+> > > > > > mimic the kupdate behavior of syncing old/expired inodes first.
+> > > > > > 
+> > > > > > The policy is
+> > > > > > - enqueue all newly expired inodes at each queue_io() time
+> > > > > > - retry with halfed expire interval until get some inodes to sync
+> > > > > > 
+> > > > > > CC: Jan Kara <jack@suse.cz>
+> > > > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > > > 
+> > > > > Ok, intuitively this would appear to tie into pageout where we want
+> > > > > older inodes to be cleaned first by background flushers to limit the
+> > > > > number of dirty pages encountered by page reclaim. If this is accurate,
+> > > > > it should be detailed in the changelog.
+> > > > 
+> > > > Good suggestion. I'll add these lines:
+> > > > 
+> > > > This is to help reduce the number of dirty pages encountered by page
+> > > > reclaim, eg. the pageout() calls. Normally older inodes contain older
+> > > > dirty pages, which are more close to the end of the LRU lists. So
+> > >   Well, this kind of implicitely assumes that once page is written, it
+> > > doesn't get accessed anymore, right?
+> > 
+> > No, this patch is not evicting the page :)
+>   Sorry, I probably wasn't clear enough :) I meant: The claim that "older
+> inodes contain older dirty pages, which are more close to the end of the
+> LRU lists" assumes that once page is written it doesn't get accessed
+> again. For example files which get continual random access (like DB files)
+> can have rather old dirtied_when but some of their pages are accessed quite
+> often...
 
-Hi Alexander,
+Ah yes. That leads to another fact: smaller inodes tend to have more
+strong correlations between its inode dirty age and pages' dirty age. 
 
-first, one thing I forgot to mention: There are some changes by Li Zefan
-in my kconfig branch, which conflict with your patch. I resolved the
-conflicts myself (but see below), but could you please use the kconfig
-or for-next branch of
-git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git next
-time? If you already have a clone of Linus's tree, then just do
+This is one of the reason to not sync huge dirty inode in one shot.
+Instead of
 
-$ git remote add kbuild \
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
-$ git remote update kbuild
-$ git checkout -b kconfig kbuild/kconfig
+        sync  1G for inode A
+        sync 10M for inode B
+        sync 10M for inode C
+        sync 10M for inode D
 
-This will only download a few hundred kilobytes.
+It's better to
 
-> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-> index 7ea649d..eb3c2f6 100644
-> --- a/scripts/kconfig/Makefile
-> +++ b/scripts/kconfig/Makefile
-> @@ -233,40 +233,52 @@ $(obj)/.tmp_qtcheck: $(src)/Makefile
->  # QT needs some extra effort...
->  $(obj)/.tmp_qtcheck:
->  	@set -e; echo "  CHECK   qt"; dir=""; pkg=""; \
-> -	pkg-config --exists qt 2> /dev/null && pkg=qt; \
-> -	pkg-config --exists qt-mt 2> /dev/null && pkg=qt-mt; \
-> -	if [ -n "$$pkg" ]; then \
-> -	  cflags="\$$(shell pkg-config $$pkg --cflags)"; \
-> -	  libs="\$$(shell pkg-config $$pkg --libs)"; \
-> -	  moc="\$$(shell pkg-config $$pkg --variable=prefix)/bin/moc"; \
-> -	  dir="$$(pkg-config $$pkg --variable=prefix)"; \
-> +	qmake=$(shell which qmake); \
-> +	if [ -z $$qmake ]; then \
+        sync 128M for inode A
+        sync  10M for inode B
+        sync  10M for inode C
+        sync  10M for inode D
+        sync 128M for inode A
+        sync 128M for inode A
+        sync 128M for inode A
+        sync  10M for inode E (newly expired)
+        sync 128M for inode A
+        ...
 
-Unfortunatelly, this doesn't work for me if I uninstall libqt4-devel and
-use qt3-devel, because then I have:
-$ qmake --version
-Qmake version: 1.07a (Qt 3.3.8b)
-Qmake is free software from Trolltech ASA.
-$ which qmake
-/usr/lib/qt3/bin/qmake
-
-I'm using openSUSE 11.3, but I think this is a generic problem, qmake
-existed before QT4.
-
-
-> diff --git a/scripts/kconfig/qconf.h b/scripts/kconfig/qconf.h
-> index b3b5657..3853ae8 100644
-> --- a/scripts/kconfig/qconf.h
-> +++ b/scripts/kconfig/qconf.h
-> @@ -3,26 +3,25 @@
->   * Released under the terms of the GNU GPL v2.0.
->   */
->  
-> +#ifdef USE_QT3
->  #include <qlistview.h>
-> -#if QT_VERSION >= 300
-> -#include <qsettings.h>
->  #else
-> -class QSettings {
-> -public:
-> -	void beginGroup(const QString& group) { }
-> -	void endGroup(void) { }
-> -	bool readBoolEntry(const QString& key, bool def = FALSE, bool* ok = 0) const
-> -	{ if (ok) *ok = FALSE; return def; }
-> -	int readNumEntry(const QString& key, int def = 0, bool* ok = 0) const
-> -	{ if (ok) *ok = FALSE; return def; }
-> -	QString readEntry(const QString& key, const QString& def = QString::null, bool* ok = 0) const
-> -	{ if (ok) *ok = FALSE; return def; }
-> -	QStringList readListEntry(const QString& key, bool* ok = 0) const
-> -	{ if (ok) *ok = FALSE; return QStringList(); }
-> -	template <class t>
-> -	bool writeEntry(const QString& key, t value)
-> -	{ return TRUE; }
-> -};
-> +#include <q3listview.h>
-> +#endif
-> +#include <qsettings.h>
-
-Here, you are removing compatibility code for pre-3.0.0 QT versions.
-That's perfectly fine in 2010 :-), but could you also please mention it
-in the changelog and remove the other occurences of this ifdef in qconf.cc?
-
-Other than that, I haven't found other issues with *your* patch, but
-when I merge it with 39a4897 (xconfig: add support to show hidden
-options which have prompts) and work around the above Makefile issue, I get
-
-QObject::connect: No such signal QActionGroup::selected(Q3Action*)
-QObject::connect:  (sender name:   'unnamed')
-QObject::connect:  (receiver name: 'config')
-QObject::connect: No such signal QActionGroup::selected(Q3Action*)
-QObject::connect:  (sender name:   'unnamed')
-QObject::connect:  (receiver name: 'menu')
-
-and the Option -> Show Normal/All/Promp options menu added by 39a4897
-does not work. The problem is that the QT4 moc does not run the
-preprocessor, so the Q3Action token is not replaced by QAction. The QT4
-does not have this limitation anymore, so I was wondering: Instead of
-renaming every single class name in the source and then defining the
-names back for QT3, could we just define the classes to the Q3Foo
-versions for the QT4 case? This would solve the issue with the QT3 moc
-and also make the patch smaller.
-
-Michal
+Thanks,
+Fengguang
