@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab0GZF3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 01:29:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35448 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753261Ab0GZF3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 01:29:18 -0400
-Date: Mon, 26 Jul 2010 15:29:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sheng Yang <sheng@linux.intel.com>
-Subject: linux-next: build failure after merge of the final tree (xen tree
- related)
-Message-Id: <20100726152908.951a95b7.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753398Ab0GZFfY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 01:35:24 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53976 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab0GZFfX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 01:35:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=WDOsrUlQXgSzt09w9yMuzpfuICVVGRLbpnq8jFVlshfOJi0+z8STGGsgrDw/Y7wRlx
+         AaL9s5wqJvx571lzgWHu0DJjK7zdJ3bjsg7VFX+wLWSAPfdyZdH9HaawytcigH50LDt3
+         iYqIzZ+q3+ewCXiwzJmD/l2H6XOdnP/NAjKOE=
+Subject: [PATCH] ab3100: fix off-by-one value range checking for voltage
+	selector
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Content-Type: text/plain
+Date: Mon, 26 Jul 2010 13:35:49 +0800
+Message-Id: <1280122549.20830.1.camel@mola>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__26_Jul_2010_15_29_08_+1000_faYTzoTLvToPiG0m"
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Jul_2010_15_29_08_+1000_faYTzoTLvToPiG0m
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The valid typ_voltages range should be 0..voltages_len-1.
 
-Hi all,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/ab3100.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-After merging the final tree, today's linux-next build (i386 defconfig)
-failed like this:
+diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+index 7b14a67..1179099 100644
+--- a/drivers/regulator/ab3100.c
++++ b/drivers/regulator/ab3100.c
+@@ -286,7 +286,7 @@ static int ab3100_list_voltage_regulator(struct regulator_dev *reg,
+ {
+ 	struct ab3100_regulator *abreg = reg->reg_data;
+ 
+-	if (selector > abreg->voltages_len)
++	if (selector >= abreg->voltages_len)
+ 		return -EINVAL;
+ 	return abreg->typ_voltages[selector];
+ }
+@@ -318,7 +318,7 @@ static int ab3100_get_voltage_regulator(struct regulator_dev *reg)
+ 	regval &= 0xE0;
+ 	regval >>= 5;
+ 
+-	if (regval > abreg->voltages_len) {
++	if (regval >= abreg->voltages_len) {
+ 		dev_err(&reg->dev,
+ 			"regulator register %02x contains an illegal voltage setting\n",
+ 			abreg->regreg);
+-- 
+1.5.4.3
 
-arch/x86/built-in.o: In function `init_hypervisor_platform':
-(.init.text+0x3ca4): undefined reference to `x86_hyper_xen_hvm'
-arch/x86/built-in.o: In function `init_hypervisor_platform':
-(.init.text+0x3cad): undefined reference to `x86_hyper_xen_hvm'
 
-Caused by commit bee6ab53e652a414af20392899879b58cd80d033 ("x86: early PV
-on HVM features initialization").
 
-I reverted commit 4b9100d12d15c0eaf23d9edc86228e1bdf452dc2 ("Merge branch
-'upstream/pvhvm' into upstream/xen") for today (since there were
-dependencies on the above commit).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__26_Jul_2010_15_29_08_+1000_faYTzoTLvToPiG0m
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMTR0kAAoJEDMEi1NhKgbsgKUH/0guGh1ynWmgFpcXqz/4vhJO
-QvWgeG4+2Jrztq8Le20yZgoGQQM8wb8VpnI5t4iowMtbVUTc3tnEJiQM2KuGRD67
-q5zj9o//lZz6AHJOvS35M+Myy5NCuCsI/d85mT2lmhZxKScG1Jpmd8C2tBDCIYk2
-rn52t6eO0EP4How3RmPNj7DyhmjyQFVDyHtB68C2ZqecOF8yfyFsviy6ha/hKaoZ
-c9vIiyMdHZ/cdulTgxUTpSm3OOATqJlj2hWQDAVpAxgfLg1CMiSU30XR5UI2Uzd4
-350rVMiTBA0XZATPmuiw1vMoTAZP/I0iR5f2UtouDvCb55IOg66QtoZ6YIBbhmQ=
-=boJ1
------END PGP SIGNATURE-----
-
---Signature=_Mon__26_Jul_2010_15_29_08_+1000_faYTzoTLvToPiG0m--
