@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab0G0DcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 23:32:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35507 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752202Ab0G0DcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 23:32:18 -0400
-Date: Tue, 27 Jul 2010 13:32:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: linux-next: manual merge of the xen tree with Linus' tree
-Message-Id: <20100727133207.9b6846fe.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__27_Jul_2010_13_32_07_+1000_c_.kCZYTL0WeILUD"
+	id S1753187Ab0G0Dfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 23:35:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51036 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752571Ab0G0Dfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 23:35:42 -0400
+Message-ID: <4C4E5313.1080308@cn.fujitsu.com>
+Date: Tue, 27 Jul 2010 11:31:31 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: [PATCH 1/3] KVM: MMU: using kvm_set_pfn_accessed() instead of mark_page_accessed()
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Jul_2010_13_32_07_+1000_c_.kCZYTL0WeILUD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's a small cleanup that using using kvm_set_pfn_accessed() instead
+of mark_page_accessed()
 
-Hi all,
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Today's linux-next merge of the xen tree got a conflict in
-arch/x86/kernel/hpet.c between commit
-ff4878089e1eaeac79d57878ad4ea32910fb4037 ("x86: Do not try to disable
-hpet if it hasn't been initialized before") from Linus' tree and commit
-ef7612e63eafaa6101f5d3185ed8d9bf232ba627 ("x86: Do not try to disable
-hpet if it hasn't been initialized before") from the xen tree.
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index bd82635..e10f2bd 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -313,7 +313,7 @@ static void update_spte(u64 *sptep, u64 new_spte)
+ 	else {
+ 		old_spte = __xchg_spte(sptep, new_spte);
+ 		if (old_spte & shadow_accessed_mask)
+-			mark_page_accessed(pfn_to_page(spte_to_pfn(old_spte)));
++			kvm_set_pfn_accessed(spte_to_pfn(old_spte));
+ 	}
+ }
+ 
+-- 
+1.6.1.2
 
-Two versions of the same patch.  I used the version from Linus' tree
-since it was dated later and had been modified by Thomas.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__27_Jul_2010_13_32_07_+1000_c_.kCZYTL0WeILUD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMTlM3AAoJEDMEi1NhKgbs+aIH/jo1JsOSvcVWhkOeYo+eMELG
-e/HFMv0lgVuznfvHFzMXjyVTqVMhnGo8ShTqTMUUswpv1cYm+wrPkCRXJVjFNsZK
-DYyygANuWIInkEUUlvc9jw71VIY8eA5HkOK+w9g1L1FPk+WZPY9FofGCdS9X4BAY
-sHy02uWYUyMU4If7EtYICAosN8JfzgTuic88gh2whQQ0NLgsD8yHrQ+hN5CIu6dt
-oizg+XNis4EmopXjvk+HoknZ3c+dGntJIVYrR5vD9FboUQ/pMpKavcLhwvAJr2oe
-DFL30bRhYuF30ighP/4XR1gRIvGH5r9Opn1opoi7koLotwQh5vU0eYYcAdc0czo=
-=8/el
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Jul_2010_13_32_07_+1000_c_.kCZYTL0WeILUD--
