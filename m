@@ -1,103 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab0G0XJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 19:09:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49684 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab0G0XJn (ORCPT
+	id S1753686Ab0G0XK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 19:10:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49284 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752919Ab0G0XKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 19:09:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Go0vV0Xn2NR/fY+8yAsW4hbEbKjX55WZituQQQTWmzxbR9pKOahKOEy/y1a8rkHQ9K
-         czjMFg+SC0tkLOsdLC9migdfncstlLKuQevdy0boDe/3IO6KAs1DKos8jLATtmgluZNq
-         d10b2eUR6uTxPfbqhrzp6dXYFqenXaE6FsNo4=
-Date: Wed, 28 Jul 2010 01:06:36 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Emil Velikov <eeydev@nottingham.ac.uk>
-Subject: [PATCH] tracing: sanitize value returned from write(trace_marker,
- "...", len)
-Message-ID: <20100727230636.GA2826@joi.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Jul 2010 19:10:53 -0400
+Date: Tue, 27 Jul 2010 16:10:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: wzt.wzt@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Check NULL pointer Dereference in mm/filemap.c
+Message-Id: <20100727161049.eeac8c7c.akpm@linux-foundation.org>
+In-Reply-To: <20100726082542.GA2646@localhost.localdomain>
+References: <20100726082542.GA2646@localhost.localdomain>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When userspace code writes non-new-line-terminated string to trace_marker
-file, write handler appends new-line and returns number of bytes written
-to trace buffer, so
-write(fd, "abc", 3) will return 4
+On Mon, 26 Jul 2010 16:25:42 +0800
+wzt.wzt@gmail.com wrote:
 
-That's unexpected and unfortunately it confuses glibc's fprintf function.
+> mapping->a_ops->direct_IO() is not checked, if it's a NULL pointer, 
+> that will casue an oops. pagecache_write_begin/end is exported to
+> other functions, so they need to check null pointer before use them. 
+> 
 
-Example:
-int main() {
-  fprintf(stderr, "abc");
-  return 0;
-}
+The patch checks a lot more things than ->directIO!
 
-results in infinite loop:
-write(fd, "abc", 3) = 4
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-(...)
-
-...and kernel trace buffer full of empty markers.
-
-Fix it by sanitizing write return value.
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 02e04c8..6b39aa8 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3499,6 +3499,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 					size_t cnt, loff_t *fpos)
- {
- 	char *buf;
-+	size_t written;
- 
- 	if (tracing_disabled)
- 		return -EINVAL;
-@@ -3520,11 +3521,15 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 	} else
- 		buf[cnt] = '\0';
- 
--	cnt = mark_printk("%s", buf);
-+	written = mark_printk("%s", buf);
- 	kfree(buf);
--	*fpos += cnt;
-+	*fpos += written;
- 
--	return cnt;
-+	/* don't tell userspace we wrote more - it might confuse them */
-+	if (written > cnt)
-+		written = cnt;
-+
-+	return written;
- }
- 
- static int tracing_clock_show(struct seq_file *m, void *v)
--- 
-1.7.1.1
+It would be best to not add this overhead if possible.  Did you
+actually observe an oops?  If so, please fully describe it.
 
