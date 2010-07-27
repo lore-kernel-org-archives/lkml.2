@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab0G0WBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 18:01:24 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54180 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab0G0WBU (ORCPT
+	id S1752480Ab0G0WBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 18:01:36 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:40722 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab0G0WB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 18:01:20 -0400
+	Tue, 27 Jul 2010 18:01:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=OyU8jpv7WaUpavgb9yADgMDWktX8NCqCrq/zo3ixYB2CnD6uoThn/idgZT6jhvniwg
-         SWp9E1hsnxi4ZG0P/lEhFZXJALGsB/vQmwCO+43hzTs2UbUEwZ/qLOFxCfKo7GxuOrdy
-         SF6BTwQQPuuc5pZR/ykPhLCeS6536qNo2NMf0=
+        b=seT2O6j5tvypTW9MsdVhG1ZUM6htmKOF2uXc/PIzRhOrUhz5WOdR2FhrQCWYrxskR8
+         AvzkKflEVwvXR9AJoUK+6d4vK+VtUbisH2jErjWEC63Jgi/kXo7ezbtg37CGb4Yfq07r
+         eFO9QDl4icA5z8InleQpY3phZ3blaWiJhmPuo=
 From: bchociej@gmail.com
 To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, cmm@us.ibm.com, bcchocie@us.ibm.com,
         mrlupfer@us.ibm.com, crscott@us.ibm.com, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 1/5] Btrfs: Add experimental hot data hash list index
-Date: Tue, 27 Jul 2010 17:00:19 -0500
-Message-Id: <1280268023-18408-2-git-send-email-bchociej@gmail.com>
+Subject: [RFC PATCH 4/5] Btrfs: Add debugfs interface for hot data stats
+Date: Tue, 27 Jul 2010 17:00:22 -0500
+Message-Id: <1280268023-18408-5-git-send-email-bchociej@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
 References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
@@ -29,9 +29,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Chociej <bcchocie@us.ibm.com>
 
-Adds a hash table structure to efficiently lookup the data temperature
-of a file. Also adds a function to calculate that temperature based on
-some metrics kept in custom frequency data structs.
+Adds a ./btrfs_data/<device_name>/ directory in the debugfs directory
+for each volume. The directory contains two files. The first,
+`inode_data', contains the heat information for inodes that have been
+brought into the hot data map structures. The second, `range_data',
+contains similar information about subfile ranges.
 
 Signed-off-by: Ben Chociej <bcchocie@us.ibm.com>
 Signed-off-by: Matt Lupfer <mrlupfer@us.ibm.com>
@@ -39,224 +41,581 @@ Signed-off-by: Conor Scott <crscott@us.ibm.com>
 Reviewed-by: Mingming Cao <cmm@us.ibm.com>
 Reviewed-by: Steve French <sfrench@us.ibm.com>
 ---
- fs/btrfs/hotdata_hash.c |  111 +++++++++++++++++++++++++++++++++++++++++++++++
- fs/btrfs/hotdata_hash.h |   89 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 200 insertions(+), 0 deletions(-)
- create mode 100644 fs/btrfs/hotdata_hash.c
- create mode 100644 fs/btrfs/hotdata_hash.h
+ fs/btrfs/debugfs.c |  500 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/btrfs/debugfs.h |   57 ++++++
+ 2 files changed, 557 insertions(+), 0 deletions(-)
+ create mode 100644 fs/btrfs/debugfs.c
+ create mode 100644 fs/btrfs/debugfs.h
 
-diff --git a/fs/btrfs/hotdata_hash.c b/fs/btrfs/hotdata_hash.c
+diff --git a/fs/btrfs/debugfs.c b/fs/btrfs/debugfs.c
 new file mode 100644
-index 0000000..a0de853
+index 0000000..a0e7bb7
 --- /dev/null
-+++ b/fs/btrfs/hotdata_hash.c
-@@ -0,0 +1,111 @@
-+#include <linux/list.h>
++++ b/fs/btrfs/debugfs.c
+@@ -0,0 +1,500 @@
++#include <linux/debugfs.h>
++#include <linux/fs.h>
 +#include <linux/module.h>
-+#include <linux/spinlock.h>
-+#include <linux/hash.h>
++#include <linux/types.h>
++#include <linux/vmalloc.h>
++#include <linux/limits.h>
++#include "ctree.h"
 +#include "hotdata_map.h"
 +#include "hotdata_hash.h"
-+#include "async-thread.h"
-+#include "ctree.h"
++#include "debugfs.h"
 +
-+/* set thread to update temperatures every 5 minutes */
-+#define HEAT_UPDATE_DELAY (HZ * 60 * 5)
++/*
++ * debugfs.c contains the code to interface with the btrfs debugfs.
++ * The debugfs outputs range- and file-level access frequency
++ * statistics for each mounted volume.
++ */
 +
-+struct heat_hashlist_node *alloc_heat_hashlist_node(gfp_t mask)
++static int copy_msg_to_log(struct debugfs_vol_data *data, char *msg, int len)
 +{
-+	struct heat_hashlist_node *node;
++	struct lstring *debugfs_log = data->debugfs_log;
++	uint new_log_alloc_size;
++	char *new_log;
 +
-+	node = kmalloc(sizeof(struct heat_hashlist_node), mask);
-+	if (!node || IS_ERR(node))
-+		return node;
-+	INIT_HLIST_NODE(&node->hashnode);
-+	node->freq_data = NULL;
-+	node->hlist = NULL;
++	if (len >= data->log_alloc_size - debugfs_log->len) {
++		/* Not enough room in the log buffer for the new message. */
++		/* Allocate a bigger buffer. */
++		new_log_alloc_size = data->log_alloc_size + LOG_PAGE_SIZE;
++		new_log = vmalloc(new_log_alloc_size);
 +
-+	return node;
-+}
-+
-+void free_heat_hashlists(struct btrfs_root *root)
-+{
-+	int i;
-+
-+	/* Free node/range heat hash lists */
-+	for (i = 0; i < HEAT_HASH_SIZE; i++) {
-+		struct hlist_node *pos = NULL, *pos2 = NULL;
-+		struct heat_hashlist_node *heatnode = NULL;
-+
-+		hlist_for_each_safe(pos, pos2,
-+			&root->heat_inode_hl[i].hashhead) {
-+			heatnode = hlist_entry(pos, struct heat_hashlist_node,
-+				hashnode);
-+			hlist_del(pos);
-+			kfree(heatnode);
-+		}
-+
-+		hlist_for_each_safe(pos, pos2,
-+			&root->heat_range_hl[i].hashhead) {
-+			heatnode = hlist_entry(pos, struct heat_hashlist_node,
-+				hashnode);
-+			hlist_del(pos);
-+			kfree(heatnode);
++		if (new_log) {
++			memcpy(new_log, debugfs_log->str,
++				debugfs_log->len);
++			memset(new_log + debugfs_log->len, 0,
++				new_log_alloc_size - debugfs_log->len);
++			vfree(debugfs_log->str);
++			debugfs_log->str = new_log;
++			data->log_alloc_size = new_log_alloc_size;
++		} else {
++			WARN_ON(1);
++			if (data->log_alloc_size - debugfs_log->len) {
++				#define err_msg "No more memory!\n"
++				strlcpy(debugfs_log->str +
++					debugfs_log->len,
++					err_msg, data->log_alloc_size -
++					debugfs_log->len);
++				debugfs_log->len +=
++					min((typeof(debugfs_log->len))
++					sizeof(err_msg),
++					((typeof(debugfs_log->len))
++					data->log_alloc_size -
++					debugfs_log->len));
++			}
++			return 0;
 +		}
 +	}
++
++	memcpy(debugfs_log->str + debugfs_log->len,
++		data->log_work_buff, len);
++	debugfs_log->len += (unsigned long) len;
++
++	return len;
 +}
 +
-+/*
-+ * Function that converts btrfs_freq_data structs to integer temperature
-+ * values, determined by some constants in .h.
-+ *
-+ * This is not very calibrated, though we've gotten it in the ballpark.
-+ */
-+int btrfs_get_temp(struct btrfs_freq_data *fdata)
++/* Returns the number of bytes written to the log. */
++static int debugfs_log(struct debugfs_vol_data *data, const char *fmt, ...)
 +{
-+	u32 result = 0;
++	struct lstring *debugfs_log = data->debugfs_log;
++	va_list args;
++	int len;
 +
-+	struct timespec ckt = current_kernel_time();
-+	u64 cur_time = timespec_to_ns(&ckt);
++	if (debugfs_log->str == NULL)
++		return -1;
 +
-+	u32 nrr_heat = fdata->nr_reads << NRR_MULTIPLIER_POWER;
-+	u32 nrw_heat = fdata->nr_writes << NRW_MULTIPLIER_POWER;
++	spin_lock(&data->log_lock);
 +
-+	u64 ltr_heat = (cur_time - timespec_to_ns(&fdata->last_read_time))
-+			>> LTR_DIVIDER_POWER;
-+	u64 ltw_heat = (cur_time - timespec_to_ns(&fdata->last_write_time))
-+			>> LTW_DIVIDER_POWER;
++	va_start(args, fmt);
++	len = vsnprintf(data->log_work_buff, sizeof(data->log_work_buff), fmt,
++		args);
++	va_end(args);
 +
-+	u64 avr_heat = (((u64) -1) - fdata->avg_delta_reads)
-+			>> AVR_DIVIDER_POWER;
-+	u64 avw_heat = (((u64) -1) - fdata->avg_delta_writes)
-+			>> AVR_DIVIDER_POWER;
++	if (len >= sizeof(data->log_work_buff)) {
++		#define truncate_msg "The next message has been truncated.\n"
++		copy_msg_to_log(data, truncate_msg, sizeof(truncate_msg));
++	}
 +
-+	if (ltr_heat >= ((u64) 1 << 32))
-+		ltr_heat = 0;
-+	else
-+		ltr_heat = ((u64) 1 << 32) - ltr_heat;
-+	/* ltr_heat is now guaranteed to be u32 safe */
++	len = copy_msg_to_log(data, data->log_work_buff, len);
++	spin_unlock(&data->log_lock);
 +
-+	if (ltw_heat >= ((u64) 1 << 32))
-+		ltw_heat = 0;
-+	else
-+		ltw_heat = ((u64) 1 << 32) - ltw_heat;
-+	/* ltw_heat is now guaranteed to be u32 safe */
-+
-+	if (avr_heat >= ((u64) 1 << 32))
-+		avr_heat = (u32) -1;
-+	/* avr_heat is now guaranteed to be u32 safe */
-+
-+	if (avw_heat >= ((u64) 1 << 32))
-+		avr_heat = (u32) -1;
-+	/* avw_heat is now guaranteed to be u32 safe */
-+
-+	nrr_heat = nrr_heat >> (3 - NRR_COEFF_POWER);
-+	nrw_heat = nrw_heat >> (3 - NRW_COEFF_POWER);
-+	ltr_heat = ltr_heat >> (3 - LTR_COEFF_POWER);
-+	ltw_heat = ltw_heat >> (3 - LTW_COEFF_POWER);
-+	avr_heat = avr_heat >> (3 - AVR_COEFF_POWER);
-+	avw_heat = avw_heat >> (3 - AVW_COEFF_POWER);
-+
-+	result = nrr_heat + nrw_heat + (u32) ltr_heat +
-+		 (u32) ltw_heat + (u32) avr_heat + (u32) avw_heat;
-+
-+	return result >> (32 - HEAT_HASH_BITS);
++	return len;
 +}
-diff --git a/fs/btrfs/hotdata_hash.h b/fs/btrfs/hotdata_hash.h
-new file mode 100644
-index 0000000..46bf61e
---- /dev/null
-+++ b/fs/btrfs/hotdata_hash.h
-@@ -0,0 +1,89 @@
-+#ifndef __HOTDATAHASH__
-+#define __HOTDATAHASH__
 +
-+#include <linux/list.h>
-+#include <linux/hash.h>
++/* initialize a log corresponding to a btrfs volume */
++static int debugfs_log_init(struct debugfs_vol_data *data)
++{
++	int err = 0;
++	struct lstring *debugfs_log = data->debugfs_log;
 +
-+#define HEAT_HASH_BITS 8
-+#define HEAT_HASH_SIZE (1 << HEAT_HASH_BITS)
-+#define HEAT_HASH_MASK (HEAT_HASH_SIZE - 1)
-+#define HEAT_MIN_VALUE 0
-+#define HEAT_MAX_VALUE (HEAT_HASH_SIZE - 1)
-+#define HEAT_HOT_MIN (HEAT_HASH_SIZE - 50)
++	spin_lock(&data->log_lock);
++	debugfs_log->str = vmalloc(INIT_LOG_ALLOC_SIZE);
 +
-+/*
-+ * The following comments explain what exactly comprises a unit of heat.
-+ *
-+ * Each of six values of heat are calculated and combined in order to form an
-+ * overall temperature for the data:
-+ *
-+ * NRR - number of reads since mount
-+ * NRW - number of writes since mount
-+ * LTR - time elapsed since last read (ns)
-+ * LTW - time elapsed since last write (ns)
-+ * AVR - average delta between recent reads (ns)
-+ * AVW - average delta between recent writes (ns)
-+ *
-+ * These values are divided (right-shifted) according to the *_DIVIDER_POWER
-+ * values defined below to bring the numbers into a reasonable range. You can
-+ * modify these values to fit your needs. However, each heat unit is a u32 and
-+ * thus maxes out at 2^32 - 1. Therefore, you must choose your dividers quite
-+ * carefully or else they could max out or be stuck at zero quite easily.
-+ *
-+ * (E.g., if you chose AVR_DIVIDER_POWER = 0, nothing less than 4s of atime
-+ * delta would bring the temperature above zero, ever.)
-+ *
-+ * Finally, each value is added to the overall temperature between 0 and 8
-+ * times, depending on its *_COEFF_POWER value. Note that the coefficients are
-+ * also actually implemented with shifts, so take care to treat these values
-+ * as powers of 2. (I.e., 0 means we'll add it to the temp once; 1 = 2x, etc.)
-+ */
++	if (debugfs_log->str) {
++		memset(debugfs_log->str, 0, INIT_LOG_ALLOC_SIZE);
++		data->log_alloc_size = INIT_LOG_ALLOC_SIZE;
++	} else {
++		err = -ENOMEM;
++	}
 +
-+#define NRR_MULTIPLIER_POWER 23
-+#define NRR_COEFF_POWER 0
-+#define NRW_MULTIPLIER_POWER 23
-+#define NRW_COEFF_POWER 0
-+#define LTR_DIVIDER_POWER 30
-+#define LTR_COEFF_POWER 1
-+#define LTW_DIVIDER_POWER 30
-+#define LTW_COEFF_POWER 1
-+#define AVR_DIVIDER_POWER 40
-+#define AVR_COEFF_POWER 0
-+#define AVW_DIVIDER_POWER 40
-+#define AVW_COEFF_POWER 0
++	spin_unlock(&data->log_lock);
++	return err;
++}
 +
-+/* TODO a kmem cache for entry structs */
++/* free a log corresponding to a btrfs volume */
++static void debugfs_log_exit(struct debugfs_vol_data *data)
++{
++	struct lstring *debugfs_log = data->debugfs_log;
++	spin_lock(&data->log_lock);
++	vfree(debugfs_log->str);
++	debugfs_log->str = NULL;
++	debugfs_log->len = 0;
++	spin_unlock(&data->log_lock);
++}
 +
-+struct btrfs_root;
-+
-+/* Hash list heads for heat hash table */
-+struct heat_hashlist_entry {
-+	struct hlist_head hashhead;
-+	rwlock_t rwlock;
-+	u32 temperature;
++/* fops to override for printing range data */
++static const struct file_operations btrfs_debugfs_range_fops = {
++	.read	= __btrfs_debugfs_range_read,
++	.open	= __btrfs_debugfs_open,
 +};
 +
-+/* Nodes stored in each hash list of hash table */
-+struct heat_hashlist_node {
-+	struct hlist_node hashnode;
++/* fops to override for printing inode data */
++static const struct file_operations btrfs_debugfs_inode_fops = {
++	.read	= __btrfs_debugfs_inode_read,
++	.open	= __btrfs_debugfs_open,
++};
++
++/* initialize debugfs for btrfs at module init */
++int btrfs_init_debugfs(void)
++{
++	debugfs_root_dentry = debugfs_create_dir(DEBUGFS_ROOT_NAME, NULL);
++	/*init list of debugfs data list */
++	INIT_LIST_HEAD(&debugfs_vol_data_list);
++	/*init lock to list of debugfs data list */
++	spin_lock_init(&data_list_lock);
++	if (!debugfs_root_dentry)
++		goto debugfs_error;
++	return 0;
++
++debugfs_error:
++	return -EIO;
++}
++
++/*
++ * on each volume mount, initialize the debugfs dentries and associated
++ * structures (debugfs_vol_data and debugfs_log)
++ */
++int btrfs_init_debugfs_volume(const char *uuid, struct super_block *sb)
++{
++	struct dentry *debugfs_volume_entry = NULL;
++	struct dentry *debugfs_range_entry = NULL;
++	struct dentry *debugfs_inode_entry = NULL;
++	struct debugfs_vol_data *range_data = NULL;
++	struct debugfs_vol_data *inode_data = NULL;
++	size_t dev_name_length = strlen(uuid);
++	char dev[NAME_MAX];
++
++	if (!debugfs_root_dentry)
++		goto debugfs_error;
++
++	/* create debugfs folder for this volume by mounted dev name */
++	memcpy(dev, uuid + DEV_NAME_CHOP, dev_name_length -
++		DEV_NAME_CHOP + 1);
++	debugfs_volume_entry = debugfs_create_dir(dev, debugfs_root_dentry);
++
++	if (!debugfs_volume_entry)
++		goto debugfs_error;
++
++	/* malloc and initialize debugfs_vol_data for range_data */
++	range_data = kmalloc(sizeof(struct debugfs_vol_data),
++		GFP_KERNEL | GFP_NOFS);
++	memset(range_data, 0, sizeof(struct debugfs_vol_data));
++	range_data->debugfs_log = NULL;
++	range_data->sb = sb;
++	spin_lock_init(&range_data->log_lock);
++	range_data->log_alloc_size = 0;
++
++	/* malloc and initialize debugfs_vol_data for range_data */
++	inode_data = kmalloc(sizeof(struct debugfs_vol_data),
++		GFP_KERNEL | GFP_NOFS);
++	memset(inode_data, 0, sizeof(struct debugfs_vol_data));
++	inode_data->debugfs_log = NULL;
++	inode_data->sb = sb;
++	spin_lock_init(&inode_data->log_lock);
++	inode_data->log_alloc_size = 0;
++
++	/* add debugfs_vol_data for inode data and range data for
++	 * volume to list */
++	range_data->de = debugfs_volume_entry;
++	inode_data->de = debugfs_volume_entry;
++	spin_lock(&data_list_lock);
++	list_add(&range_data->node, &debugfs_vol_data_list);
++	list_add(&inode_data->node, &debugfs_vol_data_list);
++	spin_unlock(&data_list_lock);
++
++	/* create debugfs range_data file */
++	debugfs_range_entry = debugfs_create_file("range_data",
++			   S_IFREG | S_IRUSR | S_IWUSR |
++			   S_IRUGO,
++			   debugfs_volume_entry,
++			   (void *) range_data,
++			   &btrfs_debugfs_range_fops);
++	if (!debugfs_range_entry)
++		goto debugfs_error;
++
++	/* create debugfs inode_data file */
++	debugfs_inode_entry = debugfs_create_file("inode_data",
++			   S_IFREG | S_IRUSR | S_IWUSR |
++			   S_IRUGO,
++			   debugfs_volume_entry,
++			   (void *) inode_data,
++			   &btrfs_debugfs_inode_fops);
++
++	if (!debugfs_inode_entry)
++		goto debugfs_error;
++
++	return 0;
++
++debugfs_error:
++
++	kfree(range_data);
++	kfree(inode_data);
++
++	return -EIO;
++}
++
++/* find volume mounted (match by superblock) and remove
++ * debugfs dentry
++ */
++void btrfs_exit_debugfs_volume(struct super_block *sb)
++{
++	struct list_head *head;
++	struct list_head *pos;
++	struct debugfs_vol_data *data;
++	spin_lock(&data_list_lock);
++	head = &debugfs_vol_data_list;
++	/* must clean up memory assicatied with superblock */
++	list_for_each(pos, head)
++	{
++		data = list_entry(pos, struct debugfs_vol_data, node);
++		if (data->sb == sb) {
++			list_del(pos);
++			debugfs_remove_recursive(data->de);
++			kfree(data);
++			data = NULL;
++			break;
++		}
++	}
++	spin_unlock(&data_list_lock);
++}
++
++/* clean up memory and remove dentries for debugsfs */
++void btrfs_exit_debugfs(void)
++{
++	/* first iterate through debugfs_vol_data_list and free memory */
++	struct list_head *head;
++	struct list_head *pos;
++	struct list_head *cur;
++	struct debugfs_vol_data *data;
++
++	spin_lock(&data_list_lock);
++	head = &debugfs_vol_data_list;
++	list_for_each_safe(pos, cur, head) {
++		data = list_entry(pos, struct debugfs_vol_data, node);
++		if (data && pos != head)
++			kfree(data);
++	}
++	spin_unlock(&data_list_lock);
++
++	/* remove all debugfs entries recursively from the root */
++	debugfs_remove_recursive(debugfs_root_dentry);
++}
++
++/* debugfs open file override from fops table */
++int __btrfs_debugfs_open(struct inode *inode, struct file *file)
++{
++	if (inode->i_private)
++		file->private_data = inode->i_private;
++
++	return 0;
++}
++
++/* debugfs read file override from fops table */
++ssize_t __btrfs_debugfs_range_read(struct file *file, char __user *user,
++			     size_t count, loff_t *ppos)
++{
++	int err = 0;
++	struct super_block *sb;
++	struct btrfs_root *root;
++	struct btrfs_root *fs_root;
++	struct hot_inode_item *current_hot_inode;
++	struct debugfs_vol_data *data;
++	struct lstring *debugfs_log;
++
++	data = (struct debugfs_vol_data *) file->private_data;
++	sb = data->sb;
++	root = btrfs_sb(sb);
++	fs_root = (struct btrfs_root *) root->fs_info->fs_root;
++
++	if (!data->debugfs_log) {
++		/* initialize debugfs log corresponding to this volume*/
++		debugfs_log = kmalloc(sizeof(struct lstring),
++			GFP_KERNEL | GFP_NOFS);
++		debugfs_log->str = NULL,
++		debugfs_log->len = 0;
++		data->debugfs_log = debugfs_log;
++		debugfs_log_init(data);
++	}
++
++	if ((unsigned long) *ppos > 0) {
++		/* caller is continuing a previous read, don't walk tree */
++		if ((unsigned long) *ppos >= data->debugfs_log->len)
++			goto clean_up;
++
++		goto print_to_user;
++	}
++
++	/* walk the inode tree */
++
++	current_hot_inode = find_next_hot_inode(fs_root, 0);
++
++	while (current_hot_inode) {
++		/* walk ranges, print data to debugfs log */
++		__walk_range_tree(current_hot_inode, data);
++
++		free_hot_inode_item(current_hot_inode);
++		current_hot_inode = find_next_hot_inode(fs_root,
++				(u64) current_hot_inode->i_ino + 1);
++	}
++
++print_to_user:
++
++	if (data->debugfs_log->len) {
++		err = simple_read_from_buffer(user, count, ppos,
++				      data->debugfs_log->str,
++				      data->debugfs_log->len);
++	}
++
++	return err;
++
++clean_up:
++
++	/* reader has finished the file */
++	/* clean up */
++
++	debugfs_log_exit(data);
++	kfree(data->debugfs_log);
++	data->debugfs_log = NULL;
++
++	return 0;
++}
++
++/* debugfs read file override from fops table */
++ssize_t __btrfs_debugfs_inode_read(struct file *file, char __user *user,
++			     size_t count, loff_t *ppos)
++{
++	int err = 0;
++	struct super_block *sb;
++	struct btrfs_root *root;
++	struct btrfs_root *fs_root;
++	struct hot_inode_item *current_hot_inode;
++	struct debugfs_vol_data *data;
++	struct lstring *debugfs_log;
++
++	data = (struct debugfs_vol_data *) file->private_data;
++	sb = data->sb;
++	root = btrfs_sb(sb);
++	fs_root = (struct btrfs_root *) root->fs_info->fs_root;
++
++	if (!data->debugfs_log) {
++		/* initialize debugfs log corresponding to this volume */
++		debugfs_log = kmalloc(sizeof(struct lstring),
++			GFP_KERNEL | GFP_NOFS);
++		debugfs_log->str = NULL,
++		debugfs_log->len = 0;
++		data->debugfs_log = debugfs_log;
++		debugfs_log_init(data);
++	}
++
++	if ((unsigned long) *ppos > 0) {
++		/* caller is continuing a previous read, don't walk tree */
++		if ((unsigned long) *ppos >= data->debugfs_log->len)
++			goto clean_up;
++
++		goto print_to_user;
++	}
++
++	/* walk the inode tree */
++
++	current_hot_inode = find_next_hot_inode(fs_root, 0);
++
++	while (current_hot_inode) {
++		/* walk ranges, print data to debugfs log */
++		__print_inode_freq_data(current_hot_inode, data);
++
++		free_hot_inode_item(current_hot_inode);
++		current_hot_inode = find_next_hot_inode(fs_root,
++				(u64) current_hot_inode->i_ino + 1);
++	}
++
++print_to_user:
++
++	if (data->debugfs_log->len) {
++		err = simple_read_from_buffer(user, count, ppos,
++				      data->debugfs_log->str,
++				      data->debugfs_log->len);
++	}
++
++	return err;
++
++clean_up:
++
++	/* reader has finished the file */
++	/* clean up */
++	debugfs_log_exit(data);
++	kfree(data->debugfs_log);
++	data->debugfs_log = NULL;
++
++	return 0;
++}
++
++/*
++ * Take the inode, find ranges associated with inode
++ * and print each range data struct
++ */
++void __walk_range_tree(struct hot_inode_item *hot_inode,
++		       struct debugfs_vol_data *data)
++{
++	struct hot_range_tree *inode_range_tree;
++	struct rb_node *node;
++	struct hot_range_item *current_range;
++
++	inode_range_tree = &hot_inode->hot_range_tree;
++	read_lock(&inode_range_tree->lock);
++	node = rb_first(&inode_range_tree->map);
++
++	/* Walk the hot_range_tree for inode */
++	while (node) {
++		current_range = rb_entry(node, struct hot_range_item, rb_node);
++		__print_range_freq_data(hot_inode, current_range, data);
++		node = rb_next(node);
++	}
++	read_unlock(&inode_range_tree->lock);
++}
++
++/* Print frequency data for each range to log */
++void __print_range_freq_data(struct hot_inode_item *hot_inode,
++			     struct hot_range_item *hot_range,
++			     struct debugfs_vol_data *data)
++{
 +	struct btrfs_freq_data *freq_data;
-+	struct heat_hashlist_entry *hlist;
++	int temp;
++	freq_data = &hot_range->freq_data;
++	read_lock(&hot_range->heat_node->hlist->rwlock);
++	temp = hot_range->heat_node->hlist->temperature;
++	read_unlock(&hot_range->heat_node->hlist->rwlock);
++
++	/* Always lock hot_inode_item first */
++	spin_lock(&hot_inode->lock);
++	spin_lock(&hot_range->lock);
++	debugfs_log(data, "inode #%lu, range start "
++			"%llu (range len %llu) reads %u, writes %u, temp %u\n",
++			hot_inode->i_ino,
++			hot_range->start,
++			hot_range->len,
++			freq_data->nr_reads,
++			freq_data->nr_writes,
++			temp);
++	spin_unlock(&hot_range->lock);
++	spin_unlock(&hot_inode->lock);
++}
++
++/* Print frequency data for each freq data to log */
++void __print_inode_freq_data(struct hot_inode_item *hot_inode,
++			     struct debugfs_vol_data *data)
++{
++	struct btrfs_freq_data *freq_data;
++	int temp;
++	freq_data = &hot_inode->freq_data;
++
++	read_lock(&hot_inode->heat_node->hlist->rwlock);
++	temp = hot_inode->heat_node->hlist->temperature;
++	read_unlock(&hot_inode->heat_node->hlist->rwlock);
++
++	spin_lock(&hot_inode->lock);
++	debugfs_log(data, "inode #%lu, reads %u, writes %u, temp %u\n",
++			hot_inode->i_ino,
++			freq_data->nr_reads,
++			freq_data->nr_writes,
++			temp);
++	spin_unlock(&hot_inode->lock);
++}
++
+diff --git a/fs/btrfs/debugfs.h b/fs/btrfs/debugfs.h
+new file mode 100644
+index 0000000..bdd4938
+--- /dev/null
++++ b/fs/btrfs/debugfs.h
+@@ -0,0 +1,57 @@
++#ifndef __BTRFS_DEBUGFS__
++#define __BTRFS_DEBUGFS__
++
++/* size of log to vmalloc */
++#define INIT_LOG_ALLOC_SIZE (PAGE_SIZE * 10)
++#define LOG_PAGE_SIZE (PAGE_SIZE * 10)
++
++/* number of chars of device name of chop off for making debugfs folder
++ * e.g. /dev/sda -> sda */
++#define DEV_NAME_CHOP 5
++
++/* list to keep track of each mounted volumes debugfs_vol_data */
++static struct list_head debugfs_vol_data_list;
++/* lock for debugfs_vol_data_list */
++static spinlock_t data_list_lock;
++
++/*
++ * Name for BTRFS data in debugfs directory
++ * e.g. /sys/kernel/debug/btrfs_data
++ */
++#define DEBUGFS_ROOT_NAME "btrfs_data"
++/* pointer to top level debugfs dentry */
++static struct dentry *debugfs_root_dentry;
++
++/* log to output to userspace in debugfs files */
++struct lstring {
++	char		*str;
++	unsigned long	len;
 +};
 +
-+struct heat_hashlist_node *alloc_heat_hashlist_node(gfp_t mask);
-+void free_heat_hashlists(struct btrfs_root *root);
-+
 +/*
-+ * Returns a value from 0 to HEAT_MAX_VALUE indicating the temperature of the
-+ * file (and consequently its bucket number in hashlist)
++ * debugfs_vol_data is a struct of items that is passed to the debugfs
 + */
-+int btrfs_get_temp(struct btrfs_freq_data *fdata);
++struct debugfs_vol_data {
++	struct list_head node; /* protected by data_list_lock */
++	struct lstring *debugfs_log;
++	struct super_block *sb;
++	struct dentry *de;
++	spinlock_t log_lock; /* protects debugfs_log */
++	char log_work_buff[1024];
++	uint log_alloc_size;
++};
 +
-+/*
-+ * recalculates temperatures for inode or range
-+ * and moves around in heat hash table based on temp
-+ */
-+void btrfs_update_heat_index(struct btrfs_freq_data *fdata,
-+			       struct btrfs_root *root);
++ssize_t __btrfs_debugfs_range_read(struct file *file, char __user *user,
++	size_t size, loff_t *len);
++ssize_t __btrfs_debugfs_inode_read(struct file *file, char __user *user,
++	size_t size, loff_t *len);
++int __btrfs_debugfs_open(struct inode *inode, struct file *file);
++void __walk_range_tree(struct hot_inode_item *hot_inode,
++			struct debugfs_vol_data *data);
++void __print_range_freq_data(struct hot_inode_item *hot_inode,
++		       struct hot_range_item *hot_range,
++		       struct debugfs_vol_data *data);
++void __print_inode_freq_data(struct hot_inode_item *hot_inode,
++		       struct debugfs_vol_data *data);
 +
-+#endif /* __HOTDATAHASH__ */
++#endif
 -- 
 1.7.1
 
