@@ -1,301 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab0G0LOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 07:14:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:46756 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756294Ab0G0LOM (ORCPT
+	id S1756423Ab0G0LOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 07:14:42 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45146 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756175Ab0G0LOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 07:14:12 -0400
-Date: Tue, 27 Jul 2010 07:10:29 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ebiederm@xmission.com, vgoyal@redhat.com
-Subject: Re: [PATCH] Enable kdump with EFI boot
-Message-ID: <20100727111029.GA6303@hmsreliant.think-freely.org>
-References: <C0CB2D0F31868Bindou.takao@jp.fujitsu.com>
+	Tue, 27 Jul 2010 07:14:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: dave b <db.pub.mail@gmail.com>
+Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
+Cc: kosaki.motohiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <AANLkTinT_W4Zfg8xcpKXMpqTAomdVBdHve7VqamdSr4o@mail.gmail.com>
+References: <AANLkTikjJ0giM+MpzNu3e0NQN=JLMviPT8UPHdZqGGpz@mail.gmail.com> <AANLkTinT_W4Zfg8xcpKXMpqTAomdVBdHve7VqamdSr4o@mail.gmail.com>
+Message-Id: <20100727200804.2F40.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C0CB2D0F31868Bindou.takao@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 27 Jul 2010 20:14:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 06:09:18PM -0400, Takao Indoh wrote:
-> Hi all,
-> 
-> The attached patch enables kdump on EFI-boot machine.
-> 
-> [Background]
-> Current kdump does not work on EFI-boot system because 2nd kernel cannot
-> find ACPI Table(RSDP). The URL below explains this problem.
-> http://lists.infradead.org/pipermail/kexec/2010-March/003889.html
-> 
-> This problem can be solved by fixing kexec-tools so that it can set up
-> struct efi_info correctly in the boot_params for 2nd kernel. However
-> there is another problem.
-> 
-> When the 1st kernel boots, EFI system table(efi_system_table_t) is
-> modified by SetVirtualAddressMap, which is one of EFI runtime service.
-> This runtime changes physical address in EFI system table to virtual
-> address.
-> 
-> When the 2nd kernel boots, it also receives the same EFI system table,
-> and the address included in it is already virtual address(1st kernel
-> rewrote it).  But 2nd kernel does not know that, 2nd kernel thinks it is
-> a physical address. This causes problems.
-> 
-> For example, the following is a part of efi_init().
-> 
-> c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
-> if (c16) {
->     for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
->         vendor[i] = *c16++;
->     vendor[i] = '\0';
-> } else
->     printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
-> 
-> 2nd kernel thinks efi.systab->fw_vendor has a physical address and tries
-> to change it to virtual address, but it is already virtual address, so
-> this code fails and 2nd kernel hangs up.
-> 
-> [How to fix]
-> My solution is as follows.
-> 1) Export physical address of each EFI system table entry via debugfs
-> /sys/kernel/debug/efi/systab/fw_vendor
-> /sys/kernel/debug/efi/systab/tables
-> /sys/kernel/debug/efi/systab/runtime
-> 
-> Kexec-tools can get physical address of each entry in EFI system table
-> via these entries. Kexec tools adds these physical addresses to boot
-> parameters
-> ex.)
-> efi_systab_fw_vendor=0x7a6a1398 efi_systab_tables=0x7a6a2e18 \
-> efi_systab_runtime=0x7a6a3e18
-> 
-> 2) Kernel parses these parameters and use them in efi_init()
+> On 27 July 2010 18:09, dave b <db.pub.mail@gmail.com> wrote:
+> > On 27 July 2010 16:09, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> >>> > Do you mean the issue will be gone if disabling intel graphics?
+> >>> It may be a general issue or it could just be specific :)
+> >
+> > I will try with the latest ubuntu and report how that goes (that will
+> > be using fairly new xorg etc.) it is likely to be hidden issue just
+> > with the intel graphics driver. However, my concern is that it isn't -
+> > and it is about how shared graphics memory is handled :)
 > 
 > 
-> So, what this patch is doing is:
-> - Add debugfs interface for each EFI system table entry
-> - eif_init() gets physical address of each EFI system table entry from
->   boot paramteter instead of the table
-> - Don't call SetVirtualAddressMap in 2nd kernel because panic occurred
->   when SetVirtualAddressMap is called in 2nd kernel. This is called in
->   1st kernel, and doesn't need to be called again.
+> Ok my desktop still stalled and no oom killer was invoked when I added
+> swap to a live-cd of 10.04 amd64.
 > 
-> Any comments would be appreciated!
-> 
-> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-CC-ing the maintainers for x86. nd kexec
+> *Without* *swap* *on* - the oom killer was invoked - here is a copy of it.
 
-Acked-by: Neil Horman <nhorman@tuxdriver.com> 
+This stack seems similar following bug. can you please try to disable intel graphics
+driver?
 
-> ---
->  arch/x86/kernel/efi.c |  132 +++++++++++++++++++++++++++++++++++++---
->  1 file changed, 123 insertions(+), 9 deletions(-)
-> 
-> diff -Nurp linux-2.6.35-rc6.org/arch/x86/kernel/efi.c linux-2.6.35-rc6/arch/x86/kernel/efi.c
-> --- linux-2.6.35-rc6.org/arch/x86/kernel/efi.c	2010-07-26 12:02:31.216675044 -0400
-> +++ linux-2.6.35-rc6/arch/x86/kernel/efi.c	2010-07-26 12:17:24.486677191 -0400
-> @@ -36,6 +36,8 @@
->  #include <linux/io.h>
->  #include <linux/reboot.h>
->  #include <linux/bcd.h>
-> +#include <linux/crash_dump.h>
-> +#include <linux/debugfs.h>
->  
->  #include <asm/setup.h>
->  #include <asm/efi.h>
-> @@ -314,6 +316,97 @@ static void __init print_efi_memmap(void
->  }
->  #endif  /*  EFI_DEBUG  */
->  
-> +unsigned long systab_fw_vendor_paddr;
-> +unsigned long systab_runtime_paddr;
-> +unsigned long systab_tables_paddr;
-> +
-> +static struct debugfs_blob_wrapper fw_vendor_blob = {
-> +	.data		= &systab_fw_vendor_paddr,
-> +	.size		= sizeof(systab_fw_vendor_paddr),
-> +};
-> +
-> +static struct debugfs_blob_wrapper runtime_blob = {
-> +	.data		= &systab_runtime_paddr,
-> +	.size		= sizeof(systab_runtime_paddr),
-> +};
-> +
-> +static struct debugfs_blob_wrapper tables_blob = {
-> +	.data		= &systab_tables_paddr,
-> +	.size		= sizeof(systab_tables_paddr),
-> +};
-> +
-> +static int __init setup_systab_fw_vendor_paddr(char *arg)
-> +{
-> +	systab_fw_vendor_paddr = simple_strtoul(arg, NULL, 16);
-> +	return 0;
-> +}
-> +early_param("efi_systab_fw_vendor", setup_systab_fw_vendor_paddr);
-> +
-> +static int __init setup_systab_runtime_paddr(char *arg)
-> +{
-> +	systab_runtime_paddr = simple_strtoul(arg, NULL, 16);
-> +	return 0;
-> +}
-> +early_param("efi_systab_runtime", setup_systab_runtime_paddr);
-> +
-> +static int __init setup_systab_tables_paddr(char *arg)
-> +{
-> +	systab_tables_paddr = simple_strtoul(arg, NULL, 16);
-> +	return 0;
-> +}
-> +early_param("efi_systab_tables", setup_systab_tables_paddr);
-> +
-> +static int create_debug_files_systab (struct dentry *root)
-> +{
-> +	struct dentry *systab_dir, *fw_vendor, *runtime, *tables;
-> +
-> +	systab_dir = debugfs_create_dir("systab", root);
-> +	if (!systab_dir)
-> +		return -1;
-> +
-> +	fw_vendor = debugfs_create_blob("fw_vendor", S_IRUGO, systab_dir,
-> +				            &fw_vendor_blob);
-> +	if (!fw_vendor)
-> +		goto err_fw;
-> +
-> +	runtime = debugfs_create_blob("runtime", S_IRUGO, systab_dir,
-> +				            &runtime_blob);
-> +	if (!runtime)
-> +		goto err_runtime;
-> +
-> +	tables = debugfs_create_blob("tables", S_IRUGO, systab_dir,
-> +				            &tables_blob);
-> +	if (tables)
-> +		return 0;
-> +
-> +	debugfs_remove(runtime);
-> +err_runtime:
-> +	debugfs_remove(fw_vendor);
-> +err_fw:
-> +	debugfs_remove(systab_dir);
-> +	return -1;
-> +}
-> +
-> +static int crate_debug_files (void)
-> +{
-> +	int error;
-> +	struct dentry *efi_dir;
-> +
-> +	efi_dir = debugfs_create_dir("efi", NULL);
-> +	if (!efi_dir)
-> +		return -1;
-> +
-> +	error = create_debug_files_systab(efi_dir);
-> +	if (error) {
-> +		debugfs_remove(efi_dir);
-> +		return -1;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +late_initcall(crate_debug_files);
-> +
->  void __init efi_init(void)
->  {
->  	efi_config_table_t *config_tables;
-> @@ -322,6 +415,7 @@ void __init efi_init(void)
->  	char vendor[100] = "unknown";
->  	int i = 0;
->  	void *tmp;
-> +	resource_size_t phys_addr;
->  
->  #ifdef CONFIG_X86_32
->  	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
-> @@ -353,7 +447,11 @@ void __init efi_init(void)
->  	/*
->  	 * Show what we know for posterity
->  	 */
-> -	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
-> +	if (is_kdump_kernel() && systab_fw_vendor_paddr != 0)
-> +		phys_addr = systab_fw_vendor_paddr;
-> +	else
-> +		phys_addr = efi.systab->fw_vendor;
-> +	c16 = tmp = early_ioremap(phys_addr, 2);
->  	if (c16) {
->  		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
->  			vendor[i] = *c16++;
-> @@ -369,8 +467,12 @@ void __init efi_init(void)
->  	/*
->  	 * Let's see what config tables the firmware passed to us.
->  	 */
-> +	if (is_kdump_kernel() && systab_tables_paddr != 0)
-> +		phys_addr = systab_tables_paddr;
-> +	else
-> +		phys_addr = efi.systab->tables;
->  	config_tables = early_ioremap(
-> -		efi.systab->tables,
-> +		phys_addr,
->  		efi.systab->nr_tables * sizeof(efi_config_table_t));
->  	if (config_tables == NULL)
->  		printk(KERN_ERR "Could not map EFI Configuration Table!\n");
-> @@ -418,8 +520,11 @@ void __init efi_init(void)
->  	 * address of several of the EFI runtime functions, needed to
->  	 * set the firmware into virtual mode.
->  	 */
-> -	runtime = early_ioremap((unsigned long)efi.systab->runtime,
-> -				sizeof(efi_runtime_services_t));
-> +	if (is_kdump_kernel() && systab_runtime_paddr != 0)
-> +		phys_addr = systab_runtime_paddr;
-> +	else
-> +		phys_addr = (unsigned long)efi.systab->runtime;
-> +	runtime = early_ioremap(phys_addr, sizeof(efi_runtime_services_t));
->  	if (runtime != NULL) {
->  		/*
->  		 * We will only need *early* access to the following
-> @@ -465,6 +570,12 @@ void __init efi_init(void)
->  #if EFI_DEBUG
->  	print_efi_memmap();
->  #endif
-> +	/* Save original physical address */
-> +	if (!is_kdump_kernel()) {
-> +		systab_fw_vendor_paddr = efi.systab->fw_vendor;
-> +		systab_tables_paddr = efi.systab->tables;
-> +		systab_runtime_paddr = (unsigned long)efi.systab->runtime;
-> +	}
->  }
->  
->  static void __init runtime_code_page_mkexec(void)
-> @@ -544,11 +655,14 @@ void __init efi_enter_virtual_mode(void)
->  
->  	BUG_ON(!efi.systab);
->  
-> -	status = phys_efi_set_virtual_address_map(
-> -		memmap.desc_size * memmap.nr_map,
-> -		memmap.desc_size,
-> -		memmap.desc_version,
-> -		memmap.phys_map);
-> +	if (!is_kdump_kernel())
-> +		status = phys_efi_set_virtual_address_map(
-> +			memmap.desc_size * memmap.nr_map,
-> +			memmap.desc_size,
-> +			memmap.desc_version,
-> +			memmap.phys_map);
-> +	else
-> +		status = EFI_SUCCESS;
->  
->  	if (status != EFI_SUCCESS) {
->  		printk(KERN_ALERT "Unable to switch EFI into virtual mode "
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+https://bugzilla.kernel.org/show_bug.cgi?id=14933
+
+
+> [  298.180542] Xorg invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=0
+> [  298.180553] Xorg cpuset=/ mems_allowed=0
+> [  298.180560] Pid: 3808, comm: Xorg Not tainted 2.6.32-21-generic #32-Ubuntu
+> [  298.180564] Call Trace:
+> [  298.180583]  [<ffffffff810b37cd>] ? cpuset_print_task_mems_allowed+0x9d/0xb0
+> [  298.180595]  [<ffffffff810f64f4>] oom_kill_process+0xd4/0x2f0
+> [  298.180603]  [<ffffffff810f6ab0>] ? select_bad_process+0xd0/0x110
+> [  298.180609]  [<ffffffff810f6b48>] __out_of_memory+0x58/0xc0
+> [  298.180616]  [<ffffffff810f6cde>] out_of_memory+0x12e/0x1a0
+> [  298.180626]  [<ffffffff81540c9e>] ? _spin_lock+0xe/0x20
+> [  298.180633]  [<ffffffff810f9d21>] __alloc_pages_slowpath+0x511/0x580
+> [  298.180641]  [<ffffffff810f9eee>] __alloc_pages_nodemask+0x15e/0x1a0
+> [  298.180650]  [<ffffffff8112ca57>] alloc_pages_current+0x87/0xd0
+> [  298.180657]  [<ffffffff810f8e0e>] __get_free_pages+0xe/0x50
+> [  298.180666]  [<ffffffff81154994>] __pollwait+0xb4/0xf0
+> [  298.180673]  [<ffffffff814e09a5>] unix_poll+0x25/0xc0
+> [  298.180682]  [<ffffffff81449bea>] sock_poll+0x1a/0x20
+> [  298.180688]  [<ffffffff811545b2>] do_select+0x3a2/0x6d0
+> [  298.180696]  [<ffffffff811548e0>] ? __pollwait+0x0/0xf0
+> [  298.180702]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180708]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180714]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180721]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180727]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180732]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180737]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180741]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180745]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
+> [  298.180749]  [<ffffffff811550ba>] core_sys_select+0x18a/0x2c0
+> [  298.180777]  [<ffffffffa001eced>] ? drm_ioctl+0x13d/0x480 [drm]
+> [  298.180784]  [<ffffffff81085320>] ? autoremove_wake_function+0x0/0x40
+> [  298.180790]  [<ffffffff810397a9>] ? default_spin_lock_flags+0x9/0x10
+> [  298.180795]  [<ffffffff81540bbf>] ? _spin_lock_irqsave+0x2f/0x40
+> [  298.180800]  [<ffffffff81019e89>] ? read_tsc+0x9/0x20
+> [  298.180805]  [<ffffffff8108f9c9>] ? ktime_get_ts+0xa9/0xe0
+> [  298.180810]  [<ffffffff81155447>] sys_select+0x47/0x110
+> [  298.180816]  [<ffffffff810131b2>] system_call_fastpath+0x16/0x1b
+> [  298.180819] Mem-Info:
+> [  298.180822] Node 0 DMA per-cpu:
+> [  298.180827] CPU    0: hi:    0, btch:   1 usd:   0
+> [  298.180830] CPU    1: hi:    0, btch:   1 usd:   0
+> [  298.180832] Node 0 DMA32 per-cpu:
+> [  298.180837] CPU    0: hi:  186, btch:  31 usd:  60
+> [  298.180839] CPU    1: hi:  186, btch:  31 usd: 137
+> [  298.180845] active_anon:374344 inactive_anon:81753 isolated_anon:0
+> [  298.180847]  active_file:7038 inactive_file:7089 isolated_file:0
+> [  298.180848]  unevictable:0 dirty:0 writeback:0 unstable:0
+> [  298.180849]  free:3399 slab_reclaimable:4226 slab_unreclaimable:4383
+> [  298.180851]  mapped:13010 shmem:45284 pagetables:5496 bounce:0
+> [  298.180854] Node 0 DMA free:7920kB min:40kB low:48kB high:60kB
+> active_anon:3880kB inactive_anon:4096kB active_file:0kB
+> inactive_file:0kB unevictable:0kB isolated(anon):0kB
+> isolated(file):0kB present:15348kB mlocked:0kB dirty:0kB writeback:0kB
+> mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:8kB
+> kernel_stack:0kB pagetables:16kB unstable:0kB bounce:0kB
+> writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
+> [  298.180866] lowmem_reserve[]: 0 1971 1971 1971
+> [  298.180871] Node 0 DMA32 free:5676kB min:5660kB low:7072kB
+> high:8488kB active_anon:1493496kB inactive_anon:322916kB
+> active_file:28152kB inactive_file:28356kB unevictable:0kB
+> isolated(anon):0kB isolated(file):0kB present:2019172kB mlocked:0kB
+> dirty:0kB writeback:0kB mapped:52040kB shmem:181136kB
+> slab_reclaimable:16904kB slab_unreclaimable:17524kB
+> kernel_stack:2096kB pagetables:21968kB unstable:0kB bounce:0kB
+> writeback_tmp:0kB pages_scanned:41088 all_unreclaimable? no
+> [  298.180884] lowmem_reserve[]: 0 0 0 0
+> [  298.180889] Node 0 DMA: 4*4kB 2*8kB 1*16kB 2*32kB 2*64kB 2*128kB
+> 1*256kB 2*512kB 2*1024kB 2*2048kB 0*4096kB = 7920kB
+> [  298.180904] Node 0 DMA32: 397*4kB 1*8kB 1*16kB 1*32kB 1*64kB
+> 1*128kB 1*256kB 1*512kB 1*1024kB 1*2048kB 0*4096kB = 5676kB
+> [  298.180918] 59413 total pagecache pages
+> [  298.180920] 0 pages in swap cache
+> [  298.180923] Swap cache stats: add 0, delete 0, find 0/0
+> [  298.180925] Free swap  = 0kB
+> [  298.180927] Total swap = 0kB
+> [  298.188124] 515887 pages RAM
+> [  298.188127] 9764 pages reserved
+> [  298.188129] 108553 pages shared
+> [  298.188131] 467319 pages non-shared
+> [  298.188136] Out of memory: kill process 3821 (gnome-session) score
+> 503983 or a child
+> [  298.188141] Killed process 3855 (ssh-agent)
+
+
+
+
+
