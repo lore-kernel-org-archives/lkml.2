@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0G0UzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 16:55:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33646 "EHLO mx1.redhat.com"
+	id S1753685Ab0G0Uzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 16:55:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36371 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752877Ab0G0UzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 16:55:19 -0400
-Date: Tue, 27 Jul 2010 16:54:53 -0400
+	id S1752877Ab0G0UzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 16:55:23 -0400
+Date: Tue, 27 Jul 2010 16:54:49 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,66 +14,82 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
         roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
         fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
         vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <6ab537c7748d1ede9c0b834a208b87dd4f5a893d.1280263065.git.jbaron@redhat.com>
+Message-Id: <f9d5e6a234622ffc7f2309af8bb1b71e9a296420.1280263065.git.jbaron@redhat.com>
 In-Reply-To: <cover.1280263065.git.jbaron@redhat.com>
 References: <cover.1280263065.git.jbaron@redhat.com>
-Subject: [PATCH 11/12] jump label v10: add sparc64 support
+Subject: [PATCH 10/12] jump label v10: x86 support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+add x86 support for jump label. I'm keeping this patch separate so its clear to
+arch maintainers what was required for x86 support this new feature. hopefully,
+it wouldn't be too painful for other arches.
+
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- arch/sparc/Kconfig                  |    1 +
- arch/sparc/include/asm/jump_label.h |   32 ++++++++++++++++++++++++++++
- arch/sparc/kernel/Makefile          |    2 +
- arch/sparc/kernel/jump_label.c      |   39 +++++++++++++++++++++++++++++++++++
- arch/sparc/kernel/module.c          |    6 +++++
- 5 files changed, 80 insertions(+), 0 deletions(-)
- create mode 100644 arch/sparc/include/asm/jump_label.h
- create mode 100644 arch/sparc/kernel/jump_label.c
+ arch/x86/Kconfig                  |    1 +
+ arch/x86/include/asm/jump_label.h |   47 +++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/Makefile          |    2 +-
+ arch/x86/kernel/jump_label.c      |   49 +++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/module.c          |    3 ++
+ 5 files changed, 101 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/include/asm/jump_label.h
+ create mode 100644 arch/x86/kernel/jump_label.c
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index c0015db..e38d976 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -29,6 +29,7 @@ config SPARC
- 	select PERF_USE_VMALLOC
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 3069a6d..089ef9f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -59,6 +59,7 @@ config X86
+ 	select ANON_INODES
+ 	select HAVE_ARCH_KMEMCHECK
+ 	select HAVE_USER_RETURN_NOTIFIER
 +	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
  
- config SPARC32
- 	def_bool !64BIT
-diff --git a/arch/sparc/include/asm/jump_label.h b/arch/sparc/include/asm/jump_label.h
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
 new file mode 100644
-index 0000000..62e66d7
+index 0000000..b4a2cb4
 --- /dev/null
-+++ b/arch/sparc/include/asm/jump_label.h
-@@ -0,0 +1,32 @@
-+#ifndef _ASM_SPARC_JUMP_LABEL_H
-+#define _ASM_SPARC_JUMP_LABEL_H
++++ b/arch/x86/include/asm/jump_label.h
+@@ -0,0 +1,47 @@
++#ifndef _ASM_X86_JUMP_LABEL_H
++#define _ASM_X86_JUMP_LABEL_H
 +
 +#ifdef __KERNEL__
 +
 +#include <linux/types.h>
-+#include <asm/system.h>
++#include <asm/nops.h>
 +
-+#define JUMP_LABEL_NOP_SIZE 4
++#define JUMP_LABEL_NOP_SIZE 5
 +
-+#define JUMP_LABEL(key, label)					\
++# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
++
++# define JUMP_LABEL(key, label)					\
 +	do {							\
-+		asm goto("1:\n\t"				\
-+			 "nop\n\t"				\
-+			 "nop\n\t"				\
-+			 ".pushsection __jump_table,  \"a\"\n\t"\
-+			 ".word 1b, %l[" #label "], %c0\n\t"	\
-+			 ".popsection \n\t"			\
-+			 : :  "i" (key) :  : label);\
++		asm goto("1:"					\
++			JUMP_LABEL_INITIAL_NOP			\
++			".pushsection __jump_table,  \"a\" \n\t"\
++			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
++			".popsection \n\t"			\
++			: :  "i" (key) :  : label);		\
 +	} while (0)
 +
 +#endif /* __KERNEL__ */
++
++#ifdef CONFIG_X86_64
++
++typedef u64 jump_label_t;
++
++struct jump_entry {
++	jump_label_t code;
++	jump_label_t target;
++	jump_label_t key;
++};
++
++#else
 +
 +typedef u32 jump_label_t;
 +
@@ -84,85 +100,90 @@ index 0000000..62e66d7
 +};
 +
 +#endif
-diff --git a/arch/sparc/kernel/Makefile b/arch/sparc/kernel/Makefile
-index 0c2dc1f..599398f 100644
---- a/arch/sparc/kernel/Makefile
-+++ b/arch/sparc/kernel/Makefile
-@@ -119,3 +119,5 @@ obj-$(CONFIG_COMPAT)    += $(audit--y)
- 
- pc--$(CONFIG_PERF_EVENTS) := perf_event.o
- obj-$(CONFIG_SPARC64)	+= $(pc--y)
 +
-+obj-$(CONFIG_SPARC64)	+= jump_label.o
-diff --git a/arch/sparc/kernel/jump_label.c b/arch/sparc/kernel/jump_label.c
++#endif
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 0925676..24fa171 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -32,7 +32,7 @@ GCOV_PROFILE_paravirt.o		:= n
+ obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
+ obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
+ obj-y			+= time.o ioport.o ldt.o dumpstack.o
+-obj-y			+= setup.o x86_init.o i8259.o irqinit.o
++obj-y			+= setup.o x86_init.o i8259.o irqinit.o jump_label.o
+ obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
+ obj-$(CONFIG_X86_32)	+= probe_roms_32.o
+ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
+diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
 new file mode 100644
-index 0000000..10cfbef
+index 0000000..b3c0f37
 --- /dev/null
-+++ b/arch/sparc/kernel/jump_label.c
-@@ -0,0 +1,39 @@
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/mutex.h>
-+#include <linux/cpu.h>
-+
++++ b/arch/x86/kernel/jump_label.c
+@@ -0,0 +1,49 @@
++/*
++ * jump label x86 support
++ *
++ * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
++ *
++ */
 +#include <linux/jump_label.h>
 +#include <linux/memory.h>
++#include <linux/uaccess.h>
++#include <linux/module.h>
++#include <linux/list.h>
++#include <linux/jhash.h>
++#include <linux/cpu.h>
++#include <asm/kprobes.h>
++#include <asm/alternative.h>
 +
 +#ifdef HAVE_JUMP_LABEL
 +
++union jump_code_union {
++	char code[JUMP_LABEL_NOP_SIZE];
++	struct {
++		char jump;
++		int offset;
++	} __attribute__((packed));
++};
++
 +void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
 +{
-+	u32 val;
-+	u32 *insn = (u32 *) (unsigned long) entry->code;
++	union jump_code_union code;
 +
 +	if (type == JUMP_LABEL_ENABLE) {
-+		s32 off = (s32)entry->target - (s32)entry->code;
-+		val = 0x40000000 | ((u32) off >> 2);
-+	} else {
-+		val = 0x01000000;
-+	}
-+
++		code.jump = 0xe9;
++		code.offset = entry->target -
++				(entry->code + JUMP_LABEL_NOP_SIZE);
++	} else
++		memcpy(&code, ideal_nop5, JUMP_LABEL_NOP_SIZE);
 +	get_online_cpus();
 +	mutex_lock(&text_mutex);
-+	*insn = val;
-+	flushi(insn);
++	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
 +	mutex_unlock(&text_mutex);
 +	put_online_cpus();
 +}
 +
 +void arch_jump_label_text_poke_early(jump_label_t addr)
 +{
-+	u32 *insn_p = (u32 *) (unsigned long) addr;
-+
-+	*insn_p = 0x01000000;
-+	flushi(insn_p);
++	text_poke_early((void *)addr, ideal_nop5, JUMP_LABEL_NOP_SIZE);
 +}
 +
 +#endif
-diff --git a/arch/sparc/kernel/module.c b/arch/sparc/kernel/module.c
-index f848aad..ee3c7dd 100644
---- a/arch/sparc/kernel/module.c
-+++ b/arch/sparc/kernel/module.c
-@@ -18,6 +18,9 @@
- #include <asm/spitfire.h>
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index e0bc186..5399f58 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -239,6 +239,9 @@ int module_finalize(const Elf_Ehdr *hdr,
+ 		apply_paravirt(pseg, pseg + para->sh_size);
+ 	}
  
- #ifdef CONFIG_SPARC64
-+
-+#include <linux/jump_label.h>
-+
- static void *module_map(unsigned long size)
- {
- 	struct vm_struct *area;
-@@ -227,6 +230,9 @@ int module_finalize(const Elf_Ehdr *hdr,
- 		    const Elf_Shdr *sechdrs,
- 		    struct module *me)
- {
 +	/* make jump label nops */
 +	jump_label_apply_nops(me);
 +
- 	/* Cheetah's I-cache is fully coherent.  */
- 	if (tlb_type == spitfire) {
- 		unsigned long va;
+ 	return module_bug_finalize(hdr, sechdrs, me);
+ }
+ 
 -- 
 1.7.1
 
