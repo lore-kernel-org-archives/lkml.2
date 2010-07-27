@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0G0Uyz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 16:54:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47150 "EHLO mx1.redhat.com"
+	id S1753086Ab0G0Uyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 16:54:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31167 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab0G0Uyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 16:54:52 -0400
-Date: Tue, 27 Jul 2010 16:54:26 -0400
+	id S1752934Ab0G0Uyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 16:54:38 -0400
+Date: Tue, 27 Jul 2010 16:53:58 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,177 +14,96 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
         roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
         fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
         vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <96a93a63600129184717ef68ab873cec51c91aae.1280263065.git.jbaron@redhat.com>
-In-Reply-To: <cover.1280263065.git.jbaron@redhat.com>
-References: <cover.1280263065.git.jbaron@redhat.com>
-Subject: [PATCH 05/12] jump label v10: jump_label_text_reserved() to reserve our jump points
+Message-Id: <cover.1280263065.git.jbaron@redhat.com>
+Subject: [PATCH 00/12] jump label v10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a jump_label_text_reserved(void *start, void *end), so that other
-pieces of code that want to modify kernel text, can first verify that
-jump label has not reserved the instruction.
+Hi, 
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
----
- arch/x86/kernel/kprobes.c  |    3 +-
- include/linux/jump_label.h |    8 ++++-
- kernel/jump_label.c        |   83 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/kprobes.c           |    3 +-
- 4 files changed, 94 insertions(+), 3 deletions(-)
+updates in -v10:
 
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index 1bfb6cf..b1a4208 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1202,7 +1202,8 @@ static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
- 	}
- 	/* Check whether the address range is reserved */
- 	if (ftrace_text_reserved(src, src + len - 1) ||
--	    alternatives_text_reserved(src, src + len - 1))
-+	    alternatives_text_reserved(src, src + len - 1) ||
-+	    jump_label_text_reserved(src, src + len - 1))
- 		return -EBUSY;
- 
- 	return len;
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index fc2b181..d3d00b6 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -25,9 +25,10 @@ extern struct jump_entry __stop___jump_table[];
- 
- extern void arch_jump_label_transform(struct jump_entry *entry,
- 				 enum jump_label_type type);
-+extern void arch_jump_label_text_poke_early(jump_label_t addr);
- extern void jump_label_update(const char *name, enum jump_label_type type);
-+extern int jump_label_text_reserved(void *start, void *end);
- extern void jump_label_apply_nops(struct module *mod);
--extern void arch_jump_label_text_poke_early(jump_label_t addr);
- 
- #define enable_jump_label(name) \
- 	jump_label_update(name, JUMP_LABEL_ENABLE);
-@@ -60,6 +61,11 @@ static inline int jump_label_apply_nops(struct module *mod)
- 	return 0;
- }
- 
-+static inline int jump_label_text_reserved(void *start, void *end)
-+{
-+	return 0;
-+}
-+
- #endif
- 
- #endif
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index ebe9145..c1e59bb 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -183,6 +183,89 @@ void jump_label_update(const char *name, enum jump_label_type type)
- 	mutex_unlock(&jump_label_mutex);
- }
- 
-+static int addr_conflict(struct jump_entry *entry, void *start, void *end)
-+{
-+	if (entry->code <= (unsigned long)end &&
-+		entry->code + JUMP_LABEL_NOP_SIZE > (unsigned long)start)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_MODULES
-+
-+static int module_conflict(void *start, void *end)
-+{
-+	struct hlist_head *head;
-+	struct hlist_node *node, *node_next, *module_node, *module_node_next;
-+	struct jump_label_entry *e;
-+	struct jump_label_module_entry *e_module;
-+	struct jump_entry *iter;
-+	int i, count;
-+	int conflict = 0;
-+
-+	for (i = 0; i < JUMP_LABEL_TABLE_SIZE; i++) {
-+		head = &jump_label_table[i];
-+		hlist_for_each_entry_safe(e, node, node_next, head, hlist) {
-+			hlist_for_each_entry_safe(e_module, module_node,
-+							module_node_next,
-+							&(e->modules), hlist) {
-+				count = e_module->nr_entries;
-+				iter = e_module->table;
-+				while (count--) {
-+					if (addr_conflict(iter, start, end)) {
-+						conflict = 1;
-+						goto out;
-+					}
-+					iter++;
-+				}
-+			}
-+		}
-+	}
-+out:
-+	return conflict;
-+}
-+
-+#endif
-+
-+/***
-+ * jump_label_text_reserved - check if addr range is reserved
-+ * @start: start text addr
-+ * @end: end text addr
-+ *
-+ * checks if the text addr located between @start and @end
-+ * overlaps with any of the jump label patch addresses. Code
-+ * that wants to modify kernel text should first verify that
-+ * it does not overlap with any of the jump label addresses.
-+ *
-+ * returns 1 if there is an overlap, 0 otherwise
-+ */
-+int jump_label_text_reserved(void *start, void *end)
-+{
-+	struct jump_entry *iter;
-+	struct jump_entry *iter_start = __start___jump_table;
-+	struct jump_entry *iter_stop = __start___jump_table;
-+	int conflict = 0;
-+
-+	mutex_lock(&jump_label_mutex);
-+	iter = iter_start;
-+	while (iter < iter_stop) {
-+		if (addr_conflict(iter, start, end)) {
-+			conflict = 1;
-+			goto out;
-+		}
-+		iter++;
-+	}
-+
-+	/* now check modules */
-+#ifdef CONFIG_MODULES
-+	conflict = module_conflict(start, end);
-+#endif
-+out:
-+	mutex_unlock(&jump_label_mutex);
-+	return conflict;
-+}
-+
- static __init int init_jump_label(void)
- {
- 	int ret;
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 282035f..2f9bea6 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1141,7 +1141,8 @@ int __kprobes register_kprobe(struct kprobe *p)
- 	preempt_disable();
- 	if (!kernel_text_address((unsigned long) p->addr) ||
- 	    in_kprobes_functions((unsigned long) p->addr) ||
--	    ftrace_text_reserved(p->addr, p->addr)) {
-+	    ftrace_text_reserved(p->addr, p->addr) ||
-+	    jump_label_text_reserved(p->addr, p->addr)) {
- 		preempt_enable();
- 		return -EINVAL;
- 	}
--- 
-1.7.1
+*removed build-time jump table sort. Since I moved to faster lib/sort.c qsort
+ method, the run-time sort is really fast. This change also reduces the
+ complexity quite a bit.
+
+*added arch_jump_label_text_poke_early(), removing text_poke_early() in generic code. 
+ I think for most arches this should be a no-op.
+
+*various Sparc cleanups and build testing on x86_64 using the 4.5 sparc64 cross
+ compiler for both 'asm goto' enabled/disabled cases.
+
+*re-ordered the patches, so as to separate out arch bits cleanly
+
+*various cleanups - incorporating last round of feedback and docs update
+
+Special thanks to Tony Breeds for helping me with the sparc64 cross compiler 4.5
+toolchain.
+
+thanks,
+
+-Jason
+
+David S. Miller (1):
+  sparc64: Add jump_label support
+
+Jason Baron (11):
+  jump label: base patch
+  jump label: add module support
+  jump label: move ftrace_dyn_arch_init to common code
+  jump label: initialize workqueue tracepoints *before* they are registered
+  jump label: jump_label_text_reserved() to reserve our jump points
+  jump label: convert jump label to use a key
+  jump label: use lib/sort.c
+  jump label: tracepoint support
+  jump label: convert dynamic debug to use jump labels.
+  jump label: x86 support
+  jump label: add docs
+
+ Documentation/jump-label.txt        |  151 +++++++++++++
+ Makefile                            |    5 +
+ arch/Kconfig                        |    3 +
+ arch/sparc/Kconfig                  |    1 +
+ arch/sparc/include/asm/jump_label.h |   32 +++
+ arch/sparc/kernel/Makefile          |    2 +
+ arch/sparc/kernel/jump_label.c      |   39 ++++
+ arch/sparc/kernel/module.c          |    6 +
+ arch/x86/Kconfig                    |    1 +
+ arch/x86/include/asm/alternative.h  |   14 ++
+ arch/x86/include/asm/jump_label.h   |   47 ++++
+ arch/x86/kernel/Makefile            |    2 +-
+ arch/x86/kernel/alternative.c       |   72 ++++++-
+ arch/x86/kernel/ftrace.c            |   70 +------
+ arch/x86/kernel/jump_label.c        |   49 ++++
+ arch/x86/kernel/kprobes.c           |    3 +-
+ arch/x86/kernel/module.c            |    3 +
+ arch/x86/kernel/setup.c             |    3 +
+ include/asm-generic/vmlinux.lds.h   |   10 +
+ include/linux/dynamic_debug.h       |   39 ++--
+ include/linux/jump_label.h          |   64 ++++++
+ include/linux/module.h              |    5 +-
+ include/linux/tracepoint.h          |    5 +-
+ kernel/Makefile                     |    2 +-
+ kernel/jump_label.c                 |  421 +++++++++++++++++++++++++++++++++++
+ kernel/kprobes.c                    |    3 +-
+ kernel/module.c                     |    7 +
+ kernel/trace/ftrace.c               |   13 +-
+ kernel/trace/trace_workqueue.c      |   10 +-
+ kernel/tracepoint.c                 |   14 +-
+ lib/dynamic_debug.c                 |   42 +----
+ scripts/Makefile.lib                |   11 +-
+ scripts/basic/Makefile              |    2 +-
+ scripts/basic/hash.c                |   64 ------
+ scripts/gcc-goto.sh                 |    5 +
+ 35 files changed, 992 insertions(+), 228 deletions(-)
+ create mode 100644 Documentation/jump-label.txt
+ create mode 100644 arch/sparc/include/asm/jump_label.h
+ create mode 100644 arch/sparc/kernel/jump_label.c
+ create mode 100644 arch/x86/include/asm/jump_label.h
+ create mode 100644 arch/x86/kernel/jump_label.c
+ create mode 100644 include/linux/jump_label.h
+ create mode 100644 kernel/jump_label.c
+ delete mode 100644 scripts/basic/hash.c
+ create mode 100644 scripts/gcc-goto.sh
 
