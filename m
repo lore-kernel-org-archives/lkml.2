@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab0G0Wuv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 18:50:51 -0400
-Received: from mail.copilotco.com ([216.105.40.123]:45920 "EHLO
-	mail.copilotco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab0G0Wuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 18:50:50 -0400
-X-Greylist: delayed 1291 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Jul 2010 18:50:50 EDT
-Date: Tue, 27 Jul 2010 15:29:16 -0700
-From: Tracy Reed <treed@ultraviolet.org>
-To: bchociej@gmail.com
-Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, cmm@us.ibm.com, bcchocie@us.ibm.com,
-        mrlupfer@us.ibm.com, crscott@us.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
-Message-ID: <20100727222916.GM18595@tracyreed.org>
-Mail-Followup-To: Tracy Reed <treed@ultraviolet.org>, bchociej@gmail.com,
-	chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, cmm@us.ibm.com, bcchocie@us.ibm.com,
-	mrlupfer@us.ibm.com, crscott@us.ibm.com,
-	linux-kernel@vger.kernel.org
-References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9/eUdp+dLtKXvemk"
-Content-Disposition: inline
-In-Reply-To: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753464Ab0G0WvS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 18:51:18 -0400
+Received: from smtp13.ono.com ([62.42.230.16]:59357 "EHLO resmaa13.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751518Ab0G0WvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 18:51:16 -0400
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Jul 2010 18:51:15 EDT
+Date: Wed, 28 Jul 2010 00:46:11 +0200
+From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org
+Subject: Questions and problems with NFS4
+Message-ID: <20100728004611.00c46b13@werewolf.home>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-mandriva-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all...
 
---9/eUdp+dLtKXvemk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm beginning to move my boxen to use nfs4, and have some questions...
 
-On Tue, Jul 27, 2010 at 05:00:18PM -0500, bchociej@gmail.com spake thusly:
-> The long-term goal of these patches, as discussed in the Motivation
-> section at the end of this message, is to enable Btrfs to perform
-> automagic relocation of hot data to fast media like SSD. This goal has
-> been motivated by the Project Ideas page on the Btrfs wiki.
+First of all, versions of my software: kernel 2.6.33.5, nfs-utils 1.2.2
+(perhaps some of my doubts are solved in newer versions)
 
-With disks being so highly virtualized away these days is there any
-way for btrfs to know which are the fast outer-tracks vs the slower
-inner-tracks of a physical disk? If so not only could this benefit SSD
-owners but it could also benefit the many more spinning platters out
-there. If not (which wouldn't be surprising) then disregard. Even just
-having that sort of functionality for SSD would be excellent. If I
-understand correctly not only would this work for SSD but if I have a
-SAN full of many large 7200rpm disks and a few 15k SAS disks I could
-effectively utilize that disk by allowing btrfs to place hot data on
-the 15k SAS. I understand Compellent does this as well.
+Questions:
 
---=20
-Tracy Reed
-http://tracyreed.org
+- Is it mandatory to use a setup with a common root for exported filesystems ?
+  In my setup I first did not use it, no fsid=0 root, and everything
+  worked fine, just change the mount type in the clients. In fact, new
+  nfs-utils just try first version 4 and you dont have to do anything.
+  You loose the ability to use simple paths inside /export, for example, 
+  and have to use full paths like in V3, but that is not so bad.
+  Am I loosing something else wrt functionality ?
 
---9/eUdp+dLtKXvemk
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+- If you have a common root, is it mandatory to mount it in the client ?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.5 (GNU/Linux)
+- If I setup a common root (say /export), and aoutomount some folders:
+  
+  /scratch/local
+  /scratch/node/00
+  /scratch/node/01
+  ......
+  /export/scratch -> /scratch/local (bind mount).
 
-iD8DBQFMT128BhSTPg0d/nQRAhBOAKCvjeQkmnXPZfOKLMH77Uqf/wq/eQCg3Jlj
-bLgbNEtYOD8rwMexPC+8lOU=
-=jetJ
------END PGP SIGNATURE-----
+  /scratch/node/?? is automounted from node ??, in which it is its own
+  /scratch/local. When I acess scratch for local node, it backs to a local
+  mount and mounts the REAL /scratch, not /export/scratch.
+  Any ideas ?
 
---9/eUdp+dLtKXvemk--
+- AFAIK, with NFS4 the only needed daemons are nfsd and idmapd. And the
+  only accesible port from the outside is 2049, for nfsd.
+  I have tried to strip down my nfs server (-N 2 -N 3 -U),
+  but rpcinfo still gives me:
+
+annwn:~# rpcinfo -p localhost
+   program vers proto   port  service
+    100000    4   tcp    111  portmapper
+    100000    3   tcp    111  portmapper
+    100000    2   tcp    111  portmapper
+    100000    4   udp    111  portmapper
+    100000    3   udp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp  48461  status
+    100024    1   tcp  37515  status
+    100021    1   udp  38583  nlockmgr
+    100021    3   udp  38583  nlockmgr
+    100021    4   udp  38583  nlockmgr
+    100021    1   tcp  37873  nlockmgr
+    100021    3   tcp  37873  nlockmgr
+    100021    4   tcp  37873  nlockmgr
+    100003    4   tcp   2049  nfs
+    100005    1   udp  45341  mountd
+    100005    1   tcp  58639  mountd
+
+  disabling portampper and mountd is just a matter of initscripts
+  requirements, but how can I disable nlockmgr ? It isn't needed for
+  NFS4, isn't it ? Nor portmapper nor mountd...
+
+TIA
+
+--
+J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
+                                         \         It's better when it's free
