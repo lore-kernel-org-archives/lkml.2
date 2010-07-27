@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab0G0XVL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 19:21:11 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44225 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab0G0XVF (ORCPT
+	id S1753888Ab0G0Xek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 19:34:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58659 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416Ab0G0Xej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 19:21:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fWw7VebhnbEOCtBeY5L9sKn7Ywk2T5cZ35IbtgusJEXF5TwRiXMmqViXMUwW1hU9Bw
-         Bf1WzCeM+smoIoG4k2Ikc8kghc/+9ulSrYmtUBJaYmOrLD7F3IC/kWjRERR7qtUHnhcZ
-         hWh6p6A2qiPDkRJpPPuQP37nnPXhpjZrsOyI4=
-Date: Wed, 28 Jul 2010 01:18:01 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Emil Velikov <eeydev@nottingham.ac.uk>
-Subject: [PATCH v2] tracing: sanitize value returned from
- write(trace_marker, "...", len)
-Message-ID: <20100727231801.GB2826@joi.lan>
-References: <20100727230636.GA2826@joi.lan>
+	Tue, 27 Jul 2010 19:34:39 -0400
+Message-ID: <4C4F6DF2.6090905@ontolinux.com>
+Date: Wed, 28 Jul 2010 01:38:26 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727230636.GA2826@joi.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: bchociej@gmail.com, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
+References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
+In-Reply-To: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:v6WMW1UQTNHEIEub1H0Y9MXweSLQyHxm2UauE2J0aOx
+ 47Lmbb1B75Ybur3u9pVsTIVZFWe6a15wEDyC2dKzplPPU0582+
+ wcbyQP08VgPuy2q65pb/O+waOwVXoRzEjaLwJBM/QTyY22cqk3
+ lbVxy675vciT0MXOHl8Mk5PXTmZ0xH0KXOyBbbc5CaTY0I0Jbp
+ ceAmj1GpnFGLHp74W/PuA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now with corrected changelog.
+At the 28.07.2010 00:00, Ben Chociej wrote:
+> INTRODUCTION:
+>
+> This patch series adds experimental support for tracking data
+> temperature in Btrfs. Essentially, this means maintaining some key
+> stats (like number of reads/writes, last read/write time, frequency of
+> reads/writes), then distilling those numbers down to a single
+> "temperature" value that reflects what data is "hot."
+>
+> The long-term goal of these patches, as discussed in the Motivation
+> section at the end of this message, is to enable Btrfs to perform
+> automagic relocation of hot data to fast media like SSD. This goal has
+> been motivated by the Project Ideas page on the Btrfs wiki.
+>
+> Of course, users are warned not to run this code outside of development
+> environments. These patches are EXPERIMENTAL, and as such they might
+> eat your data and/or memory.
+>
+>
+> MOTIVATION:
+>
+> The overall goal of enabling hot data relocation to SSD has been
+> motivated by the Project Ideas page on the Btrfs wiki at
+> https://btrfs.wiki.kernel.org/index.php/Project_ideas. It is hoped that
+> this initial patchset will eventually mature into a usable hybrid
+> storage feature set for Btrfs.
+>
+> This is essentially the traditional cache argument: SSD is fast and
+> expensive; HDD is cheap but slow. ZFS, for example, can already take
+> advantage of SSD caching. Btrfs should also be able to take advantage
+> of hybrid storage without any broad, sweeping changes to existing code.
+>    
 
----
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-Subject: [PATCH] tracing: sanitize value returned from write(trace_marker, "...", len)
+Wouldn't this feature be useful for other file systems as well, so that 
+a more general and not an only Btrfs related solution is preferable?
 
-When userspace code writes non-new-line-terminated string to trace_marker
-file, write handler appends new-line and returns number of bytes written
-to trace buffer, so
-write(fd, "abc", 3) will return 4
+> With Btrfs's COW approach, an external cache (where data is *moved* to
+> SSD, rather than just cached there) makes a lot of sense. Though these
+> patches don't enable any relocation yet, they do lay an essential
+> foundation for enabling that functionality in the near future. We plan
+> to roll out an additional patchset introducing some of the automatic
+> migration functionality in the next few weeks.
+>
+>    
 
-That's unexpected and unfortunately it confuses glibc's fprintf function.
-
-Example:
-int main() {
-  fprintf(stderr, "abc");
-  return 0;
-}
-
-$ gcc test.c -o test
-$ echo mmiotrace > /sys/kernel/debug/tracing/current_tracer
-$ ./test 2>/sys/kernel/debug/tracing/trace_marker
-
-results in infinite loop:
-write(fd, "abc", 3) = 4
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-write(fd, "", 1) = 0
-(...)
-
-...and kernel trace buffer full of empty markers.
-
-Fix it by sanitizing write return value.
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 02e04c8..6b39aa8 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3499,6 +3499,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 					size_t cnt, loff_t *fpos)
- {
- 	char *buf;
-+	size_t written;
- 
- 	if (tracing_disabled)
- 		return -EINVAL;
-@@ -3520,11 +3521,15 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 	} else
- 		buf[cnt] = '\0';
- 
--	cnt = mark_printk("%s", buf);
-+	written = mark_printk("%s", buf);
- 	kfree(buf);
--	*fpos += cnt;
-+	*fpos += written;
- 
--	return cnt;
-+	/* don't tell userspace we wrote more - it might confuse them */
-+	if (written > cnt)
-+		written = cnt;
-+
-+	return written;
- }
- 
- static int tracing_clock_show(struct seq_file *m, void *v)
--- 
-1.7.1.1
-
+  With all the best
+Christian Stroetmann
