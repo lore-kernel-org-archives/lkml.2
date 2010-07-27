@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983Ab0G0Qrg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 12:47:36 -0400
-Received: from kroah.org ([198.145.64.141]:39596 "EHLO coco.kroah.org"
+	id S1752033Ab0G0Qrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 12:47:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3290 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778Ab0G0Qre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 12:47:34 -0400
-Date: Tue, 27 Jul 2010 09:47:17 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the tty tree
-Message-ID: <20100727164717.GB9541@kroah.com>
-References: <20100727151843.7d253148.sfr@canb.auug.org.au>
- <20100727084353.5b14224a@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727084353.5b14224a@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751998Ab0G0Qrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 12:47:39 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com>
+References: <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com> <20100727155023.GF1967@jolsa.brq.redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, Jiri Olsa <jolsa@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
+Date: Tue, 27 Jul 2010 17:46:27 +0100
+Message-ID: <24865.1280249187@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 08:43:53AM +0100, Alan Cox wrote:
-> On Tue, 27 Jul 2010 15:18:43 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Hi Greg,
-> > 
-> > After merging the tty tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > drivers/serial/mfd.c:37:30: error: linux/serial_mfd.h: No such file or directory
-> > drivers/serial/mfd.c: In function 'port_show_regs':
-> > drivers/serial/mfd.c:166: error: 'UART_FOR' undeclared (first use in this function)
-> > 
-> > ... and on ... and on ...
-> > 
-> > Caused by commit c3190cf68dfc58c33de0fd59b919cbb864acbba4 ("hsu: driver
-> > for Medfield High Speed UART device") and following.   Did it miss a file?
-> > 
-> > A little more care and testing, please.
-> 
-> Yes although I had a local copy so it built and tested beautifully 8(
-> 
-> Will send Greg and updated set of those patches versus todays -next
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Now fixed up, sorry for missing this.
+> The whole patch seems to be based on "nobody can ever use
+> get_cred/put_cred, because concurrent use will then trigger the
+> BUG_ON() in __put_cred()".
 
-greg k-h
+That's not the problem.
+
+The problem is that task_state() accesses the target task's credentials whilst
+only holding the RCU read lock.  That means that the existence of the cred
+struct so accessed can only be guaranteed up to the point that the RCU read
+lock is released.
+
+What we shouldn't do is increment the usage count on the credentials because
+we're not holding a lock that will prevent the target task reducing the
+refcount on those credentials to zero between us reading the cred pointer and
+incrementing the count.
+
+If we want to increment the usage count on the credentials, we need to prevent
+the target task from modifying its own credentials whilst we do it.  Currently,
+we can't do that as, taking an example, sys_setuid() doesn't hold hold any sort
+of lock.  We would have to add a spinlock or something like that for
+commit_creds() to take.
+
+What we have to do instead is grab any values we want from the cred struct
+before releasing the RCU read lock.  The moment we drop the lock, the cred
+struct may cease to exist, even if we did increment its count.
+
+David
