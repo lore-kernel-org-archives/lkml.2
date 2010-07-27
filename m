@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0G0Sfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 14:35:47 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54943 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753284Ab0G0Sfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 14:35:45 -0400
-Subject: Re: linux-next: Tree for July 27
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100727160708.722c39c1.sfr@canb.auug.org.au>
-References: <20100727160708.722c39c1.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Jul 2010 13:35:43 -0500
-Message-ID: <1280255743.2002.184.camel@doink>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Jul 2010 18:35:44.0400 (UTC) FILETIME=[85E90900:01CB2DBA]
+	id S1753547Ab0G0ShJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 14:37:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58902 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753284Ab0G0ShG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 14:37:06 -0400
+Date: Tue, 27 Jul 2010 18:36:48 GMT
+From: tip-bot for Christoph Hellwig <hch@lst.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, hch@lst.de,
+        tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        hch@lst.de, tglx@linutronix.de
+In-Reply-To: <20100727121313.GA19976@lst.de>
+References: <20100727121313.GA19976@lst.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/irq] x86-32: Align IRQ stacks properly
+Message-ID: <tip-25897374297906eeebef8864299406bdcb5859c3@git.kernel.org>
+Git-Commit-ID: 25897374297906eeebef8864299406bdcb5859c3
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 18:36:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 16:07 +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20100726:
-> 
-> The arm tree lost its conflict.
-> 
-> The microblaze tree lost its conflict.
-> 
-> The mips tree gained a build failure so I used the version from
-> next-20100726.
-> 
-> The xfs tree still has its build failure so I used the version from
-> next-20100723.
+Commit-ID:  25897374297906eeebef8864299406bdcb5859c3
+Gitweb:     http://git.kernel.org/tip/25897374297906eeebef8864299406bdcb5859c3
+Author:     Christoph Hellwig <hch@lst.de>
+AuthorDate: Tue, 27 Jul 2010 14:13:13 +0200
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 27 Jul 2010 10:06:54 -0700
 
-The XFS master branch has been updated.  It includes
-a fix for the problem caused by this commit:
+x86-32: Align IRQ stacks properly
 
-    0fd7275cc42ab734eaa1a2c747e65479bd1e42af
+As suggested by Steven Rostedt we need to align the IRQ stacks to the
+stack size, not just the page size to make them work for stack traces
+and other things that depend on finding the stack slot itself with 8k
+stacks.
 
-...which was is the cause of this linux-next build failure.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+LKML-Reference: <20100727121313.GA19976@lst.de>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/irq_32.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The branch has also been re-based to 2.6.35-rc6.
-
-					-Alex
-
-
+diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
+index 67f5f9f..3b5609f 100644
+--- a/arch/x86/kernel/irq_32.c
++++ b/arch/x86/kernel/irq_32.c
+@@ -55,7 +55,7 @@ static inline void print_stack_overflow(void) { }
+ union irq_ctx {
+ 	struct thread_info      tinfo;
+ 	u32                     stack[THREAD_SIZE/sizeof(u32)];
+-} __attribute__((aligned(PAGE_SIZE)));
++} __attribute__((aligned(THREAD_SIZE)));
+ 
+ static DEFINE_PER_CPU(union irq_ctx *, hardirq_ctx);
+ static DEFINE_PER_CPU(union irq_ctx *, softirq_ctx);
