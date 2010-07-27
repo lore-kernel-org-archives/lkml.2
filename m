@@ -1,104 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab0G0KqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 06:46:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35323 "EHLO hera.kernel.org"
+	id S1756131Ab0G0Kq3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 06:46:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35336 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755906Ab0G0KqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 06:46:08 -0400
-Date: Tue, 27 Jul 2010 10:45:50 GMT
+	id S1755664Ab0G0Kq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 06:46:27 -0400
+Date: Tue, 27 Jul 2010 10:46:11 GMT
 From: tip-bot for John Stultz <johnstul@us.ibm.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        johnstul@us.ibm.com, oleg@redhat.com, tglx@linutronix.de,
-        jolsa@redhat.com
+        johnstul@us.ibm.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, tglx@linutronix.de, oleg@redhat.com,
-        jolsa@redhat.com
-In-Reply-To: <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
-References: <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
+        johnstul@us.ibm.com, tglx@linutronix.de
+In-Reply-To: <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
+References: <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/clocksource] x86: Fix vtime/file timestamp inconsistencies
-Message-ID: <tip-8c73626ab28527b7eb7f3061c027fbfe530c488c@git.kernel.org>
-Git-Commit-ID: 8c73626ab28527b7eb7f3061c027fbfe530c488c
+Subject: [tip:timers/clocksource] time: Implement timespec_add
+Message-ID: <tip-ce3bf7ab22527183634a76512d9854a38615e4d5@git.kernel.org>
+Git-Commit-ID: ce3bf7ab22527183634a76512d9854a38615e4d5
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 10:45:51 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 10:46:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8c73626ab28527b7eb7f3061c027fbfe530c488c
-Gitweb:     http://git.kernel.org/tip/8c73626ab28527b7eb7f3061c027fbfe530c488c
+Commit-ID:  ce3bf7ab22527183634a76512d9854a38615e4d5
+Gitweb:     http://git.kernel.org/tip/ce3bf7ab22527183634a76512d9854a38615e4d5
 Author:     John Stultz <johnstul@us.ibm.com>
-AuthorDate: Tue, 13 Jul 2010 17:56:18 -0700
+AuthorDate: Tue, 13 Jul 2010 17:56:19 -0700
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 27 Jul 2010 12:40:53 +0200
 
-x86: Fix vtime/file timestamp inconsistencies
+time: Implement timespec_add
 
-Due to vtime calling vgettimeofday(), its possible that an application
-could call  time();create("stuff",O_RDRW);  only to see the file's
-creation timestamp to be before the value returned by time.
-
-A similar way to reproduce the issue is to compare the vsyscall time()
-with the syscall time(), and observe ordering issues.
-
-The modified test case from Oleg Nesterov below can illustrate this:
-
-int main(void)
-{
-	time_t sec1,sec2;
-	do {
-		sec1 = time(&sec2);
-		sec2 = syscall(__NR_time, NULL);
-	} while (sec1 <= sec2);
-
-	printf("vtime: %d.000000\n", sec1);
-	printf("time: %d.000000\n", sec2);
-	return 0;
-}
-
-The proper fix is to make vtime use the same time value as
-current_kernel_time() (which is exported via update_vsyscall) instead of
-vgettime().
-
-Thanks to Jiri Olsa for bringing up the issue and catching bugs in
-earlier verisons of this fix.
+After accidentally misusing timespec_add_safe, I wanted to make sure
+we don't accidently trip over that issue again, so I created a simple
+timespec_add() function which we can use to replace the instances
+of timespec_add_safe() that don't want the overflow detection.
 
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-LKML-Reference: <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
+LKML-Reference: <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/vsyscall_64.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 1c0c6ab..dce0c3c 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -169,13 +169,18 @@ int __vsyscall(0) vgettimeofday(struct timeval * tv, struct timezone * tz)
-  * unlikely */
- time_t __vsyscall(1) vtime(time_t *t)
- {
--	struct timeval tv;
-+	unsigned seq;
- 	time_t result;
- 	if (unlikely(!__vsyscall_gtod_data.sysctl_enabled))
- 		return time_syscall(t);
+---
+ include/linux/time.h      |   16 ++++++++++++++++
+ kernel/time/timekeeping.c |    6 +++---
+ 2 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/time.h b/include/linux/time.h
+index ea3559f0..9072df8 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -76,9 +76,25 @@ extern unsigned long mktime(const unsigned int year, const unsigned int mon,
+ 			    const unsigned int min, const unsigned int sec);
  
--	vgettimeofday(&tv, NULL);
--	result = tv.tv_sec;
-+	do {
-+		seq = read_seqbegin(&__vsyscall_gtod_data.lock);
+ extern void set_normalized_timespec(struct timespec *ts, time_t sec, s64 nsec);
 +
-+		result = __vsyscall_gtod_data.wall_time_sec;
++/*
++ * timespec_add_safe assumes both values are positive and checks
++ * for overflow. It will return TIME_T_MAX if the reutrn would be
++ * smaller then either of the arguments.
++ */
+ extern struct timespec timespec_add_safe(const struct timespec lhs,
+ 					 const struct timespec rhs);
+ 
 +
-+	} while (read_seqretry(&__vsyscall_gtod_data.lock, seq));
++static inline struct timespec timespec_add(struct timespec lhs,
++						struct timespec rhs)
++{
++	struct timespec ts_delta;
++	set_normalized_timespec(&ts_delta, lhs.tv_sec + rhs.tv_sec,
++				lhs.tv_nsec + rhs.tv_nsec);
++	return ts_delta;
++}
 +
- 	if (t)
- 		*t = result;
- 	return result;
+ /*
+  * sub = lhs - rhs, in normalized form
+  */
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index caf8d4d..623fe3d 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -579,9 +579,9 @@ static int timekeeping_resume(struct sys_device *dev)
+ 
+ 	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
+ 		ts = timespec_sub(ts, timekeeping_suspend_time);
+-		xtime = timespec_add_safe(xtime, ts);
++		xtime = timespec_add(xtime, ts);
+ 		wall_to_monotonic = timespec_sub(wall_to_monotonic, ts);
+-		total_sleep_time = timespec_add_safe(total_sleep_time, ts);
++		total_sleep_time = timespec_add(total_sleep_time, ts);
+ 	}
+ 	/* re-base the last cycle value */
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+@@ -887,7 +887,7 @@ EXPORT_SYMBOL_GPL(getboottime);
+  */
+ void monotonic_to_bootbased(struct timespec *ts)
+ {
+-	*ts = timespec_add_safe(*ts, total_sleep_time);
++	*ts = timespec_add(*ts, total_sleep_time);
+ }
+ EXPORT_SYMBOL_GPL(monotonic_to_bootbased);
+ 
