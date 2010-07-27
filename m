@@ -1,113 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab0G0Mrq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 08:47:46 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:48285 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753586Ab0G0Mro (ORCPT
+	id S1754266Ab0G0MvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 08:51:17 -0400
+Received: from p01c11o149.mxlogic.net ([208.65.144.72]:48023 "EHLO
+	p01c11o149.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab0G0MvP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 08:47:44 -0400
-Date: Tue, 27 Jul 2010 14:45:58 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <20100727120841.GC11468@n2100.arm.linux.org.uk>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-id: <003701cb2d89$adae4580$090ad080$%szyprowski@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: AcsthKgjK94ZTFI1Qi2BH3LWPPl6rQAAb18Q
-References: <cover.1280151963.git.m.nazarewicz@samsung.com>
- <743102607e2c5fb20e3c0676fadbcb93d501a78e.1280151963.git.m.nazarewicz@samsung.com>
- <dc4bdf3e0b02c0ac4770927f72b6cbc3f0b486a2.1280151963.git.m.nazarewicz@samsung.com>
- <20100727120841.GC11468@n2100.arm.linux.org.uk>
+	Tue, 27 Jul 2010 08:51:15 -0400
+X-MXL-Hash: 4c4ed643037516aa-d2e70f4aaf3940df16fc26e84d88839bce798f8b
+Message-ID: <4C4ED641.1030803@bluearc.com>
+Date: Tue, 27 Jul 2010 13:51:13 +0100
+From: Andy Chittenden <andyc@bluearc.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: nfs client hang
+References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>	 <4C4E89D4.8040607@bluearc.com>	 <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com> <1280233276.2827.175.camel@edumazet-laptop>
+In-Reply-To: <1280233276.2827.175.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
+X-MAIL-FROM: <andyc@bluearc.com>
+X-SOURCE-IP: [213.121.168.131]
+X-AnalysisOut: [v=1.0 c=1 a=VphdPIyG4kEA:10 a=IkcTkHD0fZMA:10 a=sIqM7rbIUs]
+X-AnalysisOut: [2FIam8obyq6w==:17 a=o0cdoPS4yRlJsJjKNPkA:9 a=cXxaut9FHxzI_]
+X-AnalysisOut: [LVZQZoA:7 a=7qNss1jP2wjFzL82pD8kZAKI90EA:4 a=QEXdDO2ut3YA:]
+X-AnalysisOut: [10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+  On 2010-07-27 13:21, Eric Dumazet wrote:
+> Le mardi 27 juillet 2010 à 11:53 +0100, Andy Chittenden a écrit :
+>>>>> IE the client starts a connection and then closes it again without sending data.
+>>>> Once this happens, here's some rpcdebug info for the rpc module using 2.6.34.1 kernel:
+>>>>
+>>>> ... lots of the following nfsv3 WRITE requests:
+>>>> [ 7670.026741] 57793 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026759] 57794 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026778] 57795 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026797] 57796 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026815] 57797 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026834] 57798 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026853] 57799 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026871] 57800 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026890] 57801 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7670.026909] 57802 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+>>>> [ 7680.520042] RPC:       worker connecting xprt ffff88013e62d800 via tcp to 10.1.6.102 (port 2049)
+>>>> [ 7680.520066] RPC:       ffff88013e62d800 connect status 99 connected 0 sock state 7
+>>>> [ 7680.520074] RPC: 33550 __rpc_wake_up_task (now 4296812426)
+>>>> [ 7680.520079] RPC: 33550 disabling timer
+>>>> [ 7680.520084] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
+>>>> [ 7680.520089] RPC:       __rpc_wake_up_task done
+>>>> [ 7680.520094] RPC: 33550 __rpc_execute flags=0x1
+>>>> [ 7680.520098] RPC: 33550 xprt_connect_status: retrying
+>>>> [ 7680.520103] RPC: 33550 call_connect_status (status -11)
+>>>> [ 7680.520108] RPC: 33550 call_transmit (status 0)
+>>>> [ 7680.520112] RPC: 33550 xprt_prepare_transmit
+>>>> [ 7680.520118] RPC: 33550 rpc_xdr_encode (status 0)
+>>>> [ 7680.520123] RPC: 33550 marshaling UNIX cred ffff88012e002300
+>>>> [ 7680.520130] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
+>>>> [ 7680.520136] RPC: 33550 xprt_transmit(32920)
+>>>> [ 7680.520145] RPC:       xs_tcp_send_request(32920) = -32
+>>>> [ 7680.520151] RPC:       xs_tcp_state_change client ffff88013e62d800...
+>>>> [ 7680.520156] RPC:       state 7 conn 0 dead 0 zapped 1
+>>> I changed that debug to output sk_shutdown too. That has a value of 2
+>>> (IE SEND_SHUTDOWN). Looking at tcp_sendmsg(), I see this:
+>>>           err = -EPIPE;
+>>>           if (sk->sk_err || (sk->sk_shutdown&  SEND_SHUTDOWN))
+>>>                   goto out_err;
+>>> which correlates with the trace "xs_tcp_send_request(32920) = -32". So,
+>>> this looks like a problem in the sockets/tcp layer. The rpc layer issues
+>>> a shutdown and then reconnects using the same socket. So either
+>>> sk_shutdown needs zeroing once the shutdown completes or should be
+>>> zeroed on subsequent connect. The latter sounds safer.
+>> This patch for 2.6.34.1 fixes the issue:
+>>
+>> --- /home/company/software/src/linux-2.6.34.1/net/ipv4/tcp_output.c     2010-07-27 08:46:46.917000000 +0100
+>> +++ net/ipv4/tcp_output.c       2010-07-27 09:19:16.000000000 +0100
+>> @@ -2522,6 +2522,13 @@
+>>          struct tcp_sock *tp = tcp_sk(sk);
+>>          __u8 rcv_wscale;
+>>
+>> +       /* clear down any previous shutdown attempts so that
+>> +        * reconnects on a socket that's been shutdown leave the
+>> +        * socket in a usable state (otherwise tcp_sendmsg() returns
+>> +        * -EPIPE).
+>> +        */
+>> +       sk->sk_shutdown = 0;
+>> +
+>>          /* We'll fix this up when we get a response from the other end.
+>>           * See tcp_input.c:tcp_rcv_state_process case TCP_SYN_SENT.
+>>           */
+>>
+>> As I mentioned in my first message, we first saw this issue in 2.6.32 as supplied by debian (linux-image-2.6.32-5-amd64 Version: 2.6.32-17). It looks like the same patch would fix the problem there too.
+>>
+> CC netdev
+>
+> This reminds me a similar problem we had in the past, fixed with commit
+> 1fdf475a (tcp: tcp_disconnect() should clear window_clamp)
+>
+> But tcp_disconnect() already clears sk->sk_shutdown
+>
+> If NFS calls tcp_disconnect(), then shutdown(), there is a problem.
+>
+> Maybe xs_tcp_shutdown() should make some sanity tests ?
+>
+> Following sequence is legal, and your patch might break it.
+>
+> fd = socket(...);
+> shutdown(fd, SHUT_WR);
+> ...
+> connect(fd, ...);
+>
+>
+>
+Thanks for the response. From my reading of the RPC code, because 
+nothing clears the sk_shutdown flag, the RPC code goes into a loop when 
+recovering from packets being lost:
 
-On Tuesday, July 27, 2010 2:09 PM Russell King - ARM Linux wrote:
+shutdown
+connect
+send fails so repeat
 
-> On Mon, Jul 26, 2010 at 04:40:30PM +0200, Michal Nazarewicz wrote:
-> > +** Why is it needed?
-> > +
-> > +    Various devices on embedded systems have no scatter-getter and/or
-> > +    IO map support and as such require contiguous blocks of memory to
-> > +    operate.  They include devices such as cameras, hardware video
-> > +    decoders and encoders, etc.
-> 
-> Yes, this is becoming quite a big problem - and many ARM SoCs suffer
-> from the existing memory allocators being extremely inadequate for
-> their use.
-> 
-> One of the areas I've been working on is sorting out the DMA coherent
-> allocator so we don't violate the architecture requirements for ARMv6
-> and ARMv7 CPUs (which basically prohibits multiple mappings of memory
-> with different attributes.)
-> 
-> One of the ideas that I've thought about for this is to reserve an
-> amount of contiguous memory at boot time to fill the entire DMA coherent
-> mapping, marking the memory in the main kernel memory map as 'no access',
-> and allocate directly from the DMA coherent region.
-> 
-> However, discussing this with people who have the problem you're trying
-> to solve indicates that they do not want to set aside an amount of
-> memory as they perceive this to be a waste of resources.
+My patch stops the NFS client hang that I was seeing but I'm not an 
+expert on either the socket layer, RPC code or NFS code so I'm happy for 
+someone else to come up with the alternative, correct fix.
 
-Assuming your board have only 128MB of physical memory (quite common case
-for some embedded boards), leaving 16MB unused just for DMA coherent
-area is a huge waste imho.
-
-> This concern also applies to 'cma'.
-
-Yes, we know. We plan to recover some of that 'wasted' memory by providing
-a way to allocate some kind of virtual swap device on it. This is just an
-idea, no related works has been started yet.
-
-> 
-> > +/*
-> > + * Don't call it directly, use cma_alloc(), cma_alloc_from() or
-> > + * cma_alloc_from_region().
-> > + */
-> > +dma_addr_t __must_check
-> > +__cma_alloc(const struct device *dev, const char *kind,
-> > +	    size_t size, dma_addr_t alignment);
-> 
-> Does this really always return DMA-able memory (memory which can be
-> DMA'd to/from without DMA-mapping etc?)
-> 
-> As it returns a dma_addr_t, it's returning a cookie for the memory which
-> will be suitable for writing directly to the device 'dev' doing the DMA.
-> (NB: DMA addresses may not be the same as physical addresses, especially
-> if the device is on a downstream bus.  We have ARM platforms which have
-> different bus offsets.)
-> 
-> How does one obtain the CPU address of this memory in order for the CPU
-> to access it?
-
-Right, we did not cover such case. In CMA approach we tried to separate
-memory allocation from the memory mapping into user/kernel space. Mapping
-a buffer is much more complicated process that cannot be handled in a
-generic way, so we decided to leave this for the device drivers. Usually
-video processing devices also don't need in-kernel mapping for such
-buffers at all.
-
-Best regards
---
-Marek Szyprowski
-Samsung Poland R&D Center
-
+-- 
+Andy, BlueArc Engineering
 
