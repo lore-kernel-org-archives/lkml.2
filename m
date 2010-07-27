@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab0G0P6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 11:58:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56707 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab0G0P6N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 11:58:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=ocfACIXANQiFKr05kFha1rc3qGo5GNztsrprCpf65/9v+H4ugnwnSJLDhAnPgJFJ7J
-         MW4H5dTDxdWuOE5WjjOi/OUBPb+J3WbOPHPEyyjuBg7cpgMzOAJ7oglhkd5+ev73ktYO
-         CNWaux3dBC5NgGtvxTcgCmRQM2FVttRUOEf6o=
+	id S1752795Ab0G0P6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 11:58:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751716Ab0G0P6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 11:58:41 -0400
+Message-ID: <4C4F0244.2070803@redhat.com>
+Date: Tue, 27 Jul 2010 12:59:00 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1280223313.3721.83.camel@maxim-laptop>
-References: <20100726210651.GJ14855@tux> <1280179033.3721.15.camel@maxim-laptop> 
-	<20100726212543.GA5424@srcf.ucam.org> <AANLkTi=5_Dc8SumPi7cr8u7=DmnOHgSo6C76w9b0E4Kj@mail.gmail.com> 
-	<20100726222113.GA6487@srcf.ucam.org> <AANLkTinq-SxMHTrJM23WaeRMkU-2cySiVrkwCjDRS_o+@mail.gmail.com> 
-	<20100726222909.GA6773@srcf.ucam.org> <AANLkTinysGjYS7RKN4X_7T2q+rw_-OWdn-UJYM0poWXu@mail.gmail.com> 
-	<20100726223326.GA6904@srcf.ucam.org> <AANLkTinChEx_B9wa-n+a6xDr1vLOBOD3Mhcs=iqcYwen@mail.gmail.com> 
-	<20100726225057.GA7268@srcf.ucam.org> <1280223313.3721.83.camel@maxim-laptop>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 27 Jul 2010 08:57:51 -0700
-Message-ID: <AANLkTim1sZ5ZoGcrsdCw8dFSzUj4igZOiq7irKsdbfXR@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH v3] ath5k: disable ASPM
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        David Quan <David.Quan@atheros.com>,
-        "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "tim.gardner@canonical.com" <tim.gardner@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jarod Wilson <jarod@redhat.com>, Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 0/15] STAGING: add lirc device drivers
+References: <20100726232546.GA21225@redhat.com>
+In-Reply-To: <20100726232546.GA21225@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 2:35 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> On Mon, 2010-07-26 at 23:50 +0100, Matthew Garrett wrote:
->> On Mon, Jul 26, 2010 at 03:43:04PM -0700, Luis R. Rodriguez wrote:
->>
->> > I see.. thanks Mathew... in that case since L1 works on all devices we
->> > could just force enable L1 for all PCIE devices. What do you think?
->>
->> Works for me.
->>
->
-> On the second thought, there is no 'pci_enable_link_state' :-)
-> I afraid that if I add it, I might not do that right for all cases, thus
-> do more harm that good...
+Em 26-07-2010 20:25, Jarod Wilson escreveu:
+> This patch series adds the remaining lirc_foo device drivers to the staging
+> tree. The core lirc_dev driver and lirc headers are currently merged in a
+> v4l/dvb staging tree (which is pulled into linux-next), and are utilized by
+> way of an IR decoder/encoder bridge plugin to ir-core.
+> 
+> I've started porting lirc_foo drivers over to ir-core, first tackling the
+> lirc_mceusb and lirc_imon drivers. lirc_mceusb is no more, replaced by a
+> pure ir-core mceusb driver, and lirc_imon only supports the old first-gen
+> imon devices now, which are quite different from the current-gen ones, now
+> supported by a pure ir-core imon driver.
+> 
+> The long-term goal here is that all of these drivers should either be ported
+> to ir-core, or dropped entirely. Some of them (*cough* lirc_parallel *cough*)
+> should likely just be put out to pasture, but others are definitely still in
+> use by quite a few people out there. I've got hardware for another four or
+> five of the drivers, but not the rest, so I'm hoping that maybe people who
+> have the hardware will pitch in and help with the porting if the bits are
+> more readily available by way of the staging tree.
+> 
+> Drivers I have hardware for, and am thus most likely to work on porting to
+> ir-core before any others (and probably in this order):
+> - lirc_zilog
+> - lirc_streamzap
+> - lirc_i2c
+> - lirc_serial
+> - lirc_sir
+> 
+> Additionally, Maxim Levitsky, the author of lirc_ene0100, has already started
+> work on porting lirc_ene0100 to ir-core. Everything else, definitely
+> looking for help.
+> 
+> Patches:
+> staging/lirc: add lirc_bt829 driver
+> staging/lirc: add lirc_ene0100 driver
+> staging/lirc: add lirc_i2c driver
+> staging/lirc: add lirc_igorplugusb driver
+> staging/lirc: add lirc_imon driver
+> staging/lirc: add lirc_it87 driver
+> staging/lirc: add lirc_ite8709 driver
+> staging/lirc: add lirc_parallel driver
+> staging/lirc: add lirc_sasem driver
+> staging/lirc: add lirc_serial driver
+> staging/lirc: add lirc_sir driver
+> staging/lirc: add lirc_streamzap driver
+> staging/lirc: add lirc_ttusbir driver
+> staging/lirc: add lirc_zilog driver
+> staging/lirc: wire up Kconfig and Makefile bits
+> 
+> Diffstat:
+>  drivers/staging/Kconfig                 |    2 +
+>  drivers/staging/Makefile                |    1 +
+>  drivers/staging/lirc/Kconfig            |  110 +++
+>  drivers/staging/lirc/Makefile           |   19 +
+>  drivers/staging/lirc/TODO               |    8 +
+>  drivers/staging/lirc/lirc_bt829.c       |  383 +++++++++
+>  drivers/staging/lirc/lirc_ene0100.c     |  646 ++++++++++++++
+>  drivers/staging/lirc/lirc_ene0100.h     |  169 ++++
+>  drivers/staging/lirc/lirc_i2c.c         |  536 ++++++++++++
+>  drivers/staging/lirc/lirc_igorplugusb.c |  555 ++++++++++++
+>  drivers/staging/lirc/lirc_imon.c        | 1058 +++++++++++++++++++++++
+>  drivers/staging/lirc/lirc_it87.c        | 1019 +++++++++++++++++++++++
+>  drivers/staging/lirc/lirc_it87.h        |  116 +++
+>  drivers/staging/lirc/lirc_ite8709.c     |  542 ++++++++++++
+>  drivers/staging/lirc/lirc_parallel.c    |  705 ++++++++++++++++
+>  drivers/staging/lirc/lirc_parallel.h    |   26 +
+>  drivers/staging/lirc/lirc_sasem.c       |  933 +++++++++++++++++++++
+>  drivers/staging/lirc/lirc_serial.c      | 1313 +++++++++++++++++++++++++++++
+>  drivers/staging/lirc/lirc_sir.c         | 1282 ++++++++++++++++++++++++++++
+>  drivers/staging/lirc/lirc_streamzap.c   |  821 ++++++++++++++++++
+>  drivers/staging/lirc/lirc_ttusbir.c     |  397 +++++++++
+>  drivers/staging/lirc/lirc_zilog.c       | 1387
+> +++++++++++++++++++++++++++++++
+>  22 files changed, 12028 insertions(+), 0 deletions(-)
+> 
+Hi Jarod,
 
-I'm sorry, can you elaborate?
+Please add a TODO file at staging/lirc, describing what's needed for
+the drivers to move to the IR branch.
 
-  Luis
+Greg,
+
+It is probably simpler to merge those files via my tree, as they depend
+on some changes scheduled for 2.6.36.
+
+Would it be ok for you if I merge them from my tree?
+
+Cheers,
+Mauro
+
+
