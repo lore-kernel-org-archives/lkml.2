@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab0G0Puj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 11:50:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338Ab0G0Puh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 11:50:37 -0400
-Date: Tue, 27 Jul 2010 17:50:23 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] cred - synchronize rcu before releasing cred
-Message-ID: <20100727155023.GF1967@jolsa.brq.redhat.com>
+	id S1752383Ab0G0P6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 11:58:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56707 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab0G0P6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 11:58:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=ocfACIXANQiFKr05kFha1rc3qGo5GNztsrprCpf65/9v+H4ugnwnSJLDhAnPgJFJ7J
+         MW4H5dTDxdWuOE5WjjOi/OUBPb+J3WbOPHPEyyjuBg7cpgMzOAJ7oglhkd5+ev73ktYO
+         CNWaux3dBC5NgGtvxTcgCmRQM2FVttRUOEf6o=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1280223313.3721.83.camel@maxim-laptop>
+References: <20100726210651.GJ14855@tux> <1280179033.3721.15.camel@maxim-laptop> 
+	<20100726212543.GA5424@srcf.ucam.org> <AANLkTi=5_Dc8SumPi7cr8u7=DmnOHgSo6C76w9b0E4Kj@mail.gmail.com> 
+	<20100726222113.GA6487@srcf.ucam.org> <AANLkTinq-SxMHTrJM23WaeRMkU-2cySiVrkwCjDRS_o+@mail.gmail.com> 
+	<20100726222909.GA6773@srcf.ucam.org> <AANLkTinysGjYS7RKN4X_7T2q+rw_-OWdn-UJYM0poWXu@mail.gmail.com> 
+	<20100726223326.GA6904@srcf.ucam.org> <AANLkTinChEx_B9wa-n+a6xDr1vLOBOD3Mhcs=iqcYwen@mail.gmail.com> 
+	<20100726225057.GA7268@srcf.ucam.org> <1280223313.3721.83.camel@maxim-laptop>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 27 Jul 2010 08:57:51 -0700
+Message-ID: <AANLkTim1sZ5ZoGcrsdCw8dFSzUj4igZOiq7irKsdbfXR@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH v3] ath5k: disable ASPM
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        David Quan <David.Quan@atheros.com>,
+        "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
+        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        "tim.gardner@canonical.com" <tim.gardner@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On Tue, Jul 27, 2010 at 2:35 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> On Mon, 2010-07-26 at 23:50 +0100, Matthew Garrett wrote:
+>> On Mon, Jul 26, 2010 at 03:43:04PM -0700, Luis R. Rodriguez wrote:
+>>
+>> > I see.. thanks Mathew... in that case since L1 works on all devices we
+>> > could just force enable L1 for all PCIE devices. What do you think?
+>>
+>> Works for me.
+>>
+>
+> On the second thought, there is no 'pci_enable_link_state' :-)
+> I afraid that if I add it, I might not do that right for all cases, thus
+> do more harm that good...
 
-got no objections on linux-security-module and acked by David.
-Noone pick it, so got advice to send this directly to you.
+I'm sorry, can you elaborate?
 
-wbr,
-jirka
----
-
-BZ 591015 - kernel BUG at kernel/cred.c:168
-https://bugzilla.redhat.com/show_bug.cgi?id=591015
-
-Above bugzilla reported bug during the releasing of
-old cred structure.
-
-There is reproducer attached to the bugzilla.
-
-The issue is caused by releasing old cred struct while other
-kernel path might be still using it. This leads to cred->usage
-inconsistency inside the __put_cred and triggering the bug.
-
-Following kernel paths are affected:
-
-The CPU1 path is setting the new groups creds.
-The CPU2 path is cat /proc/PID/status
-
-
-CPU 1                              CPU 2
-
-sys_setgroups                      proc_pid_status      
-  set_current_groups                 task_state
-    commit_creds                       rcu_read_lock
-      put_cred                         ...
-        __put_cred                     get_cred
-          BUG_ON(usage != 0)           ...
-                                       rcu_read_unlock
-                                       
-
-
-If __put_cred got executed during the CPU2 holding the reference
-the BUG_ON inside __put_cred is trigered.
-
-I think there's no need to get the cred refference as long as
-the 'cred' handling stays inside the rcu_read_lock block.
-
-And the condition of __task_cred 'make sure task doesn't go away',
-is done by proc_single_show as this is the proc file.
-
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: David Howells <dhowells@redhat.com>
----
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 9b58d38..ac3b3a4 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		if (tracer)
- 			tpid = task_pid_nr_ns(tracer, ns);
- 	}
--	cred = get_cred((struct cred *) __task_cred(p));
-+	cred = __task_cred(p);
- 	seq_printf(m,
- 		"State:\t%s\n"
- 		"Tgid:\t%d\n"
-@@ -199,15 +199,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
- 		"FDSize:\t%d\n"
- 		"Groups:\t",
- 		fdt ? fdt->max_fds : 0);
--	rcu_read_unlock();
- 
- 	group_info = cred->group_info;
- 	task_unlock(p);
- 
- 	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
- 		seq_printf(m, "%d ", GROUP_AT(group_info, g));
--	put_cred(cred);
- 
-+	rcu_read_unlock();
- 	seq_printf(m, "\n");
- }
- 
-
------ End forwarded message -----
+  Luis
