@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab0G0DlK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 23:41:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54907 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab0G0DlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 23:41:09 -0400
-Message-ID: <4C4E5560.9060905@cn.fujitsu.com>
-Date: Tue, 27 Jul 2010 11:41:20 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-        Tejun Heo <tj@kernel.org>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] btrfs: set task state with schedule_timeout_uninterruptible()
-References: <1280132864-8266-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1280132864-8266-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=GB2312
+	id S1755630Ab0G0Dny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 23:43:54 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:48055 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752371Ab0G0Dnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 23:43:52 -0400
+X-Sasl-enc: vk34KwUBLgTeSY2ibp9RncHuu+xokUsnMx4C5+rM3ziz 1280202231
+Subject: Re: [PATCH 1/6] Add a dentry op to handle automounting rather than
+ abusing follow_link() [ver #2]
+From: Ian Kent <raven@themaw.net>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <30118.1280159695@redhat.com>
+References: <1280157768.3569.14.camel@localhost>
+	 <1279944664.2944.8.camel@localhost>
+	 <20100722175847.5552.11520.stgit@warthog.procyon.org.uk>
+	 <17723.1279897759@redhat.com> <9168.1280153997@redhat.com>
+	 <30118.1280159695@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Jul 2010 11:43:45 +0800
+Message-ID: <1280202225.2944.20.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jul 2010 12:27:43 +0400, Kulikov Vasiliy wrote:
-> worker_loop() uses schedule_timeout() without setting state to
-> STATE_(UN)INTERRUPTIBLE. As it is called in cycle without checking of
-> pending signals, use schedule_timeout_uninterruptible().
+On Mon, 2010-07-26 at 16:54 +0100, David Howells wrote:
+> Ian Kent <raven@themaw.net> wrote:
 > 
-> Signed-off-by: Kulikov Vasiliy<segooon@gmail.com>
+> > > Does it make autofs easier if d_op->d_automount() is allowed to return
+> > > -EXDEV to request this?  Then you can return it in Oz mode to allow the
+> > > daemon to see/use the underlying mountpoint without recursing back into
+> > > d_automount().
+> > 
+> > Yes, it's really useful.
+> 
+> I think what's required, then, is if d_automount() returns -EXDEV then:
+> 
+>  (1) If the dentry is terminal in the lookup path, then we just return -EXDEV
+>      to indicate to __follow_mount() that we really do want to stop there.
+> 
+>  (2) If the dentry is not terminal, then we convert the error to -EREMOTE to
+>      indicate that we can't complete the pathwalk as one of the earlier
+>      components is inaccessible.
+
+Is this something others need?
+
+Again, the exists vs not yet exists case for paths within indirect
+autofs mounts. At the moment I can just set the flag on all dentrys in
+the autofs fs and return EXDEV for non-empty directories in order to
+return the dentry as a path component. OTOH if the dentry is a mount
+embeded in the path and the mount fails we get a error return.
+
+I could clear the flag on non-root parent dentrys during mkdir if this
+is needed by others.
+  
+> 
+> See the attached patch.
+> 
+> David
 > ---
->   fs/btrfs/async-thread.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+> diff --git a/fs/namei.c b/fs/namei.c
+> index c154112..6c385d4 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -653,8 +653,20 @@ static int follow_automount(struct path *path, unsigned flags, int res)
+>  		return -ELOOP;
+>  
+>  	mnt = path->dentry->d_op->d_automount(path);
+> -	if (IS_ERR(mnt))
+> +	if (IS_ERR(mnt)) {
+> +		/*
+> +		 * The filesystem is allowed to return -EXDEV here to indicate
+> +		 * they don't want to automount.  For instance, autofs would do
+> +		 * this so that its userspace daemon can mount on this dentry.
+> +		 *
+> +		 * However, we can only permit this if it's a terminal point in
+> +		 * the path being looked up; if it wasn't then the remainder of
+> +		 * the path is inaccessible and we should say so.
+> +		 */
+> +		if (PTR_ERR(mnt) == -EXDEV && (flags & LOOKUP_CONTINUE))
+> +			return -EREMOTE;
+>  		return PTR_ERR(mnt);
+> +	}
+>  	if (!mnt) /* mount collision */
+>  		return 0;
+>  
 > 
-> diff --git a/fs/btrfs/async-thread.c b/fs/btrfs/async-thread.c
-> index 7ec1409..54eb070 100644
-> --- a/fs/btrfs/async-thread.c
-> +++ b/fs/btrfs/async-thread.c
-> @@ -362,7 +362,7 @@ again:
->   				 * worker->working is still 1, so nobody
->   				 * is going to try and wake us up
->   				 */
-> -				schedule_timeout(1);
-> +				schedule_timeout_uninterruptible(1);
 
-I found there is the same problem in the other place of the btrfs,
-could you fix them?
-
-Thanks!
-Miao
-
->   				smp_mb();
->   				if (!list_empty(&worker->pending) ||
->   				    !list_empty(&worker->prio_pending))
 
