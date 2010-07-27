@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab0G0MJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 08:09:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52462 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab0G0MJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 08:09:16 -0400
-Date: Tue, 27 Jul 2010 13:08:41 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Daniel Walker <dwalker@codeaurora.org>,
-        Jonathan Corbet <corbet@lwn.net>, Pawel Osciak <p.osciak@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Hiremath Vaibhav <hvaibhav@ti.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>, linux-media@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20100727120841.GC11468@n2100.arm.linux.org.uk>
-References: <cover.1280151963.git.m.nazarewicz@samsung.com> <743102607e2c5fb20e3c0676fadbcb93d501a78e.1280151963.git.m.nazarewicz@samsung.com> <dc4bdf3e0b02c0ac4770927f72b6cbc3f0b486a2.1280151963.git.m.nazarewicz@samsung.com>
-MIME-Version: 1.0
+	id S1754666Ab0G0MNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 08:13:41 -0400
+Received: from verein.lst.de ([213.95.11.210]:41593 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752Ab0G0MNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 08:13:39 -0400
+Date: Tue, 27 Jul 2010 14:13:13 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Hellwig <hch@lst.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/irq] x86: Always use irq stacks
+Message-ID: <20100727121313.GA19976@lst.de>
+References: <20100630074434.GA25509@elte.hu> <20100630075212.GA24658@lst.de> <20100630075818.GB25509@elte.hu> <20100630080453.GA14371@elte.hu> <20100708204251.GA13569@elte.hu> <20100708205302.GA23961@lst.de> <20100714151215.GA31825@lst.de> <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain> <20100714154746.GA2074@lst.de> <1279131672.4190.18.camel@localhost>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <dc4bdf3e0b02c0ac4770927f72b6cbc3f0b486a2.1280151963.git.m.nazarewicz@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1279131672.4190.18.camel@localhost>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 04:40:30PM +0200, Michal Nazarewicz wrote:
-> +** Why is it needed?
-> +
-> +    Various devices on embedded systems have no scatter-getter and/or
-> +    IO map support and as such require contiguous blocks of memory to
-> +    operate.  They include devices such as cameras, hardware video
-> +    decoders and encoders, etc.
+Ingo, can you test this patch implementing Steve's suggestion?
+Unfortunately I'm not able to reproduce the bug on my setup anymore.
 
-Yes, this is becoming quite a big problem - and many ARM SoCs suffer
-from the existing memory allocators being extremely inadequate for
-their use.
+---
 
-One of the areas I've been working on is sorting out the DMA coherent
-allocator so we don't violate the architecture requirements for ARMv6
-and ARMv7 CPUs (which basically prohibits multiple mappings of memory
-with different attributes.)
+From: Christoph Hellwig <hch@lst.de>
+Subject: [PATCH] x86-32: align irq stacks properly
 
-One of the ideas that I've thought about for this is to reserve an
-amount of contiguous memory at boot time to fill the entire DMA coherent
-mapping, marking the memory in the main kernel memory map as 'no access',
-and allocate directly from the DMA coherent region.
+As suggested by Steven Rostedt we need to align the irq stacks on the
+stack size, not just the page size to make them work for stack traces
+with 8k stacks.
 
-However, discussing this with people who have the problem you're trying
-to solve indicates that they do not want to set aside an amount of
-memory as they perceive this to be a waste of resources.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-This concern also applies to 'cma'.
-
-> +/*
-> + * Don't call it directly, use cma_alloc(), cma_alloc_from() or
-> + * cma_alloc_from_region().
-> + */
-> +dma_addr_t __must_check
-> +__cma_alloc(const struct device *dev, const char *kind,
-> +	    size_t size, dma_addr_t alignment);
-
-Does this really always return DMA-able memory (memory which can be
-DMA'd to/from without DMA-mapping etc?)
-
-As it returns a dma_addr_t, it's returning a cookie for the memory which
-will be suitable for writing directly to the device 'dev' doing the DMA.
-(NB: DMA addresses may not be the same as physical addresses, especially
-if the device is on a downstream bus.  We have ARM platforms which have
-different bus offsets.)
-
-How does one obtain the CPU address of this memory in order for the CPU
-to access it?
-
-> +static inline dma_addr_t __must_check
-> +cma_alloc(const struct device *dev, const char *kind,
-> +	  size_t size, dma_addr_t alignment)
-> +{
-> +	return dev ? -EINVAL : __cma_alloc(dev, kind, size, alignment);
-
-So I can't use this to allocate memory for anything but a NULL device?
-
-> +static inline int
-> +cma_info(struct cma_info *info, const struct device *dev, const char *kind)
-> +{
-> +	return dev ? -EINVAL : __cma_info(info, dev, kind);
-
-This won't return information for anything but a NULL device?
+Index: linux-2.6-tip/arch/x86/kernel/irq_32.c
+===================================================================
+--- linux-2.6-tip.orig/arch/x86/kernel/irq_32.c	2010-07-27 14:06:50.634494682 +0200
++++ linux-2.6-tip/arch/x86/kernel/irq_32.c	2010-07-27 14:06:58.031494680 +0200
+@@ -55,7 +55,7 @@ static inline void print_stack_overflow(
+ union irq_ctx {
+ 	struct thread_info      tinfo;
+ 	u32                     stack[THREAD_SIZE/sizeof(u32)];
+-} __attribute__((aligned(PAGE_SIZE)));
++} __attribute__((aligned(THREAD_SIZE)));
+ 
+ static DEFINE_PER_CPU(union irq_ctx *, hardirq_ctx);
+ static DEFINE_PER_CPU(union irq_ctx *, softirq_ctx);
