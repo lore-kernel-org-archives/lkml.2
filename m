@@ -1,293 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab0G0PnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 11:43:15 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:14272 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab0G0PnK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 11:43:10 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] x86, acpi: handle xapic/x2apic at same time
-Date: Tue, 27 Jul 2010 09:42:51 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Rientjes <rientjes@google.com>, Feng Tang <feng.tang@intel.com>,
-        Shaohua Li <shaohua.li@intel.com>, Jean Delvare <khali@linux-fr.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-References: <4C4E047D.6030000@kernel.org>
-In-Reply-To: <4C4E047D.6030000@kernel.org>
+	id S1756255Ab0G0Pnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 11:43:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab0G0Pnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 11:43:33 -0400
+Message-ID: <4C4EFE80.7050808@suse.cz>
+Date: Tue, 27 Jul 2010 17:42:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007270942.52333.bjorn.helgaas@hp.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 4/4] kconfig: add savedefconfig
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org>
+In-Reply-To: <20100725214021.GD5834@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 26, 2010 03:56:13 pm Yinghai Lu wrote:
+On 25.7.2010 23:40, Sam Ravnborg wrote:
+> From 5edffcc6890a7dbd43b8da9c453bee794e81e7c7 Mon Sep 17 00:00:00 2001
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Sun, 25 Jul 2010 23:18:47 +0200
+> Subject: [PATCH 4/4] kconfig: add savedefconfig
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=utf-8
+> Content-Transfer-Encoding: 8bit
 > 
-> one system have mixing xapic and x2apic entries in MADT and SRAT.
-> 
-> try to handle every entry in MADT at same time with xapic and x2apic.
-> so we can honor sequence in MADT.
-> 
-> We can use max_cpus= command line to use thread0 in every core.
-> because recent MADT always have all thread0 at first.
-> 
-> also make the cpu to node mapping more sane.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
+> savedefconfig is used to save a minimal configuration
+> that is useful for a defconfig.
+
+General comment: I like this more than the "replace defconfigs with
+Kconfig files" approach -- the .config format is efficient and easy to
+read, we have tools to edit it (make *config), the issue was the size of
+the defconfigs and the updates to them, which your patches address now.
+
+
+
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  arch/x86/kernel/acpi/boot.c |   35 ++++++++++++++++++++-------
->  drivers/acpi/numa.c         |   18 +++++++++++---
->  drivers/acpi/tables.c       |   56 ++++++++++++++++++++++++++++++++------------
->  include/linux/acpi.h        |    8 ++++++
->  4 files changed, 89 insertions(+), 28 deletions(-)
+>  scripts/kconfig/Makefile    |    7 +++-
+>  scripts/kconfig/conf.c      |   20 ++++++++-
+>  scripts/kconfig/confdata.c  |   94 ++++++++++++++++++++++++++++++++++++++++++
+>  scripts/kconfig/lkc.h       |    2 +
+>  scripts/kconfig/lkc_proto.h |    1 +
+>  scripts/kconfig/symbol.c    |   96 +++++++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 217 insertions(+), 3 deletions(-)
 > 
-> Index: linux-2.6/arch/x86/kernel/acpi/boot.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
-> +++ linux-2.6/arch/x86/kernel/acpi/boot.c
-> @@ -863,6 +863,7 @@ static int __init acpi_parse_madt_lapic_
->  {
->  	int count;
->  	int x2count = 0;
-> +	struct acpi_subtable_proc madt_proc;
+> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+> index 366711a..aeb04c2 100644
+> --- a/scripts/kconfig/Makefile
+> +++ b/scripts/kconfig/Makefile
+> @@ -95,7 +95,8 @@ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
+>  	$(Q)rm -f arch/um/Kconfig.arch
+>  	$(Q)rm -f $(obj)/config.pot
 >  
->  	if (!cpu_has_apic)
->  		return -ENODEV;
-> @@ -887,10 +888,19 @@ static int __init acpi_parse_madt_lapic_
->  				      acpi_parse_sapic, MAX_APICS);
+> -PHONY += randconfig allyesconfig allnoconfig allmodconfig alldefconfig defconfig
+> +PHONY += randconfig allyesconfig allnoconfig allmodconfig alldefconfig
+> +PHONY += defconfig savedefconfig
 >  
->  	if (!count) {
-> -		x2count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC,
-> -						acpi_parse_x2apic, MAX_APICS);
-> -		count = acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC,
-> -					      acpi_parse_lapic, MAX_APICS);
+>  randconfig: $(obj)/conf
+>  	$< -r $(Kconfig)
+> @@ -112,6 +113,9 @@ allmodconfig: $(obj)/conf
+>  alldefconfig: $(obj)/conf
+>  	$< -f $(Kconfig)
+>  
+> +savedefconfig: $(obj)/conf
+> +	$< -M defconfig $(Kconfig)
 > +
-> +		memset(&madt_proc, 0, sizeof(madt_proc));
-> +		madt_proc.id[0] = ACPI_MADT_TYPE_LOCAL_APIC;
-> +		madt_proc.handler[0] = acpi_parse_lapic;
-> +		madt_proc.num++;
-> +		madt_proc.id[1] = ACPI_MADT_TYPE_LOCAL_X2APIC;
-> +		madt_proc.handler[1] = acpi_parse_x2apic;
-> +		madt_proc.num++;
-> +		acpi_table_parse_entries_x(ACPI_SIG_MADT,
-> +					    sizeof(struct acpi_table_madt),
-> +					    &madt_proc, MAX_APICS);
-> +		count = madt_proc.count[0];
-> +		x2count = madt_proc.count[1];
 
-This is a mess.  Why should we build infrastructure like
-acpi_table_parse_entries_x() that has a built-in limit of two
-entry types?
+Out of curiosity, do you have any mnemonics for -f and -M, or are these
+just random letters that were free? :) Maybe we should add long options
+like --defconfig, --allmodconfig for each of the targets and use them in
+the Makefile. The meaning of the single-letter options is not obvious
+sometimes. scripts/genksyms already uses getopt_long() so we would not
+regress in portability.
 
-I think it would be better to move the "entry->type == entry_id"
-test out of acpi_table_parse_entries() and into the callback (the
-acpi_table_entry_handler).
 
-That's a little more work because you'd have to touch more code,
-but at least the result would be readable.
-
-Bjorn
-
->  	}
->  	if (!count && !x2count) {
->  		printk(KERN_ERR PREFIX "No LAPIC entries present\n");
-> @@ -902,11 +912,18 @@ static int __init acpi_parse_madt_lapic_
->  		return count;
->  	}
+>  defconfig: $(obj)/conf
+>  ifeq ($(KBUILD_DEFCONFIG),)
+>  	$< -d $(Kconfig)
+> @@ -140,6 +144,7 @@ help:
+>  	@echo  '  allmodconfig	  - New config selecting modules when possible'
+>  	@echo  '  allyesconfig	  - New config where all options are accepted with yes'
+>  	@echo  '  allnoconfig	  - New config where all options are answered with no'
+> +	@echo  '  savedefconfig   - Save current config as ./defconfig (minimal config)'
 >  
-> -	x2count =
-> -	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_X2APIC_NMI,
-> -				  acpi_parse_x2apic_nmi, 0);
-> -	count =
-> -	    acpi_table_parse_madt(ACPI_MADT_TYPE_LOCAL_APIC_NMI, acpi_parse_lapic_nmi, 0);
-> +	memset(&madt_proc, 0, sizeof(madt_proc));
-> +	madt_proc.id[0] = ACPI_MADT_TYPE_LOCAL_APIC_NMI;
-> +	madt_proc.handler[0] = acpi_parse_lapic_nmi;
-> +	madt_proc.num++;
-> +	madt_proc.id[1] = ACPI_MADT_TYPE_LOCAL_X2APIC_NMI;
-> +	madt_proc.handler[1] = acpi_parse_x2apic_nmi;
-> +	madt_proc.num++;
-> +	acpi_table_parse_entries_x(ACPI_SIG_MADT,
-> +				    sizeof(struct acpi_table_madt),
-> +				    &madt_proc, MAX_APICS);
-> +	count = madt_proc.count[0];
-> +	x2count = madt_proc.count[1];
->  	if (count < 0 || x2count < 0) {
->  		printk(KERN_ERR PREFIX "Error parsing LAPIC NMI entry\n");
->  		/* TBD: Cleanup to allow fallback to MPS */
-> Index: linux-2.6/drivers/acpi/numa.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/numa.c
-> +++ linux-2.6/drivers/acpi/numa.c
-> @@ -292,10 +292,20 @@ int __init acpi_numa_init(void)
+>  # lxdialog stuff
+>  check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
+> diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+> index 2b4775e..b1a903b 100644
+> --- a/scripts/kconfig/conf.c
+> +++ b/scripts/kconfig/conf.c
+> @@ -28,7 +28,8 @@ enum {
+>  	set_mod,
+>  	set_no,
+>  	set_default,
+> -	set_random
+> +	set_random,
+> +	save_defconfig,
+>  } input_mode = ask_all;
+>  char *defconfig_file;
 >  
->  	/* SRAT: Static Resource Affinity Table */
->  	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
-> -		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
-> -				     acpi_parse_x2apic_affinity, nr_cpu_ids);
-> -		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
-> -				     acpi_parse_processor_affinity, nr_cpu_ids);
-> +		struct acpi_subtable_proc srat_proc;
-> +
-> +		memset(&srat_proc, 0, sizeof(srat_proc));
-> +		srat_proc.id[0] = ACPI_SRAT_TYPE_CPU_AFFINITY;
-> +		srat_proc.handler[0] = acpi_parse_processor_affinity;
-> +		srat_proc.num++;
-> +		srat_proc.id[1] = ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY;
-> +		srat_proc.handler[1] = acpi_parse_x2apic_affinity;
-> +		srat_proc.num++;
-> +
-> +		acpi_table_parse_entries_x(ACPI_SIG_SRAT,
-> +					    sizeof(struct acpi_table_srat),
-> +					    &srat_proc, nr_cpu_ids);
-> +
->  		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
->  					    acpi_parse_memory_affinity,
->  					    NR_NODE_MEMBLKS);
-> Index: linux-2.6/drivers/acpi/tables.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/tables.c
-> +++ linux-2.6/drivers/acpi/tables.c
-> @@ -201,10 +201,9 @@ void acpi_table_print_madt_entry(struct
+> @@ -440,7 +441,7 @@ int main(int ac, char **av)
+>  	bindtextdomain(PACKAGE, LOCALEDIR);
+>  	textdomain(PACKAGE);
 >  
->  
->  int __init
-> -acpi_table_parse_entries(char *id,
-> +acpi_table_parse_entries_x(char *id,
->  			     unsigned long table_size,
-> -			     int entry_id,
-> -			     acpi_table_entry_handler handler,
-> +			     struct acpi_subtable_proc *proc,
->  			     unsigned int max_entries)
->  {
->  	struct acpi_table_header *table_header = NULL;
-> @@ -212,12 +211,12 @@ acpi_table_parse_entries(char *id,
->  	unsigned int count = 0;
->  	unsigned long table_end;
->  	acpi_size tbl_size;
-> +	int i;
->  
-> -	if (acpi_disabled)
-> +	if (acpi_disabled) {
-> +		proc->count[0] = -ENODEV;
->  		return -ENODEV;
-> -
-> -	if (!handler)
-> -		return -EINVAL;
-> +	}
->  
->  	if (strncmp(id, ACPI_SIG_MADT, 4) == 0)
->  		acpi_get_table_with_size(id, acpi_apic_instance, &table_header, &tbl_size);
-> @@ -226,6 +225,7 @@ acpi_table_parse_entries(char *id,
->  
->  	if (!table_header) {
->  		printk(KERN_WARNING PREFIX "%4.4s not present\n", id);
-> +		proc->count[0] = -ENODEV;
->  		return -ENODEV;
->  	}
->  
-> @@ -238,19 +238,25 @@ acpi_table_parse_entries(char *id,
->  
->  	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
->  	       table_end) {
-> -		if (entry->type == entry_id
-> -		    && (!max_entries || count++ < max_entries))
-> -			if (handler(entry, table_end)) {
-> -				early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-> -				return -EINVAL;
-> -			}
-> +		for (i = 0; i < proc->num; i++) {
-> +			if (entry->type != proc->id[i])
-> +				continue;
-> +			if (!max_entries || count++ < max_entries)
-> +				if (proc->handler[i](entry, table_end)) {
-> +					early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-> +					proc->count[i] = -EINVAL;
-> +					return -EINVAL;
-> +				}
-> +			proc->count[i]++;
+> -	while ((opt = getopt(ac, av, "osdD:nmyfrh")) != -1) {
+> +	while ((opt = getopt(ac, av, "osdD:nmM:yfrh")) != -1) {
+>  		switch (opt) {
+>  		case 'o':
+>  			input_mode = ask_silent;
+> @@ -485,6 +486,10 @@ int main(int ac, char **av)
+>  			input_mode = set_random;
+>  			break;
+>  		}
+> +		case 'M':
+> +			input_mode = save_defconfig;
+> +			defconfig_file = optarg;
 > +			break;
+>  		case 'h':
+>  			printf(_("See README for usage info\n"));
+>  			exit(0);
+> @@ -553,6 +558,9 @@ int main(int ac, char **av)
+>  		else if (!stat("all.config", &tmpstat))
+>  			conf_read_simple("all.config", S_DEF_USER);
+>  		break;
+> +	case save_defconfig:
+> +		conf_read(NULL);
+> +		break;
+>  	default:
+>  		break;
+>  	}
+> @@ -601,6 +609,8 @@ int main(int ac, char **av)
+>  			check_conf(&rootmenu);
+>  		} while (conf_cnt);
+>  		break;
+> +	case save_defconfig:
+> +		break;
+>  	}
+>  
+>  	if (sync_kconfig) {
+> @@ -615,6 +625,12 @@ int main(int ac, char **av)
+>  			fprintf(stderr, _("\n*** Error during update of the kernel configuration.\n\n"));
+>  			return 1;
+>  		}
+> +	} else if (input_mode == save_defconfig) {
+> +		if (conf_write_defconfig(defconfig_file)) {
+> +			fprintf(stderr, _("\n*** Error during writing of mini config to %s.\n\n"),
+> +			        defconfig_file);
+> +			return 1;
 > +		}
->  
->  		entry = (struct acpi_subtable_header *)
->  		    ((unsigned long)entry + entry->length);
->  	}
->  	if (max_entries && count > max_entries) {
-> -		printk(KERN_WARNING PREFIX "[%4.4s:0x%02x] ignored %i entries of "
-> -		       "%i found\n", id, entry_id, count - max_entries, count);
-> +		printk(KERN_WARNING PREFIX "[%4.4s:0x%02x 0x%02x] ignored %i entries of "
-> +		       "%i found\n", id, proc->id[0], proc->id[1], count - max_entries, count);
->  	}
->  
->  	early_acpi_os_unmap_memory((char *)table_header, tbl_size);
-> @@ -258,6 +264,26 @@ acpi_table_parse_entries(char *id,
+>  	} else {
+>  		if (conf_write(NULL)) {
+>  			fprintf(stderr, _("\n*** Error during writing of the kernel configuration.\n\n"));
+> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+> index c4dec80..76c4e23 100644
+> --- a/scripts/kconfig/confdata.c
+> +++ b/scripts/kconfig/confdata.c
+> @@ -396,6 +396,100 @@ int conf_read(const char *name)
+>  	return 0;
 >  }
 >  
->  int __init
-> +acpi_table_parse_entries(char *id,
-> +			     unsigned long table_size,
-> +			     int entry_id,
-> +			     acpi_table_entry_handler handler,
-> +			     unsigned int max_entries)
+> +/*
+> + * Write out a minimal config.
+> + * All values that has default values are skipped as this is redundant.
+> + */
+> +int conf_write_defconfig(const char *filename)
 > +{
-> +	struct acpi_subtable_proc proc;
+> +	struct symbol *sym;
+> +	const char *str;
+> +	FILE *out;
+> +	int i, l;
 > +
-> +	if (!handler)
-> +		return -EINVAL;
+> +	out = fopen(filename, "w");
+> +	if (!out)
+> +		return 1;
 > +
-> +	memset(&proc, 0, sizeof(proc));
-> +	proc.id[0] = entry_id;
-> +	proc.handler[0] = handler;
-> +	proc.num++;
+> +	sym_clear_all_valid();
 > +
-> +	return acpi_table_parse_entries_x(id, table_size, &proc, max_entries);
+> +	for_all_symbols(i, sym) {
+> +		sym_calc_value(sym);
+> +		if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
+> +			goto next_symbol;
+> +		/* If we cannot change the symbol - skip */
+> +		if (!sym_is_changable(sym))
+> +			goto next_symbol;
+> +		/* If symbol equals to default value - skip */
+> +		if (strcmp(sym_get_string_value(sym), sym_get_string_default(sym)) == 0)
+> +			goto next_symbol;
+> +
+> +		/* choice symbols does not have a value - skip */
+> +		if (sym_is_choice(sym))
+> +			goto next_symbol;
+> +		/*
+> +		 * If symbol is a choice value and equals to the
+> +		 * default for a choice - skip.
+> +		 * But only if value equal to "y".
+> +		 */
+> +		if (sym_is_choice_value(sym)) {
+> +			struct symbol *cs;
+> +			struct symbol *ds;
+> +
+> +			cs = prop_get_symbol(sym_get_choice_prop(sym));
+> +			ds = sym_choice_default(cs);
+> +			if (sym == ds) {
+> +				if ((sym->type == S_BOOLEAN ||
+> +				     sym->type == S_TRISTATE) &&
+> +				     sym_get_tristate_value(sym) == yes)
+> +					goto next_symbol;
+> +			}
+> +		}
+> +		switch (sym->type) {
+
+This duplicates the switch statement in conf_write(), we should move it
+into a separate function and call it from conf_write() and here.
+
+
+> +		case S_BOOLEAN:
+> +		case S_TRISTATE:
+> +			switch (sym_get_tristate_value(sym)) {
+> +			case no:
+> +				fprintf(out, "# CONFIG_%s is not set\n", sym->name);
+> +				break;
+> +			case yes:
+> +				fprintf(out, "CONFIG_%s=y\n", sym->name);
+> +				break;
+> +			case mod:
+> +				fprintf(out, "CONFIG_%s=m\n", sym->name);
+> +				break;
+> +			}
+> +			break;
+> +		case S_STRING:
+> +			str = sym_get_string_value(sym);
+> +			fprintf(out, "CONFIG_%s=\"", sym->name);
+> +			while (1) {
+> +				l = strcspn(str, "\"\\");
+> +				if (l) {
+> +					fwrite(str, l, 1, out);
+> +					str += l;
+> +				}
+> +				if (!*str)
+> +					break;
+> +				fprintf(out, "\\%c", *str++);
+> +			}
+> +			fputs("\"\n", out);
+> +			break;
+> +		case S_HEX:
+> +		case S_INT:
+> +			str = sym_get_string_value(sym);
+> +			fprintf(out, "CONFIG_%s=%s\n", sym->name, str);
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +next_symbol:
+> +		;
+> +	}
+
+The gotos should be replaced by simple continue statements if there is
+nothing to do after the label.
+
+(maybe there are more issues, I didn't look closely into it. But I like
+the approach.)
+
+Michal
+
+> +	fclose(out);
+> +	return 0;
 > +}
 > +
-> +int __init
->  acpi_table_parse_madt(enum acpi_madt_type id,
->  		      acpi_table_entry_handler handler, unsigned int max_entries)
+>  int conf_write(const char *name)
 >  {
-> Index: linux-2.6/include/linux/acpi.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/acpi.h
-> +++ linux-2.6/include/linux/acpi.h
-> @@ -76,6 +76,13 @@ typedef int (*acpi_table_handler) (struc
+>  	FILE *out;
+> diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+> index ce6549c..76db065 100644
+> --- a/scripts/kconfig/lkc.h
+> +++ b/scripts/kconfig/lkc.h
+> @@ -126,6 +126,8 @@ void sym_init(void);
+>  void sym_clear_all_valid(void);
+>  void sym_set_all_changed(void);
+>  void sym_set_changed(struct symbol *sym);
+> +struct symbol *sym_choice_default(struct symbol *sym);
+> +const char *sym_get_string_default(struct symbol *sym);
+>  struct symbol *sym_check_deps(struct symbol *sym);
+>  struct property *prop_alloc(enum prop_type type, struct symbol *sym);
+>  struct symbol *prop_get_symbol(struct property *prop);
+> diff --git a/scripts/kconfig/lkc_proto.h b/scripts/kconfig/lkc_proto.h
+> index 7cadcad..e30d5f2 100644
+> --- a/scripts/kconfig/lkc_proto.h
+> +++ b/scripts/kconfig/lkc_proto.h
+> @@ -4,6 +4,7 @@ P(conf_parse,void,(const char *name));
+>  P(conf_read,int,(const char *name));
+>  P(conf_read_simple,int,(const char *name, int));
+>  P(conf_write,int,(const char *name));
+> +P(conf_write_defconfig,int,(const char *name));
+>  P(conf_write_autoconf,int,(void));
+>  P(conf_get_changed,bool,(void));
+>  P(conf_set_changed_callback, void,(void (*fn)(void)));
+> diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+> index 0ea9c46..0bda646 100644
+> --- a/scripts/kconfig/symbol.c
+> +++ b/scripts/kconfig/symbol.c
+> @@ -216,6 +216,41 @@ static void sym_calc_visibility(struct symbol *sym)
+>  	}
+>  }
 >  
->  typedef int (*acpi_table_entry_handler) (struct acpi_subtable_header *header, const unsigned long end);
->  
-> +struct acpi_subtable_proc {
-> +	int id[2];
-> +	acpi_table_entry_handler handler[2];
-> +	int count[2];
-> +	int num;
-> +};
+> +/*
+> + * Find the default isymbol for a choice.
+> + * First try the default values for the choice symbol
+> + * Next locate the first visible choice value
+> + * Return NULL if none was found
+> + */
+> +struct symbol *sym_choice_default(struct symbol *sym)
+> +{
+> +	struct property *prop;
+> +	struct symbol *def_sym;
+> +	struct expr *e;
 > +
->  char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
->  void __acpi_unmap_table(char *map, unsigned long size);
->  int early_acpi_boot_init(void);
-> @@ -86,6 +93,7 @@ int acpi_numa_init (void);
+> +	/* any of the defaults visible? */
+> +	for_all_defaults(sym, prop) {
+> +		prop->visible.tri = expr_calc_value(prop->visible.expr);
+> +		if (prop->visible.tri == no)
+> +			continue;
+> +		def_sym = prop_get_symbol(prop);
+> +		sym_calc_visibility(def_sym);
+> +		if (def_sym->visible != no)
+> +			return def_sym;
+> +	}
+> +
+> +	/* just get the first visible value */
+> +	prop = sym_get_choice_prop(sym);
+> +	expr_list_for_each_sym(prop->expr, e, def_sym) {
+> +		sym_calc_visibility(def_sym);
+> +		if (def_sym->visible != no)
+> +			return def_sym;
+> +	}
+> +
+> +	/* failed to locate any defaults */
+> +	return NULL;
+> +}
+> +
+>  static struct symbol *sym_calc_choice(struct symbol *sym)
+>  {
+>  	struct symbol *def_sym;
+> @@ -646,6 +681,67 @@ const char *sym_get_string_value(struct symbol *sym)
+>  	return (const char *)sym->curr.val;
+>  }
 >  
->  int acpi_table_init (void);
->  int acpi_table_parse (char *id, acpi_table_handler handler);
-> +int acpi_table_parse_entries_x(char *id, unsigned long table_size, struct acpi_subtable_proc *proc, unsigned int max_entries);
->  int __init acpi_table_parse_entries(char *id, unsigned long table_size,
->  	int entry_id, acpi_table_entry_handler handler, unsigned int max_entries);
->  int acpi_table_parse_madt (enum acpi_madt_type id, acpi_table_entry_handler handler, unsigned int max_entries);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> +/*
+> + * Find the default value associated to a symbol.
+> + * For tristate symbol hande the modules=n case
+> + * in which case "m" bocomes "y".
+> + * If the symbol does not have any default fallback
+> + * to the fixed default values.
+> + */
+> +const char *sym_get_string_default(struct symbol *sym)
+> +{
+> +	struct property *prop;
+> +	struct symbol *ds;
+> +	tristate val;
+> +
+> +	prop = sym_get_default_prop(sym);
+> +	if (!prop)
+> +		goto default_value;
+> +	ds = prop_get_symbol(prop);
+> +	if (!ds)
+> +		goto default_value;
+> +
+> +	switch (sym->type) {
+> +	case S_BOOLEAN:
+> +	case S_TRISTATE:
+> +		val = sym_get_tristate_value(ds);
+> +		switch (val) {
+> +		case no:
+> +			return "n";
+> +		case yes:
+> +			return "y";
+> +		case mod:
+> +			if (sym_is_choice_value(sym))
+> +				return "m";
+> +			sym_calc_value(modules_sym);
+> +			if (modules_sym->curr.tri == no)
+> +				return "y";
+> +			else
+> +				return "m";
+> +		}
+> +		break;
+> +	default:
+> +		return (const char *)ds->curr.val;
+> +	}
+> +
+> +default_value:
+> +
+> +	switch (sym->type) {
+> +	case S_BOOLEAN:
+> +	case S_TRISTATE:
+> +		return "n";
+> +	case S_INT:
+> +	case S_HEX:
+> +		return "0";
+> +	case S_STRING:
+> +		return "";
+> +	case S_OTHER:
+> +	case S_UNKNOWN:
+> +		break;
+> +	}
+> +	return "";
+> +}
+> +
+>  bool sym_is_changable(struct symbol *sym)
+>  {
+>  	return sym->visible > sym->rev_dep.tri;
+
