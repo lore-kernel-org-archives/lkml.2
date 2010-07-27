@@ -1,81 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab0G0I2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:28:06 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:59138
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753707Ab0G0I2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:28:03 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(z1039oz1432N98dN936eMzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L67JID-02-58M-02
-X-M-MSG: 
-Date: Tue, 27 Jul 2010 10:27:49 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC][PATCH v1 02/15] perf: export generic hardware events via
- sysfs
-Message-ID: <20100727082749.GK26154@erda.amd.com>
-References: <1279797142.20942.83.camel@minggr.sh.intel.com>
- <20100723104412.GA26154@erda.amd.com>
- <1280197103.24607.61.camel@minggr.sh.intel.com>
+	id S1755033Ab0G0Ig2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:36:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59456 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753806Ab0G0Ig0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:36:26 -0400
+Message-ID: <4C4E99EF.9080809@cn.fujitsu.com>
+Date: Tue, 27 Jul 2010 16:33:51 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1280197103.24607.61.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, jmoyer@redhat.com, czoccolo@gmail.com
+Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle tunable
+ V3
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com> <4C4D3208.7090703@cn.fujitsu.com> <20100726141053.GE12449@redhat.com>
+In-Reply-To: <20100726141053.GE12449@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.07.10 22:18:23, Lin Ming wrote:
-
-> > > /sys/devices/system/cpu/cpu0/events
-> > > |-- L1-dcache-load-misses
-> > > |   |-- config
-> > > |   `-- type
-
-vs.
-
-> >  |-- L1-dcache-load-misses  ===> event name
-> >  |   `-- id                 ===> event id
-
-> > This is very simple and flexible and solves the original problem too.
+Vivek Goyal wrote:
+> On Mon, Jul 26, 2010 at 02:58:16PM +0800, Gui Jianfeng wrote:
 > 
-> Yeah, this is flexible. I'll think about this closely.
+> [..]
+>> Hi Vivek,
+>>
+>> I did some tests on single SATA disk on my desktop. With patches applied, seems no
+>> regression occurs till now, and have some performance improvement in case of 
+>> "Direct Random Reader" mode. Here're some numbers on my box.
+>>
+> 
+> Thanks for testing Gui. "iostest" seems to be working for you. If you had
+> to some fixes to make it work on my boxes, do send those to me, and I can
+> commit those in my internal git tree.
 
-The thing is, if you start introducing the config/type i/f, we will
-stick with it for a long time. I want to avoid this from the
-beginning.
+Hi Vivek,
 
-Using an id only would work with your current implementation too, you
-only need to maintain an id -> config/type mapping, maybe in some
-private data section, without exporting it to userspace.
+I didn't modify iostest at all but just upgraded fio to 1.42
 
--Robert
+Gui
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+> 
+> After running the script, you can also run "iostest -R <result-dir>" and
+> that will generate a report. It will not have all this "Starting test..."
+> lines and looks nicer.
+> 
+> Good to know that you don't see any regressions on SATA disk in your
+> cgroup testing with this patchset. Little improvement in "drr" might
+> be due to the fact that with existing slice_idle=0, we can still do
+> some extra idling on service tree and first patch in the series (V4)
+> gets rid of that.
+> 
+> Thanks
+> Vivek
+> 
+>> Vallina kernel:
+>>
+>> Blkio is already mounted at /cgroup/blkio. Unmounting it
+>> DIR=/mnt/iostestmnt/fio                 DEV=/dev/sdb2
+>> GROUPMODE=1                             NRGRP=4
+>> Will run workloads for increasing number of threads upto a max of 4
+>> Starting test for [drr] with set=1 numjobs=1 filesz=512M bs=32k runtime=30
+>> Starting test for [drr] with set=1 numjobs=2 filesz=512M bs=32k runtime=30
+>> Starting test for [drr] with set=1 numjobs=4 filesz=512M bs=32k runtime=30
+>> Finished test for workload [drr]
+>> Host=localhost.localdomain     Kernel=2.6.35-rc4-Vivek-+
+>> GROUPMODE=1          NRGRP=4
+>> DIR=/mnt/iostestmnt/fio        DEV=/dev/sdb2
+>> Workload=drr      iosched=cfq     Filesz=512M bs=32k
+>> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
+>> =========================================================================
+>> AVERAGE[drr]    [bw in KB/s]
+>> -------
+>> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total
+>> ---     --- --  -----------------------------------
+>> drr     1   1   761    761    762    760    3044
+>> drr     1   2   185    420    727    1256   2588
+>> drr     1   4   180    371    588    863    2002
+>>
+>>
+>> Patched kernel:
+>>
+>> Blkio is already mounted at /cgroup/blkio. Unmounting it
+>> DIR=/mnt/iostestmnt/fio                 DEV=/dev/sdb2
+>> GROUPMODE=1                             NRGRP=4
+>> Will run workloads for increasing number of threads upto a max of 4
+>> Starting test for [drr] with set=1 numjobs=1 filesz=512M bs=32k runtime=30
+>> Starting test for [drr] with set=1 numjobs=2 filesz=512M bs=32k runtime=30
+>> Starting test for [drr] with set=1 numjobs=4 filesz=512M bs=32k runtime=30
+>> Finished test for workload [drr]
+>> Host=localhost.localdomain     Kernel=2.6.35-rc4-Vivek-+
+>> GROUPMODE=1          NRGRP=4
+>> DIR=/mnt/iostestmnt/fio        DEV=/dev/sdb2
+>> Workload=drr      iosched=cfq     Filesz=512M bs=32k
+>> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
+>> =========================================================================
+>> AVERAGE[drr]    [bw in KB/s]
+>> -------
+>> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total
+>> ---     --- --  -----------------------------------
+>> drr     1   1   323    671    1030   1378   3402
+>> drr     1   2   165    391    686    1144   2386
+>> drr     1   4   185    373    612    873    2043
+>>
+>> Thanks
+>> Gui
+>>
+>>> Thanks
+>>> Vivek
+>>>
+> 
+> 
 
