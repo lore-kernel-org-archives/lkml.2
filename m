@@ -1,131 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab0G0FLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 01:11:00 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:45546 "EHLO a.mx.secunet.com"
+	id S1752425Ab0G0FLg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 01:11:36 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:45553 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab0G0FK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 01:10:56 -0400
-Date: Tue, 27 Jul 2010 07:14:28 +0200
+	id S1751051Ab0G0FLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 01:11:34 -0400
+Date: Tue, 27 Jul 2010 07:15:06 +0200
 From: Steffen Klassert <steffen.klassert@secunet.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>
 Cc: Dan Kruchinin <dkruchinin@acm.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] padata: Rename padata_alloc functions
-Message-ID: <20100727051428.GJ11081@secunet.com>
+Subject: [PATCH 2/7] padata: Rearrange set_cpumask functions
+Message-ID: <20100727051506.GK11081@secunet.com>
 References: <20100727051347.GI11081@secunet.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20100727051347.GI11081@secunet.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 27 Jul 2010 05:10:52.0308 (UTC) FILETIME=[15949540:01CB2D4A]
+X-OriginalArrivalTime: 27 Jul 2010 05:11:30.0823 (UTC) FILETIME=[2C898170:01CB2D4A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We rename padata_alloc to padata_alloc_possible because this
-function allocates a padata_instance and uses the cpu_possible
-mask for parallel and serial workers. Also we rename __padata_alloc
-to padata_alloc to avoid to export underlined functions. Underlined
-functions are considered to be private to padata. Users are updated
-accordingly.
+padata_set_cpumask needs to be protected by a lock. We make
+__padata_set_cpumasks unlocked and static. So this function
+can be used by the exported and locked padata_set_cpumask and
+padata_set_cpumasks functions.
 
 Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 ---
- crypto/pcrypt.c        |    2 +-
- include/linux/padata.h |    9 +++++----
- kernel/padata.c        |   24 ++++++++++++------------
- 3 files changed, 18 insertions(+), 17 deletions(-)
+ include/linux/padata.h |    6 +-
+ kernel/padata.c        |  117 +++++++++++++++++++++++++++--------------------
+ 2 files changed, 70 insertions(+), 53 deletions(-)
 
-diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
-index 794c172..5546083 100644
---- a/crypto/pcrypt.c
-+++ b/crypto/pcrypt.c
-@@ -457,7 +457,7 @@ static int __pcrypt_init_instance(struct pcrypt_instance *pcrypt,
- 	if (!pcrypt->wq)
- 		goto err;
- 
--	pcrypt->pinst = padata_alloc(pcrypt->wq);
-+	pcrypt->pinst = padata_alloc_possible(pcrypt->wq);
- 	if (!pcrypt->pinst)
- 		goto err_destroy_workqueue;
- 
 diff --git a/include/linux/padata.h b/include/linux/padata.h
-index 293ad46..71dfc9d 100644
+index 71dfc9d..bb0fc5d 100644
 --- a/include/linux/padata.h
 +++ b/include/linux/padata.h
-@@ -165,10 +165,11 @@ struct padata_instance {
- #define	PADATA_INVALID	4
- };
- 
--extern struct padata_instance *padata_alloc(struct workqueue_struct *wq);
--extern struct padata_instance *__padata_alloc(struct workqueue_struct *wq,
--					      const struct cpumask *pcpumask,
--					      const struct cpumask *cbcpumask);
-+extern struct padata_instance *padata_alloc_possible(
-+					struct workqueue_struct *wq);
-+extern struct padata_instance *padata_alloc(struct workqueue_struct *wq,
-+					    const struct cpumask *pcpumask,
-+					    const struct cpumask *cbcpumask);
- extern void padata_free(struct padata_instance *pinst);
- extern int padata_do_parallel(struct padata_instance *pinst,
- 			      struct padata_priv *padata, int cb_cpu);
+@@ -178,9 +178,9 @@ extern int padata_get_cpumask(struct padata_instance *pinst,
+ 			      int cpumask_type, struct cpumask *out_mask);
+ extern int padata_set_cpumask(struct padata_instance *pinst, int cpumask_type,
+ 			      cpumask_var_t cpumask);
+-extern int __padata_set_cpumasks(struct padata_instance *pinst,
+-				 cpumask_var_t pcpumask,
+-				 cpumask_var_t cbcpumask);
++extern int padata_set_cpumasks(struct padata_instance *pinst,
++			       cpumask_var_t pcpumask,
++			       cpumask_var_t cbcpumask);
+ extern int padata_add_cpu(struct padata_instance *pinst, int cpu, int mask);
+ extern int padata_remove_cpu(struct padata_instance *pinst, int cpu, int mask);
+ extern int padata_start(struct padata_instance *pinst);
 diff --git a/kernel/padata.c b/kernel/padata.c
-index 7f895e2..12860bc 100644
+index 12860bc..4987203 100644
 --- a/kernel/padata.c
 +++ b/kernel/padata.c
-@@ -1060,29 +1060,29 @@ static struct kobj_type padata_attr_type = {
- };
- 
- /**
-- * padata_alloc - Allocate and initialize padata instance.
-- *                Use default cpumask(cpu_possible_mask)
-- *                for serial and parallel workes.
-+ * padata_alloc_possible - Allocate and initialize padata instance.
-+ *                         Use the cpu_possible_mask for serial and
-+ *                         parallel workers.
-  *
-  * @wq: workqueue to use for the allocated padata instance
-  */
--struct padata_instance *padata_alloc(struct workqueue_struct *wq)
-+struct padata_instance *padata_alloc_possible(struct workqueue_struct *wq)
- {
--	return __padata_alloc(wq, cpu_possible_mask, cpu_possible_mask);
-+	return padata_alloc(wq, cpu_possible_mask, cpu_possible_mask);
+@@ -623,6 +623,66 @@ int padata_get_cpumask(struct padata_instance *pinst,
  }
--EXPORT_SYMBOL(padata_alloc);
-+EXPORT_SYMBOL(padata_alloc_possible);
+ EXPORT_SYMBOL(padata_get_cpumask);
  
++static int __padata_set_cpumasks(struct padata_instance *pinst,
++				 cpumask_var_t pcpumask,
++				 cpumask_var_t cbcpumask)
++{
++	int valid;
++	struct parallel_data *pd;
++
++	valid = padata_validate_cpumask(pinst, pcpumask);
++	if (!valid) {
++		__padata_stop(pinst);
++		goto out_replace;
++	}
++
++	valid = padata_validate_cpumask(pinst, cbcpumask);
++	if (!valid)
++		__padata_stop(pinst);
++
++out_replace:
++	pd = padata_alloc_pd(pinst, pcpumask, cbcpumask);
++	if (!pd)
++		return -ENOMEM;
++
++	cpumask_copy(pinst->cpumask.pcpu, pcpumask);
++	cpumask_copy(pinst->cpumask.cbcpu, cbcpumask);
++
++	padata_replace(pinst, pd);
++
++	if (valid)
++		__padata_start(pinst);
++
++	return 0;
++}
++
++/**
++ * padata_set_cpumasks - Set both parallel and serial cpumasks. The first
++ *                       one is used by parallel workers and the second one
++ *                       by the wokers doing serialization.
++ *
++ * @pinst: padata instance
++ * @pcpumask: the cpumask to use for parallel workers
++ * @cbcpumask: the cpumsak to use for serial workers
++ */
++int padata_set_cpumasks(struct padata_instance *pinst, cpumask_var_t pcpumask,
++			cpumask_var_t cbcpumask)
++{
++	int err;
++
++	mutex_lock(&pinst->lock);
++	get_online_cpus();
++
++	err = __padata_set_cpumasks(pinst, pcpumask, cbcpumask);
++
++	put_online_cpus();
++	mutex_unlock(&pinst->lock);
++
++	return err;
++
++}
++EXPORT_SYMBOL(padata_set_cpumasks);
++
  /**
-- * __padata_alloc - allocate and initialize a padata instance
-- *                  and specify cpumasks for serial and parallel workers.
-+ * padata_alloc - allocate and initialize a padata instance and specify
-+ *                cpumasks for serial and parallel workers.
-  *
-  * @wq: workqueue to use for the allocated padata instance
-  * @pcpumask: cpumask that will be used for padata parallelization
-  * @cbcpumask: cpumask that will be used for padata serialization
-  */
--struct padata_instance *__padata_alloc(struct workqueue_struct *wq,
--				       const struct cpumask *pcpumask,
--				       const struct cpumask *cbcpumask)
-+struct padata_instance *padata_alloc(struct workqueue_struct *wq,
-+				     const struct cpumask *pcpumask,
-+				     const struct cpumask *cbcpumask)
+  * padata_set_cpumask: Sets specified by @cpumask_type cpumask to the value
+  *                     equivalent to @cpumask.
+@@ -636,6 +696,10 @@ int padata_set_cpumask(struct padata_instance *pinst, int cpumask_type,
+ 		       cpumask_var_t cpumask)
  {
- 	struct padata_instance *pinst;
- 	struct parallel_data *pd = NULL;
-@@ -1138,7 +1138,7 @@ err_free_inst:
- err:
- 	return NULL;
- }
--EXPORT_SYMBOL(__padata_alloc);
-+EXPORT_SYMBOL(padata_alloc);
+ 	struct cpumask *serial_mask, *parallel_mask;
++	int err = -EINVAL;
++
++	mutex_lock(&pinst->lock);
++	get_online_cpus();
  
- /**
-  * padata_free - free a padata instance
+ 	switch (cpumask_type) {
+ 	case PADATA_CPU_PARALLEL:
+@@ -647,65 +711,18 @@ int padata_set_cpumask(struct padata_instance *pinst, int cpumask_type,
+ 		serial_mask = cpumask;
+ 		break;
+ 	default:
+-		return -EINVAL;
++		 goto out;
+ 	}
+ 
+-	return __padata_set_cpumasks(pinst, parallel_mask, serial_mask);
+-}
+-EXPORT_SYMBOL(padata_set_cpumask);
+-
+-/**
+- * __padata_set_cpumasks - Set both parallel and serial cpumasks. The first
+- *                         one is used by parallel workers and the second one
+- *                         by the wokers doing serialization.
+- *
+- * @pinst: padata instance
+- * @pcpumask: the cpumask to use for parallel workers
+- * @cbcpumask: the cpumsak to use for serial workers
+- */
+-int __padata_set_cpumasks(struct padata_instance *pinst,
+-			  cpumask_var_t pcpumask, cpumask_var_t cbcpumask)
+-{
+-	int valid;
+-	int err = 0;
+-	struct parallel_data *pd = NULL;
+-
+-	mutex_lock(&pinst->lock);
+-	get_online_cpus();
+-
+-	valid = padata_validate_cpumask(pinst, pcpumask);
+-	if (!valid) {
+-		__padata_stop(pinst);
+-		goto out_replace;
+-	}
+-
+-	valid = padata_validate_cpumask(pinst, cbcpumask);
+-	if (!valid)
+-		__padata_stop(pinst);
+-
+-out_replace:
+-	pd = padata_alloc_pd(pinst, pcpumask, cbcpumask);
+-	if (!pd) {
+-		err = -ENOMEM;
+-		goto out;
+-	}
+-
+-	cpumask_copy(pinst->cpumask.pcpu, pcpumask);
+-	cpumask_copy(pinst->cpumask.cbcpu, cbcpumask);
+-
+-	padata_replace(pinst, pd);
+-
+-	if (valid)
+-		__padata_start(pinst);
++	err =  __padata_set_cpumasks(pinst, parallel_mask, serial_mask);
+ 
+ out:
+ 	put_online_cpus();
+ 	mutex_unlock(&pinst->lock);
+ 
+ 	return err;
+-
+ }
+-EXPORT_SYMBOL(__padata_set_cpumasks);
++EXPORT_SYMBOL(padata_set_cpumask);
+ 
+ static int __padata_add_cpu(struct padata_instance *pinst, int cpu)
+ {
 -- 
 1.5.6.5
 
