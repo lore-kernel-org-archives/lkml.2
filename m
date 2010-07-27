@@ -1,101 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab0G0IYp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:24:45 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:35370 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753811Ab0G0IYn (ORCPT
+	id S1754219Ab0G0I2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:28:06 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:59138
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753707Ab0G0I2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:24:43 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEABczTkx5LclT/2dsb2JhbACfZHLAfYU2BA
-Date: Tue, 27 Jul 2010 18:24:39 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Nick Piggin <npiggin@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] vmap: add flag to allow lazy unmap to be disabled at
- runtime
-Message-ID: <20100727082439.GB6332@amd>
-References: <4C4DEF13.1030403@goop.org>
+	Tue, 27 Jul 2010 04:28:03 -0400
+X-SpamScore: -9
+X-BigFish: VPS-9(z1039oz1432N98dN936eMzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L67JID-02-58M-02
+X-M-MSG: 
+Date: Tue, 27 Jul 2010 10:27:49 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "eranian@gmail.com" <eranian@gmail.com>,
+        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC][PATCH v1 02/15] perf: export generic hardware events via
+ sysfs
+Message-ID: <20100727082749.GK26154@erda.amd.com>
+References: <1279797142.20942.83.camel@minggr.sh.intel.com>
+ <20100723104412.GA26154@erda.amd.com>
+ <1280197103.24607.61.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4C4DEF13.1030403@goop.org>
+In-Reply-To: <1280197103.24607.61.camel@minggr.sh.intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 01:24:51PM -0700, Jeremy Fitzhardinge wrote:
-> 
-> 
-> [ Nick, I forget if I sent this to you before.  Could you Ack it if it looks OK? Thanks, J ]
-> 
-> Add a flag to force lazy_max_pages() to zero to prevent any outstanding
-> mapped pages.  We'll need this for Xen.
+On 26.07.10 22:18:23, Lin Ming wrote:
 
-You have sent this to me before, probably several times, and I always
-forget about it right as you send it again.
+> > > /sys/devices/system/cpu/cpu0/events
+> > > |-- L1-dcache-load-misses
+> > > |   |-- config
+> > > |   `-- type
 
-It's no problem merging something like this for Xen, although as you
-know I would love to see an approach where Xen would benefit from
-delayed flushing as well :)
+vs.
 
-You will need to disable lazy flushing from the per-cpu allocator
-(vm_map_ram/vm_unmap_ram, which are used by XFS now). That's not
-tied to the lazy_max stuff (which it should be, arguably)
+> >  |-- L1-dcache-load-misses  ===> event name
+> >  |   `-- id                 ===> event id
 
-That code basically allocates per-cpu chunks of va from the global
-allocator, uses them, then frees them back to the global allocator
-all without doing any TLB flushing.
+> > This is very simple and flexible and solves the original problem too.
+> 
+> Yeah, this is flexible. I'll think about this closely.
 
-If you have to do global TLB flushing there, then it's probably not
-much value in per-cpu locking of the address allocator anyway, so
-you could just add a test for vmap_lazy_unmap in these branches:
+The thing is, if you start introducing the config/type i/f, we will
+stick with it for a long time. I want to avoid this from the
+beginning.
 
-  if (likely(count <= VMAP_MAX_ALLOC) && !vmap_lazy_unmap)
+Using an id only would work with your current implementation too, you
+only need to maintain an id -> config/type mapping, maybe in some
+private data section, without exporting it to userspace.
 
-Thanks,
-Nick
+-Robert
 
-> 
-> Signed-off-by: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-> 
-> diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-> index 227c2a5..b840fda 100644
-> --- a/include/linux/vmalloc.h
-> +++ b/include/linux/vmalloc.h
-> @@ -7,6 +7,8 @@
-> 
->  struct vm_area_struct;		/* vma defining user mapping in mm_types.h */
-> 
-> +extern bool vmap_lazy_unmap;
-> +
->  /* bits in flags of vmalloc's vm_struct below */
->  #define VM_IOREMAP	0x00000001	/* ioremap() and friends */
->  #define VM_ALLOC	0x00000002	/* vmalloc() */
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index ae00746..7f35fe2 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -31,6 +31,7 @@
->  #include<asm/tlbflush.h>
->  #include<asm/shmparam.h>
-> 
-> +bool vmap_lazy_unmap __read_mostly = true;
-> 
->  /*** Page table manipulation functions ***/
-> 
-> @@ -502,6 +503,9 @@ static unsigned long lazy_max_pages(void)
->  {
->  	unsigned int log;
-> 
-> +	if (!vmap_lazy_unmap)
-> +		return 0;
-> +
->  	log = fls(num_online_cpus());
-> 
->  	return log * (32UL * 1024 * 1024 / PAGE_SIZE);
-> 
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
