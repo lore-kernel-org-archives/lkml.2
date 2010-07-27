@@ -1,409 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392Ab0G0Q17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 12:27:59 -0400
-Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:2368 "EHLO
-	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab0G0Q14 (ORCPT
+	id S1751410Ab0G0Q3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 12:29:21 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:11938 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab0G0Q3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 12:27:56 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
-Date: Tue, 27 Jul 2010 18:27:02 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
-        "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-References: <cover.1280151963.git.m.nazarewicz@samsung.com> <201007262228.42358.hverkuil@xs4all.nl> <002801cb2d5f$2b288550$81798ff0$%szyprowski@samsung.com>
-In-Reply-To: <002801cb2d5f$2b288550$81798ff0$%szyprowski@samsung.com>
+	Tue, 27 Jul 2010 12:29:19 -0400
+X-SpamScore: -12
+X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+Date: Tue, 27 Jul 2010 11:28:54 -0500
+From: Scott Wood <scottwood@freescale.com>
+To: Paul Mackerras <paulus@samba.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kumar Gala <kumar.gala@freescale.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, Ingo Molnar <mingo@elte.hu>
+Subject: Re: Please pull my perf.git urgent branch
+Message-ID: <20100727112854.7bf97d48@schlenkerla.am.freescale.net>
+In-Reply-To: <20100727124019.GB14947@brick.ozlabs.ibm.com>
+References: <20100727124019.GB14947@brick.ozlabs.ibm.com>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007271827.02606.hverkuil@xs4all.nl>
+X-OriginalArrivalTime: 27 Jul 2010 16:28:55.0521 (UTC) FILETIME=[CEAA3D10:01CB2DA8]
+X-Reverse-DNS: az33egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 July 2010 09:41:40 Marek Szyprowski wrote:
-> Hello,
+On Tue, 27 Jul 2010 22:40:19 +1000
+Paul Mackerras <paulus@samba.org> wrote:
+
+> Please do a pull from
 > 
-> On Monday, July 26, 2010 10:29 PM Hans Verkuil wrote:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulus/perf.git urgent
 > 
-> > Hi Michal,
-> > 
-> > Thanks for working on this, we definitely need something along these lines.
-> > 
-> > On Monday 26 July 2010 16:40:30 Michal Nazarewicz wrote:
-> > > The Contiguous Memory Allocator framework is a set of APIs for
-> > > allocating physically contiguous chunks of memory.
-> > >
-> > > Various chips require contiguous blocks of memory to operate.  Those
-> > > chips include devices such as cameras, hardware video decoders and
-> > > encoders, etc.
-> > >
-> > > The code is highly modular and customisable to suit the needs of
-> > > various users.  Set of regions reserved for CMA can be configured on
-> > > run-time and it is easy to add custom allocator algorithms if one
-> > > has such need.
-> > >
-> > > For more details see Documentation/contiguous-memory.txt.
-> > >
-> > > Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> > > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > > Reviewed-by: Pawel Osciak <p.osciak@samsung.com>
-> > > ---
-> > >  Documentation/00-INDEX                             |    2 +
-> > >  .../ABI/testing/sysfs-kernel-mm-contiguous         |    9 +
-> > >  Documentation/contiguous-memory.txt                |  646 +++++++++++
-> > >  Documentation/kernel-parameters.txt                |    4 +
-> > >  include/linux/cma.h                                |  445 ++++++++
-> > >  mm/Kconfig                                         |   34 +
-> > >  mm/Makefile                                        |    3 +
-> > >  mm/cma-best-fit.c                                  |  407 +++++++
-> > >  mm/cma.c                                           | 1170
-> > ++++++++++++++++++++
-> > >  9 files changed, 2720 insertions(+), 0 deletions(-)
-> > >  create mode 100644 Documentation/ABI/testing/sysfs-kernel-mm-contiguous
-> > >  create mode 100644 Documentation/contiguous-memory.txt
-> > >  create mode 100644 include/linux/cma.h
-> > >  create mode 100644 mm/cma-best-fit.c
-> > >  create mode 100644 mm/cma.c
-> > >
-> > > diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-> > > index 5405f7a..bb50209 100644
-> > > --- a/Documentation/00-INDEX
-> > > +++ b/Documentation/00-INDEX
-> > > @@ -94,6 +94,8 @@ connector/
-> > >  	- docs on the netlink based userspace<->kernel space communication
-> > mod.
-> > >  console/
-> > >  	- documentation on Linux console drivers.
-> > > +contiguous-memory.txt
-> > > +	- documentation on physically-contiguous memory allocation framework.
-> > >  cpu-freq/
-> > >  	- info on CPU frequency and voltage scaling.
-> > >  cpu-hotplug.txt
-> > > diff --git a/Documentation/ABI/testing/sysfs-kernel-mm-contiguous
-> > b/Documentation/ABI/testing/sysfs-kernel-mm-contiguous
-> > > new file mode 100644
-> > > index 0000000..05e2f6a
-> > > --- /dev/null
-> > > +++ b/Documentation/ABI/testing/sysfs-kernel-mm-contiguous
-> > > @@ -0,0 +1,9 @@
-> > > +What:		/sys/kernel/mm/contiguous/
-> > > +Date:		July 2008
-> > > +Contact:	Michal Nazarewicz <m.nazarewicz@samsung.com>
-> > > +Description:
-> > > +		/sys/kernel/mm/contiguous/ contains two files: asterisk and
-> > > +		map.  They are used to configure the Contiguous Memory
-> > > +		Allocator framework.
-> > > +
-> > > +		For details see Documentation/contiguous-memory.txt.
-> > > diff --git a/Documentation/contiguous-memory.txt
-> > b/Documentation/contiguous-memory.txt
-> > > new file mode 100644
-> > > index 0000000..6eb1295
-> > > --- /dev/null
-> > > +++ b/Documentation/contiguous-memory.txt
-> > > @@ -0,0 +1,646 @@
-> > > +                                                             -*- org -*-
-> > > +
-> > > +* Contiguous Memory Allocator
-> > > +
-> > > +   The Contiguous Memory Allocator (CMA) is a framework, which allows
-> > > +   setting up a machine-specific configuration for physically-contiguous
-> > > +   memory management. Memory for devices is then allocated according
-> > > +   to that configuration.
-> > > +
-> > > +   The main role of the framework is not to allocate memory, but to
-> > > +   parse and manage memory configurations, as well as to act as an
-> > > +   in-between between device drivers and pluggable allocators. It is
-> > > +   thus not tied to any memory allocation method or strategy.
-> > > +
-> > > +** Why is it needed?
-> > > +
-> > > +    Various devices on embedded systems have no scatter-getter and/or
-> > > +    IO map support and as such require contiguous blocks of memory to
-> > > +    operate.  They include devices such as cameras, hardware video
-> > > +    decoders and encoders, etc.
-> > > +
-> > > +    Such devices often require big memory buffers (a full HD frame is,
-> > > +    for instance, more then 2 mega pixels large, i.e. more than 6 MB
-> > > +    of memory), which makes mechanisms such as kmalloc() ineffective.
-> > > +
-> > > +    Some embedded devices impose additional requirements on the
-> > > +    buffers, e.g. they can operate only on buffers allocated in
-> > > +    particular location/memory bank (if system has more than one
-> > > +    memory bank) or buffers aligned to a particular memory boundary.
-> > > +
-> > > +    Development of embedded devices have seen a big rise recently
-> > > +    (especially in the V4L area) and many such drivers include their
-> > > +    own memory allocation code. Most of them use bootmem-based methods.
-> > > +    CMA framework is an attempt to unify contiguous memory allocation
-> > > +    mechanisms and provide a simple API for device drivers, while
-> > > +    staying as customisable and modular as possible.
-> > > +
-> > > +** Design
-> > > +
-> > > +    The main design goal for the CMA was to provide a customisable and
-> > > +    modular framework, which could be configured to suit the needs of
-> > > +    individual systems.  Configuration specifies a list of memory
-> > > +    regions, which then are assigned to devices.  Memory regions can
-> > > +    be shared among many device drivers or assigned exclusively to
-> > > +    one.  This has been achieved in the following ways:
-> > 
-> > OK, I like the idea of regions, i.e. defining memory areas with specific
-> > properties or uses.
-> > 
-> > But why should it be possible to define regions through kernel parameters?
-> > Regions are typically fixed for a particular platform and can be setup in
-> > the
-> > platform specific code. Actually, one region could be setup by default:
-> > DMA-able memory. That would be very handy in fact for many PCI-based TV
-> > capture drivers.
-> 
-> IMHO this is a just desktop-point-of-view. In embedded world things are
-> a bit different. Most SoCs have a some kind of common system memory and
-> usually all build-in peripherals are able to DMA to any part of it (there is
-> no DMA specific hardware zone).
+> to get one commit that fixes a problem where, on some Freescale
+> embedded PowerPC machines, unprivileged userspace could oops the
+> kernel using the perf_event subsystem.  I know it's late, but it is a
+> potential security hole (but only on Freescale embedded systems), the
+> fix is small (3 lines) and only affects Freescale embedded processors,
+> and I was on vacation for the past two weeks. :)
+[snip]
+> diff --git a/arch/powerpc/kernel/perf_event_fsl_emb.c b/arch/powerpc/kernel/perf_event_fsl_emb.c
+> index 369872f..babccee 100644
+> --- a/arch/powerpc/kernel/perf_event_fsl_emb.c
+> +++ b/arch/powerpc/kernel/perf_event_fsl_emb.c
+> @@ -566,9 +566,9 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
+>  	 * Finally record data if requested.
+>  	 */
+>  	if (record) {
+> -		struct perf_sample_data data = {
+> -			.period	= event->hw.last_period,
+> -		};
+> +		struct perf_sample_data data;
+> +
+> +		perf_sample_data_init(&data, 0);
+>  
+>  		if (perf_event_overflow(event, nmi, &data, regs)) {
+>  			/*
 
-There are still desktops in the world, you know :-) It's nice if cma can also
-be used there. Having a region called 'dma' or something like that would be
-useful for drivers. And yes, for most embedded systems that would be the
-equivalent of common memory.
- 
-> > I think that the only thing that you want to set in the kernel params is
-> > the size of each region.
-> 
-> Keeping it as a kernel parameter is very handy for development. But I agree
-> that we might make it dependent on some Kconfig entry. This way a platform
-> setup code would provide default region description just as an array of the
-> region structures and we will get rid of the parsing code in the release
-> versions.
+Doesn't the setting of .period need to be maintained (it is in the other
+powerpc perf_event implementation that this is derived from)?
 
-I think that would help, yes.
-  
-> > The same with assigning regions to drivers: why would you want to do that?
-> > The driver should know which regions it can use (with possible fallbacks).
-> 
-> I'm sorry, but this is again a little 'desktop-centric point-of-view'. On
-> desktop it is perfectly acceptable to have a separate memory region for each
-> device. In embedded world memory is a precious resource. Of course we can go
-> the 'separate memory region for each device' way, but we observed that at
-> least some memory can be recovered if we decide to share memory regions for
-> some of the devices.
-> 
-> Assigning regions to the drivers is a way to describe how memory can be
-> shared. This is something that is independent from the actual drivers. 
-> Device drivers cannot and mustn't have such knowledge. 
+I don't see how this is a security fix -- the existing initializer above
+should zero-fill the fields that are not explicitly initialized.  In fact,
+it's taking other fields that were previously initialized to zero and is
+making them uninitialized, since perf_sample_data_init only sets addr and
+raw.
 
-You misunderstand me. I wasn't promoting separate memory regions for each device.
-Quite the opposite: initially I would make regions shared by default. I actually
-do not see why device drivers can't have the knowledge to allocate their memory
-from particular regions. We are talking about embedded systems where these types
-of memory allocations tend to be well defined. E.g. the video capture driver needs
-to allocate X video buffers at boot time. For most devices that will be the dma
-region, in the case of samsung devices that will be regions for particular memory
-banks.
+CCing linuxppc-dev on the original patch would have been nice...
 
-The only time reserving regions for specific devices might be necessary is if
-you can get memory fragmentation if multiple drivers use the same region. But if
-drivers just allocate the memory at boot, then shared regions work fine.
+-Scott
 
-> 
-> > And it can know that provided regions are setup by the platform code and
-> > not created dynamically. This will simplify things enormously.
-> > 
-> > > +    1. The core of the CMA does not handle allocation of memory and
-> > > +       management of free space.  Dedicated allocators are used for
-> > > +       that purpose.
-> > > +
-> > > +       This way, if the provided solution does not match demands
-> > > +       imposed on a given system, one can develop a new algorithm and
-> > > +       easily plug it into the CMA framework.
-> > > +
-> > > +       The presented solution includes an implementation of a best-fit
-> > > +       algorithm.
-> > 
-> > Again, do we really need user-settable per-region allocators? Just provide
-> > one with the option to later choose others through the kernel Kconfig files.
-> 
-> From our experience, yes. Different allocators can cope with different memory
-> usage scenarios better or worse. This results in higher or lower memory
-> fragmentation. System use cases are something that kernel or drivers are
-> definitely not aware, so only user space can tune this parameter to get the
-> best possible system behavior.
-
-Can you describe some of those usage scenarios? The cases I am familiar with
-are the standard: 'need to allocate X buffers of Y MB memory each on boot' and
-these buffers are only freed when the module is unloaded. While you can get
-fragmentation in that case if you creatively load and unload modules, this is
-not the normal usage in a deployed system.
-
-We already have several 'normal' memory allocators (slab, slub, slob, sleb,
-whatever. I've lost track there.) and I'm not very enthusiastic about the
-idea of adding another bunch of them. Especially not in a first release.
-
-Keep it simple. Just fix the core problem first, even if you are not yet able
-to squeeze the last byte of memory from your system. Later you can always add
-features as needed and optimize it further.
- 
-> > We can always add more complex scenarios later, but for an initial version
-> > I'd keep it simple.
-> > 
-> > > +
-> > > +    2. CMA allows a run-time configuration of the memory regions it
-> > > +       will use to allocate chunks of memory from.  The set of memory
-> > > +       regions is given on command line so it can be easily changed
-> > > +       without the need for recompiling the kernel.
-> > > +
-> > > +       Each region has it's own size, alignment demand, a start
-> > > +       address (physical address where it should be placed) and an
-> > > +       allocator algorithm assigned to the region.
-> > > +
-> > > +       This means that there can be different algorithms running at
-> > > +       the same time, if different devices on the platform have
-> > > +       distinct memory usage characteristics and different algorithm
-> > > +       match those the best way.
-> > 
-> > Seems overengineering to me. Just ensure that the code can be extended
-> > later to such hypothetical scenarios. They are hypothetical, right?
-> 
-> Not really. Having the possibility to reconfigure memory configuration
-> without kernel recompilation is very handy when one is tuning the
-> configuration for the specific use case.
-> 
-> > > +    3. When requesting memory, devices have to introduce themselves.
-> > > +       This way CMA knows who the memory is allocated for.  This
-> > > +       allows for the system architect to specify which memory regions
-> > > +       each device should use.
-> > > +
-> > > +       3a. Devices can also specify a "kind" of memory they want.
-> > > +           This makes it possible to configure the system in such
-> > > +           a way, that a single device may get memory from different
-> > > +           memory regions, depending on the "kind" of memory it
-> > > +           requested.  For example, a video codec driver might want to
-> > > +           allocate some shared buffers from the first memory bank and
-> > > +           the other from the second to get the highest possible
-> > > +           memory throughput.
-> > 
-> > Not sure I understand this. Isn't this just two regions, one for each
-> > memory bank,
-> > and the driver requests some buffers from one region and some from the
-> > other?
-> 
-> Right.
-> 
-> > Not sure how a 'kind of memory' features in this.
-> 
-> This 'kind' is a just cookie or a label used by the driver to distinguish
-> requests for both memory banks. This functionality is essential for our
-> hardware (just for hardware video codec we have 3 'kinds' of memory: memory
-> bank A, memory bank B and special region for the firmware).
-
-Let me see if I understand: driver D needs memory from bank A, so it specifies
-e.g. label "a" when requesting memory. And the kernel parameters are then supposed
-to define a region for memory bank A (say region "bank-a" and tell the cma that
-requests from driver D for memory of kind "a" should go to region "bank-a".
-
-Of course, the driver can also just request memory from the platform-defined
-region "bank-a" directly rather than having to rely on userspace provided
-parameters.
- 
-> > > +    4. For greater flexibility and extensibility, the framework allows
-> > > +       device drivers to register private regions of reserved memory
-> > > +       which then may be used only by them.
-> > > +
-> > > +       As an effect, if a driver would not use the rest of the CMA
-> > > +       interface, it can still use CMA allocators and other
-> > > +       mechanisms.
-> > 
-> > Why would you? Is there an actual driver that will need this?
-> 
-> This feature has been added after posting v1 of this rfc/patch. Jonathan 
-> Corbet suggested in <http://article.gmane.org/gmane.linux.kernel.mm/50689> 
-> that viafb driver might register its own private memory and use cma just
-> as an allocator. IMHO this is a good idea, this way we might remove a bunch
-> of custom allocators from the drivers (yes, there are such all over the
-> kernel).
-
-It goes back to whether we want per-device (or per-driver) regions or just
-have global regions. What I have seen in practice is that these drivers just
-need X amount of contiguous memory on boot. Having just a single region (as
-it will be for most systems) to carve the buffers from is just as efficient
-if not more than creating separate regions for each driver. Only if you
-start freeing and reallocating memory later on will you get into trouble.
-
-But if you do that, then you are trying to duplicate the behavior of the
-normal allocators in my opinion. I really don't think we want to go there.
-
-> 
-> > > +       4a. Early in boot process, device drivers can also request the
-> > > +           CMA framework to a reserve a region of memory for them
-> > > +           which then will be used as a private region.
-> > > +
-> > > +           This way, drivers do not need to directly call bootmem,
-> > > +           memblock or similar early allocator but merely register an
-> > > +           early region and the framework will handle the rest
-> > > +           including choosing the right early allocator.
-> > 
-> > The whole concept of private regions seems unnecessary to me.
-> > 
-> > <big snip>
-> > 
-> > It looks to me as if you tried to think of all possible hypothetical
-> > situations
-> > and write a framework for that. Of course, you may know more than I do, and
-> > some of these situations actually happen.
-> 
-> Not exactly. We tried to design a solution that would cover all requirements
-> for OUR (quite specific) embedded hardware. However we didn't want to tie it
-> only to our platform. We just generalized most of our requirements so they can
-> be reused for other systems.
-> 
-> > The basic design ideas are solid, I think. But you should get rid of all
-> > the fancy features and go back to basics. We can always add those features
-> > later should that become necessary. But removing features is much, much
-> harder.
-> 
-> Well, please keep in mind that we cannot remove features that are essential
-> for our solution. We know that a simple framework have some advantages
-> (well, the most important one is the fact that it is easy to understand),
-> but making it too simple would render it useless from our point of view
-> (if it would not provide functionality required by our drivers and hardware).
-
-Why not give a list of the requirements that your hardware has? The only
-requirement unique to your hardware that I am aware of is the need for buffers
-in specific memory banks (and apparently a special memory area for firmware).
-
-So besides a 'dma' region (which is probably sufficient for most systems)
-you would also have a 'banka' and 'bankb' region and perhaps a 'fw' region.
-
-In the kernel parameters the user can specify the sizes for these regions
-that are reserved at boot time and drivers will use cma to get their memory
-from the relevant region using a simple allocator.
-
-If there are other requirements in your hardware (or other hardware) that
-should be taken into account for an initial version of the cma, then I'm
-interested in hearing about it.
-
-One note: since the first version of the patch wasn't posted to linux-media
-I didn't follow the replies to that. If there are things in that thread that
-I should read, then just mail me some links.
-
-Regards,
-
-	Hans
-
--- 
-Hans Verkuil - video4linux developer - sponsored by TANDBERG, part of Cisco
