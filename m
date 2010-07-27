@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab0G0LOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 07:14:42 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45146 "EHLO
+	id S1756463Ab0G0LRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 07:17:11 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45235 "EHLO
 	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175Ab0G0LOl (ORCPT
+	with ESMTP id S1756301Ab0G0LRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 07:14:41 -0400
+	Tue, 27 Jul 2010 07:17:08 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: dave b <db.pub.mail@gmail.com>
-Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
-Cc: kosaki.motohiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <AANLkTinT_W4Zfg8xcpKXMpqTAomdVBdHve7VqamdSr4o@mail.gmail.com>
-References: <AANLkTikjJ0giM+MpzNu3e0NQN=JLMviPT8UPHdZqGGpz@mail.gmail.com> <AANLkTinT_W4Zfg8xcpKXMpqTAomdVBdHve7VqamdSr4o@mail.gmail.com>
-Message-Id: <20100727200804.2F40.A69D9226@jp.fujitsu.com>
+To: Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH 1/2] Add trace points to mmap, munmap, and brk
+Cc: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        mingo@redhat.com, hugh.dickins@tiscali.co.uk, riel@redhat.com,
+        peterz@infradead.org, anton@samba.org, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20100727110904.GA6519@mgebm.net>
+References: <20100721223359.8710.A69D9226@jp.fujitsu.com> <20100727110904.GA6519@mgebm.net>
+Message-Id: <20100727201644.2F46.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 27 Jul 2010 20:14:36 +0900 (JST)
+Date: Tue, 27 Jul 2010 20:17:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 27 July 2010 18:09, dave b <db.pub.mail@gmail.com> wrote:
-> > On 27 July 2010 16:09, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >>> > Do you mean the issue will be gone if disabling intel graphics?
-> >>> It may be a general issue or it could just be specific :)
-> >
-> > I will try with the latest ubuntu and report how that goes (that will
-> > be using fairly new xorg etc.) it is likely to be hidden issue just
-> > with the intel graphics driver. However, my concern is that it isn't -
-> > and it is about how shared graphics memory is handled :)
+> On Wed, 21 Jul 2010, KOSAKI Motohiro wrote:
 > 
+> > > This patch adds trace points to mmap, munmap, and brk that will report
+> > > relevant addresses and sizes before each function exits successfully.
+> > > 
+> > > Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> > 
+> > I don't think this is good idea. if you need syscall result, you should 
+> > use syscall tracer. IOW, This tracepoint bring zero information.
+> > 
+> > Please see perf_event_mmap() usage. Our kernel manage adress space by
+> > vm_area_struct. we need to trace it if we need to know what kernel does.
+> > 
+> > Thanks.
 > 
-> Ok my desktop still stalled and no oom killer was invoked when I added
-> swap to a live-cd of 10.04 amd64.
+> The syscall tracer does not give you the address and size of the mmaped areas
+> so this does provide information above simply tracing the enter/exit points
+> for each call.
+
+Why don't you fix this?
+
+
+
+> perf_event_mmap does provide the information for mmap calls.  Originally I sent
+> a patch to add a trace point to munmap and Peter Z asked for corresponding points
+> in the mmap family.  If the consensus is that the trace point in munmap is the
+> only one that should be added I can resend that patch.
 > 
-> *Without* *swap* *on* - the oom killer was invoked - here is a copy of it.
-
-This stack seems similar following bug. can you please try to disable intel graphics
-driver?
-
-https://bugzilla.kernel.org/show_bug.cgi?id=14933
-
-
-> [  298.180542] Xorg invoked oom-killer: gfp_mask=0xd0, order=0, oom_adj=0
-> [  298.180553] Xorg cpuset=/ mems_allowed=0
-> [  298.180560] Pid: 3808, comm: Xorg Not tainted 2.6.32-21-generic #32-Ubuntu
-> [  298.180564] Call Trace:
-> [  298.180583]  [<ffffffff810b37cd>] ? cpuset_print_task_mems_allowed+0x9d/0xb0
-> [  298.180595]  [<ffffffff810f64f4>] oom_kill_process+0xd4/0x2f0
-> [  298.180603]  [<ffffffff810f6ab0>] ? select_bad_process+0xd0/0x110
-> [  298.180609]  [<ffffffff810f6b48>] __out_of_memory+0x58/0xc0
-> [  298.180616]  [<ffffffff810f6cde>] out_of_memory+0x12e/0x1a0
-> [  298.180626]  [<ffffffff81540c9e>] ? _spin_lock+0xe/0x20
-> [  298.180633]  [<ffffffff810f9d21>] __alloc_pages_slowpath+0x511/0x580
-> [  298.180641]  [<ffffffff810f9eee>] __alloc_pages_nodemask+0x15e/0x1a0
-> [  298.180650]  [<ffffffff8112ca57>] alloc_pages_current+0x87/0xd0
-> [  298.180657]  [<ffffffff810f8e0e>] __get_free_pages+0xe/0x50
-> [  298.180666]  [<ffffffff81154994>] __pollwait+0xb4/0xf0
-> [  298.180673]  [<ffffffff814e09a5>] unix_poll+0x25/0xc0
-> [  298.180682]  [<ffffffff81449bea>] sock_poll+0x1a/0x20
-> [  298.180688]  [<ffffffff811545b2>] do_select+0x3a2/0x6d0
-> [  298.180696]  [<ffffffff811548e0>] ? __pollwait+0x0/0xf0
-> [  298.180702]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180708]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180714]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180721]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180727]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180732]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180737]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180741]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180745]  [<ffffffff811549d0>] ? pollwake+0x0/0x60
-> [  298.180749]  [<ffffffff811550ba>] core_sys_select+0x18a/0x2c0
-> [  298.180777]  [<ffffffffa001eced>] ? drm_ioctl+0x13d/0x480 [drm]
-> [  298.180784]  [<ffffffff81085320>] ? autoremove_wake_function+0x0/0x40
-> [  298.180790]  [<ffffffff810397a9>] ? default_spin_lock_flags+0x9/0x10
-> [  298.180795]  [<ffffffff81540bbf>] ? _spin_lock_irqsave+0x2f/0x40
-> [  298.180800]  [<ffffffff81019e89>] ? read_tsc+0x9/0x20
-> [  298.180805]  [<ffffffff8108f9c9>] ? ktime_get_ts+0xa9/0xe0
-> [  298.180810]  [<ffffffff81155447>] sys_select+0x47/0x110
-> [  298.180816]  [<ffffffff810131b2>] system_call_fastpath+0x16/0x1b
-> [  298.180819] Mem-Info:
-> [  298.180822] Node 0 DMA per-cpu:
-> [  298.180827] CPU    0: hi:    0, btch:   1 usd:   0
-> [  298.180830] CPU    1: hi:    0, btch:   1 usd:   0
-> [  298.180832] Node 0 DMA32 per-cpu:
-> [  298.180837] CPU    0: hi:  186, btch:  31 usd:  60
-> [  298.180839] CPU    1: hi:  186, btch:  31 usd: 137
-> [  298.180845] active_anon:374344 inactive_anon:81753 isolated_anon:0
-> [  298.180847]  active_file:7038 inactive_file:7089 isolated_file:0
-> [  298.180848]  unevictable:0 dirty:0 writeback:0 unstable:0
-> [  298.180849]  free:3399 slab_reclaimable:4226 slab_unreclaimable:4383
-> [  298.180851]  mapped:13010 shmem:45284 pagetables:5496 bounce:0
-> [  298.180854] Node 0 DMA free:7920kB min:40kB low:48kB high:60kB
-> active_anon:3880kB inactive_anon:4096kB active_file:0kB
-> inactive_file:0kB unevictable:0kB isolated(anon):0kB
-> isolated(file):0kB present:15348kB mlocked:0kB dirty:0kB writeback:0kB
-> mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:8kB
-> kernel_stack:0kB pagetables:16kB unstable:0kB bounce:0kB
-> writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-> [  298.180866] lowmem_reserve[]: 0 1971 1971 1971
-> [  298.180871] Node 0 DMA32 free:5676kB min:5660kB low:7072kB
-> high:8488kB active_anon:1493496kB inactive_anon:322916kB
-> active_file:28152kB inactive_file:28356kB unevictable:0kB
-> isolated(anon):0kB isolated(file):0kB present:2019172kB mlocked:0kB
-> dirty:0kB writeback:0kB mapped:52040kB shmem:181136kB
-> slab_reclaimable:16904kB slab_unreclaimable:17524kB
-> kernel_stack:2096kB pagetables:21968kB unstable:0kB bounce:0kB
-> writeback_tmp:0kB pages_scanned:41088 all_unreclaimable? no
-> [  298.180884] lowmem_reserve[]: 0 0 0 0
-> [  298.180889] Node 0 DMA: 4*4kB 2*8kB 1*16kB 2*32kB 2*64kB 2*128kB
-> 1*256kB 2*512kB 2*1024kB 2*2048kB 0*4096kB = 7920kB
-> [  298.180904] Node 0 DMA32: 397*4kB 1*8kB 1*16kB 1*32kB 1*64kB
-> 1*128kB 1*256kB 1*512kB 1*1024kB 1*2048kB 0*4096kB = 5676kB
-> [  298.180918] 59413 total pagecache pages
-> [  298.180920] 0 pages in swap cache
-> [  298.180923] Swap cache stats: add 0, delete 0, find 0/0
-> [  298.180925] Free swap  = 0kB
-> [  298.180927] Total swap = 0kB
-> [  298.188124] 515887 pages RAM
-> [  298.188127] 9764 pages reserved
-> [  298.188129] 108553 pages shared
-> [  298.188131] 467319 pages non-shared
-> [  298.188136] Out of memory: kill process 3821 (gnome-session) score
-> 503983 or a child
-> [  298.188141] Killed process 3855 (ssh-agent)
-
-
+> -- 
+> Eric B Munson
+> IBM Linux Technology Center
+> ebmunson@us.ibm.com
+> 
 
 
 
