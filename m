@@ -1,147 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab0G0INy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:13:54 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:25985 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab0G0INv (ORCPT
+	id S1755664Ab0G0IQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:16:00 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44313 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab0G0IP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:13:51 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=74.61.84.126;
-From: Milton Miller <miltonm@bga.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Message-Id: <pfn.valid.v4.reply.2@mdm.bga.com>
-In-Reply-To: <AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
-References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
-	<alpine.DEB.2.00.1007261136160.5438@router.home>
-	<pfn.valid.v4.reply.1@mdm.bga.com> 
-	<AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com> 
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-Date: Tue, 27 Jul 2010 03:12:38 -0500
-X-Originating-IP: 74.61.84.126
+	Tue, 27 Jul 2010 04:15:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=A9nsHN1jwAfOP+uKtZVJitAPKye6mN8TGO1MUIopxdmXCfhFzQM0/0FWZWDU1VTkYe
+         WuQMIyLaBk+pJeTJYoVLEW/KirgGygYuLwikJx6GVNo91BEzOKsCqEz3sLYWD2H83lkG
+         SSGZE4vTD0Eep6bYd13+kWpLXmgxzr9xKeYXg=
+Date: Tue, 27 Jul 2010 01:15:52 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC PATCH] sysrq: don't hold the sysrq_key_table_lock during
+ the handler
+Message-ID: <20100727081552.GB32084@core.coreip.homeip.net>
+References: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
+ <20100726105148.GB14198@hmsreliant.think-freely.org>
+ <20100726174153.GD14609@core.coreip.homeip.net>
+ <20100726203420.GB18789@hmsreliant.think-freely.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100726203420.GB18789@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Tue Jul 27 2010 about 02:11:22 Minchan Kim wrote:
-> > [Sorry if i missed or added anyone on cc, patchwork.kernel.org  LKML is not
-> > working and I'm not subscribed to the list ]
+On Mon, Jul 26, 2010 at 04:34:20PM -0400, Neil Horman wrote:
+> On Mon, Jul 26, 2010 at 10:41:54AM -0700, Dmitry Torokhov wrote:
+> > On Mon, Jul 26, 2010 at 06:51:48AM -0400, Neil Horman wrote:
+> > > On Mon, Jul 26, 2010 at 05:54:02PM +0800, Xiaotian Feng wrote:
+> > > > sysrq_key_table_lock is used to protect the sysrq_key_table, make sure
+> > > > we get/replace the right operation for the sysrq. But in __handle_sysrq,
+> > > > kernel will hold this lock and disable irqs until we finished op_p->handler().
+> > > > This may cause false positive watchdog alert when we're doing "show-task-states"
+> > > > on a system with many tasks.
+> > > > 
+> > > > Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> > > > Cc: Ingo Molnar <mingo@elte.hu>
+> > > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > > Cc: Neil Horman <nhorman@tuxdriver.com>
+> > > > Cc: "David S. Miller" <davem@davemloft.net>
+> > > > ---
+> > > >  drivers/char/sysrq.c |    4 +++-
+> > > >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
+> > > > index 878ac0c..0856e2e 100644
+> > > > --- a/drivers/char/sysrq.c
+> > > > +++ b/drivers/char/sysrq.c
+> > > > @@ -520,9 +520,11 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
+> > > >  		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
+> > > >  			printk("%s\n", op_p->action_msg);
+> > > >  			console_loglevel = orig_log_level;
+> > > > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > > >  			op_p->handler(key, tty);
+> > > >  		} else {
+> > > >  			printk("This sysrq operation is disabled.\n");
+> > > > +			spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > > >  		}
+> > > >  	} else {
+> > > >  		printk("HELP : ");
+> > > > @@ -541,8 +543,8 @@ void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
+> > > >  		}
+> > > >  		printk("\n");
+> > > >  		console_loglevel = orig_log_level;
+> > > > +		spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > > >  	}
+> > > > -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+> > > >  }
+> > > >  
+> > > >  void handle_sysrq(int key, struct tty_struct *tty)
+> > > > -- 
+> > > > 1.7.2
+> > > > 
+> > > > 
+> > > 
+> > > This creates the possibility of a race in the handler.  Not that it happens
+> > > often, but sysrq keys can be registered and unregistered dynamically.  If that
+> > > lock isn't held while we call the keys handler, the code implementing that
+> > > handler can live in a module that gets removed while its executing, leading to
+> > > an oops, etc.  I think the better solution would be to use an rcu lock here.
+> > 
+> > I'd simply changed spinlock to a mutex.
+> > 
+> I don't think you can do that safely in this path, as sysrqs will be looked up
+> in both process (echo t > /proc/sysrq-trigger) context and in interrupt
+> (alt-sysrq-t) context.  If a mutex is locked and you try to take it in interrupt
+> context, you get a sleeping-in-interrupt panic IIRC
 > 
-> Readd them. :)
 
-Changed linux-mmc at vger to linxu-mm at kvack.org, from my poor use of grep 
-MAINTAINERS.
+Yes, indeed. But then even RCU will not really help us since keyboard
+driver will have inpterrupts disabled anyways.
 
-> On Tue, Jul 27, 2010 at 2:55 PM, <miltonm@xxxxxxx> wrote:
-> > On Mon Jul 26 2010 about 12:47:37 EST, Christoph Lameter wrote:
-> > > On Tue, 27 Jul 2010, Minchan Kim wrote:
-> > >
-> > > > This patch registers address of mem_section to memmap itself's page struct's
-> > > > pg->private field. This means the page is used for memmap of the section.
-> > > > Otherwise, the page is used for other purpose and memmap has a hole.
-> >
-> > >
-> > > > +void mark_valid_memmap(unsigned long start, unsigned long end);
-> > > > +
-> > > > +#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
-> > > > +static inline int memmap_valid(unsigned long pfn)
-> > > > +{
-> > > > + struct page *page = pfn_to_page(pfn);
-> > > > + struct page *__pg = virt_to_page(page);
-> > > > + return page_private(__pg) == (unsigned long)__pg;
-> > >
-> > >
-> > > What if page->private just happens to be the value of the page struct?
-> > > Even if that is not possible today, someday someone may add new
-> > > functionality to the kernel where page->pivage == page is used for some
-> > > reason.
-> > >
-> > > Checking for PG_reserved wont work?
-> >
-> > I had the same thought and suggest setting it to the memory section block,
-> > since that is a uniquie value (unlike PG_reserved),
-> 
-> You mean setting pg->private to mem_section address?
-> I hope I understand your point.
-> 
-> Actually, KAMEZAWA tried it at first version but I changed it.
-> That's because I want to support this mechanism to ARM FLATMEM.
-> (It doesn't have mem_section)
-
-> >
-> > .. and we already have computed it when we use it so we could pass it as
-> > a parameter (to both _valid and mark_valid).
-> 
-> I hope this can support FALTMEM which have holes(ex, ARM).
-> 
-
-If we pass a void * to this helper we should be able to find another
-symbol.  Looking at the pfn_valid() in arch/arm/mm/init.c I would
-probably choose &meminfo as it is already used nearby, and using a single
-symbol in would avoid issues if a more specific symbol chosen (eg bank)
-were to change at a pfn boundary not PAGE_SIZE / sizeof(struct page).
-Similarly the asm-generic/page.h version could use &max_mapnr.
-
-This function is a validation helper for pfn_valid not the only check.
-
-something like
-
-static inline int memmap_valid(unsigned long pfn, void *validate)
-{
-	struct page *page = pfn_to_page(pfn);
-	struct page *__pg = virt_to_page(page);
-	return page_private(__pg) == validate;
-}
-
-static inline int pfn_valid(unsigned long pfn)
-{
-	struct mem_section *ms;
-	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
-		return 0;
-	ms = __nr_to_section(pfn_to_section_nr(pfn));
-	return valid_section(ms) && memmap_valid(pfn, ms);
-}
-
-> > > > +/*
-> > > > + * Fill pg->private on valid mem_map with page itself.
-> > > > + * pfn_valid() will check this later. (see include/linux/mmzone.h)
-> > > > + * Every arch for supporting hole of mem_map should call
-> > > > + * mark_valid_memmap(start, end). please see usage in ARM.
-> > > > + */
-> > > > +void mark_valid_memmap(unsigned long start, unsigned long end)
-> > > > +{
-> > > > +	struct mem_section *ms;
-> > > > +	unsigned long pos, next;
-> > > > +	struct page *pg;
-> > > > +	void *memmap, *mapend;
-> > > > +
-> > > > +	for (pos = start; pos < end; pos = next) {
-> > > > +		next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
-> > > > +		ms = __pfn_to_section(pos);
-> > > > +		if (!valid_section(ms))
-> > > > +			continue;
-> > > > +	
-> > > > +		for (memmap = (void*)pfn_to_page(pos),
-> > > > +					/* The last page in section */
-> > > > +					mapend = pfn_to_page(next-1);
-> > > > +				memmap < mapend; memmap += PAGE_SIZE) {
-> > > > +			pg = virt_to_page(memmap);
-> > > > +			set_page_private(pg, (unsigned long)pg);
-> > > > +		}
-> > > > +	}
-> > > > +}
-
-Hmm, this loop would need to change for sections.   And sizeof(struct
-page) % PAGE_SIZE may not be 0, so we want a global symbol for sparsemem
-too.  Perhaps the mem_section array.  Using a symbol that is part of
-the model pre-checks can remove a global symbol lookup and has the side
-effect of making sure our pfn_valid is for the right model.
-
-milton
+-- 
+Dmitry
