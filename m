@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab0G0IGk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:06:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38573 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755204Ab0G0IGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,266,1278313200"; 
-   d="scan'208";a="641960104"
-Subject: [RFC]ftrace: fix a unallocated memory access in function_graph
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, srostedt@redhat.com,
-        "Huang, Ying" <ying.huang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Jul 2010 16:06:34 +0800
-Message-ID: <1280217994.32400.76.camel@sli10-desk.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755609Ab0G0IHF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:07:05 -0400
+Received: from smtp184-pc.aruba.it ([62.149.157.184]:47116 "HELO
+	smtp1-pc.aruba.it" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1755645Ab0G0IG7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:06:59 -0400
+MIME-Version: 1.0
+X-Mailer: AtMail PHP 5.1
+Message-ID: <33201.1280217944@katamail.com>
+To: <info@ntai.com.hk>
+Reply-To: private_jntai212@yahoo.com.hk
+Content-Type: text/plain; charset="utf-8"
+X-Origin: 194.116.32.115
+Date: Tue, 27 Jul 2010 10:05:44 +0200
+Subject: Re:Await your Response
+From: "Mr Jerry Ntai" <jntai888@katamail.com>
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_DEBUG_PAGEALLOC, I observed a unallocated memory access in
-function_graph trace. It appears we find a small size entry in ring buffer, but
-we access it as a big size entry. The access overflows a page size and touch
-a unallocated page.
+Although you might be apprehensive about my email as we have not met before, My name is Mr.Jerry Ntai, Head of Operation  Mevas 
+Bank,Hong Kong. I have a secured business proposal in the tune of $21.5m for you to handle with me from my bank.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+This however is not mandatory nor will I in any manner compel you to honor against your will. I would like you to read on and consider 
+the value I
+offer. Once the funds have been transferred to your nominated bank account we shall then share in the ratio of 70% for me, 30% for you. 
+Should you be interested, Please treat this business with utmost Confidentiality and send me your full contact details and after that I 
+shall provide you with more details, of this operation.
 
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 79f4bac..33b379d 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -507,7 +507,10 @@ get_return_for_leaf(struct trace_iterator *iter,
- 			 * if the output fails.
- 			 */
- 			data->ent = *curr;
--			data->ret = *next;
-+			if (next->ent.type == TRACE_GRAPH_RET)
-+				data->ret = *next;
-+			else
-+				data->ret.ent.type = next->ent.type;
- 		}
- 	}
- 
+Kind Regards,
+Mr.Jerry Ntai
 
 
+
+---- Nuova grafica e nuove funzionalità! Crea subito Gratis la tua nuova Casella di Posta  Katamail
