@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab0G0J41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 05:56:27 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48691 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab0G0J4Z convert rfc822-to-8bit (ORCPT
+	id S1755988Ab0G0KBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 06:01:17 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36587 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab0G0KBP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 05:56:25 -0400
+	Tue, 27 Jul 2010 06:01:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=LeekEPBNt01q/kjlDjDSaKjwyVJqO92vh5/opNBWsTAWel4WloC6IAjAyphleX0sHx
-         YiTTCy7ykPYn7ylo7vX28We1uuwOjpnAl89DY1Eg7Ch5caJ2cq6QMGu/EjXfl0cB3EY3
-         JBqJ6ro5XLsu2dNyrFAW53Iv5Rl7LvGS147Dw=
+        b=UmgfNmaryi8y81lSzkKq4iFdTApVyY1EPdYt9/ei3GLJWgYOGWmwLUBSo4cT2CLM7w
+         LqoLrYWzV0Zs8tdpY54HPs5NXh9g5+kag69kkteVoKaeWJ1pqjuRl5k7XoQbcF6xB/W0
+         da8LElbEfQSPMEDd/VKY9g+hk2SPiMGGMKvB0=
 MIME-Version: 1.0
-In-Reply-To: <pfn.valid.v4.reply.2@mdm.bga.com>
+In-Reply-To: <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
 References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
 	<alpine.DEB.2.00.1007261136160.5438@router.home>
 	<pfn.valid.v4.reply.1@mdm.bga.com>
 	<AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
 	<pfn.valid.v4.reply.2@mdm.bga.com>
-Date: Tue, 27 Jul 2010 18:56:24 +0900
-Message-ID: <AANLkTim7s4FH+hU19d53R3JLKm3pcDGV5cMMeST-Wyrz@mail.gmail.com>
+	<20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 27 Jul 2010 19:01:14 +0900
+Message-ID: <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com>
 Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
 From: Minchan Kim <minchan.kim@gmail.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Milton Miller <miltonm@bga.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
         Kukjin Kim <kgene.kim@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
@@ -38,141 +40,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 5:12 PM, Milton Miller <miltonm@bga.com> wrote:
->
-> On Tue Jul 27 2010 about 02:11:22 Minchan Kim wrote:
->> > [Sorry if i missed or added anyone on cc, patchwork.kernel.org  LKML is not
->> > working and I'm not subscribed to the list ]
->>
->> Readd them. :)
->
-> Changed linux-mmc at vger to linxu-mm at kvack.org, from my poor use of grep
-> MAINTAINERS.
->
->> On Tue, Jul 27, 2010 at 2:55 PM, <miltonm@xxxxxxx> wrote:
->> > On Mon Jul 26 2010 about 12:47:37 EST, Christoph Lameter wrote:
->> > > On Tue, 27 Jul 2010, Minchan Kim wrote:
->> > >
->> > > > This patch registers address of mem_section to memmap itself's page struct's
->> > > > pg->private field. This means the page is used for memmap of the section.
->> > > > Otherwise, the page is used for other purpose and memmap has a hole.
->> >
->> > >
->> > > > +void mark_valid_memmap(unsigned long start, unsigned long end);
->> > > > +
->> > > > +#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
->> > > > +static inline int memmap_valid(unsigned long pfn)
->> > > > +{
->> > > > + struct page *page = pfn_to_page(pfn);
->> > > > + struct page *__pg = virt_to_page(page);
->> > > > + return page_private(__pg) == (unsigned long)__pg;
->> > >
->> > >
->> > > What if page->private just happens to be the value of the page struct?
->> > > Even if that is not possible today, someday someone may add new
->> > > functionality to the kernel where page->pivage == page is used for some
->> > > reason.
->> > >
->> > > Checking for PG_reserved wont work?
->> >
->> > I had the same thought and suggest setting it to the memory section block,
->> > since that is a uniquie value (unlike PG_reserved),
->>
->> You mean setting pg->private to mem_section address?
->> I hope I understand your point.
->>
->> Actually, KAMEZAWA tried it at first version but I changed it.
->> That's because I want to support this mechanism to ARM FLATMEM.
->> (It doesn't have mem_section)
->
->> >
->> > .. and we already have computed it when we use it so we could pass it as
->> > a parameter (to both _valid and mark_valid).
->>
->> I hope this can support FALTMEM which have holes(ex, ARM).
+Hi, Kame.
+
+On Tue, Jul 27, 2010 at 5:13 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com>
+>> Perhaps the mem_section array.  Using a symbol that is part of
+>> the model pre-checks can remove a global symbol lookup and has the side
+>> effect of making sure our pfn_valid is for the right model.
 >>
 >
-> If we pass a void * to this helper we should be able to find another
-> symbol.  Looking at the pfn_valid() in arch/arm/mm/init.c I would
-> probably choose &meminfo as it is already used nearby, and using a single
+> But yes, maybe it's good to make use of a fixed-(magic)-value.
 
-If we uses pg itself and PG_reserved, we can remove &meminfo in FLATMEM.
+fixed-magic-value?
+Yes. It can be good for some debugging.
+But as Christoph pointed out, we need some strict check(ex,
+PG_reserved) for preventing unlucky valid using of magic value in
+future.
+But in fact I have a concern to use PG_reserved since it can be used
+afterward pfn_valid normally to check hole in non-hole system. So I
+think it's redundant.
 
-> symbol in would avoid issues if a more specific symbol chosen (eg bank)
-> were to change at a pfn boundary not PAGE_SIZE / sizeof(struct page).
-> Similarly the asm-generic/page.h version could use &max_mapnr.
-
-I don't consider NOMMU.
-I am not sure NOMMU have a this problem.
-
->
-> This function is a validation helper for pfn_valid not the only check.
->
-> something like
->
-> static inline int memmap_valid(unsigned long pfn, void *validate)
-> {
->        struct page *page = pfn_to_page(pfn);
->        struct page *__pg = virt_to_page(page);
->        return page_private(__pg) == validate;
-> }
-
-I am not sure what's benefit we have if we use validate argument.
-
->
-> static inline int pfn_valid(unsigned long pfn)
-> {
->        struct mem_section *ms;
->        if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
->                return 0;
->        ms = __nr_to_section(pfn_to_section_nr(pfn));
->        return valid_section(ms) && memmap_valid(pfn, ms);
-> }
->
->> > > > +/*
->> > > > + * Fill pg->private on valid mem_map with page itself.
->> > > > + * pfn_valid() will check this later. (see include/linux/mmzone.h)
->> > > > + * Every arch for supporting hole of mem_map should call
->> > > > + * mark_valid_memmap(start, end). please see usage in ARM.
->> > > > + */
->> > > > +void mark_valid_memmap(unsigned long start, unsigned long end)
->> > > > +{
->> > > > +       struct mem_section *ms;
->> > > > +       unsigned long pos, next;
->> > > > +       struct page *pg;
->> > > > +       void *memmap, *mapend;
->> > > > +
->> > > > +       for (pos = start; pos < end; pos = next) {
->> > > > +               next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
->> > > > +               ms = __pfn_to_section(pos);
->> > > > +               if (!valid_section(ms))
->> > > > +                       continue;
->> > > > +
->> > > > +               for (memmap = (void*)pfn_to_page(pos),
->> > > > +                                       /* The last page in section */
->> > > > +                                       mapend = pfn_to_page(next-1);
->> > > > +                               memmap < mapend; memmap += PAGE_SIZE) {
->> > > > +                       pg = virt_to_page(memmap);
->> > > > +                       set_page_private(pg, (unsigned long)pg);
->> > > > +               }
->> > > > +       }
->> > > > +}
->
-> Hmm, this loop would need to change for sections.   And sizeof(struct
-> page) % PAGE_SIZE may not be 0, so we want a global symbol for sparsemem
-
-I can't understand your point. What is problem of sizeof(struct page)%PAGE_SIZE?
-AFAIK, I believe sizeof(struct page) is always 32 bit in 32 bit
-machine and most of PAGE_SIZE is 4K. What's problem happen?
-
-> too.  Perhaps the mem_section array.  Using a symbol that is part of
-> the model pre-checks can remove a global symbol lookup and has the side
-> effect of making sure our pfn_valid is for the right model.
-
-global symbol lookup?
-Hmm, Please let me know your approach's benefit for improving this patch. :)
-
-Thanks for careful review, milton.
+Hmm..
 
 -- 
 Kind regards,
