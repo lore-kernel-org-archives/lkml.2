@@ -1,147 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab0G0ITU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:19:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38583 "EHLO mx1.redhat.com"
+	id S1755896Ab0G0IW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:22:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40984 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755875Ab0G0ITR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:19:17 -0400
-Date: Tue, 27 Jul 2010 04:19:05 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: nhorman@redhat.com, akpm@linux-foundation.org,
-        huang ying <huang.ying.caritas@gmail.com>,
-        Amerigo Wang <amwang@redhat.com>, ebiederm@xmission.com
-Message-Id: <20100727082321.5813.84456.sendpatchset@localhost.localdomain>
-Subject: [Patch v2] kexec: increase max of kexec segments and use dynamic allocation
+	id S1755417Ab0G0IW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:22:26 -0400
+Message-ID: <4C4E970A.2030607@kernel.org>
+Date: Tue, 27 Jul 2010 10:21:30 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
+ kthread
+References: <20100722155840.GA1743@redhat.com> <4C48B664.9000109@kernel.org> <20100724191447.GA4972@redhat.com> <4C4BEAA2.6040301@kernel.org> <20100726152510.GA26223@redhat.com> <4C4DAB14.5050809@kernel.org> <20100726155014.GA26412@redhat.com> <4C4DB247.9060709@kernel.org> <20100726162346.GD26412@redhat.com> <4C4DDC31.9070206@kernel.org> <20100726201907.GF27644@redhat.com>
+In-Reply-To: <20100726201907.GF27644@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 08:21:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Currently KEXEC_SEGMENT_MAX is only 16 which is too small for machine with
-many memory ranges.  When hibernate on a machine with disjoint memory we do
-need one segment for each memory region. Increase this hard limit to 16K
-which is reasonably large.
+On 07/26/2010 10:19 PM, Michael S. Tsirkin wrote:
+> Let's try to define what do we want to achieve then.  Do you want
+> code that flushes workers not to block when workers are frozen? How
+> will we handle work submitted when worker is frozen?
 
-And change ->segment from a static array to a dynamically allocated memory.
+As I wrote earlier, it's not necessarily about correctness but rather
+avoiding unnecessary surprises and of course flushing can and should
+stall if the queue is frozen but let's not separate execution of a
+work and its completion with something which can take undeterminate
+amount of time.
 
-Cc: Neil Horman <nhorman@redhat.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: WANG Cong <amwang@redhat.com>
+Thanks.
 
----
-diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-index ed31a29..f115585 100644
---- a/arch/powerpc/kernel/machine_kexec_64.c
-+++ b/arch/powerpc/kernel/machine_kexec_64.c
-@@ -131,10 +131,7 @@ static void copy_segments(unsigned long ind)
- void kexec_copy_flush(struct kimage *image)
- {
- 	long i, nr_segments = image->nr_segments;
--	struct  kexec_segment ranges[KEXEC_SEGMENT_MAX];
--
--	/* save the ranges on the stack to efficiently flush the icache */
--	memcpy(ranges, image->segment, sizeof(ranges));
-+	struct  kexec_segment range;
- 
- 	/*
- 	 * After this call we may not use anything allocated in dynamic
-@@ -148,9 +145,11 @@ void kexec_copy_flush(struct kimage *image)
- 	 * we need to clear the icache for all dest pages sometime,
- 	 * including ones that were in place on the original copy
- 	 */
--	for (i = 0; i < nr_segments; i++)
--		flush_icache_range((unsigned long)__va(ranges[i].mem),
--			(unsigned long)__va(ranges[i].mem + ranges[i].memsz));
-+	for (i = 0; i < nr_segments; i++) {
-+		memcpy(&range, &image->segment[i], sizeof(range));
-+		flush_icache_range((unsigned long)__va(range.mem),
-+			(unsigned long)__va(range.mem + range.memsz));
-+	}
- }
- 
- #ifdef CONFIG_SMP
-diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-index 03e8e8d..26b70ff 100644
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -57,7 +57,7 @@ typedef unsigned long kimage_entry_t;
- #define IND_DONE         0x4
- #define IND_SOURCE       0x8
- 
--#define KEXEC_SEGMENT_MAX 16
-+#define KEXEC_SEGMENT_MAX (1024*16)
- struct kexec_segment {
- 	void __user *buf;
- 	size_t bufsz;
-@@ -86,7 +86,7 @@ struct kimage {
- 	struct page *swap_page;
- 
- 	unsigned long nr_segments;
--	struct kexec_segment segment[KEXEC_SEGMENT_MAX];
-+	struct kexec_segment *segment;
- 
- 	struct list_head control_pages;
- 	struct list_head dest_pages;
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 131b170..3f97309 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -131,6 +131,11 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 	if (!image)
- 		goto out;
- 
-+	image->segment = kzalloc(nr_segments * sizeof(struct kexec_segment),
-+				 GFP_KERNEL);
-+	if (!image->segment)
-+		goto out;
-+
- 	image->head = 0;
- 	image->entry = &image->head;
- 	image->last_entry = &image->head;
-@@ -216,8 +221,10 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- out:
- 	if (result == 0)
- 		*rimage = image;
--	else
-+	else if (image) {
-+		kfree(image->segment);
- 		kfree(image);
-+	}
- 
- 	return result;
- 
-@@ -261,8 +268,10 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
-  out:
- 	if (result == 0)
- 		*rimage = image;
--	else
-+	else if (image) {
-+		kfree(image->segment);
- 		kfree(image);
-+	}
- 
- 	return result;
- }
-@@ -330,8 +339,10 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
- out:
- 	if (result == 0)
- 		*rimage = image;
--	else
-+	else if (image) {
-+		kfree(image->segment);
- 		kfree(image);
-+	}
- 
- 	return result;
- }
-@@ -656,6 +667,7 @@ static void kimage_free(struct kimage *image)
- 
- 	/* Free the kexec control pages... */
- 	kimage_free_page_list(&image->control_pages);
-+	kfree(image->segment);
- 	kfree(image);
- }
- 
+-- 
+tejun
