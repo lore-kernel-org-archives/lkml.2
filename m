@@ -1,112 +1,518 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab0G0Kxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 06:53:33 -0400
-Received: from p01c11o143.mxlogic.net ([208.65.144.66]:57186 "EHLO
-	p01c11o143.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827Ab0G0Kxb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 06:53:31 -0400
-X-MXL-Hash: 4c4ebaab6bb92199-42a802add5c74f58fdf9e742a3aca04d1ebb76e4
-From: Andy Chittenden <andyc@bluearc.com>
-To: Andy Chittenden <andyc@bluearc.com>,
-        "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-CC: Trond Myklebust <trond.myklebust@fys.uio.no>
-Date: Tue, 27 Jul 2010 11:53:27 +0100
-Subject: RE: nfs client hang
-Thread-Topic: nfs client hang
-Thread-Index: AcstefGLZ9iNKEn9ROartiUpQQm0zw==
-Message-ID: <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com>
-References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>
- <4C4E89D4.8040607@bluearc.com>
-In-Reply-To: <4C4E89D4.8040607@bluearc.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
-X-MAIL-FROM: <andyc@bluearc.com>
-X-SOURCE-IP: [213.121.168.131]
-X-AnalysisOut: [v=1.0 c=1 a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10 a=sIqM7rbIUs]
-X-AnalysisOut: [2FIam8obyq6w==:17 a=pFIRK5XkktRfy562tHcA:9 a=FEd3DDvisoKgp]
-X-AnalysisOut: [fIinLUA:7 a=b3igdnga4tc_1C2pnz0jjg_egBsA:4 a=CjuIK1q_8ugA:]
-X-AnalysisOut: [10]
+	id S1756202Ab0G0Kxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 06:53:41 -0400
+Received: from compulab.co.il ([67.18.134.219]:55460 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756174Ab0G0Kxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 06:53:38 -0400
+From: Mike Rapoport <mike@compulab.co.il>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Mike Rapoport <mike@compulab.co.il>
+Subject: [PATCH] mfd: add TPS6586x driver
+Date: Tue, 27 Jul 2010 13:52:52 +0300
+Message-Id: <1280227972-1781-1-git-send-email-mike@compulab.co.il>
+X-Mailer: git-send-email 1.6.6.2
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> IE the client starts a connection and then closes it again without sending data.
-> > Once this happens, here's some rpcdebug info for the rpc module using 2.6.34.1 kernel:
-> >
-> > ... lots of the following nfsv3 WRITE requests:
-> > [ 7670.026741] 57793 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026759] 57794 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026778] 57795 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026797] 57796 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026815] 57797 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026834] 57798 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026853] 57799 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026871] 57800 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026890] 57801 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7670.026909] 57802 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > [ 7680.520042] RPC:       worker connecting xprt ffff88013e62d800 via tcp to 10.1.6.102 (port 2049)
-> > [ 7680.520066] RPC:       ffff88013e62d800 connect status 99 connected 0 sock state 7
-> > [ 7680.520074] RPC: 33550 __rpc_wake_up_task (now 4296812426)
-> > [ 7680.520079] RPC: 33550 disabling timer
-> > [ 7680.520084] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
-> > [ 7680.520089] RPC:       __rpc_wake_up_task done
-> > [ 7680.520094] RPC: 33550 __rpc_execute flags=0x1
-> > [ 7680.520098] RPC: 33550 xprt_connect_status: retrying
-> > [ 7680.520103] RPC: 33550 call_connect_status (status -11)
-> > [ 7680.520108] RPC: 33550 call_transmit (status 0)
-> > [ 7680.520112] RPC: 33550 xprt_prepare_transmit
-> > [ 7680.520118] RPC: 33550 rpc_xdr_encode (status 0)
-> > [ 7680.520123] RPC: 33550 marshaling UNIX cred ffff88012e002300
-> > [ 7680.520130] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
-> > [ 7680.520136] RPC: 33550 xprt_transmit(32920)
-> > [ 7680.520145] RPC:       xs_tcp_send_request(32920) = -32
-> > [ 7680.520151] RPC:       xs_tcp_state_change client ffff88013e62d800...
-> > [ 7680.520156] RPC:       state 7 conn 0 dead 0 zapped 1
+Add mfd core driver for TPS6586x PMICs family.
+The driver provides I/O access for the sub-device drivers and performs
+regstration of the sub-devices based on the platform requirements.
+In addition it implements GPIOlib interface for the chip GPIOs.
 
-> I changed that debug to output sk_shutdown too. That has a value of 2 
-> (IE SEND_SHUTDOWN). Looking at tcp_sendmsg(), I see this:
+TODO:
+	- add interrupt support
+	- add platform data for PWM, backlight leds and charger
 
->          err = -EPIPE;
->          if (sk->sk_err || (sk->sk_shutdown & SEND_SHUTDOWN))
->                  goto out_err;
+Signed-off-by: Mike Rapoport <mike@compulab.co.il>
+---
+ drivers/mfd/Kconfig          |   14 ++
+ drivers/mfd/Makefile         |    1 +
+ drivers/mfd/tps6586x.c       |  375 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps6586x.h |   47 ++++++
+ 4 files changed, 437 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/tps6586x.c
+ create mode 100644 include/linux/mfd/tps6586x.h
 
-> which correlates with the trace "xs_tcp_send_request(32920) = -32". So, 
-> this looks like a problem in the sockets/tcp layer. The rpc layer issues 
-> a shutdown and then reconnects using the same socket. So either 
-> sk_shutdown needs zeroing once the shutdown completes or should be 
-> zeroed on subsequent connect. The latter sounds safer.
-
-This patch for 2.6.34.1 fixes the issue:
-
---- /home/company/software/src/linux-2.6.34.1/net/ipv4/tcp_output.c     2010-07-27 08:46:46.917000000 +0100
-+++ net/ipv4/tcp_output.c       2010-07-27 09:19:16.000000000 +0100
-@@ -2522,6 +2522,13 @@
-        struct tcp_sock *tp = tcp_sk(sk);
-        __u8 rcv_wscale;
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 9da0e50..b6ee6cf 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -482,6 +482,20 @@ config MFD_JANZ_CMODIO
+ 	  host many different types of MODULbus daughterboards, including
+ 	  CAN and GPIO controllers.
  
-+       /* clear down any previous shutdown attempts so that
-+        * reconnects on a socket that's been shutdown leave the
-+        * socket in a usable state (otherwise tcp_sendmsg() returns
-+        * -EPIPE).
-+        */
-+       sk->sk_shutdown = 0;
++config MFD_TPS6586X
++	tristate "TPS6586x Power Management chips"
++	depends on I2C
++	select MFD_CORE
++	help
++	  If you say yes here you get support for the TPS6586X series of
++	  Power Management chips.
++  	  This driver provides common support for accessing the device,
++	  additional drivers must be enabled in order to use the
++	  functionality of the device.
 +
-        /* We'll fix this up when we get a response from the other end.
-         * See tcp_input.c:tcp_rcv_state_process case TCP_SYN_SENT.
-         */
-
-As I mentioned in my first message, we first saw this issue in 2.6.32 as supplied by debian (linux-image-2.6.32-5-amd64 Version: 2.6.32-17). It looks like the same patch would fix the problem there too.
-
++	  This driver can also be built as a module.  If so, the module
++	  will be called tps6586x.
++
+ endif # MFD_SUPPORT
+ 
+ menu "Multimedia Capabilities Port drivers"
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index fb503e7..fefc1d3 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -71,3 +71,4 @@ obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
+ obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+ obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
+ obj-$(CONFIG_MFD_JANZ_CMODIO)	+= janz-cmodio.o
++obj-$(CONFIG_MFD_TPS6586X)	+= tps6586x.o
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+new file mode 100644
+index 0000000..be514e5
+--- /dev/null
++++ b/drivers/mfd/tps6586x.c
+@@ -0,0 +1,375 @@
++/*
++ * Core driver for TI TPS6586x PMIC family
++ *
++ * Copyright (c) 2010 CompuLab Ltd.
++ * Mike Rapoport <mike@compulab.co.il>
++ *
++ * Based on da903x.c.
++ * Copyright (C) 2008 Compulab, Ltd.
++ * Mike Rapoport <mike@compulab.co.il>
++ * Copyright (C) 2006-2008 Marvell International Ltd.
++ * Eric Miao <eric.miao@marvell.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/slab.h>
++#include <linux/gpio.h>
++#include <linux/i2c.h>
++
++#include <linux/mfd/core.h>
++#include <linux/mfd/tps6586x.h>
++
++/* GPIO control registers */
++#define TPS6586X_GPIOSET1	0x5d
++#define TPS6586X_GPIOSET2	0x5e
++
++/* device id */
++#define TPS6586X_VERSIONCRC	0xcd
++#define TPS658621A_VERSIONCRC	0x15
++
++struct tps6586x {
++	struct mutex		lock;
++	struct device		*dev;
++	struct i2c_client	*client;
++
++	struct gpio_chip	gpio;
++};
++
++static inline int __tps6586x_read(struct i2c_client *client,
++				  int reg, uint8_t *val)
++{
++	int ret;
++
++	ret = i2c_smbus_read_byte_data(client, reg);
++	if (ret < 0) {
++		dev_err(&client->dev, "failed reading at 0x%02x\n", reg);
++		return ret;
++	}
++
++	*val = (uint8_t)ret;
++
++	return 0;
++}
++
++static inline int __tps6586x_reads(struct i2c_client *client, int reg,
++				   int len, uint8_t *val)
++{
++	int ret;
++
++	ret = i2c_smbus_read_i2c_block_data(client, reg, len, val);
++	if (ret < 0) {
++		dev_err(&client->dev, "failed reading from 0x%02x\n", reg);
++		return ret;
++	}
++
++	return 0;
++}
++
++static inline int __tps6586x_write(struct i2c_client *client,
++				 int reg, uint8_t val)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, reg, val);
++	if (ret < 0) {
++		dev_err(&client->dev, "failed writing 0x%02x to 0x%02x\n",
++				val, reg);
++		return ret;
++	}
++
++	return 0;
++}
++
++static inline int __tps6586x_writes(struct i2c_client *client, int reg,
++				  int len, uint8_t *val)
++{
++	int ret;
++
++	ret = i2c_smbus_write_i2c_block_data(client, reg, len, val);
++	if (ret < 0) {
++		dev_err(&client->dev, "failed writings to 0x%02x\n", reg);
++		return ret;
++	}
++
++	return 0;
++}
++
++int tps6586x_write(struct device *dev, int reg, uint8_t val)
++{
++	return __tps6586x_write(to_i2c_client(dev), reg, val);
++}
++EXPORT_SYMBOL_GPL(tps6586x_write);
++
++int tps6586x_writes(struct device *dev, int reg, int len, uint8_t *val)
++{
++	return __tps6586x_writes(to_i2c_client(dev), reg, len, val);
++}
++EXPORT_SYMBOL_GPL(tps6586x_writes);
++
++int tps6586x_read(struct device *dev, int reg, uint8_t *val)
++{
++	return __tps6586x_read(to_i2c_client(dev), reg, val);
++}
++EXPORT_SYMBOL_GPL(tps6586x_read);
++
++int tps6586x_reads(struct device *dev, int reg, int len, uint8_t *val)
++{
++	return __tps6586x_reads(to_i2c_client(dev), reg, len, val);
++}
++EXPORT_SYMBOL_GPL(tps6586x_reads);
++
++int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask)
++{
++	struct tps6586x *tps6586x = dev_get_drvdata(dev);
++	uint8_t reg_val;
++	int ret = 0;
++
++	mutex_lock(&tps6586x->lock);
++
++	ret = __tps6586x_read(to_i2c_client(dev), reg, &reg_val);
++	if (ret)
++		goto out;
++
++	if ((reg_val & bit_mask) == 0) {
++		reg_val |= bit_mask;
++		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
++	}
++out:
++	mutex_unlock(&tps6586x->lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(tps6586x_set_bits);
++
++int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask)
++{
++	struct tps6586x *tps6586x = dev_get_drvdata(dev);
++	uint8_t reg_val;
++	int ret = 0;
++
++	mutex_lock(&tps6586x->lock);
++
++	ret = __tps6586x_read(to_i2c_client(dev), reg, &reg_val);
++	if (ret)
++		goto out;
++
++	if (reg_val & bit_mask) {
++		reg_val &= ~bit_mask;
++		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
++	}
++out:
++	mutex_unlock(&tps6586x->lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(tps6586x_clr_bits);
++
++int tps6586x_update(struct device *dev, int reg, uint8_t val, uint8_t mask)
++{
++	struct tps6586x *tps6586x = dev_get_drvdata(dev);
++	uint8_t reg_val;
++	int ret = 0;
++
++	mutex_lock(&tps6586x->lock);
++
++	ret = __tps6586x_read(tps6586x->client, reg, &reg_val);
++	if (ret)
++		goto out;
++
++	if ((reg_val & mask) != val) {
++		reg_val = (reg_val & ~mask) | val;
++		ret = __tps6586x_write(tps6586x->client, reg, reg_val);
++	}
++out:
++	mutex_unlock(&tps6586x->lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(tps6586x_update);
++
++static int tps6586x_gpio_get(struct gpio_chip *gc, unsigned offset)
++{
++	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
++	uint8_t val;
++	int ret;
++
++	ret = __tps6586x_read(tps6586x->client, TPS6586X_GPIOSET2, &val);
++	if (ret)
++		return ret;
++
++	return !!(val & (1 << offset));
++}
++
++
++static void tps6586x_gpio_set(struct gpio_chip *chip, unsigned offset,
++			      int value)
++{
++	struct tps6586x *tps6586x = container_of(chip, struct tps6586x, gpio);
++
++	__tps6586x_write(tps6586x->client, TPS6586X_GPIOSET2,
++			 value << offset);
++}
++
++static int tps6586x_gpio_output(struct gpio_chip *gc, unsigned offset,
++				int value)
++{
++	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
++	uint8_t val, mask;
++
++	tps6586x_gpio_set(gc, offset, value);
++
++	val = 0x1 << (offset * 2);
++	mask = 0x3 << (offset * 2);
++
++	return tps6586x_update(tps6586x->dev, TPS6586X_GPIOSET1, val, mask);
++}
++
++static void tps6586x_gpio_init(struct tps6586x *tps6586x, int gpio_base)
++{
++	int ret;
++
++	if (!gpio_base)
++		return;
++
++	tps6586x->gpio.owner		= THIS_MODULE;
++	tps6586x->gpio.label		= tps6586x->client->name;
++	tps6586x->gpio.dev		= tps6586x->dev;
++	tps6586x->gpio.base		= gpio_base;
++	tps6586x->gpio.ngpio		= 4;
++	tps6586x->gpio.can_sleep	= 1;
++
++	/* FIXME: add handling of GPIOs as dedicated inputs */
++	tps6586x->gpio.direction_output	= tps6586x_gpio_output;
++	tps6586x->gpio.set		= tps6586x_gpio_set;
++	tps6586x->gpio.get		= tps6586x_gpio_get;
++
++	ret = gpiochip_add(&tps6586x->gpio);
++	if (ret)
++		dev_warn(tps6586x->dev, "GPIO registration failed: %d\n", ret);
++}
++
++static int __remove_subdev(struct device *dev, void *unused)
++{
++	platform_device_unregister(to_platform_device(dev));
++	return 0;
++}
++
++static int tps6586x_remove_subdevs(struct tps6586x *tps6586x)
++{
++	return device_for_each_child(tps6586x->dev, NULL, __remove_subdev);
++}
++
++static int __devinit tps6586x_add_subdevs(struct tps6586x *tps6586x,
++					  struct tps6586x_platform_data *pdata)
++{
++	struct tps6586x_subdev_info *subdev;
++	struct platform_device *pdev;
++	int i, ret = 0;
++
++	for (i = 0; i < pdata->num_subdevs; i++) {
++		subdev = &pdata->subdevs[i];
++
++		pdev = platform_device_alloc(subdev->name, subdev->id);
++
++		pdev->dev.parent = tps6586x->dev;
++		pdev->dev.platform_data = subdev->platform_data;
++
++		ret = platform_device_add(pdev);
++		if (ret)
++			goto failed;
++	}
++	return 0;
++
++failed:
++	tps6586x_remove_subdevs(tps6586x);
++	return ret;
++}
++
++static int __devinit tps6586x_probe(struct i2c_client *client,
++				    const struct i2c_device_id *id)
++{
++	struct tps6586x_platform_data *pdata = client->dev.platform_data;
++	struct tps6586x *tps6586x;
++	int ret;
++
++	if (!pdata) {
++		dev_err(&client->dev, "tps6586x requires platform data\n");
++		return -ENOTSUPP;
++	}
++
++	ret = i2c_smbus_read_byte_data(client, TPS6586X_VERSIONCRC);
++	if (ret < 0) {
++		dev_err(&client->dev, "Chip ID read failed: %d\n", ret);
++		return -EIO;
++	}
++
++	if (ret != TPS658621A_VERSIONCRC) {
++		dev_err(&client->dev, "Unsupported chip ID: %x\n", ret);
++		return -ENODEV;
++	}
++
++	tps6586x = kzalloc(sizeof(struct tps6586x), GFP_KERNEL);
++	if (tps6586x == NULL)
++		return -ENOMEM;
++
++	tps6586x->client = client;
++	tps6586x->dev = &client->dev;
++	i2c_set_clientdata(client, tps6586x);
++
++	mutex_init(&tps6586x->lock);
++
++	ret = tps6586x_add_subdevs(tps6586x, pdata);
++	if (ret) {
++		dev_err(&client->dev, "add devices failed: %d\n", ret);
++		goto err_add_devs;
++	}
++
++	tps6586x_gpio_init(tps6586x, pdata->gpio_base);
++
++	return 0;
++
++err_add_devs:
++	kfree(tps6586x);
++	return ret;
++}
++
++static int __devexit tps6586x_remove(struct i2c_client *client)
++{
++	return 0;
++}
++
++static const struct i2c_device_id tps6586x_id_table[] = {
++	{ "tps6586x", 0 },
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, tps6586x_id_table);
++
++static struct i2c_driver tps6586x_driver = {
++	.driver	= {
++		.name	= "tps6586x",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= tps6586x_probe,
++	.remove		= __devexit_p(tps6586x_remove),
++	.id_table	= tps6586x_id_table,
++};
++
++static int __init tps6586x_init(void)
++{
++	return i2c_add_driver(&tps6586x_driver);
++}
++subsys_initcall(tps6586x_init);
++
++static void __exit tps6586x_exit(void)
++{
++	i2c_del_driver(&tps6586x_driver);
++}
++module_exit(tps6586x_exit);
++
++MODULE_DESCRIPTION("TPS6586X core driver");
++MODULE_AUTHOR("Mike Rapoport <mike@compulab.co.il>");
++MODULE_LICENSE("GPL");
++
+diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
+new file mode 100644
+index 0000000..772b3ae
+--- /dev/null
++++ b/include/linux/mfd/tps6586x.h
+@@ -0,0 +1,47 @@
++#ifndef __LINUX_MFD_TPS6586X_H
++#define __LINUX_MFD_TPS6586X_H
++
++enum {
++	TPS6586X_ID_SM_0,
++	TPS6586X_ID_SM_1,
++	TPS6586X_ID_SM_2,
++	TPS6586X_ID_LDO_0,
++	TPS6586X_ID_LDO_1,
++	TPS6586X_ID_LDO_2,
++	TPS6586X_ID_LDO_3,
++	TPS6586X_ID_LDO_4,
++	TPS6586X_ID_LDO_5,
++	TPS6586X_ID_LDO_6,
++	TPS6586X_ID_LDO_7,
++	TPS6586X_ID_LDO_8,
++	TPS6586X_ID_LDO_9,
++	TPS6586X_ID_LDO_RTC,
++};
++
++struct tps6586x_subdev_info {
++	int		id;
++	const char	*name;
++	void		*platform_data;
++};
++
++struct tps6586x_platform_data {
++	int num_subdevs;
++	struct tps6586x_subdev_info *subdevs;
++
++	int gpio_base;
++};
++
++/*
++ * NOTE: the functions below are not intended for use outside
++ * of the TPS6586X sub-device drivers
++ */
++extern int tps6586x_write(struct device *dev, int reg, uint8_t val);
++extern int tps6586x_writes(struct device *dev, int reg, int len, uint8_t *val);
++extern int tps6586x_read(struct device *dev, int reg, uint8_t *val);
++extern int tps6586x_reads(struct device *dev, int reg, int len, uint8_t *val);
++extern int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask);
++extern int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask);
++extern int tps6586x_update(struct device *dev, int reg, uint8_t val,
++			   uint8_t mask);
++
++#endif /*__LINUX_MFD_TPS6586X_H */
 -- 
-Andy, BlueArc Engineering
+1.6.6.2
 
