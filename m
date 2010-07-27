@@ -1,119 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab0G0Ig2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:36:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59456 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753806Ab0G0Ig0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:36:26 -0400
-Message-ID: <4C4E99EF.9080809@cn.fujitsu.com>
-Date: Tue, 27 Jul 2010 16:33:51 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755746Ab0G0Il7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:41:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42618 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab0G0Il5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:41:57 -0400
+Message-ID: <4C4E9BC0.6060805@kernel.org>
+Date: Tue, 27 Jul 2010 10:41:36 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
-        dpshah@google.com, jmoyer@redhat.com, czoccolo@gmail.com
-Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle tunable
- V3
-References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com> <4C4D3208.7090703@cn.fujitsu.com> <20100726141053.GE12449@redhat.com>
-In-Reply-To: <20100726141053.GE12449@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Yuhong Bao <yuhongbao_386@hotmail.com>, jeff@garzik.org,
+        ben.collins@ubuntu.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hmh@debian.org
+Subject: Re: support for drives larger than 2TiB
+References: <4C4AB952.9030705@kernel.org> <SNT125-W4469FAC3FE110BB4882949C3A40@phx.gbl> <4C4BEF61.5010203@kernel.org> <4C4BF0D2.1070503@zytor.com> <4C4BF3C2.1020009@kernel.org> <4C4C87EF.5080605@zytor.com>
+In-Reply-To: <4C4C87EF.5080605@zytor.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 08:41:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Mon, Jul 26, 2010 at 02:58:16PM +0800, Gui Jianfeng wrote:
-> 
-> [..]
->> Hi Vivek,
->>
->> I did some tests on single SATA disk on my desktop. With patches applied, seems no
->> regression occurs till now, and have some performance improvement in case of 
->> "Direct Random Reader" mode. Here're some numbers on my box.
->>
-> 
-> Thanks for testing Gui. "iostest" seems to be working for you. If you had
-> to some fixes to make it work on my boxes, do send those to me, and I can
-> commit those in my internal git tree.
+Hello,
 
-Hi Vivek,
+On 07/25/2010 08:52 PM, H. Peter Anvin wrote:
+> If you can set up the disk with GPT then just set up a bootable
+> partition beyond the 2 TiB mark and install Syslinux 4 on it.  (Note:
+> there is a bug in current versions of gdisk: attribute 2 is the legacy
+> BIOS bootable attribute, but the author got the bit order wrong and so
+> you have to set "attribute 61".  parted doesn't support the legacy BIOS
+> bootable attribute yet.)
+>
+> If you don't want tomodify the contents of the disk then it can still be
+> tested, but I don't have a ready-made test for you.
 
-I didn't modify iostest at all but just upgraded fio to 1.42
+The disk doesn't contain any data.  I'll try it with several different
+motherboards and report back.
 
-Gui
+Thanks.
 
-> 
-> After running the script, you can also run "iostest -R <result-dir>" and
-> that will generate a report. It will not have all this "Starting test..."
-> lines and looks nicer.
-> 
-> Good to know that you don't see any regressions on SATA disk in your
-> cgroup testing with this patchset. Little improvement in "drr" might
-> be due to the fact that with existing slice_idle=0, we can still do
-> some extra idling on service tree and first patch in the series (V4)
-> gets rid of that.
-> 
-> Thanks
-> Vivek
-> 
->> Vallina kernel:
->>
->> Blkio is already mounted at /cgroup/blkio. Unmounting it
->> DIR=/mnt/iostestmnt/fio                 DEV=/dev/sdb2
->> GROUPMODE=1                             NRGRP=4
->> Will run workloads for increasing number of threads upto a max of 4
->> Starting test for [drr] with set=1 numjobs=1 filesz=512M bs=32k runtime=30
->> Starting test for [drr] with set=1 numjobs=2 filesz=512M bs=32k runtime=30
->> Starting test for [drr] with set=1 numjobs=4 filesz=512M bs=32k runtime=30
->> Finished test for workload [drr]
->> Host=localhost.localdomain     Kernel=2.6.35-rc4-Vivek-+
->> GROUPMODE=1          NRGRP=4
->> DIR=/mnt/iostestmnt/fio        DEV=/dev/sdb2
->> Workload=drr      iosched=cfq     Filesz=512M bs=32k
->> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
->> =========================================================================
->> AVERAGE[drr]    [bw in KB/s]
->> -------
->> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total
->> ---     --- --  -----------------------------------
->> drr     1   1   761    761    762    760    3044
->> drr     1   2   185    420    727    1256   2588
->> drr     1   4   180    371    588    863    2002
->>
->>
->> Patched kernel:
->>
->> Blkio is already mounted at /cgroup/blkio. Unmounting it
->> DIR=/mnt/iostestmnt/fio                 DEV=/dev/sdb2
->> GROUPMODE=1                             NRGRP=4
->> Will run workloads for increasing number of threads upto a max of 4
->> Starting test for [drr] with set=1 numjobs=1 filesz=512M bs=32k runtime=30
->> Starting test for [drr] with set=1 numjobs=2 filesz=512M bs=32k runtime=30
->> Starting test for [drr] with set=1 numjobs=4 filesz=512M bs=32k runtime=30
->> Finished test for workload [drr]
->> Host=localhost.localdomain     Kernel=2.6.35-rc4-Vivek-+
->> GROUPMODE=1          NRGRP=4
->> DIR=/mnt/iostestmnt/fio        DEV=/dev/sdb2
->> Workload=drr      iosched=cfq     Filesz=512M bs=32k
->> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
->> =========================================================================
->> AVERAGE[drr]    [bw in KB/s]
->> -------
->> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  total
->> ---     --- --  -----------------------------------
->> drr     1   1   323    671    1030   1378   3402
->> drr     1   2   165    391    686    1144   2386
->> drr     1   4   185    373    612    873    2043
->>
->> Thanks
->> Gui
->>
->>> Thanks
->>> Vivek
->>>
-> 
-> 
-
+-- 
+tejun
