@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746Ab0G0IHV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:07:21 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:36038 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab0G0IHP (ORCPT
+	id S1755707Ab0G0IIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:08:06 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:41089 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab0G0IID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:07:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 27 Jul 2010 17:02:25 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH 7/7][memcg] use spin lock instead of bit_spin_lock in
- page_cgroup
-Message-Id: <20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 27 Jul 2010 04:08:03 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C4E93CC.5030109@s5r6.in-berlin.de>
+Date: Tue, 27 Jul 2010 10:07:40 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux1394-devel@lists.sourceforge.net, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the ieee1394 tree
+References: <20100727114839.06d25309.sfr@canb.auug.org.au>
+In-Reply-To: <20100727114839.06d25309.sfr@canb.auug.org.au>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Stephen Rothwell wrote:
+> After merging the ieee1394 tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/firewire/nosy.c: In function 'packet_buffer_get':
+> drivers/firewire/nosy.c:154: error: 'TASK_INTERRUPTIBLE' undeclared (first use in this function)
+> drivers/firewire/nosy.c:154: error: implicit declaration of function 'signal_pending'
+> drivers/firewire/nosy.c:154: error: implicit declaration of function 'schedule'
+> drivers/firewire/nosy.c: In function 'packet_buffer_put':
+> drivers/firewire/nosy.c:221: error: 'TASK_INTERRUPTIBLE' undeclared (first use in this function)
+> drivers/firewire/nosy.c: In function 'remove_card':
+> drivers/firewire/nosy.c:514: error: 'TASK_INTERRUPTIBLE' undeclared (first use in this function)
+> 
+> Forgot to include something?
+> 
+> I have used the ieee1394 tree from next-20100726 for today.
 
-This patch replaces page_cgroup's bit_spinlock with spinlock. In general,
-spinlock has good implementation than bit_spin_lock and we should use
-it if we have a room for it. In 64bit arch, we have extra 4bytes.
-Let's use it.
+Oh right.  Every user of <linux/wait.h> must also include
+<linux/sched.h>, unfortunately.  I saw the same problem months ago with
+another driver, I wonder why I did not catch it this time.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
---
-Index: mmotm-0719/include/linux/page_cgroup.h
-===================================================================
---- mmotm-0719.orig/include/linux/page_cgroup.h
-+++ mmotm-0719/include/linux/page_cgroup.h
-@@ -10,8 +10,14 @@
-  * All page cgroups are allocated at boot or memory hotplug event,
-  * then the page cgroup for pfn always exists.
-  */
-+#ifdef CONFIG_64BIT
-+#define PCG_HAS_SPINLOCK
-+#endif
- struct page_cgroup {
- 	unsigned long flags;
-+#ifdef PCG_HAS_SPINLOCK
-+	spinlock_t	lock;
-+#endif
- 	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
- 	unsigned short blk_cgroup;	/* Not Used..but will be. */
- 	struct page *page;
-@@ -90,6 +96,16 @@ static inline enum zone_type page_cgroup
- 	return page_zonenum(pc->page);
- }
- 
-+#ifdef PCG_HAS_SPINLOCK
-+static inline void lock_page_cgroup(struct page_cgroup *pc)
-+{
-+	spin_lock(&pc->lock);
-+}
-+static inline void unlock_page_cgroup(struct page_cgroup *pc)
-+{
-+	spin_unlock(&pc->lock);
-+}
-+#else
- static inline void lock_page_cgroup(struct page_cgroup *pc)
- {
- 	bit_spin_lock(PCG_LOCK, &pc->flags);
-@@ -99,6 +115,7 @@ static inline void unlock_page_cgroup(st
- {
- 	bit_spin_unlock(PCG_LOCK, &pc->flags);
- }
-+#endif
- 
- static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
- {
-Index: mmotm-0719/mm/page_cgroup.c
-===================================================================
---- mmotm-0719.orig/mm/page_cgroup.c
-+++ mmotm-0719/mm/page_cgroup.c
-@@ -17,6 +17,9 @@ __init_page_cgroup(struct page_cgroup *p
- 	pc->mem_cgroup = 0;
- 	pc->page = pfn_to_page(pfn);
- 	INIT_LIST_HEAD(&pc->lru);
-+#ifdef PCG_HAS_SPINLOCK
-+	spin_lock_init(&pc->lock);
-+#endif
- }
- static unsigned long total_usage;
- 
-
+I will fix it later today.  This code is in a topic branch for a new
+driver; I will rewrite that branch to stay fully bisectable.
+-- 
+Stefan Richter
+-=====-==-=- -=== ==-==
+http://arcgraph.de/sr/
