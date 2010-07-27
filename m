@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab0G0EuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 00:50:11 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:44706 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab0G0EuJ (ORCPT
+	id S1751975Ab0G0E7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 00:59:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28840 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab0G0E7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 00:50:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=pcUOLqw6+Cmq+Y3WtSb+x2uaQnL5sv4k6Em2SEQ0EvjizyIre2aSrFJXtbLRNvyYXZ
-         qf0FCYxP/2yb5vQCKe+dlY8BvZVv+RJI6OZkMXf7zJa7cycx2ko1cIl9exm0+hBxdEnE
-         RIivUSEvLFnjRYzfKSTbAay58upTXOFe/vvB0=
+	Tue, 27 Jul 2010 00:59:37 -0400
+Message-ID: <4C4E674A.2040605@kernel.org>
+Date: Mon, 26 Jul 2010 21:57:46 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <20100727134431.2F11.A69D9226@jp.fujitsu.com>
-References: <alpine.DEB.2.00.1007261510320.2993@chino.kir.corp.google.com> 
-	<AANLkTi=Aswf+Hp+qfsC2sCo32hU3E2D4zt3-R35BZ=MC@mail.gmail.com> 
-	<20100727134431.2F11.A69D9226@jp.fujitsu.com>
-From: dave b <db.pub.mail@gmail.com>
-Date: Tue, 27 Jul 2010 14:49:48 +1000
-Message-ID: <AANLkTimdLbwvRNU09s+LfauREBaxyXBUE5jSmwnpCj8e@mail.gmail.com>
-Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+To: Corey Minyard <minyard@acm.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Myron Stowe <myron.stowe@hp.com>
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ipmi: Fix memleaking for add_smi when duplicating happen
+References: <4C4E3575.3020203@kernel.org>
+In-Reply-To: <4C4E3575.3020203@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C4E679B.014D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2010 14:46, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
->> On 27 July 2010 08:12, David Rientjes <rientjes@google.com> wrote:
->> > On Tue, 27 Jul 2010, dave b wrote:
->> >
->> >> Actually it turns out on 2.6.34.1 I can trigger this issue. What it
->> >> really is, is that linux doesn't invoke the oom killer when it should
->> >> and kill something off. This is *really* annoying.
->> >>
->> >
->> > I'm not exactly sure what you're referring to, it's been two months and
->> > you're using a new kernel and now you're saying that the oom killer isn't
->> > being utilized when the original problem statement was that it was killing
->> > things inappropriately?
->>
->> Sorry about the timespan :(
->> Well actually it is the same issue. Originally the oom killer wasn't
->> being invoked and now the problem is still it isn't invoked - it
->> doesn't come and kill things - my desktop just sits :)
->> I have since replaced the hard disk - which I thought could be the
->> issue. I am thinking that because I have shared graphics not using KMS
->> - with intel graphics - this may be the root of the cause.
->
-> Do you mean the issue will be gone if disabling intel graphics?
-> if so, we need intel graphics driver folks help. sorry, linux-mm folks don't
-> know intel graphics detail.
+need free the temp info struct when we have duplicated ones
 
-Well the only other system I have running the 2.6.34.1 kernel atm is
-an arm based system.
-I originally sent this to the kernel list and was told I should
-probably forward it to the mm list.
-It may be a general issue or it could just be specific :)
+-v2: seperate printing change to another patch
 
---
-"Not Hercules could have knock'd out his brains, for he had none."		--
-Shakespeare
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/char/ipmi/ipmi_si_intf.c |   35 ++++++++++++++++++++++++++++-------
+ 1 file changed, 28 insertions(+), 7 deletions(-)
+
+Index: linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+===================================================================
+--- linux-2.6.orig/drivers/char/ipmi/ipmi_si_intf.c
++++ linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+@@ -1804,9 +1804,12 @@ static int hotmod_handler(const char *va
+ 				info->irq_setup = std_irq_setup;
+ 			info->slave_addr = ipmb;
+ 
+-			if (!add_smi(info))
++			if (!add_smi(info)) {
+ 				if (try_smi_init(info))
+ 					cleanup_one_si(info);
++			} else {
++				kfree(info);
++			}
+ 		} else {
+ 			/* remove */
+ 			struct smi_info *e, *tmp_e;
+@@ -1890,9 +1893,12 @@ static __devinit void hardcode_find_bmc(
+ 			info->irq_setup = std_irq_setup;
+ 		info->slave_addr = slave_addrs[i];
+ 
+-		if (!add_smi(info))
++		if (!add_smi(info)) {
+ 			if (try_smi_init(info))
+ 				cleanup_one_si(info);
++		} else {
++			kfree(info);
++		}
+ 	}
+ }
+ 
+@@ -2088,7 +2094,8 @@ static __devinit int try_init_spmi(struc
+ 	}
+ 	info->io.addr_data = spmi->addr.address;
+ 
+-	add_smi(info);
++	if (add_smi(info))
++		kfree(info);
+ 
+ 	return 0;
+ }
+@@ -2204,7 +2211,10 @@ static int __devinit ipmi_pnp_probe(stru
+ 		 res, info->io.regsize, info->io.regspacing,
+ 		 info->irq);
+ 
+-	return add_smi(info);
++	if (add_smi(info))
++		goto err_free;
++
++	return 0;
+ 
+ err_free:
+ 	kfree(info);
+@@ -2362,7 +2372,8 @@ static __devinit void try_init_dmi(struc
+ 	if (info->irq)
+ 		info->irq_setup = std_irq_setup;
+ 
+-	add_smi(info);
++	if (add_smi(info))
++		kfree(info);
+ }
+ 
+ static void __devinit dmi_find_bmc(void)
+@@ -2468,7 +2479,10 @@ static int __devinit ipmi_pci_probe(stru
+ 		&pdev->resource[0], info->io.regsize, info->io.regspacing,
+ 		info->irq);
+ 
+-	return add_smi(info);
++	if (add_smi(info))
++		kfree(info);
++
++	return 0;
+ }
+ 
+ static void __devexit ipmi_pci_remove(struct pci_dev *pdev)
+@@ -2581,7 +2595,12 @@ static int __devinit ipmi_of_probe(struc
+ 
+ 	dev_set_drvdata(&dev->dev, info);
+ 
+-	return add_smi(info);
++	if (add_smi(info)) {
++		kfree(info);
++		return -EBUSY;
++	}
++
++	return 0;
+ }
+ 
+ static int __devexit ipmi_of_remove(struct of_device *dev)
+@@ -3018,6 +3037,8 @@ static __devinit void default_find_bmc(v
+ 				info->io.addr_data);
+ 			} else
+ 				cleanup_one_si(info);
++		} else {
++			kfree(info);
+ 		}
+ 	}
+ }
