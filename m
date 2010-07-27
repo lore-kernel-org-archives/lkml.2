@@ -1,66 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab0G0IFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:05:37 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35352 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab0G0IFd (ORCPT
+	id S1754984Ab0G0IFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:05:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59084 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab0G0IFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:05:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=c09va4waWoVT2s+OXG8uDSmO4at0doZkxbLnZ/4WvbG9K1voY7MhGpZ5/LATX9b5Wi
-         zxiv5D2RHm45smqWeL/IVmv6aHP5v48N9YtVX7KZlXBuWeurC+D0hCpdKa+BNEZncnL3
-         RpIEAFWmTsLZWZqrFdMdk5pwXvKsaLME31c90=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinCoSi4s1oNpxptqjA_HEf5Fk92=N_VYNnLR=wF@mail.gmail.com>
-References: <4C4555DA.40203@renesas.com>
-	<AANLkTikVm-GWq6vun-AjqLJ1L7Y+s28CdDJqmCEX4+2R@mail.gmail.com>
-	<AANLkTinCoSi4s1oNpxptqjA_HEf5Fk92=N_VYNnLR=wF@mail.gmail.com>
-Date: Tue, 27 Jul 2010 17:05:33 +0900
-Message-ID: <AANLkTin69UwXC3igcLnA9o0P==N2oV55Nj0vJt6WbSDS@mail.gmail.com>
-Subject: Re: [PATCH] tmio_mmc: Allow 2 byte requests in 4-bit mode
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Ian Molton <ian@mnementh.co.uk>
-Cc: Yusuke Goda <yusuke.goda.sx@renesas.com>, damm@opensource.se,
-        sameo@linux.intel.com, Paul Mundt <lethal@linux-sh.org>,
-        g.liakhovetski@gmx.de, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 27 Jul 2010 04:05:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 27 Jul 2010 17:00:59 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [RFC][PATCH 6/7][memcg] generic file status update
+Message-Id: <20100727170059.ca06af88.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 23 July 2010 12:05, Magnus Damm <magnus.damm@gmail.com> wrote:
->> 2010/7/20 Yusuke Goda <yusuke.goda.sx@renesas.com>:
->>> Adjust the tmio_mmc block size check to accept 2-byte requests in 4-bit mode.
->>> Tested with the SDHI hardware block included in sh7724.
->>>
->>> Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
->>
->> With this patch applied I can use SDIO cards in polling mode with the
->> tmio-mmc driver. Tested with the SDHI hardware block on sh7372 using
->> the b43 driver and BCM4318 hardware and the unfortunately out-of-tree
->> AR6002 "android" driver.
->>
->> Acked-by: Magnus Damm <damm@opensource.se>
->>
+This patch itself is not important. I just feel we need this kind of
+clean up in future.
 
-Hi Ian,
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thanks for your feedback!
+Preparing for adding new status arounf file caches.(dirty, writeback,etc..)
+Using a unified macro and more generic names.
+All counters will have the same rule for updating.
 
-On Tue, Jul 27, 2010 at 4:57 PM, Ian Molton <ian@mnementh.co.uk> wrote:
-> This change needs to be modified to test what hardware is present.
-> this wont work on my hardware TTBOMK.
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h  |   10 +++++++---
+ include/linux/page_cgroup.h |   21 +++++++++++++++------
+ mm/memcontrol.c             |   27 +++++++++++++++++----------
+ mm/rmap.c                   |    4 ++--
+ 4 files changed, 41 insertions(+), 21 deletions(-)
 
-Ok, just curious, on which platform did you test it?
+Index: mmotm-0719/include/linux/memcontrol.h
+===================================================================
+--- mmotm-0719.orig/include/linux/memcontrol.h
++++ mmotm-0719/include/linux/memcontrol.h
+@@ -121,7 +121,11 @@ static inline bool mem_cgroup_disabled(v
+ 	return false;
+ }
+ 
+-void mem_cgroup_update_file_mapped(struct page *page, int val);
++enum {
++	__MEMCG_FILE_MAPPED,
++	NR_MEMCG_FILE_STAT
++};
++void mem_cgroup_update_file_stat(struct page *page, int stat, int val);
+ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+ 						gfp_t gfp_mask, int nid,
+ 						int zid);
+@@ -292,8 +296,8 @@ mem_cgroup_print_oom_info(struct mem_cgr
+ {
+ }
+ 
+-static inline void mem_cgroup_update_file_mapped(struct page *page,
+-							int val)
++static inline void
++mem_cgroup_update_file_stat(struct page *page, int stat, int val);
+ {
+ }
+ 
+Index: mmotm-0719/mm/memcontrol.c
+===================================================================
+--- mmotm-0719.orig/mm/memcontrol.c
++++ mmotm-0719/mm/memcontrol.c
+@@ -84,16 +84,20 @@ enum mem_cgroup_stat_index {
+ 	 */
+ 	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
+ 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+-	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+ 	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
+ 	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
+ 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+ 	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
+ 	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
+-
++	MEM_CGROUP_FSTAT_BASE,
++	MEM_CGROUP_FSTAT_END
++		= MEM_CGROUP_FSTAT_BASE + NR_MEMCG_FILE_STAT,
+ 	MEM_CGROUP_STAT_NSTATS,
+ };
+ 
++#define MEM_CGROUP_STAT_FILE_MAPPED\
++	(MEM_CGROUP_FSTAT_BASE + __MEMCG_FILE_MAPPED)
++
+ struct mem_cgroup_stat_cpu {
+ 	s64 count[MEM_CGROUP_STAT_NSTATS];
+ };
+@@ -1508,7 +1512,7 @@ bool mem_cgroup_handle_oom(struct mem_cg
+  * Currently used to update mapped file statistics, but the routine can be
+  * generalized to update other statistics as well.
+  */
+-void mem_cgroup_update_file_mapped(struct page *page, int val)
++void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+ {
+ 	struct mem_cgroup *mem;
+ 	struct page_cgroup *pc;
+@@ -1534,11 +1538,11 @@ void mem_cgroup_update_file_mapped(struc
+ 	 * Preemption is already disabled. We can use __this_cpu_xxx
+ 	 */
+ 	if (val > 0) {
+-		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		SetPageCgroupFileMapped(pc);
++		__this_cpu_inc(mem->stat->count[MEM_CGROUP_FSTAT_BASE + idx]);
++		SetPCGFileFlag(pc, idx);
+ 	} else {
+-		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		ClearPageCgroupFileMapped(pc);
++		__this_cpu_dec(mem->stat->count[MEM_CGROUP_FSTAT_BASE + idx]);
++		ClearPCGFileFlag(pc, idx);
+ 	}
+ 
+ done:
+@@ -1999,17 +2003,20 @@ static void __mem_cgroup_commit_charge(s
+ static void __mem_cgroup_move_account(struct page_cgroup *pc,
+ 	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
+ {
++	int i;
+ 	VM_BUG_ON(from == to);
+ 	VM_BUG_ON(PageLRU(pc->page));
+ 	VM_BUG_ON(!PageCgroupLocked(pc));
+ 	VM_BUG_ON(!PageCgroupUsed(pc));
+ 	VM_BUG_ON(id_to_mem(pc->mem_cgroup) != from);
+ 
+-	if (PageCgroupFileMapped(pc)) {
++	for (i = 0; i < NR_MEMCG_FILE_STAT; ++i) {
++		if (!TestPCGFileFlag(pc, i))
++			continue;
+ 		/* Update mapped_file data for mem_cgroup */
+ 		preempt_disable();
+-		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
++		__this_cpu_dec(from->stat->count[MEM_CGROUP_FSTAT_BASE + i]);
++		__this_cpu_inc(to->stat->count[MEM_CGROUP_FSTAT_BASE + i]);
+ 		preempt_enable();
+ 	}
+ 	mem_cgroup_charge_statistics(from, pc, false);
+Index: mmotm-0719/include/linux/page_cgroup.h
+===================================================================
+--- mmotm-0719.orig/include/linux/page_cgroup.h
++++ mmotm-0719/include/linux/page_cgroup.h
+@@ -40,8 +40,8 @@ enum {
+ 	PCG_CACHE, /* charged as cache */
+ 	PCG_USED, /* this object is in use. */
+ 	PCG_ACCT_LRU, /* page has been accounted for */
+-	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
+ 	PCG_MIGRATION, /* under page migration */
++	PCG_FILE_FLAGS, /* see memcontrol.h */
+ };
+ 
+ #define TESTPCGFLAG(uname, lname)			\
+@@ -76,11 +76,6 @@ CLEARPCGFLAG(AcctLRU, ACCT_LRU)
+ TESTPCGFLAG(AcctLRU, ACCT_LRU)
+ TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
+ 
+-
+-SETPCGFLAG(FileMapped, FILE_MAPPED)
+-CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+-TESTPCGFLAG(FileMapped, FILE_MAPPED)
+-
+ SETPCGFLAG(Migration, MIGRATION)
+ CLEARPCGFLAG(Migration, MIGRATION)
+ TESTPCGFLAG(Migration, MIGRATION)
+@@ -105,6 +100,20 @@ static inline void unlock_page_cgroup(st
+ 	bit_spin_unlock(PCG_LOCK, &pc->flags);
+ }
+ 
++static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
++{
++	set_bit(PCG_FILE_FLAGS + idx, &pc->flags);
++}
++
++static inline void ClearPCGFileFlag(struct page_cgroup *pc, int idx)
++{
++	clear_bit(PCG_FILE_FLAGS + idx, &pc->flags);
++}
++static inline bool TestPCGFileFlag(struct page_cgroup *pc, int idx)
++{
++	return test_bit(PCG_FILE_FLAGS + idx, &pc->flags);
++}
++
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+ struct page_cgroup;
+ 
+Index: mmotm-0719/mm/rmap.c
+===================================================================
+--- mmotm-0719.orig/mm/rmap.c
++++ mmotm-0719/mm/rmap.c
+@@ -891,7 +891,7 @@ void page_add_file_rmap(struct page *pag
+ {
+ 	if (atomic_inc_and_test(&page->_mapcount)) {
+ 		__inc_zone_page_state(page, NR_FILE_MAPPED);
+-		mem_cgroup_update_file_mapped(page, 1);
++		mem_cgroup_update_file_stat(page, __MEMCG_FILE_MAPPED, 1);
+ 	}
+ }
+ 
+@@ -929,7 +929,7 @@ void page_remove_rmap(struct page *page)
+ 		__dec_zone_page_state(page, NR_ANON_PAGES);
+ 	} else {
+ 		__dec_zone_page_state(page, NR_FILE_MAPPED);
+-		mem_cgroup_update_file_mapped(page, -1);
++		mem_cgroup_update_file_stat(page, __MEMCG_FILE_MAPPED, -1);
+ 	}
+ 	/*
+ 	 * It would be tidy to reset the PageAnon mapping here,
 
-On SDHI hardware the 2-byte access works just fine in 4-bit mode.
-
-Thanks,
-
-/ magnus
