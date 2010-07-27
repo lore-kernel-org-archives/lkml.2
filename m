@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab0G0GIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 02:08:42 -0400
-Received: from claw.goop.org ([74.207.240.146]:53483 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab0G0GIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 02:08:40 -0400
-Message-ID: <4C4E77E6.3040007@goop.org>
-Date: Mon, 26 Jul 2010 23:08:38 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1752821Ab0G0GJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 02:09:46 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46760 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab0G0GJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 02:09:45 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: dave b <db.pub.mail@gmail.com>
+Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
+Cc: kosaki.motohiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <AANLkTimdLbwvRNU09s+LfauREBaxyXBUE5jSmwnpCj8e@mail.gmail.com>
+References: <20100727134431.2F11.A69D9226@jp.fujitsu.com> <AANLkTimdLbwvRNU09s+LfauREBaxyXBUE5jSmwnpCj8e@mail.gmail.com>
+Message-Id: <20100727150138.2F20.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
-References: <20100727133207.9b6846fe.sfr@canb.auug.org.au>
-In-Reply-To: <20100727133207.9b6846fe.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 27 Jul 2010 15:09:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/26/2010 08:32 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the xen tree got a conflict in
-> arch/x86/kernel/hpet.c between commit
-> ff4878089e1eaeac79d57878ad4ea32910fb4037 ("x86: Do not try to disable
-> hpet if it hasn't been initialized before") from Linus' tree and commit
-> ef7612e63eafaa6101f5d3185ed8d9bf232ba627 ("x86: Do not try to disable
-> hpet if it hasn't been initialized before") from the xen tree.
->
-> Two versions of the same patch.  I used the version from Linus' tree
-> since it was dated later and had been modified by Thomas.
+> > Do you mean the issue will be gone if disabling intel graphics?
+> > if so, we need intel graphics driver folks help. sorry, linux-mm folks don't
+> > know intel graphics detail.
+> 
+> Well the only other system I have running the 2.6.34.1 kernel atm is
+> an arm based system.
+> I originally sent this to the kernel list and was told I should
+> probably forward it to the mm list.
+> It may be a general issue or it could just be specific :)
 
-Thanks, I was waiting for that to land.  I'll drop it from my branch.
+Hmm.. I'm puzzled 8-)
 
-     J
+I don't understand why other all people can't reproduce your issue
+even though your reproduce program is very simple.
+
+So, I'm guessing there is hidden reproduce condition. but I have no
+idea to find it.
+
+
 
