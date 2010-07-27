@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475Ab0G0Twn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 15:52:43 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65166 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab0G0Twl (ORCPT
+	id S1752300Ab0G0T5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 15:57:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33661 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab0G0T5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 15:52:41 -0400
+	Tue, 27 Jul 2010 15:57:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=G++R+XvMChp8XrZlHoUIIWEoN+g70/Fg1nZv7m2wJT3CNEauxKws1mnZZ26TaZd9qK
-         6eUDUunbrCdqkMyM+nOAeRpXOAKm5fZ84bkRA/aM78VcDo2vsz6kTRQm+UPj+4Yb29Ip
-         cbygdTE5UAgRzbpjQFuc/zE5KuqomPilw/tzw=
-Date: Tue, 27 Jul 2010 21:57:43 +0200
-From: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.35-rc6] kconfig: fix MODULES-related bug in case of
- no .config
-Message-ID: <20100727195742.GA18079@ulf>
-References: <20100727192727.GA17954@ulf>
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=tTHcOj8UOziSmPKpXLXyvwewGDF1GdBFJZCRehtwhC5p09y+AkXfVdDkrBFEi2Ey9t
+         GidTwq+NVoqqHa65m5ejRyCArWrUSrD/HWKoHce/6sm0567IWlYXK8tr34p6SOkuFTim
+         I7lz4ngvNOieQj118kVI9gQFL53FSdrQkaML0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727192727.GA17954@ulf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Tue, 27 Jul 2010 14:57:21 -0500
+Message-ID: <AANLkTikhMAgf0aqGGWMj-h=K1n4gcTu8KQ0=9+nHe5-h@mail.gmail.com>
+Subject: [GIT PULL] 9p file system bug fix for rc6
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 09:27:27PM +0200, Ulf Magnusson wrote:
-> Hi,
-> 
-> There seems to be a kconfig bug due to MODULES not always being evaluated if no
-> .config is found. Take the following Kconfig as an example:
-> 
-> config MODULES
-> 	def_bool y
-> 
-> config FOO
-> 	def_tristate m
-> 
-> With no .config, the following configuration is generated:
-> 
-> CONFIG_MODULES=y
-> CONFIG_FOO=y
-> 
-> With an empty .config, the following:
-> 
-> CONFIG_MODULES=y
-> CONFIG_FOO=m
-> 
-> Tristate choice statements can also exhibit the problem, due to having an
-> implicit rev_dep (select) containing "m".
-> 
-> The problem is that MODULES is never evaluted in conf_read_simple() unless
-> there's a .config. The following patch fixes this.
-> 
-> Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-> 
-> diff -uNr linux.vanilla/scripts/kconfig/confdata.c linux.new/scripts/kconfig/confdata.c
-> --- linux.vanilla/scripts/kconfig/confdata.c	2010-07-27 16:47:43.443006287 +0200
-> +++ linux.new/scripts/kconfig/confdata.c	2010-07-27 16:50:19.795005537 +0200
-> @@ -170,8 +170,10 @@
->  		if (in)
->  			goto load;
->  		sym_add_change_count(1);
-> -		if (!sym_defconfig_list)
-> +		if (!sym_defconfig_list) {
-> +			sym_calc_value(modules_sym);
->  			return 1;
-> +		}
->  
->  		for_all_defaults(sym_defconfig_list, prop) {
->  			if (expr_calc_value(prop->visible.expr) == no ||
+I know you are trying to finalize things, but this small fix seems
+like its worth fixing before release.  I'm holding back everything
+else until the merge window.
+Thanks,
 
-Silly error in the patch. The correct patch follows.
+     -eric
 
-Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
 
-diff -uNr linux.vanilla/scripts/kconfig/confdata.c linux.new/scripts/kconfig/confdata.c
---- linux.vanilla/scripts/kconfig/confdata.c	2010-07-27 16:47:43.443006287 +0200
-+++ linux.new/scripts/kconfig/confdata.c	2010-07-27 21:48:07.471550551 +0200
-@@ -170,8 +170,11 @@
- 		if (in)
- 			goto load;
- 		sym_add_change_count(1);
--		if (!sym_defconfig_list)
-+		if (!sym_defconfig_list) {
-+			if (modules_sym)
-+				sym_calc_value(modules_sym);
- 			return 1;
-+		}
- 
- 		for_all_defaults(sym_defconfig_list, prop) {
- 			if (expr_calc_value(prop->visible.expr) == no ||
+The following changes since commit d15aa2cc641bd193596382357de917b32f1b40cb:
+  Linus Torvalds (1):
+        Merge branch 'urgent' of git://git.kernel.org/.../paulus/perf
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
+
+Latchesar Ionkov (1):
+      9p: Pass the correct end of buffer to p9stat_read
+
+ fs/9p/vfs_dir.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
