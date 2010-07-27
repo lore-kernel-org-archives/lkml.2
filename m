@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab0G0VTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 17:19:11 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51319 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750964Ab0G0VTK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 17:19:10 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] [resend] cyber2000fb: fix machine hang on module load
-Date: Tue, 27 Jul 2010 23:18:55 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201007271529.22520.linux@rainbow-software.org> <20100727162510.GB17099@n2100.arm.linux.org.uk>
-In-Reply-To: <20100727162510.GB17099@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1752782Ab0G0Vbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 17:31:42 -0400
+Received: from lo.gmane.org ([80.91.229.12]:37211 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751886Ab0G0Vbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 17:31:41 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Manuel Reimer <Manuel.Spam@nurfuerspam.de>
+Subject: Getting error message "Cannot read inode bitmap". Someone able to
+ help?
+Date: Tue, 27 Jul 2010 23:28:35 +0200
+Message-ID: <i2nj7d$lpi$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201007272318.57975.linux@rainbow-software.org>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: p4fd48739.dip0.t-ipconnect.de
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100721 SeaMonkey/2.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 July 2010 18:25:11 Russell King - ARM Linux wrote:
-> On Tue, Jul 27, 2010 at 03:29:20PM +0200, Ondrej Zary wrote:
-> > Hello,
-> > I was testing two CyberPro 2000 based PCI cards on x86 and the machine
-> > always hanged completely when the cyber2000fb module was loaded. It seems
-> > that the card hangs when some registers are accessed too quickly after
-> > writing RAMDAC control register. With this patch, both card work.
-> >
-> > Add delay after RAMDAC control register write to prevent hangs on module
-> > load.
->
-> This one on the other hand I think is rather too heavy.
->
-> What might be better is to re-code the last register write to use
-> the x86 outb_p() stuff to slow it down, rather than using udelay().
-> Could you try something along those lines please?
+Hello,
 
-Is this better?
+I tried to restore data from a broken NAS device. This small box 
+contained a embedded linux system and two 1TB hard drives.
 
+After some tries, I managed to connect both drives via mdadm and was 
+able to mount this raid as XFS.
 
-I was testing two CyberPro 2000 based PCI cards on x86 and the machine always
-hanged completely when the cyber2000fb module was loaded. It seems that the
-card hangs when some registers are accessed too quickly after writing RAMDAC
-control register. With this patch, both card work.
+Now I connected a brand new eSATA drive to this PC and started to copy 
+the data (about 700 Gigabytes). Target disk was 1TB, so enough space to 
+hold the source data.
 
-Add delay after RAMDAC control register write to prevent hangs on module load.
+With my first try (ext2 on target disk) I got the error "Cannot read 
+inode bitmap". The kernel reported this error for the *target* device 
+(the brand new SATA hard drive). I did a second try and reformated the 
+target drive to ext3 and, again, I got the same error. So I installed 
+"smartmontools" into my running live system and checked the drive. The 
+new drive has no "reallocated sectors" but several read errors (about 500).
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+The worst thing about this is, that a diff between source and target 
+showed many files differing, so I didn't just get errors, but I also 
+have bad data on the target disk. This is a pretty *unstable* disc 
+behaviour...
 
---- linux-2.6.35-rc2-orig/drivers/video/cyber2000fb.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-07-27 23:12:37.000000000 +0200
-@@ -436,6 +436,8 @@ static void cyber2000fb_write_ramdac_ctr
- 	cyber2000fb_writeb(i | 4, 0x3cf, cfb);
- 	cyber2000fb_writeb(val, 0x3c6, cfb);
- 	cyber2000fb_writeb(i, 0x3cf, cfb);
-+	/* prevent card lock-up observed on x86 with CyberPro 2000 */
-+	cyber2000fb_readb(0x3cf, cfb);
- }
- 
- static void cyber2000fb_set_timing(struct cfb_info *cfb, struct par_info *hw)
+The copy program, I used, was "cp" from busybox.
 
+What should I check to find the reason for this errors? Is it really 
+possible that a brand new disc, which doesn't have conspicuous smart 
+values, is the reason for this problem? May the eSATA disc enclosure 
+(has a small circuit to also offer USB access) be the reason?
 
+The log entries, I could get via dmesg, are available here:
+http://pastebin.org/423211
 
--- 
-Ondrej Zary
+Thank you very much in advance
+
+Yours
+
+Manuel Reimer
+
