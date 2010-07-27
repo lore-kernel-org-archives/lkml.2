@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab0G0NeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 09:34:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63634 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab0G0NeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 09:34:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3] of: Create asm-generic/of.h and provide default of_node_to_nid()
-Date: Tue, 27 Jul 2010 15:34:01 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, Sam Ravnborg <sam@ravnborg.org>,
-        sfr@canb.auug.org.au, microblaze-uclinux@itee.uq.edu.au,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        sparclinux@vger.kernel.org, davem@davemloft.net
-References: <20100726220405.1550.63442.stgit@angua> <20100726222627.GA23501@merkur.ravnborg.org> <AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com>
-In-Reply-To: <AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com>
+	id S1755374Ab0G0Nfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 09:35:31 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:57568 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752809Ab0G0Nf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 09:35:29 -0400
+Date: Tue, 27 Jul 2010 14:35:13 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
+	reclaim is encountering dirty pages
+Message-ID: <20100727133513.GZ5300@csn.ul.ie>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-9-git-send-email-mel@csn.ul.ie> <20100726072832.GB13076@localhost> <20100726092616.GG5300@csn.ul.ie> <20100726112709.GB6284@localhost> <20100726125717.GS5300@csn.ul.ie> <20100726131008.GE11947@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007271534.01250.arnd@arndb.de>
-X-Provags-ID: V02:K0:IBu03tMCrotrfv58q6VhAxWy6NWdy8x590R0lIvxmRU
- Z91qdqBgpGXTqQ3hsK846vZT/uPPOQP49NIjEv7ce2pk+28bZX
- dYVqPAyboFjOtFjV/brv/k0QgyQOpfPkp5CkwheAGBKnZrFyJU
- KZ9Al2KZ/cFP/ecO8ruekepPC8ApLVea88IQMomvtQmbuRjKcV
- aJCPBPLyWAPCP8zlP6Hqw==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100726131008.GE11947@localhost>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 27 July 2010, Grant Likely wrote:
-> > I suggest to go back to v2 of your patch where you use asm-generic/of.h.
+On Mon, Jul 26, 2010 at 09:10:08PM +0800, Wu Fengguang wrote:
+> On Mon, Jul 26, 2010 at 08:57:17PM +0800, Mel Gorman wrote:
+> > On Mon, Jul 26, 2010 at 07:27:09PM +0800, Wu Fengguang wrote:
+> > > > > > @@ -933,13 +934,16 @@ keep_dirty:
+> > > > > >  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+> > > > > >  	}
+> > > > > >  
+> > > > > > +	/*
+> > > > > > +	 * If reclaim is encountering dirty pages, it may be because
+> > > > > > +	 * dirty pages are reaching the end of the LRU even though
+> > > > > > +	 * the dirty_ratio may be satisified. In this case, wake
+> > > > > > +	 * flusher threads to pro-actively clean some pages
+> > > > > > +	 */
+> > > > > > +	wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty + nr_dirty / 2);
+> > > > > 
+> > > > > Ah it's very possible that nr_dirty==0 here! Then you are hitting the
+> > > > > number of dirty pages down to 0 whether or not pageout() is called.
+> > > > > 
+> > > > 
+> > > > True, this has been fixed to only wakeup flusher threads when this is
+> > > > the file LRU, dirty pages have been encountered and the caller has
+> > > > sc->may_writepage.
+> > > 
+> > > OK.
+> > > 
+> > > > > Another minor issue is, the passed (nr_dirty + nr_dirty / 2) is
+> > > > > normally a small number, much smaller than MAX_WRITEBACK_PAGES.
+> > > > > The flusher will sync at least MAX_WRITEBACK_PAGES pages, this is good
+> > > > > for efficiency.
+> > > > > And it seems good to let the flusher write much more
+> > > > > than nr_dirty pages to safeguard a reasonable large
+> > > > > vmscan-head-to-first-dirty-LRU-page margin. So it would be enough to
+> > > > > update the comments.
+> > > > > 
+> > > > 
+> > > > Ok, the reasoning had been to flush a number of pages that was related
+> > > > to the scanning rate but if that is inefficient for the flusher, I'll
+> > > > use MAX_WRITEBACK_PAGES.
+> > > 
+> > > It would be better to pass something like (nr_dirty * N).
+> > > MAX_WRITEBACK_PAGES may be increased to 128MB in the future, which is
+> > > obviously too large as a parameter. When the batch size is increased
+> > > to 128MB, the writeback code may be improved somehow to not exceed the
+> > > nr_pages limit too much.
+> > > 
+> > 
+> > What might be a useful value for N? 1.5 appears to work reasonably well
+> > to create a window of writeback ahead of the scanner but it's a bit
+> > arbitrary.
 > 
-> Stephen suggested dropping asm-generic/of.h.  I'm happy to do it either way.
+> I'd recommend N to be a large value. It's no longer relevant now since
+> we'll call the flusher to sync some range containing the target page.
+> The flusher will then choose an N large enough (eg. 4MB) for efficient
+> IO. It needs to be a large value, otherwise the vmscan code will
+> quickly run into dirty pages again..
+> 
 
-I don't mind adding stuff to asm-generic, but I think in this case it would
-be easier to keep this in linux/of.h because there is nothing wrong with
-all architectures including it.
+Ok, I took the 4MB at face value to be a "reasonable amount that should
+not cause congestion". The end result is
 
-Most files in asm-generic are there only for historical reasons, where some
-architectures use them but others don't. IMHO we should use the include/linux
-headers preferred for new stuff though.
+#define MAX_WRITEBACK (4194304UL >> PAGE_SHIFT)
+#define WRITEBACK_FACTOR (MAX_WRITEBACK / SWAP_CLUSTER_MAX)
+static inline long nr_writeback_pages(unsigned long nr_dirty)
+{
+        return laptop_mode ? 0 :
+                        min(MAX_WRITEBACK, (nr_dirty * WRITEBACK_FACTOR));
+}
 
-	Arnd
+nr_writeback_pages(nr_dirty) is what gets passed to
+wakeup_flusher_threads(). Does that seem sensible?
+
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
