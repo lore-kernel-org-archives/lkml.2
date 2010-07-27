@@ -1,148 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab0G0RTz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:19:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16644 "EHLO
+	id S1752587Ab0G0RUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:20:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35310 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab0G0RTu (ORCPT
+	with ESMTP id S1751964Ab0G0RUG (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 27 Jul 2010 13:19:50 -0400
+	Tue, 27 Jul 2010 13:20:06 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, alex.williamson@redhat.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Albert Herranz <albert_herranz@yahoo.es>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: [PATCH 8/9] pci-swiotlb-xen: Add glue code to setup dma_ops utilizing xen_swiotlb_* functions.
-Date: Tue, 27 Jul 2010 13:00:01 -0400
-Message-Id: <1280250002-20279-9-git-send-email-konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, alex.williamson@redhat.com
+Subject: [PATCH] Xen-SWIOTLB v0.8.6 used for Xen PCI pass through for PV guests.
+Date: Tue, 27 Jul 2010 12:59:53 -0400
+Message-Id: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
-References: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C4F1521.0152:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4C4F1532.014E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We add the glue code that sets up a dma_ops structure with the
-xen_swiotlb_* functions. The code turns on xen_swiotlb flag
-when it detects it is running under Xen and it is either
-in privileged mode or the iommu=soft flag was passed in.
+Changes since last posting [v0.8.3 (http://lkml.org/lkml/2010/6/22/310)]:
+ - Coalesced the Xen-SWIOTLB set of patches in one patch.
+ - Moved the swiotlb-xen.c to drivers/xen.
+ - Added Ack's, Cc's, as appropriate.
 
-It also disables the bare-metal SWIOTLB if the Xen-SWIOTLB has
-been enabled.
+This patchset:
 
-Note: The Xen-SWIOTLB is only built when CONFIG_XEN is enabled.
+These nine patches lay the groundwork for Xen Paravirtualized (PV)
+domains to access PCI pass-through devices (with and without an hardware
+IOMMU) These patches utilize the SWIOTLB library modifications
+(http://lkml.org/lkml/2010/6/4/272).
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Albert Herranz <albert_herranz@yahoo.es>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
----
- arch/x86/include/asm/xen/swiotlb-xen.h |   14 ++++++++
+The end user of this are:
+ - The Xen PCI frontend and Xen PCI [1] which require a DMA API "backend"
+   that understands Xen's MMU. This allows the PV domains to use PCI devices.
+   The use case is for machines with and without hardware IOMMU. Without an
+   hardware IOMMU you have a potential security hole wherin a guest domain
+   can use the hardware to map pages outside its memory range and slurp
+   pages up. As such, this is more restricted to a Priviliged PV domain,
+   aka - device driver domain (similar to Qubes but a poor-man mechanism [2]).
+ - Xen PV domain 0 support. Without this domain 0 is incapable of using any
+   PCI devices.
+
+This patch-set is split in two groups. The first alter the Xen components,
+while the second introduces the SWIOTLB-Xen.
+
+The Xen components patches consist of:
+
+      xen: Allow unprivileged Xen domains to create iomap pages
+      xen: Rename the balloon lock
+      xen: Add xen_create_contiguous_region
+      xen: use _PAGE_IOMAP in ioremap to do machine mappings
+      vmap: add flag to allow lazy unmap to be disabled at runtime
+      xen/mmu: inhibit vmap aliases rather than trying to clear them out
+
+which alter the Xen MMU, which by default utilizes a layer of indirection
+wherein the PFN is translated to the Machine Frame Number (MFN) and vice-versa.
+This is required to "fool" the guest in thinking its memory starts at PFN 0 and
+goes up to the available amount.  While in the background, PFN 0 might as well be
+MFN 1048576 (4GB).
+
+For PCI/DMA API calls (ioremap, pci_map_page, etc) having a PFN != MFN is
+not too good, so two new mechanisms are introduced:
+  a). For PTEs which manipulate the PCI/DMA pages the PFN == MFN. This is done
+      via utilizing the _PAGE_IOMAP flag to distinguish the PTE as an IO type.
+  b). Allow a mechanism to "swizzle" the MFN's under a PFN to be under a certain
+      bus width (say 32). This allows us to provide a mechanism for the
+      SWIOTLB Xen to allocate memory for its pool that will be guaranteed to be
+      under the 4GB mark.
+
+We also introduce a mechanism to inhibit vmap aliases as we need to clear the
+vmap's but might be doing this in atomic state.
+
+The SWIOTLB-Xen adds a library that is only used if the machine is detected
+to be running under Xen. It utilizes the SWIOTLB library bookkeeping functions
+(swiotlb_tbl_*) and only deals with the virtual to [physical, bus] (and vice-versa)
+address translations.
+
+The diffstat:
+
+ arch/x86/include/asm/xen/page.h        |    8 +-
+ arch/x86/include/asm/xen/swiotlb-xen.h |   14 +
+ arch/x86/kernel/pci-dma.c              |    7 +-
  arch/x86/xen/Makefile                  |    1 +
- arch/x86/xen/pci-swiotlb-xen.c         |   58 ++++++++++++++++++++++++++++++++
- 3 files changed, 73 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/xen/swiotlb-xen.h
- create mode 100644 arch/x86/xen/pci-swiotlb-xen.c
+ arch/x86/xen/enlighten.c               |    4 +
+ arch/x86/xen/mmu.c                     |  293 ++++++++++++++++++-
+ arch/x86/xen/pci-swiotlb-xen.c         |   58 ++++
+ drivers/xen/Kconfig                    |    4 +
+ drivers/xen/Makefile                   |    3 +-
+ drivers/xen/balloon.c                  |   15 +-
+ drivers/xen/swiotlb-xen.c              |  515 ++++++++++++++++++++++++++++++++
+ include/linux/vmalloc.h                |    2 +
+ include/xen/interface/memory.h         |   50 +++
+ include/xen/swiotlb-xen.h              |   65 ++++
+ include/xen/xen-ops.h                  |    6 +
+ mm/vmalloc.c                           |    4 +
+ 16 files changed, 1024 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/swiotlb-xen.h b/arch/x86/include/asm/xen/swiotlb-xen.h
-new file mode 100644
-index 0000000..1be1ab7
---- /dev/null
-+++ b/arch/x86/include/asm/xen/swiotlb-xen.h
-@@ -0,0 +1,14 @@
-+#ifndef _ASM_X86_SWIOTLB_XEN_H
-+#define _ASM_X86_SWIOTLB_XEN_H
-+
-+#ifdef CONFIG_SWIOTLB_XEN
-+extern int xen_swiotlb;
-+extern int __init pci_xen_swiotlb_detect(void);
-+extern void __init pci_xen_swiotlb_init(void);
-+#else
-+#define xen_swiotlb (0)
-+static inline int __init pci_xen_swiotlb_detect(void) { return 0; }
-+static inline void __init pci_xen_swiotlb_init(void) { }
-+#endif
-+
-+#endif /* _ASM_X86_SWIOTLB_XEN_H */
-diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
-index 3bb4fc2..32af238 100644
---- a/arch/x86/xen/Makefile
-+++ b/arch/x86/xen/Makefile
-@@ -18,3 +18,4 @@ obj-$(CONFIG_SMP)		+= smp.o
- obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
- obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
- 
-+obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
-diff --git a/arch/x86/xen/pci-swiotlb-xen.c b/arch/x86/xen/pci-swiotlb-xen.c
-new file mode 100644
-index 0000000..a013ec9
---- /dev/null
-+++ b/arch/x86/xen/pci-swiotlb-xen.c
-@@ -0,0 +1,58 @@
-+/* Glue code to lib/swiotlb-xen.c */
-+
-+#include <linux/dma-mapping.h>
-+#include <xen/swiotlb-xen.h>
-+
-+#include <asm/xen/hypervisor.h>
-+#include <xen/xen.h>
-+
-+int xen_swiotlb __read_mostly;
-+
-+static struct dma_map_ops xen_swiotlb_dma_ops = {
-+	.mapping_error = xen_swiotlb_dma_mapping_error,
-+	.alloc_coherent = xen_swiotlb_alloc_coherent,
-+	.free_coherent = xen_swiotlb_free_coherent,
-+	.sync_single_for_cpu = xen_swiotlb_sync_single_for_cpu,
-+	.sync_single_for_device = xen_swiotlb_sync_single_for_device,
-+	.sync_sg_for_cpu = xen_swiotlb_sync_sg_for_cpu,
-+	.sync_sg_for_device = xen_swiotlb_sync_sg_for_device,
-+	.map_sg = xen_swiotlb_map_sg_attrs,
-+	.unmap_sg = xen_swiotlb_unmap_sg_attrs,
-+	.map_page = xen_swiotlb_map_page,
-+	.unmap_page = xen_swiotlb_unmap_page,
-+	.dma_supported = xen_swiotlb_dma_supported,
-+};
-+
-+/*
-+ * pci_xen_swiotlb_detect - set xen_swiotlb to 1 if necessary
-+ *
-+ * This returns non-zero if we are forced to use xen_swiotlb (by the boot
-+ * option).
-+ */
-+int __init pci_xen_swiotlb_detect(void)
-+{
-+
-+	/* If running as PV guest, either iommu=soft, or swiotlb=force will
-+	 * activate this IOMMU. If running as PV privileged, activate it
-+	 * irregardlesss.
-+	 */
-+	if ((xen_initial_domain() || swiotlb || swiotlb_force) &&
-+	    (xen_pv_domain()))
-+		xen_swiotlb = 1;
-+
-+	/* If we are running under Xen, we MUST disable the native SWIOTLB.
-+	 * Don't worry about swiotlb_force flag activating the native, as
-+	 * the 'swiotlb' flag is the only one turning it on. */
-+	if (xen_pv_domain())
-+		swiotlb = 0;
-+
-+	return xen_swiotlb;
-+}
-+
-+void __init pci_xen_swiotlb_init(void)
-+{
-+	if (xen_swiotlb) {
-+		xen_swiotlb_init(1);
-+		dma_ops = &xen_swiotlb_dma_ops;
-+	}
-+}
--- 
-1.7.0.1
+P.S.
+The patchset that this depends on (which is in linux-next), is:
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git stable/swiotlb-0.8.3
+This patcheset (Xen-SWIOTLB) is available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git devel/xen-swiotlb-0.8.6
+And the customer of this (Xen PCI front):
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/xen-pcifront-0.3
+The tree with all of this on top of v2.6.35-rc6:
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/merge.2.6.35-rc6.t2
 
