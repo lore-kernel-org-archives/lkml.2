@@ -1,140 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab0G0HYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 03:24:25 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:61043 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817Ab0G0HYX convert rfc822-to-8bit (ORCPT
+	id S1753451Ab0G0HZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 03:25:20 -0400
+Received: from p01c12o147.mxlogic.net ([208.65.145.70]:49921 "EHLO
+	p01c12o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab0G0HZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 03:24:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ApMxEfzJOf8sicrPzcHdaDQa9hjpq309cINSngBZrWt8jL9/dLAAnk5gSDgH1P8HN/
-         z7MRecayx6jDgtBHYUdYpf5OnRnAhYYApQ8XgTZoULOP+OyYIByyc4ceNfY5sSAL49Z5
-         0PviBDPAaNhKE2rGEUj1VDyAkyb3Cm1Kozf+0=
+	Tue, 27 Jul 2010 03:25:18 -0400
+X-MXL-Hash: 4c4e89de17969d45-28b67a1ff664a04a3b2556a6f5261575c6248577
+X-MXL-Hash: 4c4e89d856aaee3c-60e5bb0fed5b5e9d820391191785b1139e2f4ad1
+Message-ID: <4C4E89D4.8040607@bluearc.com>
+Date: Tue, 27 Jul 2010 08:25:08 +0100
+From: Andy Chittenden <andyc@bluearc.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <20100727160708.722c39c1.sfr@canb.auug.org.au>
-References: <20100727160708.722c39c1.sfr@canb.auug.org.au>
-Date: Tue, 27 Jul 2010 12:54:22 +0530
-Message-ID: <AANLkTi=ki084ymBzsnbgnFw952BSnSDzUyL+YH-4353b@mail.gmail.com>
-Subject: Re: linux-next: Tree for July 27
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>
+CC: Trond Myklebust <trond.myklebust@fys.uio.no>
+Subject: Re: nfs client hang
+References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>
+In-Reply-To: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
+X-MAIL-FROM: <andyc@bluearc.com>
+X-SOURCE-IP: [213.121.168.131]
+X-AnalysisOut: [v=1.0 c=1 a=VphdPIyG4kEA:10 a=8nJEP1OIZ-IA:10 a=sIqM7rbIUs]
+X-AnalysisOut: [2FIam8obyq6w==:17 a=5G9WNljmkx5AFJIGeNcA:9 a=6W99VG2HNMl2j]
+X-AnalysisOut: [VjX_vQA:7 a=PraTpKcC_UPbr792Eb27VVyEaNEA:4 a=wPNLvfGTeEIA:]
+X-AnalysisOut: [10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
+  On 2010-07-23 13:36, Andy Chittenden wrote:
+>> IE the client starts a connection and then closes it again without sending data.
+> Once this happens, here's some rpcdebug info for the rpc module using 2.6.34.1 kernel:
+>
+> ... lots of the following nfsv3 WRITE requests:
+> [ 7670.026741] 57793 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026759] 57794 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026778] 57795 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026797] 57796 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026815] 57797 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026834] 57798 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026853] 57799 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026871] 57800 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026890] 57801 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7670.026909] 57802 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> [ 7680.520042] RPC:       worker connecting xprt ffff88013e62d800 via tcp to 10.1.6.102 (port 2049)
+> [ 7680.520066] RPC:       ffff88013e62d800 connect status 99 connected 0 sock state 7
+> [ 7680.520074] RPC: 33550 __rpc_wake_up_task (now 4296812426)
+> [ 7680.520079] RPC: 33550 disabling timer
+> [ 7680.520084] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
+> [ 7680.520089] RPC:       __rpc_wake_up_task done
+> [ 7680.520094] RPC: 33550 __rpc_execute flags=0x1
+> [ 7680.520098] RPC: 33550 xprt_connect_status: retrying
+> [ 7680.520103] RPC: 33550 call_connect_status (status -11)
+> [ 7680.520108] RPC: 33550 call_transmit (status 0)
+> [ 7680.520112] RPC: 33550 xprt_prepare_transmit
+> [ 7680.520118] RPC: 33550 rpc_xdr_encode (status 0)
+> [ 7680.520123] RPC: 33550 marshaling UNIX cred ffff88012e002300
+> [ 7680.520130] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
+> [ 7680.520136] RPC: 33550 xprt_transmit(32920)
+> [ 7680.520145] RPC:       xs_tcp_send_request(32920) = -32
+> [ 7680.520151] RPC:       xs_tcp_state_change client ffff88013e62d800...
+> [ 7680.520156] RPC:       state 7 conn 0 dead 0 zapped 1
+I changed that debug to output sk_shutdown too. That has a value of 2 
+(IE SEND_SHUTDOWN). Looking at tcp_sendmsg(), I see this:
 
-On Tue, Jul 27, 2010 at 11:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20100726:
->
-> The arm tree lost its conflict.
->
-> The microblaze tree lost its conflict.
->
-> The mips tree gained a build failure so I used the version from
-> next-20100726.
->
-> The xfs tree still has its build failure so I used the version from
-> next-20100723.
->
-> The ieee2394 tree gained a build failure so I used the version from
-> next-20100726.
->
-> The kvm tree still has its build failure.
->
-> The async_tx tree gained a conflict against the arm tree.
->
-> The devicetree tree lost its conflict, but gained another against the
-> microblaze tree.
->
-> The xen tree lost its build problems but gained a conflict against Linus'
-> tree.
->
-> The tip tree gained a conflict against the cpufreq tree.
->
-> The tty tree gained a conflict against the genesis tree and a build
-> failure for which I reverted 4 patches.
->
-> The usb tree lost its conflicts.
->
-> ----------------------------------------------------------------------------
->
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-> are tracking the linux-next tree using git, you should not use "git pull"
-> to do so as that will try to merge the new linux-next release with the
-> old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-> (see below).
->
-> You can see which trees have been included by looking in the Next/Trees
-> file in the source.  There are also quilt-import.log and merge.log files
-> in the Next directory.  Between each merge, the tree was built with
-> a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-> final fixups (if any), it is also built with powerpc allnoconfig (32 and
-> 64 bit), ppc44x_defconfig and allyesconfig (minus
-> CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-> and sparc64 defconfig. These builds also have
-> CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-> CONFIG_DEBUG_INFO disabled when necessary.
->
-> Below is a summary of the state of the merge.
->
-> We are up to 167 trees (counting Linus' and 22 trees of patches pending
-> for Linus' tree), more are welcome (even if they are currently empty).
-> Thanks to those who have contributed, and to those who haven't, please do.
->
-> Status of my local build tests will be at
-> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-> advice about cross compilers/configs that work, we are always open to add
-> more builds.
->
-> Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-> at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-> Dunlap for doing many randconfig builds.
->
-> There is a wiki covering stuff to do with linux-next at
-> http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
->
+         err = -EPIPE;
+         if (sk->sk_err || (sk->sk_shutdown & SEND_SHUTDOWN))
+                 goto out_err;
 
-I am getting following compilation warnings in linux-next 20100727:
+which correlates with the trace "xs_tcp_send_request(32920) = -32". So, 
+this looks like a problem in the sockets/tcp layer. The rpc layer issues 
+a shutdown and then reconnects using the same socket. So either 
+sk_shutdown needs zeroing once the shutdown completes or should be 
+zeroed on subsequent connect. The latter sounds safer.
 
-  CC [M]  arch/x86/kvm/mmu.o
-arch/x86/kvm/mmu.c: In function ‘kvm_mmu_pte_write’:
-arch/x86/kvm/mmu.c:2908: warning: suggest parentheses around operand
-of ‘!’ or change ‘&’ to ‘&&’ or ‘!’ to ‘~’
+-- 
+Andy, BlueArc Engineering
 
- CC      lib/decompress_bunzip2.o
-lib/decompress_bunzip2.c: In function ‘get_next_block’:
-lib/decompress_bunzip2.c:511: warning: the frame size of 1968 bytes is
-larger than 1024 bytes
-
-  CC      drivers/scsi/constants.o
-drivers/scsi/constants.c: In function ‘scsi_print_sense’:
-drivers/scsi/constants.c:1407: warning: zero-length gnu_printf format string
-drivers/scsi/constants.c:1413: warning: zero-length gnu_printf format string
-drivers/scsi/constants.c: In function ‘scsi_print_result’:
-drivers/scsi/constants.c:1456: warning: zero-length gnu_printf format string
-
-
-  CC      drivers/scsi/sd.o
-drivers/scsi/sd.c: In function ‘sd_print_sense_hdr’:
-drivers/scsi/sd.c:2617: warning: zero-length gnu_printf format string
-drivers/scsi/sd.c:2619: warning: zero-length gnu_printf format string
-drivers/scsi/sd.c: In function ‘sd_print_result’:
-drivers/scsi/sd.c:2625: warning: zero-length gnu_printf format string
-
-Thanks,
---
-Jaswinder Singh.
