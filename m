@@ -1,118 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab0G0MP3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 08:15:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586Ab0G0MP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 08:15:27 -0400
-Date: Tue, 27 Jul 2010 14:15:22 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-security-module@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cred - BUG: synchronize rcu before releasing cred
-Message-ID: <20100727121522.GE1967@jolsa.brq.redhat.com>
-References: <20100625133333.GA1918@jolsa.bos.redhat.com>
- <20100702121456.GD1904@jolsa.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100702121456.GD1904@jolsa.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755607Ab0G0MVX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 08:21:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59468 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab0G0MVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 08:21:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=luJhWqbhspdxUrO/xCKrveK3IJhtO90KTZ7lUGUTewrYa66Ve4h4qxuROXDQYd6iMy
+         iheAdv6JojnkSOVuDOq2q9KtQnfP7U5XsYdIWp1Lgn777moKIc2Kkd4Oic7ATRyuUGwi
+         6OCBCb8FVuZkgBA5deQ8fpISh8nOD1XpCny8Q=
+Subject: RE: nfs client hang
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andy Chittenden <andyc@bluearc.com>
+Cc: "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com>
+References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>
+	 <4C4E89D4.8040607@bluearc.com>
+	 <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Jul 2010 14:21:16 +0200
+Message-ID: <1280233276.2827.175.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-any feedback?
-
-jirka
-
-On Fri, Jul 02, 2010 at 02:14:56PM +0200, Jiri Olsa wrote:
-> hi,
-> any feedback?
+Le mardi 27 juillet 2010 à 11:53 +0100, Andy Chittenden a écrit :
+> > >> IE the client starts a connection and then closes it again without sending data.
+> > > Once this happens, here's some rpcdebug info for the rpc module using 2.6.34.1 kernel:
+> > >
+> > > ... lots of the following nfsv3 WRITE requests:
+> > > [ 7670.026741] 57793 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026759] 57794 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026778] 57795 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026797] 57796 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026815] 57797 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026834] 57798 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026853] 57799 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026871] 57800 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026890] 57801 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7670.026909] 57802 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
+> > > [ 7680.520042] RPC:       worker connecting xprt ffff88013e62d800 via tcp to 10.1.6.102 (port 2049)
+> > > [ 7680.520066] RPC:       ffff88013e62d800 connect status 99 connected 0 sock state 7
+> > > [ 7680.520074] RPC: 33550 __rpc_wake_up_task (now 4296812426)
+> > > [ 7680.520079] RPC: 33550 disabling timer
+> > > [ 7680.520084] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
+> > > [ 7680.520089] RPC:       __rpc_wake_up_task done
+> > > [ 7680.520094] RPC: 33550 __rpc_execute flags=0x1
+> > > [ 7680.520098] RPC: 33550 xprt_connect_status: retrying
+> > > [ 7680.520103] RPC: 33550 call_connect_status (status -11)
+> > > [ 7680.520108] RPC: 33550 call_transmit (status 0)
+> > > [ 7680.520112] RPC: 33550 xprt_prepare_transmit
+> > > [ 7680.520118] RPC: 33550 rpc_xdr_encode (status 0)
+> > > [ 7680.520123] RPC: 33550 marshaling UNIX cred ffff88012e002300
+> > > [ 7680.520130] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
+> > > [ 7680.520136] RPC: 33550 xprt_transmit(32920)
+> > > [ 7680.520145] RPC:       xs_tcp_send_request(32920) = -32
+> > > [ 7680.520151] RPC:       xs_tcp_state_change client ffff88013e62d800...
+> > > [ 7680.520156] RPC:       state 7 conn 0 dead 0 zapped 1
 > 
-> jirka
+> > I changed that debug to output sk_shutdown too. That has a value of 2 
+> > (IE SEND_SHUTDOWN). Looking at tcp_sendmsg(), I see this:
 > 
-> On Fri, Jun 25, 2010 at 09:33:33AM -0400, Jiri Olsa wrote:
-> > BZ 591015 - kernel BUG at kernel/cred.c:168
-> > https://bugzilla.redhat.com/show_bug.cgi?id=591015
-> > 
-> > Above bugzilla reported bug during the releasing of
-> > old cred structure.
-> > 
-> > There is reproducer attached to the bugzilla.
-> > 
-> > The issue is caused by releasing old cred struct while other
-> > kernel path might be still using it. This leads to cred->usage
-> > inconsistency inside the __put_cred and triggering the bug.
-> > 
-> > Following kernel paths are affected:
-> > 
-> > The CPU1 path is setting the new groups creds.
-> > The CPU2 path is cat /proc/PID/status
-> > 
-> > 
-> > CPU 1                              CPU 2
-> > 
-> > sys_setgroups                      proc_pid_status      
-> >   set_current_groups                 task_state
-> >     commit_creds                       rcu_read_lock
-> >       put_cred                         ...
-> >         __put_cred                     get_cred
-> >           BUG_ON(usage != 0)           ...
-> >                                        rcu_read_unlock
-> >                                        
-> > 
-> > 
-> > If __put_cred got executed during the CPU2 holding the reference
-> > the BUG_ON inside __put_cred is trigered.
-> > 
-> > I think there's no need to get the cred refference as long as
-> > the 'cred' handling stays inside the rcu_read_lock block.
-> > 
-> > And the condition of __task_cred 'make sure task doesn't go away',
-> > is done by proc_single_show as this is the proc file.
-> > 
-> > wbr,
-> > jirka
-> > 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > Acked-by: David Howells <dhowells@redhat.com>
-> > ---
-> > diff --git a/fs/proc/array.c b/fs/proc/array.c
-> > index 9b58d38..ac3b3a4 100644
-> > --- a/fs/proc/array.c
-> > +++ b/fs/proc/array.c
-> > @@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-> >  		if (tracer)
-> >  			tpid = task_pid_nr_ns(tracer, ns);
-> >  	}
-> > -	cred = get_cred((struct cred *) __task_cred(p));
-> > +	cred = __task_cred(p);
-> >  	seq_printf(m,
-> >  		"State:\t%s\n"
-> >  		"Tgid:\t%d\n"
-> > @@ -199,15 +199,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
-> >  		"FDSize:\t%d\n"
-> >  		"Groups:\t",
-> >  		fdt ? fdt->max_fds : 0);
-> > -	rcu_read_unlock();
-> >  
-> >  	group_info = cred->group_info;
-> >  	task_unlock(p);
-> >  
-> >  	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
-> >  		seq_printf(m, "%d ", GROUP_AT(group_info, g));
-> > -	put_cred(cred);
-> >  
-> > +	rcu_read_unlock();
-> >  	seq_printf(m, "\n");
-> >  }
-> >  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >          err = -EPIPE;
+> >          if (sk->sk_err || (sk->sk_shutdown & SEND_SHUTDOWN))
+> >                  goto out_err;
+> 
+> > which correlates with the trace "xs_tcp_send_request(32920) = -32". So, 
+> > this looks like a problem in the sockets/tcp layer. The rpc layer issues 
+> > a shutdown and then reconnects using the same socket. So either 
+> > sk_shutdown needs zeroing once the shutdown completes or should be 
+> > zeroed on subsequent connect. The latter sounds safer.
+> 
+> This patch for 2.6.34.1 fixes the issue:
+> 
+> --- /home/company/software/src/linux-2.6.34.1/net/ipv4/tcp_output.c     2010-07-27 08:46:46.917000000 +0100
+> +++ net/ipv4/tcp_output.c       2010-07-27 09:19:16.000000000 +0100
+> @@ -2522,6 +2522,13 @@
+>         struct tcp_sock *tp = tcp_sk(sk);
+>         __u8 rcv_wscale;
+>  
+> +       /* clear down any previous shutdown attempts so that
+> +        * reconnects on a socket that's been shutdown leave the
+> +        * socket in a usable state (otherwise tcp_sendmsg() returns
+> +        * -EPIPE).
+> +        */
+> +       sk->sk_shutdown = 0;
+> +
+>         /* We'll fix this up when we get a response from the other end.
+>          * See tcp_input.c:tcp_rcv_state_process case TCP_SYN_SENT.
+>          */
+> 
+> As I mentioned in my first message, we first saw this issue in 2.6.32 as supplied by debian (linux-image-2.6.32-5-amd64 Version: 2.6.32-17). It looks like the same patch would fix the problem there too.
+> 
+
+CC netdev
+
+This reminds me a similar problem we had in the past, fixed with commit
+1fdf475a (tcp: tcp_disconnect() should clear window_clamp)
+
+But tcp_disconnect() already clears sk->sk_shutdown
+
+If NFS calls tcp_disconnect(), then shutdown(), there is a problem.
+
+Maybe xs_tcp_shutdown() should make some sanity tests ?
+
+Following sequence is legal, and your patch might break it.
+
+fd = socket(...);
+shutdown(fd, SHUT_WR);
+...
+connect(fd, ...);
+
+
+
