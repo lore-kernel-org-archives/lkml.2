@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab0G0ADK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 20:03:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45874 "EHLO mx2.suse.de"
+	id S1755586Ab0G0ATz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 20:19:55 -0400
+Received: from norkia.v3.sk ([91.210.183.14]:54691 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411Ab0G0ADI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 20:03:08 -0400
-Date: Mon, 26 Jul 2010 17:01:44 -0700
-From: Greg KH <gregkh@suse.de>
-To: Michael Jensen <emjay1988@gmail.com>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: comedidev: Removed unused macro
- definitions
-Message-ID: <20100727000143.GA26992@suse.de>
-References: <1280070874-8961-1-git-send-email-emjay1988@gmail.com>
- <20100726224301.GA5287@kroah.com>
- <AANLkTikmDu+sOfNFwCJmshyKmeF5B1sZg6r+5_0qKc_8@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikmDu+sOfNFwCJmshyKmeF5B1sZg6r+5_0qKc_8@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755501Ab0G0ATk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 20:19:40 -0400
+Subject: Re: [PATCH] V7: Add support for non-PDP11 v7 filesystems
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20100726165231.ea38062e.akpm@linux-foundation.org>
+References: <20100724135128.GA11645@ZenIV.linux.org.uk>
+	 <1280098756-26522-1-git-send-email-lkundrak@v3.sk>
+	 <20100726165231.ea38062e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Jul 2010 02:19:15 +0200
+Message-ID: <1280189955.26200.5.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 09:46:00AM +1000, Michael Jensen wrote:
-> On Tue, Jul 27, 2010 at 8:43 AM, Greg KH <greg@kroah.com> wrote:
-> >
-> > This doesn't apply against the linux-next tree as this macro is already
-> > gone from there.
-> >
-> > What tree are you creating this diff against?
-> >
-> > confused,
-> >
-> > greg k-h
-> >
+On Mon, 2010-07-26 at 16:52 -0700, Andrew Morton wrote:
+> On Mon, 26 Jul 2010 00:59:16 +0200
+> Lubomir Rintel <lkundrak@v3.sk> wrote:
 > 
-> The main tree, cloned from
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> > This adds byte order autodetection (of PDP-11 and LE filesystems).
+> > No attempt is made to detect big-endian filesystems -- were there any?
+> > Tested with PDP-11 v7 filesystems and PC-IX maintenance floppy.
+> 
+> Which kernel is this against?  My v7_fill_super() is significantly
+> different from yours.
 
-Yeah, that's not going to work for any development.
+This depends on [PATCH] V7: Adjust sanity checks for some volumes
+<1279761108-302-1-git-send-email-lkundrak@v3.sk>.
 
-Try the linux-next tree instead, that is where everything is queuing up.
-Again, this macro is already gone in the linux-next tree which is what
-will be merged with Linus's tree for the next release (2.6.36).
+It might be that I've messed up something in the communication so that
+the dependency was not immediately clear. To be honest, I'm not very
+familiar with the way reviews and adjustements to patches are tracked.
+What have I done wrong, here? How am I supposed to follow up with a
+change to a single patch of a multi-patch (be it just two in this case)
+set?
 
-Hope this helps,
+-- 
+Flash is the Web2.0 version of blink and animated gifs.
+                                     -- Stephen Smoogen
 
-greg k-h
