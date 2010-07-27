@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab0G0KBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 06:01:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36587 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab0G0KBP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 06:01:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UmgfNmaryi8y81lSzkKq4iFdTApVyY1EPdYt9/ei3GLJWgYOGWmwLUBSo4cT2CLM7w
-         LqoLrYWzV0Zs8tdpY54HPs5NXh9g5+kag69kkteVoKaeWJ1pqjuRl5k7XoQbcF6xB/W0
-         da8LElbEfQSPMEDd/VKY9g+hk2SPiMGGMKvB0=
-MIME-Version: 1.0
-In-Reply-To: <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
-	<alpine.DEB.2.00.1007261136160.5438@router.home>
-	<pfn.valid.v4.reply.1@mdm.bga.com>
-	<AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
-	<pfn.valid.v4.reply.2@mdm.bga.com>
-	<20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 27 Jul 2010 19:01:14 +0900
-Message-ID: <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Milton Miller <miltonm@bga.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+	id S1756075Ab0G0KaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 06:30:24 -0400
+Received: from mx1.orcon.net.nz ([219.88.242.51]:49558 "EHLO mx1.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753703Ab0G0KaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 06:30:22 -0400
+From: Michael Cree <mcree@orcon.net.nz>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Cree <mcree@orcon.net.nz>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Thomas Gleixner <tglx@linutronix.de>, linux-alpha@vger.kernel.org
+Subject: [PATCH 3/3] alpha: Implement HW performance events on the EV67 and later CPUs.
+Date: Tue, 27 Jul 2010 22:29:38 +1200
+Message-Id: <1280226579-6117-1-git-send-email-mcree@orcon.net.nz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1272958808.5605.126.camel@twins>
+References: <1272958808.5605.126.camel@twins>
+X-DSPAM-Check: by mx1.orcon.net.nz on Tue, 27 Jul 2010 22:30:19 +1200
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Tue Jul 27 22:30:19 2010
+X-DSPAM-Confidence: 0.9924
+X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Kame.
+On 04/05/10 19:40, Peter Zijlstra wrote:
+> On Sat, 2010-05-01 at 11:55 +1200, Michael Cree wrote:
+>> +/* I wonder what this is for ??? */
+>> +void set_perf_event_pending(void)
+>> +{
+>> +}
+> 
+> If the PMU Interrupt comes in as an NMI we cannot take locks and such
+> from its handler. So what we do is queue that work to be ran later. The
+> kernel has a fallback to run this stuff from the timer hardirq, but if
+> the PMI is IRQ context (like ARM) you can simply call
+> perf_event_do_pending() at its tail.
+> 
+> Alternatively you can self-IPI like x86 does and run
+> perf_event_do_pending() from there.
 
-On Tue, Jul 27, 2010 at 5:13 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com>
->> Perhaps the mem_section array.  Using a symbol that is part of
->> the model pre-checks can remove a global symbol lookup and has the side
->> effect of making sure our pfn_valid is for the right model.
->>
->
-> But yes, maybe it's good to make use of a fixed-(magic)-value.
+OK, I couldn't see how to self-IPI on the Apha (there is no obvious way in
+the Alpha arch code, and the Alpha HW Ref. Man. only describes such a
+feature being supported by the PALcode for OpenVMS which we are obviously
+not running) and the PMI on Alpha is at such a high priority there is no
+chance that the lock can be freed while in the PMI handler, so I have put
+the call to perf_event_do_pending() in the timer interrupt, but unlike the
+PowerPC code I don't know any tricks to force the timer interrupt to happen
+early when there is pending work, so there is a potential maximum delay of
+1ms from pending work being notified to calling perf_event_do_pending().  Is
+this delay acceptable?
 
-fixed-magic-value?
-Yes. It can be good for some debugging.
-But as Christoph pointed out, we need some strict check(ex,
-PG_reserved) for preventing unlucky valid using of magic value in
-future.
-But in fact I have a concern to use PG_reserved since it can be used
-afterward pfn_valid normally to check hole in non-hole system. So I
-think it's redundant.
+I also fix a nasty, but heretofore hidden, bug that could completely lock up
+a machine with continuous PMIs due to a throttled PMC being accidently
+re-enabled by the other PMC. It only showed up when I set the NMI flag true
+in the call to perf_event_overflow() and had two events counting
+simultaneously with a very short sample period.
 
-Hmm..
+I also see the x86 and Sparc code in 2.6.35 have reimplemented
+the call to hw_perf_group_sched_in() in terms of new functions start_txn(),
+cancel_txn() and commit_txn().  Is this change necessary to get the Alpha
+code accepted for 2.6.36?  If so it would be helpful if I could have a brief
+description of what each function does.
 
--- 
-Kind regards,
-Minchan Kim
+The updated patch follows this message.
+
+Cheers
+Michael.
+
+
+Michael Cree (1):
+  alpha: Implement HW performance events on the EV67 and later CPUs.
+
+ arch/alpha/include/asm/perf_event.h |    8 +-
+ arch/alpha/kernel/Makefile          |    1 +
+ arch/alpha/kernel/irq_alpha.c       |    3 +
+ arch/alpha/kernel/perf_event.c      |  842 +++++++++++++++++++++++++++++++++++
+ arch/alpha/kernel/time.c            |   26 ++
+ 5 files changed, 879 insertions(+), 1 deletions(-)
+ create mode 100644 arch/alpha/kernel/perf_event.c
+
