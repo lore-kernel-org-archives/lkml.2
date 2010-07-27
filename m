@@ -1,60 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751110Ab0G0QQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 12:16:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44874 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750730Ab0G0QQn (ORCPT
+	id S1751300Ab0G0QWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 12:22:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44645 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab0G0QWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 12:16:43 -0400
+	Tue, 27 Jul 2010 12:22:07 -0400
+Date: Tue, 27 Jul 2010 17:21:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [resend] cyber2000fb: add mode_option parameter
+Message-ID: <20100727162155.GA17099@n2100.arm.linux.org.uk>
+References: <201007271529.42838.linux@rainbow-software.org>
 MIME-Version: 1.0
-In-Reply-To: <20100727155023.GF1967@jolsa.brq.redhat.com>
-References: <20100727155023.GF1967@jolsa.brq.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 27 Jul 2010 09:16:16 -0700
-Message-ID: <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com>
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007271529.42838.linux@rainbow-software.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 8:50 AM, Jiri Olsa <jolsa@redhat.com> wrote:
->
-> got no objections on linux-security-module and acked by David.
-> Noone pick it, so got advice to send this directly to you.
+On Tue, Jul 27, 2010 at 03:29:41PM +0200, Ondrej Zary wrote:
+> Add mode_option parameter to specify the default video mode.
 
-The patch seems fundamentally buggy.
-
-The whole patch seems to be based on "nobody can ever use
-get_cred/put_cred, because concurrent use will then trigger the
-BUG_ON() in __put_cred()".
-
-But that's a bug in general, not in this particular usage that isn't
-all that different from other uses. So rather than just remove the
-code that uses the refcounting, we should either:
-
- - FIX the damn ref-counting so that it works without bugging out
-
-or
-
- - remove the broken functions entirely.
-
-In other words - why are we working around what looks like a bug,
-rather than fixing the bug itself?
-
-In particular, the code you remove seems to be basically _identical_
-to get_task_cred(). So if the code you remove is buggy, then so is any
-use of get_task_cred() - no?
-
-So please explain why get_task_cred() is ok, but the particular use of
-get_cred/put_cred that you removed is not.
-
-Hmm? What am I missing?
-
-                                   Linus
+This patch is fine...
