@@ -1,101 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab0G0Ksp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 06:48:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34782 "EHLO hera.kernel.org"
+	id S1756208Ab0G0KtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 06:49:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34802 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab0G0Ksn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 06:48:43 -0400
-Date: Tue, 27 Jul 2010 10:48:26 GMT
+	id S1755664Ab0G0KtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 06:49:02 -0400
+Date: Tue, 27 Jul 2010 10:48:44 GMT
 From: tip-bot for John Stultz <johnstul@us.ibm.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         johnstul@us.ibm.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         johnstul@us.ibm.com, tglx@linutronix.de
-In-Reply-To: <1279068988-21864-10-git-send-email-johnstul@us.ibm.com>
-References: <1279068988-21864-10-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1279068988-21864-11-git-send-email-johnstul@us.ibm.com>
+References: <1279068988-21864-11-git-send-email-johnstul@us.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/clocksource] timekeeping: Make xtime and wall_to_monotonic static
-Message-ID: <tip-0fb86b06298b6cd3205cac2e68a499f269282dac@git.kernel.org>
-Git-Commit-ID: 0fb86b06298b6cd3205cac2e68a499f269282dac
+Subject: [tip:timers/clocksource] x86: Convert common clocksources to use clocksource_register_hz/khz
+Message-ID: <tip-f12a15be63d1de9a35971f35f06b73088fa25c3a@git.kernel.org>
+Git-Commit-ID: f12a15be63d1de9a35971f35f06b73088fa25c3a
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 10:48:26 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 10:48:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0fb86b06298b6cd3205cac2e68a499f269282dac
-Gitweb:     http://git.kernel.org/tip/0fb86b06298b6cd3205cac2e68a499f269282dac
+Commit-ID:  f12a15be63d1de9a35971f35f06b73088fa25c3a
+Gitweb:     http://git.kernel.org/tip/f12a15be63d1de9a35971f35f06b73088fa25c3a
 Author:     John Stultz <johnstul@us.ibm.com>
-AuthorDate: Tue, 13 Jul 2010 17:56:26 -0700
+AuthorDate: Tue, 13 Jul 2010 17:56:27 -0700
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 27 Jul 2010 12:40:55 +0200
 
-timekeeping: Make xtime and wall_to_monotonic static
+x86: Convert common clocksources to use clocksource_register_hz/khz
 
-This patch makes xtime and wall_to_monotonic static, as planned in
-Documentation/feature-removal-schedule.txt. This will allow for
-further cleanups to the timekeeping core.
+This converts the most common of the x86 clocksources over to use
+clocksource_register_hz/khz.
 
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
-LKML-Reference: <1279068988-21864-10-git-send-email-johnstul@us.ibm.com>
+LKML-Reference: <1279068988-21864-11-git-send-email-johnstul@us.ibm.com>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
 ---
- Documentation/feature-removal-schedule.txt |   10 ----------
- include/linux/time.h                       |    2 --
- kernel/time/timekeeping.c                  |    4 ++--
- 3 files changed, 2 insertions(+), 14 deletions(-)
+ arch/x86/kernel/hpet.c        |   13 +++++++++----
+ arch/x86/kernel/tsc.c         |    5 +----
+ drivers/clocksource/acpi_pm.c |    9 ++-------
+ 3 files changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 1571c0c..cd648db 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -549,16 +549,6 @@ Who:	Avi Kivity <avi@redhat.com>
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index ba390d7..33dbcc4 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -16,7 +16,6 @@
+ #include <asm/hpet.h>
  
- ----------------------------
+ #define HPET_MASK			CLOCKSOURCE_MASK(32)
+-#define HPET_SHIFT			22
  
--What:	xtime, wall_to_monotonic
--When:	2.6.36+
--Files:	kernel/time/timekeeping.c include/linux/time.h
--Why:	Cleaning up timekeeping internal values. Please use
--	existing timekeeping accessor functions to access
--	the equivalent functionality.
--Who:	John Stultz <johnstul@us.ibm.com>
+ /* FSEC = 10^-15
+    NSEC = 10^-9 */
+@@ -787,7 +786,6 @@ static struct clocksource clocksource_hpet = {
+ 	.rating		= 250,
+ 	.read		= read_hpet,
+ 	.mask		= HPET_MASK,
+-	.shift		= HPET_SHIFT,
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+ 	.resume		= hpet_resume_counter,
+ #ifdef CONFIG_X86_64
+@@ -798,6 +796,7 @@ static struct clocksource clocksource_hpet = {
+ static int hpet_clocksource_register(void)
+ {
+ 	u64 start, now;
++	u64 hpet_freq;
+ 	cycle_t t1;
+ 
+ 	/* Start the counter */
+@@ -832,9 +831,15 @@ static int hpet_clocksource_register(void)
+ 	 *  mult = (hpet_period * 2^shift)/10^6
+ 	 *  mult = (hpet_period << shift)/FSEC_PER_NSEC
+ 	 */
+-	clocksource_hpet.mult = div_sc(hpet_period, FSEC_PER_NSEC, HPET_SHIFT);
+ 
+-	clocksource_register(&clocksource_hpet);
++	/* Need to convert hpet_period (fsec/cyc) to cyc/sec:
++	 *
++	 * cyc/sec = FSEC_PER_SEC/hpet_period(fsec/cyc)
++	 * cyc/sec = (FSEC_PER_NSEC * NSEC_PER_SEC)/hpet_period
++	 */
++	hpet_freq = FSEC_PER_NSEC * NSEC_PER_SEC;
++	do_div(hpet_freq, hpet_period);
++	clocksource_register_hz(&clocksource_hpet, (u32)hpet_freq);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 9faf91a..ce8e502 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -751,7 +751,6 @@ static struct clocksource clocksource_tsc = {
+ 	.read                   = read_tsc,
+ 	.resume			= resume_tsc,
+ 	.mask                   = CLOCKSOURCE_MASK(64),
+-	.shift                  = 22,
+ 	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS |
+ 				  CLOCK_SOURCE_MUST_VERIFY,
+ #ifdef CONFIG_X86_64
+@@ -845,8 +844,6 @@ __cpuinit int unsynchronized_tsc(void)
+ 
+ static void __init init_tsc_clocksource(void)
+ {
+-	clocksource_tsc.mult = clocksource_khz2mult(tsc_khz,
+-			clocksource_tsc.shift);
+ 	if (tsc_clocksource_reliable)
+ 		clocksource_tsc.flags &= ~CLOCK_SOURCE_MUST_VERIFY;
+ 	/* lower the rating if we already know its unstable: */
+@@ -854,7 +851,7 @@ static void __init init_tsc_clocksource(void)
+ 		clocksource_tsc.rating = 0;
+ 		clocksource_tsc.flags &= ~CLOCK_SOURCE_IS_CONTINUOUS;
+ 	}
+-	clocksource_register(&clocksource_tsc);
++	clocksource_register_khz(&clocksource_tsc, tsc_khz);
+ }
+ 
+ #ifdef CONFIG_X86_64
+diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+index 72a633a..cfb0f52 100644
+--- a/drivers/clocksource/acpi_pm.c
++++ b/drivers/clocksource/acpi_pm.c
+@@ -68,10 +68,7 @@ static struct clocksource clocksource_acpi_pm = {
+ 	.rating		= 200,
+ 	.read		= acpi_pm_read,
+ 	.mask		= (cycle_t)ACPI_PM_MASK,
+-	.mult		= 0, /*to be calculated*/
+-	.shift		= 22,
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
 -
------------------------------
+ };
+ 
+ 
+@@ -190,9 +187,6 @@ static int __init init_acpi_pm_clocksource(void)
+ 	if (!pmtmr_ioport)
+ 		return -ENODEV;
+ 
+-	clocksource_acpi_pm.mult = clocksource_hz2mult(PMTMR_TICKS_PER_SEC,
+-						clocksource_acpi_pm.shift);
 -
- What:	KVM kernel-allocated memory slots
- When:	July 2010
- Why:	Since 2.6.25, kvm supports user-allocated memory slots, which are
-diff --git a/include/linux/time.h b/include/linux/time.h
-index a57e0f6..cb34e35 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -113,8 +113,6 @@ static inline struct timespec timespec_sub(struct timespec lhs,
- #define timespec_valid(ts) \
- 	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
+ 	/* "verify" this timing source: */
+ 	for (j = 0; j < ACPI_PM_MONOTONICITY_CHECKS; j++) {
+ 		udelay(100 * j);
+@@ -220,7 +214,8 @@ static int __init init_acpi_pm_clocksource(void)
+ 	if (verify_pmtmr_rate() != 0)
+ 		return -ENODEV;
  
--extern struct timespec xtime;
--extern struct timespec wall_to_monotonic;
- extern seqlock_t xtime_lock;
+-	return clocksource_register(&clocksource_acpi_pm);
++	return clocksource_register_hz(&clocksource_acpi_pm,
++						PMTMR_TICKS_PER_SEC);
+ }
  
- extern void read_persistent_clock(struct timespec *ts);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index fb61c2e..e14c839 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -153,8 +153,8 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
-  * - wall_to_monotonic is no longer the boot time, getboottime must be
-  * used instead.
-  */
--struct timespec xtime __attribute__ ((aligned (16)));
--struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
-+static struct timespec xtime __attribute__ ((aligned (16)));
-+static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
- static struct timespec total_sleep_time;
- 
- /*
+ /* We use fs_initcall because we want the PCI fixups to have run
