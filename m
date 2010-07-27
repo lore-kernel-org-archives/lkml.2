@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab0G0RwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:52:21 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59451 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947Ab0G0RwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 13:52:19 -0400
-Message-ID: <4C4F1CBB.7040003@linux.vnet.ibm.com>
-Date: Tue, 27 Jul 2010 10:51:55 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+	id S1753055Ab0G0Rxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:53:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39321 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752865Ab0G0Rxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 13:53:40 -0400
+Message-ID: <4C4F1CE4.70605@zytor.com>
+Date: Tue, 27 Jul 2010 10:52:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC][PATCH v1 02/15] perf: export generic hardware events via
- sysfs
-References: <1279797142.20942.83.camel@minggr.sh.intel.com> <20100723104412.GA26154@erda.amd.com> <1280197103.24607.61.camel@minggr.sh.intel.com> <20100727082749.GK26154@erda.amd.com>
-In-Reply-To: <20100727082749.GK26154@erda.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+        Zachary Amsden <zamsden@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ 	for pvclock
+References: <20100701175144.GA2116@kroah.com>	<20100701173218.125822294@clark.site>	<20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<AANLkTim_xKrPSTNqS3JWipjlAkmeDnlEYcHt1cn90ggB@mail.gmail.com>	<4C3CAAC6.501@redhat.com> <AANLkTik_hRn9acIuuRBJDWLuQVUh9qE-blvgFmUQvzlz@mail.gmail.com> <4C4F1B6D.1070207@goop.org>
+In-Reply-To: <4C4F1B6D.1070207@goop.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2010 01:27 AM, Robert Richter wrote:
-> On 26.07.10 22:18:23, Lin Ming wrote:
->
->>>> /sys/devices/system/cpu/cpu0/events
->>>> |-- L1-dcache-load-misses
->>>> |   |-- config
->>>> |   `-- type
->
-> vs.
->
->>>   |-- L1-dcache-load-misses  ===>  event name
->>>   |   `-- id                 ===>  event id
->
->>> This is very simple and flexible and solves the original problem too.
+On 07/27/2010 10:46 AM, Jeremy Fitzhardinge wrote:
+>  On 07/13/2010 11:15 AM, Linus Torvalds wrote:
+>> On Tue, Jul 13, 2010 at 11:04 AM, Avi Kivity<avi@redhat.com>  wrote:
+>>> Well, current upstream uses "m":
+>> Yes, I'd expect current 2.6.34 to also show the same problem.
 >>
->> Yeah, this is flexible. I'll think about this closely.
->
-> The thing is, if you start introducing the config/type i/f, we will
-> stick with it for a long time. I want to avoid this from the
-> beginning.
->
-> Using an id only would work with your current implementation too, you
-> only need to maintain an id ->  config/type mapping, maybe in some
-> private data section, without exporting it to userspace.
+>>> and works; I also failed to reproduce with 2.6.32.16.  So I expect some
+>>> toolchain involvement.
+>> And yes, I do believe it's likely a newer gcc that triggers it too,
+>> otherwise we'd have seen more reports of it.
+> 
+> Did anyone get around to doing a proper fix for this?   I don't see one
+> in tip.git or linux-2.6.git.  And it needs to get back into stable...
+> 
 
-Now that I understand that the sysfs id essentially points to a kernel 
-data structure, I like this idea a lot.  Before I was thinking that you 
-were trying to place a lot of info into the id itself.
+I'll go ahead and write it up.
 
-The only downside I see, and maybe it's a very minor one, is that you'll 
-no longer have the ability to specify an event without specifying a 
-sysfs path... there's no other mechanism.
+	-hpa
 
-- Corey
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
