@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab0G0M6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 08:58:50 -0400
-Received: from tex.lwn.net ([70.33.254.29]:34178 "EHLO vena.lwn.net"
+	id S1753248Ab0G0NJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 09:09:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377Ab0G0M6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 08:58:45 -0400
-Date: Tue, 27 Jul 2010 06:58:42 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20100727065842.40ae76c8@bike.lwn.net>
-In-Reply-To: <003701cb2d89$adae4580$090ad080$%szyprowski@samsung.com>
-References: <cover.1280151963.git.m.nazarewicz@samsung.com>
-	<743102607e2c5fb20e3c0676fadbcb93d501a78e.1280151963.git.m.nazarewicz@samsung.com>
-	<dc4bdf3e0b02c0ac4770927f72b6cbc3f0b486a2.1280151963.git.m.nazarewicz@samsung.com>
-	<20100727120841.GC11468@n2100.arm.linux.org.uk>
-	<003701cb2d89$adae4580$090ad080$%szyprowski@samsung.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1751949Ab0G0NJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 09:09:15 -0400
+Date: Tue, 27 Jul 2010 09:09:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, nauman@google.com,
+        dpshah@google.com, jmoyer@redhat.com, czoccolo@gmail.com
+Subject: Re: [PATCH 2/5] cfq-iosched: Implment IOPS mode for group scheduling
+Message-ID: <20100727130906.GA23118@redhat.com>
+References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+ <1279834172-4227-3-git-send-email-vgoyal@redhat.com>
+ <4C4E72FB.2080104@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4E72FB.2080104@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 14:45:58 +0200
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On Tue, Jul 27, 2010 at 01:47:39PM +0800, Gui Jianfeng wrote:
 
-> > How does one obtain the CPU address of this memory in order for the CPU
-> > to access it?  
+[..]
+> > @@ -913,19 +927,21 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+> >  				struct cfq_queue *cfqq)
+> >  {
+> >  	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+> > -	unsigned int used_sl, charge_sl;
+> > +	unsigned int used_sl, charge;
+> >  	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
+> >  			- cfqg->service_tree_idle.count;
+> >  
+> >  	BUG_ON(nr_sync < 0);
+> > -	used_sl = charge_sl = cfq_cfqq_slice_usage(cfqq);
+> > +	used_sl = charge = cfq_cfqq_slice_usage(cfqq);
+> >  
+> > -	if (!cfq_cfqq_sync(cfqq) && !nr_sync)
+> > -		charge_sl = cfqq->allocated_slice;
+> > +	if (iops_mode(cfqd))
+> > +		charge = cfqq->slice_dispatch;
 > 
-> Right, we did not cover such case. In CMA approach we tried to separate
-> memory allocation from the memory mapping into user/kernel space. Mapping
-> a buffer is much more complicated process that cannot be handled in a
-> generic way, so we decided to leave this for the device drivers. Usually
-> video processing devices also don't need in-kernel mapping for such
-> buffers at all.
+> Hi Vivek,
+> 
+> At this time, requests may still stay in dispatch list, shall we add a new variable
+> in cfqq to keep track of the number of requests that go into driver, and charging
+> this number?
+> 
 
-Still...that *is* why I suggested an interface which would return both
-the DMA address and a kernel-space virtual address, just like the DMA
-API does...  Either that, or just return the void * kernel address and
-let drivers do the DMA mapping themselves.  Returning only the
-dma_addr_t address will make the interface difficult to use in many
-situations.
+Hi Gui,
 
-jon
+How does that help. Even if request is in dispatch list, sooner or later
+it will be dispatched. As long as we can make sure that requests in 
+dispatch list are in proportion to group weights, things should be just
+fine.
+
+Thanks
+Vivek
