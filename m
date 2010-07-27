@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab0G0ABv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 20:01:51 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59123 "EHLO smtps.tip.net.au"
+	id S1755376Ab0G0ADK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 20:03:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45874 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab0G0ABt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 20:01:49 -0400
-Date: Tue, 27 Jul 2010 10:01:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sheng Yang <sheng@linux.intel.com>,
-        Dave McCracken <dcm@mccr.org>
-Subject: Re: linux-next: build failure after merge of the final tree (xen
- tree related)
-Message-Id: <20100727100137.c9ec453c.sfr@canb.auug.org.au>
-In-Reply-To: <4C4DE64C.9070004@goop.org>
-References: <20100726152908.951a95b7.sfr@canb.auug.org.au>
-	<4C4DE64C.9070004@goop.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t"
+	id S1752411Ab0G0ADI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 20:03:08 -0400
+Date: Mon, 26 Jul 2010 17:01:44 -0700
+From: Greg KH <gregkh@suse.de>
+To: Michael Jensen <emjay1988@gmail.com>
+Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: comedidev: Removed unused macro
+ definitions
+Message-ID: <20100727000143.GA26992@suse.de>
+References: <1280070874-8961-1-git-send-email-emjay1988@gmail.com>
+ <20100726224301.GA5287@kroah.com>
+ <AANLkTikmDu+sOfNFwCJmshyKmeF5B1sZg6r+5_0qKc_8@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikmDu+sOfNFwCJmshyKmeF5B1sZg6r+5_0qKc_8@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Jeremy,
-
-On Mon, 26 Jul 2010 12:47:24 -0700 Jeremy Fitzhardinge <jeremy@goop.org> wr=
-ote:
->
->   On 07/25/2010 10:29 PM, Stephen Rothwell wrote:
-> > Hi all,
+On Tue, Jul 27, 2010 at 09:46:00AM +1000, Michael Jensen wrote:
+> On Tue, Jul 27, 2010 at 8:43 AM, Greg KH <greg@kroah.com> wrote:
 > >
-> > After merging the final tree, today's linux-next build (i386 defconfig)
-> > failed like this:
->=20
-> Both these build failures should be fixed in upstream/xen now.
+> > This doesn't apply against the linux-next tree as this macro is already
+> > gone from there.
+> >
+> > What tree are you creating this diff against?
+> >
+> > confused,
+> >
+> > greg k-h
+> >
+> 
+> The main tree, cloned from
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
 
-Thanks.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Yeah, that's not going to work for any development.
 
---Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t
-Content-Type: application/pgp-signature
+Try the linux-next tree instead, that is where everything is queuing up.
+Again, this macro is already gone in the linux-next tree which is what
+will be merged with Linus's tree for the next release (2.6.36).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Hope this helps,
 
-iQEcBAEBAgAGBQJMTiHhAAoJEDMEi1NhKgbsHMUH/jh5hnfncj8hkR8u5rWvGimu
-uGH3avtgqa5USHibgj/Mi8418JnMuq3joAnfTYhtJa7AnnQe8wcTjpjtvuQKsjj9
-/B0eHWugQGz9Ott8+7bLXzJ8a52Ccy1VJULaieUXR7T4ybbWKgyo0pcCYJBjg+++
-klekRzsjVdlsG4Gfeb+mkzAhaF3mvkxsxc0EmJCY2qnMWfAjB/raVyDzG6C7+AwR
-jK2WzhTajPImDyiSdJJAzfqKyVspHPac993eCQNliiRQD4t77/HIDnc7SMP/peBt
-sEiVEq+lDYtQpte1Ak7hCwUcoAvgsxc/WtfUvwtx+RuMiGMVZFuADthNtE+V5rQ=
-=Hkqd
------END PGP SIGNATURE-----
-
---Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t--
+greg k-h
