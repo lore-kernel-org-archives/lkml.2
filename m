@@ -1,58 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab0G0Twc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 15:52:32 -0400
-Received: from mx02.infracom.it ([62.196.48.10]:43148 "EHLO mx02.infracom.it"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751665Ab0G0Twb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 15:52:31 -0400
-Message-ID: <4C4F38F1.105@gmail.com>
-Date: Tue, 27 Jul 2010 21:52:17 +0200
-From: Roberto Oppedisano <roberto.oppedisano@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100710 Thunderbird/3.1
+	id S1752475Ab0G0Twn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 15:52:43 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65166 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab0G0Twl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 15:52:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=G++R+XvMChp8XrZlHoUIIWEoN+g70/Fg1nZv7m2wJT3CNEauxKws1mnZZ26TaZd9qK
+         6eUDUunbrCdqkMyM+nOAeRpXOAKm5fZ84bkRA/aM78VcDo2vsz6kTRQm+UPj+4Yb29Ip
+         cbygdTE5UAgRzbpjQFuc/zE5KuqomPilw/tzw=
+Date: Tue, 27 Jul 2010 21:57:43 +0200
+From: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.35-rc6] kconfig: fix MODULES-related bug in case of
+ no .config
+Message-ID: <20100727195742.GA18079@ulf>
+References: <20100727192727.GA17954@ulf>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.35 suspend regression (bisected)
-References: <4C4C9E40.7070209@infracom.it> <20100725223508.GA9885@merkur.ravnborg.org> <4C4F27C2.6050001@gmail.com> <201007272103.38448.rjw@sisk.pl>
-In-Reply-To: <201007272103.38448.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727192727.GA17954@ulf>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 27/07/2010 21:03, Rafael J. Wysocki wrote:
->> I did bisect again and I did get a different result:
->>
->> c1518f12bab97a6d409a25aaccb02dc8895800f3 is the first bad commit
->>
->> Trying to revert that commit gives:
->>
->> $ git bisect reset
->> $ git revert c1518f12bab97a6d409a25aaccb02dc8895800f3
->> fatal: Commit c1518f12bab97a6d409a25aaccb02dc8895800f3 is a merge but no
->> -m option was given.
->>
->> How am I supposed to proceed now ? (sorry I'm a git newbie)
-> The bisect turned up a merge, which means it probably didn't really converge
-> for you.
->
-> Do you use a camera driver?
-Yes, this laptop has an integrated webcam.
+On Tue, Jul 27, 2010 at 09:27:27PM +0200, Ulf Magnusson wrote:
+> Hi,
+> 
+> There seems to be a kconfig bug due to MODULES not always being evaluated if no
+> .config is found. Take the following Kconfig as an example:
+> 
+> config MODULES
+> 	def_bool y
+> 
+> config FOO
+> 	def_tristate m
+> 
+> With no .config, the following configuration is generated:
+> 
+> CONFIG_MODULES=y
+> CONFIG_FOO=y
+> 
+> With an empty .config, the following:
+> 
+> CONFIG_MODULES=y
+> CONFIG_FOO=m
+> 
+> Tristate choice statements can also exhibit the problem, due to having an
+> implicit rev_dep (select) containing "m".
+> 
+> The problem is that MODULES is never evaluted in conf_read_simple() unless
+> there's a .config. The following patch fixes this.
+> 
+> Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+> 
+> diff -uNr linux.vanilla/scripts/kconfig/confdata.c linux.new/scripts/kconfig/confdata.c
+> --- linux.vanilla/scripts/kconfig/confdata.c	2010-07-27 16:47:43.443006287 +0200
+> +++ linux.new/scripts/kconfig/confdata.c	2010-07-27 16:50:19.795005537 +0200
+> @@ -170,8 +170,10 @@
+>  		if (in)
+>  			goto load;
+>  		sym_add_change_count(1);
+> -		if (!sym_defconfig_list)
+> +		if (!sym_defconfig_list) {
+> +			sym_calc_value(modules_sym);
+>  			return 1;
+> +		}
+>  
+>  		for_all_defaults(sym_defconfig_list, prop) {
+>  			if (expr_calc_value(prop->visible.expr) == no ||
 
-Bus 001 Device 004: ID 04f2:b059 Chicony Electronics Co., Ltd
+Silly error in the patch. The correct patch follows.
 
+Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
 
-which i think is driven by uvcvideo.ko. I've tryed to rmmod uvcvideo, 
-videodev and
-
-v4l1_compat but on current git suspend still hangs in the same way 
-(screen black,
-backlight on, fans at full speed, no response to ping and... nothing in 
-the logs).
-
-
-R
-
-
+diff -uNr linux.vanilla/scripts/kconfig/confdata.c linux.new/scripts/kconfig/confdata.c
+--- linux.vanilla/scripts/kconfig/confdata.c	2010-07-27 16:47:43.443006287 +0200
++++ linux.new/scripts/kconfig/confdata.c	2010-07-27 21:48:07.471550551 +0200
+@@ -170,8 +170,11 @@
+ 		if (in)
+ 			goto load;
+ 		sym_add_change_count(1);
+-		if (!sym_defconfig_list)
++		if (!sym_defconfig_list) {
++			if (modules_sym)
++				sym_calc_value(modules_sym);
+ 			return 1;
++		}
+ 
+ 		for_all_defaults(sym_defconfig_list, prop) {
+ 			if (expr_calc_value(prop->visible.expr) == no ||
