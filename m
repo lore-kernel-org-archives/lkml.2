@@ -1,88 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab0G0ISs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:18:48 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:36717 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab0G0ISo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:18:44 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 27 Jul 2010 17:13:51 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-Message-Id: <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <pfn.valid.v4.reply.2@mdm.bga.com>
-References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
-	<alpine.DEB.2.00.1007261136160.5438@router.home>
-	<pfn.valid.v4.reply.1@mdm.bga.com>
-	<AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
-	<pfn.valid.v4.reply.2@mdm.bga.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755912Ab0G0ITU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:19:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38583 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755875Ab0G0ITR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:19:17 -0400
+Date: Tue, 27 Jul 2010 04:19:05 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: nhorman@redhat.com, akpm@linux-foundation.org,
+        huang ying <huang.ying.caritas@gmail.com>,
+        Amerigo Wang <amwang@redhat.com>, ebiederm@xmission.com
+Message-Id: <20100727082321.5813.84456.sendpatchset@localhost.localdomain>
+Subject: [Patch v2] kexec: increase max of kexec segments and use dynamic allocation
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 03:12:38 -0500
-Milton Miller <miltonm@bga.com> wrote:
 
-> > > > > +/*
-> > > > > + * Fill pg->private on valid mem_map with page itself.
-> > > > > + * pfn_valid() will check this later. (see include/linux/mmzone.h)
-> > > > > + * Every arch for supporting hole of mem_map should call
-> > > > > + * mark_valid_memmap(start, end). please see usage in ARM.
-> > > > > + */
-> > > > > +void mark_valid_memmap(unsigned long start, unsigned long end)
-> > > > > +{
-> > > > > +	struct mem_section *ms;
-> > > > > +	unsigned long pos, next;
-> > > > > +	struct page *pg;
-> > > > > +	void *memmap, *mapend;
-> > > > > +
-> > > > > +	for (pos = start; pos < end; pos = next) {
-> > > > > +		next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
-> > > > > +		ms = __pfn_to_section(pos);
-> > > > > +		if (!valid_section(ms))
-> > > > > +			continue;
-> > > > > +	
-> > > > > +		for (memmap = (void*)pfn_to_page(pos),
-> > > > > +					/* The last page in section */
-> > > > > +					mapend = pfn_to_page(next-1);
-> > > > > +				memmap < mapend; memmap += PAGE_SIZE) {
-> > > > > +			pg = virt_to_page(memmap);
-> > > > > +			set_page_private(pg, (unsigned long)pg);
-> > > > > +		}
-> > > > > +	}
-> > > > > +}
-> 
-> Hmm, this loop would need to change for sections.   And sizeof(struct
-> page) % PAGE_SIZE may not be 0, so we want a global symbol for sparsemem
-> too. 
-IIUC, sizeof(struct page) % PAGE_SIZE is not a probelm.
+Currently KEXEC_SEGMENT_MAX is only 16 which is too small for machine with
+many memory ranges.  When hibernate on a machine with disjoint memory we do
+need one segment for each memory region. Increase this hard limit to 16K
+which is reasonably large.
 
+And change ->segment from a static array to a dynamically allocated memory.
 
-> Perhaps the mem_section array.  Using a symbol that is part of
-> the model pre-checks can remove a global symbol lookup and has the side
-> effect of making sure our pfn_valid is for the right model.
-> 
+Cc: Neil Horman <nhorman@redhat.com>
+Cc: huang ying <huang.ying.caritas@gmail.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-But yes, maybe it's good to make use of a fixed-(magic)-value.
-
-
-Tanks,
--Kame
-
-
-
+---
+diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
+index ed31a29..f115585 100644
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -131,10 +131,7 @@ static void copy_segments(unsigned long ind)
+ void kexec_copy_flush(struct kimage *image)
+ {
+ 	long i, nr_segments = image->nr_segments;
+-	struct  kexec_segment ranges[KEXEC_SEGMENT_MAX];
+-
+-	/* save the ranges on the stack to efficiently flush the icache */
+-	memcpy(ranges, image->segment, sizeof(ranges));
++	struct  kexec_segment range;
+ 
+ 	/*
+ 	 * After this call we may not use anything allocated in dynamic
+@@ -148,9 +145,11 @@ void kexec_copy_flush(struct kimage *image)
+ 	 * we need to clear the icache for all dest pages sometime,
+ 	 * including ones that were in place on the original copy
+ 	 */
+-	for (i = 0; i < nr_segments; i++)
+-		flush_icache_range((unsigned long)__va(ranges[i].mem),
+-			(unsigned long)__va(ranges[i].mem + ranges[i].memsz));
++	for (i = 0; i < nr_segments; i++) {
++		memcpy(&range, &image->segment[i], sizeof(range));
++		flush_icache_range((unsigned long)__va(range.mem),
++			(unsigned long)__va(range.mem + range.memsz));
++	}
+ }
+ 
+ #ifdef CONFIG_SMP
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 03e8e8d..26b70ff 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -57,7 +57,7 @@ typedef unsigned long kimage_entry_t;
+ #define IND_DONE         0x4
+ #define IND_SOURCE       0x8
+ 
+-#define KEXEC_SEGMENT_MAX 16
++#define KEXEC_SEGMENT_MAX (1024*16)
+ struct kexec_segment {
+ 	void __user *buf;
+ 	size_t bufsz;
+@@ -86,7 +86,7 @@ struct kimage {
+ 	struct page *swap_page;
+ 
+ 	unsigned long nr_segments;
+-	struct kexec_segment segment[KEXEC_SEGMENT_MAX];
++	struct kexec_segment *segment;
+ 
+ 	struct list_head control_pages;
+ 	struct list_head dest_pages;
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 131b170..3f97309 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -131,6 +131,11 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
+ 	if (!image)
+ 		goto out;
+ 
++	image->segment = kzalloc(nr_segments * sizeof(struct kexec_segment),
++				 GFP_KERNEL);
++	if (!image->segment)
++		goto out;
++
+ 	image->head = 0;
+ 	image->entry = &image->head;
+ 	image->last_entry = &image->head;
+@@ -216,8 +221,10 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
+ out:
+ 	if (result == 0)
+ 		*rimage = image;
+-	else
++	else if (image) {
++		kfree(image->segment);
+ 		kfree(image);
++	}
+ 
+ 	return result;
+ 
+@@ -261,8 +268,10 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+  out:
+ 	if (result == 0)
+ 		*rimage = image;
+-	else
++	else if (image) {
++		kfree(image->segment);
+ 		kfree(image);
++	}
+ 
+ 	return result;
+ }
+@@ -330,8 +339,10 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
+ out:
+ 	if (result == 0)
+ 		*rimage = image;
+-	else
++	else if (image) {
++		kfree(image->segment);
+ 		kfree(image);
++	}
+ 
+ 	return result;
+ }
+@@ -656,6 +667,7 @@ static void kimage_free(struct kimage *image)
+ 
+ 	/* Free the kexec control pages... */
+ 	kimage_free_page_list(&image->control_pages);
++	kfree(image->segment);
+ 	kfree(image);
+ }
+ 
