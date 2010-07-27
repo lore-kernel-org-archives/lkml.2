@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab0G0ATi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 20:19:38 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:40023 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab0G0ATg (ORCPT
+	id S1754834Ab0G0A3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 20:29:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44509 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752411Ab0G0A3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 20:19:36 -0400
-Date: Mon, 26 Jul 2010 20:19:10 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Yu, Luming" <luming.yu@intel.com>,
-        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+	Mon, 26 Jul 2010 20:29:38 -0400
+Date: Mon, 26 Jul 2010 17:29:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "venki@google.com" <venki@google.com>
-Subject: Re: [PATCH] ACPI: create "processor.bm_check_disable" boot param
-In-reply-to: <87k4oiiu3x.fsf@basil.nowhere.org>
-Message-id: <alpine.LFD.2.00.1007262007550.5292@localhost.localdomain>
-References: <20100427124703.GA16706@jgarrett.org>
- <alpine.LFD.2.00.1004301218280.2489@sony>
- <20100430174447.GA14889@srcf.ucam.org>
- <d7f2dd35a4361e5156079278543769a0@localhost>
- <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
- <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com>
- <20100525124325.GC7876@srcf.ucam.org>
- <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain>
- <20100525185507.GA15997@srcf.ucam.org>
- <alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
- <20100722074750.GA22520@one.firstfloor.org>
- <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
- <alpine.LFD.2.00.1007221720270.7970@localhost.localdomain>
- <alpine.LFD.2.00.1007221739260.7970@localhost.localdomain>
- <87k4oiiu3x.fsf@basil.nowhere.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH] V7: Add support for non-PDP11 v7 filesystems
+Message-Id: <20100726172916.50ab7356.akpm@linux-foundation.org>
+In-Reply-To: <1280189955.26200.5.camel@localhost.localdomain>
+References: <20100724135128.GA11645@ZenIV.linux.org.uk>
+	<1280098756-26522-1-git-send-email-lkundrak@v3.sk>
+	<20100726165231.ea38062e.akpm@linux-foundation.org>
+	<1280189955.26200.5.camel@localhost.localdomain>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 27 Jul 2010 02:19:15 +0200 Lubomir Rintel <lkundrak@v3.sk> wrote:
 
-> > Note also that an alternative for newer systems
-> > is to use the intel_idle driver, which always
-> > ignores BM_STS, relying Linux device drivers
-> > to register constraints explicitly via PM_QOS.
-> >
-> > https://bugzilla.kernel.org/show_bug.cgi?id=15886
+> On Mon, 2010-07-26 at 16:52 -0700, Andrew Morton wrote:
+> > On Mon, 26 Jul 2010 00:59:16 +0200
+> > Lubomir Rintel <lkundrak@v3.sk> wrote:
+> > 
+> > > This adds byte order autodetection (of PDP-11 and LE filesystems).
+> > > No attempt is made to detect big-endian filesystems -- were there any?
+> > > Tested with PDP-11 v7 filesystems and PC-IX maintenance floppy.
+> > 
+> > Which kernel is this against?  My v7_fill_super() is significantly
+> > different from yours.
 > 
-> Thanks.  I don't fully understand why the check for this option
-> is in a different place than the register check in the earlier patch? 
+> This depends on [PATCH] V7: Adjust sanity checks for some volumes
+> <1279761108-302-1-git-send-email-lkundrak@v3.sk>.
+> 
+> It might be that I've messed up something in the communication so that
+> the dependency was not immediately clear. To be honest, I'm not very
+> familiar with the way reviews and adjustements to patches are tracked.
+> What have I done wrong, here? How am I supposed to follow up with a
+> change to a single patch of a multi-patch (be it just two in this case)
+> set?
 
-Technically, it could have been.
+ah, OK, I managed to confuse myself with
+fs-sysv-v7-adjust-sanity-checks-for-some-volumes-checkpatch-fixes.patch.
 
-There are a comple of constraints in the layout of this code.
+This new patch triggers many warnings also:
 
-The _CST flag is x86 (actually Intel) specific -- so the detection
-went into arch/x86/kernel/acpi/cstate.c
+ERROR: do not use assignment in if condition
+#52: FILE: fs/sysv/super.c:456:
++	if ((bh2 = sb_bread(sb, 2)) == NULL) {
 
-However, the operation of the that flag is per C-state,
-not necessarily per system -- so we remember the flag
-in in a cx->bm_sts_skip flag and check it in the 
-'acpi generic' drivers/acpi/processor_idle.c
+WARNING: braces {} are not necessary for single statement blocks
+#52: FILE: fs/sysv/super.c:456:
++	if ((bh2 = sb_bread(sb, 2)) == NULL) {
++		return 0;
++	}
 
-But we can't test a per cx flag inside acpi_idle_bm_check()
-because it doesn't have access to the cx, so i put that
-test at the site of its only caller.
+ERROR: code indent should use tabs where possible
+#61: FILE: fs/sysv/super.c:465:
++             sizeof (struct sysv_dir_entry))) {$
 
-In this 2nd patch...
-we added a 'generic' ACPI bootparam that applies
-to all C-states.  So it overrides any per-cstate flag
-and it is static to the processor_idle.c file,
-so it seemed cleanest (to me)
-to push it down inside acpi_idle_bm_check()
-rather than in its only caller.
+WARNING: please, no space for starting a line, 
+				excluding comments
+#61: FILE: fs/sysv/super.c:465:
++             sizeof (struct sysv_dir_entry))) {$
 
-> This needs to be also documented in Documentation/kernel-parameters.txt
+WARNING: space prohibited between function name and open parenthesis '('
+#61: FILE: fs/sysv/super.c:465:
++             sizeof (struct sysv_dir_entry))) {
 
-I thought about that and decided against it.
-While we do document some driver specific modparams
-in kernel-parameters.txt, I do not expect this one to
-be used that often -- mostly for diagnosis of BIOS bugs.
-I know of two machines that need it,
-and both of those machines have a BIOS update
-or a BIOS update in progress that make it unnecessary.
+WARNING: space prohibited between function name and open parenthesis '('
+#97: FILE: fs/sysv/super.c:504:
++	if (v7_sanity_check (sb, bh))
 
-thanks for caring.
+WARNING: space prohibited between function name and open parenthesis '('
+#115: FILE: fs/sysv/super.c:509:
++	if (v7_sanity_check (sb, bh))
 
-Len Brown, Intel Open Source Technology Center.
+WARNING: printk() should include KERN_ facility level
+#128: FILE: fs/sysv/super.c:521:
++	printk("VFS: could not find a valid V7 on %s.\n", sb->s_id);
+
+total: 2 errors, 6 warnings, 109 lines checked
+
+./patches/v7-add-support-for-non-pdp11-v7-filesystems.patch has style problems, please review.  If any of these errors
+are false positives report them to the maintainer, see
+CHECKPATCH in MAINTAINERS.
+
+
+
+
+--- a/fs/sysv/super.c~fs-sysv-superc-add-support-for-non-pdp11-v7-filesystems-checkpatch-fixes
++++ a/fs/sysv/super.c
+@@ -453,16 +453,16 @@ static int v7_sanity_check(struct super_
+ 
+ 	/* plausibility check on root inode: it is a directory,
+ 	   with a nonzero size that is a multiple of 16 */
+-	if ((bh2 = sb_bread(sb, 2)) == NULL) {
++	bh2 = sb_bread(sb, 2);
++	if (bh2 == NULL)
+ 		return 0;
+-	}
+ 
+ 	v7i = (struct sysv_inode *)(bh2->b_data + 64);
+ 	if ((fs16_to_cpu(sbi, v7i->i_mode) & ~0777) != S_IFDIR ||
+ 	    (fs32_to_cpu(sbi, v7i->i_size) == 0) ||
+ 	    (fs32_to_cpu(sbi, v7i->i_size) & 017) ||
+ 	    (fs32_to_cpu(sbi, v7i->i_size) > V7_NFILES *
+-             sizeof (struct sysv_dir_entry))) {
++	     sizeof(struct sysv_dir_entry))) {
+ 		brelse(bh2);
+ 		return 0;
+ 	}
+@@ -501,12 +501,12 @@ static int v7_fill_super(struct super_bl
+ 
+ 	/* Try PDP-11 UNIX */
+ 	sbi->s_bytesex = BYTESEX_PDP;
+-	if (v7_sanity_check (sb, bh))
++	if (v7_sanity_check(sb, bh))
+ 		goto detected;
+ 
+ 	/* Try PC/IX, v7/x86 */
+ 	sbi->s_bytesex = BYTESEX_LE;
+-	if (v7_sanity_check (sb, bh))
++	if (v7_sanity_check(sb, bh))
+ 		goto detected;
+ 
+ 	goto failed;
+@@ -518,7 +518,8 @@ detected:
+ 		return 0;
+ 
+ failed:
+-	printk("VFS: could not find a valid V7 on %s.\n", sb->s_id);
++	printk(KERN_ERR "VFS: could not find a valid V7 on %s.\n",
++		sb->s_id);
+ 	brelse(bh);
+ 	kfree(sbi);
+ 	return -EINVAL;
+_
 
