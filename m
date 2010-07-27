@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab0G0Mvl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 08:51:41 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:47341 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751975Ab0G0Mvj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 08:51:39 -0400
-X-Sasl-enc: 2sYAHTsdT6w/QQz6PvUh2Gohd04PgwK1b5OtPDrZr9Pr 1280235084
-Subject: Re: [PATCH 1/6] Add a dentry op to handle automounting rather than
- abusing follow_link() [ver #2]
-From: Ian Kent <raven@themaw.net>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <12883.1280220521@redhat.com>
-References: <1280202225.2944.20.camel@localhost>
-	 <1280157768.3569.14.camel@localhost> <1279944664.2944.8.camel@localhost>
-	 <20100722175847.5552.11520.stgit@warthog.procyon.org.uk>
-	 <17723.1279897759@redhat.com> <9168.1280153997@redhat.com>
-	 <30118.1280159695@redhat.com>  <12883.1280220521@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Jul 2010 20:51:18 +0800
-Message-ID: <1280235078.2946.21.camel@localhost>
+	id S1754474Ab0G0M6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 08:58:50 -0400
+Received: from tex.lwn.net ([70.33.254.29]:34178 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377Ab0G0M6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 08:58:45 -0400
+Date: Tue, 27 Jul 2010 06:58:42 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
+        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
+Message-ID: <20100727065842.40ae76c8@bike.lwn.net>
+In-Reply-To: <003701cb2d89$adae4580$090ad080$%szyprowski@samsung.com>
+References: <cover.1280151963.git.m.nazarewicz@samsung.com>
+	<743102607e2c5fb20e3c0676fadbcb93d501a78e.1280151963.git.m.nazarewicz@samsung.com>
+	<dc4bdf3e0b02c0ac4770927f72b6cbc3f0b486a2.1280151963.git.m.nazarewicz@samsung.com>
+	<20100727120841.GC11468@n2100.arm.linux.org.uk>
+	<003701cb2d89$adae4580$090ad080$%szyprowski@samsung.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 09:48 +0100, David Howells wrote:
-> Ian Kent <raven@themaw.net> wrote:
-> 
-> > Is this something others need?
-> 
-> Not as far as I know...  I think autofs is the only one doing out-of-kernel
-> automounting.
-> 
-> That doesn't mean it shouldn't be provided, though...
-> 
-> > Again, the exists vs not yet exists case for paths within indirect
-> > autofs mounts. At the moment I can just set the flag on all dentrys in
-> > the autofs fs and return EXDEV for non-empty directories in order to
-> > return the dentry as a path component. OTOH if the dentry is a mount
-> > embeded in the path and the mount fails we get a error return.
-> 
-> Seems redundant, but I'd say go with it for now.  Maybe we can offload
-> S_AUTOMOUNT to the dentry.
+On Tue, 27 Jul 2010 14:45:58 +0200
+Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 
-Yes, it is redundant but it is simple and works fine as long as I don't
-apply the patch to return -EREMOTE for non-terminal dentrys. I'd need to
-clear the flag, as below, on non-terminal dentrys if the -EREMOTE patch
-is needed.
-
+> > How does one obtain the CPU address of this memory in order for the CPU
+> > to access it?  
 > 
-> > I could clear the flag on non-root parent dentrys during mkdir if this
-> > is needed by others.
-> 
-> I'm not sure that would actually matter, since it would come to
-> follow_automount() at the same place.
-> 
-> Note that someone who tries to stat() with AT_NO_AUTOMOUNT will cause the call
-> to d_automount() to be suppressed and will see the negative or non-mounted
-> directory.  That might be okay for you.
+> Right, we did not cover such case. In CMA approach we tried to separate
+> memory allocation from the memory mapping into user/kernel space. Mapping
+> a buffer is much more complicated process that cannot be handled in a
+> generic way, so we decided to leave this for the device drivers. Usually
+> video processing devices also don't need in-kernel mapping for such
+> buffers at all.
 
-With one small correction to the autofs patch I've been able to
-successfully run the autofs Connectathon parser test without any user
-space changes for both the nobrowse (the usual case) and the browse
-(pre-created mount point directories) cases. The test consists of 230
-mounts, with success and fail cases, for both direct and indirect
-mounts. These mounts include various offset mount constructs as well. To
-consider the test a success I require the mounts to also expire
-correctly.
+Still...that *is* why I suggested an interface which would return both
+the DMA address and a kernel-space virtual address, just like the DMA
+API does...  Either that, or just return the void * kernel address and
+let drivers do the DMA mapping themselves.  Returning only the
+dma_addr_t address will make the interface difficult to use in many
+situations.
 
-There are more tests to run, such as the program mount test, and the
-often problematic submount test. Also, I have a submount based stress
-test.
-
-But, all in all, this is shaping up to be just what I need. Having one
-single place to call back to the daemon, where I don't need to play
-around with the inode mutex, makes me think this implementation will
-finally resolve my deadlock issue with indirect mounts.
-
-Ian
-
-
+jon
