@@ -1,66 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab0G0OmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 10:42:19 -0400
-Received: from vms173019pub.verizon.net ([206.46.173.19]:52389 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756088Ab0G0OmS (ORCPT
+	id S1756370Ab0G0Onk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 10:43:40 -0400
+Received: from complete.lackof.org ([198.49.126.79]:59161 "EHLO
+	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756146Ab0G0Oni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 10:42:18 -0400
-Message-id: <4C4EF03D.2000307@acm.org>
-Date: Tue, 27 Jul 2010 09:42:05 -0500
-From: Corey Minyard <minyard@acm.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9)
- Gecko/20100423 Thunderbird/3.0.4
-MIME-version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Myron Stowe <myron.stowe@hp.com>,
-        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipmi: Fix memleaking for add_smi when duplicating happen
-References: <4C4E3575.3020203@kernel.org> <4C4E3F03.4030707@acm.org>
- <4C4E6363.7060705@kernel.org>
-In-reply-to: <4C4E6363.7060705@kernel.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
+	Tue, 27 Jul 2010 10:43:38 -0400
+Date: Tue, 27 Jul 2010 08:43:27 -0600
+From: dann frazier <dannf@debian.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: ia64 hang/mca running gdb 'make check'
+Message-ID: <20100727144326.GC22945@lackof.org>
+References: <20100720173512.GF26783@ldl.fc.hp.com> <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com> <20100721030629.GA9987@lackof.org> <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com> <20100727071914.GB22945@lackof.org> <20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2010 11:41 PM, Yinghai Lu wrote:
-> On 07/26/2010 07:05 PM, Corey Minyard wrote:
->    
->> Please run this through checkpatch, as it has coding style violations.
->>      
-> yhlu@linux-siqj:~/xx/xx/kernel/tip/linux-2.6>  ./scripts/checkpatch.pl patches/ipmi_reg_size.patch
-> total: 0 errors, 0 warnings, 105 lines checked
->
-> patches/ipmi_reg_size.patch has no obvious style problems and is ready for submission.
-> yhlu@linux-siqj:~/xx/xx/kernel/tip/linux-2.6>
->    
-Sorry, you are right.
+On Tue, Jul 27, 2010 at 06:03:30PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 27 Jul 2010 01:19:15 -0600
+> dann frazier <dannf@debian.org> wrote:
+> 
+> > On Tue, Jul 20, 2010 at 09:19:50PM -0700, Hugh Dickins wrote:
+> > > On Tue, 20 Jul 2010, dann frazier wrote:
+> > > > On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > On Tue, 20 Jul 2010 11:35:12 -0600
+> > > > > dann frazier <dannf@debian.org> wrote:
+> > > > > 
+> > > > > > Debian's ia64 autobuilders have been experiencing system crashes while
+> > > > > > trying to run the gdb test suite:
+> > > > > >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
+> > > > > > 
+> > > > > > I was able to reproduce this w/ the latest git tree, and bisected it
+> > > > > > down to this commit, introduced in 2.6.32:
+> > > > > > 
+> > > > > >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
+> > > > > >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+> > > > > >   Date:   Mon Sep 21 17:03:34 2009 -0700
+> > > > > > 
+> > > > > >     mm: ZERO_PAGE without PTE_SPECIAL
+> > > > > > 
+> > > > > >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
+> > > > > >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
+> > > > > > 
+> > > > > >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
+> > > > > >     zero_pfn test built into one or another block of vm_normal_page().
+> > > > > > 
+> > > > > >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
+> > > > > >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
+> > > > > >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
+> > > > > >     that: it would have to take vm_flags to weed out some cases.
+> > > > > > 
+> > > > > > fyi, I found this to not be reproducible on SLES11 SP1 (which is
+> > > > > > 2.6.32-based). I compared the .configs and found that the relevant
+> > > > > > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
+> > > > > > reliably fails w/ 16KB pages.
+> > > > > > 
+> > > > > 
+> > > > > Sorry, I have no idea...
+> > > > > Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
+> > > > 
+> > > > 
+> > > > dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley 
+> > > > a0000001008784c0 d __ksymtab_empty_zero_page
+> > > > a000000100882688 d __kcrctab_empty_zero_page
+> > > > a000000100884ca4 r __kstrtab_empty_zero_page
+> > > > a000000100974000 D empty_zero_page
+> > > 
+> > > Thanks a lot for reporting this, but I too have no idea yet.
+> > > 
+> > > It is likely that the bug is not to be found in that 62eede62, but
+> > > rather in one of the preceding patches to mm/memory.c which 62eede62
+> > > was extending to ia64 and other architectures without PTE_SPECIAL.
+> > > 
+> > > I wonder, from looking at that gdb testsuite log, is it plausible
+> > > that all these hangs/crashes occurred when writing out a coredump?
+> > > Is that something you could check for us? or rule out the possibility.
+> > 
+> > Yep, seems so. I've reduced it down to this test case:
+> > 
+> > dannf@rx2600:~> cat > foo.c
+> > int leaf(void) {
+> >   return 0;
+> > }
+> > 
+> > int main(void) {
+> >   leaf();
+> > }
+> > dannf@rx2600:~> gcc -g foo.c -o foo
+> > dannf@rx2600:~> gdb ./foo 
+> > GNU gdb (GDB) SUSE (7.0-0.4.16)
+> > Copyright (C) 2009 Free Software Foundation, Inc.
+> > License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+> > This is free software: you are free to change and redistribute it.
+> > There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> > and "show warranty" for details.
+> > This GDB was configured as "ia64-suse-linux".
+> > For bug reporting instructions, please see:
+> > <http://www.gnu.org/software/gdb/bugs/>...
+> > Reading symbols from /home/dannf/foo...done.
+> > (gdb) break leaf
+> > Breakpoint 1 at 0x40000000000005c1: file foo.c, line 2.
+> > (gdb) run
+> > Starting program: /home/dannf/foo 
+> > Missing separate debuginfo for /lib/ld-linux-ia64.so.2
+> > Try: zypper install -C "debuginfo(build-id)=d5bfb8b5940e174d54b978ca515dc0df76c7618c"
+> > Missing separate debuginfo for /lib/libc.so.6.1
+> > Try: zypper install -C "debuginfo(build-id)=ca78657bd9173653d95f8504a313d2b6db8cb1d6"
+> > 
+> > Breakpoint 1, leaf () at foo.c:2
+> > 2	     return 0;
+> > (gdb) gcore /tmp/save
+> > 
+> > [bang]
+> > 
+> 
+> Does this happen on 2.6.34 or 2.6.35-rc kernel ?
 
->    
->> Also, this patch appears to fix bugs in addition to adding the print.
->> Can we have a separate patch for that?
->>      
-> in the comment log, i already mentioned that.
->
-> will separate it to twol
->    
-Ok, thanks
+I've been testing w/ a 2.6.35-rc4+, though it was originally reported
+on a 2.6.32.
 
->    
->> I'm also not clear on the reason for this.  I believe all this
->> information is already available in /proc/ipmi/<if#>/params.  I don't
->> think there is a strong reason to print it to the log.
->>      
-> then why there is printing for ACPI path and pci path?
->    
-Well, I'm not sure on this.  You are right, it is printed for those 
-paths and not for DMI or SPMI cases.  Printing too much information is 
-not generally a good idea, but this may be useful.  I guess to make it 
-consistent it would be best to add this.
+-- 
+dann frazier
 
--corey
