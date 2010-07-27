@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab0G0ABH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 20:01:07 -0400
-Received: from kroah.org ([198.145.64.141]:52254 "EHLO coco.kroah.org"
+	id S1755045Ab0G0ABv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 20:01:51 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59123 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755029Ab0G0AA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 20:00:56 -0400
-Date: Mon, 26 Jul 2010 17:00:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Patrick Pannuto <ppannuto@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Emese Revfy <re.emese@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: [PATCH 2/6] Driver core: Fix memory leak on bus_register error
- path
-Message-ID: <20100727000048.GB26421@kroah.com>
-References: <1279836546-26913-1-git-send-email-ppannuto@codeaurora.org>
- <1279836546-26913-3-git-send-email-ppannuto@codeaurora.org>
- <20100722234107.GB674@kroah.com>
- <4C4A3F9B.6040600@codeaurora.org>
- <4C4A4681.4070901@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4A4681.4070901@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751349Ab0G0ABt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 20:01:49 -0400
+Date: Tue, 27 Jul 2010 10:01:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sheng Yang <sheng@linux.intel.com>,
+        Dave McCracken <dcm@mccr.org>
+Subject: Re: linux-next: build failure after merge of the final tree (xen
+ tree related)
+Message-Id: <20100727100137.c9ec453c.sfr@canb.auug.org.au>
+In-Reply-To: <4C4DE64C.9070004@goop.org>
+References: <20100726152908.951a95b7.sfr@canb.auug.org.au>
+	<4C4DE64C.9070004@goop.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 06:48:49PM -0700, Patrick Pannuto wrote:
-> >>>  
-> >>>  	retval = kset_register(&priv->subsys);
-> >>> -	if (retval)
-> >>> +	if (retval) {
-> >>> +		kfree(priv->subsys.kobj.name);
-> >>
-> >> I don't think we want to bury the logic of how kobject names are handled
-> >> up here in the bus code, right?  Shouldn't the subsys kobject name be
-> >> able to be cleaned up on its own somehow instead?
-> >>
-> > 
-> > So, my first instinct was to use kobject_cleanup, but a few lines above:
-> > 
-> > 	priv->subsys.kobj.ktype = &bus_ktype;
-> > 
-> > and bus_ktype's definition, with the notable absence of a release method:
-> > 
-> > static struct kobj_type bus_ktype = {
-> > 	.sysfs_ops	= &bus_sysfs_ops,
-> > };
-> > 
-> > which in kobject_cleanup would yield:
-> > 
-> > 	struct kobj_type *t = get_ktype(kobj);
-> > 
-> > 	if (t && !t->release)
-> > 		pr_debug("kobject: '%s' (%p): does not have a release() "
-> > 			 "function, it is broken and must be fixed.\n",
-> > 			 kobject_name(kobj), kobj);
-> > 
-> > (if I understand everything correctly)
-> > 
-> 
-> Thinking about this more, how does this ever work "correctly"? If we
-> chase the 'normal' path from bus_unregister...
-> 
-> given bus->p->subsys.kobj.ktype = &bus_ktype
-> 
-> bus_unregister(struct bus_type *bus) {
->    kset_unregister(&bus->p->subsys) {
->       kobject_put(&k->kobj) {
->          kref_put(&kobj->kref, kobject_release) {
->             (assuming last ref)
->             kobject_cleanup(container_of(kref, struct kobject, kref)) {
->                	struct kobj_type *t = get_ktype(kobj);
-> 
-> 		if (t && !t->release)
-> 			pr_debug("kobject: '%s' (%p): does not have a release() "
-> 				 "function, it is broken and must be fixed.\n",
-> 				 kobject_name(kobj), kobj);
-> 
-> Wouldn't this get hit every time a bus unregisters?  I feel like I'm
-> missing something here?
+--Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You are, busses are wierd :)
+Hi Jeremy,
 
-I can't recall off the top of my head, but it all works out ok in the
-end.
+On Mon, 26 Jul 2010 12:47:24 -0700 Jeremy Fitzhardinge <jeremy@goop.org> wr=
+ote:
+>
+>   On 07/25/2010 10:29 PM, Stephen Rothwell wrote:
+> > Hi all,
+> >
+> > After merging the final tree, today's linux-next build (i386 defconfig)
+> > failed like this:
+>=20
+> Both these build failures should be fixed in upstream/xen now.
 
-thanks,
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-greg k-h
+--Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMTiHhAAoJEDMEi1NhKgbsHMUH/jh5hnfncj8hkR8u5rWvGimu
+uGH3avtgqa5USHibgj/Mi8418JnMuq3joAnfTYhtJa7AnnQe8wcTjpjtvuQKsjj9
+/B0eHWugQGz9Ott8+7bLXzJ8a52Ccy1VJULaieUXR7T4ybbWKgyo0pcCYJBjg+++
+klekRzsjVdlsG4Gfeb+mkzAhaF3mvkxsxc0EmJCY2qnMWfAjB/raVyDzG6C7+AwR
+jK2WzhTajPImDyiSdJJAzfqKyVspHPac993eCQNliiRQD4t77/HIDnc7SMP/peBt
+sEiVEq+lDYtQpte1Ak7hCwUcoAvgsxc/WtfUvwtx+RuMiGMVZFuADthNtE+V5rQ=
+=Hkqd
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Jul_2010_10_01_37_+1000_NDkhPZOr+/PhG_+t--
