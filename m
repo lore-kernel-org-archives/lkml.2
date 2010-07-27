@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab0G0Sdc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 14:33:32 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35983 "EHLO ogre.sisk.pl"
+	id S1753452Ab0G0Se3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 14:34:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab0G0Sda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 14:33:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Subject: Re: [RFC][PATCH] PCI / PCIe: Ask BIOS for control of all native services simultaneously
-Date: Tue, 27 Jul 2010 20:31:15 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <201007250105.23610.rjw@sisk.pl> <4C4E2BBD.7080003@jp.fujitsu.com>
-In-Reply-To: <4C4E2BBD.7080003@jp.fujitsu.com>
+	id S1751915Ab0G0Se1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 14:34:27 -0400
+Date: Tue, 27 Jul 2010 14:24:04 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 0/15] STAGING: add lirc device drivers
+Message-ID: <20100727182404.GE9465@redhat.com>
+References: <20100726232546.GA21225@redhat.com>
+ <4C4F0244.2070803@redhat.com>
+ <20100727160955.GA7528@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007272031.15517.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727160955.GA7528@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 27, 2010, Kenji Kaneshige wrote:
-> Hi,
+On Tue, Jul 27, 2010 at 09:09:56AM -0700, Greg KH wrote:
+> On Tue, Jul 27, 2010 at 12:59:00PM -0300, Mauro Carvalho Chehab wrote:
+> > Em 26-07-2010 20:25, Jarod Wilson escreveu:
 > 
-> If I understand your patch correctly, the PCIe port services work
-> only when firmware grants all the controls for port services with
-> your patch. Correct?
+> Hm, Jarod, you forgot to cc: the staging maintainer, so I missed these
+> :)
 
-Yes, that's correct.
+D'oh, sorry, yeah, realized that about 10 minutes after I sent everything.
+Figured I'd ping you if you hadn't said anything about 'em in a day or
+three.
 
-> I think this will break PCIe services currently working. For example,
-> firmware doesn't grant PCIe AER control on my hardware. On the other
-> hand, firmware grants PCIe native hot-plug control on the same machine.
-> So I think PCIe hot-plug will not work with your patch.
-
-It won't, but the question is if it should.  Namely, PCIe native hot-plug
-requires control of the PCIe capability structure, which is also used for
-AER, so the BIOS granting control of the PCIe capability structure and
-not granting control of AER is arguably broken.
-
-> Another example, what would happen on the platform that doesn't have any PCIe
-> hot-plug slot? I guess firmware doesn't grant PCIe native hot-plug control on
-> that environment. So I think all the other PCIe port services would
-> not work on such platform.
-
-You would be surprised. :-)
-
-> My suggestion is that
+> > Greg,
+> > 
+> > It is probably simpler to merge those files via my tree, as they depend
+> > on some changes scheduled for 2.6.36.
+> > 
+> > Would it be ok for you if I merge them from my tree?
 > 
-> (1) Query all controls for PCIe port services and see what controls
->      will be granted to OS by firmware.
-
-We do that already.
-
-> (2) Request all the controls acquired in step (1) at the same time.
-
-Yes, we can do that, although it would complicate things quite a bit and I'm
-not sure that's _really_ necessary, given that all of the native services
-require access to the PCIe capability structure and once _that_ is granted,
-the BIOS has no reason not to grant any other bits.
-
-> (3) Create PCIe port services for those controls.
-
-I don't really think (3) is necessary in that case.  It should be OK not to
-load a service driver, in which case the service will simply be disabled.
-
-> What do you think about this?
+> No objection from me for them to go through your tree.
 > 
-> I think there is still a problem that needs to be addressed. The problem
-> is that if ACPIPHP (ACPI based hot-plug driver) is required for PCIe hot-
-> plug, all the PCIe port services needs to be disabled. I don't think it
-> is acceptable for ACPIPHP users.
+> Do you want me to handle the cleanup and other fixes after they go into
+> the tree, or do you want to also handle them as well (either is fine
+> with me.)
 
-I'm not sure what you mean.  The $subject patch (rather the last version of it
-at https://patchwork.kernel.org/patch/114127/) doesn't change the existing
-behavior in that respect other than PCIeHP will not be enabled without PME and
-possibly AER.
+Note that I've got a git tree I've been maintaining the lirc drivers in
+for a while, so whomever is ultimately the gateway, I can also stage
+cleanups there -- I'll certainly be pushing any cleanups I do on the lirc
+drivers there prior to sending along for upstream, or else I'm liable to
+lose track of them... :)
 
-Certainly, though, our current behavior is wrong, since all of the port service
-drivers request OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL on their own, which leads
-to problems in real systems.
+http://git.kernel.org/?p=linux/kernel/git/jarod/linux-2.6-lirc.git
 
-Thanks,
-Rafael
+-- 
+Jarod Wilson
+jarod@redhat.com
+
