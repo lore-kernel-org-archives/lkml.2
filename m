@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab0G0Okn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 10:40:43 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:60991 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754672Ab0G0Okm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 10:40:42 -0400
-Date: Tue, 27 Jul 2010 15:40:26 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
-	reclaim is encountering dirty pages
-Message-ID: <20100727144026.GC5300@csn.ul.ie>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-9-git-send-email-mel@csn.ul.ie> <20100726072832.GB13076@localhost> <20100726092616.GG5300@csn.ul.ie> <20100726112709.GB6284@localhost> <20100726125717.GS5300@csn.ul.ie> <20100726131008.GE11947@localhost> <20100727133513.GZ5300@csn.ul.ie> <20100727142412.GA4771@localhost> <20100727143423.GA5057@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100727143423.GA5057@localhost>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1756330Ab0G0OmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 10:42:19 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:52389 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756088Ab0G0OmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 10:42:18 -0400
+Message-id: <4C4EF03D.2000307@acm.org>
+Date: Tue, 27 Jul 2010 09:42:05 -0500
+From: Corey Minyard <minyard@acm.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9)
+ Gecko/20100423 Thunderbird/3.0.4
+MIME-version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Myron Stowe <myron.stowe@hp.com>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Fix memleaking for add_smi when duplicating happen
+References: <4C4E3575.3020203@kernel.org> <4C4E3F03.4030707@acm.org>
+ <4C4E6363.7060705@kernel.org>
+In-reply-to: <4C4E6363.7060705@kernel.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 10:34:23PM +0800, Wu Fengguang wrote:
-> > If you plan to keep wakeup_flusher_threads(), a simpler form may be
-> > sufficient, eg.
-> > 
-> >         laptop_mode ? 0 : (nr_dirty * 16)
-> 
-> This number is not sensitive because the writeback code may well round
-> it up to some more IO efficient value (currently 4MB). AFAIK the
-> nr_pages parameters passed by all existing flusher callers are some
-> rule-of-thumb value, and far from being an exact number.
-> 
+On 07/26/2010 11:41 PM, Yinghai Lu wrote:
+> On 07/26/2010 07:05 PM, Corey Minyard wrote:
+>    
+>> Please run this through checkpatch, as it has coding style violations.
+>>      
+> yhlu@linux-siqj:~/xx/xx/kernel/tip/linux-2.6>  ./scripts/checkpatch.pl patches/ipmi_reg_size.patch
+> total: 0 errors, 0 warnings, 105 lines checked
+>
+> patches/ipmi_reg_size.patch has no obvious style problems and is ready for submission.
+> yhlu@linux-siqj:~/xx/xx/kernel/tip/linux-2.6>
+>    
+Sorry, you are right.
 
-I get that it's a rule of thumb but decided I would still pass in some value
-related to nr_dirty that was bounded in some manner.  Currently, that bound
-is 4MB but maybe it should have been bound to MAX_WRITEBACK_PAGES (which is
-4MB for x86, but could be anything depending on the base page size).
+>    
+>> Also, this patch appears to fix bugs in addition to adding the print.
+>> Can we have a separate patch for that?
+>>      
+> in the comment log, i already mentioned that.
+>
+> will separate it to twol
+>    
+Ok, thanks
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+>    
+>> I'm also not clear on the reason for this.  I believe all this
+>> information is already available in /proc/ipmi/<if#>/params.  I don't
+>> think there is a strong reason to print it to the log.
+>>      
+> then why there is printing for ACPI path and pci path?
+>    
+Well, I'm not sure on this.  You are right, it is printed for those 
+paths and not for DMI or SPMI cases.  Printing too much information is 
+not generally a good idea, but this may be useful.  I guess to make it 
+consistent it would be best to add this.
+
+-corey
