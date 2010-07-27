@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab0G0UVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 16:21:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46433 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab0G0UVk (ORCPT
+	id S1752688Ab0G0UiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 16:38:11 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:59539 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab0G0UiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 16:21:40 -0400
-Date: Tue, 27 Jul 2010 16:21:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] bdi: Use parent filesystem BDI for inodes not
- capable of writeback
-Message-ID: <20100727202129.GA28641@infradead.org>
-References: <1280250301-17603-1-git-send-email-jack@suse.cz>
- <1280250301-17603-2-git-send-email-jack@suse.cz>
- <20100727170903.GA9034@infradead.org>
- <20100727172437.GE6820@quack.suse.cz>
- <20100727172731.GA25727@infradead.org>
- <20100727180131.GG6820@quack.suse.cz>
- <20100727201207.GA16335@infradead.org>
+	Tue, 27 Jul 2010 16:38:08 -0400
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, vgoyal@redhat.com
+Subject: Re: [PATCH] Enable kdump with EFI boot
+References: <C0CB2D0F31868Bindou.takao@jp.fujitsu.com>
+	<20100727111029.GA6303@hmsreliant.think-freely.org>
+	<m1eieolsy6.fsf@fess.ebiederm.org>
+	<C1CB2DC4DB0586indou.takao@jp.fujitsu.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 27 Jul 2010 13:38:00 -0700
+In-Reply-To: <C1CB2DC4DB0586indou.takao@jp.fujitsu.com> (Takao Indoh's message of "Tue\, 27 Jul 2010 15\:49\:42 -0400")
+Message-ID: <m1pqy8ek47.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727201207.GA16335@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 04:12:07PM -0400, Christoph Hellwig wrote:
-> On Tue, Jul 27, 2010 at 08:01:31PM +0200, Jan Kara wrote:
-> > > It shouldn't.  Block device nodes are on the bdev filesystems, and
-> >   Ok, so inode->i_sb->s_bdi will actually point to noop_backing_dev_info
-> > as set by set_anon_super(). Or am I completely out?
-> 
-> I think you're right.  This seems rather bad if it's indeed true. I'll
-> quickly verify it using Dave's new tracing once I've built a block
-> tree kernel.
+Takao Indoh <indou.takao@jp.fujitsu.com> writes:
 
-Indeed it does.  So using ->s_bdi actually is wrong for the block
-device node, given that it does set up the bdevfs inode's 
-backing_dev_info to the proper one, but can't actually do it for
-the per-sb one.
+> If SetVirtualAddressMap is not called in 1st kernel, EFI system table 
+> keeps its physical address, so it's ok, my patch is not needed. Did
+> anyone post a patch to do that, or anyone are trying that?
+
+Not that I know of.  What I have heard people doing is not using any
+of the kernel efi support at all, in which case everything just works.
+Certainly that is what my friends at sgi are doing.
+
+Eric
