@@ -1,49 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab0G0B5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 21:57:40 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51743 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab0G0B5i convert rfc822-to-8bit (ORCPT
+	id S1751949Ab0G0CGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 22:06:13 -0400
+Received: from vms173007pub.verizon.net ([206.46.173.7]:48920 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496Ab0G0CGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 21:57:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100726.183808.15223674.davem@davemloft.net>
-References: <AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com> 
-	<20100726.154854.35052662.davem@davemloft.net> <AANLkTikpON7WUkTLrnW4y2kghM=H8cLCAFst08S3cL_Z@mail.gmail.com> 
-	<20100726.183808.15223674.davem@davemloft.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 26 Jul 2010 19:57:17 -0600
-X-Google-Sender-Auth: 1UzqRGbK4ITRZp7ESho3REwrexE
-Message-ID: <AANLkTi=Kw78W0zuuQ0vzO7rXXVkTDf0D5w8n44hV_FWt@mail.gmail.com>
-Subject: Re: [PATCH v3] of: Create asm-generic/of.h and provide default 
-	of_node_to_nid()
-To: David Miller <davem@davemloft.net>
-Cc: sam@ravnborg.org, sfr@canb.auug.org.au, monstr@monstr.eu,
-        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        benh@kernel.crashing.org, sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 26 Jul 2010 22:06:11 -0400
+Message-id: <4C4E3F03.4030707@acm.org>
+Date: Mon, 26 Jul 2010 21:05:55 -0500
+From: Corey Minyard <minyard@acm.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9)
+ Gecko/20100423 Thunderbird/3.0.4
+MIME-version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Myron Stowe <myron.stowe@hp.com>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Fix memleaking for add_smi when duplicating happen
+References: <4C4E3575.3020203@kernel.org>
+In-reply-to: <4C4E3575.3020203@kernel.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 7:38 PM, David Miller <davem@davemloft.net> wrote:
-> From: Grant Likely <grant.likely@secretlab.ca>
-> Date: Mon, 26 Jul 2010 16:51:01 -0600
->
->> Indeed.  I looked at it briefly, but it wasn't immediately clear what
->> the impact would be to switch powerpc over to -1, and it looked to me
->> like sparc depends on -1 to signify no node association.
->
-> Kernel wide, NUMA interfaces tend to take "-1" to mean "any node."
->
-> I had looked over the powerpc cases, and besides 1 or 2 strange
-> locations the powerpc call sites were ready to handle -1.
+Please run this through checkpatch, as it has coding style violations.
 
-Okay, well let me rework the patch to make -1 the default and let
-powerpc override it.  A follow-on patch can fix up the powerpc usage
-of 0.
+Also, this patch appears to fix bugs in addition to adding the print.  
+Can we have a separate patch for that?
 
-g.
+I'm also not clear on the reason for this.  I believe all this 
+information is already available in /proc/ipmi/<if#>/params.  I don't 
+think there is a strong reason to print it to the log.
+
+-corey
+
+On 07/26/2010 08:25 PM, Yinghai Lu wrote:
+> also print out the reg spacing and size for spmi and smbios.
+> so bios guys could have idea to make them consistent.
+>
+> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
+>
+> ---
+>   drivers/char/ipmi/ipmi_si_intf.c |   47 ++++++++++++++++++++++++++++++++-------
+>   1 file changed, 39 insertions(+), 8 deletions(-)
+>
+> Index: linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/char/ipmi/ipmi_si_intf.c
+> +++ linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -1804,9 +1804,12 @@ static int hotmod_handler(const char *va
+>   				info->irq_setup = std_irq_setup;
+>   			info->slave_addr = ipmb;
+>
+> -			if (!add_smi(info))
+> +			if (!add_smi(info)) {
+>   				if (try_smi_init(info))
+>   					cleanup_one_si(info);
+> +			} else {
+> +				kfree(info);
+> +			}
+>   		} else {
+>   			/* remove */
+>   			struct smi_info *e, *tmp_e;
+> @@ -1890,9 +1893,12 @@ static __devinit void hardcode_find_bmc(
+>   			info->irq_setup = std_irq_setup;
+>   		info->slave_addr = slave_addrs[i];
+>
+> -		if (!add_smi(info))
+> +		if (!add_smi(info)) {
+>   			if (try_smi_init(info))
+>   				cleanup_one_si(info);
+> +		} else {
+> +			kfree(info);
+> +		}
+>   	}
+>   }
+>
+> @@ -2088,7 +2094,13 @@ static __devinit int try_init_spmi(struc
+>   	}
+>   	info->io.addr_data = spmi->addr.address;
+>
+> -	add_smi(info);
+> +	pr_info("ipmi_si: SPMI: %s %#lx regsize %d spacing %d irq %d\n",
+> +		 (info->io.addr_type == IPMI_IO_ADDR_SPACE) ? "io" : "mem",
+> +		 info->io.addr_data, info->io.regsize, info->io.regspacing,
+> +		 info->irq);
+> +
+> +	if (add_smi(info))
+> +		kfree(info);
+>
+>   	return 0;
+>   }
+> @@ -2204,7 +2216,10 @@ static int __devinit ipmi_pnp_probe(stru
+>   		 res, info->io.regsize, info->io.regspacing,
+>   		 info->irq);
+>
+> -	return add_smi(info);
+> +	if (add_smi(info))
+> +		goto err_free;
+> +
+> +	return 0;
+>
+>   err_free:
+>   	kfree(info);
+> @@ -2362,7 +2377,13 @@ static __devinit void try_init_dmi(struc
+>   	if (info->irq)
+>   		info->irq_setup = std_irq_setup;
+>
+> -	add_smi(info);
+> +	pr_info("ipmi_si: SMBIOS: %s %#lx regsize %d spacing %d irq %d\n",
+> +		 (info->io.addr_type == IPMI_IO_ADDR_SPACE) ? "io" : "mem",
+> +		 info->io.addr_data, info->io.regsize, info->io.regspacing,
+> +		 info->irq);
+> +
+> +	if (add_smi(info))
+> +		kfree(info);
+>   }
+>
+>   static void __devinit dmi_find_bmc(void)
+> @@ -2468,7 +2489,10 @@ static int __devinit ipmi_pci_probe(stru
+>   		&pdev->resource[0], info->io.regsize, info->io.regspacing,
+>   		info->irq);
+>
+> -	return add_smi(info);
+> +	if (add_smi(info))
+> +		kfree(info);
+> +
+> +	return 0;
+>   }
+>
+>   static void __devexit ipmi_pci_remove(struct pci_dev *pdev)
+> @@ -2581,7 +2605,12 @@ static int __devinit ipmi_of_probe(struc
+>
+>   	dev_set_drvdata(&dev->dev, info);
+>
+> -	return add_smi(info);
+> +	if (add_smi(info)) {
+> +		kfree(info);
+> +		return -EBUSY;
+> +	}
+> +
+> +	return 0;
+>   }
+>
+>   static int __devexit ipmi_of_remove(struct of_device *dev)
+> @@ -3018,6 +3047,8 @@ static __devinit void default_find_bmc(v
+>   				info->io.addr_data);
+>   			} else
+>   				cleanup_one_si(info);
+> +		} else {
+> +			kfree(info);
+>   		}
+>   	}
+>   }
+> @@ -3045,7 +3076,7 @@ static int add_smi(struct smi_info *new_
+>   			si_to_str[new_smi->si_type]);
+>   	mutex_lock(&smi_infos_lock);
+>   	if (!is_new_interface(new_smi)) {
+> -		printk(KERN_CONT PFX "duplicate interface\n");
+> +		printk(KERN_CONT " duplicate interface\n");
+>   		rv = -EBUSY;
+>   		goto out_err;
+>   	}
+>    
+
