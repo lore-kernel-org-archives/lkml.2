@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab0G0QfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 12:35:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43378 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab0G0QfS convert rfc822-to-8bit (ORCPT
+	id S1751695Ab0G0QjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 12:39:00 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53360 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab0G0Qi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 12:35:18 -0400
+	Tue, 27 Jul 2010 12:38:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=lZ1uPYCWz7zjgnPWs9TZQt072rzWumGt4sl4uHKyIIQtseLJ4UXi3ehjeS6kO8pEjS
-         QVGRwbAk/0mZTDuHy8fZjZCqYSJ6Y+gXARqc39biziq9eMkkPT8FnE8/pGCO+FVByApH
-         hw68U5j2ksEIp3VmTZpb9c1y2CoC+zHKlofvY=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=G1loS+DakABq2JadwGe+zZtGceqF75FTyAs0+++SUjrcYIsvfW7tbMmwUuqW+zNI1j
+         hVh4vNl/jQzKKODBpCjmtm7aHtBQgTMKGsfHoxi12MXpTnkU7YKKuz75sDxuQjiDGovu
+         U0+xhe5FY+yzlfaEh5rOcPAdpvgZOIcd+C/q0=
+Date: Tue, 27 Jul 2010 09:38:52 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC PATCH] sysrq: don't hold the sysrq_key_table_lock during
+ the handler
+Message-ID: <20100727163852.GA5961@core.coreip.homeip.net>
+References: <1280138042-1576-1-git-send-email-dfeng@redhat.com>
+ <20100726105148.GB14198@hmsreliant.think-freely.org>
+ <20100726174153.GD14609@core.coreip.homeip.net>
+ <20100726203420.GB18789@hmsreliant.think-freely.org>
+ <20100727081552.GB32084@core.coreip.homeip.net>
+ <20100727115754.GC6303@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-In-Reply-To: <4C4F0032.1010706@gmail.com>
-References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>
-	<4C4F0032.1010706@gmail.com>
-Date: Tue, 27 Jul 2010 17:35:16 +0100
-Message-ID: <AANLkTin+a3V5Lydg__XGZwTDZbUKqeyHY4X57bBpc0CS@mail.gmail.com>
-Subject: Re: Small typo in kernel [current source from git] .config option
-From: trapDoor <trapdoor6@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727115754.GC6303@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 4:50 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 07/27/2010 07:46 AM, trapDoor wrote:
->>
->> Hello,
->> I've just got lucky and found this little typo under "Power management
->> and ACPI options"  --->  "ACPI (Advanced Configuration and Power
->> Interface) Support":
->> hArdware Error Device
->>
->> Here is my fix:
->> Hardware Error Device
->> :)
->>
->> BTW, first time I've used nconfig instead of menuconfig. And I like it.
->>
->
-> probably should create a patch, and send it to trivial@kernel.org
->
-> Justin P. Mattock
->
+On Tue, Jul 27, 2010 at 07:57:54AM -0400, Neil Horman wrote:
+> On Tue, Jul 27, 2010 at 01:15:52AM -0700, Dmitry Torokhov wrote:
+> > On Mon, Jul 26, 2010 at 04:34:20PM -0400, Neil Horman wrote:
+> > > On Mon, Jul 26, 2010 at 10:41:54AM -0700, Dmitry Torokhov wrote:
+> > > > On Mon, Jul 26, 2010 at 06:51:48AM -0400, Neil Horman wrote:
+> > > > > On Mon, Jul 26, 2010 at 05:54:02PM +0800, Xiaotian Feng wrote:
+> > > > > <snip>
+> > > > > 
+> > > > > This creates the possibility of a race in the handler.  Not that it happens
+> > > > > often, but sysrq keys can be registered and unregistered dynamically.  If that
+> > > > > lock isn't held while we call the keys handler, the code implementing that
+> > > > > handler can live in a module that gets removed while its executing, leading to
+> > > > > an oops, etc.  I think the better solution would be to use an rcu lock here.
+> > > > 
+> > > > I'd simply changed spinlock to a mutex.
+> > > > 
+> > > I don't think you can do that safely in this path, as sysrqs will be looked up
+> > > in both process (echo t > /proc/sysrq-trigger) context and in interrupt
+> > > (alt-sysrq-t) context.  If a mutex is locked and you try to take it in interrupt
+> > > context, you get a sleeping-in-interrupt panic IIRC
+> > > 
+> > 
+> > Yes, indeed. But then even RCU will not really help us since keyboard
+> > driver will have inpterrupts disabled anyways.
+> > 
+> 
+> Hm, thats true.  I suppose the right thing to do then is grab a reference on any
+> sysrq implemented within code that might be considered transient before
+> releasing the lock.  I've not tested this patch out, but it should do what we
+> need, in that it allows us to release the lock without having to worry about the
+> op list changing underneath us, or having the module with the handler code
+> dissappear
+> 
 
-Sure, but I don't know which script generates that part of config and
-... how to do the patch :| (Sorry, I'm not even a greenhorn on the
-programming field).
-Just cc-eding trivial@kernel.org for now ..
+That would only help if you also offload execution to a workqueue (which
+may not be desirable in all cases) since keyboard driver^H^H input core
+still calls into SysRq code holding [another] spinlock with interrupts
+disabled.
 
 -- 
-Regards
-trapDoor
+Dmitry
