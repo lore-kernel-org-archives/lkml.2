@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751242Ab0G0EGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 00:06:21 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:43206 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750704Ab0G0EGU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 00:06:20 -0400
-Message-ID: <4C4E5B1E.4040004@st.com>
-Date: Tue, 27 Jul 2010 09:35:50 +0530
-From: Viresh KUMAR <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.11) Gecko/20100711 Lightning/1.0b1 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, armando.visconti@st.com,
-        shiraz.hashim@st.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Subject: Re: [PATCH resend] Watchdog: Adding support for ARM Primecell	SP805
- Watchdog
-References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com> <4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be> <4C285A72.7030303@st.com> <20100628162430.GN3788@infomag.iguana.be> <20100718193425.GD24707@n2100.arm.linux.org.uk> <20100726184601.GS11857@infomag.iguana.be>
-In-Reply-To: <20100726184601.GS11857@infomag.iguana.be>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750985Ab0G0EOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 00:14:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38870 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770Ab0G0EOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 00:14:22 -0400
+Date: Tue, 27 Jul 2010 14:14:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Renninger <trenn@suse.de>, Dave Jones <davej@redhat.com>
+Subject: linux-next: manual merge of the tip tree with the cpufreq tree
+Message-Id: <20100727141413.2c67e158.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Jul_2010_14_14_13_+1000_=f_lfSfh_ROnWiMB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/27/2010 12:16 AM, Wim Van Sebroeck wrote:
-> Hi All,
-> 
->>>> > > > Have you reviewed this patch or still need to look at it?
->>> > > 
->>> > > I'm chasing another bug and must admit I almost forgot about this one.
->>> > > So, yes, I still need to look at this one.
->> > 
->> > Any news on this - its still sitting in the patch system since May 31st...
->> > What do I do about it?
-> Patch looks OK. Will add it to my linux-2.6-watchdog-next tree this week.
+--Signature=_Tue__27_Jul_2010_14_14_13_+1000_=f_lfSfh_ROnWiMB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Wim,
+Hi all,
 
-I will send V2 of this patch, which will include modification as suggested by
-Linus walleij.
+Today's linux-next merge of the tip tree got a conflict in
+drivers/cpufreq/cpufreq.c between commit
+1f247ccc157ce29b4cd1e1b9cbe3cce8f24522bf ("[CPUFREQ] x86 cpufreq: Make
+trace_power_frequency cpufreq driver independent") from the cpufreq tree
+and commit 4c21adf26f8fcf86a755b9b9f55c2e9fd241e1fb ("x86 cpufreq, perf:
+Make trace_power_frequency cpufreq driver independent") from the tip tree.
 
-Viresh.
+Slightly different versions of the same patch.  I used the cpufreq tree
+version of this file (it has an added dprintk() and fixed whitespace).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__27_Jul_2010_14_14_13_+1000_=f_lfSfh_ROnWiMB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMTl0VAAoJEDMEi1NhKgbs77MH/32C6JGurmiP6D0E+bVhpETM
+IeTNgc7bzXzOtvvBwhdYfRqzbdhtZfBSEZdOWv0Ev78vNEBTjSAXSQWTunVuzfNB
+ybm3CA4oNTesWOvulA2CDNTh9F4zHzKl7A4oKmHZl3cRVrYNotoZWuIG9sQB5/US
+l4VplQe5KP1RzhYp2hUuUumVUCwhblkfbuvtfB5jw66DqvX2ebwdV4EsU/dA+gYF
+WBQZLKAA5zqON01ILp8Qf8FYiCIYSq3H0r23IRtdNCA8C7zGO1+hMarqA5PDMcGM
+sXftbwIrOVUAZ7QV8hAkT2MiRx7/W19JtzmFLd6TCv6vZ9A85JJ3fWzS+avIhjM=
+=sBKC
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Jul_2010_14_14_13_+1000_=f_lfSfh_ROnWiMB--
