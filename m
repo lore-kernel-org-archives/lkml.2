@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab0G0JIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 05:08:24 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:39220 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab0G0JIV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 05:08:21 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 27 Jul 2010 18:03:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: dann frazier <dannf@debian.org>
-Cc: Hugh Dickins <hughd@google.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: ia64 hang/mca running gdb 'make check'
-Message-Id: <20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100727071914.GB22945@lackof.org>
-References: <20100720173512.GF26783@ldl.fc.hp.com>
-	<20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100721030629.GA9987@lackof.org>
-	<alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
-	<20100727071914.GB22945@lackof.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755972Ab0G0JMt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 05:12:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32783 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754115Ab0G0JMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 05:12:47 -0400
+Date: Tue, 27 Jul 2010 11:12:20 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Dave Chinner <david@fromorbit.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] writeback: reduce calls to global_page_state in
+ balance_dirty_pages()
+Message-ID: <20100727091220.GD3358@quack.suse.cz>
+References: <20100711020656.340075560@intel.com>
+ <20100711021748.735126772@intel.com>
+ <20100726151946.GH3280@quack.suse.cz>
+ <20100727035941.GA15007@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727035941.GA15007@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 01:19:15 -0600
-dann frazier <dannf@debian.org> wrote:
-
-> On Tue, Jul 20, 2010 at 09:19:50PM -0700, Hugh Dickins wrote:
-> > On Tue, 20 Jul 2010, dann frazier wrote:
-> > > On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > > On Tue, 20 Jul 2010 11:35:12 -0600
-> > > > dann frazier <dannf@debian.org> wrote:
-> > > > 
-> > > > > Debian's ia64 autobuilders have been experiencing system crashes while
-> > > > > trying to run the gdb test suite:
-> > > > >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
-> > > > > 
-> > > > > I was able to reproduce this w/ the latest git tree, and bisected it
-> > > > > down to this commit, introduced in 2.6.32:
-> > > > > 
-> > > > >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
-> > > > >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-> > > > >   Date:   Mon Sep 21 17:03:34 2009 -0700
-> > > > > 
-> > > > >     mm: ZERO_PAGE without PTE_SPECIAL
-> > > > > 
-> > > > >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
-> > > > >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
-> > > > > 
-> > > > >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
-> > > > >     zero_pfn test built into one or another block of vm_normal_page().
-> > > > > 
-> > > > >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
-> > > > >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
-> > > > >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
-> > > > >     that: it would have to take vm_flags to weed out some cases.
-> > > > > 
-> > > > > fyi, I found this to not be reproducible on SLES11 SP1 (which is
-> > > > > 2.6.32-based). I compared the .configs and found that the relevant
-> > > > > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
-> > > > > reliably fails w/ 16KB pages.
-> > > > > 
-> > > > 
-> > > > Sorry, I have no idea...
-> > > > Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
+On Tue 27-07-10 11:59:41, Wu Fengguang wrote:
+> > > This patch slightly changes behavior by replacing clip_bdi_dirty_limit()
+> > > with the explicit check (nr_reclaimable + nr_writeback >= dirty_thresh)
+> > > to avoid exceeding the dirty limit. Since the bdi dirty limit is mostly
+> > > accurate we don't need to do routinely clip. A simple dirty limit check
+> > > would be enough.
 > > > 
+> > > The check is necessary because, in principle we should throttle
+> > > everything calling balance_dirty_pages() when we're over the total
+> > > limit, as said by Peter.
 > > > 
-> > > dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley 
-> > > a0000001008784c0 d __ksymtab_empty_zero_page
-> > > a000000100882688 d __kcrctab_empty_zero_page
-> > > a000000100884ca4 r __kstrtab_empty_zero_page
-> > > a000000100974000 D empty_zero_page
-> > 
-> > Thanks a lot for reporting this, but I too have no idea yet.
-> > 
-> > It is likely that the bug is not to be found in that 62eede62, but
-> > rather in one of the preceding patches to mm/memory.c which 62eede62
-> > was extending to ia64 and other architectures without PTE_SPECIAL.
-> > 
-> > I wonder, from looking at that gdb testsuite log, is it plausible
-> > that all these hangs/crashes occurred when writing out a coredump?
-> > Is that something you could check for us? or rule out the possibility.
+> > > We now set and clear dirty_exceeded not only based on bdi dirty limits,
+> > > but also on the global dirty limits. This is a bit counterintuitive, but
+> > > the global limits are the ultimate goal and shall be always imposed.
+> >   Thinking about this again - what you did is rather big change for systems
+> > with more active BDIs. For example if I have two disks sda and sdb and
+> > write for some time to sda, then dirty limit for sdb gets scaled down.
+> > So when we start writing to sbd we'll heavily throttle the threads until
+> > the dirty limit for sdb ramps up regardless of how far are we to reach the
+> > global limit...
 > 
-> Yep, seems so. I've reduced it down to this test case:
+> The global threshold check is added in place of clip_bdi_dirty_limit()
+> for safety and not intended as a behavior change. If ever leading to
+> big behavior change and regression, that it would be indicating some
+> too permissive per-bdi threshold calculation.
 > 
-> dannf@rx2600:~> cat > foo.c
-> int leaf(void) {
->   return 0;
-> }
-> 
-> int main(void) {
->   leaf();
-> }
-> dannf@rx2600:~> gcc -g foo.c -o foo
-> dannf@rx2600:~> gdb ./foo 
-> GNU gdb (GDB) SUSE (7.0-0.4.16)
-> Copyright (C) 2009 Free Software Foundation, Inc.
-> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-> This is free software: you are free to change and redistribute it.
-> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-> and "show warranty" for details.
-> This GDB was configured as "ia64-suse-linux".
-> For bug reporting instructions, please see:
-> <http://www.gnu.org/software/gdb/bugs/>...
-> Reading symbols from /home/dannf/foo...done.
-> (gdb) break leaf
-> Breakpoint 1 at 0x40000000000005c1: file foo.c, line 2.
-> (gdb) run
-> Starting program: /home/dannf/foo 
-> Missing separate debuginfo for /lib/ld-linux-ia64.so.2
-> Try: zypper install -C "debuginfo(build-id)=d5bfb8b5940e174d54b978ca515dc0df76c7618c"
-> Missing separate debuginfo for /lib/libc.so.6.1
-> Try: zypper install -C "debuginfo(build-id)=ca78657bd9173653d95f8504a313d2b6db8cb1d6"
-> 
-> Breakpoint 1, leaf () at foo.c:2
-> 2	     return 0;
-> (gdb) gcore /tmp/save
-> 
-> [bang]
-> 
+> Did you see the global dirty threshold get exceeded when writing to 2+
+> devices? Occasional small exceeding should be OK though. I tried the
+> following debug patch and see no warnings when doing two concurrent cp
+> over local disk and NFS.
+  Oops, sorry. I've misread the code. You're right. There shouldn't be a big
+change in the behavior.
 
-Does this happen on 2.6.34 or 2.6.35-rc kernel ?
-
-Thanks,
--Kame
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
