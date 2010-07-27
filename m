@@ -1,54 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab0G0MNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 08:13:41 -0400
-Received: from verein.lst.de ([213.95.11.210]:41593 "EHLO verein.lst.de"
+	id S1755374Ab0G0MP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 08:15:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63279 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752Ab0G0MNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 08:13:39 -0400
-Date: Tue, 27 Jul 2010 14:13:13 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Christoph Hellwig <hch@lst.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/irq] x86: Always use irq stacks
-Message-ID: <20100727121313.GA19976@lst.de>
-References: <20100630074434.GA25509@elte.hu> <20100630075212.GA24658@lst.de> <20100630075818.GB25509@elte.hu> <20100630080453.GA14371@elte.hu> <20100708204251.GA13569@elte.hu> <20100708205302.GA23961@lst.de> <20100714151215.GA31825@lst.de> <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain> <20100714154746.GA2074@lst.de> <1279131672.4190.18.camel@localhost>
-Mime-Version: 1.0
+	id S1753586Ab0G0MP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 08:15:27 -0400
+Date: Tue, 27 Jul 2010 14:15:22 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-security-module@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cred - BUG: synchronize rcu before releasing cred
+Message-ID: <20100727121522.GE1967@jolsa.brq.redhat.com>
+References: <20100625133333.GA1918@jolsa.bos.redhat.com>
+ <20100702121456.GD1904@jolsa.brq.redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279131672.4190.18.camel@localhost>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <20100702121456.GD1904@jolsa.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, can you test this patch implementing Steve's suggestion?
-Unfortunately I'm not able to reproduce the bug on my setup anymore.
+hi,
+any feedback?
 
----
+jirka
 
-From: Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] x86-32: align irq stacks properly
-
-As suggested by Steven Rostedt we need to align the irq stacks on the
-stack size, not just the page size to make them work for stack traces
-with 8k stacks.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-
-Index: linux-2.6-tip/arch/x86/kernel/irq_32.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/irq_32.c	2010-07-27 14:06:50.634494682 +0200
-+++ linux-2.6-tip/arch/x86/kernel/irq_32.c	2010-07-27 14:06:58.031494680 +0200
-@@ -55,7 +55,7 @@ static inline void print_stack_overflow(
- union irq_ctx {
- 	struct thread_info      tinfo;
- 	u32                     stack[THREAD_SIZE/sizeof(u32)];
--} __attribute__((aligned(PAGE_SIZE)));
-+} __attribute__((aligned(THREAD_SIZE)));
- 
- static DEFINE_PER_CPU(union irq_ctx *, hardirq_ctx);
- static DEFINE_PER_CPU(union irq_ctx *, softirq_ctx);
+On Fri, Jul 02, 2010 at 02:14:56PM +0200, Jiri Olsa wrote:
+> hi,
+> any feedback?
+> 
+> jirka
+> 
+> On Fri, Jun 25, 2010 at 09:33:33AM -0400, Jiri Olsa wrote:
+> > BZ 591015 - kernel BUG at kernel/cred.c:168
+> > https://bugzilla.redhat.com/show_bug.cgi?id=591015
+> > 
+> > Above bugzilla reported bug during the releasing of
+> > old cred structure.
+> > 
+> > There is reproducer attached to the bugzilla.
+> > 
+> > The issue is caused by releasing old cred struct while other
+> > kernel path might be still using it. This leads to cred->usage
+> > inconsistency inside the __put_cred and triggering the bug.
+> > 
+> > Following kernel paths are affected:
+> > 
+> > The CPU1 path is setting the new groups creds.
+> > The CPU2 path is cat /proc/PID/status
+> > 
+> > 
+> > CPU 1                              CPU 2
+> > 
+> > sys_setgroups                      proc_pid_status      
+> >   set_current_groups                 task_state
+> >     commit_creds                       rcu_read_lock
+> >       put_cred                         ...
+> >         __put_cred                     get_cred
+> >           BUG_ON(usage != 0)           ...
+> >                                        rcu_read_unlock
+> >                                        
+> > 
+> > 
+> > If __put_cred got executed during the CPU2 holding the reference
+> > the BUG_ON inside __put_cred is trigered.
+> > 
+> > I think there's no need to get the cred refference as long as
+> > the 'cred' handling stays inside the rcu_read_lock block.
+> > 
+> > And the condition of __task_cred 'make sure task doesn't go away',
+> > is done by proc_single_show as this is the proc file.
+> > 
+> > wbr,
+> > jirka
+> > 
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > Acked-by: David Howells <dhowells@redhat.com>
+> > ---
+> > diff --git a/fs/proc/array.c b/fs/proc/array.c
+> > index 9b58d38..ac3b3a4 100644
+> > --- a/fs/proc/array.c
+> > +++ b/fs/proc/array.c
+> > @@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+> >  		if (tracer)
+> >  			tpid = task_pid_nr_ns(tracer, ns);
+> >  	}
+> > -	cred = get_cred((struct cred *) __task_cred(p));
+> > +	cred = __task_cred(p);
+> >  	seq_printf(m,
+> >  		"State:\t%s\n"
+> >  		"Tgid:\t%d\n"
+> > @@ -199,15 +199,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+> >  		"FDSize:\t%d\n"
+> >  		"Groups:\t",
+> >  		fdt ? fdt->max_fds : 0);
+> > -	rcu_read_unlock();
+> >  
+> >  	group_info = cred->group_info;
+> >  	task_unlock(p);
+> >  
+> >  	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
+> >  		seq_printf(m, "%d ", GROUP_AT(group_info, g));
+> > -	put_cred(cred);
+> >  
+> > +	rcu_read_unlock();
+> >  	seq_printf(m, "\n");
+> >  }
+> >  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
