@@ -1,49 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750768Ab0G0PuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 11:50:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57009 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab0G0PuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 11:50:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=BQl76MOZm3ncR53WFPAy1+ifVRGp5yLI7djyvDTupDH5eUnvEX1k9Zxq6smeMXsv7x
-         vQL2hrYDJkLeshjeKbfV/Vd4/Dn2td4fLpXmIllV4CKjOq1dIR1Zy0IE6/+jSmxLG20c
-         lqhbhDILkYvwGO17dLklG7b7DwNS3/gwm9+Hc=
-Message-ID: <4C4F0032.1010706@gmail.com>
-Date: Tue, 27 Jul 2010 08:50:10 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1753014Ab0G0Puj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 11:50:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752338Ab0G0Puh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 11:50:37 -0400
+Date: Tue, 27 Jul 2010 17:50:23 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH] cred - synchronize rcu before releasing cred
+Message-ID: <20100727155023.GF1967@jolsa.brq.redhat.com>
 MIME-Version: 1.0
-To: trapdoor6@gmail.com
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Small typo in kernel [current source from git] .config option
-References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>
-In-Reply-To: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2010 07:46 AM, trapDoor wrote:
-> Hello,
-> I've just got lucky and found this little typo under "Power management
-> and ACPI options"  --->  "ACPI (Advanced Configuration and Power
-> Interface) Support":
-> hArdware Error Device
->
-> Here is my fix:
-> Hardware Error Device
-> :)
->
-> BTW, first time I've used nconfig instead of menuconfig. And I like it.
->
+hi,
 
-probably should create a patch, and send it to trivial@kernel.org
+got no objections on linux-security-module and acked by David.
+Noone pick it, so got advice to send this directly to you.
 
-Justin P. Mattock
+wbr,
+jirka
+---
+
+BZ 591015 - kernel BUG at kernel/cred.c:168
+https://bugzilla.redhat.com/show_bug.cgi?id=591015
+
+Above bugzilla reported bug during the releasing of
+old cred structure.
+
+There is reproducer attached to the bugzilla.
+
+The issue is caused by releasing old cred struct while other
+kernel path might be still using it. This leads to cred->usage
+inconsistency inside the __put_cred and triggering the bug.
+
+Following kernel paths are affected:
+
+The CPU1 path is setting the new groups creds.
+The CPU2 path is cat /proc/PID/status
+
+
+CPU 1                              CPU 2
+
+sys_setgroups                      proc_pid_status      
+  set_current_groups                 task_state
+    commit_creds                       rcu_read_lock
+      put_cred                         ...
+        __put_cred                     get_cred
+          BUG_ON(usage != 0)           ...
+                                       rcu_read_unlock
+                                       
+
+
+If __put_cred got executed during the CPU2 holding the reference
+the BUG_ON inside __put_cred is trigered.
+
+I think there's no need to get the cred refference as long as
+the 'cred' handling stays inside the rcu_read_lock block.
+
+And the condition of __task_cred 'make sure task doesn't go away',
+is done by proc_single_show as this is the proc file.
+
+wbr,
+jirka
+
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
+---
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 9b58d38..ac3b3a4 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		if (tracer)
+ 			tpid = task_pid_nr_ns(tracer, ns);
+ 	}
+-	cred = get_cred((struct cred *) __task_cred(p));
++	cred = __task_cred(p);
+ 	seq_printf(m,
+ 		"State:\t%s\n"
+ 		"Tgid:\t%d\n"
+@@ -199,15 +199,14 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		"FDSize:\t%d\n"
+ 		"Groups:\t",
+ 		fdt ? fdt->max_fds : 0);
+-	rcu_read_unlock();
+ 
+ 	group_info = cred->group_info;
+ 	task_unlock(p);
+ 
+ 	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
+ 		seq_printf(m, "%d ", GROUP_AT(group_info, g));
+-	put_cred(cred);
+ 
++	rcu_read_unlock();
+ 	seq_printf(m, "\n");
+ }
+ 
+
+----- End forwarded message -----
