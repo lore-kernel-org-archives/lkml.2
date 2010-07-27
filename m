@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab0G0Rz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:55:58 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:43985 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751195Ab0G0Rz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 13:55:57 -0400
-Message-ID: <4C4F1D9E.70007@cs.helsinki.fi>
-Date: Tue, 27 Jul 2010 20:55:42 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1753168Ab0G0R5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:57:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34152 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751596Ab0G0R5V convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 13:57:21 -0400
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Hannes Reinecke <hare@suse.de>, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        "=?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        "=?UTF-8?B?QW5kcsOpIEdvZGRhcmQgUm9zYQ==?=" <andre.goddard@gmail.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] aic7xxx: Remove OS utility wrappers
-References: <1279102377-958-1-git-send-email-penberg@cs.helsinki.fi>	 <4C43F3DE.8000405@suse.de> <1280252404.2833.168.camel@mulgrave.site>
-In-Reply-To: <1280252404.2833.168.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <24865.1280249187@redhat.com>
+References: <20100727155023.GF1967@jolsa.brq.redhat.com> <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com> 
+	<24865.1280249187@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 27 Jul 2010 10:56:20 -0700
+Message-ID: <AANLkTikB9Msot4m_oaw+V+dvEg+SzyXHb0cqhKQqUtC2@mail.gmail.com>
+Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
+To: David Howells <dhowells@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley wrote:
-> On Mon, 2010-07-19 at 08:42 +0200, Hannes Reinecke wrote:
->> Pekka Enberg wrote:
->>> This patch removes malloc(), free(), and printf() wrappers from the aic7xxx
->>> SCSI driver. I didn't use pr_debug for printf because of some 'clever' uses of
->>> printf don't compile with the pr_debug. I didn't fix the overeager uses of
->>> GFP_ATOMIC either because I wanted to keep this patch as simple as possible.
->>>
->>> Cc: Hannes Reinecke <hare@suse.de>
->>> Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
->>> Cc: Jiri Kosina <jkosina@suse.cz>
->>> Cc: "Uwe Kleine-König" <u.kleine-koenig@pengutronix.de>
->>> Cc: "André Goddard Rosa" <andre.goddard@gmail.com>
->>> Cc: <linux-scsi@vger.kernel.org>
->>> Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
->> Thanks for the work. Long overdue.
->>
->> Acked-by: Hannes Reinecke <hare@suse.de>
-> 
-> A good rule of thumb is compile before acking:
-> 
-> drivers/scsi/aic7xxx/aic7770.c: In function 'aic7770_config':
-> drivers/scsi/aic7xxx/aic7770.c:224: error: implicit declaration of function 'free'
-> drivers/scsi/aic7xxx/aic7770.c:224: error: 'M_DEVBUF' undeclared (first use in this function)
-> drivers/scsi/aic7xxx/aic7770.c:224: error: (Each undeclared identifier is reported only once
-> drivers/scsi/aic7xxx/aic7770.c:224: error: for each function it appears in.)
-> make[3]: *** [drivers/scsi/aic7xxx/aic7770.o] Error 1
-> 
-> It looks like a lone missed conversion, so I fixed it up.
+On Tue, Jul 27, 2010 at 9:46 AM, David Howells <dhowells@redhat.com> wrote:
+>
+> That's not the problem.
+>
+> The problem is that task_state() accesses the target task's credentials whilst
+> only holding the RCU read lock. �That means that the existence of the cred
+> struct so accessed can only be guaranteed up to the point that the RCU read
+> lock is released.
 
-Sorry about that, I thought I tested all the configurations. Thanks for 
-fixing it up!
+Umm. In that case, get_task_cred() is actively misleading.
 
-			Pekka
+What you are saying is that you cannot do
+
+   rcu_read_lock()
+   __cred = (struct cred *) __task_cred((task));
+   get_cred(__cred);
+   rcu_read_unlock();
+
+but that is _exactly_ what get_task_cred() does. And that
+__task_cred() check checks that we have
+
+   rcu_read_lock_held() || lockdep_tasklist_lock_is_held()
+
+and what you are describing would require us to have a '&&' rather
+than a '||' in that test. Because it is _not_ sufficient to have just
+the rcu_read_lock held.
+
+So it looks like the validation is simply wrong. The __task_cred()
+helper is buggy. It's used for two different cases, and they have
+totally different locking requirements.
+
+Case #1:
+ - you can do __task_cred() with just read-lock held, but then you
+cannot add refs to it
+
+Case #2:
+ - you can do __task_cred() with read-lock held _and_ guaranteeing
+that the task doesn't go away, and then you can hold a ref to it as
+long as you still guarantee the task is around.
+
+And the comments are actively wrong. The comments talk about the "case
+#2" thing only. Ignoring case #1, except for the fact that the _check_
+allows case #1, so you never get a warning from the RCU "proving" code
+even for incorrect code.
+
+So presumably Jiri's patch is correct, but the reason the bug happened
+in the first place is that all those accessor functions are totally
+confused about how they supposed to be used, with incorrect comments
+and incorrect access checks.
+
+That should get fixed. Who knows how many other buggy users there are
+due to the confusion?
+
+                   Linus
