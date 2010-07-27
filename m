@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab0G0C6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 22:58:33 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49900 "EHLO
+	id S1755824Ab0G0C7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 22:59:49 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:50152 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab0G0C6K (ORCPT
+	with ESMTP id S1753109Ab0G0C6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 22:58:10 -0400
+	Mon, 26 Jul 2010 22:58:30 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 04/13] AppArmor: core policy routines
-Date: Mon, 26 Jul 2010 19:57:39 -0700
-Message-Id: <1280199468-19680-5-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 10/13] AppArmor: domain functions for domain transition
+Date: Mon, 26 Jul 2010 19:57:45 -0700
+Message-Id: <1280199468-19680-11-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
 References: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
@@ -20,41 +20,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The basic routines and defines for AppArmor policy.  AppArmor policy
-is defined by a few basic components.
-      profiles - the basic unit of confinement contain all the information
-                 to enforce policy on a task
+AppArmor routines for controling domain transitions, which can occur at
+exec or through self directed change_profile/change_hat calls.
 
-                 Profiles tend to be named after an executable that they
-                 will attach to but this is not required.
-      namespaces - a container for a set of profiles that will be used
-                 during attachment and transitions between profiles.
-      sids - which provide a unique id for each profile
+Unconfined tasks are checked at exec against the profiles in the confining
+profile namespace to determine if a profile should be attached to the task.
+
+Confined tasks execs are controlled by the profile which provides rules
+determining which execs are allowed and if so which profiles should be
+transitioned to.
+
+Self directed domain transitions allow a task to request transition
+to a given profile.  If the transition is allowed then the profile will
+be applied, either immeditately or at exec time depending on the request.
+Immeditate self directed transitions have several security limitations
+but have uses in setting up stub transition profiles and other limited
+cases.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/include/policy.h |  307 ++++++++++
- security/apparmor/include/sid.h    |   24 +
- security/apparmor/policy.c         | 1184 ++++++++++++++++++++++++++++++++++++
- security/apparmor/sid.c            |   55 ++
- 4 files changed, 1570 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/include/policy.h
- create mode 100644 security/apparmor/include/sid.h
- create mode 100644 security/apparmor/policy.c
- create mode 100644 security/apparmor/sid.c
+ security/apparmor/domain.c         |  819 ++++++++++++++++++++++++++++++++++++
+ security/apparmor/include/domain.h |   36 ++
+ 2 files changed, 855 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/domain.c
+ create mode 100644 security/apparmor/include/domain.h
 
-diff --git a/security/apparmor/include/policy.h b/security/apparmor/include/policy.h
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
 new file mode 100644
-index 0000000..7d757b8
+index 0000000..9efb5d9
 --- /dev/null
-+++ b/security/apparmor/include/policy.h
-@@ -0,0 +1,307 @@
++++ b/security/apparmor/domain.c
+@@ -0,0 +1,819 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor policy definitions.
++ * This file contains AppArmor policy attachment and domain transitions
 + *
-+ * Copyright (C) 1998-2008 Novell/SUSE
++ * Copyright (C) 2002-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
 + *
 + * This program is free software; you can redistribute it and/or
@@ -63,1580 +65,853 @@ index 0000000..7d757b8
 + * License.
 + */
 +
-+#ifndef __AA_POLICY_H
-+#define __AA_POLICY_H
++#include <linux/errno.h>
++#include <linux/fdtable.h>
++#include <linux/file.h>
++#include <linux/mount.h>
++#include <linux/syscalls.h>
++#include <linux/tracehook.h>
++#include <linux/personality.h>
 +
-+#include <linux/capability.h>
-+#include <linux/cred.h>
-+#include <linux/kref.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/socket.h>
-+
-+#include "apparmor.h"
-+#include "audit.h"
-+#include "capability.h"
-+#include "domain.h"
-+#include "file.h"
-+#include "resource.h"
-+
-+extern const char *profile_mode_names[];
-+#define APPARMOR_NAMES_MAX_INDEX 3
-+
-+#define COMPLAIN_MODE(_profile)	\
-+	((aa_g_profile_mode == APPARMOR_COMPLAIN) || \
-+	 ((_profile)->mode == APPARMOR_COMPLAIN))
-+
-+#define KILL_MODE(_profile) \
-+	((aa_g_profile_mode == APPARMOR_KILL) || \
-+	 ((_profile)->mode == APPARMOR_KILL))
-+
-+#define PROFILE_IS_HAT(_profile) ((_profile)->flags & PFLAG_HAT)
-+
-+/*
-+ * FIXME: currently need a clean way to replace and remove profiles as a
-+ * set.  It should be done at the namespace level.
-+ * Either, with a set of profiles loaded at the namespace level or via
-+ * a mark and remove marked interface.
-+ */
-+enum profile_mode {
-+	APPARMOR_ENFORCE,	/* enforce access rules */
-+	APPARMOR_COMPLAIN,	/* allow and log access violations */
-+	APPARMOR_KILL,		/* kill task on access violation */
-+};
-+
-+enum profile_flags {
-+	PFLAG_HAT = 1,			/* profile is a hat */
-+	PFLAG_UNCONFINED = 2,		/* profile is the unconfined profile */
-+	PFLAG_NULL = 4,			/* profile is null learning profile */
-+	PFLAG_IX_ON_NAME_ERROR = 8,	/* fallback to ix on name lookup fail */
-+	PFLAG_IMMUTABLE = 0x10,		/* don't allow changes/replacement */
-+	PFLAG_USER_DEFINED = 0x20,	/* user based profile */
-+	PFLAG_NO_LIST_REF = 0x40,	/* list doesn't keep profile ref */
-+	PFLAG_OLD_NULL_TRANS = 0x100,	/* use // as the null transition */
-+
-+	/* These flags must coorespond with PATH_flags */
-+	PFLAG_MEDIATE_DELETED = 0x10000, /* mediate instead delegate deleted */
-+};
-+
-+#define AA_NEW_SID 0
-+
-+struct aa_profile;
-+
-+/* struct aa_policy - common part of both namespaces and profiles
-+ * @name: name of the object
-+ * @hname - The hierarchical name
-+ * @count: reference count of the obj
-+ * @list: list policy object is on
-+ * @profiles: head of the profiles list contained in the object
-+ */
-+struct aa_policy {
-+	char *name;
-+	char *hname;
-+	struct kref count;
-+	struct list_head list;
-+	struct list_head profiles;
-+};
-+
-+/* struct aa_ns_acct - accounting of profiles in namespace
-+ * @max_size: maximum space allowed for all profiles in namespace
-+ * @max_count: maximum number of profiles that can be in this namespace
-+ * @size: current size of profiles
-+ * @count: current count of profiles (includes null profiles)
-+ */
-+struct aa_ns_acct {
-+	int max_size;
-+	int max_count;
-+	int size;
-+	int count;
-+};
-+
-+/* struct aa_namespace - namespace for a set of profiles
-+ * @base: common policy
-+ * @parent: parent of namespace
-+ * @lock: lock for modifying the object
-+ * @acct: accounting for the namespace
-+ * @unconfined: special unconfined profile for the namespace
-+ * @sub_ns: list of namespaces under the current namespace.
-+ *
-+ * An aa_namespace defines the set profiles that are searched to determine
-+ * which profile to attach to a task.  Profiles can not be shared between
-+ * aa_namespaces and profile names within a namespace are guarenteed to be
-+ * unique.  When profiles in seperate namespaces have the same name they
-+ * are NOT considered to be equivalent.
-+ *
-+ * Namespaces are hierarchical and only namespaces and profiles below the
-+ * current namespace are visible.
-+ *
-+ * Namespace names must be unique and can not contain the characters :/\0
-+ *
-+ * FIXME TODO: add vserver support so a vserer (can it all be done in userspace)
-+ */
-+struct aa_namespace {
-+	struct aa_policy base;
-+	struct aa_namespace *parent;
-+	rwlock_t lock;
-+	struct aa_ns_acct acct;
-+	struct aa_profile *unconfined;
-+	struct list_head sub_ns;
-+};
-+
-+/* struct aa_profile - basic confinement data
-+ * @base - base componets of the profile (name, refcount, lists, lock ...)
-+ * @parent: parent of profile
-+ * @ns: namespace the profile is in
-+ * @replacedby: is set profile that replaced this profile
-+ * @rename: optional profile name that this profile renamed
-+ * @xmatch: optional extended matching for unconfined executables names
-+ * @xmatch_len: xmatch prefix len, used to determine xmatch priority
-+ * @sid: the unique security id number of this profile
-+ * @audit: the auditing mode of the profile
-+ * @mode: the enforcement mode of the profile
-+ * @flags: flags controlling profile behavior
-+ * @path_flags: flags controlling path generation behavior
-+ * @size: the memory consumed by this profiles rules
-+ * @file: The set of rules governing basic file access and domain transitions
-+ * @caps: capabilities for the profile
-+ * @rlimits: rlimits for the profile
-+ *
-+ * The AppArmor profile contains the basic confinement data.  Each profile
-+ * has a name, and exists in a namespace.  The @name and @exec_match are
-+ * used to determine profile attachment against unconfined tasks.  All other
-+ * attachments are determined by profile X transition rules.
-+ *
-+ * The @replacedby field is write protected by the profile lock.  Reads
-+ * are assumed to be atomic, and are done without locking.
-+ *
-+ * Profiles have a hierachy where hats and children profiles keep
-+ * a reference to their parent.
-+ *
-+ * Profile names can not begin with a : and can not contain the \0
-+ * character.  If a profile name begins with / it will be considered when
-+ * determining profile attachment on "unconfined" tasks.
-+ */
-+struct aa_profile {
-+	struct aa_policy base;
-+	struct aa_profile *parent;
-+
-+	struct aa_namespace *ns;
-+	struct aa_profile *replacedby;
-+	const char *rename;
-+
-+	struct aa_dfa *xmatch;
-+	int xmatch_len;
-+	u32 sid;
-+	enum audit_mode audit;
-+	enum profile_mode mode;
-+	u32 flags;
-+	u32 path_flags;
-+	int size;
-+
-+	struct aa_file_rules file;
-+	struct aa_caps caps;
-+	struct aa_rlimit rlimits;
-+};
-+
-+extern struct aa_namespace *root_ns;
-+extern enum profile_mode aa_g_profile_mode;
-+
-+void aa_add_profile(struct aa_policy *common, struct aa_profile *profile);
-+
-+bool aa_ns_visible(struct aa_namespace *curr, struct aa_namespace *view);
-+const char *aa_ns_name(struct aa_namespace *parent, struct aa_namespace *child);
-+int aa_alloc_root_ns(void);
-+void aa_free_root_ns(void);
-+void aa_free_namespace_kref(struct kref *kref);
-+
-+struct aa_namespace *aa_find_namespace(struct aa_namespace *root,
-+				       const char *name);
-+
-+static inline struct aa_policy *aa_get_common(struct aa_policy *c)
-+{
-+	if (c)
-+		kref_get(&c->count);
-+
-+	return c;
-+}
-+
-+/**
-+ * aa_get_namespace - increment references count on @ns
-+ * @ns: namespace to increment reference count of (MAYBE NULL)
-+ *
-+ * Returns: pointer to @ns if @ns is NULL returns NULL
-+ * Requires: @ns must be held with valid refcount when called
-+ */
-+static inline struct aa_namespace *aa_get_namespace(struct aa_namespace *ns)
-+{
-+	if (ns)
-+		kref_get(&(ns->base.count));
-+
-+	return ns;
-+}
-+
-+/**
-+ * aa_put_namespace - decrement refcount on @ns
-+ * @ns: namespace to put reference to
-+ *
-+ * Decrement reference count to @ns and if no longer in use free it
-+ */
-+static inline void aa_put_namespace(struct aa_namespace *ns)
-+{
-+	if (ns)
-+		kref_put(&ns->base.count, aa_free_namespace_kref);
-+}
-+
-+struct aa_profile *aa_alloc_profile(const char *name);
-+struct aa_profile *aa_new_null_profile(struct aa_profile *parent, int hat);
-+void aa_free_profile_kref(struct kref *kref);
-+struct aa_profile *aa_find_child(struct aa_profile *parent, const char *name);
-+struct aa_profile *aa_lookup_profile(struct aa_namespace *ns, const char *name);
-+struct aa_profile *aa_match_profile(struct aa_namespace *ns, const char *name);
-+
-+ssize_t aa_replace_profiles(void *udata, size_t size, bool noreplace);
-+ssize_t aa_remove_profiles(char *name, size_t size);
-+
-+#define PROF_ADD 1
-+#define PROF_REPLACE 0
-+
-+#define unconfined(X) ((X)->flags & PFLAG_UNCONFINED)
-+
-+/**
-+ * aa_newest_version - find the newest version of @profile
-+ * @profile: the profile to check for newer versions of (NOT NULL)
-+ *
-+ * Returns: newest version of @profile, if @profile is the newest version
-+ *          return @profile.
-+ *
-+ * NOTE: the profile returned is not refcounted, The refcount on @profile
-+ * must be held until the caller decides what to do with the returned newest
-+ * version.
-+ */
-+static inline struct aa_profile *aa_newest_version(struct aa_profile *profile)
-+{
-+	if (unlikely(profile && profile->replacedby))
-+		for (; profile->replacedby; profile = profile->replacedby)
-+			;
-+
-+	return profile;
-+}
-+
-+/**
-+ * aa_get_profile - increment refcount on profile @p
-+ * @p: profile  (MAYBE NULL)
-+ *
-+ * Returns: pointer to @p if @p is NULL will return NULL
-+ * Requires: @p must be held with valid refcount when called
-+ */
-+static inline struct aa_profile *aa_get_profile(struct aa_profile *p)
-+{
-+	if (p)
-+		kref_get(&(p->base.count));
-+
-+	return p;
-+}
-+
-+/**
-+ * aa_put_profile - decrement refcount on profile @p
-+ * @p: profile  (MAYBE NULL)
-+ */
-+static inline void aa_put_profile(struct aa_profile *p)
-+{
-+	if (p)
-+		kref_put(&p->base.count, aa_free_profile_kref);
-+}
-+
-+static inline int AUDIT_MODE(struct aa_profile *profile)
-+{
-+	if (aa_g_audit != AUDIT_NORMAL)
-+		return aa_g_audit;
-+
-+	return profile->audit;
-+}
-+
-+bool aa_may_manage_policy(int op);
-+
-+#endif /* __AA_POLICY_H */
-diff --git a/security/apparmor/include/sid.h b/security/apparmor/include/sid.h
-new file mode 100644
-index 0000000..020db35
---- /dev/null
-+++ b/security/apparmor/include/sid.h
-@@ -0,0 +1,24 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor security identifier (sid) definitions
-+ *
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#ifndef __AA_SID_H
-+#define __AA_SID_H
-+
-+#include <linux/types.h>
-+
-+struct aa_profile;
-+
-+u32 aa_alloc_sid(void);
-+void aa_free_sid(u32 sid);
-+
-+#endif /* __AA_SID_H */
-diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
-new file mode 100644
-index 0000000..7fecdf2
---- /dev/null
-+++ b/security/apparmor/policy.c
-@@ -0,0 +1,1184 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor policy manipulation functions
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ *
-+ *
-+ * AppArmor policy is based around profiles, which contain the rules a
-+ * task is confined by.  Every task in the sytem has a profile attached
-+ * to it determined either by matching "unconfined" tasks against the
-+ * visible set of profiles or by following a profiles attachment rules.
-+ *
-+ * Each profile exists in a profile namespace which is a container of
-+ * visible profiles.  Each namespace contains a special "unconfined" profile,
-+ * which doesn't enforce any confinement on a task beyond DAC.
-+ *
-+ * Namespace and profile names can be written together in either
-+ * of two syntaxes.
-+ *	:namespace:profile - used by kernel interfaces for easy detection
-+ *	namespace://profile - used by policy
-+ *
-+ * Profile names can not start with : or @ or ^ and may not contain \0
-+ *
-+ * Reserved profile names
-+ *	unconfined - special automatically generated unconfined profile
-+ *	inherit - special name to indicate profile inheritance
-+ *	null-XXXX-YYYY - special automically generated learning profiles
-+ *
-+ * Namespace names may not start with / or @ and may not contain \0 or :
-+ * Reserved namespace namespace
-+ *	user-XXXX - user defined profiles
-+ *
-+ * a // in a profile or namespace name indicates a hierarcical name with the
-+ * name before the // being the parent and the name after the child.
-+ *
-+ * Profile and namespace hierachies serve two different but similar purposes.
-+ * The namespace contains the set of visible profiles that are considered
-+ * for attachment.  The hierarchy of namespaces allows for virtualizing
-+ * the namespace so that for example a chroot can have its own set of profiles
-+ * which may define some local user namespaces.
-+ * The profile hierachy severs two distinct purposes,
-+ * -  it allows for sub profiles or hats, which allows an application to run
-+ *    subprograms under its own profile with different restriction than it
-+ *    self, and not have it use the system profile.
-+ *    eg. if a mail program starts an editor, the policy might make the
-+ *        restrictions tighter on the editor tighter than the mail program,
-+ *        and definitely different than general editor restrictions
-+ * - it allows for binary hierarchy of profiles, so that execution history
-+ *   is preserved.  This feature isn't exploited by AppArmor reference policy
-+ *   but is allowed.  NOTE: this is currently suboptimal because profile
-+ *   aliasing is not currently implemented so that a profile for each
-+ *   level must be defined.
-+ *   eg. /bin/bash///bin/ls as a name would indicate /bin/ls was started
-+ *       from /bin/bash
-+ *
-+ *   A profile or namespace name that can contain one or more // seperators
-+ *   is refered to as an hname (hierarchical).
-+ *   eg.  /bin/bash//bin/ls
-+ *
-+ *   An fqname is a name that may contain both namespace and profile hnames.
-+ *   eg. :ns:/bin/bash//bin/ls
-+ *
-+ * NOTES:
-+ *   - locking of profile lists is currently fairly coarse.  All profile
-+ *     lists within a namespace use the namespace lock.
-+ * FIXME: move profile lists to using rcu_lists
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+#include <linux/string.h>
-+
-+#include "include/apparmor.h"
-+#include "include/capability.h"
++#include "include/audit.h"
++#include "include/apparmorfs.h"
 +#include "include/context.h"
++#include "include/domain.h"
 +#include "include/file.h"
 +#include "include/ipc.h"
 +#include "include/match.h"
 +#include "include/path.h"
 +#include "include/policy.h"
-+#include "include/policy_unpack.h"
-+#include "include/resource.h"
-+#include "include/sid.h"
-+
-+
-+/* root profile namespace */
-+struct aa_namespace *root_ns;
-+
-+const char *profile_mode_names[] = {
-+	"enforce",
-+	"complain",
-+	"kill",
-+};
 +
 +/**
-+ * hname_tail - find the last component of an hname
-+ * @name: hname to find the base profile name component of  (NOT NULL)
-+ *
-+ * Returns: the tail (base profile name) name component of an hname
++ * aa_free_domain_entries - free entries in a domain table
++ * @domain: the domain table to free  (MAYBE NULL)
 + */
-+static const char *hname_tail(const char *hname)
++void aa_free_domain_entries(struct aa_domain *domain)
 +{
-+	char *split;
-+	hname = strim((char *)hname);
-+	for (split = strstr(hname, "//"); split; split = strstr(hname, "//"))
-+		hname = split + 2;
++	int i;
++	if (domain) {
++		if (!domain->table)
++			return;
 +
-+	return hname;
-+}
-+
-+/**
-+ * policy_init - initialize a policy structure
-+ * @policy: policy to initialize  (NOT NULL)
-+ * @prefix: prefix name if any is required.  (MAYBE NULL)
-+ * @name: name of the policy, init will make a copy of it  (NOT NULL)
-+ *
-+ * Note: this fn creates a copy of strings passed in
-+ *
-+ * Returns: true if policy init successful
-+ */
-+static bool policy_init(struct aa_policy *policy, const char *prefix,
-+			const char *name)
-+{
-+	/* freed by policy_free */
-+	if (prefix) {
-+		policy->hname = kmalloc(strlen(prefix) + strlen(name) + 3,
-+					GFP_KERNEL);
-+		if (policy->hname)
-+			sprintf(policy->hname, "%s//%s", prefix, name);
-+	} else
-+		policy->hname = kstrdup(name, GFP_KERNEL);
-+	if (!policy->hname)
-+		return 0;
-+	/* base.name is a substring of fqname */
-+	policy->name = (char *)hname_tail(policy->hname);
-+	INIT_LIST_HEAD(&policy->list);
-+	INIT_LIST_HEAD(&policy->profiles);
-+	kref_init(&policy->count);
-+
-+	return 1;
-+}
-+
-+/**
-+ * policy_destroy - free the elements referenced by @policy
-+ * @policy: policy that is to have its elements freed  (NOT NULL)
-+ */
-+static void policy_destroy(struct aa_policy *policy)
-+{
-+	/* still contains profiles -- invalid */
-+	if (!list_empty(&policy->profiles)) {
-+		AA_ERROR("%s: internal error, "
-+			 "policy '%s' still contains profiles\n",
-+			 __func__, policy->name);
-+		BUG();
++		for (i = 0; i < domain->size; i++)
++			kzfree(domain->table[i]);
++		kzfree(domain->table);
++		domain->table = NULL;
 +	}
-+	if (!list_empty(&policy->list)) {
-+		AA_ERROR("%s: internal error, policy '%s' still on list\n",
-+			 __func__, policy->name);
-+		BUG();
++}
++
++/**
++ * may_change_ptraced_domain - check if can change profile on ptraced task
++ * @task: task we want to change profile of   (NOT NULL)
++ * @to_profile: profile to change to  (NOT NULL)
++ *
++ * Check if the task is ptraced and if so if the tracing task is allowed
++ * to trace the new domain
++ *
++ * Returns: %0 or error if change not allowed
++ */
++static int may_change_ptraced_domain(struct task_struct *task,
++				     struct aa_profile *to_profile)
++{
++	struct task_struct *tracer;
++	struct cred *cred = NULL;
++	struct aa_profile *tracerp = NULL;
++	int error = 0;
++
++	rcu_read_lock();
++	tracer = tracehook_tracer_task(task);
++	if (tracer) {
++		/* released below */
++		cred = get_task_cred(tracer);
++		tracerp = aa_cred_profile(cred);
 +	}
++	rcu_read_unlock();
 +
-+	/* don't free name as its a subset of hname */
-+	kzfree(policy->hname);
-+}
-+
-+/**
-+ * __policy_find - find a policy by @name on a policy list
-+ * @head: list to search  (NOT NULL)
-+ * @name: name to search for  (NOT NULL)
-+ *
-+ * Requires: correct locks for the @head list be held
-+ *
-+ * Returns: unrefcounted policy that match @name or NULL if not found
-+ */
-+static struct aa_policy *__policy_find(struct list_head *head, const char *name)
-+{
-+	struct aa_policy *policy;
-+
-+	list_for_each_entry(policy, head, list) {
-+		if (!strcmp(policy->name, name))
-+			return policy;
-+	}
-+	return NULL;
-+}
-+
-+/**
-+ * __policy_strn_find - find a policy thats name matches @len chars of @str
-+ * @head: list to search  (NOT NULL)
-+ * @str: string to search for  (NOT NULL)
-+ * @len: length of match required
-+ *
-+ * Requires: correct locks for the @head list be held
-+ *
-+ * Returns: unrefcounted policy that match @str or NULL if not found
-+ *
-+ * if @len == strlen(@strlen) then this is equiv to __policy_find
-+ * other wise it allows searching for policy by a partial match of name
-+ */
-+static struct aa_policy *__policy_strn_find(struct list_head *head,
-+					    const char *str, int len)
-+{
-+	struct aa_policy *policy;
-+
-+	list_for_each_entry(policy, head, list) {
-+		if (aa_strneq(policy->name, str, len))
-+			return policy;
-+	}
-+
-+	return NULL;
-+}
-+
-+/*
-+ * Routines for AppArmor namespaces
-+ */
-+
-+static const char *hidden_ns_name = "---";
-+/**
-+ * aa_ns_visible - test if @view is visible from @curr
-+ * @curr: namespace to treat as the parent (NOT NULL)
-+ * @view:  namespace to test if visible from @curr (NOT NULL)
-+ *
-+ * Returns: true if @view is visible from @curr else false
-+ */
-+bool aa_ns_visible(struct aa_namespace *curr, struct aa_namespace *view)
-+{
-+	if (curr == view)
-+		return true;
-+
-+	for ( ; view; view = view->parent) {
-+		if (view->parent == curr)
-+			return true;
-+	}
-+	return false;
-+}
-+
-+/**
-+ * aa_na_name - Find the ns name to display for @view from @curr
-+ * @curr - current namespace (NOT NULL)
-+ * @view - namespace attempting to view (NOT NULL)
-+ *
-+ * Returns: name of @view visible from @curr
-+ */
-+const char *aa_ns_name(struct aa_namespace *curr, struct aa_namespace *view)
-+{
-+	/* if view == curr then the namespace name isn't displayed */
-+	if (curr == view)
-+		return "";
-+
-+	if (aa_ns_visible(curr, view)) {
-+		/* at this point if a ns is visible it is in a view ns
-+		 * thus the curr ns.hname is a prefix of its name.
-+		 * Only output the virtualized portion of the name
-+		 * Add + 2 to skip over // seperating curr hname prefix
-+		 * from the visible tail of the views hname
-+		 */
-+		return view->base.hname + strlen(curr->base.hname) + 2;
-+	} else
-+		return hidden_ns_name;
-+}
-+
-+/**
-+ * alloc_namespace - allocate, initialize and return a new namespace
-+ * @prefix: parent namespace name (MAYBE NULL)
-+ * @name: a preallocated name  (NOT NULL)
-+ *
-+ * Returns: refcounted namespace or NULL on failure.
-+ */
-+static struct aa_namespace *alloc_namespace(const char *prefix,
-+					    const char *name)
-+{
-+	struct aa_namespace *ns;
-+
-+	ns = kzalloc(sizeof(*ns), GFP_KERNEL);
-+	AA_DEBUG("%s(%p)\n", __func__, ns);
-+	if (!ns)
-+		return NULL;
-+	if (!policy_init(&ns->base, prefix, name))
-+		goto fail_ns;
-+
-+	INIT_LIST_HEAD(&ns->sub_ns);
-+	rwlock_init(&ns->lock);
-+
-+	/* released by free_namespace */
-+	ns->unconfined = aa_alloc_profile("unconfined");
-+	if (!ns->unconfined)
-+		goto fail_unconfined;
-+
-+	ns->unconfined->sid = aa_alloc_sid();
-+	ns->unconfined->flags = PFLAG_UNCONFINED | PFLAG_IX_ON_NAME_ERROR |
-+	    PFLAG_IMMUTABLE;
-+
-+	/*
-+	 * released by free_namespace, however __remove_namespace breaks
-+	 * the cyclic references (ns->unconfined, and unconfined->ns) and
-+	 * replaces with refs to parent namespace unconfined
-+	 */
-+	ns->unconfined->ns = aa_get_namespace(ns);
-+
-+	return ns;
-+
-+fail_unconfined:
-+	kzfree(ns->base.name);
-+fail_ns:
-+	kzfree(ns);
-+	return NULL;
-+}
-+
-+/**
-+ * free_namespace - free a profile namespace
-+ * @ns: the namespace to free  (MAYBE NULL)
-+ *
-+ * Requires: All references to the namespace must have been put, if the
-+ *           namespace was referenced by a profile confining a task,
-+ */
-+static void free_namespace(struct aa_namespace *ns)
-+{
-+	if (!ns)
-+		return;
-+
-+	policy_destroy(&ns->base);
-+	aa_put_namespace(ns->parent);
-+
-+	if (ns->unconfined && ns->unconfined->ns == ns)
-+		ns->unconfined->ns = NULL;
-+
-+	aa_put_profile(ns->unconfined);
-+	kzfree(ns);
-+}
-+
-+/**
-+ * aa_free_namespace_kref - free aa_namespace by kref (see aa_put_namespace)
-+ * @kr: kref callback for freeing of a namespace  (NOT NULL)
-+ */
-+void aa_free_namespace_kref(struct kref *kref)
-+{
-+	free_namespace(container_of(kref, struct aa_namespace, base.count));
-+}
-+
-+/**
-+ * __aa_find_namespace - find a namespace on a list by @name
-+ * @head: list to search for namespace on  (NOT NULL)
-+ * @name: name of namespace to look for  (NOT NULL)
-+ *
-+ * Returns: unrefcounted namespace
-+ *
-+ * Requires: ns lock be held
-+ */
-+static struct aa_namespace *__aa_find_namespace(struct list_head *head,
-+						const char *name)
-+{
-+	return (struct aa_namespace *)__policy_find(head, name);
-+}
-+
-+/**
-+ * aa_find_namespace  -  look up a profile namespace on the namespace list
-+ * @root: namespace to search in  (NOT NULL)
-+ * @name: name of namespace to find  (NOT NULL)
-+ *
-+ * Returns: a refcounted namespace on the list, or NULL if no namespace
-+ *          called @name exists.
-+ *
-+ * refcount released by caller
-+ */
-+struct aa_namespace *aa_find_namespace(struct aa_namespace *root,
-+				       const char *name)
-+{
-+	struct aa_namespace *ns = NULL;
-+
-+	read_lock(&root->lock);
-+	ns = aa_get_namespace(__aa_find_namespace(&root->sub_ns, name));
-+	read_unlock(&root->lock);
-+
-+	return ns;
-+}
-+
-+/**
-+ * aa_prepare_namespace - find an existing or create a new namespace of @name
-+ * @name: the namespace to find or add  (MAYBE NULL)
-+ *
-+ * Returns: refcounted namespace or NULL if failed to create one
-+ */
-+static struct aa_namespace *aa_prepare_namespace(const char *name)
-+{
-+	struct aa_namespace *ns, *root;
-+
-+	root = aa_current_profile()->ns;
-+
-+	write_lock(&root->lock);
-+
-+	/* if name isn't specified the profile is loaded to the current ns */
-+	if (!name) {
-+		/* released by caller */
-+		ns = aa_get_namespace(root);
++	/* not ptraced */
++	if (!tracer || unconfined(tracerp))
 +		goto out;
-+	}
 +
-+	/* try and find the specified ns and if it doesn't exist create it */
-+	/* released by caller */
-+	ns = aa_get_namespace(__aa_find_namespace(&root->sub_ns, name));
-+	if (!ns) {
-+		/* namespace not found */
-+		struct aa_namespace *new_ns;
-+		write_unlock(&root->lock);
-+		new_ns = alloc_namespace(root->base.hname, name);
-+		if (!new_ns)
-+			return NULL;
-+		write_lock(&root->lock);
-+		/* test for race when new_ns was allocated */
-+		ns = __aa_find_namespace(&root->sub_ns, name);
-+		if (!ns) {
-+			/* add parent ref */
-+			new_ns->parent = aa_get_namespace(root);
++	error = aa_may_ptrace(tracer, tracerp, to_profile, PTRACE_MODE_ATTACH);
 +
-+			list_add(&new_ns->base.list, &root->sub_ns);
-+			/* add list ref */
-+			ns = aa_get_namespace(new_ns);
-+		} else {
-+			/* raced so free the new one */
-+			free_namespace(new_ns);
-+			/* get reference on namespace */
-+			aa_get_namespace(ns);
-+		}
-+	}
 +out:
-+	write_unlock(&root->lock);
++	if (cred)
++		put_cred(cred);
 +
-+	/* return ref */
-+	return ns;
++	return error;
 +}
 +
 +/**
-+ * __list_add_profile - add a profile to a list
-+ * @list: list to add it to  (NOT NULL)
-+ * @profile: the profile to add  (NOT NULL)
++ * change_profile_perms - find permissions for change_profile
++ * @profile: the current profile  (NOT NULL)
++ * @ns: the namespace being switched to  (NOT NULL)
++ * @name: the name of the profile to change to  (NOT NULL)
++ * @request: requested perms
++ * @start: state to start matching in
 + *
-+ * refcount @profile, should be put by __list_remove_profile
-+ *
-+ * Requires: namespace lock be held, or list not be shared
++ * Returns: permission set
 + */
-+static void __list_add_profile(struct list_head *list,
-+			       struct aa_profile *profile)
++static struct file_perms change_profile_perms(struct aa_profile *profile,
++					      struct aa_namespace *ns,
++					      const char *name, u32 request,
++					      unsigned int start)
 +{
-+	list_add(&profile->base.list, list);
-+	/* get list reference */
-+	aa_get_profile(profile);
-+}
++	struct file_perms perms;
++	struct path_cond cond = { };
++	unsigned int state;
 +
-+/**
-+ * __list_remove_profile - remove a profile from the list it is on
-+ * @profile: the profile to remove  (NOT NULL)
-+ *
-+ * remove a profile from the list, warning generally removal should
-+ * be done with __replace_profile as most profile removals are
-+ * replacements to the unconfined profile.
-+ *
-+ * put @profile list refcount
-+ *
-+ * Requires: namespace lock be held, or list not have been live
-+ */
-+static void __list_remove_profile(struct aa_profile *profile)
-+{
-+	list_del_init(&profile->base.list);
-+	if (!(profile->flags & PFLAG_NO_LIST_REF))
-+		/* release list reference */
-+		aa_put_profile(profile);
-+}
-+
-+/**
-+ * __replace_profile - replace @old with @new on a list
-+ * @old: profile to be replaced  (NOT NULL)
-+ * @new: profile to replace @old with  (NOT NULL)
-+ *
-+ * Will duplicaticate and refcount elements that @new inherits from @old
-+ * and will inherit @old children.
-+ *
-+ * refcount @new for list, put @old list refcount
-+ *
-+ * Requires: namespace list lock be held, or list not be shared
-+ */
-+static void __replace_profile(struct aa_profile *old, struct aa_profile *new)
-+{
-+	struct aa_policy *policy;
-+	struct aa_profile *child, *tmp;
-+
-+	if (old->parent)
-+		policy = &old->parent->base;
-+	else
-+		policy = &old->ns->base;
-+
-+	/* released when @new is freed */
-+	new->parent = aa_get_profile(old->parent);
-+	new->ns = aa_get_namespace(old->ns);
-+	new->sid = old->sid;
-+	__list_add_profile(&policy->profiles, new);
-+	/* inherit children */
-+	list_for_each_entry_safe(child, tmp, &old->base.profiles, base.list) {
-+		aa_put_profile(child->parent);
-+		child->parent = aa_get_profile(new);
-+		/* list refcount transfered to @new*/
-+		list_move(&child->base.list, &new->base.profiles);
++	if (unconfined(profile)) {
++		perms.allow = AA_MAY_CHANGE_PROFILE | AA_MAY_ONEXEC;
++		perms.audit = perms.quiet = perms.kill = 0;
++		return perms;
++	} else if (!profile->file.dfa) {
++		return nullperms;
++	} else if ((ns == profile->ns)) {
++		/* try matching against rules with out namespace prependend */
++		aa_str_perms(profile->file.dfa, start, name, &cond, &perms);
++		if (COMBINED_PERM_MASK(perms) & request)
++			return perms;
 +	}
 +
-+	/* released by free_profile */
-+	old->replacedby = aa_get_profile(new);
-+	__list_remove_profile(old);
-+}
++	/* try matching with namespace name and then profile */
++	state = aa_dfa_match(profile->file.dfa, start, ns->base.name);
++	state = aa_dfa_match_len(profile->file.dfa, state, ":", 1);
++	aa_str_perms(profile->file.dfa, state, name, &cond, &perms);
 +
-+static void __profile_list_release(struct list_head *head);
-+
-+/**
-+ * __remove_profile - remove old profile, and children
-+ * @profile: profile to be replaced  (NOT NULL)
-+ *
-+ * Requires: namespace list lock be held, or list not be shared
-+ */
-+static void __remove_profile(struct aa_profile *profile)
-+{
-+	/* release any children lists first */
-+	__profile_list_release(&profile->base.profiles);
-+	/* released by free_profile */
-+	profile->replacedby = aa_get_profile(profile->ns->unconfined);
-+	__list_remove_profile(profile);
++	return perms;
 +}
 +
 +/**
-+ * __profile_list_release - remove all profiles on the list and put refs
-+ * @head: list of profiles  (NOT NULL)
++ * __attach_match_ - find an attachment match
++ * @name - to match against  (NOT NULL)
++ * @head - profile list to walk  (NOT NULL)
 + *
-+ * Requires: namespace lock be held
-+ */
-+static void __profile_list_release(struct list_head *head)
-+{
-+	struct aa_profile *profile, *tmp;
-+	list_for_each_entry_safe(profile, tmp, head, base.list)
-+		__remove_profile(profile);
-+}
-+
-+static void __ns_list_release(struct list_head *head);
-+
-+/**
-+ * destroy_namespace - remove everything contained by @ns
-+ * @ns: namespace to have it contents removed  (NOT NULL)
-+ */
-+static void destroy_namespace(struct aa_namespace *ns)
-+{
-+	if (!ns)
-+		return;
-+
-+	write_lock(&ns->lock);
-+	/* release all profiles in this namespace */
-+	__profile_list_release(&ns->base.profiles);
-+
-+	/* release all sub namespaces */
-+	__ns_list_release(&ns->sub_ns);
-+
-+	write_unlock(&ns->lock);
-+}
-+
-+/**
-+ * __remove_namespace - remove a namespace and all its children
-+ * @ns: namespace to be removed  (NOT NULL)
++ * Do a linear search on the profiles in the list.  There is a matching
++ * preference where an exact match is prefered over a name which uses
++ * expressions to match, and matching expressions with the greatest
++ * xmatch_len are prefered.
 + *
-+ * Requires: ns->parent->lock be held and ns removed from parent.
-+ */
-+static void __remove_namespace(struct aa_namespace *ns)
-+{
-+	struct aa_profile *unconfined = ns->unconfined;
-+
-+	/* remove ns from namespace list */
-+	list_del_init(&ns->base.list);
-+
-+	/*
-+	 * break the ns, unconfined profile cyclic reference and forward
-+	 * all new unconfined profiles requests to the parent namespace
-+	 * This will result in all confined tasks that have a profile
-+	 * being removed, inheriting the parent->unconfined profile.
-+	 */
-+	if (ns->parent)
-+		ns->unconfined = aa_get_profile(ns->parent->unconfined);
-+
-+	destroy_namespace(ns);
-+
-+	/* release original ns->unconfined ref */
-+	aa_put_profile(unconfined);
-+	/* release ns->base.list ref, from removal above */
-+	aa_put_namespace(ns);
-+}
-+
-+/**
-+ * __ns_list_release - remove all profile namespaces on the list put refs
-+ * @head: list of profile namespaces  (NOT NULL)
++ * Requires: @head not be shared or have appropriate locks held
 + *
-+ * Requires: namespace lock be held
++ * Returns: profile or NULL if no match found
 + */
-+static void __ns_list_release(struct list_head *head)
++static struct aa_profile *__attach_match(const char *name,
++					 struct list_head *head)
 +{
-+	struct aa_namespace *ns, *tmp;
-+	list_for_each_entry_safe(ns, tmp, head, base.list)
-+		__remove_namespace(ns);
++	int len = 0;
++	struct aa_profile *profile, *candidate = NULL;
 +
-+}
-+
-+/**
-+ * aa_alloc_root_ns - allocate the root profile namespace
-+ *
-+ * Returns: %0 on success else error
-+ *
-+ */
-+int __init aa_alloc_root_ns(void)
-+{
-+	/* released by aa_free_root_ns - used as list ref*/
-+	root_ns = alloc_namespace(NULL, "root");
-+	if (!root_ns)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+ /**
-+  * aa_free_root_ns - free the root profile namespace
-+  */
-+void __init aa_free_root_ns(void)
-+ {
-+	 struct aa_namespace *ns = root_ns;
-+	 root_ns = NULL;
-+
-+	 destroy_namespace(ns);
-+	 aa_put_namespace(ns);
-+}
-+
-+/**
-+ * aa_alloc_profile - allocate, initialize and return a new profile
-+ * @hname: name of the profile  (NOT NULL)
-+ *
-+ * Returns: refcount profile or NULL on failure
-+ */
-+struct aa_profile *aa_alloc_profile(const char *hname)
-+{
-+	struct aa_profile *profile;
-+
-+	/* freed by free_profile - usually through aa_put_profile */
-+	profile = kzalloc(sizeof(*profile), GFP_KERNEL);
-+	if (!profile)
-+		return NULL;
-+
-+	if (!policy_init(&profile->base, NULL, hname)) {
-+		kzfree(profile);
-+		return NULL;
++	list_for_each_entry(profile, head, base.list) {
++		if (profile->flags & PFLAG_NULL)
++			continue;
++		if (profile->xmatch && profile->xmatch_len > len) {
++			unsigned int state = aa_dfa_match(profile->xmatch,
++							  DFA_START, name);
++			u32 perm = dfa_user_allow(profile->xmatch, state);
++			/* any accepting state means a valid match. */
++			if (perm & MAY_EXEC) {
++				candidate = profile;
++				len = profile->xmatch_len;
++			}
++		} else if (!strcmp(profile->base.name, name))
++			/* exact non-re match, no more searching required */
++			return profile;
 +	}
 +
-+	/* refcount released by caller */
-+	return profile;
++	return candidate;
 +}
 +
 +/**
-+ * aa_new_null_profile - create a new null-X learning profile
-+ * @parent: profile that caused this profile to be created (NOT NULL)
-+ * @hat: true if the null- learning profile is a hat
++ * find_attach - do attachment search for unconfined processes
++ * @ns: the current namespace  (NOT NULL)
++ * @list: list to search  (NOT NULL)
++ * @name: the executable name to match against  (NOT NULL)
 + *
-+ * Create a null- complain mode profile used in learning mode.  The name of
-+ * the profile is unique and follows the format of parent//null-sid.
-+ *
-+ * null profiles are added to the profile list but the list does not
-+ * hold a count on them so that they are automatically released when
-+ * not in use.
-+ *
-+ * Returns: new refcounted profile else NULL on failure
++ * Returns: profile or NULL if no match found
 + */
-+struct aa_profile *aa_new_null_profile(struct aa_profile *parent, int hat)
-+{
-+	struct aa_profile *profile = NULL;
-+	char *name;
-+	u32 sid = aa_alloc_sid();
-+
-+	/* freed below */
-+	name = kmalloc(strlen(parent->base.hname) + 2 + 7 + 8, GFP_KERNEL);
-+	if (!name)
-+		goto fail;
-+	sprintf(name, "%s//null-%x", parent->base.hname, sid);
-+
-+	profile = aa_alloc_profile(name);
-+	kfree(name);
-+	if (!profile)
-+		goto fail;
-+
-+	profile->sid = sid;
-+	profile->mode = APPARMOR_COMPLAIN;
-+	profile->flags = PFLAG_NULL;
-+	if (hat)
-+		profile->flags |= PFLAG_HAT;
-+
-+	/* released on free_profile */
-+	profile->parent = aa_get_profile(parent);
-+	profile->ns = aa_get_namespace(parent->ns);
-+
-+	write_lock(&profile->ns->lock);
-+	__list_add_profile(&parent->base.profiles, profile);
-+	write_unlock(&profile->ns->lock);
-+
-+	/* refcount released by caller */
-+	return profile;
-+
-+fail:
-+	aa_free_sid(sid);
-+	return NULL;
-+}
-+
-+/**
-+ * free_profile - free a profile
-+ * @profile: the profile to free  (MAYBE NULL)
-+ *
-+ * Free a profile, its hats and null_profile. All references to the profile,
-+ * its hats and null_profile must have been put.
-+ *
-+ * If the profile was referenced from a task context, free_profile() will
-+ * be called from an rcu callback routine, so we must not sleep here.
-+ */
-+static void free_profile(struct aa_profile *profile)
-+{
-+	AA_DEBUG("%s(%p)\n", __func__, profile);
-+
-+	if (!profile)
-+		return;
-+
-+	if (!list_empty(&profile->base.list)) {
-+		AA_ERROR("%s: internal error, "
-+			 "profile '%s' still on ns list\n",
-+			 __func__, profile->base.name);
-+		BUG();
-+	}
-+
-+	/* free children profiles */
-+	policy_destroy(&profile->base);
-+	aa_put_profile(profile->parent);
-+
-+	aa_put_namespace(profile->ns);
-+	kzfree(profile->rename);
-+
-+	aa_free_file_rules(&profile->file);
-+	aa_free_cap_rules(&profile->caps);
-+	aa_free_rlimit_rules(&profile->rlimits);
-+
-+	aa_free_sid(profile->sid);
-+	aa_put_dfa(profile->xmatch);
-+
-+	aa_put_profile(profile->replacedby);
-+
-+	kzfree(profile);
-+}
-+
-+/**
-+ * aa_free_profile_kref - free aa_profile by kref (called by aa_put_profile)
-+ * @kr: kref callback for freeing of a profile  (NOT NULL)
-+ */
-+void aa_free_profile_kref(struct kref *kref)
-+{
-+	struct aa_profile *p = container_of(kref, struct aa_profile,
-+					    base.count);
-+
-+	free_profile(p);
-+}
-+
-+/* TODO: profile accounting - setup in remove */
-+
-+/**
-+ * __find_child - find a profile on @head list with a name matching @name
-+ * @head: list to search  (NOT NULL)
-+ * @name: name of profile (NOT NULL)
-+ *
-+ * Requires: ns lock protecting list be held
-+ *
-+ * Returns: unrefcounted profile ptr, or NULL if not found
-+ */
-+static struct aa_profile *__find_child(struct list_head *head, const char *name)
-+{
-+	return (struct aa_profile *)__policy_find(head, name);
-+}
-+
-+/**
-+ * __strn_find_child - find a profile on @head list using substring of @name
-+ * @head: list to search  (NOT NULL)
-+ * @name: name of profile (NOT NULL)
-+ * @len: length of @name substring to match
-+ *
-+ * Requires: ns lock protecting list be held
-+ *
-+ * Returns: unrefcounted profile ptr, or NULL if not found
-+ */
-+static struct aa_profile *__strn_find_child(struct list_head *head,
-+					    const char *name, int len)
-+{
-+	return (struct aa_profile *)__policy_strn_find(head, name, len);
-+}
-+
-+/**
-+ * aa_find_child - find a profile by @name in @parent
-+ * @parent: profile to search  (NOT NULL)
-+ * @name: profile name to search for  (NOT NULL)
-+ *
-+ * Returns: a refcounted profile or NULL if not found
-+ */
-+struct aa_profile *aa_find_child(struct aa_profile *parent, const char *name)
-+{
-+	struct aa_profile *profile;
-+
-+	read_lock(&parent->ns->lock);
-+	profile = aa_get_profile(__find_child(&parent->base.profiles, name));
-+	read_unlock(&parent->ns->lock);
-+
-+	/* refcount released by caller */
-+	return profile;
-+}
-+
-+/**
-+ * __lookup_parent - lookup the parent of a profile of name @hname
-+ * @ns: namespace to lookup profile in  (NOT NULL)
-+ * @hname: hierarchical profile name to find parent of  (NOT NULL)
-+ *
-+ * Lookups up the parent of a fully qualified profile name, the profile
-+ * that matches hname does not need to exist, in general this
-+ * is used to load a new profile.
-+ *
-+ * Requires: ns->lock be held
-+ *
-+ * Returns: unrefcounted policy or NULL if not found
-+ */
-+static struct aa_policy *__lookup_parent(struct aa_namespace *ns,
-+					 const char *hname)
-+{
-+	struct aa_policy *policy;
-+	struct aa_profile *profile = NULL;
-+	char *split;
-+
-+	policy = &ns->base;
-+
-+	for (split = strstr(hname, "//"); split;) {
-+		profile = __strn_find_child(&policy->profiles, hname,
-+					    split - hname);
-+		if (!profile)
-+			return NULL;
-+		policy = &profile->base;
-+		hname = split + 2;
-+		split = strstr(hname, "//");
-+	}
-+	if (!profile)
-+		return &ns->base;
-+	return &profile->base;
-+}
-+
-+/**
-+ * __lookup_profile - lookup the profile matching @hname
-+ * @base: base list to start looking up profile name from  (NOT NULL)
-+ * @hname: hierarchical profile name  (NOT NULL)
-+ *
-+ * Requires: ns->lock be held
-+ *
-+ * Returns: unrefcounted profile pointer or NULL if not found
-+ *
-+ * Do a relative name lookup, recursing through profile tree.
-+ */
-+static struct aa_profile *__lookup_profile(struct aa_policy *base,
-+					   const char *hname)
-+{
-+	struct aa_profile *profile = NULL;
-+	char *split;
-+
-+	for (split = strstr(hname, "//"); split;) {
-+		profile = __strn_find_child(&base->profiles, hname,
-+					    split - hname);
-+		if (!profile)
-+			return NULL;
-+
-+		base = &profile->base;
-+		hname = split + 2;
-+		split = strstr(hname, "//");
-+	}
-+
-+	profile = __find_child(&base->profiles, hname);
-+
-+	return profile;
-+}
-+
-+/**
-+ * aa_lookup_profile - find a profile by its full or partial name
-+ * @ns: the namespace to start from (NOT NULL)
-+ * @hname: name to do lookup on.  Does not contain namespace prefix (NOT NULL)
-+ *
-+ * Returns: refcounted profile or NULL if not found
-+ */
-+struct aa_profile *aa_lookup_profile(struct aa_namespace *ns, const char *hname)
++static struct aa_profile *find_attach(struct aa_namespace *ns,
++				      struct list_head *list, const char *name)
 +{
 +	struct aa_profile *profile;
 +
 +	read_lock(&ns->lock);
-+	profile = aa_get_profile(__lookup_profile(&ns->base, hname));
++	profile = aa_get_profile(__attach_match(name, list));
 +	read_unlock(&ns->lock);
 +
-+	/* refcount released by caller */
 +	return profile;
 +}
 +
 +/**
-+ * replacement_allowed - test to see if replacement is allowed
-+ * @profile: profile to test if it can be replaced  (MAYBE NULL)
-+ * @noreplace: true if replacement shouldn't be allowed but addition is okay
-+ * @info: Returns - info about why replacement failed (NOT NULL)
++ * separate_fqname - separate the namespace and profile names
++ * @fqname: the fqname name to split  (NOT NULL)
++ * @ns_name: the namespace name if it exists  (NOT NULL)
 + *
-+ * Returns: %0 if replacement allowed else error code
++ * This is the xtable equivalent routine of aa_split_fqname.  It finds the
++ * split in an xtable fqname which contains an embedded \0 instead of a :
++ * if a namespace is specified.  This is done so the xtable is constant and
++ * isn't resplit on every lookup.
++ *
++ * Either the profile or namespace name may be optional but if the namespace
++ * is specified the profile name termination must be present.  This results
++ * in the following possible encodings:
++ * profile_name\0
++ * :ns_name\0profile_name\0
++ * :ns_name\0\0
++ *
++ * NOTE: the xtable fqname is prevalidated at load time in unpack_trans_table
++ *
++ * Returns: profile name if it is specified else NULL
 + */
-+static int replacement_allowed(struct aa_profile *profile, int noreplace,
-+			       const char **info)
++static const char *separate_fqname(const char *fqname, const char **ns_name)
 +{
-+	if (profile) {
-+		if (profile->flags & PFLAG_IMMUTABLE) {
-+			*info = "cannot replace immutible profile";
-+			return -EPERM;
-+		} else if (noreplace) {
-+			*info = "profile already exists";
-+			return -EEXIST;
++	const char *name;
++
++	if (fqname[0] == ':') {
++		*ns_name = fqname + 1;		/* skip : */
++		name = *ns_name + strlen(*ns_name) + 1;
++		if (!*name)
++			name = NULL;
++	} else {
++		*ns_name = NULL;
++		name = fqname;
++	}
++
++	return name;
++}
++
++static const char *next_name(int xtype, const char *name)
++{
++	return NULL;
++}
++
++/**
++ * x_table_lookup - lookup an x transition name via transition table
++ * @profile: current profile (NOT NULL)
++ * @xindex: index into x transition table
++ *
++ * Returns: refcounted profile, or NULL on failure (MAYBE NULL)
++ */
++static struct aa_profile *x_table_lookup(struct aa_profile *profile, u32 xindex)
++{
++	struct aa_profile *new_profile = NULL;
++	struct aa_namespace *ns = profile->ns;
++	u32 xtype = xindex & AA_X_TYPE_MASK;
++	int index = xindex & AA_X_INDEX_MASK;
++	const char *name;
++
++	/* index is guarenteed to be in range, validated at load time */
++	for (name = profile->file.trans.table[index]; !new_profile && name;
++	     name = next_name(xtype, name)) {
++		struct aa_namespace *new_ns;
++		const char *xname = NULL;
++
++		new_ns = NULL;
++		if (xindex & AA_X_CHILD) {
++			/* release by caller */
++			new_profile = aa_find_child(profile, name);
++			continue;
++		} else if (*name == ':') {
++			/* switching namespace */
++			const char *ns_name;
++			xname = name = separate_fqname(name, &ns_name);
++			if (!xname)
++				/* no name so use profile name */
++				xname = profile->base.hname;
++			if (*ns_name == '@') {
++				/* TODO: variable support */
++				;
++			}
++			/* released below */
++			new_ns = aa_find_namespace(ns, ns_name);
++			if (!new_ns)
++				continue;
++		} else if (*name == '@') {
++			/* TODO: variable support */
++			continue;
++		} else {
++			/* basic namespace lookup */
++			xname = name;
 +		}
++
++		/* released by caller */
++		new_profile = aa_lookup_profile(new_ns ? new_ns : ns, xname);
++		aa_put_namespace(new_ns);
 +	}
-+	return 0;
++
++	/* released by caller */
++	return new_profile;
 +}
 +
 +/**
-+ * __add_new_profile - simple wrapper around __list_add_profile
-+ * @ns: namespace that profile is being added to  (NOT NULL)
-+ * @policy: the policy container to add the profile to  (NOT NULL)
-+ * @profile: profile to add  (NOT NULL)
++ * x_to_profile - get target profile for a given xindex
++ * @profile: current profile  (NOT NULL)
++ * @name: to to lookup (NOT NULL)
++ * @xindex: index into x transition table
 + *
-+ * add a profile to a list and do other required basic allocations
++ * find profile for a transition index
++ *
++ * Returns: refcounted profile or NULL if not found available
 + */
-+static void __add_new_profile(struct aa_namespace *ns, struct aa_policy *policy,
-+			      struct aa_profile *profile)
++static struct aa_profile *x_to_profile(struct aa_profile *profile,
++				       const char *name, u32 xindex)
 +{
-+	if (policy != &ns->base)
-+		/* released on profile replacement or free_profile */
-+		profile->parent = aa_get_profile((struct aa_profile *) policy);
-+	__list_add_profile(&policy->profiles, profile);
-+	/* released on free_profile */
-+	profile->sid = aa_alloc_sid();
-+	profile->ns = aa_get_namespace(ns);
++	struct aa_profile *new_profile = NULL;
++	struct aa_namespace *ns = profile->ns;
++	u32 xtype = xindex & AA_X_TYPE_MASK;
++
++	switch (xtype) {
++	case AA_X_NONE:
++		/* fail exec unless ix || ux fallback - handled by caller */
++		return NULL;
++	case AA_X_NAME:
++		if (xindex & AA_X_CHILD)
++			/* released by caller */
++			new_profile = find_attach(ns, &profile->base.profiles,
++						  name);
++		else
++			/* released by caller */
++			new_profile = find_attach(ns, &ns->base.profiles,
++						  name);
++		break;
++	case AA_X_TABLE:
++		/* released by caller */
++		new_profile = x_table_lookup(profile, xindex);
++		break;
++	}
++
++	/* released by caller */
++	return new_profile;
 +}
 +
 +/**
-+ * aa_audit_policy - Do auditing of policy changes
-+ * @op: policy operation being performed
-+ * @gfp: memory allocation flags
-+ * @name: name of profile being manipulated (NOT NULL)
-+ * @info: any extra information to be audited (MAYBE NULL)
-+ * @error: error code
++ * apparmor_bprm_set_creds - set the new creds on the bprm struct
++ * @bprm: binprm for the exec  (NOT NULL)
 + *
-+ * Returns: the error to be returned after audit is done
++ * Returns: %0 or error on failure
 + */
-+static int audit_policy(int op, gfp_t gfp, const char *name, const char *info,
-+			int error)
++int apparmor_bprm_set_creds(struct linux_binprm *bprm)
 +{
-+	struct common_audit_data sa;
-+	COMMON_AUDIT_DATA_INIT(&sa, NONE);
-+	sa.aad.op = op;
-+	sa.aad.name = name;
-+	sa.aad.info = info;
-+	sa.aad.error = error;
++	struct aa_task_cxt *cxt;
++	struct aa_profile *profile, *new_profile = NULL;
++	struct aa_namespace *ns;
++	char *buffer = NULL;
++	unsigned int state;
++	struct file_perms perms = {};
++	struct path_cond cond = {
++		bprm->file->f_path.dentry->d_inode->i_uid,
++		bprm->file->f_path.dentry->d_inode->i_mode
++	};
++	const char *name = NULL, *target = NULL, *info = NULL;
++	int error = cap_bprm_set_creds(bprm);
++	if (error)
++		return error;
 +
-+	return aa_audit(AUDIT_APPARMOR_STATUS, __aa_current_profile(), gfp,
-+			&sa, NULL);
-+}
-+
-+/**
-+ * aa_may_manage_policy - can the current task manage policy
-+ * @op: the policy manipulation operation being done
-+ *
-+ * Returns: true if the task is allowed to manipulate policy
-+ */
-+bool aa_may_manage_policy(int op)
-+{
-+	/* check if loading policy is locked out */
-+	if (aa_g_lock_policy) {
-+		audit_policy(op, GFP_KERNEL, NULL, "policy_locked", -EACCES);
++	if (bprm->cred_prepared)
 +		return 0;
-+	}
 +
-+	if (!capable(CAP_MAC_ADMIN)) {
-+		audit_policy(op, GFP_KERNEL, NULL, "not policy admin", -EACCES);
-+		return 0;
-+	}
++	cxt = bprm->cred->security;
++	BUG_ON(!cxt);
 +
-+	return 1;
-+}
++	profile = aa_get_profile(aa_newest_version(cxt->profile));
++	/*
++	 * get the namespace from the replacement profile as replacement
++	 * can change the namespace
++	 */
++	ns = profile->ns;
++	state = profile->file.start;
 +
-+/**
-+ * aa_replace_profiles - replace profile(s) on the profile list
-+ * @udata: serialized data stream  (NOT NULL)
-+ * @size: size of the serialized data stream
-+ * @noreplace: true if only doing addition, no replacement allowed
-+ *
-+ * unpack and replace a profile on the profile list and uses of that profile
-+ * by any aa_task_cxt.  If the profile does not exist on the profile list
-+ * it is added.
-+ *
-+ * Returns: size of data consumed else error code on failure.
-+ */
-+ssize_t aa_replace_profiles(void *udata, size_t size, bool noreplace)
-+{
-+	struct aa_policy *policy;
-+	struct aa_profile *old_profile = NULL, *new_profile = NULL;
-+	struct aa_profile *rename_profile = NULL;
-+	struct aa_namespace *ns = NULL;
-+	const char *ns_name, *name = NULL, *info = NULL;
-+	int op = OP_PROF_REPL;
-+	ssize_t error;
-+
-+	/* released below */
-+	new_profile = aa_unpack(udata, size, &ns_name);
-+	if (IS_ERR(new_profile)) {
-+		error = PTR_ERR(new_profile);
-+		new_profile = NULL;
-+		goto fail;
-+	}
-+
-+	/* released below */
-+	ns = aa_prepare_namespace(ns_name);
-+	if (!ns) {
-+		info = "failed to prepare namespace";
-+		error = -ENOMEM;
-+		name = ns_name;
-+		goto fail;
-+	}
-+
-+	name = new_profile->base.hname;
-+
-+	write_lock(&ns->lock);
-+	/* no ref on policy only use inside lock */
-+	policy = __lookup_parent(ns, new_profile->base.hname);
-+
-+	if (!policy) {
-+		info = "parent does not exist";
-+		error = -ENOENT;
++	/* buffer freed below, name is pointer into buffer */
++	error = aa_get_name(&bprm->file->f_path, profile->path_flags, &buffer,
++			    &name);
++	if (error) {
++		if (profile->flags &
++		    (PFLAG_IX_ON_NAME_ERROR | PFLAG_UNCONFINED))
++			error = 0;
++		info = "Exec failed name resolution";
++		name = bprm->filename;
 +		goto audit;
 +	}
 +
-+	old_profile = __find_child(&policy->profiles, new_profile->base.name);
-+	/* released below */
-+	aa_get_profile(old_profile);
++	/* Test for onexec first as onexec directives override other
++	 * x transitions.
++	 */
++	if (unconfined(profile)) {
++		/* unconfined task */
++		if (cxt->onexec)
++			/* change_profile on exec already been granted */
++			new_profile = aa_get_profile(cxt->onexec);
++		else
++			new_profile = find_attach(ns, &ns->base.profiles, name);
++		if (!new_profile)
++			goto cleanup;
++		goto apply;
++	}
 +
-+	if (new_profile->rename) {
-+		rename_profile = __lookup_profile(&ns->base,
-+						  new_profile->rename);
-+		/* released below */
-+		aa_get_profile(rename_profile);
++	/* find exec permissions for name */
++	state = aa_str_perms(profile->file.dfa, state, name, &cond, &perms);
++	if (cxt->onexec) {
++		struct file_perms cp;
++		info = "change_profile onexec";
++		if (!(perms.allow & AA_MAY_ONEXEC))
++			goto audit;
 +
-+		if (!rename_profile) {
-+			info = "profile to rename does not exist";
-+			name = new_profile->rename;
-+			error = -ENOENT;
++		/* test if this exec can be paired with change_profile onexec.
++		 * onexec permission is linked to exec with a standard pairing
++		 * exec\0change_profile
++		 */
++		state = aa_dfa_null_transition(profile->file.dfa, state);
++		cp = change_profile_perms(profile, cxt->onexec->ns, name,
++					  AA_MAY_ONEXEC, state);
++
++		if (!(cp.allow & AA_MAY_ONEXEC))
++			goto audit;
++		new_profile = aa_get_profile(aa_newest_version(cxt->onexec));
++		goto apply;
++	}
++
++	if (perms.allow & MAY_EXEC) {
++		/* exec permission determine how to transition */
++		new_profile = x_to_profile(profile, name, perms.xindex);
++		if (!new_profile) {
++			if (perms.xindex & AA_X_INHERIT) {
++				/* (p|c|n)ix - don't change profile but do
++				 * use the newest version, which was picked
++				 * up above when getting profile
++				 */
++				info = "ix fallback";
++				new_profile = aa_get_profile(profile);
++				goto x_clear;
++			} else if (perms.xindex & AA_X_UNCONFINED) {
++				new_profile = aa_get_profile(ns->unconfined);
++				info = "ux fallback";
++			} else {
++				error = -ENOENT;
++				info = "profile not found";
++			}
++		}
++	} else if (COMPLAIN_MODE(profile)) {
++		/* no exec permission - are we in learning mode */
++		new_profile = aa_new_null_profile(profile, 0);
++		if (!new_profile) {
++			error = -ENOMEM;
++			info = "could not create null profile";
++		} else {
++			error = -EACCES;
++			target = new_profile->base.hname;
++		}
++		perms.xindex |= AA_X_UNSAFE;
++	} else
++		/* fail exec */
++		error = -EACCES;
++
++	if (!new_profile)
++		goto audit;
++
++	if (bprm->unsafe & LSM_UNSAFE_SHARE) {
++		/* FIXME: currently don't mediate shared state */
++		;
++	}
++
++	if (bprm->unsafe & (LSM_UNSAFE_PTRACE | LSM_UNSAFE_PTRACE_CAP)) {
++		error = may_change_ptraced_domain(current, new_profile);
++		if (error) {
++			aa_put_profile(new_profile);
 +			goto audit;
 +		}
 +	}
 +
-+	error = replacement_allowed(old_profile, noreplace, &info);
-+	if (error)
-+		goto audit;
++	/* Determine if secure exec is needed.
++	 * Can be at this point for the following reasons:
++	 * 1. unconfined switching to confined
++	 * 2. confined switching to different confinement
++	 * 3. confined switching to unconfined
++	 *
++	 * Cases 2 and 3 are marked as requiring secure exec
++	 * (unless policy specified "unsafe exec")
++	 *
++	 * bprm->unsafe is used to cache the AA_X_UNSAFE permission
++	 * to avoid having to recompute in secureexec
++	 */
++	if (!(perms.xindex & AA_X_UNSAFE)) {
++		AA_DEBUG("scrubbing environment variables for %s profile=%s\n",
++			 name, new_profile->base.hname);
++		bprm->unsafe |= AA_SECURE_X_NEEDED;
++	}
++apply:
++	target = new_profile->base.hname;
++	/* when transitioning profiles clear unsafe personality bits */
++	bprm->per_clear |= PER_CLEAR_ON_SETID;
 +
-+	error = replacement_allowed(rename_profile, noreplace, &info);
-+	if (error)
-+		goto audit;
++x_clear:
++	aa_put_profile(cxt->profile);
++	/* transfer new profile reference will be released when cxt is freed */
++	cxt->profile = new_profile;
++
++	/* clear out all temporary/transitional state from the context */
++	aa_put_profile(cxt->previous);
++	aa_put_profile(cxt->onexec);
++	cxt->previous = NULL;
++	cxt->onexec = NULL;
++	cxt->token = 0;
 +
 +audit:
-+	if (!old_profile && !rename_profile)
-+		op = OP_PROF_LOAD;
++	error = aa_audit_file(profile, &perms, GFP_KERNEL, OP_EXEC, MAY_EXEC,
++			      name, target, cond.uid, info, error);
 +
-+	error = audit_policy(op, GFP_ATOMIC, name, info, error);
++cleanup:
++	aa_put_profile(profile);
++	kfree(buffer);
 +
-+	if (!error) {
-+		if (rename_profile)
-+			__replace_profile(rename_profile, new_profile);
-+		if (old_profile) {
-+			/* when there are both rename and old profiles
-+			 * inherit old profiles sid
-+			 */
-+			if (rename_profile)
-+				aa_free_sid(new_profile->sid);
-+			__replace_profile(old_profile, new_profile);
-+		}
-+		if (!(old_profile || rename_profile))
-+			__add_new_profile(ns, policy, new_profile);
-+	}
-+	write_unlock(&ns->lock);
-+
-+out:
-+	aa_put_namespace(ns);
-+	aa_put_profile(rename_profile);
-+	aa_put_profile(old_profile);
-+	aa_put_profile(new_profile);
-+	if (error)
-+		return error;
-+	return size;
-+
-+fail:
-+	error = audit_policy(op, GFP_KERNEL, name, info, error);
-+	goto out;
++	return error;
 +}
 +
 +/**
-+ * aa_remove_profiles - remove profile(s) from the system
-+ * @fqname: name of the profile or namespace to remove  (NOT NULL)
-+ * @size: size of the name
++ * apparmor_bprm_secureexec - determine if secureexec is needed
++ * @bprm: binprm for exec  (NOT NULL)
 + *
-+ * Remove a profile or sub namespace from the current namespace, so that
-+ * they can not be found anymore and mark them as replaced by unconfined
-+ *
-+ * NOTE: removing confinement does not restore rlimits to preconfinemnet values
-+ *
-+ * Returns: size of data consume else error code if fails
++ * Returns: %1 if secureexec is needed else %0
 + */
-+ssize_t aa_remove_profiles(char *fqname, size_t size)
++int apparmor_bprm_secureexec(struct linux_binprm *bprm)
 +{
-+	struct aa_namespace *root, *ns = NULL;
-+	struct aa_profile *profile = NULL;
-+	const char *name = fqname, *info = NULL;
-+	ssize_t error = 0;
++	int ret = cap_bprm_secureexec(bprm);
 +
-+	if (*fqname == 0) {
-+		info = "no profile specified";
-+		error = -ENOENT;
-+		goto fail;
++	/* the decision to use secure exec is computed in set_creds
++	 * and stored in bprm->unsafe.
++	 */
++	if (!ret && (bprm->unsafe & AA_SECURE_X_NEEDED))
++		ret = 1;
++
++	return ret;
++}
++
++/**
++ * apparmor_bprm_committing_creds - do task cleanup on committing new creds
++ * @bprm: binprm for the exec  (NOT NULL)
++ */
++void apparmor_bprm_committing_creds(struct linux_binprm *bprm)
++{
++	struct aa_profile *profile = __aa_current_profile();
++	struct aa_task_cxt *new_cxt = bprm->cred->security;
++
++	/* bail out if unconfined or not changing profile */
++	if ((new_cxt->profile == profile) ||
++	    (unconfined(new_cxt->profile)))
++		return;
++
++	current->pdeath_signal = 0;
++
++	/* reset soft limits and set hard limits for the new profile */
++	__aa_transition_rlimits(profile, new_cxt->profile);
++}
++
++/**
++ * apparmor_bprm_commited_cred - do cleanup after new creds committed
++ * @bprm: binprm for the exec  (NOT NULL)
++ */
++void apparmor_bprm_committed_creds(struct linux_binprm *bprm)
++{
++	/* TODO: cleanup signals - ipc mediation */
++	return;
++}
++
++/*
++ * Functions for self directed profile change
++ */
++
++/**
++ * new_compound_name - create an hname with @n2 appended to @n1
++ * @n1: base of hname  (NOT NULL)
++ * @n2: name to append (NOT NULL)
++ *
++ * Returns: new name or NULL on error
++ */
++static char *new_compound_name(const char *n1, const char *n2)
++{
++	char *name = kmalloc(strlen(n1) + strlen(n2) + 3, GFP_KERNEL);
++	if (name)
++		sprintf(name, "%s//%s", n1, n2);
++	return name;
++}
++
++/**
++ * aa_change_hat - change hat to/from subprofile
++ * @hats: vector of hat names to try changing into (MAYBE NULL if @count == 0)
++ * @count: number of hat names in @hats
++ * @token: magic value to validate the hat change
++ * @permtest: true if this is just a permission test
++ *
++ * Change to the first profile specified in @hats that exists, and store
++ * the @hat_magic in the current task context.  If the count == 0 and the
++ * @token matches that stored in the current task context, return to the
++ * top level profile.
++ *
++ * Returns %0 on success, error otherwise.
++ */
++int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
++{
++	const struct cred *cred;
++	struct aa_task_cxt *cxt;
++	struct aa_profile *profile, *previous_profile, *hat = NULL;
++	char *name = NULL;
++	int i;
++	struct file_perms perms = {};
++	const char *target = NULL, *info = NULL;
++	int error = 0;
++
++	/* released below */
++	cred = get_current_cred();
++	cxt = cred->security;
++	profile = aa_cred_profile(cred);
++	previous_profile = cxt->previous;
++
++	if (unconfined(profile)) {
++		info = "unconfined";
++		error = -EPERM;
++		goto audit;
 +	}
 +
-+	root = aa_current_profile()->ns;
++	if (count) {
++		/* attempting to change into a new hat or switch to a sibling */
++		struct aa_profile *root;
++		root = PROFILE_IS_HAT(profile) ? profile->parent : profile;
 +
-+	if (fqname[0] == ':') {
-+		char *ns_name;
-+		name = aa_split_fqname(fqname, &ns_name);
-+		if (ns_name) {
++		/* find first matching hat */
++		for (i = 0; i < count && !hat; i++)
 +			/* released below */
-+			ns = aa_find_namespace(root, ns_name);
-+			if (!ns) {
-+				info = "namespace does not exist";
-+				error = -ENOENT;
-+				goto fail;
++			hat = aa_find_child(root, hats[i]);
++		if (!hat) {
++			if (!COMPLAIN_MODE(root) || permtest) {
++				if (list_empty(&root->base.profiles))
++					error = -ECHILD;
++				else
++					error = -ENOENT;
++				goto out;
 +			}
++
++			/*
++			 * In complain mode and failed to match any hats.
++			 * Audit the failure is based off of the first hat
++			 * supplied.  This is done due how userspace
++			 * interacts with change_hat.
++			 *
++			 * TODO: Add logging of all failed hats
++			 */
++
++			/* freed below */
++			name = new_compound_name(root->base.hname, hats[0]);
++			target = name;
++			/* released below */
++			hat = aa_new_null_profile(profile, 1);
++			if (!hat) {
++				info = "failed null profile create";
++				error = -ENOMEM;
++				goto audit;
++			}
++		} else {
++			target = hat->base.hname;
++			if (!PROFILE_IS_HAT(hat)) {
++				info = "target not hat";
++				error = -EPERM;
++				goto audit;
++			}
++		}
++
++		error = may_change_ptraced_domain(current, hat);
++		if (error) {
++			info = "ptraced";
++			error = -EPERM;
++			goto audit;
++		}
++
++		if (!permtest) {
++			error = aa_set_current_hat(hat, token);
++			if (error == -EACCES)
++				/* kill task incase of brute force attacks */
++				perms.kill = AA_MAY_CHANGEHAT;
++			else if (name && !error)
++				/* reset error for learning of new hats */
++				error = -ENOENT;
++		}
++	} else if (previous_profile) {
++		/* Return to saved profile.  Kill task if restore fails
++		 * to avoid brute force attacks
++		 */
++		target = previous_profile->base.hname;
++		error = aa_restore_previous_profile(token);
++		perms.kill = AA_MAY_CHANGEHAT;
++	} else
++		/* ignore restores when there is no saved profile */
++		goto out;
++
++audit:
++	if (!permtest)
++		error = aa_audit_file(profile, &perms, GFP_KERNEL,
++				      OP_CHANGE_HAT, AA_MAY_CHANGEHAT, NULL,
++				      target, 0, info, error);
++
++out:
++	aa_put_profile(hat);
++	kfree(name);
++	put_cred(cred);
++
++	return error;
++}
++
++/**
++ * aa_change_profile - perform a one-way profile transition
++ * @ns_name: name of the profile namespace to change to (MAYBE NULL)
++ * @hname: name of profile to change to (MAYBE NULL)
++ * @onexec: whether this transition is to take place immediately or at exec
++ * @permtest: true if this is just a permission test
++ *
++ * Change to new profile @name.  Unlike with hats, there is no way
++ * to change back.  If @name isn't specified the current profile name is
++ * used.
++ * If @onexec then the transition is delayed until
++ * the next exec.
++ *
++ * Returns %0 on success, error otherwise.
++ */
++int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
++		      bool permtest)
++{
++	const struct cred *cred;
++	struct aa_task_cxt *cxt;
++	struct aa_profile *profile, *target = NULL;
++	struct aa_namespace *ns = NULL;
++	struct file_perms perms = {};
++	const char *name = NULL, *info = NULL;
++	int op, error = 0;
++	u32 request;
++
++	if (!hname && !ns_name)
++		return -EINVAL;
++
++	if (onexec) {
++		request = AA_MAY_ONEXEC;
++		op = OP_CHANGE_ONEXEC;
++	} else {
++		request = AA_MAY_CHANGE_PROFILE;
++		op = OP_CHANGE_PROFILE;
++	}
++
++	cred = get_current_cred();
++	cxt = cred->security;
++	profile = aa_cred_profile(cred);
++
++	if (ns_name) {
++		/* released below */
++		ns = aa_find_namespace(profile->ns, ns_name);
++		if (!ns) {
++			/* we don't create new namespace in complain mode */
++			name = ns_name;
++			info = "namespace not found";
++			error = -ENOENT;
++			goto audit;
 +		}
 +	} else
 +		/* released below */
-+		ns = aa_get_namespace(root);
++		ns = aa_get_namespace(profile->ns);
 +
-+	write_lock(&ns->lock);
-+	if (!name) {
-+		/* remove namespace - can only happen if fqname[0] == ':' */
-+		__remove_namespace(ns);
-+	} else {
-+		/* remove profile */
-+		profile = aa_get_profile(__lookup_profile(&ns->base, name));
-+		if (!profile) {
-+			error = -ENOENT;
-+			info = "profile does not exist";
-+			goto fail_ns_lock;
-+		}
-+		name = profile->base.hname;
-+		__remove_profile(profile);
++	/* if the name was not specified, use the name of the current profile */
++	if (!hname) {
++		if (unconfined(profile))
++			hname = ns->unconfined->base.hname;
++		else
++			hname = profile->base.hname;
 +	}
-+	write_unlock(&ns->lock);
 +
-+	/* don't fail removal if audit fails */
-+	(void) audit_policy(OP_PROF_RM, GFP_KERNEL, name, info, error);
++	perms = change_profile_perms(profile, ns, hname, request,
++				     profile->file.start);
++	if (!(perms.allow & request)) {
++		error = -EACCES;
++		goto audit;
++	}
++
++	/* released below */
++	target = aa_lookup_profile(ns, hname);
++	if (!target) {
++		info = "profile not found";
++		error = -ENOENT;
++		if (permtest || !COMPLAIN_MODE(profile))
++			goto audit;
++		/* release below */
++		target = aa_new_null_profile(profile, 0);
++		if (!target) {
++			info = "failed null profile create";
++			error = -ENOMEM;
++			goto audit;
++		}
++	}
++
++	/* check if tracing task is allowed to trace target domain */
++	error = may_change_ptraced_domain(current, target);
++	if (error) {
++		info = "ptrace prevents transition";
++		goto audit;
++	}
++
++	if (permtest)
++		goto audit;
++
++	if (onexec)
++		error = aa_set_current_onexec(target);
++	else
++		error = aa_replace_current_profile(target);
++
++audit:
++	if (!permtest)
++		error = aa_audit_file(profile, &perms, GFP_KERNEL, op, request,
++				      name, hname, 0, info, error);
++
 +	aa_put_namespace(ns);
-+	aa_put_profile(profile);
-+	return size;
++	aa_put_profile(target);
++	put_cred(cred);
 +
-+fail_ns_lock:
-+	write_unlock(&ns->lock);
-+	aa_put_namespace(ns);
-+
-+fail:
-+	(void) audit_policy(OP_PROF_RM, GFP_KERNEL, name, info, error);
 +	return error;
 +}
-diff --git a/security/apparmor/sid.c b/security/apparmor/sid.c
+diff --git a/security/apparmor/include/domain.h b/security/apparmor/include/domain.h
 new file mode 100644
-index 0000000..f0b34f7
+index 0000000..de04464
 --- /dev/null
-+++ b/security/apparmor/sid.c
-@@ -0,0 +1,55 @@
++++ b/security/apparmor/include/domain.h
+@@ -0,0 +1,36 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor security identifier (sid) manipulation fns
++ * This file contains AppArmor security domain transition function definitions.
 + *
++ * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License as
 + * published by the Free Software Foundation, version 2 of the
 + * License.
-+ *
-+ *
-+ * AppArmor allocates a unique sid for every profile loaded.  If a profile
-+ * is replaced it receives the sid of the profile it is replacing.
-+ *
-+ * The sid value of 0 is invalid.
 + */
 +
-+#include <linux/spinlock.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
++#include <linux/binfmts.h>
++#include <linux/types.h>
 +
-+#include "include/sid.h"
++#ifndef __AA_DOMAIN_H
++#define __AA_DOMAIN_H
 +
-+/* global counter from which sids are allocated */
-+static u32 global_sid;
-+static DEFINE_SPINLOCK(sid_lock);
++struct aa_domain {
++	int size;
++	char **table;
++};
 +
-+/* TODO FIXME: add sid to profile mapping, and sid recycling */
++int apparmor_bprm_set_creds(struct linux_binprm *bprm);
++int apparmor_bprm_secureexec(struct linux_binprm *bprm);
++void apparmor_bprm_committing_creds(struct linux_binprm *bprm);
++void apparmor_bprm_committed_creds(struct linux_binprm *bprm);
 +
-+/**
-+ * aa_alloc_sid - allocate a new sid for a profile
-+ */
-+u32 aa_alloc_sid(void)
-+{
-+	u32 sid;
++void aa_free_domain_entries(struct aa_domain *domain);
++int aa_change_hat(const char *hats[], int count, u64 token, bool permtest);
++int aa_change_profile(const char *ns_name, const char *name, bool onexec,
++		      bool permtest);
 +
-+	/*
-+	 * TODO FIXME: sid recycling - part of profile mapping table
-+	 */
-+	spin_lock(&sid_lock);
-+	sid = (++global_sid);
-+	spin_unlock(&sid_lock);
-+	return sid;
-+}
-+
-+/**
-+ * aa_free_sid - free a sid
-+ * @sid: sid to free
-+ */
-+void aa_free_sid(u32 sid)
-+{
-+	;			/* NOP ATM */
-+}
++#endif /* __AA_DOMAIN_H */
 -- 
 1.7.1
 
