@@ -1,127 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab0G0Gpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 02:45:31 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:57334 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab0G0Gp3 (ORCPT
+	id S1753508Ab0G0GxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 02:53:19 -0400
+Received: from n3-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.157]:35076 "HELO
+	n3-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753311Ab0G0GxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 02:45:29 -0400
-Date: Tue, 27 Jul 2010 08:45:23 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Marek <mmarek@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Francis Galiegue <fgaliegue@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Andi Kleen <ak@linux.intel.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Nir Tzachar <nir.tzachar@gmail.com>,
-        Vadim Bendebury <vbendeb@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Cheng Renquan <crquan@gmail.com>, Trevor Keith <tsrk@tsrk.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [RFC][PATCH] kconfig: implement select with values
-Message-ID: <20100727064523.GA25872@merkur.ravnborg.org>
-References: <20100720043706.3813715a.sfr@canb.auug.org.au> <20100726221717.GA22439@merkur.ravnborg.org> <AANLkTikP3nZd-LionO27vsinjXz=upKbDZeErSD4CAfz@mail.gmail.com>
+	Tue, 27 Jul 2010 02:53:18 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 560582.25681.bm@omp131.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=Ht2IVIEmTgswEgMWCxEk8fTgZJRgJuOakPo8EYFXOrFQzoL9pr4/9ZW8jOdSxanu+wbAm1CAG4g702+wOP1vYL050AWHxpy1V0XGyXfboq5bt+klJgjVzep5yRwbpb8MZ809W72bTYA0ZJonTslwDfVhwMXlzGQyjcZywsz9CnE=;
+Message-ID: <358447.61367.qm@web180316.mail.gq1.yahoo.com>
+X-YMail-OSG: XqnO_LwVM1nOKvVkLzBMQaMu.TDh55ZvRwLo_F3yLjf3IuE
+ W9X7r.4h24aqDGwGcsFFtiEwkILAytCHUqoR0s7B6iEaapVgCqebdJZTwsB3
+ zCl4IHP5dOfPt.bvf0G7lmAJ5dfmdh73O4ZKOv4aj0TCOv_Mydr3gj39_cFE
+ lyixIx6sSPfbhUSsXbEyBZq4VtJNH6Zp6GN9GEFPilo9qVRBzcLKIzbO30td
+ DbCTM6cJcOmlrwCEcWBuHVWsnhVpD_P_tI9e7fvEVnKwe15FCH5SJTFydy.2
+ kKDjFfOUFJYkM69tB_LLpmnt8t37KMATFvHgJsbnPa5B3qeeDm9OfTkjVkg-
+ -
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.276605
+Date: Mon, 26 Jul 2010 23:53:17 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv4 1/5] USB: gadget: composite: Better string override handling
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>, Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        stable <stable@kernel.org>
+In-Reply-To: <20100722234630.GA1352@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikP3nZd-LionO27vsinjXz=upKbDZeErSD4CAfz@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Cute.  I didn't know this was possible.  I'll give it a try and see
-> how it works for me.  Do override config options also pickup
-> select/depends constraints applied by later definitions?  I think that
-> would be necessary to kick out warnings when a defconfig selection
-> isn't actually achievable.
 
-kconfig allows one to add more properties to a config
-symbol by defining the symbol again.
+> David, do these look better?
 
-So:
-config FOO
-	bool
-	prompt "foo prompt"
-	default y
-	help
-	  Help text
+Can I get a URL to a specific patch?  Or
+a re-post
 
-Is the same as:
-config FOO
-	bool
-
-config FOO
-	prompt "foo prompt"
-
-config FOO
-	default y
-
-config FOO
-	help
-	  help text
-
-The abvoe four lines can be located in different files.
-
-And likewise kconfig allows the same property to be
-specified twice or more.
-
-So it is OK to say:
-
-config BAR
-	tristate "bar prompt"
-	default m
-	default y
-
-Here kconfig just picks the first default is see.
-
-And the example in my original mail uses the feature
-that we can specify several defaults - and kconfig uses the first.
-
-
-For choices the same is possible but then you need to use
-a named choice - something that no one does today in the kernel.
-
-choice CHOICE_X86_CPU
-	default M386
-
-endchoice
-
-Here we change the default to M386 which becomes the
-selected if we use "alldefconfig".
-
-[Note: It does not work until we use named choices in arch/x86/Kconfig.cpu]
-
-> 
-> > Now in the original suggestion of Linus he used:
-> >
-> >    KBUILD_KCONFIG=Mykconfig make allnoconfig
-> >
-> > And "allnoconfig" would make the modified defaults useless.
-> >
-> > But the soon-to-be-introduced alldefconfig is more sensible.
-> >
-> > alldefconfig uses default values for everything.
-> 
-> I basically used defconfig in the prototype that I posted.  I think it
-> works well for me, and I've got it integrated into the build targets
-> (just like Stephen's earlier patch) without having to do a
-> KBUILD_KCONFIG trick.
-
-"defconfig" with an empty file gives same config as "alldefconfig" so
-it makes sense. But we wanted to drop the use of defconfig files
-in favour of files with Kconfig syntax.
-So alldefconfig is just a better fit here.
-
-[The above btw. also makes "savedefconfig" less usefull].
-
-	Sam
 
