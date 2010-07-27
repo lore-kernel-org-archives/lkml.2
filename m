@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab0G0CdX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 22:33:23 -0400
-Received: from smtp-out-074.synserver.de ([212.40.180.74]:1040 "HELO
-	smtp-out-074.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751430Ab0G0CdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 22:33:22 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 27729
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] fbdev: Make jz4740-fb depends on MACH_JZ4740
-Date: Tue, 27 Jul 2010 04:32:59 +0200
-Message-Id: <1280197979-24307-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20100727111422.673b4919.sfr@canb.auug.org.au>
-References: <20100727111422.673b4919.sfr@canb.auug.org.au>
+	id S1752134Ab0G0ChA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 22:37:00 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:46929 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430Ab0G0Cg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 22:36:58 -0400
+Subject: Re: [PATCH 4/8] v3 Allow memory_block to span multiple memory
+ sections
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
+In-Reply-To: <4C4A5985.6000206@austin.ibm.com>
+References: <4C451BF5.50304@austin.ibm.com>
+	 <4C451E1C.8070907@austin.ibm.com> <1279653481.9785.4.camel@nimitz>
+	 <4C4A5985.6000206@austin.ibm.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Mon, 26 Jul 2010 19:36:52 -0700
+Message-ID: <1280198212.16922.422.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The jz4740-fb driver should only be selectabed of MACH_JZ4740 is selected.
+On Fri, 2010-07-23 at 22:09 -0500, Nathan Fontenot wrote:
+> If we add a lock should I submit it as part of this patchset? or
+> submit it
+> as a follow-on?
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/video/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It should probably be at the beginning of the patch set.  We don't want
+to have a case where your set introduces races that we _need_ a later
+patch to fix.
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index a42cb9b..9e711a1 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -2231,7 +2231,7 @@ config FB_BROADSHEET
- 
- config FB_JZ4740
- 	tristate "JZ4740 LCD framebuffer support"
--	depends on FB
-+	depends on FB && MACH_JZ4740
- 	select FB_SYS_FILLRECT
- 	select FB_SYS_COPYAREA
- 	select FB_SYS_IMAGEBLIT
--- 
-1.5.6.5
+-- Dave
 
