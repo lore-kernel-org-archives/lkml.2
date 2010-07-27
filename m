@@ -1,17 +1,17 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab0G0LC0 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 27 Jul 2010 07:02:26 -0400
-Received: from compulab.co.il ([67.18.134.219]:55548 "EHLO compulab.co.il"
+	id S1756211Ab0G0LDt (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 27 Jul 2010 07:03:49 -0400
+Received: from compulab.co.il ([67.18.134.219]:55556 "EHLO compulab.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119Ab0G0LCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 07:02:25 -0400
+	id S1756085Ab0G0LDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 07:03:48 -0400
 From: y@droid.compulab.local
 To: Liam Girdwood <lrg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org, Mike Rapoport <mike@compulab.co.il>
-Subject: [PATCH] mfd: add TPS6586x driver
-Date: Tue, 27 Jul 2010 14:01:40 +0300
-Message-Id: <1280228500-2173-1-git-send-email-y>
+Subject: [PATCH] regulator: add TPS6586X regulator driver
+Date: Tue, 27 Jul 2010 14:03:01 +0300
+Message-Id: <1280228581-2219-1-git-send-email-y>
 X-Mailer: git-send-email 1.6.6.2
 X-ACL-Warn: {
 X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
@@ -28,493 +28,434 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mike Rapoport <mike@compulab.co.il>
 
-Add mfd core driver for TPS6586x PMICs family.
-The driver provides I/O access for the sub-device drivers and performs
-regstration of the sub-devices based on the platform requirements.
-In addition it implements GPIOlib interface for the chip GPIOs.
-
-TODO:
-	- add interrupt support
-	- add platform data for PWM, backlight leds and charger
-
 Signed-off-by: Mike Rapoport <mike@compulab.co.il>
 ---
- drivers/mfd/Kconfig          |   14 ++
- drivers/mfd/Makefile         |    1 +
- drivers/mfd/tps6586x.c       |  375 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/tps6586x.h |   47 ++++++
- 4 files changed, 437 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/tps6586x.c
- create mode 100644 include/linux/mfd/tps6586x.h
+ drivers/regulator/Kconfig              |    6 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/tps6586x-regulator.c |  387 ++++++++++++++++++++++++++++++++
+ 3 files changed, 394 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/tps6586x-regulator.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 9da0e50..b6ee6cf 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -482,6 +482,20 @@ config MFD_JANZ_CMODIO
- 	  host many different types of MODULbus daughterboards, including
- 	  CAN and GPIO controllers.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 04f2e08..c833b14 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -201,5 +201,11 @@ config REGULATOR_88PM8607
+ 	help
+ 	  This driver supports 88PM8607 voltage regulator chips.
  
-+config MFD_TPS6586X
-+	tristate "TPS6586x Power Management chips"
++config REGULATOR_TPS6586X
++	tristate "TI TPS6586X Power regulators"
 +	depends on I2C
-+	select MFD_CORE
 +	help
-+	  If you say yes here you get support for the TPS6586X series of
-+	  Power Management chips.
-+  	  This driver provides common support for accessing the device,
-+	  additional drivers must be enabled in order to use the
-+	  functionality of the device.
++	  This driver supports TPS6586X voltage regulator chips.
 +
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called tps6586x.
-+
- endif # MFD_SUPPORT
+ endif
  
- menu "Multimedia Capabilities Port drivers"
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index fb503e7..fefc1d3 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -71,3 +71,4 @@ obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
- obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
- obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
- obj-$(CONFIG_MFD_JANZ_CMODIO)	+= janz-cmodio.o
-+obj-$(CONFIG_MFD_TPS6586X)	+= tps6586x.o
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 4e7feec..f1c779c 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -31,5 +31,6 @@ obj-$(CONFIG_REGULATOR_AB3100) += ab3100.o
+ obj-$(CONFIG_REGULATOR_TPS65023) += tps65023-regulator.o
+ obj-$(CONFIG_REGULATOR_TPS6507X) += tps6507x-regulator.o
+ obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
++obj-$(CONFIG_REGULATOR_TPS6586X) += tps6586x-regulator.o
+ 
+ ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
 new file mode 100644
-index 0000000..be514e5
+index 0000000..76cc41e
 --- /dev/null
-+++ b/drivers/mfd/tps6586x.c
-@@ -0,0 +1,375 @@
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -0,0 +1,387 @@
 +/*
-+ * Core driver for TI TPS6586x PMIC family
++ * Regulator driver for TI TPS6586x
 + *
-+ * Copyright (c) 2010 CompuLab Ltd.
-+ * Mike Rapoport <mike@compulab.co.il>
++ * Copyright (C) 2010 Compulab Ltd.
++ * Author: Mike Rapoport <mike@compulab.co.il>
 + *
-+ * Based on da903x.c.
-+ * Copyright (C) 2008 Compulab, Ltd.
-+ * Mike Rapoport <mike@compulab.co.il>
++ * Based on da903x
 + * Copyright (C) 2006-2008 Marvell International Ltd.
-+ * Eric Miao <eric.miao@marvell.com>
++ * Copyright (C) 2008 Compulab Ltd.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
++#define DEBUG
 +#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
++#include <linux/init.h>
++#include <linux/err.h>
 +#include <linux/slab.h>
-+#include <linux/gpio.h>
-+#include <linux/i2c.h>
-+
-+#include <linux/mfd/core.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
 +#include <linux/mfd/tps6586x.h>
 +
-+/* GPIO control registers */
-+#define TPS6586X_GPIOSET1	0x5d
-+#define TPS6586X_GPIOSET2	0x5e
++/* supply control and voltage setting  */
++#define TPS6586X_SUPPLYENA	0x10
++#define TPS6586X_SUPPLYENB	0x11
++#define TPS6586X_SUPPLYENC	0x12
++#define TPS6586X_SUPPLYEND	0x13
++#define TPS6586X_SUPPLYENE	0x14
++#define TPS6586X_VCC1		0x20
++#define TPS6586X_VCC2		0x21
++#define TPS6586X_SM1V1		0x23
++#define TPS6586X_SM1V2		0x24
++#define TPS6586X_SM1SL		0x25
++#define TPS6586X_SM0V1		0x26
++#define TPS6586X_SM0V2		0x27
++#define TPS6586X_SM0SL		0x28
++#define TPS6586X_LDO2AV1	0x29
++#define TPS6586X_LDO2AV2	0x2A
++#define TPS6586X_LDO2BV1	0x2F
++#define TPS6586X_LDO2BV2	0x30
++#define TPS6586X_LDO4V1		0x32
++#define TPS6586X_LDO4V2		0x33
 +
-+/* device id */
-+#define TPS6586X_VERSIONCRC	0xcd
-+#define TPS658621A_VERSIONCRC	0x15
++/* converter settings  */
++#define TPS6586X_SUPPLYV1	0x41
++#define TPS6586X_SUPPLYV2	0x42
++#define TPS6586X_SUPPLYV3	0x43
++#define TPS6586X_SUPPLYV4	0x44
++#define TPS6586X_SUPPLYV5	0x45
++#define TPS6586X_SUPPLYV6	0x46
++#define TPS6586X_SMODE1		0x47
++#define TPS6586X_SMODE2		0x48
 +
-+struct tps6586x {
-+	struct mutex		lock;
-+	struct device		*dev;
-+	struct i2c_client	*client;
++struct tps6586x_regulator {
++	struct regulator_desc desc;
 +
-+	struct gpio_chip	gpio;
++	int volt_reg;
++	int volt_shift;
++	int volt_nbits;
++	int enable_bit[2];
++	int enable_reg[2];
++
++	int *voltages;
++
++	/* for DVM regulators */
++	int go_reg;
++	int go_bit;
 +};
 +
-+static inline int __tps6586x_read(struct i2c_client *client,
-+				  int reg, uint8_t *val)
++static inline struct device *to_tps6586x_dev(struct regulator_dev *rdev)
 +{
-+	int ret;
++	return rdev_get_dev(rdev)->parent->parent;
++}
 +
-+	ret = i2c_smbus_read_byte_data(client, reg);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "failed reading at 0x%02x\n", reg);
-+		return ret;
++static int tps6586x_ldo_list_voltage(struct regulator_dev *rdev,
++				     unsigned selector)
++{
++	struct tps6586x_regulator *info = rdev_get_drvdata(rdev);
++
++	return info->voltages[selector];
++}
++
++
++static int __tps6586x_ldo_set_voltage(struct device *parent,
++				      struct tps6586x_regulator *ri,
++				      int min_uV, int max_uV)
++{
++	int val, uV;
++	uint8_t mask;
++
++	for (val = 0; val < ri->desc.n_voltages; val++) {
++		uV = ri->voltages[val] * 1000;
++
++		/* LDO0 has minimal voltage 1.2 rather than 1.25 */
++		if (ri->desc.id == TPS6586X_ID_LDO_0 && val == 0)
++			uV -= 50 * 1000;
++
++		/* use the first in-range value */
++		if (min_uV <= uV && uV <= max_uV) {
++
++			val <<= ri->volt_shift;
++			mask = ((1 << ri->volt_nbits) - 1) << ri->volt_shift;
++
++			return tps6586x_update(parent, ri->volt_reg, val, mask);
++		}
 +	}
 +
-+	*val = (uint8_t)ret;
-+
-+	return 0;
++	return -EINVAL;
 +}
 +
-+static inline int __tps6586x_reads(struct i2c_client *client, int reg,
-+				   int len, uint8_t *val)
++static int tps6586x_ldo_set_voltage(struct regulator_dev *rdev,
++				    int min_uV, int max_uV)
 +{
-+	int ret;
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps6586x_dev(rdev);
 +
-+	ret = i2c_smbus_read_i2c_block_data(client, reg, len, val);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "failed reading from 0x%02x\n", reg);
-+		return ret;
-+	}
-+
-+	return 0;
++	return __tps6586x_ldo_set_voltage(parent, ri, min_uV, max_uV);
 +}
 +
-+static inline int __tps6586x_write(struct i2c_client *client,
-+				 int reg, uint8_t val)
++static int tps6586x_ldo_get_voltage(struct regulator_dev *rdev)
 +{
-+	int ret;
-+
-+	ret = i2c_smbus_write_byte_data(client, reg, val);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "failed writing 0x%02x to 0x%02x\n",
-+				val, reg);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static inline int __tps6586x_writes(struct i2c_client *client, int reg,
-+				  int len, uint8_t *val)
-+{
-+	int ret;
-+
-+	ret = i2c_smbus_write_i2c_block_data(client, reg, len, val);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "failed writings to 0x%02x\n", reg);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+int tps6586x_write(struct device *dev, int reg, uint8_t val)
-+{
-+	return __tps6586x_write(to_i2c_client(dev), reg, val);
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_write);
-+
-+int tps6586x_writes(struct device *dev, int reg, int len, uint8_t *val)
-+{
-+	return __tps6586x_writes(to_i2c_client(dev), reg, len, val);
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_writes);
-+
-+int tps6586x_read(struct device *dev, int reg, uint8_t *val)
-+{
-+	return __tps6586x_read(to_i2c_client(dev), reg, val);
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_read);
-+
-+int tps6586x_reads(struct device *dev, int reg, int len, uint8_t *val)
-+{
-+	return __tps6586x_reads(to_i2c_client(dev), reg, len, val);
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_reads);
-+
-+int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask)
-+{
-+	struct tps6586x *tps6586x = dev_get_drvdata(dev);
-+	uint8_t reg_val;
-+	int ret = 0;
-+
-+	mutex_lock(&tps6586x->lock);
-+
-+	ret = __tps6586x_read(to_i2c_client(dev), reg, &reg_val);
-+	if (ret)
-+		goto out;
-+
-+	if ((reg_val & bit_mask) == 0) {
-+		reg_val |= bit_mask;
-+		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
-+	}
-+out:
-+	mutex_unlock(&tps6586x->lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_set_bits);
-+
-+int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask)
-+{
-+	struct tps6586x *tps6586x = dev_get_drvdata(dev);
-+	uint8_t reg_val;
-+	int ret = 0;
-+
-+	mutex_lock(&tps6586x->lock);
-+
-+	ret = __tps6586x_read(to_i2c_client(dev), reg, &reg_val);
-+	if (ret)
-+		goto out;
-+
-+	if (reg_val & bit_mask) {
-+		reg_val &= ~bit_mask;
-+		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
-+	}
-+out:
-+	mutex_unlock(&tps6586x->lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_clr_bits);
-+
-+int tps6586x_update(struct device *dev, int reg, uint8_t val, uint8_t mask)
-+{
-+	struct tps6586x *tps6586x = dev_get_drvdata(dev);
-+	uint8_t reg_val;
-+	int ret = 0;
-+
-+	mutex_lock(&tps6586x->lock);
-+
-+	ret = __tps6586x_read(tps6586x->client, reg, &reg_val);
-+	if (ret)
-+		goto out;
-+
-+	if ((reg_val & mask) != val) {
-+		reg_val = (reg_val & ~mask) | val;
-+		ret = __tps6586x_write(tps6586x->client, reg, reg_val);
-+	}
-+out:
-+	mutex_unlock(&tps6586x->lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(tps6586x_update);
-+
-+static int tps6586x_gpio_get(struct gpio_chip *gc, unsigned offset)
-+{
-+	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
-+	uint8_t val;
-+	int ret;
-+
-+	ret = __tps6586x_read(tps6586x->client, TPS6586X_GPIOSET2, &val);
-+	if (ret)
-+		return ret;
-+
-+	return !!(val & (1 << offset));
-+}
-+
-+
-+static void tps6586x_gpio_set(struct gpio_chip *chip, unsigned offset,
-+			      int value)
-+{
-+	struct tps6586x *tps6586x = container_of(chip, struct tps6586x, gpio);
-+
-+	__tps6586x_write(tps6586x->client, TPS6586X_GPIOSET2,
-+			 value << offset);
-+}
-+
-+static int tps6586x_gpio_output(struct gpio_chip *gc, unsigned offset,
-+				int value)
-+{
-+	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps6586x_dev(rdev);
 +	uint8_t val, mask;
-+
-+	tps6586x_gpio_set(gc, offset, value);
-+
-+	val = 0x1 << (offset * 2);
-+	mask = 0x3 << (offset * 2);
-+
-+	return tps6586x_update(tps6586x->dev, TPS6586X_GPIOSET1, val, mask);
-+}
-+
-+static void tps6586x_gpio_init(struct tps6586x *tps6586x, int gpio_base)
-+{
 +	int ret;
 +
-+	if (!gpio_base)
-+		return;
-+
-+	tps6586x->gpio.owner		= THIS_MODULE;
-+	tps6586x->gpio.label		= tps6586x->client->name;
-+	tps6586x->gpio.dev		= tps6586x->dev;
-+	tps6586x->gpio.base		= gpio_base;
-+	tps6586x->gpio.ngpio		= 4;
-+	tps6586x->gpio.can_sleep	= 1;
-+
-+	/* FIXME: add handling of GPIOs as dedicated inputs */
-+	tps6586x->gpio.direction_output	= tps6586x_gpio_output;
-+	tps6586x->gpio.set		= tps6586x_gpio_set;
-+	tps6586x->gpio.get		= tps6586x_gpio_get;
-+
-+	ret = gpiochip_add(&tps6586x->gpio);
++	ret = tps6586x_read(parent, ri->volt_reg, &val);
 +	if (ret)
-+		dev_warn(tps6586x->dev, "GPIO registration failed: %d\n", ret);
++		return ret;
++
++	mask = ((1 << ri->volt_nbits) - 1) << ri->volt_shift;
++	val = (val & mask) >> ri->volt_shift;
++
++	if (val > ri->desc.n_voltages)
++		BUG();
++
++	return ri->voltages[val];
 +}
 +
-+static int __remove_subdev(struct device *dev, void *unused)
++static int tps6586x_dvm_set_voltage(struct regulator_dev *rdev,
++				    int min_uV, int max_uV)
 +{
-+	platform_device_unregister(to_platform_device(dev));
-+	return 0;
-+}
-+
-+static int tps6586x_remove_subdevs(struct tps6586x *tps6586x)
-+{
-+	return device_for_each_child(tps6586x->dev, NULL, __remove_subdev);
-+}
-+
-+static int __devinit tps6586x_add_subdevs(struct tps6586x *tps6586x,
-+					  struct tps6586x_platform_data *pdata)
-+{
-+	struct tps6586x_subdev_info *subdev;
-+	struct platform_device *pdev;
-+	int i, ret = 0;
-+
-+	for (i = 0; i < pdata->num_subdevs; i++) {
-+		subdev = &pdata->subdevs[i];
-+
-+		pdev = platform_device_alloc(subdev->name, subdev->id);
-+
-+		pdev->dev.parent = tps6586x->dev;
-+		pdev->dev.platform_data = subdev->platform_data;
-+
-+		ret = platform_device_add(pdev);
-+		if (ret)
-+			goto failed;
-+	}
-+	return 0;
-+
-+failed:
-+	tps6586x_remove_subdevs(tps6586x);
-+	return ret;
-+}
-+
-+static int __devinit tps6586x_probe(struct i2c_client *client,
-+				    const struct i2c_device_id *id)
-+{
-+	struct tps6586x_platform_data *pdata = client->dev.platform_data;
-+	struct tps6586x *tps6586x;
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps6586x_dev(rdev);
 +	int ret;
 +
-+	if (!pdata) {
-+		dev_err(&client->dev, "tps6586x requires platform data\n");
-+		return -ENOTSUPP;
-+	}
++	ret = __tps6586x_ldo_set_voltage(parent, ri, min_uV, max_uV);
++	if (ret)
++		return ret;
 +
-+	ret = i2c_smbus_read_byte_data(client, TPS6586X_VERSIONCRC);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "Chip ID read failed: %d\n", ret);
-+		return -EIO;
-+	}
-+
-+	if (ret != TPS658621A_VERSIONCRC) {
-+		dev_err(&client->dev, "Unsupported chip ID: %x\n", ret);
-+		return -ENODEV;
-+	}
-+
-+	tps6586x = kzalloc(sizeof(struct tps6586x), GFP_KERNEL);
-+	if (tps6586x == NULL)
-+		return -ENOMEM;
-+
-+	tps6586x->client = client;
-+	tps6586x->dev = &client->dev;
-+	i2c_set_clientdata(client, tps6586x);
-+
-+	mutex_init(&tps6586x->lock);
-+
-+	ret = tps6586x_add_subdevs(tps6586x, pdata);
-+	if (ret) {
-+		dev_err(&client->dev, "add devices failed: %d\n", ret);
-+		goto err_add_devs;
-+	}
-+
-+	tps6586x_gpio_init(tps6586x, pdata->gpio_base);
-+
-+	return 0;
-+
-+err_add_devs:
-+	kfree(tps6586x);
-+	return ret;
++	return tps6586x_set_bits(parent, ri->go_reg, ri->go_bit);
 +}
 +
-+static int __devexit tps6586x_remove(struct i2c_client *client)
++static int tps6586x_regulator_enable(struct regulator_dev *rdev)
 +{
-+	return 0;
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps6586x_dev(rdev);
++
++	return tps6586x_set_bits(parent, ri->enable_reg[0],
++				 1 << ri->enable_bit[0]);
 +}
 +
-+static const struct i2c_device_id tps6586x_id_table[] = {
-+	{ "tps6586x", 0 },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(i2c, tps6586x_id_table);
-+
-+static struct i2c_driver tps6586x_driver = {
-+	.driver	= {
-+		.name	= "tps6586x",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= tps6586x_probe,
-+	.remove		= __devexit_p(tps6586x_remove),
-+	.id_table	= tps6586x_id_table,
-+};
-+
-+static int __init tps6586x_init(void)
++static int tps6586x_regulator_disable(struct regulator_dev *rdev)
 +{
-+	return i2c_add_driver(&tps6586x_driver);
-+}
-+subsys_initcall(tps6586x_init);
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps6586x_dev(rdev);
 +
-+static void __exit tps6586x_exit(void)
++	return tps6586x_clr_bits(parent, ri->enable_reg[0],
++				 1 << ri->enable_bit[0]);
++}
++
++static int tps6586x_regulator_is_enabled(struct regulator_dev *rdev)
 +{
-+	i2c_del_driver(&tps6586x_driver);
++	struct tps6586x_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps6586x_dev(rdev);
++	uint8_t reg_val;
++	int ret;
++
++	ret = tps6586x_read(parent, ri->enable_reg[0], &reg_val);
++	if (ret)
++		return ret;
++
++	return !!(reg_val & (1 << ri->enable_bit[0]));
 +}
-+module_exit(tps6586x_exit);
 +
-+MODULE_DESCRIPTION("TPS6586X core driver");
-+MODULE_AUTHOR("Mike Rapoport <mike@compulab.co.il>");
-+MODULE_LICENSE("GPL");
++static struct regulator_ops tps6586x_regulator_ldo_ops = {
++	.list_voltage = tps6586x_ldo_list_voltage,
++	.get_voltage = tps6586x_ldo_get_voltage,
++	.set_voltage = tps6586x_ldo_set_voltage,
 +
-diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
-new file mode 100644
-index 0000000..772b3ae
---- /dev/null
-+++ b/include/linux/mfd/tps6586x.h
-@@ -0,0 +1,47 @@
-+#ifndef __LINUX_MFD_TPS6586X_H
-+#define __LINUX_MFD_TPS6586X_H
-+
-+enum {
-+	TPS6586X_ID_SM_0,
-+	TPS6586X_ID_SM_1,
-+	TPS6586X_ID_SM_2,
-+	TPS6586X_ID_LDO_0,
-+	TPS6586X_ID_LDO_1,
-+	TPS6586X_ID_LDO_2,
-+	TPS6586X_ID_LDO_3,
-+	TPS6586X_ID_LDO_4,
-+	TPS6586X_ID_LDO_5,
-+	TPS6586X_ID_LDO_6,
-+	TPS6586X_ID_LDO_7,
-+	TPS6586X_ID_LDO_8,
-+	TPS6586X_ID_LDO_9,
-+	TPS6586X_ID_LDO_RTC,
++	.is_enabled = tps6586x_regulator_is_enabled,
++	.enable = tps6586x_regulator_enable,
++	.disable = tps6586x_regulator_disable,
 +};
 +
-+struct tps6586x_subdev_info {
-+	int		id;
-+	const char	*name;
-+	void		*platform_data;
++static struct regulator_ops tps6586x_regulator_dvm_ops = {
++	.list_voltage = tps6586x_ldo_list_voltage,
++	.get_voltage = tps6586x_ldo_get_voltage,
++	.set_voltage = tps6586x_dvm_set_voltage,
++
++	.is_enabled = tps6586x_regulator_is_enabled,
++	.enable = tps6586x_regulator_enable,
++	.disable = tps6586x_regulator_disable,
 +};
 +
-+struct tps6586x_platform_data {
-+	int num_subdevs;
-+	struct tps6586x_subdev_info *subdevs;
++static int tps6586x_ldo_voltages[] = {
++	1250, 1500, 1800, 2500, 2700, 2850, 3100, 3300,
++};
 +
-+	int gpio_base;
++static int tps6586x_ldo4_voltages[] = {
++	1700, 1725, 1750, 1775, 1800, 1825, 1850, 1875,
++	1900, 1925, 1950, 1975, 2000, 2025, 2050, 2075,
++	2100, 2125, 2150, 2175, 2200, 2225, 2250, 2275,
++	2300, 2325, 2350, 2375, 2400, 2425, 2450, 2475,
++};
++
++static int tps6586x_dvm_voltages[] = {
++	 725,  750,  775,  800,  825,  850,  875,  900,
++	 925,  950,  975, 1000, 1025, 1050, 1075, 1100,
++	1125, 1150, 1175, 1200, 1225, 1250, 1275, 1300,
++	1325, 1350, 1375, 1400, 1425, 1450, 1475, 1500,
++};
++
++#define TPS6586X_REGULATOR(_id, vdata, _ops, vreg, shift, nbits,	\
++			   ereg0, ebit0, ereg1, ebit1, goreg, gobit)	\
++{									\
++	.desc	= {							\
++		.name	= "REG-" #_id,					\
++		.ops	= &tps6586x_regulator_##_ops,			\
++		.type	= REGULATOR_VOLTAGE,				\
++		.id	= TPS6586X_ID_##_id,				\
++		.n_voltages = ARRAY_SIZE(tps6586x_##vdata##_voltages),	\
++		.owner	= THIS_MODULE,					\
++	},								\
++	.volt_reg	= TPS6586X_##vreg,				\
++	.volt_shift	= (shift),					\
++	.volt_nbits	= (nbits),					\
++	.enable_reg[0]	= TPS6586X_SUPPLY##ereg0,			\
++	.enable_bit[0]	= (ebit0),					\
++	.enable_reg[1]	= TPS6586X_SUPPLY##ereg1,			\
++	.enable_bit[1]	= (ebit1),					\
++	.voltages	= tps6586x_##vdata##_voltages,			\
++}
++
++#define TPS6586X_LDO(_id, vdata, vreg, shift, nbits,			\
++		     ereg0, ebit0, ereg1, ebit1)			\
++	TPS6586X_REGULATOR(_id, vdata, ldo_ops, vreg, shift, nbits,	\
++			   ereg0, ebit0, ereg1, ebit1, 0, 0)
++
++#define TPS6586X_DVM(_id, vdata, vreg, shift, nbits,			\
++		     ereg0, ebit0, ereg1, ebit1, goreg, gobit)		\
++	TPS6586X_REGULATOR(_id, vdata, dvm_ops, vreg, shift, nbits,	\
++			   ereg0, ebit0, ereg1, ebit1, goreg, gobit)
++
++static struct tps6586x_regulator tps6586x_regulator[] = {
++	TPS6586X_LDO(LDO_0, ldo, SUPPLYV1, 5, 3, ENC, 0, END, 0),
++	TPS6586X_LDO(LDO_3, ldo, SUPPLYV4, 0, 3, ENC, 2, END, 2),
++	TPS6586X_LDO(LDO_5, ldo, SUPPLYV6, 0, 3, ENE, 6, ENE, 6),
++	TPS6586X_LDO(LDO_6, ldo, SUPPLYV3, 0, 3, ENC, 4, END, 4),
++	TPS6586X_LDO(LDO_7, ldo, SUPPLYV3, 3, 3, ENC, 5, END, 5),
++	TPS6586X_LDO(LDO_8, ldo, SUPPLYV1, 5, 3, ENC, 6, END, 6),
++	TPS6586X_LDO(LDO_9, ldo, SUPPLYV6, 3, 3, ENE, 7, ENE, 7),
++	TPS6586X_LDO(LDO_RTC, ldo, SUPPLYV4, 3, 3, ENE, 7, ENE, 7),
++	TPS6586X_LDO(LDO_1, dvm, SUPPLYV1, 0, 5, ENC, 1, END, 1),
++	TPS6586X_LDO(SM_2, dvm, SUPPLYV2, 0, 5, ENC, 1, END, 1),
++
++	TPS6586X_DVM(LDO_2, dvm, LDO2BV1, 0, 5, ENA, 3, ENB, 3, VCC2, 6),
++	TPS6586X_DVM(LDO_4, ldo4, LDO4V1, 0, 5, ENC, 3, END, 3, VCC1, 6),
++	TPS6586X_DVM(SM_0, dvm, SM0V1, 0, 5, ENA, 1, ENB, 1, VCC1, 2),
++	TPS6586X_DVM(SM_1, dvm, SM1V1, 0, 5, ENA, 0, ENB, 0, VCC1, 0),
 +};
 +
 +/*
-+ * NOTE: the functions below are not intended for use outside
-+ * of the TPS6586X sub-device drivers
++ * TPS6586X has 2 enable bits that are OR'ed to determine the actual
++ * regulator state. Clearing one of this bits allows switching
++ * regulator on and of with single register write.
 + */
-+extern int tps6586x_write(struct device *dev, int reg, uint8_t val);
-+extern int tps6586x_writes(struct device *dev, int reg, int len, uint8_t *val);
-+extern int tps6586x_read(struct device *dev, int reg, uint8_t *val);
-+extern int tps6586x_reads(struct device *dev, int reg, int len, uint8_t *val);
-+extern int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask);
-+extern int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask);
-+extern int tps6586x_update(struct device *dev, int reg, uint8_t val,
-+			   uint8_t mask);
++static inline int tps6586x_regulator_preinit(struct device *parent,
++					     struct tps6586x_regulator *ri)
++{
++	uint8_t val1, val2;
++	int ret;
 +
-+#endif /*__LINUX_MFD_TPS6586X_H */
++	ret = tps6586x_read(parent, ri->enable_reg[0], &val1);
++	if (ret)
++		return ret;
++
++	ret = tps6586x_read(parent, ri->enable_reg[1], &val2);
++	if (ret)
++		return ret;
++
++	if (!(val2 & ri->enable_bit[1]))
++		return 0;
++
++	/*
++	 * The regulator is on, but it's enabled with the bit we don't
++	 * want to use, so we switch the enable bits
++	 */
++	if (!(val1 & ri->enable_bit[0])) {
++		ret = tps6586x_set_bits(parent, ri->enable_reg[0],
++					1 << ri->enable_bit[0]);
++		if (ret)
++			return ret;
++	}
++
++	return tps6586x_clr_bits(parent, ri->enable_reg[1],
++				 1 << ri->enable_bit[1]);
++}
++
++static inline struct tps6586x_regulator *find_regulator_info(int id)
++{
++	struct tps6586x_regulator *ri;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(tps6586x_regulator); i++) {
++		ri = &tps6586x_regulator[i];
++		if (ri->desc.id == id)
++			return ri;
++	}
++	return NULL;
++}
++
++static int __devinit tps6586x_regulator_probe(struct platform_device *pdev)
++{
++	struct tps6586x_regulator *ri = NULL;
++	struct regulator_dev *rdev;
++	int id = pdev->id;
++	int err;
++
++	dev_dbg(&pdev->dev, "Probing reulator %d\n", id);
++
++	ri = find_regulator_info(id);
++	if (ri == NULL) {
++		dev_err(&pdev->dev, "invalid regulator ID specified\n");
++		return -EINVAL;
++	}
++
++	err = tps6586x_regulator_preinit(pdev->dev.parent, ri);
++	if (err)
++		return err;
++
++	rdev = regulator_register(&ri->desc, &pdev->dev,
++				  pdev->dev.platform_data, ri);
++	if (IS_ERR(rdev)) {
++		dev_err(&pdev->dev, "failed to register regulator %s\n",
++				ri->desc.name);
++		return PTR_ERR(rdev);
++	}
++
++	platform_set_drvdata(pdev, ri);
++
++	return 0;
++}
++
++static int __devexit tps6586x_regulator_remove(struct platform_device *pdev)
++{
++	return 0;
++}
++
++static struct platform_driver tps6586x_regulator_driver = {
++	.driver	= {
++		.name	= "tps6586x-regulator",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= tps6586x_regulator_probe,
++	.remove		= __devexit_p(tps6586x_regulator_remove),
++};
++
++static int __init tps6586x_regulator_init(void)
++{
++	return platform_driver_register(&tps6586x_regulator_driver);
++}
++subsys_initcall(tps6586x_regulator_init);
++
++static void __exit tps6586x_regulator_exit(void)
++{
++	platform_driver_unregister(&tps6586x_regulator_driver);
++}
++module_exit(tps6586x_regulator_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Mike Rapoport <mike@compulab.co.il>");
++MODULE_DESCRIPTION("Regulator Driver for TI TPS6586X PMIC");
++MODULE_ALIAS("platform:tps6586x-regulator");
 -- 
 1.6.6.2
 
