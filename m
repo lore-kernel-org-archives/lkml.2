@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab0G0C6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 22:58:35 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49936 "EHLO
+	id S1755815Ab0G0C7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 22:59:22 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:50193 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab0G0C6N (ORCPT
+	with ESMTP id S1755613Ab0G0C6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 22:58:13 -0400
+	Mon, 26 Jul 2010 22:58:34 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 05/13] AppArmor: dfa match engine
-Date: Mon, 26 Jul 2010 19:57:40 -0700
-Message-Id: <1280199468-19680-6-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 11/13] AppArmor: LSM interface, and security module initialization
+Date: Mon, 26 Jul 2010 19:57:46 -0700
+Message-Id: <1280199468-19680-12-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
 References: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
@@ -20,47 +20,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A basic dfa matching engine based off the dfa engine in the Dragon
-Book.  It uses simple row comb compression with a check field.
-
-This allows AppArmor to do pattern matching in linear time, and also
-avoids stack issues that an nfa based engine may have.  The dfa
-engine uses a byte based comparison, with all values being valid.
-Any potential character encoding are handled user side when the dfa
-tables are created.  By convention AppArmor uses \0 to separate two
-dependent path matches since \0 is not a valid path character
-(this is done in the link permission check).
-
-The dfa tables are generated in user space and are verified at load
-time to be internally consistent.
-
-There are several future improvements planned for the dfa engine:
-* The dfa engine may be converted to a hybrid nfa-dfa engine, with
-  a fixed size limited stack.  This would allow for size time
-  tradeoffs, by inserting limited nfa states to help control
-  state explosion that can occur with dfas.
-* The dfa engine may pickup the ability to do limited dynamic
-  variable matching, instead of fixing all variables at policy
-  load time.
+AppArmor hooks to interface with the LSM, module parameters and module
+initialization.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/include/match.h |  132 ++++++++++++++
- security/apparmor/match.c         |  353 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 485 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/include/match.h
- create mode 100644 security/apparmor/match.c
+ security/apparmor/lsm.c |  939 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 939 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/lsm.c
 
-diff --git a/security/apparmor/include/match.h b/security/apparmor/include/match.h
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
 new file mode 100644
-index 0000000..3cd089f
+index 0000000..b4828d7
 --- /dev/null
-+++ b/security/apparmor/include/match.h
-@@ -0,0 +1,132 @@
++++ b/security/apparmor/lsm.c
+@@ -0,0 +1,939 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor policy dfa matching engine definitions.
++ * This file contains AppArmor LSM hooks.
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -71,483 +49,931 @@ index 0000000..3cd089f
 + * License.
 + */
 +
-+#ifndef __AA_MATCH_H
-+#define __AA_MATCH_H
-+
-+#include <linux/workqueue.h>
-+
-+#define DFA_NOMATCH			0
-+#define DFA_START			1
-+
-+#define DFA_VALID_PERM_MASK		0xffffffff
-+#define DFA_VALID_PERM2_MASK		0xffffffff
-+
-+/**
-+ * The format used for transition tables is based on the GNU flex table
-+ * file format (--tables-file option; see Table File Format in the flex
-+ * info pages and the flex sources for documentation). The magic number
-+ * used in the header is 0x1B5E783D insted of 0xF13C57B1 though, because
-+ * the YY_ID_CHK (check) and YY_ID_DEF (default) tables are used
-+ * slightly differently (see the apparmor-parser package).
-+ */
-+
-+#define YYTH_MAGIC	0x1B5E783D
-+#define YYTH_DEF_RECURSE 0x1			/* DEF Table is recursive */
-+
-+struct table_set_header {
-+	u32 th_magic;		/* YYTH_MAGIC */
-+	u32 th_hsize;
-+	u32 th_ssize;
-+	u16 th_flags;
-+	char th_version[];
-+};
-+
-+/* The YYTD_ID are one less than flex table mappings.  The flex id
-+ * has 1 subtracted at table load time, this allows us to directly use the
-+ * ID's as indexes.
-+ */
-+#define	YYTD_ID_ACCEPT	0
-+#define YYTD_ID_BASE	1
-+#define YYTD_ID_CHK	2
-+#define YYTD_ID_DEF	3
-+#define YYTD_ID_EC	4
-+#define YYTD_ID_META	5
-+#define YYTD_ID_ACCEPT2 6
-+#define YYTD_ID_NXT	7
-+#define YYTD_ID_TSIZE	8
-+
-+#define YYTD_DATA8	1
-+#define YYTD_DATA16	2
-+#define YYTD_DATA32	4
-+#define YYTD_DATA64	8
-+
-+/* Each ACCEPT2 table gets 6 dedicated flags, YYTD_DATAX define the
-+ * first flags
-+ */
-+#define ACCEPT1_FLAGS(X) ((X) & 0x3f)
-+#define ACCEPT2_FLAGS(X) ACCEPT1_FLAGS((X) >> YYTD_ID_ACCEPT2)
-+#define TO_ACCEPT1_FLAG(X) ACCEPT1_FLAGS(X)
-+#define TO_ACCEPT2_FLAG(X) (ACCEPT1_FLAGS(X) << YYTD_ID_ACCEPT2)
-+#define DFA_FLAG_VERIFY_STATES 0x1000
-+
-+struct table_header {
-+	u16 td_id;
-+	u16 td_flags;
-+	u32 td_hilen;
-+	u32 td_lolen;
-+	char td_data[];
-+};
-+
-+#define DEFAULT_TABLE(DFA) ((u16 *)((DFA)->tables[YYTD_ID_DEF]->td_data))
-+#define BASE_TABLE(DFA) ((u32 *)((DFA)->tables[YYTD_ID_BASE]->td_data))
-+#define NEXT_TABLE(DFA) ((u16 *)((DFA)->tables[YYTD_ID_NXT]->td_data))
-+#define CHECK_TABLE(DFA) ((u16 *)((DFA)->tables[YYTD_ID_CHK]->td_data))
-+#define EQUIV_TABLE(DFA) ((u8 *)((DFA)->tables[YYTD_ID_EC]->td_data))
-+#define ACCEPT_TABLE(DFA) ((u32 *)((DFA)->tables[YYTD_ID_ACCEPT]->td_data))
-+#define ACCEPT_TABLE2(DFA) ((u32 *)((DFA)->tables[YYTD_ID_ACCEPT2]->td_data))
-+
-+struct aa_dfa {
-+	struct kref count;
-+	u16 flags;
-+	struct table_header *tables[YYTD_ID_TSIZE];
-+};
-+
-+#define byte_to_byte(X) (X)
-+
-+#define UNPACK_ARRAY(TABLE, BLOB, LEN, TYPE, NTOHX) \
-+	do { \
-+		typeof(LEN) __i; \
-+		TYPE *__t = (TYPE *) TABLE; \
-+		TYPE *__b = (TYPE *) BLOB; \
-+		for (__i = 0; __i < LEN; __i++) { \
-+			__t[__i] = NTOHX(__b[__i]); \
-+		} \
-+	} while (0)
-+
-+static inline size_t table_size(size_t len, size_t el_size)
-+{
-+	return ALIGN(sizeof(struct table_header) + len * el_size, 8);
-+}
-+
-+struct aa_dfa *aa_dfa_unpack(void *blob, size_t size, int flags);
-+unsigned int aa_dfa_match_len(struct aa_dfa *dfa, unsigned int start,
-+			      const char *str, int len);
-+unsigned int aa_dfa_match(struct aa_dfa *dfa, unsigned int start,
-+			  const char *str);
-+void aa_dfa_free_kref(struct kref *kref);
-+
-+/**
-+ * aa_put_dfa - put a dfa refcount
-+ * @dfa: dfa to put refcount   (MAYBE NULL)
-+ *
-+ * Requires: if @dfa != NULL that valid refcount be held
-+ */
-+static inline void aa_put_dfa(struct aa_dfa *dfa)
-+{
-+	if (dfa)
-+		kref_put(&dfa->count, aa_dfa_free_kref);
-+}
-+
-+#endif /* __AA_MATCH_H */
-diff --git a/security/apparmor/match.c b/security/apparmor/match.c
-new file mode 100644
-index 0000000..8e7523a
---- /dev/null
-+++ b/security/apparmor/match.c
-@@ -0,0 +1,353 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor dfa based regular expression matching engine
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
++#include <linux/security.h>
++#include <linux/moduleparam.h>
 +#include <linux/mm.h>
-+#include <linux/slab.h>
-+#include <linux/vmalloc.h>
-+#include <linux/err.h>
-+#include <linux/kref.h>
++#include <linux/mman.h>
++#include <linux/mount.h>
++#include <linux/namei.h>
++#include <linux/ptrace.h>
++#include <linux/ctype.h>
++#include <linux/sysctl.h>
++#include <linux/audit.h>
++#include <net/sock.h>
 +
 +#include "include/apparmor.h"
-+#include "include/match.h"
++#include "include/apparmorfs.h"
++#include "include/audit.h"
++#include "include/capability.h"
++#include "include/context.h"
++#include "include/file.h"
++#include "include/ipc.h"
++#include "include/path.h"
++#include "include/policy.h"
++#include "include/procattr.h"
 +
-+/**
-+ * unpack_table - unpack a dfa table (one of accept, default, base, next check)
-+ * @blob: data to unpack (NOT NULL)
-+ * @bsize: size of blob
-+ *
-+ * Returns: pointer to table else NULL on failure
-+ *
-+ * NOTE: must be freed by kvfree (not kmalloc)
++/* Flag indicating whether initialization completed */
++int apparmor_initialized;
++
++/*
++ * LSM hook functions
 + */
-+static struct table_header *unpack_table(char *blob, size_t bsize)
++
++/*
++ * free the associated aa_task_cxt and put its profiles
++ */
++static void apparmor_cred_free(struct cred *cred)
 +{
-+	struct table_header *table = NULL;
-+	struct table_header th;
-+	size_t tsize;
-+
-+	if (bsize < sizeof(struct table_header))
-+		goto out;
-+
-+	/* loaded td_id's start at 1, subtract 1 now to avoid doing
-+	 * it every time we use td_id as an index
-+	 */
-+	th.td_id = be16_to_cpu(*(u16 *) (blob)) - 1;
-+	th.td_flags = be16_to_cpu(*(u16 *) (blob + 2));
-+	th.td_lolen = be32_to_cpu(*(u32 *) (blob + 8));
-+	blob += sizeof(struct table_header);
-+
-+	if (!(th.td_flags == YYTD_DATA16 || th.td_flags == YYTD_DATA32 ||
-+	      th.td_flags == YYTD_DATA8))
-+		goto out;
-+
-+	tsize = table_size(th.td_lolen, th.td_flags);
-+	if (bsize < tsize)
-+		goto out;
-+
-+	table = kvmalloc(tsize);
-+	if (table) {
-+		*table = th;
-+		if (th.td_flags == YYTD_DATA8)
-+			UNPACK_ARRAY(table->td_data, blob, th.td_lolen,
-+				     u8, byte_to_byte);
-+		else if (th.td_flags == YYTD_DATA16)
-+			UNPACK_ARRAY(table->td_data, blob, th.td_lolen,
-+				     u16, be16_to_cpu);
-+		else if (th.td_flags == YYTD_DATA32)
-+			UNPACK_ARRAY(table->td_data, blob, th.td_lolen,
-+				     u32, be32_to_cpu);
-+		else
-+			goto fail;
-+	}
-+
-+out:
-+	/* if table was vmalloced make sure the page tables are synced
-+	 * before it is used, as it goes live to all cpus.
-+	 */
-+	if (is_vmalloc_addr(table))
-+		vm_unmap_aliases();
-+	return table;
-+fail:
-+	kvfree(table);
-+	return NULL;
++	aa_free_task_context(cred->security);
++	cred->security = NULL;
 +}
 +
-+/**
-+ * verify_dfa - verify that transitions and states in the tables are in bounds.
-+ * @dfa: dfa to test  (NOT NULL)
-+ * @flags: flags controlling what type of accept table are acceptable
-+ *
-+ * Assumes dfa has gone through the first pass verification done by unpacking
-+ * NOTE: this does not valid accept table values
-+ *
-+ * Returns: %0 else error code on failure to verify
++/*
++ * allocate the apparmor part of blank credentials
 + */
-+static int verify_dfa(struct aa_dfa *dfa, int flags)
++static int apparmor_cred_alloc_blank(struct cred *cred, gfp_t gfp)
 +{
-+	size_t i, state_count, trans_count;
-+	int error = -EPROTO;
++	/* freed by apparmor_cred_free */
++	struct aa_task_cxt *cxt = aa_alloc_task_context(gfp);
++	if (!cxt)
++		return -ENOMEM;
 +
-+	/* check that required tables exist */
-+	if (!(dfa->tables[YYTD_ID_DEF] &&
-+	      dfa->tables[YYTD_ID_BASE] &&
-+	      dfa->tables[YYTD_ID_NXT] && dfa->tables[YYTD_ID_CHK]))
-+		goto out;
++	cred->security = cxt;
++	return 0;
++}
 +
-+	/* accept.size == default.size == base.size */
-+	state_count = dfa->tables[YYTD_ID_BASE]->td_lolen;
-+	if (ACCEPT1_FLAGS(flags)) {
-+		if (!dfa->tables[YYTD_ID_ACCEPT])
-+			goto out;
-+		if (state_count != dfa->tables[YYTD_ID_ACCEPT]->td_lolen)
-+			goto out;
++/*
++ * prepare new aa_task_cxt for modification by prepare_cred block
++ */
++static int apparmor_cred_prepare(struct cred *new, const struct cred *old,
++				 gfp_t gfp)
++{
++	/* freed by apparmor_cred_free */
++	struct aa_task_cxt *cxt = aa_alloc_task_context(gfp);
++	if (!cxt)
++		return -ENOMEM;
++
++	aa_dup_task_context(cxt, old->security);
++	new->security = cxt;
++	return 0;
++}
++
++/*
++ * transfer the apparmor data to a blank set of creds
++ */
++static void apparmor_cred_transfer(struct cred *new, const struct cred *old)
++{
++	const struct aa_task_cxt *old_cxt = old->security;
++	struct aa_task_cxt *new_cxt = new->security;
++
++	aa_dup_task_context(new_cxt, old_cxt);
++}
++
++static int apparmor_ptrace_access_check(struct task_struct *child,
++					unsigned int mode)
++{
++	int error = cap_ptrace_access_check(child, mode);
++	if (error)
++		return error;
++
++	return aa_ptrace(current, child, mode);
++}
++
++static int apparmor_ptrace_traceme(struct task_struct *parent)
++{
++	int error = cap_ptrace_traceme(parent);
++	if (error)
++		return error;
++
++	return aa_ptrace(parent, current, PTRACE_MODE_ATTACH);
++}
++
++/* Derived from security/commoncap.c:cap_capget */
++static int apparmor_capget(struct task_struct *target, kernel_cap_t *effective,
++			   kernel_cap_t *inheritable, kernel_cap_t *permitted)
++{
++	struct aa_profile *profile;
++	const struct cred *cred;
++
++	rcu_read_lock();
++	cred = __task_cred(target);
++	profile = aa_cred_profile(cred);
++
++	*effective = cred->cap_effective;
++	*inheritable = cred->cap_inheritable;
++	*permitted = cred->cap_permitted;
++
++	if (!unconfined(profile)) {
++		*effective = cap_intersect(*effective, profile->caps.allow);
++		*permitted = cap_intersect(*permitted, profile->caps.allow);
 +	}
-+	if (ACCEPT2_FLAGS(flags)) {
-+		if (!dfa->tables[YYTD_ID_ACCEPT2])
-+			goto out;
-+		if (state_count != dfa->tables[YYTD_ID_ACCEPT2]->td_lolen)
-+			goto out;
++	rcu_read_unlock();
++
++	return 0;
++}
++
++static int apparmor_capable(struct task_struct *task, const struct cred *cred,
++			    int cap, int audit)
++{
++	struct aa_profile *profile;
++	/* cap_capable returns 0 on success, else -EPERM */
++	int error = cap_capable(task, cred, cap, audit);
++	if (!error) {
++		profile = aa_cred_profile(cred);
++		if (!unconfined(profile))
++			error = aa_capable(task, profile, cap, audit);
 +	}
-+	if (state_count != dfa->tables[YYTD_ID_DEF]->td_lolen)
-+		goto out;
-+
-+	/* next.size == chk.size */
-+	trans_count = dfa->tables[YYTD_ID_NXT]->td_lolen;
-+	if (trans_count != dfa->tables[YYTD_ID_CHK]->td_lolen)
-+		goto out;
-+
-+	/* if equivalence classes then its table size must be 256 */
-+	if (dfa->tables[YYTD_ID_EC] &&
-+	    dfa->tables[YYTD_ID_EC]->td_lolen != 256)
-+		goto out;
-+
-+	if (flags & DFA_FLAG_VERIFY_STATES) {
-+		for (i = 0; i < state_count; i++) {
-+			if (DEFAULT_TABLE(dfa)[i] >= state_count)
-+				goto out;
-+			/* TODO: do check that DEF state recursion terminates */
-+			if (BASE_TABLE(dfa)[i] + 255 >= trans_count) {
-+				printk(KERN_ERR "AppArmor DFA next/check upper "
-+				       "bounds error\n");
-+				goto out;
-+			}
-+		}
-+
-+		for (i = 0; i < trans_count; i++) {
-+			if (NEXT_TABLE(dfa)[i] >= state_count)
-+				goto out;
-+			if (CHECK_TABLE(dfa)[i] >= state_count)
-+				goto out;
-+		}
-+	}
-+
-+	error = 0;
-+out:
 +	return error;
 +}
 +
 +/**
-+ * dfa_free - free a dfa allocated by aa_dfa_unpack
-+ * @dfa: the dfa to free  (MAYBE NULL)
++ * common_perm - basic common permission check wrapper fn for paths
++ * @op: operation being checked
++ * @path: path to check permission of  (NOT NULL)
++ * @mask: requested permissions mask
++ * @cond: conditional info for the permission request  (NOT NULL)
 + *
-+ * Requires: reference count to dfa == 0
++ * Returns: %0 else error code if error or permission denied
 + */
-+static void dfa_free(struct aa_dfa *dfa)
++static int common_perm(int op, struct path *path, u32 mask,
++		       struct path_cond *cond)
 +{
-+	if (dfa) {
-+		int i;
++	struct aa_profile *profile;
++	int error = 0;
 +
-+		for (i = 0; i < ARRAY_SIZE(dfa->tables); i++) {
-+			kvfree(dfa->tables[i]);
-+			dfa->tables[i] = NULL;
-+		}
-+		kfree(dfa);
-+	}
++	profile = __aa_current_profile();
++	if (!unconfined(profile))
++		error = aa_path_perm(op, profile, path, 0, mask, cond);
++
++	return error;
 +}
 +
 +/**
-+ * aa_dfa_free_kref - free aa_dfa by kref (called by aa_put_dfa)
-+ * @kr: kref callback for freeing of a dfa  (NOT NULL)
++ * common_perm_dir_dentry - common permission wrapper when path is dir, dentry
++ * @op: operation being checked
++ * @dir: directory of the dentry  (NOT NULL)
++ * @dentry: dentry to check  (NOT NULL)
++ * @mask: requested permissions mask
++ * @cond: conditional info for the permission request  (NOT NULL)
++ *
++ * Returns: %0 else error code if error or permission denied
 + */
-+void aa_dfa_free_kref(struct kref *kref)
++static int common_perm_dir_dentry(int op, struct path *dir,
++				  struct dentry *dentry, u32 mask,
++				  struct path_cond *cond)
 +{
-+	struct aa_dfa *dfa = container_of(kref, struct aa_dfa, count);
-+	dfa_free(dfa);
++	struct path path = { dir->mnt, dentry };
++
++	return common_perm(op, &path, mask, cond);
 +}
 +
 +/**
-+ * aa_dfa_unpack - unpack the binary tables of a serialized dfa
-+ * @blob: aligned serialized stream of data to unpack  (NOT NULL)
-+ * @size: size of data to unpack
-+ * @flags: flags controlling what type of accept tables are acceptable
++ * common_perm_mnt_dentry - common permission wrapper when mnt, dentry
++ * @op: operation being checked
++ * @mnt: mount point of dentry (NOT NULL)
++ * @dentry: dentry to check  (NOT NULL)
++ * @mask: requested permissions mask
 + *
-+ * Unpack a dfa that has been serialized.  Dfa format and information in
-+ * Documentation/AppArmor/dfa.txt
-+ * Assumes the dfa @blob stream has been aligned on a 8 byte boundry
-+ *
-+ * Returns: an unpacked dfa ready for matching or ERR_PTR on failure
++ * Returns: %0 else error code if error or permission denied
 + */
-+struct aa_dfa *aa_dfa_unpack(void *blob, size_t size, int flags)
++static int common_perm_mnt_dentry(int op, struct vfsmount *mnt,
++				  struct dentry *dentry, u32 mask)
 +{
-+	int hsize;
-+	int error = -ENOMEM;
-+	char *data = blob;
-+	struct table_header *table = NULL;
-+	struct aa_dfa *dfa = kzalloc(sizeof(struct aa_dfa), GFP_KERNEL);
-+	if (!dfa)
-+		goto fail;
++	struct path path = { mnt, dentry };
++	struct path_cond cond = { dentry->d_inode->i_uid,
++				  dentry->d_inode->i_mode
++	};
 +
-+	kref_init(&dfa->count);
-+
-+	error = -EPROTO;
-+
-+	/* get dfa table set header */
-+	if (size < sizeof(struct table_set_header))
-+		goto fail;
-+
-+	if (ntohl(*(u32 *) data) != YYTH_MAGIC)
-+		goto fail;
-+
-+	hsize = ntohl(*(u32 *) (data + 4));
-+	if (size < hsize)
-+		goto fail;
-+
-+	dfa->flags = ntohs(*(u16 *) (data + 12));
-+	data += hsize;
-+	size -= hsize;
-+
-+	while (size > 0) {
-+		table = unpack_table(data, size);
-+		if (!table)
-+			goto fail;
-+
-+		switch (table->td_id) {
-+		case YYTD_ID_ACCEPT:
-+			if (!(table->td_flags & ACCEPT1_FLAGS(flags)))
-+				goto fail;
-+			break;
-+		case YYTD_ID_ACCEPT2:
-+			if (!(table->td_flags & ACCEPT2_FLAGS(flags)))
-+				goto fail;
-+			break;
-+		case YYTD_ID_BASE:
-+			if (table->td_flags != YYTD_DATA32)
-+				goto fail;
-+			break;
-+		case YYTD_ID_DEF:
-+		case YYTD_ID_NXT:
-+		case YYTD_ID_CHK:
-+			if (table->td_flags != YYTD_DATA16)
-+				goto fail;
-+			break;
-+		case YYTD_ID_EC:
-+			if (table->td_flags != YYTD_DATA8)
-+				goto fail;
-+			break;
-+		default:
-+			goto fail;
-+		}
-+		/* check for duplicate table entry */
-+		if (dfa->tables[table->td_id])
-+			goto fail;
-+		dfa->tables[table->td_id] = table;
-+		data += table_size(table->td_lolen, table->td_flags);
-+		size -= table_size(table->td_lolen, table->td_flags);
-+		table = NULL;
-+	}
-+
-+	error = verify_dfa(dfa, flags);
-+	if (error)
-+		goto fail;
-+
-+	return dfa;
-+
-+fail:
-+	kvfree(table);
-+	dfa_free(dfa);
-+	return ERR_PTR(error);
++	return common_perm(op, &path, mask, &cond);
 +}
 +
 +/**
-+ * aa_dfa_match_len - traverse @dfa to find state @str stops at
-+ * @dfa: the dfa to match @str against  (NOT NULL)
-+ * @start: the state of the dfa to start matching in
-+ * @str: the string of bytes to match against the dfa  (NOT NULL)
-+ * @len: length of the string of bytes to match
++ * common_perm_rm - common permission wrapper for operations doing rm
++ * @op: operation being checked
++ * @dir: directory that the dentry is in  (NOT NULL)
++ * @dentry: dentry being rm'd  (NOT NULL)
++ * @mask: requested permission mask
 + *
-+ * aa_dfa_match_len will match @str against the dfa and return the state it
-+ * finished matching in. The final state can be used to look up the accepting
-+ * label, or as the start state of a continuing match.
-+ *
-+ * This function will happily match again the 0 byte and only finishes
-+ * when @len input is consumed.
-+ *
-+ * Returns: final state reached after input is consumed
++ * Returns: %0 else error code if error or permission denied
 + */
-+unsigned int aa_dfa_match_len(struct aa_dfa *dfa, unsigned int start,
-+			      const char *str, int len)
++static int common_perm_rm(int op, struct path *dir,
++			  struct dentry *dentry, u32 mask)
 +{
-+	u16 *def = DEFAULT_TABLE(dfa);
-+	u32 *base = BASE_TABLE(dfa);
-+	u16 *next = NEXT_TABLE(dfa);
-+	u16 *check = CHECK_TABLE(dfa);
-+	unsigned int state = start, pos;
++	struct inode *inode = dentry->d_inode;
++	struct path_cond cond = { };
 +
-+	if (state == 0)
++	if (!inode || !dir->mnt || !mediated_filesystem(inode))
 +		return 0;
 +
-+	/* current state is <state>, matching character *str */
-+	if (dfa->tables[YYTD_ID_EC]) {
-+		/* Equivalence class table defined */
-+		u8 *equiv = EQUIV_TABLE(dfa);
-+		/* default is direct to next state */
-+		for (; len; len--) {
-+			pos = base[state] + equiv[(u8) *str++];
-+			if (check[pos] == state)
-+				state = next[pos];
-+			else
-+				state = def[state];
-+		}
-+	} else {
-+		/* default is direct to next state */
-+		for (; len; len--) {
-+			pos = base[state] + (u8) *str++;
-+			if (check[pos] == state)
-+				state = next[pos];
-+			else
-+				state = def[state];
-+		}
-+	}
++	cond.uid = inode->i_uid;
++	cond.mode = inode->i_mode;
 +
-+	return state;
++	return common_perm_dir_dentry(op, dir, dentry, mask, &cond);
 +}
 +
 +/**
-+ * aa_dfa_next_state - traverse @dfa to find state @str stops at
-+ * @dfa: the dfa to match @str against  (NOT NULL)
-+ * @start: the state of the dfa to start matching in
-+ * @str: the null terminated string of bytes to match against the dfa (NOT NULL)
++ * common_perm_create - common permission wrapper for operations doing create
++ * @op: operation being checked
++ * @dir: directory that dentry will be created in  (NOT NULL)
++ * @dentry: dentry to create   (NOT NULL)
++ * @mask: request permission mask
++ * @mode: created file mode
 + *
-+ * aa_dfa_next_state will match @str against the dfa and return the state it
-+ * finished matching in. The final state can be used to look up the accepting
-+ * label, or as the start state of a continuing match.
-+ *
-+ * Returns: final state reached after input is consumed
++ * Returns: %0 else error code if error or permission denied
 + */
-+unsigned int aa_dfa_match(struct aa_dfa *dfa, unsigned int start,
-+			  const char *str)
++static int common_perm_create(int op, struct path *dir, struct dentry *dentry,
++			      u32 mask, umode_t mode)
 +{
-+	return aa_dfa_match_len(dfa, start, str, strlen(str));
++	struct path_cond cond = { current_fsuid(), mode };
++
++	if (!dir->mnt || !mediated_filesystem(dir->dentry->d_inode))
++		return 0;
++
++	return common_perm_dir_dentry(op, dir, dentry, mask, &cond);
 +}
++
++static int apparmor_path_unlink(struct path *dir, struct dentry *dentry)
++{
++	return common_perm_rm(OP_UNLINK, dir, dentry, AA_MAY_DELETE);
++}
++
++static int apparmor_path_mkdir(struct path *dir, struct dentry *dentry,
++			       int mode)
++{
++	return common_perm_create(OP_MKDIR, dir, dentry, AA_MAY_CREATE,
++				  S_IFDIR);
++}
++
++static int apparmor_path_rmdir(struct path *dir, struct dentry *dentry)
++{
++	return common_perm_rm(OP_RMDIR, dir, dentry, AA_MAY_DELETE);
++}
++
++static int apparmor_path_mknod(struct path *dir, struct dentry *dentry,
++			       int mode, unsigned int dev)
++{
++	return common_perm_create(OP_MKNOD, dir, dentry, AA_MAY_CREATE, mode);
++}
++
++static int apparmor_path_truncate(struct path *path, loff_t length,
++				  unsigned int time_attrs)
++{
++	struct path_cond cond = { path->dentry->d_inode->i_uid,
++				  path->dentry->d_inode->i_mode
++	};
++
++	if (!path->mnt || !mediated_filesystem(path->dentry->d_inode))
++		return 0;
++
++	return common_perm(OP_TRUNC, path, MAY_WRITE | AA_MAY_META_WRITE,
++			   &cond);
++}
++
++static int apparmor_path_symlink(struct path *dir, struct dentry *dentry,
++				 const char *old_name)
++{
++	return common_perm_create(OP_SYMLINK, dir, dentry, AA_MAY_CREATE,
++				  S_IFLNK);
++}
++
++static int apparmor_path_link(struct dentry *old_dentry, struct path *new_dir,
++			      struct dentry *new_dentry)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	if (!mediated_filesystem(old_dentry->d_inode))
++		return 0;
++
++	profile = aa_current_profile();
++	if (!unconfined(profile))
++		error = aa_path_link(profile, old_dentry, new_dir, new_dentry);
++	return error;
++}
++
++static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
++				struct path *new_dir, struct dentry *new_dentry)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	if (!mediated_filesystem(old_dentry->d_inode))
++		return 0;
++
++	profile = aa_current_profile();
++	if (!unconfined(profile)) {
++		struct path old_path = { old_dir->mnt, old_dentry };
++		struct path new_path = { new_dir->mnt, new_dentry };
++		struct path_cond cond = { old_dentry->d_inode->i_uid,
++					  old_dentry->d_inode->i_mode
++		};
++
++		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
++				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
++				     AA_MAY_META_WRITE | AA_MAY_DELETE,
++				     &cond);
++		if (!error)
++			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
++					     0, MAY_WRITE | AA_MAY_META_WRITE |
++					     AA_MAY_CREATE, &cond);
++
++	}
++	return error;
++}
++
++static int apparmor_path_chmod(struct dentry *dentry, struct vfsmount *mnt,
++			       mode_t mode)
++{
++	if (!mediated_filesystem(dentry->d_inode))
++		return 0;
++
++	return common_perm_mnt_dentry(OP_CHMOD, mnt, dentry, AA_MAY_CHMOD);
++}
++
++static int apparmor_path_chown(struct path *path, uid_t uid, gid_t gid)
++{
++	struct path_cond cond =  { path->dentry->d_inode->i_uid,
++				   path->dentry->d_inode->i_mode
++	};
++
++	if (!mediated_filesystem(path->dentry->d_inode))
++		return 0;
++
++	return common_perm(OP_CHOWN, path, AA_MAY_CHOWN, &cond);
++}
++
++static int apparmor_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
++{
++	if (!mediated_filesystem(dentry->d_inode))
++		return 0;
++
++	return common_perm_mnt_dentry(OP_GETATTR, mnt, dentry,
++				      AA_MAY_META_READ);
++}
++
++static int apparmor_dentry_open(struct file *file, const struct cred *cred)
++{
++	struct aa_file_cxt *fcxt = file->f_security;
++	struct aa_profile *profile;
++	int error = 0;
++
++	if (!mediated_filesystem(file->f_path.dentry->d_inode))
++		return 0;
++
++	/* If in exec, permission is handled by bprm hooks.
++	 * Cache permissions granted by the previous exec check, with
++	 * implicit read and executable mmap which are required to
++	 * actually execute the image.
++	 */
++	if (current->in_execve) {
++		fcxt->allow = MAY_EXEC | MAY_READ | AA_EXEC_MMAP;
++		return 0;
++	}
++
++	profile = aa_cred_profile(cred);
++	if (!unconfined(profile)) {
++		struct inode *inode = file->f_path.dentry->d_inode;
++		struct path_cond cond = { inode->i_uid, inode->i_mode };
++
++		error = aa_path_perm(OP_OPEN, profile, &file->f_path, 0,
++				     aa_map_file_to_perms(file), &cond);
++		/* todo cache full allowed permissions set and state */
++		fcxt->allow = aa_map_file_to_perms(file);
++	}
++
++	return error;
++}
++
++static int apparmor_file_alloc_security(struct file *file)
++{
++	/* freed by apparmor_file_free_security */
++	file->f_security = aa_alloc_file_context(GFP_KERNEL);
++	if (!file->f_security)
++		return -ENOMEM;
++	return 0;
++
++}
++
++static void apparmor_file_free_security(struct file *file)
++{
++	struct aa_file_cxt *cxt = file->f_security;
++
++	aa_free_file_context(cxt);
++}
++
++static int common_file_perm(int op, struct file *file, u32 mask)
++{
++	struct aa_file_cxt *fcxt = file->f_security;
++	struct aa_profile *profile, *fprofile = aa_cred_profile(file->f_cred);
++	int error = 0;
++
++	BUG_ON(!fprofile);
++
++	if (!file->f_path.mnt ||
++	    !mediated_filesystem(file->f_path.dentry->d_inode))
++		return 0;
++
++	profile = __aa_current_profile();
++
++	/* revalidate access, if task is unconfined, or the cached cred
++	 * doesn't match or if the request is for more permissions than
++	 * was granted.
++	 *
++	 * Note: the test for !unconfined(fprofile) is to handle file
++	 *       delegation from unconfined tasks
++	 */
++	if (!unconfined(profile) && !unconfined(fprofile) &&
++	    ((fprofile != profile) || (mask & ~fcxt->allow)))
++		error = aa_file_perm(op, profile, file, mask);
++
++	return error;
++}
++
++static int apparmor_file_permission(struct file *file, int mask)
++{
++	return common_file_perm(OP_FPERM, file, mask);
++}
++
++static int apparmor_file_lock(struct file *file, unsigned int cmd)
++{
++	u32 mask = AA_MAY_LOCK;
++
++	if (cmd == F_WRLCK)
++		mask |= MAY_WRITE;
++
++	return common_file_perm(OP_FLOCK, file, mask);
++}
++
++static int common_mmap(int op, struct file *file, unsigned long prot,
++		       unsigned long flags)
++{
++	struct dentry *dentry;
++	int mask = 0;
++
++	if (!file || !file->f_security)
++		return 0;
++
++	if (prot & PROT_READ)
++		mask |= MAY_READ;
++	/*
++	 * Private mappings don't require write perms since they don't
++	 * write back to the files
++	 */
++	if ((prot & PROT_WRITE) && !(flags & MAP_PRIVATE))
++		mask |= MAY_WRITE;
++	if (prot & PROT_EXEC)
++		mask |= AA_EXEC_MMAP;
++
++	dentry = file->f_path.dentry;
++	return common_file_perm(op, file, mask);
++}
++
++static int apparmor_file_mmap(struct file *file, unsigned long reqprot,
++			      unsigned long prot, unsigned long flags,
++			      unsigned long addr, unsigned long addr_only)
++{
++	int rc = 0;
++
++	/* do DAC check */
++	rc = cap_file_mmap(file, reqprot, prot, flags, addr, addr_only);
++	if (rc || addr_only)
++		return rc;
++
++	return common_mmap(OP_FMMAP, file, prot, flags);
++}
++
++static int apparmor_file_mprotect(struct vm_area_struct *vma,
++				  unsigned long reqprot, unsigned long prot)
++{
++	return common_mmap(OP_FMPROT, vma->vm_file, prot,
++			   !(vma->vm_flags & VM_SHARED) ? MAP_PRIVATE : 0);
++}
++
++static int apparmor_getprocattr(struct task_struct *task, char *name,
++				char **value)
++{
++	int error = -ENOENT;
++	struct aa_profile *profile;
++	/* released below */
++	const struct cred *cred = get_task_cred(task);
++	struct aa_task_cxt *cxt = cred->security;
++	profile = aa_cred_profile(cred);
++
++	if (strcmp(name, "current") == 0)
++		error = aa_getprocattr(aa_newest_version(cxt->profile),
++				       value);
++	else if (strcmp(name, "prev") == 0  && cxt->previous)
++		error = aa_getprocattr(aa_newest_version(cxt->previous),
++				       value);
++	else if (strcmp(name, "exec") == 0 && cxt->onexec)
++		error = aa_getprocattr(aa_newest_version(cxt->onexec),
++				       value);
++	else
++		error = -EINVAL;
++
++	put_cred(cred);
++
++	return error;
++}
++
++static int apparmor_setprocattr(struct task_struct *task, char *name,
++				void *value, size_t size)
++{
++	char *command, *args = value;
++	size_t arg_size;
++	int error;
++
++	if (size == 0)
++		return -EINVAL;
++	/* args points to a PAGE_SIZE buffer, AppArmor requires that
++	 * the buffer must be null terminated or have size <= PAGE_SIZE -1
++	 * so that AppArmor can null terminate them
++	 */
++	if (args[size - 1] != '\0') {
++		if (size == PAGE_SIZE)
++			return -EINVAL;
++		args[size] = '\0';
++	}
++
++	/* task can only write its own attributes */
++	if (current != task)
++		return -EACCES;
++
++	args = value;
++	args = strim(args);
++	command = strsep(&args, " ");
++	if (!args)
++		return -EINVAL;
++	args = skip_spaces(args);
++	if (!*args)
++		return -EINVAL;
++
++	arg_size = size - (args - (char *) value);
++	if (strcmp(name, "current") == 0) {
++		if (strcmp(command, "changehat") == 0) {
++			error = aa_setprocattr_changehat(args, arg_size,
++							 !AA_DO_TEST);
++		} else if (strcmp(command, "permhat") == 0) {
++			error = aa_setprocattr_changehat(args, arg_size,
++							 AA_DO_TEST);
++		} else if (strcmp(command, "changeprofile") == 0) {
++			error = aa_setprocattr_changeprofile(args, !AA_ONEXEC,
++							     !AA_DO_TEST);
++		} else if (strcmp(command, "permprofile") == 0) {
++			error = aa_setprocattr_changeprofile(args, !AA_ONEXEC,
++							     AA_DO_TEST);
++		} else if (strcmp(command, "permipc") == 0) {
++			error = aa_setprocattr_permipc(args);
++		} else {
++			struct common_audit_data sa;
++			COMMON_AUDIT_DATA_INIT(&sa, NONE);
++			sa.aad.op = OP_SETPROCATTR;
++			sa.aad.info = name;
++			sa.aad.error = -EINVAL;
++			return aa_audit(AUDIT_APPARMOR_DENIED, NULL, GFP_KERNEL,
++					&sa, NULL);
++		}
++	} else if (strcmp(name, "exec") == 0) {
++		error = aa_setprocattr_changeprofile(args, AA_ONEXEC,
++						     !AA_DO_TEST);
++	} else {
++		/* only support the "current" and "exec" process attributes */
++		return -EINVAL;
++	}
++	if (!error)
++		error = size;
++	return error;
++}
++
++static int apparmor_task_setrlimit(unsigned int resource,
++				   struct rlimit *new_rlim)
++{
++	struct aa_profile *profile = aa_current_profile();
++	int error = 0;
++
++	if (!unconfined(profile))
++		error = aa_task_setrlimit(profile, resource, new_rlim);
++
++	return error;
++}
++
++static struct security_operations apparmor_ops = {
++	.name =				"apparmor",
++
++	.ptrace_access_check =		apparmor_ptrace_access_check,
++	.ptrace_traceme =		apparmor_ptrace_traceme,
++	.capget =			apparmor_capget,
++	.capable =			apparmor_capable,
++
++	.path_link =			apparmor_path_link,
++	.path_unlink =			apparmor_path_unlink,
++	.path_symlink =			apparmor_path_symlink,
++	.path_mkdir =			apparmor_path_mkdir,
++	.path_rmdir =			apparmor_path_rmdir,
++	.path_mknod =			apparmor_path_mknod,
++	.path_rename =			apparmor_path_rename,
++	.path_chmod =			apparmor_path_chmod,
++	.path_chown =			apparmor_path_chown,
++	.path_truncate =		apparmor_path_truncate,
++	.dentry_open =			apparmor_dentry_open,
++	.inode_getattr =                apparmor_inode_getattr,
++
++	.file_permission =		apparmor_file_permission,
++	.file_alloc_security =		apparmor_file_alloc_security,
++	.file_free_security =		apparmor_file_free_security,
++	.file_mmap =			apparmor_file_mmap,
++	.file_mprotect =		apparmor_file_mprotect,
++	.file_lock =			apparmor_file_lock,
++
++	.getprocattr =			apparmor_getprocattr,
++	.setprocattr =			apparmor_setprocattr,
++
++	.cred_alloc_blank =		apparmor_cred_alloc_blank,
++	.cred_free =			apparmor_cred_free,
++	.cred_prepare =			apparmor_cred_prepare,
++	.cred_transfer =		apparmor_cred_transfer,
++
++	.bprm_set_creds =		apparmor_bprm_set_creds,
++	.bprm_committing_creds =	apparmor_bprm_committing_creds,
++	.bprm_committed_creds =		apparmor_bprm_committed_creds,
++	.bprm_secureexec =		apparmor_bprm_secureexec,
++
++	.task_setrlimit =		apparmor_task_setrlimit,
++};
++
++/*
++ * AppArmor sysfs module parameters
++ */
++
++static int param_set_aabool(const char *val, struct kernel_param *kp);
++static int param_get_aabool(char *buffer, struct kernel_param *kp);
++#define param_check_aabool(name, p) __param_check(name, p, int)
++
++static int param_set_aauint(const char *val, struct kernel_param *kp);
++static int param_get_aauint(char *buffer, struct kernel_param *kp);
++#define param_check_aauint(name, p) __param_check(name, p, int)
++
++static int param_set_aalockpolicy(const char *val, struct kernel_param *kp);
++static int param_get_aalockpolicy(char *buffer, struct kernel_param *kp);
++#define param_check_aalockpolicy(name, p) __param_check(name, p, int)
++
++static int param_set_audit(const char *val, struct kernel_param *kp);
++static int param_get_audit(char *buffer, struct kernel_param *kp);
++#define param_check_audit(name, p) __param_check(name, p, int)
++
++static int param_set_mode(const char *val, struct kernel_param *kp);
++static int param_get_mode(char *buffer, struct kernel_param *kp);
++#define param_check_mode(name, p) __param_check(name, p, int)
++
++/* Flag values, also controllable via /sys/module/apparmor/parameters
++ * We define special types as we want to do additional mediation.
++ */
++
++/* AppArmor global enforcement switch - complain, enforce, kill */
++enum profile_mode aa_g_profile_mode = APPARMOR_ENFORCE;
++module_param_call(mode, param_set_mode, param_get_mode,
++		  &aa_g_profile_mode, S_IRUSR | S_IWUSR);
++
++/* Debug mode */
++int aa_g_debug;
++module_param_named(debug, aa_g_debug, aabool, S_IRUSR | S_IWUSR);
++
++/* Audit mode */
++enum audit_mode aa_g_audit;
++module_param_call(audit, param_set_audit, param_get_audit,
++		  &aa_g_audit, S_IRUSR | S_IWUSR);
++
++/* Determines if audit header is included in audited messages.  This
++ * provides more context if the audit daemon is not running
++ */
++int aa_g_audit_header = 1;
++module_param_named(audit_header, aa_g_audit_header, aabool,
++		   S_IRUSR | S_IWUSR);
++
++/* lock out loading/removal of policy
++ * TODO: add in at boot loading of policy, which is the only way to
++ *       load policy, if lock_policy is set
++ */
++int aa_g_lock_policy;
++module_param_named(lock_policy, aa_g_lock_policy, aalockpolicy,
++		   S_IRUSR | S_IWUSR);
++
++/* Syscall logging mode */
++int aa_g_logsyscall;
++module_param_named(logsyscall, aa_g_logsyscall, aabool, S_IRUSR | S_IWUSR);
++
++/* Maximum pathname length before accesses will start getting rejected */
++unsigned int aa_g_path_max = 2 * PATH_MAX;
++module_param_named(path_max, aa_g_path_max, aauint, S_IRUSR | S_IWUSR);
++
++/* Determines how paranoid loading of policy is and how much verification
++ * on the loaded policy is done.
++ */
++int aa_g_paranoid_load = 1;
++module_param_named(paranoid_load, aa_g_paranoid_load, aabool,
++		   S_IRUSR | S_IWUSR);
++
++/* Boot time disable flag */
++static unsigned int apparmor_enabled = CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE;
++module_param_named(enabled, apparmor_enabled, aabool, S_IRUSR);
++
++static int __init apparmor_enabled_setup(char *str)
++{
++	unsigned long enabled;
++	int error = strict_strtoul(str, 0, &enabled);
++	if (!error)
++		apparmor_enabled = enabled ? 1 : 0;
++	return 1;
++}
++
++__setup("apparmor=", apparmor_enabled_setup);
++
++/* set global flag turning off the ability to load policy */
++static int param_set_aalockpolicy(const char *val, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	if (aa_g_lock_policy)
++		return -EACCES;
++	return param_set_bool(val, kp);
++}
++
++static int param_get_aalockpolicy(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_get_bool(buffer, kp);
++}
++
++static int param_set_aabool(const char *val, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_set_bool(val, kp);
++}
++
++static int param_get_aabool(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_get_bool(buffer, kp);
++}
++
++static int param_set_aauint(const char *val, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_set_uint(val, kp);
++}
++
++static int param_get_aauint(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_get_uint(buffer, kp);
++}
++
++static int param_get_audit(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	return sprintf(buffer, "%s", audit_mode_names[aa_g_audit]);
++}
++
++static int param_set_audit(const char *val, struct kernel_param *kp)
++{
++	int i;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	if (!val)
++		return -EINVAL;
++
++	for (i = 0; i < AUDIT_MAX_INDEX; i++) {
++		if (strcmp(val, audit_mode_names[i]) == 0) {
++			aa_g_audit = i;
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static int param_get_mode(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	return sprintf(buffer, "%s", profile_mode_names[aa_g_profile_mode]);
++}
++
++static int param_set_mode(const char *val, struct kernel_param *kp)
++{
++	int i;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	if (!val)
++		return -EINVAL;
++
++	for (i = 0; i < APPARMOR_NAMES_MAX_INDEX; i++) {
++		if (strcmp(val, profile_mode_names[i]) == 0) {
++			aa_g_profile_mode = i;
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++}
++
++/*
++ * AppArmor init functions
++ */
++
++/**
++ * set_init_cxt - set a task context and profile on the first task.
++ *
++ * TODO: allow setting an alternate profile than unconfined
++ */
++static int __init set_init_cxt(void)
++{
++	struct cred *cred = (struct cred *)current->real_cred;
++	struct aa_task_cxt *cxt;
++
++	cxt = aa_alloc_task_context(GFP_KERNEL);
++	if (!cxt)
++		return -ENOMEM;
++
++	cxt->profile = aa_get_profile(root_ns->unconfined);
++	cred->security = cxt;
++
++	return 0;
++}
++
++static int __init apparmor_init(void)
++{
++	int error;
++
++	if (!apparmor_enabled || !security_module_enable(&apparmor_ops)) {
++		aa_info_message("AppArmor disabled by boot time parameter");
++		apparmor_enabled = 0;
++		return 0;
++	}
++
++	error = aa_alloc_root_ns();
++	if (error) {
++		AA_ERROR("Unable to allocate default profile namespace\n");
++		goto alloc_out;
++	}
++
++	error = set_init_cxt();
++	if (error) {
++		AA_ERROR("Failed to set context on init task\n");
++		goto register_security_out;
++	}
++
++	error = register_security(&apparmor_ops);
++	if (error) {
++		AA_ERROR("Unable to register AppArmor\n");
++		goto register_security_out;
++	}
++
++	/* Report that AppArmor successfully initialized */
++	apparmor_initialized = 1;
++	if (aa_g_profile_mode == APPARMOR_COMPLAIN)
++		aa_info_message("AppArmor initialized: complain mode enabled");
++	else if (aa_g_profile_mode == APPARMOR_KILL)
++		aa_info_message("AppArmor initialized: kill mode enabled");
++	else
++		aa_info_message("AppArmor initialized");
++
++	return error;
++
++register_security_out:
++	aa_free_root_ns();
++
++alloc_out:
++	aa_destroy_aafs();
++
++	apparmor_enabled = 0;
++	return error;
++
++}
++
++security_initcall(apparmor_init);
 -- 
 1.7.1
 
