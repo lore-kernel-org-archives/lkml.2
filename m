@@ -1,104 +1,683 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab0G0RUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:20:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36451 "EHLO
+	id S1752685Ab0G0RUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:20:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36476 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab0G0RUh (ORCPT
+	with ESMTP id S1752633Ab0G0RUi (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 27 Jul 2010 13:20:37 -0400
+	Tue, 27 Jul 2010 13:20:38 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>, alex.williamson@redhat.com,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 6/9] xen/mmu: inhibit vmap aliases rather than trying to clear them out
-Date: Tue, 27 Jul 2010 12:59:59 -0400
-Message-Id: <1280250002-20279-7-git-send-email-konrad.wilk@oracle.com>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Albert Herranz <albert_herranz@yahoo.es>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH 7/9] swiotlb-xen: SWIOTLB library for Xen PV guest with PCI passthrough.
+Date: Tue, 27 Jul 2010 13:00:00 -0400
+Message-Id: <1280250002-20279-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
 References: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C4F1534.002A:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4C4F1533.02A2:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+This patchset:
 
-Rather than trying to deal with aliases once they appear, just completely
-inhibit them.  Mostly the removal of aliases was managable, but it comes
-unstuck in xen_create_contiguous_region() because it gets executed at
-interrupt time (as a result of dma_alloc_coherent()), which causes all
-sorts of confusion in the vmap code, as it was never intended to be run
-in interrupt context.
+PV guests under Xen are running in an non-contiguous memory architecture.
 
-This has the unfortunate side effect of removing all the unmap batching
-the vmap code so carefully added, but that can't be helped.
+When PCI pass-through is utilized, this necessitates an IOMMU for
+translating bus (DMA) to virtual and vice-versa and also providing a
+mechanism to have contiguous pages for device drivers operations (say DMA
+operations).
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Specifically, under Xen the Linux idea of pages is an illusion. It
+assumes that pages start at zero and go up to the available memory. To
+help with that, the Linux Xen MMU provides a lookup mechanism to
+translate the page frame numbers (PFN) to machine frame numbers (MFN)
+and vice-versa. The MFN are the "real" frame numbers. Furthermore
+memory is not contiguous. Xen hypervisor stitches memory for guests
+from different pools, which means there is no guarantee that PFN==MFN
+and PFN+1==MFN+1. Lastly with Xen 4.0, pages (in debug mode) are
+allocated in descending order (high to low), meaning the guest might
+never get any MFN's under the 4GB mark.
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Albert Herranz <albert_herranz@yahoo.es>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
 ---
- arch/x86/xen/mmu.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+ drivers/xen/Kconfig       |    4 +
+ drivers/xen/Makefile      |    3 +-
+ drivers/xen/swiotlb-xen.c |  515 +++++++++++++++++++++++++++++++++++++++++++++
+ include/xen/swiotlb-xen.h |   65 ++++++
+ 4 files changed, 586 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/xen/swiotlb-xen.c
+ create mode 100644 include/xen/swiotlb-xen.h
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index eb51402..ef5728d 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -42,6 +42,7 @@
- #include <linux/highmem.h>
- #include <linux/debugfs.h>
- #include <linux/bug.h>
-+#include <linux/vmalloc.h>
- #include <linux/module.h>
- #include <linux/gfp.h>
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index fad3df2..97199c2 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -62,4 +62,8 @@ config XEN_SYS_HYPERVISOR
+ 	 virtual environment, /sys/hypervisor will still be present,
+ 	 but will have no xen contents.
  
-@@ -1015,8 +1016,6 @@ static int xen_pin_page(struct mm_struct *mm, struct page *page,
-    read-only, and can be pinned. */
- static void __xen_pgd_pin(struct mm_struct *mm, pgd_t *pgd)
- {
--	vm_unmap_aliases();
--
- 	xen_mc_batch();
- 
- 	if (__xen_pgd_walk(mm, pgd, xen_pin_page, USER_LIMIT)) {
-@@ -1580,7 +1579,6 @@ static void xen_alloc_ptpage(struct mm_struct *mm, unsigned long pfn, unsigned l
- 	if (PagePinned(virt_to_page(mm->pgd))) {
- 		SetPagePinned(page);
- 
--		vm_unmap_aliases();
- 		if (!PageHighMem(page)) {
- 			make_lowmem_page_readonly(__va(PFN_PHYS((unsigned long)pfn)));
- 			if (level == PT_PTE && USE_SPLIT_PTLOCKS)
-@@ -2026,6 +2024,8 @@ void __init xen_init_mmu_ops(void)
- 	x86_init.paging.pagetable_setup_start = xen_pagetable_setup_start;
- 	x86_init.paging.pagetable_setup_done = xen_pagetable_setup_done;
- 	pv_mmu_ops = xen_mmu_ops;
++config SWIOTLB_XEN
++	def_bool y
++	depends on SWIOTLB
 +
-+	vmap_lazy_unmap = false;
- }
- 
- /* Protected by xen_reservation_lock. */
-@@ -2165,8 +2165,6 @@ int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
- 
- 	memset((void *) vstart, 0, PAGE_SIZE << order);
- 
--	vm_unmap_aliases();
--
- 	spin_lock_irqsave(&xen_reservation_lock, flags);
- 
- 	/* 1. Zap current PTEs, remembering MFNs. */
-@@ -2204,8 +2202,6 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order)
- 
- 	memset((void *) vstart, 0, PAGE_SIZE << order);
- 
--	vm_unmap_aliases();
--
- 	spin_lock_irqsave(&xen_reservation_lock, flags);
- 
- 	/* 1. Find start MFN of contiguous extent. */
+ endmenu
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 7c28434..85f84cf 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -9,4 +9,5 @@ obj-$(CONFIG_XEN_XENCOMM)	+= xencomm.o
+ obj-$(CONFIG_XEN_BALLOON)	+= balloon.o
+ obj-$(CONFIG_XEN_DEV_EVTCHN)	+= evtchn.o
+ obj-$(CONFIG_XENFS)		+= xenfs/
+-obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
+\ No newline at end of file
++obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
++obj-$(CONFIG_SWIOTLB_XEN)	+= swiotlb-xen.o
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+new file mode 100644
+index 0000000..54469c3
+--- /dev/null
++++ b/drivers/xen/swiotlb-xen.c
+@@ -0,0 +1,515 @@
++/*
++ *  Copyright 2010
++ *  by Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
++ *
++ * This code provides a IOMMU for Xen PV guests with PCI passthrough.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License v2.0 as published by
++ * the Free Software Foundation
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * PV guests under Xen are running in an non-contiguous memory architecture.
++ *
++ * When PCI pass-through is utilized, this necessitates an IOMMU for
++ * translating bus (DMA) to virtual and vice-versa and also providing a
++ * mechanism to have contiguous pages for device drivers operations (say DMA
++ * operations).
++ *
++ * Specifically, under Xen the Linux idea of pages is an illusion. It
++ * assumes that pages start at zero and go up to the available memory. To
++ * help with that, the Linux Xen MMU provides a lookup mechanism to
++ * translate the page frame numbers (PFN) to machine frame numbers (MFN)
++ * and vice-versa. The MFN are the "real" frame numbers. Furthermore
++ * memory is not contiguous. Xen hypervisor stitches memory for guests
++ * from different pools, which means there is no guarantee that PFN==MFN
++ * and PFN+1==MFN+1. Lastly with Xen 4.0, pages (in debug mode) are
++ * allocated in descending order (high to low), meaning the guest might
++ * never get any MFN's under the 4GB mark.
++ *
++ */
++
++#include <linux/bootmem.h>
++#include <linux/dma-mapping.h>
++#include <xen/swiotlb-xen.h>
++#include <xen/page.h>
++#include <xen/xen-ops.h>
++/*
++ * Used to do a quick range check in swiotlb_tbl_unmap_single and
++ * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
++ * API.
++ */
++
++static char *xen_io_tlb_start, *xen_io_tlb_end;
++static unsigned long xen_io_tlb_nslabs;
++/*
++ * Quick lookup value of the bus address of the IOTLB.
++ */
++
++u64 start_dma_addr;
++
++static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
++{
++	return phys_to_machine(XPADDR(paddr)).maddr;;
++}
++
++static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
++{
++	return machine_to_phys(XMADDR(baddr)).paddr;
++}
++
++static dma_addr_t xen_virt_to_bus(void *address)
++{
++	return xen_phys_to_bus(virt_to_phys(address));
++}
++
++static int check_pages_physically_contiguous(unsigned long pfn,
++					     unsigned int offset,
++					     size_t length)
++{
++	unsigned long next_mfn;
++	int i;
++	int nr_pages;
++
++	next_mfn = pfn_to_mfn(pfn);
++	nr_pages = (offset + length + PAGE_SIZE-1) >> PAGE_SHIFT;
++
++	for (i = 1; i < nr_pages; i++) {
++		if (pfn_to_mfn(++pfn) != ++next_mfn)
++			return 0;
++	}
++	return 1;
++}
++
++static int range_straddles_page_boundary(phys_addr_t p, size_t size)
++{
++	unsigned long pfn = PFN_DOWN(p);
++	unsigned int offset = p & ~PAGE_MASK;
++
++	if (offset + size <= PAGE_SIZE)
++		return 0;
++	if (check_pages_physically_contiguous(pfn, offset, size))
++		return 0;
++	return 1;
++}
++
++static int is_xen_swiotlb_buffer(dma_addr_t dma_addr)
++{
++	unsigned long mfn = PFN_DOWN(dma_addr);
++	unsigned long pfn = mfn_to_local_pfn(mfn);
++	phys_addr_t paddr;
++
++	/* If the address is outside our domain, it CAN
++	 * have the same virtual address as another address
++	 * in our domain. Therefore _only_ check address within our domain.
++	 */
++	if (pfn_valid(pfn)) {
++		paddr = PFN_PHYS(pfn);
++		return paddr >= virt_to_phys(xen_io_tlb_start) &&
++		       paddr < virt_to_phys(xen_io_tlb_end);
++	}
++	return 0;
++}
++
++static int max_dma_bits = 32;
++
++static int
++xen_swiotlb_fixup(void *buf, size_t size, unsigned long nslabs)
++{
++	int i, rc;
++	int dma_bits;
++
++	dma_bits = get_order(IO_TLB_SEGSIZE << IO_TLB_SHIFT) + PAGE_SHIFT;
++
++	i = 0;
++	do {
++		int slabs = min(nslabs - i, (unsigned long)IO_TLB_SEGSIZE);
++
++		do {
++			rc = xen_create_contiguous_region(
++				(unsigned long)buf + (i << IO_TLB_SHIFT),
++				get_order(slabs << IO_TLB_SHIFT),
++				dma_bits);
++		} while (rc && dma_bits++ < max_dma_bits);
++		if (rc)
++			return rc;
++
++		i += slabs;
++	} while (i < nslabs);
++	return 0;
++}
++
++void __init xen_swiotlb_init(int verbose)
++{
++	unsigned long bytes;
++	int rc;
++
++	xen_io_tlb_nslabs = (64 * 1024 * 1024 >> IO_TLB_SHIFT);
++	xen_io_tlb_nslabs = ALIGN(xen_io_tlb_nslabs, IO_TLB_SEGSIZE);
++
++	bytes = xen_io_tlb_nslabs << IO_TLB_SHIFT;
++
++	/*
++	 * Get IO TLB memory from any location.
++	 */
++	xen_io_tlb_start = alloc_bootmem(bytes);
++	if (!xen_io_tlb_start)
++		panic("Cannot allocate SWIOTLB buffer");
++
++	xen_io_tlb_end = xen_io_tlb_start + bytes;
++	/*
++	 * And replace that memory with pages under 4GB.
++	 */
++	rc = xen_swiotlb_fixup(xen_io_tlb_start,
++			       bytes,
++			       xen_io_tlb_nslabs);
++	if (rc)
++		goto error;
++
++	start_dma_addr = xen_virt_to_bus(xen_io_tlb_start);
++	swiotlb_init_with_tbl(xen_io_tlb_start, xen_io_tlb_nslabs, verbose);
++
++	return;
++error:
++	panic("DMA(%d): Failed to exchange pages allocated for DMA with Xen! "\
++	      "We either don't have the permission or you do not have enough"\
++	      "free memory under 4GB!\n", rc);
++}
++
++void *
++xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
++			   dma_addr_t *dma_handle, gfp_t flags)
++{
++	void *ret;
++	int order = get_order(size);
++	u64 dma_mask = DMA_BIT_MASK(32);
++	unsigned long vstart;
++
++	/*
++	* Ignore region specifiers - the kernel's ideas of
++	* pseudo-phys memory layout has nothing to do with the
++	* machine physical layout.  We can't allocate highmem
++	* because we can't return a pointer to it.
++	*/
++	flags &= ~(__GFP_DMA | __GFP_HIGHMEM);
++
++	if (dma_alloc_from_coherent(hwdev, size, dma_handle, &ret))
++		return ret;
++
++	vstart = __get_free_pages(flags, order);
++	ret = (void *)vstart;
++
++	if (hwdev && hwdev->coherent_dma_mask)
++		dma_mask = dma_alloc_coherent_mask(hwdev, flags);
++
++	if (ret) {
++		if (xen_create_contiguous_region(vstart, order,
++						 fls64(dma_mask)) != 0) {
++			free_pages(vstart, order);
++			return NULL;
++		}
++		memset(ret, 0, size);
++		*dma_handle = virt_to_machine(ret).maddr;
++	}
++	return ret;
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_alloc_coherent);
++
++void
++xen_swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
++			  dma_addr_t dev_addr)
++{
++	int order = get_order(size);
++
++	if (dma_release_from_coherent(hwdev, order, vaddr))
++		return;
++
++	xen_destroy_contiguous_region((unsigned long)vaddr, order);
++	free_pages((unsigned long)vaddr, order);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_free_coherent);
++
++
++/*
++ * Map a single buffer of the indicated size for DMA in streaming mode.  The
++ * physical address to use is returned.
++ *
++ * Once the device is given the dma address, the device owns this memory until
++ * either xen_swiotlb_unmap_page or xen_swiotlb_dma_sync_single is performed.
++ */
++dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
++				unsigned long offset, size_t size,
++				enum dma_data_direction dir,
++				struct dma_attrs *attrs)
++{
++	phys_addr_t phys = page_to_phys(page) + offset;
++	dma_addr_t dev_addr = xen_phys_to_bus(phys);
++	void *map;
++
++	BUG_ON(dir == DMA_NONE);
++	/*
++	 * If the address happens to be in the device's DMA window,
++	 * we can safely return the device addr and not worry about bounce
++	 * buffering it.
++	 */
++	if (dma_capable(dev, dev_addr, size) &&
++	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
++		return dev_addr;
++
++	/*
++	 * Oh well, have to allocate and map a bounce buffer.
++	 */
++	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
++	if (!map)
++		return DMA_ERROR_CODE;
++
++	dev_addr = xen_virt_to_bus(map);
++
++	/*
++	 * Ensure that the address returned is DMA'ble
++	 */
++	if (!dma_capable(dev, dev_addr, size))
++		panic("map_single: bounce buffer is not DMA'ble");
++
++	return dev_addr;
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
++
++/*
++ * Unmap a single streaming mode DMA translation.  The dma_addr and size must
++ * match what was provided for in a previous xen_swiotlb_map_page call.  All
++ * other usages are undefined.
++ *
++ * After this call, reads by the cpu to the buffer are guaranteed to see
++ * whatever the device wrote there.
++ */
++static void xen_unmap_single(struct device *hwdev, dma_addr_t dev_addr,
++			     size_t size, enum dma_data_direction dir)
++{
++	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
++
++	BUG_ON(dir == DMA_NONE);
++
++	/* NOTE: We use dev_addr here, not paddr! */
++	if (is_xen_swiotlb_buffer(dev_addr)) {
++		swiotlb_tbl_unmap_single(hwdev, phys_to_virt(paddr), size, dir);
++		return;
++	}
++
++	if (dir != DMA_FROM_DEVICE)
++		return;
++
++	/*
++	 * phys_to_virt doesn't work with hihgmem page but we could
++	 * call dma_mark_clean() with hihgmem page here. However, we
++	 * are fine since dma_mark_clean() is null on POWERPC. We can
++	 * make dma_mark_clean() take a physical address if necessary.
++	 */
++	dma_mark_clean(phys_to_virt(paddr), size);
++}
++
++void xen_swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
++			    size_t size, enum dma_data_direction dir,
++			    struct dma_attrs *attrs)
++{
++	xen_unmap_single(hwdev, dev_addr, size, dir);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_page);
++
++/*
++ * Make physical memory consistent for a single streaming mode DMA translation
++ * after a transfer.
++ *
++ * If you perform a xen_swiotlb_map_page() but wish to interrogate the buffer
++ * using the cpu, yet do not wish to teardown the dma mapping, you must
++ * call this function before doing so.  At the next point you give the dma
++ * address back to the card, you must first perform a
++ * xen_swiotlb_dma_sync_for_device, and then the device again owns the buffer
++ */
++static void
++xen_swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
++			size_t size, enum dma_data_direction dir,
++			enum dma_sync_target target)
++{
++	phys_addr_t paddr = xen_bus_to_phys(dev_addr);
++
++	BUG_ON(dir == DMA_NONE);
++
++	/* NOTE: We use dev_addr here, not paddr! */
++	if (is_xen_swiotlb_buffer(dev_addr)) {
++		swiotlb_tbl_sync_single(hwdev, phys_to_virt(paddr), size, dir,
++				       target);
++		return;
++	}
++
++	if (dir != DMA_FROM_DEVICE)
++		return;
++
++	dma_mark_clean(phys_to_virt(paddr), size);
++}
++
++void
++xen_swiotlb_sync_single_for_cpu(struct device *hwdev, dma_addr_t dev_addr,
++				size_t size, enum dma_data_direction dir)
++{
++	xen_swiotlb_sync_single(hwdev, dev_addr, size, dir, SYNC_FOR_CPU);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_sync_single_for_cpu);
++
++void
++xen_swiotlb_sync_single_for_device(struct device *hwdev, dma_addr_t dev_addr,
++				   size_t size, enum dma_data_direction dir)
++{
++	xen_swiotlb_sync_single(hwdev, dev_addr, size, dir, SYNC_FOR_DEVICE);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_sync_single_for_device);
++
++/*
++ * Map a set of buffers described by scatterlist in streaming mode for DMA.
++ * This is the scatter-gather version of the above xen_swiotlb_map_page
++ * interface.  Here the scatter gather list elements are each tagged with the
++ * appropriate dma address and length.  They are obtained via
++ * sg_dma_{address,length}(SG).
++ *
++ * NOTE: An implementation may be able to use a smaller number of
++ *       DMA address/length pairs than there are SG table elements.
++ *       (for example via virtual mapping capabilities)
++ *       The routine returns the number of addr/length pairs actually
++ *       used, at most nents.
++ *
++ * Device ownership issues as mentioned above for xen_swiotlb_map_page are the
++ * same here.
++ */
++int
++xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
++			 int nelems, enum dma_data_direction dir,
++			 struct dma_attrs *attrs)
++{
++	struct scatterlist *sg;
++	int i;
++
++	BUG_ON(dir == DMA_NONE);
++
++	for_each_sg(sgl, sg, nelems, i) {
++		phys_addr_t paddr = sg_phys(sg);
++		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
++
++		if (swiotlb_force ||
++		    !dma_capable(hwdev, dev_addr, sg->length) ||
++		    range_straddles_page_boundary(paddr, sg->length)) {
++			void *map = swiotlb_tbl_map_single(hwdev,
++							   start_dma_addr,
++							   sg_phys(sg),
++							   sg->length, dir);
++			if (!map) {
++				/* Don't panic here, we expect map_sg users
++				   to do proper error handling. */
++				xen_swiotlb_unmap_sg_attrs(hwdev, sgl, i, dir,
++							   attrs);
++				sgl[0].dma_length = 0;
++				return DMA_ERROR_CODE;
++			}
++			sg->dma_address = xen_virt_to_bus(map);
++		} else
++			sg->dma_address = dev_addr;
++		sg->dma_length = sg->length;
++	}
++	return nelems;
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_map_sg_attrs);
++
++int
++xen_swiotlb_map_sg(struct device *hwdev, struct scatterlist *sgl, int nelems,
++		   enum dma_data_direction dir)
++{
++	return xen_swiotlb_map_sg_attrs(hwdev, sgl, nelems, dir, NULL);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_map_sg);
++
++/*
++ * Unmap a set of streaming mode DMA translations.  Again, cpu read rules
++ * concerning calls here are the same as for swiotlb_unmap_page() above.
++ */
++void
++xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
++			   int nelems, enum dma_data_direction dir,
++			   struct dma_attrs *attrs)
++{
++	struct scatterlist *sg;
++	int i;
++
++	BUG_ON(dir == DMA_NONE);
++
++	for_each_sg(sgl, sg, nelems, i)
++		xen_unmap_single(hwdev, sg->dma_address, sg->dma_length, dir);
++
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg_attrs);
++
++void
++xen_swiotlb_unmap_sg(struct device *hwdev, struct scatterlist *sgl, int nelems,
++		     enum dma_data_direction dir)
++{
++	return xen_swiotlb_unmap_sg_attrs(hwdev, sgl, nelems, dir, NULL);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_unmap_sg);
++
++/*
++ * Make physical memory consistent for a set of streaming mode DMA translations
++ * after a transfer.
++ *
++ * The same as swiotlb_sync_single_* but for a scatter-gather list, same rules
++ * and usage.
++ */
++static void
++xen_swiotlb_sync_sg(struct device *hwdev, struct scatterlist *sgl,
++		    int nelems, enum dma_data_direction dir,
++		    enum dma_sync_target target)
++{
++	struct scatterlist *sg;
++	int i;
++
++	for_each_sg(sgl, sg, nelems, i)
++		xen_swiotlb_sync_single(hwdev, sg->dma_address,
++					sg->dma_length, dir, target);
++}
++
++void
++xen_swiotlb_sync_sg_for_cpu(struct device *hwdev, struct scatterlist *sg,
++			    int nelems, enum dma_data_direction dir)
++{
++	xen_swiotlb_sync_sg(hwdev, sg, nelems, dir, SYNC_FOR_CPU);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_sync_sg_for_cpu);
++
++void
++xen_swiotlb_sync_sg_for_device(struct device *hwdev, struct scatterlist *sg,
++			       int nelems, enum dma_data_direction dir)
++{
++	xen_swiotlb_sync_sg(hwdev, sg, nelems, dir, SYNC_FOR_DEVICE);
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_sync_sg_for_device);
++
++int
++xen_swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr)
++{
++	return !dma_addr;
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_dma_mapping_error);
++
++/*
++ * Return whether the given device DMA address mask can be supported
++ * properly.  For example, if your device can only drive the low 24-bits
++ * during bus mastering, then you would pass 0x00ffffff as the mask to
++ * this function.
++ */
++int
++xen_swiotlb_dma_supported(struct device *hwdev, u64 mask)
++{
++	return xen_virt_to_bus(xen_io_tlb_end - 1) <= mask;
++}
++EXPORT_SYMBOL_GPL(xen_swiotlb_dma_supported);
+diff --git a/include/xen/swiotlb-xen.h b/include/xen/swiotlb-xen.h
+new file mode 100644
+index 0000000..2ea2fdc
+--- /dev/null
++++ b/include/xen/swiotlb-xen.h
+@@ -0,0 +1,65 @@
++#ifndef __LINUX_SWIOTLB_XEN_H
++#define __LINUX_SWIOTLB_XEN_H
++
++#include <linux/swiotlb.h>
++
++extern void xen_swiotlb_init(int verbose);
++
++extern void
++*xen_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
++			    dma_addr_t *dma_handle, gfp_t flags);
++
++extern void
++xen_swiotlb_free_coherent(struct device *hwdev, size_t size,
++			  void *vaddr, dma_addr_t dma_handle);
++
++extern dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
++				       unsigned long offset, size_t size,
++				       enum dma_data_direction dir,
++				       struct dma_attrs *attrs);
++
++extern void xen_swiotlb_unmap_page(struct device *hwdev, dma_addr_t dev_addr,
++				   size_t size, enum dma_data_direction dir,
++				   struct dma_attrs *attrs);
++/*
++extern int
++xen_swiotlb_map_sg(struct device *hwdev, struct scatterlist *sg, int nents,
++		   enum dma_data_direction dir);
++
++extern void
++xen_swiotlb_unmap_sg(struct device *hwdev, struct scatterlist *sg, int nents,
++		     enum dma_data_direction dir);
++*/
++extern int
++xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
++			 int nelems, enum dma_data_direction dir,
++			 struct dma_attrs *attrs);
++
++extern void
++xen_swiotlb_unmap_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
++			   int nelems, enum dma_data_direction dir,
++			   struct dma_attrs *attrs);
++
++extern void
++xen_swiotlb_sync_single_for_cpu(struct device *hwdev, dma_addr_t dev_addr,
++				size_t size, enum dma_data_direction dir);
++
++extern void
++xen_swiotlb_sync_sg_for_cpu(struct device *hwdev, struct scatterlist *sg,
++			    int nelems, enum dma_data_direction dir);
++
++extern void
++xen_swiotlb_sync_single_for_device(struct device *hwdev, dma_addr_t dev_addr,
++				   size_t size, enum dma_data_direction dir);
++
++extern void
++xen_swiotlb_sync_sg_for_device(struct device *hwdev, struct scatterlist *sg,
++			       int nelems, enum dma_data_direction dir);
++
++extern int
++xen_swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr);
++
++extern int
++xen_swiotlb_dma_supported(struct device *hwdev, u64 mask);
++
++#endif /* __LINUX_SWIOTLB_XEN_H */
 -- 
 1.7.0.1
 
