@@ -1,71 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab0G0Pc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 11:32:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34594 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab0G0Pcz (ORCPT
+	id S1756124Ab0G0PfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 11:35:05 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:25598 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab0G0PfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 11:32:55 -0400
-Date: Tue, 27 Jul 2010 17:32:31 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Gregory Bean <gbean@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jon Povey <jon.povey@racelogic.co.uk>
-Subject: Re: [PATCH] gpio: remove spurious gpio_unexport debug error.
-Message-ID: <20100727153231.GA7072@pengutronix.de>
-References: <1279832758-25442-1-git-send-email-gbean@codeaurora.org> <20100723045807.GA14875@pengutronix.de> <20100726153236.ead96c88.akpm@linux-foundation.org>
+	Tue, 27 Jul 2010 11:35:03 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] ipmi: Fix ACPI detecting with regspacing
+Date: Tue, 27 Jul 2010 09:34:45 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: Corey Minyard <minyard@acm.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Myron Stowe <myron.stowe@hp.com>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <4C4E0292.4010004@kernel.org>
+In-Reply-To: <4C4E0292.4010004@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100726153236.ead96c88.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007270934.45683.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
-
-On Mon, Jul 26, 2010 at 03:32:36PM -0700, Andrew Morton wrote:
-> On Fri, 23 Jul 2010 06:58:07 +0200
-> Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de> wrote:
+On Monday, July 26, 2010 03:48:02 pm Yinghai Lu wrote:
 > 
-> > Hello,
-> > 
-> > On Thu, Jul 22, 2010 at 02:05:58PM -0700, Gregory Bean wrote:
-> > > Make gpio_unexport generate success instead of an -EINVAL
-> > > if asked to unexport a line which is not exported, because
-> > > the only result of that condition is a pr_debug
-> > > which complains of what is really a harmless no-op:
-> > > when an unexported gpio is unexported again, nothing happens.
-> > > That's not a failure, just a trivial border case.
-> > > Since gpio_free calls gpio_unexport unconditionally
-> > > and exported gpio lines are uncommon, most calls to
-> > > gpio_free with debug flags enabled generate -EINVAL
-> > > warnings in the log, causing unnecessary stress.
-> > I noticed that a few days ago, too.  Just didn't come around to fix it
-> > myself.
-> >  
-> > > Signed-off-by: Gregory Bean <gbean@codeaurora.org>
-> > Acked-by: Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de>
-> > 
+> after the commint that change ipmi_si detecting sequence from SMBIOS/ACPI to ACPI/SMBIOS,
 > 
-> Jon got there first ;)
-OK, then he can get my ack, too.
+> | commit 754d453185275951d39792865927ec494fa1ebd8
+> | Author: Matthew Garrett <mjg@redhat.com>
+> | Date:   Wed May 26 14:43:47 2010 -0700
+> |
+> |    ipmi: change device discovery order
+> |
+> |    The ipmi spec provides an ordering for si discovery.  Change the driver to
+> |    match, with the exception of preferring smbios to SPMI as HPs (at least)
+> |    contain accurate information in the former but not the latter.
+> 
+> ipmi_si can not be initialized.
 
-Thanks
-Uwe
+I think this patch makes sense, as long as this is not a bringup
+issue that only affects pre-release firmware.  If this only affects
+a prototype, it would be better to change the firmware so it conforms
+to the conventional _CRS usage of systems in the field.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+To that end, I'd like to know what system this is, and whether IPMI
+works under Windows on this system.  We know that Windows doesn't
+look at SMBIOS or SPMI, so if Windows works, it must be doing something
+similar to your patch.
+
+Bjorn
+
+> [  138.799739] calling  init_ipmi_devintf+0x0/0x109 @ 1
+> [  138.805050] ipmi device interface
+> [  138.818131] initcall init_ipmi_devintf+0x0/0x109 returned 0 after 12797 usecs
+> [  138.822998] calling  init_ipmi_si+0x0/0xa90 @ 1
+> [  138.840276] IPMI System Interface driver.
+> [  138.846137] ipmi_si: probing via ACPI
+> [  138.849225] ipmi_si 00:09: [io  0x0ca2] regsize 1 spacing 1 irq 0
+> [  138.864438] ipmi_si: Adding ACPI-specified kcs state machine
+> [  138.870893] ipmi_si: probing via SMBIOS
+> [  138.880945] ipmi_si: Adding SMBIOS-specified kcs state machineipmi_si: duplicate interface
+> [  138.896511] ipmi_si: probing via SPMI
+> [  138.899861] ipmi_si: Adding SPMI-specified kcs state machineipmi_si: duplicate interface
+> [  138.917095] ipmi_si: Trying ACPI-specified kcs state machine at i/o address 0xca2, slave address 0x0, irq 0
+> [  138.928658] ipmi_si: Interface detection failed
+> [  138.953411] initcall init_ipmi_si+0x0/0xa90 returned 0 after 110847 usecs
+> 
+> in smbios has
+> DMI/SMBIOS
+> Handle 0x00C5, DMI type 38, 18 bytes
+> IPMI Device Information
+>         Interface Type: KCS (Keyboard Control Style)
+>         Specification Version: 2.0
+>         I2C Slave Address: 0x00
+>         NV Storage Device: Not Present
+>         Base Address: 0x0000000000000CA2 (I/O)
+>         Register Spacing: 32-bit Boundaries
+> in DSDT has
+>                     Device (BMC)
+>                     {
+> 
+>                         Name (_HID, EisaId ("IPI0001"))
+>                         Method (_STA, 0, NotSerialized)
+>                         {
+>                             If (LEqual (OSN, Zero))
+>                             {
+>                                 Return (Zero)
+>                             }
+> 
+>                             Return (0x0F)
+>                         }
+> 
+>                         Name (_STR, Unicode ("IPMI_KCS"))
+>                         Name (_UID, Zero)
+>                         Name (_CRS, ResourceTemplate ()
+>                         {
+>                             IO (Decode16,
+>                                 0x0CA2,             // Range Minimum
+>                                 0x0CA2,             // Range Maximum
+>                                 0x00,               // Alignment
+>                                 0x01,               // Length
+>                                 )
+>                             IO (Decode16,
+>                                 0x0CA6,             // Range Minimum
+>                                 0x0CA6,             // Range Maximum
+>                                 0x00,               // Alignment
+>                                 0x01,               // Length
+>                                 )
+>                         })
+>                         Method (_IFT, 0, NotSerialized)
+>                         {
+>                             Return (One)
+>                         }
+> 
+>                         Method (_SRV, 0, NotSerialized)
+>                         {
+>                             Return (0x0200)
+>                         }
+>                     }
+> so the reg spacing should be 4 instead of 1.
+> 
+> Try to calculate regspacing for this kind of system.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  drivers/char/ipmi/ipmi_si_intf.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> Index: linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/char/ipmi/ipmi_si_intf.c
+> +++ linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -2176,6 +2176,14 @@ static int __devinit ipmi_pnp_probe(stru
+>  	info->io.addr_data = res->start;
+>  
+>  	info->io.regspacing = DEFAULT_REGSPACING;
+> +	res = pnp_get_resource(dev,
+> +			       (info->io.addr_type == IPMI_IO_ADDR_SPACE) ?
+> +					IORESOURCE_IO : IORESOURCE_MEM,
+> +			       1);
+> +	if (res) {
+> +		if (res->start > info->io.addr_data)
+> +			info->io.regspacing = res->start - info->io.addr_data;
+> +	}
+>  	info->io.regsize = DEFAULT_REGSPACING;
+>  	info->io.regshift = 0;
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
