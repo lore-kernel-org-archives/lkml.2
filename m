@@ -1,121 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab0G0ONt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 10:13:49 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61120 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab0G0ONh (ORCPT
+	id S1756217Ab0G0ORE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 10:17:04 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58366 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683Ab0G0ORB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 10:13:37 -0400
+	Tue, 27 Jul 2010 10:17:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:subject:cc:date:message-id:user-agent:mime-version
-         :content-type;
-        b=SVoH2aZNhgSZXFSMEfeeAKy1IOWihbfq07s9jlU+PQqt7I9hhPEUDF/JrDP5S446x8
-         jHUl1jSBeSvDardBiqYur1nXdLyF4RCGGRvO/u9wdeaRUvciKM8V6+V2GacASe6GioV4
-         3vIT6vyWgYhRj01B/rqARmqdT42GY9XJ+pC6U=
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: jens.axboe@oracle.com
-Subject: [PATCH] blkdev: fix blkdev_issue_zeroout return value
-CC: linux-kernel@vger.kernel.org
-Date: Tue, 27 Jul 2010 18:13:31 +0400
-Message-ID: <87k4ohc8s4.fsf@dmon-lap.sw.ru>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=eMezKb8XRZ/rOC+BkofUCTPjOl5A1h+NbL3Jikylb7M1A57GQ2c3c0tBhVfF0HkcGu
+         3sWguhCzTpVlA6JjQ00bjTQrc8iex82/8v5YPqN5Fm2TiMOiSoP2gAgUJcK+A8WLPaMK
+         g3gdJK2DjnfL4GWp/xgWZfYRDZHS1RyZwoxNQ=
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+In-Reply-To: <1276767215-4217-1-git-send-email-andy.shevchenko@gmail.com>
+References: <1276767215-4217-1-git-send-email-andy.shevchenko@gmail.com>
+Date: Tue, 27 Jul 2010 17:16:56 +0300
+Message-ID: <AANLkTikeFP-BTsf_MJ79VyTzBshqQxdtu+GnnfcrcJJc@mail.gmail.com>
+Subject: Re: [PATCH] kgdb: remove custom hex_to_bin() implementation
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Jason Wessel <jason.wessel@windriver.com>, Martin Hicks <mort@sgi.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+On Thu, Jun 17, 2010 at 12:33 PM, Andy Shevchenko
+<andy.shevchenko@gmail.com> wrote:
+> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Cc: Martin Hicks <mort@sgi.com>
+> Cc: kgdb-bugreport@lists.sourceforge.net
 
-Hi Jens,  
-I've found couple of trivial issues in blkdev_issue_zeroout()
-implementation. Unfortunately I've miss during initial testing phase
-because i've always called it with BARRIER|WAIT flags.
+Any comments?
+The patch still valid for linux-next tree (I did cherry-pick today).
 
-
---=-=-=
-Content-Disposition: inline;
- filename=0001-blkdev-fix-blkdev_issue_zeroout-return-value.patch
-
->From 5eb4d762ad8fe146ee638fb1b2d7730db3e3ca4b Mon Sep 17 00:00:00 2001
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-Date: Tue, 27 Jul 2010 17:12:27 +0400
-Subject: [PATCH] blkdev: fix blkdev_issue_zeroout return value
-
-- If function called without barrier option retvalue is incorrect
-- Add io_schedule() between loops
-
-
- diff --git a/block/blk-lib.c b/block/blk-lib.c
-index d0216b9..a8d6a21 100644
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- block/blk-lib.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index d0216b9..a8d6a21 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -157,7 +157,7 @@ static void bio_batch_end_io(struct bio *bio, int err)
- int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
- {
--	int ret = 0;
-+	int ret;
- 	struct bio *bio;
- 	struct bio_batch bb;
- 	unsigned int sz, issued = 0;
-@@ -175,11 +175,14 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			return ret;
- 	}
- submit:
-+	ret = 0;
- 	while (nr_sects != 0) {
- 		bio = bio_alloc(gfp_mask,
- 				min(nr_sects, (sector_t)BIO_MAX_PAGES));
--		if (!bio)
-+		if (!bio) {
-+			ret = -ENOMEM;
- 			break;
-+		}
- 
- 		bio->bi_sector = sector;
- 		bio->bi_bdev   = bdev;
-@@ -198,6 +201,7 @@ submit:
- 			if (ret < (sz << 9))
- 				break;
- 		}
-+		ret = 0;
- 		issued++;
- 		submit_bio(WRITE, bio);
- 	}
-@@ -218,15 +222,18 @@ submit:
- 		/* One of bios in the batch was completed with error.*/
- 		ret = -EIO;
- 
--	if (ret)
-+	if (ret && ret != -ENOMEM)
- 		goto out;
- 
- 	if (test_bit(BIO_EOPNOTSUPP, &bb.flags)) {
- 		ret = -EOPNOTSUPP;
- 		goto out;
- 	}
--	if (nr_sects != 0)
-+	if (nr_sects != 0) {
-+		if (ret == -ENOMEM)
-+			io_schedule();
- 		goto submit;
-+	}
- out:
- 	return ret;
- }
 -- 
-1.6.6.1
-
-
---=-=-=--
+With Best Regards,
+Andy Shevchenko
