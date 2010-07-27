@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab0G0SB6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 14:01:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47202 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753021Ab0G0SB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 14:01:57 -0400
-Date: Tue, 27 Jul 2010 20:01:31 +0200
-From: Jan Kara <jack@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/3] bdi: Use parent filesystem BDI for inodes not
- capable of writeback
-Message-ID: <20100727180131.GG6820@quack.suse.cz>
-References: <1280250301-17603-1-git-send-email-jack@suse.cz>
- <1280250301-17603-2-git-send-email-jack@suse.cz>
- <20100727170903.GA9034@infradead.org>
- <20100727172437.GE6820@quack.suse.cz>
- <20100727172731.GA25727@infradead.org>
+	id S1752469Ab0G0SOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 14:14:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24609 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab0G0SOK (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 27 Jul 2010 14:14:10 -0400
+Date: Tue, 27 Jul 2010 14:13:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vmap: add flag to allow lazy unmap to be disabled at
+ runtime
+Message-ID: <20100727181349.GA15674@phenom.dumpdata.com>
+References: <4C4DEF13.1030403@goop.org>
+ <20100727082439.GB6332@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100727172731.GA25727@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100727082439.GB6332@amd>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C4F21EA.017A:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 27-07-10 13:27:31, Christoph Hellwig wrote:
-> On Tue, Jul 27, 2010 at 07:24:38PM +0200, Jan Kara wrote:
-> >   Always returning inode->i_sb->s_bdi wouldn't be a right thing IMHO.
-> > That would file inode for /dev/sda to BDI list of tmpfs mounted on /dev/
-> > which isn't what you want...
+On Tue, Jul 27, 2010 at 06:24:39PM +1000, Nick Piggin wrote:
+> On Mon, Jul 26, 2010 at 01:24:51PM -0700, Jeremy Fitzhardinge wrote:
+> > 
+> > 
+> > [ Nick, I forget if I sent this to you before.  Could you Ack it if it looks OK? Thanks, J ]
+> > 
+> > Add a flag to force lazy_max_pages() to zero to prevent any outstanding
+> > mapped pages.  We'll need this for Xen.
 > 
-> It shouldn't.  Block device nodes are on the bdev filesystems, and
-  Ok, so inode->i_sb->s_bdi will actually point to noop_backing_dev_info
-as set by set_anon_super(). Or am I completely out?
+> You have sent this to me before, probably several times, and I always
+> forget about it right as you send it again.
+> 
+> It's no problem merging something like this for Xen, although as you
+> know I would love to see an approach where Xen would benefit from
+> delayed flushing as well :)
 
-> we twist the file->mapping pointer so that all the low-level read/write
-> code always deals with the bdev fs inode, and not the device node
-> filesystem.
-  Yes, I know this but I fail to see how this influences where </dev/sda's
-inode>->i_sb->s_bdi ends up...
+Hey Nick,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+So I've posted the patch with your Ack, in this thread
+http://lkml.org/lkml/2010/7/27/246. I hope that is OK?
+
+I think that using the delayed flushing is appropiate long-term.
+I don't know that much about it but I will put it on the list of todo.
+Fortunatly that list is actually shrinking (amazing!).
