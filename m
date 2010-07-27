@@ -1,126 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab0G0MVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 08:21:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59468 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab0G0MVV (ORCPT
+	id S1753678Ab0G0Me6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 08:34:58 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40742 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab0G0Me4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 08:21:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=luJhWqbhspdxUrO/xCKrveK3IJhtO90KTZ7lUGUTewrYa66Ve4h4qxuROXDQYd6iMy
-         iheAdv6JojnkSOVuDOq2q9KtQnfP7U5XsYdIWp1Lgn777moKIc2Kkd4Oic7ATRyuUGwi
-         6OCBCb8FVuZkgBA5deQ8fpISh8nOD1XpCny8Q=
-Subject: RE: nfs client hang
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andy Chittenden <andyc@bluearc.com>
-Cc: "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com>
-References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>
-	 <4C4E89D4.8040607@bluearc.com>
-	 <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Jul 2010 14:21:16 +0200
-Message-ID: <1280233276.2827.175.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 27 Jul 2010 08:34:56 -0400
+Message-ID: <4C4ED26C.5030502@canonical.com>
+Date: Tue, 27 Jul 2010 14:34:52 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Lightning/1.0b1 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+CC: Daniel J Blueman <daniel.blueman@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        linux-ext4@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: udevd / ext4 issue mounting 2.6.35-rc5
+References: <AANLkTilYEJMD_s5Iupru24WPXasxI_jE8JVJ35Nf8hrN@mail.gmail.com> 	<AANLkTinQKhvnAIa-1qXxIWFHCeE0ajM-07eYOAH1QA_J@mail.gmail.com> 	<AANLkTikY0eeq1Ufs-UOCiHYXu_314HUnw7ESK5ktocWV@mail.gmail.com> 	<AANLkTimNFIc8Ygg4O2NPHCYHk1G3dLBhYA2N9JSeAbdt@mail.gmail.com> 	<AANLkTikwQg6ZC-5tAzBExnNSx5J7Zgyc14sPXE7KqLW5@mail.gmail.com> 	<AANLkTimTdy2DmcdXtgFvtREMX8bMADk73Oz5bwpeHw6H@mail.gmail.com> <AANLkTi=9Y+v6ikUi=UH1BNKgcOFfp13Q1YowjJVrRSA9@mail.gmail.com>
+In-Reply-To: <AANLkTi=9Y+v6ikUi=UH1BNKgcOFfp13Q1YowjJVrRSA9@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 27 juillet 2010 à 11:53 +0100, Andy Chittenden a écrit :
-> > >> IE the client starts a connection and then closes it again without sending data.
-> > > Once this happens, here's some rpcdebug info for the rpc module using 2.6.34.1 kernel:
-> > >
-> > > ... lots of the following nfsv3 WRITE requests:
-> > > [ 7670.026741] 57793 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026759] 57794 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026778] 57795 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026797] 57796 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026815] 57797 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026834] 57798 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026853] 57799 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026871] 57800 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026890] 57801 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7670.026909] 57802 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
-> > > [ 7680.520042] RPC:       worker connecting xprt ffff88013e62d800 via tcp to 10.1.6.102 (port 2049)
-> > > [ 7680.520066] RPC:       ffff88013e62d800 connect status 99 connected 0 sock state 7
-> > > [ 7680.520074] RPC: 33550 __rpc_wake_up_task (now 4296812426)
-> > > [ 7680.520079] RPC: 33550 disabling timer
-> > > [ 7680.520084] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
-> > > [ 7680.520089] RPC:       __rpc_wake_up_task done
-> > > [ 7680.520094] RPC: 33550 __rpc_execute flags=0x1
-> > > [ 7680.520098] RPC: 33550 xprt_connect_status: retrying
-> > > [ 7680.520103] RPC: 33550 call_connect_status (status -11)
-> > > [ 7680.520108] RPC: 33550 call_transmit (status 0)
-> > > [ 7680.520112] RPC: 33550 xprt_prepare_transmit
-> > > [ 7680.520118] RPC: 33550 rpc_xdr_encode (status 0)
-> > > [ 7680.520123] RPC: 33550 marshaling UNIX cred ffff88012e002300
-> > > [ 7680.520130] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
-> > > [ 7680.520136] RPC: 33550 xprt_transmit(32920)
-> > > [ 7680.520145] RPC:       xs_tcp_send_request(32920) = -32
-> > > [ 7680.520151] RPC:       xs_tcp_state_change client ffff88013e62d800...
-> > > [ 7680.520156] RPC:       state 7 conn 0 dead 0 zapped 1
+On 07/27/2010 01:43 AM, Luis R. Rodriguez wrote:
+> On Fri, Jul 23, 2010 at 10:56 AM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+>> On Fri, Jul 23, 2010 at 9:49 AM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+>>> On Thu, Jul 22, 2010 at 2:10 AM, Daniel J Blueman
+>>> <daniel.blueman@gmail.com> wrote:
+>>>> On 22 July 2010 02:06, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+>>>>> On Wed, Jul 21, 2010 at 1:43 AM, Daniel J Blueman
+>>>>> <daniel.blueman@gmail.com> wrote:
+>>>>>> Hi Luis,
+>>>>>>
+>>>>>> On 21 July 2010 01:36, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+>>>>>>> I have been reluctant to boot to 2.6.35-rc due to the large set of
+>>>>>>> regression list and the amount of work I needed to actually get done
+>>>>>>> on 2.6.35. Last I checked the regression list it was getting small so
+>>>>>>> I gave it a spin today. No luck. I get some bootup error from udevd
+>>>>>>> and ext2/ext3/ext4, something like this:
+>>>>>>>
+>>>>>>> EXT3-fs (sda1): error: couldn't mount because of unsupported optional
+>>>>>>> features (240)
+>>>>>>> EXT2-fs (sda1): error: couldn't mount because of unsupported optional
+>>>>>>> features (240)
+>>>>>>> EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
+>>>>>>
+>>>>>> This succeeded.
+>>>>>
+>>>>> Heh, OK :)
+>>>>>
+>>>>>>> VFS: Mounted root (ext4 filesystem) readonly on device 8:1
+>>>>>>> Freeing unused kernel memory: 708k freed
+>>>>>>> Write protecting the kernel read-only data: 102040k
+>>>>>>> Freeing unused kernel memory: 764k freed
+>>>>>>> Freeing unused kernel memory: 1796k freed
+>>>>>>> udevd: failed to create queue file: No such file or directory
+>>>>>>> udevd: error creating queue file
+>>>>>>
+>>>>>> It looks like you need to enable:
+>>>>>>
+>>>>>> CONFIG_DEVTMPFS
+>>>>>> CONFIG_DEVTMPFS_MOUNT
+>>>>>
+>>>>> Thanks, it also turned out that when I upgraded from Ubuntu 9.10 to
+>>>>> Ubuntu 10.04 it replaced my own /sbin/installkernel so this was likely
+>>>>> another issue. My /sbin/installkernel changes allow for easy initramfs
+>>>>> installation on Debian/Ubuntu but my patches have been ignored my the
+>>>>> maintainer.
+>>>>>
+>>>>> --- installkernel-ubuntu-10.04  2010-07-21 18:03:34.607678010 -0700
+>>>>> +++ installkernel       2010-01-29 13:17:10.000000000 -0800
+>>>>> @@ -36,7 +36,8 @@
+>>>>>  # Create backups of older versions before installing
+>>>>>  updatever () {
+>>>>>   if [ -f "$dir/$1-$ver" ] ; then
+>>>>> -    mv "$dir/$1-$ver" "$dir/$1-$ver.old"
+>>>>> +    #mv "$dir/$1-$ver" "$dir/$1-$ver.old"
+>>>>> +    rm -f "$dir/$1-$ver" "$dir/$1-$ver.old"
+>>>>>   fi
+>>>>>
+>>>>>   cat "$2" > "$dir/$1-$ver"
+>>>>> @@ -75,5 +76,16 @@
+>>>>>  if [ -f "$config" ] ; then
+>>>>>   updatever config "$config"
+>>>>>  fi
+>>>>> +
+>>>>> +LSB_RED_ID=$(/usr/bin/lsb_release -i -s)
+>>>>> +
+>>>>> +case $LSB_RED_ID in
+>>>>> +"Ubuntu")
+>>>>> +       update-initramfs -c -k  $ver
+>>>>> +       update-grub
+>>>>> +       ;;
+>>>>> +*)
+>>>>> +       ;;
+>>>>> +esac
+>>>>>
+>>>>>  exit 0
+>>>>>
+>>>>> But anyway I also now get another boot failure with:
+>>>>>
+>>>>> mount: mounting /dev on /root/dev failed: No such file or directory
+>>>>> mount: mounting /sys on /root/sys failed: No such file or directory
+>>>>
+>>>> Hmm...the scripts in the initrd are not doing what is expected -
+>>>> perhaps if you didn't use:
+>>>> linux$ fakeroot make-kpkg --append-to-version -luis1 --initrd kernel-image
+>>>
+>>> I am not using that to build my kernels I just build my kernels with
+>>>
+>>> make
+>>> sudo make modules_install install
+>>>
+>>>> ...or if there are eg initrd script modifications on the filesystem
+>>>> when it cooked the initd.
+>>>
+>>> I haven't modified any initrd scripts.
+>>>
+>>>> You could just try eg:
+>>>> http://archive.ubuntu.com/ubuntu/pool/main/l/linux/linux-image-2.6.35-9-generic_2.6.35-9.14_amd64.deb
+>>
+>> Fun, so that kernel actually works but the one I am building from
+>> wireless-testing.git does not. The curious thing is it doesn't boot
+>> even if I remove my 802.11 module... so something is fishy. This is
+>> likely a config issue. After booting with the above kernel though I
+>> generated a new one with
+>>
+>> make localmodconfig
+>>
+>> and then enabled my 802.11 modules. Still, no luck.. Going to reset my
+>> tree, I had manually merged Linus' latest stuff in but I don't think
+>> this should matter.
 > 
-> > I changed that debug to output sk_shutdown too. That has a value of 2 
-> > (IE SEND_SHUTDOWN). Looking at tcp_sendmsg(), I see this:
+> That didn't work, but it seems this was just my config, the same
+> config worked on older kernels but I am not motivated enough to figure
+> out what I actually did enable which fixed this. But just for the
+> record
 > 
-> >          err = -EPIPE;
-> >          if (sk->sk_err || (sk->sk_shutdown & SEND_SHUTDOWN))
-> >                  goto out_err;
+> config which did not work:
 > 
-> > which correlates with the trace "xs_tcp_send_request(32920) = -32". So, 
-> > this looks like a problem in the sockets/tcp layer. The rpc layer issues 
-> > a shutdown and then reconnects using the same socket. So either 
-> > sk_shutdown needs zeroing once the shutdown completes or should be 
-> > zeroed on subsequent connect. The latter sounds safer.
+> http://bombadil.infradead.org/~mcgrof/configs/2010/config-issue/config-old.txt
 > 
-> This patch for 2.6.34.1 fixes the issue:
+> config which worked:
 > 
-> --- /home/company/software/src/linux-2.6.34.1/net/ipv4/tcp_output.c     2010-07-27 08:46:46.917000000 +0100
-> +++ net/ipv4/tcp_output.c       2010-07-27 09:19:16.000000000 +0100
-> @@ -2522,6 +2522,13 @@
->         struct tcp_sock *tp = tcp_sk(sk);
->         __u8 rcv_wscale;
->  
-> +       /* clear down any previous shutdown attempts so that
-> +        * reconnects on a socket that's been shutdown leave the
-> +        * socket in a usable state (otherwise tcp_sendmsg() returns
-> +        * -EPIPE).
-> +        */
-> +       sk->sk_shutdown = 0;
-> +
->         /* We'll fix this up when we get a response from the other end.
->          * See tcp_input.c:tcp_rcv_state_process case TCP_SYN_SENT.
->          */
+> http://bombadil.infradead.org/~mcgrof/configs/2010/config-issue/config.txt
 > 
-> As I mentioned in my first message, we first saw this issue in 2.6.32 as supplied by debian (linux-image-2.6.32-5-amd64 Version: 2.6.32-17). It looks like the same patch would fix the problem there too.
+> The diff:
+> 
+> http://bombadil.infradead.org/~mcgrof/configs/2010/config-issue/diff-34-35.patch
+> 
+>   Luis
 > 
 
-CC netdev
+Hm, I hope I did not miss some info in the threads above, but have you tried to
+use the config in /boot/ as a base for your new config with make oldconfig?
+I think to remember make modules_install purges all existing modules under
+kernel before installing the new ones. So likely there is something essential
+going away when rebuilding the initrd. The messages sound like basic root fs is
+not there, so it misses all the mount points. But I admit to be too lazy to walk
+all the config.
 
-This reminds me a similar problem we had in the past, fixed with commit
-1fdf475a (tcp: tcp_disconnect() should clear window_clamp)
-
-But tcp_disconnect() already clears sk->sk_shutdown
-
-If NFS calls tcp_disconnect(), then shutdown(), there is a problem.
-
-Maybe xs_tcp_shutdown() should make some sanity tests ?
-
-Following sequence is legal, and your patch might break it.
-
-fd = socket(...);
-shutdown(fd, SHUT_WR);
-...
-connect(fd, ...);
-
-
-
+-Stefan
