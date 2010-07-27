@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab0G0Ip7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:45:59 -0400
-Received: from server109-228-4-14.live-servers.net ([109.228.4.14]:52061 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755607Ab0G0Ip6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:45:58 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH] lib/scatterlist: Hook sg_kmalloc into kmemleak (v2)
-Date: Tue, 27 Jul 2010 09:44:58 +0100
-Message-Id: <1280220298-9641-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1280177744.27682.2.camel@e102109-lin.cambridge.arm.com>
-References: <1280177744.27682.2.camel@e102109-lin.cambridge.arm.com>
-X-Originating-IP: 78.156.66.37
+	id S1755921Ab0G0Isz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:48:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55718 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752376Ab0G0Isw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:48:52 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1280202225.2944.20.camel@localhost>
+References: <1280202225.2944.20.camel@localhost> <1280157768.3569.14.camel@localhost> <1279944664.2944.8.camel@localhost> <20100722175847.5552.11520.stgit@warthog.procyon.org.uk> <17723.1279897759@redhat.com> <9168.1280153997@redhat.com> <30118.1280159695@redhat.com>
+To: Ian Kent <raven@themaw.net>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] Add a dentry op to handle automounting rather than abusing follow_link() [ver #2]
+Date: Tue, 27 Jul 2010 09:48:41 +0100
+Message-ID: <12883.1280220521@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmemleak ignores page_alloc() and so believes the final sub-page
-allocation using the plain kmalloc is decoupled and lost. This leads to
-lots of false-positives with code that uses scatterlists.
+Ian Kent <raven@themaw.net> wrote:
 
-The options seem to be either to tell kmemleak that the kmalloc is not
-leaked or to notify kmemleak of the page allocations. The danger of the
-first approach is that we may hide a real leak, so choose the latter
-approach (of which I am not sure of the downsides).
+> Is this something others need?
 
-v2: Added comments on the suggestion of Catalin.
+Not as far as I know...  I think autofs is the only one doing out-of-kernel
+automounting.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
----
- lib/scatterlist.c |   21 ++++++++++++++++-----
- 1 files changed, 16 insertions(+), 5 deletions(-)
+That doesn't mean it shouldn't be provided, though...
 
-diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-index 9afa25b..fc85552 100644
---- a/lib/scatterlist.c
-+++ b/lib/scatterlist.c
-@@ -115,17 +115,28 @@ EXPORT_SYMBOL(sg_init_one);
-  */
- static struct scatterlist *sg_kmalloc(unsigned int nents, gfp_t gfp_mask)
- {
--	if (nents == SG_MAX_SINGLE_ALLOC)
--		return (struct scatterlist *) __get_free_page(gfp_mask);
--	else
-+	if (nents == SG_MAX_SINGLE_ALLOC) {
-+		/* kmemleak doesn't track page allocations as they are not
-+		 * commonly used (in a raw form) for kernel data structures.
-+		 * As we chain together a list of pages and then a normal
-+		 * kmalloc (tracked by kmemleak), in order to for that last
-+		 * allocation not to become decoupled (and thus a
-+		 * false-positive) we need to inform kmemleak of all the
-+		 * intermediate allocations.
-+		 */
-+		void *ptr = (void *) __get_free_page(gfp_mask);
-+		kmemleak_alloc(ptr, PAGE_SIZE, 1, gfp_mask);
-+		return ptr;
-+	} else
- 		return kmalloc(nents * sizeof(struct scatterlist), gfp_mask);
- }
- 
- static void sg_kfree(struct scatterlist *sg, unsigned int nents)
- {
--	if (nents == SG_MAX_SINGLE_ALLOC)
-+	if (nents == SG_MAX_SINGLE_ALLOC) {
-+		kmemleak_free(sg);
- 		free_page((unsigned long) sg);
--	else
-+	} else
- 		kfree(sg);
- }
- 
--- 
-1.7.1
+> Again, the exists vs not yet exists case for paths within indirect
+> autofs mounts. At the moment I can just set the flag on all dentrys in
+> the autofs fs and return EXDEV for non-empty directories in order to
+> return the dentry as a path component. OTOH if the dentry is a mount
+> embeded in the path and the mount fails we get a error return.
 
+Seems redundant, but I'd say go with it for now.  Maybe we can offload
+S_AUTOMOUNT to the dentry.
+
+> I could clear the flag on non-root parent dentrys during mkdir if this
+> is needed by others.
+
+I'm not sure that would actually matter, since it would come to
+follow_automount() at the same place.
+
+Note that someone who tries to stat() with AT_NO_AUTOMOUNT will cause the call
+to d_automount() to be suppressed and will see the negative or non-mounted
+directory.  That might be okay for you.
+
+David
