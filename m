@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab0G0C6Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 22:58:25 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49767 "EHLO
+	id S1755863Ab0G0DAo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 23:00:44 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:50066 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752371Ab0G0C6A (ORCPT
+	with ESMTP id S1752855Ab0G0C6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 22:58:00 -0400
+	Mon, 26 Jul 2010 22:58:23 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 01/13] AppArmor: misc. base functions and defines
-Date: Mon, 26 Jul 2010 19:57:36 -0700
-Message-Id: <1280199468-19680-2-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 08/13] AppArmor: file enforcement routines
+Date: Mon, 26 Jul 2010 19:57:43 -0700
+Message-Id: <1280199468-19680-9-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
 References: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
@@ -20,31 +20,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miscellaneous functions and defines needed by AppArmor, including
-the base path resolution routines.
+AppArmor does files enforcement via pathname matching.  Matching is done
+at file open using a dfa match engine.  Permission is against the final
+file object not parent directories, ie. the traversal of directories
+as part of the file match is implicitly allowed.  In the case of nonexistant
+files (creation) permissions are checked against the target file not the
+directory.  eg. In case of creating the file /dir/new, permissions are
+checked against the match /dir/new not against /dir/.
+
+The permissions for matches are currently stored in the dfa accept table,
+but this will change to allow for dfa reuse and also to allow for sharing
+of wider accept states.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/include/apparmor.h |   93 +++++++++++++
- security/apparmor/include/path.h     |   31 +++++
- security/apparmor/lib.c              |  129 +++++++++++++++++++
- security/apparmor/path.c             |  235 ++++++++++++++++++++++++++++++++++
- 4 files changed, 488 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/include/apparmor.h
- create mode 100644 security/apparmor/include/path.h
- create mode 100644 security/apparmor/lib.c
- create mode 100644 security/apparmor/path.c
+ security/apparmor/file.c         |  457 ++++++++++++++++++++++++++++++++++++++
+ security/apparmor/include/file.h |  217 ++++++++++++++++++
+ 2 files changed, 674 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/file.c
+ create mode 100644 security/apparmor/include/file.h
 
-diff --git a/security/apparmor/include/apparmor.h b/security/apparmor/include/apparmor.h
+diff --git a/security/apparmor/file.c b/security/apparmor/file.c
 new file mode 100644
-index 0000000..c51e551
+index 0000000..1b3c0a9
 --- /dev/null
-+++ b/security/apparmor/include/apparmor.h
-@@ -0,0 +1,93 @@
++++ b/security/apparmor/file.c
+@@ -0,0 +1,457 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor basic global and lib definitions
++ * This file contains AppArmor mediation of files
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -54,499 +59,673 @@ index 0000000..c51e551
 + * published by the Free Software Foundation, version 2 of the
 + * License.
 + */
-+
-+#ifndef __APPARMOR_H
-+#define __APPARMOR_H
-+
-+#include <linux/fs.h>
-+
-+#include "match.h"
-+
-+/* Control parameters settable thru module/boot flags or
-+ * via /sys/kernel/security/apparmor/control */
-+extern enum audit_mode aa_g_audit;
-+extern int aa_g_audit_header;
-+extern int aa_g_debug;
-+extern int aa_g_lock_policy;
-+extern int aa_g_logsyscall;
-+extern int aa_g_paranoid_load;
-+extern unsigned int aa_g_path_max;
-+
-+/*
-+ * DEBUG remains global (no per profile flag) since it is mostly used in sysctl
-+ * which is not related to profile accesses.
-+ */
-+
-+#define AA_DEBUG(fmt, args...)						\
-+	do {								\
-+		if (aa_g_debug && printk_ratelimit())			\
-+			printk(KERN_DEBUG "AppArmor: " fmt, ##args);	\
-+	} while (0)
-+
-+#define AA_ERROR(fmt, args...)						\
-+	do {								\
-+		if (printk_ratelimit())					\
-+			printk(KERN_ERR "AppArmor: " fmt, ##args);	\
-+	} while (0)
-+
-+/* Flag indicating whether initialization completed */
-+extern int apparmor_initialized;
-+
-+/* fn's in lib */
-+char *aa_split_fqname(char *args, char **ns_name);
-+void aa_info_message(const char *str);
-+void *kvmalloc(size_t size);
-+void kvfree(void *buffer);
-+
-+
-+/**
-+ * aa_strneq - compare null terminated @str to a non null terminated substring
-+ * @str: a null terminated string
-+ * @sub: a substring, not necessarily null terminated
-+ * @len: length of @sub to compare
-+ *
-+ * The @str string must be full consumed for this to be considered a match
-+ */
-+static inline bool aa_strneq(const char *str, const char *sub, int len)
-+{
-+	return !strncmp(str, sub, len) && !str[len];
-+}
-+
-+/**
-+ * aa_dfa_null_transition - step to next state after null character
-+ * @dfa: the dfa to match against
-+ * @start: the state of the dfa to start matching in
-+ *
-+ * aa_dfa_null_transition transitions to the next state after a null
-+ * character which is not used in standard matching and is only
-+ * used to seperate pairs.
-+ */
-+static inline unsigned int aa_dfa_null_transition(struct aa_dfa *dfa,
-+						  unsigned int start)
-+{
-+	/* the null transition only needs a single null byte of the string */
-+	return aa_dfa_match_len(dfa, start, "", 1);
-+}
-+
-+static inline bool mediated_filesystem(struct inode *inode)
-+{
-+	return !(inode->i_sb->s_flags & MS_NOUSER);
-+}
-+
-+#endif /* __APPARMOR_H */
-diff --git a/security/apparmor/include/path.h b/security/apparmor/include/path.h
-new file mode 100644
-index 0000000..27b327a
---- /dev/null
-+++ b/security/apparmor/include/path.h
-@@ -0,0 +1,31 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor basic path manipulation function definitions.
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#ifndef __AA_PATH_H
-+#define __AA_PATH_H
-+
-+
-+enum path_flags {
-+	PATH_IS_DIR = 0x1,		/* path is a directory */
-+	PATH_CONNECT_PATH = 0x4,	/* connect disconnected paths to / */
-+	PATH_CHROOT_REL = 0x8,		/* do path lookup relative to chroot */
-+	PATH_CHROOT_NSCONNECT = 0x10,	/* connect paths that are at ns root */
-+
-+	PATH_DELEGATE_DELETED = 0x08000, /* delegate deleted files */
-+	PATH_MEDIATE_DELETED = 0x10000,	/* mediate deleted paths */
-+};
-+
-+int aa_get_name(struct path *path, int flags, char **buffer, const char **name);
-+
-+#endif /* __AA_PATH_H */
-diff --git a/security/apparmor/lib.c b/security/apparmor/lib.c
-new file mode 100644
-index 0000000..959bb59
---- /dev/null
-+++ b/security/apparmor/lib.c
-@@ -0,0 +1,129 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains basic common functions used in AppArmor
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+
-+#include "include/audit.h"
-+
-+
-+/**
-+ * aa_split_fqname - split a fqname into a profile and namespace name
-+ * @fqname: a full qualified name in namespace profile format (NOT NULL)
-+ * @ns_name: pointer to portion of the string containing the ns name (NOT NULL)
-+ *
-+ * Returns: profile name or NULL if one is not specified
-+ *
-+ * Split a namespace name from a profile name (see policy.c for naming
-+ * description).  If a portion of the name is missing it returns NULL for
-+ * that portion.
-+ *
-+ * NOTE: may modifiy the @fqname string.  The pointers returned point
-+ *       into the @fqname string.
-+ */
-+char *aa_split_fqname(char *fqname, char **ns_name)
-+{
-+	char *name = strim(fqname);
-+
-+	*ns_name = NULL;
-+	if (name[0] == ':') {
-+		char *split = strchr(&name[1], ':');
-+		if (split) {
-+			/* overwrite ':' with \0 */
-+			*split = 0;
-+			name = skip_spaces(split + 1);
-+		} else
-+			/* a ns name without a following profile is allowed */
-+			name = NULL;
-+		*ns_name = &name[1];
-+	}
-+	if (name && *name == 0)
-+		name = NULL;
-+
-+	return name;
-+}
-+
-+/**
-+ * aa_info_message - log a none profile related status message
-+ * @str: message to log
-+ */
-+void aa_info_message(const char *str)
-+{
-+	if (audit_enabled) {
-+		struct common_audit_data sa;
-+		COMMON_AUDIT_DATA_INIT(&sa, NONE);
-+		sa.aad.info = str;
-+		printk(KERN_INFO "AppArmor: %s\n", str);
-+		aa_audit_msg(AUDIT_APPARMOR_STATUS, &sa, NULL);
-+	}
-+}
-+
-+/**
-+ * kvmalloc - do allocation prefering kmalloc but falling back to vmalloc
-+ * @size: size of allocation
-+ *
-+ * Return: allocated buffer or NULL if failed
-+ *
-+ * It is possible that policy being loaded from the user is larger than
-+ * what can be allocated by kmalloc, in those cases fall back to vmalloc.
-+ */
-+void *kvmalloc(size_t size)
-+{
-+	void *buffer = NULL;
-+
-+	if (size == 0)
-+		return NULL;
-+
-+	/* do not attempt kmalloc if we need more than 16 pages at once */
-+	if (size <= (16*PAGE_SIZE))
-+		buffer = kmalloc(size, GFP_NOIO | __GFP_NOWARN);
-+	if (!buffer) {
-+		if (size < sizeof(struct work_struct))
-+			size = sizeof(struct work_struct);
-+		buffer = vmalloc(size);
-+	}
-+	return buffer;
-+}
-+
-+/**
-+ * do_vfree - workqueue routine for freeing vmalloced memory
-+ * @work: data to be freed
-+ *
-+ * The work_struct is overlayed to the data being freed, as at the point
-+ * the work is scheduled the data is no longer valid, be its freeing
-+ * needs to be delayed until safe.
-+ */
-+static void do_vfree(struct work_struct *work)
-+{
-+	vfree(work);
-+}
-+
-+/**
-+ * kvfree - free an allocation do by kvmalloc
-+ * @buffer: buffer to free (MAYBE_NULL)
-+ *
-+ * Free a buffer allocated by kvmalloc
-+ */
-+void kvfree(void *buffer)
-+{
-+	if (is_vmalloc_addr(buffer)) {
-+		/* Data is no longer valid so just use the allocated space
-+		 * as the work_struct
-+		 */
-+		struct work_struct *work = (struct work_struct *) buffer;
-+		INIT_WORK(work, do_vfree);
-+		schedule_work(work);
-+	} else
-+		kfree(buffer);
-+}
-diff --git a/security/apparmor/path.c b/security/apparmor/path.c
-new file mode 100644
-index 0000000..a19ba05
---- /dev/null
-+++ b/security/apparmor/path.c
-@@ -0,0 +1,235 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor function for pathnames
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#include <linux/magic.h>
-+#include <linux/mnt_namespace.h>
-+#include <linux/mount.h>
-+#include <linux/namei.h>
-+#include <linux/nsproxy.h>
-+#include <linux/path.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/fs_struct.h>
 +
 +#include "include/apparmor.h"
++#include "include/audit.h"
++#include "include/file.h"
++#include "include/match.h"
 +#include "include/path.h"
 +#include "include/policy.h"
 +
++struct file_perms nullperms;
 +
-+/* modified from dcache.c */
-+static int prepend(char **buffer, int buflen, const char *str, int namelen)
++
++/**
++ * audit_file_mask - convert mask to owner::other string
++ * @buffer: buffer to write string to (NOT NULL)
++ * @mask: permission mask to convert
++ */
++static void audit_file_mask(struct audit_buffer *ab, u32 mask)
 +{
-+	buflen -= namelen;
-+	if (buflen < 0)
-+		return -ENAMETOOLONG;
-+	*buffer -= namelen;
-+	memcpy(*buffer, str, namelen);
++	char str[10];
++
++	char *m = str;
++
++	if (mask & AA_EXEC_MMAP)
++		*m++ = 'm';
++	if (mask & (MAY_READ | AA_MAY_META_READ))
++		*m++ = 'r';
++	if (mask & (MAY_WRITE | AA_MAY_META_WRITE | AA_MAY_CHMOD |
++		    AA_MAY_CHOWN))
++		*m++ = 'w';
++	else if (mask & MAY_APPEND)
++		*m++ = 'a';
++	if (mask & AA_MAY_CREATE)
++		*m++ = 'c';
++	if (mask & AA_MAY_DELETE)
++		*m++ = 'd';
++	if (mask & AA_MAY_LINK)
++		*m++ = 'l';
++	if (mask & AA_MAY_LOCK)
++		*m++ = 'k';
++	if (mask & MAY_EXEC)
++		*m++ = 'x';
++	*m = '\0';
++
++	audit_log_string(ab, str);
++}
++
++/**
++ * file_audit_cb - call back for file specific audit fields
++ * @ab: audit_buffer  (NOT NULL)
++ * @va: audit struct to audit values of  (NOT NULL)
++ */
++static void file_audit_cb(struct audit_buffer *ab, void *va)
++{
++	struct common_audit_data *sa = va;
++	uid_t fsuid = current_fsuid();
++
++	if (sa->aad.fs.request & AA_AUDIT_FILE_MASK) {
++		audit_log_format(ab, " requested_mask=");
++		audit_file_mask(ab, sa->aad.fs.request);
++	}
++	if (sa->aad.fs.denied & AA_AUDIT_FILE_MASK) {
++		audit_log_format(ab, " denied_mask=");
++		audit_file_mask(ab, sa->aad.fs.denied);
++	}
++	if (sa->aad.fs.request & AA_AUDIT_FILE_MASK) {
++		audit_log_format(ab, " fsuid=%d", fsuid);
++		audit_log_format(ab, " ouid=%d", sa->aad.fs.ouid);
++	}
++
++	if (sa->aad.fs.target) {
++		audit_log_format(ab, " target=");
++		audit_log_untrustedstring(ab, sa->aad.fs.target);
++	}
++}
++
++/**
++ * aa_audit_file - handle the auditing of file operations
++ * @profile: the profile being enforced  (NOT NULL)
++ * @perms: the permissions computed for the request (NOT NULL)
++ * @gfp: allocation flags
++ * @op: operation being mediated
++ * @request: permissions requested
++ * @name: name of object being mediated (MAYBE NULL)
++ * @target: name of target (MAYBE NULL)
++ * @ouid: object uid
++ * @info: extra information message (MAYBE NULL)
++ * @error: 0 if operation allowed else failure error code
++ *
++ * Returns: %0 or error on failure
++ */
++int aa_audit_file(struct aa_profile *profile, struct file_perms *perms,
++		  gfp_t gfp, int op, u32 request, const char *name,
++		  const char *target, uid_t ouid, const char *info, int error)
++{
++	int type = AUDIT_APPARMOR_AUTO;
++	struct common_audit_data sa;
++	COMMON_AUDIT_DATA_INIT(&sa, NONE);
++	sa.aad.op = op,
++	sa.aad.fs.request = request;
++	sa.aad.name = name;
++	sa.aad.fs.target = target;
++	sa.aad.fs.ouid = ouid;
++	sa.aad.info = info;
++	sa.aad.error = error;
++
++	if (likely(!sa.aad.error)) {
++		u32 mask = perms->audit;
++
++		if (unlikely(AUDIT_MODE(profile) == AUDIT_ALL))
++			mask = 0xffff;
++
++		/* mask off perms that are not being force audited */
++		sa.aad.fs.request &= mask;
++
++		if (likely(!sa.aad.fs.request))
++			return 0;
++		type = AUDIT_APPARMOR_AUDIT;
++	} else {
++		/* only report permissions that were denied */
++		sa.aad.fs.request = sa.aad.fs.request & ~perms->allow;
++
++		if (sa.aad.fs.request & perms->kill)
++			type = AUDIT_APPARMOR_KILL;
++
++		/* quiet known rejects, assumes quiet and kill do not overlap */
++		if ((sa.aad.fs.request & perms->quiet) &&
++		    AUDIT_MODE(profile) != AUDIT_NOQUIET &&
++		    AUDIT_MODE(profile) != AUDIT_ALL)
++			sa.aad.fs.request &= ~perms->quiet;
++
++		if (!sa.aad.fs.request)
++			return COMPLAIN_MODE(profile) ? 0 : sa.aad.error;
++	}
++
++	sa.aad.fs.denied = sa.aad.fs.request & ~perms->allow;
++	return aa_audit(type, profile, gfp, &sa, file_audit_cb);
++}
++
++/**
++ * map_old_perms - map old file perms layout to the new layout
++ * @old: permission set in old mapping
++ *
++ * Returns: new permission mapping
++ */
++static u32 map_old_perms(u32 old)
++{
++	u32 new = old & 0xf;
++	if (old & MAY_READ)
++		new |= AA_MAY_META_READ;
++	if (old & MAY_WRITE)
++		new |= AA_MAY_META_WRITE | AA_MAY_CREATE | AA_MAY_DELETE |
++			AA_MAY_CHMOD | AA_MAY_CHOWN;
++	if (old & 0x10)
++		new |= AA_MAY_LINK;
++	/* the old mapping lock and link_subset flags where overlaid
++	 * and use was determined by part of a pair that they were in
++	 */
++	if (old & 0x20)
++		new |= AA_MAY_LOCK | AA_LINK_SUBSET;
++	if (old & 0x40)	/* AA_EXEC_MMAP */
++		new |= AA_EXEC_MMAP;
++
++	new |= AA_MAY_META_READ;
++
++	return new;
++}
++
++/**
++ * compute_perms - convert dfa compressed perms to internal perms
++ * @dfa: dfa to compute perms for   (NOT NULL)
++ * @state: state in dfa
++ * @cond:  conditions to consider  (NOT NULL)
++ *
++ * TODO: convert from dfa + state to permission entry, do computation conversion
++ *       at load time.
++ *
++ * Returns: computed permission set
++ */
++static struct file_perms compute_perms(struct aa_dfa *dfa, unsigned int state,
++				       struct path_cond *cond)
++{
++	struct file_perms perms;
++
++	/* FIXME: change over to new dfa format
++	 * currently file perms are encoded in the dfa, new format
++	 * splits the permissions from the dfa.  This mapping can be
++	 * done at profile load
++	 */
++	perms.kill = 0;
++
++	if (current_fsuid() == cond->uid) {
++		perms.allow = map_old_perms(dfa_user_allow(dfa, state));
++		perms.audit = map_old_perms(dfa_user_audit(dfa, state));
++		perms.quiet = map_old_perms(dfa_user_quiet(dfa, state));
++		perms.xindex = dfa_user_xindex(dfa, state);
++	} else {
++		perms.allow = map_old_perms(dfa_other_allow(dfa, state));
++		perms.audit = map_old_perms(dfa_other_audit(dfa, state));
++		perms.quiet = map_old_perms(dfa_other_quiet(dfa, state));
++		perms.xindex = dfa_other_xindex(dfa, state);
++	}
++
++	/* change_profile wasn't determined by ownership in old mapping */
++	if (ACCEPT_TABLE(dfa)[state] & 0x80000000)
++		perms.allow |= AA_MAY_CHANGE_PROFILE;
++
++	return perms;
++}
++
++/**
++ * aa_str_perms - find permission that match @name
++ * @dfa: to match against  (MAYBE NULL)
++ * @state: state to start matching in
++ * @name: string to match against dfa  (NOT NULL)
++ * @cond: conditions to consider for permission set computation  (NOT NULL)
++ * @perms: Returns - the permissions found when matching @name
++ *
++ * Returns: the final state in @dfa when beginning @start and walking @name
++ */
++unsigned int aa_str_perms(struct aa_dfa *dfa, unsigned int start,
++			  const char *name, struct path_cond *cond,
++			  struct file_perms *perms)
++{
++	unsigned int state;
++	if (!dfa) {
++		*perms = nullperms;
++		return DFA_NOMATCH;
++	}
++
++	state = aa_dfa_match(dfa, start, name);
++	*perms = compute_perms(dfa, state, cond);
++
++	return state;
++}
++
++/**
++ * is_deleted - test if a file has been completely unlinked
++ * @dentry: dentry of file to test for deletion  (NOT NULL)
++ *
++ * Returns: %1 if deleted else %0
++ */
++static inline bool is_deleted(struct dentry *dentry)
++{
++	if (d_unlinked(dentry) && dentry->d_inode->i_nlink == 0)
++		return 1;
 +	return 0;
 +}
 +
-+#define CHROOT_NSCONNECT (PATH_CHROOT_REL | PATH_CHROOT_NSCONNECT)
-+
 +/**
-+ * d_namespace_path - lookup a name associated with a given path
-+ * @path: path to lookup  (NOT NULL)
-+ * @buf:  buffer to store path to  (NOT NULL)
-+ * @buflen: length of @buf
-+ * @name: Returns - pointer for start of path name with in @buf (NOT NULL)
-+ * @flags: flags controling path lookup
++ * aa_path_perm - do permissions check & audit for @path
++ * @op: operation being checked
++ * @profile: profile being enforced  (NOT NULL)
++ * @path: path to check permissions of  (NOT NULL)
++ * @flags: any additional path flags beyond what the profile specifies
++ * @request: requested permissions
++ * @cond: conditional info for this request  (NOT NULL)
 + *
-+ * Handle path name lookup.
-+ *
-+ * Returns: %0 else error code if path lookup fails
-+ *          When no error the path name is returned in @name which points to
-+ *          to a position in @buf
++ * Returns: %0 else error if access denied or other error
 + */
-+static int d_namespace_path(struct path *path, char *buf, int buflen,
-+			    char **name, int flags)
++int aa_path_perm(int op, struct aa_profile *profile, struct path *path,
++		 int flags, u32 request, struct path_cond *cond)
 +{
-+	struct path root, tmp;
-+	char *res;
-+	int deleted, connected;
-+	int error = 0;
-+
-+	/* Get the root we want to resolve too */
-+	if (flags & PATH_CHROOT_REL) {
-+		/* resolve paths relative to chroot */
-+		read_lock(&current->fs->lock);
-+		root = current->fs->root;
-+		/* released below */
-+		path_get(&root);
-+		read_unlock(&current->fs->lock);
-+	} else {
-+		/* resolve paths relative to namespace */
-+		root.mnt = current->nsproxy->mnt_ns->root;
-+		root.dentry = root.mnt->mnt_root;
-+		/* released below */
-+		path_get(&root);
-+	}
-+
-+	spin_lock(&dcache_lock);
-+	/* There is a race window between path lookup here and the
-+	 * need to strip the " (deleted) string that __d_path applies
-+	 * Detect the race and relookup the path
-+	 *
-+	 * The stripping of (deleted) is a hack that could be removed
-+	 * with an updated __d_path
-+	 */
-+	do {
-+		tmp = root;
-+		deleted = d_unlinked(path->dentry);
-+		res = __d_path(path, &tmp, buf, buflen);
-+
-+	} while (deleted != d_unlinked(path->dentry));
-+	spin_unlock(&dcache_lock);
-+
-+	*name = res;
-+	/* handle error conditions - and still allow a partial path to
-+	 * be returned.
-+	 */
-+	if (IS_ERR(res)) {
-+		error = PTR_ERR(res);
-+		*name = buf;
-+		goto out;
-+	}
-+	if (deleted) {
-+		/* On some filesystems, newly allocated dentries appear to the
-+		 * security_path hooks as a deleted dentry except without an
-+		 * inode allocated.
-+		 *
-+		 * Remove the appended deleted text and return as string for
-+		 * normal mediation, or auditing.  The (deleted) string is
-+		 * guarenteed to be added in this case, so just strip it.
-+		 */
-+		buf[buflen - 11] = 0;	/* - (len(" (deleted)") +\0) */
-+
-+		if (path->dentry->d_inode && !(flags & PATH_MEDIATE_DELETED)) {
-+			error = -ENOENT;
-+			goto out;
-+		}
-+	}
-+
-+	/* Determine if the path is connected to the expected root */
-+	connected = tmp.dentry == root.dentry && tmp.mnt == root.mnt;
-+
-+	/* If the path is not connected,
-+	 * check if it is a sysctl and handle specially else remove any
-+	 * leading / that __d_path may have returned.
-+	 * Unless
-+	 *     specifically directed to connect the path,
-+	 * OR
-+	 *     if in a chroot and doing chroot relative paths and the path
-+	 *     resolves to the namespace root (would be connected outside
-+	 *     of chroot) and specifically directed to connect paths to
-+	 *     namespace root.
-+	 */
-+	if (!connected) {
-+		/* is the disconnect path a sysctl? */
-+		if (tmp.dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
-+		    strncmp(*name, "/sys/", 5) == 0) {
-+			/* TODO: convert over to using a per namespace
-+			 * control instead of hard coded /proc
-+			 */
-+			error = prepend(name, *name - buf, "/proc", 5);
-+		} else if (!(flags & PATH_CONNECT_PATH) &&
-+			   !(((flags & CHROOT_NSCONNECT) == CHROOT_NSCONNECT) &&
-+			     (tmp.mnt == current->nsproxy->mnt_ns->root &&
-+			      tmp.dentry == tmp.mnt->mnt_root))) {
-+			/* disconnected path, don't return pathname starting
-+			 * with '/'
-+			 */
-+			error = -ESTALE;
-+			if (*res == '/')
-+				*name = res + 1;
-+		}
-+	}
-+
-+out:
-+	path_put(&root);
-+
-+	return error;
-+}
-+
-+/**
-+ * get_name_to_buffer - get the pathname to a buffer ensure dir / is appended
-+ * @path: path to get name for  (NOT NULL)
-+ * @flags: flags controlling path lookup
-+ * @buffer: buffer to put name in  (NOT NULL)
-+ * @size: size of buffer
-+ * @name: Returns - contains position of path name in @buffer (NOT NULL)
-+ *
-+ * Returns: %0 else error on failure
-+ */
-+static int get_name_to_buffer(struct path *path, int flags, char *buffer,
-+			      int size, char **name)
-+{
-+	int adjust = (flags & PATH_IS_DIR) ? 1 : 0;
-+	int error = d_namespace_path(path, buffer, size - adjust, name, flags);
-+
-+	if (!error && (flags & PATH_IS_DIR) && (*name)[1] != '\0')
-+		/*
-+		 * Append "/" to the pathname.  The root directory is a special
-+		 * case; it already ends in slash.
-+		 */
-+		strcpy(&buffer[size - 2], "/");
-+
-+	return error;
-+}
-+
-+/**
-+ * aa_get_name - compute the pathname of a file
-+ * @path: path the file  (NOT NULL)
-+ * @flags: flags controling path name generation
-+ * @buffer: buffer that aa_get_name() allocated  (NOT NULL)
-+ * @name: Returns - the generated path name if !error (NOT NULL)
-+ *
-+ * @name is a pointer to the beginning of the pathname (which usually differs
-+ * from the beginning of the buffer), or NULL.  If there is an error @name
-+ * may contain a partial or invalid name that can be used for audit purposes,
-+ * but it can not be used for mediation.
-+ *
-+ * We need PATH_IS_DIR to indicate whether the file is a directory or not
-+ * because the file may not yet exist, and so we cannot check the inode's
-+ * file type.
-+ *
-+ * Returns: %0 else error code if could retrieve name
-+ */
-+int aa_get_name(struct path *path, int flags, char **buffer, const char **name)
-+{
-+	char *buf, *str = NULL;
-+	int size = 256;
++	char *buffer = NULL;
++	struct file_perms perms = {};
++	const char *name, *info = NULL;
 +	int error;
 +
-+	*name = NULL;
-+	*buffer = NULL;
-+	for (;;) {
-+		/* freed by caller */
-+		buf = kmalloc(size, GFP_KERNEL);
-+		if (!buf)
-+			return -ENOMEM;
-+
-+		error = get_name_to_buffer(path, flags, buf, size, &str);
-+		if (error != -ENAMETOOLONG)
-+			break;
-+
-+		kfree(buf);
-+		size <<= 1;
-+		if (size > aa_g_path_max)
-+			return -ENAMETOOLONG;
++	flags |= profile->path_flags | (S_ISDIR(cond->mode) ? PATH_IS_DIR : 0);
++	error = aa_get_name(path, flags, &buffer, &name);
++	if (error) {
++		if (error == -ENOENT && is_deleted(path->dentry)) {
++			/* Access to open files that are deleted are
++			 * give a pass (implicit delegation)
++			 */
++			error = 0;
++			perms.allow = request;
++		} else if (error == -ENOENT)
++			info = "Failed name lookup - deleted entry";
++		else if (error == -ESTALE)
++			info = "Failed name lookup - disconnected path";
++		else if (error == -ENAMETOOLONG)
++			info = "Failed name lookup - name too long";
++		else
++			info = "Failed name lookup";
++	} else {
++		aa_str_perms(profile->file.dfa, profile->file.start, name, cond,
++			     &perms);
++		if (request & ~perms.allow)
++			error = -EACCES;
 +	}
-+	*buffer = buf;
-+	*name = str;
++	error = aa_audit_file(profile, &perms, GFP_KERNEL, op, request, name,
++			      NULL, cond->uid, info, error);
++	kfree(buffer);
 +
 +	return error;
 +}
++
++/**
++ * xindex_is_subset - helper for aa_path_link
++ * @link: link permission set
++ * @target: target permission set
++ *
++ * test target x permissions are equal OR a subset of link x permissions
++ * this is done as part of the subset test, where a hardlink must have
++ * a subset of permissions that the target has.
++ *
++ * Returns: %1 if subset else %0
++ */
++static inline bool xindex_is_subset(u32 link, u32 target)
++{
++	if (((link & ~AA_X_UNSAFE) != (target & ~AA_X_UNSAFE)) ||
++	    ((link & AA_X_UNSAFE) && !(target & AA_X_UNSAFE)))
++		return 0;
++
++	return 1;
++}
++
++/**
++ * aa_path_link - Handle hard link permission check
++ * @profile: the profile being enforced  (NOT NULL)
++ * @old_dentry: the target dentry  (NOT NULL)
++ * @new_dir: directory the new link will be created in  (NOT NULL)
++ * @new_dentry: the link being created  (NOT NULL)
++ *
++ * Handle the permission test for a link & target pair.  Permission
++ * is encoded as a pair where the link permission is determined
++ * first, and if allowed, the target is tested.  The target test
++ * is done from the point of the link match (not start of DFA)
++ * making the target permission dependent on the link permission match.
++ *
++ * The subset test if required forces that permissions granted
++ * on link are a subset of the permission granted to target.
++ *
++ * Returns: %0 if allowed else error
++ */
++int aa_path_link(struct aa_profile *profile, struct dentry *old_dentry,
++		 struct path *new_dir, struct dentry *new_dentry)
++{
++	struct path link = { new_dir->mnt, new_dentry };
++	struct path target = { new_dir->mnt, old_dentry };
++	struct path_cond cond = {
++		old_dentry->d_inode->i_uid,
++		old_dentry->d_inode->i_mode
++	};
++	char *buffer = NULL, *buffer2 = NULL;
++	const char *lname, *tname = NULL, *info = NULL;
++	struct file_perms lperms, perms;
++	u32 request = AA_MAY_LINK;
++	unsigned int state;
++	int error;
++
++	lperms = nullperms;
++
++	/* buffer freed below, lname is pointer in buffer */
++	error = aa_get_name(&link, profile->path_flags, &buffer, &lname);
++	if (error)
++		goto audit;
++
++	/* buffer2 freed below, tname is pointer in buffer2 */
++	error = aa_get_name(&target, profile->path_flags, &buffer2, &tname);
++	if (error)
++		goto audit;
++
++	error = -EACCES;
++	/* aa_str_perms - handles the case of the dfa being NULL */
++	state = aa_str_perms(profile->file.dfa, profile->file.start, lname,
++			     &cond, &lperms);
++
++	if (!(lperms.allow & AA_MAY_LINK))
++		goto audit;
++
++	/* test to see if target can be paired with link */
++	state = aa_dfa_null_transition(profile->file.dfa, state);
++	aa_str_perms(profile->file.dfa, state, tname, &cond, &perms);
++
++	/* force audit/quiet masks for link are stored in the second entry
++	 * in the link pair.
++	 */
++	lperms.audit = perms.audit;
++	lperms.quiet = perms.quiet;
++	lperms.kill = perms.kill;
++
++	if (!(perms.allow & AA_MAY_LINK)) {
++		info = "target restricted";
++		goto audit;
++	}
++
++	/* done if link subset test is not required */
++	if (!(perms.allow & AA_LINK_SUBSET))
++		goto done_tests;
++
++	/* Do link perm subset test requiring allowed permission on link are a
++	 * subset of the allowed permissions on target.
++	 */
++	aa_str_perms(profile->file.dfa, profile->file.start, tname, &cond,
++		     &perms);
++
++	/* AA_MAY_LINK is not considered in the subset test */
++	request = lperms.allow & ~AA_MAY_LINK;
++	lperms.allow &= perms.allow | AA_MAY_LINK;
++
++	request |= AA_AUDIT_FILE_MASK & (lperms.allow & ~perms.allow);
++	if (request & ~lperms.allow) {
++		goto audit;
++	} else if ((lperms.allow & MAY_EXEC) &&
++		   !xindex_is_subset(lperms.xindex, perms.xindex)) {
++		lperms.allow &= ~MAY_EXEC;
++		request |= MAY_EXEC;
++		info = "link not subset of target";
++		goto audit;
++	}
++
++done_tests:
++	error = 0;
++
++audit:
++	error = aa_audit_file(profile, &lperms, GFP_KERNEL, OP_LINK, request,
++			      lname, tname, cond.uid, info, error);
++	kfree(buffer);
++	kfree(buffer2);
++
++	return error;
++}
++
++/**
++ * aa_file_perm - do permission revalidation check & audit for @file
++ * @op: operation being checked
++ * @profile: profile being enforced   (NOT NULL)
++ * @file: file to revalidate access permissions on  (NOT NULL)
++ * @request: requested permissions
++ *
++ * Returns: %0 if access allowed else error
++ */
++int aa_file_perm(int op, struct aa_profile *profile, struct file *file,
++		 u32 request)
++{
++	struct path_cond cond = {
++		.uid = file->f_path.dentry->d_inode->i_uid,
++		.mode = file->f_path.dentry->d_inode->i_mode
++	};
++
++	return aa_path_perm(op, profile, &file->f_path, PATH_DELEGATE_DELETED,
++			    request, &cond);
++}
+diff --git a/security/apparmor/include/file.h b/security/apparmor/include/file.h
+new file mode 100644
+index 0000000..bba5ced
+--- /dev/null
++++ b/security/apparmor/include/file.h
+@@ -0,0 +1,217 @@
++/*
++ * AppArmor security module
++ *
++ * This file contains AppArmor file mediation function definitions.
++ *
++ * Copyright (C) 1998-2008 Novell/SUSE
++ * Copyright 2009-2010 Canonical Ltd.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ */
++
++#ifndef __AA_FILE_H
++#define __AA_FILE_H
++
++#include <linux/path.h>
++
++#include "domain.h"
++#include "match.h"
++
++struct aa_profile;
++
++/*
++ * We use MAY_EXEC, MAY_WRITE, MAY_READ, MAY_APPEND and the following flags
++ * for profile permissions
++ */
++#define AA_MAY_CREATE                  0x0010
++#define AA_MAY_DELETE                  0x0020
++#define AA_MAY_META_WRITE              0x0040
++#define AA_MAY_META_READ               0x0080
++
++#define AA_MAY_CHMOD                   0x0100
++#define AA_MAY_CHOWN                   0x0200
++#define AA_MAY_LOCK                    0x0400
++#define AA_EXEC_MMAP                   0x0800
++
++#define AA_MAY_LINK			0x1000
++#define AA_LINK_SUBSET			AA_MAY_LOCK	/* overlayed */
++#define AA_MAY_ONEXEC			0x40000000	/* exec allows onexec */
++#define AA_MAY_CHANGE_PROFILE		0x80000000
++#define AA_MAY_CHANGEHAT		0x80000000	/* ctrl auditing only */
++
++#define AA_AUDIT_FILE_MASK	(MAY_READ | MAY_WRITE | MAY_EXEC | MAY_APPEND |\
++				 AA_MAY_CREATE | AA_MAY_DELETE |	\
++				 AA_MAY_META_READ | AA_MAY_META_WRITE | \
++				 AA_MAY_CHMOD | AA_MAY_CHOWN | AA_MAY_LOCK | \
++				 AA_EXEC_MMAP | AA_MAY_LINK)
++
++/*
++ * The xindex is broken into 3 parts
++ * - index - an index into either the exec name table or the variable table
++ * - exec type - which determines how the executable name and index are used
++ * - flags - which modify how the destination name is applied
++ */
++#define AA_X_INDEX_MASK		0x03ff
++
++#define AA_X_TYPE_MASK		0x0c00
++#define AA_X_TYPE_SHIFT		10
++#define AA_X_NONE		0x0000
++#define AA_X_NAME		0x0400	/* use executable name px */
++#define AA_X_TABLE		0x0800	/* use a specified name ->n# */
++
++#define AA_X_UNSAFE		0x1000
++#define AA_X_CHILD		0x2000	/* make >AA_X_NONE apply to children */
++#define AA_X_INHERIT		0x4000
++#define AA_X_UNCONFINED		0x8000
++
++/* AA_SECURE_X_NEEDED - is passed in the bprm->unsafe field */
++#define AA_SECURE_X_NEEDED	0x8000
++
++/* need to conditionalize which ones are being set */
++struct path_cond {
++	uid_t uid;
++	umode_t mode;
++};
++
++/* struct file_perms - file permission fo
++ * @allow: mask of permissions that are allowed
++ * @audit: mask of permissions to force an audit message for
++ * @quiet: mask of permissions to quiet audit messages for
++ * @kill: mask of permissions that when matched will kill the task
++ * @xindex: exec transition index if @allow contains MAY_EXEC
++ *
++ * The @audit and @queit mask should be mutually exclusive.
++ */
++struct file_perms {
++	u32 allow;
++	u32 audit;
++	u32 quiet;
++	u32 kill;
++	u16 xindex;
++};
++
++extern struct file_perms nullperms;
++
++#define COMBINED_PERM_MASK(X) ((X).allow | (X).audit | (X).quiet | (X).kill)
++
++/* FIXME: split perms from dfa and match this to description
++ *        also add delegation info.
++ */
++static inline u16 dfa_map_xindex(u16 mask)
++{
++	u16 old_index = (mask >> 10) & 0xf;
++	u16 index = 0;
++
++	if (mask & 0x100)
++		index |= AA_X_UNSAFE;
++	if (mask & 0x200)
++		index |= AA_X_INHERIT;
++	if (mask & 0x80)
++		index |= AA_X_UNCONFINED;
++
++	if (old_index == 1) {
++		index |= AA_X_UNCONFINED;
++	} else if (old_index == 2) {
++		index |= AA_X_NAME;
++	} else if (old_index == 3) {
++		index |= AA_X_NAME | AA_X_CHILD;
++	} else {
++		index |= AA_X_TABLE;
++		index |= old_index - 4;
++	}
++
++	return index;
++}
++
++/*
++ * map old dfa inline permissions to new format
++ */
++#define dfa_user_allow(dfa, state) (((ACCEPT_TABLE(dfa)[state]) & 0x7f) | \
++				    ((ACCEPT_TABLE(dfa)[state]) & 0x80000000))
++#define dfa_user_audit(dfa, state) ((ACCEPT_TABLE2(dfa)[state]) & 0x7f)
++#define dfa_user_quiet(dfa, state) (((ACCEPT_TABLE2(dfa)[state]) >> 7) & 0x7f)
++#define dfa_user_xindex(dfa, state) \
++	(dfa_map_xindex(ACCEPT_TABLE(dfa)[state] & 0x3fff))
++
++#define dfa_other_allow(dfa, state) ((((ACCEPT_TABLE(dfa)[state]) >> 14) & \
++				      0x7f) |				\
++				     ((ACCEPT_TABLE(dfa)[state]) & 0x80000000))
++#define dfa_other_audit(dfa, state) (((ACCEPT_TABLE2(dfa)[state]) >> 14) & 0x7f)
++#define dfa_other_quiet(dfa, state) \
++	((((ACCEPT_TABLE2(dfa)[state]) >> 7) >> 14) & 0x7f)
++#define dfa_other_xindex(dfa, state) \
++	dfa_map_xindex((ACCEPT_TABLE(dfa)[state] >> 14) & 0x3fff)
++
++int aa_audit_file(struct aa_profile *profile, struct file_perms *perms,
++		  gfp_t gfp, int op, u32 request, const char *name,
++		  const char *target, uid_t ouid, const char *info, int error);
++
++/**
++ * struct aa_file_rules - components used for file rule permissions
++ * @dfa: dfa to match path names and conditionals against
++ * @perms: permission table indexed by the matched state accept entry of @dfa
++ * @trans: transition table for indexed by named x transitions
++ *
++ * File permission are determined by matching a path against @dfa and then
++ * then using the value of the accept entry for the matching state as
++ * an index into @perms.  If a named exec transition is required it is
++ * looked up in the transition table.
++ */
++struct aa_file_rules {
++	unsigned int start;
++	struct aa_dfa *dfa;
++	/* struct perms perms; */
++	struct aa_domain trans;
++	/* TODO: add delegate table */
++};
++
++unsigned int aa_str_perms(struct aa_dfa *dfa, unsigned int start,
++			  const char *name, struct path_cond *cond,
++			  struct file_perms *perms);
++
++int aa_path_perm(int op, struct aa_profile *profile, struct path *path,
++		 int flags, u32 request, struct path_cond *cond);
++
++int aa_path_link(struct aa_profile *profile, struct dentry *old_dentry,
++		 struct path *new_dir, struct dentry *new_dentry);
++
++int aa_file_perm(int op, struct aa_profile *profile, struct file *file,
++		 u32 request);
++
++static inline void aa_free_file_rules(struct aa_file_rules *rules)
++{
++	aa_put_dfa(rules->dfa);
++	aa_free_domain_entries(&rules->trans);
++}
++
++#define ACC_FMODE(x) (("\000\004\002\006"[(x)&O_ACCMODE]) | (((x) << 1) & 0x40))
++
++/* from namei.c */
++#define MAP_OPEN_FLAGS(x) ((((x) + 1) & O_ACCMODE) ? (x) + 1 : (x))
++
++/**
++ * aa_map_file_perms - map file flags to AppArmor permissions
++ * @file: open file to map flags to AppArmor permissions
++ *
++ * Returns: apparmor permission set for the file
++ */
++static inline u32 aa_map_file_to_perms(struct file *file)
++{
++	int flags = MAP_OPEN_FLAGS(file->f_flags);
++	u32 perms = ACC_FMODE(file->f_mode);
++
++	if ((flags & O_APPEND) && (perms & MAY_WRITE))
++		perms = (perms & ~MAY_WRITE) | MAY_APPEND;
++	/* trunc implies write permission */
++	if (flags & O_TRUNC)
++		perms |= MAY_WRITE;
++	if (flags & O_CREAT)
++		perms |= AA_MAY_CREATE;
++
++	return perms;
++}
++
++#endif /* __AA_FILE_H */
 -- 
 1.7.1
 
