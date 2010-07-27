@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab0G0W2x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 18:28:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34375 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab0G0W2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 18:28:51 -0400
-Message-ID: <4C4F5D6E.10201@zytor.com>
-Date: Tue, 27 Jul 2010 15:27:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1752683Ab0G0WdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 18:33:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47431 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab0G0WdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 18:33:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=uaIbWDjnG4l40xZwNjFEukRARizEP9hO6F4JEzQ43bilwt1hqbKgimSICBRRDlDVlW
+         M04dHhKpZmJDyKYt7rggePp2FrvwUNsCwB6IMvAuiKme0Otdn4/JJrIBsbNQJVJ+JICd
+         HX/sc9IGC3UH8e8brGKbQusslMdVv1ijaSo5Y=
 MIME-Version: 1.0
-To: Neil Brown <neilb@suse.de>
-CC: Boaz Harrosh <bharrosh@panasas.com>, Christoph Hellwig <hch@infradead.org>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
-        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org
-Subject: Re: [PATCH] md: bitwise operations might not fit in a "bool"
-References: <4C47ED7B.1050709@gmail.com>	<20100722173716.66264bef@notabene>	<4C481FD5.4070509@gmail.com>	<4C482F35.6000004@panasas.com> <20100722215555.7ab2b1ee@notabene>
-In-Reply-To: <20100722215555.7ab2b1ee@notabene>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1007270929290.28648@router.home>
+References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
+	<alpine.DEB.2.00.1007261136160.5438@router.home>
+	<pfn.valid.v4.reply.1@mdm.bga.com>
+	<AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
+	<pfn.valid.v4.reply.2@mdm.bga.com>
+	<20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com>
+	<alpine.DEB.2.00.1007270929290.28648@router.home>
+Date: Wed, 28 Jul 2010 07:33:07 +0900
+Message-ID: <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> -	const bool do_sync = (bio->bi_rw & REQ_SYNC);
->> +	const bool do_sync = (bio->bi_rw & REQ_SYNC) != 0;
+On Tue, Jul 27, 2010 at 11:34 PM, Christoph Lameter
+<cl@linux-foundation.org> wrote:
+> On Tue, 27 Jul 2010, Minchan Kim wrote:
+>
+>> But in fact I have a concern to use PG_reserved since it can be used
+>> afterward pfn_valid normally to check hole in non-hole system. So I
+>> think it's redundant.
 
-FWIW, this is a null change.
+Ignore me. I got confused.
 
-	-hpa
+>
+> PG_reserved is already used to mark pages not handled by the page
+> allocator (see mmap_init_zone).
+
+
+I will resend below approach.
+
+static inline int memmap_valid(unsigned long pfn)
+{
+       struct page *page = pfn_to_page(pfn);
+       struct page *__pg = virt_to_page(page);
+       return page_private(__pg) == MAGIC_MEMMAP && PageReserved(__pg);
+}
+
+Thanks, all.
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Kind regards,
+Minchan Kim
