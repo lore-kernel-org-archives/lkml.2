@@ -1,68 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab0G0TdQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 15:33:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44008 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132Ab0G0TdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 15:33:14 -0400
-Message-ID: <4C4F348C.3040703@redhat.com>
-Date: Tue, 27 Jul 2010 16:33:32 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1752142Ab0G0Tlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 15:41:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50853 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab0G0Tl3 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 27 Jul 2010 15:41:29 -0400
+Date: Tue, 27 Jul 2010 15:41:05 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Albert Herranz <albert_herranz@yahoo.es>, x86@kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        iommu@lists.linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
+Message-ID: <20100727194105.GA18647@phenom.dumpdata.com>
+References: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
+ <1280250002-20279-10-git-send-email-konrad.wilk@oracle.com>
+ <4C4F2D9C.4020303@zytor.com>
 MIME-Version: 1.0
-To: Jarod Wilson <jarod@redhat.com>
-CC: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 0/15] STAGING: add lirc device drivers
-References: <20100726232546.GA21225@redhat.com> <4C4F0244.2070803@redhat.com> <20100727160955.GA7528@kroah.com> <20100727182404.GE9465@redhat.com>
-In-Reply-To: <20100727182404.GE9465@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4F2D9C.4020303@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4C4F3656.0149:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-07-2010 15:24, Jarod Wilson escreveu:
-> On Tue, Jul 27, 2010 at 09:09:56AM -0700, Greg KH wrote:
->> On Tue, Jul 27, 2010 at 12:59:00PM -0300, Mauro Carvalho Chehab wrote:
->>> Em 26-07-2010 20:25, Jarod Wilson escreveu:
->>
->> Hm, Jarod, you forgot to cc: the staging maintainer, so I missed these
->> :)
+On Tue, Jul 27, 2010 at 12:03:56PM -0700, H. Peter Anvin wrote:
+> On 07/27/2010 10:00 AM, Konrad Rzeszutek Wilk wrote:
+> > It is paramount that we call pci_xen_swiotlb_detect before
+> > pci_swiotlb_detect as both implementations use the 'swiotlb'
+> > and 'swiotlb_force' flags. The pci-xen_swiotlb_detect inhibits
+> > the swiotlb_force and swiotlb flag so that the native SWIOTLB
+> > implementation is not enabled when running under Xen.
+> > 
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > Cc: Albert Herranz <albert_herranz@yahoo.es>
+> > Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: x86@kernel.org
+> > Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > ---
+> >  arch/x86/kernel/pci-dma.c |    7 +++++--
+> >  1 files changed, 5 insertions(+), 2 deletions(-)
+> > 
 > 
-> D'oh, sorry, yeah, realized that about 10 minutes after I sent everything.
-> Figured I'd ping you if you hadn't said anything about 'em in a day or
-> three.
-> 
->>> Greg,
->>>
->>> It is probably simpler to merge those files via my tree, as they depend
->>> on some changes scheduled for 2.6.36.
->>>
->>> Would it be ok for you if I merge them from my tree?
->>
->> No objection from me for them to go through your tree.
+> Is there any way we can abstract this out a bit more instead of crapping
+> on generic code?
 
-Ok, thanks. I'll merge the patches on my tree.
+I was toying with something like this:
 
->>
->> Do you want me to handle the cleanup and other fixes after they go into
->> the tree, or do you want to also handle them as well (either is fine
->> with me.)
-> 
-> Note that I've got a git tree I've been maintaining the lirc drivers in
-> for a while, so whomever is ultimately the gateway, I can also stage
-> cleanups there -- I'll certainly be pushing any cleanups I do on the lirc
-> drivers there prior to sending along for upstream, or else I'm liable to
-> lose track of them... :)
-> 
-> http://git.kernel.org/?p=linux/kernel/git/jarod/linux-2.6-lirc.git
-> 
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index 9f07cfc..e0cd388 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -45,6 +45,25 @@ int iommu_detected __read_mostly = 0;
+  */
+ int iommu_pass_through __read_mostly;
+ 
++initcall_t __swiotlb_initcall_detect[] =
++	{pci_xen_swiotlb_detect,
++	 pci_swiotlb_detect,
++	NULL};
++
++initcall_t __swiotlb_initcall_init[] = {
++	pci_xen_swiotlb_init,
++	pci_swiotlb_init,
++	NULL};
++
++
++initcall_t __iommu_initcall_detect[] = {
++	gart_iommu_hole_init,
++	detect_calgary,
++	detect_intel_iommu,
++	/* needs to be called after gart_iommu_hole_init */
++	amd_iommu_detect,
++	NULL};
++
+ /* Dummy device used for NULL arguments (normally ISA). */
+ struct device x86_dma_fallback_dev = {
+ 	.init_name = "fallback device",
+@@ -130,24 +149,22 @@ static void __init dma32_free_bootmem(void)
+ 
+ void __init pci_iommu_alloc(void)
+ {
++	initcall_t *fn;
++
+ 	/* free the range so iommu could get some range less than 4G */
+ 	dma32_free_bootmem();
+ 
+-	if (pci_xen_swiotlb_detect() || pci_swiotlb_detect())
+-		goto out;
+-
+-	gart_iommu_hole_init();
+-
+-	detect_calgary();
++	/* First do the SWIOTLB - if they work, skip the IOMMUs. */
++	for (fn = __swiotlb_initcall_detect; fn != NULL; fn++)
++		if ((*fn)())
++			goto swiotlb_init;
+ 
+-	detect_intel_iommu();
+-
+-	/* needs to be called after gart_iommu_hole_init */
+-	amd_iommu_detect();
+-out:
+-	pci_xen_swiotlb_init();
++	for (fn = __iommu_initcall_detect; fn != NULL; fn++)
++		(*fn)();
+ 
+-	pci_swiotlb_init();
++swiotlb_init:
++	for (fn = __swiotlb_initcall_init; fn != NULL; fn++)
++		(*fn)();
+ }
+ 
+ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
 
-Well, maybe the easiest way would be if I handle the first merge, to be sure that
-they'll reach linux-next and 2.6.36 at the right time, avoiding conflicts with some
-core changes. After the merge, Jerod can handle it via his own tree.
 
-Cheers,
-Mauro
+(compiles with warnings and has not yet been completly flushed), but
+Fujita mentioned that it might the right choice to use this
+when we have more than just these two swiotlb-implentors.
+
+
+> 
+> 	-hpa
+> -- 
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
+> 
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/iommu
