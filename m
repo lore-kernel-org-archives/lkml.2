@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab0G0S4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 14:56:40 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52800 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab0G0S4j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 14:56:39 -0400
-Date: Tue, 27 Jul 2010 19:56:28 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        linux-pci@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [RFC][PATCH] PCI / PCIe: Ask BIOS for control of all native
-	services simultaneously
-Message-ID: <20100727185628.GA17903@srcf.ucam.org>
-References: <201007250105.23610.rjw@sisk.pl> <4C4E2BBD.7080003@jp.fujitsu.com> <20100727171842.GB7324@srcf.ucam.org> <201007272042.39269.rjw@sisk.pl>
+	id S1752143Ab0G0S4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 14:56:52 -0400
+Received: from claw.goop.org ([74.207.240.146]:51722 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751416Ab0G0S4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 14:56:51 -0400
+Message-ID: <4C4F2BF2.6010903@goop.org>
+Date: Tue, 27 Jul 2010 11:56:50 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007272042.39269.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Nick Piggin <npiggin@suse.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] vmap: add flag to allow lazy unmap to be disabled at
+ runtime
+References: <4C4DEF13.1030403@goop.org> <20100727082439.GB6332@amd>
+In-Reply-To: <20100727082439.GB6332@amd>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 08:42:39PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, July 27, 2010, Matthew Garrett wrote:
-> > I've done some more testing of this and found that my intial belief 
-> > (supported by Microsoft's documentation...) that all PCIe support had to 
-> > be handed over for any to be used is incorrect. It turns out that the 
-> > firmware must support native hotplug, native power management and PCI 
-> > express capability structure control - ie, SHPC and AER aren't required.
-> 
-> But the ACPI spec says quite explicitly that PCIe capability control is
-> necessary for AER as well.
+  On 07/27/2010 01:24 AM, Nick Piggin wrote:
+> On Mon, Jul 26, 2010 at 01:24:51PM -0700, Jeremy Fitzhardinge wrote:
+>>
+>> [ Nick, I forget if I sent this to you before.  Could you Ack it if it looks OK? Thanks, J ]
+>>
+>> Add a flag to force lazy_max_pages() to zero to prevent any outstanding
+>> mapped pages.  We'll need this for Xen.
+> You have sent this to me before, probably several times, and I always
+> forget about it right as you send it again.
+>
+> It's no problem merging something like this for Xen, although as you
+> know I would love to see an approach where Xen would benefit from
+> delayed flushing as well :)
 
-I may not have been clear. If the firmware doesn't report AER, Windows 
-will use PME and hotplug. If the firmware doesn't support hotplug, 
-Windows will *not* use PME or AER, and ditto if it doesn't support PME.
+Yes indeed, that would be nice to get.  What it comes down to is we need 
+to be able to flush any lazy vunmap aliases from within interrupt 
+context, but the code really isn't set up to do that, and last time I 
+tried to understand that code I couldn't see a straightforward way to 
+make it work.   It would also be nice to have a way to shoot down the 
+aliases for a specific page, assuming that's any more efficient than 
+flushing everything.
 
-> > (2) If any of bits 0, 2 and 4 are unsupported, disable all PCIe support 
-> > via _OSC
-> 
-> I guess you mean "don't request control of that services at all"?
+I don't think anything has changed since we last talked about this.
 
-I mean pass 0 as the third dword in our _OSC call.
+> You will need to disable lazy flushing from the per-cpu allocator
+> (vm_map_ram/vm_unmap_ram, which are used by XFS now). That's not
+> tied to the lazy_max stuff (which it should be, arguably)
 
-> > (3) Ask for the set of supported bits & 0x1d
-> 
-> Really, if we try to treat native PME, native hot-plug and AER separately
-> (which is our current approach), we fall into a Catch 22 situation where
-> each of them needs PCIe capability control and once we've received the
-> control of that, we have no choice but to use the other native sevices as well.
+Ah, OK.  I should really add xfs to our roster of regularly tested 
+filesystems, since it seems to play the most games.  Do you know of any 
+other filesystems which do that kind of thing?
 
-It seems that it's valid to have hotplug and PME without AER. The 
-behaviour of Windows for each bit is:
+> That code basically allocates per-cpu chunks of va from the global
+> allocator, uses them, then frees them back to the global allocator
+> all without doing any TLB flushing.
+>
+> If you have to do global TLB flushing there, then it's probably not
+> much value in per-cpu locking of the address allocator anyway, so
+> you could just add a test for vmap_lazy_unmap in these branches:
+>
+>    if (likely(count<= VMAP_MAX_ALLOC)&&  !vmap_lazy_unmap)
 
-0 Hotplug             Required
-1 SHPHC               Will never request
-2 PME                 Required
-3 AER                 Optional
-4 capability control  Required
+We don't need to do any tlb flushing in these cases, because we're 
+concerned about making sure we know what ptes a given page is mapped 
+by.  The hypervisor will do any tlb flushing it requires to maintain its 
+own invariants (so, for example, we can't use a stale tlb entry to keep 
+accessing a page we've given back to Xen).
 
-So firmware can refuse to support SHPHC and AER and still get PCIe 
-support, but if any of the required bits aren't available Windows won't 
-use *any* of the _OSC-provided functions.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+     J
