@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab0G0Nlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 09:41:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11233 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab0G0Nld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 09:41:33 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <8426.1279548573@redhat.com>
-References: <8426.1279548573@redhat.com> <20100718084955.GB27794@infradead.org> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021720.5544.19973.stgit@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, Christoph Hellwig <hch@infradead.org>,
-        viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 09/18] xstat: Make special system filesystems return FS_SPECIAL_FL [ver #6]
-Date: Tue, 27 Jul 2010 14:41:24 +0100
-Message-ID: <17717.1280238084@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1756100Ab0G0NsN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 09:48:13 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58936 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab0G0NsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 09:48:10 -0400
+Date: Tue, 27 Jul 2010 15:46:26 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
+In-reply-to: <20100727065842.40ae76c8@bike.lwn.net>
+To: "'Jonathan Corbet'" <corbet@lwn.net>
+Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
+        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-id: <003f01cb2d92$20819730$6184c590$%szyprowski@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Acsti34hslJiPIn4THqABG1DyrvpiQABRawQ
+References: <cover.1280151963.git.m.nazarewicz@samsung.com>
+ <743102607e2c5fb20e3c0676fadbcb93d501a78e.1280151963.git.m.nazarewicz@samsung.com>
+ <dc4bdf3e0b02c0ac4770927f72b6cbc3f0b486a2.1280151963.git.m.nazarewicz@samsung.com>
+ <20100727120841.GC11468@n2100.arm.linux.org.uk>
+ <003701cb2d89$adae4580$090ad080$%szyprowski@samsung.com>
+ <20100727065842.40ae76c8@bike.lwn.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+Hello,
 
-> Also, not all the flags are per-filesystem.  The following are:
+On Tuesday, July 27, 2010 2:59 PM Jonathan Corbet wrote:
+
+> On Tue, 27 Jul 2010 14:45:58 +0200
+> Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 > 
-> 	FS_SPECIAL_FL		/* Special file as found in procfs/sysfs */
-> 	FS_REMOTE_FL		/* File is remote */
+> > > How does one obtain the CPU address of this memory in order for the CPU
+> > > to access it?
+> >
+> > Right, we did not cover such case. In CMA approach we tried to separate
+> > memory allocation from the memory mapping into user/kernel space. Mapping
+> > a buffer is much more complicated process that cannot be handled in a
+> > generic way, so we decided to leave this for the device drivers. Usually
+> > video processing devices also don't need in-kernel mapping for such
+> > buffers at all.
+> 
+> Still...that *is* why I suggested an interface which would return both
+> the DMA address and a kernel-space virtual address, just like the DMA
+> API does...  Either that, or just return the void * kernel address and
+> let drivers do the DMA mapping themselves.  Returning only the
+> dma_addr_t address will make the interface difficult to use in many
+> situations.
 
-Actually, that last is not true; FS_REMOTE_FL is per-file, not per-fs.  You
-can have a filesystem that has fabricated files and remote files.  For
-instance, with kAFS at some point you will be go into /afs, do a lookup for a
-directory that doesn't exist, but whose name represents a cell+volume, the
-filesystem will fabricate a local directory and then attempt to mount a remote
-directory on to it.
+As I said, drivers usually don't need in-kernel mapping for video buffers.
+Is there really a need for creating such mapping?
 
-David
+Best regards
+--
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
