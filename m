@@ -1,80 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab0G0LKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 07:10:06 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:50304 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756173Ab0G0LKE (ORCPT
+	id S1756272Ab0G0LKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 07:10:33 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43218 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756173Ab0G0LKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 07:10:04 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAMZZTkx5LclT/2dsb2JhbACfZHLAd4U2BA
-Date: Tue, 27 Jul 2010 21:09:58 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: VFS scalability git tree
-Message-ID: <20100727110958.GA2913@amd>
-References: <20100722190100.GA22269@amd>
- <20100723135514.GJ32635@dastard>
- <20100727070538.GA2893@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727070538.GA2893@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Jul 2010 07:10:30 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Tue, 27 Jul 2010 16:38:55 +0530
+Message-Id: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
+Subject: [PATCHv10 2.6.35-rc6-tip 0/14]  Uprobes Patches
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 05:05:39PM +1000, Nick Piggin wrote:
-> On Fri, Jul 23, 2010 at 11:55:14PM +1000, Dave Chinner wrote:
-> > On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
-> > > I'm pleased to announce I have a git tree up of my vfs scalability work.
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
-> > > http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
-> > > 
-> > > Branch vfs-scale-working
-> > 
-> > With a production build (i.e. no lockdep, no xfs debug), I'll
-> > run the same fs_mark parallel create/unlink workload to show
-> > scalability as I ran here:
-> > 
-> > http://oss.sgi.com/archives/xfs/2010-05/msg00329.html
-> 
-> I've made a similar setup, 2s8c machine, but using 2GB ramdisk instead
-> of a real disk (I don't have easy access to a good disk setup ATM, but
-> I guess we're more interested in code above the block layer anyway).
-> 
-> Made an XFS on /dev/ram0 with 16 ags, 64MB log, otherwise same config as
-> yours.
 
-I also tried dbench on this setup. 20 runs of dbench -t20 8
-(that is a 20 second run, 8 clients).
+Changelog from V9:
+ - Resolved comments from Arnaldo on perf support for uprobes.
+ - perf probe -S will now list only global binding functions as
+   requested by Christoph Hellwig.
+ - Moved Changelog to below Signed-off-by: line, so that its not part
+   of the patch description. (Suggested by Christoph.)
 
-Numbers are throughput, higher is better:
+Changelog from V8:
+ - Fix build issues reported by Christoph.
+ - List available probes in a file without need to specify pid.
 
-          N           Min           Max        Median           Avg Stddev
-vanilla  20       2219.19       2249.43       2230.43     2230.9915 7.2528893
-scale    20       2428.21        2490.8       2437.86      2444.111 16.668256
-Difference at 95.0% confidence
-        213.119 +/- 8.22695
-        9.55268% +/- 0.368757%
-        (Student's t, pooled s = 12.8537)
+Changelog from V7:
+ - New feature: perf probe lists available probes.
+ - Fix perf probes for uprobes to exit with a error message on dwarf
+   based probes.
+ - Merge changes to kprobes traceevent infrastructure.
+ - Merge changes to perf.
 
-vfs-scale is 9.5% or 210MB/s faster than vanilla.
+Changelog from V6:
+ - Remove perf adjust symbols patch.
 
-Like fs_mark, dbench has creat/unlink activity, so I hope rcu-inodes
-should not be such a problem in practice. In my creat/unlink benchmark,
-it is creating and destroying one inode repeatedly, which is the
-absolute worst case for rcu-inodes. Wheras in most real workloads
-would be creating and destroying many inodes, which is not such a dis
-advantage for rcu-inodes.
+Changelog from V5:
+  - Merged user_bkpt and user_bkpt_xol into uprobes.
+  - Addressed comments till now.
 
-Incidentally, XFS was by far the fastest "real" filesystem I tested on
-this workload. ext4 was around 1700MB/s (ext2 was around 3100MB/s and
-ramfs is 3350MB/s).
+Changelog from V4:
+  - Rebased to tip tree. (2.6.35-rc3-tip)
 
+Changelog from v3:
+  - Reverted to background page replacement as suggested by Peter Zijlstra.
+  - Dso in 'perf probe' can be either be a short name or a absolute path.
+  - Addressed comments from Masami, Frederic, Steven on traceevents and perf
+
+Changelog from v2:
+  - Addressed comments from Oleg, including removal of interrupt context
+    handlers, reverting background page replacement in favour of
+    access_process_vm().
+
+  - Provides perf interface for uprobes.
+
+Changelog from v1:
+ - Added trace_event interface for uprobes.
+ - Addressed comments from Andrew Morton and Randy Dunlap.
+
+For previous posting: please refer: http://lkml.org/lkml/2010/7/12/67,
+http://lkml.org/lkml/2010/7/8/239, http://lkml.org/lkml/2010/6/29/299,
+http://lkml.org/lkml/2010/6/14/41, http://lkml.org/lkml/2010/3/20/107
+and http://lkml.org/lkml/2010/5/18/307
+
+This patchset implements Uprobes which enables you to dynamically break
+into any routine in a user space application and collect information
+non-disruptively.
+
+This patchset is a rework based on suggestions from discussions on lkml
+in January and March 2010 (http://lkml.org/lkml/2010/1/11/92,
+http://lkml.org/lkml/2010/1/27/19, http://lkml.org/lkml/2010/3/20/107
+and http://lkml.org/lkml/2010/3/31/199 ). This implementation of
+uprobes doesnt depend on utrace.
+
+When a uprobe is registered, Uprobes makes a copy of the probed
+instruction, replaces the first byte(s) of the probed instruction with a
+breakpoint instruction. (Uprobes uses background page replacement
+mechanism and ensures that the breakpoint affects only that process.)
+
+When a CPU hits the breakpoint instruction, Uprobes gets notified of
+trap and finds the associated uprobe. It then executes the associated
+handler. Uprobes single-steps its copy of the probed instruction and
+resumes execution of the probed process at the instruction following the
+probepoint. Instruction copies to be single-stepped are stored in a
+per-process "execution out of line (XOL) area". Currently XOL area is
+allocated as one page vma.
+
+Advantages of uprobes over conventional debugging include:
+
+1. Non-disruptive.
+Unlike current ptrace based mechanisms, uprobes tracing wouldnt
+involve signals, stopping threads and context switching between the
+tracer and tracee.
+
+2. Much better handling of multithreaded programs because of XOL.
+Current ptrace based mechanisms use single stepping inline, i.e they
+copy back the original instruction on hitting a breakpoint.  In such
+mechanisms tracers have to stop all the threads on a breakpoint hit or
+tracers will not be able to handle all hits to the location of
+interest. Uprobes uses execution out of line, where the instruction to
+be traced is analysed at the time of breakpoint insertion and a copy
+of instruction is stored at a different location.  On breakpoint hit,
+uprobes jumps to that copied location and singlesteps the same
+instruction and does the necessary fixups post singlestepping.
+
+3. Multiple tracers for an application.
+Multiple uprobes based tracer could work in unison to trace an
+application. There could one tracer that could be interested in
+generic events for a particular set of process. While there could be
+another tracer that is just interested in one specific event of a
+particular process thats part of the previous set of process.
+
+4. Corelating events from kernels and userspace.
+Uprobes could be used with other tools like kprobes, tracepoints or as
+part of higher level tools like perf to give a consolidated set of
+events from kernel and userspace.  In future we could look at a single
+backtrace showing application, library and kernel calls.
+
+Here is the list of TODO Items.
+
+- Perf automatically adds probes for high-overhead functions.
+- Allow trace scripts to insert probes
+- Syscall integration and TRACE_EVENT() universe.
+	(Need clarity/discussion on API)
+- Allow users to insert probes in their applications.
+- Allowing probes across fork.
+- Allowing probes per-executable/per dso.
+- Allow multiple probes to share a probepoint.
+- Return probes.
+- Support for other architectures.
+- Uprobes booster.
+- Merge uprobes and kprobes trace_event.
+- replace macro W with bits in inat table.
+
+Please do provide your valuable comments.
+
+Thanks in advance.
+Srikar
+ Srikar Dronamraju(14)
+  0: Uprobes Patches
+  1: mm: Move replace_page() / write_protect_page() to mm/memory.c
+  2: uprobes: Breakpoint insertion/removal in user space applications.
+  3: uprobes: Slot allocation for Execution out of line(XOL)
+  4: uprobes: x86 specific functions for user space breakpointing.
+  5: uprobes: Uprobes (un)registration and exception handling.
+  6: uprobes: X86 support for Uprobes
+  7: uprobes: Uprobes Documentation
+  8: trace: Extract out common code for kprobes/uprobes traceevents.
+  9: trace: uprobes trace_event interface
+ 10: perf: rename common fields/functions from kprobe to probe.
+ 11: perf: perf interface for uprobes
+ 12: perf: Add third parameter to symbol_filter_t.
+ 13: [RFC] perf: Show Potential probe points.
+ 14: [RFC] perf: show functions in a file without using pid
+
+
+ Documentation/uprobes.txt          |  193 +++++
+ arch/Kconfig                       |    6 +
+ arch/x86/Kconfig                   |    1 +
+ arch/x86/include/asm/thread_info.h |    2 +
+ arch/x86/include/asm/uprobes.h     |   43 ++
+ arch/x86/kernel/Makefile           |    2 +
+ arch/x86/kernel/signal.c           |   13 +
+ arch/x86/kernel/uprobes.c          |  599 ++++++++++++++++
+ fs/exec.c                          |    4 +
+ include/linux/mm.h                 |    4 +
+ include/linux/mm_types.h           |    4 +
+ include/linux/sched.h              |    3 +
+ include/linux/uprobes.h            |  334 +++++++++
+ kernel/Makefile                    |    1 +
+ kernel/fork.c                      |   21 +
+ kernel/trace/Kconfig               |   20 +
+ kernel/trace/Makefile              |    2 +
+ kernel/trace/trace.h               |    5 +
+ kernel/trace/trace_kprobe.c        |  742 +-------------------
+ kernel/trace/trace_probe.c         |  654 +++++++++++++++++
+ kernel/trace/trace_probe.h         |  157 ++++
+ kernel/trace/trace_uprobe.c        |  739 +++++++++++++++++++
+ kernel/uprobes.c                   | 1396 ++++++++++++++++++++++++++++++++++++
+ mm/ksm.c                           |  112 ---
+ mm/memory.c                        |  120 +++
+ tools/perf/builtin-probe.c         |   58 ++-
+ tools/perf/builtin-test.c          |    4 +-
+ tools/perf/builtin-top.c           |   26 +-
+ tools/perf/util/event.c            |   20 +
+ tools/perf/util/event.h            |    1 +
+ tools/perf/util/map.h              |   31 +-
+ tools/perf/util/probe-event.c      |  637 +++++++++++++----
+ tools/perf/util/probe-event.h      |   38 +-
+ tools/perf/util/probe-finder.c     |   34 +-
+ tools/perf/util/probe-finder.h     |   10 +-
+ tools/perf/util/symbol.c           |   32 +-
+ tools/perf/util/symbol.h           |    2 +
+ 37 files changed, 5007 insertions(+), 1063 deletions(-)
