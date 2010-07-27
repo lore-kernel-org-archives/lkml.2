@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab0G0RVK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:21:10 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47048 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab0G0RVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 13:21:06 -0400
-Date: Tue, 27 Jul 2010 18:21:00 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Corey Minyard <cminyard@mvista.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipmi: Run a dummy command before submitting a new
-	command
-Message-ID: <20100727172100.GC7324@srcf.ucam.org>
-References: <1280246493-964-1-git-send-email-mjg@redhat.com> <4C4F123F.3010700@mvista.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4F123F.3010700@mvista.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1752732Ab0G0RVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:21:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36687 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab0G0RUo (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 27 Jul 2010 13:20:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, alex.williamson@redhat.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 5/9] vmap: add flag to allow lazy unmap to be disabled at runtime
+Date: Tue, 27 Jul 2010 12:59:58 -0400
+Message-Id: <1280250002-20279-6-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
+References: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C4F1538.0334:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 12:07:11PM -0500, Corey Minyard wrote:
-> I don't think this is the right way to handle the problem.  Though it's  
-> not going to break anything, this change is just a hack.  We need to  
-> figure out why these machine exhibit this behavior.  If it's a bug in  
-> the driver, then we need to fix the driver.  If it's a bug in the HP  
-> firmware, then we need to document it well as such, get HP to fix their  
-> firmware, and possibly tie it into the xaction handler that's already in  
-> start_next_msg.
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Yeah, I agree that this isn't the optimal approach. I'm waiting to hear 
-from HP if they have any idea what happened between 1.01 (which worked) 
-and 1.05 (which is broken), which might give some more insight into what 
-we're doing wrong.
+Add a flag to force lazy_max_pages() to zero to prevent any outstanding
+mapped pages.  We'll need this for Xen.
 
-> The only interaction with the device that this change should cause is  
-> one read from the status register, since the device should be idle at  
-> this point.  If that's the case, and it's not a driver bug, you can try  
-> adding an xaction that calls smi_info->handlers->event(smi_info->si_sm, 
-> 0).
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Nick Piggin <npiggin@suse.de>
+---
+ include/linux/vmalloc.h |    2 ++
+ mm/vmalloc.c            |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-I'll try to see what's going on.
-
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 227c2a5..b840fda 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -7,6 +7,8 @@
+ 
+ struct vm_area_struct;		/* vma defining user mapping in mm_types.h */
+ 
++extern bool vmap_lazy_unmap;
++
+ /* bits in flags of vmalloc's vm_struct below */
+ #define VM_IOREMAP	0x00000001	/* ioremap() and friends */
+ #define VM_ALLOC	0x00000002	/* vmalloc() */
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index ae00746..7f35fe2 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -31,6 +31,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/shmparam.h>
+ 
++bool vmap_lazy_unmap __read_mostly = true;
+ 
+ /*** Page table manipulation functions ***/
+ 
+@@ -502,6 +503,9 @@ static unsigned long lazy_max_pages(void)
+ {
+ 	unsigned int log;
+ 
++	if (!vmap_lazy_unmap)
++		return 0;
++
+ 	log = fls(num_online_cpus());
+ 
+ 	return log * (32UL * 1024 * 1024 / PAGE_SIZE);
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.0.1
+
