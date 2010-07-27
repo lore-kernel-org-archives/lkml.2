@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab0G0Soa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 14:44:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36052 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab0G0So2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 14:44:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [RFC][PATCH] PCI / PCIe: Ask BIOS for control of all native services simultaneously
-Date: Tue, 27 Jul 2010 20:42:39 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        linux-pci@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <201007250105.23610.rjw@sisk.pl> <4C4E2BBD.7080003@jp.fujitsu.com> <20100727171842.GB7324@srcf.ucam.org>
-In-Reply-To: <20100727171842.GB7324@srcf.ucam.org>
+	id S1753622Ab0G0Soh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 14:44:37 -0400
+Received: from mx02.infracom.it ([62.196.48.10]:43100 "EHLO mx02.infracom.it"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751234Ab0G0Sod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 14:44:33 -0400
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Jul 2010 14:44:33 EDT
+Message-ID: <4C4F27C2.6050001@gmail.com>
+Date: Tue, 27 Jul 2010 20:38:58 +0200
+From: Roberto Oppedisano <roberto.oppedisano@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100710 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.35 suspend regression (bisected)
+References: <4C4C9E40.7070209@infracom.it> <201007260018.14300.rjw@sisk.pl> <20100725223508.GA9885@merkur.ravnborg.org>
+In-Reply-To: <20100725223508.GA9885@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007272042.39269.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 27, 2010, Matthew Garrett wrote:
-> On Tue, Jul 27, 2010 at 09:43:41AM +0900, Kenji Kaneshige wrote:
-> 
-> > I think this will break PCIe services currently working. For example,
-> > firmware doesn't grant PCIe AER control on my hardware. On the other
-> > hand, firmware grants PCIe native hot-plug control on the same machine.
-> > So I think PCIe hot-plug will not work with your patch. Another example,
-> > what would happen on the platform that doesn't have any PCIe hot-plug
-> > slot? I guess firmware doesn't grant PCIe native hot-plug control on
-> > that environment. So I think all the other PCIe port services would
-> > not work on such platform.
-> 
-> I've done some more testing of this and found that my intial belief 
-> (supported by Microsoft's documentation...) that all PCIe support had to 
-> be handed over for any to be used is incorrect. It turns out that the 
-> firmware must support native hotplug, native power management and PCI 
-> express capability structure control - ie, SHPC and AER aren't required.
+  On 26/07/2010 00:35, Sam Ravnborg wrote:
+> On Mon, Jul 26, 2010 at 12:18:14AM +0200, Rafael J. Wysocki wrote:
+>> On Sunday, July 25, 2010, Roberto Oppedisano wrote:
+>>> My HP6730B (x86_64 kernel, uptodate lubuntu Lucid installed) fails to suspend
+>>> on recent git kernels, the screen goes black (backlight on) and stays there forever.
+>>>
+>>> Here's what I found from a bisect.
+>>>
+>> Does it work if you revert that commit?
+> Roberto wrote:
+>
+>>> Alas reverting that single commit on current linux/master does not
+>>> solve the issue so it could be that I did something wrong... anyway
+>>> here the log of the bisect:
+> So I guess not...
+[resending due to lklm reject... gmail defaults to html email, sorry for 
+duplicate emails]
 
-But the ACPI spec says quite explicitly that PCIe capability control is
-necessary for AER as well.
+I did bisect again and I did get a different result:
 
-> However, if any of the other flags are missing then Windows doesn't use 
-> any PCIe functionality on the system. That's the behaviour we wish to 
-> duplicate.
+c1518f12bab97a6d409a25aaccb02dc8895800f3 is the first bad commit
 
-Agreed.
+git bisect start
+# good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
+git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
+# bad: [1a041a23da7c77b53c71fe11b4f940388bee37b1] Merge branch 
+'x86-fixes-for-linus' of 
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip
+git bisect bad 1a041a23da7c77b53c71fe11b4f940388bee37b1
+# good: [7f02ab3ce3c7e093c414fcbd93bdc591cc4419d0] Merge 
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty-2.6
+git bisect gdinf ood 7f02ab3ce3c7e093c414fcbd93bdc591cc4419d0
+# good: [7839ec78214ecf477cc9e2862233b8d9fcf4ec58] gpiolib: document 
+that names can contain printk format specifiers
+git bisect good 7839ec78214ecf477cc9e2862233b8d9fcf4ec58
+# bad: [e620d1e39aa33b43bed96aa7f2ebbc88914aed58] Merge branch 
+'v4l_for_2.6.35' of 
+git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6
+git bisect bad e620d1e39aa33b43bed96aa7f2ebbc88914aed58
+# good: [021fad8b706849c091f6e682bc5df3ce4f9ab4d7] Merge branch 
+'x86-fixes-for-linus' of 
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip
+git bisect good 021fad8b706849c091f6e682bc5df3ce4f9ab4d7
+# good: [d4376802999d478a103868d7e7b1f473e4a387af] Merge branch 
+'fix/asoc' into for-linus
+git bisect good d4376802999d478a103868d7e7b1f473e4a387af
+# good: [d7940b04fa441b06b69f05faef43c5fb2156ab72] Merge 
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6
+git bisect good d7940b04fa441b06b69f05faef43c5fb2156ab72
+# good: [5c331fc8c19e181bffab46e9d18e1637cdc47170] V4L/DVB: dvb-core: 
+Fix ULE decapsulation bug
+git bisect good 5c331fc8c19e181bffab46e9d18e1637cdc47170
+# good: [a094c0afc3515aaf962dd0793f3b23fe67e6b192] Merge 
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
+git bisect good a094c0afc3515aaf962dd0793f3b23fe67e6b192
+# good: [2a0ab2cd73c26835e635ed4e3868f983519048fb] drbd: Reduce verbosity
+git bisect good 2a0ab2cd73c26835e635ed4e3868f983519048fb
+# good: [1abec4fdbb142e3ccb6ce99832fae42129134a96] block: make 
+blk_init_free_list and elevator_init idempotent
+git bisect good 1abec4fdbb142e3ccb6ce99832fae42129134a96
+# good: [bd62307b20ff864c48541e46c3ee2bb9cc330f64] V4L/DVB: ivtv: Avoid 
+accidental video standard change
+git bisect good bd62307b20ff864c48541e46c3ee2bb9cc330f64
+# bad: [c1518f12bab97a6d409a25aaccb02dc8895800f3] Merge branch 
+'rc-fixes' of 
+git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6
+git bisect bad c1518f12bab97a6d409a25aaccb02dc8895800f3
+# good: [cbab05f041a4cff6ca15856bdd35238b282b64eb] gconfig: fix build 
+failure on fedora 13
+git bisect good cbab05f041a4cff6ca15856bdd35238b282b64eb
 
-> > (1) Query all controls for PCIe port services and see what controls
-> >     will be granted to OS by firmware.
-> > (2) Request all the controls acquired in step (1) at the same time.
-> > (3) Create PCIe port services for those controls.
-> >
-> > What do you think about this?
-> 
-> I think we need to do:
-> 
-> (1) Query all controls and see what will be granted
+Trying to revert that commit gives:
 
-This is done already by our current code running _OSC.
+$ git bisect reset
+$ git revert c1518f12bab97a6d409a25aaccb02dc8895800f3
+fatal: Commit c1518f12bab97a6d409a25aaccb02dc8895800f3 is a merge but no 
+-m option was given.
 
-> (2) If any of bits 0, 2 and 4 are unsupported, disable all PCIe support 
-> via _OSC
+How am I supposed to proceed now ? (sorry I'm a git newbie)
 
-I guess you mean "don't request control of that services at all"?
-
-> (3) Ask for the set of supported bits & 0x1d
-
-Really, if we try to treat native PME, native hot-plug and AER separately
-(which is our current approach), we fall into a Catch 22 situation where
-each of them needs PCIe capability control and once we've received the
-control of that, we have no choice but to use the other native sevices as well.
-
-> > I think there is still a problem that needs to be addressed. The 
-> > problem is that if ACPIPHP (ACPI based hot-plug driver) is required 
-> > for PCIe hot- plug, all the PCIe port services needs to be disabled. I 
-> > don't think it is acceptable for ACPIPHP users.
-> 
-> I believe that that's the only way Windows will work on their system, 
-> which generally implies that that's how the machine was intended to run.
-
-Agreed.
-
-Thanks,
-Rafael
+R
