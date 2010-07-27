@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab0G0WrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 18:47:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51960 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab0G0WrR (ORCPT
+	id S1753405Ab0G0Wuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 18:50:51 -0400
+Received: from mail.copilotco.com ([216.105.40.123]:45920 "EHLO
+	mail.copilotco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753349Ab0G0Wuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 18:47:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=BLQF1X6GGgmD5VqkrvpcBNOQ6GrRtSunZZ6IOMNbcdscvbqE8RoX2jVlnyE1PzB7iX
-         RjOX5iliihx6Jn1EgKbPKYM39hCD/lCfBpD5oDWiRVUxd3Sqyfjn8PdB6PSX2b+beeAf
-         B0Z5ob+N36L2yYla6ZpP3O08ok8ld2miokYTc=
-Date: Wed, 28 Jul 2010 00:44:08 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH] tracing: wake up tasks reading trace_pipe on write to
- trace_marker
-Message-ID: <20100727224408.GB4142@joi.lan>
+	Tue, 27 Jul 2010 18:50:50 -0400
+X-Greylist: delayed 1291 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Jul 2010 18:50:50 EDT
+Date: Tue, 27 Jul 2010 15:29:16 -0700
+From: Tracy Reed <treed@ultraviolet.org>
+To: bchociej@gmail.com
+Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, cmm@us.ibm.com, bcchocie@us.ibm.com,
+        mrlupfer@us.ibm.com, crscott@us.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
+Message-ID: <20100727222916.GM18595@tracyreed.org>
+Mail-Followup-To: Tracy Reed <treed@ultraviolet.org>, bchociej@gmail.com,
+	chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, cmm@us.ibm.com, bcchocie@us.ibm.com,
+	mrlupfer@us.ibm.com, crscott@us.ibm.com,
+	linux-kernel@vger.kernel.org
+References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9/eUdp+dLtKXvemk"
 Content-Disposition: inline
+In-Reply-To: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we rely on other code periodically waking up trace reader.
-If there aren't any other data than markers, reader will never be woken up.
-Fix it.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+--9/eUdp+dLtKXvemk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 086d363..02e04c8 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1520,6 +1520,7 @@ int trace_array_vprintk(struct trace_array *tr,
- 	if (!filter_check_discard(call, entry, buffer, event)) {
- 		ring_buffer_unlock_commit(buffer, event);
- 		ftrace_trace_stack(buffer, irq_flags, 6, pc);
-+		trace_wake_up();
- 	}
- 
-  out_unlock:
--- 
-1.7.1.1
+On Tue, Jul 27, 2010 at 05:00:18PM -0500, bchociej@gmail.com spake thusly:
+> The long-term goal of these patches, as discussed in the Motivation
+> section at the end of this message, is to enable Btrfs to perform
+> automagic relocation of hot data to fast media like SSD. This goal has
+> been motivated by the Project Ideas page on the Btrfs wiki.
 
+With disks being so highly virtualized away these days is there any
+way for btrfs to know which are the fast outer-tracks vs the slower
+inner-tracks of a physical disk? If so not only could this benefit SSD
+owners but it could also benefit the many more spinning platters out
+there. If not (which wouldn't be surprising) then disregard. Even just
+having that sort of functionality for SSD would be excellent. If I
+understand correctly not only would this work for SSD but if I have a
+SAN full of many large 7200rpm disks and a few 15k SAS disks I could
+effectively utilize that disk by allowing btrfs to place hot data on
+the 15k SAS. I understand Compellent does this as well.
+
+--=20
+Tracy Reed
+http://tracyreed.org
+
+--9/eUdp+dLtKXvemk
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iD8DBQFMT128BhSTPg0d/nQRAhBOAKCvjeQkmnXPZfOKLMH77Uqf/wq/eQCg3Jlj
+bLgbNEtYOD8rwMexPC+8lOU=
+=jetJ
+-----END PGP SIGNATURE-----
+
+--9/eUdp+dLtKXvemk--
