@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab0G0UzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 16:55:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60614 "EHLO mx1.redhat.com"
+	id S1753614Ab0G0Uzh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 16:55:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752877Ab0G0UzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 16:55:03 -0400
-Date: Tue, 27 Jul 2010 16:54:32 -0400
+	id S1753541Ab0G0UzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 16:55:25 -0400
+Date: Tue, 27 Jul 2010 16:54:57 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,267 +14,179 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
         roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
         fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
         vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <1d0369680bbab87acfef5499e479bdc6d991ebea.1280263065.git.jbaron@redhat.com>
+Message-Id: <71c841fd9aae46eca89d28eecae5b32adbf4c7b8.1280263065.git.jbaron@redhat.com>
 In-Reply-To: <cover.1280263065.git.jbaron@redhat.com>
 References: <cover.1280263065.git.jbaron@redhat.com>
-Subject: [PATCH 06/12] jump label v10: convert jump label to use a key
+Subject: [PATCH 12/12] jump label v10: add docs
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the jump label code to use a key to identify each related set of
-jump labels instead of a string. This saves space since we no longer need
-to store strings and their pointers, just the keys. In addition we can
-simplify the JUMP_LABEL macro to 2 arguments from 3. We use the address
-of the conditional variable as the key value. If jump labels are not enabled
-then we can use the conditional variable as usual.
+Add jump label docs as: Documentation/jump-label.txt
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- include/asm-generic/vmlinux.lds.h |   10 +++++---
- include/linux/jump_label.h        |   37 ++++++++++++++---------------------
- kernel/jump_label.c               |   38 ++++++++++++++++--------------------
- 3 files changed, 38 insertions(+), 47 deletions(-)
+ Documentation/jump-label.txt |  151 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 151 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/jump-label.txt
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 3c7e9ab..8679ec7 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -163,8 +163,7 @@
- 	BRANCH_PROFILE()						\
- 	TRACE_PRINTKS()							\
- 	FTRACE_EVENTS()							\
--	TRACE_SYSCALLS()						\
--	JUMP_TABLE()							\
-+	TRACE_SYSCALLS()
- 
- /*
-  * Data section helpers
-@@ -203,7 +202,6 @@
- 		*(__vermagic)		/* Kernel version magic */	\
- 		*(__markers_strings)	/* Markers: strings */		\
- 		*(__tracepoints_strings)/* Tracepoints: strings */	\
--		*(__jump_strings)/* Jump: strings */	\
- 	}								\
- 									\
- 	.rodata1          : AT(ADDR(.rodata1) - LOAD_OFFSET) {		\
-@@ -212,6 +210,8 @@
- 									\
- 	BUG_TABLE							\
- 									\
-+	JUMP_TABLE							\
-+									\
- 	/* PCI quirks */						\
- 	.pci_fixup        : AT(ADDR(.pci_fixup) - LOAD_OFFSET) {	\
- 		VMLINUX_SYMBOL(__start_pci_fixups_early) = .;		\
-@@ -555,11 +555,13 @@
- #define BUG_TABLE
- #endif
- 
--#define JUMP_TABLE()							\
-+#define JUMP_TABLE							\
- 	. = ALIGN(8);							\
-+	__jump_table : AT(ADDR(__jump_table) - LOAD_OFFSET) {		\
- 		VMLINUX_SYMBOL(__start___jump_table) = .;		\
- 		*(__jump_table)						\
- 		VMLINUX_SYMBOL(__stop___jump_table) = .;		\
-+	}
- 
- #ifdef CONFIG_PM_TRACE
- #define TRACEDATA							\
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index d3d00b6..c9e17b0 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -18,43 +18,36 @@ struct module;
- extern struct jump_entry __start___jump_table[];
- extern struct jump_entry __stop___jump_table[];
- 
--#define DEFINE_JUMP_LABEL(name)						\
--	const char __jlstrtab_##name[]					\
--	__used __attribute__((section("__jump_strings")))  = #name;	\
--	EXPORT_SYMBOL_GPL(__jlstrtab_##name);
--
- extern void arch_jump_label_transform(struct jump_entry *entry,
- 				 enum jump_label_type type);
- extern void arch_jump_label_text_poke_early(jump_label_t addr);
--extern void jump_label_update(const char *name, enum jump_label_type type);
-+extern void jump_label_update(unsigned long key, enum jump_label_type type);
- extern int jump_label_text_reserved(void *start, void *end);
- extern void jump_label_apply_nops(struct module *mod);
- 
--#define enable_jump_label(name) \
--	jump_label_update(name, JUMP_LABEL_ENABLE);
-+#define enable_jump_label(key) \
-+	jump_label_update((unsigned long)key, JUMP_LABEL_ENABLE);
- 
--#define disable_jump_label(name) \
--	jump_label_update(name, JUMP_LABEL_DISABLE);
-+#define disable_jump_label(key) \
-+	jump_label_update((unsigned long)key, JUMP_LABEL_DISABLE);
- 
- #else
- 
--#define DEFINE_JUMP_LABEL(name)
--
--#define JUMP_LABEL(tag, label, cond)		\
+diff --git a/Documentation/jump-label.txt b/Documentation/jump-label.txt
+new file mode 100644
+index 0000000..232ab79
+--- /dev/null
++++ b/Documentation/jump-label.txt
+@@ -0,0 +1,151 @@
++			Jump Label
++			----------
++
++By: Jason Baron <jbaron@redhat.com>
++
++
++1) motivation
++
++
++Currently, tracepoints are implemented using a conditional. The conditional
++check requires checking a global variable for each tracepoint. Although,
++the overhead of this check is small, it increases under memory pressure. As we
++increase the number of tracepoints in the kernel this may become more of an
++issue. In addition, tracepoints are often dormant (disabled), and provide no
++direct kernel functionality. Thus, it is highly desirable to reduce their
++impact as much as possible. Although tracepoints are the original motivation
++for this work, other kernel code paths should be able to make use of the jump
++label optimization.
++
++
++2) jump label description/usage
++
++
++gcc (v4.5) adds a new 'asm goto' statement that allows branching to a label.
++http://gcc.gnu.org/ml/gcc-patches/2009-07/msg01556.html
++
++Thus, this patch set introduces an architecture specific 'JUMP_LABEL()' macro as
++follows (x86):
++
++# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
++
++# define JUMP_LABEL(key, label)					\
++	do {                                                    \
++		asm goto("1:"                                   \
++			JUMP_LABEL_INITIAL_NOP			\
++                        ".pushsection __jump_table,  \"a\" \n\t"\
++                        _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
++                        ".popsection \n\t"                      \
++                        : :  "i" (key) :  : label);		\
++        } while (0)
++
++
++For architectures that have not yet introduced jump label support its simply:
++
 +#define JUMP_LABEL(key, label)			\
- do {						\
--	if (unlikely(cond))			\
 +	if (unlikely(*key))			\
- 		goto label;			\
- } while (0)
- 
--static inline int enable_jump_label(const char *name)
--{
--	return 0;
--}
-+#define enable_jump_label(cond_var)	\
-+do {					\
-+	*(cond_var) = 1;		\
-+} while (0)
- 
--static inline int disable_jump_label(const char *name)
--{
--	return 0;
--}
-+#define disable_jump_label(cond_var)	\
-+do {					\
-+	*(cond_var) = 0;		\
-+} while (0)
- 
- static inline int jump_label_apply_nops(struct module *mod)
- {
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index c1e59bb..10fb17f 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -28,7 +28,7 @@ struct jump_label_entry {
- 	int nr_entries;
- 	/* hang modules off here */
- 	struct hlist_head modules;
--	const char *name;
-+	unsigned long key;
- };
- 
- struct jump_label_module_entry {
-@@ -59,8 +59,7 @@ static void sort_jump_label_entries(struct jump_entry *start, struct jump_entry
- 		iter_next = start;
- 		iter_next++;
- 		for (; iter_next < stop; iter++, iter_next++) {
--			if (strcmp((char *)iter->name,
--						(char *)iter_next->name) > 0) {
-+			if (iter->key > iter_next->key) {
- 				swap_jump_label_entries(iter, iter_next);
- 				swapped = 1;
- 			}
-@@ -68,29 +67,28 @@ static void sort_jump_label_entries(struct jump_entry *start, struct jump_entry
- 	} while (swapped == 1);
- }
- 
--static struct jump_label_entry *get_jump_label_entry(const char *name)
-+static struct jump_label_entry *get_jump_label_entry(jump_label_t key)
- {
- 	struct hlist_head *head;
- 	struct hlist_node *node;
- 	struct jump_label_entry *e;
--	u32 hash = jhash(name, strlen(name), 0);
-+	u32 hash = jhash((void *)&key, sizeof(jump_label_t), 0);
- 
- 	head = &jump_label_table[hash & (JUMP_LABEL_TABLE_SIZE - 1)];
- 	hlist_for_each_entry(e, node, head, hlist) {
--		if (!strcmp((char *)name, (char *)e->name))
-+		if (key == e->key)
- 			return e;
- 	}
- 	return NULL;
- }
- 
--static struct jump_label_entry *add_jump_label_entry(const char *name, int nr_entries, struct jump_entry *table)
-+static struct jump_label_entry *add_jump_label_entry(jump_label_t key, int nr_entries, struct jump_entry *table)
- {
- 	struct hlist_head *head;
- 	struct jump_label_entry *e;
--	size_t name_len;
- 	u32 hash;
- 
--	e = get_jump_label_entry(name);
-+	e = get_jump_label_entry(key);
- 	if (e)
- 		return ERR_PTR(-EEXIST);
- 
-@@ -98,10 +96,9 @@ static struct jump_label_entry *add_jump_label_entry(const char *name, int nr_en
- 	if (!e)
- 		return ERR_PTR(-ENOMEM);
- 
--	name_len = strlen(name) + 1;
--	hash = jhash(name, name_len-1, 0);
-+	hash = jhash((void *)&key, sizeof(jump_label_t), 0);
- 	head = &jump_label_table[hash & (JUMP_LABEL_TABLE_SIZE - 1)];
--	e->name = name;
-+	e->key = key;
- 	e->table = table;
- 	e->nr_entries = nr_entries;
- 	INIT_HLIST_HEAD(&(e->modules));
-@@ -118,17 +115,16 @@ static int build_jump_label_hashtable(struct jump_entry *start, struct jump_entr
- 	sort_jump_label_entries(start, stop);
- 	iter = start;
- 	while (iter < stop) {
--		entry = get_jump_label_entry((char *)iter->name);
-+		entry = get_jump_label_entry(iter->key);
- 		if (!entry) {
- 			iter_begin = iter;
- 			count = 0;
- 			while ((iter < stop) &&
--				(strcmp((char *)iter->name,
--					(char *)iter_begin->name) == 0)) {
-+				(iter->key == iter_begin->key)) {
- 				iter++;
- 				count++;
- 			}
--			entry = add_jump_label_entry((char *)iter_begin->name,
-+			entry = add_jump_label_entry(iter_begin->key,
- 							count, iter_begin);
- 			if (IS_ERR(entry))
- 				return PTR_ERR(entry);
-@@ -150,7 +146,7 @@ static int build_jump_label_hashtable(struct jump_entry *start, struct jump_entr
-  *
-  */
- 
--void jump_label_update(const char *name, enum jump_label_type type)
-+void jump_label_update(unsigned long key, enum jump_label_type type)
- {
- 	struct jump_entry *iter;
- 	struct jump_label_entry *entry;
-@@ -159,7 +155,7 @@ void jump_label_update(const char *name, enum jump_label_type type)
- 	int count;
- 
- 	mutex_lock(&jump_label_mutex);
--	entry = get_jump_label_entry(name);
-+	entry = get_jump_label_entry((jump_label_t)key);
- 	if (entry) {
- 		count = entry->nr_entries;
- 		iter = entry->table;
-@@ -317,16 +313,16 @@ static int add_jump_label_module(struct module *mod)
- 				mod->jump_entries + mod->num_jump_entries);
- 	iter = mod->jump_entries;
- 	while (iter < mod->jump_entries + mod->num_jump_entries) {
--		entry = get_jump_label_entry((char *)iter->name);
-+		entry = get_jump_label_entry(iter->key);
- 		iter_begin = iter;
- 		count = 0;
- 		while ((iter < mod->jump_entries + mod->num_jump_entries) &&
--			(strcmp((char *)iter->name, (char *)iter_begin->name) == 0)) {
-+			(iter->key == iter_begin->key)) {
- 				iter++;
- 				count++;
- 		}
- 		if (!entry) {
--			entry = add_jump_label_entry((char *)iter_begin->name, 0, NULL);
-+			entry = add_jump_label_entry(iter_begin->key, 0, NULL);
- 			if (IS_ERR(entry))
- 				return PTR_ERR(entry);
- 		}
++		goto label;
++
++which then can be used as:
++
++	....
++        JUMP_LABEL(trace_name, trace_label, jump_enabled);
++        printk("not doing tracing\n");
++	return;
++trace_label:
++        printk("doing tracing: %d\n", file);
++	....
++
++The 'key' argument is thus a pointer to a conditional argument that can be used
++if the optimization is not enabled. Otherwise, this address serves as a unique
++key to identify the particular instance of the jump label.
++
++Thus, when tracing is disabled, we simply have a no-op followed by a jump around
++the dormant (disabled) tracing code. The 'JUMP_LABEL()' macro, produces a
++'jump_table' which has the following format:
++
++[instruction address] [jump target] [tracepoint key]
++
++Thus, to enable a tracepoint, we simply patch the 'instruction address' with
++a jump to the 'jump target'.
++
++The call to enable a jump label is: enable_jump_label(key); to disable:
++disable_jump_label(key);
++
++
++3) architecture interface
++
++
++There are a few functions and macros which arches must implement in order to
++take advantage of this optimization. As previously mentioned, if there is no
++architecture support we simply fall back to a traditional, load, test, and
++jump sequence.
++
++* add "HAVE_ARCH_JUMP_LABEL" to arch/<arch>/Kconfig to indicate support
++
++* #define JUMP_LABEL_NOP_SIZE, arch/x86/include/asm/jump_label.h
++
++* #define "JUMP_LABEL(key, label)", arch/x86/include/asm/jump_label.h
++
++* void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
++	see: arch/x86/kernel/jump_label.c
++
++* void arch_jump_label_text_poke_early(jump_label_t addr)
++	see: arch/x86/kernel/jump_label.c
++
++* finally add a definition for "struct jump_entry".
++	see: arch/x86/include/asm/jump_label.h
++
++
++4) Jump label analysis (x86)
++
++
++I've tested the performance of using 'get_cycles()' calls around the
++tracepoint call sites. For an Intel Core 2 Quad cpu (in cycles, averages):
++
++		idle		after tbench run
++		----		----------------
++old code	 32		  88
++new code	  2		   4
++
++
++The performance improvement can be reproduced reliably on both Intel and AMD
++hardware.
++
++In terms of code analysis the current code for the disabled case is a 'cmpl'
++followed by a 'je' around the tracepoint code. so:
++
++cmpl - 83 3d 0e 77 87 00 00 - 7 bytes
++je   - 74 3e                - 2 bytes
++
++total of 9 instruction bytes.
++
++The new code is a 'nopl' followed by a 'jmp'. Thus:
++
++nopl - 0f 1f 44 00 00 - 5 bytes
++jmp  - eb 3e          - 2 bytes
++
++total of 7 instruction bytes.
++
++So, the new code also accounts for 2 less bytes in the instruction cache per tracepoint.
++
++The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When CC_OPTIMIZE_FOR_SIZE is
++set, gcc does not always out of line the not taken label path in the same way
++that the "if unlikely()" paths are made out of line. Thus, with
++CC_OPTIMIZE_FOR_SIZE set, this optimization is not always optimal. This may be
++solved in subsequent gcc versions, that allow us to move labels out of line,
++while still optimizing for size. In the case of !CC_OPTIMIZE_FOR_SIZE this
++optimization is seen on high level benchmarks such as tbench where I can get
++~1-2% higher throughput. In addition we are within .5% of the performance of no
++tracepoints compiled in at all.
++
++
++5) Acknowledgments
++
++
++Thanks to Roland McGrath and Richard Henderson for helping come up with the
++initial 'asm goto' and jump label design.
++
++Thanks to Mathieu Desnoyers and H. Peter Anvin for calling attention to this
++issue, and outlining the requirements of a solution. Mathieu also implemened a
++solution in the form of the "Immediate Values" work.
 -- 
 1.7.1
 
