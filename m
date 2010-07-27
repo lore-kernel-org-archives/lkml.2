@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab0G0Uzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 16:55:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46025 "EHLO mx1.redhat.com"
+	id S1753495Ab0G0Uz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 16:55:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753541Ab0G0UzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 16:55:25 -0400
-Date: Tue, 27 Jul 2010 16:54:57 -0400
+	id S1753466Ab0G0UzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 16:55:12 -0400
+Date: Tue, 27 Jul 2010 16:54:44 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,179 +14,292 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
         roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
         fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
         vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <71c841fd9aae46eca89d28eecae5b32adbf4c7b8.1280263065.git.jbaron@redhat.com>
+Message-Id: <90bbb210fa57faba378e58551c47884df1cbe14c.1280263065.git.jbaron@redhat.com>
 In-Reply-To: <cover.1280263065.git.jbaron@redhat.com>
 References: <cover.1280263065.git.jbaron@redhat.com>
-Subject: [PATCH 12/12] jump label v10: add docs
+Subject: [PATCH 09/12] jump label v10: convert dynamic debug to use jump labels.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add jump label docs as: Documentation/jump-label.txt
+Convert the 'dynamic debug' infrastructure to use jump labels.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- Documentation/jump-label.txt |  151 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 151 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/jump-label.txt
+ include/linux/dynamic_debug.h |   39 +++++++++++++-----------
+ lib/dynamic_debug.c           |   42 ++-------------------------
+ scripts/Makefile.lib          |   11 +------
+ scripts/basic/Makefile        |    2 +-
+ scripts/basic/hash.c          |   64 -----------------------------------------
+ 5 files changed, 26 insertions(+), 132 deletions(-)
+ delete mode 100644 scripts/basic/hash.c
 
-diff --git a/Documentation/jump-label.txt b/Documentation/jump-label.txt
-new file mode 100644
-index 0000000..232ab79
---- /dev/null
-+++ b/Documentation/jump-label.txt
-@@ -0,0 +1,151 @@
-+			Jump Label
-+			----------
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 52c0da4..bef3cda 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -1,6 +1,8 @@
+ #ifndef _DYNAMIC_DEBUG_H
+ #define _DYNAMIC_DEBUG_H
+ 
++#include <linux/jump_label.h>
 +
-+By: Jason Baron <jbaron@redhat.com>
-+
-+
-+1) motivation
-+
-+
-+Currently, tracepoints are implemented using a conditional. The conditional
-+check requires checking a global variable for each tracepoint. Although,
-+the overhead of this check is small, it increases under memory pressure. As we
-+increase the number of tracepoints in the kernel this may become more of an
-+issue. In addition, tracepoints are often dormant (disabled), and provide no
-+direct kernel functionality. Thus, it is highly desirable to reduce their
-+impact as much as possible. Although tracepoints are the original motivation
-+for this work, other kernel code paths should be able to make use of the jump
-+label optimization.
-+
-+
-+2) jump label description/usage
-+
-+
-+gcc (v4.5) adds a new 'asm goto' statement that allows branching to a label.
-+http://gcc.gnu.org/ml/gcc-patches/2009-07/msg01556.html
-+
-+Thus, this patch set introduces an architecture specific 'JUMP_LABEL()' macro as
-+follows (x86):
-+
-+# define JUMP_LABEL_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-+
-+# define JUMP_LABEL(key, label)					\
-+	do {                                                    \
-+		asm goto("1:"                                   \
-+			JUMP_LABEL_INITIAL_NOP			\
-+                        ".pushsection __jump_table,  \"a\" \n\t"\
-+                        _ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-+                        ".popsection \n\t"                      \
-+                        : :  "i" (key) :  : label);		\
-+        } while (0)
-+
-+
-+For architectures that have not yet introduced jump label support its simply:
-+
-+#define JUMP_LABEL(key, label)			\
-+	if (unlikely(*key))			\
-+		goto label;
-+
-+which then can be used as:
-+
-+	....
-+        JUMP_LABEL(trace_name, trace_label, jump_enabled);
-+        printk("not doing tracing\n");
-+	return;
-+trace_label:
-+        printk("doing tracing: %d\n", file);
-+	....
-+
-+The 'key' argument is thus a pointer to a conditional argument that can be used
-+if the optimization is not enabled. Otherwise, this address serves as a unique
-+key to identify the particular instance of the jump label.
-+
-+Thus, when tracing is disabled, we simply have a no-op followed by a jump around
-+the dormant (disabled) tracing code. The 'JUMP_LABEL()' macro, produces a
-+'jump_table' which has the following format:
-+
-+[instruction address] [jump target] [tracepoint key]
-+
-+Thus, to enable a tracepoint, we simply patch the 'instruction address' with
-+a jump to the 'jump target'.
-+
-+The call to enable a jump label is: enable_jump_label(key); to disable:
-+disable_jump_label(key);
-+
-+
-+3) architecture interface
-+
-+
-+There are a few functions and macros which arches must implement in order to
-+take advantage of this optimization. As previously mentioned, if there is no
-+architecture support we simply fall back to a traditional, load, test, and
-+jump sequence.
-+
-+* add "HAVE_ARCH_JUMP_LABEL" to arch/<arch>/Kconfig to indicate support
-+
-+* #define JUMP_LABEL_NOP_SIZE, arch/x86/include/asm/jump_label.h
-+
-+* #define "JUMP_LABEL(key, label)", arch/x86/include/asm/jump_label.h
-+
-+* void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
-+	see: arch/x86/kernel/jump_label.c
-+
-+* void arch_jump_label_text_poke_early(jump_label_t addr)
-+	see: arch/x86/kernel/jump_label.c
-+
-+* finally add a definition for "struct jump_entry".
-+	see: arch/x86/include/asm/jump_label.h
-+
-+
-+4) Jump label analysis (x86)
-+
-+
-+I've tested the performance of using 'get_cycles()' calls around the
-+tracepoint call sites. For an Intel Core 2 Quad cpu (in cycles, averages):
-+
-+		idle		after tbench run
-+		----		----------------
-+old code	 32		  88
-+new code	  2		   4
-+
-+
-+The performance improvement can be reproduced reliably on both Intel and AMD
-+hardware.
-+
-+In terms of code analysis the current code for the disabled case is a 'cmpl'
-+followed by a 'je' around the tracepoint code. so:
-+
-+cmpl - 83 3d 0e 77 87 00 00 - 7 bytes
-+je   - 74 3e                - 2 bytes
-+
-+total of 9 instruction bytes.
-+
-+The new code is a 'nopl' followed by a 'jmp'. Thus:
-+
-+nopl - 0f 1f 44 00 00 - 5 bytes
-+jmp  - eb 3e          - 2 bytes
-+
-+total of 7 instruction bytes.
-+
-+So, the new code also accounts for 2 less bytes in the instruction cache per tracepoint.
-+
-+The optimization depends on !CC_OPTIMIZE_FOR_SIZE. When CC_OPTIMIZE_FOR_SIZE is
-+set, gcc does not always out of line the not taken label path in the same way
-+that the "if unlikely()" paths are made out of line. Thus, with
-+CC_OPTIMIZE_FOR_SIZE set, this optimization is not always optimal. This may be
-+solved in subsequent gcc versions, that allow us to move labels out of line,
-+while still optimizing for size. In the case of !CC_OPTIMIZE_FOR_SIZE this
-+optimization is seen on high level benchmarks such as tbench where I can get
-+~1-2% higher throughput. In addition we are within .5% of the performance of no
-+tracepoints compiled in at all.
-+
-+
-+5) Acknowledgments
-+
-+
-+Thanks to Roland McGrath and Richard Henderson for helping come up with the
-+initial 'asm goto' and jump label design.
-+
-+Thanks to Mathieu Desnoyers and H. Peter Anvin for calling attention to this
-+issue, and outlining the requirements of a solution. Mathieu also implemened a
-+solution in the form of the "Immediate Values" work.
+ /* dynamic_printk_enabled, and dynamic_printk_enabled2 are bitmasks in which
+  * bit n is set to 1 if any modname hashes into the bucket n, 0 otherwise. They
+  * use independent hash functions, to reduce the chance of false positives.
+@@ -22,8 +24,6 @@ struct _ddebug {
+ 	const char *function;
+ 	const char *filename;
+ 	const char *format;
+-	char primary_hash;
+-	char secondary_hash;
+ 	unsigned int lineno:24;
+ 	/*
+  	 * The flags field controls the behaviour at the callsite.
+@@ -33,6 +33,7 @@ struct _ddebug {
+ #define _DPRINTK_FLAGS_PRINT   (1<<0)  /* printk() a message using the format */
+ #define _DPRINTK_FLAGS_DEFAULT 0
+ 	unsigned int flags:8;
++	char enabled;
+ } __attribute__((aligned(8)));
+ 
+ 
+@@ -42,33 +43,35 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ #if defined(CONFIG_DYNAMIC_DEBUG)
+ extern int ddebug_remove_module(const char *mod_name);
+ 
+-#define __dynamic_dbg_enabled(dd)  ({	     \
+-	int __ret = 0;							     \
+-	if (unlikely((dynamic_debug_enabled & (1LL << DEBUG_HASH)) &&	     \
+-			(dynamic_debug_enabled2 & (1LL << DEBUG_HASH2))))   \
+-				if (unlikely(dd.flags))			     \
+-					__ret = 1;			     \
+-	__ret; })
+-
+ #define dynamic_pr_debug(fmt, ...) do {					\
++	__label__ do_printk;						\
++	__label__ out;							\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+ 	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, DEBUG_HASH,	\
+-		DEBUG_HASH2, __LINE__, _DPRINTK_FLAGS_DEFAULT };	\
+-	if (__dynamic_dbg_enabled(descriptor))				\
+-		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
++	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
++		_DPRINTK_FLAGS_DEFAULT };				\
++	JUMP_LABEL(&descriptor.enabled, do_printk);			\
++	goto out;							\
++do_printk:								\
++	printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);			\
++out:	;								\
+ 	} while (0)
+ 
+ 
+ #define dynamic_dev_dbg(dev, fmt, ...) do {				\
++	__label__ do_printk;						\
++	__label__ out;							\
+ 	static struct _ddebug descriptor				\
+ 	__used								\
+ 	__attribute__((section("__verbose"), aligned(8))) =		\
+-	{ KBUILD_MODNAME, __func__, __FILE__, fmt, DEBUG_HASH,	\
+-		DEBUG_HASH2, __LINE__, _DPRINTK_FLAGS_DEFAULT };	\
+-	if (__dynamic_dbg_enabled(descriptor))				\
+-		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
++	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
++		_DPRINTK_FLAGS_DEFAULT };				\
++	JUMP_LABEL(&descriptor.enabled, do_printk);			\
++	goto out;							\
++do_printk:								\
++	dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);		\
++out:	;								\
+ 	} while (0)
+ 
+ #else
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 02afc25..e925c7b 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -26,19 +26,11 @@
+ #include <linux/dynamic_debug.h>
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
++#include <linux/jump_label.h>
+ 
+ extern struct _ddebug __start___verbose[];
+ extern struct _ddebug __stop___verbose[];
+ 
+-/* dynamic_debug_enabled, and dynamic_debug_enabled2 are bitmasks in which
+- * bit n is set to 1 if any modname hashes into the bucket n, 0 otherwise. They
+- * use independent hash functions, to reduce the chance of false positives.
+- */
+-long long dynamic_debug_enabled;
+-EXPORT_SYMBOL_GPL(dynamic_debug_enabled);
+-long long dynamic_debug_enabled2;
+-EXPORT_SYMBOL_GPL(dynamic_debug_enabled2);
+-
+ struct ddebug_table {
+ 	struct list_head link;
+ 	char *mod_name;
+@@ -88,26 +80,6 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+ }
+ 
+ /*
+- * must be called with ddebug_lock held
+- */
+-
+-static int disabled_hash(char hash, bool first_table)
+-{
+-	struct ddebug_table *dt;
+-	char table_hash_value;
+-
+-	list_for_each_entry(dt, &ddebug_tables, link) {
+-		if (first_table)
+-			table_hash_value = dt->ddebugs->primary_hash;
+-		else
+-			table_hash_value = dt->ddebugs->secondary_hash;
+-		if (dt->num_enabled && (hash == table_hash_value))
+-			return 0;
+-	}
+-	return 1;
+-}
+-
+-/*
+  * Search the tables for _ddebug's which match the given
+  * `query' and apply the `flags' and `mask' to them.  Tells
+  * the user which ddebug's were changed, or whether none
+@@ -170,17 +142,9 @@ static void ddebug_change(const struct ddebug_query *query,
+ 				dt->num_enabled++;
+ 			dp->flags = newflags;
+ 			if (newflags) {
+-				dynamic_debug_enabled |=
+-						(1LL << dp->primary_hash);
+-				dynamic_debug_enabled2 |=
+-						(1LL << dp->secondary_hash);
++				enable_jump_label(&dp->enabled);
+ 			} else {
+-				if (disabled_hash(dp->primary_hash, true))
+-					dynamic_debug_enabled &=
+-						~(1LL << dp->primary_hash);
+-				if (disabled_hash(dp->secondary_hash, false))
+-					dynamic_debug_enabled2 &=
+-						~(1LL << dp->secondary_hash);
++				disable_jump_label(&dp->enabled);
+ 			}
+ 			if (verbose)
+ 				printk(KERN_INFO
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 54fd1b7..7bfcf1a 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -101,14 +101,6 @@ basename_flags = -D"KBUILD_BASENAME=KBUILD_STR($(call name-fix,$(basetarget)))"
+ modname_flags  = $(if $(filter 1,$(words $(modname))),\
+                  -D"KBUILD_MODNAME=KBUILD_STR($(call name-fix,$(modname)))")
+ 
+-#hash values
+-ifdef CONFIG_DYNAMIC_DEBUG
+-debug_flags = -D"DEBUG_HASH=$(shell ./scripts/basic/hash djb2 $(@D)$(modname))"\
+-              -D"DEBUG_HASH2=$(shell ./scripts/basic/hash r5 $(@D)$(modname))"
+-else
+-debug_flags =
+-endif
+-
+ orig_c_flags   = $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(KBUILD_SUBDIR_CCFLAGS) \
+                  $(ccflags-y) $(CFLAGS_$(basetarget).o)
+ _c_flags       = $(filter-out $(CFLAGS_REMOVE_$(basetarget).o), $(orig_c_flags))
+@@ -152,8 +144,7 @@ endif
+ 
+ c_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+ 		 $(__c_flags) $(modkern_cflags)                           \
+-		 -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags) \
+-		  $(debug_flags)
++		 -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags)
+ 
+ a_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+ 		 $(__a_flags) $(modkern_aflags)
+diff --git a/scripts/basic/Makefile b/scripts/basic/Makefile
+index 0955995..4c324a1 100644
+--- a/scripts/basic/Makefile
++++ b/scripts/basic/Makefile
+@@ -9,7 +9,7 @@
+ # fixdep: 	 Used to generate dependency information during build process
+ # docproc:	 Used in Documentation/DocBook
+ 
+-hostprogs-y	:= fixdep docproc hash
++hostprogs-y	:= fixdep docproc
+ always		:= $(hostprogs-y)
+ 
+ # fixdep is needed to compile other host programs
+diff --git a/scripts/basic/hash.c b/scripts/basic/hash.c
+deleted file mode 100644
+index 2ef5d3f..0000000
+--- a/scripts/basic/hash.c
++++ /dev/null
+@@ -1,64 +0,0 @@
+-/*
+- * Copyright (C) 2008 Red Hat, Inc., Jason Baron <jbaron@redhat.com>
+- *
+- */
+-
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <string.h>
+-
+-#define DYNAMIC_DEBUG_HASH_BITS 6
+-
+-static const char *program;
+-
+-static void usage(void)
+-{
+-	printf("Usage: %s <djb2|r5> <modname>\n", program);
+-	exit(1);
+-}
+-
+-/* djb2 hashing algorithm by Dan Bernstein. From:
+- * http://www.cse.yorku.ca/~oz/hash.html
+- */
+-
+-static unsigned int djb2_hash(char *str)
+-{
+-	unsigned long hash = 5381;
+-	int c;
+-
+-	c = *str;
+-	while (c) {
+-		hash = ((hash << 5) + hash) + c;
+-		c = *++str;
+-	}
+-	return (unsigned int)(hash & ((1 << DYNAMIC_DEBUG_HASH_BITS) - 1));
+-}
+-
+-static unsigned int r5_hash(char *str)
+-{
+-	unsigned long hash = 0;
+-	int c;
+-
+-	c = *str;
+-	while (c) {
+-		hash = (hash + (c << 4) + (c >> 4)) * 11;
+-		c = *++str;
+-	}
+-	return (unsigned int)(hash & ((1 << DYNAMIC_DEBUG_HASH_BITS) - 1));
+-}
+-
+-int main(int argc, char *argv[])
+-{
+-	program = argv[0];
+-
+-	if (argc != 3)
+-		usage();
+-	if (!strcmp(argv[1], "djb2"))
+-		printf("%d\n", djb2_hash(argv[2]));
+-	else if (!strcmp(argv[1], "r5"))
+-		printf("%d\n", r5_hash(argv[2]));
+-	else
+-		usage();
+-	exit(0);
+-}
+-
 -- 
 1.7.1
 
