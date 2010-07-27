@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab0G0Bhw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Jul 2010 21:37:52 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33878
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752877Ab0G0Bhw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Jul 2010 21:37:52 -0400
-Date: Mon, 26 Jul 2010 18:38:08 -0700 (PDT)
-Message-Id: <20100726.183808.15223674.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: sam@ravnborg.org, sfr@canb.auug.org.au, monstr@monstr.eu,
-        microblaze-uclinux@itee.uq.edu.au, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        benh@kernel.crashing.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v3] of: Create asm-generic/of.h and provide default
- of_node_to_nid()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikpON7WUkTLrnW4y2kghM=H8cLCAFst08S3cL_Z@mail.gmail.com>
-References: <AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com>
-	<20100726.154854.35052662.davem@davemloft.net>
-	<AANLkTikpON7WUkTLrnW4y2kghM=H8cLCAFst08S3cL_Z@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1751923Ab0G0Bss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Jul 2010 21:48:48 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49425 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751430Ab0G0Bsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Jul 2010 21:48:46 -0400
+Date: Tue, 27 Jul 2010 11:48:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        <linux1394-devel@lists.sourceforge.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the ieee1394 tree
+Message-Id: <20100727114839.06d25309.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__27_Jul_2010_11_48_39_+1000_KR6DasizNe0Bh+Ss"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 26 Jul 2010 16:51:01 -0600
+--Signature=_Tue__27_Jul_2010_11_48_39_+1000_KR6DasizNe0Bh+Ss
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Indeed.  I looked at it briefly, but it wasn't immediately clear what
-> the impact would be to switch powerpc over to -1, and it looked to me
-> like sparc depends on -1 to signify no node association.
+Hi all,
 
-Kernel wide, NUMA interfaces tend to take "-1" to mean "any node."
+After merging the ieee1394 tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-I had looked over the powerpc cases, and besides 1 or 2 strange
-locations the powerpc call sites were ready to handle -1.
+drivers/firewire/nosy.c: In function 'packet_buffer_get':
+drivers/firewire/nosy.c:154: error: 'TASK_INTERRUPTIBLE' undeclared (first =
+use in this function)
+drivers/firewire/nosy.c:154: error: implicit declaration of function 'signa=
+l_pending'
+drivers/firewire/nosy.c:154: error: implicit declaration of function 'sched=
+ule'
+drivers/firewire/nosy.c: In function 'packet_buffer_put':
+drivers/firewire/nosy.c:221: error: 'TASK_INTERRUPTIBLE' undeclared (first =
+use in this function)
+drivers/firewire/nosy.c: In function 'remove_card':
+drivers/firewire/nosy.c:514: error: 'TASK_INTERRUPTIBLE' undeclared (first =
+use in this function)
+
+Forgot to include something?
+
+I have used the ieee1394 tree from next-20100726 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__27_Jul_2010_11_48_39_+1000_KR6DasizNe0Bh+Ss
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMTjr3AAoJEDMEi1NhKgbsYCQH/2cQ8xx10c+ZcwyVzQgsBpY7
+eaz5EzSkH89R54zaEyn+PnQCq/VSAxC7ZpRL1SMfbhks9qhmhA6ntHEO5PBZgRg3
+0gZYDMIqzCqbvtxwiSzj7KvLybi3M/+vSZ3yz9KOUqTYn7fKCZj195eTciPPwtHi
+HE8wDL5KHOS9AIhlR2xynwuqCaco0AJS/9kz+ZL8D2OCxJNAJX9ew5eBXgqDODBH
+8TEMo01rRZY43Sh19OB53XbxvT9/Hd8IRBzhMitjyqpCWOzk/rtRGK65xXEo0QpS
+UMNr+7Rxm+ZIiD3UZuQRQXP/Brr5hYrcY7oQdS7BoiWW8fgYVNJaYWVBG7ibjPw=
+=McMz
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__27_Jul_2010_11_48_39_+1000_KR6DasizNe0Bh+Ss--
