@@ -1,203 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab0G0RUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:20:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36710 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab0G0RUp (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 27 Jul 2010 13:20:45 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, alex.williamson@redhat.com,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/9] xen: use _PAGE_IOMAP in ioremap to do machine mappings
-Date: Tue, 27 Jul 2010 12:59:54 -0400
-Message-Id: <1280250002-20279-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
-References: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C4F153B.003C:SCFMA4539814,ss=1,fgs=0
+	id S1752764Ab0G0RVK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:21:10 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47048 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab0G0RVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 13:21:06 -0400
+Date: Tue, 27 Jul 2010 18:21:00 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Run a dummy command before submitting a new
+	command
+Message-ID: <20100727172100.GC7324@srcf.ucam.org>
+References: <1280246493-964-1-git-send-email-mjg@redhat.com> <4C4F123F.3010700@mvista.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4F123F.3010700@mvista.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Tue, Jul 27, 2010 at 12:07:11PM -0500, Corey Minyard wrote:
+> I don't think this is the right way to handle the problem.  Though it's  
+> not going to break anything, this change is just a hack.  We need to  
+> figure out why these machine exhibit this behavior.  If it's a bug in  
+> the driver, then we need to fix the driver.  If it's a bug in the HP  
+> firmware, then we need to document it well as such, get HP to fix their  
+> firmware, and possibly tie it into the xaction handler that's already in  
+> start_next_msg.
 
-In a Xen domain, ioremap operates on machine addresses, not
-pseudo-physical addresses.  We use _PAGE_IOMAP to determine whether a
-mapping is intended for machine addresses.
+Yeah, I agree that this isn't the optimal approach. I'm waiting to hear 
+from HP if they have any idea what happened between 1.01 (which worked) 
+and 1.05 (which is broken), which might give some more insight into what 
+we're doing wrong.
 
-[ Impact: allow Xen domain to map real hardware ]
+> The only interaction with the device that this change should cause is  
+> one read from the status register, since the device should be idle at  
+> this point.  If that's the case, and it's not a driver bug, you can try  
+> adding an xaction that calls smi_info->handlers->event(smi_info->si_sm, 
+> 0).
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/xen/page.h |    8 +---
- arch/x86/xen/mmu.c              |   71 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 71 insertions(+), 8 deletions(-)
+I'll try to see what's going on.
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 018a0a4..bf5f7d3 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -112,13 +112,9 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
-  */
- static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
- {
--	extern unsigned long max_mapnr;
- 	unsigned long pfn = mfn_to_pfn(mfn);
--	if ((pfn < max_mapnr)
--	    && !xen_feature(XENFEAT_auto_translated_physmap)
--	    && (get_phys_to_machine(pfn) != mfn))
--		return max_mapnr; /* force !pfn_valid() */
--	/* XXX fixme; not true with sparsemem */
-+	if (get_phys_to_machine(pfn) != mfn)
-+		return -1; /* force !pfn_valid() */
- 	return pfn;
- }
- 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 914f046..a4dea9d 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -56,9 +56,11 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
- 
-+#include <xen/xen.h>
- #include <xen/page.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/version.h>
-+#include <xen/interface/memory.h>
- #include <xen/hvc-console.h>
- 
- #include "multicalls.h"
-@@ -377,6 +379,28 @@ static bool xen_page_pinned(void *ptr)
- 	return PagePinned(page);
- }
- 
-+static bool xen_iomap_pte(pte_t pte)
-+{
-+	return xen_initial_domain() && (pte_flags(pte) & _PAGE_IOMAP);
-+}
-+
-+static void xen_set_iomap_pte(pte_t *ptep, pte_t pteval)
-+{
-+	struct multicall_space mcs;
-+	struct mmu_update *u;
-+
-+	mcs = xen_mc_entry(sizeof(*u));
-+	u = mcs.args;
-+
-+	/* ptep might be kmapped when using 32-bit HIGHPTE */
-+	u->ptr = arbitrary_virt_to_machine(ptep).maddr;
-+	u->val = pte_val_ma(pteval);
-+
-+	MULTI_mmu_update(mcs.mc, mcs.args, 1, NULL, DOMID_IO);
-+
-+	xen_mc_issue(PARAVIRT_LAZY_MMU);
-+}
-+
- static void xen_extend_mmu_update(const struct mmu_update *update)
- {
- 	struct multicall_space mcs;
-@@ -453,6 +477,11 @@ void set_pte_mfn(unsigned long vaddr, unsigned long mfn, pgprot_t flags)
- void xen_set_pte_at(struct mm_struct *mm, unsigned long addr,
- 		    pte_t *ptep, pte_t pteval)
- {
-+	if (xen_iomap_pte(pteval)) {
-+		xen_set_iomap_pte(ptep, pteval);
-+		goto out;
-+	}
-+
- 	ADD_STATS(set_pte_at, 1);
- //	ADD_STATS(set_pte_at_pinned, xen_page_pinned(ptep));
- 	ADD_STATS(set_pte_at_current, mm == current->mm);
-@@ -523,8 +552,25 @@ static pteval_t pte_pfn_to_mfn(pteval_t val)
- 	return val;
- }
- 
-+static pteval_t iomap_pte(pteval_t val)
-+{
-+	if (val & _PAGE_PRESENT) {
-+		unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
-+		pteval_t flags = val & PTE_FLAGS_MASK;
-+
-+		/* We assume the pte frame number is a MFN, so
-+		   just use it as-is. */
-+		val = ((pteval_t)pfn << PAGE_SHIFT) | flags;
-+	}
-+
-+	return val;
-+}
-+
- pteval_t xen_pte_val(pte_t pte)
- {
-+	if (xen_initial_domain() && (pte.pte & _PAGE_IOMAP))
-+		return pte.pte;
-+
- 	return pte_mfn_to_pfn(pte.pte);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_pte_val);
-@@ -537,7 +583,11 @@ PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
- 
- pte_t xen_make_pte(pteval_t pte)
- {
--	pte = pte_pfn_to_mfn(pte);
-+	if (unlikely(xen_initial_domain() && (pte & _PAGE_IOMAP)))
-+		pte = iomap_pte(pte);
-+	else
-+		pte = pte_pfn_to_mfn(pte);
-+
- 	return native_make_pte(pte);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_make_pte);
-@@ -593,6 +643,11 @@ void xen_set_pud(pud_t *ptr, pud_t val)
- 
- void xen_set_pte(pte_t *ptep, pte_t pte)
- {
-+	if (xen_iomap_pte(pte)) {
-+		xen_set_iomap_pte(ptep, pte);
-+		return;
-+	}
-+
- 	ADD_STATS(pte_update, 1);
- //	ADD_STATS(pte_update_pinned, xen_page_pinned(ptep));
- 	ADD_STATS(pte_update_batched, paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU);
-@@ -609,6 +664,11 @@ void xen_set_pte(pte_t *ptep, pte_t pte)
- #ifdef CONFIG_X86_PAE
- void xen_set_pte_atomic(pte_t *ptep, pte_t pte)
- {
-+	if (xen_iomap_pte(pte)) {
-+		xen_set_iomap_pte(ptep, pte);
-+		return;
-+	}
-+
- 	set_64bit((u64 *)ptep, native_pte_val(pte));
- }
- 
-@@ -1811,9 +1871,16 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
- 		pte = pfn_pte(phys, prot);
- 		break;
- 
--	default:
-+	case FIX_PARAVIRT_BOOTMAP:
-+		/* This is an MFN, but it isn't an IO mapping from the
-+		   IO domain */
- 		pte = mfn_pte(phys, prot);
- 		break;
-+
-+	default:
-+		/* By default, set_fixmap is used for hardware mappings */
-+		pte = mfn_pte(phys, __pgprot(pgprot_val(prot) | _PAGE_IOMAP));
-+		break;
- 	}
- 
- 	__native_set_fixmap(idx, pte);
 -- 
-1.7.0.1
-
+Matthew Garrett | mjg59@srcf.ucam.org
