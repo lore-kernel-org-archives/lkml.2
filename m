@@ -1,79 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab0G0RS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:18:56 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47004 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab0G0RSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 13:18:54 -0400
-Date: Tue, 27 Jul 2010 18:18:42 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pci@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [RFC][PATCH] PCI / PCIe: Ask BIOS for control of all native
-	services simultaneously
-Message-ID: <20100727171842.GB7324@srcf.ucam.org>
-References: <201007250105.23610.rjw@sisk.pl> <4C4E2BBD.7080003@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4E2BBD.7080003@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1752473Ab0G0RTt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:19:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16578 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab0G0RTs (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 27 Jul 2010 13:19:48 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, alex.williamson@redhat.com,
+        Alex Nixon <alex.nixon@citrix.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/9] xen: Allow unprivileged Xen domains to create iomap pages
+Date: Tue, 27 Jul 2010 12:59:55 -0400
+Message-Id: <1280250002-20279-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
+References: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C4F151F.0141:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 09:43:41AM +0900, Kenji Kaneshige wrote:
+From: Alex Nixon <alex.nixon@citrix.com>
 
-> I think this will break PCIe services currently working. For example,
-> firmware doesn't grant PCIe AER control on my hardware. On the other
-> hand, firmware grants PCIe native hot-plug control on the same machine.
-> So I think PCIe hot-plug will not work with your patch. Another example,
-> what would happen on the platform that doesn't have any PCIe hot-plug
-> slot? I guess firmware doesn't grant PCIe native hot-plug control on
-> that environment. So I think all the other PCIe port services would
-> not work on such platform.
+PV DomU domains are allowed to map hardware MFNs for PCI passthrough,
+but are not generally allowed to map raw machine pages.  In particular,
+various pieces of code try to map DMI and ACPI tables in the ISA ROM
+range.  We disallow _PAGE_IOMAP for those mappings, so that they are
+redirected to a set of local zeroed pages we reserve for that purpose.
 
-I've done some more testing of this and found that my intial belief 
-(supported by Microsoft's documentation...) that all PCIe support had to 
-be handed over for any to be used is incorrect. It turns out that the 
-firmware must support native hotplug, native power management and PCI 
-express capability structure control - ie, SHPC and AER aren't required.
+[ Impact: prevent passthrough of ISA space, as we only allow PCI ]
 
-However, if any of the other flags are missing then Windows doesn't use 
-any PCIe functionality on the system. That's the behaviour we wish to 
-duplicate.
+Signed-off-by: Alex Nixon <alex.nixon@citrix.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c |    4 ++++
+ arch/x86/xen/mmu.c       |   18 +++++++++++++++---
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
-> (1) Query all controls for PCIe port services and see what controls
->     will be granted to OS by firmware.
-> (2) Request all the controls acquired in step (1) at the same time.
-> (3) Create PCIe port services for those controls.
->
-> What do you think about this?
-
-I think we need to do:
-
-(1) Query all controls and see what will be granted
-(2) If any of bits 0, 2 and 4 are unsupported, disable all PCIe support 
-via _OSC
-(3) Ask for the set of supported bits & 0x1d
-
-> I think there is still a problem that needs to be addressed. The 
-> problem is that if ACPIPHP (ACPI based hot-plug driver) is required 
-> for PCIe hot- plug, all the PCIe port services needs to be disabled. I 
-> don't think it is acceptable for ACPIPHP users.
-
-I believe that that's the only way Windows will work on their system, 
-which generally implies that that's how the machine was intended to run.
-
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 65d8d79..3254e8b 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1145,6 +1145,10 @@ asmlinkage void __init xen_start_kernel(void)
+ 
+ 	pgd = (pgd_t *)xen_start_info->pt_base;
+ 
++	if (!xen_initial_domain())
++		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
++
++	__supported_pte_mask |= _PAGE_IOMAP;
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+ 	   possible map and a non-dummy shared_info. */
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index a4dea9d..a5577f5 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -51,6 +51,7 @@
+ #include <asm/mmu_context.h>
+ #include <asm/setup.h>
+ #include <asm/paravirt.h>
++#include <asm/e820.h>
+ #include <asm/linkage.h>
+ 
+ #include <asm/xen/hypercall.h>
+@@ -381,7 +382,7 @@ static bool xen_page_pinned(void *ptr)
+ 
+ static bool xen_iomap_pte(pte_t pte)
+ {
+-	return xen_initial_domain() && (pte_flags(pte) & _PAGE_IOMAP);
++	return pte_flags(pte) & _PAGE_IOMAP;
+ }
+ 
+ static void xen_set_iomap_pte(pte_t *ptep, pte_t pteval)
+@@ -583,10 +584,21 @@ PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
+ 
+ pte_t xen_make_pte(pteval_t pte)
+ {
+-	if (unlikely(xen_initial_domain() && (pte & _PAGE_IOMAP)))
++	phys_addr_t addr = (pte & PTE_PFN_MASK);
++
++	/*
++	 * Unprivileged domains are allowed to do IOMAPpings for
++	 * PCI passthrough, but not map ISA space.  The ISA
++	 * mappings are just dummy local mappings to keep other
++	 * parts of the kernel happy.
++	 */
++	if (unlikely(pte & _PAGE_IOMAP) &&
++	    (xen_initial_domain() || addr >= ISA_END_ADDRESS)) {
+ 		pte = iomap_pte(pte);
+-	else
++	} else {
++		pte &= ~_PAGE_IOMAP;
+ 		pte = pte_pfn_to_mfn(pte);
++	}
+ 
+ 	return native_make_pte(pte);
+ }
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.0.1
+
