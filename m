@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab0G0IKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:10:06 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50747 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661Ab0G0IKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:10:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=DFZOyzIecuByVPC0eOj/m1jWG9q+qiYLe+KF7mlE3queMDOayS3+lwg+qcCbSYu8Ve
-         s/AsJYIL+QaFiL9G6OQpaeMhBCjnmzGrjLPA3ZJQFe33ccbXa6TKSmainEEZxZr8tRdu
-         /mgmNbLHv6ZqaRnvLNdyWxhUBlHXh/lo2cvgs=
+	id S1755782Ab0G0IKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:10:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222Ab0G0IKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:10:44 -0400
+Message-ID: <4C4E9556.7050003@redhat.com>
+Date: Tue, 27 Jul 2010 16:14:14 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100727150138.2F20.A69D9226@jp.fujitsu.com>
-References: <20100727134431.2F11.A69D9226@jp.fujitsu.com> <AANLkTimdLbwvRNU09s+LfauREBaxyXBUE5jSmwnpCj8e@mail.gmail.com> 
-	<20100727150138.2F20.A69D9226@jp.fujitsu.com>
-From: dave b <db.pub.mail@gmail.com>
-Date: Tue, 27 Jul 2010 18:09:41 +1000
-Message-ID: <AANLkTikjJ0giM+MpzNu3e0NQN=JLMviPT8UPHdZqGGpz@mail.gmail.com>
-Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: huang ying <huang.ying.caritas@gmail.com>, linux-kernel@vger.kernel.org,
+        nhorman@redhat.com, akpm@linux-foundation.org
+Subject: Re: [Patch] kexec: increase max of kexec segments and use dynamic
+ allocation
+References: <20100722061810.5659.87609.sendpatchset@localhost.localdomain>	<m1wrso2foi.fsf@fess.ebiederm.org> <4C47E7C9.60608@redhat.com>	<m1iq482duy.fsf@fess.ebiederm.org>	<AANLkTikZTGYl2NIFzcTCG2DAaMefhnJAkSHIoJN22QoI@mail.gmail.com>	<m1lj90p8yp.fsf@fess.ebiederm.org> <4C4D5F4F.8080002@redhat.com> <m1iq425tay.fsf@fess.ebiederm.org>
+In-Reply-To: <m1iq425tay.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2010 16:09, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
->> > Do you mean the issue will be gone if disabling intel graphics?
->> It may be a general issue or it could just be specific :)
+On 07/26/10 20:19, Eric W. Biederman wrote:
+> Cong Wang<amwang@redhat.com>  writes:
 >
-> Hmm.. I'm puzzled 8-)
+>> So, what is a better number? 2048? :)
 >
-> I don't understand why other all people can't reproduce your issue
-> even though your reproduce program is very simple.
+> I was thinking something a little ridiculous like 10K or 64K.
 >
-> So, I'm guessing there is hidden reproduce condition. but I have no
-> idea to find it.
+> Assuming the usage you care about is something like hibernate on a
+> machine with disjoint memory where you truly need one segment for
+> each memory region.
+>
+> The only point of a limit at all once we introduce dynamic allocation
+> is to catch buggy apps.
+>
 
-I will try with the latest ubuntu and report how that goes (that will
-be using fairly new xorg etc.) it is likely to be hidden issue just
-with the intel graphics driver. However, my concern is that it isn't -
-and it is about how shared graphics memory is handled :)
+Ok, I will change that number and improve the changelog.
+
+Thanks.
+
+
+-- 
+The opposite of love is not hate, it's indifference.
+  - Elie Wiesel
