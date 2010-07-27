@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498Ab0G0RYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:24:05 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:34776 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab0G0RYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 13:24:01 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] ipmi: Fix ACPI detecting with regspacing
-Date: Tue, 27 Jul 2010 11:23:43 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: Corey Minyard <minyard@acm.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Myron Stowe <myron.stowe@hp.com>,
-        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <4C4E0292.4010004@kernel.org> <201007270934.45683.bjorn.helgaas@hp.com> <4C4F126B.8050309@kernel.org>
-In-Reply-To: <4C4F126B.8050309@kernel.org>
+	id S1752573Ab0G0RZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:25:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45771 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752184Ab0G0RZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 13:25:04 -0400
+Date: Tue, 27 Jul 2010 19:24:38 +0200
+From: Jan Kara <jack@suse.cz>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/3] bdi: Use parent filesystem BDI for inodes not
+ capable of writeback
+Message-ID: <20100727172437.GE6820@quack.suse.cz>
+References: <1280250301-17603-1-git-send-email-jack@suse.cz>
+ <1280250301-17603-2-git-send-email-jack@suse.cz>
+ <20100727170903.GA9034@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007271123.44335.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727170903.GA9034@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 27, 2010 11:07:55 am Yinghai Lu wrote:
-> On 07/27/2010 08:34 AM, Bjorn Helgaas wrote:
-> > On Monday, July 26, 2010 03:48:02 pm Yinghai Lu wrote:
-> >>
-> >> after the commint that change ipmi_si detecting sequence from SMBIOS/ACPI to ACPI/SMBIOS,
-> >>
-> >> | commit 754d453185275951d39792865927ec494fa1ebd8
-> >> | Author: Matthew Garrett <mjg@redhat.com>
-> >> | Date:   Wed May 26 14:43:47 2010 -0700
-> >> |
-> >> |    ipmi: change device discovery order
-> >> |
-> >> |    The ipmi spec provides an ordering for si discovery.  Change the driver to
-> >> |    match, with the exception of preferring smbios to SPMI as HPs (at least)
-> >> |    contain accurate information in the former but not the latter.
-> >>
-> >> ipmi_si can not be initialized.
-> > 
-> > I think this patch makes sense, as long as this is not a bringup
-> > issue that only affects pre-release firmware.  If this only affects
-> > a prototype, it would be better to change the firmware so it conforms
-> > to the conventional _CRS usage of systems in the field.
-> > 
-> > To that end, I'd like to know what system this is, and whether IPMI
-> > works under Windows on this system.  We know that Windows doesn't
-> > look at SMBIOS or SPMI, so if Windows works, it must be doing something
-> > similar to your patch.
+On Tue 27-07-10 13:09:03, Christoph Hellwig wrote:
+> > +static struct backing_dev_info *inode_to_bdi(struct inode *inode)
+> > +{
+> > +	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
+> > +
+> > +	/*
+> > +	 * This is a hack but it solves a problem with device inode
+> > +	 * for e.g. /dev/zero getting dirty (via touch or so) and confusing
+> > +	 * writeback code. In such cases we return the "parent" filesystem's
+> > +	 * bdi.
+> > +	 */
+> > +	if (bdi_cap_writeback_dirty(bdi))
+> > +		return bdi;
+> > +	return inode->i_sb->s_bdi;
 > 
-> Sun Fire X4800.
-> 
-> Yes. other OSes work and pass certification.
+> When do we ever have a writeback-capable bdi that sits inside another
+> filesystem?  I think just always using inode->i_sb->s_bdi is the right
+> thing here.
+  Always returning inode->i_sb->s_bdi wouldn't be a right thing IMHO.
+That would file inode for /dev/sda to BDI list of tmpfs mounted on /dev/
+which isn't what you want...
 
-Please put this information in the changelog (if that wasn't obvious).
-
-Bjorn
+> And btw, having a BDI_CAP_NO_WRITEBACK instead of a BDI_CAP_WRITEBACK
+> is rather dumb, we'd better fix it up while we're at it.
+  Yes, that seems reasonable. I'm just not sure how many places one has
+to change to fix this and how to find them... Maybe grepping for BDI_CAP_
+will be enough but I'm not sure.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
