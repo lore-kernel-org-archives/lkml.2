@@ -1,217 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab0G0LNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 07:13:34 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33905 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756452Ab0G0LNb (ORCPT
+	id S1756357Ab0G0LOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 07:14:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46756 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756294Ab0G0LOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 07:13:31 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 27 Jul 2010 16:41:48 +0530
-Message-Id: <20100727111148.24690.77378.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
-Subject: [PATCHv10 2.6.35-rc6-tip 14/14]  [RFC] perf: show functions in a file without using pid
+	Tue, 27 Jul 2010 07:14:12 -0400
+Date: Tue, 27 Jul 2010 07:10:29 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ebiederm@xmission.com, vgoyal@redhat.com
+Subject: Re: [PATCH] Enable kdump with EFI boot
+Message-ID: <20100727111029.GA6303@hmsreliant.think-freely.org>
+References: <C0CB2D0F31868Bindou.takao@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C0CB2D0F31868Bindou.takao@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 26, 2010 at 06:09:18PM -0400, Takao Indoh wrote:
+> Hi all,
+> 
+> The attached patch enables kdump on EFI-boot machine.
+> 
+> [Background]
+> Current kdump does not work on EFI-boot system because 2nd kernel cannot
+> find ACPI Table(RSDP). The URL below explains this problem.
+> http://lists.infradead.org/pipermail/kexec/2010-March/003889.html
+> 
+> This problem can be solved by fixing kexec-tools so that it can set up
+> struct efi_info correctly in the boot_params for 2nd kernel. However
+> there is another problem.
+> 
+> When the 1st kernel boots, EFI system table(efi_system_table_t) is
+> modified by SetVirtualAddressMap, which is one of EFI runtime service.
+> This runtime changes physical address in EFI system table to virtual
+> address.
+> 
+> When the 2nd kernel boots, it also receives the same EFI system table,
+> and the address included in it is already virtual address(1st kernel
+> rewrote it).  But 2nd kernel does not know that, 2nd kernel thinks it is
+> a physical address. This causes problems.
+> 
+> For example, the following is a part of efi_init().
+> 
+> c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
+> if (c16) {
+>     for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+>         vendor[i] = *c16++;
+>     vendor[i] = '\0';
+> } else
+>     printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
+> 
+> 2nd kernel thinks efi.systab->fw_vendor has a physical address and tries
+> to change it to virtual address, but it is already virtual address, so
+> this code fails and 2nd kernel hangs up.
+> 
+> [How to fix]
+> My solution is as follows.
+> 1) Export physical address of each EFI system table entry via debugfs
+> /sys/kernel/debug/efi/systab/fw_vendor
+> /sys/kernel/debug/efi/systab/tables
+> /sys/kernel/debug/efi/systab/runtime
+> 
+> Kexec-tools can get physical address of each entry in EFI system table
+> via these entries. Kexec tools adds these physical addresses to boot
+> parameters
+> ex.)
+> efi_systab_fw_vendor=0x7a6a1398 efi_systab_tables=0x7a6a2e18 \
+> efi_systab_runtime=0x7a6a3e18
+> 
+> 2) Kernel parses these parameters and use them in efi_init()
+> 
+> 
+> So, what this patch is doing is:
+> - Add debugfs interface for each EFI system table entry
+> - eif_init() gets physical address of each EFI system table entry from
+>   boot paramteter instead of the table
+> - Don't call SetVirtualAddressMap in 2nd kernel because panic occurred
+>   when SetVirtualAddressMap is called in 2nd kernel. This is called in
+>   1st kernel, and doesn't need to be called again.
+> 
+> Any comments would be appreciated!
+> 
+> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+CC-ing the maintainers for x86. nd kexec
 
-Lists function names in a dso. Dso needs to a filename.
-However passing Dso short name will not work.
+Acked-by: Neil Horman <nhorman@tuxdriver.com> 
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
-
-Changelog from V9: Filter labels, weak, and local binding functions
-from listing as suggested by Christoph Hellwig.
-
-Show last 10 functions in /bin/zsh.
-
-# perf probe -S -D /bin/zsh | tail
-zstrtol
-ztrcmp
-ztrdup
-ztrduppfx
-ztrftime
-ztrlen
-ztrncpy
-ztrsub
-zwarn
-zwarnnam
-
-Show first 10 functions in /lib/libc.so.6
-
-# perf probe -S -D /lib/libc.so.6 | head
-_IO_adjust_column
-_IO_adjust_wcolumn
-_IO_default_doallocate
-_IO_default_finish
-_IO_default_pbackfail
-_IO_default_uflow
-_IO_default_xsgetn
-_IO_default_xsputn
-_IO_do_write@@GLIBC_2.2.5
-_IO_doallocbuf
-
- tools/perf/util/probe-event.c |   75 ++++++++++++++++++++++-------------------
- tools/perf/util/symbol.c      |    8 ++++
- tools/perf/util/symbol.h      |    1 +
- 3 files changed, 50 insertions(+), 34 deletions(-)
-
-
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index d0636e1..a079ecc 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -2018,14 +2018,14 @@ static int print_list_available_symbols(struct map *map,
- 
- int show_possible_probes(struct strlist *limitlist, pid_t pid)
- {
--	struct perf_session *session;
--	struct thread *thread;
-+	struct perf_session *session = NULL;
-+	struct thread *thread = NULL;
- 	struct str_node *ent;
- 	struct map *map = NULL;
- 	char *name = NULL, *tmpname = NULL, *str;
- 	int ret = -EINVAL;
- 
--	if (!pid) {
-+	if (!pid && !limitlist) { /* Show functions in kernel */
- 		ret = init_vmlinux();
- 		if (ret < 0)
- 			return ret;
-@@ -2036,26 +2036,28 @@ int show_possible_probes(struct strlist *limitlist, pid_t pid)
- 		if (ret < 0)
- 			return ret;
- 	}
--	session = perf_session__new(NULL, O_WRONLY, false, false);
--	if (!session) {
--		ret = -ENOMEM;
--		goto out_delete;
--	}
--	event__synthesize_thread(pid, event__process, session);
--
--	thread = perf_session__findnew(session, pid);
--	if (!thread)
--		goto out_delete;
--
--	if (!limitlist) {
--		map_groups__for_each_map(map, MAP__FUNCTION, &thread->mg) {
--			ret = print_list_available_symbols(map, NULL);
--			if (ret)
--				pr_warning("No Symbols in dso %s.\n",
-+	if (pid)  {
-+		session = perf_session__new(NULL, O_WRONLY, false, false);
-+		if (!session) {
-+			ret = -ENOMEM;
-+			goto out_delete;
-+		}
-+		event__synthesize_thread(pid, event__process, session);
-+		thread = perf_session__findnew(session, pid);
-+		if (!thread)
-+			goto out_delete;
-+		if (!limitlist) {
-+			map_groups__for_each_map(map, MAP__FUNCTION,
-+								&thread->mg) {
-+				ret = print_list_available_symbols(map, NULL);
-+				if (ret)
-+					pr_warning("No Symbols in dso %s.\n",
- 							map->dso->short_name);
-+			}
-+			goto out_delete;
- 		}
--		goto out_delete;
- 	}
-+
- 	strlist__for_each(ent, limitlist) {
- 		str = strdup(ent->s);
- 		if (!str) {
-@@ -2063,20 +2065,25 @@ int show_possible_probes(struct strlist *limitlist, pid_t pid)
- 			goto out_delete;
- 		}
- 
--		tmpname = realpath(str, NULL);
--		if (tmpname)
--			name = basename(tmpname);
--		if (!name)
--			name = str;
--		map = map_groups__find_by_name(&thread->mg,
--						MAP__FUNCTION, name);
--		if (tmpname)
--			free(tmpname);
--		if (!map) {
--			pr_warning("Skip probe listing in %s DSO.", str);
--			free(str);
--			continue;
--		}
-+		if (pid) {
-+			tmpname = realpath(str, NULL);
-+			if (tmpname)
-+				name = basename(tmpname);
-+			if (!name)
-+				name = str;
-+			map = map_groups__find_by_name(&thread->mg,
-+							MAP__FUNCTION, name);
-+			if (tmpname)
-+				free(tmpname);
-+			if (!map) {
-+				pr_warning("Skip probe listing in %s DSO.\n",
-+							str);
-+				free(str);
-+				continue;
-+			}
-+		} else
-+			map = dso__new_map(str);
-+
- 		ret = print_list_available_symbols(map, NULL);
- 		if (ret)
- 			pr_warning("No Symbols in dso %s.\n", str);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 674b95a..3ec57a8 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2360,3 +2360,11 @@ int machine__load_vmlinux_path(struct machine *self, enum map_type type,
- 
- 	return ret;
- }
-+
-+struct map *dso__new_map(char *name)
-+{
-+	struct dso *dso = dso__new(name);
-+	struct map *map = map__new2(0, dso, MAP__FUNCTION);
-+
-+	return map;
-+}
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 93f1058..b1f608e 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -196,6 +196,7 @@ char dso__symtab_origin(const struct dso *self);
- void dso__set_long_name(struct dso *self, char *name);
- void dso__set_build_id(struct dso *self, void *build_id);
- void dso__read_running_kernel_build_id(struct dso *self, struct machine *machine);
-+struct map *dso__new_map(char *name);
- struct symbol *dso__find_symbol(struct dso *self, enum map_type type, u64 addr);
- struct symbol *dso__find_symbol_by_name(struct dso *self, enum map_type type,
- 					const char *name);
+> ---
+>  arch/x86/kernel/efi.c |  132 +++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 123 insertions(+), 9 deletions(-)
+> 
+> diff -Nurp linux-2.6.35-rc6.org/arch/x86/kernel/efi.c linux-2.6.35-rc6/arch/x86/kernel/efi.c
+> --- linux-2.6.35-rc6.org/arch/x86/kernel/efi.c	2010-07-26 12:02:31.216675044 -0400
+> +++ linux-2.6.35-rc6/arch/x86/kernel/efi.c	2010-07-26 12:17:24.486677191 -0400
+> @@ -36,6 +36,8 @@
+>  #include <linux/io.h>
+>  #include <linux/reboot.h>
+>  #include <linux/bcd.h>
+> +#include <linux/crash_dump.h>
+> +#include <linux/debugfs.h>
+>  
+>  #include <asm/setup.h>
+>  #include <asm/efi.h>
+> @@ -314,6 +316,97 @@ static void __init print_efi_memmap(void
+>  }
+>  #endif  /*  EFI_DEBUG  */
+>  
+> +unsigned long systab_fw_vendor_paddr;
+> +unsigned long systab_runtime_paddr;
+> +unsigned long systab_tables_paddr;
+> +
+> +static struct debugfs_blob_wrapper fw_vendor_blob = {
+> +	.data		= &systab_fw_vendor_paddr,
+> +	.size		= sizeof(systab_fw_vendor_paddr),
+> +};
+> +
+> +static struct debugfs_blob_wrapper runtime_blob = {
+> +	.data		= &systab_runtime_paddr,
+> +	.size		= sizeof(systab_runtime_paddr),
+> +};
+> +
+> +static struct debugfs_blob_wrapper tables_blob = {
+> +	.data		= &systab_tables_paddr,
+> +	.size		= sizeof(systab_tables_paddr),
+> +};
+> +
+> +static int __init setup_systab_fw_vendor_paddr(char *arg)
+> +{
+> +	systab_fw_vendor_paddr = simple_strtoul(arg, NULL, 16);
+> +	return 0;
+> +}
+> +early_param("efi_systab_fw_vendor", setup_systab_fw_vendor_paddr);
+> +
+> +static int __init setup_systab_runtime_paddr(char *arg)
+> +{
+> +	systab_runtime_paddr = simple_strtoul(arg, NULL, 16);
+> +	return 0;
+> +}
+> +early_param("efi_systab_runtime", setup_systab_runtime_paddr);
+> +
+> +static int __init setup_systab_tables_paddr(char *arg)
+> +{
+> +	systab_tables_paddr = simple_strtoul(arg, NULL, 16);
+> +	return 0;
+> +}
+> +early_param("efi_systab_tables", setup_systab_tables_paddr);
+> +
+> +static int create_debug_files_systab (struct dentry *root)
+> +{
+> +	struct dentry *systab_dir, *fw_vendor, *runtime, *tables;
+> +
+> +	systab_dir = debugfs_create_dir("systab", root);
+> +	if (!systab_dir)
+> +		return -1;
+> +
+> +	fw_vendor = debugfs_create_blob("fw_vendor", S_IRUGO, systab_dir,
+> +				            &fw_vendor_blob);
+> +	if (!fw_vendor)
+> +		goto err_fw;
+> +
+> +	runtime = debugfs_create_blob("runtime", S_IRUGO, systab_dir,
+> +				            &runtime_blob);
+> +	if (!runtime)
+> +		goto err_runtime;
+> +
+> +	tables = debugfs_create_blob("tables", S_IRUGO, systab_dir,
+> +				            &tables_blob);
+> +	if (tables)
+> +		return 0;
+> +
+> +	debugfs_remove(runtime);
+> +err_runtime:
+> +	debugfs_remove(fw_vendor);
+> +err_fw:
+> +	debugfs_remove(systab_dir);
+> +	return -1;
+> +}
+> +
+> +static int crate_debug_files (void)
+> +{
+> +	int error;
+> +	struct dentry *efi_dir;
+> +
+> +	efi_dir = debugfs_create_dir("efi", NULL);
+> +	if (!efi_dir)
+> +		return -1;
+> +
+> +	error = create_debug_files_systab(efi_dir);
+> +	if (error) {
+> +		debugfs_remove(efi_dir);
+> +		return -1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +late_initcall(crate_debug_files);
+> +
+>  void __init efi_init(void)
+>  {
+>  	efi_config_table_t *config_tables;
+> @@ -322,6 +415,7 @@ void __init efi_init(void)
+>  	char vendor[100] = "unknown";
+>  	int i = 0;
+>  	void *tmp;
+> +	resource_size_t phys_addr;
+>  
+>  #ifdef CONFIG_X86_32
+>  	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
+> @@ -353,7 +447,11 @@ void __init efi_init(void)
+>  	/*
+>  	 * Show what we know for posterity
+>  	 */
+> -	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
+> +	if (is_kdump_kernel() && systab_fw_vendor_paddr != 0)
+> +		phys_addr = systab_fw_vendor_paddr;
+> +	else
+> +		phys_addr = efi.systab->fw_vendor;
+> +	c16 = tmp = early_ioremap(phys_addr, 2);
+>  	if (c16) {
+>  		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+>  			vendor[i] = *c16++;
+> @@ -369,8 +467,12 @@ void __init efi_init(void)
+>  	/*
+>  	 * Let's see what config tables the firmware passed to us.
+>  	 */
+> +	if (is_kdump_kernel() && systab_tables_paddr != 0)
+> +		phys_addr = systab_tables_paddr;
+> +	else
+> +		phys_addr = efi.systab->tables;
+>  	config_tables = early_ioremap(
+> -		efi.systab->tables,
+> +		phys_addr,
+>  		efi.systab->nr_tables * sizeof(efi_config_table_t));
+>  	if (config_tables == NULL)
+>  		printk(KERN_ERR "Could not map EFI Configuration Table!\n");
+> @@ -418,8 +520,11 @@ void __init efi_init(void)
+>  	 * address of several of the EFI runtime functions, needed to
+>  	 * set the firmware into virtual mode.
+>  	 */
+> -	runtime = early_ioremap((unsigned long)efi.systab->runtime,
+> -				sizeof(efi_runtime_services_t));
+> +	if (is_kdump_kernel() && systab_runtime_paddr != 0)
+> +		phys_addr = systab_runtime_paddr;
+> +	else
+> +		phys_addr = (unsigned long)efi.systab->runtime;
+> +	runtime = early_ioremap(phys_addr, sizeof(efi_runtime_services_t));
+>  	if (runtime != NULL) {
+>  		/*
+>  		 * We will only need *early* access to the following
+> @@ -465,6 +570,12 @@ void __init efi_init(void)
+>  #if EFI_DEBUG
+>  	print_efi_memmap();
+>  #endif
+> +	/* Save original physical address */
+> +	if (!is_kdump_kernel()) {
+> +		systab_fw_vendor_paddr = efi.systab->fw_vendor;
+> +		systab_tables_paddr = efi.systab->tables;
+> +		systab_runtime_paddr = (unsigned long)efi.systab->runtime;
+> +	}
+>  }
+>  
+>  static void __init runtime_code_page_mkexec(void)
+> @@ -544,11 +655,14 @@ void __init efi_enter_virtual_mode(void)
+>  
+>  	BUG_ON(!efi.systab);
+>  
+> -	status = phys_efi_set_virtual_address_map(
+> -		memmap.desc_size * memmap.nr_map,
+> -		memmap.desc_size,
+> -		memmap.desc_version,
+> -		memmap.phys_map);
+> +	if (!is_kdump_kernel())
+> +		status = phys_efi_set_virtual_address_map(
+> +			memmap.desc_size * memmap.nr_map,
+> +			memmap.desc_size,
+> +			memmap.desc_version,
+> +			memmap.phys_map);
+> +	else
+> +		status = EFI_SUCCESS;
+>  
+>  	if (status != EFI_SUCCESS) {
+>  		printk(KERN_ALERT "Unable to switch EFI into virtual mode "
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
