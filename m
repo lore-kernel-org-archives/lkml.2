@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab0G0LJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 07:09:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37038 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab0G0LJJ (ORCPT
+	id S1756251Ab0G0LKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 07:10:06 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:50304 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756173Ab0G0LKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 07:09:09 -0400
-Date: Tue, 27 Jul 2010 12:09:04 +0100
-From: Eric B Munson <emunson@mgebm.net>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, mingo@redhat.com, hugh.dickins@tiscali.co.uk,
-        riel@redhat.com, peterz@infradead.org, anton@samba.org,
-        hch@infradead.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] Add trace points to mmap, munmap, and brk
-Message-ID: <20100727110904.GA6519@mgebm.net>
-References: <cover.1279558781.git.emunson@mgebm.net>
- <f6a595dfac141397dcac8c29475be73d10f5248c.1279558781.git.emunson@mgebm.net>
- <20100721223359.8710.A69D9226@jp.fujitsu.com>
+	Tue, 27 Jul 2010 07:10:04 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAMZZTkx5LclT/2dsb2JhbACfZHLAd4U2BA
+Date: Tue, 27 Jul 2010 21:09:58 +1000
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: VFS scalability git tree
+Message-ID: <20100727110958.GA2913@amd>
+References: <20100722190100.GA22269@amd>
+ <20100723135514.GJ32635@dastard>
+ <20100727070538.GA2893@amd>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100721223359.8710.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100727070538.GA2893@amd>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 27, 2010 at 05:05:39PM +1000, Nick Piggin wrote:
+> On Fri, Jul 23, 2010 at 11:55:14PM +1000, Dave Chinner wrote:
+> > On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
+> > > I'm pleased to announce I have a git tree up of my vfs scalability work.
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+> > > http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
+> > > 
+> > > Branch vfs-scale-working
+> > 
+> > With a production build (i.e. no lockdep, no xfs debug), I'll
+> > run the same fs_mark parallel create/unlink workload to show
+> > scalability as I ran here:
+> > 
+> > http://oss.sgi.com/archives/xfs/2010-05/msg00329.html
+> 
+> I've made a similar setup, 2s8c machine, but using 2GB ramdisk instead
+> of a real disk (I don't have easy access to a good disk setup ATM, but
+> I guess we're more interested in code above the block layer anyway).
+> 
+> Made an XFS on /dev/ram0 with 16 ags, 64MB log, otherwise same config as
+> yours.
 
---YZ5djTAD1cGYuMQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I also tried dbench on this setup. 20 runs of dbench -t20 8
+(that is a 20 second run, 8 clients).
 
-On Wed, 21 Jul 2010, KOSAKI Motohiro wrote:
+Numbers are throughput, higher is better:
 
-> > This patch adds trace points to mmap, munmap, and brk that will report
-> > relevant addresses and sizes before each function exits successfully.
-> >=20
-> > Signed-off-by: Eric B Munson <emunson@mgebm.net>
->=20
-> I don't think this is good idea. if you need syscall result, you should=
-=20
-> use syscall tracer. IOW, This tracepoint bring zero information.
->=20
-> Please see perf_event_mmap() usage. Our kernel manage adress space by
-> vm_area_struct. we need to trace it if we need to know what kernel does.
->=20
-> Thanks.
+          N           Min           Max        Median           Avg Stddev
+vanilla  20       2219.19       2249.43       2230.43     2230.9915 7.2528893
+scale    20       2428.21        2490.8       2437.86      2444.111 16.668256
+Difference at 95.0% confidence
+        213.119 +/- 8.22695
+        9.55268% +/- 0.368757%
+        (Student's t, pooled s = 12.8537)
 
-The syscall tracer does not give you the address and size of the mmaped are=
-as
-so this does provide information above simply tracing the enter/exit points
-for each call.
+vfs-scale is 9.5% or 210MB/s faster than vanilla.
 
-perf_event_mmap does provide the information for mmap calls.  Originally I =
-sent
-a patch to add a trace point to munmap and Peter Z asked for corresponding =
-points
-in the mmap family.  If the consensus is that the trace point in munmap is =
-the
-only one that should be added I can resend that patch.
+Like fs_mark, dbench has creat/unlink activity, so I hope rcu-inodes
+should not be such a problem in practice. In my creat/unlink benchmark,
+it is creating and destroying one inode repeatedly, which is the
+absolute worst case for rcu-inodes. Wheras in most real workloads
+would be creating and destroying many inodes, which is not such a dis
+advantage for rcu-inodes.
 
---=20
-Eric B Munson
-IBM Linux Technology Center
-ebmunson@us.ibm.com
+Incidentally, XFS was by far the fastest "real" filesystem I tested on
+this workload. ext4 was around 1700MB/s (ext2 was around 3100MB/s and
+ramfs is 3350MB/s).
 
-
---YZ5djTAD1cGYuMQK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMTr5QAAoJEH65iIruGRnNmSgH/12U99EVo3kI42/mdzDVQsN7
-HeA54RKgS49LefEaGRJrL5YcySn+OoEcKJHbqo5ci9bZ+E/NNAsQ3FLrJbKHkXSP
-fg6+8rGUmjXCxKRhV90A4kdV+njkv6zC50t5kwf++YVfAYKnlfoqRI8qMaGpkx3z
-hOsCbbYrIl1An6huj2RNf4JtpMyX72E4gEyt4SR7tYWlY3QvX+qKYyauFwSZLW8j
-MFh2IKZdPtn5mDJl+Lgtwx2485hWxte1sBlVKYYRcZUFuU0uirTedCjTLrZr6AHL
-F+0wliiphdh4GfuFEZwtBp8zPy77POk9RMUBtP86UkNQYsx7sKa/B3hm2/+c6D0=
-=+aKZ
------END PGP SIGNATURE-----
-
---YZ5djTAD1cGYuMQK--
