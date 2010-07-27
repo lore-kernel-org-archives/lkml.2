@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab0G0EkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 00:40:11 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49543 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab0G0EkJ (ORCPT
+	id S1751337Ab0G0EmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 00:42:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17614 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab0G0EmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 00:40:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=gkurQgQZ0ahZqLy4U/UuCGAyVRTuDwRCNeG6cgu73ZWd9cquq1dlkjnHULKQDDYMEf
-         /+NjVh0zOQxsNFDSMwSg3OKIxaFhVQokyQ7wGniOJM4OmmQjttfWmnbZLuTZ1cDjy+C9
-         btv2zNBhJmKSPF/jTVEMJGCqKaowdQ6wy1ruY=
+	Tue, 27 Jul 2010 00:42:18 -0400
+Message-ID: <4C4E6363.7060705@kernel.org>
+Date: Mon, 26 Jul 2010 21:41:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1007261510320.2993@chino.kir.corp.google.com>
-References: <AANLkTimAF1zxXlnEavXSnlKTkQgGD0u9UqCtUVT_r9jV@mail.gmail.com> 
-	<AANLkTimUYmUCdFMIaVi1qqcz2DqGoILeu43XWZBHSILP@mail.gmail.com> 
-	<AANLkTilmr29Vv3N64n7KVj9fSDpfBHIt8-quxtEwY0_X@mail.gmail.com> 
-	<alpine.LSU.2.00.1005211410170.14789@sister.anvils> <AANLkTil8sEzrsC9If5HdU8S5R-sK84_fUt_BXUDcAu0J@mail.gmail.com> 
-	<alpine.DEB.2.00.1006011351400.13136@chino.kir.corp.google.com> 
-	<AANLkTikUO+WMHXqTMc7jR84UMgKidzX5d5JX6q=DvmpY@mail.gmail.com> 
-	<alpine.DEB.2.00.1007261510320.2993@chino.kir.corp.google.com>
-From: dave b <db.pub.mail@gmail.com>
-Date: Tue, 27 Jul 2010 14:39:48 +1000
-Message-ID: <AANLkTi=Aswf+Hp+qfsC2sCo32hU3E2D4zt3-R35BZ=MC@mail.gmail.com>
-Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
-To: David Rientjes <rientjes@google.com>
-Cc: Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+To: Corey Minyard <minyard@acm.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Myron Stowe <myron.stowe@hp.com>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Fix memleaking for add_smi when duplicating happen
+References: <4C4E3575.3020203@kernel.org> <4C4E3F03.4030707@acm.org>
+In-Reply-To: <4C4E3F03.4030707@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C4E6388.0096,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2010 08:12, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 27 Jul 2010, dave b wrote:
->
->> Actually it turns out on 2.6.34.1 I can trigger this issue. What it
->> really is, is that linux doesn't invoke the oom killer when it should
->> and kill something off. This is *really* annoying.
->>
->
-> I'm not exactly sure what you're referring to, it's been two months and
-> you're using a new kernel and now you're saying that the oom killer isn't
-> being utilized when the original problem statement was that it was killing
-> things inappropriately?
+On 07/26/2010 07:05 PM, Corey Minyard wrote:
+> Please run this through checkpatch, as it has coding style violations.
 
-Sorry about the timespan :(
-Well actually it is the same issue. Originally the oom killer wasn't
-being invoked and now the problem is still it isn't invoked - it
-doesn't come and kill things - my desktop just sits :)
-I have since replaced the hard disk - which I thought could be the
-issue. I am thinking that because I have shared graphics not using KMS
-- with intel graphics - this may be the root of the cause.
+yhlu@linux-siqj:~/xx/xx/kernel/tip/linux-2.6> ./scripts/checkpatch.pl patches/ipmi_reg_size.patch
+total: 0 errors, 0 warnings, 105 lines checked
 
---
-All things that are, are with more spirit chased than enjoyed.		--
-Shakespeare, "Merchant of Venice"
+patches/ipmi_reg_size.patch has no obvious style problems and is ready for submission.
+yhlu@linux-siqj:~/xx/xx/kernel/tip/linux-2.6> 
+
+> 
+> Also, this patch appears to fix bugs in addition to adding the print. 
+> Can we have a separate patch for that?
+
+in the comment log, i already mentioned that. 
+
+will separate it to twol
+
+> 
+> I'm also not clear on the reason for this.  I believe all this
+> information is already available in /proc/ipmi/<if#>/params.  I don't
+> think there is a strong reason to print it to the log.
+
+then why there is printing for ACPI path and pci path?
+
+Yinghai
