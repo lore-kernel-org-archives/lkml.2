@@ -1,177 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909Ab0G0Tum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 15:50:42 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:33863 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab0G0Tul (ORCPT
+	id S1752100Ab0G0Tvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 15:51:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50823 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab0G0Tvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 15:50:41 -0400
-Date: Tue, 27 Jul 2010 21:50:34 +0200
-From: Nils Radtke <lkml@Think-Future.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: ata_port_flush_task, BUG: unable to handle kernel paging
- request
-Message-ID: <20100727195034.GP31966@localhost>
-Reply-To: Nils Radtke <lkml@Think-Future.de>
-References: <20100725154816.GF31966@localhost>
- <4C4E9C3B.9070402@kernel.org>
+	Tue, 27 Jul 2010 15:51:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Neil Horman <nhorman@tuxdriver.com>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, vgoyal@redhat.com
+Subject: Re: [PATCH] Enable kdump with EFI boot
+Date: Tue, 27 Jul 2010 15:49:42 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4E9C3B.9070402@kernel.org>
-X-Url: http://www.Think-Future.de
-X-Editor: Vi it! http://www.vim.org
-X-Bkp: p2mi
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Mailer: HidemaruMail 5.38 (WinNT,501)
+In-Reply-To: <m1eieolsy6.fsf@fess.ebiederm.org>
+References: <C0CB2D0F31868Bindou.takao@jp.fujitsu.com> <20100727111029.GA6303@hmsreliant.think-freely.org> <m1eieolsy6.fsf@fess.ebiederm.org>
+Message-Id: <C1CB2DC4DB0586indou.takao@jp.fujitsu.com>
+X-Antivirus: avast! (VPS 100727-0, 2010/07/27), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Tejun,
+On Tue, 27 Jul 2010 10:45:21 -0700, "Eric W. Biederman" wrote:
 
-  Thank you for your time.
+>Neil Horman <nhorman@tuxdriver.com> writes:
+>
+>> On Mon, Jul 26, 2010 at 06:09:18PM -0400, Takao Indoh wrote:
+>>> Hi all,
+>>> 
+>>> The attached patch enables kdump on EFI-boot machine.
+>>> 
+>>> [Background]
+>>> Current kdump does not work on EFI-boot system because 2nd kernel cannot
+>>> find ACPI Table(RSDP). The URL below explains this problem.
+>>> http://lists.infradead.org/pipermail/kexec/2010-March/003889.html
+>>> 
+>>> This problem can be solved by fixing kexec-tools so that it can set up
+>>> struct efi_info correctly in the boot_params for 2nd kernel. However
+>>> there is another problem.
+>>> 
+>>> When the 1st kernel boots, EFI system table(efi_system_table_t) is
+>>> modified by SetVirtualAddressMap, which is one of EFI runtime service.
+>>> This runtime changes physical address in EFI system table to virtual
+>>> address.
+>>> 
+>>> When the 2nd kernel boots, it also receives the same EFI system table,
+>>> and the address included in it is already virtual address(1st kernel
+>>> rewrote it).  But 2nd kernel does not know that, 2nd kernel thinks it is
+>>> a physical address. This causes problems.
+>>> 
+>>> For example, the following is a part of efi_init().
+>>> 
+>>> c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
+>>> if (c16) {
+>>>     for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+>>>         vendor[i] = *c16++;
+>>>     vendor[i] = '\0';
+>>> } else
+>>>     printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
+>>> 
+>>> 2nd kernel thinks efi.systab->fw_vendor has a physical address and tries
+>>> to change it to virtual address, but it is already virtual address, so
+>>> this code fails and 2nd kernel hangs up.
+>>> 
+>>> [How to fix]
+>>> My solution is as follows.
+>>> 1) Export physical address of each EFI system table entry via debugfs
+>>> /sys/kernel/debug/efi/systab/fw_vendor
+>>> /sys/kernel/debug/efi/systab/tables
+>>> /sys/kernel/debug/efi/systab/runtime
+>>> 
+>>> Kexec-tools can get physical address of each entry in EFI system table
+>>> via these entries. Kexec tools adds these physical addresses to boot
+>>> parameters
+>>> ex.)
+>>> efi_systab_fw_vendor=0x7a6a1398 efi_systab_tables=0x7a6a2e18 \
+>>> efi_systab_runtime=0x7a6a3e18
+>>> 
+>>> 2) Kernel parses these parameters and use them in efi_init()
+>>> 
+>>> 
+>>> So, what this patch is doing is:
+>>> - Add debugfs interface for each EFI system table entry
+>>> - eif_init() gets physical address of each EFI system table entry from
+>>>   boot paramteter instead of the table
+>>> - Don't call SetVirtualAddressMap in 2nd kernel because panic occurred
+>>>   when SetVirtualAddressMap is called in 2nd kernel. This is called in
+>>>   1st kernel, and doesn't need to be called again.
+>>> Any comments would be appreciated!
+>
+>As I recall after SetVirtualAddressMap is called we can not you physical
+>addresses in EFI.
+>
+>We should not call SetVirtualAddressMap in the first kernel. EFI should
+>not be doing anything performance critical and we already are required
+>to have code that runs EFI at it's physical address, so just removing
+>the false optimization of calling SetVirtualAddressMap should fix this
+>issue.
+>
+>Furthermore is_kdump_kernel is a bad test because it presumes this is
+>only an issue for a crash dump kernel.  kexec is used in some
+>instances as a general purpose bootloader, so we may kexec a new
+>kernel and that kernel will not be a kdump kernel.
+>
+>Also having to use debugfs for a production usage appears strongly
+>wrong.  We are not talking about debugging information so if we still
+>need these files after we remove SetVirtualAddressMap, we should design
+>a proper interface and use sysfs or proc.
 
-# Which kernel version is this?  What was the configuration and what
-# were the system doing?  Can you please post lspci -nn output and boot
-# log?
-Linux host 2.6.33.1 #3 PREEMPT Wed Mar 31 13:22:30 CEST 2010 i686 GNU/Linux
+If SetVirtualAddressMap is not called in 1st kernel, EFI system table 
+keeps its physical address, so it's ok, my patch is not needed. Did
+anyone post a patch to do that, or anyone are trying that?
 
-config: Internal sata disk.
-
-action: iirc it was during a suspend/resume cycle or just during normal operation.
-
-the boot log of this particular boot/uptime when it happened isn't available any more.
-fastboot is enabled, hdparm, laptop-mode and smartd are enabled (std debian config)
-
-
-    Hope this helps,
-
-                Nils
-
-
-lspci -nn:
-00:00.0 Host bridge [0600]: Intel Corporation Mobile PM965/GM965/GL960 Memory Controller Hub [8086:2a00] (rev 03)
-00:02.0 VGA compatible controller [0300]: Intel Corporation Mobile GM965/GL960 Integrated Graphics Controller [8086:2a02] (rev 03)
-00:02.1 Display controller [0380]: Intel Corporation Mobile GM965/GL960 Integrated Graphics Controller [8086:2a03] (rev 03)
-00:1a.0 USB Controller [0c03]: Intel Corporation 82801H (ICH8 Family) USB UHCI Controller #4 [8086:2834] (rev 03)
-00:1a.1 USB Controller [0c03]: Intel Corporation 82801H (ICH8 Family) USB UHCI Controller #5 [8086:2835] (rev 03)
-00:1a.7 USB Controller [0c03]: Intel Corporation 82801H (ICH8 Family) USB2 EHCI Controller #2 [8086:283a] (rev 03)
-00:1b.0 Audio device [0403]: Intel Corporation 82801H (ICH8 Family) HD Audio Controller [8086:284b] (rev 03)
-00:1c.0 PCI bridge [0604]: Intel Corporation 82801H (ICH8 Family) PCI Express Port 1 [8086:283f] (rev 03)
-00:1c.1 PCI bridge [0604]: Intel Corporation 82801H (ICH8 Family) PCI Express Port 2 [8086:2841] (rev 03)
-00:1c.2 PCI bridge [0604]: Intel Corporation 82801H (ICH8 Family) PCI Express Port 3 [8086:2843] (rev 03)
-00:1d.0 USB Controller [0c03]: Intel Corporation 82801H (ICH8 Family) USB UHCI Controller #1 [8086:2830] (rev 03)
-00:1d.1 USB Controller [0c03]: Intel Corporation 82801H (ICH8 Family) USB UHCI C
-ontroller #2 [8086:2831] (rev 03)
-00:1d.2 USB Controller [0c03]: Intel Corporation 82801H (ICH8 Family) USB UHCI Controller #3 [8086:2832] (rev 03)
-00:1d.7 USB Controller [0c03]: Intel Corporation 82801H (ICH8 Family) USB2 EHCI Controller #1 [8086:2836] (rev 03)
-00:1e.0 PCI bridge [0604]: Intel Corporation 82801 Mobile PCI Bridge [8086:2448] (rev f3)
-00:1f.0 ISA bridge [0601]: Intel Corporation 82801HEM (ICH8M) LPC Interface Controller [8086:2815] (rev 03)
-00:1f.1 IDE interface [0101]: Intel Corporation 82801HBM/HEM (ICH8M/ICH8M-E) IDE Controller [8086:2850] (rev 03)
-00:1f.2 IDE interface [0101]: Intel Corporation 82801HBM/HEM (ICH8M/ICH8M-E) SATA IDE Controller [8086:2828] (rev 03)
-00:1f.3 SMBus [0c05]: Intel Corporation 82801H (ICH8 Family) SMBus Controller [8086:283e] (rev 03)
-02:00.0 Ethernet controller [0200]: Broadcom Corporation NetLink BCM5787M Gigabit Ethernet PCI Express [14e4:1693] (rev 02)
-04:00.0 Ethernet controller [0200]: Atheros Communications Inc. AR5001 Wireless Network Adapter [168c:001c] (rev 01)
-0f:06.0 CardBus bridge [0607]: Texas Instruments PCIxx12 Cardbus Controller [104c:8039]
-0f:06.1 FireWire (IEEE 1394) [0c00]: Texas Instruments PCIxx12 OHCI Compliant IEEE 1394 Host Controller [104c:803a]
-0f:06.2 Mass storage controller [0180]: Texas Instruments 5-in-1 Multimedia Card Reader (SD/MMC/MS/MS PRO/xD) [104c:803b]
-0f:06.3 SD Host controller [0805]: Texas Instruments PCIxx12 SDA Standard Compliant SD Host Controller [104c:803c]
-
-/proc/config.gz:
-
-CONFIG_BLK_DEV=y
-CONFIG_BLK_DEV_LOOP=y
-CONFIG_BLK_DEV_CRYPTOLOOP=y
-CONFIG_BLK_DEV_RAM=y
-CONFIG_BLK_DEV_RAM_COUNT=16
-CONFIG_BLK_DEV_RAM_SIZE=4096
-CONFIG_CDROM_PKTCDVD=y
-CONFIG_CDROM_PKTCDVD_BUFFERS=8
-CONFIG_MISC_DEVICES=y
-CONFIG_TIFM_CORE=y
-CONFIG_TIFM_7XX1=y
-
-CONFIG_HAVE_IDE=y
-
-CONFIG_RAID_ATTRS=y
-CONFIG_SCSI=y
-CONFIG_SCSI_DMA=y
-CONFIG_SCSI_TGT=y
-CONFIG_SCSI_NETLINK=y
-CONFIG_SCSI_PROC_FS=y
-CONFIG_SCSI_WAIT_SCAN=m
-
-CONFIG_SCSI_SPI_ATTRS=y
-CONFIG_SCSI_FC_ATTRS=y
-CONFIG_SCSI_FC_TGT_ATTRS=y
-CONFIG_SCSI_ISCSI_ATTRS=y
-CONFIG_SCSI_SAS_ATTRS=y
-CONFIG_SCSI_SAS_LIBSAS=y
-CONFIG_SCSI_SAS_ATA=y
-CONFIG_SCSI_SAS_HOST_SMP=y
-CONFIG_SCSI_SRP_ATTRS=y
-CONFIG_SCSI_SRP_TGT_ATTRS=y
-CONFIG_ATA=y
-CONFIG_ATA_VERBOSE_ERROR=y
-CONFIG_ATA_ACPI=y
-CONFIG_SATA_PMP=y
-CONFIG_SATA_AHCI=y
-CONFIG_ATA_SFF=y
-CONFIG_ATA_PIIX=y
-CONFIG_MD=y
-CONFIG_BLK_DEV_DM=y
-CONFIG_DM_CRYPT=y
-CONFIG_DM_SNAPSHOT=y
-CONFIG_DM_MIRROR=y
-CONFIG_DM_MULTIPATH=y
+Thanks,
+Takao Indoh
 
 
-On Tue 2010-07-27 @ 10-43-39AM +0200, Tejun Heo wrote: 
-# (cc'ing linux-ide)
-# Hello,
-# 
-# On 07/25/2010 05:48 PM, Nils Radtke wrote:
-# >   Hi,
-# > 
-# > Ideas, anybody?
-# > 
-# > BUG: unable to handle kernel paging request at 10ec83c6
-# > IP: [<c13b8880>] ata_port_flush_task+0x0/0x50
-# > *pde = 00000000 
-# > Oops: 0002 [#1] PREEMPT 
-# > last sysfs file: /sys/devices/pci0000:00/0000:00:1c.0/0000:02:00.0/net/eth0/carrier
-# > Modules linked in: snd_usb_audio snd_usb_lib snd_seq_midi snd_rawmidi uvcvideo option usbserial usb_storage video1394 raw1394 dv1394 firewire_ohci firewire_core ohci1394 ieee1394 tg3 libphy
-# > 
-# > Pid: 1298, comm: scsi_eh_0 Not tainted 2.6.33 #6 Columbia                       /Extensa 5220                   
-# > EIP: 0060:[<c13b8880>] EFLAGS: 00010292 CPU: 0
-# > EIP is at ata_port_flush_task+0x0/0x50
-# > EAX: f6878000 EBX: 00000246 ECX: 00000003 EDX: c13c7ab0
-# > ESI: f6813800 EDI: f6813844 EBP: 00000000 ESP: f6877f48
-# >  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
-# > Process scsi_eh_0 (pid: 1298, ti=f6876000 task=f70603f0 task.ti=f6876000)
-# > Stack:
-# >  c13c7aca c1852b50 f6acbc80 f6acbc80 c102fb3e f6acbc80 f70603f0 c184a5a0
-# > <0> f6813800 c184a400 f6878000 f70603f0 00000246 f6813800 f6813844 00000000
-# > <0> c138a5af 00000000 c13897b0 c102bd97 f70603f0 f70603f0 f6813834 f6813844
-# > Call Trace:
-# >  [<c13c7aca>] ? ata_scsi_error+0x1a/0x870
-# >  [<c102fb3e>] ? finish_task_switch+0x2e/0xa0
-# >  [<c138a5af>] ? scsi_error_handler+0x9f/0x3a0
-# >  [<c13897b0>] ? eh_lock_door_done+0x0/0x10
-# >  [<c102bd97>] ? pick_next_task_fair+0x97/0xe0
-# >  [<c1671f0a>] ? schedule+0x28a/0x3b0
-# >  [<c138a510>] ? scsi_error_handler+0x0/0x3a0
-# >  [<c104f3f4>] ? kthread+0x74/0x80
-# >  [<c104f380>] ? kthread+0x0/0x80
-# >  [<c1003236>] ? kernel_thread_helper+0x6/0x10
-# > Code: 18 00 00 b8 a5 f7 7b c1 e8 2e b8 c7 ff eb 81 8d b6 00 00 00 00 8d bf 00 00 00 00 83 c0 5c e8 48 d3 fb ff e9 43 ff ff ff 8d 76 00 <ff> 89 c3 83 ec 10 8d 80 75 1e 00 00 e8 bf 3d c9 ff f6 83 c4 1e 
-# > EIP: [<c13b8880>] ata_port_flush_task+0x0/0x50 SS:ESP 0068:f6877f48
-# > CR2: 0000000010ec83c6
-# > ---[ end trace 2f757ea4d01bedcf ]---
-# 
-# 
-# -- 
-# tejun
 
+
+>
+>>> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+>> CC-ing the maintainers for x86. nd kexec
+>>
+>> Acked-by: Neil Horman <nhorman@tuxdriver.com> 
+>
+>A good attempt but not something we want to run.
+>
+>Eric
+>
+>>> ---
+>>>  arch/x86/kernel/efi.c |  132 +++++++++++++++++++++++++++++++++++++---
+>>>  1 file changed, 123 insertions(+), 9 deletions(-)
+>>> 
+>>> diff -Nurp linux-2.6.35-rc6.org/arch/x86/kernel/efi.c linux-2.6.35-rc6/
+>>> arch/x86/kernel/efi.c
+>>> --- linux-2.6.35-rc6.org/arch/x86/kernel/efi.c	2010-07-26 12:02:31.
+>>> 216675044 -0400
+>>> +++ linux-2.6.35-rc6/arch/x86/kernel/efi.c	2010-07-26 12:17:24.486677191 
+>>> -0400
+>>> @@ -36,6 +36,8 @@
+>>>  #include <linux/io.h>
+>>>  #include <linux/reboot.h>
+>>>  #include <linux/bcd.h>
+>>> +#include <linux/crash_dump.h>
+>>> +#include <linux/debugfs.h>
+>>>  
+>>>  #include <asm/setup.h>
+>>>  #include <asm/efi.h>
+>>> @@ -314,6 +316,97 @@ static void __init print_efi_memmap(void
+>>>  }
+>>>  #endif  /*  EFI_DEBUG  */
+>>>  
+>>> +unsigned long systab_fw_vendor_paddr;
+>>> +unsigned long systab_runtime_paddr;
+>>> +unsigned long systab_tables_paddr;
+>>> +
+>>> +static struct debugfs_blob_wrapper fw_vendor_blob = {
+>>> +	.data		= &systab_fw_vendor_paddr,
+>>> +	.size		= sizeof(systab_fw_vendor_paddr),
+>>> +};
+>>> +
+>>> +static struct debugfs_blob_wrapper runtime_blob = {
+>>> +	.data		= &systab_runtime_paddr,
+>>> +	.size		= sizeof(systab_runtime_paddr),
+>>> +};
+>>> +
+>>> +static struct debugfs_blob_wrapper tables_blob = {
+>>> +	.data		= &systab_tables_paddr,
+>>> +	.size		= sizeof(systab_tables_paddr),
+>>> +};
+>>> +
+>>> +static int __init setup_systab_fw_vendor_paddr(char *arg)
+>>> +{
+>>> +	systab_fw_vendor_paddr = simple_strtoul(arg, NULL, 16);
+>>> +	return 0;
+>>> +}
+>>> +early_param("efi_systab_fw_vendor", setup_systab_fw_vendor_paddr);
+>>> +
+>>> +static int __init setup_systab_runtime_paddr(char *arg)
+>>> +{
+>>> +	systab_runtime_paddr = simple_strtoul(arg, NULL, 16);
+>>> +	return 0;
+>>> +}
+>>> +early_param("efi_systab_runtime", setup_systab_runtime_paddr);
+>>> +
+>>> +static int __init setup_systab_tables_paddr(char *arg)
+>>> +{
+>>> +	systab_tables_paddr = simple_strtoul(arg, NULL, 16);
+>>> +	return 0;
+>>> +}
+>>> +early_param("efi_systab_tables", setup_systab_tables_paddr);
+>>> +
+>>> +static int create_debug_files_systab (struct dentry *root)
+>>> +{
+>>> +	struct dentry *systab_dir, *fw_vendor, *runtime, *tables;
+>>> +
+>>> +	systab_dir = debugfs_create_dir("systab", root);
+>>> +	if (!systab_dir)
+>>> +		return -1;
+>>> +
+>>> +	fw_vendor = debugfs_create_blob("fw_vendor", S_IRUGO, systab_dir,
+>>> +				            &fw_vendor_blob);
+>>> +	if (!fw_vendor)
+>>> +		goto err_fw;
+>>> +
+>>> +	runtime = debugfs_create_blob("runtime", S_IRUGO, systab_dir,
+>>> +				            &runtime_blob);
+>>> +	if (!runtime)
+>>> +		goto err_runtime;
+>>> +
+>>> +	tables = debugfs_create_blob("tables", S_IRUGO, systab_dir,
+>>> +				            &tables_blob);
+>>> +	if (tables)
+>>> +		return 0;
+>>> +
+>>> +	debugfs_remove(runtime);
+>>> +err_runtime:
+>>> +	debugfs_remove(fw_vendor);
+>>> +err_fw:
+>>> +	debugfs_remove(systab_dir);
+>>> +	return -1;
+>>> +}
+>>> +
+>>> +static int crate_debug_files (void)
+>>> +{
+>>> +	int error;
+>>> +	struct dentry *efi_dir;
+>>> +
+>>> +	efi_dir = debugfs_create_dir("efi", NULL);
+>>> +	if (!efi_dir)
+>>> +		return -1;
+>>> +
+>>> +	error = create_debug_files_systab(efi_dir);
+>>> +	if (error) {
+>>> +		debugfs_remove(efi_dir);
+>>> +		return -1;
+>>> +	}
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +late_initcall(crate_debug_files);
+>>> +
+>>>  void __init efi_init(void)
+>>>  {
+>>>  	efi_config_table_t *config_tables;
+>>> @@ -322,6 +415,7 @@ void __init efi_init(void)
+>>>  	char vendor[100] = "unknown";
+>>>  	int i = 0;
+>>>  	void *tmp;
+>>> +	resource_size_t phys_addr;
+>>>  
+>>>  #ifdef CONFIG_X86_32
+>>>  	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.
+>>> efi_systab;
+>>> @@ -353,7 +447,11 @@ void __init efi_init(void)
+>>>  	/*
+>>>  	 * Show what we know for posterity
+>>>  	 */
+>>> -	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
+>>> +	if (is_kdump_kernel() && systab_fw_vendor_paddr != 0)
+>>> +		phys_addr = systab_fw_vendor_paddr;
+>>> +	else
+>>> +		phys_addr = efi.systab->fw_vendor;
+>>> +	c16 = tmp = early_ioremap(phys_addr, 2);
+>>>  	if (c16) {
+>>>  		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+>>>  			vendor[i] = *c16++;
+>>> @@ -369,8 +467,12 @@ void __init efi_init(void)
+>>>  	/*
+>>>  	 * Let's see what config tables the firmware passed to us.
+>>>  	 */
+>>> +	if (is_kdump_kernel() && systab_tables_paddr != 0)
+>>> +		phys_addr = systab_tables_paddr;
+>>> +	else
+>>> +		phys_addr = efi.systab->tables;
+>>>  	config_tables = early_ioremap(
+>>> -		efi.systab->tables,
+>>> +		phys_addr,
+>>>  		efi.systab->nr_tables * sizeof(efi_config_table_t));
+>>>  	if (config_tables == NULL)
+>>>  		printk(KERN_ERR "Could not map EFI Configuration Table!\n");
+>>> @@ -418,8 +520,11 @@ void __init efi_init(void)
+>>>  	 * address of several of the EFI runtime functions, needed to
+>>>  	 * set the firmware into virtual mode.
+>>>  	 */
+>>> -	runtime = early_ioremap((unsigned long)efi.systab->runtime,
+>>> -				sizeof(efi_runtime_services_t));
+>>> +	if (is_kdump_kernel() && systab_runtime_paddr != 0)
+>>> +		phys_addr = systab_runtime_paddr;
+>>> +	else
+>>> +		phys_addr = (unsigned long)efi.systab->runtime;
+>>> +	runtime = early_ioremap(phys_addr, sizeof(efi_runtime_services_t));
+>>>  	if (runtime != NULL) {
+>>>  		/*
+>>>  		 * We will only need *early* access to the following
+>>> @@ -465,6 +570,12 @@ void __init efi_init(void)
+>>>  #if EFI_DEBUG
+>>>  	print_efi_memmap();
+>>>  #endif
+>>> +	/* Save original physical address */
+>>> +	if (!is_kdump_kernel()) {
+>>> +		systab_fw_vendor_paddr = efi.systab->fw_vendor;
+>>> +		systab_tables_paddr = efi.systab->tables;
+>>> +		systab_runtime_paddr = (unsigned long)efi.systab->runtime;
+>>> +	}
+>>>  }
+>>>  
+>>>  static void __init runtime_code_page_mkexec(void)
+>>> @@ -544,11 +655,14 @@ void __init efi_enter_virtual_mode(void)
+>>>  
+>>>  	BUG_ON(!efi.systab);
+>>>  
+>>> -	status = phys_efi_set_virtual_address_map(
+>>> -		memmap.desc_size * memmap.nr_map,
+>>> -		memmap.desc_size,
+>>> -		memmap.desc_version,
+>>> -		memmap.phys_map);
+>>> +	if (!is_kdump_kernel())
+>>> +		status = phys_efi_set_virtual_address_map(
+>>> +			memmap.desc_size * memmap.nr_map,
+>>> +			memmap.desc_size,
+>>> +			memmap.desc_version,
+>>> +			memmap.phys_map);
+>>> +	else
+>>> +		status = EFI_SUCCESS;
+>>>  
+>>>  	if (status != EFI_SUCCESS) {
+>>>  		printk(KERN_ALERT "Unable to switch EFI into virtual mode "
+>>> 
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>> 
