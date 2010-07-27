@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0G0Pr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 11:47:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752539Ab0G0Prz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 11:47:55 -0400
-Date: Tue, 27 Jul 2010 18:41:55 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>, Peter Zijlstra <peterz@infradead.org>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100727154155.GA13419@redhat.com>
-References: <4C2CA5C5.4040402@kernel.org>
- <20100701144624.GA11171@redhat.com>
- <4C2CABF2.2020801@kernel.org>
- <1277996135.1917.198.camel@laptop>
- <4C2E2987.9040702@us.ibm.com>
- <1278094270.1917.288.camel@laptop>
- <20100702210637.GA12433@redhat.com>
- <20100726171230.GA27644@redhat.com>
- <1280166688.3375.5.camel@localhost>
- <20100726180834.GA26988@redhat.com>
+	id S1750768Ab0G0PuS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 11:50:18 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57009 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab0G0PuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 11:50:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=BQl76MOZm3ncR53WFPAy1+ifVRGp5yLI7djyvDTupDH5eUnvEX1k9Zxq6smeMXsv7x
+         vQL2hrYDJkLeshjeKbfV/Vd4/Dn2td4fLpXmIllV4CKjOq1dIR1Zy0IE6/+jSmxLG20c
+         lqhbhDILkYvwGO17dLklG7b7DwNS3/gwm9+Hc=
+Message-ID: <4C4F0032.1010706@gmail.com>
+Date: Tue, 27 Jul 2010 08:50:10 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100726180834.GA26988@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: trapdoor6@gmail.com
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Small typo in kernel [current source from git] .config option
+References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>
+In-Reply-To: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 08:08:34PM +0200, Oleg Nesterov wrote:
-> On 07/26, Sridhar Samudrala wrote:
-> >
-> > I have been testing out a similar patch that uses kernel_thread() without CLONE_FILES
-> > flag rather than create_kthread() and then closing the files.
-> 
-> !CLONE_FILES can't help. copy_files() does dup_fd() in this case.
-> The child still inherits the files.
-> 
-> > Either version should be fine.
-> 
-> I think neither version is fine ;)
-> 
-> exit_files() is not enough too. How about the signals, reparenting?
-> 
-> 
-> I already forgot all details, probably I missed somethig. But it
-> seems to me that it is better to just export get/set affinity and
-> forget about all complications.
-> 
-> Oleg.
+On 07/27/2010 07:46 AM, trapDoor wrote:
+> Hello,
+> I've just got lucky and found this little typo under "Power management
+> and ACPI options"  --->  "ACPI (Advanced Configuration and Power
+> Interface) Support":
+> hArdware Error Device
+>
+> Here is my fix:
+> Hardware Error Device
+> :)
+>
+> BTW, first time I've used nconfig instead of menuconfig. And I like it.
+>
 
-Oleg, so can I attach your Ack to the patch in question, and merge
-it all through net-next?
+probably should create a patch, and send it to trivial@kernel.org
 
--- 
-MST
+Justin P. Mattock
