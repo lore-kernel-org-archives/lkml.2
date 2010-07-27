@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab0G0Isz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 04:48:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55718 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752376Ab0G0Isw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 04:48:52 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1280202225.2944.20.camel@localhost>
-References: <1280202225.2944.20.camel@localhost> <1280157768.3569.14.camel@localhost> <1279944664.2944.8.camel@localhost> <20100722175847.5552.11520.stgit@warthog.procyon.org.uk> <17723.1279897759@redhat.com> <9168.1280153997@redhat.com> <30118.1280159695@redhat.com>
-To: Ian Kent <raven@themaw.net>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-afs@lists.infradead.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] Add a dentry op to handle automounting rather than abusing follow_link() [ver #2]
-Date: Tue, 27 Jul 2010 09:48:41 +0100
-Message-ID: <12883.1280220521@redhat.com>
+	id S1755936Ab0G0Ix7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 04:53:59 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:36995 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801Ab0G0Ix5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 04:53:57 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L67KPQ-01-AH8-02
+X-M-MSG: 
+Date: Tue, 27 Jul 2010 10:53:50 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] x86, xsave: disable xsave in i387 emulation mode
+Message-ID: <20100727085350.GM26154@erda.amd.com>
+References: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
+ <1279731838-1522-7-git-send-email-robert.richter@amd.com>
+ <1279736162.2812.3.camel@sbs-t61.sc.intel.com>
+ <20100722123603.GU26154@erda.amd.com>
+ <4C4DD35C.8060708@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4C4DD35C.8060708@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian Kent <raven@themaw.net> wrote:
+On 26.07.10 14:26:36, H. Peter Anvin wrote:
 
-> Is this something others need?
+> >> I think it is cleaner to clear these cpu capabilities in the function
+> >> which handles no387 boot parameter.
+> > 
+> > This does not cover all (of course weird but potentially existing)
+> > cases. Disabling xsave in the no387 setup would only work if an fpu
+> > exists.
+> 
+> If the fpu doesn't exist, then xsave can't exist, either.
 
-Not as far as I know...  I think autofs is the only one doing out-of-kernel
-automounting.
+It does not convince me to move it either to no387 setup or
+xsave_init(). There is no benefit with both of it. We should disable
+it where we decide to use the soft fpu. Otherwise we will not have the
+same underlying rules for it. In case of xsave_init() we need to
+duplicate fpu code and export it to xsave code. I want to avoid this
+as xsave and fpu code should be kept simple and only be shared where
+necessary.
 
-That doesn't mean it shouldn't be provided, though...
+-Robert
 
-> Again, the exists vs not yet exists case for paths within indirect
-> autofs mounts. At the moment I can just set the flag on all dentrys in
-> the autofs fs and return EXDEV for non-empty directories in order to
-> return the dentry as a path component. OTOH if the dentry is a mount
-> embeded in the path and the mount fails we get a error return.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-Seems redundant, but I'd say go with it for now.  Maybe we can offload
-S_AUTOMOUNT to the dentry.
-
-> I could clear the flag on non-root parent dentrys during mkdir if this
-> is needed by others.
-
-I'm not sure that would actually matter, since it would come to
-follow_automount() at the same place.
-
-Note that someone who tries to stat() with AT_NO_AUTOMOUNT will cause the call
-to d_automount() to be suppressed and will see the negative or non-mounted
-directory.  That might be okay for you.
-
-David
