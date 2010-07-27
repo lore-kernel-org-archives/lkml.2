@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab0G0Nbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 09:31:45 -0400
-Received: from THUNK.ORG ([69.25.196.29]:51112 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab0G0Nbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 09:31:43 -0400
-Date: Tue, 27 Jul 2010 09:31:46 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andreas Dilger <adilger@sun.com>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, ext4: Fix potential memory leak in ext4_fill_super
-Message-ID: <20100727133146.GA18966@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Cyrill Gorcunov <gorcunov@gmail.com>,
-	Andreas Dilger <adilger@sun.com>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20100616153332.GA6751@lenovo>
+	id S1753764Ab0G0NeH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 09:34:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63634 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab0G0NeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 09:34:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v3] of: Create asm-generic/of.h and provide default of_node_to_nid()
+Date: Tue, 27 Jul 2010 15:34:01 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, Sam Ravnborg <sam@ravnborg.org>,
+        sfr@canb.auug.org.au, microblaze-uclinux@itee.uq.edu.au,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        sparclinux@vger.kernel.org, davem@davemloft.net
+References: <20100726220405.1550.63442.stgit@angua> <20100726222627.GA23501@merkur.ravnborg.org> <AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com>
+In-Reply-To: <AANLkTikcV3jJUm_My-oK-drudSDz3M2iH1cWhxdt+W1s@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100616153332.GA6751@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007271534.01250.arnd@arndb.de>
+X-Provags-ID: V02:K0:IBu03tMCrotrfv58q6VhAxWy6NWdy8x590R0lIvxmRU
+ Z91qdqBgpGXTqQ3hsK846vZT/uPPOQP49NIjEv7ce2pk+28bZX
+ dYVqPAyboFjOtFjV/brv/k0QgyQOpfPkp5CkwheAGBKnZrFyJU
+ KZ9Al2KZ/cFP/ecO8ruekepPC8ApLVea88IQMomvtQmbuRjKcV
+ aJCPBPLyWAPCP8zlP6Hqw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 16, 2010 at 07:33:32PM +0400, Cyrill Gorcunov wrote:
-> Under heavy memory pressure we may hit out of memory
-> situation and as result kstrdup'ed options will not be
-> freed. Fix it.
+On Tuesday 27 July 2010, Grant Likely wrote:
+> > I suggest to go back to v2 of your patch where you use asm-generic/of.h.
 > 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Stephen suggested dropping asm-generic/of.h.  I'm happy to do it either way.
 
-Thanks, I've added this to the ext4 tree.
+I don't mind adding stuff to asm-generic, but I think in this case it would
+be easier to keep this in linux/of.h because there is nothing wrong with
+all architectures including it.
 
-						- Ted
+Most files in asm-generic are there only for historical reasons, where some
+architectures use them but others don't. IMHO we should use the include/linux
+headers preferred for new stuff though.
+
+	Arnd
