@@ -1,146 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab0G0RVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 13:21:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16695 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab0G0RTw (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 27 Jul 2010 13:19:52 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, alex.williamson@redhat.com,
-        Alex Nixon <alex.nixon@citrix.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/9] xen: Rename the balloon lock
-Date: Tue, 27 Jul 2010 12:59:56 -0400
-Message-Id: <1280250002-20279-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
-References: <1280250002-20279-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C4F1524.005C:SCFMA4539814,ss=1,fgs=0
+	id S1752698Ab0G0RWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 13:22:30 -0400
+Received: from mail.perches.com ([173.55.12.10]:2103 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751772Ab0G0RW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 13:22:29 -0400
+Subject: Re: [PATCH] checkpatch: Add warnings for use of mdelay()
+From: Joe Perches <joe@perches.com>
+To: Israel Schlesinger <israels@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, apw@canonical.com, akpm@linux-foundation.org
+In-Reply-To: <4C4F132F.6020401@codeaurora.org>
+References: <4C4F132F.6020401@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Jul 2010 10:22:26 -0700
+Message-ID: <1280251346.2082.69.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Nixon <alex.nixon@citrix.com>
+On Tue, 2010-07-27 at 10:11 -0700, Israel Schlesinger wrote:
+> +		if ($line =~ /\bmdelay\(/) {
+ 
+That should be:
 
-* xen_create_contiguous_region needs access to the balloon lock to
-  ensure memory doesn't change under its feet, so expose the balloon
-  lock
-* Change the name of the lock to xen_reservation_lock, to imply it's
-  now less-specific usage.
+		if ($line =~ /\bmdelay\s*\(/) {
 
-[ Impact: cleanup ]
-
-Signed-off-by: Alex Nixon <alex.nixon@citrix.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/mmu.c             |    7 +++++++
- drivers/xen/balloon.c          |   15 ++++-----------
- include/xen/interface/memory.h |    8 ++++++++
- 3 files changed, 19 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index a5577f5..9e0d82f 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -70,6 +70,13 @@
- 
- #define MMU_UPDATE_HISTO	30
- 
-+/*
-+ * Protects atomic reservation decrease/increase against concurrent increases.
-+ * Also protects non-atomic updates of current_pages and driver_pages, and
-+ * balloon lists.
-+ */
-+DEFINE_SPINLOCK(xen_reservation_lock);
-+
- #ifdef CONFIG_XEN_DEBUG_FS
- 
- static struct {
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 1a0d8c2..500290b 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -85,13 +85,6 @@ static struct sys_device balloon_sysdev;
- 
- static int register_balloon(struct sys_device *sysdev);
- 
--/*
-- * Protects atomic reservation decrease/increase against concurrent increases.
-- * Also protects non-atomic updates of current_pages and driver_pages, and
-- * balloon lists.
-- */
--static DEFINE_SPINLOCK(balloon_lock);
--
- static struct balloon_stats balloon_stats;
- 
- /* We increase/decrease in batches which fit in a page */
-@@ -210,7 +203,7 @@ static int increase_reservation(unsigned long nr_pages)
- 	if (nr_pages > ARRAY_SIZE(frame_list))
- 		nr_pages = ARRAY_SIZE(frame_list);
- 
--	spin_lock_irqsave(&balloon_lock, flags);
-+	spin_lock_irqsave(&xen_reservation_lock, flags);
- 
- 	page = balloon_first_page();
- 	for (i = 0; i < nr_pages; i++) {
-@@ -254,7 +247,7 @@ static int increase_reservation(unsigned long nr_pages)
- 	balloon_stats.current_pages += rc;
- 
-  out:
--	spin_unlock_irqrestore(&balloon_lock, flags);
-+	spin_unlock_irqrestore(&xen_reservation_lock, flags);
- 
- 	return rc < 0 ? rc : rc != nr_pages;
- }
-@@ -299,7 +292,7 @@ static int decrease_reservation(unsigned long nr_pages)
- 	kmap_flush_unused();
- 	flush_tlb_all();
- 
--	spin_lock_irqsave(&balloon_lock, flags);
-+	spin_lock_irqsave(&xen_reservation_lock, flags);
- 
- 	/* No more mappings: invalidate P2M and add to balloon. */
- 	for (i = 0; i < nr_pages; i++) {
-@@ -315,7 +308,7 @@ static int decrease_reservation(unsigned long nr_pages)
- 
- 	balloon_stats.current_pages -= nr_pages;
- 
--	spin_unlock_irqrestore(&balloon_lock, flags);
-+	spin_unlock_irqrestore(&xen_reservation_lock, flags);
- 
- 	return need_sleep;
- }
-diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-index af36ead..e6adce6 100644
---- a/include/xen/interface/memory.h
-+++ b/include/xen/interface/memory.h
-@@ -9,6 +9,8 @@
- #ifndef __XEN_PUBLIC_MEMORY_H__
- #define __XEN_PUBLIC_MEMORY_H__
- 
-+#include <linux/spinlock.h>
-+
- /*
-  * Increase or decrease the specified domain's memory reservation. Returns a
-  * -ve errcode on failure, or the # extents successfully allocated or freed.
-@@ -142,4 +144,10 @@ struct xen_translate_gpfn_list {
- };
- DEFINE_GUEST_HANDLE_STRUCT(xen_translate_gpfn_list);
- 
-+
-+/*
-+ * Prevent the balloon driver from changing the memory reservation
-+ * during a driver critical region.
-+ */
-+extern spinlock_t xen_reservation_lock;
- #endif /* __XEN_PUBLIC_MEMORY_H__ */
--- 
-1.7.0.1
 
