@@ -1,133 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab0G0HT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 03:19:28 -0400
-Received: from complete.lackof.org ([198.49.126.79]:55561 "EHLO
-	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459Ab0G0HT0 (ORCPT
+	id S1753305Ab0G0HYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 03:24:25 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61043 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab0G0HYX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 03:19:26 -0400
-Date: Tue, 27 Jul 2010 01:19:15 -0600
-From: dann frazier <dannf@debian.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: ia64 hang/mca running gdb 'make check'
-Message-ID: <20100727071914.GB22945@lackof.org>
-References: <20100720173512.GF26783@ldl.fc.hp.com> <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com> <20100721030629.GA9987@lackof.org> <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
+	Tue, 27 Jul 2010 03:24:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ApMxEfzJOf8sicrPzcHdaDQa9hjpq309cINSngBZrWt8jL9/dLAAnk5gSDgH1P8HN/
+         z7MRecayx6jDgtBHYUdYpf5OnRnAhYYApQ8XgTZoULOP+OyYIByyc4ceNfY5sSAL49Z5
+         0PviBDPAaNhKE2rGEUj1VDyAkyb3Cm1Kozf+0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100727160708.722c39c1.sfr@canb.auug.org.au>
+References: <20100727160708.722c39c1.sfr@canb.auug.org.au>
+Date: Tue, 27 Jul 2010 12:54:22 +0530
+Message-ID: <AANLkTi=ki084ymBzsnbgnFw952BSnSDzUyL+YH-4353b@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 27
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 09:19:50PM -0700, Hugh Dickins wrote:
-> On Tue, 20 Jul 2010, dann frazier wrote:
-> > On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > On Tue, 20 Jul 2010 11:35:12 -0600
-> > > dann frazier <dannf@debian.org> wrote:
-> > > 
-> > > > Debian's ia64 autobuilders have been experiencing system crashes while
-> > > > trying to run the gdb test suite:
-> > > >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
-> > > > 
-> > > > I was able to reproduce this w/ the latest git tree, and bisected it
-> > > > down to this commit, introduced in 2.6.32:
-> > > > 
-> > > >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
-> > > >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-> > > >   Date:   Mon Sep 21 17:03:34 2009 -0700
-> > > > 
-> > > >     mm: ZERO_PAGE without PTE_SPECIAL
-> > > > 
-> > > >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
-> > > >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
-> > > > 
-> > > >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
-> > > >     zero_pfn test built into one or another block of vm_normal_page().
-> > > > 
-> > > >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
-> > > >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
-> > > >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
-> > > >     that: it would have to take vm_flags to weed out some cases.
-> > > > 
-> > > > fyi, I found this to not be reproducible on SLES11 SP1 (which is
-> > > > 2.6.32-based). I compared the .configs and found that the relevant
-> > > > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
-> > > > reliably fails w/ 16KB pages.
-> > > > 
-> > > 
-> > > Sorry, I have no idea...
-> > > Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
-> > 
-> > 
-> > dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley 
-> > a0000001008784c0 d __ksymtab_empty_zero_page
-> > a000000100882688 d __kcrctab_empty_zero_page
-> > a000000100884ca4 r __kstrtab_empty_zero_page
-> > a000000100974000 D empty_zero_page
-> 
-> Thanks a lot for reporting this, but I too have no idea yet.
-> 
-> It is likely that the bug is not to be found in that 62eede62, but
-> rather in one of the preceding patches to mm/memory.c which 62eede62
-> was extending to ia64 and other architectures without PTE_SPECIAL.
-> 
-> I wonder, from looking at that gdb testsuite log, is it plausible
-> that all these hangs/crashes occurred when writing out a coredump?
-> Is that something you could check for us? or rule out the possibility.
+Hello Stephen,
 
-Yep, seems so. I've reduced it down to this test case:
+On Tue, Jul 27, 2010 at 11:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20100726:
+>
+> The arm tree lost its conflict.
+>
+> The microblaze tree lost its conflict.
+>
+> The mips tree gained a build failure so I used the version from
+> next-20100726.
+>
+> The xfs tree still has its build failure so I used the version from
+> next-20100723.
+>
+> The ieee2394 tree gained a build failure so I used the version from
+> next-20100726.
+>
+> The kvm tree still has its build failure.
+>
+> The async_tx tree gained a conflict against the arm tree.
+>
+> The devicetree tree lost its conflict, but gained another against the
+> microblaze tree.
+>
+> The xen tree lost its build problems but gained a conflict against Linus'
+> tree.
+>
+> The tip tree gained a conflict against the cpufreq tree.
+>
+> The tty tree gained a conflict against the genesis tree and a build
+> failure for which I reverted 4 patches.
+>
+> The usb tree lost its conflicts.
+>
+> ----------------------------------------------------------------------------
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+> (see below).
+>
+> You can see which trees have been included by looking in the Next/Trees
+> file in the source.  There are also quilt-import.log and merge.log files
+> in the Next directory.  Between each merge, the tree was built with
+> a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+> final fixups (if any), it is also built with powerpc allnoconfig (32 and
+> 64 bit), ppc44x_defconfig and allyesconfig (minus
+> CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+> and sparc64 defconfig. These builds also have
+> CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+> CONFIG_DEBUG_INFO disabled when necessary.
+>
+> Below is a summary of the state of the merge.
+>
+> We are up to 167 trees (counting Linus' and 22 trees of patches pending
+> for Linus' tree), more are welcome (even if they are currently empty).
+> Thanks to those who have contributed, and to those who haven't, please do.
+>
+> Status of my local build tests will be at
+> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+> advice about cross compilers/configs that work, we are always open to add
+> more builds.
+>
+> Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+> at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+> Dunlap for doing many randconfig builds.
+>
+> There is a wiki covering stuff to do with linux-next at
+> http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+>
 
-dannf@rx2600:~> cat > foo.c
-int leaf(void) {
-  return 0;
-}
+I am getting following compilation warnings in linux-next 20100727:
 
-int main(void) {
-  leaf();
-}
-dannf@rx2600:~> gcc -g foo.c -o foo
-dannf@rx2600:~> gdb ./foo 
-GNU gdb (GDB) SUSE (7.0-0.4.16)
-Copyright (C) 2009 Free Software Foundation, Inc.
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-and "show warranty" for details.
-This GDB was configured as "ia64-suse-linux".
-For bug reporting instructions, please see:
-<http://www.gnu.org/software/gdb/bugs/>...
-Reading symbols from /home/dannf/foo...done.
-(gdb) break leaf
-Breakpoint 1 at 0x40000000000005c1: file foo.c, line 2.
-(gdb) run
-Starting program: /home/dannf/foo 
-Missing separate debuginfo for /lib/ld-linux-ia64.so.2
-Try: zypper install -C "debuginfo(build-id)=d5bfb8b5940e174d54b978ca515dc0df76c7618c"
-Missing separate debuginfo for /lib/libc.so.6.1
-Try: zypper install -C "debuginfo(build-id)=ca78657bd9173653d95f8504a313d2b6db8cb1d6"
+  CC [M]  arch/x86/kvm/mmu.o
+arch/x86/kvm/mmu.c: In function ‘kvm_mmu_pte_write’:
+arch/x86/kvm/mmu.c:2908: warning: suggest parentheses around operand
+of ‘!’ or change ‘&’ to ‘&&’ or ‘!’ to ‘~’
 
-Breakpoint 1, leaf () at foo.c:2
-2	     return 0;
-(gdb) gcore /tmp/save
+ CC      lib/decompress_bunzip2.o
+lib/decompress_bunzip2.c: In function ‘get_next_block’:
+lib/decompress_bunzip2.c:511: warning: the frame size of 1968 bytes is
+larger than 1024 bytes
 
-[bang]
+  CC      drivers/scsi/constants.o
+drivers/scsi/constants.c: In function ‘scsi_print_sense’:
+drivers/scsi/constants.c:1407: warning: zero-length gnu_printf format string
+drivers/scsi/constants.c:1413: warning: zero-length gnu_printf format string
+drivers/scsi/constants.c: In function ‘scsi_print_result’:
+drivers/scsi/constants.c:1456: warning: zero-length gnu_printf format string
 
-> I was rather proud of the get_dump_page() simplification,
-> but perhaps there's something nasty lurking in there.
-> 
-> Hugh
-> 
 
--- 
-dann frazier
+  CC      drivers/scsi/sd.o
+drivers/scsi/sd.c: In function ‘sd_print_sense_hdr’:
+drivers/scsi/sd.c:2617: warning: zero-length gnu_printf format string
+drivers/scsi/sd.c:2619: warning: zero-length gnu_printf format string
+drivers/scsi/sd.c: In function ‘sd_print_result’:
+drivers/scsi/sd.c:2625: warning: zero-length gnu_printf format string
 
+Thanks,
+--
+Jaswinder Singh.
