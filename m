@@ -1,72 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab0G0ONi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 10:13:38 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49531 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab0G0ONh (ORCPT
+	id S1756202Ab0G0ONt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 10:13:49 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61120 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504Ab0G0ONh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 27 Jul 2010 10:13:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=ecWjv/6jThsDoTFUJQ5ad1k19uKR030L8bo1geBW691aTRZr1sbh2vwtkYMbKqI+vU
-         XHK4UxKiGlsXdQn1ljlVXFYsFQakcRHT3D5fdjNdUZzIxSCdRgNp3iUWckB5/Y9kGPT+
-         3gjtWrcwyMJ4HcdDj1cr8c0y2hXKratKAxo/s=
+        h=sender:from:to:subject:cc:date:message-id:user-agent:mime-version
+         :content-type;
+        b=SVoH2aZNhgSZXFSMEfeeAKy1IOWihbfq07s9jlU+PQqt7I9hhPEUDF/JrDP5S446x8
+         jHUl1jSBeSvDardBiqYur1nXdLyF4RCGGRvO/u9wdeaRUvciKM8V6+V2GacASe6GioV4
+         3vIT6vyWgYhRj01B/rqARmqdT42GY9XJ+pC6U=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: jens.axboe@oracle.com
+Subject: [PATCH] blkdev: fix blkdev_issue_zeroout return value
+CC: linux-kernel@vger.kernel.org
 Date: Tue, 27 Jul 2010 18:13:31 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        Ryan Mallon <ryan@bluewatersys.com>,
-        Yulia Vilensky <vilensky@compulab.co.il>
-Subject: Re: [GIT PULL] battery-2.6.35.git
-Message-ID: <20100727141331.GA5394@oksana.dev.rtsoft.ru>
-References: <20100727135115.GA31789@oksana.dev.rtsoft.ru>
- <AANLkTim77oCDk9L8oYE5DCEKqZL_L_dm=mm-46=MZwX7@mail.gmail.com>
+Message-ID: <87k4ohc8s4.fsf@dmon-lap.sw.ru>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim77oCDk9L8oYE5DCEKqZL_L_dm=mm-46=MZwX7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 04:03:14PM +0200, Geert Uytterhoeven wrote:
-> On Tue, Jul 27, 2010 at 15:51, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> > diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-> > index d762a0c..9b3b4b7 100644
-> > --- a/drivers/power/ds2782_battery.c
-> > +++ b/drivers/power/ds2782_battery.c
-> > @@ -43,10 +43,9 @@
-> >  struct ds278x_info;
-> >
-> >  struct ds278x_battery_ops {
-> > -       int     (*get_current)(struct ds278x_info *info, int *current_uA);
-> > -       int     (*get_voltage)(struct ds278x_info *info, int *voltage_uA);
-> > -       int     (*get_capacity)(struct ds278x_info *info, int *capacity_uA);
-> > -
-> > +       int (*get_battery_current)(struct ds278x_info *info, int *current_uA);
-> > +       int (*get_battery_voltage)(struct ds278x_info *info, int *voltage_uA);
-> > +       int (*get_battery_capacity)(struct ds278x_info *info, int *capacity_uA);
-> 
-> What's the meaning of these `uA' namings? At first I thought `micro Ampère', but
-> that can't be correct for voltage (`uV'?) and capacity (`uAh'?).
+--=-=-=
 
-Yeah, the names aren't quite right. But they were wrong before
-that patch too, so a patch on top to fix these issues will work.
+Hi Jens,  
+I've found couple of trivial issues in blkdev_issue_zeroout()
+implementation. Unfortunately I've miss during initial testing phase
+because i've always called it with BARRIER|WAIT flags.
 
-Cc'ing driver authors.
 
-Thanks Geert!
+--=-=-=
+Content-Disposition: inline;
+ filename=0001-blkdev-fix-blkdev_issue_zeroout-return-value.patch
 
+>From 5eb4d762ad8fe146ee638fb1b2d7730db3e3ca4b Mon Sep 17 00:00:00 2001
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+Date: Tue, 27 Jul 2010 17:12:27 +0400
+Subject: [PATCH] blkdev: fix blkdev_issue_zeroout return value
+
+- If function called without barrier option retvalue is incorrect
+- Add io_schedule() between loops
+
+
+ diff --git a/block/blk-lib.c b/block/blk-lib.c
+index d0216b9..a8d6a21 100644
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ block/blk-lib.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index d0216b9..a8d6a21 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -157,7 +157,7 @@ static void bio_batch_end_io(struct bio *bio, int err)
+ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
+ {
+-	int ret = 0;
++	int ret;
+ 	struct bio *bio;
+ 	struct bio_batch bb;
+ 	unsigned int sz, issued = 0;
+@@ -175,11 +175,14 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			return ret;
+ 	}
+ submit:
++	ret = 0;
+ 	while (nr_sects != 0) {
+ 		bio = bio_alloc(gfp_mask,
+ 				min(nr_sects, (sector_t)BIO_MAX_PAGES));
+-		if (!bio)
++		if (!bio) {
++			ret = -ENOMEM;
+ 			break;
++		}
+ 
+ 		bio->bi_sector = sector;
+ 		bio->bi_bdev   = bdev;
+@@ -198,6 +201,7 @@ submit:
+ 			if (ret < (sz << 9))
+ 				break;
+ 		}
++		ret = 0;
+ 		issued++;
+ 		submit_bio(WRITE, bio);
+ 	}
+@@ -218,15 +222,18 @@ submit:
+ 		/* One of bios in the batch was completed with error.*/
+ 		ret = -EIO;
+ 
+-	if (ret)
++	if (ret && ret != -ENOMEM)
+ 		goto out;
+ 
+ 	if (test_bit(BIO_EOPNOTSUPP, &bb.flags)) {
+ 		ret = -EOPNOTSUPP;
+ 		goto out;
+ 	}
+-	if (nr_sects != 0)
++	if (nr_sects != 0) {
++		if (ret == -ENOMEM)
++			io_schedule();
+ 		goto submit;
++	}
+ out:
+ 	return ret;
+ }
 -- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+1.6.6.1
+
+
+--=-=-=--
