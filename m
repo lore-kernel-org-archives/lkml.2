@@ -1,105 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab0G0Jpx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 05:45:53 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36306 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750Ab0G0Jpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 05:45:52 -0400
-Date: Tue, 27 Jul 2010 10:45:34 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
-	writeback
-Message-ID: <20100727094534.GW5300@csn.ul.ie>
-References: <20100722050928.653312535@intel.com> <20100722061822.906037624@intel.com> <20100726105736.GM5300@csn.ul.ie> <20100726125635.GC11947@localhost> <20100726125954.GT5300@csn.ul.ie> <20100726131152.GF11947@localhost>
+	id S1755961Ab0G0J41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 05:56:27 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48691 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509Ab0G0J4Z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 05:56:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LeekEPBNt01q/kjlDjDSaKjwyVJqO92vh5/opNBWsTAWel4WloC6IAjAyphleX0sHx
+         YiTTCy7ykPYn7ylo7vX28We1uuwOjpnAl89DY1Eg7Ch5caJ2cq6QMGu/EjXfl0cB3EY3
+         JBqJ6ro5XLsu2dNyrFAW53Iv5Rl7LvGS147Dw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100726131152.GF11947@localhost>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <pfn.valid.v4.reply.2@mdm.bga.com>
+References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
+	<alpine.DEB.2.00.1007261136160.5438@router.home>
+	<pfn.valid.v4.reply.1@mdm.bga.com>
+	<AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
+	<pfn.valid.v4.reply.2@mdm.bga.com>
+Date: Tue, 27 Jul 2010 18:56:24 +0900
+Message-ID: <AANLkTim7s4FH+hU19d53R3JLKm3pcDGV5cMMeST-Wyrz@mail.gmail.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 09:11:52PM +0800, Wu Fengguang wrote:
-> On Mon, Jul 26, 2010 at 08:59:55PM +0800, Mel Gorman wrote:
-> > On Mon, Jul 26, 2010 at 08:56:35PM +0800, Wu Fengguang wrote:
-> > > > > @@ -232,8 +232,15 @@ static void move_expired_inodes(struct l
-> > > > >  	while (!list_empty(delaying_queue)) {
-> > > > >  		inode = list_entry(delaying_queue->prev, struct inode, i_list);
-> > > > >  		if (expire_interval &&
-> > > > > -		    inode_dirtied_after(inode, older_than_this))
-> > > > > -			break;
-> > > > > +		    inode_dirtied_after(inode, older_than_this)) {
-> > > > > +			if (wbc->for_background &&
-> > > > > +			    list_empty(dispatch_queue) && list_empty(&tmp)) {
-> > > > > +				expire_interval >>= 1;
-> > > > > +				older_than_this = jiffies - expire_interval;
-> > > > > +				continue;
-> > > > > +			} else
-> > > > > +				break;
-> > > > > +		}
-> > > > 
-> > > > This needs a comment.
-> > > > 
-> > > > I think what it is saying is that if background flush is active but no
-> > > > inodes are old enough, consider newer inodes. This is on the assumption
-> > > > that page reclaim has encountered dirty pages and the dirty inodes are
-> > > > still too young.
-> > > 
-> > > Yes this should be commented. How about this one?
-> > > 
-> > > @@ -232,8 +232,20 @@ static void move_expired_inodes(struct l
-> > >         while (!list_empty(delaying_queue)) {
-> > >                 inode = list_entry(delaying_queue->prev, struct inode, i_list);
-> > >                 if (expire_interval &&
-> > > -                   inode_dirtied_after(inode, older_than_this))
-> > > +                   inode_dirtied_after(inode, older_than_this)) {
-> > > +                       /*
-> > > +                        * background writeback will start with expired inodes,
-> > > +                        * and then fresh inodes. This order helps reducing
-> > > +                        * the number of dirty pages reaching the end of LRU
-> > > +                        * lists and cause trouble to the page reclaim.
-> > > +                        */
-> > 
-> > s/reducing/reduce/
-> > 
-> > Otherwise, it's enough detail to know what is going on. Thanks
-> 
-> Thanks. Here is the updated patch.
-> ---
-> Subject: writeback: sync expired inodes first in background writeback
-> From: Wu Fengguang <fengguang.wu@intel.com>
-> Date: Wed Jul 21 20:11:53 CST 2010
-> 
-> A background flush work may run for ever. So it's reasonable for it to
-> mimic the kupdate behavior of syncing old/expired inodes first.
-> 
-> The policy is
-> - enqueue all newly expired inodes at each queue_io() time
-> - enqueue all dirty inodes if there are no more expired inodes to sync
-> 
-> This will help reduce the number of dirty pages encountered by page
-> reclaim, eg. the pageout() calls. Normally older inodes contain older
-> dirty pages, which are more close to the end of the LRU lists. So
-> syncing older inodes first helps reducing the dirty pages reached by
-> the page reclaim code.
-> 
-> CC: Jan Kara <jack@suse.cz>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+On Tue, Jul 27, 2010 at 5:12 PM, Milton Miller <miltonm@bga.com> wrote:
+>
+> On Tue Jul 27 2010 about 02:11:22 Minchan Kim wrote:
+>> > [Sorry if i missed or added anyone on cc, patchwork.kernel.org  LKML is not
+>> > working and I'm not subscribed to the list ]
+>>
+>> Readd them. :)
+>
+> Changed linux-mmc at vger to linxu-mm at kvack.org, from my poor use of grep
+> MAINTAINERS.
+>
+>> On Tue, Jul 27, 2010 at 2:55 PM, <miltonm@xxxxxxx> wrote:
+>> > On Mon Jul 26 2010 about 12:47:37 EST, Christoph Lameter wrote:
+>> > > On Tue, 27 Jul 2010, Minchan Kim wrote:
+>> > >
+>> > > > This patch registers address of mem_section to memmap itself's page struct's
+>> > > > pg->private field. This means the page is used for memmap of the section.
+>> > > > Otherwise, the page is used for other purpose and memmap has a hole.
+>> >
+>> > >
+>> > > > +void mark_valid_memmap(unsigned long start, unsigned long end);
+>> > > > +
+>> > > > +#ifdef CONFIG_ARCH_HAS_HOLES_MEMORYMODEL
+>> > > > +static inline int memmap_valid(unsigned long pfn)
+>> > > > +{
+>> > > > + struct page *page = pfn_to_page(pfn);
+>> > > > + struct page *__pg = virt_to_page(page);
+>> > > > + return page_private(__pg) == (unsigned long)__pg;
+>> > >
+>> > >
+>> > > What if page->private just happens to be the value of the page struct?
+>> > > Even if that is not possible today, someday someone may add new
+>> > > functionality to the kernel where page->pivage == page is used for some
+>> > > reason.
+>> > >
+>> > > Checking for PG_reserved wont work?
+>> >
+>> > I had the same thought and suggest setting it to the memory section block,
+>> > since that is a uniquie value (unlike PG_reserved),
+>>
+>> You mean setting pg->private to mem_section address?
+>> I hope I understand your point.
+>>
+>> Actually, KAMEZAWA tried it at first version but I changed it.
+>> That's because I want to support this mechanism to ARM FLATMEM.
+>> (It doesn't have mem_section)
+>
+>> >
+>> > .. and we already have computed it when we use it so we could pass it as
+>> > a parameter (to both _valid and mark_valid).
+>>
+>> I hope this can support FALTMEM which have holes(ex, ARM).
+>>
+>
+> If we pass a void * to this helper we should be able to find another
+> symbol.  Looking at the pfn_valid() in arch/arm/mm/init.c I would
+> probably choose &meminfo as it is already used nearby, and using a single
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+If we uses pg itself and PG_reserved, we can remove &meminfo in FLATMEM.
+
+> symbol in would avoid issues if a more specific symbol chosen (eg bank)
+> were to change at a pfn boundary not PAGE_SIZE / sizeof(struct page).
+> Similarly the asm-generic/page.h version could use &max_mapnr.
+
+I don't consider NOMMU.
+I am not sure NOMMU have a this problem.
+
+>
+> This function is a validation helper for pfn_valid not the only check.
+>
+> something like
+>
+> static inline int memmap_valid(unsigned long pfn, void *validate)
+> {
+>        struct page *page = pfn_to_page(pfn);
+>        struct page *__pg = virt_to_page(page);
+>        return page_private(__pg) == validate;
+> }
+
+I am not sure what's benefit we have if we use validate argument.
+
+>
+> static inline int pfn_valid(unsigned long pfn)
+> {
+>        struct mem_section *ms;
+>        if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+>                return 0;
+>        ms = __nr_to_section(pfn_to_section_nr(pfn));
+>        return valid_section(ms) && memmap_valid(pfn, ms);
+> }
+>
+>> > > > +/*
+>> > > > + * Fill pg->private on valid mem_map with page itself.
+>> > > > + * pfn_valid() will check this later. (see include/linux/mmzone.h)
+>> > > > + * Every arch for supporting hole of mem_map should call
+>> > > > + * mark_valid_memmap(start, end). please see usage in ARM.
+>> > > > + */
+>> > > > +void mark_valid_memmap(unsigned long start, unsigned long end)
+>> > > > +{
+>> > > > +       struct mem_section *ms;
+>> > > > +       unsigned long pos, next;
+>> > > > +       struct page *pg;
+>> > > > +       void *memmap, *mapend;
+>> > > > +
+>> > > > +       for (pos = start; pos < end; pos = next) {
+>> > > > +               next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
+>> > > > +               ms = __pfn_to_section(pos);
+>> > > > +               if (!valid_section(ms))
+>> > > > +                       continue;
+>> > > > +
+>> > > > +               for (memmap = (void*)pfn_to_page(pos),
+>> > > > +                                       /* The last page in section */
+>> > > > +                                       mapend = pfn_to_page(next-1);
+>> > > > +                               memmap < mapend; memmap += PAGE_SIZE) {
+>> > > > +                       pg = virt_to_page(memmap);
+>> > > > +                       set_page_private(pg, (unsigned long)pg);
+>> > > > +               }
+>> > > > +       }
+>> > > > +}
+>
+> Hmm, this loop would need to change for sections.   And sizeof(struct
+> page) % PAGE_SIZE may not be 0, so we want a global symbol for sparsemem
+
+I can't understand your point. What is problem of sizeof(struct page)%PAGE_SIZE?
+AFAIK, I believe sizeof(struct page) is always 32 bit in 32 bit
+machine and most of PAGE_SIZE is 4K. What's problem happen?
+
+> too.  Perhaps the mem_section array.  Using a symbol that is part of
+> the model pre-checks can remove a global symbol lookup and has the side
+> effect of making sure our pfn_valid is for the right model.
+
+global symbol lookup?
+Hmm, Please let me know your approach's benefit for improving this patch. :)
+
+Thanks for careful review, milton.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Kind regards,
+Minchan Kim
