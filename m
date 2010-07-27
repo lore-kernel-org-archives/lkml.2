@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab0G0Uyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 16:54:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26000 "EHLO mx1.redhat.com"
+	id S1753210Ab0G0Uyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 16:54:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45398 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752941Ab0G0Uyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 16:54:38 -0400
-Date: Tue, 27 Jul 2010 16:54:06 -0400
+	id S1752943Ab0G0Uyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 16:54:47 -0400
+Date: Tue, 27 Jul 2010 16:54:18 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,369 +14,395 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
         roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
         fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
         vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <986107d3f3e49b6aa17af43ed7f9c66349cc61a4.1280263065.git.jbaron@redhat.com>
+Message-Id: <b76240c06b6ebe9f1f4956763929601e3c295b4d.1280263065.git.jbaron@redhat.com>
 In-Reply-To: <cover.1280263065.git.jbaron@redhat.com>
 References: <cover.1280263065.git.jbaron@redhat.com>
-Subject: [PATCH 01/12] jump label v10: base patch
+Subject: [PATCH 03/12] jump label v10: move ftrace_dyn_arch_init to common code
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-base patch to implement 'jump labeling'. Based on a new 'asm goto' inline
-assembly gcc mechanism, we can now branch to labels from an 'asm goto'
-statment. This allows us to create a 'no-op' fastpath, which can subsequently
-be patched with a jump to the slowpath code. This is useful for code which
-might be rarely used, but which we'd like to be able to call, if needed.
-Tracepoints are the current usecase that these are being implemented for.
+Move Steve's code for finding the best 5-byte no-op from ftrace.c to alternative.c.
+The idea is that other consumers (in this case jump label) want to make use of
+that code. I've created a global: 'char ideal_nop[5]', that is setup during
+setup_arch that can be used.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- Makefile                          |    5 +
- arch/Kconfig                      |    3 +
- include/asm-generic/vmlinux.lds.h |   10 ++-
- include/linux/jump_label.h        |   56 ++++++++++++
- kernel/Makefile                   |    2 +-
- kernel/jump_label.c               |  179 +++++++++++++++++++++++++++++++++++++
- scripts/gcc-goto.sh               |    5 +
- 7 files changed, 258 insertions(+), 2 deletions(-)
- create mode 100644 include/linux/jump_label.h
- create mode 100644 kernel/jump_label.c
- create mode 100644 scripts/gcc-goto.sh
+ arch/x86/include/asm/alternative.h |   14 +++++++
+ arch/x86/kernel/alternative.c      |   72 +++++++++++++++++++++++++++++++++++-
+ arch/x86/kernel/ftrace.c           |   70 +----------------------------------
+ arch/x86/kernel/setup.c            |    3 +
+ include/linux/jump_label.h         |   10 ++++-
+ kernel/jump_label.c                |   32 ++++++++++++++++
+ kernel/trace/ftrace.c              |   13 +------
+ 7 files changed, 130 insertions(+), 84 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index f5787e2..0aafa4d 100644
---- a/Makefile
-+++ b/Makefile
-@@ -582,6 +582,11 @@ KBUILD_CFLAGS	+= $(call cc-option,-fno-strict-overflow)
- # conserve stack if available
- KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
- 
-+# check for 'asm goto'
-+ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
-+	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
-+endif
-+
- # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
- # But warn user when we do so
- warn-assign = \
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 4877a8c..1462d84 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -158,4 +158,7 @@ config HAVE_PERF_EVENTS_NMI
- 	  subsystem.  Also has support for calculating CPU cycle events
- 	  to determine how many clock cycles in a given period.
- 
-+config HAVE_ARCH_JUMP_LABEL
-+	bool
-+
- source "kernel/gcov/Kconfig"
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 415b1a9..3c7e9ab 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -163,7 +163,8 @@
- 	BRANCH_PROFILE()						\
- 	TRACE_PRINTKS()							\
- 	FTRACE_EVENTS()							\
--	TRACE_SYSCALLS()
-+	TRACE_SYSCALLS()						\
-+	JUMP_TABLE()							\
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index bc6abb7..963f5f9 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -4,6 +4,7 @@
+ #include <linux/types.h>
+ #include <linux/stddef.h>
+ #include <linux/stringify.h>
++#include <linux/jump_label.h>
+ #include <asm/asm.h>
  
  /*
-  * Data section helpers
-@@ -202,6 +203,7 @@
- 		*(__vermagic)		/* Kernel version magic */	\
- 		*(__markers_strings)	/* Markers: strings */		\
- 		*(__tracepoints_strings)/* Tracepoints: strings */	\
-+		*(__jump_strings)/* Jump: strings */	\
- 	}								\
- 									\
- 	.rodata1          : AT(ADDR(.rodata1) - LOAD_OFFSET) {		\
-@@ -553,6 +555,12 @@
- #define BUG_TABLE
+@@ -160,6 +161,8 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
+ #define __parainstructions_end	NULL
  #endif
  
-+#define JUMP_TABLE()							\
-+	. = ALIGN(8);							\
-+		VMLINUX_SYMBOL(__start___jump_table) = .;		\
-+		*(__jump_table)						\
-+		VMLINUX_SYMBOL(__stop___jump_table) = .;		\
++extern void *text_poke_early(void *addr, const void *opcode, size_t len);
 +
- #ifdef CONFIG_PM_TRACE
- #define TRACEDATA							\
- 	. = ALIGN(4);							\
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-new file mode 100644
-index 0000000..846b72a
---- /dev/null
-+++ b/include/linux/jump_label.h
-@@ -0,0 +1,56 @@
-+#ifndef _LINUX_JUMP_LABEL_H
-+#define _LINUX_JUMP_LABEL_H
-+
-+#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_HAVE_ARCH_JUMP_LABEL)
-+# include <asm/jump_label.h>
-+# define HAVE_JUMP_LABEL
-+#endif
-+
-+enum jump_label_type {
-+	JUMP_LABEL_ENABLE,
-+	JUMP_LABEL_DISABLE
-+};
-+
-+#ifdef HAVE_JUMP_LABEL
-+
-+extern struct jump_entry __start___jump_table[];
-+extern struct jump_entry __stop___jump_table[];
-+
-+#define DEFINE_JUMP_LABEL(name)						\
-+	const char __jlstrtab_##name[]					\
-+	__used __attribute__((section("__jump_strings")))  = #name;
-+
-+extern void arch_jump_label_transform(struct jump_entry *entry,
-+				 enum jump_label_type type);
-+extern const u8 *arch_jump_label_get_nop(void);
-+extern void jump_label_update(const char *name, enum jump_label_type type);
-+
-+#define enable_jump_label(name) \
-+	jump_label_update(name, JUMP_LABEL_ENABLE);
-+
-+#define disable_jump_label(name) \
-+	jump_label_update(name, JUMP_LABEL_DISABLE);
-+
-+#else
-+
-+#define DEFINE_JUMP_LABEL(name)
-+
-+#define JUMP_LABEL(tag, label, cond)		\
-+do {						\
-+	if (unlikely(cond))			\
-+		goto label;			\
-+} while (0)
-+
-+static inline int enable_jump_label(const char *name)
-+{
-+	return 0;
-+}
-+
-+static inline int disable_jump_label(const char *name)
-+{
-+	return 0;
-+}
-+
-+#endif
-+
-+#endif
-diff --git a/kernel/Makefile b/kernel/Makefile
-index ce53fb2..662c96d 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -10,7 +10,7 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
- 	    kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
- 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
- 	    notifier.o ksysfs.o pm_qos_params.o sched_clock.o cred.o \
--	    async.o range.o
-+	    async.o range.o jump_label.o
- obj-$(CONFIG_HAVE_EARLY_RES) += early_res.o
- obj-y += groups.o
+ /*
+  * Clear and restore the kernel write-protection flag on the local CPU.
+  * Allows the kernel to edit read-only pages.
+@@ -180,4 +183,15 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
+ extern void *text_poke(void *addr, const void *opcode, size_t len);
+ extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
  
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-new file mode 100644
-index 0000000..78d18f0
---- /dev/null
-+++ b/kernel/jump_label.c
-@@ -0,0 +1,179 @@
-+/*
-+ * jump label support
-+ *
-+ * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
-+ *
-+ */
++#if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
++#define IDEAL_NOP_SIZE_5 5
++extern unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
++extern int arch_init_ideal_nop5(void);
++#else
++static inline int arch_init_ideal_nop5(void)
++{
++	return 0;
++}
++#endif
++
+ #endif /* _ASM_X86_ALTERNATIVE_H */
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index f65ab8b..df5a4f2 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -195,7 +195,7 @@ static void __init_or_module add_nops(void *insns, unsigned int len)
+ 
+ extern struct alt_instr __alt_instructions[], __alt_instructions_end[];
+ extern s32 __smp_locks[], __smp_locks_end[];
+-static void *text_poke_early(void *addr, const void *opcode, size_t len);
++void *text_poke_early(void *addr, const void *opcode, size_t len);
+ 
+ /* Replace instructions with better alternatives for this CPU type.
+    This runs before SMP is initialized to avoid SMP problems with
+@@ -522,7 +522,7 @@ void __init alternative_instructions(void)
+  * instructions. And on the local CPU you need to be protected again NMI or MCE
+  * handlers seeing an inconsistent instruction while you patch.
+  */
+-static void *__init_or_module text_poke_early(void *addr, const void *opcode,
++void *__init_or_module text_poke_early(void *addr, const void *opcode,
+ 					      size_t len)
+ {
+ 	unsigned long flags;
+@@ -641,3 +641,71 @@ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
+ 	return addr;
+ }
+ 
++#if defined(CONFIG_DYNAMIC_FTRACE) || defined(HAVE_JUMP_LABEL)
++
++unsigned char ideal_nop5[IDEAL_NOP_SIZE_5];
++
++int __init arch_init_ideal_nop5(void)
++{
++	extern const unsigned char ftrace_test_p6nop[];
++	extern const unsigned char ftrace_test_nop5[];
++	extern const unsigned char ftrace_test_jmp[];
++	int faulted = 0;
++	unsigned long flags;
++
++	local_irq_save(flags);
++	/*
++	 * There is no good nop for all x86 archs.
++	 * We will default to using the P6_NOP5, but first we
++	 * will test to make sure that the nop will actually
++	 * work on this CPU. If it faults, we will then
++	 * go to a lesser efficient 5 byte nop. If that fails
++	 * we then just use a jmp as our nop. This isn't the most
++	 * efficient nop, but we can not use a multi part nop
++	 * since we would then risk being preempted in the middle
++	 * of that nop, and if we enabled tracing then, it might
++	 * cause a system crash.
++	 *
++	 * TODO: check the cpuid to determine the best nop.
++	 */
++	asm volatile (
++		"ftrace_test_jmp:"
++		"jmp ftrace_test_p6nop\n"
++		"nop\n"
++		"nop\n"
++		"nop\n"  /* 2 byte jmp + 3 bytes */
++		"ftrace_test_p6nop:"
++		P6_NOP5
++		"jmp 1f\n"
++		"ftrace_test_nop5:"
++		".byte 0x66,0x66,0x66,0x66,0x90\n"
++		"1:"
++		".section .fixup, \"ax\"\n"
++		"2:	movl $1, %0\n"
++		"	jmp ftrace_test_nop5\n"
++		"3:	movl $2, %0\n"
++		"	jmp 1b\n"
++		".previous\n"
++		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
++		_ASM_EXTABLE(ftrace_test_nop5, 3b)
++		: "=r"(faulted) : "0" (faulted));
++
++	switch (faulted) {
++	case 0:
++		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
++		memcpy(ideal_nop5, ftrace_test_p6nop, IDEAL_NOP_SIZE_5);
++		break;
++	case 1:
++		pr_info("converting mcount calls to 66 66 66 66 90\n");
++		memcpy(ideal_nop5, ftrace_test_nop5, IDEAL_NOP_SIZE_5);
++		break;
++	case 2:
++		pr_info("converting mcount calls to jmp . + 5\n");
++		memcpy(ideal_nop5, ftrace_test_jmp, IDEAL_NOP_SIZE_5);
++		break;
++	}
++
++	local_irq_restore(flags);
++	return 0;
++}
++#endif
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index cd37469..ba2e0d9 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -257,14 +257,9 @@ do_ftrace_mod_code(unsigned long ip, void *new_code)
+ 	return mod_code_status;
+ }
+ 
+-
+-
+-
+-static unsigned char ftrace_nop[MCOUNT_INSN_SIZE];
+-
+ static unsigned char *ftrace_nop_replace(void)
+ {
+-	return ftrace_nop;
++	return ideal_nop5;
+ }
+ 
+ static int
+@@ -336,69 +331,6 @@ int ftrace_update_ftrace_func(ftrace_func_t func)
+ 	return ret;
+ }
+ 
+-int __init ftrace_dyn_arch_init(void *data)
+-{
+-	extern const unsigned char ftrace_test_p6nop[];
+-	extern const unsigned char ftrace_test_nop5[];
+-	extern const unsigned char ftrace_test_jmp[];
+-	int faulted = 0;
+-
+-	/*
+-	 * There is no good nop for all x86 archs.
+-	 * We will default to using the P6_NOP5, but first we
+-	 * will test to make sure that the nop will actually
+-	 * work on this CPU. If it faults, we will then
+-	 * go to a lesser efficient 5 byte nop. If that fails
+-	 * we then just use a jmp as our nop. This isn't the most
+-	 * efficient nop, but we can not use a multi part nop
+-	 * since we would then risk being preempted in the middle
+-	 * of that nop, and if we enabled tracing then, it might
+-	 * cause a system crash.
+-	 *
+-	 * TODO: check the cpuid to determine the best nop.
+-	 */
+-	asm volatile (
+-		"ftrace_test_jmp:"
+-		"jmp ftrace_test_p6nop\n"
+-		"nop\n"
+-		"nop\n"
+-		"nop\n"  /* 2 byte jmp + 3 bytes */
+-		"ftrace_test_p6nop:"
+-		P6_NOP5
+-		"jmp 1f\n"
+-		"ftrace_test_nop5:"
+-		".byte 0x66,0x66,0x66,0x66,0x90\n"
+-		"1:"
+-		".section .fixup, \"ax\"\n"
+-		"2:	movl $1, %0\n"
+-		"	jmp ftrace_test_nop5\n"
+-		"3:	movl $2, %0\n"
+-		"	jmp 1b\n"
+-		".previous\n"
+-		_ASM_EXTABLE(ftrace_test_p6nop, 2b)
+-		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+-		: "=r"(faulted) : "0" (faulted));
+-
+-	switch (faulted) {
+-	case 0:
+-		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+-		memcpy(ftrace_nop, ftrace_test_p6nop, MCOUNT_INSN_SIZE);
+-		break;
+-	case 1:
+-		pr_info("converting mcount calls to 66 66 66 66 90\n");
+-		memcpy(ftrace_nop, ftrace_test_nop5, MCOUNT_INSN_SIZE);
+-		break;
+-	case 2:
+-		pr_info("converting mcount calls to jmp . + 5\n");
+-		memcpy(ftrace_nop, ftrace_test_jmp, MCOUNT_INSN_SIZE);
+-		break;
+-	}
+-
+-	/* The return code is retured via data */
+-	*(unsigned long *)data = 0;
+-
+-	return 0;
+-}
+ #endif
+ 
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index b008e78..cb28d82 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -49,6 +49,7 @@
+ #include <asm/pci-direct.h>
+ #include <linux/init_ohci1394_dma.h>
+ #include <linux/kvm_para.h>
 +#include <linux/jump_label.h>
-+#include <linux/memory.h>
-+#include <linux/uaccess.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/jhash.h>
-+#include <linux/slab.h>
+ 
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -1069,6 +1070,8 @@ void __init setup_arch(char **cmdline_p)
+ 	x86_init.oem.banner();
+ 
+ 	mcheck_init();
 +
-+#ifdef HAVE_JUMP_LABEL
++	arch_init_ideal_nop5();
+ }
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 9ac29c0..fc2b181 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -11,6 +11,8 @@ enum jump_label_type {
+ 	JUMP_LABEL_DISABLE
+ };
+ 
++struct module;
 +
-+#define JUMP_LABEL_HASH_BITS 6
-+#define JUMP_LABEL_TABLE_SIZE (1 << JUMP_LABEL_HASH_BITS)
-+static struct hlist_head jump_label_table[JUMP_LABEL_TABLE_SIZE];
-+
-+/* mutex to protect coming/going of the the jump_label table */
-+static DEFINE_MUTEX(jump_label_mutex);
-+
-+struct jump_label_entry {
-+	struct hlist_node hlist;
-+	struct jump_entry *table;
-+	int nr_entries;
-+	/* hang modules off here */
-+	struct hlist_head modules;
-+	const char *name;
-+};
-+
-+static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
+ #ifdef HAVE_JUMP_LABEL
+ 
+ extern struct jump_entry __start___jump_table[];
+@@ -23,8 +25,9 @@ extern struct jump_entry __stop___jump_table[];
+ 
+ extern void arch_jump_label_transform(struct jump_entry *entry,
+ 				 enum jump_label_type type);
+-extern const u8 *arch_jump_label_get_nop(void);
+ extern void jump_label_update(const char *name, enum jump_label_type type);
++extern void jump_label_apply_nops(struct module *mod);
++extern void arch_jump_label_text_poke_early(jump_label_t addr);
+ 
+ #define enable_jump_label(name) \
+ 	jump_label_update(name, JUMP_LABEL_ENABLE);
+@@ -52,6 +55,11 @@ static inline int disable_jump_label(const char *name)
+ 	return 0;
+ }
+ 
++static inline int jump_label_apply_nops(struct module *mod)
 +{
-+	struct jump_entry tmp;
-+
-+	tmp = *next;
-+	*next = *previous;
-+	*previous = tmp;
-+}
-+
-+static void sort_jump_label_entries(struct jump_entry *start, struct jump_entry *stop)
-+{
-+	int swapped = 0;
-+	struct jump_entry *iter;
-+	struct jump_entry *iter_next;
-+
-+	do {
-+		swapped = 0;
-+		iter = start;
-+		iter_next = start;
-+		iter_next++;
-+		for (; iter_next < stop; iter++, iter_next++) {
-+			if (strcmp((char *)iter->name,
-+						(char *)iter_next->name) > 0) {
-+				swap_jump_label_entries(iter, iter_next);
-+				swapped = 1;
-+			}
-+		}
-+	} while (swapped == 1);
-+}
-+
-+static struct jump_label_entry *get_jump_label_entry(const char *name)
-+{
-+	struct hlist_head *head;
-+	struct hlist_node *node;
-+	struct jump_label_entry *e;
-+	u32 hash = jhash(name, strlen(name), 0);
-+
-+	head = &jump_label_table[hash & (JUMP_LABEL_TABLE_SIZE - 1)];
-+	hlist_for_each_entry(e, node, head, hlist) {
-+		if (!strcmp((char *)name, (char *)e->name))
-+			return e;
-+	}
-+	return NULL;
-+}
-+
-+static struct jump_label_entry *add_jump_label_entry(const char *name, int nr_entries, struct jump_entry *table)
-+{
-+	struct hlist_head *head;
-+	struct jump_label_entry *e;
-+	size_t name_len;
-+	u32 hash;
-+
-+	e = get_jump_label_entry(name);
-+	if (e)
-+		return ERR_PTR(-EEXIST);
-+
-+	e = kmalloc(sizeof(struct jump_label_entry), GFP_KERNEL);
-+	if (!e)
-+		return ERR_PTR(-ENOMEM);
-+
-+	name_len = strlen(name) + 1;
-+	hash = jhash(name, name_len-1, 0);
-+	head = &jump_label_table[hash & (JUMP_LABEL_TABLE_SIZE - 1)];
-+	e->name = name;
-+	e->table = table;
-+	e->nr_entries = nr_entries;
-+	INIT_HLIST_HEAD(&(e->modules));
-+	hlist_add_head(&e->hlist, head);
-+	return e;
-+}
-+
-+static int build_jump_label_hashtable(struct jump_entry *start, struct jump_entry *stop)
-+{
-+	struct jump_entry *iter, *iter_begin;
-+	struct jump_label_entry *entry;
-+	int count;
-+
-+	sort_jump_label_entries(start, stop);
-+	iter = start;
-+	while (iter < stop) {
-+		entry = get_jump_label_entry((char *)iter->name);
-+		if (!entry) {
-+			iter_begin = iter;
-+			count = 0;
-+			while ((iter < stop) &&
-+				(strcmp((char *)iter->name,
-+					(char *)iter_begin->name) == 0)) {
-+				iter++;
-+				count++;
-+			}
-+			entry = add_jump_label_entry((char *)iter_begin->name,
-+							count, iter_begin);
-+			if (IS_ERR(entry))
-+				return PTR_ERR(entry);
-+		 } else {
-+			WARN_ONCE(1, KERN_ERR "build_jump_hashtable: unexpected entry!\n");
-+			return -1;
-+		}
-+	}
 +	return 0;
 +}
 +
+ #endif
+ 
+ #endif
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index ecca4f4..ebe9145 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -11,6 +11,7 @@
+ #include <linux/list.h>
+ #include <linux/jhash.h>
+ #include <linux/slab.h>
++#include <linux/err.h>
+ 
+ #ifdef HAVE_JUMP_LABEL
+ 
+@@ -185,10 +186,18 @@ void jump_label_update(const char *name, enum jump_label_type type)
+ static __init int init_jump_label(void)
+ {
+ 	int ret;
++	struct jump_entry *iter_start = __start___jump_table;
++	struct jump_entry *iter_stop = __stop___jump_table;
++	struct jump_entry *iter;
+ 
+ 	mutex_lock(&jump_label_mutex);
+ 	ret = build_jump_label_hashtable(__start___jump_table,
+ 					 __stop___jump_table);
++	iter = iter_start;
++	while (iter < iter_stop) {
++		arch_jump_label_text_poke_early(iter->code);
++		iter++;
++	}
+ 	mutex_unlock(&jump_label_mutex);
+ 	return ret;
+ }
+@@ -299,6 +308,29 @@ static int jump_label_module_notify(struct notifier_block *self, unsigned long v
+ 	return ret;
+ }
+ 
 +/***
-+ * jump_label_update - update jump label text
-+ * @name - name of the jump label
-+ * @type - enum set to JUMP_LABEL_ENABLE or JUMP_LABEL_DISABLE
++ * apply_jump_label_nops - patch module jump labels with arch_get_jump_label_nop()
++ * @mod: module to patch
 + *
-+ * Will enable/disable the jump for jump label @name, depending on the
-+ * value of @type.
-+ *
++ * Allow for run-time selection of the optimal nops. Before the module
++ * loads patch these with arch_get_jump_label_nop(), which is specified by
++ * the arch specific jump label code.
 + */
-+
-+void jump_label_update(const char *name, enum jump_label_type type)
++void jump_label_apply_nops(struct module *mod)
 +{
 +	struct jump_entry *iter;
-+	struct jump_label_entry *entry;
-+	struct hlist_node *module_node;
-+	struct jump_label_module_entry *e_module;
-+	int count;
 +
-+	mutex_lock(&jump_label_mutex);
-+	entry = get_jump_label_entry(name);
-+	if (entry) {
-+		count = entry->nr_entries;
-+		iter = entry->table;
-+		while (count--) {
-+			if (kernel_text_address(iter->code))
-+				arch_jump_label_transform(iter, type);
-+			iter++;
-+		}
++	/* if the module doesn't have jump label entries, just return */
++	if (!mod->num_jump_entries)
++		return;
++
++	iter = mod->jump_entries;
++	while (iter < mod->jump_entries + mod->num_jump_entries) {
++		arch_jump_label_text_poke_early(iter->code);
++		iter++;
 +	}
-+	mutex_unlock(&jump_label_mutex);
 +}
 +
-+static __init int init_jump_label(void)
-+{
-+	int ret;
-+
-+	mutex_lock(&jump_label_mutex);
-+	ret = build_jump_label_hashtable(__start___jump_table,
-+					 __stop___jump_table);
-+	mutex_unlock(&jump_label_mutex);
-+	return ret;
-+}
-+early_initcall(init_jump_label);
-+
-+#endif
-diff --git a/scripts/gcc-goto.sh b/scripts/gcc-goto.sh
-new file mode 100644
-index 0000000..8e82424
---- /dev/null
-+++ b/scripts/gcc-goto.sh
-@@ -0,0 +1,5 @@
-+#!/bin/sh
-+# Test for gcc 'asm goto' suport
-+# Copyright (C) 2010, Jason Baron <jbaron@redhat.com>
-+
-+echo "int main(void) { entry: asm goto (\"\"::::entry); return 0; }" | $1 -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
+ struct notifier_block jump_label_module_nb = {
+ 	.notifier_call = jump_label_module_notify,
+ 	.priority = 0,
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0d88ce9..1a1cc47 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2749,20 +2749,9 @@ extern unsigned long __stop_mcount_loc[];
+ 
+ void __init ftrace_init(void)
+ {
+-	unsigned long count, addr, flags;
++	unsigned long count;
+ 	int ret;
+ 
+-	/* Keep the ftrace pointer to the stub */
+-	addr = (unsigned long)ftrace_stub;
+-
+-	local_irq_save(flags);
+-	ftrace_dyn_arch_init(&addr);
+-	local_irq_restore(flags);
+-
+-	/* ftrace_dyn_arch_init places the return code in addr */
+-	if (addr)
+-		goto failed;
+-
+ 	count = __stop_mcount_loc - __start_mcount_loc;
+ 
+ 	ret = ftrace_dyn_table_alloc(count);
 -- 
 1.7.1
 
