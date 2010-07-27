@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab0G0TWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 15:22:40 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40428 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab0G0TWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 15:22:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=ke+C14FnWb+PwA6CQiaM7S2n9HU/10N6O4qdr1ZYJUfn/IpXsELwqw4wzb5EQma8X1
-         501JMJiZFC2yopYKm89CYac+G2d3KW6peXUqDKmCCOt3fKQJXc2c9istY513znsCFNYn
-         szZfVRhA6bt7PbZS38CL6nc0fGopNuTakaBx4=
-Date: Tue, 27 Jul 2010 21:27:27 +0200
-From: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.35-rc6] kconfig: fix MODULES-related bug in case of no
- .config
-Message-ID: <20100727192727.GA17954@ulf>
+	id S1751979Ab0G0TYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 15:24:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22332 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750996Ab0G0TYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 15:24:05 -0400
+Message-ID: <4C4F3267.2060908@redhat.com>
+Date: Tue, 27 Jul 2010 16:24:23 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jarod Wilson <jarod@redhat.com>
+CC: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 0/15] STAGING: add lirc device drivers
+References: <20100726232546.GA21225@redhat.com> <4C4F0244.2070803@redhat.com> <20100727181757.GD9465@redhat.com>
+In-Reply-To: <20100727181757.GD9465@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Em 27-07-2010 15:17, Jarod Wilson escreveu:
+> On Tue, Jul 27, 2010 at 12:59:00PM -0300, Mauro Carvalho Chehab wrote:
+>> Em 26-07-2010 20:25, Jarod Wilson escreveu:
+>>> This patch series adds the remaining lirc_foo device drivers to the staging
+>>> tree.
+>>>  drivers/staging/lirc/TODO               |    8 +
+> 
+> ^^^
+> 
+>> Hi Jarod,
+>>
+>> Please add a TODO file at staging/lirc, describing what's needed for
+>> the drivers to move to the IR branch.
+> 
+> See above. :)
 
-There seems to be a kconfig bug due to MODULES not always being evaluated if no
-.config is found. Take the following Kconfig as an example:
+Ops!
 
-config MODULES
-	def_bool y
+> It could use some further fleshing out though, particularly, some "known
+> issues that must be fixed in this specific driver" type things.
 
-config FOO
-	def_tristate m
+Yes, but that's ok for now ;)
 
-With no .config, the following configuration is generated:
-
-CONFIG_MODULES=y
-CONFIG_FOO=y
-
-With an empty .config, the following:
-
-CONFIG_MODULES=y
-CONFIG_FOO=m
-
-Tristate choice statements can also exhibit the problem, due to having an
-implicit rev_dep (select) containing "m".
-
-The problem is that MODULES is never evaluted in conf_read_simple() unless
-there's a .config. The following patch fixes this.
-
-Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-
-diff -uNr linux.vanilla/scripts/kconfig/confdata.c linux.new/scripts/kconfig/confdata.c
---- linux.vanilla/scripts/kconfig/confdata.c	2010-07-27 16:47:43.443006287 +0200
-+++ linux.new/scripts/kconfig/confdata.c	2010-07-27 16:50:19.795005537 +0200
-@@ -170,8 +170,10 @@
- 		if (in)
- 			goto load;
- 		sym_add_change_count(1);
--		if (!sym_defconfig_list)
-+		if (!sym_defconfig_list) {
-+			sym_calc_value(modules_sym);
- 			return 1;
-+		}
- 
- 		for_all_defaults(sym_defconfig_list, prop) {
- 			if (expr_calc_value(prop->visible.expr) == no ||
+Cheers,
+Mauro
