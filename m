@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547Ab0G0ShJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 14:37:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58902 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753284Ab0G0ShG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 14:37:06 -0400
-Date: Tue, 27 Jul 2010 18:36:48 GMT
-From: tip-bot for Christoph Hellwig <hch@lst.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, hch@lst.de,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        hch@lst.de, tglx@linutronix.de
-In-Reply-To: <20100727121313.GA19976@lst.de>
-References: <20100727121313.GA19976@lst.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/irq] x86-32: Align IRQ stacks properly
-Message-ID: <tip-25897374297906eeebef8864299406bdcb5859c3@git.kernel.org>
-Git-Commit-ID: 25897374297906eeebef8864299406bdcb5859c3
-X-Mailer: tip-git-log-daemon
+	id S1753576Ab0G0Sit (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 14:38:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25192 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab0G0Sir (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 14:38:47 -0400
+Message-ID: <4C4F27A3.5040109@oracle.com>
+Date: Tue, 27 Jul 2010 11:38:27 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
 MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        jeremy@goop.org, Jeremy Fitzhardinge <jeremy@xensource.com>
+Subject: Re: linux-next: Tree for July 27 (xen)
+References: <20100727160708.722c39c1.sfr@canb.auug.org.au>
+In-Reply-To: <20100727160708.722c39c1.sfr@canb.auug.org.au>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 27 Jul 2010 18:36:48 +0000 (UTC)
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C4F27B0.0256:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  25897374297906eeebef8864299406bdcb5859c3
-Gitweb:     http://git.kernel.org/tip/25897374297906eeebef8864299406bdcb5859c3
-Author:     Christoph Hellwig <hch@lst.de>
-AuthorDate: Tue, 27 Jul 2010 14:13:13 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 27 Jul 2010 10:06:54 -0700
+Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20100726:
+> 
+> 
+> The xen tree lost its build problems but gained a conflict against Linus'
+> tree.
 
-x86-32: Align IRQ stacks properly
+when X86_32=y, SMP=n, X86_LOCAL_APIC=n:
 
-As suggested by Steven Rostedt we need to align the IRQ stacks to the
-stack size, not just the page size to make them work for stack traces
-and other things that depend on finding the stack slot itself with 8k
-stacks.
+drivers/built-in.o: In function `xen_callback_vector':
+(.text+0x41238): undefined reference to `first_system_vector'
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-LKML-Reference: <20100727121313.GA19976@lst.de>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/irq_32.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
-index 67f5f9f..3b5609f 100644
---- a/arch/x86/kernel/irq_32.c
-+++ b/arch/x86/kernel/irq_32.c
-@@ -55,7 +55,7 @@ static inline void print_stack_overflow(void) { }
- union irq_ctx {
- 	struct thread_info      tinfo;
- 	u32                     stack[THREAD_SIZE/sizeof(u32)];
--} __attribute__((aligned(PAGE_SIZE)));
-+} __attribute__((aligned(THREAD_SIZE)));
- 
- static DEFINE_PER_CPU(union irq_ctx *, hardirq_ctx);
- static DEFINE_PER_CPU(union irq_ctx *, softirq_ctx);
+alloc_intr_gate() calls alloc_system_vector(), which uses first_system_vector.
