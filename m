@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab0G0N33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 09:29:29 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:56488 "EHLO
+	id S1755654Ab0G0N3s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 09:29:48 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45160 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753108Ab0G0N31 (ORCPT
+	with ESMTP id S1753636Ab0G0N3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 09:29:27 -0400
+	Tue, 27 Jul 2010 09:29:46 -0400
 To: Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] [resend] cyber2000fb: fix machine hang on module load
+Subject: [PATCH] [resend] cyber2000fb: add mode_option parameter
 Cc: linux-fbdev@vger.kernel.org,
         Kernel development list <linux-kernel@vger.kernel.org>
 Content-Disposition: inline
 From: Ondrej Zary <linux@rainbow-software.org>
-Date: Tue, 27 Jul 2010 15:29:20 +0200
+Date: Tue, 27 Jul 2010 15:29:41 +0200
 MIME-Version: 1.0
 Content-Type: text/plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007271529.22520.linux@rainbow-software.org>
+Message-Id: <201007271529.42838.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I was testing two CyberPro 2000 based PCI cards on x86 and the machine always
-hanged completely when the cyber2000fb module was loaded. It seems that the
-card hangs when some registers are accessed too quickly after writing RAMDAC
-control register. With this patch, both card work.
-
-Add delay after RAMDAC control register write to prevent hangs on module load.
+Add mode_option parameter to specify the default video mode.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
---- linux-2.6.35-rc2/drivers/video/cyber2000fb.c	2010-06-06 05:43:24.000000000 +0200
-+++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-07-25 18:20:47.000000000 +0200
-@@ -436,6 +436,7 @@ static void cyber2000fb_write_ramdac_ctr
- 	cyber2000fb_writeb(i | 4, 0x3cf, cfb);
- 	cyber2000fb_writeb(val, 0x3c6, cfb);
- 	cyber2000fb_writeb(i, 0x3cf, cfb);
-+	udelay(1);
- }
+--- linux-2.6.35-rc3-/drivers/video/cyber2000fb.c	2010-07-25 21:28:33.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-07-25 20:36:49.000000000 +0200
+@@ -94,6 +94,10 @@ static char *default_font = "Acorn8x8";
+ module_param(default_font, charp, 0);
+ MODULE_PARM_DESC(default_font, "Default font name");
  
- static void cyber2000fb_set_timing(struct cfb_info *cfb, struct par_info *hw)
-
++static char *mode_option __devinitdata = "640x480-8@60";
++module_param(mode_option, charp, 0444);
++MODULE_PARM_DESC(mode_option, "Default video mode ('640x480-8@60', etc)");
++
+ /*
+  * Our access methods.
+  */
+@@ -1368,7 +1372,7 @@ static int __devinit cyberpro_common_pro
+ 	cfb->fb.screen_base    = cfb->region;
+ 
+ 	err = -EINVAL;
+-	if (!fb_find_mode(&cfb->fb.var, &cfb->fb, NULL, NULL, 0,
++	if (!fb_find_mode(&cfb->fb.var, &cfb->fb, mode_option, NULL, 0,
+ 			  &cyber2000fb_default_mode, 8)) {
+ 		printk(KERN_ERR "%s: no valid mode found\n", cfb->fb.fix.id);
+ 		goto failed;
 
 -- 
 Ondrej Zary
