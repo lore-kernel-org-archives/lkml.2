@@ -1,77 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab0G0Xek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 19:34:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58659 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab0G0Xej (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 19:34:39 -0400
-Message-ID: <4C4F6DF2.6090905@ontolinux.com>
-Date: Wed, 28 Jul 2010 01:38:26 +0200
-From: Christian Stroetmann <stroetmann@ontolinux.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: bchociej@gmail.com, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
-References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
-In-Reply-To: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1753564Ab0G0Xgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 19:36:55 -0400
+Received: from sh.osrg.net ([192.16.179.4]:33160 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753164Ab0G0Xgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 19:36:52 -0400
+Date: Wed, 28 Jul 2010 08:36:06 +0900
+To: konrad.wilk@oracle.com
+Cc: hpa@zytor.com, jeremy@goop.org, Ian.Campbell@citrix.com,
+        albert_herranz@yahoo.es, x86@kernel.org, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
+        iommu@lists.linux-foundation.org, tglx@linutronix.de
+Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100727194105.GA18647@phenom.dumpdata.com>
+References: <1280250002-20279-10-git-send-email-konrad.wilk@oracle.com>
+	<4C4F2D9C.4020303@zytor.com>
+	<20100727194105.GA18647@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:v6WMW1UQTNHEIEub1H0Y9MXweSLQyHxm2UauE2J0aOx
- 47Lmbb1B75Ybur3u9pVsTIVZFWe6a15wEDyC2dKzplPPU0582+
- wcbyQP08VgPuy2q65pb/O+waOwVXoRzEjaLwJBM/QTyY22cqk3
- lbVxy675vciT0MXOHl8Mk5PXTmZ0xH0KXOyBbbc5CaTY0I0Jbp
- ceAmj1GpnFGLHp74W/PuA==
+Message-Id: <20100728083526J.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 28 Jul 2010 08:36:10 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the 28.07.2010 00:00, Ben Chociej wrote:
-> INTRODUCTION:
->
-> This patch series adds experimental support for tracking data
-> temperature in Btrfs. Essentially, this means maintaining some key
-> stats (like number of reads/writes, last read/write time, frequency of
-> reads/writes), then distilling those numbers down to a single
-> "temperature" value that reflects what data is "hot."
->
-> The long-term goal of these patches, as discussed in the Motivation
-> section at the end of this message, is to enable Btrfs to perform
-> automagic relocation of hot data to fast media like SSD. This goal has
-> been motivated by the Project Ideas page on the Btrfs wiki.
->
-> Of course, users are warned not to run this code outside of development
-> environments. These patches are EXPERIMENTAL, and as such they might
-> eat your data and/or memory.
->
->
-> MOTIVATION:
->
-> The overall goal of enabling hot data relocation to SSD has been
-> motivated by the Project Ideas page on the Btrfs wiki at
-> https://btrfs.wiki.kernel.org/index.php/Project_ideas. It is hoped that
-> this initial patchset will eventually mature into a usable hybrid
-> storage feature set for Btrfs.
->
-> This is essentially the traditional cache argument: SSD is fast and
-> expensive; HDD is cheap but slow. ZFS, for example, can already take
-> advantage of SSD caching. Btrfs should also be able to take advantage
-> of hybrid storage without any broad, sweeping changes to existing code.
->    
+On Tue, 27 Jul 2010 15:41:05 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-Wouldn't this feature be useful for other file systems as well, so that 
-a more general and not an only Btrfs related solution is preferable?
+> On Tue, Jul 27, 2010 at 12:03:56PM -0700, H. Peter Anvin wrote:
+> > On 07/27/2010 10:00 AM, Konrad Rzeszutek Wilk wrote:
+> > > It is paramount that we call pci_xen_swiotlb_detect before
+> > > pci_swiotlb_detect as both implementations use the 'swiotlb'
+> > > and 'swiotlb_force' flags. The pci-xen_swiotlb_detect inhibits
+> > > the swiotlb_force and swiotlb flag so that the native SWIOTLB
+> > > implementation is not enabled when running under Xen.
+> > > 
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > > Acked-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > > Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > > Cc: Albert Herranz <albert_herranz@yahoo.es>
+> > > Cc: Ian Campbell <Ian.Campbell@citrix.com>
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > > Cc: x86@kernel.org
+> > > Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> > > ---
+> > >  arch/x86/kernel/pci-dma.c |    7 +++++--
+> > >  1 files changed, 5 insertions(+), 2 deletions(-)
+> > > 
+> > 
+> > Is there any way we can abstract this out a bit more instead of crapping
+> > on generic code?
 
-> With Btrfs's COW approach, an external cache (where data is *moved* to
-> SSD, rather than just cached there) makes a lot of sense. Though these
-> patches don't enable any relocation yet, they do lay an essential
-> foundation for enabling that functionality in the near future. We plan
-> to roll out an additional patchset introducing some of the automatic
-> migration functionality in the next few weeks.
->
->    
+I don't like this change much too, however I think that this is the
+most simple and straightforward.
 
-  With all the best
-Christian Stroetmann
+Basically, Xen's swiotlb works like a new IOMMU implementation so we
+need to initialize it like other IOMMU implementations (call the
+detect and init functions in order).
+
+
+> I was toying with something like this:
+> 
+> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+> index 9f07cfc..e0cd388 100644
+> --- a/arch/x86/kernel/pci-dma.c
+> +++ b/arch/x86/kernel/pci-dma.c
+> @@ -45,6 +45,25 @@ int iommu_detected __read_mostly = 0;
+>   */
+>  int iommu_pass_through __read_mostly;
+>  
+> +initcall_t __swiotlb_initcall_detect[] =
+> +	{pci_xen_swiotlb_detect,
+> +	 pci_swiotlb_detect,
+> +	NULL};
+> +
+> +initcall_t __swiotlb_initcall_init[] = {
+> +	pci_xen_swiotlb_init,
+> +	pci_swiotlb_init,
+> +	NULL};
+> +
+> +
+> +initcall_t __iommu_initcall_detect[] = {
+> +	gart_iommu_hole_init,
+> +	detect_calgary,
+> +	detect_intel_iommu,
+> +	/* needs to be called after gart_iommu_hole_init */
+> +	amd_iommu_detect,
+> +	NULL};
+
+I really don't think that this makes the code better. I prefer the
+current simple (dumb) code.
+
+
+>  /* Dummy device used for NULL arguments (normally ISA). */
+>  struct device x86_dma_fallback_dev = {
+>  	.init_name = "fallback device",
+> @@ -130,24 +149,22 @@ static void __init dma32_free_bootmem(void)
+>  
+>  void __init pci_iommu_alloc(void)
+>  {
+> +	initcall_t *fn;
+> +
+>  	/* free the range so iommu could get some range less than 4G */
+>  	dma32_free_bootmem();
+>  
+> -	if (pci_xen_swiotlb_detect() || pci_swiotlb_detect())
+> -		goto out;
+> -
+> -	gart_iommu_hole_init();
+> -
+> -	detect_calgary();
+> +	/* First do the SWIOTLB - if they work, skip the IOMMUs. */
+
+btw, this comment is wrong. We check if we are forced to use SWIOTLB
+by kernel command line here.
+
+Even if SWIOTLB works, we see if hardware IOMMU is available. SWIOTLB
+is a last resort. We prefer hardware IOMMU.
