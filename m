@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab0G0XSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 19:18:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42902 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751310Ab0G0XSi (ORCPT
+	id S1753881Ab0G0XSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 19:18:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33135 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723Ab0G0XSp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 19:18:38 -0400
-Date: Tue, 27 Jul 2010 16:18:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: monstr@monstr.eu
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] asm-generic: Use raw_local_irq_save/restore instead
- local_irq_save/restore
-Message-Id: <20100727161819.cf6feab1.akpm@linux-foundation.org>
-In-Reply-To: <4C4D4C2E.8010103@monstr.eu>
-References: <1274863724-14906-1-git-send-email-monstr@monstr.eu>
-	<1274863724-14906-2-git-send-email-monstr@monstr.eu>
-	<1274884963.22648.245.camel@gandalf.stny.rr.com>
-	<20100526100805.171b3c48.akpm@linux-foundation.org>
-	<4C4D4C2E.8010103@monstr.eu>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Jul 2010 19:18:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cqb4wBJfYfm1nyLpLThhZfPeWyKgXsCHvLJpkCGSo7U4U4K/aVoML1/6kLbtyym3/R
+         tUIfgL86lfmnv8TJfsVMo1/We6DPUtPNtO98j87nwfVJ1GiPrLIUrfSNngJb/52GQlq5
+         ABJ/KfMwrGoCSwzl5TyWXto/PCYxt6qGRjmtU=
+MIME-Version: 1.0
+In-Reply-To: <201007280110.46059.diegocg@gmail.com>
+References: <1280268023-18408-1-git-send-email-bchociej@gmail.com> 
+	<201007280110.46059.diegocg@gmail.com>
+From: Ben Chociej <bchociej@gmail.com>
+Date: Tue, 27 Jul 2010 18:18:23 -0500
+Message-ID: <AANLkTi=x9q1XOu_6F2hOv_ZPoM+McKz9Nv2Q5GZNfa4a@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
+To: diegocg@gmail.com
+Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, cmm@us.ibm.com, bcchocie@us.ibm.com,
+        mrlupfer@us.ibm.com, crscott@us.ibm.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Jul 2010 10:49:50 +0200
-Michal Simek <monstr@monstr.eu> wrote:
+On Tue, Jul 27, 2010 at 6:10 PM, Diego Calleja <diegocg@gmail.com> wrote:
+> On Miércoles, 28 de Julio de 2010 00:00:18 bchociej@gmail.com escribió:
+>> With Btrfs's COW approach, an external cache (where data is moved to
+>> SSD, rather than just cached there) makes a lot of sense. Though these
+>
+> As I understand it, what your proyect intends to do is to move "hot"
+> data to a SSD which would be part of a Btrfs pool, and not do any
+> kind of SSD caching, as bcache (http://lwn.net/Articles/394672/) does?
+>
 
-> start/stop_critical_timing function for preemptirqsoff, preemptoff
-> and irqsoff tracers contains atomic_inc and atomic_dec operations.
-> 
-> Atomic operations used local_irq_save/restore macros to ensure
-> atomic access but they are traced by the same function which is causing
-> recursion problem.
-> 
-> The reason is when these tracers are turn ON then local_irq_save/restore
-> macros are changed in include/linux/irqflags.h to call trace_hardirqs_on/off
-> which call start/stop_critical_timing.
-> 
-> Microblaze was affected because use generic atomic implementation.
+Yes, that's correct. It's likely not going to be a cache in the
+traditional sense, since the entire capacity of both HDD and SSD would
+be available.
 
-Seems that this will also affect blackfin, mn10300 and score.  I guess
-they aren't supporting tracing yet?
-
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-hm, I wonder how my signoff got there.  Doesn't matter.
+BC
