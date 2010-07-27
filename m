@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434Ab0G0UzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 16:55:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9401 "EHLO mx1.redhat.com"
+	id S1753388Ab0G0UzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 16:55:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7999 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752878Ab0G0UzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 16:55:03 -0400
-Date: Tue, 27 Jul 2010 16:54:40 -0400
+	id S1752943Ab0G0UzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 16:55:01 -0400
+Date: Tue, 27 Jul 2010 16:54:36 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,84 +14,82 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
         roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
         fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
         vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Message-Id: <7332e54e06ed316a2a3a4ac275b6817787d2a469.1280263065.git.jbaron@redhat.com>
+Message-Id: <59e3532f43294252ff34468bbbf0444c589f0956.1280263065.git.jbaron@redhat.com>
 In-Reply-To: <cover.1280263065.git.jbaron@redhat.com>
 References: <cover.1280263065.git.jbaron@redhat.com>
-Subject: [PATCH 08/12] jump label v10: tracepoint support
+Subject: [PATCH 07/12] jump label v10: use lib/sort.c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the jump label infrastructure for tracepoints.
+Make use of the the kernel's generic sort routines.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- include/linux/tracepoint.h |    5 ++++-
- kernel/tracepoint.c        |   14 ++++++++++++--
- 2 files changed, 16 insertions(+), 3 deletions(-)
+ kernel/jump_label.c |   37 ++++++++++++++++---------------------
+ 1 files changed, 16 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 103d1b6..a4a90b6 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -17,6 +17,7 @@
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/rcupdate.h>
-+#include <linux/jump_label.h>
- 
- struct module;
- struct tracepoint;
-@@ -145,7 +146,9 @@ static inline void tracepoint_update_probe_range(struct tracepoint *begin,
- 	extern struct tracepoint __tracepoint_##name;			\
- 	static inline void trace_##name(proto)				\
- 	{								\
--		if (unlikely(__tracepoint_##name.state))		\
-+		JUMP_LABEL(&__tracepoint_##name.state, do_trace);	\
-+		return;							\
-+do_trace:								\
- 			__DO_TRACE(&__tracepoint_##name,		\
- 				TP_PROTO(data_proto),			\
- 				TP_ARGS(data_args));			\
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index c77f3ec..d6073a5 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -25,6 +25,7 @@
- #include <linux/err.h>
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 10fb17f..faef97e 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -12,6 +12,7 @@
+ #include <linux/jhash.h>
  #include <linux/slab.h>
- #include <linux/sched.h>
-+#include <linux/jump_label.h>
+ #include <linux/err.h>
++#include <linux/sort.h>
  
- extern struct tracepoint __start___tracepoints[];
- extern struct tracepoint __stop___tracepoints[];
-@@ -263,7 +264,13 @@ static void set_tracepoint(struct tracepoint_entry **entry,
- 	 * is used.
- 	 */
- 	rcu_assign_pointer(elem->funcs, (*entry)->funcs);
--	elem->state = active;
-+	if (!elem->state && active) {
-+		enable_jump_label(&elem->state);
-+		elem->state = active;
-+	} else if (elem->state && !active) {
-+		disable_jump_label(&elem->state);
-+		elem->state = active;
-+	}
+ #ifdef HAVE_JUMP_LABEL
+ 
+@@ -38,33 +39,27 @@ struct jump_label_module_entry {
+ 	struct module *mod;
+ };
+ 
+-static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
++static int jump_label_cmp(const void *a, const void *b)
+ {
+-	struct jump_entry tmp;
++	const struct jump_entry *jea = a;
++	const struct jump_entry *jeb = b;
+ 
+-	tmp = *next;
+-	*next = *previous;
+-	*previous = tmp;
++	if (jea->key < jeb->key)
++		return -1;
++
++	if (jea->key > jeb->key)
++		return 1;
++
++	return 0;
  }
  
- /*
-@@ -277,7 +284,10 @@ static void disable_tracepoint(struct tracepoint *elem)
- 	if (elem->unregfunc && elem->state)
- 		elem->unregfunc();
- 
--	elem->state = 0;
-+	if (elem->state) {
-+		disable_jump_label(&elem->state);
-+		elem->state = 0;
-+	}
- 	rcu_assign_pointer(elem->funcs, NULL);
+ static void sort_jump_label_entries(struct jump_entry *start, struct jump_entry *stop)
+ {
+-	int swapped = 0;
+-	struct jump_entry *iter;
+-	struct jump_entry *iter_next;
+-
+-	do {
+-		swapped = 0;
+-		iter = start;
+-		iter_next = start;
+-		iter_next++;
+-		for (; iter_next < stop; iter++, iter_next++) {
+-			if (iter->key > iter_next->key) {
+-				swap_jump_label_entries(iter, iter_next);
+-				swapped = 1;
+-			}
+-		}
+-	} while (swapped == 1);
++	unsigned long size;
++
++	size = (((unsigned long)stop - (unsigned long)start)
++					/ sizeof(struct jump_entry));
++	sort(start, size, sizeof(struct jump_entry), jump_label_cmp, NULL);
  }
  
+ static struct jump_label_entry *get_jump_label_entry(jump_label_t key)
 -- 
 1.7.1
 
