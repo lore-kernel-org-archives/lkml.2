@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab0G1NMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 09:12:13 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:30469 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab0G1NMJ convert rfc822-to-8bit (ORCPT
+	id S1753785Ab0G1NNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:13:13 -0400
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:35416 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752959Ab0G1NNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 09:12:09 -0400
-From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
-To: "Frazier, Daniel Kent (ProLiant Linux)" <daniel_frazier@hp.com>,
-        Wim Van Sebroeck <wim@iguana.be>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 28 Jul 2010 13:10:02 +0000
-Subject: RE: [PATCH 00/15] hpwdt: make NMI code a config option (+ other
- cleanup)
-Thread-Topic: [PATCH 00/15] hpwdt: make NMI code a config option (+ other
- cleanup)
-Thread-Index: Acst5qKoBDJ9tGTATMW3XPgdUhu3ZAAb3DFg
-Message-ID: <183C1D5A376DE343AA8F94FC2A1EC149769B9E0305@GVW1091EXB.americas.hpqcorp.net>
-References: <1280274663-9160-1-git-send-email-dannf@hp.com>
-In-Reply-To: <1280274663-9160-1-git-send-email-dannf@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Jul 2010 09:13:05 -0400
+Message-ID: <4C502CC5.7070205@linux.vnet.ibm.com>
+Date: Wed, 28 Jul 2010 15:12:37 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: GCOV doesn't seem to work on ARM with kernel 2.6.35-rc6
+References: <4C4D6458.6040402@samsung.com> <4C4D6554.30707@samsung.com> <4C4DBE8E.70102@linux.vnet.ibm.com> <4C4E8C2C.3000903@samsung.com>
+In-Reply-To: <4C4E8C2C.3000903@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-By: Tom Mingarelli <Thomas.mingarelli@hp.com>
+On 27.07.2010 09:35, Karol Lewandowski wrote:
+> On 07/26/2010 06:57 PM, Peter Oberparleiter wrote:
+>> Karol Lewandowski wrote:
+>>> On 07/26/2010 12:32 PM, Karol Lewandowski wrote:
+>>>> I'm trying to use code coverage measurements with mainline Linux kernel
+>>>> 2.6.35-rc6 on ARM platform (specifically on Samsung's S5PC110 board).
+> ...
+>> I just tested gcov support for 2.6.35-rc6 on s390 and it works without
+>> a problem. My assumption would be that you are using an EABI-GCC to
+>> compile your kernel. Those compilers name their constructor symbols
+>
+> Exactly.
+>
+>> differently than the vanilla GCC so that the whole constructor calling
+>> mechanism on which the gcov support relies, will fail. If that is
+>> indeed the case, the following testing patch should solve your
+>> problem:
+>
+> Yes, that was the case and your patch indeed solved my problem.
 
-> -----Original Message-----
-> From: Frazier, Daniel Kent (ProLiant Linux)
-> Sent: Tuesday, July 27, 2010 6:51 PM
-> To: Wim Van Sebroeck
-> Cc: linux-kernel@vger.kernel.org; Mingarelli, Thomas
-> Subject: [PATCH 00/15] hpwdt: make NMI code a config option (+ other
-> cleanup)
-> 
-> hwpdt includes an NMI-decoding feature, but the watchdog interface is
-> quite
-> usable without it. This patchset makes it possible to build hpwdt without
-> the
-> NMI functionality, as well as some general cleanup.
-> 
->  Kconfig |   22 +++++--
->  hpwdt.c |  181 ++++++++++++++++++++++++++++++++++++----------------------
-> ------
->  2 files changed, 119 insertions(+), 84 deletions(-)
+Excellent. I could imagine that other ARM users might also benefit from 
+this patch. Before I submit it for integration though, I need to make 
+sure that it also works for kernel modules. Could you enable profiling 
+for a kernel module and verify that you are seeing files in 
+/sys/kernel/debug/gcov belonging to that module??
+
+
+Regards,
+   Peter Oberparleiter
 
