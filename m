@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab0G1Fhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:37:31 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59267 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab0G1Fh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 01:37:27 -0400
-Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+	id S1752744Ab0G1Fme (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:42:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37140 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab0G1Fma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:42:30 -0400
+Message-ID: <4C4FC2CB.6040200@kernel.org>
+Date: Tue, 27 Jul 2010 22:40:27 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         David Miller <davem@davemloft.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org
-In-Reply-To: <1279822864-17154-32-git-send-email-yinghai@kernel.org>
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-	 <1279822864-17154-32-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 15:36:55 +1000
-Message-ID: <1280295415.1970.245.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Subject: Re: [PATCH 03/16] x86, memblock: Add memblock_x86_to_bootmem()
+References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>	 <1279824241-17582-4-git-send-email-yinghai@kernel.org> <1280293236.1970.234.camel@pasglop>
+In-Reply-To: <1280293236.1970.234.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C4FC32A.0099,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 11:21 -0700, Yinghai Lu wrote:
-> it is a wrapper for memblock_find_base
+On 07/27/2010 10:00 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-07-22 at 11:43 -0700, Yinghai Lu wrote:
+>> memblock_x86_to_bootmem() will reserve memblock.reserved.region in bootmem after bootmem is
 > 
-> make it more easy for x86 to use memblock. ( rebase )
-> x86 early_res is using find/reserve pattern instead of alloc.
+>> +#ifndef CONFIG_NO_BOOTMEM
+>> +void __init memblock_x86_to_bootmem(u64 start, u64 end)
+>> +{
+>> +	int count;
+>> +	u64 final_start, final_end;
+>> +	struct memblock_region *r;
+>> +
+>> +	/* Take out region array itself */
+>> +	if (memblock.reserved.regions != memblock_reserved_init_regions)
+>> +		memblock_free(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
 > 
-> keep it in weak version, so later We can use x86 own version if needed.
-> also We need it in mm/memblock.c, so one caller mm/page_alloc.c could get compiled
+> So that's why you export memblock_reserved_init_regions...
 > 
-> -v2: Change name to memblock_find_in_range() according to Michael Ellerman
-> -v3: Add generic weak version __memblock_find_in_range()
->      so keep the path for fallback to x86 version that handle from low
-> -v4: use 0 for failing path
-> -v5: use MEMBLOCK_ERROR again
-> -v6: remove __memblock_find_in_range()
+> I really -really- don't like it. First of all, it's really gross to
+> free the array then walk it. We know it won't race but still ...
+> especially since you re-do the above every time
+> memblock_x86_to_bootmem() is called. Is it called more than once ? If
+> yes, then it's bogus. If not, then why have start,end ?
 
-It's very gross to have this weak and not memblock_find_base()... IE. 
+only one time for x86.
 
-You create a new function defined as a wrapper on an existing one to
-provide an easier set of arguments ... but also make it weak so the
-arch can completely change its semantics without actually changing
-the semantics of the function it wraps.
-
-This is going to cause confusion and bugs. I'm adding the patch without
-the weak bit to my branch for now, we need to discuss what is the best
-approach for x86 here. Might be to use a different function. I don't
-understand yet -why- x86 needs to override it, maybe the right way is
-to reserve things more intelligently on x86 ?
-
-In any case, you can always use your own wrapper there if needed
-
-Cheers,
-Ben.
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  include/linux/memblock.h |    2 ++
->  mm/memblock.c            |    8 ++++++++
->  2 files changed, 10 insertions(+), 0 deletions(-)
 > 
-> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-> index 751a4eb..61b22eb 100644
-> --- a/include/linux/memblock.h
-> +++ b/include/linux/memblock.h
-> @@ -48,6 +48,8 @@ extern struct memblock_region memblock_reserved_init_regions[];
->  #define memblock_dbg(fmt, ...) \
->  	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
->  
-> +u64 memblock_find_in_range(u64 start, u64 end, u64 size, u64 align);
-> +
->  extern void __init memblock_init(void);
->  extern void __init memblock_analyze(void);
->  extern long memblock_add(phys_addr_t base, phys_addr_t size);
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 7471dac..ca7de91 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -156,6 +156,14 @@ static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align
->  	return MEMBLOCK_ERROR;
->  }
->  
-> +/*
-> + * Find a free area with specified alignment in a specific range.
-> + */
-> +u64 __init __weak memblock_find_in_range(u64 start, u64 end, u64 size, u64 align)
-> +{
-> +	return memblock_find_base(size, align, start, end);
-> +}
-> +
->  static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
->  {
->  	unsigned long i;
+> If you really want to free it, maybe best is to stick something in
+> mm/memblock.c that kicks in at late init time and does the freeing ?
+> 
+> I'm going to keep the exporting out of my branch for now. If you really
+> want it, you can always add it to this specific patch, but it sucks.
 
+Actually the last patch remove this bootmem support for x86, so this function get removed later.
 
+Thanks
+
+Yinghai
