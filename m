@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab0G1R3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 13:29:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38810 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754312Ab0G1R3t convert rfc822-to-8bit (ORCPT
+	id S1754696Ab0G1RcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:32:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46295 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751134Ab0G1RcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 13:29:49 -0400
-From: "Ramos Falcon, Ernesto" <ernesto@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: "Menon, Nishanth" <nm@ti.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+	Wed, 28 Jul 2010 13:32:06 -0400
+Date: Wed, 28 Jul 2010 10:30:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, stable@kernel.org,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Christoph Hellwig <hch@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Wed, 28 Jul 2010 12:29:39 -0500
-Subject: RE: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
- 	NULL pointer in cmm.c
-Thread-Topic: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
- 	NULL pointer in cmm.c
-Thread-Index: Acsud/bWPxNi/21iS6q5A0etqORMlQAAjlSA
-Message-ID: <B852767254C5C94EBB1040EE0EFA060094B73BAD@dlee01.ent.ti.com>
-References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
-	<1280328052-31292-2-git-send-email-ernesto@ti.com>
-	<1280328052-31292-3-git-send-email-ernesto@ti.com>	<4C504719.3020007@ti.com>
-	<4C504D66.8090302@ti.com>
-	<B852767254C5C94EBB1040EE0EFA060094B73B31@dlee01.ent.ti.com>
- <AANLkTi=3K1NC4nGnuTBdVmTOmmG0JEZrG9vKhOvYgXhf@mail.gmail.com>
-In-Reply-To: <AANLkTi=3K1NC4nGnuTBdVmTOmmG0JEZrG9vKhOvYgXhf@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
+Message-Id: <20100728103056.c5511c78.akpm@linux-foundation.org>
+In-Reply-To: <20100728191322.4A85.A69D9226@jp.fujitsu.com>
+References: <20100728071705.GA22964@localhost>
+	<20100728191322.4A85.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Agree! I'll send new version of this patch.
+On Wed, 28 Jul 2010 20:40:21 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
->-----Original Message-----
->From: Felipe Contreras [mailto:felipe.contreras@gmail.com]
->Sent: Wednesday, July 28, 2010 12:12 PM
->To: Ramos Falcon, Ernesto
->Cc: Menon, Nishanth; gregkh@suse.de; Ramirez Luna, Omar; ohad@wizery.com;
->ameya.palande@nokia.com; felipe.contreras@nokia.com; Guzman Lugo, Fernando;
->linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux-
->omap@vger.kernel.org
->Subject: Re: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
->NULL pointer in cmm.c
->
->Hi Ernesto,
->
->On Wed, Jul 28, 2010 at 7:53 PM, Ramos Falcon, Ernesto <ernesto@ti.com>
->wrote:
->>>here is a better approach:
->>>remove cmm_xlator_delete altogether
->
->[...]
->
->> I considered this approach before but in terms of maintainability I
->thought it was easier to locate where translator tables are destroy if we
->keep cmm_xlator_delete function.
->
->That's not maintainability, that's debugging convenience. AFAIU linux
->is all about maintenance, because that provides real, tangible, and
->proven gains. Debugging convenience gains are hypothetical; you don't
->really know how useful it will be to have a separate free function.
->
->And please avoid bottom-posting, instead use interleaved style,
->otherwise people see a comment, and then have to scroll down to see
->the answer.
->http://en.wikipedia.org/wiki/Posting_style#Interleaved_style
->
->--
->Felipe Contreras
+> 3. pageout() is intended anynchronous api. but doesn't works so.
+> 
+> pageout() call ->writepage with wbc->nonblocking=1. because if the system have
+> default vm.dirty_ratio (i.e. 20), we have 80% clean memory. so, getting stuck
+> on one page is stupid, we should scan much pages as soon as possible.
+> 
+> HOWEVER, block layer ignore this argument. if slow usb memory device connect
+> to the system, ->writepage() will sleep long time. because submit_bio() call
+> get_request_wait() unconditionally and it doesn't have any PF_MEMALLOC task
+> bonus.
+
+The idea is that vmscan doesn't call ->writepage if the underlying
+queue is congested.  may_write_to_queue()->bdi_queue_congested() should
+return false and we skip the write.
+
+If that logic is broken then that would explain a few things...
