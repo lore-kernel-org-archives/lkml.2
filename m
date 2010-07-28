@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab0G1NnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 09:43:20 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54079 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab0G1NnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 09:43:19 -0400
-Message-ID: <4C5033D9.7030800@kernel.org>
-Date: Wed, 28 Jul 2010 15:42:49 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>
-CC: Jeff Garzik <jeff@garzik.org>, Greg KH <gregkh@suse.de>
-Subject: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Jul 2010 13:42:54 +0000 (UTC)
+	id S1754234Ab0G1No0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:44:26 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:47772 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab0G1NoX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 09:44:23 -0400
+Date: Wed, 28 Jul 2010 15:44:15 +0200
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: GCOV doesn't seem to work on ARM with kernel 2.6.35-rc6
+In-reply-to: <4C502CC5.7070205@linux.vnet.ibm.com>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: Karol Lewandowski <k.lewandowsk@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <4C50342F.2080001@samsung.local>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10)
+ Gecko/20100620 Icedove/3.0.5
+References: <4C4D6458.6040402@samsung.com> <4C4D6554.30707@samsung.com>
+ <4C4DBE8E.70102@linux.vnet.ibm.com> <4C4E8C2C.3000903@samsung.com>
+ <4C502CC5.7070205@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Thomas.
+On 07/28/2010 03:12 PM, Peter Oberparleiter wrote:
+> On 27.07.2010 09:35, Karol Lewandowski wrote:
+>> On 07/26/2010 06:57 PM, Peter Oberparleiter wrote:
+>>> Karol Lewandowski wrote:
+>>>> On 07/26/2010 12:32 PM, Karol Lewandowski wrote:
+>>>>> I'm trying to use code coverage measurements with mainline Linux kernel
+>>>>> 2.6.35-rc6 on ARM platform (specifically on Samsung's S5PC110 board).
+>> ...
+>>> I just tested gcov support for 2.6.35-rc6 on s390 and it works without
+>>> a problem. My assumption would be that you are using an EABI-GCC to
+>>> compile your kernel. Those compilers name their constructor symbols
+>>
+>> Exactly.
+>>
+>>> differently than the vanilla GCC so that the whole constructor calling
+>>> mechanism on which the gcov support relies, will fail. If that is
+>>> indeed the case, the following testing patch should solve your
+>>> problem:
+>>
+>> Yes, that was the case and your patch indeed solved my problem.
+>
+> Excellent. I could imagine that other ARM users might also benefit from
+> this patch. Before I submit it for integration though, I need to make
+> sure that it also works for kernel modules. Could you enable profiling
+> for a kernel module and verify that you are seeing files in
+> /sys/kernel/debug/gcov belonging to that module??
 
-With Jeff's acks added, patches to make libata use irq-expect are
-commited.  Please pull from the following branch to receive patches[1]
-to improve lost/spurious irq handling.
+That does work too.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git lost-spurious-irq
+However, having seen this[x] patch I would ask if constructor name might 
+be dynamically selected via user-(in)visible Kconfig option (like in 
+that patch?)  I've tested it and it does seem to work too.
+
+[x] 
+http://groups.google.com/group/linux.kernel/browse_thread/thread/84439151c5386e0f/d7dbec62b9d7989f?show_docid=d7dbec62b9d7989f
+
+I've copy pasted interesting parts from that patch below - I'm sure you 
+get the idea.
 
 Thanks.
 
-Tejun Heo (14):
-      irq: cleanup irqfixup
-      irq: make spurious poll timer per desc
-      irq: use desc->poll_timer for irqpoll
-      irq: kill IRQF_IRQPOLL
-      irq: misc preparations for further changes
-      irq: implement irq_schedule_poll()
-      irq: improve spurious IRQ handling
-      irq: implement IRQ watching
-      irq: implement IRQ expecting
-      irq: add comment about overall design of lost/spurious IRQ handling
-      usb: use IRQ watching
-      sata_fsl,mv,nv: prepare for NCQ command completion update
-      libata: always use ata_qc_complete_multiple() for NCQ command completion
-      libata: use IRQ expecting
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -442,7 +442,7 @@
+  #ifdef CONFIG_CONSTRUCTORS
+  #define KERNEL_CTORS() . = ALIGN(8);                      \
+                         VMLINUX_SYMBOL(__ctors_start) = .; \
+-                       *(.ctors)                          \
++                       *(CONFIG_GCOV_CTORS)               \
 
- arch/arm/mach-aaec2000/core.c            |    2 +-
- arch/arm/mach-at91/at91rm9200_time.c     |    2 +-
- arch/arm/mach-at91/at91sam926x_time.c    |    2 +-
- arch/arm/mach-bcmring/core.c             |    2 +-
- arch/arm/mach-clps711x/time.c            |    2 +-
- arch/arm/mach-cns3xxx/core.c             |    2 +-
- arch/arm/mach-ebsa110/core.c             |    2 +-
- arch/arm/mach-ep93xx/core.c              |    2 +-
- arch/arm/mach-footbridge/dc21285-timer.c |    2 +-
- arch/arm/mach-footbridge/isa-timer.c     |    2 +-
- arch/arm/mach-h720x/cpu-h7201.c          |    2 +-
- arch/arm/mach-h720x/cpu-h7202.c          |    2 +-
- arch/arm/mach-integrator/integrator_ap.c |    2 +-
- arch/arm/mach-ixp2000/core.c             |    2 +-
- arch/arm/mach-ixp23xx/core.c             |    2 +-
- arch/arm/mach-ixp4xx/common.c            |    2 +-
- arch/arm/mach-lh7a40x/time.c             |    2 +-
- arch/arm/mach-mmp/time.c                 |    2 +-
- arch/arm/mach-netx/time.c                |    2 +-
- arch/arm/mach-ns9xxx/irq.c               |    3 -
- arch/arm/mach-ns9xxx/time-ns9360.c       |    2 +-
- arch/arm/mach-nuc93x/time.c              |    2 +-
- arch/arm/mach-omap1/time.c               |    2 +-
- arch/arm/mach-omap1/timer32k.c           |    2 +-
- arch/arm/mach-omap2/timer-gp.c           |    2 +-
- arch/arm/mach-pnx4008/time.c             |    2 +-
- arch/arm/mach-pxa/time.c                 |    2 +-
- arch/arm/mach-sa1100/time.c              |    2 +-
- arch/arm/mach-shark/core.c               |    2 +-
- arch/arm/mach-u300/timer.c               |    2 +-
- arch/arm/mach-w90x900/time.c             |    2 +-
- arch/arm/plat-iop/time.c                 |    2 +-
- arch/arm/plat-mxc/time.c                 |    2 +-
- arch/arm/plat-samsung/time.c             |    2 +-
- arch/arm/plat-versatile/timer-sp.c       |    2 +-
- arch/blackfin/kernel/time-ts.c           |    6 +-
- arch/ia64/kernel/time.c                  |    2 +-
- arch/parisc/kernel/irq.c                 |    2 +-
- arch/powerpc/platforms/cell/interrupt.c  |    5 +-
- arch/x86/kernel/time.c                   |    2 +-
- drivers/ata/libata-core.c                |   54 ++-
- drivers/ata/libata-eh.c                  |    4 +-
- drivers/ata/libata-sff.c                 |   37 +-
- drivers/ata/sata_fsl.c                   |   26 +-
- drivers/ata/sata_mv.c                    |   58 +-
- drivers/ata/sata_nv.c                    |   87 +--
- drivers/clocksource/sh_cmt.c             |    3 +-
- drivers/clocksource/sh_mtu2.c            |    3 +-
- drivers/clocksource/sh_tmu.c             |    3 +-
- drivers/usb/core/hcd.c                   |    1 +
- include/linux/interrupt.h                |   43 +-
- include/linux/irq.h                      |   40 +-
- include/linux/libata.h                   |    2 +
- kernel/irq/chip.c                        |   20 +-
- kernel/irq/handle.c                      |    7 +-
- kernel/irq/internals.h                   |   10 +-
- kernel/irq/manage.c                      |   18 +-
- kernel/irq/proc.c                        |    5 +-
- kernel/irq/spurious.c                    |  978 +++++++++++++++++++++++++-----
- 59 files changed, 1101 insertions(+), 386 deletions(-)
+--- a/kernel/gcov/Kconfig
++++ b/kernel/gcov/Kconfig
++config GCOV_CTORS
++       string
++       depends on GCOV_KERNEL
++       default ".init_array" if ARM && AEABI
++       default ".ctors"
 
--- 
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.ide/46448
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2296,7 +2296,7 @@ static noinline struct module *load_module(void 
+__user *umod,
+                                             "__kcrctab_unused_gpl");
+  #endif
+  #ifdef CONFIG_CONSTRUCTORS
+-       mod->ctors = section_objs(hdr, sechdrs, secstrings, ".ctors",
++       mod->ctors = section_objs(hdr, sechdrs, secstrings, 
+CONFIG_GCOV_CTORS, sizeof(*mod->ctors), &mod->num_ctors);
