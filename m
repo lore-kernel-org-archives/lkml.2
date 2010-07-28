@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0G1Wjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 18:39:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16633 "EHLO
+	id S1756415Ab0G1Woo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 18:44:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46147 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab0G1Wjg (ORCPT
+	with ESMTP id S1752485Ab0G1Won (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 28 Jul 2010 18:39:36 -0400
-Date: Wed, 28 Jul 2010 18:38:16 -0400
+	Wed, 28 Jul 2010 18:44:43 -0400
+Date: Wed, 28 Jul 2010 18:42:29 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: hpa@zytor.com, jeremy@goop.org, Ian.Campbell@citrix.com,
-        albert_herranz@yahoo.es, x86@kernel.org, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
-Message-ID: <20100728223816.GB32739@phenom.dumpdata.com>
-References: <20100727194105.GA18647@phenom.dumpdata.com>
- <20100728083526J.fujita.tomonori@lab.ntt.co.jp>
- <4C4F779D.9060908@zytor.com>
- <20100728095157I.fujita.tomonori@lab.ntt.co.jp>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: avi@redhat.com, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+        npiggin@suse.de, Jeremy Fitzhardinge <jeremy@goop.org>,
+        kvm@vger.kernel.org, bharata@in.ibm.com,
+        Balbir Singh <balbir@in.ibm.com>, Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH RFC 0/4] Paravirt-spinlock implementation for KVM guests
+ (Version 0)
+Message-ID: <20100728224229.GA1693@phenom.dumpdata.com>
+References: <20100726061150.GB21699@linux.vnet.ibm.com>
+ <20100728221059.GA32739@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100728095157I.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100728221059.GA32739@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C50B173.011A:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4C50B2C7.0118:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > >>> Is there any way we can abstract this out a bit more instead of crapping
-> > >>> on generic code?
-> > > 
-> > > I don't like this change much too, however I think that this is the
-> > > most simple and straightforward.
-> > > 
-> > > Basically, Xen's swiotlb works like a new IOMMU implementation so we
-> > > need to initialize it like other IOMMU implementations (call the
-> > > detect and init functions in order).
-> > > 
+On Wed, Jul 28, 2010 at 06:10:59PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jul 26, 2010 at 11:41:50AM +0530, Srivatsa Vaddagiri wrote:
+> > This patch-series implements paravirt-spinlock implementation for KVM guests,
+> > based heavily on Xen's implementation. I tried to refactor Xen's spinlock
+> > implementation to make it common for both Xen and KVM - but found that 
+> > few differences between Xen and KVM (Xen has the ability to block on a
+> > particular event/irq for example) _and_ the fact that the guest kernel 
+> > can be compiled to support both Xen and KVM hypervisors (CONFIG_XEN and
+> > CONFIG_KVM_GUEST can both be turned on) makes the "common" code a eye-sore.
+> > There will have to be:
 > > 
-> > Even mentioning "xen" in generic code should be considered a bug.  I
-> > think we *do* need to driverize the iommu stuff, and yes, Xen's swiotlb
-> > should just be handled like one in the list.
-
-I think we all don't like the way 'pci_iommu_alloc' does it. But it does
-the job right now pretty well, and the code looks well, ok. Adding in
-the extra '_detect' and '_init' does not detract from it all that much.
-
-Long term I think the driverization is the way to go, and..
-
-> > > I really don't think that this makes the code better. I prefer the
-> > > current simple (dumb) code.
-> > > 
+> > 	if (xen) {
+> > 		...
+> > 	} else if (kvm) {
+> > 		..
+> > 	}
 > > 
-> > The special handling of swiotlb here really looks wrong, but otherwise I
-> > think it's the right idea.
+> > or possibly:
 > > 
-> > > Even if SWIOTLB works, we see if hardware IOMMU is available. SWIOTLB
-> > > is a last resort. We prefer hardware IOMMU.
-> > 
-> > Any reason to not just handle swiotlb like any of the other iommus, at
-> > the bottom of the list?
+> > 	alternative(NOP, some_xen_specific_call, ....)
 > 
-> we need to check if swiotlb usage is forced by the command line since:
-> 
-> - we skip hardware IOMMU initialization if so.
+> Why not utilize the pvops path?
 
-I think the flow a). check if we need SWIOTLB b), check all IOMMUs, c).
-recheck SWIOTLB in case no IOMMUs volunteered MUST be preserved
-irregardless if we driverize the IOMMUs/SWIOTLB or not.
-
-Perhaps we should get together at one of these Linux conferences and
-think this one through? Beers on me.
-
+Duh. You did use it. Sorry about the noise.
