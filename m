@@ -1,124 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab0G1JKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:10:52 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:39291 "EHLO gir.skynet.ie"
+	id S1754485Ab0G1J0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:26:46 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48984 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754438Ab0G1JKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:10:50 -0400
-Date: Wed, 28 Jul 2010 10:10:33 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Andy Whitcroft <apw@shadowen.org>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: [PATCH] vmscan: remove wait_on_page_writeback() from pageout()
-Message-ID: <20100728091032.GD5300@csn.ul.ie>
-References: <20100728071705.GA22964@localhost> <AANLkTimaj6+MzY5Aa_xqi75zKy1fDOQV5QiQjdX8jgm7@mail.gmail.com> <20100728084654.GA26776@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100728084654.GA26776@localhost>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1752184Ab0G1J0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 05:26:44 -0400
+Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: David Miller <davem@davemloft.net>
+Cc: hpa@zytor.com, yinghai@kernel.org, mingo@elte.hu, tglx@linutronix.de,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <20100727.230120.43037767.davem@davemloft.net>
+References: <1280294128.1970.237.camel@pasglop>
+	 <1280294376.1970.239.camel@pasglop> <4C4FC5D1.3070708@zytor.com>
+	 <20100727.230120.43037767.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 19:25:31 +1000
+Message-ID: <1280309131.1970.280.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 04:46:54PM +0800, Wu Fengguang wrote:
-> The wait_on_page_writeback() call inside pageout() is virtually dead code.
+On Tue, 2010-07-27 at 23:01 -0700, David Miller wrote:
+> > On x86, physical address 0 contains the real-mode IVT and will thus be
+> > reserved, at least for the forseeable future.  Other architectures may
+> > very well have non-special RAM there.
 > 
->         shrink_inactive_list()
->           shrink_page_list(PAGEOUT_IO_ASYNC)
->             pageout(PAGEOUT_IO_ASYNC)
->           shrink_page_list(PAGEOUT_IO_SYNC)
->             pageout(PAGEOUT_IO_SYNC)
-> 
-> Because shrink_page_list/pageout(PAGEOUT_IO_SYNC) is always called after
-> a preceding shrink_page_list/pageout(PAGEOUT_IO_ASYNC), the first
-> pageout(ASYNC) converts dirty pages into writeback pages, the second
-> shrink_page_list(SYNC) waits on the clean of writeback pages before
-> calling pageout(SYNC). The second shrink_page_list(SYNC) can hardly run
-> into dirty pages for pageout(SYNC) unless in some race conditions.
-> 
+> 0 is very much possible on sparc64 
 
-It's possible for the second call to run into dirty pages as there is a
-congestion_wait() call between the first shrink_page_list() call and the
-second. That's a big window.
+Yup, we need to fix that.
 
-> And the wait page-by-page behavior of pageout(SYNC) will lead to very
-> long stall time if running into some range of dirty pages.
+For now I made MEMBLOCK_ERROR 0 and added a blurb to prevent allocating
+the first page since it would cause other problems with the current code
+(0 is after all the normal error result from membloc_alloc(), ie, our
+API wasn't quite consistent there).
 
-True, but this is also lumpy reclaim which is depending on a contiguous
-range of pages. It's better for it to wait on the selected range of pages
-which is known to contain at least one old page than excessively scan and
-reclaim newer pages.
+So I don't think I'm introducing a regression here, on the contrary. But
+if we are going to allow lmb_alloc() to return 0, we need to fix all
+callers first and then we can look into turning MEMBLOCK_ERROR back to
+~0
 
-> So it's bad
-> idea anyway to call wait_on_page_writeback() inside pageout().
-> 
-
-I recognise that you are probably thinking of the stall-due-to-fork problem
-but I'd expect the patch that raises the bar for <= PAGE_ALLOC_COSTLY_ORDER
-to be sufficient. If not, I think it still makes sense to call
-wait_on_page_writeback() for > PAGE_ALLOC_COSTLY_ORDER.
+Cheers,
+Ben.
 
 
-> CC: Andy Whitcroft <apw@shadowen.org>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/vmscan.c |   13 ++-----------
->  1 file changed, 2 insertions(+), 11 deletions(-)
-> 
-> --- linux-next.orig/mm/vmscan.c	2010-07-28 16:22:21.000000000 +0800
-> +++ linux-next/mm/vmscan.c	2010-07-28 16:23:35.000000000 +0800
-> @@ -324,8 +324,7 @@ typedef enum {
->   * pageout is called by shrink_page_list() for each dirty page.
->   * Calls ->writepage().
->   */
-> -static pageout_t pageout(struct page *page, struct address_space *mapping,
-> -						enum pageout_io sync_writeback)
-> +static pageout_t pageout(struct page *page, struct address_space *mapping)
->  {
->  	/*
->  	 * If the page is dirty, only perform writeback if that write
-> @@ -384,14 +383,6 @@ static pageout_t pageout(struct page *pa
->  			return PAGE_ACTIVATE;
->  		}
->  
-> -		/*
-> -		 * Wait on writeback if requested to. This happens when
-> -		 * direct reclaiming a large contiguous area and the
-> -		 * first attempt to free a range of pages fails.
-> -		 */
-> -		if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
-> -			wait_on_page_writeback(page);
-> -
->  		if (!PageWriteback(page)) {
->  			/* synchronous write or broken a_ops? */
->  			ClearPageReclaim(page);
-> @@ -727,7 +718,7 @@ static unsigned long shrink_page_list(st
->  				goto keep_locked;
->  
->  			/* Page is dirty, try to write it out here */
-> -			switch (pageout(page, mapping, sync_writeback)) {
-> +			switch (pageout(page, mapping)) {
->  			case PAGE_KEEP:
->  				goto keep_locked;
->  			case PAGE_ACTIVATE:
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
