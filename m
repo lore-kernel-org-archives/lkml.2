@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab0G1Ad4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 20:33:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47043 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab0G1Adv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 20:33:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,271,1278313200"; 
-   d="scan'208";a="590335748"
-From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-To: Marc Haber <mh+linux-kernel@zugschlus.de>,
-        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>
-Date: Tue, 27 Jul 2010 18:33:49 -0600
-Subject: RE: e1000e crashes with 2.6.34.x and ThinkPad T60
-Thread-Topic: e1000e crashes with 2.6.34.x and ThinkPad T60
-Thread-Index: AcsrF9sVYPDpcye4Rm6zqDr136KvKgC09ghA
-Message-ID: <EA929A9653AAE14F841771FB1DE5A1366000F42E28@rrsmsx501.amr.corp.intel.com>
-References: <20100724092644.GA13353@torres.zugschlus.de>
-In-Reply-To: <20100724092644.GA13353@torres.zugschlus.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753966Ab0G1Alp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 20:41:45 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:57857 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab0G1Alo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 20:41:44 -0400
+Subject: Re: Make vhost multi-threaded and associate each thread to its
+ guest's cgroup
+From: Sridhar Samudrala <sri@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>
+In-Reply-To: <20100727204254.GA17947@redhat.com>
+References: <20100727204254.GA17947@redhat.com>
+Content-Type: text/plain
+Date: Tue, 27 Jul 2010 17:41:41 -0700
+Message-Id: <1280277701.27059.11.camel@w-sridhar.beaverton.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o6S0YF41023876
 
-Marc Haber wrote:
-> Hi,
+On Tue, 2010-07-27 at 23:42 +0300, Michael S. Tsirkin wrote:
+> Sridhar,
+> I pushed a patchset with all known issues fixed,
+> on my vhost-net-next branch.
 > 
-> I have a new notebook, a Thinkpad T60, which is freezing in random
-> intervals (like 30 minutes to two days) as long as I am using the
-> on-board wired ethernet interface, which is an e1000e, [8086:109a]. As
-> long as I keep using the WLAN, the system runs for weeks despite
-> frequent suspend/resume cycles etc. The crashes seem really to be tied
-> to using the wired ethernet. This is a hard freeze, with nothing
-> happening on the system, only a long push on the power button helps.
-
-When the crashes occur - is there a trace on the screen?
-
-Do you know of a way to reproduce the issue? For example were
-you downloading files, browsing internet, or using the ethernet device
-in any way when the system crashed?
-
-> Additionally, sometimes, probably after suspend/resume, the wired
-> ethernet does not come up properly again, ip addr claims "NO CARRIER"
-> even if the LEDs on the interface and on the switch claim that there
-> was a link. No packets are received by the interface when it's at this
-> stage.
+> For now this ignores the cpu mask issue, addressing
+> only the cgroups issue.
 > 
-> Both issues appear with 2.6.34 and 2.6.34.1. I didn't try any of these
-> issues with an older kernel, 2.6.34 was already out when I started
-> using the T60.
+> Would appreciate testing and reports.
 
-I got a T60 notebook running on 2.6.34.1 and will try to reproduce in house.
+I had to apply the following patch to get it build.
+With this patch, i am seeing similar results as i saw earlier.
 
-> 
-> To rule out defective hardware, I have tried with a second T60, with
-> the same results.
-> 
-> Full dmesg and lspci-nn attached, please say if you need more.
+Thanks
+Sridhar
 
-Doesn't seem that there were any attachments to this email. 
-Could you also provide the kernel config?
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 996e751..8543898 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -23,6 +23,7 @@
+ #include <linux/highmem.h>
+ #include <linux/slab.h>
+ #include <linux/kthread.h>
++#include <linux/cgroup.h>
+ 
+ #include <linux/net.h>
+ #include <linux/if_packet.h>
+@@ -252,7 +253,7 @@ static long vhost_dev_set_owner(struct vhost_dev *dev)
+ 	}
+ 
+ 	dev->worker = worker;
+-	err = cgroup_attach_task_current_cg(poller);
++	err = cgroup_attach_task_current_cg(worker);
+ 	if (err)
+ 		goto err_cgroup;
+ 	wake_up_process(worker);	/* avoid contributing to loadavg */
 
-> Greetings
-> Marc
 
-Thanks,
-Emil
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
