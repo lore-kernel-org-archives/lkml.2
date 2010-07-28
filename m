@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab0G1Oln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 10:41:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60550 "EHLO arroyo.ext.ti.com"
+	id S1755328Ab0G1Ols (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 10:41:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57725 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755069Ab0G1Oky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755070Ab0G1Oky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jul 2010 10:40:54 -0400
 From: Ernesto Ramos <ernesto@ti.com>
 To: gregkh@suse.de
@@ -12,11 +12,11 @@ Cc: omar.ramirez@ti.com, ohad@wizery.com, ameya.palande@nokia.com,
         felipe.contreras@nokia.com, fernando.lugo@ti.com,
         linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com, nm@ti.com,
         linux-omap@vger.kernel.org, Ernesto Ramos <ernesto@ti.com>
-Subject: [PATCH 08/10] staging:ti dspbridge: remove DSP_FAILED macro from rmgr
-Date: Wed, 28 Jul 2010 09:45:31 -0500
-Message-Id: <1280328333-31336-9-git-send-email-ernesto@ti.com>
+Subject: [PATCH 07/10] staging:ti dspbridge: remove DSP_FAILED macro from pmgr
+Date: Wed, 28 Jul 2010 09:45:30 -0500
+Message-Id: <1280328333-31336-8-git-send-email-ernesto@ti.com>
 X-Mailer: git-send-email 1.5.4.5
-In-Reply-To: <1280328333-31336-8-git-send-email-ernesto@ti.com>
+In-Reply-To: <1280328333-31336-7-git-send-email-ernesto@ti.com>
 References: <1280328333-31336-1-git-send-email-ernesto@ti.com>
  <1280328333-31336-2-git-send-email-ernesto@ti.com>
  <1280328333-31336-3-git-send-email-ernesto@ti.com>
@@ -24,7 +24,6 @@ References: <1280328333-31336-1-git-send-email-ernesto@ti.com>
  <1280328333-31336-5-git-send-email-ernesto@ti.com>
  <1280328333-31336-6-git-send-email-ernesto@ti.com>
  <1280328333-31336-7-git-send-email-ernesto@ti.com>
- <1280328333-31336-8-git-send-email-ernesto@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,1174 +33,386 @@ is not necessary anymore.
 
 Signed-off-by: Ernesto Ramos <ernesto@ti.com>
 ---
- drivers/staging/tidspbridge/rmgr/dbdcd.c         |   24 ++++----
- drivers/staging/tidspbridge/rmgr/disp.c          |   28 ++++----
- drivers/staging/tidspbridge/rmgr/drv.c           |    8 +-
- drivers/staging/tidspbridge/rmgr/drv_interface.c |    8 +-
- drivers/staging/tidspbridge/rmgr/dspdrv.c        |    8 +-
- drivers/staging/tidspbridge/rmgr/mgr.c           |   12 ++--
- drivers/staging/tidspbridge/rmgr/nldr.c          |   15 ++--
- drivers/staging/tidspbridge/rmgr/node.c          |   75 +++++++++++-----------
- drivers/staging/tidspbridge/rmgr/proc.c          |   42 ++++++------
- drivers/staging/tidspbridge/rmgr/pwr.c           |    8 +-
- drivers/staging/tidspbridge/rmgr/rmm.c           |    4 +-
- drivers/staging/tidspbridge/rmgr/strm.c          |   29 ++++----
- 12 files changed, 129 insertions(+), 132 deletions(-)
+ drivers/staging/tidspbridge/pmgr/chnl.c   |    2 +-
+ drivers/staging/tidspbridge/pmgr/cmm.c    |    2 +-
+ drivers/staging/tidspbridge/pmgr/cod.c    |    8 +++---
+ drivers/staging/tidspbridge/pmgr/dbll.c   |   12 +++++-----
+ drivers/staging/tidspbridge/pmgr/dev.c    |   24 ++++++++++------------
+ drivers/staging/tidspbridge/pmgr/dmm.c    |    2 +-
+ drivers/staging/tidspbridge/pmgr/dspapi.c |   30 ++++++++++++++--------------
+ 7 files changed, 39 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-index 12d2d41..f71e860 100644
---- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
-+++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-@@ -135,7 +135,7 @@ int dcd_create_manager(char *sz_zl_dll_name,
- 	DBC_REQUIRE(dcd_mgr);
- 
- 	status = cod_create(&cod_mgr, sz_zl_dll_name, NULL);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* Create a DCD object. */
-@@ -464,7 +464,7 @@ int dcd_get_object_def(struct dcd_manager *hdcd_mgr,
- 	/* Open COFF file. */
- 	status = cod_open(dcd_mgr_obj->cod_mgr, dcd_key->path,
- 							COD_NOLOAD, &lib);
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		status = -EACCES;
- 		goto func_end;
- 	}
-@@ -480,7 +480,7 @@ int dcd_get_object_def(struct dcd_manager *hdcd_mgr,
- 
- 	/* Get section information. */
- 	status = cod_get_section(lib, sz_sect_name, &ul_addr, &ul_len);
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		status = -EACCES;
- 		goto func_end;
- 	}
-@@ -513,7 +513,7 @@ int dcd_get_object_def(struct dcd_manager *hdcd_mgr,
- 		/* Parse the content of the COFF buffer. */
- 		status =
- 		    get_attrs_from_buf(psz_coff_buf, ul_len, obj_type, obj_def);
--		if (DSP_FAILED(status))
-+		if (status)
- 			status = -EACCES;
- 	} else {
- 		status = -EACCES;
-@@ -557,14 +557,14 @@ int dcd_get_objects(struct dcd_manager *hdcd_mgr,
- 
- 	/* Open DSP coff file, don't load symbols. */
- 	status = cod_open(dcd_mgr_obj->cod_mgr, sz_coff_path, COD_NOLOAD, &lib);
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		status = -EACCES;
- 		goto func_cont;
+diff --git a/drivers/staging/tidspbridge/pmgr/chnl.c b/drivers/staging/tidspbridge/pmgr/chnl.c
+index 626a993..90317b5 100644
+--- a/drivers/staging/tidspbridge/pmgr/chnl.c
++++ b/drivers/staging/tidspbridge/pmgr/chnl.c
+@@ -100,7 +100,7 @@ int chnl_create(struct chnl_mgr **channel_mgr,
+ 		}
  	}
  
- 	/* Get DCD_RESIGER_SECTION section information. */
- 	status = cod_get_section(lib, DCD_REGISTER_SECTION, &ul_addr, &ul_len);
--	if (DSP_FAILED(status) || !(ul_len > 0)) {
-+	if (status || !(ul_len > 0)) {
- 		status = -EACCES;
- 		goto func_cont;
- 	}
-@@ -617,7 +617,7 @@ int dcd_get_objects(struct dcd_manager *hdcd_mgr,
- 			 */
- 			status =
- 			    register_fxn(&dsp_uuid_obj, object_type, handle);
+-	DBC_ENSURE(DSP_FAILED(status) || chnl_mgr_obj);
++	DBC_ENSURE(status || chnl_mgr_obj);
+ 
+ 	return status;
+ }
+diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
+index 2f974c5..ce3dc88 100644
+--- a/drivers/staging/tidspbridge/pmgr/cmm.c
++++ b/drivers/staging/tidspbridge/pmgr/cmm.c
+@@ -1042,7 +1042,7 @@ int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator, void *buf_va)
+ 		if (buf_pa) {
+ 			status = cmm_free_buf(xlator_obj->hcmm_mgr, buf_pa,
+ 					      xlator_obj->ul_seg_id);
 -			if (DSP_FAILED(status)) {
 +			if (status) {
- 				/* if error occurs, break from while loop. */
- 				break;
- 			}
-@@ -729,7 +729,7 @@ int dcd_get_library_name(struct dcd_manager *hdcd_mgr,
- 		status = -ENOKEY;
+ 				/* Uh oh, this shouldn't happen. Descriptor
+ 				 * gone! */
+ 				DBC_ASSERT(false);	/* CMM is leaking mem */
+diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
+index 9f902de..52989ab 100644
+--- a/drivers/staging/tidspbridge/pmgr/cod.c
++++ b/drivers/staging/tidspbridge/pmgr/cod.c
+@@ -257,7 +257,7 @@ int cod_create(struct cod_manager **mgr, char *str_zl_file,
  
- 	/* If can't find, phases might be registered as generic LIBRARYTYPE */
--	if (DSP_FAILED(status) && phase != NLDR_NOPHASE) {
-+	if (status && phase != NLDR_NOPHASE) {
- 		if (phase_split)
- 			*phase_split = false;
+ 	status = mgr_new->fxns.create_fxn(&mgr_new->target, &zl_attrs);
  
-@@ -872,7 +872,7 @@ int dcd_register_object(struct dsp_uuid *uuid_obj,
- 			status = -EPERM;
+-	if (DSP_FAILED(status)) {
++	if (status) {
+ 		cod_delete(mgr_new);
+ 		return -ESPIPE;
+ 	}
+@@ -529,7 +529,7 @@ int cod_load_base(struct cod_manager *cod_mgr_obj, u32 num_argc, char *args[],
+ 	status = cod_mgr_obj->fxns.load_fxn(cod_mgr_obj->base_lib, flags,
+ 					    &new_attrs,
+ 					    &cod_mgr_obj->ul_entry);
+-	if (DSP_FAILED(status))
++	if (status)
+ 		cod_mgr_obj->fxns.close_fxn(cod_mgr_obj->base_lib);
+ 
+ 	if (!status)
+@@ -570,7 +570,7 @@ int cod_open(struct cod_manager *hmgr, char *sz_coff_path,
+ 			*lib_obj = lib;
  	}
  
 -	if (DSP_FAILED(status))
 +	if (status)
- 		goto func_end;
+ 		pr_err("%s: error status 0x%x, sz_coff_path: %s flags: 0x%x\n",
+ 		       __func__, status, sz_coff_path, flags);
+ 	return status;
+@@ -608,7 +608,7 @@ int cod_open_base(struct cod_manager *hmgr, char *sz_coff_path,
+ 		hmgr->sz_zl_file[COD_MAXPATHLENGTH - 1] = '\0';
+ 	}
  
+-	if (DSP_FAILED(status))
++	if (status)
+ 		pr_err("%s: error status 0x%x sz_coff_path: %s\n", __func__,
+ 		       status, sz_coff_path);
+ 	return status;
+diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
+index ea27824..2340638 100644
+--- a/drivers/staging/tidspbridge/pmgr/dbll.c
++++ b/drivers/staging/tidspbridge/pmgr/dbll.c
+@@ -256,7 +256,7 @@ int dbll_create(struct dbll_tar_obj **target_obj,
+ 			*target_obj = (struct dbll_tar_obj *)pzl_target;
+ 		}
+ 		DBC_ENSURE((!status && *target_obj) ||
+-				(DSP_FAILED(status) && *target_obj == NULL));
++				(status && *target_obj == NULL));
+ 	}
+ 
+ 	return status;
+@@ -559,7 +559,7 @@ int dbll_load(struct dbll_library_obj *lib, dbll_flags flags,
+ 	if (opened_doff)
+ 		dof_close(zl_lib);
+ 
+-	DBC_ENSURE(DSP_FAILED(status) || zl_lib->load_ref > 0);
++	DBC_ENSURE(status || zl_lib->load_ref > 0);
+ 
+ 	dev_dbg(bridge, "%s: lib: %p flags: 0x%x entry: %p, status 0x%x\n",
+ 		__func__, lib, flags, entry, status);
+@@ -631,7 +631,7 @@ int dbll_open(struct dbll_tar_obj *target, char *file, dbll_flags flags,
  	/*
-@@ -1449,14 +1449,14 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
- 		/* Get dependent library section information. */
- 		status = cod_get_section(lib, DEPLIBSECT, &ul_addr, &ul_len);
- 
--		if (DSP_FAILED(status)) {
-+		if (status) {
- 			/* Ok, no dependent libraries */
- 			ul_len = 0;
- 			status = 0;
- 		}
- 	}
- 
--	if (DSP_FAILED(status) || !(ul_len > 0))
-+	if (status || !(ul_len > 0))
- 		goto func_cont;
- 
- 	/* Allocate zeroed buffer. */
-@@ -1466,7 +1466,7 @@ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
- 
- 	/* Read section contents. */
- 	status = cod_read_section(lib, DEPLIBSECT, psz_coff_buf, ul_len);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	/* Compress and format DSP buffer to conform to PC format. */
-diff --git a/drivers/staging/tidspbridge/rmgr/disp.c b/drivers/staging/tidspbridge/rmgr/disp.c
-index 2d479b2..b7ce435 100644
---- a/drivers/staging/tidspbridge/rmgr/disp.c
-+++ b/drivers/staging/tidspbridge/rmgr/disp.c
-@@ -121,12 +121,12 @@ int disp_create(struct disp_object **dispatch_obj,
- 
- 	/* check device type and decide if streams or messag'ing is used for
- 	 * RMS/EDS */
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	status = dev_get_dev_type(hdev_obj, &dev_type);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	if (dev_type != DSP_UNIT) {
-@@ -168,7 +168,7 @@ func_cont:
- 	else
- 		delete_disp(disp_obj);
- 
--	DBC_ENSURE(((DSP_FAILED(status)) && ((*dispatch_obj == NULL))) ||
-+	DBC_ENSURE((status && *dispatch_obj == NULL) ||
- 				(!status && *dispatch_obj));
- 	return status;
- }
-@@ -284,7 +284,7 @@ int disp_node_create(struct disp_object *disp_obj,
- 
- 	status = dev_get_dev_type(disp_obj->hdev_obj, &dev_type);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	if (dev_type != DSP_UNIT) {
-@@ -377,7 +377,7 @@ int disp_node_create(struct disp_object *disp_obj,
- 		       node_msg_args.arg_length);
- 		total += dw_length;
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* If node is a task node, copy task create arguments into  buffer */
-@@ -425,7 +425,7 @@ int disp_node_create(struct disp_object *disp_obj,
- 			/* Fill SIO defs and offsets */
- 			offset = sio_defs_offset;
- 			for (i = 0; i < task_arg_obj.num_inputs; i++) {
--				if (DSP_FAILED(status))
-+				if (status)
- 					break;
- 
- 				pdw_buf[sio_in_def_offset + i] =
-@@ -467,7 +467,7 @@ int disp_node_create(struct disp_object *disp_obj,
- 			 * on the DSP-side
- 			 */
- 			status = (((rms_word *) (disp_obj->pbuf))[0]);
--			if (DSP_FAILED(status))
-+			if (status < 0)
- 				dev_dbg(bridge, "%s: DSP-side failed: 0x%x\n",
- 					__func__, status);
- 		}
-@@ -520,7 +520,7 @@ int disp_node_delete(struct disp_object *disp_obj,
- 				 * function on the DSP-side
- 				 */
- 				status = (((rms_word *) (disp_obj->pbuf))[0]);
--				if (DSP_FAILED(status))
-+				if (status < 0)
- 					dev_dbg(bridge, "%s: DSP-side failed: "
- 						"0x%x\n", __func__, status);
- 			}
-@@ -573,7 +573,7 @@ int disp_node_run(struct disp_object *disp_obj,
- 				 * function on the DSP-side
- 				 */
- 				status = (((rms_word *) (disp_obj->pbuf))[0]);
--				if (DSP_FAILED(status))
-+				if (status < 0)
- 					dev_dbg(bridge, "%s: DSP-side failed: "
- 						"0x%x\n", __func__, status);
- 			}
-@@ -603,7 +603,7 @@ static void delete_disp(struct disp_object *disp_obj)
- 			 * is invalid. */
- 			status = (*intf_fxns->pfn_chnl_close)
- 			    (disp_obj->chnl_from_dsp);
--			if (DSP_FAILED(status)) {
-+			if (status) {
- 				dev_dbg(bridge, "%s: Failed to close channel "
- 					"from RMS: 0x%x\n", __func__, status);
- 			}
-@@ -612,7 +612,7 @@ static void delete_disp(struct disp_object *disp_obj)
- 			status =
- 			    (*intf_fxns->pfn_chnl_close) (disp_obj->
- 							  chnl_to_dsp);
--			if (DSP_FAILED(status)) {
-+			if (status) {
- 				dev_dbg(bridge, "%s: Failed to close channel to"
- 					" RMS: 0x%x\n", __func__, status);
- 			}
-@@ -704,7 +704,7 @@ static int send_message(struct disp_object *disp_obj, u32 timeout,
- 	/* Send the command */
- 	status = (*intf_fxns->pfn_chnl_add_io_req) (chnl_obj, pbuf, ul_bytes, 0,
- 						    0L, dw_arg);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	status =
-@@ -718,14 +718,14 @@ static int send_message(struct disp_object *disp_obj, u32 timeout,
- 		}
- 	}
- 	/* Get the reply */
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	chnl_obj = disp_obj->chnl_from_dsp;
- 	ul_bytes = REPLYSIZE;
- 	status = (*intf_fxns->pfn_chnl_add_io_req) (chnl_obj, pbuf, ul_bytes,
- 						    0, 0L, dw_arg);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	status =
-diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
-index 93e9369..12c270a 100644
---- a/drivers/staging/tidspbridge/rmgr/drv.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv.c
-@@ -180,7 +180,7 @@ int drv_remove_all_dmm_res_elements(void *process_ctxt)
- 	list_for_each_entry_safe(map_obj, temp_map, &ctxt->dmm_map_list, link) {
- 		status = proc_un_map(ctxt->hprocessor,
- 				     (void *)map_obj->dsp_addr, ctxt);
--		if (DSP_FAILED(status))
-+		if (status)
- 			pr_err("%s: proc_un_map failed!"
- 			       " status = 0x%xn", __func__, status);
- 	}
-@@ -190,7 +190,7 @@ int drv_remove_all_dmm_res_elements(void *process_ctxt)
- 		status = proc_un_reserve_memory(ctxt->hprocessor, (void *)
- 						rsv_obj->dsp_reserved_addr,
- 						ctxt);
--		if (DSP_FAILED(status))
-+		if (status)
- 			pr_err("%s: proc_un_reserve_memory failed!"
- 			       " status = 0x%xn", __func__, status);
- 	}
-@@ -464,7 +464,7 @@ int drv_create(struct drv_object **drv_obj)
- 		kfree(pdrv_object);
- 	}
- 
--	DBC_ENSURE(DSP_FAILED(status) || pdrv_object);
-+	DBC_ENSURE(status || pdrv_object);
- 	return status;
- }
- 
-@@ -767,7 +767,7 @@ int drv_request_resources(u32 dw_context, u32 *dev_node_strg)
- 
- 	DBC_ENSURE((!status && dev_node_strg != NULL &&
- 		    !LST_IS_EMPTY(pdrv_object->dev_node_string)) ||
--		   (DSP_FAILED(status) && *dev_node_strg == 0));
-+		   (status && *dev_node_strg == 0));
- 
- 	return status;
- }
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index b1dcf4a..aec7cf7 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -201,7 +201,7 @@ static void bridge_recover(struct work_struct *work)
- 	}
- 	dev = dev_get_first();
- 	dev_get_dev_node(dev, &dev_node);
--	if (!dev_node || DSP_FAILED(proc_auto_start(dev_node, dev)))
-+	if (!dev_node || proc_auto_start(dev_node, dev))
- 		pr_err("DSP could not be restarted\n");
- 	recover = false;
- 	complete_all(&bridge_open_comp);
-@@ -397,7 +397,7 @@ static int __devexit omap34_xx_bridge_remove(struct platform_device *pdev)
- 	void *hdrv_obj = NULL;
- 
- 	status = cfg_get_object((u32 *) &hdrv_obj, REG_DRV_OBJECT);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- #ifdef CONFIG_TIDSPBRIDGE_DVFS
-@@ -439,7 +439,7 @@ static int BRIDGE_SUSPEND(struct platform_device *pdev, pm_message_t state)
- 	u32 command = PWR_EMERGENCYDEEPSLEEP;
- 
- 	status = pwr_sleep_dsp(command, time_out);
--	if (DSP_FAILED(status))
-+	if (status)
- 		return -1;
- 
- 	bridge_suspend_data.suspended = 1;
-@@ -451,7 +451,7 @@ static int BRIDGE_RESUME(struct platform_device *pdev)
- 	u32 status;
- 
- 	status = pwr_wake_dsp(time_out);
--	if (DSP_FAILED(status))
-+	if (status)
- 		return -1;
- 
- 	bridge_suspend_data.suspended = 0;
-diff --git a/drivers/staging/tidspbridge/rmgr/dspdrv.c b/drivers/staging/tidspbridge/rmgr/dspdrv.c
-index 0a10d88..714f348 100644
---- a/drivers/staging/tidspbridge/rmgr/dspdrv.c
-+++ b/drivers/staging/tidspbridge/rmgr/dspdrv.c
-@@ -56,7 +56,7 @@ u32 dsp_init(u32 *init_status)
- 		goto func_cont;
- 
- 	status = drv_create(&drv_obj);
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		api_exit();
- 		goto func_cont;
- 	}
-@@ -68,7 +68,7 @@ u32 dsp_init(u32 *init_status)
- 		/* Attempt to Start the Device */
- 		status = dev_start_device((struct cfg_devnode *)
- 					  device_node_string);
--		if (DSP_FAILED(status))
-+		if (status)
- 			(void)drv_release_resources
- 			    ((u32) device_node_string, drv_obj);
- 	} else {
-@@ -77,7 +77,7 @@ u32 dsp_init(u32 *init_status)
- 	}
- 
- 	/* Unwind whatever was loaded */
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		/* irrespective of the status of dev_remove_device we conitinue
- 		 * unloading. Get the Driver Object iterate through and remove.
- 		 * Reset the status to E_FAIL to avoid going through
-@@ -106,7 +106,7 @@ func_cont:
- 		dev_dbg(bridge, "%s: Failed\n", __func__);
- 	}			/* End api_init_complete2 */
- 	DBC_ENSURE((!status && drv_obj != NULL) ||
--		   (DSP_FAILED(status) && drv_obj == NULL));
-+		   (status && drv_obj == NULL));
- 	*init_status = status;
- 	/* Return the Driver Object */
- 	return (u32) drv_obj;
-diff --git a/drivers/staging/tidspbridge/rmgr/mgr.c b/drivers/staging/tidspbridge/rmgr/mgr.c
-index 57ae807..57a39b9 100644
---- a/drivers/staging/tidspbridge/rmgr/mgr.c
-+++ b/drivers/staging/tidspbridge/rmgr/mgr.c
-@@ -82,7 +82,7 @@ int mgr_create(struct mgr_object **mgr_obj,
- 		status = -ENOMEM;
- 	}
- 
--	DBC_ENSURE(DSP_FAILED(status) || pmgr_obj);
-+	DBC_ENSURE(status || pmgr_obj);
- 	return status;
- }
- 
-@@ -132,7 +132,7 @@ int mgr_enum_node_info(u32 node_id, struct dsp_ndbprops *pndb_props,
- 	*pu_num_nodes = 0;
- 	/* Get The Manager Object from the Registry */
- 	status = cfg_get_object((u32 *) &pmgr_obj, REG_MGR_OBJECT);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	DBC_ASSERT(pmgr_obj);
-@@ -167,7 +167,7 @@ int mgr_enum_node_info(u32 node_id, struct dsp_ndbprops *pndb_props,
- 
- func_cont:
- 	DBC_ENSURE((!status && *pu_num_nodes > 0) ||
--		   (DSP_FAILED(status) && *pu_num_nodes == 0));
-+		   (status && *pu_num_nodes == 0));
- 
- 	return status;
- }
-@@ -216,11 +216,11 @@ int mgr_enum_processor_info(u32 processor_id,
- 				processor_info->processor_type = DSPTYPE64;
- 		}
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* Get The Manager Object from the Registry */
--	if (DSP_FAILED(cfg_get_object((u32 *) &pmgr_obj, REG_MGR_OBJECT))) {
-+	if (cfg_get_object((u32 *) &pmgr_obj, REG_MGR_OBJECT)) {
- 		dev_dbg(bridge, "%s: Failed to get MGR Object\n", __func__);
- 		goto func_end;
- 	}
-@@ -319,7 +319,7 @@ int mgr_get_dcd_handle(struct mgr_object *mgr_handle,
- 		status = 0;
- 	}
- 	DBC_ENSURE((!status && *dcd_handle != (u32) NULL) ||
--		   (DSP_FAILED(status) && *dcd_handle == (u32) NULL));
-+		   (status && *dcd_handle == (u32) NULL));
- 
- 	return status;
- }
-diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
-index 3b83fc3..d8f4eeb 100644
---- a/drivers/staging/tidspbridge/rmgr/nldr.c
-+++ b/drivers/staging/tidspbridge/rmgr/nldr.c
-@@ -399,11 +399,11 @@ int nldr_allocate(struct nldr_object *nldr_obj, void *priv_ref,
- 		*nldr_nodeobj = (struct nldr_nodeobject *)nldr_node_obj;
- 	}
- 	/* Cleanup on failure */
--	if (DSP_FAILED(status) && nldr_node_obj)
-+	if (status && nldr_node_obj)
- 		kfree(nldr_node_obj);
- 
- 	DBC_ENSURE((!status && *nldr_nodeobj)
--		   || (DSP_FAILED(status) && *nldr_nodeobj == NULL));
-+		   || (status && *nldr_nodeobj == NULL));
- 	return status;
- }
- 
-@@ -587,8 +587,7 @@ int nldr_create(struct nldr_object **nldr,
- 		*nldr = NULL;
- 	}
- 	/* FIXME:Temp. Fix. Must be removed */
--	DBC_ENSURE((!status && *nldr)
--		   || (DSP_FAILED(status) && (*nldr == NULL)));
-+	DBC_ENSURE((!status && *nldr) || (status && *nldr == NULL));
- 	return status;
- }
- 
-@@ -1012,7 +1011,7 @@ static int add_ovly_node(struct dsp_uuid *uuid_obj,
- 	status =
- 	    dcd_get_object_def(nldr_obj->hdcd_mgr, uuid_obj, obj_type,
- 			       &obj_def);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* If overlay node, add to the list */
-@@ -1422,7 +1421,7 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
- 	 *  were loaded, and close the root library.
- 	 *  (Persistent libraries are unloaded from the very top)
+ 	 *  Set up objects needed by the dynamic loader
  	 */
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		if (phase != NLDR_EXECUTE) {
- 			for (i = 0; i < nldr_node_obj->pers_libs; i++)
- 				unload_lib(nldr_node_obj,
-@@ -1593,7 +1592,7 @@ static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
- 			}
- 		}
- 	}
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		/* 'Deallocate' memory */
- 		free_sects(nldr_obj, phase_sects, alloc_num);
- 		free_sects(nldr_obj, other_sects_list, other_alloc);
-@@ -1684,7 +1683,7 @@ static int remote_alloc(void **ref, u16 mem_sect, u32 size,
- 		rmm_addr_obj->segid = segid;
- 		status =
- 		    rmm_alloc(rmm, segid, word_size, align, dsp_address, false);
--		if (DSP_FAILED(status)) {
-+		if (status) {
- 			dev_dbg(bridge, "%s: Unable allocate from segment %d\n",
- 				__func__, segid);
- 		}
-diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index d8593fd..e2d02c4 100644
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -345,7 +345,7 @@ int node_allocate(struct proc_object *hprocessor,
- 
- 	}
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	status = dev_get_bridge_context(hdev_obj, &pbridge_context);
-@@ -356,7 +356,7 @@ int node_allocate(struct proc_object *hprocessor,
- 
- 	status = proc_get_state(hprocessor, &proc_state,
- 				sizeof(struct dsp_processorstate));
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 	/* If processor is in error state then don't attempt
- 	   to send the message */
-@@ -380,7 +380,7 @@ int node_allocate(struct proc_object *hprocessor,
- 		}
- 	}
- 	/* Allocate node object and fill in */
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	pnode = kzalloc(sizeof(struct node_object), GFP_KERNEL);
-@@ -395,7 +395,7 @@ int node_allocate(struct proc_object *hprocessor,
- 	/* Get dsp_ndbprops from node database */
- 	status = get_node_props(hnode_mgr->hdcd_mgr, pnode, node_uuid,
- 				&(pnode->dcd_props));
 -	if (DSP_FAILED(status))
 +	if (status)
  		goto func_cont;
  
- 	pnode->node_uuid = *node_uuid;
-@@ -428,7 +428,7 @@ int node_allocate(struct proc_object *hprocessor,
- 		pnode->create_args.asa.task_arg_obj.ugpp_heap_addr =
- 		    (u32) attr_in->pgpp_virt_addr;
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	status = proc_reserve_memory(hprocessor,
-@@ -437,7 +437,7 @@ int node_allocate(struct proc_object *hprocessor,
- 				     (void **)&(pnode->create_args.asa.
- 					task_arg_obj.udsp_heap_res_addr),
- 				     pr_ctxt);
--	if (DSP_FAILED(status)) {
-+	if (status) {
- 		pr_err("%s: Failed to reserve memory for heap: 0x%x\n",
- 		       __func__, status);
- 		goto func_cont;
-@@ -460,7 +460,7 @@ int node_allocate(struct proc_object *hprocessor,
- 			  (void *)pnode->create_args.asa.task_arg_obj.
- 			  udsp_heap_res_addr, (void **)&mapped_addr, map_attrs,
- 			  pr_ctxt);
--	if (DSP_FAILED(status))
-+	if (status)
- 		pr_err("%s: Failed to map memory for Heap: 0x%x\n",
- 		       __func__, status);
- 	else
-@@ -597,7 +597,7 @@ func_cont:
- 			    hnode_mgr->nldr_fxns.
- 			    pfn_get_fxn_addr(pnode->nldr_node_obj, "DYNEXT_BEG",
- 					     &dynext_base);
--			if (DSP_FAILED(status))
-+			if (status)
- 				pr_err("%s: Failed to get addr for DYNEXT_BEG"
- 				       " status = 0x%x\n", __func__, status);
- 
-@@ -606,7 +606,7 @@ func_cont:
- 			    pfn_get_fxn_addr(pnode->nldr_node_obj,
- 					     "L1DSRAM_HEAP", &pul_value);
- 
--			if (DSP_FAILED(status))
-+			if (status)
- 				pr_err("%s: Failed to get addr for L1DSRAM_HEAP"
- 				       " status = 0x%x\n", __func__, status);
- 
-@@ -614,7 +614,7 @@ func_cont:
- 			if (!host_res)
- 				status = -EPERM;
- 
--			if (DSP_FAILED(status)) {
-+			if (status) {
- 				pr_err("%s: Failed to get host resource, status"
- 				       " = 0x%x\n", __func__, status);
- 				goto func_end;
-@@ -670,7 +670,7 @@ func_cont:
- 		drv_proc_node_update_heap_status(node_res, true);
- 		drv_proc_node_update_status(node_res, true);
- 	}
--	DBC_ENSURE((DSP_FAILED(status) && (*ph_node == NULL)) ||
-+	DBC_ENSURE((status && (*ph_node == NULL)) ||
- 			(!status && *ph_node));
- func_end:
- 	dev_dbg(bridge, "%s: hprocessor: %p node_uuid: %p pargs: %p attr_in:"
-@@ -704,7 +704,7 @@ DBAPI node_alloc_msg_buf(struct node_object *hnode, u32 usize,
- 	else if (node_get_type(pnode) == NODE_DEVICE)
- 		status = -EPERM;
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	if (pattr == NULL)
-@@ -792,7 +792,7 @@ int node_change_priority(struct node_object *hnode, s32 prio)
- 		else if (prio < hnode_mgr->min_pri || prio > hnode_mgr->max_pri)
- 			status = -EDOM;
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* Enter critical section */
-@@ -905,7 +905,7 @@ int node_connect(struct node_object *node1, u32 stream1,
- 			status = -EPERM;	/* illegal stream mode */
+ 	/* Stream */
+@@ -713,7 +713,7 @@ func_cont:
  
  	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
+ 	DBC_ENSURE((!status && (zl_lib->open_ref > 0) && *lib_obj)
+-				|| (DSP_FAILED(status) && *lib_obj == NULL));
++				|| (status && *lib_obj == NULL));
  
- 	if (node1_type != NODE_GPP) {
-@@ -1167,7 +1167,7 @@ int node_create(struct node_object *hnode)
- 	hprocessor = hnode->hprocessor;
- 	status = proc_get_state(hprocessor, &proc_state,
- 				sizeof(struct dsp_processorstate));
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 	/* If processor is in error state then don't attempt to create
- 	   new node */
-@@ -1190,7 +1190,7 @@ int node_create(struct node_object *hnode)
- 	if (!status)
- 		status = proc_get_processor_id(pnode->hprocessor, &proc_id);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont2;
- 
- 	if (proc_id != DSP_UNIT)
-@@ -1267,7 +1267,7 @@ int node_create(struct node_object *hnode)
- 							  NLDR_CREATE);
- 		hnode->loaded = false;
- 	}
--	if (DSP_FAILED(status1))
-+	if (status1)
- 		pr_err("%s: Failed to unload create code: 0x%x\n",
- 		       __func__, status1);
- func_cont2:
-@@ -1421,8 +1421,7 @@ int node_create_mgr(struct node_mgr **node_man,
- 	else
- 		delete_node_mgr(node_mgr_obj);
- 
--	DBC_ENSURE((DSP_FAILED(status) && (*node_man == NULL)) ||
--			(!status && *node_man));
-+	DBC_ENSURE((status && *node_man == NULL) || (!status && *node_man));
- 
- 	return status;
- }
-@@ -1478,7 +1477,7 @@ int node_delete(struct node_object *hnode,
- 	if (!(state == NODE_ALLOCATED && hnode->node_env == (u32) NULL) &&
- 	    node_type != NODE_DEVICE) {
- 		status = proc_get_processor_id(pnode->hprocessor, &proc_id);
--		if (DSP_FAILED(status))
-+		if (status)
- 			goto func_cont1;
- 
- 		if (proc_id == DSP_UNIT || proc_id == IVA_UNIT) {
-@@ -1549,7 +1548,7 @@ func_cont1:
- 					    pfn_unload(hnode->nldr_node_obj,
- 						       NLDR_EXECUTE);
- 				}
--				if (DSP_FAILED(status1))
-+				if (status1)
- 					pr_err("%s: fail - unload execute code:"
- 					       " 0x%x\n", __func__, status1);
- 
-@@ -1558,7 +1557,7 @@ func_cont1:
- 							    nldr_node_obj,
- 							    NLDR_DELETE);
- 				hnode->loaded = false;
--				if (DSP_FAILED(status1))
-+				if (status1)
- 					pr_err("%s: fail - unload delete code: "
- 					       "0x%x\n", __func__, status1);
- 			}
-@@ -1822,7 +1821,7 @@ int node_get_message(struct node_object *hnode,
- 	hprocessor = hnode->hprocessor;
- 	status = proc_get_state(hprocessor, &proc_state,
- 				sizeof(struct dsp_processorstate));
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 	/* If processor is in error state then don't attempt to get the
- 	   message */
-@@ -1846,7 +1845,7 @@ int node_get_message(struct node_object *hnode,
- 	status =
- 	    (*intf_fxns->pfn_msg_get) (hnode->msg_queue_obj, message, utimeout);
- 	/* Check if message contains SM descriptor */
--	if (DSP_FAILED(status) || !(message->dw_cmd & DSP_RMSBUFDESC))
-+	if (status || !(message->dw_cmd & DSP_RMSBUFDESC))
- 		goto func_end;
- 
- 	/* Translate DSP byte addr to GPP Va. */
-@@ -2030,7 +2029,7 @@ int node_pause(struct node_object *hnode)
- 		if (node_type != NODE_TASK && node_type != NODE_DAISSOCKET)
- 			status = -EPERM;
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	status = proc_get_processor_id(pnode->hprocessor, &proc_id);
-@@ -2048,12 +2047,12 @@ int node_pause(struct node_object *hnode)
- 		if (state != NODE_RUNNING)
- 			status = -EBADR;
- 
--		if (DSP_FAILED(status))
-+		if (status)
- 			goto func_cont;
- 		hprocessor = hnode->hprocessor;
- 		status = proc_get_state(hprocessor, &proc_state,
- 				sizeof(struct dsp_processorstate));
--		if (DSP_FAILED(status))
-+		if (status)
- 			goto func_cont;
- 		/* If processor is in error state then don't attempt
- 		   to send the message */
-@@ -2115,7 +2114,7 @@ int node_put_message(struct node_object *hnode,
- 	hprocessor = hnode->hprocessor;
- 	status = proc_get_state(hprocessor, &proc_state,
- 				sizeof(struct dsp_processorstate));
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 	/* If processor is in bad state then don't attempt sending the
- 	   message */
-@@ -2145,7 +2144,7 @@ int node_put_message(struct node_object *hnode,
- 		/* end of sync_enter_cs */
- 		mutex_unlock(&hnode_mgr->node_mgr_lock);
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* assign pmsg values to new msg */
-@@ -2267,7 +2266,7 @@ int node_run(struct node_object *hnode)
- 	hprocessor = hnode->hprocessor;
- 	status = proc_get_state(hprocessor, &proc_state,
- 				sizeof(struct dsp_processorstate));
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 	/* If processor is in error state then don't attempt to run the node */
- 	if (proc_state.proc_state == PROC_ERROR) {
-@@ -2277,7 +2276,7 @@ int node_run(struct node_object *hnode)
- 	node_type = node_get_type(hnode);
- 	if (node_type == NODE_DEVICE)
- 		status = -EPERM;
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	hnode_mgr = hnode->hnode_mgr;
-@@ -2296,7 +2295,7 @@ int node_run(struct node_object *hnode)
- 	if (!status)
- 		status = proc_get_processor_id(pnode->hprocessor, &proc_id);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont1;
- 
- 	if ((proc_id != DSP_UNIT) && (proc_id != IVA_UNIT))
-@@ -2420,7 +2419,7 @@ int node_terminate(struct node_object *hnode, int *pstatus)
- 		 */
- 		status = proc_get_state(pnode->hprocessor, &proc_state,
- 					sizeof(struct dsp_processorstate));
--		if (DSP_FAILED(status))
-+		if (status)
- 			goto func_cont;
- 		/* If processor is in error state then don't attempt to send
- 		 * A kill task command */
-@@ -2442,7 +2441,7 @@ int node_terminate(struct node_object *hnode, int *pstatus)
- 
- 		status = (*intf_fxns->pfn_msg_put) (hnode->msg_queue_obj, &msg,
- 						    hnode->utimeout);
--		if (DSP_FAILED(status))
-+		if (status)
- 			goto func_cont;
- 
- 		/*
-@@ -2458,11 +2457,11 @@ int node_terminate(struct node_object *hnode, int *pstatus)
- 
- 		status = (*intf_fxns->pfn_msg_put)(hnode->msg_queue_obj,
- 						&killmsg, hnode->utimeout);
--		if (DSP_FAILED(status))
-+		if (status)
- 			goto func_cont;
- 		status = sync_wait_on_event(hnode->sync_done,
- 					     kill_time_out / 2);
--		if (DSP_FAILED(status)) {
-+		if (status) {
- 			/*
- 			 * Here it goes the part of the simulation of
- 			 * the DSP exception.
-@@ -3022,7 +3021,7 @@ int node_get_uuid_props(void *hprocessor,
- 	}
- 	status = proc_get_state(hprocessor, &proc_state,
- 				sizeof(struct dsp_processorstate));
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 	/* If processor is in error state then don't attempt
- 	   to send the message */
-@@ -3099,7 +3098,7 @@ static int get_rms_fxns(struct node_mgr *hnode_mgr)
- 	for (i = 0; i < NUMRMSFXNS; i++) {
- 		status = dev_get_symbol(dev_obj, psz_fxns[i],
- 					&(hnode_mgr->ul_fxn_addrs[i]));
--		if (DSP_FAILED(status)) {
-+		if (status) {
- 			if (status == -ESPIPE) {
- 				/*
- 				 *  May be loaded dynamically (in the future),
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index 570927f..6258d8b 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -302,7 +302,7 @@ proc_attach(u32 processor_id,
- 	if (!status)
- 		status = dev_get_dev_type(hdev_obj, &dev_type);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* If we made it this far, create the Proceesor object: */
-@@ -329,12 +329,12 @@ proc_attach(u32 processor_id,
- 	if (!status) {
- 		status = dev_get_bridge_context(hdev_obj,
- 					     &p_proc_object->hbridge_context);
--		if (DSP_FAILED(status))
-+		if (status)
- 			kfree(p_proc_object);
- 	} else
- 		kfree(p_proc_object);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* Create the Notification Object */
-@@ -376,7 +376,7 @@ proc_attach(u32 processor_id,
- 						  DSP_PROCESSORATTACH);
- 		}
+ 	dev_dbg(bridge, "%s: target: %p file: %s lib_obj: %p, status 0x%x\n",
+ 		__func__, target, file, lib_obj, status);
+@@ -756,7 +756,7 @@ int dbll_read_sect(struct dbll_library_obj *lib, char *name,
  	} else {
--		/* Don't leak memory if DSP_FAILED */
-+		/* Don't leak memory if status is failed */
- 		kfree(p_proc_object);
- 	}
- func_end:
-@@ -437,7 +437,7 @@ int proc_auto_start(struct cfg_devnode *dev_node_obj,
- 
- 	/* Create a Dummy PROC Object */
- 	status = cfg_get_object((u32 *) &hmgr_obj, REG_MGR_OBJECT);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	p_proc_object = kzalloc(sizeof(struct proc_object), GFP_KERNEL);
-@@ -451,13 +451,13 @@ int proc_auto_start(struct cfg_devnode *dev_node_obj,
- 	if (!status)
- 		status = dev_get_bridge_context(hdev_obj,
- 					     &p_proc_object->hbridge_context);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	/* Stop the Device, put it into standby mode */
- 	status = proc_stop(p_proc_object);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	/* Get the default executable for this board... */
-@@ -953,7 +953,7 @@ int proc_get_dev_object(void *hprocessor,
- 	}
- 
- 	DBC_ENSURE((!status && *device_obj != NULL) ||
--		   (DSP_FAILED(status) && *device_obj == NULL));
-+		   (status && *device_obj == NULL));
- 
- 	return status;
- }
-@@ -1103,12 +1103,12 @@ int proc_load(void *hprocessor, const s32 argc_index,
- 		goto func_end;
- 	}
- 	status = proc_stop(hprocessor);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* Place the board in the monitor state. */
- 	status = proc_monitor(hprocessor);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/* Save ptr to  original argv[0]. */
-@@ -1174,7 +1174,7 @@ int proc_load(void *hprocessor, const s32 argc_index,
- 			if (status == -EACCES)
- 				status = 0;
- 
--			if (DSP_FAILED(status)) {
-+			if (status) {
- 				status = -EPERM;
- 			} else {
- 				DBC_ASSERT(p_proc_object->psz_last_coff ==
-@@ -1225,7 +1225,7 @@ int proc_load(void *hprocessor, const s32 argc_index,
- 		status = cod_load_base(cod_mgr, argc_index, (char **)user_args,
- 				       dev_brd_write_fxn,
- 				       p_proc_object->hdev_obj, NULL);
--		if (DSP_FAILED(status)) {
-+		if (status) {
- 			if (status == -EBADF) {
- 				dev_dbg(bridge, "%s: Failure to Load the EXE\n",
- 					__func__);
-@@ -1302,12 +1302,12 @@ int proc_load(void *hprocessor, const s32 argc_index,
- 	}
- 
- func_end:
--	if (DSP_FAILED(status))
-+	if (status)
- 		pr_err("%s: Processor failed to load\n", __func__);
- 
- 	DBC_ENSURE((!status
- 		    && p_proc_object->proc_state == PROC_LOADED)
--		   || DSP_FAILED(status));
-+		   || status);
- #ifdef OPT_LOAD_TIME_INSTRUMENTATION
- 	do_gettimeofday(&tv2);
- 	if (tv2.tv_usec < tv1.tv_usec) {
-@@ -1391,7 +1391,7 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 	}
- 	mutex_unlock(&proc_lock);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- func_end:
-@@ -1454,7 +1454,7 @@ int proc_register_notify(void *hprocessor, u32 event_mask,
- 			 * so if we're trying to deregister and ntfy_register
- 			 * failed, we'll give the deh manager a shot.
- 			 */
--			if ((event_mask == 0) && DSP_FAILED(status)) {
-+			if ((event_mask == 0) && status) {
- 				status =
- 				    dev_get_deh_mgr(p_proc_object->hdev_obj,
- 						    &hdeh_mgr);
-@@ -1558,12 +1558,12 @@ int proc_start(void *hprocessor)
- 	}
- 
- 	status = cod_get_entry(cod_mgr, &dw_dsp_addr);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	status = (*p_proc_object->intf_fxns->pfn_brd_start)
- 	    (p_proc_object->hbridge_context, dw_dsp_addr);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	/* Call dev_create2 */
-@@ -1598,7 +1598,7 @@ func_cont:
- 
- func_end:
- 	DBC_ENSURE((!status && p_proc_object->proc_state ==
--		    PROC_RUNNING) || DSP_FAILED(status));
-+		    PROC_RUNNING) || status);
- 	return status;
- }
- 
-@@ -1705,7 +1705,7 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 	}
- 
- 	mutex_unlock(&proc_lock);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	/*
-@@ -1817,7 +1817,7 @@ static int proc_monitor(struct proc_object *proc_obj)
- 	}
- 
- 	DBC_ENSURE((!status && brd_state == BRD_IDLE) ||
--		   DSP_FAILED(status));
-+		   status);
- 	return status;
- }
- 
-diff --git a/drivers/staging/tidspbridge/rmgr/pwr.c b/drivers/staging/tidspbridge/rmgr/pwr.c
-index 69c2e19..85cb1a2 100644
---- a/drivers/staging/tidspbridge/rmgr/pwr.c
-+++ b/drivers/staging/tidspbridge/rmgr/pwr.c
-@@ -49,14 +49,14 @@ int pwr_sleep_dsp(const u32 sleep_code, const u32 timeout)
- 	     hdev_obj != NULL;
- 	     hdev_obj =
- 	     (struct dev_object *)drv_get_next_dev_object((u32) hdev_obj)) {
--		if (DSP_FAILED(dev_get_bridge_context(hdev_obj,
-+		if (dev_get_bridge_context(hdev_obj,
- 						(struct bridge_dev_context **)
--						   &dw_context))) {
-+						   &dw_context)) {
- 			continue;
- 		}
--		if (DSP_FAILED(dev_get_intf_fxns(hdev_obj,
-+		if (dev_get_intf_fxns(hdev_obj,
- 						(struct bridge_drv_interface **)
--						&intf_fxns))) {
-+						&intf_fxns)) {
- 			continue;
- 		}
- 		if (sleep_code == PWR_DEEPSLEEP)
-diff --git a/drivers/staging/tidspbridge/rmgr/rmm.c b/drivers/staging/tidspbridge/rmgr/rmm.c
-index 633d441..761e8f4 100644
---- a/drivers/staging/tidspbridge/rmgr/rmm.c
-+++ b/drivers/staging/tidspbridge/rmgr/rmm.c
-@@ -186,7 +186,7 @@ int rmm_create(struct rmm_target_obj **target_obj,
- 	if (target == NULL)
- 		status = -ENOMEM;
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_cont;
- 
- 	target->num_segs = num_segs;
-@@ -249,7 +249,7 @@ func_cont:
- 	}
- 
- 	DBC_ENSURE((!status && *target_obj)
--		   || (DSP_FAILED(status) && *target_obj == NULL));
-+		   || (status && *target_obj == NULL));
- 
- 	return status;
- }
-diff --git a/drivers/staging/tidspbridge/rmgr/strm.c b/drivers/staging/tidspbridge/rmgr/strm.c
-index 35d6378..df8458e 100644
---- a/drivers/staging/tidspbridge/rmgr/strm.c
-+++ b/drivers/staging/tidspbridge/rmgr/strm.c
-@@ -120,7 +120,7 @@ int strm_allocate_buffer(struct strm_object *stream_obj, u32 usize,
  		status = -EFAULT;
  	}
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	for (i = 0; i < num_bufs; i++) {
-@@ -133,10 +133,10 @@ int strm_allocate_buffer(struct strm_object *stream_obj, u32 usize,
- 			break;
- 		}
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		strm_free_buffer(stream_obj, ap_buffer, alloc_cnt, pr_ctxt);
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	if (drv_get_strm_res_element(stream_obj, &hstrm_res, pr_ctxt) !=
-@@ -180,7 +180,7 @@ int strm_close(struct strm_object *stream_obj,
- 			status = delete_strm(stream_obj);
- 	}
- 
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	if (drv_get_strm_res_element(stream_obj, &hstrm_res, pr_ctxt) !=
-@@ -233,8 +233,7 @@ int strm_create(struct strm_mgr **strm_man,
- 	else
- 		kfree(strm_mgr_obj);
- 
--	DBC_ENSURE((!status && *strm_man) ||
--				(DSP_FAILED(status) && *strm_man == NULL));
-+	DBC_ENSURE((!status && *strm_man) || (status && *strm_man == NULL));
- 
- 	return status;
- }
-@@ -291,7 +290,7 @@ int strm_free_buffer(struct strm_object *stream_obj, u8 ** ap_buffer,
- 			status =
- 			    cmm_xlator_free_buf(stream_obj->xlator,
- 						ap_buffer[i]);
--			if (DSP_FAILED(status))
-+			if (status)
- 				break;
- 			ap_buffer[i] = NULL;
- 		}
-@@ -329,14 +328,14 @@ int strm_get_info(struct strm_object *stream_obj,
- 			status = -EINVAL;
- 		}
- 	}
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 	status =
- 	    (*intf_fxns->pfn_chnl_get_info) (stream_obj->chnl_obj,
- 						  &chnl_info_obj);
--	if (DSP_FAILED(status))
-+	if (status)
- 		goto func_end;
- 
- 	if (stream_obj->xlator) {
-@@ -540,7 +539,7 @@ int strm_open(struct node_object *hnode, u32 dir, u32 index,
- 
- 		}
- 	}
 -	if (DSP_FAILED(status))
 +	if (status)
  		goto func_cont;
  
- 	if ((pattr->virt_base == NULL) || !(pattr->ul_virt_size > 0))
-@@ -572,7 +571,7 @@ func_cont:
- 						      strm_mgr_obj->hchnl_mgr,
- 						      chnl_mode, ul_chnl_id,
- 						      &chnl_attr_obj);
+ 	byte_size = 1;
+@@ -1314,7 +1314,7 @@ func_cont:
+ 						    (u32 *) &rmm_addr_obj,
+ 						    seg_id, req, false);
+ 	}
+-	if (DSP_FAILED(status)) {
++	if (status) {
+ 		ret = false;
+ 	} else {
+ 		/* RMM gives word address. Need to convert to byte address */
+diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
+index 8f1e56a..4ddf03d 100644
+--- a/drivers/staging/tidspbridge/pmgr/dev.c
++++ b/drivers/staging/tidspbridge/pmgr/dev.c
+@@ -150,7 +150,7 @@ int dev_create_device(struct dev_object **device_obj,
+ 
+ 	status = drv_request_bridge_res_dsp((void *)&host_res);
+ 
+-	if (DSP_FAILED(status)) {
++	if (status) {
+ 		dev_dbg(bridge, "%s: Failed to reserve bridge resources\n",
+ 			__func__);
+ 		goto leave;
+@@ -158,7 +158,7 @@ int dev_create_device(struct dev_object **device_obj,
+ 
+ 	/*  Get the Bridge driver interface functions */
+ 	bridge_drv_entry(&drv_fxns, driver_file_name);
+-	if (DSP_FAILED(cfg_get_object((u32 *) &hdrv_obj, REG_DRV_OBJECT))) {
++	if (cfg_get_object((u32 *) &hdrv_obj, REG_DRV_OBJECT)) {
+ 		/* don't propogate CFG errors from this PROC function */
+ 		status = -EPERM;
+ 	}
+@@ -189,7 +189,7 @@ int dev_create_device(struct dev_object **device_obj,
+ 			    (&dev_obj->hbridge_context, dev_obj,
+ 			     host_res);
+ 			/* Assert bridge_dev_create()'s ensure clause: */
+-			DBC_ASSERT(DSP_FAILED(status)
++			DBC_ASSERT(status
+ 				   || (dev_obj->hbridge_context != NULL));
+ 		} else {
+ 			status = -ENOMEM;
+@@ -276,8 +276,7 @@ leave:
+ 		*device_obj = NULL;
+ 	}
+ 
+-	DBC_ENSURE((!status && *device_obj) ||
+-		   (DSP_FAILED(status) && !*device_obj));
++	DBC_ENSURE((!status && *device_obj) || (status && !*device_obj));
+ 	return status;
+ }
+ 
+@@ -299,11 +298,11 @@ int dev_create2(struct dev_object *hdev_obj)
+ 	/* There can be only one Node Manager per DEV object */
+ 	DBC_ASSERT(!dev_obj->hnode_mgr);
+ 	status = node_create_mgr(&dev_obj->hnode_mgr, hdev_obj);
+-	if (DSP_FAILED(status))
++	if (status)
+ 		dev_obj->hnode_mgr = NULL;
+ 
+ 	DBC_ENSURE((!status && dev_obj->hnode_mgr != NULL)
+-		   || (DSP_FAILED(status) && dev_obj->hnode_mgr == NULL));
++		   || (status && dev_obj->hnode_mgr == NULL));
+ 	return status;
+ }
+ 
+@@ -321,15 +320,14 @@ int dev_destroy2(struct dev_object *hdev_obj)
+ 	DBC_REQUIRE(hdev_obj);
+ 
+ 	if (dev_obj->hnode_mgr) {
+-		if (DSP_FAILED(node_delete_mgr(dev_obj->hnode_mgr)))
++		if (node_delete_mgr(dev_obj->hnode_mgr))
+ 			status = -EPERM;
+ 		else
+ 			dev_obj->hnode_mgr = NULL;
+ 
+ 	}
+ 
+-	DBC_ENSURE((!status && dev_obj->hnode_mgr == NULL) ||
+-		   DSP_FAILED(status));
++	DBC_ENSURE((!status && dev_obj->hnode_mgr == NULL) || status);
+ 	return status;
+ }
+ 
+@@ -847,7 +845,7 @@ int dev_set_chnl_mgr(struct dev_object *hdev_obj,
+ 	else
+ 		status = -EFAULT;
+ 
+-	DBC_ENSURE(DSP_FAILED(status) || (dev_obj->hchnl_mgr == hmgr));
++	DBC_ENSURE(status || (dev_obj->hchnl_mgr == hmgr));
+ 	return status;
+ }
+ 
+@@ -885,7 +883,7 @@ int dev_start_device(struct cfg_devnode *dev_node_obj)
+ 	if (!status) {
+ 		/* Store away the hdev_obj with the DEVNODE */
+ 		status = cfg_set_dev_object(dev_node_obj, (u32) hdev_obj);
 -		if (DSP_FAILED(status)) {
 +		if (status) {
- 			/*
- 			 * over-ride non-returnable status codes so we return
- 			 * something documented
-@@ -767,7 +766,7 @@ int strm_select(struct strm_object **strm_tab, u32 strms,
- 			break;
+ 			/* Clean up */
+ 			dev_destroy_device(hdev_obj);
+ 			hdev_obj = NULL;
+@@ -895,7 +893,7 @@ int dev_start_device(struct cfg_devnode *dev_node_obj)
+ 		/* Create the Manager Object */
+ 		status = mgr_create(&hmgr_obj, dev_node_obj);
+ 	}
+-	if (DSP_FAILED(status)) {
++	if (status) {
+ 		if (hdev_obj)
+ 			dev_destroy_device(hdev_obj);
+ 
+diff --git a/drivers/staging/tidspbridge/pmgr/dmm.c b/drivers/staging/tidspbridge/pmgr/dmm.c
+index ef28748..8685233 100644
+--- a/drivers/staging/tidspbridge/pmgr/dmm.c
++++ b/drivers/staging/tidspbridge/pmgr/dmm.c
+@@ -106,7 +106,7 @@ int dmm_create_tables(struct dmm_object *dmm_mgr, u32 addr, u32 size)
  		}
  	}
+ 
+-	if (DSP_FAILED(status))
++	if (status)
+ 		pr_err("%s: failure, status 0x%x\n", __func__, status);
+ 
+ 	return status;
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index 60d7410..1b0ab4a 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -170,7 +170,7 @@ static u8 size_cmd[] = {
+ static inline void _cp_fm_usr(void *to, const void __user * from,
+ 			      int *err, unsigned long bytes)
+ {
+-	if (DSP_FAILED(*err))
++	if (*err)
+ 		return;
+ 
+ 	if (unlikely(!from)) {
+@@ -188,7 +188,7 @@ static inline void _cp_fm_usr(void *to, const void __user * from,
+ static inline void _cp_to_usr(void __user *to, const void *from,
+ 			      int *err, unsigned long bytes)
+ {
+-	if (DSP_FAILED(*err))
++	if (*err)
+ 		return;
+ 
+ 	if (unlikely(!to)) {
+@@ -391,10 +391,10 @@ int api_init_complete2(void)
+ 	 *  requires KFILE. */
+ 	for (hdev_obj = dev_get_first(); hdev_obj != NULL;
+ 	     hdev_obj = dev_get_next(hdev_obj)) {
+-		if (DSP_FAILED(dev_get_dev_node(hdev_obj, &dev_node)))
++		if (dev_get_dev_node(hdev_obj, &dev_node))
+ 			continue;
+ 
+-		if (DSP_FAILED(dev_get_dev_type(hdev_obj, &dev_type)))
++		if (dev_get_dev_type(hdev_obj, &dev_type))
+ 			continue;
+ 
+ 		if ((dev_type == DSP_UNIT) || (dev_type == IVA_UNIT))
+@@ -486,7 +486,7 @@ u32 mgrwrap_register_object(union trapped_args *args, void *pr_ctxt)
+ 	int status = 0;
+ 
+ 	CP_FM_USR(&uuid_obj, args->args_mgr_registerobject.uuid_obj, status, 1);
+-	if (DSP_FAILED(status))
++	if (status)
+ 		goto func_end;
+ 	/* path_size is increased by 1 to accommodate NULL */
+ 	path_size = strlen_user((char *)
+@@ -523,7 +523,7 @@ u32 mgrwrap_unregister_object(union trapped_args *args, void *pr_ctxt)
+ 	struct dsp_uuid uuid_obj;
+ 
+ 	CP_FM_USR(&uuid_obj, args->args_mgr_registerobject.uuid_obj, status, 1);
 -	if (DSP_FAILED(status))
 +	if (status)
  		goto func_end;
  
- 	/* Determine which channels have IO ready */
-@@ -775,7 +774,7 @@ int strm_select(struct strm_object **strm_tab, u32 strms,
- 		intf_fxns = strm_tab[i]->strm_mgr_obj->intf_fxns;
- 		status = (*intf_fxns->pfn_chnl_get_info) (strm_tab[i]->chnl_obj,
- 							  &chnl_info_obj);
+ 	status = dcd_unregister_object(&uuid_obj,
+@@ -834,7 +834,7 @@ u32 procwrap_load(union trapped_args *args, void *pr_ctxt)
+ 	}
+ 
+ 	CP_FM_USR(argv, args->args_proc_load.user_args, status, count);
+-	if (DSP_FAILED(status)) {
++	if (status) {
+ 		kfree(argv);
+ 		argv = NULL;
+ 		goto func_cont;
+@@ -850,7 +850,7 @@ u32 procwrap_load(union trapped_args *args, void *pr_ctxt)
+ 			argv[i] = kmalloc(len, GFP_KERNEL);
+ 			if (argv[i]) {
+ 				CP_FM_USR(argv[i], temp, status, len);
+-				if (DSP_FAILED(status)) {
++				if (status) {
+ 					kfree(argv[i]);
+ 					argv[i] = NULL;
+ 					goto func_cont;
+@@ -876,7 +876,7 @@ u32 procwrap_load(union trapped_args *args, void *pr_ctxt)
+ 		}
+ 
+ 		CP_FM_USR(envp, args->args_proc_load.user_envp, status, count);
 -		if (DSP_FAILED(status)) {
 +		if (status) {
- 			break;
- 		} else {
- 			if (chnl_info_obj.cio_cs > 0)
-@@ -796,7 +795,7 @@ int strm_select(struct strm_object **strm_tab, u32 strms,
- 				    strm_tab[i]->strm_mgr_obj->intf_fxns;
- 				status = (*intf_fxns->pfn_chnl_get_info)
- 				    (strm_tab[i]->chnl_obj, &chnl_info_obj);
--				if (DSP_FAILED(status))
-+				if (status)
- 					break;
- 				else
- 					sync_events[i] =
-@@ -820,7 +819,7 @@ func_end:
- 	kfree(sync_events);
+ 			kfree(envp);
+ 			envp = NULL;
+ 			goto func_cont;
+@@ -890,7 +890,7 @@ u32 procwrap_load(union trapped_args *args, void *pr_ctxt)
+ 			envp[i] = kmalloc(len, GFP_KERNEL);
+ 			if (envp[i]) {
+ 				CP_FM_USR(envp[i], temp, status, len);
+-				if (DSP_FAILED(status)) {
++				if (status) {
+ 					kfree(envp[i]);
+ 					envp[i] = NULL;
+ 					goto func_cont;
+@@ -1078,7 +1078,7 @@ u32 nodewrap_allocate(union trapped_args *args, void *pr_ctxt)
+ 			  cb_data_size);
+ 	}
+ 	CP_FM_USR(&node_uuid, args->args_node_allocate.node_id_ptr, status, 1);
+-	if (DSP_FAILED(status))
++	if (status)
+ 		goto func_cont;
+ 	/* Optional argument */
+ 	if (args->args_node_allocate.attr_in) {
+@@ -1097,7 +1097,7 @@ u32 nodewrap_allocate(union trapped_args *args, void *pr_ctxt)
+ 	}
+ 	if (!status) {
+ 		CP_TO_USR(args->args_node_allocate.ph_node, &hnode, status, 1);
+-		if (DSP_FAILED(status)) {
++		if (status) {
+ 			status = -EFAULT;
+ 			node_delete(hnode, pr_ctxt);
+ 		}
+@@ -1179,7 +1179,7 @@ u32 nodewrap_connect(union trapped_args *args, void *pr_ctxt)
+ 		}
+ 		CP_FM_USR(pargs, args->args_node_connect.conn_param, status,
+ 			  cb_data_size);
+-		if (DSP_FAILED(status))
++		if (status)
+ 			goto func_cont;
+ 	}
+ 	if (args->args_node_connect.pattrs) {	/* Optional argument */
+@@ -1378,7 +1378,7 @@ u32 nodewrap_get_uuid_props(union trapped_args *args, void *pr_ctxt)
  
- 	DBC_ENSURE((!status && (*pmask != 0 || utimeout == 0)) ||
--		   (DSP_FAILED(status) && *pmask == 0));
-+		   (status && *pmask == 0));
- 
- 	return status;
- }
+ 	CP_FM_USR(&node_uuid, args->args_node_getuuidprops.node_id_ptr, status,
+ 		  1);
+-	if (DSP_FAILED(status))
++	if (status)
+ 		goto func_cont;
+ 	pnode_props = kmalloc(sizeof(struct dsp_ndbprops), GFP_KERNEL);
+ 	if (pnode_props != NULL) {
+@@ -1416,7 +1416,7 @@ u32 strmwrap_allocate_buffer(union trapped_args *args, void *pr_ctxt)
+ 	if (!status) {
+ 		CP_TO_USR(args->args_strm_allocatebuffer.ap_buffer, ap_buffer,
+ 			  status, num_bufs);
+-		if (DSP_FAILED(status)) {
++		if (status) {
+ 			status = -EFAULT;
+ 			strm_free_buffer(args->args_strm_allocatebuffer.hstream,
+ 					 ap_buffer, num_bufs, pr_ctxt);
 -- 
 1.5.4.5
 
