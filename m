@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab0G1S7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 14:59:14 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:36034 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0G1S7K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 14:59:10 -0400
-Date: Wed, 28 Jul 2010 14:58:51 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Yu, Luming" <luming.yu@intel.com>,
-        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "venki@google.com" <venki@google.com>
-Subject: Re: [PATCH] ACPI: create "processor.bm_check_disable" boot param
-In-reply-to: <20100727112841.GC7813@basil.fritz.box>
-Message-id: <alpine.LFD.2.00.1007281456350.26093@localhost.localdomain>
-References: <20100525124325.GC7876@srcf.ucam.org>
- <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain>
- <20100525185507.GA15997@srcf.ucam.org>
- <alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
- <20100722074750.GA22520@one.firstfloor.org>
- <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
- <alpine.LFD.2.00.1007221720270.7970@localhost.localdomain>
- <alpine.LFD.2.00.1007221739260.7970@localhost.localdomain>
- <87k4oiiu3x.fsf@basil.nowhere.org>
- <alpine.LFD.2.00.1007262007550.5292@localhost.localdomain>
- <20100727112841.GC7813@basil.fritz.box>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1751470Ab0G1TCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 15:02:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38000 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750940Ab0G1TCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 15:02:43 -0400
+Date: Wed, 28 Jul 2010 11:56:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Ernesto Ramos <ernesto@ti.com>, omar.ramirez@ti.com, ohad@wizery.com,
+        ameya.palande@nokia.com, felipe.contreras@nokia.com,
+        fernando.lugo@ti.com, linux-kernel@vger.kernel.org, nm@ti.com,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 5/5] staging:ti dspbridge: replace simple_strtoul by
+ strict_strtoul
+Message-ID: <20100728185654.GA7424@suse.de>
+References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
+ <1280328052-31292-2-git-send-email-ernesto@ti.com>
+ <1280328052-31292-3-git-send-email-ernesto@ti.com>
+ <1280328052-31292-4-git-send-email-ernesto@ti.com>
+ <1280328052-31292-5-git-send-email-ernesto@ti.com>
+ <1280328052-31292-6-git-send-email-ernesto@ti.com>
+ <20100728150934.GA25299@suse.de>
+ <AANLkTimNAoy7fJLeGeUPz2tZT9evUwD58tm7mOxTqqv2@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimNAoy7fJLeGeUPz2tZT9evUwD58tm7mOxTqqv2@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 28, 2010 at 09:40:19PM +0300, Andy Shevchenko wrote:
+> On Wed, Jul 28, 2010 at 6:09 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Wed, Jul 28, 2010 at 09:40:52AM -0500, Ernesto Ramos wrote:
+> >> Replace simple_strtoul by strict_strtoul in atoi function.
+> >
+> > Why not use the built-in kernel function instead of having your own atoi
+> > function?
+> The commit message left opened questions about
+> http://dev.omapzoom.org/?p=tidspbridge/kernel-dspbridge.git;a=commit;h=b8af1123b47741086ef5a307ad1ec8fec6fc7f0d
 
-On Tue, 27 Jul 2010, Andi Kleen wrote:
+Ok, but you will have to fix this up eventually, you need to use the
+in-kernel library functions, or fix the in-kernel ones to add the
+support you need.
 
-> > > This needs to be also documented in Documentation/kernel-parameters.txt
-> > 
-> > I thought about that and decided against it.
-> > While we do document some driver specific modparams
-> > in kernel-parameters.txt, I do not expect this one to
-> > be used that often -- mostly for diagnosis of BIOS bugs.
-> > I know of two machines that need it,
-> > and both of those machines have a BIOS update
-> > or a BIOS update in progress that make it unnecessary.
-> 
-> I think even obscure parameters should be documented.
+thanks,
 
-Where?
-
-kernel-parameters.txt seems to be mostly about core kernel parameters.
-While there are some key driver parameters in there, they
-appear to be the exception.
-
--Len
-
+greg k-h
