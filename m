@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab0G1QiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 12:38:19 -0400
-Received: from p01c11o142.mxlogic.net ([208.65.144.65]:59303 "EHLO
-	p01c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab0G1QiQ (ORCPT
+	id S1755596Ab0G1QjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 12:39:11 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35241 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754419Ab0G1QjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 12:38:16 -0400
-X-MXL-Hash: 4c505cf803bb1d03-dbbaada36bc14b0e99ad30996e7a428bfed5355a
-X-MXL-Hash: 4c505ce54cba18c4-355a1af59142f128979f680a7b5e142755c429ad
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] Staging: dt3155: make local variables static
-Date: Wed, 28 Jul 2010 09:37:08 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <gregkh@suse.de>, <ss@aao.gov.au>,
-        <joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201007280937.08637.hartleys@visionengravers.com>
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.72]
-X-AnalysisOut: [v=1.0 c=1 a=9PbaAOEawRwA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=jM3uHZP82BWpxjlUuN2t4A==:17 a=i00gxMtYAAAA:8 a=IJv]
-X-AnalysisOut: [9LcIfAAAA:8 a=KSJMCbnaM9aTShvhBdoA:9 a=dsYsrUcjBrOmPCPDSd8]
-X-AnalysisOut: [A:7 a=AiDbqlyw14oldI-b1YdQUBs9PbMA:4 a=QEXdDO2ut3YA:10 a=x]
-X-AnalysisOut: [1WnkoZAwusA:10 a=0kPLrQdw3YYA:10 a=K6kUPx8HyhEA:10]
+	Wed, 28 Jul 2010 12:39:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AgETnfE8+TiHayp4D0WE+b2NGiqq8yY9QNwo0pUuxqaql2p96iuMSqr8bW9EMYnHdk
+         92Q83loDH9ingL5aE7CkY/Q/J/t558WllC9x9dMrIMf9h3nZOJkZVQXNL/yeQ/Ph5/Wf
+         9MV7HerBEDppqZPSCBlPt5iCpCHSUXWjXjiQ0=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/10] arm: leds: check return value of request_region()
+Date: Wed, 28 Jul 2010 20:38:47 +0400
+Message-Id: <1280335127-23145-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbols dt3155_dev_open, unique_tag, and allocatorAddr are only used in
-the file dt3155_drv.c and should be static. Also, as pointed out by Joe Perches,
-static variables do not need initialization so remove them. While here, also
-move the definition for allocatorAddr so that all the variables are declared at
-one place in the code.
+request_region() may fail, if so return -ENOMEM.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Scott Smedley <ss@aao.gov.au>
-Cc: Joe Perches <joe@perches.com>
-
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
+ arch/arm/mach-shark/leds.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-index 7316996..83af63d 100644
---- a/drivers/staging/dt3155/dt3155_drv.c
-+++ b/drivers/staging/dt3155/dt3155_drv.c
-@@ -112,21 +112,14 @@ int dt3155_major = 0;
- struct dt3155_status dt3155_status[MAXBOARDS];
+diff --git a/arch/arm/mach-shark/leds.c b/arch/arm/mach-shark/leds.c
+index c9e32de..cb1a8f2 100644
+--- a/arch/arm/mach-shark/leds.c
++++ b/arch/arm/mach-shark/leds.c
+@@ -155,7 +155,8 @@ static int __init leds_init(void)
+ 	leds_event = sequoia_leds_event;
  
- /* kernel logical address of the board */
--static void __iomem *dt3155_lbase[MAXBOARDS] = { NULL
--#if MAXBOARDS == 2
--				      , NULL
--#endif
--};
-+static void __iomem *dt3155_lbase[MAXBOARDS];
- 
--u32  dt3155_dev_open[MAXBOARDS] = {0
--#if MAXBOARDS == 2
--				       , 0
--#endif
--};
-+static u32 dt3155_dev_open[MAXBOARDS];
- 
- u32  ndevices = 0;
--u32 unique_tag = 0;;
-+static u32 unique_tag;
- 
-+static u32 allocatorAddr;
- 
- /*
-  * Stops interrupt generation right away and resets the status
-@@ -937,9 +930,6 @@ err:
-   return -EIO;
- }
- 
--u32 allocatorAddr = 0;
--
--
- static int __init dt3155_init(void)
- {
-   struct dt3155_status *dts;
+ 	/* Make LEDs independent of power-state */
+-	request_region(0x24,4,"sequoia");
++	if (request_region(0x24, 4, "sequoia") == NULL)
++		return -ENOMEM;
+ 	temp = sequoia_read(0x09);
+ 	temp |= 1<<10;
+ 	sequoia_write(temp,0x09);
+-- 
+1.7.0.4
+
