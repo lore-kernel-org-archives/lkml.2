@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab0G1ANp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 20:13:45 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37265 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459Ab0G1ANn (ORCPT
+	id S1752887Ab0G1AO4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 20:14:56 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:40846 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab0G1AOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 20:13:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Jul 2010 09:08:54 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/7][memcg] virtually indexed array library.
-Message-Id: <20100728090854.9b255f7c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100727122949.3bfbfd0a@bike.lwn.net>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727122949.3bfbfd0a@bike.lwn.net>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 27 Jul 2010 20:14:54 -0400
+Message-ID: <4C4F767D.4020002@candelatech.com>
+Date: Tue, 27 Jul 2010 17:14:53 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.34.1+hacks:  kernel deadlock related to file-IO?
+References: <4C4F67B3.50101@candelatech.com> <20100727165146.71e46170@nehalam>
+In-Reply-To: <20100727165146.71e46170@nehalam>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 12:29:49 -0600
-Jonathan Corbet <corbet@lwn.net> wrote:
+On 07/27/2010 04:51 PM, Stephen Hemminger wrote:
+> On Tue, 27 Jul 2010 16:11:47 -0700
+> Ben Greear<greearb@candelatech.com>  wrote:
+>
+>> NOTE:  This is from a hacked 2.6.34.1 kernel, with
+>> a module of my own devising loaded and in active use.
+>
+> Ben please don't ask LKML for help with problems when
+> you have a binary only module loaded...
 
-> On Tue, 27 Jul 2010 16:53:03 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > This virt-array allocates a virtally contiguous array via get_vm_area()
-> > and allows object allocation per an element of array.
-> 
-> Quick question: this looks a lot like the "flexible array" mechanism
-> which went in around a year ago, and which is documented in
-> Documentation/flexible-arrays.txt.  I'm not sure we need two of
-> these...  That said, it appears that there are still no users of
-> flexible arrays.  If your virtually-indexed arrays provide something
-> that flexible arrays don't, perhaps your implementation should replace
-> flexible arrays?
+Yeah, I know..but I spent all day hacking .34 enough to
+run lockdep and get those backtraces..and they *might* be
+valid.  There's a small chance someone else has seen similar
+things but not reported it for whatever reason, so maybe
+they will chime in.
 
-Hmm. As Documentatin/flexible-arrays.txt says,
+And finally, I will attempt to reproduce with some official
+kernels, and will report what I find one way or another.
 
-"The down sides are that the arrays cannot be indexed directly, individual object
- size cannot exceed the system page size, and putting data into a flexible array
- requires a copy operation. "
-
-This virtually-indexed array is
-
- - the arrays can be indexed directly.
- - individual object size can be defined arbitrary.
- - puttind data into virt-array requires memory allocation via alloc_varray_item().
-
-But, virtyally-indexed array has its own down side, too.
-
- - It uses vmalloc() area. This can be very limited in 32bit archs.
- - It cannot be used in !MMU archs.
- - It may consume much TLBs because vmalloc area tends not to be backed by hugepage.
-
-Especially, I think !MMU case is much different. So, there are functional
-difference. I implemented this to do quick direct access to objects by indexes.
-Otherwise, flex-array may be able to provide more generic frameworks.
-
-Then, I myself don't think virt-array is a replacemento for flex-array.
-
-A discussion "flex-array should be dropped or not" is out of my scope, sorry.
-I think you can ask to drop it just because it's almost dead without mentioning
-virt-array.
+The .34 kernel has been a real bitch to get stable  (You
+know things must be bad when my name's on -stable patches),
+so I wouldn't be surprised if I'm hitting another real bug.
 
 Thanks,
--Kame
- 
+Ben
 
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
