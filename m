@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab0G1GPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:15:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24322 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab0G1GPT (ORCPT
+	id S1753628Ab0G1GRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:17:21 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:43748 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab0G1GRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:15:19 -0400
-Message-ID: <4C4FCA7A.1020506@kernel.org>
-Date: Tue, 27 Jul 2010 23:13:14 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	Wed, 28 Jul 2010 02:17:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=itPBae0YGees4WIODXvwTlbOcqHokCpwTwve9pwgEr3K4mbyPwAce9ezvNFdjpvo2
+	J7E/JoP0Sj1QD9w2BD0Bw==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        m-ikeda@ds.jp.nec.com,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 7/7][memcg] use spin lock instead of bit_spin_lock in page_cgroup
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 27 Jul 2010 23:16:54 -0700
+In-Reply-To: <20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Tue, 27 Jul 2010 17:02:25 +0900")
+Message-ID: <xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: hpa@zytor.com, benh@kernel.crashing.org, mingo@elte.hu, tglx@linutronix.de,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
-References: <1280294128.1970.237.camel@pasglop>	<1280294376.1970.239.camel@pasglop>	<4C4FC5D1.3070708@zytor.com> <20100727.230120.43037767.davem@davemloft.net>
-In-Reply-To: <20100727.230120.43037767.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C4FCAD8.0221,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2010 11:01 PM, David Miller wrote:
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> Date: Tue, 27 Jul 2010 22:53:21 -0700
-> 
->> On 07/27/2010 10:19 PM, Benjamin Herrenschmidt wrote:
->>>
->>> Screw it, I don't like it but I'll just split your patch in two for now
->>> and keep 0. It's a bit fishy but memblock does mostly top-down
->>> allocations and so shouldn't hit 0, and in practice the region at 0 is,
->>> I beleive, reserved, but we need to be extra careful and might need to
->>> revisit that a bit.
->>>
->>> That's an area where I don't completely agree with Linus, ie, 0 is a
->>> perfectly valid physical address for memblock to return :-)
->>>
->>
->> On x86, physical address 0 contains the real-mode IVT and will thus be
->> reserved, at least for the forseeable future.  Other architectures may
->> very well have non-special RAM there.
-> 
-> 0 is very much possible on sparc64
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-So still keep MEMBLOCK_ERROR to (~(phys_addr_t)0) ?
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> This patch replaces page_cgroup's bit_spinlock with spinlock. In general,
+> spinlock has good implementation than bit_spin_lock and we should use
+> it if we have a room for it. In 64bit arch, we have extra 4bytes.
+> Let's use it.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> --
+> Index: mmotm-0719/include/linux/page_cgroup.h
+> ===================================================================
+> --- mmotm-0719.orig/include/linux/page_cgroup.h
+> +++ mmotm-0719/include/linux/page_cgroup.h
+> @@ -10,8 +10,14 @@
+>   * All page cgroups are allocated at boot or memory hotplug event,
+>   * then the page cgroup for pfn always exists.
+>   */
+> +#ifdef CONFIG_64BIT
+> +#define PCG_HAS_SPINLOCK
+> +#endif
+>  struct page_cgroup {
+>  	unsigned long flags;
+> +#ifdef PCG_HAS_SPINLOCK
+> +	spinlock_t	lock;
+> +#endif
+>  	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
+>  	unsigned short blk_cgroup;	/* Not Used..but will be. */
+>  	struct page *page;
+> @@ -90,6 +96,16 @@ static inline enum zone_type page_cgroup
+>  	return page_zonenum(pc->page);
+>  }
+>  
+> +#ifdef PCG_HAS_SPINLOCK
+> +static inline void lock_page_cgroup(struct page_cgroup *pc)
+> +{
+> +	spin_lock(&pc->lock);
+> +}
 
-We can change some variable from unsigned long to phys_addr_t that will be
- assigned by memblock_find_base().
+This is minor issue, but this patch breaks usage of PageCgroupLocked().
+Example from __mem_cgroup_move_account() cases panic:
+	VM_BUG_ON(!PageCgroupLocked(pc));
 
-that could avoid casting too.
+I assume that this patch should also delete the following:
+- PCG_LOCK definition from page_cgroup.h
+- TESTPCGFLAG(Locked, LOCK) from page_cgroup.h
+- PCGF_LOCK from memcontrol.c
 
-Thanks
-
-Yinghai
+> +static inline void unlock_page_cgroup(struct page_cgroup *pc)
+> +{
+> +	spin_unlock(&pc->lock);
+> +}
+> +#else
+>  static inline void lock_page_cgroup(struct page_cgroup *pc)
+>  {
+>  	bit_spin_lock(PCG_LOCK, &pc->flags);
+> @@ -99,6 +115,7 @@ static inline void unlock_page_cgroup(st
+>  {
+>  	bit_spin_unlock(PCG_LOCK, &pc->flags);
+>  }
+> +#endif
+>  
+>  static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
+>  {
+> Index: mmotm-0719/mm/page_cgroup.c
+> ===================================================================
+> --- mmotm-0719.orig/mm/page_cgroup.c
+> +++ mmotm-0719/mm/page_cgroup.c
+> @@ -17,6 +17,9 @@ __init_page_cgroup(struct page_cgroup *p
+>  	pc->mem_cgroup = 0;
+>  	pc->page = pfn_to_page(pfn);
+>  	INIT_LIST_HEAD(&pc->lru);
+> +#ifdef PCG_HAS_SPINLOCK
+> +	spin_lock_init(&pc->lock);
+> +#endif
+>  }
+>  static unsigned long total_usage;
+>  
