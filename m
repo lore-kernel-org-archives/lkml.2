@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0G1DBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 23:01:41 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37629 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab0G1DBk (ORCPT
+	id S1752865Ab0G1DFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 23:05:40 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51524 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab0G1DFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 23:01:40 -0400
+	Tue, 27 Jul 2010 23:05:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=r/K1/dhFFzY9o57bzk8GrR+oLdkcJyPdlBSztZiFFlzaitBncBEXCy50Y0GtdFD3um
-         hbt0cWbH0IU3teKvlhvEJ4ehEtulcqD1a0eBtvg5Y1MEMHuv9Uwjcibs9808sTC0zgxG
-         ZazfJhGY+/AVBMQQgNg++9lQDwMLA1xkELguU=
-Date: Wed, 28 Jul 2010 11:05:46 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Victor Rodriguez <vm.rod25@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Question missing menul.lst file
-Message-ID: <20100728030546.GA5161@cr0.nay.redhat.com>
-References: <AANLkTi=bbmAH1pL5EBoOKBKMN4bm8ZEpwV1BHYNPB8Ps@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=bbmAH1pL5EBoOKBKMN4bm8ZEpwV1BHYNPB8Ps@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=OGXUBK7LRf3AyyNKyC5AQunUdVtC5b3KV9gdT38+nqcEGC2hq8kms+Aps0tr/TPykd
+         zc+plJi8BGFnaq9tAd2jjxHLaihc+CLQGa343sFR+TMR1jtyGZZTygRMHcpD1AgXgzqm
+         JGplB3gFmdZHzwYZn4pvNUzJP9uFn4Xxk26kE=
+Subject: [PATCH 1/2] s6e63m0: unregister backlight device and remove sysfs
+	attribute file in s6e63m0_remove
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        InKi Dae <inki.dae@samsung.com>
+Content-Type: text/plain
+Date: Wed, 28 Jul 2010 11:06:13 +0800
+Message-Id: <1280286373.19065.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 06:54:24PM -0500, Victor Rodriguez wrote:
->I have already clone the mainline and follw the steps sugested in
->kernelnewbies in order compile the kenel I was working in ubuntu 10.04
-> i followed all the instruction in this way
->
->$make menuconfig
->$make
->#make modules_install
->#make install
->
->but then they put really explicit
->
->If you're using Ubuntu, you will need to edit menu.lst instead of grub.conf
->
->I look for in ubuntu documentation for this file and ubuntu establish
->in the LucidLynx/ReleaseNotes that the file most be opened by this way
->
->Open /boot/grub/menu.lst with a text editor (e.g., sudo gedit
->/boot/grub/menu.lst).
->
->And then save the file, and run sudo update-grub from the commandline.
->
->I have run in file system
->
->$sudo find -name menu.lst and nothing appear
->
->any way i skip the part of open the menu.lst file and just did the
->sudo update-grub and for me it works the image of the new kernel is
->available after reboot the machine i cehck the kernel version with
->
->$ uname -a and this appear
->
->Linux victor-desktop 2.6.35-rc6+ #1 SMP Tue Jul 27 16:40:26 CDT 2010
->i686 GNU/Linux
->
->I don't know if this is a bug in the new kernel release but at least
->in the available documentation it is
->
+s6e63m0_probe() registered backlight device and create sysfs attribute files,
+thus s6e63m0_remove() should unregister backlight device and remove sysfs
+attribute files.
 
-No, it is the distribution's work to make the kernel installed
-correctly in grub.conf or menu.lst. Distribution has to provide
-a correct INSTALLKERNEL.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/s6e63m0.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Thanks.
+diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
+index a3128c9..b27ccf9 100644
+--- a/drivers/video/backlight/s6e63m0.c
++++ b/drivers/video/backlight/s6e63m0.c
+@@ -829,6 +829,9 @@ static int __devexit s6e63m0_remove(struct spi_device *spi)
+ 	struct s6e63m0 *lcd = dev_get_drvdata(&spi->dev);
+ 
+ 	s6e63m0_power(lcd, FB_BLANK_POWERDOWN);
++	device_remove_file(&spi->dev, &dev_attr_gamma_table);
++	device_remove_file(&spi->dev, &dev_attr_gamma_mode);
++	backlight_device_unregister(lcd->bd);
+ 	lcd_device_unregister(lcd->ld);
+ 	kfree(lcd);
+ 
+-- 
+1.5.4.3
+
+
+
