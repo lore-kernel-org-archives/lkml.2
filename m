@@ -1,236 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab0G1HND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:13:03 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:2247 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab0G1HM7 (ORCPT
+	id S1753476Ab0G1HOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:14:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43838 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab0G1HOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:12:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:message-id:user-agent:
-	mime-version:content-type;
-	b=w0GWqUI5ixImrS8pxPbZPLBMkAyF4LrVDYuhVFlCOKzj0TaXKNbrpi3P4jeu9hOqS
-	EwPyPhc8o97qoTJT7sA6Q==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 6/7][memcg] generic file status update
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727170059.ca06af88.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 28 Jul 2010 00:12:13 -0700
-Message-ID: <xr937hkgkrle.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 28 Jul 2010 03:14:11 -0400
+Message-ID: <4C4FD85C.2090603@kernel.org>
+Date: Wed, 28 Jul 2010 00:12:28 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>	 <1279822864-17154-32-git-send-email-yinghai@kernel.org> <1280295415.1970.245.camel@pasglop> <4C4FC95F.6040806@kernel.org> <4C4FD04B.5090503@zytor.com>
+In-Reply-To: <4C4FD04B.5090503@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C4FD8A6.01DD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On 07/27/2010 11:38 PM, H. Peter Anvin wrote:
+> On 07/27/2010 11:08 PM, Yinghai Lu wrote:
+>>
+>> for example: 
+>> high/low allocation, from first kernel to kexec second kernel, always work fine except system with Qlogic card.
+>> because Qlogic card is using main RAM as EFT etc for card's FW log trace. second kernel have not idea that those RAM
+>>  is used by first kernel for that purpose. that the CARD still use that between two kernels.
+>> second kernel could have crash it try to use those ram.
+>>
+> 
+> Uhm, no.  That's a bug in the Qlogic driver not shutting the card down
+> cleanly.  Hacking around that in memory allocation order is braindamaged
+> in the extreme.  kexec *cannot* be safe in any way if we don't shut down
+> pending DMA, and what you describe above is DMA.
+> 
 
-> This patch itself is not important. I just feel we need this kind of
-> clean up in future.
->
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> Preparing for adding new status arounf file caches.(dirty, writeback,etc..)
-> Using a unified macro and more generic names.
-> All counters will have the same rule for updating.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/memcontrol.h  |   10 +++++++---
->  include/linux/page_cgroup.h |   21 +++++++++++++++------
->  mm/memcontrol.c             |   27 +++++++++++++++++----------
->  mm/rmap.c                   |    4 ++--
->  4 files changed, 41 insertions(+), 21 deletions(-)
->
-> Index: mmotm-0719/include/linux/memcontrol.h
-> ===================================================================
-> --- mmotm-0719.orig/include/linux/memcontrol.h
-> +++ mmotm-0719/include/linux/memcontrol.h
-> @@ -121,7 +121,11 @@ static inline bool mem_cgroup_disabled(v
->  	return false;
->  }
->  
-> -void mem_cgroup_update_file_mapped(struct page *page, int val);
-> +enum {
-> +	__MEMCG_FILE_MAPPED,
-> +	NR_MEMCG_FILE_STAT
-> +};
+the problem is later if the user hit the problem, it will be called "Regression" after bisecting to the memblock/x86 changes.
+because low/high does work before.
 
-These two stat values need to be defined outside of "#if
-CONFIG_CGROUP_MEM_RES_CTLR" (above) to allow for rmap.c to allow for the
-following (from rmap.c) when memcg is not compiled in:
-	mem_cgroup_update_file_stat(page, __MEMCG_FILE_MAPPED, 1);
+BTW, that design from qlogic to save log in RAM is not good one, they may save some cents for the ram in card.
 
-> +void mem_cgroup_update_file_stat(struct page *page, int stat, int val);
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  						gfp_t gfp_mask, int nid,
->  						int zid);
-> @@ -292,8 +296,8 @@ mem_cgroup_print_oom_info(struct mem_cgr
->  {
->  }
->  
-> -static inline void mem_cgroup_update_file_mapped(struct page *page,
-> -							int val)
-> +static inline void
-> +mem_cgroup_update_file_stat(struct page *page, int stat, int val);
+other vendors seems put log/trace in the ram on card.
 
-Trailing ';' needs to be removed.
+Thanks
 
->  {
->  }
->  
-> Index: mmotm-0719/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0719.orig/mm/memcontrol.c
-> +++ mmotm-0719/mm/memcontrol.c
-> @@ -84,16 +84,20 @@ enum mem_cgroup_stat_index {
->  	 */
->  	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
->  	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
-> -	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
->  	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
->  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
->  	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
->  	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
-> -
-> +	MEM_CGROUP_FSTAT_BASE,
-> +	MEM_CGROUP_FSTAT_END
-> +		= MEM_CGROUP_FSTAT_BASE + NR_MEMCG_FILE_STAT,
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> +#define MEM_CGROUP_STAT_FILE_MAPPED\
-> +	(MEM_CGROUP_FSTAT_BASE + __MEMCG_FILE_MAPPED)
-> +
->  struct mem_cgroup_stat_cpu {
->  	s64 count[MEM_CGROUP_STAT_NSTATS];
->  };
-> @@ -1508,7 +1512,7 @@ bool mem_cgroup_handle_oom(struct mem_cg
->   * Currently used to update mapped file statistics, but the routine can be
->   * generalized to update other statistics as well.
->   */
-> -void mem_cgroup_update_file_mapped(struct page *page, int val)
-> +void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
->  {
->  	struct mem_cgroup *mem;
->  	struct page_cgroup *pc;
-> @@ -1534,11 +1538,11 @@ void mem_cgroup_update_file_mapped(struc
->  	 * Preemption is already disabled. We can use __this_cpu_xxx
->  	 */
->  	if (val > 0) {
-> -		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		SetPageCgroupFileMapped(pc);
-> +		__this_cpu_inc(mem->stat->count[MEM_CGROUP_FSTAT_BASE + idx]);
-> +		SetPCGFileFlag(pc, idx);
->  	} else {
-> -		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		ClearPageCgroupFileMapped(pc);
-> +		__this_cpu_dec(mem->stat->count[MEM_CGROUP_FSTAT_BASE + idx]);
-> +		ClearPCGFileFlag(pc, idx);
->  	}
->  
->  done:
-> @@ -1999,17 +2003,20 @@ static void __mem_cgroup_commit_charge(s
->  static void __mem_cgroup_move_account(struct page_cgroup *pc,
->  	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
->  {
-> +	int i;
->  	VM_BUG_ON(from == to);
->  	VM_BUG_ON(PageLRU(pc->page));
->  	VM_BUG_ON(!PageCgroupLocked(pc));
->  	VM_BUG_ON(!PageCgroupUsed(pc));
->  	VM_BUG_ON(id_to_mem(pc->mem_cgroup) != from);
->  
-> -	if (PageCgroupFileMapped(pc)) {
-> +	for (i = 0; i < NR_MEMCG_FILE_STAT; ++i) {
-> +		if (!TestPCGFileFlag(pc, i))
-> +			continue;
->  		/* Update mapped_file data for mem_cgroup */
->  		preempt_disable();
-> -		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> +		__this_cpu_dec(from->stat->count[MEM_CGROUP_FSTAT_BASE + i]);
-> +		__this_cpu_inc(to->stat->count[MEM_CGROUP_FSTAT_BASE + i]);
->  		preempt_enable();
->  	}
->  	mem_cgroup_charge_statistics(from, pc, false);
-> Index: mmotm-0719/include/linux/page_cgroup.h
-> ===================================================================
-> --- mmotm-0719.orig/include/linux/page_cgroup.h
-> +++ mmotm-0719/include/linux/page_cgroup.h
-> @@ -40,8 +40,8 @@ enum {
->  	PCG_CACHE, /* charged as cache */
->  	PCG_USED, /* this object is in use. */
->  	PCG_ACCT_LRU, /* page has been accounted for */
-> -	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
->  	PCG_MIGRATION, /* under page migration */
-> +	PCG_FILE_FLAGS, /* see memcontrol.h */
->  };
->  
->  #define TESTPCGFLAG(uname, lname)			\
-> @@ -76,11 +76,6 @@ CLEARPCGFLAG(AcctLRU, ACCT_LRU)
->  TESTPCGFLAG(AcctLRU, ACCT_LRU)
->  TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
->  
-> -
-> -SETPCGFLAG(FileMapped, FILE_MAPPED)
-> -CLEARPCGFLAG(FileMapped, FILE_MAPPED)
-> -TESTPCGFLAG(FileMapped, FILE_MAPPED)
-> -
->  SETPCGFLAG(Migration, MIGRATION)
->  CLEARPCGFLAG(Migration, MIGRATION)
->  TESTPCGFLAG(Migration, MIGRATION)
-> @@ -105,6 +100,20 @@ static inline void unlock_page_cgroup(st
->  	bit_spin_unlock(PCG_LOCK, &pc->flags);
->  }
->  
-> +static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
-> +{
-> +	set_bit(PCG_FILE_FLAGS + idx, &pc->flags);
-> +}
-> +
-> +static inline void ClearPCGFileFlag(struct page_cgroup *pc, int idx)
-> +{
-> +	clear_bit(PCG_FILE_FLAGS + idx, &pc->flags);
-> +}
-> +static inline bool TestPCGFileFlag(struct page_cgroup *pc, int idx)
-> +{
-> +	return test_bit(PCG_FILE_FLAGS + idx, &pc->flags);
-> +}
-> +
->  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
->  struct page_cgroup;
->  
-> Index: mmotm-0719/mm/rmap.c
-> ===================================================================
-> --- mmotm-0719.orig/mm/rmap.c
-> +++ mmotm-0719/mm/rmap.c
-> @@ -891,7 +891,7 @@ void page_add_file_rmap(struct page *pag
->  {
->  	if (atomic_inc_and_test(&page->_mapcount)) {
->  		__inc_zone_page_state(page, NR_FILE_MAPPED);
-> -		mem_cgroup_update_file_mapped(page, 1);
-> +		mem_cgroup_update_file_stat(page, __MEMCG_FILE_MAPPED, 1);
->  	}
->  }
->  
-> @@ -929,7 +929,7 @@ void page_remove_rmap(struct page *page)
->  		__dec_zone_page_state(page, NR_ANON_PAGES);
->  	} else {
->  		__dec_zone_page_state(page, NR_FILE_MAPPED);
-> -		mem_cgroup_update_file_mapped(page, -1);
-> +		mem_cgroup_update_file_stat(page, __MEMCG_FILE_MAPPED, -1);
->  	}
->  	/*
->  	 * It would be tidy to reset the PageAnon mapping here,
+Yinghai
