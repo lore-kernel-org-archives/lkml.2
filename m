@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab0G1UZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 16:25:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58046 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754748Ab0G1UZc (ORCPT
+	id S1755919Ab0G1U0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 16:26:45 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61001 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752659Ab0G1U0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 16:25:32 -0400
-Date: Wed, 28 Jul 2010 13:24:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Patrick Pannuto <ppannuto@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, apw@canonical.com, corbet@lwn.net,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH 4/4] Checkpatch: warn about unexpectedly long msleep's
-Message-Id: <20100728132457.06b0c279.akpm@linux-foundation.org>
-In-Reply-To: <1280345587-19725-5-git-send-email-ppannuto@codeaurora.org>
-References: <1280345587-19725-1-git-send-email-ppannuto@codeaurora.org>
-	<1280345587-19725-5-git-send-email-ppannuto@codeaurora.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jul 2010 16:26:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Sb5xcJoL5o1y5cz7bpBNZdL4r/AW8a/SmvlO+yQIWd+sE2pQFA3ilWpAMw0L4IVIP4
+         cwhpWrOCjiIWgpVZavFjpWiHScs7gaXOwMH4OCFTsVeFzDV7CFWQf/cG9Az2Ooi2EE0W
+         SKVWXEcc0l4pK42vP0tVVuOENmUlbczOr3HKs=
+MIME-Version: 1.0
+In-Reply-To: <20100727210210.58d3118c@infradead.org>
+References: <20100727210210.58d3118c@infradead.org>
+Date: Wed, 28 Jul 2010 13:26:39 -0700
+X-Google-Sender-Auth: Pyzfzkz-BJxY66-KX4ECairz19w
+Message-ID: <AANLkTikZ_RHHv9cudUh8pp9H8MtKO8Rsr+eboupv49xD@mail.gmail.com>
+Subject: Re: [patch] Remove the per cpu tick skew
+From: john stultz <johnstul@us.ibm.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 12:33:07 -0700
-Patrick Pannuto <ppannuto@codeaurora.org> wrote:
+On Tue, Jul 27, 2010 at 9:02 PM, Arjan van de Ven <arjan@infradead.org> wrote:
+> the following patch is a win for power management on x86....
+> ... but since this touches generic code.. are there any
+> other architectures that would be negatively affected by this?
 
-> As explained in Documentation/timers/delays.txt, msleep's
-> of < 20ms may sleep for as long as 20ms. Caller's of
-> msleep(1) or msleep(2), etc are likely not to expect this
-> quirky behavior - warn them.
-> 
-> Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
-> ---
->  scripts/checkpatch.pl |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 892ae62..0ca2ea5 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2578,6 +2578,13 @@ sub process {
->  			}
->  		}
->  
-> +# warn about unexpectedly long msleep's
-> +		if ($line =~ /\bmsleep\s*\((\d+)\);/) {
-> +			if ($1 < 20) {
-> +				WARN("msleep < 20ms can sleep for up to 20ms; see Documentation/timers/delays.txt\n" . $line);
+It was added to avoid contention when all the cpus grabbed the
+xtime_lock (causing latency spikes of timer overhead * number of
+cpus). We don't grab the xtime lock everywhere anymore, so that
+shouldn't bite us, but I'm curious if there are not other global locks
+taken that may see extra contention without this change.
 
-Should be timers-howto.txt?
+> Subject: [patch] Remove the per cpu tick skew
+>
+> Historically, Linux has tried to make the regular timer tick on the various
+> CPUs not happen at the same time, to avoid contention on xtime_lock.
+>
+> Nowadays, with the tickless kernel, this contention no longer happens
+> since time keeping and updating are done differently. In addition,
+> this skew is actually hurting power consumption in a measurable
+> way on many-core systems.
+>
+> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 
+I'll give it a spin against -rt and see if we show any latency jumps.
 
+thanks
+-john
