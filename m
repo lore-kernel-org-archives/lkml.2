@@ -1,88 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab0G1X2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 19:28:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48388 "EHLO hera.kernel.org"
+	id S1756709Ab0G1X2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:28:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48401 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173Ab0G1X2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 19:28:36 -0400
-Date: Wed, 28 Jul 2010 23:28:19 GMT
-From: tip-bot for Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: linux-kernel@vger.kernel.org, hans.rosenfeld@amd.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, hans.rosenfeld@amd.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1280336972-865982-3-git-send-email-hans.rosenfeld@amd.com>
-References: <1280336972-865982-3-git-send-email-hans.rosenfeld@amd.com>
+	id S1752173Ab0G1X2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 19:28:53 -0400
+Date: Wed, 28 Jul 2010 23:28:37 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <AANLkTikAmaDPji-TVDarmG1yD=fwbffcsmEU=YEuP+8r@mail.gmail.com>
+References: <AANLkTikAmaDPji-TVDarmG1yD=fwbffcsmEU=YEuP+8r@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cpu: Use AMD errata checking framework for erratum 383
-Message-ID: <tip-1be85a6d93f4207d8c2c6238c4a96895e28cefba@git.kernel.org>
-Git-Commit-ID: 1be85a6d93f4207d8c2c6238c4a96895e28cefba
+Subject: [tip:x86/asm] x86, asm: Clean up and simplify <asm/cmpxchg.h>
+Message-ID: <tip-4532b305e8f0c238dd73048068ff8a6dd1380291@git.kernel.org>
+Git-Commit-ID: 4532b305e8f0c238dd73048068ff8a6dd1380291
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Jul 2010 23:28:19 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Jul 2010 23:28:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1be85a6d93f4207d8c2c6238c4a96895e28cefba
-Gitweb:     http://git.kernel.org/tip/1be85a6d93f4207d8c2c6238c4a96895e28cefba
-Author:     Hans Rosenfeld <hans.rosenfeld@amd.com>
-AuthorDate: Wed, 28 Jul 2010 19:09:32 +0200
+Commit-ID:  4532b305e8f0c238dd73048068ff8a6dd1380291
+Gitweb:     http://git.kernel.org/tip/4532b305e8f0c238dd73048068ff8a6dd1380291
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Wed, 28 Jul 2010 15:18:35 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 28 Jul 2010 13:12:31 -0700
+CommitDate: Wed, 28 Jul 2010 15:24:09 -0700
 
-x86, cpu: Use AMD errata checking framework for erratum 383
+x86, asm: Clean up and simplify <asm/cmpxchg.h>
 
-Use the AMD errata checking framework instead of open-coding the test.
+Remove the __xg() hack to create a memory barrier near xchg and
+cmpxchg; it has been there since 1.3.11 but should not be necessary
+with "asm volatile" and a "memory" clobber, neither of which were
+there in the original implementation.
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
-LKML-Reference: <1280336972-865982-3-git-send-email-hans.rosenfeld@amd.com>
+However, we *should* make this a volatile reference.
+
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+LKML-Reference: <AANLkTikAmaDPji-TVDarmG1yD=fwbffcsmEU=YEuP+8r@mail.gmail.com>
 ---
- arch/x86/include/asm/processor.h |    1 +
- arch/x86/kernel/cpu/amd.c        |    2 ++
- arch/x86/kvm/svm.c               |    3 +--
- 3 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/cmpxchg_32.h |   75 ++++++++++++++++++++----------------
+ arch/x86/include/asm/cmpxchg_64.h |   61 ++++++++++++++++++++---------
+ 2 files changed, 84 insertions(+), 52 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index eebdc1f..d85637b 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -1029,6 +1029,7 @@ unsigned long calc_aperfmperf_ratio(struct aperfmperf *old,
-  * AMD errata checking
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index 20955ea..f5bd1fd 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -11,38 +11,42 @@
+ extern void __xchg_wrong_size(void);
+ 
+ /*
+- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
+- * Note 2: xchg has side effect, so that attribute volatile is necessary,
+- *	  but generally the primitive is invalid, *ptr is output argument. --ANK
++ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
++ * Since this is generally used to protect other memory information, we
++ * use "asm volatile" and "memory" clobbers to prevent gcc from moving
++ * information around.
   */
- #ifdef CONFIG_CPU_SUP_AMD
-+extern const int amd_erratum_383[];
- extern const int amd_erratum_400[];
- extern bool cpu_has_amd_erratum(const int *);
+-
+-struct __xchg_dummy {
+-	unsigned long a[100];
+-};
+-#define __xg(x) ((struct __xchg_dummy *)(x))
+-
+ #define __xchg(x, ptr, size)						\
+ ({									\
+ 	__typeof(*(ptr)) __x = (x);					\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile("xchgb %b0,%1"				\
+-			     : "=q" (__x), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile("xchgb %0,%1"				\
++			     : "=q" (__x), "+m" (*__ptr)		\
+ 			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile("xchgw %w0,%1"				\
+-			     : "=r" (__x), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile("xchgw %0,%1"				\
++			     : "=r" (__x), "+m" (*__ptr)		\
+ 			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
+ 		asm volatile("xchgl %0,%1"				\
+-			     : "=r" (__x), "+m" (*__xg(ptr))		\
++			     : "=r" (__x), "+m" (*__ptr)		\
+ 			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__xchg_wrong_size();					\
+ 	}								\
+@@ -94,23 +98,32 @@ extern void __cmpxchg_wrong_size(void);
+ 	__typeof__(*(ptr)) __new = (new);				\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile(lock "cmpxchgb %b2,%1"			\
+-			     : "=a" (__ret), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile(lock "cmpxchgb %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "q" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile(lock "cmpxchgw %w2,%1"			\
+-			     : "=a" (__ret), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile(lock "cmpxchgw %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
+ 		asm volatile(lock "cmpxchgl %2,%1"			\
+-			     : "=a" (__ret), "+m" (*__xg(ptr))		\
++			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__cmpxchg_wrong_size();					\
+ 	}								\
+@@ -148,31 +161,27 @@ extern void __cmpxchg_wrong_size(void);
+ 					       (unsigned long long)(n)))
+ #endif
  
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index a62a4ae..30f30dc 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -632,6 +632,8 @@ const int amd_erratum_400[] =
- 	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
- 			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
- 
-+const int amd_erratum_383[] =
-+	AMD_OSVW_ERRATUM(3, AMD_MODEL_RANGE(0x10, 0, 0, 0xff, 0xf));
- 
- bool cpu_has_amd_erratum(const int *erratum)
+-static inline unsigned long long __cmpxchg64(volatile void *ptr,
+-					     unsigned long long old,
+-					     unsigned long long new)
++static inline u64 __cmpxchg64(volatile u64 *ptr, u64 old, u64 new)
  {
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index ce438e0..03b534b 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -383,8 +383,7 @@ static void svm_init_erratum_383(void)
- 	int err;
- 	u64 val;
+-	unsigned long long prev;
++	u64 prev;
+ 	asm volatile(LOCK_PREFIX "cmpxchg8b %1"
+ 		     : "=A" (prev),
+-		       "+m" (*__xg(ptr))
+-		     : "b" ((unsigned long)new),
+-		       "c" ((unsigned long)(new >> 32)),
++		       "+m" (*ptr)
++		     : "b" ((u32)new),
++		       "c" ((u32)(new >> 32)),
+ 		       "0" (old)
+ 		     : "memory");
+ 	return prev;
+ }
  
--	/* Only Fam10h is affected */
--	if (boot_cpu_data.x86 != 0x10)
-+	if (!cpu_has_amd_erratum(amd_erratum_383))
- 		return;
+-static inline unsigned long long __cmpxchg64_local(volatile void *ptr,
+-						   unsigned long long old,
+-						   unsigned long long new)
++static inline u64 __cmpxchg64_local(volatile u64 *ptr, u64 old, u64 new)
+ {
+-	unsigned long long prev;
++	u64 prev;
+ 	asm volatile("cmpxchg8b %1"
+ 		     : "=A" (prev),
+-		       "+m" (*__xg(ptr))
+-		     : "b" ((unsigned long)new),
+-		       "c" ((unsigned long)(new >> 32)),
++		       "+m" (*ptr)
++		     : "b" ((u32)new),
++		       "c" ((u32)(new >> 32)),
+ 		       "0" (old)
+ 		     : "memory");
+ 	return prev;
+diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
+index 9596e7c..423ae58 100644
+--- a/arch/x86/include/asm/cmpxchg_64.h
++++ b/arch/x86/include/asm/cmpxchg_64.h
+@@ -3,8 +3,6 @@
  
- 	/* Use _safe variants to not break nested virtualization */
+ #include <asm/alternative.h> /* Provides LOCK_PREFIX */
+ 
+-#define __xg(x) ((volatile long *)(x))
+-
+ static inline void set_64bit(volatile u64 *ptr, u64 val)
+ {
+ 	*ptr = val;
+@@ -14,38 +12,51 @@ extern void __xchg_wrong_size(void);
+ extern void __cmpxchg_wrong_size(void);
+ 
+ /*
+- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
+- * Note 2: xchg has side effect, so that attribute volatile is necessary,
+- *	  but generally the primitive is invalid, *ptr is output argument. --ANK
++ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
++ * Since this is generally used to protect other memory information, we
++ * use "asm volatile" and "memory" clobbers to prevent gcc from moving
++ * information around.
+  */
+ #define __xchg(x, ptr, size)						\
+ ({									\
+ 	__typeof(*(ptr)) __x = (x);					\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile("xchgb %b0,%1"				\
+-			     : "=q" (__x), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile("xchgb %0,%1"				\
++			     : "=q" (__x), "+m" (*__ptr)		\
+ 			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile("xchgw %w0,%1"				\
+-			     : "=r" (__x), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile("xchgw %0,%1"				\
++			     : "=r" (__x), "+m" (*__ptr)		\
+ 			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
+-		asm volatile("xchgl %k0,%1"				\
+-			     : "=r" (__x), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
++		asm volatile("xchgl %0,%1"				\
++			     : "=r" (__x), "+m" (*__ptr)		\
+ 			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 8:								\
++	{								\
++		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
+ 		asm volatile("xchgq %0,%1"				\
+-			     : "=r" (__x), "+m" (*__xg(ptr))		\
++			     : "=r" (__x), "+m" (*__ptr)		\
+ 			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__xchg_wrong_size();					\
+ 	}								\
+@@ -69,29 +80,41 @@ extern void __cmpxchg_wrong_size(void);
+ 	__typeof__(*(ptr)) __new = (new);				\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile(lock "cmpxchgb %b2,%1"			\
+-			     : "=a" (__ret), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile(lock "cmpxchgb %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "q" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile(lock "cmpxchgw %w2,%1"			\
+-			     : "=a" (__ret), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile(lock "cmpxchgw %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
+-		asm volatile(lock "cmpxchgl %k2,%1"			\
+-			     : "=a" (__ret), "+m" (*__xg(ptr))		\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
++		asm volatile(lock "cmpxchgl %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 8:								\
++	{								\
++		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
+ 		asm volatile(lock "cmpxchgq %2,%1"			\
+-			     : "=a" (__ret), "+m" (*__xg(ptr))		\
++			     : "=a" (__ret), "+m" (*__ptr)		\
+ 			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__cmpxchg_wrong_size();					\
+ 	}								\
