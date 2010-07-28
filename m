@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab0G1DOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 23:14:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47503 "EHLO mx1.redhat.com"
+	id S1753594Ab0G1DQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 23:16:08 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60044 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879Ab0G1DOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 23:14:16 -0400
-Date: Tue, 27 Jul 2010 23:13:58 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 4/7][memcg] memcg use ID in page_cgroup
-Message-ID: <20100728031358.GG12642@redhat.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
- <20100727165629.6f98145c.kamezawa.hiroyu@jp.fujitsu.com>
- <20100728023904.GE12642@redhat.com>
- <20100728114402.571b8ec6.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100728114402.571b8ec6.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751879Ab0G1DQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 23:16:05 -0400
+Date: Wed, 28 Jul 2010 13:15:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Anton Vorontsov <avorontsov@ru.mvista.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nithish Mahalingam <nithish.mahalingam@intel.com>,
+        "Lars-Peter Clausen" <lars@metafoo.de>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: linux-next: manual merge of the battery tree with the mips tree
+Message-Id: <20100728131559.8b8ac475.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 11:44:02AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 27 Jul 2010 22:39:04 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > On Tue, Jul 27, 2010 at 04:56:29PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > 
-> > > Now, addresses of memory cgroup can be calculated by their ID without complex.
-> > > This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
-> > > On 64bit architecture, this offers us more 6bytes room per page_cgroup.
-> > > Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
-> > > some light-weight concurrent access.
-> > > 
-> > > We may able to move this id onto flags field but ...go step by step.
-> > > 
-> > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > ---
-> > >  include/linux/page_cgroup.h |    3 ++-
-> > >  mm/memcontrol.c             |   40 +++++++++++++++++++++++++---------------
-> > >  mm/page_cgroup.c            |    2 +-
-> > >  3 files changed, 28 insertions(+), 17 deletions(-)
-> > > 
-> > > Index: mmotm-0719/include/linux/page_cgroup.h
-> > > ===================================================================
-> > > --- mmotm-0719.orig/include/linux/page_cgroup.h
-> > > +++ mmotm-0719/include/linux/page_cgroup.h
-> > > @@ -12,7 +12,8 @@
-> > >   */
-> > >  struct page_cgroup {
-> > >  	unsigned long flags;
-> > > -	struct mem_cgroup *mem_cgroup;
-> > > +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
-> > > +	unsigned short blk_cgroup;	/* Not Used..but will be. */
-> > 
-> > So later I shall have to use virtually indexed arrays in blkio controller?
-> > Or you are just using virtually indexed arrays for lookup speed and
-> > I can continue to use css_lookup() and not worry about using virtually
-> > indexed arrays.
-> > 
-> yes. you can use css_lookup() even if it's slow.
-> 
+Hi Anton,
 
-Ok.
+Today's linux-next merge of the battery tree got a conflict in
+drivers/power/Kconfig drivers/power/Makefile between commit
+0a5518307648808ce7d62cbfa6d7bdbb01c4e84a ("POWER: Add JZ4740 battery
+driver") from the mips tree and commit
+6721081b6b911a067fe6ca3d6f5534c4a11a9e59 ("Intel MID platform battery
+driver") from the battery tree.
 
-> > So the idea is that when a page is allocated, also store the blk_group
-> > id and once that page is submitted for writeback, we should be able
-> > to associate it to right blkio group?
-> > 
-> blk_cgroup id can be attached whenever you wants. please overwrite 
-> page_cgroup->blk_cgroup when it's necessary.
+Just overlapping additions.  I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Did you read Ikeda's patch ? I myself doesn't have patches at this point. 
-> This is just for make a room for recording blkio-ID, which was requested
-> for a year.
-
-I have not read his patches yet. IIRC, previously there were issues
-regarding which group should be charged for the page. The person who
-allocated it or the thread which did last write to it etc... I guess
-we can sort that out later.
-
-> 
-> Hmm, but page-allocation-time doesn't sound very good for me.
-> 
-
-Why?
-
-Vivek
+diff --cc drivers/power/Kconfig
+index 1e5506b,d1d3c70..0000000
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@@ -142,15 -148,11 +148,22 @@@ config CHARGER_PCF5063
+  	help
+  	 Say Y to include support for NXP PCF50633 Main Battery Charger.
+  
+ +config BATTERY_JZ4740
+ +	tristate "Ingenic JZ4740 battery"
+ +	depends on MACH_JZ4740
+ +	depends on MFD_JZ4740_ADC
+ +	help
+ +	  Say Y to enable support for the battery on Ingenic JZ4740 based
+ +	  boards.
+ +
+ +	  This driver can be build as a module. If so, the module will be
+ +	  called jz4740-battery.
+ +
++ config BATTERY_INTEL_MID
++ 	tristate "Battery driver for Intel MID platforms"
++ 	depends on INTEL_SCU_IPC && SPI
++ 	help
++ 	  Say Y here to enable the battery driver on Intel MID
++ 	  platforms.
++ 
+  endif # POWER_SUPPLY
+diff --cc drivers/power/Makefile
+index cf95009,705675a..0000000
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@@ -33,5 -33,6 +33,7 @@@ obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x0
+  obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
+  obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+  obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
++ obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
+  obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+ +obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
++ obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
