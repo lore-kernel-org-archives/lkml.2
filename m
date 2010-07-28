@@ -1,79 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab0G1DQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 23:16:08 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60044 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879Ab0G1DQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 23:16:05 -0400
-Date: Wed, 28 Jul 2010 13:15:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nithish Mahalingam <nithish.mahalingam@intel.com>,
-        "Lars-Peter Clausen" <lars@metafoo.de>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: linux-next: manual merge of the battery tree with the mips tree
-Message-Id: <20100728131559.8b8ac475.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753718Ab0G1DV6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 23:21:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43628 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab0G1DVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 23:21:55 -0400
+Date: Tue, 27 Jul 2010 22:21:18 -0500
+From: Jon Mason <jon.mason@exar.com>
+To: Joe Perches <joe@perches.com>
+Cc: Ramkrishna Vepa <Ramkrishna.Vepa@exar.com>,
+        Sreenivasa Honnur <Sreenivasa.Honnur@exar.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next] drivers/net/vxge/vxge-main.c: Use pr_<level>
+ and netdev_<level>
+Message-ID: <20100728032117.GL28630@exar.com>
+References: <1280267223.24054.44.camel@Joe-Laptop.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280267223.24054.44.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+On Tue, Jul 27, 2010 at 02:47:03PM -0700, Joe Perches wrote:
+> Use pr_fmt, pr_<level> and netdev_<level> where appropriate.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Today's linux-next merge of the battery tree got a conflict in
-drivers/power/Kconfig drivers/power/Makefile between commit
-0a5518307648808ce7d62cbfa6d7bdbb01c4e84a ("POWER: Add JZ4740 battery
-driver") from the mips tree and commit
-6721081b6b911a067fe6ca3d6f5534c4a11a9e59 ("Intel MID platform battery
-driver") from the battery tree.
+Acked-by: Jon Mason <jon.mason@exar.com>
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/power/Kconfig
-index 1e5506b,d1d3c70..0000000
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@@ -142,15 -148,11 +148,22 @@@ config CHARGER_PCF5063
-  	help
-  	 Say Y to include support for NXP PCF50633 Main Battery Charger.
-  
- +config BATTERY_JZ4740
- +	tristate "Ingenic JZ4740 battery"
- +	depends on MACH_JZ4740
- +	depends on MFD_JZ4740_ADC
- +	help
- +	  Say Y to enable support for the battery on Ingenic JZ4740 based
- +	  boards.
- +
- +	  This driver can be build as a module. If so, the module will be
- +	  called jz4740-battery.
- +
-+ config BATTERY_INTEL_MID
-+ 	tristate "Battery driver for Intel MID platforms"
-+ 	depends on INTEL_SCU_IPC && SPI
-+ 	help
-+ 	  Say Y here to enable the battery driver on Intel MID
-+ 	  platforms.
-+ 
-  endif # POWER_SUPPLY
-diff --cc drivers/power/Makefile
-index cf95009,705675a..0000000
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@@ -33,5 -33,6 +33,7 @@@ obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x0
-  obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
-  obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
-  obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
-+ obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
-  obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
- +obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
-+ obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
+> ---
+>  drivers/net/vxge/vxge-main.c |   27 +++++++++++----------------
+>  1 files changed, 11 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/net/vxge/vxge-main.c b/drivers/net/vxge/vxge-main.c
+> index 94d87e8..c7c5605 100644
+> --- a/drivers/net/vxge/vxge-main.c
+> +++ b/drivers/net/vxge/vxge-main.c
+> @@ -41,6 +41,8 @@
+>  *
+>  ******************************************************************************/
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/if_vlan.h>
+>  #include <linux/pci.h>
+>  #include <linux/slab.h>
+> @@ -144,7 +146,7 @@ vxge_callback_link_up(struct __vxge_hw_device *hldev)
+>  
+>  	vxge_debug_entryexit(VXGE_TRACE, "%s: %s:%d",
+>  		vdev->ndev->name, __func__, __LINE__);
+> -	printk(KERN_NOTICE "%s: Link Up\n", vdev->ndev->name);
+> +	netdev_notice(vdev->ndev, "Link Up\n");
+>  	vdev->stats.link_up++;
+>  
+>  	netif_carrier_on(vdev->ndev);
+> @@ -168,7 +170,7 @@ vxge_callback_link_down(struct __vxge_hw_device *hldev)
+>  
+>  	vxge_debug_entryexit(VXGE_TRACE,
+>  		"%s: %s:%d", vdev->ndev->name, __func__, __LINE__);
+> -	printk(KERN_NOTICE "%s: Link Down\n", vdev->ndev->name);
+> +	netdev_notice(vdev->ndev, "Link Down\n");
+>  
+>  	vdev->stats.link_down++;
+>  	netif_carrier_off(vdev->ndev);
+> @@ -2679,7 +2681,7 @@ vxge_open(struct net_device *dev)
+>  
+>  	if (vxge_hw_device_link_state_get(vdev->devh) == VXGE_HW_LINK_UP) {
+>  		netif_carrier_on(vdev->ndev);
+> -		printk(KERN_NOTICE "%s: Link Up\n", vdev->ndev->name);
+> +		netdev_notice(vdev->ndev, "Link Up\n");
+>  		vdev->stats.link_up++;
+>  	}
+>  
+> @@ -2817,7 +2819,7 @@ int do_vxge_close(struct net_device *dev, int do_io)
+>  	}
+>  
+>  	netif_carrier_off(vdev->ndev);
+> -	printk(KERN_NOTICE "%s: Link Down\n", vdev->ndev->name);
+> +	netdev_notice(vdev->ndev, "Link Down\n");
+>  	netif_tx_stop_all_queues(vdev->ndev);
+>  
+>  	/* Note that at this point xmit() is stopped by upper layer */
+> @@ -3844,9 +3846,7 @@ static pci_ers_result_t vxge_io_slot_reset(struct pci_dev *pdev)
+>  	struct vxgedev *vdev = netdev_priv(netdev);
+>  
+>  	if (pci_enable_device(pdev)) {
+> -		printk(KERN_ERR "%s: "
+> -			"Cannot re-enable device after reset\n",
+> -			VXGE_DRIVER_NAME);
+> +		netdev_err(netdev, "Cannot re-enable device after reset\n");
+>  		return PCI_ERS_RESULT_DISCONNECT;
+>  	}
+>  
+> @@ -3871,9 +3871,8 @@ static void vxge_io_resume(struct pci_dev *pdev)
+>  
+>  	if (netif_running(netdev)) {
+>  		if (vxge_open(netdev)) {
+> -			printk(KERN_ERR "%s: "
+> -				"Can't bring device back up after reset\n",
+> -				VXGE_DRIVER_NAME);
+> +			netdev_err(netdev,
+> +				   "Can't bring device back up after reset\n");
+>  			return;
+>  		}
+>  	}
+> @@ -4430,13 +4429,9 @@ static int __init
+>  vxge_starter(void)
+>  {
+>  	int ret = 0;
+> -	char version[32];
+> -	snprintf(version, 32, "%s", DRV_VERSION);
+>  
+> -	printk(KERN_INFO "%s: Copyright(c) 2002-2010 Exar Corp.\n",
+> -		VXGE_DRIVER_NAME);
+> -	printk(KERN_INFO "%s: Driver version: %s\n",
+> -			VXGE_DRIVER_NAME, version);
+> +	pr_info("Copyright(c) 2002-2010 Exar Corp.\n");
+> +	pr_info("Driver version: %s\n", DRV_VERSION);
+>  
+>  	verify_bandwidth();
+>  
+> 
+> 
