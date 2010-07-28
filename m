@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab0G1Gu7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:50:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44179 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab0G1Guz (ORCPT
+	id S1753899Ab0G1Gwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:52:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59885 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab0G1Gwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:50:55 -0400
+	Wed, 28 Jul 2010 02:52:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=B/4oAgUl3+7geFmwrxJe/Jm1NHpAFi3qK+y85In2hvN7VLXNgbUUwT/aEhz0jLKzRH
-         wuqcpFqek86tC7o/hx8NXhvH5/o/mMexN4yS5L6fgGSYQhSFHrioYEalZLjzKVo9LPfG
-         rrWkCdrocxANH1IiBNQ2/ikD+JOO1phL2Fj6k=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=J1psAZK0cSab+JAmq05MAvlcA9UcSazpo6FEyvgiH8dY9eo1MaW8lTBFmiZiEHoGpn
+         xQUP3rzvczHzLHpEFWLb28+e9YUILFPzj0Ug2UDfMg5sX58p7J/7E7tH0sB9gf5k+/yW
+         BS/4PG9s+z8lq8IiPdF9W1AXWg6rCcKEyd/qQ=
+Date: Wed, 28 Jul 2010 14:56:40 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Davidlohr Bueso <dave.bueso@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Alexey Dobriyan <adobriyan@gmail.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC] [PATCH procfs] Add process age
+Message-ID: <20100728065640.GD5161@cr0.nay.redhat.com>
+References: <1279907271.4335.3.camel@cowboy>
+ <20100723183549.GA10518@x200>
+ <1279910830.1851.5.camel@cowboy>
+ <87fwz6it0e.fsf@basil.nowhere.org>
+ <1280152668.2212.1.camel@cowboy>
+ <20100726144848.GC17756@basil.fritz.box>
+ <1280157029.2212.17.camel@cowboy>
 MIME-Version: 1.0
-Date: Wed, 28 Jul 2010 14:50:54 +0800
-Message-ID: <AANLkTiniwW+r1G40QvA+oja=1YDkykNWRahHL4LuiCAU@mail.gmail.com>
-Subject: BUG: 'Unknown symbol in module' happens after reloading ehci-hcd 
-	module
-From: Ming Lei <tom.leiming@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-usb <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280157029.2212.17.camel@cowboy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jul 26, 2010 at 11:10:29AM -0400, Davidlohr Bueso wrote:
+>On Mon, 2010-07-26 at 16:48 +0200, Andi Kleen wrote:
+>> > True, but there are also many other no-so-useful files under /proc that
+>> > can also be replaced by userspace apps.
+>> 
+>> Example? 
+>
+>Off the top of my head:
+>
+>/proc/cmdline
 
-'Unknown symbol in module'  happens after the actions below:
+Are you kidding?
 
-         rmmod ehci-hcd
-         modprobe ehci-hcd
+/proc/cmdlines contains lots of info, it is not only used by the kernel,
+but also used by initramfs (this depends on your distribution).
 
-kernel version: 2.6.35-rc6+gregkh tree+wireless tree
-
-dmsg info:
-[  689.025428] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-[  689.025431] Warning! ehci_hcd should always be loaded before
-uhci_hcd and ohci_hcd, not after
-[  689.025434] ehci_hcd: block sizes: qh 104 qtd 96 itd 192 sitd 96
-
->From source code of ehci-hcd, seems debugfs_create_dir or usb_debug_root
-in ehci_hcd_init is thought as unknown symbol mistakenly by kernel.
-
--- 
-Lei Ming
