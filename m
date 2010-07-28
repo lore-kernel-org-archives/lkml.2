@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab0G1RCV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 13:02:21 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:47297 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751894Ab0G1RCT (ORCPT
+	id S1755771Ab0G1RCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:02:36 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48569 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755730Ab0G1RCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 13:02:19 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: L61aQ_8VM1n1nNRDGxlIFKZRPUo3gKIiShBJrzxr3llAN0l
- 24Vb1wTBOOuG1sZWQKYY7rqisPOdEIyHZleB5qBueTryEYokyoL2y1T1fFKU
- b6cAHcgfw3y6dcq1dZNBMVfyy4v.4Xky4bcCAVyYSGheDie4xNHUd8jMgMeF
- lsIRmPEXUVzzrs2CSCVhatGk5aBycLpdcmH8dJAoTxpl5QXEXenu_Hjf9BaZ
- _2j_DGtm7UDd8KAhgLsBVwPC0uM3l
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 28 Jul 2010 12:02:16 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-In-Reply-To: <20100728155617.GA5401@barrios-desktop>
-Message-ID: <alpine.DEB.2.00.1007281158150.21717@router.home>
-References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com> <alpine.DEB.2.00.1007261136160.5438@router.home> <pfn.valid.v4.reply.1@mdm.bga.com> <AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com> <pfn.valid.v4.reply.2@mdm.bga.com>
- <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com> <alpine.DEB.2.00.1007270929290.28648@router.home> <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
- <alpine.DEB.2.00.1007281005440.21717@router.home> <20100728155617.GA5401@barrios-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 28 Jul 2010 13:02:33 -0400
+Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <4C4FD04B.5090503@zytor.com>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+	 <1279822864-17154-32-git-send-email-yinghai@kernel.org>
+	 <1280295415.1970.245.camel@pasglop> <4C4FC95F.6040806@kernel.org>
+	 <4C4FD04B.5090503@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 12:02:28 -0500
+Message-ID: <1280336548.30808.489.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010, Minchan Kim wrote:
+On Tue, 2010-07-27 at 23:38 -0700, H. Peter Anvin wrote:
+> On 07/27/2010 11:08 PM, Yinghai Lu wrote:
+> > 
+> > for example: 
+> > high/low allocation, from first kernel to kexec second kernel, always work fine except system with Qlogic card.
+> > because Qlogic card is using main RAM as EFT etc for card's FW log trace. second kernel have not idea that those RAM
+> >  is used by first kernel for that purpose. that the CARD still use that between two kernels.
+> > second kernel could have crash it try to use those ram.
+> > 
+> 
+> Uhm, no.  That's a bug in the Qlogic driver not shutting the card down
+> cleanly.  Hacking around that in memory allocation order is braindamaged
+> in the extreme.  kexec *cannot* be safe in any way if we don't shut down
+> pending DMA, and what you describe above is DMA.
 
-> > Simplest scheme would be to clear PageReserved() in all page struct
-> > associated with valid pages and clear those for page structs that do not
-> > refer to valid pages.
->
-> I can't understand your words.
-> Clear PG_resereved in valid pages and invalid pages both?
+That's not the kexec for crash dump requirement as it was communicated
+to us.  We were specifically told that the shutdown routines *may* not
+be called before booting the kexec kernel and thus we have to take
+action to stop the DMA engines in the init routines so the kexec kernel
+can halt all in-progress DMA as it boots.  This implies that kexec must
+be able to cope with in-progress DMA.
 
-Argh sorry. No. Set PageReserved for pages that do not refer to reserved
-pages.
-
-> I guess your code look like that clear PG_revered on valid memmap
-> but set PG_reserved on invalid memmap.
-> Right?
-
-Right.
-
-> invalid memmap pages will be freed by free_memmap and will be used
-> on any place. How do we make sure it has PG_reserved?
-
-Not present memmap pages make pfn_valid fail already since there is no
-entry for the page table (vmemmap) or blocks are missing in the sparsemem
-tables.
-
-> Maybe I don't understand your point.
-
-I thought we are worrying about holes in the memmap blocks containing page
-structs. Some page structs point to valid pages and some are not. The
-invalid page structs need to be marked consistently to allow the check.
+James
 
 
