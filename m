@@ -1,134 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab0G1G3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:29:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44130 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab0G1G3S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:29:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C4FCE31.5090004@jp.fujitsu.com>
-Date: Wed, 28 Jul 2010 15:29:05 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
-        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: [RFC PATCH v4 1/5] irq: add tracepoint to softirq_raise
-References: <4C4FCDA1.3000803@jp.fujitsu.com>
-In-Reply-To: <4C4FCDA1.3000803@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754114Ab0G1Ga2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:30:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35151 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752959Ab0G1Ga0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 02:30:26 -0400
+Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <4C4FC5D1.3070708@zytor.com>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+	 <1279822864-17154-29-git-send-email-yinghai@kernel.org>
+	 <1280294128.1970.237.camel@pasglop> <1280294376.1970.239.camel@pasglop>
+	 <4C4FC5D1.3070708@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 16:29:52 +1000
+Message-ID: <1280298592.1970.248.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CHANGE-LOG since v3:
-  -change arguments of softirq tracepoint into original one.
+On Tue, 2010-07-27 at 22:53 -0700, H. Peter Anvin wrote:
+> On 07/27/2010 10:19 PM, Benjamin Herrenschmidt wrote:
+> > 
+> > Screw it, I don't like it but I'll just split your patch in two for now
+> > and keep 0. It's a bit fishy but memblock does mostly top-down
+> > allocations and so shouldn't hit 0, and in practice the region at 0 is,
+> > I beleive, reserved, but we need to be extra careful and might need to
+> > revisit that a bit.
+> > 
+> > That's an area where I don't completely agree with Linus, ie, 0 is a
+> > perfectly valid physical address for memblock to return :-)
+> > 
+> 
+> On x86, physical address 0 contains the real-mode IVT and will thus be
+> reserved, at least for the forseeable future.  Other architectures may
+> very well have non-special RAM there.
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Right, that's my point. Anyways, I'm making 0 special for now and adding
+a wart to prevent the allocator from returning something below
+PAGE_SIZE. If we want to revisit that later we can.
 
-Add a tracepoint for tracing when softirq action is raised.
+Cheers,
+Ben.
 
-It and the existed tracepoints complete softirq's tracepoints:
-softirq_raise, softirq_entry and softirq_exit.
-
-And when this tracepoint is used in combination with
-the softirq_entry tracepoint we can determine
-the softirq raise latency.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-[ factorize softirq events with DECLARE_EVENT_CLASS ]
-Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
----
- include/linux/interrupt.h  |    8 +++++++-
- include/trace/events/irq.h |   26 ++++++++++++++++++++++++--
- 2 files changed, 31 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index c233113..5460db4 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -18,6 +18,7 @@
- #include <asm/atomic.h>
- #include <asm/ptrace.h>
- #include <asm/system.h>
-+#include <trace/events/irq.h>
- 
- /*
-  * These correspond to the IORESOURCE_IRQ_* defines in
-@@ -402,7 +403,12 @@ asmlinkage void do_softirq(void);
- asmlinkage void __do_softirq(void);
- extern void open_softirq(int nr, void (*action)(struct softirq_action *));
- extern void softirq_init(void);
--#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
-+static inline void __raise_softirq_irqoff(unsigned int nr)
-+{
-+	trace_softirq_raise((struct softirq_action *)&nr, NULL);
-+	or_softirq_pending(1UL << nr);
-+}
-+
- extern void raise_softirq_irqoff(unsigned int nr);
- extern void raise_softirq(unsigned int nr);
- extern void wakeup_softirqd(void);
-diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-index 0e4cfb6..3ddda02 100644
---- a/include/trace/events/irq.h
-+++ b/include/trace/events/irq.h
-@@ -5,7 +5,9 @@
- #define _TRACE_IRQ_H
- 
- #include <linux/tracepoint.h>
--#include <linux/interrupt.h>
-+
-+struct irqaction;
-+struct softirq_action;
- 
- #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
- #define show_softirq_name(val)				\
-@@ -93,7 +95,10 @@ DECLARE_EVENT_CLASS(softirq,
- 	),
- 
- 	TP_fast_assign(
--		__entry->vec = (int)(h - vec);
-+		if (vec)
-+			__entry->vec = (int)(h - vec);
-+		else
-+			__entry->vec = *((int *)h);
- 	),
- 
- 	TP_printk("vec=%d [action=%s]", __entry->vec,
-@@ -136,6 +141,23 @@ DEFINE_EVENT(softirq, softirq_exit,
- 	TP_ARGS(h, vec)
- );
- 
-+/**
-+ * softirq_raise - called immediately when a softirq is raised
-+ * @h: pointer to struct softirq_action
-+ * @vec: pointer to first struct softirq_action in softirq_vec array
-+ *
-+ * The @h parameter contains a pointer to the softirq vector number which is
-+ * raised. @vec is NULL and it means @h includes vector number not
-+ * softirq_action. When used in combination with the softirq_entry tracepoint
-+ * we can determine the softirq raise latency.
-+ */
-+DEFINE_EVENT(softirq, softirq_raise,
-+
-+	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
-+
-+	TP_ARGS(h, vec)
-+);
-+
- #endif /*  _TRACE_IRQ_H */
- 
- /* This part must be outside protection */
 
