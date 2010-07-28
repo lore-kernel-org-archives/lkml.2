@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753628Ab0G1GRV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:17:21 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:43748 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab0G1GRU (ORCPT
+	id S1753738Ab0G1GTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:19:10 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38696 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240Ab0G1GTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:17:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=itPBae0YGees4WIODXvwTlbOcqHokCpwTwve9pwgEr3K4mbyPwAce9ezvNFdjpvo2
-	J7E/JoP0Sj1QD9w2BD0Bw==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 7/7][memcg] use spin lock instead of bit_spin_lock in page_cgroup
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 27 Jul 2010 23:16:54 -0700
-In-Reply-To: <20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
-	(KAMEZAWA Hiroyuki's message of "Tue, 27 Jul 2010 17:02:25 +0900")
-Message-ID: <xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 28 Jul 2010 02:19:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oQMkpkV4TISzHf/2j0UM1DC0706yYWQ/MRy30i6hzrFinkYofzHEep8E9PrLYYrXgc
+         Gx4jEXFEQ5diOFnsFztaniRmiOS5KeJiNjhK57kv26jCFPCCWv6Pji5rKNSxg4Kec9Jn
+         4yaMNpFmSO63QUv7iRmPyhsxnRNytZBdXxfg0=
+Date: Wed, 28 Jul 2010 14:23:13 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.35-rc6] kconfig: fix MODULES-related bug in case of
+ no .config
+Message-ID: <20100728062313.GC5161@cr0.nay.redhat.com>
+References: <20100727192727.GA17954@ulf>
+ <20100727195742.GA18079@ulf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727195742.GA18079@ulf>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Tue, Jul 27, 2010 at 09:57:43PM +0200, Ulf Magnusson wrote:
+>On Tue, Jul 27, 2010 at 09:27:27PM +0200, Ulf Magnusson wrote:
+>> Hi,
+>> 
+>> There seems to be a kconfig bug due to MODULES not always being evaluated if no
+>> .config is found. Take the following Kconfig as an example:
+>> 
+>> config MODULES
+>> 	def_bool y
+>> 
+>> config FOO
+>> 	def_tristate m
+>> 
+>> With no .config, the following configuration is generated:
+>> 
+>> CONFIG_MODULES=y
+>> CONFIG_FOO=y
+>> 
+>> With an empty .config, the following:
+>> 
+>> CONFIG_MODULES=y
+>> CONFIG_FOO=m
+>> 
+>> Tristate choice statements can also exhibit the problem, due to having an
+>> implicit rev_dep (select) containing "m".
+>> 
+>> The problem is that MODULES is never evaluted in conf_read_simple() unless
+>> there's a .config. The following patch fixes this.
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+<snip>
+
 >
-> This patch replaces page_cgroup's bit_spinlock with spinlock. In general,
-> spinlock has good implementation than bit_spin_lock and we should use
-> it if we have a room for it. In 64bit arch, we have extra 4bytes.
-> Let's use it.
+>Silly error in the patch. The correct patch follows.
 >
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> --
-> Index: mmotm-0719/include/linux/page_cgroup.h
-> ===================================================================
-> --- mmotm-0719.orig/include/linux/page_cgroup.h
-> +++ mmotm-0719/include/linux/page_cgroup.h
-> @@ -10,8 +10,14 @@
->   * All page cgroups are allocated at boot or memory hotplug event,
->   * then the page cgroup for pfn always exists.
->   */
-> +#ifdef CONFIG_64BIT
-> +#define PCG_HAS_SPINLOCK
-> +#endif
->  struct page_cgroup {
->  	unsigned long flags;
-> +#ifdef PCG_HAS_SPINLOCK
-> +	spinlock_t	lock;
-> +#endif
->  	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
->  	unsigned short blk_cgroup;	/* Not Used..but will be. */
->  	struct page *page;
-> @@ -90,6 +96,16 @@ static inline enum zone_type page_cgroup
->  	return page_zonenum(pc->page);
->  }
->  
-> +#ifdef PCG_HAS_SPINLOCK
-> +static inline void lock_page_cgroup(struct page_cgroup *pc)
-> +{
-> +	spin_lock(&pc->lock);
-> +}
+>Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+>
 
-This is minor issue, but this patch breaks usage of PageCgroupLocked().
-Example from __mem_cgroup_move_account() cases panic:
-	VM_BUG_ON(!PageCgroupLocked(pc));
+Sounds good for me.
 
-I assume that this patch should also delete the following:
-- PCG_LOCK definition from page_cgroup.h
-- TESTPCGFLAG(Locked, LOCK) from page_cgroup.h
-- PCGF_LOCK from memcontrol.c
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-> +static inline void unlock_page_cgroup(struct page_cgroup *pc)
-> +{
-> +	spin_unlock(&pc->lock);
-> +}
-> +#else
->  static inline void lock_page_cgroup(struct page_cgroup *pc)
->  {
->  	bit_spin_lock(PCG_LOCK, &pc->flags);
-> @@ -99,6 +115,7 @@ static inline void unlock_page_cgroup(st
->  {
->  	bit_spin_unlock(PCG_LOCK, &pc->flags);
->  }
-> +#endif
->  
->  static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
->  {
-> Index: mmotm-0719/mm/page_cgroup.c
-> ===================================================================
-> --- mmotm-0719.orig/mm/page_cgroup.c
-> +++ mmotm-0719/mm/page_cgroup.c
-> @@ -17,6 +17,9 @@ __init_page_cgroup(struct page_cgroup *p
->  	pc->mem_cgroup = 0;
->  	pc->page = pfn_to_page(pfn);
->  	INIT_LIST_HEAD(&pc->lru);
-> +#ifdef PCG_HAS_SPINLOCK
-> +	spin_lock_init(&pc->lock);
-> +#endif
->  }
->  static unsigned long total_usage;
->  
+
+>diff -uNr linux.vanilla/scripts/kconfig/confdata.c linux.new/scripts/kconfig/confdata.c
+>--- linux.vanilla/scripts/kconfig/confdata.c	2010-07-27 16:47:43.443006287 +0200
+>+++ linux.new/scripts/kconfig/confdata.c	2010-07-27 21:48:07.471550551 +0200
+>@@ -170,8 +170,11 @@
+> 		if (in)
+> 			goto load;
+> 		sym_add_change_count(1);
+>-		if (!sym_defconfig_list)
+>+		if (!sym_defconfig_list) {
+>+			if (modules_sym)
+>+				sym_calc_value(modules_sym);
+> 			return 1;
+>+		}
+> 
+> 		for_all_defaults(sym_defconfig_list, prop) {
+> 			if (expr_calc_value(prop->visible.expr) == no ||
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
