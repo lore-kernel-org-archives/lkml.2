@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab0G1PfY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 11:35:24 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52471 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752808Ab0G1PfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 11:35:18 -0400
-Date: Thu, 29 Jul 2010 01:35:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: please pull in from lost-spurious-irq branch
-Message-Id: <20100729013509.22731f11.sfr@canb.auug.org.au>
-In-Reply-To: <4C5035BF.9040904@kernel.org>
-References: <4C5035BF.9040904@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__29_Jul_2010_01_35_09_+1000_Mz+QQOM61RVq8N/L"
+	id S1755410Ab0G1Pg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 11:36:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46709 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab0G1Pg4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 11:36:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=LCPHZ9N0oiBt5sRePY+HWtZqoWyu7IG4TjJbgguHqtVCmrMtXH+0CH9EubyX1XfzOL
+         xLw+x64ieQKjsdB57xyvbYlqtaF0gZBv+SL6CklhbppDyNdI8WzkeZJCdXsgAYHc0OFq
+         S4G3QulxTfvpHp9eQ8bKy1HKmqjJuvYw9z6s8=
+MIME-Version: 1.0
+In-Reply-To: <1280311240.24054.103.camel@Joe-Laptop.home>
+References: <1280258531.24054.10.camel@Joe-Laptop.home> <AANLkTi=p=-ovBaqyqBdEW=W4E1ArWsiyUBwy37GtXOyu@mail.gmail.com> 
+	<1280311240.24054.103.camel@Joe-Laptop.home>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 28 Jul 2010 11:36:35 -0400
+Message-ID: <AANLkTimHYS8BRBbomxwyqwayu8eyp+k6TurtsniNTMfs@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH net-next] drivers/net/bfin_mac.c: Use 
+	pr_fmt, netdev_<level>
+To: Joe Perches <joe@perches.com>
+Cc: Michael Hennerich <michael.hennerich@analog.com>,
+        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Jul_2010_01_35_09_+1000_Mz+QQOM61RVq8N/L
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Tejun,
-
-On Wed, 28 Jul 2010 15:50:55 +0200 Tejun Heo <tj@kernel.org> wrote:
+On Wed, Jul 28, 2010 at 06:00, Joe Perches wrote:
+> On Wed, 2010-07-28 at 03:50 -0400, Mike Frysinger wrote:
+>> On Tue, Jul 27, 2010 at 15:22, Joe Perches wrote:
+>> > $ ./scripts/checkpatch.pl -f drivers/net/bfin_mac.c | grep "^total:"
+>> > total: 2 errors, 25 warnings, 1723 lines checked
+>> > $ ./scripts/checkpatch.pl -f drivers/net/bfin_mac.c | grep "^total:"
+>> > total: 0 errors, 0 warnings, 1743 lines checked
+>> i dislike the mixing of whitespace and useful changes
+>> if they were split, and they worked, then i wouldnt have a problem with them
 >
-> If possible, can you please pull the following branch into linux-next?
->=20
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git lost-spurious=
--irq
->=20
-> It's scheduled to go through tip/genirq, so once it shows up in tip,
-> the above branch can be dropped from linux-next.  As the merge window
-> is closing in, I'm hoping to get it tested enough in linux-next.  The
-> branch is based on rc3 but merges without conflict into the current
-> mainline.
+> Is that a nak or a dislike?
 
-OK, added from today.  I'll keep an eye out for it in the tip tree.
+if you arent going to bother fixing things, then i guess it's a NAK ;)
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+> Also, is Michael Hennerich actually the maintainer for bfin_mac?
+> He had been  listed as MAINTAINER for over a year but he hasn't
+> ever written or acked a patch for this file.
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Thu__29_Jul_2010_01_35_09_+1000_Mz+QQOM61RVq8N/L
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMUE4tAAoJEDMEi1NhKgbsPPQH/0/wPk7kXvirolFvdlsiO4pY
-laN5uMwj8X8vj6k50+fme6tYfcRmy1hWLaXdrbgZ4EITN1BIW90jyGjHThIEs17S
-IaRUvaBFojd3SRWaqDBXF1w4yBr/2fRChyXiYqH/PkeVddMinNPq/w6okgAf9/go
-6WiEFp/CFWXf9NydOCy3bj/evv0lnxfTUJqtje5DcQS6q5GYWrUgea+krnbJqjoZ
-BdAT/PUEQXuGALbzyCM97PFvwslOvR5m5FTjJcMSkyn+ZX/Sy/ZgK/qOEaoEPfqW
-7xABeSUNTmotFVN9w0oZZ0AIcu6WF41LAjTnyr533yzvOKjJrnapMzFncjHiez4=
-=G9MZ
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Jul_2010_01_35_09_+1000_Mz+QQOM61RVq8N/L--
+i dont know what log you're reading, but i see Michael making plenty
+of changes to this driver
+-mike
