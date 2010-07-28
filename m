@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab0G1Ga2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:30:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35151 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959Ab0G1Ga0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754148Ab0G1Gaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:30:30 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44168 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab0G1Ga0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jul 2010 02:30:26 -0400
-Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <4C4FC5D1.3070708@zytor.com>
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-	 <1279822864-17154-29-git-send-email-yinghai@kernel.org>
-	 <1280294128.1970.237.camel@pasglop> <1280294376.1970.239.camel@pasglop>
-	 <4C4FC5D1.3070708@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 16:29:52 +1000
-Message-ID: <1280298592.1970.248.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C4FCE76.7030902@jp.fujitsu.com>
+Date: Wed, 28 Jul 2010 15:30:14 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+MIME-Version: 1.0
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: [RFC PATCH v4 2/5] napi: convert trace_napi_poll to TRACE_EVENT
+References: <4C4FCDA1.3000803@jp.fujitsu.com>
+In-Reply-To: <4C4FCDA1.3000803@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 22:53 -0700, H. Peter Anvin wrote:
-> On 07/27/2010 10:19 PM, Benjamin Herrenschmidt wrote:
-> > 
-> > Screw it, I don't like it but I'll just split your patch in two for now
-> > and keep 0. It's a bit fishy but memblock does mostly top-down
-> > allocations and so shouldn't hit 0, and in practice the region at 0 is,
-> > I beleive, reserved, but we need to be extra careful and might need to
-> > revisit that a bit.
-> > 
-> > That's an area where I don't completely agree with Linus, ie, 0 is a
-> > perfectly valid physical address for memblock to return :-)
-> > 
-> 
-> On x86, physical address 0 contains the real-mode IVT and will thus be
-> reserved, at least for the forseeable future.  Other architectures may
-> very well have non-special RAM there.
+From: Neil Horman <nhorman@tuxdriver.com>
 
-Right, that's my point. Anyways, I'm making 0 special for now and adding
-a wart to prevent the allocator from returning something below
-PAGE_SIZE. If we want to revisit that later we can.
+This patch converts trace_napi_poll from DECLARE_EVENT to TRACE_EVENT to improve
+the usability of napi_poll tracepoint.
 
-Cheers,
-Ben.
+          <idle>-0     [001] 241302.750777: napi_poll: napi poll on napi struct f6acc480 for device eth3
+          <idle>-0     [000] 241302.852389: napi_poll: napi poll on napi struct f5d0d70c for device eth1
 
+An original patch is below.
+http://marc.info/?l=linux-kernel&m=126021713809450&w=2
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+
+And add a fix by Steven Rostedt.
+http://marc.info/?l=linux-kernel&m=126150506519173&w=2
+
+Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+---
+ include/trace/events/napi.h |   25 +++++++++++++++++++++++--
+ 1 files changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/include/trace/events/napi.h b/include/trace/events/napi.h
+index 188deca..8fe1e93 100644
+--- a/include/trace/events/napi.h
++++ b/include/trace/events/napi.h
+@@ -6,10 +6,31 @@
+ 
+ #include <linux/netdevice.h>
+ #include <linux/tracepoint.h>
++#include <linux/ftrace.h>
++
++#define NO_DEV "(no_device)"
++
++TRACE_EVENT(napi_poll,
+ 
+-DECLARE_TRACE(napi_poll,
+ 	TP_PROTO(struct napi_struct *napi),
+-	TP_ARGS(napi));
++
++	TP_ARGS(napi),
++
++	TP_STRUCT__entry(
++		__field(	struct napi_struct *,	napi)
++		__string(	dev_name, napi->dev ? napi->dev->name : NO_DEV)
++	),
++
++	TP_fast_assign(
++		__entry->napi = napi;
++		__assign_str(dev_name, napi->dev ? napi->dev->name : NO_DEV);
++	),
++
++	TP_printk("napi poll on napi struct %p for device %s",
++		__entry->napi, __get_str(dev_name))
++);
++
++#undef NO_DEV
+ 
+ #endif /* _TRACE_NAPI_H_ */
+ 
 
