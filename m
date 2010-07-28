@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab0G1W6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 18:58:33 -0400
-Received: from avexcashub1.qlogic.com ([198.70.193.61]:10443 "EHLO
-	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab0G1W6b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 18:58:31 -0400
-Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
-From: Ralph Campbell <ralph.campbell@qlogic.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Infinipath <Infinipath@qlogic.com>
-In-Reply-To: <4C507728.3000207@zytor.com>
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-	 <1279822864-17154-32-git-send-email-yinghai@kernel.org>
-	 <1280295415.1970.245.camel@pasglop> <4C4FC95F.6040806@kernel.org>
-	 <4C4FD04B.5090503@zytor.com> <1280336548.30808.489.camel@mulgrave.site>
-	 <4C506E9B.4070501@zytor.com> <1280340633.30808.583.camel@mulgrave.site>
-	 <4C507728.3000207@zytor.com>
-Content-Type: text/plain; charset="us-ascii"
-Organization: QLogic
-Date: Wed, 28 Jul 2010 15:58:29 -0700
-Message-ID: <1280357909.9969.6.camel@chromite.mv.qlogic.com>
+	id S1756663Ab0G1XB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:01:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38243 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752373Ab0G1XB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 19:01:57 -0400
+Message-ID: <4C50B6A7.3060401@zytor.com>
+Date: Wed, 28 Jul 2010 16:00:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, glommer@redhat.com,
+        alan@lxorguk.ukuu.org.uk, zamsden@redhat.com, stable@kernel.org,
+        mtosatti@redhat.com, gregkh@suse.de, peter@palfrader.org,
+        tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86: Add memory modify constraints to xchg()
+ and 	cmpxchg()
+References: <4C4F7277.8050306@zytor.com> <tip-113fc5a6e8c2288619ff7e8187a6f556b7e0d372@git.kernel.org> <AANLkTikAmaDPji-TVDarmG1yD=fwbffcsmEU=YEuP+8r@mail.gmail.com>
+In-Reply-To: <AANLkTikAmaDPji-TVDarmG1yD=fwbffcsmEU=YEuP+8r@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-28 at 11:30 -0700, H. Peter Anvin wrote:
-> On 07/28/2010 11:10 AM, James Bottomley wrote:
-> > 
-> > So I don't understand the problem.  Proper shutdown of the old kernel
-> > will halt all the DMA engines (by design ... we can't have DMA ongoing
-> > if the next action might be power off).  The only case I know where DMA
-> > engines may be active is the crash kernel case.
-> > 
+On 07/28/2010 08:45 AM, Linus Torvalds wrote:
+> On Tue, Jul 27, 2010 at 10:33 PM, tip-bot for H. Peter Anvin
+> <hpa@zytor.com> wrote:
+>>
+>> x86: Add memory modify constraints to xchg() and cmpxchg()
 > 
-> I'm not sure I fully understand the exact problem, either; not being
-> familiar with this putative "logging" facility of the Qlogic devices.
-> My point was largely that if a device causes failures because of the
-> choice of the allocation order, then we have a much bigger problem and
-> papering over it by trying to muck with the allocation order is just wrong.
+> Ack. I assume this doesn't really change the code generated? At least
+> not with a gcc that honors the whole memory clobber thing properly?
 > 
-> This logging facility of Qlogic is DMA, no more, no less.  It needs to
-> be shut down on a "overwrite" kexec, where we replace one kernel with
-> another, as opposed to a crash dump kexec, where we use a reserved chunk
-> of virgin memory.  What I don't know/understand at the moment is if
-> there is something "special" about this particular logging facility,
-> e.g. if the Qlogic card ignore the bus mastering control bit -- which
-> would be reckless but I can see someone having the bright idea to do that.
+> I also suspect that we can/should get rid of the __xg() thing - it was
+> there just to make sure gcc didn't see the memory read as a single
+> word and tried to optimize it. With the "+m" it probably doesn't
+> matter any more (don't know if it ever did)
 > 
-> Yinghai, do you have any more detail, or know who would?  Also copying
-> the Qlogic Infinipath maintainer email...
-> 
-> 	-hpa
 
-I read the messages in this thread but I don't understand what the
-problem is. Something to do with logging, DMA and crash dumps but
-it also sounds like the original discussion may be confused about
-how the Infiniband HCA cards work.
+For what it's worth, it fairly heavily preturbs code around
+__set_64bit(), which implies it actually does something useful in that
+case.  The rest of the code looks similar enough.
 
-Can someone summarize what is going on...
+	-hpa
 
