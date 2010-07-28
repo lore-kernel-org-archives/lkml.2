@@ -1,91 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0G1Tpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 15:45:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57474 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751006Ab0G1Tp3 (ORCPT
+	id S1754663Ab0G1Tud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 15:50:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50895 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab0G1Tuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 15:45:29 -0400
-Date: Wed, 28 Jul 2010 12:45:13 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/7][memcg] virtually indexed array library.
-Message-Id: <20100728124513.85bfa047.akpm@linux-foundation.org>
-In-Reply-To: <20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jul 2010 15:50:32 -0400
+Date: Wed, 28 Jul 2010 20:49:38 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Huewe <PeterHuewe@gmx.de>, Tejun Heo <tj@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <trivial@kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] arm/mach-ixp2000: Add missing comma - fix build failure
+Message-ID: <20100728194938.GA5772@n2100.arm.linux.org.uk>
+References: <201007282043.13561.PeterHuewe@gmx.de> <20100728191531.GA10719@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100728191531.GA10719@shutemov.name>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 16:53:03 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, Jul 28, 2010 at 10:15:31PM +0300, Kirill A. Shutemov wrote:
+> On Wed, Jul 28, 2010 at 08:43:13PM +0200, Peter Huewe wrote:
+> > From: Peter Huewe <peterhuewe@gmx.de>
+> > 
+> > This trivial patch fixes a build failure [1] by adding a missing comma.
 > 
-> This virt-array allocates a virtally contiguous array via get_vm_area()
-> and allows object allocation per an element of array.
-> Physical pages are used only for used items in the array.
+> It has been fixed by updated patch:
 > 
->  - At first, the user has to create an array by create_virt_array().
->  - At using an element, virt_array_alloc_index(index) should be called.
->  - At freeing an element, virt_array_free_index(index) should be called.
->  - At destroying, destroy_virt_array() should be called.
-> 
-> Item used/unused status is controlled by bitmap and back-end physical
-> pages are automatically allocated/freed. This is useful when you
-> want to access objects by index in light weight. For example,
-> 
-> 	create_virt_array(va);
-> 	struct your_struct *objmap = va->address;
-> 	Then, you can access your objects by objmap[i].
-> 
-> In usual case, holding reference by index rather than pointer can save memory.
-> But index -> object lookup cost cannot be negligible. In such case,
-> this virt-array may be helpful. Ah yes, if lookup performance is not important,
-> using radix-tree will be better (from TLB point of view). This virty-array
-> may consume VMALLOC area too much. and alloc/free routine is very slow.
-> 
-> Changelog:
->  - fixed bugs in bitmap ops.
->  - add offset for find_free_index.
-> 
+> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6269/1
 
-My gut reaction to this sort of thing is "run away in terror".  It
-encourages kernel developers to operate like lackadaisical userspace
-developers and to assume that underlying code can perform heroic and
-immortal feats.  But it can't.  This is the kernel and the kernel is a
-tough and hostile place and callers should be careful and defensive and
-take great efforts to minimise the strain they put upon other systems.
-
-IOW, can we avoid doing this?
-
->
-> ...
->
-> +void free_varray_item(struct virt_array *v, int idx)
-> +{
-> +	mutex_lock(&v->mutex);
-> +	__free_unmap_entry(v, idx);
-> +	mutex_unlock(&v->mutex);
-> +}
-
-It's generally a bad idea for library code to perform its own locking. 
-In this case we've just made this whole facility inaccessible to code
-which runs from interrupt or atomic contexts.
-
-> +		pg[0] = alloc_page(GFP_KERNEL);
-
-And hard-wiring GFP_KERNEL makes this facility inaccessible to GFP_NOIO
-and GFP_NOFS contexts as well.
-
+And committed.  I want to give the MMCI changes I've committed yesterday
+a run before I push the tree out though.
