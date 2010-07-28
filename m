@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0G1VXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 17:23:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51974 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754743Ab0G1VXD (ORCPT
+	id S1756301Ab0G1VXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 17:23:19 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:57944 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518Ab0G1VXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 17:23:03 -0400
-Date: Wed, 28 Jul 2010 14:22:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Patrick Pannuto <ppannuto@codeaurora.org>, linux-kernel@vger.kernel.org,
-        apw@canonical.com, corbet@lwn.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: Re: [PATCH 1/4] timer: Added usleep[_range] timer
-Message-Id: <20100728142239.d8dd468b.akpm@linux-foundation.org>
-In-Reply-To: <4C509B6F.8000200@linux.intel.com>
-References: <1280345587-19725-1-git-send-email-ppannuto@codeaurora.org>
-	<1280345587-19725-2-git-send-email-ppannuto@codeaurora.org>
-	<20100728132314.29cd68c5.akpm@linux-foundation.org>
-	<4C509772.1070407@codeaurora.org>
-	<20100728135857.2a0ab8bd.akpm@linux-foundation.org>
-	<4C509B6F.8000200@linux.intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 28 Jul 2010 17:23:08 -0400
+Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
+From: Mingming Cao <cmm@us.ibm.com>
+To: Tracy Reed <treed@ultraviolet.org>
+Cc: bchociej@gmail.com, chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, bcchocie@us.ibm.com,
+        mrlupfer@us.ibm.com, crscott@vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100727222916.GM18595@tracyreed.org>
+References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
+	 <20100727222916.GM18595@tracyreed.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 14:22:49 -0700
+Message-ID: <1280352169.7694.2.camel@mingming-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 14:04:47 -0700
-Arjan van de Ven <arjan@linux.intel.com> wrote:
-
-> On 7/28/2010 1:58 PM, Andrew Morton wrote:
-> >
-> > My main concern is that someone will type usleep(50) and won't realise
-> > that it goes and sleeps for 100 usecs and their code gets slow as a
-> > result.  This sort of thing takes *years* to discover and fix.  If we'd
-> > forced them to type usleep_range() instead, it would never have happened.
-> >
-> >
-> >
-> > Another question: what is the typical overhead of a usleep()?  IOW, at
-> > what delay value does it make more sense to use udelay()?  Another way
-> > of asking that would be "how long does a usleep(1) take"?  If it
-> > reliably consumes 2us CPU time then we shouldn't do it.
-> >
-> > But it's not just CPU time, is it?  A smart udelay() should put the CPU
-> > into a lower power state, so a udelay(3) might consume less energy than
-> > a usleep(2), because the usleep() does much more work in schedule() and
-> > friends?
-> >    
+On Tue, 2010-07-27 at 15:29 -0700, Tracy Reed wrote: 
+> On Tue, Jul 27, 2010 at 05:00:18PM -0500, bchociej@gmail.com spake thusly:
+> > The long-term goal of these patches, as discussed in the Motivation
+> > section at the end of this message, is to enable Btrfs to perform
+> > automagic relocation of hot data to fast media like SSD. This goal has
+> > been motivated by the Project Ideas page on the Btrfs wiki.
 > 
-> for very low values of udelay() you're likely right.... but we could and 
-> should catch that inside usleep imo and fall back to a udelay
-> it'll likely be 10 usec or so where we'd cut off.
+> With disks being so highly virtualized away these days is there any
+> way for btrfs to know which are the fast outer-tracks vs the slower
+> inner-tracks of a physical disk? If so not only could this benefit SSD
+> owners but it could also benefit the many more spinning platters out
+> there. If not (which wouldn't be surprising) then disregard. Even just
+> having that sort of functionality for SSD would be excellent. If I
+> understand correctly not only would this work for SSD but if I have a
+> SAN full of many large 7200rpm disks and a few 15k SAS disks I could
+> effectively utilize that disk by allowing btrfs to place hot data on
+> the 15k SAS. I understand Compellent does this as well.
 > 
-> now there is no such thing as a "low power udelay", not really anyway....
 
-Yup.  I can't find any arch which tries to do anything fancy.
+This certainly possible. The disk to store hot data does not has to
+limit to SSDs, thought current implementation detecting "fast" device by
+checking the SSD rotation flag. This could be easily extended if btrfs
+is able to detect the relatively fast devices.
 
-x86's rep_nop() tries to save a bit of juice, doesn't it?  Should we be
-using that?
-
-Because we use udelay() in many places - it wouldn't surprise me if
-some people's machines were consuming significant amounts of
-time/energy in there, if they have suitably broken hardware or drivers.
-
-> but the opposite is true; the cpu idle code will effectively do the 
-> equivalent of udelay() if you're asking for a very short delay, so
-> short that any power saving thing isn't giong to be worth it. ( + 
-> hitting scheduler overhead
-
-hm, point.
