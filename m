@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0G1BhG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 21:37:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54478 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab0G1BhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 21:37:02 -0400
-Date: Wed, 28 Jul 2010 04:31:36 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sridhar Samudrala <sri@us.ibm.com>
-Cc: netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, dlstevens@us.ibm.com
-Subject: Re: vhost mergeable buffers guest's cgroup
-Message-ID: <20100728013136.GA23358@redhat.com>
-References: <20100728012735.GA23243@redhat.com>
+	id S1753733Ab0G1BnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 21:43:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52417 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab0G1BnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 21:43:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=AUs2gJ5WJ0jcT3MxtxGsD0sQwTXs1e+qATxcErYNKF1hpQP8ZxZ4xYHquq7j/RlnaB
+         bCg7gA5In6x0KcQROmwB+ellVe4jvLfirEsukPob3H/Yv6qF8pXYD6nYsXzVliB6GG4n
+         7RUN4+NcWzlLc1pwlY7dnnhqcWqL4CRQLQ7S0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100728012735.GA23243@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Tue, 27 Jul 2010 19:43:17 -0600
+Message-ID: <AANLkTi=Ojnj62WPUL12-DQdpY4=aVmWLiM+48tmcf+xR@mail.gmail.com>
+Subject: [ANNOUNCE] Open CWorthy Libraries 07-27-2010
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 04:27:35AM +0300, Michael S. Tsirkin wrote:
-> Sridhar, David,
-> I pushed a mergeable buffers patchset on my vhost-net-next branch,
-> on top of the threading changes.
->  
-> This is a minimal patch, which in my testing has zero impact on
-> non-mergeable path.
-> 
-> Please give this a spin and let me know.
-> 
-> Thanks!
+CURRENT
+http://cworthylinux.googlecode.com/files/cworthy-07-27-2010.tar.gz
 
-The userspace bits can be found on my qemu-kvm tree at kernel.org,
-branch vhost_mergeable.
-Please use these for testing.
+REPOSITORIES
+http://code.google.com/p/cworthylinux/
+http://sourceforge.net/projects/opencworthy/
 
-> -- 
-> MST
+FIXES
+- fix pthread_mutex_lock deadlock in refresh_screen() wen called from
+pthread_cancel
+- add support for shaded fields based on field input
+- add cwgen packet generator CWorthy sample application.
+- add cwgen.ko support for linux kernel 2.6.34.1
+- add clear_portal_storage function for clearing portal storage
+without blanking the screen
+- add MSDOS and DRDOS build defines and includes
+- add Windows build defines and includes
+- add pthread_setcancelstate() to sample program to prevent deadlocks during
+  calls to pthread_cancel.  You need to set the cancel state to disable when
+  pthread_mutex_lock is called and a process is holding a lock during cancel
+  operations
+- add saved flag to menu_frame to check if we have previously saved a screen
+  area before calling restore_menu
+- add fixes to input_portal_fields to redraw the portal after F10 submit
+
+TODO
+- write another cworthy kernel app and think about more
+- write cworthy application version of net-tools for network monitoring
+- write cworthy application for monitoring disk and lan throughput totals
