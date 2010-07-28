@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab0G1ViW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 17:38:22 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:50312 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751136Ab0G1ViT (ORCPT
+	id S1756482Ab0G1VnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 17:43:00 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:33825 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752659Ab0G1Vm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 17:38:19 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Memory corruption during hibernation since 2.6.31
-Date: Wed, 28 Jul 2010 23:38:09 +0200
-User-Agent: KMail/1.9.10
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>
-References: <201007282320.39528.linux@rainbow-software.org> <201007282334.08063.rjw@sisk.pl>
-In-Reply-To: <201007282334.08063.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Wed, 28 Jul 2010 17:42:59 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Uq2iL/NHaciIRvo/wybFJ7otrq9n8CgYDa9ktFIZ8QbuxVSZwA7vCXrhPa4ogPJOzYu/qb3bajpsyZKUS26MkjbRLhgyDypdyT3+a5JmpFcUKjr0Hq6YWg7VzIvSIHLs;
+Date: Wed, 28 Jul 2010 14:42:56 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ips driver: make it less chatty
+Message-ID: <20100728144256.70666442@virtuousgeek.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201007282338.12098.linux@rainbow-software.org>
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 July 2010 23:34:07 Rafael J. Wysocki wrote:
-> On Wednesday, July 28, 2010, Ondrej Zary wrote:
-> > Hello,
-> > after very long bisection, I finally found what's causing memory
-> > corruption during hibernation on my machine sice 2.6.31:
-> > https://bugzilla.kernel.org/show_bug.cgi?id=15753
-> >
-> > It's commit c9e444103b5e7a5a3519f9913f59767f92e33baf (mm: reuse unused
-> > swap entry if necessary).
-> >
-> > I don't know anything about swapping in Linux so I don't have a clue
-> > what's wrong with that commit.
->
-> Thanks for bisecting!
->
-> This looks rather serious.  I'd be grateful from any clues from the mm guys
-> involved (CCed).
->
-> Do you use s2disk or the built-in hibernation code?
+We don't need a dev_warn when we exceed a thermal or power limit as
+we'll handle it appropriately by clamping down on the CPU, GPU or both
+as needed.
 
-I use built-in code (echo disk >/sys/power/state). The machine has 256MB RAM 
-and 256MB swap partition.
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
--- 
-Ondrej Zary
+diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
+index 0344822..afe82e5 100644
+--- a/drivers/platform/x86/intel_ips.c
++++ b/drivers/platform/x86/intel_ips.c
+@@ -607,7 +607,7 @@ static bool mcp_exceeded(struct ips_driver *ips)
+ 	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
+ 
+ 	if (ret)
+-		dev_warn(&ips->dev->dev,
++		dev_info(&ips->dev->dev,
+ 			 "MCP power or thermal limit exceeded\n");
+ 
+ 	return ret;
+@@ -635,7 +635,7 @@ static bool cpu_exceeded(struct ips_driver *ips, int cpu)
+ 	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
+ 
+ 	if (ret)
+-		dev_warn(&ips->dev->dev,
++		dev_info(&ips->dev->dev,
+ 			 "CPU power or thermal limit exceeded\n");
+ 
+ 	return ret;
