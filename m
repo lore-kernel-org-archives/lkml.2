@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684Ab0G1Wxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 18:53:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42260 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071Ab0G1Wxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 18:53:39 -0400
-Message-ID: <4C50B4C2.2070807@zytor.com>
-Date: Wed, 28 Jul 2010 15:52:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1756621Ab0G1W6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 18:58:12 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:58888 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab0G1W6I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 18:58:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bG1T9TXibqqQTTNIxdz/N+TC513XGvmjdPqjY9PChjlrglYTMqay0PlIs99nFecfSd
+         WouDEvNTowKvBh8fdOsam2OivB6zMoGrpdSc0L71xjb/n4ljS7rtAcq79qCoB60QhLuA
+         wxqRAydp1CINHu97swoRXSbioX9RBf5W0wCX4=
+Date: Thu, 29 Jul 2010 07:57:56 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+Message-ID: <20100728225756.GA6108@barrios-desktop>
+References: <pfn.valid.v4.reply.1@mdm.bga.com>
+ <AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
+ <pfn.valid.v4.reply.2@mdm.bga.com>
+ <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com>
+ <alpine.DEB.2.00.1007270929290.28648@router.home>
+ <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
+ <alpine.DEB.2.00.1007281005440.21717@router.home>
+ <20100728155617.GA5401@barrios-desktop>
+ <alpine.DEB.2.00.1007281158150.21717@router.home>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, jeremy@goop.org,
-        Ian.Campbell@citrix.com, albert_herranz@yahoo.es, x86@kernel.org,
-        jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, tglx@linutronix.de
-Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
-References: <20100727194105.GA18647@phenom.dumpdata.com> <20100728083526J.fujita.tomonori@lab.ntt.co.jp> <4C4F779D.9060908@zytor.com> <20100728095157I.fujita.tomonori@lab.ntt.co.jp> <20100728223816.GB32739@phenom.dumpdata.com>
-In-Reply-To: <20100728223816.GB32739@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1007281158150.21717@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2010 03:38 PM, Konrad Rzeszutek Wilk wrote:
+On Wed, Jul 28, 2010 at 12:02:16PM -0500, Christoph Lameter wrote:
+> On Thu, 29 Jul 2010, Minchan Kim wrote:
+> > invalid memmap pages will be freed by free_memmap and will be used
+> > on any place. How do we make sure it has PG_reserved?
 > 
-> Long term I think the driverization is the way to go, and..
+> Not present memmap pages make pfn_valid fail already since there is no
+> entry for the page table (vmemmap) or blocks are missing in the sparsemem
+> tables.
 > 
-> I think the flow a). check if we need SWIOTLB b), check all IOMMUs, c).
-> recheck SWIOTLB in case no IOMMUs volunteered MUST be preserved
-> irregardless if we driverize the IOMMUs/SWIOTLB or not.
+> > Maybe I don't understand your point.
 > 
-> Perhaps we should get together at one of these Linux conferences and
-> think this one through? Beers on me.
-> 
+> I thought we are worrying about holes in the memmap blocks containing page
+> structs. Some page structs point to valid pages and some are not. The
+> invalid page structs need to be marked consistently to allow the check.
 
-I don't understand point (a) here.  (c) simply seems like the fallback
-case, and in the case we are actively forcing swiotlb we simply skip
-step (b).
+The thing is that memmap pages which contains struct page array on hole will be 
+freed by free_memmap in ARM. Please loot at arch/arm/mm/init.c.
+And it will be used by page allocator as free pages.
 
-	-hpa
+-- 
+Kind regards,
+Minchan Kim
