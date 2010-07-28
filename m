@@ -1,36 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab0G1FNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:13:01 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59986 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab0G1FNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 01:13:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=nyXWtbDkmIsRjvsKGhaTks0OHWJlMI91aB0Acf7bIIeZrVBBBXqUa1/JpycS1cr1aQ
-         4Cl+z8R8HeIZusJTJ650U7oD6vnFH1vDfu1GtrSulPIZhX5tYSNQTZ4YIH5gCEE+vq9+
-         yE+8+YAGJCjQqlkfEMiyo+wAFutlSQlHpt3Yw=
-MIME-Version: 1.0
-Date: Wed, 28 Jul 2010 10:42:53 +0530
-Message-ID: <AANLkTin4r_NrQbzXoTWoJJRCUXX9mjfgtrJ9yTPLW5_W@mail.gmail.com>
-Subject: JPEG hw decoder
-From: rd bairva <rbairva@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751944Ab0G1FQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:16:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47513 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751087Ab0G1FQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:16:00 -0400
+Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1279822864-17154-29-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+	 <1279822864-17154-29-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 15:15:28 +1000
+Message-ID: <1280294128.1970.237.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ,
-      My board has a hardware JPEG decoder. I want to write a driver
-for this in Linux kernel, But it seems there that no Framework exists
-in kernel. Can somebody provide me some pointers?
+On Thu, 2010-07-22 at 11:21 -0700, Yinghai Lu wrote:
+> will used by x86 memblock_x86_find_in_range_node and nobootmem replacement
+> 
+> -v2: use 0 instead -1ULL, Suggested by Linus, so we don't need cast them later to unsigned long
 
-Thanks in advance.
+The patch in its current form is a NAK.
+
+You can't just do those two things in one commit.
+
+If we're going to switch LMB errors to always be 0, we need to ensure we
+cannot realistically hand out 0 as a result of lmb_alloc().
+
+I'll cook up a patch to do that.
+
+Ben.
+
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/memblock.h |    1 +
+>  mm/memblock.c            |    2 --
+>  2 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index 70bc467..89749c4 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -19,6 +19,7 @@
+>  #include <asm/memblock.h>
+>  
+>  #define INIT_MEMBLOCK_REGIONS 128
+> +#define MEMBLOCK_ERROR		0
+>  
+>  struct memblock_region {
+>  	phys_addr_t base;
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 796ef8c..3d0a754 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -27,8 +27,6 @@ int memblock_can_resize;
+>  static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+>  struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+>  
+> -#define MEMBLOCK_ERROR	(~(phys_addr_t)0)
+> -
+>  /* inline so we don't get a warning when pr_debug is compiled out */
+>  static inline const char *memblock_type_name(struct memblock_type *type)
+>  {
 
 
-Regards,
-Rbairva
