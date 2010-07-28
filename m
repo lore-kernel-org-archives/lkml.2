@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab0G1AO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 20:14:56 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:40846 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab0G1AOy (ORCPT
+	id S1752936Ab0G1ASV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 20:18:21 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37473 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab0G1AST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 20:14:54 -0400
-Message-ID: <4C4F767D.4020002@candelatech.com>
-Date: Tue, 27 Jul 2010 17:14:53 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@vyatta.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34.1+hacks:  kernel deadlock related to file-IO?
-References: <4C4F67B3.50101@candelatech.com> <20100727165146.71e46170@nehalam>
-In-Reply-To: <20100727165146.71e46170@nehalam>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 27 Jul 2010 20:18:19 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Jul 2010 09:13:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/7][memcg] towards I/O aware memory cgroup
+Message-Id: <20100728091330.b8197d15.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2010 04:51 PM, Stephen Hemminger wrote:
-> On Tue, 27 Jul 2010 16:11:47 -0700
-> Ben Greear<greearb@candelatech.com>  wrote:
->
->> NOTE:  This is from a hacked 2.6.34.1 kernel, with
->> a module of my own devising loaded and in active use.
->
-> Ben please don't ask LKML for help with problems when
-> you have a binary only module loaded...
+On Tue, 27 Jul 2010 16:51:55 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Yeah, I know..but I spent all day hacking .34 enough to
-run lockdep and get those backtraces..and they *might* be
-valid.  There's a small chance someone else has seen similar
-things but not reported it for whatever reason, so maybe
-they will chime in.
+> 
+> From a view of patch management, this set is a mixture of a few features for
+> memcg, and I should divide them to some groups. But, at first, I'd like to
+> show the total view. This set is consists from 5 sets. Main purpose is
+> create a room in page_cgroup for I/O tracking and add light-weight access method
+> for file-cache related accounting. 
+> 
+> 1.   An virtual-indexed array.
+> 2,3. Use virtual-indexed array for id-to-memory_cgroup detection.
+> 4.   modify page_cgroup to use ID instead of pointer, this gives us enough
+>      spaces for further memory tracking.
+> 5,6   Use light-weight locking mechanism for file related accounting.
+> 7.   use spin_lock instead of bit_spinlock.
+> 
+> 
+> As a function,  patch 5,6 can be an independent patch and I'll accept
+> reordering series of patch if someone requests.
+> But we'll need all, I think.
+> (irq_save for patch 7 will be required later.)
+> 
+> Any comments are welcome.
+> 
 
-And finally, I will attempt to reproduce with some official
-kernels, and will report what I find one way or another.
-
-The .34 kernel has been a real bitch to get stable  (You
-know things must be bad when my name's on -stable patches),
-so I wouldn't be surprised if I'm hitting another real bug.
+This was onto mmotm-0719..but mmotm-0727 is shipped. I'll post rebased one
+if someone wants to test.
 
 Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+-Kame
 
