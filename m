@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab0G1Olu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 10:41:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35260 "EHLO comal.ext.ti.com"
+	id S1755273Ab0G1Olj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 10:41:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57727 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754951Ab0G1Okx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 10:40:53 -0400
+	id S1755076Ab0G1Okz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 10:40:55 -0400
 From: Ernesto Ramos <ernesto@ti.com>
 To: gregkh@suse.de
 Cc: omar.ramirez@ti.com, ohad@wizery.com, ameya.palande@nokia.com,
         felipe.contreras@nokia.com, fernando.lugo@ti.com,
         linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com, nm@ti.com,
         linux-omap@vger.kernel.org, Ernesto Ramos <ernesto@ti.com>
-Subject: [PATCH 02/10] staging:ti dspbridge: remove DSP_SUCCEEDED macro from pmgr
-Date: Wed, 28 Jul 2010 09:45:25 -0500
-Message-Id: <1280328333-31336-3-git-send-email-ernesto@ti.com>
+Subject: [PATCH 01/10] staging:ti dspbridge: remove DSP_SUCCEEDED macro from core
+Date: Wed, 28 Jul 2010 09:45:24 -0500
+Message-Id: <1280328333-31336-2-git-send-email-ernesto@ti.com>
 X-Mailer: git-send-email 1.5.4.5
-In-Reply-To: <1280328333-31336-2-git-send-email-ernesto@ti.com>
+In-Reply-To: <1280328333-31336-1-git-send-email-ernesto@ti.com>
 References: <1280328333-31336-1-git-send-email-ernesto@ti.com>
- <1280328333-31336-2-git-send-email-ernesto@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,925 +27,798 @@ is not necessary anymore.
 
 Signed-off-by: Ernesto Ramos <ernesto@ti.com>
 ---
- drivers/staging/tidspbridge/pmgr/chnl.c   |    8 +-
- drivers/staging/tidspbridge/pmgr/cmm.c    |  135 +++++++++++++----------------
- drivers/staging/tidspbridge/pmgr/cod.c    |   10 +-
- drivers/staging/tidspbridge/pmgr/dbll.c   |   20 ++--
- drivers/staging/tidspbridge/pmgr/dev.c    |   59 ++++++-------
- drivers/staging/tidspbridge/pmgr/dmm.c    |   10 +-
- drivers/staging/tidspbridge/pmgr/dspapi.c |   52 ++++++------
- drivers/staging/tidspbridge/pmgr/io.c     |    4 +-
- drivers/staging/tidspbridge/pmgr/msg.c    |    2 +-
- 9 files changed, 139 insertions(+), 161 deletions(-)
+ drivers/staging/tidspbridge/core/chnl_sm.c        |   22 ++++----
+ drivers/staging/tidspbridge/core/dsp-clock.c      |    4 +-
+ drivers/staging/tidspbridge/core/io_sm.c          |   47 ++++++++---------
+ drivers/staging/tidspbridge/core/msg_sm.c         |   22 ++++----
+ drivers/staging/tidspbridge/core/tiomap3430.c     |   57 +++++++++------------
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c |    6 +-
+ drivers/staging/tidspbridge/core/tiomap_io.c      |   41 +++++++--------
+ 7 files changed, 91 insertions(+), 108 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/pmgr/chnl.c b/drivers/staging/tidspbridge/pmgr/chnl.c
-index d73c89c..626a993 100644
---- a/drivers/staging/tidspbridge/pmgr/chnl.c
-+++ b/drivers/staging/tidspbridge/pmgr/chnl.c
-@@ -77,20 +77,20 @@ int chnl_create(struct chnl_mgr **channel_mgr,
- 	if (mgr_attrts->word_size == 0)
- 		status = -EINVAL;
+diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
+index 69c4784..1b23141 100644
+--- a/drivers/staging/tidspbridge/core/chnl_sm.c
++++ b/drivers/staging/tidspbridge/core/chnl_sm.c
+@@ -170,7 +170,7 @@ func_cont:
+ 	omap_mbox_disable_irq(dev_ctxt->mbox, IRQ_RX);
+ 	if (pchnl->chnl_type == CHNL_PCPY) {
+ 		/* This is a processor-copy channel. */
+-		if (DSP_SUCCEEDED(status) && CHNL_IS_OUTPUT(pchnl->chnl_mode)) {
++		if (!status && CHNL_IS_OUTPUT(pchnl->chnl_mode)) {
+ 			/* Check buffer size on output channels for fit. */
+ 			if (byte_size >
+ 			    io_buf_size(pchnl->chnl_mgr_obj->hio_mgr))
+@@ -178,7 +178,7 @@ func_cont:
  
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status = dev_get_chnl_mgr(hdev_obj, &hchnl_mgr);
--		if (DSP_SUCCEEDED(status) && hchnl_mgr != NULL)
-+		if (!status && hchnl_mgr != NULL)
- 			status = -EEXIST;
- 
- 	}
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		struct bridge_drv_interface *intf_fxns;
- 		dev_get_intf_fxns(hdev_obj, &intf_fxns);
- 		/* Let Bridge channel module finish the create: */
- 		status = (*intf_fxns->pfn_chnl_create) (&hchnl_mgr, hdev_obj,
- 							mgr_attrts);
--		if (DSP_SUCCEEDED(status)) {
-+		if (!status) {
- 			/* Fill in DSP API channel module's fields of the
- 			 * chnl_mgr structure */
- 			chnl_mgr_obj = (struct chnl_mgr_ *)hchnl_mgr;
-diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
-index b7cba1b..2f974c5 100644
---- a/drivers/staging/tidspbridge/pmgr/cmm.c
-+++ b/drivers/staging/tidspbridge/pmgr/cmm.c
-@@ -266,33 +266,25 @@ int cmm_create(struct cmm_object **ph_cmm_mgr,
- 		sys_info.dw_page_size = PAGE_SIZE;
- 		sys_info.dw_allocation_granularity = PAGE_SIZE;
- 		sys_info.dw_number_of_processors = 1;
--		if (DSP_SUCCEEDED(status)) {
--			cmm_obj->dw_page_size = sys_info.dw_page_size;
--		} else {
--			cmm_obj->dw_page_size = 0;
--			status = -EPERM;
--		}
-+
-+		cmm_obj->dw_page_size = sys_info.dw_page_size;
-+
- 		/* Note: DSP SM seg table(aDSPSMSegTab[]) zero'd by
- 		 * MEM_ALLOC_OBJECT */
--		if (DSP_SUCCEEDED(status)) {
--			/* create node free list */
--			cmm_obj->node_free_list_head =
--					kzalloc(sizeof(struct lst_list),
--							GFP_KERNEL);
--			if (cmm_obj->node_free_list_head == NULL)
--				status = -ENOMEM;
--			else
--				INIT_LIST_HEAD(&cmm_obj->
--					       node_free_list_head->head);
--		}
--		if (DSP_SUCCEEDED(status))
--			mutex_init(&cmm_obj->cmm_lock);
- 
--		if (DSP_SUCCEEDED(status))
--			*ph_cmm_mgr = cmm_obj;
--		else
-+		/* create node free list */
-+		cmm_obj->node_free_list_head =
-+				kzalloc(sizeof(struct lst_list),
-+						GFP_KERNEL);
-+		if (cmm_obj->node_free_list_head == NULL) {
-+			status = -ENOMEM;
- 			cmm_destroy(cmm_obj, true);
--
-+		} else {
-+			INIT_LIST_HEAD(&cmm_obj->
-+				       node_free_list_head->head);
-+			mutex_init(&cmm_obj->cmm_lock);
-+			*ph_cmm_mgr = cmm_obj;
-+		}
- 	} else {
- 		status = -ENOMEM;
- 	}
-@@ -322,14 +314,14 @@ int cmm_destroy(struct cmm_object *hcmm_mgr, bool force)
- 	if (!force) {
- 		/* Check for outstanding memory allocations */
- 		status = cmm_get_info(hcmm_mgr, &temp_info);
--		if (DSP_SUCCEEDED(status)) {
-+		if (!status) {
- 			if (temp_info.ul_total_in_use_cnt > 0) {
- 				/* outstanding allocations */
- 				status = -EPERM;
- 			}
  		}
  	}
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		/* UnRegister SM allocator */
- 		for (slot_seg = 0; slot_seg < CMM_MAXGPPSEGS; slot_seg++) {
- 			if (cmm_mgr_obj->pa_gppsm_seg_tab[slot_seg] != NULL) {
-@@ -351,7 +343,7 @@ int cmm_destroy(struct cmm_object *hcmm_mgr, bool force)
- 		kfree(cmm_mgr_obj->node_free_list_head);
- 	}
- 	mutex_unlock(&cmm_mgr_obj->cmm_lock);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		/* delete CS & cmm mgr object */
- 		mutex_destroy(&cmm_mgr_obj->cmm_lock);
- 		kfree(cmm_mgr_obj);
-@@ -441,7 +433,7 @@ int cmm_get_handle(void *hprocessor, struct cmm_object ** ph_cmm_mgr)
- 	else
- 		hdev_obj = dev_get_first();	/* default */
+ 		/* Get a free chirp: */
+ 		chnl_packet_obj =
+ 		    (struct chnl_irp *)lst_get_head(pchnl->free_packets_list);
+@@ -186,7 +186,7 @@ func_cont:
+ 			status = -EIO;
  
--	if (DSP_SUCCEEDED(status))
-+	if (!status)
- 		status = dev_get_cmm_mgr(hdev_obj, ph_cmm_mgr);
- 
- 	return status;
-@@ -571,16 +563,13 @@ int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 		goto func_end;
- 	}
- 	/* Check if input ul_size is big enough to alloc at least one block */
--	if (DSP_SUCCEEDED(status)) {
--		if (ul_size < cmm_mgr_obj->ul_min_block_size) {
--			status = -EINVAL;
--			goto func_end;
--		}
--	}
--	if (DSP_SUCCEEDED(status)) {
--		/* create, zero, and tag an SM allocator object */
--		psma = kzalloc(sizeof(struct cmm_allocator), GFP_KERNEL);
-+	if (ul_size < cmm_mgr_obj->ul_min_block_size) {
-+		status = -EINVAL;
-+		goto func_end;
- 	}
-+
-+	/* create, zero, and tag an SM allocator object */
-+	psma = kzalloc(sizeof(struct cmm_allocator), GFP_KERNEL);
- 	if (psma != NULL) {
- 		psma->hcmm_mgr = hcmm_mgr;	/* ref to parent */
- 		psma->shm_base = dw_gpp_base_pa;	/* SM Base phys */
-@@ -594,54 +583,50 @@ int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 			status = -EPERM;
- 			goto func_end;
- 		}
--		if (DSP_SUCCEEDED(status)) {
--			/* return the actual segment identifier */
--			*sgmt_id = (u32) slot_seg + 1;
--			/* create memory free list */
--			psma->free_list_head = kzalloc(sizeof(struct lst_list),
--								GFP_KERNEL);
--			if (psma->free_list_head == NULL) {
--				status = -ENOMEM;
--				goto func_end;
--			}
--			INIT_LIST_HEAD(&psma->free_list_head->head);
--		}
--		if (DSP_SUCCEEDED(status)) {
--			/* create memory in-use list */
--			psma->in_use_list_head = kzalloc(sizeof(struct
--							lst_list), GFP_KERNEL);
--			if (psma->in_use_list_head == NULL) {
--				status = -ENOMEM;
--				goto func_end;
--			}
--			INIT_LIST_HEAD(&psma->in_use_list_head->head);
-+		/* return the actual segment identifier */
-+		*sgmt_id = (u32) slot_seg + 1;
-+		/* create memory free list */
-+		psma->free_list_head = kzalloc(sizeof(struct lst_list),
-+							GFP_KERNEL);
-+		if (psma->free_list_head == NULL) {
-+			status = -ENOMEM;
-+			goto func_end;
- 		}
--		if (DSP_SUCCEEDED(status)) {
--			/* Get a mem node for this hunk-o-memory */
--			new_node = get_node(cmm_mgr_obj, dw_gpp_base_pa,
--					    psma->dw_vm_base, ul_size);
--			/* Place node on the SM allocator's free list */
--			if (new_node) {
--				lst_put_tail(psma->free_list_head,
--					     (struct list_head *)new_node);
--			} else {
--				status = -ENOMEM;
--				goto func_end;
--			}
-+		INIT_LIST_HEAD(&psma->free_list_head->head);
-+
-+		/* create memory in-use list */
-+		psma->in_use_list_head = kzalloc(sizeof(struct
-+						lst_list), GFP_KERNEL);
-+		if (psma->in_use_list_head == NULL) {
-+			status = -ENOMEM;
-+			goto func_end;
- 		}
--		if (DSP_FAILED(status)) {
--			/* Cleanup allocator */
--			un_register_gppsm_seg(psma);
-+		INIT_LIST_HEAD(&psma->in_use_list_head->head);
-+
-+		/* Get a mem node for this hunk-o-memory */
-+		new_node = get_node(cmm_mgr_obj, dw_gpp_base_pa,
-+				    psma->dw_vm_base, ul_size);
-+		/* Place node on the SM allocator's free list */
-+		if (new_node) {
-+			lst_put_tail(psma->free_list_head,
-+				     (struct list_head *)new_node);
-+		} else {
-+			status = -ENOMEM;
-+			goto func_end;
- 		}
- 	} else {
- 		status = -ENOMEM;
- 		goto func_end;
- 	}
- 	/* make entry */
--	if (DSP_SUCCEEDED(status))
--		cmm_mgr_obj->pa_gppsm_seg_tab[slot_seg] = psma;
-+	cmm_mgr_obj->pa_gppsm_seg_tab[slot_seg] = psma;
- 
- func_end:
-+	if (status && psma) {
-+		/* Cleanup allocator */
-+		un_register_gppsm_seg(psma);
-+	}
-+
- 	mutex_unlock(&cmm_mgr_obj->cmm_lock);
- 	return status;
- }
-@@ -977,7 +962,7 @@ int cmm_xlator_create(struct cmm_xlatorobject **xlator,
- 	} else {
- 		status = -ENOMEM;
- 	}
--	if (DSP_SUCCEEDED(status))
-+	if (!status)
- 		*xlator = (struct cmm_xlatorobject *)xlator_object;
- 
- 	return status;
-diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
-index 81102d2..9f902de 100644
---- a/drivers/staging/tidspbridge/pmgr/cod.c
-+++ b/drivers/staging/tidspbridge/pmgr/cod.c
-@@ -411,7 +411,7 @@ int cod_get_section(struct cod_libraryobj *lib, char *str_sect,
- 		status = -ESPIPE;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((*addr == 0) && (*len == 0)));
-+	DBC_ENSURE(!status || ((*addr == 0) && (*len == 0)));
- 
- 	return status;
- }
-@@ -532,7 +532,7 @@ int cod_load_base(struct cod_manager *cod_mgr_obj, u32 num_argc, char *args[],
- 	if (DSP_FAILED(status))
- 		cod_mgr_obj->fxns.close_fxn(cod_mgr_obj->base_lib);
- 
--	if (DSP_SUCCEEDED(status))
-+	if (!status)
- 		cod_mgr_obj->loaded = true;
- 	else
- 		cod_mgr_obj->base_lib = NULL;
-@@ -562,11 +562,11 @@ int cod_open(struct cod_manager *hmgr, char *sz_coff_path,
- 	if (lib == NULL)
- 		status = -ENOMEM;
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		lib->cod_mgr = hmgr;
- 		status = hmgr->fxns.open_fxn(hmgr->target, sz_coff_path, flags,
- 					     &lib->dbll_lib);
--		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			*lib_obj = lib;
- 	}
- 
-@@ -601,7 +601,7 @@ int cod_open_base(struct cod_manager *hmgr, char *sz_coff_path,
- 		hmgr->base_lib = NULL;
- 	}
- 	status = hmgr->fxns.open_fxn(hmgr->target, sz_coff_path, flags, &lib);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		/* hang onto the library for subsequent sym table usage */
- 		hmgr->base_lib = lib;
- 		strncpy(hmgr->sz_zl_file, sz_coff_path, COD_MAXPATHLENGTH - 1);
-diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
-index d1806aa..ea27824 100644
---- a/drivers/staging/tidspbridge/pmgr/dbll.c
-+++ b/drivers/staging/tidspbridge/pmgr/dbll.c
-@@ -255,7 +255,7 @@ int dbll_create(struct dbll_tar_obj **target_obj,
- 			pzl_target->attrs = *pattrs;
- 			*target_obj = (struct dbll_tar_obj *)pzl_target;
- 		}
--		DBC_ENSURE((DSP_SUCCEEDED(status) && *target_obj) ||
-+		DBC_ENSURE((!status && *target_obj) ||
- 				(DSP_FAILED(status) && *target_obj == NULL));
- 	}
- 
-@@ -393,7 +393,7 @@ int dbll_get_sect(struct dbll_library_obj *lib, char *name, u32 *paddr,
- 	if (zl_lib != NULL) {
- 		if (zl_lib->fp == NULL) {
- 			status = dof_open(zl_lib);
--			if (DSP_SUCCEEDED(status))
-+			if (!status)
- 				opened_doff = true;
- 
- 		} else {
-@@ -404,7 +404,7 @@ int dbll_get_sect(struct dbll_library_obj *lib, char *name, u32 *paddr,
- 	} else {
- 		status = -EFAULT;
  	}
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		byte_size = 1;
- 		if (dload_get_section_info(zl_lib->desc, name, &sect)) {
- 			*paddr = sect->load_addr;
-@@ -517,11 +517,11 @@ int dbll_load(struct dbll_library_obj *lib, dbll_flags flags,
- 		/* If COFF file is not open, we open it. */
- 		if (zl_lib->fp == NULL) {
- 			status = dof_open(zl_lib);
--			if (DSP_SUCCEEDED(status))
-+			if (!status)
- 				opened_doff = true;
- 
- 		}
--		if (DSP_SUCCEEDED(status)) {
-+		if (!status) {
- 			zl_lib->ul_pos = (*(zl_lib->target_obj->attrs.ftell))
- 			    (zl_lib->fp);
- 			/* Reset file cursor */
-@@ -552,7 +552,7 @@ int dbll_load(struct dbll_library_obj *lib, dbll_flags flags,
- 			}
- 		}
- 	}
--	if (DSP_SUCCEEDED(status))
-+	if (!status)
- 		zl_lib->load_ref++;
- 
- 	/* Clean up DOFF resources */
-@@ -658,7 +658,7 @@ int dbll_open(struct dbll_tar_obj *target, char *file, dbll_flags flags,
- 	zl_lib->init.dl_init.execute = execute;
- 	zl_lib->init.dl_init.release = release;
- 	zl_lib->init.lib = zl_lib;
--	if (DSP_SUCCEEDED(status) && zl_lib->fp == NULL)
-+	if (!status && zl_lib->fp == NULL)
- 		status = dof_open(zl_lib);
- 
- 	zl_lib->ul_pos = (*(zl_lib->target_obj->attrs.ftell)) (zl_lib->fp);
-@@ -695,7 +695,7 @@ int dbll_open(struct dbll_tar_obj *target, char *file, dbll_flags flags,
- 		}
+ 		/* Enqueue the chirp on the chnl's IORequest queue: */
+ 		chnl_packet_obj->host_user_buf = chnl_packet_obj->host_sys_buf =
+ 		    host_buf;
+@@ -330,7 +330,7 @@ int bridge_chnl_close(struct chnl_object *chnl_obj)
+ 		status = bridge_chnl_cancel_io(chnl_obj);
  	}
  func_cont:
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		if (zl_lib->open_ref == 1) {
- 			/* First time opened - insert in list */
- 			if (zl_target->head)
-@@ -712,7 +712,7 @@ func_cont:
- 			dbll_close((struct dbll_library_obj *)zl_lib);
- 
- 	}
--	DBC_ENSURE((DSP_SUCCEEDED(status) && (zl_lib->open_ref > 0) && *lib_obj)
-+	DBC_ENSURE((!status && (zl_lib->open_ref > 0) && *lib_obj)
- 				|| (DSP_FAILED(status) && *lib_obj == NULL));
- 
- 	dev_dbg(bridge, "%s: target: %p file: %s lib_obj: %p, status 0x%x\n",
-@@ -745,7 +745,7 @@ int dbll_read_sect(struct dbll_library_obj *lib, char *name,
- 	if (zl_lib != NULL) {
- 		if (zl_lib->fp == NULL) {
- 			status = dof_open(zl_lib);
+ 		/* Assert I/O on this channel is now cancelled: Protects
+ 		 * from io_dpc. */
+ 		DBC_ASSERT((pchnl->dw_state & CHNL_STATECANCEL));
+@@ -420,8 +420,7 @@ int bridge_chnl_create(struct chnl_mgr **channel_mgr,
+ 			chnl_mgr_obj->dw_output_mask = 0;
+ 			chnl_mgr_obj->dw_last_output = 0;
+ 			chnl_mgr_obj->hdev_obj = hdev_obj;
 -			if (DSP_SUCCEEDED(status))
-+			if (!status)
- 				opened_doff = true;
- 
+-				spin_lock_init(&chnl_mgr_obj->chnl_mgr_lock);
++			spin_lock_init(&chnl_mgr_obj->chnl_mgr_lock);
  		} else {
-diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
-index 2039e6f..8f1e56a 100644
---- a/drivers/staging/tidspbridge/pmgr/dev.c
-+++ b/drivers/staging/tidspbridge/pmgr/dev.c
-@@ -118,7 +118,7 @@ u32 dev_brd_write_fxn(void *arb, u32 dsp_add, void *host_buf,
- 		/* Special case of getting the address only */
- 		if (ul_num_bytes == 0)
- 			ul_num_bytes = 1;
--		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			ul_written = ul_num_bytes;
- 
- 	}
-@@ -164,7 +164,7 @@ int dev_create_device(struct dev_object **device_obj,
- 	}
- 	/* Create the device object, and pass a handle to the Bridge driver for
- 	 * storage. */
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		DBC_ASSERT(drv_fxns);
- 		dev_obj = kzalloc(sizeof(struct dev_object), GFP_KERNEL);
- 		if (dev_obj) {
-@@ -196,11 +196,11 @@ int dev_create_device(struct dev_object **device_obj,
- 		}
- 	}
- 	/* Attempt to create the COD manager for this device: */
--	if (DSP_SUCCEEDED(status))
-+	if (!status)
- 		status = init_cod_mgr(dev_obj);
- 
- 	/* Attempt to create the channel manager for this device: */
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		mgr_attrs.max_channels = CHNL_MAXCHANNELS;
- 		io_mgr_attrs.birq = host_res->birq_registers;
- 		io_mgr_attrs.irq_shared =
-@@ -231,12 +231,12 @@ int dev_create_device(struct dev_object **device_obj,
- 		status = cmm_create(&dev_obj->hcmm_mgr,
- 				    (struct dev_object *)dev_obj, NULL);
- 		/* Only create IO manager if we have a channel manager */
--		if (DSP_SUCCEEDED(status) && dev_obj->hchnl_mgr) {
-+		if (!status && dev_obj->hchnl_mgr) {
- 			status = io_create(&dev_obj->hio_mgr, dev_obj,
- 					   &io_mgr_attrs);
- 		}
- 		/* Only create DEH manager if we have an IO manager */
--		if (DSP_SUCCEEDED(status)) {
-+		if (!status) {
- 			/* Instantiate the DEH module */
- 			status = bridge_deh_create(&dev_obj->hdeh_mgr, dev_obj);
- 		}
-@@ -245,12 +245,12 @@ int dev_create_device(struct dev_object **device_obj,
- 				    (struct dev_object *)dev_obj, NULL);
- 	}
- 	/* Add the new DEV_Object to the global list: */
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		lst_init_elem(&dev_obj->link);
- 		status = drv_insert_dev_object(hdrv_obj, dev_obj);
- 	}
- 	/* Create the Processor List */
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		dev_obj->proc_list = kzalloc(sizeof(struct lst_list),
- 							GFP_KERNEL);
- 		if (!(dev_obj->proc_list))
-@@ -260,8 +260,8 @@ int dev_create_device(struct dev_object **device_obj,
- 	}
- leave:
- 	/*  If all went well, return a handle to the dev object;
--	 *  else, cleanup and return NULL in the parameter. */
--	if (DSP_SUCCEEDED(status)) {
-+	 *  else, cleanup and return NULL in the OUT parameter. */
-+	if (!status) {
- 		*device_obj = dev_obj;
- 	} else {
- 		if (dev_obj) {
-@@ -276,7 +276,7 @@ leave:
- 		*device_obj = NULL;
- 	}
- 
--	DBC_ENSURE((DSP_SUCCEEDED(status) && *device_obj) ||
-+	DBC_ENSURE((!status && *device_obj) ||
- 		   (DSP_FAILED(status) && !*device_obj));
- 	return status;
- }
-@@ -302,7 +302,7 @@ int dev_create2(struct dev_object *hdev_obj)
- 	if (DSP_FAILED(status))
- 		dev_obj->hnode_mgr = NULL;
- 
--	DBC_ENSURE((DSP_SUCCEEDED(status) && dev_obj->hnode_mgr != NULL)
-+	DBC_ENSURE((!status && dev_obj->hnode_mgr != NULL)
- 		   || (DSP_FAILED(status) && dev_obj->hnode_mgr == NULL));
- 	return status;
- }
-@@ -328,7 +328,7 @@ int dev_destroy2(struct dev_object *hdev_obj)
- 
- 	}
- 
--	DBC_ENSURE((DSP_SUCCEEDED(status) && dev_obj->hnode_mgr == NULL) ||
-+	DBC_ENSURE((!status && dev_obj->hnode_mgr == NULL) ||
- 		   DSP_FAILED(status));
- 	return status;
- }
-@@ -394,7 +394,7 @@ int dev_destroy_device(struct dev_object *hdev_obj)
- 			dev_obj->hbridge_context = NULL;
- 		} else
- 			status = -EPERM;
--		if (DSP_SUCCEEDED(status)) {
-+		if (!status) {
- 			kfree(dev_obj->proc_list);
- 			dev_obj->proc_list = NULL;
- 
-@@ -435,8 +435,7 @@ int dev_get_chnl_mgr(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((mgr != NULL) &&
--					     (*mgr == NULL)));
-+	DBC_ENSURE(!status || (mgr != NULL && *mgr == NULL));
- 	return status;
- }
- 
-@@ -462,8 +461,7 @@ int dev_get_cmm_mgr(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((mgr != NULL) &&
--					     (*mgr == NULL)));
-+	DBC_ENSURE(!status || (mgr != NULL && *mgr == NULL));
- 	return status;
- }
- 
-@@ -489,8 +487,7 @@ int dev_get_dmm_mgr(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((mgr != NULL) &&
--					     (*mgr == NULL)));
-+	DBC_ENSURE(!status || (mgr != NULL && *mgr == NULL));
- 	return status;
- }
- 
-@@ -515,8 +512,7 @@ int dev_get_cod_mgr(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((cod_mgr != NULL) &&
--					     (*cod_mgr == NULL)));
-+	DBC_ENSURE(!status || (cod_mgr != NULL && *cod_mgr == NULL));
- 	return status;
- }
- 
-@@ -561,8 +557,7 @@ int dev_get_dev_node(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((dev_nde != NULL) &&
--					     (*dev_nde == NULL)));
-+	DBC_ENSURE(!status || (dev_nde != NULL && *dev_nde == NULL));
- 	return status;
- }
- 
-@@ -603,8 +598,7 @@ int dev_get_intf_fxns(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((if_fxns != NULL) &&
--					     (*if_fxns == NULL)));
-+	DBC_ENSURE(!status || ((if_fxns != NULL) && (*if_fxns == NULL)));
- 	return status;
- }
- 
-@@ -682,8 +676,7 @@ int dev_get_node_manager(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((node_man != NULL) &&
--					     (*node_man == NULL)));
-+	DBC_ENSURE(!status || (node_man != NULL && *node_man == NULL));
- 	return status;
- }
- 
-@@ -733,7 +726,7 @@ int dev_get_bridge_context(struct dev_object *hdev_obj,
- 		status = -EFAULT;
- 	}
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((phbridge_context != NULL) &&
-+	DBC_ENSURE(!status || ((phbridge_context != NULL) &&
- 					     (*phbridge_context == NULL)));
- 	return status;
- }
-@@ -826,7 +819,7 @@ int dev_remove_device(struct cfg_devnode *dev_node_obj)
- 	/* Retrieve the device object handle originaly stored with
- 	 * the dev_node: */
- 	status = cfg_get_dev_object(dev_node_obj, (u32 *) &hdev_obj);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		/* Remove the Processor List */
- 		dev_obj = (struct dev_object *)hdev_obj;
- 		/* Destroy the device object. */
-@@ -889,7 +882,7 @@ int dev_start_device(struct cfg_devnode *dev_node_obj)
- 	/* Given all resources, create a device object. */
- 	status = dev_create_device(&hdev_obj, bridge_file_name,
- 				   dev_node_obj);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		/* Store away the hdev_obj with the DEVNODE */
- 		status = cfg_set_dev_object(dev_node_obj, (u32) hdev_obj);
- 		if (DSP_FAILED(status)) {
-@@ -898,7 +891,7 @@ int dev_start_device(struct cfg_devnode *dev_node_obj)
- 			hdev_obj = NULL;
- 		}
- 	}
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		/* Create the Manager Object */
- 		status = mgr_create(&hmgr_obj, dev_node_obj);
- 	}
-@@ -990,7 +983,7 @@ int dev_insert_proc_object(struct dev_object *hdev_obj,
- 	/* Add DevObject to tail. */
- 	lst_put_tail(dev_obj->proc_list, (struct list_head *)proc_obj);
- 
--	DBC_ENSURE(DSP_SUCCEEDED(status) && !LST_IS_EMPTY(dev_obj->proc_list));
-+	DBC_ENSURE(!status && !LST_IS_EMPTY(dev_obj->proc_list));
- 
- 	return status;
- }
-diff --git a/drivers/staging/tidspbridge/pmgr/dmm.c b/drivers/staging/tidspbridge/pmgr/dmm.c
-index e53700f..ef28748 100644
---- a/drivers/staging/tidspbridge/pmgr/dmm.c
-+++ b/drivers/staging/tidspbridge/pmgr/dmm.c
-@@ -88,7 +88,7 @@ int dmm_create_tables(struct dmm_object *dmm_mgr, u32 addr, u32 size)
- 	int status = 0;
- 
- 	status = dmm_delete_tables(dmm_obj);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		dyn_mem_map_beg = addr;
- 		table_size = PG_ALIGN_HIGH(size, PG_SIZE4K) / PG_SIZE4K;
- 		/*  Create the free list */
-@@ -152,7 +152,7 @@ int dmm_destroy(struct dmm_object *dmm_mgr)
- 	DBC_REQUIRE(refs > 0);
- 	if (dmm_mgr) {
- 		status = dmm_delete_tables(dmm_obj);
--		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			kfree(dmm_obj);
- 	} else
- 		status = -EFAULT;
-@@ -209,7 +209,7 @@ int dmm_get_handle(void *hprocessor, struct dmm_object **dmm_manager)
- 	else
- 		hdev_obj = dev_get_first();	/* default */
- 
--	if (DSP_SUCCEEDED(status))
-+	if (!status)
- 		status = dev_get_dmm_mgr(hdev_obj, dmm_manager);
- 
- 	return status;
-@@ -337,7 +337,7 @@ int dmm_un_map_memory(struct dmm_object *dmm_mgr, u32 addr, u32 *psize)
- 	if (chunk == NULL)
- 		status = -ENOENT;
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		/* Unmap the region */
- 		*psize = chunk->mapped_size * PG_SIZE4K;
- 		chunk->mapped = false;
-@@ -371,7 +371,7 @@ int dmm_un_reserve_memory(struct dmm_object *dmm_mgr, u32 rsv_addr)
- 	if (chunk == NULL)
- 		status = -ENOENT;
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		/* Free all the mapped pages for this reserved region */
- 		i = 0;
- 		while (i < chunk->region_size) {
-diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
-index 78192a3..60d7410 100644
---- a/drivers/staging/tidspbridge/pmgr/dspapi.c
-+++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
-@@ -425,7 +425,7 @@ u32 mgrwrap_enum_node_info(union trapped_args *args, void *pr_ctxt)
- 	if (pndb_props == NULL)
- 		status = -ENOMEM;
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status =
- 		    mgr_enum_node_info(args->args_mgr_enumnode_info.node_id,
- 				       (struct dsp_ndbprops *)pndb_props, size,
-@@ -457,7 +457,7 @@ u32 mgrwrap_enum_proc_info(union trapped_args *args, void *pr_ctxt)
- 	if (processor_info == NULL)
- 		status = -ENOMEM;
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status =
- 		    mgr_enum_processor_info(args->args_mgr_enumproc_info.
- 					    processor_id,
-@@ -554,12 +554,12 @@ u32 mgrwrap_wait_for_bridge_events(union trapped_args *args, void *pr_ctxt)
- 	/* get the events */
- 	for (i = 0; i < count; i++) {
- 		CP_FM_USR(&notifications[i], anotifications[i], status, 1);
--		if (DSP_SUCCEEDED(status)) {
-+		if (!status) {
- 			/* set the array of pointers to kernel structures */
- 			anotifications[i] = &notifications[i];
- 		}
- 	}
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		real_status = mgr_wait_for_bridge_events(anotifications, count,
- 							 &index,
- 							 args->args_mgr_wait.
-@@ -592,7 +592,7 @@ u32 procwrap_attach(union trapped_args *args, void *pr_ctxt)
- 	if (args->args_proc_attach.attr_in) {
- 		CP_FM_USR(&proc_attr_in, args->args_proc_attach.attr_in, status,
- 			  1);
--		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			attr_in = &proc_attr_in;
- 		else
- 			goto func_end;
-@@ -630,7 +630,7 @@ u32 procwrap_ctrl(union trapped_args *args, void *pr_ctxt)
- 		CP_FM_USR(pargs, args->args_proc_ctrl.pargs, status,
- 			  cb_data_size);
- 	}
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status = proc_ctrl(args->args_proc_ctrl.hprocessor,
- 				   args->args_proc_ctrl.dw_cmd,
- 				   (struct dsp_cbdata *)pargs);
-@@ -902,7 +902,7 @@ u32 procwrap_load(union trapped_args *args, void *pr_ctxt)
- 		}
- 	}
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status = proc_load(args->args_proc_load.hprocessor,
- 				   args->args_proc_load.argc_index,
- 				   (const char **)argv, (const char **)envp);
-@@ -943,7 +943,7 @@ u32 procwrap_map(union trapped_args *args, void *pr_ctxt)
- 			  args->args_proc_mapmem.ul_size,
- 			  args->args_proc_mapmem.req_addr, &map_addr,
- 			  args->args_proc_mapmem.ul_map_attr, pr_ctxt);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		if (put_user(map_addr, args->args_proc_mapmem.pp_map_addr)) {
- 			status = -EINVAL;
- 			proc_un_map(args->args_proc_mapmem.hprocessor,
-@@ -991,7 +991,7 @@ u32 procwrap_reserve_memory(union trapped_args *args, void *pr_ctxt)
- 	status = proc_reserve_memory(args->args_proc_rsvmem.hprocessor,
- 				     args->args_proc_rsvmem.ul_size, &prsv_addr,
- 				     pr_ctxt);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		if (put_user(prsv_addr, args->args_proc_rsvmem.pp_rsv_addr)) {
- 			status = -EINVAL;
- 			proc_un_reserve_memory(args->args_proc_rsvmem.
-@@ -1068,7 +1068,7 @@ u32 nodewrap_allocate(union trapped_args *args, void *pr_ctxt)
- 			status = -EPERM;
- 
- 		cb_data_size += sizeof(u32);
--		if (DSP_SUCCEEDED(status)) {
-+		if (!status) {
- 			pargs = kmalloc(cb_data_size, GFP_KERNEL);
- 			if (pargs == NULL)
- 				status = -ENOMEM;
-@@ -1084,18 +1084,18 @@ u32 nodewrap_allocate(union trapped_args *args, void *pr_ctxt)
- 	if (args->args_node_allocate.attr_in) {
- 		CP_FM_USR(&proc_attr_in, args->args_node_allocate.attr_in,
- 			  status, 1);
--		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			attr_in = &proc_attr_in;
- 		else
  			status = -ENOMEM;
- 
+ 		}
+@@ -499,7 +498,7 @@ int bridge_chnl_flush_io(struct chnl_object *chnl_obj, u32 timeout)
+ 	} else {
+ 		status = -EFAULT;
  	}
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		status = node_allocate(args->args_node_allocate.hprocessor,
- 				       &node_uuid, (struct dsp_cbdata *)pargs,
- 				       attr_in, &hnode, pr_ctxt);
- 	}
+ 		/* Note: Currently, if another thread continues to add IO
+ 		 * requests to this channel, this function will continue to
+ 		 * flush all such queued IO requests. */
+@@ -507,8 +506,7 @@ int bridge_chnl_flush_io(struct chnl_object *chnl_obj, u32 timeout)
+ 		    && (pchnl->chnl_type == CHNL_PCPY)) {
+ 			/* Wait for IO completions, up to the specified
+ 			 * timeout: */
+-			while (!LST_IS_EMPTY(pchnl->pio_requests) &&
+-			       DSP_SUCCEEDED(status)) {
++			while (!LST_IS_EMPTY(pchnl->pio_requests) && !status) {
+ 				status = bridge_chnl_get_ioc(chnl_obj,
+ 						timeout, &chnl_ioc_obj);
+ 				if (DSP_FAILED(status))
+@@ -833,7 +831,7 @@ int bridge_chnl_open(struct chnl_object **chnl,
+ 	else
+ 		status = -ENOMEM;
+ 
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		CP_TO_USR(args->args_node_allocate.ph_node, &hnode, status, 1);
- 		if (DSP_FAILED(status)) {
- 			status = -EFAULT;
-@@ -1123,13 +1123,13 @@ u32 nodewrap_alloc_msg_buf(union trapped_args *args, void *pr_ctxt)
+ 		pchnl->ntfy_obj = kmalloc(sizeof(struct ntfy_object),
+ 							GFP_KERNEL);
+ 		if (pchnl->ntfy_obj)
+@@ -842,7 +840,7 @@ int bridge_chnl_open(struct chnl_object **chnl,
+ 			status = -ENOMEM;
+ 	}
  
- 	if (args->args_node_allocmsgbuf.pattr) {	/* Optional argument */
- 		CP_FM_USR(&attr, args->args_node_allocmsgbuf.pattr, status, 1);
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		if (pchnl->pio_completions && pchnl->pio_requests &&
+ 		    pchnl->free_packets_list) {
+ 			/* Initialize CHNL object fields: */
+@@ -897,7 +895,7 @@ int bridge_chnl_open(struct chnl_object **chnl,
+ 		*chnl = pchnl;
+ 	}
+ func_end:
+-	DBC_ENSURE((DSP_SUCCEEDED(status) && pchnl) || (*chnl == NULL));
++	DBC_ENSURE((!status && pchnl) || (*chnl == NULL));
+ 	return status;
+ }
+ 
+diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
+index b474e83..5b1a0c5 100644
+--- a/drivers/staging/tidspbridge/core/dsp-clock.c
++++ b/drivers/staging/tidspbridge/core/dsp-clock.c
+@@ -285,7 +285,7 @@ int dsp_clk_enable(enum dsp_clk_id clk_id)
+ 		status = -EPERM;
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status))
++	if (!status)
+ 		set_dsp_clk_active(&dsp_clocks, clk_id);
+ 
+ out:
+@@ -354,7 +354,7 @@ int dsp_clk_disable(enum dsp_clk_id clk_id)
+ 		status = -EPERM;
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status))
++	if (!status)
+ 		set_dsp_clk_inactive(&dsp_clocks, clk_id);
+ 
+ out:
+diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
+index e5e3684..1d433a9 100644
+--- a/drivers/staging/tidspbridge/core/io_sm.c
++++ b/drivers/staging/tidspbridge/core/io_sm.c
+@@ -230,11 +230,10 @@ int bridge_io_create(struct io_mgr **io_man,
+ 
+ 		spin_lock_init(&pio_mgr->dpc_lock);
+ 
 -		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			pattr = &attr;
- 
+-			status = dev_get_dev_node(hdev_obj, &dev_node_obj);
++		status = dev_get_dev_node(hdev_obj, &dev_node_obj);
  	}
- 	/* argument */
- 	CP_FM_USR(&pbuffer, args->args_node_allocmsgbuf.pbuffer, status, 1);
+ 
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		status = node_alloc_msg_buf(args->args_node_allocmsgbuf.hnode,
- 					    args->args_node_allocmsgbuf.usize,
- 					    pattr, &pbuffer);
-@@ -1169,7 +1169,7 @@ u32 nodewrap_connect(union trapped_args *args, void *pr_ctxt)
- 			status = -EPERM;
+ 		pio_mgr->hbridge_context = hbridge_context;
+ 		pio_mgr->shared_irq = mgr_attrts->irq_shared;
+ 		if (dsp_wdt_init())
+@@ -378,15 +377,13 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
+ 	dev_dbg(bridge, "%s: (proc)proccopy shmmem size: 0x%x bytes\n",
+ 		__func__, (ul_shm_length - sizeof(struct shm)));
  
- 		cb_data_size += sizeof(u32);
+-	if (DSP_SUCCEEDED(status)) {
+-		/* Get start and length of message part of shared memory */
+-		status = cod_get_sym_value(cod_man, MSG_SHARED_BUFFER_BASE_SYM,
++	/* Get start and length of message part of shared memory */
++	status = cod_get_sym_value(cod_man, MSG_SHARED_BUFFER_BASE_SYM,
+ 					   &ul_msg_base);
+-	}
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		status = cod_get_sym_value(cod_man, MSG_SHARED_BUFFER_LIMIT_SYM,
+ 					   &ul_msg_limit);
 -		if (DSP_SUCCEEDED(status)) {
 +		if (!status) {
- 			pargs = kmalloc(cb_data_size, GFP_KERNEL);
- 			if (pargs == NULL) {
- 				status = -ENOMEM;
-@@ -1184,11 +1184,11 @@ u32 nodewrap_connect(union trapped_args *args, void *pr_ctxt)
- 	}
- 	if (args->args_node_connect.pattrs) {	/* Optional argument */
- 		CP_FM_USR(&attrs, args->args_node_connect.pattrs, status, 1);
--		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			pattrs = &attrs;
- 
+ 			if (ul_msg_limit <= ul_msg_base) {
+ 				status = -EINVAL;
+ 			} else {
+@@ -409,7 +406,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
+ 	} else {
+ 		status = -EFAULT;
  	}
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		status = node_connect(args->args_node_connect.hnode,
- 				      args->args_node_connect.stream_id,
- 				      args->args_node_connect.other_node,
-@@ -1235,7 +1235,7 @@ u32 nodewrap_free_msg_buf(union trapped_args *args, void *pr_ctxt)
- 	struct dsp_bufferattr attr;
- 	if (args->args_node_freemsgbuf.pattr) {	/* Optional argument */
- 		CP_FM_USR(&attr, args->args_node_freemsgbuf.pattr, status, 1);
--		if (DSP_SUCCEEDED(status))
-+		if (!status)
- 			pattr = &attr;
- 
+ #if defined(CONFIG_TIDSPBRIDGE_BACKTRACE) || defined(CONFIG_TIDSPBRIDGE_DEBUG)
+ 		status =
+ 		    cod_get_sym_value(cod_man, DSP_TRACESEC_END, &shm0_end);
+@@ -420,18 +417,18 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
+ 		if (DSP_FAILED(status))
+ 			status = -EFAULT;
  	}
-@@ -1243,7 +1243,7 @@ u32 nodewrap_free_msg_buf(union trapped_args *args, void *pr_ctxt)
- 	if (!args->args_node_freemsgbuf.pbuffer)
- 		return -EFAULT;
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status = node_free_msg_buf(args->args_node_freemsgbuf.hnode,
- 					   args->args_node_freemsgbuf.pbuffer,
- 					   pattr);
-@@ -1305,7 +1305,7 @@ u32 nodewrap_put_message(union trapped_args *args, void *pr_ctxt)
- 
- 	CP_FM_USR(&msg, args->args_node_putmessage.message, status, 1);
- 
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
  		status =
- 		    node_put_message(args->args_node_putmessage.hnode, &msg,
- 				     args->args_node_putmessage.utimeout);
-@@ -1413,7 +1413,7 @@ u32 strmwrap_allocate_buffer(union trapped_args *args, void *pr_ctxt)
- 	status = strm_allocate_buffer(args->args_strm_allocatebuffer.hstream,
- 				      args->args_strm_allocatebuffer.usize,
- 				      ap_buffer, num_bufs, pr_ctxt);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		CP_TO_USR(args->args_strm_allocatebuffer.ap_buffer, ap_buffer,
- 			  status, num_bufs);
- 		if (DSP_FAILED(status)) {
-@@ -1454,7 +1454,7 @@ u32 strmwrap_free_buffer(union trapped_args *args, void *pr_ctxt)
- 	CP_FM_USR(ap_buffer, args->args_strm_freebuffer.ap_buffer, status,
- 		  num_bufs);
- 
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status = strm_free_buffer(args->args_strm_freebuffer.hstream,
- 					  ap_buffer, num_bufs, pr_ctxt);
+ 		    cod_get_sym_value(cod_man, DYNEXTBASE, &ul_dyn_ext_base);
+ 		if (DSP_FAILED(status))
+ 			status = -EFAULT;
  	}
-@@ -1490,7 +1490,7 @@ u32 strmwrap_get_info(union trapped_args *args, void *pr_ctxt)
- 
- 	strm_info.user_strm = &user;
- 
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		status = strm_get_info(args->args_strm_getinfo.hstream,
- 				       &strm_info,
- 				       args->args_strm_getinfo.
-@@ -1551,7 +1551,7 @@ u32 strmwrap_open(union trapped_args *args, void *pr_ctxt)
- 
- 	if (attr.stream_attr_in != NULL) {	/* Optional argument */
- 		CP_FM_USR(&strm_attr_in, attr.stream_attr_in, status, 1);
+ 		status = cod_get_sym_value(cod_man, EXTEND, &ul_ext_end);
+ 		if (DSP_FAILED(status))
+ 			status = -EFAULT;
+ 	}
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		/* Get memory reserved in host resources */
+ 		(void)mgr_enum_processor_info(0, (struct dsp_processorinfo *)
+ 					      &hio_mgr->ext_proc_info,
+@@ -1551,7 +1548,7 @@ static int register_shm_segs(struct io_mgr *hio_mgr,
+ 		goto func_end;
+ 	}
+ 	/* Get end of 1st SM Heap region */
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		/* Get start and length of message part of shared memory */
+ 		status = cod_get_sym_value(cod_man, SHM0_SHARED_END_SYM,
+ 					   &shm0_end);
+@@ -1561,7 +1558,7 @@ static int register_shm_segs(struct io_mgr *hio_mgr,
+ 		}
+ 	}
+ 	/* Start of Gpp reserved region */
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		/* Get start and length of message part of shared memory */
+ 		status =
+ 		    cod_get_sym_value(cod_man, SHM0_SHARED_RESERVED_BASE_SYM,
+@@ -1572,15 +1569,15 @@ static int register_shm_segs(struct io_mgr *hio_mgr,
+ 		}
+ 	}
+ 	/* Register with CMM */
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		status = dev_get_cmm_mgr(hio_mgr->hdev_obj, &hio_mgr->hcmm_mgr);
 -		if (DSP_SUCCEEDED(status)) {
 +		if (!status) {
- 			attr.stream_attr_in = &strm_attr_in;
- 			if (attr.stream_attr_in->strm_mode == STRMMODE_LDMA)
- 				return -ENOSYS;
-@@ -1627,7 +1627,7 @@ u32 strmwrap_select(union trapped_args *args, void *pr_ctxt)
- 
- 	CP_FM_USR(strm_tab, args->args_strm_select.stream_tab, status,
- 		  args->args_strm_select.strm_num);
--	if (DSP_SUCCEEDED(status)) {
-+	if (!status) {
- 		status = strm_select(strm_tab, args->args_strm_select.strm_num,
- 				     &mask, args->args_strm_select.utimeout);
+ 			status = cmm_un_register_gppsm_seg(hio_mgr->hcmm_mgr,
+ 							   CMM_ALLSEGMENTS);
+ 		}
  	}
-diff --git a/drivers/staging/tidspbridge/pmgr/io.c b/drivers/staging/tidspbridge/pmgr/io.c
-index 2c26f06..7970fe5 100644
---- a/drivers/staging/tidspbridge/pmgr/io.c
-+++ b/drivers/staging/tidspbridge/pmgr/io.c
-@@ -67,14 +67,14 @@ int io_create(struct io_mgr **io_man, struct dev_object *hdev_obj,
- 	if (mgr_attrts->word_size == 0)
- 		status = -EINVAL;
+ 	/* Register new SM region(s) */
+-	if (DSP_SUCCEEDED(status) && (shm0_end - ul_shm0_base) > 0) {
++	if (!status && (shm0_end - ul_shm0_base) > 0) {
+ 		/* Calc size (bytes) of SM the GPP can alloc from */
+ 		ul_rsrvd_size =
+ 		    (shm0_end - ul_shm0_rsrvd_start + 1) * hio_mgr->word_size;
+@@ -1843,11 +1840,11 @@ int print_dsp_trace_buffer(struct bridge_dev_context *hbridge_context)
+ 	} else {
+ 		status = -EFAULT;
+ 	}
+-	if (DSP_SUCCEEDED(status))
++	if (!status)
+ 		status =
+ 		    cod_get_sym_value(cod_mgr, COD_TRACEEND, &ul_trace_end);
+ 
+-	if (DSP_SUCCEEDED(status))
++	if (!status)
+ 		/* trace_cur_pos will hold the address of a DSP pointer */
+ 		status = cod_get_sym_value(cod_mgr, COD_TRACECURPOS,
+ 							&trace_cur_pos);
+@@ -2013,7 +2010,7 @@ int dump_dsp_stack(struct bridge_dev_context *bridge_context)
+ 		status = -EFAULT;
+ 	}
  
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		dev_get_intf_fxns(hdev_obj, &intf_fxns);
+ 		status = dev_get_node_manager(dev_object, &node_mgr);
+ 		if (!node_mgr) {
+ 			pr_debug("%s: Failed on dev_get_node_manager.\n",
+@@ -2022,7 +2019,7 @@ int dump_dsp_stack(struct bridge_dev_context *bridge_context)
+ 		}
+ 	}
  
- 		/* Let Bridge channel module finish the create: */
- 		status = (*intf_fxns->pfn_io_create) (&hio_mgr, hdev_obj,
- 						      mgr_attrts);
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		/* Look for SYS_PUTCBEG/SYS_PUTCEND: */
+ 		status =
+ 			cod_get_sym_value(code_mgr, COD_TRACEBEG, &trace_begin);
+@@ -2032,7 +2029,7 @@ int dump_dsp_stack(struct bridge_dev_context *bridge_context)
+ 			pr_debug("%s: Failed on cod_get_sym_value.\n",
+ 								__func__);
+ 	}
+-	if (DSP_SUCCEEDED(status))
++	if (!status)
+ 		status = dev_get_intf_fxns(dev_object, &intf_fxns);
+ 	/*
+ 	 * Check for the "magic number" in the trace buffer.  If it has
+@@ -2041,7 +2038,7 @@ int dump_dsp_stack(struct bridge_dev_context *bridge_context)
+ 	 */
+ 	mmu_fault_dbg_info.head[0] = 0;
+ 	mmu_fault_dbg_info.head[1] = 0;
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		poll_cnt = 0;
+ 		while ((mmu_fault_dbg_info.head[0] != MMU_FAULT_HEAD1 ||
+ 			mmu_fault_dbg_info.head[1] != MMU_FAULT_HEAD2) &&
+@@ -2066,7 +2063,7 @@ int dump_dsp_stack(struct bridge_dev_context *bridge_context)
+ 		}
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		total_size = mmu_fault_dbg_info.size;
+ 		/* Limit the size in case DSP went crazy */
+ 		if (total_size > MAX_MMU_DBGBUFF)
+diff --git a/drivers/staging/tidspbridge/core/msg_sm.c b/drivers/staging/tidspbridge/core/msg_sm.c
+index 7f44294..85ca448 100644
+--- a/drivers/staging/tidspbridge/core/msg_sm.c
++++ b/drivers/staging/tidspbridge/core/msg_sm.c
+@@ -102,7 +102,7 @@ int bridge_msg_create(struct msg_mgr **msg_man,
+ 		else
+ 			sync_init_event(msg_mgr_obj->sync_event);
+ 
+-		if (DSP_SUCCEEDED(status))
++		if (!status)
+ 			*msg_man = msg_mgr_obj;
+ 		else
+ 			delete_msg_mgr(msg_mgr_obj);
+@@ -157,7 +157,7 @@ int bridge_msg_create_queue(struct msg_mgr *hmsg_mgr,
+ 
+ 	/*  Create event that will be signalled when a message from
+ 	 *  the DSP is available. */
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		msg_q->sync_event = kzalloc(sizeof(struct sync_object),
+ 							GFP_KERNEL);
+ 		if (msg_q->sync_event)
+@@ -167,7 +167,7 @@ int bridge_msg_create_queue(struct msg_mgr *hmsg_mgr,
+ 	}
+ 
+ 	/* Create a notification list for message ready notification. */
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		msg_q->ntfy_obj = kmalloc(sizeof(struct ntfy_object),
+ 							GFP_KERNEL);
+ 		if (msg_q->ntfy_obj)
+@@ -181,7 +181,7 @@ int bridge_msg_create_queue(struct msg_mgr *hmsg_mgr,
+ 	 *  unblock threads in MSG_Put() or MSG_Get(). sync_done_ack
+ 	 *  will be set by the unblocked thread to signal that it
+ 	 *  is unblocked and will no longer reference the object. */
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		msg_q->sync_done = kzalloc(sizeof(struct sync_object),
+ 							GFP_KERNEL);
+ 		if (msg_q->sync_done)
+@@ -190,7 +190,7 @@ int bridge_msg_create_queue(struct msg_mgr *hmsg_mgr,
+ 			status = -ENOMEM;
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		msg_q->sync_done_ack = kzalloc(sizeof(struct sync_object),
+ 							GFP_KERNEL);
+ 		if (msg_q->sync_done_ack)
+@@ -199,13 +199,13 @@ int bridge_msg_create_queue(struct msg_mgr *hmsg_mgr,
+ 			status = -ENOMEM;
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		/* Enter critical section */
+ 		spin_lock_bh(&hmsg_mgr->msg_mgr_lock);
+ 		/* Initialize message frames and put in appropriate queues */
+-		for (i = 0; i < max_msgs && DSP_SUCCEEDED(status); i++) {
++		for (i = 0; i < max_msgs && !status; i++) {
+ 			status = add_new_msg(hmsg_mgr->msg_free_list);
+-			if (DSP_SUCCEEDED(status)) {
++			if (!status) {
+ 				num_allocated++;
+ 				status = add_new_msg(msg_q->msg_free_list);
+ 			}
+@@ -330,7 +330,7 @@ int bridge_msg_get(struct msg_queue *msg_queue_obj,
+ 	}
+ 	/* Exit critical section */
+ 	spin_unlock_bh(&hmsg_mgr->msg_mgr_lock);
+-	if (DSP_SUCCEEDED(status) && !got_msg) {
++	if (!status && !got_msg) {
+ 		/*  Wait til message is available, timeout, or done. We don't
+ 		 *  have to schedule the DPC, since the DSP will send messages
+ 		 *  when they are available. */
+@@ -349,7 +349,7 @@ int bridge_msg_get(struct msg_queue *msg_queue_obj,
+ 			(void)sync_set_event(msg_queue_obj->sync_done_ack);
+ 			status = -EPERM;
+ 		} else {
+-			if (DSP_SUCCEEDED(status)) {
++			if (!status) {
+ 				DBC_ASSERT(!LST_IS_EMPTY
+ 					   (msg_queue_obj->msg_used_list));
+ 				/* Get msg from used list */
+@@ -432,7 +432,7 @@ int bridge_msg_put(struct msg_queue *msg_queue_obj,
+ 
+ 		spin_unlock_bh(&hmsg_mgr->msg_mgr_lock);
+ 	}
+-	if (DSP_SUCCEEDED(status) && !put_msg) {
++	if (!status && !put_msg) {
+ 		/* Wait til a free message frame is available, timeout,
+ 		 * or done */
+ 		syncs[0] = hmsg_mgr->sync_event;
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index ae1f394..8f25a05 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -262,7 +262,6 @@ void bridge_drv_entry(struct bridge_drv_interface **drv_intf,
+  */
+ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt)
+ {
+-	int status = 0;
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+ 	u32 temp;
+ 	struct dspbridge_platform_data *pdata =
+@@ -291,11 +290,10 @@ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt)
+ 					OMAP3430_IVA2_MOD, OMAP2_RM_RSTCTRL);
+ 	dsp_clk_enable(DSP_CLK_IVA2);
+ 
+-	if (DSP_SUCCEEDED(status)) {
+-		/* set the device state to IDLE */
+-		dev_context->dw_brd_state = BRD_IDLE;
+-	}
+-	return status;
++	/* set the device state to IDLE */
++	dev_context->dw_brd_state = BRD_IDLE;
++
++	return 0;
+ }
+ 
+ /*
+@@ -406,13 +404,13 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 	} else
+ 		__raw_writel(0xffffffff, dw_sync_addr);
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		resources = dev_context->resources;
+ 		if (!resources)
+ 			status = -EPERM;
+ 
+ 		/* Assert RST1 i.e only the RST only for DSP megacell */
+-		if (DSP_SUCCEEDED(status)) {
++		if (!status) {
+ 			(*pdata->dsp_prm_rmw_bits)(OMAP3430_RST1_IVA2_MASK,
+ 					OMAP3430_RST1_IVA2_MASK, OMAP3430_IVA2_MOD,
+ 					OMAP2_RM_RSTCTRL);
+@@ -428,7 +426,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 					OMAP343X_CONTROL_IVA2_BOOTMOD));
+ 		}
+ 	}
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		/* Reset and Unreset the RST2, so that BOOTADDR is copied to
+ 		 * IVA2 SYSC register */
+ 		(*pdata->dsp_prm_rmw_bits)(OMAP3430_RST2_IVA2_MASK,
+@@ -476,7 +474,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 
+ 	/* Lock the above TLB entries and get the BIOS and load monitor timer
+ 	 * information */
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		hw_mmu_num_locked_set(resources->dw_dmmu_base, itmp_entry_ndx);
+ 		hw_mmu_victim_num_set(resources->dw_dmmu_base, itmp_entry_ndx);
+ 		hw_mmu_ttb_set(resources->dw_dmmu_base,
+@@ -499,7 +497,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 				     &ul_load_monitor_timer);
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		if (ul_load_monitor_timer != 0xFFFF) {
+ 			clk_cmd = (BPWR_ENABLE_CLOCK << MBX_PM_CLK_CMDSHIFT) |
+ 			    ul_load_monitor_timer;
+@@ -510,7 +508,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 		}
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		if (ul_bios_gp_timer != 0xFFFF) {
+ 			clk_cmd = (BPWR_ENABLE_CLOCK << MBX_PM_CLK_CMDSHIFT) |
+ 			    ul_bios_gp_timer;
+@@ -521,7 +519,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 		}
+ 	}
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		/* Set the DSP clock rate */
+ 		(void)dev_get_symbol(dev_context->hdev_obj,
+ 				     "_BRIDGEINIT_DSP_FREQ", &ul_dsp_clk_addr);
+@@ -551,7 +549,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 		}
+ 
+ 	}
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		dev_context->mbox->rxq->callback = (int (*)(void *))io_mbox_msg;
+ 
+ /*PM_IVA2GRPSEL_PER = 0xC0;*/
+@@ -908,7 +906,7 @@ static int bridge_dev_create(struct bridge_dev_context
+ 	else
+ 		status = -ENOMEM;
+ 
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		spin_lock_init(&pt_attrs->pg_lock);
+ 		dev_context->tc_word_swap_on = drv_datap->tc_wordswapon;
+ 
+@@ -918,7 +916,7 @@ static int bridge_dev_create(struct bridge_dev_context
+ 		 * resources struct */
+ 		dev_context->dw_dsp_mmu_base = resources->dw_dmmu_base;
+ 	}
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		dev_context->hdev_obj = hdev_obj;
+ 		/* Store current board state. */
+ 		dev_context->dw_brd_state = BRD_STOPPED;
+@@ -1111,13 +1109,13 @@ static int bridge_brd_mem_copy(struct bridge_dev_context *dev_ctxt,
+ 	u32 total_bytes = ul_num_bytes;
+ 	u8 host_buf[BUFFERSIZE];
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+-	while ((total_bytes > 0) && DSP_SUCCEEDED(status)) {
++	while (total_bytes > 0 && !status) {
+ 		copy_bytes =
+ 		    total_bytes > BUFFERSIZE ? BUFFERSIZE : total_bytes;
+ 		/* Read from External memory */
+ 		status = read_ext_dsp_data(dev_ctxt, host_buf, src_addr,
+ 					   copy_bytes, mem_type);
+-		if (DSP_SUCCEEDED(status)) {
++		if (!status) {
+ 			if (dest_addr < (dev_context->dw_dsp_start_add +
+ 					 dev_context->dw_internal_size)) {
+ 				/* Write to Internal memory */
+@@ -1149,7 +1147,7 @@ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
+ 	u32 ul_remain_bytes = 0;
+ 	u32 ul_bytes = 0;
+ 	ul_remain_bytes = ul_num_bytes;
+-	while (ul_remain_bytes > 0 && DSP_SUCCEEDED(status)) {
++	while (ul_remain_bytes > 0 && !status) {
+ 		ul_bytes =
+ 		    ul_remain_bytes > BUFFERSIZE ? BUFFERSIZE : ul_remain_bytes;
+ 		if (dsp_addr < (dev_context->dw_dsp_start_add +
+@@ -1369,9 +1367,7 @@ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 	}
+ 	up_read(&mm->mmap_sem);
+ func_cont:
+-	if (DSP_SUCCEEDED(status)) {
+-		status = 0;
+-	} else {
++	if (status) {
+ 		/*
+ 		 * Roll out the mapped pages incase it failed in middle of
+ 		 * mapping
+@@ -1433,7 +1429,7 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *dev_ctxt,
+ 		"pte_addr_l1 %x\n", __func__, dev_ctxt, virt_addr,
+ 		ul_num_bytes, l1_base_va, pte_addr_l1);
+ 
+-	while (rem_bytes && (DSP_SUCCEEDED(status))) {
++	while (rem_bytes && !status) {
+ 		u32 va_curr_orig = va_curr;
+ 		/* Find whether the L1 PTE points to a valid L2 PT */
+ 		pte_addr_l1 = hw_mmu_pte_addr_l1(l1_base_va, va_curr);
+@@ -1472,7 +1468,7 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *dev_ctxt,
+ 		 * entry. Similar checking is done for L1 PTEs too
+ 		 * below
+ 		 */
+-		while (rem_bytes_l2 && (DSP_SUCCEEDED(status))) {
++		while (rem_bytes_l2 && !status) {
+ 			pte_val = *(u32 *) pte_addr_l2;
+ 			pte_size = hw_mmu_pte_size_l2(pte_val);
+ 			/* va_curr aligned to pte_size? */
+@@ -1639,7 +1635,7 @@ static int pte_update(struct bridge_dev_context *dev_ctxt, u32 pa,
+ 		HW_PAGE_SIZE64KB, HW_PAGE_SIZE4KB
+ 	};
+ 
+-	while (num_bytes && DSP_SUCCEEDED(status)) {
++	while (num_bytes && !status) {
+ 		/* To find the max. page size with which both PA & VA are
+ 		 * aligned */
+ 		all_bits = pa_curr | va_curr;
+@@ -1736,7 +1732,7 @@ static int pte_set(struct pg_table_attrs *pt, u32 pa, u32 va,
+ 			 * Should not overwrite it. */
+ 			status = -EPERM;
+ 		}
+-		if (DSP_SUCCEEDED(status)) {
++		if (!status) {
+ 			pg_tbl_va = l2_base_va;
+ 			if (size == HW_PAGE_SIZE64KB)
+ 				pt->pg_info[l2_page_num].num_entries += 16;
+@@ -1749,7 +1745,7 @@ static int pte_set(struct pg_table_attrs *pt, u32 pa, u32 va,
+ 		}
+ 		spin_unlock(&pt->pg_lock);
+ 	}
+-	if (DSP_SUCCEEDED(status)) {
++	if (!status) {
+ 		dev_dbg(bridge, "PTE: pg_tbl_va %x, pa %x, va %x, size %x\n",
+ 			pg_tbl_va, pa, va, size);
+ 		dev_dbg(bridge, "PTE: endianism %x, element_size %x, "
+@@ -1789,7 +1785,7 @@ static int mem_map_vmalloc(struct bridge_dev_context *dev_context,
+ 	va_curr = ul_mpu_addr;
+ 	page[0] = vmalloc_to_page((void *)va_curr);
+ 	pa_next = page_to_phys(page[0]);
+-	while (DSP_SUCCEEDED(status) && (i < num_pages)) {
++	while (!status && (i < num_pages)) {
+ 		/*
+ 		 * Reuse pa_next from the previous iteraion to avoid
+ 		 * an extra va2pa call
+@@ -1827,11 +1823,6 @@ static int mem_map_vmalloc(struct bridge_dev_context *dev_context,
+ 				    hw_attrs);
+ 		va_curr += size_curr;
+ 	}
+-	if (DSP_SUCCEEDED(status))
+-		status = 0;
+-	else
+-		status = -EPERM;
+-
+ 	/*
+ 	 * In any case, flush the TLB
+ 	 * This is called from here instead from pte_update to avoid unnecessary
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
+index dc63b3a..d938645 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
+@@ -112,7 +112,7 @@ int handle_hibernation_from_dsp(struct bridge_dev_context *dev_context)
+ 		/* Disable wdt on hibernation. */
+ 		dsp_wdt_enable(false);
  
 -		if (DSP_SUCCEEDED(status)) {
 +		if (!status) {
- 			pio_mgr = (struct io_mgr_ *)hio_mgr;
- 			pio_mgr->intf_fxns = intf_fxns;
- 			pio_mgr->hdev_obj = hdev_obj;
-diff --git a/drivers/staging/tidspbridge/pmgr/msg.c b/drivers/staging/tidspbridge/pmgr/msg.c
-index 884f8b5..abd4365 100644
---- a/drivers/staging/tidspbridge/pmgr/msg.c
-+++ b/drivers/staging/tidspbridge/pmgr/msg.c
-@@ -66,7 +66,7 @@ int msg_create(struct msg_mgr **msg_man,
- 	status =
- 	    (*intf_fxns->pfn_msg_create) (&hmsg_mgr, hdev_obj, msg_callback);
+ 			/* Update the Bridger Driver state */
+ 			dev_context->dw_brd_state = BRD_DSP_HIBERNATION;
+ #ifdef CONFIG_TIDSPBRIDGE_DVFS
+@@ -310,7 +310,7 @@ int dsp_peripheral_clk_ctrl(struct bridge_dev_context *dev_context,
+ 		status = dsp_clk_disable(bpwr_clks[clk_id_index].clk);
+ 		dsp_clk_wakeup_event_ctrl(bpwr_clks[clk_id_index].clk_id,
+ 					  false);
+-		if (DSP_SUCCEEDED(status)) {
++		if (!status) {
+ 			(dev_context->dsp_per_clks) &=
+ 				(~((u32) (1 << bpwr_clks[clk_id_index].clk)));
+ 		}
+@@ -318,7 +318,7 @@ int dsp_peripheral_clk_ctrl(struct bridge_dev_context *dev_context,
+ 	case BPWR_ENABLE_CLOCK:
+ 		status = dsp_clk_enable(bpwr_clks[clk_id_index].clk);
+ 		dsp_clk_wakeup_event_ctrl(bpwr_clks[clk_id_index].clk_id, true);
+-		if (DSP_SUCCEEDED(status))
++		if (!status)
+ 			(dev_context->dsp_per_clks) |=
+ 				(1 << bpwr_clks[clk_id_index].clk);
+ 		break;
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
+index 742da05..190c028 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.c
++++ b/drivers/staging/tidspbridge/core/tiomap_io.c
+@@ -70,19 +70,19 @@ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 	DBC_ASSERT(ul_shm_base_virt != 0);
+ 
+ 	/* Check if it is a read of Trace section */
+-	if (DSP_SUCCEEDED(status) && !ul_trace_sec_beg) {
++	if (!status && !ul_trace_sec_beg) {
+ 		status = dev_get_symbol(dev_context->hdev_obj,
+ 					DSP_TRACESEC_BEG, &ul_trace_sec_beg);
+ 	}
+ 	DBC_ASSERT(ul_trace_sec_beg != 0);
+ 
+-	if (DSP_SUCCEEDED(status) && !ul_trace_sec_end) {
++	if (!status && !ul_trace_sec_end) {
+ 		status = dev_get_symbol(dev_context->hdev_obj,
+ 					DSP_TRACESEC_END, &ul_trace_sec_end);
+ 	}
+ 	DBC_ASSERT(ul_trace_sec_end != 0);
  
 -	if (DSP_SUCCEEDED(status)) {
 +	if (!status) {
- 		/* Fill in DSP API message module's fields of the msg_mgr
- 		 * structure */
- 		msg_mgr_obj = (struct msg_mgr_ *)hmsg_mgr;
+ 		if ((dsp_addr <= ul_trace_sec_end) &&
+ 		    (dsp_addr >= ul_trace_sec_beg))
+ 			trace_read = true;
+@@ -100,19 +100,19 @@ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 		ul_ext_end = 0;
+ 
+ 		/* Get DYNEXT_BEG, EXT_BEG and EXT_END. */
+-		if (DSP_SUCCEEDED(status) && !ul_dyn_ext_base) {
++		if (!status && !ul_dyn_ext_base) {
+ 			status = dev_get_symbol(dev_context->hdev_obj,
+ 						DYNEXTBASE, &ul_dyn_ext_base);
+ 		}
+ 		DBC_ASSERT(ul_dyn_ext_base != 0);
+ 
+-		if (DSP_SUCCEEDED(status)) {
++		if (!status) {
+ 			status = dev_get_symbol(dev_context->hdev_obj,
+ 						EXTBASE, &ul_ext_base);
+ 		}
+ 		DBC_ASSERT(ul_ext_base != 0);
+ 
+-		if (DSP_SUCCEEDED(status)) {
++		if (!status) {
+ 			status = dev_get_symbol(dev_context->hdev_obj,
+ 						EXTEND, &ul_ext_end);
+ 		}
+@@ -131,7 +131,7 @@ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 		if (ul_ext_end < ul_ext_base)
+ 			status = -EPERM;
+ 
+-		if (DSP_SUCCEEDED(status)) {
++		if (!status) {
+ 			ul_tlb_base_virt =
+ 			    dev_context->atlb_entry[0].ul_dsp_va * DSPWORDSIZE;
+ 			DBC_ASSERT(ul_tlb_base_virt <= ul_shm_base_virt);
+@@ -167,7 +167,7 @@ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 
+ 	offset = dsp_addr - ul_ext_base;
+ 
+-	if (DSP_SUCCEEDED(status))
++	if (!status)
+ 		memcpy(host_buff, (u8 *) dw_base_addr + offset, ul_num_bytes);
+ 
+ 	return status;
+@@ -247,12 +247,12 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 		/* Check if it is a load to Trace section */
+ 		ret = dev_get_symbol(dev_context->hdev_obj,
+ 				     DSP_TRACESEC_BEG, &ul_trace_sec_beg);
+-		if (DSP_SUCCEEDED(ret))
++		if (!ret)
+ 			ret = dev_get_symbol(dev_context->hdev_obj,
+ 					     DSP_TRACESEC_END,
+ 					     &ul_trace_sec_end);
+ 	}
+-	if (DSP_SUCCEEDED(ret)) {
++	if (!ret) {
+ 		if ((dsp_addr <= ul_trace_sec_end) &&
+ 		    (dsp_addr >= ul_trace_sec_beg))
+ 			trace_load = true;
+@@ -272,7 +272,7 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 					     SHMBASENAME, &ul_shm_base_virt);
+ 		DBC_ASSERT(ul_shm_base_virt != 0);
+ 		if (dynamic_load) {
+-			if (DSP_SUCCEEDED(ret)) {
++			if (!ret) {
+ 				if (symbols_reloaded)
+ 					ret =
+ 					    dev_get_symbol
+@@ -280,7 +280,7 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 					     &ul_ext_base);
+ 			}
+ 			DBC_ASSERT(ul_ext_base != 0);
+-			if (DSP_SUCCEEDED(ret)) {
++			if (!ret) {
+ 				/* DR  OMAPS00013235 : DLModules array may be
+ 				 * in EXTMEM. It is expected that DYNEXTMEM and
+ 				 * EXTMEM are contiguous, so checking for the
+@@ -293,13 +293,13 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 			}
+ 		} else {
+ 			if (symbols_reloaded) {
+-				if (DSP_SUCCEEDED(ret))
++				if (!ret)
+ 					ret =
+ 					    dev_get_symbol
+ 					    (dev_context->hdev_obj, EXTBASE,
+ 					     &ul_ext_base);
+ 				DBC_ASSERT(ul_ext_base != 0);
+-				if (DSP_SUCCEEDED(ret))
++				if (!ret)
+ 					ret =
+ 					    dev_get_symbol
+ 					    (dev_context->hdev_obj, EXTEND,
+@@ -316,19 +316,16 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 		if (ul_ext_end < ul_ext_base)
+ 			ret = -EPERM;
+ 
+-		if (DSP_SUCCEEDED(ret)) {
++		if (!ret) {
+ 			ul_tlb_base_virt =
+ 			    dev_context->atlb_entry[0].ul_dsp_va * DSPWORDSIZE;
+ 			DBC_ASSERT(ul_tlb_base_virt <= ul_shm_base_virt);
+ 
+ 			if (symbols_reloaded) {
+-				if (DSP_SUCCEEDED(ret)) {
+-					ret =
+-					    dev_get_symbol
++				ret = dev_get_symbol
+ 					    (dev_context->hdev_obj,
+ 					     DSP_TRACESEC_END, &shm0_end);
+-				}
+-				if (DSP_SUCCEEDED(ret)) {
++				if (!ret) {
+ 					ret =
+ 					    dev_get_symbol
+ 					    (dev_context->hdev_obj, DYNEXTBASE,
+@@ -360,7 +357,7 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 	if (!dw_base_addr || !ul_ext_base || !ul_ext_end)
+ 		ret = -EPERM;
+ 
+-	if (DSP_SUCCEEDED(ret)) {
++	if (!ret) {
+ 		for (i = 0; i < 4; i++)
+ 			remain_byte[i] = 0x0;
+ 
+@@ -369,7 +366,7 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 		if (dsp_addr > ul_ext_end || dw_offset > dsp_addr)
+ 			ret = -EPERM;
+ 	}
+-	if (DSP_SUCCEEDED(ret)) {
++	if (!ret) {
+ 		if (ul_num_bytes)
+ 			memcpy((u8 *) dw_base_addr + dw_offset, host_buff,
+ 			       ul_num_bytes);
 -- 
 1.5.4.5
 
