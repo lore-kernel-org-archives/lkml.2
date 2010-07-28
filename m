@@ -1,147 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab0G1Jot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:44:49 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57821 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab0G1Joq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:44:46 -0400
-Date: Wed, 28 Jul 2010 10:44:14 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Patrick Pannuto <ppannuto@codeaurora.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Israel Schlesinger <israels@codeaurora.org>,
-        linux-kernel@vger.kernel.org, joe@perches.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] checkpatch: Add warnings for use of mdelay()
-Message-ID: <20100728094414.GA3586@shadowen.org>
-References: <4C4F132F.6020401@codeaurora.org>
- <20100727113133.1605c9fe@bike.lwn.net>
- <4C4F1846.3090103@codeaurora.org>
- <20100727121610.64b38cfa.akpm@linux-foundation.org>
+	id S1754546Ab0G1Jpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:45:45 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39731 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754138Ab0G1Jpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 05:45:43 -0400
+Date: Wed, 28 Jul 2010 10:45:27 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Andy Whitcroft <apw@shadowen.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH] vmscan: remove wait_on_page_writeback() from pageout()
+Message-ID: <20100728094527.GE5300@csn.ul.ie>
+References: <20100728071705.GA22964@localhost> <AANLkTimaj6+MzY5Aa_xqi75zKy1fDOQV5QiQjdX8jgm7@mail.gmail.com> <20100728084654.GA26776@localhost> <20100728091032.GD5300@csn.ul.ie> <20100728093031.GA29551@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100727121610.64b38cfa.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100728093031.GA29551@localhost>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 12:16:10PM -0700, Andrew Morton wrote:
-> On Tue, 27 Jul 2010 10:32:54 -0700
-> Patrick Pannuto <ppannuto@codeaurora.org> wrote:
-> 
-> > On 07/27/2010 10:31 AM, Jonathan Corbet wrote:
-> > > On Tue, 27 Jul 2010 10:11:11 -0700
-> > > Israel Schlesinger <israels@codeaurora.org> wrote:
+On Wed, Jul 28, 2010 at 05:30:31PM +0800, Wu Fengguang wrote:
+> On Wed, Jul 28, 2010 at 05:10:33PM +0800, Mel Gorman wrote:
+> > On Wed, Jul 28, 2010 at 04:46:54PM +0800, Wu Fengguang wrote:
+> > > The wait_on_page_writeback() call inside pageout() is virtually dead code.
 > > > 
-> > >> mdelay is a busy-wait loop which is wasteful. If at all possible,
-> > >> callers should use msleep instead of mdelay.
-> > >>
-> > >> The only time mdelay is really appropriate is in atomic context,
-> > >> however, delays of 1ms+ in atomic context are rather expensive, so
-> > >> a warning for this case is probably appropriate as well to encourage
-> > >> people to move such expensive delays outside of atomic context
+> > >         shrink_inactive_list()
+> > >           shrink_page_list(PAGEOUT_IO_ASYNC)
+> > >             pageout(PAGEOUT_IO_ASYNC)
+> > >           shrink_page_list(PAGEOUT_IO_SYNC)
+> > >             pageout(PAGEOUT_IO_SYNC)
 > > > 
-> > > Once upon a time, msleep(1) would sleep for 20ms, while mdelay(1) gave
-> > > a 1ms delay.  My patch to fix msleep() at that time didn't get in due
-> > > to concerns about the cost of using hrtimers.  Perhaps msleep() has
-> > > gotten better, but, if not, actually getting a 1ms delay remains a
-> > > valid reason for using mdelay() instead IMO.  It made a difference of a
-> > > few seconds at open time for a driver I was doing at the time.
+> > > Because shrink_page_list/pageout(PAGEOUT_IO_SYNC) is always called after
+> > > a preceding shrink_page_list/pageout(PAGEOUT_IO_ASYNC), the first
+> > > pageout(ASYNC) converts dirty pages into writeback pages, the second
+> > > shrink_page_list(SYNC) waits on the clean of writeback pages before
+> > > calling pageout(SYNC). The second shrink_page_list(SYNC) can hardly run
+> > > into dirty pages for pageout(SYNC) unless in some race conditions.
 > > > 
-> > > jon
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
 > > 
-> > Check out the recently added usleep in -tip, and the checkpatch patch
-> > pending in my queue that fixes that case (I'll send in a few hours ;) )
+> > It's possible for the second call to run into dirty pages as there is a
+> > congestion_wait() call between the first shrink_page_list() call and the
+> > second. That's a big window.
+> 
+> OK there is a <=0.1s time window.
+
+Ok, big was an exagguration for IO but during this window the page can
+also be refaulted. If unmapped, it can get dirtied again.
+
+> Then what about the data set size?
+> After first shrink_page_list(ASYNC), there will be hardly any pages
+> left in the page_list except for the already under-writeback pages and
+> other unreclaimable pages. So it still asks for some race conditions
+> for hitting the second pageout(SYNC) -- some unreclaimable pages
+> become reclaimable+dirty in the 0.1s time window.
+> 
+
+We are hitting this window because otherwise the trace points would not be
+reporting sync IO in pageout(). Take from an ftrace-based report
+
+Direct reclaims                               1176
+Direct reclaim pages scanned                184337
+Direct reclaim write file async I/O           2317
+Direct reclaim write anon async I/O          35551
+Direct reclaim write file sync I/O            1817
+Direct reclaim write anon sync I/O           15920
+
+For the last line to have a positive value, we must have called
+pageout(PAGEOUT_IO_ASYNC) and then hit a dirty page during the
+pageout(PAGEOUT_IO_SYNC) call.
+
+Here is one fairly plausible scenario where we end up waiting on
+writeback despite the previous pageout() call.
+
+shrink_inactive_list()
+  shrink_page_list(PAGEOUT_IO_ASYNC)
+    Check PageWriteback
+    Unmap page (set_dirty_page, if PTE was dirty)
+    pageout(PAGEOUT_IO_ASYNC, IO starts, page in writeback)
+    call congestion_wait()
+
+During this 0.1s window, the process references the page and faults in.
+As it is lumpy reclaim, the page could have been young even though it
+was physically located near an old page
+
+  shrink_page_list(PAGEOUT_IO_SYNC)
+    Check PageWriteback (Lets assume it is written back for this example)
+    Unmap page again (dirty page again, if PTE was dirty)
+    pageout(PAGEOUT_IO_SYNC, IO starts, wait on writeback this time)
+
+> > > And the wait page-by-page behavior of pageout(SYNC) will lead to very
+> > > long stall time if running into some range of dirty pages.
 > > 
+> > True, but this is also lumpy reclaim which is depending on a contiguous
+> > range of pages. It's better for it to wait on the selected range of pages
+> > which is known to contain at least one old page than excessively scan and
+> > reclaim newer pages.
+> > 
+> > > So it's bad
+> > > idea anyway to call wait_on_page_writeback() inside pageout().
+> > > 
+> > 
+> > I recognise that you are probably thinking of the stall-due-to-fork problem
+> > but I'd expect the patch that raises the bar for <= PAGE_ALLOC_COSTLY_ORDER
+> > to be sufficient. If not, I think it still makes sense to call
+> > wait_on_page_writeback() for > PAGE_ALLOC_COSTLY_ORDER.
 > 
-> The message should point people at usleep_range(), I'd suggest.  It's a
-> more power-friendly way of sleeping.
+> The main intention of this patch is to remove semi-dead code.
+> I'm less disturbed by the long stall time now with the previous patch ;)
 > 
-> That assumes that the below patch gets merged - the people who handle
-> timer-related things are presently, err, asleep.
-> 
-> 
-> From: Patrick Pannuto <ppannuto@codeaurora.org>
-> 
-> usleep[_range] are finer precision implementations of msleep and are
-> designed to be drop-in replacements for udelay where a precise sleep /
-> busy-wait is unnecessary.  They also allow an easy interface to specify
-> slack when a precise (ish) wakeup is unnecessary to help minimize wakeups
-> 
-> Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
-> Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  include/linux/delay.h |    6 ++++++
->  kernel/timer.c        |   22 ++++++++++++++++++++++
->  2 files changed, 28 insertions(+)
-> 
-> diff -puN include/linux/delay.h~timers-add-usleep-timer include/linux/delay.h
-> --- a/include/linux/delay.h~timers-add-usleep-timer
-> +++ a/include/linux/delay.h
-> @@ -45,6 +45,12 @@ extern unsigned long lpj_fine;
->  void calibrate_delay(void);
->  void msleep(unsigned int msecs);
->  unsigned long msleep_interruptible(unsigned int msecs);
-> +void usleep_range(unsigned long min, unsigned long max);
-> +
-> +static inline void usleep(unsigned long usecs)
-> +{
-> +	usleep_range(usecs, usecs);
-> +}
->  
->  static inline void ssleep(unsigned int seconds)
->  {
-> diff -puN kernel/timer.c~timers-add-usleep-timer kernel/timer.c
-> --- a/kernel/timer.c~timers-add-usleep-timer
-> +++ a/kernel/timer.c
-> @@ -1763,3 +1763,25 @@ unsigned long msleep_interruptible(unsig
->  }
->  
->  EXPORT_SYMBOL(msleep_interruptible);
-> +
-> +static int __sched do_usleep_range(unsigned long min, unsigned long max)
-> +{
-> +	ktime_t kmin;
-> +	unsigned long delta;
-> +
-> +	kmin = ktime_set(0, min * NSEC_PER_USEC);
-> +	delta = max - min;
 
-If this interface is taking a min and max in micro-seconds, then does
-not the delta need also to be converted to nano-seconds?
+Unfortuately, while the code may not be currently doing the most
+efficient thing with respect to lumpy reclaim, it's not dead either :/
 
-schedule_hrtimeout_range seems to call hrtimer_set_expires_range_ns
-which seems to generally be called with 'delta_ns'.  Something like:
-
-delta = (max - min) * NSEC_PER_USEC;
-
-> +	return schedule_hrtimeout_range(&kmin, delta, HRTIMER_MODE_REL);
-> +}
-> +
-> +/**
-> + * usleep_range - Drop in replacement for udelay where wakeup is flexible
-> + * @min: Minimum time in usecs to sleep
-> + * @max: Maximum time in usecs to sleep
-> + */
-> +void usleep_range(unsigned long min, unsigned long max)
-> +{
-> +	__set_current_state(TASK_UNINTERRUPTIBLE);
-> +	do_usleep_range(min, max);
-> +}
-> +EXPORT_SYMBOL(usleep_range);
-
--apw
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
