@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388Ab0G1Et5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 00:49:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57763 "EHLO gate.crashing.org"
+	id S1751578Ab0G1Ewo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 00:52:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39616 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab0G1Etx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 00:49:53 -0400
-Subject: Re: [PATCH 01/16] x86, memblock: Add
- memblock_x86_find_in_range_size()
+	id S1750944Ab0G1Ewl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 00:52:41 -0400
+Subject: Re: [PATCH 02/16] bootmem, x86: Add weak version of
+ reserve_bootmem_generic
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -17,12 +17,12 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org
-In-Reply-To: <1279824241-17582-2-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1279824241-17582-3-git-send-email-yinghai@kernel.org>
 References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
-	 <1279824241-17582-2-git-send-email-yinghai@kernel.org>
+	 <1279824241-17582-3-git-send-email-yinghai@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 14:49:18 +1000
-Message-ID: <1280292558.1970.222.camel@pasglop>
+Date: Wed, 28 Jul 2010 14:51:56 +1000
+Message-ID: <1280292716.1970.225.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -31,55 +31,105 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2010-07-22 at 11:43 -0700, Yinghai Lu wrote:
-> size is returned according free range.
-> Will be used to find free ranges for early_memtest and memory corruption check
+> It will be used memblock_x86_to_bootmem converting
+
+The above doesn't make much sense.
+
+Appart from that, no objection.
+
+Ben.
+
+> It is an wrapper for reserve_bootmem, and x86 64bit is using special one.
 > 
-> Do not mess it up with lib/memblock.c yet.
-
-So I'm readying my branch which incudes your 6 patches, however I'm
-still not happy with a few things.
-
-For example, I really really don't like exporting
-memblock_reserved_init_regions.
-
-So you do those things for the sake of x86, so let's walk through your
-x86 patches and see if I can figure out what you do wrong :-)
-
+> Also clean up that version for x86_64. We don't need to take care of numa
+> path for that, bootmem can handle it how
+> 
 > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
->  arch/x86/include/asm/memblock.h |    8 ++++
->  arch/x86/mm/Makefile            |    2 +
->  arch/x86/mm/memblock.c          |   88 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 98 insertions(+), 0 deletions(-)
->  create mode 100644 arch/x86/include/asm/memblock.h
->  create mode 100644 arch/x86/mm/memblock.c
+>  arch/x86/mm/init_32.c |    6 ------
+>  arch/x86/mm/init_64.c |   20 ++------------------
+>  mm/bootmem.c          |    6 ++++++
+>  3 files changed, 8 insertions(+), 24 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-> new file mode 100644
-> index 0000000..c14219a
-> --- /dev/null
-> +++ b/arch/x86/include/asm/memblock.h
-> @@ -0,0 +1,8 @@
-> +#ifndef _X86_MEMBLOCK_H
-> +#define _X86_MEMBLOCK_H
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index bca7909..90e0545 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -1069,9 +1069,3 @@ void mark_rodata_ro(void)
+>  #endif
+>  }
+>  #endif
+> -
+> -int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+> -				   int flags)
+> -{
+> -	return reserve_bootmem(phys, len, flags);
+> -}
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index ee41bba..634fa08 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -799,13 +799,10 @@ void mark_rodata_ro(void)
+>  
+>  #endif
+>  
+> +#ifndef CONFIG_NO_BOOTMEM
+>  int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+>  				   int flags)
+>  {
+> -#ifdef CONFIG_NUMA
+> -	int nid, next_nid;
+> -	int ret;
+> -#endif
+>  	unsigned long pfn = phys >> PAGE_SHIFT;
+>  
+>  	if (pfn >= max_pfn) {
+> @@ -821,21 +818,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+>  		return -EFAULT;
+>  	}
+>  
+> -	/* Should check here against the e820 map to avoid double free */
+> -#ifdef CONFIG_NUMA
+> -	nid = phys_to_nid(phys);
+> -	next_nid = phys_to_nid(phys + len - 1);
+> -	if (nid == next_nid)
+> -		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
+> -	else
+> -		ret = reserve_bootmem(phys, len, flags);
+> -
+> -	if (ret != 0)
+> -		return ret;
+> -
+> -#else
+>  	reserve_bootmem(phys, len, flags);
+> -#endif
+>  
+>  	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+>  		dma_reserve += len / PAGE_SIZE;
+> @@ -844,6 +827,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+>  
+>  	return 0;
+>  }
+> +#endif
+>  
+>  int kern_addr_valid(unsigned long addr)
+>  {
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index 142c84a..bde170d 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -526,6 +526,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
+>  }
+>  
+>  #ifndef CONFIG_NO_BOOTMEM
+> +int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+> +				   int flags)
+> +{
+> +	return reserve_bootmem(phys, len, flags);
+> +}
 > +
-> +#define ARCH_DISCARD_MEMBLOCK
-
-So I'm no fan of this ARCH_DISCARD_MEMBLOCK, especially since it makes a
-lot of sense to keep the debugfs files around or maybe even move to
-sysfs for diagnostic purposes.
-
-Maybe we should consider something better by having memblock always be
-init/initdata but we copy the arrays to a "final" location from an
-initcall ? We can keep your patches for now, but I think we should
-improve on that.
- 
-> +u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
-
-I really really don't like your function naming. The above doesn't give
-me any bloody idea about what the purpose of the function is...
-
-Cheers,
-Ben.
+>  static unsigned long __init align_idx(struct bootmem_data *bdata,
+>  				      unsigned long idx, unsigned long step)
+>  {
 
 
