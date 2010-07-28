@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab0G1NuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 09:50:15 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:52924 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab0G1NuM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 09:50:12 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 28 Jul 2010 15:50:00 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH] firewire: ohci: release channel in error path
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org
-Message-ID: <tkrat.bce374d4efc046af@s5r6.in-berlin.de>
+	id S1754568Ab0G1NuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:50:25 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:53255 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754492Ab0G1NuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 09:50:21 -0400
+Message-ID: <4C503594.7040602@linux.vnet.ibm.com>
+Date: Wed, 28 Jul 2010 08:50:12 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+To: Nathan Fontenot <nfont@austin.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        greg@kroah.com, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 6/8] v3 Update the node sysfs code
+References: <4C451BF5.50304@austin.ibm.com> <4C451EAF.1080505@austin.ibm.com>
+In-Reply-To: <4C451EAF.1080505@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-firewire-ohci keeps book of which isochronous channels are occupied by
-IR DMA contexts, so that there cannot be more than one context listening
-to a certain channel.
+On 07/19/2010 10:57 PM, Nathan Fontenot wrote:
+> Index: linux-2.6/include/linux/node.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/node.h	2010-07-19 21:10:25.000000000 -0500
+> +++ linux-2.6/include/linux/node.h	2010-07-19 21:13:11.000000000 -0500
+> @@ -44,7 +44,8 @@ extern int register_cpu_under_node(unsig
+>  extern int unregister_cpu_under_node(unsigned int cpu, unsigned int nid);
+>  extern int register_mem_sect_under_node(struct memory_block *mem_blk,
+>  						int nid);
+> -extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk);
+> +extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
+> +					   unsigned long phys_index);
 
-If IR context creation failed due to an out-of-memory condition, this
-bookkeeping leaked a channel.
+You also need to update the inline definition of unregister_mem_sect_under_nodes
+for the !CONFIG_NUMA case.
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/ohci.c |    1 +
- 1 file changed, 1 insertion(+)
-
-Index: b/drivers/firewire/ohci.c
-===================================================================
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2314,6 +2314,7 @@ static struct fw_iso_context *ohci_alloc
- 	free_page((unsigned long)ctx->header);
-  out:
- 	spin_lock_irqsave(&ohci->lock, flags);
-+	*channels |= 1ULL << channel;
- 	*mask |= 1 << index;
- 	spin_unlock_irqrestore(&ohci->lock, flags);
- 
+-Brian
 
 -- 
-Stefan Richter
--=====-==-=- -=== ===--
-http://arcgraph.de/sr/
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
+
 
