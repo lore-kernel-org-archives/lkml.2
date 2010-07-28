@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab0G1Kym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:54:42 -0400
+	id S1754988Ab0G1Kyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:54:53 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:19098 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901Ab0G1Kyi (ORCPT
+	with ESMTP id S1754906Ab0G1Kyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 06:54:38 -0400
+	Wed, 28 Jul 2010 06:54:39 -0400
 X-IronPort-AV: E=Sophos;i="4.55,273,1278302400"; 
-   d="scan'208";a="107382894"
+   d="scan'208";a="107382895"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: linux-kernel@vger.kernel.org
 Cc: Ian Campbell <ian.campbell@citrix.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 3/4] powerpc: Use IRQF_NO_SUSPEND not IRQF_TIMER for non-timer interrupts
-Date: Wed, 28 Jul 2010 11:54:26 +0100
-Message-Id: <1280314467-5637-3-git-send-email-ian.campbell@citrix.com>
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com
+Subject: [PATCH 4/4] xen: do not suspend IPI IRQs.
+Date: Wed, 28 Jul 2010 11:54:27 +0100
+Message-Id: <1280314467-5637-4-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1280314445.24292.90.camel@zakaz.uk.xensource.com>
 References: <1280314445.24292.90.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 28 Jul 2010 10:54:37.0224 (UTC) FILETIME=[4566C280:01CB2E43]
+X-OriginalArrivalTime: 28 Jul 2010 10:54:38.0568 (UTC) FILETIME=[4633D680:01CB2E43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kw_i2c_irq and via_pmu_interrupt are not timer interrupts and
-therefore should not use IRQF_TIMER. Use the recently introduced
-IRQF_NO_SUSPEND instead since that is the actual desired behaviour.
+In general the semantics of IPIs are that they are are expected to
+continue functioning after dpm_suspend_noirq().
+
+Specifically I have seen a deadlock between the callfunc IPI and the
+stop machine used by xen's do_suspend() routine. If one CPU has already
+called dpm_suspend_noirq() then there is a window where it can be sent
+a callfunc IPI before all the other CPUs have entered stop_cpu().
+
+If this happens then the first CPU ends up spinning in stop_cpu()
+waiting for the other to rendezvous in state STOPMACHINE_PREPARE while
+the other is spinning in csd_lock_wait().
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: linuxppc-dev@ozlabs.org
-Cc: devicetree-discuss@lists.ozlabs.org
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+Cc: <stable@kernel.org> # .32.x+: 517d6934: irq: rename IRQF_TIMER to IRQF_NO_SUSPEND
+Cc: <stable@kernel.org> # .32.x+
 ---
- arch/powerpc/platforms/powermac/low_i2c.c |    4 ++--
- drivers/macintosh/via-pmu.c               |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/xen/events.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/platforms/powermac/low_i2c.c b/arch/powerpc/platforms/powermac/low_i2c.c
-index 06a137c..1554d29 100644
---- a/arch/powerpc/platforms/powermac/low_i2c.c
-+++ b/arch/powerpc/platforms/powermac/low_i2c.c
-@@ -542,11 +542,11 @@ static struct pmac_i2c_host_kw *__init kw_i2c_host_init(struct device_node *np)
- 	/* Make sure IRQ is disabled */
- 	kw_write_reg(reg_ier, 0);
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index db8f506..28f133a 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -536,6 +536,7 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
+ 	if (irq < 0)
+ 		return irq;
  
--	/* Request chip interrupt. We set IRQF_TIMER because we don't
-+	/* Request chip interrupt. We set IRQF_NO_SUSPEND because we don't
- 	 * want that interrupt disabled between the 2 passes of driver
- 	 * suspend or we'll have issues running the pfuncs
- 	 */
--	if (request_irq(host->irq, kw_i2c_irq, IRQF_TIMER, "keywest i2c", host))
-+	if (request_irq(host->irq, kw_i2c_irq, IRQF_NO_SUSPEND, "keywest i2c", host))
- 		host->irq = NO_IRQ;
- 
- 	printk(KERN_INFO "KeyWest i2c @0x%08x irq %d %s\n",
-diff --git a/drivers/macintosh/via-pmu.c b/drivers/macintosh/via-pmu.c
-index 3d4fc0f..5c6b5be 100644
---- a/drivers/macintosh/via-pmu.c
-+++ b/drivers/macintosh/via-pmu.c
-@@ -400,11 +400,11 @@ static int __init via_pmu_start(void)
- 		printk(KERN_ERR "via-pmu: can't map interrupt\n");
- 		return -ENODEV;
- 	}
--	/* We set IRQF_TIMER because we don't want the interrupt to be disabled
-+	/* We set IRQF_NO_SUSPEND because we don't want the interrupt to be disabled
- 	 * between the 2 passes of driver suspend, we control our own disabling
- 	 * for that one
- 	 */
--	if (request_irq(irq, via_pmu_interrupt, IRQF_TIMER, "VIA-PMU", (void *)0)) {
-+	if (request_irq(irq, via_pmu_interrupt, IRQF_NO_SUSPEND, "VIA-PMU", (void *)0)) {
- 		printk(KERN_ERR "via-pmu: can't request irq %d\n", irq);
- 		return -ENODEV;
- 	}
++	irqflags |= IRQF_NO_SUSPEND;
+ 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
+ 	if (retval != 0) {
+ 		unbind_from_irq(irq);
 -- 
 1.5.6.5
 
