@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab0G1S3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 14:29:23 -0400
-Received: from ppsw-30.csi.cam.ac.uk ([131.111.8.130]:38389 "EHLO
-	ppsw-30.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab0G1S3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 14:29:22 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C5077A0.7090701@cam.ac.uk>
-Date: Wed, 28 Jul 2010 19:32:00 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100726 Thunderbird/3.1.1
+	id S1755920Ab0G1SaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 14:30:07 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:38828 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1755798Ab0G1SaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 14:30:00 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/2VEp/vU324AOra360hO+/OB1Fn9wpIvnqcLA/b4
+	XzOW9Sqy0IbJLN
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] video/w100fb: ignore void return value / fix build failure
+Date: Wed, 28 Jul 2010 20:29:52 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jaya Kumar <jayakumar.lkml@gmail.com>,
+        Henrik Kretzschmar <henne@nachtwindheim.de>,
+        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        Jiri Kosina <trivial@kernel.org>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-iio@vger.kernel.org, Greg KH <greg@kroah.com>
-Subject: Re: mmotm 2010-07-27-14-56 uploaded (staging/iio)
-References: <201007272226.o6RMQRBm008735@imap1.linux-foundation.org> <20100728085428.1e50a262.randy.dunlap@oracle.com>
-In-Reply-To: <20100728085428.1e50a262.randy.dunlap@oracle.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007282029.52989.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks,
+From: Peter Huewe <peterhuewe@gmx.de>
 
-Sorry, my bad, will send fix out shortly.
+This patch fixes a build failure [1] (error: void value not ignored as
+it ought to be) by removing an assignment of a void return value.
+The functionality of the code is not changed.
 
-Jonathan
-> On Tue, 27 Jul 2010 14:56:50 -0700 akpm@linux-foundation.org wrote:
-> 
->> The mm-of-the-moment snapshot 2010-07-27-14-56 has been uploaded to
->>
->>    http://userweb.kernel.org/~akpm/mmotm/
->>
->> and will soon be available at
->>
->>    git://zen-kernel.org/kernel/mmotm.git
-> 
-> 
-> (from linux-next.patch ?)
-> 
-> In file included from drivers/staging/iio/accel/lis3l02dq_core.c:31:
-> drivers/staging/iio/accel/../ring_sw.h:223: warning: 'struct iio_ring_access_funcs' declared inside parameter list
-> drivers/staging/iio/accel/../ring_sw.h:223: warning: its scope is only this definition or declaration, which is probably not what you want
-> In file included from drivers/staging/iio/accel/lis3l02dq_core.c:35:
-> drivers/staging/iio/accel/lis3l02dq.h:161: error: field 'help' has incomplete type
-> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_read_reg_8':
-> drivers/staging/iio/accel/lis3l02dq_core.c:54: warning: type defaults to 'int' in declaration of '__mptr'
-> drivers/staging/iio/accel/lis3l02dq_core.c:54: warning: initialization from incompatible pointer type
-> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_write_reg_8':
-> drivers/staging/iio/accel/lis3l02dq_core.c:92: warning: type defaults to 'int' in declaration of '__mptr'
-> drivers/staging/iio/accel/lis3l02dq_core.c:92: warning: initialization from incompatible pointer type
-> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_write_reg_s16':
-> drivers/staging/iio/accel/lis3l02dq_core.c:128: warning: type defaults to 'int' in declaration of '__mptr'
-> drivers/staging/iio/accel/lis3l02dq_core.c:128: warning: initialization from incompatible pointer type
-> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_read_reg_s16':
-> drivers/staging/iio/accel/lis3l02dq_core.c:172: warning: type defaults to 'int' in declaration of '__mptr'
-> drivers/staging/iio/accel/lis3l02dq_core.c:172: warning: initialization from incompatible pointer type
-> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_thresh_handler_th':
-> drivers/staging/iio/accel/lis3l02dq_core.c:615: warning: type defaults to 'int' in declaration of '__mptr'
-> drivers/staging/iio/accel/lis3l02dq_core.c:615: warning: initialization from incompatible pointer type
-> drivers/staging/iio/accel/lis3l02dq_core.c:618: error: dereferencing pointer to incomplete type
-> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_stop_device':
-> drivers/staging/iio/accel/lis3l02dq_core.c:865: warning: type defaults to 'int' in declaration of '__mptr'
-> drivers/staging/iio/accel/lis3l02dq_core.c:865: warning: initialization from incompatible pointer type
-> drivers/staging/iio/imu/adis16350_core.c: In function 'adis16350_probe':
-> drivers/staging/iio/imu/adis16350_core.c:614: error: implicit declaration of function 'adis16350_configure_ring'
-> drivers/staging/iio/imu/adis16350_core.c:657: error: implicit declaration of function 'adis16350_unconfigure_ring'
-> 
-> 
-> config attached.
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+KernelVersion: linux-next-20100728
+References:
+[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2980912/
+
+ drivers/video/w100fb.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/w100fb.c b/drivers/video/w100fb.c
+index e66b8b1..d8b12c3 100644
+--- a/drivers/video/w100fb.c
++++ b/drivers/video/w100fb.c
+@@ -858,9 +858,9 @@ unsigned long w100fb_gpio_read(int port)
+ void w100fb_gpio_write(int port, unsigned long value)
+ {
+ 	if (port==W100_GPIO_PORT_A)
+-		value = writel(value, remapped_regs + mmGPIO_DATA);
++		writel(value, remapped_regs + mmGPIO_DATA);
+ 	else
+-		value = writel(value, remapped_regs + mmGPIO_DATA2);
++		writel(value, remapped_regs + mmGPIO_DATA2);
+ }
+ EXPORT_SYMBOL(w100fb_gpio_read);
+ EXPORT_SYMBOL(w100fb_gpio_write);
+-- 
+1.7.1
 
