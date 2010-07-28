@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab0G1VXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 17:23:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35943 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755518Ab0G1VXm (ORCPT
+	id S1756381Ab0G1VXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 17:23:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58186 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756364Ab0G1VXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 17:23:42 -0400
-Subject: [GIT PULL] Regulator fixes for 2.6.35
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 22:23:37 +0100
-Message-ID: <1280352217.3112.10.camel@odin>
+	Wed, 28 Jul 2010 17:23:52 -0400
+Date: Wed, 28 Jul 2010 14:23:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, apw@canonical.com, corbet@lwn.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH 1/4] timer: Added usleep[_range] timer
+Message-Id: <20100728142334.a0453c20.akpm@linux-foundation.org>
+In-Reply-To: <4C509BA3.7090403@codeaurora.org>
+References: <1280345587-19725-1-git-send-email-ppannuto@codeaurora.org>
+	<1280345587-19725-2-git-send-email-ppannuto@codeaurora.org>
+	<20100728132314.29cd68c5.akpm@linux-foundation.org>
+	<4C509772.1070407@codeaurora.org>
+	<20100728135857.2a0ab8bd.akpm@linux-foundation.org>
+	<4C509BA3.7090403@codeaurora.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 28 Jul 2010 14:05:39 -0700
+Patrick Pannuto <ppannuto@codeaurora.org> wrote:
 
-Please pull the following regulator fixes for 2.6.35.
+> On 07/28/2010 01:58 PM, Andrew Morton wrote:
+> > On Wed, 28 Jul 2010 13:47:46 -0700
+> > Patrick Pannuto <ppannuto@codeaurora.org> wrote:
+> > 
+> >>> This is different from the patch I merged and I'm not seeing any
+> >>> explanation for the change.
+> >>>
+> >>> The implementation of usleep() looks odd.  The longer we sleep, the
+> >>> greater the possible inaccuracy.  A code comment which explains the
+> >>> thinking and which warns people about the implications is needed.
+> > 
+> > I wanna code comment!
+> > 
+> 
+> I understand -- will do (if this even survives, which is unlikely)
+> 
+> > My main concern is that someone will type usleep(50) and won't realise
+> > that it goes and sleeps for 100 usecs and their code gets slow as a
+> > result.  This sort of thing takes *years* to discover and fix.  If we'd
+> > forced them to type usleep_range() instead, it would never have happened.
+> 
+> In that case, it would push me in the direction of only providing
+> usleep_range, and thus forcing people to think about it that way;
+> leave slack decisions to people who know what tolerances are acceptable.
 
-Two are relatively small resource leakage fixes, whilst the tps6507x and
-omap-l138-evm patches together fix a regulator voltage control bug on
-the omap evm board.
-
-Thanks
-
-Liam
-
---- 
-
-The following changes since commit b37fa16e78d6f9790462b3181602a26b5af36260:
-  Linus Torvalds (1):
-        Linux 2.6.35-rc6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
-
-Anuj Aggarwal (1):
-      regulator: tps6507x: allow driver to use DEFDCDC{2,3}_HIGH register
-
-Axel Lin (2):
-      ab3100: fix off-by-one value range checking for voltage selector
-      wm8350-regulator: fix wm8350_register_regulator error handling
-
-Sekhar Nori (1):
-      davinci: da850/omap-l138 evm: account for DEFDCDC{2,3} being tied high
-
- arch/arm/mach-davinci/board-da850-evm.c |    8 +++++++
- drivers/regulator/ab3100.c              |    4 +-
- drivers/regulator/tps6507x-regulator.c  |   36 +++++++++++++++++++++++++------
- drivers/regulator/wm8350-regulator.c    |    2 +-
- include/linux/regulator/tps6507x.h      |   32 +++++++++++++++++++++++++++
- 5 files changed, 72 insertions(+), 10 deletions(-)
- create mode 100644 include/linux/regulator/tps6507x.h
-
+Well, I _think_ that would be a good approach.  I'm 45%/55% on that one
+and would be interested in other opinions ;)
 
