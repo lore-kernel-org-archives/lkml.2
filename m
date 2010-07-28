@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab0G1Uwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 16:52:30 -0400
-Received: from mx7.orcon.net.nz ([219.88.242.57]:55648 "EHLO mx7.orcon.net.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752297Ab0G1Uw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 16:52:29 -0400
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-alpha@vger.kernel.org
-Message-Id: <FA98B8E5-B4E8-4FC7-94F0-9A8EA38CFF97@orcon.net.nz>
-From: Michael Cree <mcree@orcon.net.nz>
-To: Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100728125330.af75e63c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+	id S1756219Ab0G1U7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 16:59:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52782 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752580Ab0G1U7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 16:59:17 -0400
+Date: Wed, 28 Jul 2010 13:58:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, apw@canonical.com, corbet@lwn.net,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH 1/4] timer: Added usleep[_range] timer
+Message-Id: <20100728135857.2a0ab8bd.akpm@linux-foundation.org>
+In-Reply-To: <4C509772.1070407@codeaurora.org>
+References: <1280345587-19725-1-git-send-email-ppannuto@codeaurora.org>
+	<1280345587-19725-2-git-send-email-ppannuto@codeaurora.org>
+	<20100728132314.29cd68c5.akpm@linux-foundation.org>
+	<4C509772.1070407@codeaurora.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: [PATCH 3/3 V2] alpha: Implement HW performance events on the EV67 and later CPUs.
-Date: Thu, 29 Jul 2010 08:52:24 +1200
-References: <1272958808.5605.126.camel@twins> <1280226579-6117-2-git-send-email-mcree@orcon.net.nz> <20100728125330.af75e63c.akpm@linux-foundation.org>
-X-Mailer: Apple Mail (2.936)
-X-DSPAM-Check: by mx7.orcon.net.nz on Thu, 29 Jul 2010 08:52:27 +1200
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Jul 29 08:52:27 2010
-X-DSPAM-Confidence: 0.9917
-X-DSPAM-Probability: 0.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/2010, at 7:53 AM, Andrew Morton wrote:
-> On Tue, 27 Jul 2010 22:29:39 +1200
-> Michael Cree <mcree@orcon.net.nz> wrote:
->
->> This implements hardware performance events for the EV67 and later
->> CPUs within the Linux performance events subsystem.  Only using the
->> performance monitoring unit in HP/Compaq's so called "Aggregrate
->> mode" is supported.
->>
->> The code has been implemented in a manner that makes extension to
->> other older Alpha CPUs relatively straightforward should some mug
->> wish to indulge his or herself.
->
-> Below is the incremental diff.
->
-> I have a note here that Peter had issues with the earlier version of
-> this patch.  But I see no info here regarding what those issues were,
-> nor whether or how they were addressed.
+On Wed, 28 Jul 2010 13:47:46 -0700
+Patrick Pannuto <ppannuto@codeaurora.org> wrote:
 
-Yeah, I addressed those in the cover letter, which I include here FYI:
+> > This is different from the patch I merged and I'm not seeing any
+> > explanation for the change.
+> > 
+> > The implementation of usleep() looks odd.  The longer we sleep, the
+> > greater the possible inaccuracy.  A code comment which explains the
+> > thinking and which warns people about the implications is needed.
 
-On 04/05/10 19:40, Peter Zijlstra wrote:
-> On Sat, 2010-05-01 at 11:55 +1200, Michael Cree wrote:
->> +/* I wonder what this is for ??? */
->> +void set_perf_event_pending(void)
->> +{
->> +}
->
-> If the PMU Interrupt comes in as an NMI we cannot take locks and such
-> from its handler. So what we do is queue that work to be ran later.  
-> The
-> kernel has a fallback to run this stuff from the timer hardirq, but if
-> the PMI is IRQ context (like ARM) you can simply call
-> perf_event_do_pending() at its tail.
->
-> Alternatively you can self-IPI like x86 does and run
-> perf_event_do_pending() from there.
+I wanna code comment!
 
-OK, I couldn't see how to self-IPI on the Apha (there is no obvious  
-way in
-the Alpha arch code, and the Alpha HW Ref. Man. only describes such a
-feature being supported by the PALcode for OpenVMS which we are  
-obviously
-not running) and the PMI on Alpha is at such a high priority there is no
-chance that the lock can be freed while in the PMI handler, so I have  
-put
-the call to perf_event_do_pending() in the timer interrupt, but unlike  
-the
-PowerPC code I don't know any tricks to force the timer interrupt to  
-happen
-early when there is pending work, so there is a potential maximum  
-delay of
-1ms from pending work being notified to calling  
-perf_event_do_pending().  Is
-this delay acceptable?
+> Yes it is different; the explanation was in the cover message. I should
+> probably include a copy of the explanation in the commit message as
+> well? It was becoming a very long commit message...
+> 
+> // FROM COVER MESSAGE:
+>    This iteration is similar, with the notable difference that now
+>    usleep has a "built-in slack" of 200%. This is analogous to msleep,
+>    which has a built-in slack of 0.4% (since it relies on legacy timers,
+>    which have a built-in slack of 0.4%). 200% slack is significantly
+>    greater than 0.4%, but the scale of usleep is also significantly
+>    different than that of msleep, and I believe 200% to be a sane
+>    default.
+> 
+>    It is my opinion that this interface will most often mirror what
+>    developers actually intend - indeed some people who have begun
+>    trying to use the API raised this point -, however, I would like
+>    some input as it is possibly confusing that the API will "double
+>    your sleep" by default.
+> 
+>    The usleep_range API is still included, since it provides an
+>    interface to override the "default slack" of 200% by providing
+>    an explicit range, or to allow callers to specify an even larger
+>    slack if possible.
+> 
+> The problem that was raised by a few people trying to use usleep here
+> was that the API as written was very awkward -- there was never really
+> a good reason to use "usleep" as it was written. The intention was
+> to make usleep a usable / sensible API; the obvious alternative I see
+> is to drop the usleep function entirely and only provide usleep_range - 
+> which would probably fit well in your request for callers to think
+> about what they are doing, if providing a somewhat awkward API.
+> 
+> The complaint was something to the effect of:
+> 
+>    "Well, I understand that I should probably give a range, but I have
+>    no idea what a good range would be. I really just want it to sleep
+>    for a little bit, but I probably shouldn't trigger an extra interrupt.
+>    Given the limitations, what's the point of even having a usleep call
+>    at all?"
+> 
+> 
+> Thoughts?
 
-I also fix a nasty, but heretofore hidden, bug that could completely  
-lock up
-a machine with continuous PMIs due to a throttled PMC being accidently
-re-enabled by the other PMC. It only showed up when I set the NMI flag  
-true
-in the call to perf_event_overflow() and had two events counting
-simultaneously with a very short sample period.
+My main concern is that someone will type usleep(50) and won't realise
+that it goes and sleeps for 100 usecs and their code gets slow as a
+result.  This sort of thing takes *years* to discover and fix.  If we'd
+forced them to type usleep_range() instead, it would never have happened.
 
-I also see the x86 and Sparc code in 2.6.35 have reimplemented
-the call to hw_perf_group_sched_in() in terms of new functions  
-start_txn(),
-cancel_txn() and commit_txn().  Is this change necessary to get the  
-Alpha
-code accepted for 2.6.36?  If so it would be helpful if I could have a  
-brief
-description of what each function does.
 
-Cheers
-Michael.
+
+Another question: what is the typical overhead of a usleep()?  IOW, at
+what delay value does it make more sense to use udelay()?  Another way
+of asking that would be "how long does a usleep(1) take"?  If it
+reliably consumes 2us CPU time then we shouldn't do it.
+
+But it's not just CPU time, is it?  A smart udelay() should put the CPU
+into a lower power state, so a udelay(3) might consume less energy than
+a usleep(2), because the usleep() does much more work in schedule() and
+friends?
 
