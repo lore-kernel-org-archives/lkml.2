@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab0G1K1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:27:40 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34647 "EHLO gir.skynet.ie"
+	id S1754823Ab0G1K2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:28:06 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34671 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754743Ab0G1K1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 06:27:30 -0400
+	id S1751444Ab0G1K13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 06:27:29 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 8/9] vmscan: Kick flusher threads to clean pages when reclaim is encountering dirty pages
-Date: Wed, 28 Jul 2010 11:27:22 +0100
-Message-Id: <1280312843-11789-9-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 7/9] writeback: Roll up of writeback: try to write older pages first
+Date: Wed, 28 Jul 2010 11:27:21 +0100
+Message-Id: <1280312843-11789-8-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1280312843-11789-1-git-send-email-mel@csn.ul.ie>
 References: <1280312843-11789-1-git-send-email-mel@csn.ul.ie>
@@ -27,117 +27,300 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a number of cases where pages get cleaned but two of concern
-to this patch are;
-  o When dirtying pages, processes may be throttled to clean pages if
-    dirty_ratio is not met.
-  o Pages belonging to inodes dirtied longer than
-    dirty_writeback_centisecs get cleaned.
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-The problem for reclaim is that dirty pages can reach the end of the LRU if
-pages are being dirtied slowly so that neither the throttling or a flusher
-thread waking periodically cleans them.
+This is a roll-up of the series entitled "[RFC] writeback: try to write
+older pages first".
 
-Background flush is already cleaning old or expired inodes first but the
-expire time is too far in the future at the time of page reclaim. To mitigate
-future problems, this patch wakes flusher threads to clean 4M of data -
-an amount that should be manageable without causing congestion in many cases.
-
-Ideally, the background flushers would only be cleaning pages belonging
-to the zone being scanned but it's not clear if this would be of benefit
-(less IO) or not (potentially less efficient IO if an inode is scattered
-across multiple zones).
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+No signoff required
 ---
- mm/vmscan.c |   33 +++++++++++++++++++++++++++++++--
- 1 files changed, 31 insertions(+), 2 deletions(-)
+ fs/fs-writeback.c                |   83 ++++++++++++++++++++------------------
+ include/linux/writeback.h        |    4 +-
+ include/trace/events/writeback.h |    9 +----
+ mm/backing-dev.c                 |    1 -
+ mm/page-writeback.c              |    1 -
+ 5 files changed, 46 insertions(+), 52 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2d2b588..b66d1f5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -142,6 +142,18 @@ static DECLARE_RWSEM(shrinker_rwsem);
- /* Direct lumpy reclaim waits up to five seconds for background cleaning */
- #define MAX_SWAP_CLEAN_WAIT 50
- 
-+/*
-+ * When reclaim encounters dirty data, wakeup flusher threads to clean
-+ * a maximum of 4M of data.
-+ */
-+#define MAX_WRITEBACK (4194304UL >> PAGE_SHIFT)
-+#define WRITEBACK_FACTOR (MAX_WRITEBACK / SWAP_CLUSTER_MAX)
-+static inline long nr_writeback_pages(unsigned long nr_dirty)
-+{
-+	return laptop_mode ? 0 : 
-+			min(MAX_WRITEBACK, (nr_dirty * WRITEBACK_FACTOR));
-+}
-+
- static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
- 						  struct scan_control *sc)
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 10f939a..5a3c764 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -213,20 +213,34 @@ static bool inode_dirtied_after(struct inode *inode, unsigned long t)
+  * Move expired dirty inodes from @delaying_queue to @dispatch_queue.
+  */
+ static void move_expired_inodes(struct list_head *delaying_queue,
+-			       struct list_head *dispatch_queue,
+-				unsigned long *older_than_this)
++				struct list_head *dispatch_queue,
++				struct writeback_control *wbc)
  {
-@@ -649,12 +661,14 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
- static unsigned long shrink_page_list(struct list_head *page_list,
- 					struct scan_control *sc,
- 					enum pageout_io sync_writeback,
-+					int file,
- 					unsigned long *nr_still_dirty)
++	unsigned long expire_interval = 0;
++	unsigned long older_than_this = 0; /* reset to kill gcc warning */
+ 	LIST_HEAD(tmp);
+ 	struct list_head *pos, *node;
+ 	struct super_block *sb = NULL;
+ 	struct inode *inode;
+ 	int do_sb_sort = 0;
+ 
++	if (wbc->for_kupdate || wbc->for_background) {
++		expire_interval = msecs_to_jiffies(dirty_expire_interval * 10);
++		older_than_this = jiffies - expire_interval;
++	}
++
+ 	while (!list_empty(delaying_queue)) {
+ 		inode = list_entry(delaying_queue->prev, struct inode, i_list);
+-		if (older_than_this &&
+-		    inode_dirtied_after(inode, *older_than_this))
+-			break;
++		if (expire_interval &&
++		    inode_dirtied_after(inode, older_than_this)) {
++			if (wbc->for_background &&
++			    list_empty(dispatch_queue) && list_empty(&tmp)) {
++				expire_interval >>= 1;
++				older_than_this = jiffies - expire_interval;
++				continue;
++			} else
++				break;
++		}
+ 		if (sb && sb != inode->i_sb)
+ 			do_sb_sort = 1;
+ 		sb = inode->i_sb;
+@@ -254,10 +268,10 @@ static void move_expired_inodes(struct list_head *delaying_queue,
+ /*
+  * Queue all expired dirty inodes for io, eldest first.
+  */
+-static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
++static void queue_io(struct bdi_writeback *wb, struct writeback_control *wbc)
  {
- 	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
- 	int pgactivate = 0;
- 	unsigned long nr_dirty = 0;
-+	unsigned long nr_dirty_seen = 0;
- 	unsigned long nr_reclaimed = 0;
+ 	list_splice_init(&wb->b_more_io, wb->b_io.prev);
+-	move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
++	move_expired_inodes(&wb->b_dirty, &wb->b_io, wbc);
+ }
  
- 	cond_resched();
-@@ -748,6 +762,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		}
- 
- 		if (PageDirty(page)) {
-+			nr_dirty_seen++;
-+
- 			/*
- 			 * Only kswapd can writeback filesystem pages to
- 			 * avoid risk of stack overflow
-@@ -875,6 +891,18 @@ keep:
- 
- 	list_splice(&ret_pages, page_list);
- 
-+	/*
-+	 * If reclaim is encountering dirty pages, it may be because
-+	 * dirty pages are reaching the end of the LRU even though the
-+	 * dirty_ratio may be satisified. In this case, wake flusher
-+	 * threads to pro-actively clean up to a maximum of
-+	 * 4 * SWAP_CLUSTER_MAX amount of data (usually 1/2MB) unless
-+	 * !may_writepage indicates that this is a direct reclaimer in
-+	 * laptop mode avoiding disk spin-ups
-+	 */
-+	if (file && nr_dirty_seen && sc->may_writepage)
-+		wakeup_flusher_threads(nr_writeback_pages(nr_dirty));
-+
- 	*nr_still_dirty = nr_dirty;
- 	count_vm_events(PGACTIVATE, pgactivate);
- 	return nr_reclaimed;
-@@ -1315,7 +1343,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 	spin_unlock_irq(&zone->lru_lock);
- 
- 	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
--								&nr_dirty);
-+							file, &nr_dirty);
- 
- 	/*
- 	 * If specific pages are needed such as with direct reclaiming
-@@ -1351,7 +1379,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 			count_vm_events(PGDEACTIVATE, nr_active);
- 
- 			nr_reclaimed += shrink_page_list(&page_list, sc,
--						PAGEOUT_IO_SYNC, &nr_dirty);
-+						PAGEOUT_IO_SYNC, file,
-+						&nr_dirty);
- 		}
+ static int write_inode(struct inode *inode, struct writeback_control *wbc)
+@@ -362,6 +376,8 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 		int err = write_inode(inode, wbc);
+ 		if (ret == 0)
+ 			ret = err;
++		if (!err)
++			wbc->inodes_written++;
  	}
  
+ 	spin_lock(&inode_lock);
+@@ -528,12 +544,8 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
+ 		iput(inode);
+ 		cond_resched();
+ 		spin_lock(&inode_lock);
+-		if (wbc->nr_to_write <= 0) {
+-			wbc->more_io = 1;
++		if (wbc->nr_to_write <= 0)
+ 			return 1;
+-		}
+-		if (!list_empty(&wb->b_more_io))
+-			wbc->more_io = 1;
+ 	}
+ 	/* b_io is empty */
+ 	return 1;
+@@ -546,8 +558,9 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
+ 
+ 	wbc->wb_start = jiffies; /* livelock avoidance */
+ 	spin_lock(&inode_lock);
+-	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+-		queue_io(wb, wbc->older_than_this);
++
++	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
++		queue_io(wb, wbc);
+ 
+ 	while (!list_empty(&wb->b_io)) {
+ 		struct inode *inode = list_entry(wb->b_io.prev,
+@@ -575,8 +588,8 @@ static void __writeback_inodes_sb(struct super_block *sb,
+ 
+ 	wbc->wb_start = jiffies; /* livelock avoidance */
+ 	spin_lock(&inode_lock);
+-	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+-		queue_io(wb, wbc->older_than_this);
++	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
++		queue_io(wb, wbc);
+ 	writeback_sb_inodes(sb, wb, wbc, true);
+ 	spin_unlock(&inode_lock);
+ }
+@@ -611,29 +624,19 @@ static inline bool over_bground_thresh(void)
+  * Try to run once per dirty_writeback_interval.  But if a writeback event
+  * takes longer than a dirty_writeback_interval interval, then leave a
+  * one-second gap.
+- *
+- * older_than_this takes precedence over nr_to_write.  So we'll only write back
+- * all dirty pages if they are all attached to "old" mappings.
+  */
+ static long wb_writeback(struct bdi_writeback *wb,
+ 			 struct wb_writeback_work *work)
+ {
+ 	struct writeback_control wbc = {
+ 		.sync_mode		= work->sync_mode,
+-		.older_than_this	= NULL,
+ 		.for_kupdate		= work->for_kupdate,
+ 		.for_background		= work->for_background,
+ 		.range_cyclic		= work->range_cyclic,
+ 	};
+-	unsigned long oldest_jif;
+ 	long wrote = 0;
+ 	struct inode *inode;
+ 
+-	if (wbc.for_kupdate) {
+-		wbc.older_than_this = &oldest_jif;
+-		oldest_jif = jiffies -
+-				msecs_to_jiffies(dirty_expire_interval * 10);
+-	}
+ 	if (!wbc.range_cyclic) {
+ 		wbc.range_start = 0;
+ 		wbc.range_end = LLONG_MAX;
+@@ -653,9 +656,9 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		if (work->for_background && !over_bground_thresh())
+ 			break;
+ 
+-		wbc.more_io = 0;
+ 		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
+ 		wbc.pages_skipped = 0;
++		wbc.inodes_written = 0;
+ 
+ 		trace_wbc_writeback_start(&wbc, wb->bdi);
+ 		if (work->sb)
+@@ -668,20 +671,25 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+ 
+ 		/*
+-		 * If we consumed everything, see if we have more
++		 * Did we write something? Try for more
++		 *
++		 * This is needed _before_ the b_more_io test because the
++		 * background writeback moves inodes to b_io and works on
++		 * them in batches (in order to sync old pages first).  The
++		 * completion of the current batch does not necessarily mean
++		 * the overall work is done.
+ 		 */
+-		if (wbc.nr_to_write <= 0)
++		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
++			continue;
++		if (wbc.inodes_written)
+ 			continue;
++
+ 		/*
+-		 * Didn't write everything and we don't have more IO, bail
++		 * Nothing written and no more inodes for IO, bail
+ 		 */
+-		if (!wbc.more_io)
++		if (list_empty(&wb->b_more_io))
+ 			break;
+-		/*
+-		 * Did we write something? Try for more
+-		 */
+-		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
+-			continue;
++
+ 		/*
+ 		 * Nothing written. Wait for some inode to
+ 		 * become available for writeback. Otherwise
+@@ -1026,9 +1034,6 @@ EXPORT_SYMBOL(__mark_inode_dirty);
+  * Write out a superblock's list of dirty inodes.  A wait will be performed
+  * upon no inodes, all inodes or the final one, depending upon sync_mode.
+  *
+- * If older_than_this is non-NULL, then only write out inodes which
+- * had their first dirtying at a time earlier than *older_than_this.
+- *
+  * If `bdi' is non-zero then we're being asked to writeback a specific queue.
+  * This function assumes that the blockdev superblock's inodes are backed by
+  * a variety of queues, so all inodes are searched.  For other superblocks,
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index c24eca7..494edd6 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -28,14 +28,13 @@ enum writeback_sync_modes {
+  */
+ struct writeback_control {
+ 	enum writeback_sync_modes sync_mode;
+-	unsigned long *older_than_this;	/* If !NULL, only write back inodes
+-					   older than this */
+ 	unsigned long wb_start;         /* Time writeback_inodes_wb was
+ 					   called. This is needed to avoid
+ 					   extra jobs and livelock */
+ 	long nr_to_write;		/* Write this many pages, and decrement
+ 					   this for each page written */
+ 	long pages_skipped;		/* Pages which were not written */
++	long inodes_written;		/* Number of inodes(metadata) synced */
+ 
+ 	/*
+ 	 * For a_ops->writepages(): is start or end are non-zero then this is
+@@ -51,7 +50,6 @@ struct writeback_control {
+ 	unsigned for_background:1;	/* A background writeback */
+ 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+ 	unsigned range_cyclic:1;	/* range_start is cyclic */
+-	unsigned more_io:1;		/* more io to be dispatched */
+ };
+ 
+ /*
+diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+index 0be26ac..dc8001f 100644
+--- a/include/trace/events/writeback.h
++++ b/include/trace/events/writeback.h
+@@ -99,8 +99,6 @@ DECLARE_EVENT_CLASS(wbc_class,
+ 		__field(int, for_background)
+ 		__field(int, for_reclaim)
+ 		__field(int, range_cyclic)
+-		__field(int, more_io)
+-		__field(unsigned long, older_than_this)
+ 		__field(long, range_start)
+ 		__field(long, range_end)
+ 	),
+@@ -114,15 +112,12 @@ DECLARE_EVENT_CLASS(wbc_class,
+ 		__entry->for_background	= wbc->for_background;
+ 		__entry->for_reclaim	= wbc->for_reclaim;
+ 		__entry->range_cyclic	= wbc->range_cyclic;
+-		__entry->more_io	= wbc->more_io;
+-		__entry->older_than_this = wbc->older_than_this ?
+-						*wbc->older_than_this : 0;
+ 		__entry->range_start	= (long)wbc->range_start;
+ 		__entry->range_end	= (long)wbc->range_end;
+ 	),
+ 
+ 	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
+-		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
++		"bgrd=%d reclm=%d cyclic=%d "
+ 		"start=0x%lx end=0x%lx",
+ 		__entry->name,
+ 		__entry->nr_to_write,
+@@ -132,8 +127,6 @@ DECLARE_EVENT_CLASS(wbc_class,
+ 		__entry->for_background,
+ 		__entry->for_reclaim,
+ 		__entry->range_cyclic,
+-		__entry->more_io,
+-		__entry->older_than_this,
+ 		__entry->range_start,
+ 		__entry->range_end)
+ )
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index ac78a33..eaea7e0 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -270,7 +270,6 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
+ {
+ 	struct writeback_control wbc = {
+ 		.sync_mode		= WB_SYNC_NONE,
+-		.older_than_this	= NULL,
+ 		.range_cyclic		= 1,
+ 		.nr_to_write		= 1024,
+ 	};
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index d556cd8..d4a9e3d 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -497,7 +497,6 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 	for (;;) {
+ 		struct writeback_control wbc = {
+ 			.sync_mode	= WB_SYNC_NONE,
+-			.older_than_this = NULL,
+ 			.nr_to_write	= write_chunk,
+ 			.range_cyclic	= 1,
+ 		};
 -- 
 1.7.1
 
