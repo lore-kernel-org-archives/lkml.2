@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab0G1TdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 15:33:22 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:12545 "EHLO
+	id S1756144Ab0G1TeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 15:34:01 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12555 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab0G1TdQ (ORCPT
+	with ESMTP id S1754870Ab0G1TdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 15:33:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6057"; a="49104463"
+	Wed, 28 Jul 2010 15:33:17 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6057"; a="49104465"
 From: Patrick Pannuto <ppannuto@codeaurora.org>
 To: linux-kernel@vger.kernel.org
 Cc: ppannuto@codeaurora.org, apw@canonical.com, corbet@lwn.net,
         Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH 1/4] timer: Added usleep[_range] timer
-Date: Wed, 28 Jul 2010 12:33:04 -0700
-Message-Id: <1280345587-19725-2-git-send-email-ppannuto@codeaurora.org>
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Subject: [PATCH 2/4] Documentation: Add timers/timers-howto.txt
+Date: Wed, 28 Jul 2010 12:33:05 -0700
+Message-Id: <1280345587-19725-3-git-send-email-ppannuto@codeaurora.org>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1280345587-19725-1-git-send-email-ppannuto@codeaurora.org>
 References: <1280345587-19725-1-git-send-email-ppannuto@codeaurora.org>
@@ -25,175 +23,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usleep[_range] are finer precision implementations of msleep
-and are designed to be drop-in replacements for udelay where
-a precise sleep / busy-wait is unnecessary. They also allow
-an easy interface to specify slack when a precise (ish)
-wakeup is unnecessary to help minimize wakeups
+This file seeks to explain the nuances in various delays;
+many driver writers are not necessarily familiar with the
+various kernel timers, their shortfalls, and quirks. When
+faced with
 
-By default, usleep introduces a "slack" of twice the requested
-duration. If callers require a more precise sleep (?), the
-provided usleep_range call can be used to provide a tighter,
-or much looser, bound.
+ndelay, udelay, mdelay, usleep, usleep_range, msleep, and
+msleep_interrubtible
 
-*** INTRO ***
+the question "How do I just wait 1 ms for my hardware to
+latch?" has the non-intuitive "best" answer:
+	usleep(1000)
 
-As discussed here ( http://lkml.org/lkml/2007/8/3/250 ), msleep(1) is not
-precise enough for many drivers (yes, sleep precision is an unfair notion,
-but consistently sleeping for ~an order of magnitude greater than requested
-is worth fixing). This patch adds a usleep API so that udelay does not have
-to be used. Obviously not every udelay can be replaced (those in atomic
-contexts or being used for simple bitbanging come to mind), but there are
-many, many examples of
-
-mydriver_write(...)
-/* Wait for hardware to latch */
-udelay(100)
-
-in various drivers where a busy-wait loop is neither beneficial nor
-necessary, but msleep simply does not provide enough precision and people
-are using a busy-wait loop instead.
-
-*** CONCERNS FROM THE RFC ***
-
-Why is udelay a problem / necessary? Most callers of udelay are in device/
-driver initialization code, which is serial...
-
-	As I see it, there is only benefit to sleeping over a delay; the
-	notion of "refactoring" areas that use udelay was presented, but
-	I see usleep as the refactoring. Consider i2c, if the bus is busy,
-	you need to wait a bit (say 100us) before trying again, your
-	current options are:
-
-		* udelay(100)
-		* msleep(1) <-- As noted above, actually as high as ~20ms
-				on some platforms, so not really an option
-		* Manually set up an hrtimer to try again in 100us (which
-		  is what usleep does anyway...)
-
-	People choose the udelay route because it is EASY; we need to
-	provide a better easy route.
-
-	Device / driver / boot code is *currently* serial, but every few
-	months someone makes noise about parallelizing boot, and IMHO, a
-	little forward-thinking now is one less thing to worry about
-	if/when that ever happens
-
-udelay's could be preempted
-
-	Sure, but if udelay plans on looping 1000 times, and it gets
-	preempted on loop 200, whenever it's scheduled again, it is
-	going to do the next 800 loops.
-
-Is the interruptible case needed?
-
-	Probably not, but I see usleep as a very logical parallel to msleep,
-	so it made sense to include the "full" API. Processors are getting
-	faster (albeit not as quickly as they are becoming more parallel),
-	so if someone wanted to be interruptible for a few usecs, why not
-	let them? If this is a contentious point, I'm happy to remove it.
-
-*** OTHER THOUGHTS ***
-
-I believe there is also value in exposing the usleep_range option; it gives
-the scheduler a lot more flexibility and allows the programmer to express
-his intent much more clearly; it's something I would hope future driver
-writers will take advantage of.
-
-To get the results in the NUMBERS section below, I literally s/udelay/usleep
-the kernel tree; I had to go in and undo the changes to the USB drivers, but
-everything else booted successfully; I find that extremely telling in and
-of itself -- many people are using a delay API where a sleep will suit them
-just fine.
-
-*** SOME ATTEMPTS AT NUMBERS ***
-
-It turns out that calculating quantifiable benefit on this is challenging,
-so instead I will simply present the current state of things, and I hope
-this to be sufficient:
-
-How many udelay calls are there in 2.6.35-rc5?
-
-	udealy(ARG) >=	| COUNT
-	1000		| 319
-	500		| 414
-	100		| 1146
-	20		| 1832
-
-I am working on Android, so that is my focus for this. The following table
-is a modified usleep that simply printk's the amount of time requested to
-sleep; these tests were run on a kernel with udelay >= 20 --> usleep
-
-"boot" is power-on to lock screen
-"power collapse" is when the power button is pushed and the device suspends
-"resume" is when the power button is pushed and the lock screen is displayed
-         (no touchscreen events or anything, just turning on the display)
-"use device" is from the unlock swipe to clicking around a bit; there is no
-	sd card in this phone, so fail loading music, video, camera
-
-	ACTION		| TOTAL NUMBER OF USLEEP CALLS	| NET TIME (us)
-	boot		| 22				| 1250
-	power-collapse	| 9				| 1200
-	resume		| 5				| 500
-	use device	| 59				| 7700
-
-The most interesting category to me is the "use device" field; 7700us of
-busy-wait time that could be put towards better responsiveness, or at the
-least less power usage.
+This patch is followed by a series of checkpatch additions
+that seek to help kernel hackers pick the best delay.
 
 Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
 ---
- include/linux/delay.h |    6 ++++++
- kernel/timer.c        |   22 ++++++++++++++++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
+ Documentation/timers/timers-howto.txt |  106 +++++++++++++++++++++++++++++++++
+ 1 files changed, 106 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/timers/timers-howto.txt
 
-diff --git a/include/linux/delay.h b/include/linux/delay.h
-index fd832c6..2538c95 100644
---- a/include/linux/delay.h
-+++ b/include/linux/delay.h
-@@ -45,6 +45,12 @@ extern unsigned long lpj_fine;
- void calibrate_delay(void);
- void msleep(unsigned int msecs);
- unsigned long msleep_interruptible(unsigned int msecs);
-+void usleep_range(unsigned long min, unsigned long max);
+diff --git a/Documentation/timers/timers-howto.txt b/Documentation/timers/timers-howto.txt
+new file mode 100644
+index 0000000..ea10a3a
+--- /dev/null
++++ b/Documentation/timers/timers-howto.txt
+@@ -0,0 +1,106 @@
++delays - Information on the various kernel delay / sleep mechanisms
++-------------------------------------------------------------------
 +
-+static inline void usleep(unsigned long usecs)
-+{
-+	usleep_range(usecs, usecs * 2);
-+}
- 
- static inline void ssleep(unsigned int seconds)
- {
-diff --git a/kernel/timer.c b/kernel/timer.c
-index ee305c8..c2253dd 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1750,3 +1750,25 @@ unsigned long msleep_interruptible(unsigned int msecs)
- }
- 
- EXPORT_SYMBOL(msleep_interruptible);
++This document seeks to answer the common question: "What is the
++RightWay (TM) to insert a delay?"
 +
-+static int __sched do_usleep_range(unsigned long min, unsigned long max)
-+{
-+	ktime_t kmin;
-+	unsigned long delta;
++This question is most often faced by driver writers who have to
++deal with hardware delays and who may not be the most intimately
++familiar with the inner workings of the Linux Kernel.
 +
-+	kmin = ktime_set(0, min * NSEC_PER_USEC);
-+	delta = (max - min) * NSEC_PER_USEC;
-+	return schedule_hrtimeout_range(&kmin, delta, HRTIMER_MODE_REL);
-+}
 +
-+/**
-+ * usleep_range - Drop in replacement for udelay where wakeup is flexible
-+ * @min: Minimum time in usecs to sleep
-+ * @max: Maximum time in usecs to sleep
-+ */
-+void usleep_range(unsigned long min, unsigned long max)
-+{
-+	__set_current_state(TASK_UNINTERRUPTIBLE);
-+	do_usleep_range(min, max);
-+}
-+EXPORT_SYMBOL(usleep_range);
++Inserting Delays
++----------------
++
++The first, and most important, question you need to ask is "Is my
++code in an atomic context?"  This should be followed closely by "Does
++it really need to delay in atomic context?" If so...
++
++ATOMIC CONTEXT:
++	You must use the *delay family of functions. These
++	functions use the jiffie estimation of clock speed
++	and will busy wait for enough loop cycles to achieve
++	the desired delay:
++
++	ndelay(unsigned long nsecs)
++	udelay(unsigned long usecs)
++	mdelay(unsgined long msecs)
++
++	udelay is the generally preferred API; ndelay-level
++	precision may not actually exist on many non-PC devices.
++
++	mdelay is macro wrapper around udelay, to account for
++	possible overflow when passing large arguments to udelay.
++	In general, use of mdelay is discouraged.
++
++NON-ATOMIC CONTEXT:
++	You should use the *sleep[_range] family of functions.
++	There are a few more options here, while any of them may
++	work correctly, using the "right" sleep function will
++	help the scheduler, power management, and just make your
++	driver better :)
++
++	-- Backed by busy-wait loop:
++		udelay(unsigned long usecs)
++	-- Backed by hrtimers:
++		usleep(unsigned long usecs)
++		usleep_range(unsigned long min, unsigned long max)
++	-- Backed by jiffies / legacy_timers
++		msleep(unsigned long msecs)
++		msleep_interruptible(unsigned long msecs)
++
++	Unlike the *delay family, the underlying mechanism
++	driving each of these calls varies, thus there are
++	quirks you should be aware of.
++
++
++	SLEEPING FOR "A FEW" USECS ( < ~10us? ):
++		* Use udelay
++
++		- Why not usleep?
++			On slower systems, (embedded, OR perhaps a speed-
++			stepped PC!) the overhead of setting up the hrtimers
++			for usleep *may* not be worth it. Such an evaluation
++			will obviously depend on your specific situation, but
++			it is something to be aware of.
++
++	SLEEPING FOR ~USECS OR SMALL MSECS ( 10us - 20ms):
++		* Use usleep[_range]
++
++		- Why not msleep for (1ms - 20ms)?
++			Explained originally here:
++				http://lkml.org/lkml/2007/8/3/250
++			msleep(1~20) may not do what the caller intends, and
++			will often sleep longer (~20 ms actual sleep for any
++			value given in the 1~20ms range). In many cases this
++			is not the desired behavior.
++
++		- What is the difference between usleep and usleep_range?
++			Fundamentally nothing; usleep(unsigned long usecs)
++			simply calls usleep_range(usecs, usecs * 2). This
++			built-in slack is similar in spirit to the slack
++			now built-in to legacy timers (0.4%) - and thus
++			built-in to msleep -, although it is significantly
++			larger.
++
++			The reasoning for slack is that usleep is built upon
++			hrtimers, and mindless callers of usleep will actually
++			introduce many undesired interrupts. By allowing a
++			range, wakeups can be coalesced. Given the scale, a
++			200% slack seems a reasonable default value.
++
++			If your application can afford it, use usleep_range
++			to extend the slack to an even larger window; or, if
++			you need a more precise sleep (?), you can use
++			usleep_range to restrict the slack to a tighter bound.
++
++	SLEEPING FOR LARGER MSECS ( 10ms+ )
++		* Use msleep or possibly msleep_interruptible
++
++		- What's the difference?
++			msleep sets the current task to TASK_UNINTERRUPTIBLE
++			whereas msleep_interruptible sets the current task to
++			TASK_INTERRUPTIBLE before scheduling the sleep. In
++			short, the difference is whether the sleep can be ended
++			early by a signal. In general, just use msleep unless
++			you know you have a need for the interruptible variant.
 -- 
 1.7.2
 
