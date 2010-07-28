@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab0G1Qta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 12:49:30 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:57425 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755717Ab0G1Qt0 (ORCPT
+	id S1755704Ab0G1QtT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 12:49:19 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:14744 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755655Ab0G1QtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 12:49:26 -0400
-Message-ID: <4C505F86.7050509@cs.helsinki.fi>
-Date: Wed, 28 Jul 2010 19:49:10 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	Wed, 28 Jul 2010 12:49:13 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zz1432Nzz1202hzz15d4Rz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L6A1DO-02-RBT-02
+X-M-MSG: 
+Date: Wed, 28 Jul 2010 18:48:15 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] x86: mce: fix error handling
+Message-ID: <20100728164815.GG16250@aftab>
+References: <1280335185-23265-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-CC: Catalin Marinas <catalin.marinas@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.35-rc6 patch] increase kmemleak robustness at boot
-References: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>
-In-Reply-To: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1280335185-23265-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel J Blueman wrote:
-> I've consistently been experiencing kmemleak exhaust it's 400-entry
-> early-boot buffer and disabling itself; there have been reports of
-> this also, and I'm finding this on x86-64 with various debug options
-> enabled.
-> 
-> If we issue a warning and allow the buffer to wrap, we don't need to
-> hit the kill-switch. While we lose track of some early potential
-> leaks, it's better than no functionality.
-> 
-> Let me know if it's acceptable, and many thanks for such an excellent tool,
+From: Kulikov Vasiliy <segooon@gmail.com>
+Date: Wed, Jul 28, 2010 at 12:39:44PM -0400
 
-Is it just potential leaks that we lose or can this cause false positives?
+> mcheck_init_device() poorly handles errors. If any request fails
+> unregister and free everything.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+
+Acked-by: Borislav Petkov <Borislav.Petkov@amd.com>
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
+
