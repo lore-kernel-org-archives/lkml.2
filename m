@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab0G1J0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:26:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:48984 "EHLO gate.crashing.org"
+	id S1754528Ab0G1JaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:30:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59078 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752184Ab0G1J0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:26:44 -0400
+	id S1754476Ab0G1JaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 05:30:04 -0400
 Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Miller <davem@davemloft.net>
-Cc: hpa@zytor.com, yinghai@kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <20100727.230120.43037767.davem@davemloft.net>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: David Miller <davem@davemloft.net>, hpa@zytor.com, mingo@elte.hu,
+        tglx@linutronix.de, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <4C4FCA7A.1020506@kernel.org>
 References: <1280294128.1970.237.camel@pasglop>
-	 <1280294376.1970.239.camel@pasglop> <4C4FC5D1.3070708@zytor.com>
+	 <1280294376.1970.239.camel@pasglop>	<4C4FC5D1.3070708@zytor.com>
 	 <20100727.230120.43037767.davem@davemloft.net>
+	 <4C4FCA7A.1020506@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 19:25:31 +1000
-Message-ID: <1280309131.1970.280.camel@pasglop>
+Date: Wed, 28 Jul 2010 19:29:02 +1000
+Message-ID: <1280309342.1970.283.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -27,26 +28,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 23:01 -0700, David Miller wrote:
-> > On x86, physical address 0 contains the real-mode IVT and will thus be
-> > reserved, at least for the forseeable future.  Other architectures may
-> > very well have non-special RAM there.
+On Tue, 2010-07-27 at 23:13 -0700, Yinghai Lu wrote:
+> So still keep MEMBLOCK_ERROR to (~(phys_addr_t)0) ?
+
+No point for now. lmb_alloc() etc... are defined as returning 0 for
+failure so we would need to fix that too.
+
+As I said in a previous email we do need to revisit the memblock error
+handling.
+
+> We can change some variable from unsigned long to phys_addr_t that
+> will be assigned by memblock_find_base().
 > 
-> 0 is very much possible on sparc64 
+> that could avoid casting too. 
 
-Yup, we need to fix that.
+That would be a good idea anyways if those are indeed carrying a
+physical address.
 
-For now I made MEMBLOCK_ERROR 0 and added a blurb to prevent allocating
-the first page since it would cause other problems with the current code
-(0 is after all the normal error result from membloc_alloc(), ie, our
-API wasn't quite consistent there).
-
-So I don't think I'm introducing a regression here, on the contrary. But
-if we are going to allow lmb_alloc() to return 0, we need to fix all
-callers first and then we can look into turning MEMBLOCK_ERROR back to
-~0
-
-Cheers,
 Ben.
 
 
