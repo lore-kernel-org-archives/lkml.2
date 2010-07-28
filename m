@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264Ab0G1SzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 14:55:12 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:36602 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876Ab0G1SzG (ORCPT
+	id S1751330Ab0G1S7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 14:59:14 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:36034 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0G1S7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 14:55:06 -0400
-Date: Wed, 28 Jul 2010 20:55:05 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: trapdoor6@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        "Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org,
-        Nir Tzachar <nir.tzachar@gmail.com>
-Subject: Re: Small typo in kernel [current source from git] .config option
-Message-ID: <20100728185505.GF29266@merkur.ravnborg.org>
-References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com> <20100727165549.GC26649@merkur.ravnborg.org> <AANLkTimmLLJ9VrbD94GA3ZH2XvBwEAAcrrL_etWAoEea@mail.gmail.com> <4C500E41.40708@suse.cz> <AANLkTi=rPP7OfoNoyVkM0XR08ns6p0+cENzcdk7gY8TE@mail.gmail.com> <4C504FBB.3020600@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C504FBB.3020600@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 28 Jul 2010 14:59:10 -0400
+Date: Wed, 28 Jul 2010 14:58:51 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Yu, Luming" <luming.yu@intel.com>,
+        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "venki@google.com" <venki@google.com>
+Subject: Re: [PATCH] ACPI: create "processor.bm_check_disable" boot param
+In-reply-to: <20100727112841.GC7813@basil.fritz.box>
+Message-id: <alpine.LFD.2.00.1007281456350.26093@localhost.localdomain>
+References: <20100525124325.GC7876@srcf.ucam.org>
+ <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain>
+ <20100525185507.GA15997@srcf.ucam.org>
+ <alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
+ <20100722074750.GA22520@one.firstfloor.org>
+ <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
+ <alpine.LFD.2.00.1007221720270.7970@localhost.localdomain>
+ <alpine.LFD.2.00.1007221739260.7970@localhost.localdomain>
+ <87k4oiiu3x.fsf@basil.nowhere.org>
+ <alpine.LFD.2.00.1007262007550.5292@localhost.localdomain>
+ <20100727112841.GC7813@basil.fritz.box>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 05:41:47PM +0200, Michal Marek wrote:
-> (adding Nir, who wrote nconfig, to CC).
-> 
-> On 28.7.2010 14:17, trapDoor wrote:
-> > On Wed, Jul 28, 2010 at 12:02 PM, Michal Marek <mmarek@suse.cz> wrote:
-> >> respectively). Unfortunatelly, there doesn't seem to be a way to
-> >> highlight single letters in an ncurses menu, hence the strange
-> >> cApitalization :(.
+
+On Tue, 27 Jul 2010, Andi Kleen wrote:
+
+> > > This needs to be also documented in Documentation/kernel-parameters.txt
 > > 
-> > I wonder how is this resolved in other console applications such as
-> > Midnight Commander. Does it have its own implementation for
-> > highlighting characters (it uses coloured mnemonics e.g. in menus) or
-> > it's based on some common Linux/Unix library which perhaps could be
-> > used for the nconfig as well?
+> > I thought about that and decided against it.
+> > While we do document some driver specific modparams
+> > in kernel-parameters.txt, I do not expect this one to
+> > be used that often -- mostly for diagnosis of BIOS bugs.
+> > I know of two machines that need it,
+> > and both of those machines have a BIOS update
+> > or a BIOS update in progress that make it unnecessary.
 > 
-> The problem is that nconfig uses the higher-level ncurses libraries
-> libmenu and libpanel, which make some things easier, but aren't as
-> flexible as using ncurses directly. Patches are welcome of course :-).
+> I think even obscure parameters should be documented.
 
-The capitilazing is the main reason why I have
-not recommended nconfig to be default.
+Where?
 
-And I doubt the shortcut letters are used that often.
-One idea could be to drop the shortcut for the individual menus.
+kernel-parameters.txt seems to be mostly about core kernel parameters.
+While there are some key driver parameters in there, they
+appear to be the exception.
 
-	Sam
+-Len
+
