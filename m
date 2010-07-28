@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab0G1Vwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 17:52:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21768 "EHLO mx1.redhat.com"
+	id S1756499Ab0G1V5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 17:57:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52264 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753493Ab0G1Vwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 17:52:42 -0400
-Date: Thu, 29 Jul 2010 00:46:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
+	id S1753484Ab0G1V5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 17:57:22 -0400
+Subject: Re: [PATCH V3] VFIO driver: Non-privileged user level PCI drivers
+From: Alex Williamson <alex.williamson@redhat.com>
 To: Tom Lyon <pugs@cisco.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-kernel@vger.kernel.org,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org, randy.dunlap@oracle.com, arnd@arndb.de,
         chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de,
         avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
-Subject: Re: [PATCH V3] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100728214654.GC9184@redhat.com>
-References: <4c40d618./j7HFMCg9NusCIiB%pugs@cisco.com>
- <201007271513.15093.pugs@cisco.com>
- <20100727235322.GB19930@redhat.com>
- <201007281414.22335.pugs@cisco.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <201007281414.22335.pugs@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+References: <4c40d618./j7HFMCg9NusCIiB%pugs@cisco.com>
+	 <201007271513.15093.pugs@cisco.com> <20100727235322.GB19930@redhat.com>
+	 <201007281414.22335.pugs@cisco.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 15:57:02 -0600
+Message-ID: <1280354222.3919.12.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 02:14:21PM -0700, Tom Lyon wrote:
+On Wed, 2010-07-28 at 14:14 -0700, Tom Lyon wrote:
 > On Tuesday, July 27, 2010 04:53:22 pm Michael S. Tsirkin wrote:
 > > On Tue, Jul 27, 2010 at 03:13:14PM -0700, Tom Lyon wrote:
 > > > [ Sorry for the long hiatus, I've been wrapped up in other issues.]
@@ -60,30 +58,11 @@ On Wed, Jul 28, 2010 at 02:14:21PM -0700, Tom Lyon wrote:
 > > interpret what do the virtual values mean.
 > 
 > Exactly! The PCI bus is far better *specified*, *documented*, and widely 
-> implemented than a Linux driver could ever hope to be.
-
-Yes but it does not map all that well to what you need to do.
-We need a sane backward compatibility plan, cross-platform support,
-error reporting, atomicity ... PCI config has support for none of this.
-So you implement a "kind of" PCI config, where accesses might fail
-or not go through to device, where there are some atomicity guarantees
-but not others ...
-And there won't even be a header file to look at to say "aha,
-this driver has this functionality".
-How does an application know whether you support capability X?
-Reading the driver source seems to be shaping up the only way.
-
->  And there are lots of 
+> implemented than a Linux driver could ever hope to be.  And there are lots of 
 > current Linux drivers which bang around in pci config space simply because the 
 > authors were not aware of some api call buried deep in linux which would do 
 > the work for them - or - got tired of using OS-specific APIs when porting a 
 > driver and decided to just ask the hardware.
-
-Really? Example? drivers either use proper APIs or are broken in some way.
-You can not even size the BARs without using the OS API.
-So what's safe to do directly? Maybe reading out device/vendor/revision ID ...
-looks like small change to me.
-
 > 
 > > Example:
 > > 
@@ -101,28 +80,17 @@ looks like small change to me.
 > By and large, the user drivers just know how many because the hardware is 
 > constant.
 
-But you might not have CPU resources to allocate all vectors.
-And, same will apply to any register you spend code virtualizing.
+Something like GET_MSIX_VECTORS seems like a user library routine to me.
+The PCI config space is well specified and if we try to do more than
+shortcut trivial operations (like getting the BAR length), we risk
+losing functionality.  And for my purposes, translating to and from a
+made up API to PCI for the guest seems like a pain.
 
-> And inventing 20 or 30 ioctls to do a bunch of random stuff is gross
-
-
-If you dislike ioctls, use read/write at a defined offset,
-or sysfs. Just don't pretend you can say "look at PCI spec"
-and avoid the need to document your interface this way.
-
-> when you 
+> And inventing 20 or 30 ioctls to do a bunch of random stuff is gross when you 
 > can instead use normal read and write calls to a well defined structure.
 
-It is not all that well defined.
-What if hardware supports MSIX but host controller does not?
-Do you return error from write enabling MSIX?
-Virtualize it and pretend there is no capability?
-PCI has no provision for this, and deciding what to do
-here is policy which kernel should not dictate.
+Yep, this sounds like a job for libvfio.
 
-
-> > 
 > > > Now, the virtual model *could* look little like the real hardware, and
 > > > use bunches of ioctls for everything it needs,
 > > 
@@ -142,9 +110,7 @@ here is policy which kernel should not dictate.
 > 
 > Yes, there will be userspace libraries - I already have a vfio backend for 
 > libpci.
-
-So move the virtualization stuff there, and out of kernel.
-
+> > 
 > > > I realize that to date the VFIO driver has been a  bit of a mish-mash
 > > > between the ioctl and config based techniques; I intend to clean that
 > > > up.  And, yes, the abstract model presented by VFIO will need plenty of
@@ -155,23 +121,10 @@ So move the virtualization stuff there, and out of kernel.
 > > to fix a bug, to the driver this looks like a hardware change,
 > > and it will crash.
 > 
-> The changes will come only to allow for a more-perfect emulation,
-> so I doubt 
-> that  will cause driver problems.
-
-You plan changing the API to accomodate new hardware
-and doubt this will create problems?
-'more perfect emulation' for one app is a crasher bug for another one.
-
-
-> No different than discovering and fixing 
+> The changes will come only to allow for a more-perfect emulation, so I doubt 
+> that  will cause driver problems.  No different than discovering and fixing 
 > bugs in the ioctls needed in you scenario.
-
-Very different. With a sane interface you can just add
-another register to encode new information, keeping
-the old one around to avoid breaking userspace.
-PCI is not designed to allow this, so it does not.
-
+> 
 > > 
 > > The PCI spec has some weak versioning support, but it
 > > is mostly not a problem in that space: a specific driver needs to
@@ -179,16 +132,9 @@ PCI is not designed to allow this, so it does not.
 > > configuration space is a bad interface to use.
 > 
 > PCI has great versioning. Damn near every change made in 16+ years has been 
-> upwards compatible.
-
-You plan to push interface extensions for your driver through PCI SIG?
-
->  BIOS and OS writers don't have trouble with generic PCI, 
+> upwards compatible.  BIOS and OS writers don't have trouble with generic PCI, 
 > why should vfio?
-
-They do with it what it was defined to do. You want to use it
-as a system call interface which it was never intended for.
-
+> 
 > > 
 > > > Since KVM/qemu already has its own notion of a virtual PCI device which
 > > > it presents to the guest OS, we either need to reconcile VFIO and qemu,
@@ -200,8 +146,24 @@ as a system call interface which it was never intended for.
 > 
 > I hope not, but I also hope not to become the qemu expert to find out.  Alex 
 > W. seemed to be making progress in this area.
-> 
-> > 
+
+I hope not too, the qemu driver I wrote does perfectly fine with the
+virtualized config space (aside from things like guest initiated FLR or
+resent via oem specific mechanism, which we need to figure out how to
+handle anway).  I end up calling into the qemu PCI emulation for writes
+only to keep the qemu infrastructure working when BARs get mapped.
+Reads come from VFIO except for the command register due to the mem/io
+bits not necessarily tracking what the driver expects for VFs.
+
+The old device assignment driver uses pci sysfs, so I think we can
+easily adapt the qemu vfio driver in either direction, virtualized
+config space or non.  I do prefer the virtualized config space because
+it makes my life easier in the qemu vfio driver.  I have far, far fewer
+traps for reads and writes to specific addresses than the old device
+assignment driver.  Thanks,
+
+Alex
+
 > > > Other little things:
 > > > 1. Yes, I can share some code with sysfs if I can get the right EXPORTs
 > > > there. 2. I'll add multiple MSI support, but I wish to point out that
@@ -217,3 +179,10 @@ as a system call interface which it was never intended for.
 > > > 4. I'll get rid of the vfio config_map in sysfs; it was there for
 > > > debugging. 5. I'm still looking to support hotplug/unplug and power
 > > > management stuff via generic netlink notifications.
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
