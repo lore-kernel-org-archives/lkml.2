@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab0G1XMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 19:12:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63979 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab0G1XMu convert rfc822-to-8bit (ORCPT
+	id S1756690Ab0G1XM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:12:59 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56975 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab0G1XMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 19:12:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=H/R51kxRHbj3SCtZdY5ELemzQftoYjkerauoOTM360b93WT28iLIPRQ17oV2YO6EpL
-         gIndC4yvqy0m3LH91XlbO4U4crkoM6Xk1N0YcHvGecwhkH/Jr07NUsNtv2DdW8WpIp9g
-         ps2aT4JGEi9RoxjFcDrfIaYKtRYK5a1uImW4g=
+	Wed, 28 Jul 2010 19:12:54 -0400
+Message-ID: <4C50B971.10807@canonical.com>
+Date: Wed, 28 Jul 2010 16:12:49 -0700
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=jStVGbJC7jUyhOG3og14F58rw+LEN2UqnP-X0@mail.gmail.com>
-References: <1277811391-17966-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTi=jStVGbJC7jUyhOG3og14F58rw+LEN2UqnP-X0@mail.gmail.com>
-Date: Thu, 29 Jul 2010 01:12:48 +0200
-Message-ID: <AANLkTi=bkp+JJYQ7dF36Up3gcjJR8LypgfKBWZHLfPH-@mail.gmail.com>
-Subject: Re: [PATCH 2/2] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        yuanyabin1978@sina.com, Peter Pearse <peter.pearse@arm.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Russell King <rmk@arm.linux.org.uk>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 13/13] AppArmor: update Maintainer and Documentation/kernel-parameters.txt
+References: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>	<1280199468-19680-14-git-send-email-john.johansen@canonical.com> <20100728104629.ddba3cc5.randy.dunlap@oracle.com>
+In-Reply-To: <20100728104629.ddba3cc5.randy.dunlap@oracle.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/28 Dan Williams <dan.j.williams@intel.com>:
-> On Tue, Jun 29, 2010 at 4:36 AM, Linus Walleij
-> <linus.walleij@stericsson.com> wrote:
->> This creates a DMAengine driver for the ARM PL080/PL081 PrimeCells
->> based on the implementation earlier submitted by Peter Pearse.
->> This is working like a charm for memcpy and slave DMA to the PL011
->> PrimeCell on the PB11MPCore.
->
-> Russell I am assuming this implementation and testing is sufficient to
-> allay your prior nak [1]?  Linus is oversubscribing virtual channels
-> to physical channels to handle muxing.
-
-I don't think Russell has ever NAK:ed the PL08x driver(s). The NAK
-was about the PrimeCell DMA extenstions to amba-pl011.c etc.
-(Still I'm happy if Russell looks at this thing of course.)
-
-This patch along with the generic channel control removed the
-cross-dependency between the PrimeCell DMA patchset and the
-drivers/dma DMA engine framework (yay!) so there is no arch/arm
-or AMBA stuff involved anymore, other than the fact that this driver
-sits on the AMBA/PrimeCell bus.
-
->> +#ifdef MODULE
->> +
->> +# error "AMBA PL08X DMA CANNOT BE COMPILED AS A LOADABLE MODULE AT PRESENT"
->> +
->> +/*
->> +       a) Some devices might make use of DMA during boot
->> +          (esp true for DMAENGINE implementation)
->> +       b) Memory allocation will need much more attention
->> +          before load/unload can be supported
->> + */
->> +#endif
->
-> This is taken care of by being "config bool", but I assume you want
-> this for documentation purposes?
-
-Peter had that in and I didn't remove it. If you don't like it you
-can remove it or I can send a new patch.
-
->> +       txd = kzalloc(sizeof(struct pl08x_txd), GFP_KERNEL);
->
-> ...appears in the prep routines.  Will this driver be used by any
-> storage controllers on the platfom?  Might we deadlock waiting on i/o
-> that needs to allocate a descriptor to complete?
-
-I haven't noticed anything but a descriptor pool is on my
-list of things to look into and fix.
-
-Yours,
-Linus Walleij
+On 07/28/2010 10:46 AM, Randy Dunlap wrote:
+> On Mon, 26 Jul 2010 19:57:48 -0700 John Johansen wrote:
+> 
+>> Signed-off-by: John Johansen <john.johansen@canonical.com>
+>> ---
+>>  Documentation/kernel-parameters.txt |   12 ++++++++++--
+>>  MAINTAINERS                         |    8 ++++++++
+>>  2 files changed, 18 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 4ddb58d..b61f89f 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -93,6 +93,7 @@ parameter is applicable:
+>>  			Documentation/scsi/.
+>>  	SECURITY Different security models are enabled.
+>>  	SELINUX SELinux support is enabled.
+>> +	APPARMOR AppArmor support is enabled.
+>>  	SERIAL	Serial support is enabled.
+>>  	SH	SuperH architecture is enabled.
+>>  	SMP	The kernel is an SMP kernel.
+>> @@ -254,8 +255,8 @@ and is between 256 and 4096 characters. It is defined in the file
+>>  			control method, with respect to putting devices into
+>>  			low power states, to be enforced (the ACPI 2.0 ordering
+>>  			of _PTS is used by default).
+>> -			s4_nonvs prevents the kernel from saving/restoring the
+>> -			ACPI NVS memory during hibernation.
+>> +			nonvs prevents the kernel from saving/restoring the
+>> +			ACPI NVS memory during suspend/hibernation and resume.
+>>  			sci_force_enable causes the kernel to set SCI_EN directly
+>>  			on resume from S1/S3 (which is against the ACPI spec,
+>>  			but some broken systems don't work without it).
+> 
+> 
+> Is that piece supposed to be part of this patch set?
+> 
+No, I'm not sure how that slipped in.  Thanks catching it.
