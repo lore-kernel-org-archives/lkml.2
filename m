@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab0G1KKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:10:40 -0400
-Received: from sh.osrg.net ([192.16.179.4]:55619 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934Ab0G1KKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 06:10:37 -0400
-Date: Wed, 28 Jul 2010 19:10:19 +0900
-To: ak@linux.intel.com
-Cc: konrad.wilk@oracle.com, akataria@vmware.com, fujita.tomonori@lab.ntt.co.jp,
-        lenb@kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, petr@vmware.com
-Subject: Re: swiotlb detection should be memory hotplug aware ?
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4C49B3F5.3030904@linux.intel.com>
-References: <4C49A83C.8070203@linux.intel.com>
-	<20100723145945.GA31857@phenom.dumpdata.com>
-	<4C49B3F5.3030904@linux.intel.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754651Ab0G1KNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:13:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56084 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753133Ab0G1KM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 06:12:58 -0400
+Message-ID: <4C5003CA.50501@cn.fujitsu.com>
+Date: Wed, 28 Jul 2010 18:17:46 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Jack Daniel <wanders.thirst@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: No definition of trace_sched_stat_wait in kernel found!
+References: <AANLkTin1qWT=NykGs6_YMopxdWoLzOKa1Zg_Q9EbtY0b@mail.gmail.com>
+In-Reply-To: <AANLkTin1qWT=NykGs6_YMopxdWoLzOKa1Zg_Q9EbtY0b@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100728190939D.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 28 Jul 2010 19:10:21 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 17:23:33 +0200
-Andi Kleen <ak@linux.intel.com> wrote:
-
+Jack Daniel wrote:
+> Greetings,
 > 
-> > I was thinking about this at some point. I think the first step is to
-> > make SWIOTLB use the debugfs to actually print out how much of its
-> > buffers are used - and see if the 64MB is a good fit.
+> With reference to the function update_stats_wait_end(), there seems to
+> be a call to trace_sched_stat_wait(). But strangely I can find no
+> definition of this function even though the kernel compiles without
+> any errors. There is no reference to this function
+> trace_sched_stat_wait() in the System.map file either, which means
+> this is not getting compiled? Could someone please make sense of this
+> absurdity.
 > 
-> swiotlb is near always wrongly sized. For most system it's far too much, 
-> but for some
-> not enough. I have some systemtap scripts around to instrument it.
 
-True, it's impossible to preallocate the best iotlb size statically.
+It's generated in include/trace/events/sched.h:
 
- 
-> Also it depends on the IO load, so if you size it reasonable you
-> risk overflow on large IO (however these days this very rarely happens 
-> because
-> all "serious" IO devices don't need swiotlb anymore)
-
-Yeah, nowadays it's pointless to try to get the good performance with
-swiotlb.
+DEFINE_EVENT(sched_stat_template, sched_stat_wait,
+             TP_PROTO(struct task_struct *tsk, u64 delay),
+             TP_ARGS(tsk, delay));
 
 
-> The other problem is that using only  two bits for the needed address 
-> space is also extremly
-> inefficient (4GB and 16MB on x86). Really want masks everywhere and 
-> optimize for the
-> actual requirements.
+And the trace_xxx() function is defined by macros in include/linux/tracepoint.h:
 
-swiotlb doesn't allocate GFP_DMA memory. It handles only GFP_DMA32.
-
-swiotlb doesn't work for drivers with some odd dma mask (non 32bit)
-but we have been lived with it so I don't think that it's a big issue.
-
-
-I think, supporting expanding swiotlb dynamically is enough. The
-default swiotlb size, 64MB is too large for majority.
-
-I have a half-baked patch for it. I'll send it later.
+#define __DECLARE_TRACE(name, proto, args, data_proto, data_args)       \
+        extern struct tracepoint __tracepoint_##name;                   \
+        static inline void trace_##name(proto)                          \
+        {                                                               \
+                if (unlikely(__tracepoint_##name.state))                \
+                        __DO_TRACE(&__tracepoint_##name,                \
+                                TP_PROTO(data_proto),                   \
+                                TP_ARGS(data_args));                    \
+        }
+	...
