@@ -1,132 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab0G1GZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:25:30 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49751 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab0G1GZ3 (ORCPT
+	id S1753954Ab0G1G1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:27:12 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58065 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab0G1G1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:25:29 -0400
+	Wed, 28 Jul 2010 02:27:09 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Jul 2010 15:20:40 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 7/7][memcg] use spin lock instead of bit_spin_lock
- in page_cgroup
-Message-Id: <20100728152040.f6a0499c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Message-ID: <4C4FCDA1.3000803@jp.fujitsu.com>
+Date: Wed, 28 Jul 2010 15:26:41 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+MIME-Version: 1.0
+To: netdev@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: [RFC PATCH v4 0/5] netdev: show a process of packets
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 23:16:54 -0700
-Greg Thelen <gthelen@google.com> wrote:
+CHANGE-LOG since v3:
+    1) change arguments of softirq tracepoint into original one.
+    2) remove tracepoint of dev_kfree_skb_irq and skb_free_datagram_locked
+       and add trace_kfree_skb before __kfree_skb instead of them.
+    3) add tracepoint to netif_rx and display it by netdev-times script.
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > This patch replaces page_cgroup's bit_spinlock with spinlock. In general,
-> > spinlock has good implementation than bit_spin_lock and we should use
-> > it if we have a room for it. In 64bit arch, we have extra 4bytes.
-> > Let's use it.
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > --
-> > Index: mmotm-0719/include/linux/page_cgroup.h
-> > ===================================================================
-> > --- mmotm-0719.orig/include/linux/page_cgroup.h
-> > +++ mmotm-0719/include/linux/page_cgroup.h
-> > @@ -10,8 +10,14 @@
-> >   * All page cgroups are allocated at boot or memory hotplug event,
-> >   * then the page cgroup for pfn always exists.
-> >   */
-> > +#ifdef CONFIG_64BIT
-> > +#define PCG_HAS_SPINLOCK
-> > +#endif
-> >  struct page_cgroup {
-> >  	unsigned long flags;
-> > +#ifdef PCG_HAS_SPINLOCK
-> > +	spinlock_t	lock;
-> > +#endif
-> >  	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
-> >  	unsigned short blk_cgroup;	/* Not Used..but will be. */
-> >  	struct page *page;
-> > @@ -90,6 +96,16 @@ static inline enum zone_type page_cgroup
-> >  	return page_zonenum(pc->page);
-> >  }
-> >  
-> > +#ifdef PCG_HAS_SPINLOCK
-> > +static inline void lock_page_cgroup(struct page_cgroup *pc)
-> > +{
-> > +	spin_lock(&pc->lock);
-> > +}
-> 
-> This is minor issue, but this patch breaks usage of PageCgroupLocked().
-> Example from __mem_cgroup_move_account() cases panic:
-> 	VM_BUG_ON(!PageCgroupLocked(pc));
-> 
-> I assume that this patch should also delete the following:
-> - PCG_LOCK definition from page_cgroup.h
-> - TESTPCGFLAG(Locked, LOCK) from page_cgroup.h
-> - PCGF_LOCK from memcontrol.c
-> 
+These patch-set adds tracepoints to show us a process of packets.
+Using these tracepoints and existing points, we can get the time when
+packet passes through some points in transmit or receive sequence.
+For example, this is an output of perf script which is attached by patch 5/5.
 
-yes. thank you.
+106133.171439sec cpu=0
+  irq_entry(+0.000msec irq=24:eth4)
+         |
+  softirq_entry(+0.006msec)
+         |
+         |---netif_receive_skb(+0.010msec skb=f2d15900 len=100)
+         |            |
+         |      skb_copy_datagram_iovec(+0.039msec 10291::10291)
+         |
+  napi_poll_exit(+0.022msec eth4)
 
--Kame
+106134.175634sec cpu=1
+  irq_entry(+0.000msec irq=28:eth1)
+         |
+         |---netif_rx(+0.009msec skb=f3ef0a00)
+         |
+  softirq_entry(+0.018msec)
+         |
+         |---netif_receive_skb(+0.021msec skb=f3ef0a00 len=84)
+         |            |
+         |      skb_copy_datagram_iovec(+0.033msec 0:swapper)
+         |
+  napi_poll_exit(+0.035msec (no_device))
 
+The above is a receive side(eth4 is NAPI. eth1 is non-NAPI). Like this, it can
+show receive sequence frominterrupt(irq_entry) to application
+(skb_copy_datagram_iovec). 
+This script shows one NET_RX softirq and events related to it. All relative
+time bases on first irq_entry which raise NET_RX softirq.
 
+   dev    len      Qdisc               netdevice             free
+   eth4    74 106125.030004sec        0.006msec             0.009msec
+   eth4    87 106125.041020sec        0.007msec             0.023msec
+   eth4    66 106125.042291sec        0.003msec             0.012msec
+   eth4    66 106125.043274sec        0.006msec             0.004msec
+   eth4   850 106125.044283sec        0.007msec             0.018msec
 
-> > +static inline void unlock_page_cgroup(struct page_cgroup *pc)
-> > +{
-> > +	spin_unlock(&pc->lock);
-> > +}
-> > +#else
-> >  static inline void lock_page_cgroup(struct page_cgroup *pc)
-> >  {
-> >  	bit_spin_lock(PCG_LOCK, &pc->flags);
-> > @@ -99,6 +115,7 @@ static inline void unlock_page_cgroup(st
-> >  {
-> >  	bit_spin_unlock(PCG_LOCK, &pc->flags);
-> >  }
-> > +#endif
-> >  
-> >  static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
-> >  {
-> > Index: mmotm-0719/mm/page_cgroup.c
-> > ===================================================================
-> > --- mmotm-0719.orig/mm/page_cgroup.c
-> > +++ mmotm-0719/mm/page_cgroup.c
-> > @@ -17,6 +17,9 @@ __init_page_cgroup(struct page_cgroup *p
-> >  	pc->mem_cgroup = 0;
-> >  	pc->page = pfn_to_page(pfn);
-> >  	INIT_LIST_HEAD(&pc->lru);
-> > +#ifdef PCG_HAS_SPINLOCK
-> > +	spin_lock_init(&pc->lock);
-> > +#endif
-> >  }
-> >  static unsigned long total_usage;
-> >  
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+The above is a transmit side. There are three check-time-points.
+Point1 is before putting a packet to Qdisc. point2 is after ndo_start_xmit in
+dev_hard_start_xmit. It indicates finishing putting a packet to driver.
+point3 is in consume_skb and kfree_skb. It indicates freeing a transmitted packet.
+Values of this script are, from left, device name, length of a packet, a time of
+point1, an interval time between point1 and point2 and an interval time between
+point2 and point3.
+
+These times are useful to analyze a performance or to detect a point where
+packet delays. For example,
+- NET_RX softirq calling is late.
+- Application is late to take a packet.
+- It takes much time to put a transmitting packet to driver
+  (It may be caused by packed queue)
+
+And also, these tracepoint help us to investigate a network driver's trouble
+from memory dump because ftrace records it to memory. And ftrace is so light
+even if always trace on. So, in a case investigating a problem which doesn't
+reproduce, it is useful.
+
+Thanks,
+Koki Sanagi.
 
