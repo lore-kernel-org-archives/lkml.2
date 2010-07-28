@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab0G1GJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:09:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25734 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab0G1GJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:09:25 -0400
-Message-ID: <4C4FC95F.6040806@kernel.org>
-Date: Tue, 27 Jul 2010 23:08:31 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>	 <1279822864-17154-32-git-send-email-yinghai@kernel.org> <1280295415.1970.245.camel@pasglop>
-In-Reply-To: <1280295415.1970.245.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+	id S1752954Ab0G1GOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:14:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:20517 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab0G1GOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 02:14:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,272,1278313200"; 
+   d="scan'208";a="822403640"
+Subject: [BUGFIX] trace, fix ring_buffer_read_page reading out of page
+ boundary
+From: Huang Ying <ying.huang@intel.com>
+To: "srostedt@redhat.com" <srostedt@redhat.com>
+Cc: Shaohua Li <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 14:14:01 +0800
+Message-ID: <1280297641.2771.307.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C4FC979.0057,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2010 10:36 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-07-22 at 11:21 -0700, Yinghai Lu wrote:
->> it is a wrapper for memblock_find_base
->>
->> make it more easy for x86 to use memblock. ( rebase )
->> x86 early_res is using find/reserve pattern instead of alloc.
->>
->> keep it in weak version, so later We can use x86 own version if needed.
->> also We need it in mm/memblock.c, so one caller mm/page_alloc.c could get compiled
->>
->> -v2: Change name to memblock_find_in_range() according to Michael Ellerman
->> -v3: Add generic weak version __memblock_find_in_range()
->>      so keep the path for fallback to x86 version that handle from low
->> -v4: use 0 for failing path
->> -v5: use MEMBLOCK_ERROR again
->> -v6: remove __memblock_find_in_range()
-> 
-> It's very gross to have this weak and not memblock_find_base()... IE. 
-> 
-> You create a new function defined as a wrapper on an existing one to
-> provide an easier set of arguments ... but also make it weak so the
-> arch can completely change its semantics without actually changing
-> the semantics of the function it wraps.
-> 
-> This is going to cause confusion and bugs. I'm adding the patch without
-> the weak bit to my branch for now, we need to discuss what is the best
-> approach for x86 here. Might be to use a different function. I don't
-> understand yet -why- x86 needs to override it, maybe the right way is
-> to reserve things more intelligently on x86 ?
+With the configuration: CONFIG_DEBUG_PAGEALLOC=y and Shaohua's patch:
 
-again there is a difference between low/high to high/low.
+[PATCH]x86: make spurious_fault check correct pte bit
 
-for example: 
-high/low allocation, from first kernel to kexec second kernel, always work fine except system with Qlogic card.
-because Qlogic card is using main RAM as EFT etc for card's FW log trace. second kernel have not idea that those RAM
- is used by first kernel for that purpose. that the CARD still use that between two kernels.
-second kernel could have crash it try to use those ram.
+Function call graph trace as follow will trigger page fault.
 
-low/high allocation seems to be safe,  second kernel can slip to boot fine.
+# cd /sys/kernel/debug/tracing/
+# echo function_graph > current_tracer
+# cat per_cpu/cpu1/trace_pipe_raw > /dev/null
 
-Thanks
+BUG: unable to handle kernel paging request at ffff880006e99000
+IP: [<ffffffff81085572>] rb_event_length+0x1/0x3f
+PGD 1b19063 PUD 1b1d063 PMD 3f067 PTE 6e99160
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+last sysfs file: /sys/devices/virtual/net/lo/operstate
+CPU 1
+Modules linked in:
 
-Yinghai
+Pid: 1982, comm: cat Not tainted 2.6.35-rc6-aes+ #300 /Bochs
+RIP: 0010:[<ffffffff81085572>]  [<ffffffff81085572>] rb_event_length+0x1/0x3f
+RSP: 0018:ffff880006475e38  EFLAGS: 00010006
+RAX: 0000000000000ff0 RBX: ffff88000786c630 RCX: 000000000000001d
+RDX: ffff880006e98000 RSI: 0000000000000ff0 RDI: ffff880006e99000
+RBP: ffff880006475eb8 R08: 000000145d7008bd R09: 0000000000000000
+R10: 0000000000008000 R11: ffffffff815d9336 R12: ffff880006d08000
+R13: ffff880006e605d8 R14: 0000000000000000 R15: 0000000000000018
+FS:  00007f2b83e456f0(0000) GS:ffff880002100000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: ffff880006e99000 CR3: 00000000064a8000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process cat (pid: 1982, threadinfo ffff880006474000, task ffff880006e40770)
+Stack:
+ ffff880006475eb8 ffffffff8108730f 0000000000000ff0 000000145d7008bd
+<0> ffff880006e98010 ffff880006d08010 0000000000000296 ffff88000786c640
+<0> ffffffff81002956 0000000000000000 ffff8800071f4680 ffff8800071f4680
+Call Trace:
+ [<ffffffff8108730f>] ? ring_buffer_read_page+0x15a/0x24a
+ [<ffffffff81002956>] ? return_to_handler+0x15/0x2f
+ [<ffffffff8108a575>] tracing_buffers_read+0xb9/0x164
+ [<ffffffff810debfe>] vfs_read+0xaf/0x150
+ [<ffffffff81002941>] return_to_handler+0x0/0x2f
+ [<ffffffff810248b0>] __bad_area_nosemaphore+0x17e/0x1a1
+ [<ffffffff81002941>] return_to_handler+0x0/0x2f
+ [<ffffffff810248e6>] bad_area_nosemaphore+0x13/0x15
+Code: 80 25 b2 16 b3 00 fe c9 c3 55 48 89 e5 f0 80 0d a4 16 b3 00 02 c9 c3 55 31 c0 48 89 e5 48 83 3d 94 16 b3 00 01 c9 0f 94 c0 c3 55 <8a> 0f 48 89 e5 83 e1 1f b8 08 00 00 00 0f b6 d1 83 fa 1e 74 27 
+RIP  [<ffffffff81085572>] rb_event_length+0x1/0x3f
+ RSP <ffff880006475e38>
+CR2: ffff880006e99000
+---[ end trace a6877bb92ccb36bb ]---
+
+The root cause is that ring_buffer_read_page() may read out of page
+boundary, because the boundary checking is done after reading. This is
+fixed via doing boundary checking before reading.
+
+Reported-by: Shaohua Li <shaohua.li@intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ kernel/trace/ring_buffer.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3868,6 +3868,9 @@ int ring_buffer_read_page(struct ring_bu
+ 			rpos = reader->read;
+ 			pos += size;
+ 
++			if (rpos >= commit)
++				break;
++
+ 			event = rb_reader_event(cpu_buffer);
+ 			size = rb_event_length(event);
+ 		} while (len > size);
+
 
