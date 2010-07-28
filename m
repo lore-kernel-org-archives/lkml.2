@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0G1JdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:33:10 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40483 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab0G1JdF (ORCPT
+	id S1753243Ab0G1Jhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:37:53 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:49301 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab0G1Jhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:33:05 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Jul 2010 18:28:13 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-        matthltc@us.ibm.com, menage@google.com, oleg@redhat.com
-Subject: Re: [RFC] [PATCH v3 1/2] cgroups: read-write lock CLONE_THREAD
- forking per threadgroup
-Message-Id: <20100728182813.7c2826ae.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100728082953.GA15455@ghc01.ghc.andrew.cmu.edu>
-References: <20100625054541.GA20610@ghc01.ghc.andrew.cmu.edu>
-	<20100625054654.GB20610@ghc01.ghc.andrew.cmu.edu>
-	<20100628161031.a8c71fce.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100628154359.GA24629@ghc01.ghc.andrew.cmu.edu>
-	<20100728082953.GA15455@ghc01.ghc.andrew.cmu.edu>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jul 2010 05:37:51 -0400
+X-SpamScore: -34
+X-BigFish: VPS-34(zz1432N98dN936eM9371Pzz1202hzz15d4Rz32i87h2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L69H9K-01-5PF-02
+X-M-MSG: 
+Date: Wed, 28 Jul 2010 11:37:08 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: SVM: Emulate next_rip svm feature
+Message-ID: <20100728093708.GD26098@amd.com>
+References: <1280247261-19115-1-git-send-email-joerg.roedel@amd.com>
+ <1280247261-19115-3-git-send-email-joerg.roedel@amd.com>
+ <4C4F2643.8080507@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4C4F2643.8080507@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 04:29:53 -0400
-Ben Blum <bblum@andrew.cmu.edu> wrote:
+On Tue, Jul 27, 2010 at 02:32:35PM -0400, Avi Kivity wrote:
+>   On 07/27/2010 07:14 PM, Joerg Roedel wrote:
+> > This patch implements the emulations of the svm next_rip
+> > feature in the nested svm implementation in kvm.
+> >
+> > Signed-off-by: Joerg Roedel<joerg.roedel@amd.com>
+> > ---
+> >   arch/x86/kvm/svm.c |    8 +++++++-
+> >   1 files changed, 7 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> > index 7d10f2c..b44c9cc 100644
+> > --- a/arch/x86/kvm/svm.c
+> > +++ b/arch/x86/kvm/svm.c
+> > @@ -1919,6 +1919,7 @@ static int nested_svm_vmexit(struct vcpu_svm *svm)
+> >   	nested_vmcb->control.exit_info_2       = vmcb->control.exit_info_2;
+> >   	nested_vmcb->control.exit_int_info     = vmcb->control.exit_int_info;
+> >   	nested_vmcb->control.exit_int_info_err = vmcb->control.exit_int_info_err;
+> > +	nested_vmcb->control.next_rip          = vmcb->control.next_rip;
+> >
+> 
+> Can it be really this simple?  Suppose we emulate a nested guest 
+> instruction just before vmexit, doesn't that invalidate 
+> vmcb->control.next_rip?  Can that happen?
 
-> On Mon, Jun 28, 2010 at 11:43:59AM -0400, Ben Blum wrote:
-> > On Mon, Jun 28, 2010 at 04:10:31PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > By the way, IMHO, hiding lock in cgroup_fork() and cgroup_post_fork() doesn't
-> > > seem good idea. How about a code like this ?
-> > > 
-> > >   read_lock_thread_clone(current);
-> > >   cgroup_fork();
-> > >  .....
-> > >   cgroup_post_fork();
-> > >   read_unlock_thrad_clone(current);
-> > > 
-> > > We may have chances to move these lock to better position if cgroup is
-> > > an only user.
-> > 
-> > I didn't do that out of a desire to change fork.c as little as possible,
-> > but that does look better than what I've got. Those two functions should
-> > be in fork.c under #ifdef CONFIG_CGROUPS.
-> 
-> I'm looking at this now and am not sure where the best place to put
-> these is:
-> 
-> 1) Don't make new functions, just put:
-> 
->     #ifdef CONFIG_CGROUPS
->         if (clone_flags & CLONE_THREAD)
->             down/up_read(...);
->     #endif
-> 
-> directly in copy_process() in fork.c. Simplest, but uglifies the code.
-> 
-> 2) Make static helper functions in fork.c. Good, but not consistent with
-> directly using the lock in write-side (attach_proc).
-> 
-> 3) Define inline functions under #ifdef CONFIG_CGROUPS in sched.h, just
-> under the declaration of the lock. Most robust, but I'm hesitant to add
-> unneeded stuff to such a popular header file.
-> 
-> Any opinions?
-> 
+Good point. I looked again into it. The documentation states:
 
-My point was simple. Because copy_process() is very important path,
-the new lock should be visible in copy_process() or kernek/fork.c.
-"If the lock is visible in copy_process(), the reader can notice it".
+	The next sequential instruction pointer (nRIP) is saved in
+	the guest VMCB control area at location C8h on all #VMEXITs that
+	are due to instruction intercepts, as defined in Section 15.8 on
+	page 378, as well as MSR and IOIO intercepts and exceptions
+	caused by the INT3, INTO, and BOUND instructions. For all other
+	intercepts, nRIP is reset to zero.
 
-Then, I offer you 2 options.
+There are a few intercepts that may need injection when running nested
+immediatly after an instruction emulation on the host side:
+	
+	INTR, NMI
+	#PF, #GP, ...
 
-rename cgroup_fork() and cgroup_post_fork() as
-       cgroup_fork_lock() and cgroup_post_fork_unlock() 
+All these instructions do not provide a valid next_rip on #vmexit so we
+should be save here. The other way around, copying back a next_rip
+pointer when there should be none, should also not happen as far as I
+see it. The next_rip is only set for instruction intercepts which are
+either handled on the host side or reinjected directly into the L1
+hypervisor.
+When you don't see a failing case either, I think we are save with this
+simple implementation.
 
-Now, the lock is visible and the change is minimum.
+	Joerg
 
-Or
-       add the definition of lock/unlock to cgroup.h and include it 
-       from kernel/fork.c
+-- 
+Joerg Roedel - AMD Operating System Research Center
 
-Thanks,
--Kame
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
