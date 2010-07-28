@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab0G1Mr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 08:47:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751772Ab0G1MrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 08:47:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <18537.1280318862@redhat.com>
-References: <18537.1280318862@redhat.com> <AANLkTikB9Msot4m_oaw+V+dvEg+SzyXHb0cqhKQqUtC2@mail.gmail.com> <20100727155023.GF1967@jolsa.brq.redhat.com> <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com> <24865.1280249187@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-Date: Wed, 28 Jul 2010 13:47:06 +0100
-Message-ID: <32758.1280321226@redhat.com>
+	id S1752857Ab0G1NAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:00:36 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:44169 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab0G1NAd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 09:00:33 -0400
+Date: Wed, 28 Jul 2010 15:02:01 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv5 3/3] USB: gadget: storage_common: fixed warning building
+ mass storage function
+In-reply-to: <AANLkTikW8eSn3fgRqJsXwp=+ZMjKgojHDP6+DsDMtg4y@mail.gmail.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-id: <op.vgj05nev7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <38424b23c94ddcff6f1808161912f362c2ccae39.1280316431.git.m.nazarewicz@samsung.com>
+ <7b3ddf05e135e8147d1011a81f9069d9cd78aa62.1280316431.git.m.nazarewicz@samsung.com>
+ <d7a11c97d1b28c7a0336c747de57a9a17dcc7604.1280316431.git.m.nazarewicz@samsung.com>
+ <AANLkTikW8eSn3fgRqJsXwp=+ZMjKgojHDP6+DsDMtg4y@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
+On Wed, 28 Jul 2010 14:25:59 +0200, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
 
-> Yeah.  I think there are three alternatives:
+> On Wed, Jul 28, 2010 at 3:13 PM, Michal Nazarewicz
+> <m.nazarewicz@samsung.com> wrote:
+>> The "nofua" attribute is used in the File-Storage Gadget but the
+>> functions handling it are defined in storage_common.c (which may be
+>> not a bad thing if anyone will want to port tho "nofua" attribute to
+>> mass storage function) which causes the following warnings:
+>>
+>> drivers/usb/gadget/storage_common.c:718: \
+>>  warning: ‘fsg_show_nofua’ defined but not used
+>> drivers/usb/gadget/storage_common.c:782: \
+>>  warning: ‘fsg_store_nofua’ defined but not used
+>>
+>> Adding __maybe_unused fixes this issue.
+> It's a bit odd.
+>
+> Why the warning happens for those two only?
+> There are two more parameters (four methods) to handle 'ro' and 'file'
+> which are done in the same way.
 
-There's a fourth alternative too:
+Those are the only ones that are not used by the mass storage function.
 
- (4) I could try and make it so that if the RCU cleanup routine sees it with a
-     non-zero usage count, then it just ignores it.  This, however, would
-     require call_rcu() to be able to cope with requeueing.
+The warning is issued when drivers using mass storage function are built.
+File-Storage Gadget compiles fine.
 
-David
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
