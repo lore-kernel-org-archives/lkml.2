@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab0G1RZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 13:25:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22249 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab0G1RZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 13:25:55 -0400
-Date: Wed, 28 Jul 2010 10:24:17 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, lirc-list@lists.sourceforge.net,
-        Jarod Wilson <jarod@wilsonet.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: linux-next: Tree for July 28 (lirc #2)
-Message-Id: <20100728102417.be60049a.randy.dunlap@oracle.com>
-In-Reply-To: <20100728162855.4968e561.sfr@canb.auug.org.au>
-References: <20100728162855.4968e561.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C506806.00E2:SCFMA4539814,ss=1,fgs=0
+	id S1755865Ab0G1R2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:28:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2300 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab0G1R2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 13:28:30 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100728111525.355a2bd3@notabene>
+References: <20100728111525.355a2bd3@notabene> <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com> <E1Obxpd-00CRIo-SF@intern.SerNet.DE> <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com> <20100722162712.GB10352@jeremy-laptop> <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> <alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr> <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com> 
+To: Neil Brown <neilb@suse.de>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
+        Volker.Lendecke@sernet.de, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
+Date: Wed, 28 Jul 2010 18:28:02 +0100
+Message-ID: <13591.1280338082@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 16:28:55 +1000 Stephen Rothwell wrote:
+Neil Brown <neilb@suse.de> wrote:
 
-> Hi all,
-> 
-> Changes since 20100727:
+> ctime and mtime have real cache-coherence semantics which require them being
+> updated by the kernel (whether the cache is on an NFS client, in a backup
+> archive, or in a .o translation of a .c file).
 
+So does creation time, at least for CIFS caching.  Creation time has potential
+for spotting when the object at a pathname has changed for something else,
+given the lack of inode number and inode generation from windows servers.
+Creation time gives us one more datum to use.
 
-When USB_SUPPORT is not enabled and MEDIA_SUPPORT is not enabled:
+> The only role the kernel might have would be setting the 'creation time' when
+> the file was created, but it seems even that isn't always what is wanted,
+> because people don't so much what the time of create of the
+> container-on-disk, but the time of creation of the data-content.
 
+That should be a timestamp in the content itself, not a filesystem metadata
+timestamp.
 
-ERROR: "lirc_dev_fop_close" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_dev_fop_open" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_dev_fop_poll" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_dev_fop_write" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_dev_fop_read" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_register_driver" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_register_driver" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_string" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_alloc_urb" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_alloc_coherent" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_dev_fop_ioctl" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_get_pdata" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_free_coherent" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_free_urb" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_unregister_driver" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_kill_urb" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_submit_urb" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "usb_deregister" [drivers/staging/lirc/lirc_streamzap.ko] undefined!
-ERROR: "lirc_dev_fop_close" [drivers/staging/lirc/lirc_sir.ko] undefined!
-ERROR: "lirc_dev_fop_open" [drivers/staging/lirc/lirc_sir.ko] undefined!
-ERROR: "lirc_register_driver" [drivers/staging/lirc/lirc_sir.ko] undefined!
-ERROR: "lirc_unregister_driver" [drivers/staging/lirc/lirc_sir.ko] undefined!
+> I would want to see a pretty convincing use-case that cannot be solved with
+> xattrs before 'creation time' was added to a generic kernel interface.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Then there's no point even considering this.  You could emulate the entirety
+of stat() with getxattr().  I've previously posted a patch to implement the
+retrieval of creation time, inode gen and data version as xattrs and been told
+that it's the wrong way to do it and I should extend stat instead.
+
+> So just use xattrs and don't involve the kernel in any detailed knowledge of
+> this value.
+
+Why not?  BSD has it in its stat struct.  Windows has it in its Win32
+equivalents.  Samba for one will look for it there, and use it if it is.
+
+Using an xattr means an extra pathwalk and extra locking per access for any
+program that wants it.  It's a reasonable bet such a program will also be
+stat'ing the file it wants the creation time for.
+
+If we are going to extend stat anyway, then why not make out a short list of
+extra things we could usefully return and consider adding them?  Something
+like creation time is reasonably easy to come by for little extra overhead.
+Ext4, for example, retains a copy of it in RAM in its inode struct.
+
+> Maybe xstat should take a list of xattrs to be retrieved as well??  or maybe
+> not.
+
+The idea of xstat() having a variable-length buffer and variable arguments has
+been well derided.  It ain't going to happen, much though I'd like it to.  I'd
+quite like to offer the opportunity to return the security label, for example.
+
+David
