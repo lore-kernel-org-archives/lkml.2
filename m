@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab0G1JJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:09:27 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:50783 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab0G1JJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:09:24 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C4FF3B3.1050800@s5r6.in-berlin.de>
-Date: Wed, 28 Jul 2010 11:09:07 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	id S1754494Ab0G1JKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:10:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39291 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754438Ab0G1JKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 05:10:50 -0400
+Date: Wed, 28 Jul 2010 10:10:33 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Andy Whitcroft <apw@shadowen.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH] vmscan: remove wait_on_page_writeback() from pageout()
+Message-ID: <20100728091032.GD5300@csn.ul.ie>
+References: <20100728071705.GA22964@localhost> <AANLkTimaj6+MzY5Aa_xqi75zKy1fDOQV5QiQjdX8jgm7@mail.gmail.com> <20100728084654.GA26776@localhost>
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: Re: [PATCH + an old question] firewire: ohci: use memory barriers
- to order descriptor updates
-References: <tkrat.21d3972644f46dc9@s5r6.in-berlin.de> <4C4FDC06.3050703@ladisch.de>
-In-Reply-To: <4C4FDC06.3050703@ladisch.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100728084654.GA26776@localhost>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clemens Ladisch wrote:
-> Stefan Richter wrote:
->> We need:
->> 2. a write memory barrier between branch_address update and wake-up of
->>    the DMA unit by MMIO register write.
->>
->> Barrier 2 is implicit in writel() on most machines --- or at least I
->> think it is.  See this from arch/x86/include/asm/io.h:
->>
->>     #define build_mmio_write(name, size, type, reg, barrier) \
->>     static inline void name(type val, volatile void __iomem *addr) \
->>     { asm volatile("mov" size " %0,%1": :reg (val), \
->>     "m" (*(volatile type __force *)addr) barrier); }
->>
->>     build_mmio_write(writel, "l", unsigned int, "r", :"memory")
->>
->> Does this order the mmio write relative to previous memory writes?
+On Wed, Jul 28, 2010 at 04:46:54PM +0800, Wu Fengguang wrote:
+> The wait_on_page_writeback() call inside pageout() is virtually dead code.
 > 
-> This asm barrier prevents the compiler from reordering.
+>         shrink_inactive_list()
+>           shrink_page_list(PAGEOUT_IO_ASYNC)
+>             pageout(PAGEOUT_IO_ASYNC)
+>           shrink_page_list(PAGEOUT_IO_SYNC)
+>             pageout(PAGEOUT_IO_SYNC)
 > 
-> The main purpose of writel() and friends is to access the address space
-> where memory-mapped I/O ranges reside; there are architectures where the
-> normal memory access commands cannot be used.  This does not necessarily
-> imply anything about reordering semantics.
+> Because shrink_page_list/pageout(PAGEOUT_IO_SYNC) is always called after
+> a preceding shrink_page_list/pageout(PAGEOUT_IO_ASYNC), the first
+> pageout(ASYNC) converts dirty pages into writeback pages, the second
+> shrink_page_list(SYNC) waits on the clean of writeback pages before
+> calling pageout(SYNC). The second shrink_page_list(SYNC) can hardly run
+> into dirty pages for pageout(SYNC) unless in some race conditions.
 > 
-> However, PCI address ranges are marked by the device's config registers
-> as either cacheable or not, and the kernel heeds this when mapping these
-> ranges.  Registers are, of course, marked as uncacheable.
 
-But the memory to which we wrote before that is cachable (though
-cache-coherent, allocated by dma_alloc_coherent).  This memory write
-should not cross the mmio register write.
+It's possible for the second call to run into dirty pages as there is a
+congestion_wait() call between the first shrink_page_list() call and the
+second. That's a big window.
 
-Documentation/DocBook/deviceiobook.tmpl mentions that mmio reads to a
-device are ordered WRT to DMA transactions that the device issued before
-that mmio read.  But no mentions of mmio write to a device vs. preceding
-memory accesses by the CPU.
+> And the wait page-by-page behavior of pageout(SYNC) will lead to very
+> long stall time if running into some range of dirty pages.
 
-Well, a quick look how some hopefully well-written drivers use and don't
-use wmb() indicates that I don't need to worry.  Perhaps it is time to
-look for a PCI book.
+True, but this is also lumpy reclaim which is depending on a contiguous
+range of pages. It's better for it to wait on the selected range of pages
+which is known to contain at least one old page than excessively scan and
+reclaim newer pages.
+
+> So it's bad
+> idea anyway to call wait_on_page_writeback() inside pageout().
+> 
+
+I recognise that you are probably thinking of the stall-due-to-fork problem
+but I'd expect the patch that raises the bar for <= PAGE_ALLOC_COSTLY_ORDER
+to be sufficient. If not, I think it still makes sense to call
+wait_on_page_writeback() for > PAGE_ALLOC_COSTLY_ORDER.
+
+
+> CC: Andy Whitcroft <apw@shadowen.org>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/vmscan.c |   13 ++-----------
+>  1 file changed, 2 insertions(+), 11 deletions(-)
+> 
+> --- linux-next.orig/mm/vmscan.c	2010-07-28 16:22:21.000000000 +0800
+> +++ linux-next/mm/vmscan.c	2010-07-28 16:23:35.000000000 +0800
+> @@ -324,8 +324,7 @@ typedef enum {
+>   * pageout is called by shrink_page_list() for each dirty page.
+>   * Calls ->writepage().
+>   */
+> -static pageout_t pageout(struct page *page, struct address_space *mapping,
+> -						enum pageout_io sync_writeback)
+> +static pageout_t pageout(struct page *page, struct address_space *mapping)
+>  {
+>  	/*
+>  	 * If the page is dirty, only perform writeback if that write
+> @@ -384,14 +383,6 @@ static pageout_t pageout(struct page *pa
+>  			return PAGE_ACTIVATE;
+>  		}
+>  
+> -		/*
+> -		 * Wait on writeback if requested to. This happens when
+> -		 * direct reclaiming a large contiguous area and the
+> -		 * first attempt to free a range of pages fails.
+> -		 */
+> -		if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
+> -			wait_on_page_writeback(page);
+> -
+>  		if (!PageWriteback(page)) {
+>  			/* synchronous write or broken a_ops? */
+>  			ClearPageReclaim(page);
+> @@ -727,7 +718,7 @@ static unsigned long shrink_page_list(st
+>  				goto keep_locked;
+>  
+>  			/* Page is dirty, try to write it out here */
+> -			switch (pageout(page, mapping, sync_writeback)) {
+> +			switch (pageout(page, mapping)) {
+>  			case PAGE_KEEP:
+>  				goto keep_locked;
+>  			case PAGE_ACTIVATE:
+> 
+
 -- 
-Stefan Richter
--=====-==-=- -=== ===--
-http://arcgraph.de/sr/
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
