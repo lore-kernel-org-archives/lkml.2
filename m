@@ -1,318 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab0G1FnR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:43:17 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54508 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab0G1FnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 01:43:15 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Andrew Morton <akpm@linux-foundation.org>, David Airlie <airlied@linux.ie>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Francisco Jerez <currojerez@riseup.net>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: mmotm 2010-07-27 - nouveau lockdep issues.
-In-Reply-To: Your message of "Tue, 27 Jul 2010 14:56:50 PDT."
-             <201007272226.o6RMQRBm008735@imap1.linux-foundation.org>
-From: Valdis.Kletnieks@vt.edu
-References: <201007272226.o6RMQRBm008735@imap1.linux-foundation.org>
+	id S1752439Ab0G1Fpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:45:38 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56225 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab0G1Fpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:45:35 -0400
+Subject: Re: [PATCH 30/31] memblock: Add ARCH_DISCARD_MEMBLOCK to put
+ memblock code to .init
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1279822864-17154-31-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+	 <1279822864-17154-31-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 15:45:02 +1000
+Message-ID: <1280295902.1970.247.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1280295723_4558P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Date: Wed, 28 Jul 2010 01:42:03 -0400
-Message-ID: <31845.1280295723@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020207.4C4FC334.01D7,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1280295723_4558P
-Content-Type: text/plain; charset=us-ascii
-
-On Tue, 27 Jul 2010 14:56:50 PDT, akpm@linux-foundation.org said:
-> The mm-of-the-moment snapshot 2010-07-27-14-56 has been uploaded to
+On Thu, 2010-07-22 at 11:21 -0700, Yinghai Lu wrote:
+> So those memblock bits could be released after kernel is booted up.
 > 
->    http://userweb.kernel.org/~akpm/mmotm/
+> Arch code could define ARCH_DISCARD_MEMBLOCK in asm/memblock.h,
+> __init_memblock will become __init, __initdata_memblock will becom __initdata
 
-Hit this while the X server was on its way down during a 'shutdown -r now'. Worked fine
-in -rc5-mmotm0719. 'e16' is the Enlightenment window manager, if that matters.
+Actually, that sucks.
 
-[   93.181787] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-[   99.802836] [drm] nouveau 0000:01:00.0: Allocating FIFO number 4
-[   99.808875] [drm] nouveau 0000:01:00.0: nouveau_channel_alloc: initialised FIFO 4
-[  103.262226] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-[  113.341948] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-[  123.421836] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-[  123.550520] [drm] nouveau 0000:01:00.0: nouveau_channel_free: freeing fifo 4
-[  123.551253] 
-[  123.551253] ======================================================
-[  123.551253] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-[  123.551253] 2.6.35-rc6-mmotm0727 #1
-[  123.551253] ------------------------------------------------------
-[  123.551253] e16/3822 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[  123.551253]  (&(&mm->unused_lock)->rlock){+.+...}, at: [<ffffffff812a94bc>] drm_mm_put_block+0x10e/0x142
-[  123.551253] 
-[  123.551253] and this task is already holding:
-[  123.551253]  (&(&dev_priv->context_switch_lock)->rlock){-.....}, at: [<ffffffff812bdbab>] nouveau_channel_free+0x10f/0x233
-[  123.551253] which would create a new lock dependency:
-[  123.551253]  (&(&dev_priv->context_switch_lock)->rlock){-.....} -> (&(&mm->unused_lock)->rlock){+.+...}
-[  123.551253] 
-[  123.551253] but this new dependency connects a HARDIRQ-irq-safe lock:
-[  123.551253]  (&(&dev_priv->context_switch_lock)->rlock){-.....}
-[  123.551253] ... which became HARDIRQ-irq-safe at:
-[  123.551253]   [<ffffffff81065043>] __lock_acquire+0x301/0xd6a
-[  123.551253]   [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.551253]   [<ffffffff81594dda>] _raw_spin_lock_irqsave+0x44/0x57
-[  123.551253]   [<ffffffff812c264b>] nouveau_irq_handler+0x63/0x1920
-[  123.551253]   [<ffffffff810817bb>] handle_IRQ_event+0xad/0x213
-[  123.551253]   [<ffffffff81083bd2>] handle_fasteoi_irq+0xd1/0x115
-[  123.551253]   [<ffffffff81004b6e>] handle_irq+0x122/0x133
-[  123.551253]   [<ffffffff8100499f>] do_IRQ+0x57/0xaf
-[  123.551253]   
-[  123.604031] [drm] nouveau 0000:01:00.0: GPU lockup - switching to software fbcon
-[  123.604031] [<ffffffff81595cd3>] ret_from_intr+0x0/0xf
-[  123.604031]   [<ffffffff81000c73>] cpu_idle+0x85/0x169
-[  123.604031]   [<ffffffff81b62061>] start_secondary+0x1b1/0x1b5
-[  123.604031] 
-[  123.604031] to a HARDIRQ-irq-unsafe lock:
-[  123.604031]  (&(&mm->unused_lock)->rlock){+.+...}
-[  123.604031] ... which became HARDIRQ-irq-unsafe at:
-[  123.604031] ...  [<ffffffff810650c4>] __lock_acquire+0x382/0xd6a
-[  123.604031]   [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]   [<ffffffff81594ce1>] _raw_spin_lock+0x36/0x45
-[  123.604031]   [<ffffffff812a9669>] drm_mm_pre_get+0x24/0xb2
-[  123.604031]   [<ffffffff812b748b>] ttm_bo_init+0x1fe/0x3c0
-[  123.604031]   [<ffffffff812c5dce>] nouveau_bo_new+0x3ae/0x423
-[  123.604031]   [<ffffffff812bf2c8>] nouveau_mem_init+0x293/0x487
-[  123.604031]   [<ffffffff812bce55>] nouveau_card_init+0xa5e/0xd52
-[  123.604031]   [<ffffffff812bd675>] nouveau_load+0x519/0x528
-[  123.604031]   [<ffffffff812a74af>] drm_get_pci_dev+0x174/0x26a
-[  123.604031]   [<ffffffff8158a14e>] nouveau_pci_probe+0x10/0x12
-[  123.604031]   [<ffffffff812228ce>] local_pci_probe+0x3f/0x70
-[  123.604031]   [<ffffffff81222c4c>] pci_device_probe+0x65/0x96
-[  123.604031]   [<ffffffff8130a840>] driver_probe_device+0xe8/0x182
-[  123.604031]   [<ffffffff8130a924>] __driver_attach+0x4a/0x6b
-[  123.604031]   [<ffffffff81309a2f>] bus_for_each_dev+0x57/0x83
-[  123.604031]   [<ffffffff8130a505>] driver_attach+0x19/0x1b
-[  123.604031]   [<ffffffff8130a147>] bus_add_driver+0xae/0x205
-[  123.604031]   [<ffffffff8130ab80>] driver_register+0xb5/0x122
-[  123.604031]   [<ffffffff81222e82>] __pci_register_driver+0x61/0xcd
-[  123.604031]   [<ffffffff812a7839>] drm_pci_init+0x31/0x98
-[  123.604031]   [<ffffffff812a003f>] drm_init+0x5d/0x61
-[  123.604031]   [<ffffffff81b4e59a>] nouveau_init+0x48/0x4a
-[  123.604031]   [<ffffffff810002ff>] do_one_initcall+0x7a/0x12f
-[  123.604031]   [<ffffffff81b2ccae>] kernel_init+0x138/0x1c2
-[  123.604031]   [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
-[  123.604031] 
-[  123.604031] other info that might help us debug this:
-[  123.604031] 
-[  123.604031] 1 lock held by e16/3822:
-[  123.604031]  #0:  (&(&dev_priv->context_switch_lock)->rlock){-.....}, at: [<ffffffff812bdbab>] nouveau_channel_free+0x10f/0x233
-[  123.604031] 
-[  123.604031] the dependencies between HARDIRQ-irq-safe lock and the holding lock:
-[  123.604031] -> (&(&dev_priv->context_switch_lock)->rlock){-.....} ops: 15 {
-[  123.604031]    IN-HARDIRQ-W at:
-[  123.604031]                                        [<ffffffff81065043>] __lock_acquire+0x301/0xd6a
-[  123.604031]                                        [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]                                        [<ffffffff81594dda>] _raw_spin_lock_irqsave+0x44/0x57
-[  123.604031]                                        [<ffffffff812c264b>] nouveau_irq_handler+0x63/0x1920
-[  123.604031]                                        [<ffffffff810817bb>] handle_IRQ_event+0xad/0x213
-[  123.604031]                                        [<ffffffff81083bd2>] handle_fasteoi_irq+0xd1/0x115
-[  123.604031]                                        [<ffffffff81004b6e>] handle_irq+0x122/0x133
-[  123.604031]                                        [<ffffffff8100499f>] do_IRQ+0x57/0xaf
-[  123.604031]                                        [<ffffffff81595cd3>] ret_from_intr+0x0/0xf
-[  123.604031]                                        [<ffffffff81000c73>] cpu_idle+0x85/0x169
-[  123.604031]                                        [<ffffffff81b62061>] start_secondary+0x1b1/0x1b5
-[  123.604031]    INITIAL USE at:
-[  123.604031]                                       [<ffffffff81065145>] __lock_acquire+0x403/0xd6a
-[  123.604031]                                       [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]                                       [<ffffffff81594dda>] _raw_spin_lock_irqsave+0x44/0x57
-[  123.604031]                                       [<ffffffff812c264b>] nouveau_irq_handler+0x63/0x1920
-[  123.604031]                                       [<ffffffff810817bb>] handle_IRQ_event+0xad/0x213
-[  123.604031]                                       [<ffffffff81083bd2>] handle_fasteoi_irq+0xd1/0x115
-[  123.604031]                                       [<ffffffff81004b6e>] handle_irq+0x122/0x133
-[  123.604031]                                       [<ffffffff8100499f>] do_IRQ+0x57/0xaf
-[  123.604031]                                       [<ffffffff81595cd3>] ret_from_intr+0x0/0xf
-[  123.604031]                                       [<ffffffff81000c73>] cpu_idle+0x85/0x169
-[  123.604031]                                       [<ffffffff81b62061>] start_secondary+0x1b1/0x1b5
-[  123.604031]  }
-[  123.604031]  ... key      at: [<ffffffff8243b758>] __key.32520+0x0/0x8
-[  123.604031]  ... acquired at:
-[  123.604031]    [<ffffffff810648cd>] check_irq_usage+0x42/0x89
-[  123.604031]    [<ffffffff810657d6>] __lock_acquire+0xa94/0xd6a
-[  123.604031]    [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]    [<ffffffff81594ce1>] _raw_spin_lock+0x36/0x45
-[  123.604031]    [<ffffffff812a94bc>] drm_mm_put_block+0x10e/0x142
-[  123.604031]    [<ffffffff812bf7e2>] nouveau_gpuobj_del+0x14c/0x179
-[  123.604031]    [<ffffffff812c02ad>] nouveau_gpuobj_ref_del+0x25d/0x284
-[  123.604031]    [<ffffffff812e3fb2>] nv50_graph_destroy_context+0xd0/0xdc
-[  123.604031]    [<ffffffff812bdbdd>] nouveau_channel_free+0x141/0x233
-[  123.604031]    [<ffffffff812be5bf>] nouveau_ioctl_fifo_free+0x79/0x86
-[  123.604031]    [<ffffffff8129fdab>] drm_ioctl+0x2b3/0x36b
-[  123.604031]    [<ffffffff810ec6fc>] vfs_ioctl+0x31/0xa2
-[  123.604031]    [<ffffffff810ed07b>] do_vfs_ioctl+0x496/0x4c9
-[  123.604031]    [<ffffffff810ed105>] sys_ioctl+0x57/0x96
-[  123.604031]    [<ffffffff8100272b>] system_call_fastpath+0x16/0x1b
-[  123.604031] 
-[  123.604031] 
-[  123.604031] the dependencies between the lock to be acquired and HARDIRQ-irq-unsafe lock:
-[  123.604031] -> (&(&mm->unused_lock)->rlock){+.+...} ops: 10338 {
-[  123.604031]    HARDIRQ-ON-W at:
-[  123.604031]                                        [<ffffffff810650c4>] __lock_acquire+0x382/0xd6a
-[  123.604031]                                        [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]                                        [<ffffffff81594ce1>] _raw_spin_lock+0x36/0x45
-[  123.604031]                                        [<ffffffff812a9669>] drm_mm_pre_get+0x24/0xb2
-[  123.604031]                                        [<ffffffff812b748b>] ttm_bo_init+0x1fe/0x3c0
-[  123.604031]                                        [<ffffffff812c5dce>] nouveau_bo_new+0x3ae/0x423
-[  123.604031]                                        [<ffffffff812bf2c8>] nouveau_mem_init+0x293/0x487
-[  123.604031]                                        [<ffffffff812bce55>] nouveau_card_init+0xa5e/0xd52
-[  123.604031]                                        [<ffffffff812bd675>] nouveau_load+0x519/0x528
-[  123.604031]                                        [<ffffffff812a74af>] drm_get_pci_dev+0x174/0x26a
-[  123.604031]                                        [<ffffffff8158a14e>] nouveau_pci_probe+0x10/0x12
-[  123.604031]                                        [<ffffffff812228ce>] local_pci_probe+0x3f/0x70
-[  123.604031]                                        [<ffffffff81222c4c>] pci_device_probe+0x65/0x96
-[  123.604031]                                        [<ffffffff8130a840>] driver_probe_device+0xe8/0x182
-[  123.604031]                                        [<ffffffff8130a924>] __driver_attach+0x4a/0x6b
-[  123.604031]                                        [<ffffffff81309a2f>] bus_for_each_dev+0x57/0x83
-[  123.604031]                                        [<ffffffff8130a505>] driver_attach+0x19/0x1b
-[  123.604031]                                        [<ffffffff8130a147>] bus_add_driver+0xae/0x205
-[  123.604031]                                        [<ffffffff8130ab80>] driver_register+0xb5/0x122
-[  123.604031]                                        [<ffffffff81222e82>] __pci_register_driver+0x61/0xcd
-[  123.604031]                                        [<ffffffff812a7839>] drm_pci_init+0x31/0x98
-[  123.604031]                                        [<ffffffff812a003f>] drm_init+0x5d/0x61
-[  123.604031]                                        [<ffffffff81b4e59a>] nouveau_init+0x48/0x4a
-[  123.604031]                                        [<ffffffff810002ff>] do_one_initcall+0x7a/0x12f
-[  123.604031]                                        [<ffffffff81b2ccae>] kernel_init+0x138/0x1c2
-[  123.604031]                                        [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
-[  123.604031]    SOFTIRQ-ON-W at:
-[  123.604031]                                        [<ffffffff810650e5>] __lock_acquire+0x3a3/0xd6a
-[  123.604031]                                        [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]                                        [<ffffffff81594ce1>] _raw_spin_lock+0x36/0x45
-[  123.604031]                                        [<ffffffff812a9669>] drm_mm_pre_get+0x24/0xb2
-[  123.604031]                                        [<ffffffff812b748b>] ttm_bo_init+0x1fe/0x3c0
-[  123.604031]                                        [<ffffffff812c5dce>] nouveau_bo_new+0x3ae/0x423
-[  123.604031]                                        [<ffffffff812bf2c8>] nouveau_mem_init+0x293/0x487
-[  123.604031]                                        [<ffffffff812bce55>] nouveau_card_init+0xa5e/0xd52
-[  123.604031]                                        [<ffffffff812bd675>] nouveau_load+0x519/0x528
-[  123.604031]                                        [<ffffffff812a74af>] drm_get_pci_dev+0x174/0x26a
-[  123.604031]                                        [<ffffffff8158a14e>] nouveau_pci_probe+0x10/0x12
-[  123.604031]                                        [<ffffffff812228ce>] local_pci_probe+0x3f/0x70
-[  123.604031]                                        [<ffffffff81222c4c>] pci_device_probe+0x65/0x96
-[  123.604031]                                        [<ffffffff8130a840>] driver_probe_device+0xe8/0x182
-[  123.604031]                                        [<ffffffff8130a924>] __driver_attach+0x4a/0x6b
-[  123.604031]                                        [<ffffffff81309a2f>] bus_for_each_dev+0x57/0x83
-[  123.604031]                                        [<ffffffff8130a505>] driver_attach+0x19/0x1b
-[  123.604031]                                        [<ffffffff8130a147>] bus_add_driver+0xae/0x205
-[  123.604031]                                        [<ffffffff8130ab80>] driver_register+0xb5/0x122
-[  123.604031]                                        [<ffffffff81222e82>] __pci_register_driver+0x61/0xcd
-[  123.604031]                                        [<ffffffff812a7839>] drm_pci_init+0x31/0x98
-[  123.604031]                                        [<ffffffff812a003f>] drm_init+0x5d/0x61
-[  123.604031]                                        [<ffffffff81b4e59a>] nouveau_init+0x48/0x4a
-[  123.604031]                                        [<ffffffff810002ff>] do_one_initcall+0x7a/0x12f
-[  123.604031]                                        [<ffffffff81b2ccae>] kernel_init+0x138/0x1c2
-[  123.604031]                                        [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
-[  123.604031]    INITIAL USE at:
-[  123.604031]                                       [<ffffffff81065145>] __lock_acquire+0x403/0xd6a
-[  123.604031]                                       [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]                                       [<ffffffff81594ce1>] _raw_spin_lock+0x36/0x45
-[  123.604031]                                       [<ffffffff812a9669>] drm_mm_pre_get+0x24/0xb2
-[  123.604031]                                       [<ffffffff812b748b>] ttm_bo_init+0x1fe/0x3c0
-[  123.604031]                                       [<ffffffff812c5dce>] nouveau_bo_new+0x3ae/0x423
-[  123.604031]                                       [<ffffffff812bf2c8>] nouveau_mem_init+0x293/0x487
-[  123.604031]                                       [<ffffffff812bce55>] nouveau_card_init+0xa5e/0xd52
-[  123.604031]                                       [<ffffffff812bd675>] nouveau_load+0x519/0x528
-[  123.604031]                                       [<ffffffff812a74af>] drm_get_pci_dev+0x174/0x26a
-[  123.604031]                                       [<ffffffff8158a14e>] nouveau_pci_probe+0x10/0x12
-[  123.604031]                                       [<ffffffff812228ce>] local_pci_probe+0x3f/0x70
-[  123.604031]                                       [<ffffffff81222c4c>] pci_device_probe+0x65/0x96
-[  123.604031]                                       [<ffffffff8130a840>] driver_probe_device+0xe8/0x182
-[  123.604031]                                       [<ffffffff8130a924>] __driver_attach+0x4a/0x6b
-[  123.604031]                                       [<ffffffff81309a2f>] bus_for_each_dev+0x57/0x83
-[  123.604031]                                       [<ffffffff8130a505>] driver_attach+0x19/0x1b
-[  123.604031]                                       [<ffffffff8130a147>] bus_add_driver+0xae/0x205
-[  123.604031]                                       [<ffffffff8130ab80>] driver_register+0xb5/0x122
-[  123.604031]                                       [<ffffffff81222e82>] __pci_register_driver+0x61/0xcd
-[  123.604031]                                       [<ffffffff812a7839>] drm_pci_init+0x31/0x98
-[  123.604031]                                       [<ffffffff812a003f>] drm_init+0x5d/0x61
-[  123.604031]                                       [<ffffffff81b4e59a>] nouveau_init+0x48/0x4a
-[  123.604031]                                       [<ffffffff810002ff>] do_one_initcall+0x7a/0x12f
-[  123.604031]                                       [<ffffffff81b2ccae>] kernel_init+0x138/0x1c2
-[  123.604031]                                       [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
-[  123.604031]  }
-[  123.604031]  ... key      at: [<ffffffff8243b408>] __key.30042+0x0/0x8
-[  123.604031]  ... acquired at:
-[  123.604031]    [<ffffffff810648cd>] check_irq_usage+0x42/0x89
-[  123.604031]    [<ffffffff810657d6>] __lock_acquire+0xa94/0xd6a
-[  123.604031]    [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]    [<ffffffff81594ce1>] _raw_spin_lock+0x36/0x45
-[  123.604031]    [<ffffffff812a94bc>] drm_mm_put_block+0x10e/0x142
-[  123.604031]    [<ffffffff812bf7e2>] nouveau_gpuobj_del+0x14c/0x179
-[  123.604031]    [<ffffffff812c02ad>] nouveau_gpuobj_ref_del+0x25d/0x284
-[  123.604031]    [<ffffffff812e3fb2>] nv50_graph_destroy_context+0xd0/0xdc
-[  123.604031]    [<ffffffff812bdbdd>] nouveau_channel_free+0x141/0x233
-[  123.604031]    [<ffffffff812be5bf>] nouveau_ioctl_fifo_free+0x79/0x86
-[  123.604031]    [<ffffffff8129fdab>] drm_ioctl+0x2b3/0x36b
-[  123.604031]    [<ffffffff810ec6fc>] vfs_ioctl+0x31/0xa2
-[  123.604031]    [<ffffffff810ed07b>] do_vfs_ioctl+0x496/0x4c9
-[  123.604031]    [<ffffffff810ed105>] sys_ioctl+0x57/0x96
-[  123.604031]    [<ffffffff8100272b>] system_call_fastpath+0x16/0x1b
-[  123.604031] 
-[  123.604031] 
-[  123.604031] stack backtrace:
-[  123.604031] Pid: 3822, comm: e16 Tainted: G        W   2.6.35-rc6-mmotm0727 #1
-[  123.604031] Call Trace:
-[  123.604031]  [<ffffffff81064876>] check_usage+0x351/0x366
-[  123.604031]  [<ffffffff8106313b>] ? register_lock_class+0x1e/0x2c7
-[  123.604031]  [<ffffffff810648cd>] check_irq_usage+0x42/0x89
-[  123.604031]  [<ffffffff810657d6>] __lock_acquire+0xa94/0xd6a
-[  123.604031]  [<ffffffff810652ba>] ? __lock_acquire+0x578/0xd6a
-[  123.604031]  [<ffffffff812a94bc>] ? drm_mm_put_block+0x10e/0x142
-[  123.604031]  [<ffffffff81065fca>] lock_acquire+0x10a/0x130
-[  123.604031]  [<ffffffff812a94bc>] ? drm_mm_put_block+0x10e/0x142
-[  123.604031]  [<ffffffff81594ce1>] _raw_spin_lock+0x36/0x45
-[  123.604031]  [<ffffffff812a94bc>] ? drm_mm_put_block+0x10e/0x142
-[  123.604031]  [<ffffffff812a94bc>] drm_mm_put_block+0x10e/0x142
-[  123.604031]  [<ffffffff812bf7e2>] nouveau_gpuobj_del+0x14c/0x179
-[  123.604031]  [<ffffffff812c02ad>] nouveau_gpuobj_ref_del+0x25d/0x284
-[  123.604031]  [<ffffffff812e3fb2>] nv50_graph_destroy_context+0xd0/0xdc
-[  123.604031]  [<ffffffff812bdbdd>] nouveau_channel_free+0x141/0x233
-[  123.604031]  [<ffffffff8109a0f9>] ? trace_preempt_off+0x15/0x28
-[  123.604031]  [<ffffffff8129fd9c>] ? drm_ioctl+0x2a4/0x36b
-[  123.604031]  [<ffffffff812be5bf>] nouveau_ioctl_fifo_free+0x79/0x86
-[  123.604031]  [<ffffffff8129fdab>] drm_ioctl+0x2b3/0x36b
-[  123.604031]  [<ffffffff812be546>] ? nouveau_ioctl_fifo_free+0x0/0x86
-[  123.604031]  [<ffffffff81064b97>] ? mark_lock+0x2d/0x1d8
-[  123.604031]  [<ffffffff810ec6fc>] vfs_ioctl+0x31/0xa2
-[  123.604031]  [<ffffffff810ed07b>] do_vfs_ioctl+0x496/0x4c9
-[  123.604031]  [<ffffffff810ed105>] sys_ioctl+0x57/0x96
-[  123.604031]  [<ffffffff8100272b>] system_call_fastpath+0x16/0x1b
+A bunch of memblock is already __init. The bits that aren't fall mostly
+into two categories:
+
+ - Stuff used by powerpc memory hotplug. Most of this could be covered
+by __meminit
+
+ - The arrays themselves. We really only care about keeping the memory
+array and a couple of things to walk it.
+
+I'm merging the patch now to avoid further delays but we need to
+revisit that too.
+
+Ben.
 
 
---==_Exmh_1280295723_4558P
-Content-Type: application/pgp-signature
+> x86 code will use that.
+> 
+> if ARCH_DISCARD_MEMBLOCK is defined, debugfs is not used
+> 
+> -v2: use ARCH_DISCARD_MEMBLOCK according to Michael Ellerman
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/memblock.h |    8 +++++++
+>  mm/memblock.c            |   48 +++++++++++++++++++++++-----------------------
+>  2 files changed, 32 insertions(+), 24 deletions(-)
+> 
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index 4aaaf0d..751a4eb 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -148,6 +148,14 @@ static inline unsigned long memblock_region_pages(const struct memblock_region *
+>  	     region++)
+>  
+> 
+> +#ifdef ARCH_DISCARD_MEMBLOCK
+> +#define __init_memblock __init
+> +#define __initdata_memblock __initdata
+> +#else
+> +#define __init_memblock
+> +#define __initdata_memblock
+> +#endif
+> +
+>  #endif /* CONFIG_HAVE_MEMBLOCK */
+>  
+>  #endif /* __KERNEL__ */
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 3d0a754..7471dac 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -20,12 +20,12 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/memblock.h>
+>  
+> -struct memblock memblock;
+> +struct memblock memblock __initdata_memblock;
+>  
+> -int memblock_debug;
+> -int memblock_can_resize;
+> -static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+> -struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+> +int memblock_debug __initdata_memblock;
+> +int memblock_can_resize __initdata_memblock;
+> +static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1] __initdata_memblock;
+> +struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1] __initdata_memblock;
+>  
+>  /* inline so we don't get a warning when pr_debug is compiled out */
+>  static inline const char *memblock_type_name(struct memblock_type *type)
+> @@ -42,23 +42,23 @@ static inline const char *memblock_type_name(struct memblock_type *type)
+>   * Address comparison utilities
+>   */
+>  
+> -static phys_addr_t memblock_align_down(phys_addr_t addr, phys_addr_t size)
+> +static phys_addr_t __init_memblock memblock_align_down(phys_addr_t addr, phys_addr_t size)
+>  {
+>  	return addr & ~(size - 1);
+>  }
+>  
+> -static phys_addr_t memblock_align_up(phys_addr_t addr, phys_addr_t size)
+> +static phys_addr_t __init_memblock memblock_align_up(phys_addr_t addr, phys_addr_t size)
+>  {
+>  	return (addr + (size - 1)) & ~(size - 1);
+>  }
+>  
+> -static unsigned long memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
+> +static unsigned long __init_memblock memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
+>  				       phys_addr_t base2, phys_addr_t size2)
+>  {
+>  	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
+>  }
+>  
+> -static long memblock_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
+> +static long __init_memblock memblock_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
+>  			       phys_addr_t base2, phys_addr_t size2)
+>  {
+>  	if (base2 == base1 + size1)
+> @@ -69,7 +69,7 @@ static long memblock_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
+>  	return 0;
+>  }
+>  
+> -static long memblock_regions_adjacent(struct memblock_type *type,
+> +static long __init_memblock memblock_regions_adjacent(struct memblock_type *type,
+>  				 unsigned long r1, unsigned long r2)
+>  {
+>  	phys_addr_t base1 = type->regions[r1].base;
+> @@ -80,7 +80,7 @@ static long memblock_regions_adjacent(struct memblock_type *type,
+>  	return memblock_addrs_adjacent(base1, size1, base2, size2);
+>  }
+>  
+> -long memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+> +long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+>  {
+>  	unsigned long i;
+>  
+> @@ -156,7 +156,7 @@ static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align
+>  	return MEMBLOCK_ERROR;
+>  }
+>  
+> -static void memblock_remove_region(struct memblock_type *type, unsigned long r)
+> +static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
+>  {
+>  	unsigned long i;
+>  
+> @@ -168,7 +168,7 @@ static void memblock_remove_region(struct memblock_type *type, unsigned long r)
+>  }
+>  
+>  /* Assumption: base addr of region 1 < base addr of region 2 */
+> -static void memblock_coalesce_regions(struct memblock_type *type,
+> +static void __init_memblock memblock_coalesce_regions(struct memblock_type *type,
+>  		unsigned long r1, unsigned long r2)
+>  {
+>  	type->regions[r1].size += type->regions[r2].size;
+> @@ -178,7 +178,7 @@ static void memblock_coalesce_regions(struct memblock_type *type,
+>  /* Defined below but needed now */
+>  static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size);
+>  
+> -static int memblock_double_array(struct memblock_type *type)
+> +static int __init_memblock memblock_double_array(struct memblock_type *type)
+>  {
+>  	struct memblock_region *new_array, *old_array;
+>  	phys_addr_t old_size, new_size, addr;
+> @@ -249,13 +249,13 @@ static int memblock_double_array(struct memblock_type *type)
+>  	return 0;
+>  }
+>  
+> -extern int __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+> +extern int __init_memblock __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+>  					  phys_addr_t addr2, phys_addr_t size2)
+>  {
+>  	return 1;
+>  }
+>  
+> -static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+> +static long __init_memblock memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+>  {
+>  	unsigned long coalesced = 0;
+>  	long adjacent, i;
+> @@ -342,13 +342,13 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
+>  	return 0;
+>  }
+>  
+> -long memblock_add(phys_addr_t base, phys_addr_t size)
+> +long __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
+>  {
+>  	return memblock_add_region(&memblock.memory, base, size);
+>  
+>  }
+>  
+> -static long __memblock_remove(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+> +static long __init_memblock __memblock_remove(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+>  {
+>  	phys_addr_t rgnbegin, rgnend;
+>  	phys_addr_t end = base + size;
+> @@ -396,7 +396,7 @@ static long __memblock_remove(struct memblock_type *type, phys_addr_t base, phys
+>  	return memblock_add_region(type, end, rgnend - end);
+>  }
+>  
+> -long memblock_remove(phys_addr_t base, phys_addr_t size)
+> +long __init_memblock memblock_remove(phys_addr_t base, phys_addr_t size)
+>  {
+>  	return __memblock_remove(&memblock.memory, base, size);
+>  }
+> @@ -562,7 +562,7 @@ phys_addr_t __init memblock_phys_mem_size(void)
+>  	return memblock.memory_size;
+>  }
+>  
+> -phys_addr_t memblock_end_of_DRAM(void)
+> +phys_addr_t __init_memblock memblock_end_of_DRAM(void)
+>  {
+>  	int idx = memblock.memory.cnt - 1;
+>  
+> @@ -623,7 +623,7 @@ int __init memblock_is_reserved(phys_addr_t addr)
+>  	return 0;
+>  }
+>  
+> -int memblock_is_region_reserved(phys_addr_t base, phys_addr_t size)
+> +int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t size)
+>  {
+>  	return memblock_overlaps_region(&memblock.reserved, base, size);
+>  }
+> @@ -634,7 +634,7 @@ void __init memblock_set_current_limit(phys_addr_t limit)
+>  	memblock.current_limit = limit;
+>  }
+>  
+> -static void memblock_dump(struct memblock_type *region, char *name)
+> +static void __init_memblock memblock_dump(struct memblock_type *region, char *name)
+>  {
+>  	unsigned long long base, size;
+>  	int i;
+> @@ -650,7 +650,7 @@ static void memblock_dump(struct memblock_type *region, char *name)
+>  	}
+>  }
+>  
+> -void memblock_dump_all(void)
+> +void __init_memblock memblock_dump_all(void)
+>  {
+>  	if (!memblock_debug)
+>  		return;
+> @@ -716,7 +716,7 @@ static int __init early_memblock(char *p)
+>  }
+>  early_param("memblock", early_memblock);
+>  
+> -#ifdef CONFIG_DEBUG_FS
+> +#if defined(CONFIG_DEBUG_FS) && !defined(ARCH_DISCARD_MEMBLOCK)
+>  
+>  static int memblock_debug_show(struct seq_file *m, void *private)
+>  {
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMT8MrcC3lWbTT17ARAquzAJ9sRANPKqgrhV+ai7dau4g5cjy7QACgpnk6
-Npq9taTrd5jwtZDq9qbhqNM=
-=oNL9
------END PGP SIGNATURE-----
-
---==_Exmh_1280295723_4558P--
 
