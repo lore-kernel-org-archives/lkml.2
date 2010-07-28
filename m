@@ -1,38 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab0G1Jt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:49:56 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33468 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab0G1Jtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:49:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=cfyCtD1bU9z0AUUcWx1sTlgTd/eJDooaVckaXFuG16HLiDgKCv/rYN9BS1HuKgczp8
-         zzN+OoluQ+eY6krjRfhROcn+cf3q7m1/U8c8OA70IWk/HpRC96xilodEVEYvYPylEkBw
-         0i67PK+1BaAZJbZoCTKJdp3ZOzCaZ6KGNUmuE=
+	id S1754587Ab0G1JvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:51:16 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35430 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752715Ab0G1JvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 05:51:15 -0400
+Date: Wed, 28 Jul 2010 10:50:58 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Andy Whitcroft <apw@shadowen.org>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH] vmscan: remove wait_on_page_writeback() from pageout()
+Message-ID: <20100728095058.GF5300@csn.ul.ie>
+References: <20100728084654.GA26776@localhost> <20100728091032.GD5300@csn.ul.ie> <20100728183625.4A7F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Date: Wed, 28 Jul 2010 15:19:53 +0530
-Message-ID: <AANLkTin1qWT=NykGs6_YMopxdWoLzOKa1Zg_Q9EbtY0b@mail.gmail.com>
-Subject: No definition of trace_sched_stat_wait in kernel found!
-From: Jack Daniel <wanders.thirst@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100728183625.4A7F.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On Wed, Jul 28, 2010 at 06:43:41PM +0900, KOSAKI Motohiro wrote:
+> > On Wed, Jul 28, 2010 at 04:46:54PM +0800, Wu Fengguang wrote:
+> > > The wait_on_page_writeback() call inside pageout() is virtually dead code.
+> > > 
+> > >         shrink_inactive_list()
+> > >           shrink_page_list(PAGEOUT_IO_ASYNC)
+> > >             pageout(PAGEOUT_IO_ASYNC)
+> > >           shrink_page_list(PAGEOUT_IO_SYNC)
+> > >             pageout(PAGEOUT_IO_SYNC)
+> > > 
+> > > Because shrink_page_list/pageout(PAGEOUT_IO_SYNC) is always called after
+> > > a preceding shrink_page_list/pageout(PAGEOUT_IO_ASYNC), the first
+> > > pageout(ASYNC) converts dirty pages into writeback pages, the second
+> > > shrink_page_list(SYNC) waits on the clean of writeback pages before
+> > > calling pageout(SYNC). The second shrink_page_list(SYNC) can hardly run
+> > > into dirty pages for pageout(SYNC) unless in some race conditions.
+> > > 
+> > 
+> > It's possible for the second call to run into dirty pages as there is a
+> > congestion_wait() call between the first shrink_page_list() call and the
+> > second. That's a big window.
+> > 
+> > > And the wait page-by-page behavior of pageout(SYNC) will lead to very
+> > > long stall time if running into some range of dirty pages.
+> > 
+> > True, but this is also lumpy reclaim which is depending on a contiguous
+> > range of pages. It's better for it to wait on the selected range of pages
+> > which is known to contain at least one old page than excessively scan and
+> > reclaim newer pages.
+> 
+> Today, I was successful to reproduce the Andres's issue. and I disagree this
+> opinion.
 
-With reference to the function update_stats_wait_end(), there seems to
-be a call to trace_sched_stat_wait(). But strangely I can find no
-definition of this function even though the kernel compiles without
-any errors. There is no reference to this function
-trace_sched_stat_wait() in the System.map file either, which means
-this is not getting compiled? Could someone please make sense of this
-absurdity.
+Is Andres's issue not covered by the patch "vmscan: raise the bar to
+PAGEOUT_IO_SYNC stalls" because wait_on_page_writeback() was the
+main problem?
 
-Thanks,
-Jack
+> The root cause is, congestion_wait() mean "wait until clear io congestion". but
+> if the system have plenty dirty pages, flusher threads are issueing IO conteniously.
+> So, io congestion is not cleared long time. eventually, congestion_wait(BLK_RW_ASYNC, HZ/10)
+> become to equivalent to sleep(HZ/10).
+> 
+> I would propose followint patch instead.
+> 
+> And I've found synchronous lumpy reclaim have more serious problem. I woule like to
+> explain it as another mail.
+> 
+> Thanks.
+> 
+> 
+> 
+> From 0266fb2c23aef659cd4e89fccfeb464f23257b74 Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Tue, 27 Jul 2010 14:36:44 +0900
+> Subject: [PATCH] vmscan: synchronous lumpy reclaim don't call congestion_wait()
+> 
+> congestion_wait() mean "waiting for number of requests in IO queue is
+> under congestion threshold".
+> That said, if the system have plenty dirty pages, flusher thread push
+> new request to IO queue conteniously. So, IO queue are not cleared
+> congestion status for a long time. thus, congestion_wait(HZ/10) is
+> almostly equivalent schedule_timeout(HZ/10).
+> 
+> If the system 512MB memory, DEF_PRIORITY mean 128kB scan and 4096 times
+> shrink_inactive_list call. 4096 times 0.1sec stall makes crazy insane
+> long stall. That shouldn't.
+> 
+> In the other hand, this synchronous lumpy reclaim donesn't need this
+> congestion_wait() at all. shrink_page_list(PAGEOUT_IO_SYNC) cause to
+> call wait_on_page_writeback() and it provide sufficient waiting.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+I think the final paragraph makes a lot of sense. If a lumpy reclaimer is
+going to get stalled on wait_on_page_writeback(), it should be a sufficient
+throttling mechanism.
+
+Will test.
+
+> ---
+>  mm/vmscan.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 97170eb..2aa16eb 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1304,8 +1304,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  	 */
+>  	if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
+>  			sc->lumpy_reclaim_mode) {
+> -		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> -
+>  		/*
+>  		 * The attempt at page out may have made some
+>  		 * of the pages active, mark them inactive again.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
