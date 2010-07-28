@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab0G1F0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:26:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59033 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab0G1F0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 01:26:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,271,1278313200"; 
-   d="scan'208";a="305228740"
-Message-ID: <4C4FBF63.2040609@linux.intel.com>
-Date: Tue, 27 Jul 2010 22:25:55 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
+	id S1752293Ab0G1F1O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:27:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55000 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab0G1F1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:27:10 -0400
+Message-ID: <4C4FBEDC.4000008@monstr.eu>
+Date: Wed, 28 Jul 2010 07:23:40 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, tglx@linutronix.de
-Subject: Re: [tip:x86/build] x86, vdso: Error out if the vdso contains external
- references
-References: <tip-*@vger.kernel.org>	<tip-05d0b0889ca9d033a960542af7f8a13b3ad4f630@git.kernel.org> <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
-In-Reply-To: <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] asm-generic: Use raw_local_irq_save/restore instead local_irq_save/restore
+References: <1274863724-14906-1-git-send-email-monstr@monstr.eu> 	<1274863724-14906-2-git-send-email-monstr@monstr.eu> <1274884963.22648.245.camel@gandalf.stny.rr.com> 	<20100526100805.171b3c48.akpm@linux-foundation.org> <4C4D4C2E.8010103@monstr.eu> 	<20100727161819.cf6feab1.akpm@linux-foundation.org> <AANLkTim3Po8XD3UFB-h6UH4HWtSZP9MA+V63TE5tQgku@mail.gmail.com>
+In-Reply-To: <AANLkTim3Po8XD3UFB-h6UH4HWtSZP9MA+V63TE5tQgku@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Hi,
+Mike Frysinger wrote:
+> On Tue, Jul 27, 2010 at 19:18, Andrew Morton wrote:
+>> On Mon, 26 Jul 2010 10:49:50 +0200 Michal Simek wrote:
+>>> start/stop_critical_timing function for preemptirqsoff, preemptoff
+>>> and irqsoff tracers contains atomic_inc and atomic_dec operations.
+>>>
+>>> Atomic operations used local_irq_save/restore macros to ensure
+>>> atomic access but they are traced by the same function which is causing
+>>> recursion problem.
+>>>
+>>> The reason is when these tracers are turn ON then local_irq_save/restore
+>>> macros are changed in include/linux/irqflags.h to call trace_hardirqs_on/off
+>>> which call start/stop_critical_timing.
+>>>
+>>> Microblaze was affected because use generic atomic implementation.
+>> Seems that this will also affect blackfin, mn10300 and score.  I guess
+>> they aren't supporting tracing yet?
 > 
-> On Fri, 18 Jun 2010 22:16:05 GMT "tip-bot for H. Peter Anvin" <hpa@linux.intel.com> wrote:
->> diff --git a/arch/x86/vdso/checkundef.sh b/arch/x86/vdso/checkundef.sh
->> new file mode 100755
->> index 0000000..490be1c
->> --- /dev/null
->> +++ b/arch/x86/vdso/checkundef.sh
->> @@ -0,0 +1,10 @@
->> +#!/bin/sh
->> +nm="$1"
->> +file="$2"
->> +"$nm" "$file" | grep '^ *U' > /dev/null 2>&1
-> 
-> Quoting $nm here doesn't work if you are building with ccache like this:
-> 
-> make CROSS_COMPILE="ccache ...."
+> do you mean TRACE_IRQFLAGS_SUPPORT ?  Blackfin should ... my
+> understanding was that arches just needed to implement asm/irqflags.h
+> for it.
 
-Hmmm... in some ways I'm not sure if that's a feature or a bug, but I 
-guess it's the only way currently provided.  Sigh.
+Blackin uses own include/asm/atomic.h implementation where shouldn't be 
+a problem with irqflags tracer. Look at my second post.
 
-	-hpa
+Michal
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
