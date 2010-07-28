@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750905Ab0G1ECP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 00:02:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34457 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab0G1ECM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 00:02:12 -0400
-Date: Tue, 27 Jul 2010 21:02:10 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, linux-arch@vger.kernel.org
-Subject: [patch] Remove the per cpu tick skew
-Message-ID: <20100727210210.58d3118c@infradead.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+	id S1750969Ab0G1EGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 00:06:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42594 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab0G1EGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 00:06:08 -0400
+Date: Wed, 28 Jul 2010 14:05:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: linux-next: build failure after merge of the final tree (kgdb tree
+ related)
+Message-Id: <20100728140556.2bdacbf3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Jul_2010_14_05_56_+1000_on4IKzyjfasCl7OX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Wed__28_Jul_2010_14_05_56_+1000_on4IKzyjfasCl7OX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-the following patch is a win for power management on x86....
-... but since this touches generic code.. are there any 
-other architectures that would be negatively affected by this?
+Hi all,
 
+After merging the final tree, next-20100726 build (i386 allmodconfig)
+failed like this:
 
+In file included from arch/x86/include/asm/uaccess.h:571,
+                 from include/linux/uaccess.h:5,
+                 from include/linux/highmem.h:6,
+                 from include/linux/pagemap.h:10,
+                 from kernel/trace/trace.c:24:
+arch/x86/include/asm/uaccess_32.h: In function 'copy_from_user':
+arch/x86/include/asm/uaccess_32.h:212: error: call to 'copy_from_user_overf=
+low' declared with attribute error: copy_from_user() buffer size is not pro=
+vably correct
 
-Subject: [patch] Remove the per cpu tick skew
+Probably caused by commit e5738a3d75254c6d135ccad925e513ddb860967e
+("ftrace,kdb: Extend kdb to be able to dump the ftrace buffer") from the
+kgdb tree which turned off optimization (and therefore probably inlining)
+for kernel/trace/trace.c ...
 
-Historically, Linux has tried to make the regular timer tick on the various
-CPUs not happen at the same time, to avoid contention on xtime_lock.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Nowadays, with the tickless kernel, this contention no longer happens
-since time keeping and updating are done differently. In addition,
-this skew is actually hurting power consumption in a measurable
-way on many-core systems.
+--Signature=_Wed__28_Jul_2010_14_05_56_+1000_on4IKzyjfasCl7OX
+Content-Type: application/pgp-signature
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
---- linux.trees.git/kernel/time/tick-sched.c~	2010-07-16 09:40:50.000000000 -0400
-+++ linux.trees.git/kernel/time/tick-sched.c	2010-07-26 11:18:51.138003329 -0400
-@@ -780,7 +780,6 @@
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
- 	ktime_t now = ktime_get();
--	u64 offset;
- 
- 	/*
- 	 * Emulate tick processing via per-CPU hrtimers:
-@@ -790,10 +789,6 @@
- 
- 	/* Get the next period (per cpu) */
- 	hrtimer_set_expires(&ts->sched_timer, tick_init_jiffy_update());
--	offset = ktime_to_ns(tick_period) >> 1;
--	do_div(offset, num_possible_cpus());
--	offset *= smp_processor_id();
--	hrtimer_add_expires_ns(&ts->sched_timer, offset);
- 
- 	for (;;) {
- 		hrtimer_forward(&ts->sched_timer, now, tick_period);
+iQEcBAEBAgAGBQJMT6ykAAoJEDMEi1NhKgbsPvoH/Ao4rMkHLo2MrtteHKv/w+oZ
+WdWQit9/i2de8Eyk0dg0YMdfxbV5kLwg8zyQQsDk5OCKweGOF1h3685ncny6ufqp
+In+yLLCiIsIh0jptEYfpP9hlbebbv9zD6Q0qyqY0mQDTVwHEL4l5oUkCyGHhMRZn
+pv7Af+xQ4WrNDZn/5Fb7bWqJeIGBIqLIOjY7VO265yETVOoSSiYPVyaiSCf+V2eO
+FNiClxtUrPmmxMu36YH78+3jREEPI7ArU/pHWkGvestY+xyT4Iw+D6U1zCh1sM4w
+gity/1ROBfK0FFoRDdik1uNn2HX0upxlWv4fglBDtgS2H/WgDDxdr7bQ0ZsIJnA=
+=EUQh
+-----END PGP SIGNATURE-----
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+--Signature=_Wed__28_Jul_2010_14_05_56_+1000_on4IKzyjfasCl7OX--
