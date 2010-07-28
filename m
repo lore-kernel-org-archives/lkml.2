@@ -1,186 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab0G1FAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:00:05 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:49514 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750794Ab0G1E77 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 00:59:59 -0400
-Date: Wed, 28 Jul 2010 14:59:24 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: VFS scalability git tree
-Message-ID: <20100728045924.GF655@dastard>
-References: <20100722190100.GA22269@amd>
- <20100723135514.GJ32635@dastard>
- <20100727070538.GA2893@amd>
- <20100727131810.GO7362@dastard>
- <20100727150908.GA3749@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100727150908.GA3749@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751896Ab0G1FBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:01:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47538 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750794Ab0G1FBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:01:08 -0400
+Subject: Re: [PATCH 03/16] x86, memblock: Add memblock_x86_to_bootmem()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1279824241-17582-4-git-send-email-yinghai@kernel.org>
+References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
+	 <1279824241-17582-4-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 15:00:36 +1000
+Message-ID: <1280293236.1970.234.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 01:09:08AM +1000, Nick Piggin wrote:
-> On Tue, Jul 27, 2010 at 11:18:10PM +1000, Dave Chinner wrote:
-> > On Tue, Jul 27, 2010 at 05:05:39PM +1000, Nick Piggin wrote:
-> > > On Fri, Jul 23, 2010 at 11:55:14PM +1000, Dave Chinner wrote:
-> > solve. The difficulty (as always) is in reliably reproducing the bad
-> > behaviour.
-> 
-> Sure, and I didn't see any corruptions, it seems pretty stable and
-> scalability is better than other filesystems. I'll see if I can
-> give a better recipe to reproduce the 'livelock'ish behaviour.
+On Thu, 2010-07-22 at 11:43 -0700, Yinghai Lu wrote:
+> memblock_x86_to_bootmem() will reserve memblock.reserved.region in bootmem after bootmem is
 
-Well, stable is a good start :)
+> +#ifndef CONFIG_NO_BOOTMEM
+> +void __init memblock_x86_to_bootmem(u64 start, u64 end)
+> +{
+> +	int count;
+> +	u64 final_start, final_end;
+> +	struct memblock_region *r;
+> +
+> +	/* Take out region array itself */
+> +	if (memblock.reserved.regions != memblock_reserved_init_regions)
+> +		memblock_free(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
 
-> > > > 	fs_mark rate (thousands of files/second)
-> > > >            2.6.35-rc5   2.6.35-rc5-scale
-> > > > threads    xfs   ext4     xfs    ext4
-> > > >   1         20    39       20     39
-> > > >   2         35    55       35     57
-> > > >   4         60    41       57     42
-> > > >   8         79     9       75      9
-> > > > 
-> > > > ext4 is getting IO bound at more than 2 threads, so apart from
-> > > > pointing out that XFS is 8-9x faster than ext4 at 8 thread, I'm
-> > > > going to ignore ext4 for the purposes of testing scalability here.
-> > > > 
-> > > > For XFS w/ delayed logging, 2.6.35-rc5 is only getting to about 600%
-> > > > CPU and with Nick's patches it's about 650% (10% higher) for
-> > > > slightly lower throughput.  So at this class of machine for this
-> > > > workload, the changes result in a slight reduction in scalability.
-> > > 
-> > > I wonder if these results are stable. It's possible that changes in
-> > > reclaim behaviour are causing my patches to require more IO for a
-> > > given unit of work?
-> > 
-> > More likely that's the result of using a smaller log size because it
-> > will require more frequent metadata pushes to make space for new
-> > transactions.
-> 
-> I was just checking whether your numbers are stable (where you
-> saw some slowdown with vfs-scale patches), and what could be the
-> cause. I agree that running real disks could make big changes in
-> behaviour.
+So that's why you export memblock_reserved_init_regions...
 
-Yeah, the numbers are repeatable within about +/-5%. I generally
-don't bother with optimisations that result in gains/losses less
-than that because IO benchmarks that reliably repoduce results with
-more precise repeatability than that are few and far between.
+I really -really- don't like it. First of all, it's really gross to
+free the array then walk it. We know it won't race but still ...
+especially since you re-do the above every time
+memblock_x86_to_bootmem() is called. Is it called more than once ? If
+yes, then it's bogus. If not, then why have start,end ?
 
-> > FWIW, I use PCP monitoring graphs to correlate behavioural changes
-> > across different subsystems because it is far easier to relate
-> > information visually than it is by looking at raw numbers or traces.
-> > I think this graph shows the effect of relcaim on performance
-> > most clearly:
-> > 
-> > http://userweb.kernel.org/~dgc/shrinker-2.6.36/fs_mark-2.6.35-rc3-context-only-per-xfs-batch6-16x500-xfs.png
-> 
-> I haven't actually used that, it looks interesting.
+If you really want to free it, maybe best is to stick something in
+mm/memblock.c that kicks in at late init time and does the freeing ?
 
-The archiving side of PCP is the most useful, I find. i.e. being able
-to record the metrics into a file and  analyse them with pmchart or
-other tools after the fact...
+I'm going to keep the exporting out of my branch for now. If you really
+want it, you can always add it to this specific patch, but it sucks.
 
-> > That is by far the largest improvement I've been able to obtain from
-> > modifying the shrinker code, and it is from those sorts of
-> > observations that I think that IO being issued from reclaim is
-> > currently the most significant performance limiting factor for XFS
-> > in this sort of workload....
-> 
-> How is the xfs inode reclaim tied to linux inode reclaim? Does the
-> xfs inode not become reclaimable until some time after the linux inode
-> is reclaimed? Or what?
+Ben.
 
-The struct xfs_inode embeds a struct inode like so:
+> +	count  = memblock.reserved.cnt;
+> +	pr_info("(%d early reservations) ==> bootmem [%010llx-%010llx]\n", count, start, end - 1);
+> +	for_each_memblock(reserved, r) {
+> +		pr_info("  [%010llx-%010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
+> +		final_start = max(start, r->base);
+> +		final_end = min(end, r->base + r->size);
+> +		if (final_start >= final_end) {
+> +			pr_cont("\n");
+> +			continue;
+> +		}
+> +		pr_cont(" ==> [%010llx-%010llx]\n", final_start, final_end - 1);
+> +		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+> +	}
+> +
+> +	/* Put region array back ? */
+> +	if (memblock.reserved.regions != memblock_reserved_init_regions)
+> +		memblock_reserve(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
+> +}
+> +#endif
 
-struct xfs_inode {
-	.....
-	struct inode	i_inode;
-}
 
-so they are the same chunk of memory. XFS does not use the VFS inode
-hashes for finding inodes - that's what the per-ag radix trees are
-used for. The xfs_inode lives longer than the struct inode because
-we do non-trivial work after the VFS "reclaims" the struct inode.
-
-For example, when an inode is unlinked
-do not truncate or free the inode until after the VFS has finished with
-it - the inode remains on the unlinked list (orphaned in ext3 terms)
-from the time is is unlinked by the VFS to the time the last VFs
-reference goes away. When XFS gets it, XFS then issues the inactive
-transaction that takes the inode off the unlinked list and marks it
-free in the inode alloc btree. This transaction is asynchronous and
-dirties the xfs inode. Finally XFS will mark the inode as
-reclaimable via a radix tree tag. The final processing of the inode
-is then done via eaither a background relcaim walk from xfssyncd
-(every 30s) where it will do non-blocking operations to finalіze
-reclaim. It may take several passes to actually reclaim the inode.
-e.g. one pass to force the log if the inode is pinned, another pass
-to flush the inode to disk if it is dirty and not stale, and then
-another pass to reclaim the inode once clean. There may be multiple
-passes inbetween where the inode is skipped because those operations
-have not completed.
-
-And to top it all off, if the inode is looked up again (cache hit)
-while in the reclaimable state, it will be removed from the reclaim
-state and reused immediately. in this case we don't need to continue
-the reclaim processing other things will ensure all the correct
-information will go to disk.
-
-> Do all or most of the xfs inodes require IO before being reclaimed
-> during this test?
-
-Yes, because all the inode are being dirtied and they are being
-reclaimed faster than background flushing expires them.
-
-> I wonder if you could throttle them a bit or sort
-> them somehow so that they tend to be cleaned by writeout and reclaim
-> just comes after and removes the clean ones, like pagecache reclaim
-> is (supposed) to work.?
-
-The whole point of using the radix trees is to get nicely sorted
-reclaim IO - inodes are indexed by number, and the radix tree walk
-gives us ascending inode number (and hence ascending block number)
-reclaim - and the background reclaim allows optimal flushing to
-occur by aggregating all the IO into delayed write metadata buffers
-so they can be sorted and flushed to the elevator by the xfsbufd in
-the most optimal manner possible.
-
-The shrinker does preempt this somewhat, which is why delaying the
-XFS shrinker's work appears to improve things alot. If the shrinker
-is not running, the the background reclaim does exactly what you are
-suggesting.
-
-However, I don't think the increase in iops is caused by the XFS
-inode shrinker - I think that it is the VFS cache shrinkers. If you
-look at the the graphs in the link above, preformance doesn't
-decrease when the XFS inode cache is being shrunk (top chart, yellow
-trace) - it drops when the vfs caches are being shrunk (middle
-chart). I haven't correlated the behaviour any further than that
-because I haven't had time.
-
-FWIW, all this background reclaim, radix tree reclaim tagging and
-walking, embedded struct inodes, etc is all relatively new code.
-The oldest bit of it was introduced in 2.6.31 (I think) and so a
-significant part of what we are exploring here is uncharted
-territory. The changes to relcaim, etc are aprtially reponsible for
-the scalabilty we are geting from delayed logging, but there is
-certainly room for improvement....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
