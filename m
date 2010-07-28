@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab0G1Ivx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 04:51:53 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:34940 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab0G1Ivu convert rfc822-to-8bit (ORCPT
+	id S1754411Ab0G1I6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 04:58:11 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38629 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab0G1I6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 04:51:50 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Wed, 28 Jul 2010 10:53:17 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <20100727120841.GC11468@n2100.arm.linux.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Daniel Walker <dwalker@codeaurora.org>, Jonathan Corbet <corbet@lwn.net>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Hiremath Vaibhav <hvaibhav@ti.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, linux-mm@kvack.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Message-id: <op.vgjpm3it7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <cover.1280151963.git.m.nazarewicz@samsung.com>
- <743102607e2c5fb20e3c0676fadbcb93d501a78e.1280151963.git.m.nazarewicz@samsung.com>
- <dc4bdf3e0b02c0ac4770927f72b6cbc3f0b486a2.1280151963.git.m.nazarewicz@samsung.com>
- <20100727120841.GC11468@n2100.arm.linux.org.uk>
+	Wed, 28 Jul 2010 04:58:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=teqjuRs6lPqi371hrGQzTp4vbWs2qeK9/p6TYYV2EIwFgO7fVONmHkm/cWt/liHn49
+         yQem/htcrYxnEsqqjpR50gOKmpJ7zzryC4IjYXWqrBARf/JK7D+sP3n3M3zU8zLJxDdi
+         dcyWxFP7sCg5ZZm8FTe0dum/Xl1TRrJWcMa2o=
+Subject: [PATCH] hpimsgx: fix wrong sizeof
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Eliot Blennerhassett <eblennerhassett@audioscience.com>
+Content-Type: text/plain
+Date: Wed, 28 Jul 2010 16:58:42 +0800
+Message-Id: <1280307522.28099.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +static inline dma_addr_t __must_check
->> +cma_alloc(const struct device *dev, const char *kind,
->> +	  size_t size, dma_addr_t alignment)
->> +{
->> +	return dev ? -EINVAL : __cma_alloc(dev, kind, size, alignment);
+The correct size should be sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS),
+sizeof(&gRESP_HPI_SUBSYS_FIND_ADAPTERS) is incorrect.
 
-On Tue, 27 Jul 2010 14:08:41 +0200, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> So I can't use this to allocate memory for anything but a NULL device?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/pci/asihpi/hpimsgx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->> +static inline int
->> +cma_info(struct cma_info *info, const struct device *dev, const char *kind)
->> +{
->> +	return dev ? -EINVAL : __cma_info(info, dev, kind);
-
-> This won't return information for anything but a NULL device?
-
-Obviously a bug.  Thanks for spotting that.
-
+diff --git a/sound/pci/asihpi/hpimsgx.c b/sound/pci/asihpi/hpimsgx.c
+index 2ee90dc..f01ab96 100644
+--- a/sound/pci/asihpi/hpimsgx.c
++++ b/sound/pci/asihpi/hpimsgx.c
+@@ -741,7 +741,7 @@ static void HPIMSGX__reset(u16 adapter_index)
+ 		hpi_init_response(&hr, HPI_OBJ_SUBSYSTEM,
+ 			HPI_SUBSYS_FIND_ADAPTERS, 0);
+ 		memcpy(&gRESP_HPI_SUBSYS_FIND_ADAPTERS, &hr,
+-			sizeof(&gRESP_HPI_SUBSYS_FIND_ADAPTERS));
++			sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS));
+ 
+ 		for (adapter = 0; adapter < HPI_MAX_ADAPTERS; adapter++) {
+ 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.5.4.3
+
+
+
