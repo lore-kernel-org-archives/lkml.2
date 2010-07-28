@@ -1,21 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab0G1JyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:54:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56695 "EHLO mx2.suse.de"
+	id S1754532Ab0G1Jzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:55:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43196 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934Ab0G1JyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:54:04 -0400
-Date: Wed, 28 Jul 2010 11:54:01 +0200
-Message-ID: <s5h6300vsna.wl%tiwai@suse.de>
+	id S1752934Ab0G1Jzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 05:55:45 -0400
+Date: Wed, 28 Jul 2010 11:55:27 +0200
+Message-ID: <s5h39v4vskw.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Eliot Blennerhassett <eblennerhassett@audioscience.com>
-Subject: Re: [PATCH] hpimsgx: fix wrong sizeof
-In-Reply-To: <1280307522.28099.1.camel@mola>
-References: <1280307522.28099.1.camel@mola>
+To: Wei Ni <wni@nvidia.com>
+Cc: "'Wu Fengguang'" <fengguang.wu@intel.com>,
+        "'Pavel Hofman'" <pavel.hofman@insite.cz>,
+        "'alsa-devel'" <alsa-devel@alsa-project.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'akpm'" <akpm@linux-foundation.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: Support MCP89 hdmi audio
+In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C29D065C7E@HKMAIL01.nvidia.com>
+References: <6B4D417B830BC44B8026029FD256F7F1C29D065C70@HKMAIL01.nvidia.com>
+	<s5hr5ix2dzb.wl%tiwai@suse.de>
+	<6B4D417B830BC44B8026029FD256F7F1C29D065C72@HKMAIL01.nvidia.com>
+	<6B4D417B830BC44B8026029FD256F7F1C29D065C7E@HKMAIL01.nvidia.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,38 +31,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 28 Jul 2010 16:58:42 +0800,
-Axel Lin wrote:
-> 
-> The correct size should be sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS),
-> sizeof(&gRESP_HPI_SUBSYS_FIND_ADAPTERS) is incorrect.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Wei,
 
-Applied now.  Thanks.
+At Fri, 23 Jul 2010 16:43:57 +0800,
+Wei Ni wrote:
+> 
+> Hi, Takashi
+> I tried your patch file, it worked fine on MCP89 board.
+> But I still need to check some other problems.
+> So please don't add this patch now.
 
+What is the status now?
+
+
+thanks,
 
 Takashi
 
+> 
+> Thanks
+> Wei.
+> 
+> -----Original Message-----
+> From: Wei Ni 
+> Sent: Thursday, July 22, 2010 11:14 AM
+> To: 'Takashi Iwai'
+> Cc: Wu Fengguang; 'Pavel Hofman'; 'alsa-devel'; 'linux-kernel'; 'akpm'
+> Subject: RE: Support MCP89 hdmi audio
+> 
+> it's great, I will try it.
+> 
+> Thanks
+> Wei.
+> 
+> -----Original Message-----
+> From: Takashi Iwai [mailto:tiwai@suse.de] 
+> Sent: Wednesday, July 21, 2010 8:53 PM
+> To: Wei Ni
+> Cc: Wu Fengguang; 'Pavel Hofman'; 'alsa-devel'; 'linux-kernel'; 'akpm'
+> Subject: Re: Support MCP89 hdmi audio
+> 
+> At Wed, 21 Jul 2010 19:45:09 +0800,
+> Wei Ni wrote:
+> > 
+> > Hi, all
+> > I'm an Nvidia engineer, I maintain the nvidia linux hdmi audio driver.
+> > 
+> > An end-user report a problem with his TV attached to an MCP89.
+> > ALSA won't send audio to it, because
+> > PD=0:
+> > HDMI hot plug event: Pin=5 Presence_Detect=1 ELD_Valid=0
+> > HDMI hot plug event: Pin=5 Presence_Detect=0 ELD_Valid=1
+> > 
+> > As you know, in linux driver patch_hdmi.c, it use (pind && eldv)
+> > in unsolicited events. So the driver can't detect the monitor.
+> > 
+> > >From the HAD specification
+> > (http://download.intel.com/standards/hdaudio/pdf/HDA036.pdf):
+> > 
+> > Original text for Unsolicited Response PD bit:
+> > 
+> > Presence Detect: When this bit is set, sense measurement has
+> > changed on the pin widget and software can use the pin sense
+> > control verb to determine the current pin sense data state.
+> > For analog pin widgets, this UR means that Presence Detect or
+> > Impedance has changed on the pin widget.
+> > For digital pin widgets, including HDMI pin widgets, this means
+> > that presence detect (and optionally ELD valid bit) has
+> > **changed**. [my emphasis]
+> > 
+> > Updated text for Unsolicted Response PD bit:
+> > 
+> > Presence Detect: This bit reflects the **present** [my
+> > emphasis] state of the Pin Sense Presence Detect bit when the
+> > unsolicited response is triggered. Software can optionally use
+> > the pin sense control verb to determine the latest pin sense
+> > data state. This bit implementation is only required for
+> > digital display pin widget. Non digital display pin widget is
+> > optional to implement this bit.
+> > 
+> > For our MCP89, the values indicates the change of status of PD, not the actual value of PD,
+> > which follows older description of UR for PD bit.
+> > 
+> > So could we add a workaround for MCP89? We could use Pin Sense to determine again in
+> > unsolicited events. If it return 0xc0000000, it means PD=1 and ELVD=1.
+> > Or do you have any suggestions?
+> 
+> Yes.  The patch below does similar thing.
+> Could you give it a try?
+> 
+> 
+> thanks,
+> 
+> Takashi
+> 
 > ---
->  sound/pci/asihpi/hpimsgx.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/pci/asihpi/hpimsgx.c b/sound/pci/asihpi/hpimsgx.c
-> index 2ee90dc..f01ab96 100644
-> --- a/sound/pci/asihpi/hpimsgx.c
-> +++ b/sound/pci/asihpi/hpimsgx.c
-> @@ -741,7 +741,7 @@ static void HPIMSGX__reset(u16 adapter_index)
->  		hpi_init_response(&hr, HPI_OBJ_SUBSYSTEM,
->  			HPI_SUBSYS_FIND_ADAPTERS, 0);
->  		memcpy(&gRESP_HPI_SUBSYS_FIND_ADAPTERS, &hr,
-> -			sizeof(&gRESP_HPI_SUBSYS_FIND_ADAPTERS));
-> +			sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS));
+> diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+> index 86067ee..2fc5396 100644
+> --- a/sound/pci/hda/patch_hdmi.c
+> +++ b/sound/pci/hda/patch_hdmi.c
+> @@ -52,6 +52,10 @@ struct hdmi_spec {
+>  	 */
+>  	struct hda_multi_out multiout;
+>  	unsigned int codec_type;
+> +
+> +	/* misc flags */
+> +	/* PD bit indicates only the update, not the current state */
+> +	unsigned int old_pin_detect:1;
+>  };
 >  
->  		for (adapter = 0; adapter < HPI_MAX_ADAPTERS; adapter++) {
 >  
-> -- 
-> 1.5.4.3
-> 
-> 
+> @@ -616,6 +620,9 @@ static void hdmi_setup_audio_infoframe(struct hda_codec *codec, hda_nid_t nid,
+>   * Unsolicited events
+>   */
+>  
+> +static void hdmi_present_sense(struct hda_codec *codec, hda_nid_t pin_nid,
+> +			       struct hdmi_eld *eld);
+> +
+>  static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
+>  {
+>  	struct hdmi_spec *spec = codec->spec;
+> @@ -632,6 +639,12 @@ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
+>  	if (index < 0)
+>  		return;
+>  
+> +	if (spec->old_pin_detect) {
+> +		if (pind)
+> +			hdmi_present_sense(codec, tag, &spec->sink_eld[index]);
+> +		pind = spec->sink_eld[index].monitor_present;
+> +	}
+> +
+>  	spec->sink_eld[index].monitor_present = pind;
+>  	spec->sink_eld[index].eld_valid = eldv;
+>  
+> diff --git a/sound/pci/hda/patch_nvhdmi.c b/sound/pci/hda/patch_nvhdmi.c
+> index 3c10c0b..b0652ac 100644
+> --- a/sound/pci/hda/patch_nvhdmi.c
+> +++ b/sound/pci/hda/patch_nvhdmi.c
+> @@ -478,6 +478,7 @@ static int patch_nvhdmi_8ch_89(struct hda_codec *codec)
+>  
+>  	codec->spec = spec;
+>  	spec->codec_type = HDA_CODEC_NVIDIA_MCP89;
+> +	spec->old_pin_detect = 1;
+>  
+>  	if (hdmi_parse_codec(codec) < 0) {
+>  		codec->spec = NULL;
+> @@ -508,6 +509,7 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
+>  	spec->multiout.max_channels = 8;
+>  	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
+>  	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
+> +	spec->old_pin_detect = 1;
+>  
+>  	codec->patch_ops = nvhdmi_patch_ops_8ch_7x;
+>  
+> @@ -528,6 +530,7 @@ static int patch_nvhdmi_2ch(struct hda_codec *codec)
+>  	spec->multiout.max_channels = 2;
+>  	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
+>  	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
+> +	spec->old_pin_detect = 1;
+>  
+>  	codec->patch_ops = nvhdmi_patch_ops_2ch;
+>  
+> -----------------------------------------------------------------------------------
+> This email message is for the sole use of the intended recipient(s) and may contain
+> confidential information.  Any unauthorized review, use, disclosure or distribution
+> is prohibited.  If you are not the intended recipient, please contact the sender by
+> reply email and destroy all copies of the original message.
+> -----------------------------------------------------------------------------------
 > 
