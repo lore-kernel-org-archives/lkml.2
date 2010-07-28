@@ -1,71 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab0G1GXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:23:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59015 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab0G1GXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:23:37 -0400
-Message-ID: <4C4FCCB6.3030003@zytor.com>
-Date: Tue, 27 Jul 2010 23:22:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>	 <1279822864-17154-32-git-send-email-yinghai@kernel.org> <1280295415.1970.245.camel@pasglop>
-In-Reply-To: <1280295415.1970.245.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+	id S1753887Ab0G1GZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:25:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49751 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab0G1GZ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 02:25:29 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Jul 2010 15:20:40 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        m-ikeda@ds.jp.nec.com,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 7/7][memcg] use spin lock instead of bit_spin_lock
+ in page_cgroup
+Message-Id: <20100728152040.f6a0499c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2010 10:36 PM, Benjamin Herrenschmidt wrote:
+On Tue, 27 Jul 2010 23:16:54 -0700
+Greg Thelen <gthelen@google.com> wrote:
+
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 > 
-> It's very gross to have this weak and not memblock_find_base()... IE. 
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >
+> > This patch replaces page_cgroup's bit_spinlock with spinlock. In general,
+> > spinlock has good implementation than bit_spin_lock and we should use
+> > it if we have a room for it. In 64bit arch, we have extra 4bytes.
+> > Let's use it.
+> >
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > --
+> > Index: mmotm-0719/include/linux/page_cgroup.h
+> > ===================================================================
+> > --- mmotm-0719.orig/include/linux/page_cgroup.h
+> > +++ mmotm-0719/include/linux/page_cgroup.h
+> > @@ -10,8 +10,14 @@
+> >   * All page cgroups are allocated at boot or memory hotplug event,
+> >   * then the page cgroup for pfn always exists.
+> >   */
+> > +#ifdef CONFIG_64BIT
+> > +#define PCG_HAS_SPINLOCK
+> > +#endif
+> >  struct page_cgroup {
+> >  	unsigned long flags;
+> > +#ifdef PCG_HAS_SPINLOCK
+> > +	spinlock_t	lock;
+> > +#endif
+> >  	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
+> >  	unsigned short blk_cgroup;	/* Not Used..but will be. */
+> >  	struct page *page;
+> > @@ -90,6 +96,16 @@ static inline enum zone_type page_cgroup
+> >  	return page_zonenum(pc->page);
+> >  }
+> >  
+> > +#ifdef PCG_HAS_SPINLOCK
+> > +static inline void lock_page_cgroup(struct page_cgroup *pc)
+> > +{
+> > +	spin_lock(&pc->lock);
+> > +}
 > 
-> You create a new function defined as a wrapper on an existing one to
-> provide an easier set of arguments ... but also make it weak so the
-> arch can completely change its semantics without actually changing
-> the semantics of the function it wraps.
+> This is minor issue, but this patch breaks usage of PageCgroupLocked().
+> Example from __mem_cgroup_move_account() cases panic:
+> 	VM_BUG_ON(!PageCgroupLocked(pc));
 > 
-> This is going to cause confusion and bugs. I'm adding the patch without
-> the weak bit to my branch for now, we need to discuss what is the best
-> approach for x86 here. Might be to use a different function. I don't
-> understand yet -why- x86 needs to override it, maybe the right way is
-> to reserve things more intelligently on x86 ?
-> 
-> In any case, you can always use your own wrapper there if needed
+> I assume that this patch should also delete the following:
+> - PCG_LOCK definition from page_cgroup.h
+> - TESTPCGFLAG(Locked, LOCK) from page_cgroup.h
+> - PCGF_LOCK from memcontrol.c
 > 
 
-I'm really confused by this as well.  First of all this only looks like
-a prototype which swizzles the argument order, which is a good start for
-making problems.
+yes. thank you.
 
-The second thing is that the proposed x86 code seems to do something I
-would consider to be a core service, which is find an allocation outside
-any reserved region, but it does so by looking at two different data
-structures.  Instead the logical thing would be to knock a reserved
-block out of the available set, so that there is always a data structure
-which contains the currently free and available memory.  I think the
-best thing would be if the same data structure could also handle
-reserved memory types (by carrying an attribute), but if that is not
-possible, there can be a reserved memblock structure and an available
-memblock structure, alternatively (and equivalently) an "all memory"
-memblock structure and an available memblock structure, but unavailable
-memory should not be in the available structure.
+-Kame
 
-	-hpa
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+
+> > +static inline void unlock_page_cgroup(struct page_cgroup *pc)
+> > +{
+> > +	spin_unlock(&pc->lock);
+> > +}
+> > +#else
+> >  static inline void lock_page_cgroup(struct page_cgroup *pc)
+> >  {
+> >  	bit_spin_lock(PCG_LOCK, &pc->flags);
+> > @@ -99,6 +115,7 @@ static inline void unlock_page_cgroup(st
+> >  {
+> >  	bit_spin_unlock(PCG_LOCK, &pc->flags);
+> >  }
+> > +#endif
+> >  
+> >  static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
+> >  {
+> > Index: mmotm-0719/mm/page_cgroup.c
+> > ===================================================================
+> > --- mmotm-0719.orig/mm/page_cgroup.c
+> > +++ mmotm-0719/mm/page_cgroup.c
+> > @@ -17,6 +17,9 @@ __init_page_cgroup(struct page_cgroup *p
+> >  	pc->mem_cgroup = 0;
+> >  	pc->page = pfn_to_page(pfn);
+> >  	INIT_LIST_HEAD(&pc->lru);
+> > +#ifdef PCG_HAS_SPINLOCK
+> > +	spin_lock_init(&pc->lock);
+> > +#endif
+> >  }
+> >  static unsigned long total_usage;
+> >  
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
