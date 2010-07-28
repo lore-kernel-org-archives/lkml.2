@@ -1,62 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab0G1NAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 09:00:36 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:44169 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab0G1NAd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 09:00:33 -0400
-Date: Wed, 28 Jul 2010 15:02:01 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv5 3/3] USB: gadget: storage_common: fixed warning building
- mass storage function
-In-reply-to: <AANLkTikW8eSn3fgRqJsXwp=+ZMjKgojHDP6+DsDMtg4y@mail.gmail.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <op.vgj05nev7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <38424b23c94ddcff6f1808161912f362c2ccae39.1280316431.git.m.nazarewicz@samsung.com>
- <7b3ddf05e135e8147d1011a81f9069d9cd78aa62.1280316431.git.m.nazarewicz@samsung.com>
- <d7a11c97d1b28c7a0336c747de57a9a17dcc7604.1280316431.git.m.nazarewicz@samsung.com>
- <AANLkTikW8eSn3fgRqJsXwp=+ZMjKgojHDP6+DsDMtg4y@mail.gmail.com>
+	id S1753241Ab0G1NKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:10:38 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34869 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752793Ab0G1NKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 09:10:34 -0400
+Date: Wed, 28 Jul 2010 14:10:17 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
+Message-ID: <20100728131017.GI5300@csn.ul.ie>
+References: <20100728071705.GA22964@localhost> <20100728191322.4A85.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100728191322.4A85.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 14:25:59 +0200, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+On Wed, Jul 28, 2010 at 08:40:21PM +0900, KOSAKI Motohiro wrote:
+> In this week, I've tested some IO congested workload for a while. and probably
+> I did reproduced Andreas's issue.
+> 
+> So, I would like to explain current lumpy reclaim how works and why so much sucks.
+> 
+> 
+> 1. Now isolate_lru_pages() have following pfn neighber grabbing logic.
+> 
+>                 for (; pfn < end_pfn; pfn++) {
+> (snip)
+>                         if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+>                                 list_move(&cursor_page->lru, dst);
+>                                 mem_cgroup_del_lru(cursor_page);
+>                                 nr_taken++;
+>                                 nr_lumpy_taken++;
+>                                 if (PageDirty(cursor_page))
+>                                         nr_lumpy_dirty++;
+>                                 scan++;
+>                         } else {
+>                                 if (mode == ISOLATE_BOTH &&
+>                                                 page_count(cursor_page))
+>                                         nr_lumpy_failed++;
+>                         }
+>                 }
+> 
+> Mainly, __isolate_lru_page() failure can be caused following reasons.
+>   (1) the page have already been freed and is in buddy.
+>   (2) the page is used for non user process purpose
+>   (3) the page is unevictable (e.g. mlocked)
+> 
+> (2), (3) have very different characteristic from (1). the lumpy reclaim
+> mean 'contenious physical memory reclaiming'. that said, if we are trying
+> order 9 reclaim, 512 pages reclaim success and 511 pages reclaim success
+> are completely differennt.
 
-> On Wed, Jul 28, 2010 at 3:13 PM, Michal Nazarewicz
-> <m.nazarewicz@samsung.com> wrote:
->> The "nofua" attribute is used in the File-Storage Gadget but the
->> functions handling it are defined in storage_common.c (which may be
->> not a bad thing if anyone will want to port tho "nofua" attribute to
->> mass storage function) which causes the following warnings:
->>
->> drivers/usb/gadget/storage_common.c:718: \
->>  warning: ‘fsg_show_nofua’ defined but not used
->> drivers/usb/gadget/storage_common.c:782: \
->>  warning: ‘fsg_store_nofua’ defined but not used
->>
->> Adding __maybe_unused fixes this issue.
-> It's a bit odd.
->
-> Why the warning happens for those two only?
-> There are two more parameters (four methods) to handle 'ro' and 'file'
-> which are done in the same way.
+Yep, and this can occur quite regularly. Judging from the ftrace
+results, contig_failed is frequently positive although whether this is
+due to the page being about to be freed or because it's due (2), I don't
+know.
 
-Those are the only ones that are not used by the mass storage function.
+> former mean lumpy reclaim successfull, latter mean
+> failure. So, if (2) or (3) occur, that pfn have lost a possibility of lumpy
+> reclaim successfull. then, we should stop pfn neighbor search immediately and
+> try to get lru next page. (i.e. we should use 'break' statement instead 'continue')
+> 
 
-The warning is issued when drivers using mass storage function are built.
-File-Storage Gadget compiles fine.
+Easy enough to do.
+
+> 2. synchronous lumpy reclaim condition is insane.
+> 
+> currently, synchrounous lumpy reclaim will be invoked when following
+> condition.
+> 
+>         if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
+>                         sc->lumpy_reclaim_mode) {
+> 
+> but "nr_reclaimed < nr_taken" is pretty stupid. if isolated pages have
+> much dirty pages, pageout() only issue first 113 IOs.
+> (if io queue have >113 requests, bdi_write_congested() return true and
+>  may_write_to_queue() return false)
+> 
+> So, we haven't call ->writepage(), congestion_wait() and wait_on_page_writeback()
+> are surely stupid.
+> 
+
+This is somewhat intentional though. See the comment
+
+                        /*
+                         * Synchronous reclaim is performed in two passes,
+                         * first an asynchronous pass over the list to
+                         * start parallel writeback, and a second synchronous
+                         * pass to wait for the IO to complete......
+
+If all pages on the list were not taken, it means that some of the them
+were dirty but most should now be queued for writeback (possibly not all if
+congested). The intention is to loop a second time waiting for that writeback
+to complete before continueing on.
+
+> 3. pageout() is intended anynchronous api. but doesn't works so.
+> 
+> pageout() call ->writepage with wbc->nonblocking=1. because if the system have
+> default vm.dirty_ratio (i.e. 20), we have 80% clean memory. so, getting stuck
+> on one page is stupid, we should scan much pages as soon as possible.
+> 
+> HOWEVER, block layer ignore this argument. if slow usb memory device connect
+> to the system, ->writepage() will sleep long time. because submit_bio() call
+> get_request_wait() unconditionally and it doesn't have any PF_MEMALLOC task
+> bonus.
+> 
+
+Is this not a problem in the writeback layer rather than pageout()
+specifically?
+
+> 
+> 4. synchronous lumpy reclaim call clear_active_flags(). but it is also silly.
+> 
+> Now, page_check_references() ignore pte young bit when we are processing lumpy reclaim.
+> Then, In almostly case, PageActive() mean "swap device is full". Therefore,
+> waiting IO and retry pageout() are just silly.
+> 
+
+try_to_unmap also obey reference bits. If you remove the call to
+clear_active_flags, then pageout should pass TTY_IGNORE_ACCESS to
+try_to_unmap(). I had a patch to do this but it didn't improve
+high-order allocation success rates any so I dropped it.
+
+> In andres's case, congestion_wait() and get_request_wait() are root cause.
+> Other issue is problematic when more higher order lumpy reclaim.
+> 
+> Now, I'm preparing some patches and probably I can send them tommorow.
+> 
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
