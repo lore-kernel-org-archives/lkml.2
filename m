@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab0G1WcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 18:32:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40300 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752158Ab0G1WcA (ORCPT
+	id S1756598Ab0G1Wg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 18:36:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44958 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab0G1Wg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 18:32:00 -0400
-Date: Wed, 28 Jul 2010 15:31:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>, InKi Dae <inki.dae@samsung.com>
-Subject: Re: [PATCH 2/2] s6e63m0: fix section mismatch
-Message-Id: <20100728153116.634dc64b.akpm@linux-foundation.org>
-In-Reply-To: <1280286456.19065.4.camel@mola>
-References: <1280286456.19065.4.camel@mola>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Jul 2010 18:36:26 -0400
+Date: Wed, 28 Jul 2010 23:36:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Steve Muckle <smuckle@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH 2/3] arm: mm: do not set missing flags on ScorpionMP
+Message-ID: <20100728223603.GB6729@n2100.arm.linux.org.uk>
+References: <1279911483-7039-1-git-send-email-johlstei@codeaurora.org> <1279911483-7039-3-git-send-email-johlstei@codeaurora.org> <20100724082334.GB15571@n2100.arm.linux.org.uk> <1280354280.21185.10.camel@c-dwalke-linux.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280354280.21185.10.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 11:07:36 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
-
-> Eliminate section mismatch warning by marking s6e63m0_probe() as __devinit.
+On Wed, Jul 28, 2010 at 02:58:00PM -0700, Daniel Walker wrote:
+> On Sat, 2010-07-24 at 09:23 +0100, Russell King - ARM Linux wrote:
+> > On Fri, Jul 23, 2010 at 11:58:02AM -0700, Jeff Ohlstein wrote:
+> > > From: Steve Muckle <smuckle@codeaurora.org>
+> > > 
+> > > ScorpionMP does not have the SMP/nAMP mode and TLB ops
+> > > broadcasting bits in the ACTLR.
+> > 
+> > Please provide a separate instance of __v7_proc_info for your processor
+> > and direct it to jump into the __v7_setup code after this setup instead.
 > 
-
-Please aways quote the error messages or warnings when fixing build
-errors or warnings.  It helps with the review quite a lot.
-
 > 
-> diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
-> index b27ccf9..1757379 100644
-> --- a/drivers/video/backlight/s6e63m0.c
-> +++ b/drivers/video/backlight/s6e63m0.c
-> @@ -732,7 +732,7 @@ static ssize_t s6e63m0_sysfs_show_gamma_table(struct device *dev,
->  static DEVICE_ATTR(gamma_table, 0644,
->  		s6e63m0_sysfs_show_gamma_table, NULL);
->  
-> -static int __init s6e63m0_probe(struct spi_device *spi)
-> +static int __devinit s6e63m0_probe(struct spi_device *spi)
->  {
->  	int ret = 0;
->  	struct s6e63m0 *lcd = NULL;
+> You mean add another label into __v7_setup along with a proc-msm.S to
+> jump over this code?
 
-Many drivers/video/backlight/*.c drivers use __devinit for the
-platform_driver.probe handler.  Quite a lot use nothing (ie: .text). 
-Some still use __init.  About half of them use __devexit_p for .remove
-and half don't.  It looks like it all needs a bit of loving care.
+Yes to the first, no to the second.
+
+__v7_setup:
+#ifdef CONFIG_SMP
+        mrc     p15, 0, r0, c1, c0, 1
+        tst     r0, #(1 << 6)                   @ SMP/nAMP mode enabled?
+        orreq   r0, r0, #(1 << 6) | (1 << 0)    @ Enable SMP/nAMP mode and
+        mcreq   p15, 0, r0, c1, c0, 1           @ TLB ops broadcasting
+#endif
+__v7_msm_setup:
+	...
+
+        .section ".proc.info.init", #alloc, #execinstr
+
+	.type	__v7_msm_proc_info, #object
+__v7_msm_proc_info:
+	.long	...
+	.long	...
+	...
+	b	__v7_msm_setup
+	...
+
+        /*
+         * Match any ARMv7 processor core.
+         */
+        .type   __v7_proc_info, #object
+__v7_proc_info:
+	...
 
