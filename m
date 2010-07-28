@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab0G1CfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 22:35:18 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:57123 "EHLO h5.dl5rb.org.uk"
+	id S1752762Ab0G1CjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 22:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14295 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752458Ab0G1CfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 22:35:15 -0400
-Date: Wed, 28 Jul 2010 03:35:01 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fbdev: Make jz4740-fb depends on MACH_JZ4740
-Message-ID: <20100728023500.GA7530@linux-mips.org>
-References: <20100727111422.673b4919.sfr@canb.auug.org.au>
- <1280197979-24307-1-git-send-email-lars@metafoo.de>
- <20100727055546.GA5469@linux-mips.org>
- <20100728113136.97942d63.sfr@canb.auug.org.au>
+	id S1751384Ab0G1CjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 22:39:21 -0400
+Date: Tue, 27 Jul 2010 22:39:04 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 4/7][memcg] memcg use ID in page_cgroup
+Message-ID: <20100728023904.GE12642@redhat.com>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100727165629.6f98145c.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100728113136.97942d63.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100727165629.6f98145c.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 11:31:36AM +1000, Stephen Rothwell wrote:
-
-> On Tue, 27 Jul 2010 06:55:46 +0100 Ralf Baechle <ralf@linux-mips.org> wrote:
-> >
-> > On Tue, Jul 27, 2010 at 04:32:59AM +0200, Lars-Peter Clausen wrote:
-> > 
-> > > The jz4740-fb driver should only be selectabed of MACH_JZ4740 is selected.
-> > 
-> > Thanks, folded into the original patch.
+On Tue, Jul 27, 2010 at 04:56:29PM +0900, KAMEZAWA Hiroyuki wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> But it didn't make it into your mips-for-linux-next branch today?
+> Now, addresses of memory cgroup can be calculated by their ID without complex.
+> This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
+> On 64bit architecture, this offers us more 6bytes room per page_cgroup.
+> Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
+> some light-weight concurrent access.
+> 
+> We may able to move this id onto flags field but ...go step by step.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/page_cgroup.h |    3 ++-
+>  mm/memcontrol.c             |   40 +++++++++++++++++++++++++---------------
+>  mm/page_cgroup.c            |    2 +-
+>  3 files changed, 28 insertions(+), 17 deletions(-)
+> 
+> Index: mmotm-0719/include/linux/page_cgroup.h
+> ===================================================================
+> --- mmotm-0719.orig/include/linux/page_cgroup.h
+> +++ mmotm-0719/include/linux/page_cgroup.h
+> @@ -12,7 +12,8 @@
+>   */
+>  struct page_cgroup {
+>  	unsigned long flags;
+> -	struct mem_cgroup *mem_cgroup;
+> +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
+> +	unsigned short blk_cgroup;	/* Not Used..but will be. */
 
-Fixed.  Sorry.
+So later I shall have to use virtually indexed arrays in blkio controller?
+Or you are just using virtually indexed arrays for lookup speed and
+I can continue to use css_lookup() and not worry about using virtually
+indexed arrays.
 
-  Ralf
+So the idea is that when a page is allocated, also store the blk_group
+id and once that page is submitted for writeback, we should be able
+to associate it to right blkio group?
+
+Vivek
