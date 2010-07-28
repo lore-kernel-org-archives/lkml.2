@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab0G1GTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:19:10 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38696 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab0G1GTD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:19:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oQMkpkV4TISzHf/2j0UM1DC0706yYWQ/MRy30i6hzrFinkYofzHEep8E9PrLYYrXgc
-         Gx4jEXFEQ5diOFnsFztaniRmiOS5KeJiNjhK57kv26jCFPCCWv6Pji5rKNSxg4Kec9Jn
-         4yaMNpFmSO63QUv7iRmPyhsxnRNytZBdXxfg0=
-Date: Wed, 28 Jul 2010 14:23:13 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.35-rc6] kconfig: fix MODULES-related bug in case of
- no .config
-Message-ID: <20100728062313.GC5161@cr0.nay.redhat.com>
-References: <20100727192727.GA17954@ulf>
- <20100727195742.GA18079@ulf>
+	id S1753744Ab0G1GXj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:23:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59015 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab0G1GXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 02:23:37 -0400
+Message-ID: <4C4FCCB6.3030003@zytor.com>
+Date: Tue, 27 Jul 2010 23:22:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727195742.GA18079@ulf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>	 <1279822864-17154-32-git-send-email-yinghai@kernel.org> <1280295415.1970.245.camel@pasglop>
+In-Reply-To: <1280295415.1970.245.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 09:57:43PM +0200, Ulf Magnusson wrote:
->On Tue, Jul 27, 2010 at 09:27:27PM +0200, Ulf Magnusson wrote:
->> Hi,
->> 
->> There seems to be a kconfig bug due to MODULES not always being evaluated if no
->> .config is found. Take the following Kconfig as an example:
->> 
->> config MODULES
->> 	def_bool y
->> 
->> config FOO
->> 	def_tristate m
->> 
->> With no .config, the following configuration is generated:
->> 
->> CONFIG_MODULES=y
->> CONFIG_FOO=y
->> 
->> With an empty .config, the following:
->> 
->> CONFIG_MODULES=y
->> CONFIG_FOO=m
->> 
->> Tristate choice statements can also exhibit the problem, due to having an
->> implicit rev_dep (select) containing "m".
->> 
->> The problem is that MODULES is never evaluted in conf_read_simple() unless
->> there's a .config. The following patch fixes this.
-
-<snip>
-
->
->Silly error in the patch. The correct patch follows.
->
->Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
->
-
-Sounds good for me.
-
-Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
-
-
->diff -uNr linux.vanilla/scripts/kconfig/confdata.c linux.new/scripts/kconfig/confdata.c
->--- linux.vanilla/scripts/kconfig/confdata.c	2010-07-27 16:47:43.443006287 +0200
->+++ linux.new/scripts/kconfig/confdata.c	2010-07-27 21:48:07.471550551 +0200
->@@ -170,8 +170,11 @@
-> 		if (in)
-> 			goto load;
-> 		sym_add_change_count(1);
->-		if (!sym_defconfig_list)
->+		if (!sym_defconfig_list) {
->+			if (modules_sym)
->+				sym_calc_value(modules_sym);
-> 			return 1;
->+		}
+On 07/27/2010 10:36 PM, Benjamin Herrenschmidt wrote:
 > 
-> 		for_all_defaults(sym_defconfig_list, prop) {
-> 			if (expr_calc_value(prop->visible.expr) == no ||
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+> It's very gross to have this weak and not memblock_find_base()... IE. 
+> 
+> You create a new function defined as a wrapper on an existing one to
+> provide an easier set of arguments ... but also make it weak so the
+> arch can completely change its semantics without actually changing
+> the semantics of the function it wraps.
+> 
+> This is going to cause confusion and bugs. I'm adding the patch without
+> the weak bit to my branch for now, we need to discuss what is the best
+> approach for x86 here. Might be to use a different function. I don't
+> understand yet -why- x86 needs to override it, maybe the right way is
+> to reserve things more intelligently on x86 ?
+> 
+> In any case, you can always use your own wrapper there if needed
+> 
+
+I'm really confused by this as well.  First of all this only looks like
+a prototype which swizzles the argument order, which is a good start for
+making problems.
+
+The second thing is that the proposed x86 code seems to do something I
+would consider to be a core service, which is find an allocation outside
+any reserved region, but it does so by looking at two different data
+structures.  Instead the logical thing would be to knock a reserved
+block out of the available set, so that there is always a data structure
+which contains the currently free and available memory.  I think the
+best thing would be if the same data structure could also handle
+reserved memory types (by carrying an attribute), but if that is not
+possible, there can be a reserved memblock structure and an available
+memblock structure, alternatively (and equivalently) an "all memory"
+memblock structure and an available memblock structure, but unavailable
+memory should not be in the available structure.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
