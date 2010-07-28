@@ -1,82 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab0G1V15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 17:27:57 -0400
-Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:56279 "EHLO
-	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab0G1V1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 17:27:55 -0400
-Date: Wed, 28 Jul 2010 23:27:46 +0200
-From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] Regression 2.6.35-rc6: ALSA Intel HDA/Realtek:
- missing	Beep
-Message-ID: <20100728212745.GA15394@darkside.kls.lan>
-Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
-	Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-	alsa-devel@alsa-project.org
-References: <20100728144903.GA18170@darkside.kls.lan>
- <s5hzkxbtya9.wl%tiwai@suse.de>
- <s5htynjtwz2.wl%tiwai@suse.de>
+	id S1756440Ab0G1V2n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 17:28:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56029 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab0G1V2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 17:28:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,276,1278313200"; 
+   d="scan'208";a="822655697"
+Message-ID: <4C50A107.9000409@linux.intel.com>
+Date: Wed, 28 Jul 2010 14:28:39 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
-Content-Disposition: inline
-In-Reply-To: <s5htynjtwz2.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ai Li <aili@codeaurora.org>
+CC: akpm@linux-foundation.org, dwalker@codeaurora.org, mingo@elte.hu,
+        shemminger@vyatta.com, czoccolo@gmail.com, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH v2] cpuidle: extend cpuidle and menu governor to handle
+ dynamic states
+References: <1280352443-28044-1-git-send-email-aili@codeaurora.org>
+In-Reply-To: <1280352443-28044-1-git-send-email-aili@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 7/28/2010 2:27 PM, Ai Li wrote:
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
 
-On Wed, Jul 28, 2010 at 06:03:29PM +0200, Takashi Iwai wrote:
-> I wrote:
-> > Mario 'BitKoenig' Holbe wrote:
-> > > My PC-Speaker Beep control worked in 2.6.34, but is gone in 2.6.35-rc=
-6.
-> > It's because now the driver checks the SSID your board sets up.
-> > So, it's actually BIOS that clears it.
-
-But the BIOS itself beeps through the sound-card at boot :/
-
-> Or, does the following patch fix?  It's already in sound git tree,
-
-Nope, unfortunately it doesn't. Still no Beep controls, no beep through
-sound-card.
-
-May I somehow provide any further data?
-Or am I somehow able to tweak it? Is there a module parameter to set
-this SSID bit? I mean, it did work before... :)
-
-
-Thanks for you help & regards
-   Mario
---=20
-Why did the tachyon cross the road?
-Because it was on the other side.
-
---M9NhX3UHpAaciwkO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEVAwUBTFCg0RS+e2HeSPbpAQLLxAgAgx7fx3F9KtEs57rQnAysRCEVyxZKIvGd
-XsInyUCKdvnUPJ9tlpQJPEPr2z9KW9mnKUNcNuqq1HuGvCD/13WTJ0htk9nHoMLx
-cWTrNPdpaoQmYBj8sUHQoXiqqd/Zwvjfoz+zRGjdje9YVjNJxI8yFkHniSGLW4wF
-SHACViIBMzeRcafpffMkDfjrtxPdFJkxsn6JT1rtvUzo0YZYe/v1BKhQpoxJbYgv
-DJv0ZczLKPu3V8Phnfo3QThu2y8uJmu/v/zG8MgsZl+bZoG0vQG/ytymoO6yyoNV
-VqE26Vc8UvuXAb41beiGP4add/pGbwznMjFauE2sIzYIhwhQuj8hcQ==
-=PFrw
------END PGP SIGNATURE-----
-
---M9NhX3UHpAaciwkO--
