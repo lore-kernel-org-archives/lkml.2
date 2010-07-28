@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab0G1L5n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 07:57:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532Ab0G1L5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 07:57:42 -0400
-Message-ID: <4C501B30.6020900@redhat.com>
-Date: Wed, 28 Jul 2010 14:57:36 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1755071Ab0G1L7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 07:59:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34023 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab0G1L7F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 07:59:05 -0400
+Message-ID: <4C501B83.9070400@windriver.com>
+Date: Wed, 28 Jul 2010 06:58:59 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM: SVM: Emulate next_rip svm feature
-References: <1280247261-19115-1-git-send-email-joerg.roedel@amd.com> <1280247261-19115-3-git-send-email-joerg.roedel@amd.com> <4C4F2643.8080507@redhat.com> <20100728093708.GD26098@amd.com> <4C500636.1070708@redhat.com> <20100728112540.GE26098@amd.com> <4C5015B3.8010003@redhat.com> <20100728115133.GG26098@amd.com>
-In-Reply-To: <20100728115133.GG26098@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Michal Simek <monstr@monstr.eu>
+CC: John Williams <john.williams@petalogix.com>,
+        "Edgar E. Iglesias" <edgar.iglesias@petalogix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] microblaze: Add KGDB support
+References: <1280309353-9172-1-git-send-email-monstr@monstr.eu> <1280309353-9172-2-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1280309353-9172-2-git-send-email-monstr@monstr.eu>
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Jul 2010 11:59:01.0235 (UTC) FILETIME=[44880C30:01CB2E4C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/28/2010 02:51 PM, Roedel, Joerg wrote:
-> On Wed, Jul 28, 2010 at 07:34:11AM -0400, Avi Kivity wrote:
->>    On 07/28/2010 02:25 PM, Roedel, Joerg wrote:
->>> On Wed, Jul 28, 2010 at 06:28:06AM -0400, Avi Kivity wrote:
->>>> We have a slightly different problem, if the nested guest manages to get
->>>> an instruction to be emulated by the host (if the guest assigned it the
->>>> cirrus framebuffer, for example, so from L1's point of view it is RAM,
->>>> but from L0's point of view it is emulated), then we miss the
->>>> intercept.  L2 could take over L1 this way.
->>> I wonder how this could happen. Shouldn't the shadow paging code take
->>> care of this?
->>>
->> L1 thinks the memory is RAM, so it maps it directly and forgets about
->> it.  L0 knows it isn't, so it leaves it unmapped and emulates any
->> instruction which accesses it.  The emulator needs to check whether the
->> instruction is intercepted or not.
-> Instruction intercepts take precedence over exception intercepts. So if
-> the L2 executes an instruction which the L1 hypervisor wants to
-> intercept we get this instruction intercept on the host side and
-> re-inject it.
-> To my understanding the fault-intercept which causes the emulator to run
-> can only happen if the instruction causing the fault isn't intercepted
-> itself.
+On 07/28/2010 04:29 AM, Michal Simek wrote:
+> Kgdb uses brki r16, 0x18 instruction to call
+> low level _debug_exception function which save
+> current state to pt_regs and call microblaze_kgdb_break
+> function. _debug_exception should be called only from
+> the kernel space. User space calling is not supported
+> because user application debugging uses different handling.
+>
+> pt_regs_to_gdb_regs loads additional special registers
+> which can't be changed
+>
+>  * Enable KGDB in Kconfig
+>  * Remove ancient not-tested KGDB support
+>  * Remove ancient _debug_exception code from entry.S
+>
+> Only MMU KGDB support is supported.
+>
+>   
+There is only one place I saw a problem and if you fix it, you can add:
 
-If the instruction opcode is on mmio, the processor never sees the 
-opcode and thus can not intercept.  Or the processor may see one 
-instruction, which is not intercepted, but by the time the emulator 
-kicks in a different instruction takes its place, since another vcpu is 
-evilly cross-modifying the code.
+Acked-by: Jason Wessel <jason.wessel@windriver.com>
 
->> Note, I think if the instruction operand is in mmio, we're safe, since
->> the intercept has higher priority than memory access.  But if the
->> instruction itself is on mmio, or if we entered the emulator through smp
->> trickery, then the emulator will execute the instruction in nested guest
->> context.
-> Right. But if the guest executes code which is on mmio we are doomed
-> anyway because our instruction emulator does not emulate the whole x86
-> instruction set, right?
+> +
+> +int kgdb_arch_handle_exception(int vector, int signo, int err_code,
+> +			       char *remcom_in_buffer, char *remcom_out_buffer,
+> +			       struct pt_regs *regs)
+> +{
+> +	char *ptr;
+> +	unsigned long address;
+> +	int cpu = smp_processor_id();
+> +
+> +	switch (remcom_in_buffer[0]) {
+> +	case 's':
+> +	case 'c':
+> +		/* handle the optional parameter */
+> +		ptr = &remcom_in_buffer[1];
+> +		if (kgdb_hex2long(&ptr, &address))
+> +			regs->pc = address;
+> +		atomic_set(&kgdb_cpu_doing_single_step, -1);
+> +		if (remcom_in_buffer[0] == 's')
+> +			atomic_set(&kgdb_cpu_doing_single_step, cpu);
+> +
+> +		return 0;
+> +	}
+>   
 
-The guest (L2 in this case) is doomed since it execution cannot 
-continue.  But L1 and L0 are fine.  The problem with L2 avoiding 
-intercepts is that L2 can change control registers and take over L1.
+As far as I can see there is no code in the arch specific portion to
+make use of single stepping.  It needs to be implemented using hardware
+assist, or a software breakpoint strategy, else you simply omit the 's'
+case from statement so that kdb will not enable single stepping at run time.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Example:
 
+	switch (remcom_in_buffer[0]) {
+	case 'c':
+		/* handle the optional parameter */
+		ptr = &remcom_in_buffer[1];
+		if (kgdb_hex2long(&ptr, &address))
+			regs->pc = address;
+
+		return 0;
+	}
+
+
+You can also remove the kgdb_cpu_doing_single_step operations because
+this arch does not currently implement the kgdb single stepping.
+
+
+Cheers,
+Jason.
