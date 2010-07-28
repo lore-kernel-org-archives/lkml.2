@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab0G1TXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 15:23:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50882 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab0G1TXM convert rfc822-to-8bit (ORCPT
+	id S1753961Ab0G1TXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 15:23:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58259 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751159Ab0G1TXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 15:23:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=glv+M2NnWK7qy7gGvAjryrQ9JiycW7bhzFN6TLof1otBAjOkNWL3rqWIiMt2Awz+5X
-         x8vxxT6hiUveRmWL/sE6M+I4o045IStvoVHpkCnK7So4P3XYbX5epYk4SrQ0XIxKkdU8
-         0NbnhtjVtQZQJpGuXnsnQODQ0YHYVhB5XIH1c=
-MIME-Version: 1.0
-In-Reply-To: <1279741966.25713.31.camel@dwillia2-linux>
-References: <1279741966.25713.31.camel@dwillia2-linux>
-Date: Wed, 28 Jul 2010 12:23:11 -0700
-X-Google-Sender-Auth: g9KbRUXCEU3WsV1bTkCpKV-7goM
-Message-ID: <AANLkTinNOo1_-KJ2CC_-ACBaDtmWjGX3+Vy60ND17guH@mail.gmail.com>
-Subject: Re: md versus partition scanning (bd_invalidated)
-From: Dan Williams <dan.j.williams@intel.com>
-To: Jens Axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.de>,
-        Tejun Heo <htejun@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-raid <linux-raid@vger.kernel.org>,
-        "Neubauer, Wojciech" <Wojciech.Neubauer@intel.com>,
-        Ed Ciechanowski <ed.ciechanowski@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Jul 2010 15:23:15 -0400
+Date: Wed, 28 Jul 2010 12:22:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Corey Minyard <minyard@acm.org>,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Myron Stowe <myron.stowe@hp.com>,
+        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipmi: Fix ACPI detecting with regspacing
+Message-Id: <20100728122223.b753f586.akpm@linux-foundation.org>
+In-Reply-To: <201007271141.10933.bjorn.helgaas@hp.com>
+References: <4C4E0292.4010004@kernel.org>
+	<201007271123.44335.bjorn.helgaas@hp.com>
+	<4C4F173C.1010406@kernel.org>
+	<201007271141.10933.bjorn.helgaas@hp.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 12:52 PM, Dan Williams <dan.j.williams@intel.com> wrote:
-> Hi,
->
-> We (Intel software raid devs) are seeing a problem with the detection of
-> partitions on md devices.  The trace below shows that the block device
-> inode is dropped in-between when the array comes up and when it is first
-> opened (timestamp 655.498875).  When this happens bdev->bd_invalidated
-> is cleared by bdget() and we never detect partitions.  (Seen on a 2.6.32
-> based kernel, but I presume it is still present)
+On Tue, 27 Jul 2010 11:41:10 -0600
+Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 
-The kernel in question was missing commit f3b99be1 "Restore partition
-detection of newly created md arrays" [1].  With that in place the
-problem goes away.  I haven't fully convinced myself that there isn't
-a small race that could be triggered by changing the array size via
-sysfs, to get the the gendisk size updated and then dropping all inode
-references prior to the first open... but I'll put that investigation
-on the back burner.
+> On Tuesday, July 27, 2010 11:28:28 am Yinghai Lu wrote:
+> > On 07/27/2010 10:23 AM, Bjorn Helgaas wrote:
+> > > On Tuesday, July 27, 2010 11:07:55 am Yinghai Lu wrote:
+> > >> On 07/27/2010 08:34 AM, Bjorn Helgaas wrote:
+> > >>> On Monday, July 26, 2010 03:48:02 pm Yinghai Lu wrote:
+> > >>>>
+> > >>>> after the commint that change ipmi_si detecting sequence from SMBIOS/ACPI to ACPI/SMBIOS,
+> > >>>>
+> > >>>> | commit 754d453185275951d39792865927ec494fa1ebd8
+> > >>>> | Author: Matthew Garrett <mjg@redhat.com>
+> > >>>> | Date:   Wed May 26 14:43:47 2010 -0700
+> > >>>> |
+> > >>>> |    ipmi: change device discovery order
+> > >>>> |
+> > >>>> |    The ipmi spec provides an ordering for si discovery.  Change the driver to
+> > >>>> |    match, with the exception of preferring smbios to SPMI as HPs (at least)
+> > >>>> |    contain accurate information in the former but not the latter.
+> > >>>>
+> > >>>> ipmi_si can not be initialized.
+> > >>>
+> > >>> I think this patch makes sense, as long as this is not a bringup
+> > >>> issue that only affects pre-release firmware.  If this only affects
+> > >>> a prototype, it would be better to change the firmware so it conforms
+> > >>> to the conventional _CRS usage of systems in the field.
+> > >>>
+> > >>> To that end, I'd like to know what system this is, and whether IPMI
+> > >>> works under Windows on this system.  We know that Windows doesn't
+> > >>> look at SMBIOS or SPMI, so if Windows works, it must be doing something
+> > >>> similar to your patch.
+> > >>
+> > >> Sun Fire X4800.
+> > >>
+> > >> Yes. other OSes work and pass certification.
+> > > 
+> > > Please put this information in the changelog (if that wasn't obvious).
+> > 
+> > I don't want to mention other os.
+> 
+> Sigh.  Why is this so difficult?
 
---
-Dan
+It wasn't for me ;)
 
-[1]: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f3b99be1
+Do we have acks for 2.6.36 and a -stable backport on this patch?
+
