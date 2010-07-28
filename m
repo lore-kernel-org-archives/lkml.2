@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab0G1VXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 17:23:19 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:57944 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755518Ab0G1VXI (ORCPT
+	id S1756328Ab0G1VXn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 17:23:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35943 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518Ab0G1VXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 17:23:08 -0400
-Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
-From: Mingming Cao <cmm@us.ibm.com>
-To: Tracy Reed <treed@ultraviolet.org>
-Cc: bchociej@gmail.com, chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, bcchocie@us.ibm.com,
-        mrlupfer@us.ibm.com, crscott@vnet.ibm.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100727222916.GM18595@tracyreed.org>
-References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
-	 <20100727222916.GM18595@tracyreed.org>
+	Wed, 28 Jul 2010 17:23:42 -0400
+Subject: [GIT PULL] Regulator fixes for 2.6.35
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 14:22:49 -0700
-Message-ID: <1280352169.7694.2.camel@mingming-laptop>
+Date: Wed, 28 Jul 2010 22:23:37 +0100
+Message-ID: <1280352217.3112.10.camel@odin>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 15:29 -0700, Tracy Reed wrote: 
-> On Tue, Jul 27, 2010 at 05:00:18PM -0500, bchociej@gmail.com spake thusly:
-> > The long-term goal of these patches, as discussed in the Motivation
-> > section at the end of this message, is to enable Btrfs to perform
-> > automagic relocation of hot data to fast media like SSD. This goal has
-> > been motivated by the Project Ideas page on the Btrfs wiki.
-> 
-> With disks being so highly virtualized away these days is there any
-> way for btrfs to know which are the fast outer-tracks vs the slower
-> inner-tracks of a physical disk? If so not only could this benefit SSD
-> owners but it could also benefit the many more spinning platters out
-> there. If not (which wouldn't be surprising) then disregard. Even just
-> having that sort of functionality for SSD would be excellent. If I
-> understand correctly not only would this work for SSD but if I have a
-> SAN full of many large 7200rpm disks and a few 15k SAS disks I could
-> effectively utilize that disk by allowing btrfs to place hot data on
-> the 15k SAS. I understand Compellent does this as well.
-> 
+Hi Linus,
 
-This certainly possible. The disk to store hot data does not has to
-limit to SSDs, thought current implementation detecting "fast" device by
-checking the SSD rotation flag. This could be easily extended if btrfs
-is able to detect the relatively fast devices.
+Please pull the following regulator fixes for 2.6.35.
+
+Two are relatively small resource leakage fixes, whilst the tps6507x and
+omap-l138-evm patches together fix a regulator voltage control bug on
+the omap evm board.
+
+Thanks
+
+Liam
+
+--- 
+
+The following changes since commit b37fa16e78d6f9790462b3181602a26b5af36260:
+  Linus Torvalds (1):
+        Linux 2.6.35-rc6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
+
+Anuj Aggarwal (1):
+      regulator: tps6507x: allow driver to use DEFDCDC{2,3}_HIGH register
+
+Axel Lin (2):
+      ab3100: fix off-by-one value range checking for voltage selector
+      wm8350-regulator: fix wm8350_register_regulator error handling
+
+Sekhar Nori (1):
+      davinci: da850/omap-l138 evm: account for DEFDCDC{2,3} being tied high
+
+ arch/arm/mach-davinci/board-da850-evm.c |    8 +++++++
+ drivers/regulator/ab3100.c              |    4 +-
+ drivers/regulator/tps6507x-regulator.c  |   36 +++++++++++++++++++++++++------
+ drivers/regulator/wm8350-regulator.c    |    2 +-
+ include/linux/regulator/tps6507x.h      |   32 +++++++++++++++++++++++++++
+ 5 files changed, 72 insertions(+), 10 deletions(-)
+ create mode 100644 include/linux/regulator/tps6507x.h
+
 
