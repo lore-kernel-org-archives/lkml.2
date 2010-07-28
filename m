@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab0G1Pg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 11:36:58 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46709 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab0G1Pg4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 11:36:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=LCPHZ9N0oiBt5sRePY+HWtZqoWyu7IG4TjJbgguHqtVCmrMtXH+0CH9EubyX1XfzOL
-         xLw+x64ieQKjsdB57xyvbYlqtaF0gZBv+SL6CklhbppDyNdI8WzkeZJCdXsgAYHc0OFq
-         S4G3QulxTfvpHp9eQ8bKy1HKmqjJuvYw9z6s8=
+	id S1755242Ab0G1Plx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 11:41:53 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59083 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751768Ab0G1Plv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 11:41:51 -0400
+Message-ID: <4C504FBB.3020600@suse.cz>
+Date: Wed, 28 Jul 2010 17:41:47 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-In-Reply-To: <1280311240.24054.103.camel@Joe-Laptop.home>
-References: <1280258531.24054.10.camel@Joe-Laptop.home> <AANLkTi=p=-ovBaqyqBdEW=W4E1ArWsiyUBwy37GtXOyu@mail.gmail.com> 
-	<1280311240.24054.103.camel@Joe-Laptop.home>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 28 Jul 2010 11:36:35 -0400
-Message-ID: <AANLkTimHYS8BRBbomxwyqwayu8eyp+k6TurtsniNTMfs@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH net-next] drivers/net/bfin_mac.c: Use 
-	pr_fmt, netdev_<level>
-To: Joe Perches <joe@perches.com>
-Cc: Michael Hennerich <michael.hennerich@analog.com>,
-        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: trapdoor6@gmail.com
+Cc: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org,
+        Nir Tzachar <nir.tzachar@gmail.com>
+Subject: Re: Small typo in kernel [current source from git] .config option
+References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>	<20100727165549.GC26649@merkur.ravnborg.org>	<AANLkTimmLLJ9VrbD94GA3ZH2XvBwEAAcrrL_etWAoEea@mail.gmail.com>	<4C500E41.40708@suse.cz> <AANLkTi=rPP7OfoNoyVkM0XR08ns6p0+cENzcdk7gY8TE@mail.gmail.com>
+In-Reply-To: <AANLkTi=rPP7OfoNoyVkM0XR08ns6p0+cENzcdk7gY8TE@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 06:00, Joe Perches wrote:
-> On Wed, 2010-07-28 at 03:50 -0400, Mike Frysinger wrote:
->> On Tue, Jul 27, 2010 at 15:22, Joe Perches wrote:
->> > $ ./scripts/checkpatch.pl -f drivers/net/bfin_mac.c | grep "^total:"
->> > total: 2 errors, 25 warnings, 1723 lines checked
->> > $ ./scripts/checkpatch.pl -f drivers/net/bfin_mac.c | grep "^total:"
->> > total: 0 errors, 0 warnings, 1743 lines checked
->> i dislike the mixing of whitespace and useful changes
->> if they were split, and they worked, then i wouldnt have a problem with them
->
-> Is that a nak or a dislike?
+(adding Nir, who wrote nconfig, to CC).
 
-if you arent going to bother fixing things, then i guess it's a NAK ;)
+On 28.7.2010 14:17, trapDoor wrote:
+> On Wed, Jul 28, 2010 at 12:02 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> respectively). Unfortunatelly, there doesn't seem to be a way to
+>> highlight single letters in an ncurses menu, hence the strange
+>> cApitalization :(.
+> 
+> I wonder how is this resolved in other console applications such as
+> Midnight Commander. Does it have its own implementation for
+> highlighting characters (it uses coloured mnemonics e.g. in menus) or
+> it's based on some common Linux/Unix library which perhaps could be
+> used for the nconfig as well?
 
-> Also, is Michael Hennerich actually the maintainer for bfin_mac?
-> He had been  listed as MAINTAINER for over a year but he hasn't
-> ever written or acked a patch for this file.
+The problem is that nconfig uses the higher-level ncurses libraries
+libmenu and libpanel, which make some things easier, but aren't as
+flexible as using ncurses directly. Patches are welcome of course :-).
 
-i dont know what log you're reading, but i see Michael making plenty
-of changes to this driver
--mike
+Michal
