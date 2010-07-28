@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab0G0X7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 19:59:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19095 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753852Ab0G0X7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 19:59:07 -0400
-Date: Wed, 28 Jul 2010 02:53:22 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tom Lyon <pugs@cisco.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, randy.dunlap@oracle.com, arnd@arndb.de,
-        chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de,
-        avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
-Subject: Re: [PATCH V3] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100727235322.GB19930@redhat.com>
-References: <4c40d618./j7HFMCg9NusCIiB%pugs@cisco.com>
- <1279515407.20397.382.camel@x201>
- <20100719100617.GA31417@redhat.com>
- <201007271513.15093.pugs@cisco.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007271513.15093.pugs@cisco.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752718Ab0G1ANp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 20:13:45 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37265 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab0G1ANn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 20:13:43 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 28 Jul 2010 09:08:54 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/7][memcg] virtually indexed array library.
+Message-Id: <20100728090854.9b255f7c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100727122949.3bfbfd0a@bike.lwn.net>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727122949.3bfbfd0a@bike.lwn.net>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 03:13:14PM -0700, Tom Lyon wrote:
-> [ Sorry for the long hiatus, I've been wrapped up in other issues.]
+On Tue, 27 Jul 2010 12:29:49 -0600
+Jonathan Corbet <corbet@lwn.net> wrote:
+
+> On Tue, 27 Jul 2010 16:53:03 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
-> I think the fundamental issue to resolve is to decide on the model which the 
-> VFIO driver presents to its users.
+> > This virt-array allocates a virtally contiguous array via get_vm_area()
+> > and allows object allocation per an element of array.
 > 
-> Fundamentally, VFIO as part of the OS must protect the system from its users 
-> and also protect the users from each other.  No disagreement here.
-> 
-> But another fundamental purpose of an OS to to present an abstract model of 
-> the underlying hardware to its users, so that the users don't have to deal 
-> with the full complexity of the hardware.
-> 
-> So I think VFIO should present a 'virtual', abstracted PCI device to its users 
-> whereas Michael has argued for a simpler model of presenting the real PCI
-> device config registers while preventing writes only to the registers which 
-> would clearly disrupt the system.
+> Quick question: this looks a lot like the "flexible array" mechanism
+> which went in around a year ago, and which is documented in
+> Documentation/flexible-arrays.txt.  I'm not sure we need two of
+> these...  That said, it appears that there are still no users of
+> flexible arrays.  If your virtually-indexed arrays provide something
+> that flexible arrays don't, perhaps your implementation should replace
+> flexible arrays?
 
-In fact, there is no contradiction. I am all for an abstracted
-API *and* I think the virtualization concept is a bad way
-to build this API.
+Hmm. As Documentatin/flexible-arrays.txt says,
 
-The 'virtual' interface you present is very complex and hardware specific:
-you do not hide literally *anything*. Deciding which functionality userspace
-needs, and exposing it to userspace as a set of APIs would be abstract.
-Instead you ask people to go read the PCI spec, the device spec, and bang
-on PCI registers, little-endian-ness and all, then try to interpret
-what do the virtual values mean.
+"The down sides are that the arrays cannot be indexed directly, individual object
+ size cannot exceed the system page size, and putting data into a flexible array
+ requires a copy operation. "
 
-Example:
+This virtually-indexed array is
 
-How do I find # of MSI-X vectors? Sure, scan the capability list,
-find the capability, read the value, convert from little endian
-at each step.
-A page or two of code, and let's hope I have a ppc to test on.
-And note no driver has this code - they all use OS routines.
+ - the arrays can be indexed directly.
+ - individual object size can be defined arbitrary.
+ - puttind data into virt-array requires memory allocation via alloc_varray_item().
 
-So why wouldn't
-	ioctl(dev, VFIO_GET_MSIX_VECTORS, &n);
-better serve the declared goal of presenting an abstracted PCI device to
-users?
+But, virtyally-indexed array has its own down side, too.
 
+ - It uses vmalloc() area. This can be very limited in 32bit archs.
+ - It cannot be used in !MMU archs.
+ - It may consume much TLBs because vmalloc area tends not to be backed by hugepage.
 
-> Now, the virtual model *could* look little like the real hardware, and use 
-> bunches of ioctls for everything it needs,
+Especially, I think !MMU case is much different. So, there are functional
+difference. I implemented this to do quick direct access to objects by indexes.
+Otherwise, flex-array may be able to provide more generic frameworks.
 
-Or reads/writes at special offsets, or sysfs attributes.
+Then, I myself don't think virt-array is a replacemento for flex-array.
 
-> or it could look a lot like PCI and 
-> use reads and writes of the virtual PCI config registers to trigger its 
-> actions.  The latter makes things more amenable to those porting drivers from 
-> other environments.
+A discussion "flex-array should be dropped or not" is out of my scope, sorry.
+I think you can ask to drop it just because it's almost dead without mentioning
+virt-array.
 
-I really doubt this helps at all. Drivers typically use OS-specific
-APIs. It is very uncommon for them to touch standard registers,
-which is 100% of what your patch seem to be dealing with.
-
-And again, how about a small userspace library that would wrap vfio and
-add the abstractions for drivers that do need them?
-
-> I realize that to date the VFIO driver has been a  bit of a mish-mash between 
-> the ioctl and config based techniques; I intend to clean that up.  And, yes, 
-> the abstract model presented by VFIO will need plenty of documentation.
-
-And, it will need to be maintained forever, bugs and all.
-For example, if you change some register you emulated
-to fix a bug, to the driver this looks like a hardware change,
-and it will crash.
-
-The PCI spec has some weak versioning support, but it
-is mostly not a problem in that space: a specific driver needs to
-only deal with a specific device.  We have a generic driver so PCI
-configuration space is a bad interface to use.
+Thanks,
+-Kame
+ 
 
 
-> Since KVM/qemu already has its own notion of a virtual PCI device which it 
-> presents to the guest OS, we either need to reconcile VFIO and qemu, or 
-> provide a bypass of the VFIO virtual model.  This could be direct access 
-> through sysfs, or else an ioctl to VFIO.  Since I have no internals knowledge 
-> of qemu, I look to others to choose.
-
-Ah, so there will be 2 APIs, one for qemu, one for userspace drivers?
-
-> Other little things:
-> 1. Yes, I can share some code with sysfs if I can get the right EXPORTs there.
-> 2. I'll add multiple MSI support, but I wish to point out that even though the 
-> PCI MSI API supports it, none of the architectures do.
-> 3. FLR needs work.  I was foolish enough to assume that FLR wouldn't reset 
-> BARs; now I know better.
-
-And as I said separately, drivers might reset BARs without FLR as well.
-As long as io/memory is disabled, we really should allow userspace
-write anything in BARs. And once we let it do it, most of the problem goes
-away.
-
-> 4. I'll get rid of the vfio config_map in sysfs; it was there for debugging.
-> 5. I'm still looking to support hotplug/unplug and power management stuff via 
-> generic netlink notifications.
