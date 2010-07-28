@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab0G1HTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:19:20 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:32925 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab0G1HTR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:19:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Jul 2010 16:14:22 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 6/7][memcg] generic file status update
-Message-Id: <20100728161422.753029c1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr937hkgkrle.fsf@ninji.mtv.corp.google.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727170059.ca06af88.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr937hkgkrle.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754309Ab0G1HT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:19:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42183 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754191Ab0G1HTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 03:19:18 -0400
+Date: Wed, 28 Jul 2010 07:19:00 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        sfr@canb.auug.org.au, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, sfr@canb.auug.org.au
+In-Reply-To: <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
+References: <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/build] x86, vdso: Don't quote $nm in the script for checking vdso references
+Message-ID: <tip-18642a57df02a044b91219d3176128996ddc81a5@git.kernel.org>
+Git-Commit-ID: 18642a57df02a044b91219d3176128996ddc81a5
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Jul 2010 07:19:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 00:12:13 -0700
-Greg Thelen <gthelen@google.com> wrote:
+Commit-ID:  18642a57df02a044b91219d3176128996ddc81a5
+Gitweb:     http://git.kernel.org/tip/18642a57df02a044b91219d3176128996ddc81a5
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Tue, 27 Jul 2010 23:52:29 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 27 Jul 2010 23:52:29 -0700
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> 
-> > This patch itself is not important. I just feel we need this kind of
-> > clean up in future.
-> >
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > Preparing for adding new status arounf file caches.(dirty, writeback,etc..)
-> > Using a unified macro and more generic names.
-> > All counters will have the same rule for updating.
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/memcontrol.h  |   10 +++++++---
-> >  include/linux/page_cgroup.h |   21 +++++++++++++++------
-> >  mm/memcontrol.c             |   27 +++++++++++++++++----------
-> >  mm/rmap.c                   |    4 ++--
-> >  4 files changed, 41 insertions(+), 21 deletions(-)
-> >
-> > Index: mmotm-0719/include/linux/memcontrol.h
-> > ===================================================================
-> > --- mmotm-0719.orig/include/linux/memcontrol.h
-> > +++ mmotm-0719/include/linux/memcontrol.h
-> > @@ -121,7 +121,11 @@ static inline bool mem_cgroup_disabled(v
-> >  	return false;
-> >  }
-> >  
-> > -void mem_cgroup_update_file_mapped(struct page *page, int val);
-> > +enum {
-> > +	__MEMCG_FILE_MAPPED,
-> > +	NR_MEMCG_FILE_STAT
-> > +};
-> 
-> These two stat values need to be defined outside of "#if
-> CONFIG_CGROUP_MEM_RES_CTLR" (above) to allow for rmap.c to allow for the
-> following (from rmap.c) when memcg is not compiled in:
-> 	mem_cgroup_update_file_stat(page, __MEMCG_FILE_MAPPED, 1);
-> 
+x86, vdso: Don't quote $nm in the script for checking vdso references
 
-ok. or I'll not remove mem_cgroup_update_file_mapped().
+Don't quote $nm in the script for checking the vdso for external
+references.  Doing so breaks multiword constructs, like using
+CROSS_COMPILE='ccache '.
 
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
+---
+ arch/x86/vdso/checkundef.sh |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-> > +void mem_cgroup_update_file_stat(struct page *page, int stat, int val);
-> >  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
-> >  						gfp_t gfp_mask, int nid,
-> >  						int zid);
-> > @@ -292,8 +296,8 @@ mem_cgroup_print_oom_info(struct mem_cgr
-> >  {
-> >  }
-> >  
-> > -static inline void mem_cgroup_update_file_mapped(struct page *page,
-> > -							int val)
-> > +static inline void
-> > +mem_cgroup_update_file_stat(struct page *page, int stat, int val);
-> 
-> Trailing ';' needs to be removed.
-> 
-ok, will do.
-
-Bye.
--Kame
-
+diff --git a/arch/x86/vdso/checkundef.sh b/arch/x86/vdso/checkundef.sh
+index 490be1c..7ee90a9 100755
+--- a/arch/x86/vdso/checkundef.sh
++++ b/arch/x86/vdso/checkundef.sh
+@@ -1,7 +1,7 @@
+ #!/bin/sh
+ nm="$1"
+ file="$2"
+-"$nm" "$file" | grep '^ *U' > /dev/null 2>&1
++$nm "$file" | grep '^ *U' > /dev/null 2>&1
+ if [ $? -eq 1 ]; then
+     exit 0
+ else
