@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab0G1Csw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 22:48:52 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46383 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab0G1Csv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 22:48:51 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Jul 2010 11:44:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 4/7][memcg] memcg use ID in page_cgroup
-Message-Id: <20100728114402.571b8ec6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100728023904.GE12642@redhat.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727165629.6f98145c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100728023904.GE12642@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752637Ab0G1CvJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 22:51:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61812 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751804Ab0G1CvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 22:51:02 -0400
+Message-ID: <4C4F9C3A.6020406@cn.fujitsu.com>
+Date: Wed, 28 Jul 2010 10:55:54 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Ian Munsie <imunsie@au1.ibm.com>
+CC: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/2] ftrace: record command lines at more appropriate
+ moment
+References: <1280284180-17863-1-git-send-email-imunsie@au1.ibm.com>
+In-Reply-To: <1280284180-17863-1-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 22:39:04 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
-
-> On Tue, Jul 27, 2010 at 04:56:29PM +0900, KAMEZAWA Hiroyuki wrote:
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > Now, addresses of memory cgroup can be calculated by their ID without complex.
-> > This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
-> > On 64bit architecture, this offers us more 6bytes room per page_cgroup.
-> > Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
-> > some light-weight concurrent access.
-> > 
-> > We may able to move this id onto flags field but ...go step by step.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/page_cgroup.h |    3 ++-
-> >  mm/memcontrol.c             |   40 +++++++++++++++++++++++++---------------
-> >  mm/page_cgroup.c            |    2 +-
-> >  3 files changed, 28 insertions(+), 17 deletions(-)
-> > 
-> > Index: mmotm-0719/include/linux/page_cgroup.h
-> > ===================================================================
-> > --- mmotm-0719.orig/include/linux/page_cgroup.h
-> > +++ mmotm-0719/include/linux/page_cgroup.h
-> > @@ -12,7 +12,8 @@
-> >   */
-> >  struct page_cgroup {
-> >  	unsigned long flags;
-> > -	struct mem_cgroup *mem_cgroup;
-> > +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
-> > +	unsigned short blk_cgroup;	/* Not Used..but will be. */
+Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
 > 
-> So later I shall have to use virtually indexed arrays in blkio controller?
-> Or you are just using virtually indexed arrays for lookup speed and
-> I can continue to use css_lookup() and not worry about using virtually
-> indexed arrays.
+> Previously, when tracing was activated through debugfs, regardless of
+> which tracing plugin (if any) were activated, the probe_sched_switch and
+> probe_sched_wakeup probes from the sched_switch plugin would be
+> activated. This appears to have been a hack to use them to record the
+> command lines of active processes as they were scheduled.
 > 
-yes. you can use css_lookup() even if it's slow.
-
-> So the idea is that when a page is allocated, also store the blk_group
-> id and once that page is submitted for writeback, we should be able
-> to associate it to right blkio group?
+> That approach would suffer if many processes were being scheduled that
+> were not generating events as they would consume entries in the
+> saved_cmdlines buffer that could otherwise have been used by other
+> processes that were actually generating events.
 > 
-blk_cgroup id can be attached whenever you wants. please overwrite 
-page_cgroup->blk_cgroup when it's necessary.
-Did you read Ikeda's patch ? I myself doesn't have patches at this point. 
-This is just for make a room for recording blkio-ID, which was requested
-for a year.
+> It also had the problem that events could be mis-attributed - in the
+> common situation of a process forking then execing a new process, the
+> change of the process command would not be noticed for some time after
+> the exec until the process was next scheduled.
+> 
+> If the trace was read after the fact this would generally go unnoticed
+> because at some point the process would be scheduled and the entry in
+> the saved_cmdlines buffer would be updated so that the new command would
+> be reported when the trace was eventually read. However, if the events
+> were being read live (e.g. through trace_pipe), the events just after
+> the exec and before the process was next scheduled would show the
+> incorrect command (though the PID would be correct).
+> 
+> This patch removes the sched_switch hack altogether and instead records
+> the commands at a more appropriate moment - at the same time the PID of
+> the process is recorded (i.e. when an entry on the ring buffer is
+> reserved). This means that the recorded command line is much more likely
+> to be correct when the trace is read, either live or after the fact, so
+> long as the command line still resides in the saved_cmdlines buffer.
+> 
+> It is still not guaranteed to be correct in all situations. For instance
+> if the trace is read after the fact rather than live (consider events
+> generated by a process before an exec - in the below example they would
+> be attributed to sleep rather than stealpid since the entry in
+> saved_cmdlines would have changed before the event was read), but this
+> is no different to the current situation and the alternative would be to
+> store the command line with each and every event.
+> 
+...
+> 
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> ---
+>  kernel/trace/trace.c                 |    3 +--
+>  kernel/trace/trace_events.c          |   11 -----------
+>  kernel/trace/trace_functions.c       |    2 --
+>  kernel/trace/trace_functions_graph.c |    2 --
+>  kernel/trace/trace_sched_switch.c    |   10 ----------
+>  5 files changed, 1 insertions(+), 27 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 4b1122d..f8458c3 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1023,8 +1023,6 @@ void tracing_stop(void)
+>  	spin_unlock_irqrestore(&tracing_start_lock, flags);
+>  }
+>  
+> -void trace_stop_cmdline_recording(void);
+> -
+>  static void trace_save_cmdline(struct task_struct *tsk)
+>  {
+>  	unsigned pid, idx;
+> @@ -1112,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry *entry, unsigned long flags,
+>  {
+>  	struct task_struct *tsk = current;
+>  
+> +	tracing_record_cmdline(tsk);
 
-Hmm, but page-allocation-time doesn't sound very good for me.
+Now this function is called everytime a tracepoint is triggered, so
+did you run some benchmarks to see if the performance is improved
+or even worse?
 
-Thanks.
--Kame
+Another problem in this patch is, tracing_generic_entry_update() is also
+called by perf, but cmdline recoding is not needed in perf.
 
+>  	entry->preempt_count		= pc & 0xff;
+>  	entry->pid			= (tsk) ? tsk->pid : 0;
+>  	entry->lock_depth		= (tsk) ? tsk->lock_depth : 0;
+...
