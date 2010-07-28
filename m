@@ -1,44 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab0G1DL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 23:11:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40908 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab0G1DLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 23:11:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FilWeJ8s1yRnDBAn4GZbaBB5Ib7Vdv+oc/NR3DXBMkfbmbk+SNbhjvX0uyTmt97VY7
-         AMyR9EzipcYgZntrjm/h4hK8iIhwFNMSLH0CYqtFqPMXsgU2AHqDGW5KXNS0BoxIxEH8
-         1tjCHslvDhM//f3pndTzfZJxZb3UHcU/ZCdr8=
-Date: Wed, 28 Jul 2010 11:16:03 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Israel Schlesinger <israels@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, apw@canonical.com, akpm@linux-foundation.org,
-        joe@perches.com
-Subject: Re: [PATCH v2] checkpatch: Add warnings for use of mdelay()
-Message-ID: <20100728031603.GB5161@cr0.nay.redhat.com>
-References: <4C4F16EE.9010008@codeaurora.org>
+	id S1753206Ab0G1DOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 23:14:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47503 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751879Ab0G1DOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 23:14:16 -0400
+Date: Tue, 27 Jul 2010 23:13:58 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 4/7][memcg] memcg use ID in page_cgroup
+Message-ID: <20100728031358.GG12642@redhat.com>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100727165629.6f98145c.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100728023904.GE12642@redhat.com>
+ <20100728114402.571b8ec6.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C4F16EE.9010008@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100728114402.571b8ec6.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 10:27:10AM -0700, Israel Schlesinger wrote:
->mdelay is a busy-wait loop which is wasteful. If at all possible,
->callers should use msleep instead of mdelay.
->
->The only time mdelay is really appropriate is in atomic context,
->however, delays of 1ms+ in atomic context are rather expensive, so
->a warning for this case is probably appropriate as well to encourage
->people to move such expensive delays outside of atomic context
->
+On Wed, Jul 28, 2010 at 11:44:02AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 27 Jul 2010 22:39:04 -0400
+> Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> > On Tue, Jul 27, 2010 at 04:56:29PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > Now, addresses of memory cgroup can be calculated by their ID without complex.
+> > > This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
+> > > On 64bit architecture, this offers us more 6bytes room per page_cgroup.
+> > > Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
+> > > some light-weight concurrent access.
+> > > 
+> > > We may able to move this id onto flags field but ...go step by step.
+> > > 
+> > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > ---
+> > >  include/linux/page_cgroup.h |    3 ++-
+> > >  mm/memcontrol.c             |   40 +++++++++++++++++++++++++---------------
+> > >  mm/page_cgroup.c            |    2 +-
+> > >  3 files changed, 28 insertions(+), 17 deletions(-)
+> > > 
+> > > Index: mmotm-0719/include/linux/page_cgroup.h
+> > > ===================================================================
+> > > --- mmotm-0719.orig/include/linux/page_cgroup.h
+> > > +++ mmotm-0719/include/linux/page_cgroup.h
+> > > @@ -12,7 +12,8 @@
+> > >   */
+> > >  struct page_cgroup {
+> > >  	unsigned long flags;
+> > > -	struct mem_cgroup *mem_cgroup;
+> > > +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
+> > > +	unsigned short blk_cgroup;	/* Not Used..but will be. */
+> > 
+> > So later I shall have to use virtually indexed arrays in blkio controller?
+> > Or you are just using virtually indexed arrays for lookup speed and
+> > I can continue to use css_lookup() and not worry about using virtually
+> > indexed arrays.
+> > 
+> yes. you can use css_lookup() even if it's slow.
+> 
 
-Then udelay() is also preferred...
+Ok.
+
+> > So the idea is that when a page is allocated, also store the blk_group
+> > id and once that page is submitted for writeback, we should be able
+> > to associate it to right blkio group?
+> > 
+> blk_cgroup id can be attached whenever you wants. please overwrite 
+> page_cgroup->blk_cgroup when it's necessary.
+
+> Did you read Ikeda's patch ? I myself doesn't have patches at this point. 
+> This is just for make a room for recording blkio-ID, which was requested
+> for a year.
+
+I have not read his patches yet. IIRC, previously there were issues
+regarding which group should be charged for the page. The person who
+allocated it or the thread which did last write to it etc... I guess
+we can sort that out later.
+
+> 
+> Hmm, but page-allocation-time doesn't sound very good for me.
+> 
+
+Why?
+
+Vivek
