@@ -1,106 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab0G1KCg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:02:36 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:4108 "EHLO
-	VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754507Ab0G1KCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 06:02:34 -0400
-X-SpamScore: -17
-X-BigFish: VPS-17(z1039oz1432N98dN936eM9371Pzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L69IJR-02-1KD-02
-X-M-MSG: 
-Date: Wed, 28 Jul 2010 12:02:17 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-CC: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC][PATCH v1 02/15] perf: export generic hardware events via
- sysfs
-Message-ID: <20100728100217.GN26154@erda.amd.com>
-References: <1279797142.20942.83.camel@minggr.sh.intel.com>
- <20100723104412.GA26154@erda.amd.com>
- <1280197103.24607.61.camel@minggr.sh.intel.com>
- <20100727082749.GK26154@erda.amd.com>
- <4C4F1CBB.7040003@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C4F1CBB.7040003@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1754664Ab0G1KCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:02:46 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42320 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754641Ab0G1KCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 06:02:42 -0400
+Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <4C4FC95F.6040806@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+	 <1279822864-17154-32-git-send-email-yinghai@kernel.org>
+	 <1280295415.1970.245.camel@pasglop>  <4C4FC95F.6040806@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 19:27:55 +1000
+Message-ID: <1280309275.1970.282.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.07.10 13:51:55, Corey Ashford wrote:
-> On 07/27/2010 01:27 AM, Robert Richter wrote:
-> > On 26.07.10 22:18:23, Lin Ming wrote:
-> >
-> >>>> /sys/devices/system/cpu/cpu0/events
-> >>>> |-- L1-dcache-load-misses
-> >>>> |   |-- config
-> >>>> |   `-- type
-> >
-> > vs.
-> >
-> >>>   |-- L1-dcache-load-misses  ===>  event name
-> >>>   |   `-- id                 ===>  event id
-> >
-> >>> This is very simple and flexible and solves the original problem too.
-> >>
-> >> Yeah, this is flexible. I'll think about this closely.
-> >
-> > The thing is, if you start introducing the config/type i/f, we will
-> > stick with it for a long time. I want to avoid this from the
-> > beginning.
-> >
-> > Using an id only would work with your current implementation too, you
-> > only need to maintain an id ->  config/type mapping, maybe in some
-> > private data section, without exporting it to userspace.
+On Tue, 2010-07-27 at 23:08 -0700, Yinghai Lu wrote:
 > 
-> Now that I understand that the sysfs id essentially points to a kernel 
-> data structure, I like this idea a lot.  Before I was thinking that you 
-> were trying to place a lot of info into the id itself.
+> for example: 
+> high/low allocation, from first kernel to kexec second kernel, always
+> work fine except system with Qlogic card.
+> because Qlogic card is using main RAM as EFT etc for card's FW log
+> trace. second kernel have not idea that those RAM
+>  is used by first kernel for that purpose. that the CARD still use
+> that between two kernels.
+> second kernel could have crash it try to use those ram.
 > 
-> The only downside I see, and maybe it's a very minor one, is that you'll 
-> no longer have the ability to specify an event without specifying a 
-> sysfs path... there's no other mechanism.
+> low/high allocation seems to be safe,  second kernel can slip to boot
+> fine.
 
-Right, the id is generated dynamically, it could be an incremented u64
-value, a pointer to a kernel structure or something else. Its
-implementation could even change from kernel to kernel without
-breaking the i/f.
+No, it works 'by chance'. You need kexec to somewhat mark those regions
+as reserved. I don't know how x86 does those things, on architectures
+using the flat device-tree, we have added a concept of "reserve map" to
+the flat device tree blob to mark that kind of region.
 
-Note also, that you will still be able to setup current events using
-the traditional way of filling in the syscall structure. Nothing will
-change for this.
+Also, because you mark your new function as weak but not the one that's
+actually used by memblock_alloc(), it will still end up being top-down,
+so if you want to switch to bottom up, make the internal function weak,
+not the wrapper.
 
-But yes, a new event could only support a sysfs id setup. And then,
-you need sysfs. But you could also implement a non-sysfs setup in
-addition.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Cheers,
+Ben.
+ 
 
