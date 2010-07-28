@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab0G1F1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:27:40 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43886 "EHLO smtps.tip.net.au"
+	id S1752094Ab0G1F2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:28:00 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52179 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751297Ab0G1F1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 01:27:39 -0400
-Date: Wed, 28 Jul 2010 15:27:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jarod Wilson <jarod@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: linux-next: manual merge of the staging-next tree with the v4l-dvb
- tree
-Message-Id: <20100728152736.bcaa5d59.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752959Ab0G1F15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:27:57 -0400
+Subject: Re: [PATCH 29/31] memblock: Prepare to include linux/memblock.h in
+ core file
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1279822864-17154-30-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+	 <1279822864-17154-30-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 15:27:31 +1000
+Message-ID: <1280294851.1970.242.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu, 2010-07-22 at 11:21 -0700, Yinghai Lu wrote:
+> Need to add protection in linux/memblock.h, to prepare to include it in
+>  mm/page_alloc.c and mm/bootmem.c etc.
 
-Today's linux-next merge of the staging-next tree got a conflict in
-drivers/staging/Kconfig between commit
-44d349d2b19019e0b5912bc4e6c8531e50b394aa ("V4L/DVB: staging/lirc: wire up
-Kconfig and Makefile bits") from the v4l-dvb tree and several commits
-from the staging-next tree.
+Not really no ... having the definitions shouldn't hurt whether memblock
+is used or not, no ?
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'm going to keep that patch in the queue because it has one advantage
+that you don't mention, which is to more easily catch attempts to
+use those functions when CONFIG_HAVE_MEMBLOCK isn't set, but I'll update
+the commit message.
 
-diff --cc drivers/staging/Kconfig
-index 0e4122e,6796265..0000000
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@@ -145,7 -149,13 +147,15 @@@ source "drivers/staging/mrst-touchscree
-  
-  source "drivers/staging/msm/Kconfig"
-  
- +source "drivers/staging/lirc/Kconfig"
- +
-+ source "drivers/staging/easycap/Kconfig"
-+ 
-+ source "drivers/staging/solo6x10/Kconfig"
-+ 
-+ source "drivers/staging/tidspbridge/Kconfig"
-+ 
-+ source "drivers/staging/quickstart/Kconfig"
-+ 
-  endif # !STAGING_EXCLUDE_BUILD
-  endif # STAGING
+Ben.
+
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/memblock.h |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index 89749c4..4aaaf0d 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -2,6 +2,7 @@
+>  #define _LINUX_MEMBLOCK_H
+>  #ifdef __KERNEL__
+>  
+> +#ifdef CONFIG_HAVE_MEMBLOCK
+>  /*
+>   * Logical memory blocks.
+>   *
+> @@ -147,6 +148,8 @@ static inline unsigned long memblock_region_pages(const struct memblock_region *
+>  	     region++)
+>  
+> 
+> +#endif /* CONFIG_HAVE_MEMBLOCK */
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  #endif /* _LINUX_MEMBLOCK_H */
+
+
