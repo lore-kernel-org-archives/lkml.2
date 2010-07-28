@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0G1Gaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:30:30 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44168 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437Ab0G1Ga0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:30:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C4FCE76.7030902@jp.fujitsu.com>
-Date: Wed, 28 Jul 2010 15:30:14 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
-        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: [RFC PATCH v4 2/5] napi: convert trace_napi_poll to TRACE_EVENT
-References: <4C4FCDA1.3000803@jp.fujitsu.com>
-In-Reply-To: <4C4FCDA1.3000803@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754190Ab0G1Gau (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:30:50 -0400
+Received: from phil.doycomm.com ([66.219.128.249]:41937 "EHLO phil.doycomm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754163Ab0G1Gar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 02:30:47 -0400
+X-Greylist: delayed 3511 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Jul 2010 02:30:47 EDT
+Subject: Re: Linux 2.6.35-rc6
+From: Donald Parsons <dparsons@brightdsl.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 01:32:09 -0400
+Message-ID: <1280295129.5113.11.camel@falcon.homelinux.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Horman <nhorman@tuxdriver.com>
+Hi,
 
-This patch converts trace_napi_poll from DECLARE_EVENT to TRACE_EVENT to improve
-the usability of napi_poll tracepoint.
+This rc6 kernel and rc6-git1 fail to boot with message:
 
-          <idle>-0     [001] 241302.750777: napi_poll: napi poll on napi struct f6acc480 for device eth3
-          <idle>-0     [000] 241302.852389: napi_poll: napi poll on napi struct f5d0d70c for device eth1
+    No root device found
+    Boot has failed, sleeping forever.
 
-An original patch is below.
-http://marc.info/?l=linux-kernel&m=126021713809450&w=2
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+2.6.34.1 and all previous boot fine.  New kernel made
+using usual make oldconfig.  initramfs has all same
+ata drivers.  Asus motherboard P5B Deluxe, E6600 CPU.
+All kernels since mid-June 2010 have been built with
+gcc-4.5.0 and work, but neither 2.6.35-rc6 nor the git1
+boot.
 
-And add a fix by Steven Rostedt.
-http://marc.info/?l=linux-kernel&m=126150506519173&w=2
+I went back to gcc-4.4.4 and compiled tonight's -git3
+with same identical result, no boot.
 
-Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
----
- include/trace/events/napi.h |   25 +++++++++++++++++++++++--
- 1 files changed, 23 insertions(+), 2 deletions(-)
+What can be wrong?  I see these modules in 2.6.34.1
+with lsmod:
 
-diff --git a/include/trace/events/napi.h b/include/trace/events/napi.h
-index 188deca..8fe1e93 100644
---- a/include/trace/events/napi.h
-+++ b/include/trace/events/napi.h
-@@ -6,10 +6,31 @@
- 
- #include <linux/netdevice.h>
- #include <linux/tracepoint.h>
-+#include <linux/ftrace.h>
-+
-+#define NO_DEV "(no_device)"
-+
-+TRACE_EVENT(napi_poll,
- 
--DECLARE_TRACE(napi_poll,
- 	TP_PROTO(struct napi_struct *napi),
--	TP_ARGS(napi));
-+
-+	TP_ARGS(napi),
-+
-+	TP_STRUCT__entry(
-+		__field(	struct napi_struct *,	napi)
-+		__string(	dev_name, napi->dev ? napi->dev->name : NO_DEV)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->napi = napi;
-+		__assign_str(dev_name, napi->dev ? napi->dev->name : NO_DEV);
-+	),
-+
-+	TP_printk("napi poll on napi struct %p for device %s",
-+		__entry->napi, __get_str(dev_name))
-+);
-+
-+#undef NO_DEV
- 
- #endif /* _TRACE_NAPI_H_ */
- 
+Module        Size  Used by
+ata_generic   3427  0 
+pata_acpi     3227  0 
+pata_jmicron  2547  0 
+ahci         35887  4 
+libata      157450  4 ata_generic,pata_acpi,pata_jmicron,ahci
+
+and also 2.6.35's too by looking in /lib/modules/...
+and I see them in the initramfs.img
+
+Note, 2.6.35-rc6 was first of .35 kernels I tried.
+
+Thanks,
+Don
 
