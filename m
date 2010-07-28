@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab0G1MaR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 08:30:17 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46801 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab0G1MaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 08:30:13 -0400
-Message-ID: <4C5022CE.3030609@kernel.org>
-Date: Wed, 28 Jul 2010 14:30:06 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: Nils Radtke <lkml@Think-Future.de>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: ata_port_flush_task, BUG: unable to handle kernel paging request
-References: <20100725154816.GF31966@localhost> <4C4E9C3B.9070402@kernel.org> <20100727195034.GP31966@localhost>
-In-Reply-To: <20100727195034.GP31966@localhost>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755206Ab0G1Mcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 08:32:41 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33158 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754731Ab0G1Mci (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 08:32:38 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (scsi
+ tree related)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
+        Karen Higgins <karen.higgins@qlogic.com>,
+        Ravi Anand <ravi.anand@qlogic.com>
+In-Reply-To: <20100728160530.da25fdb1.sfr@canb.auug.org.au>
+References: <20100728160530.da25fdb1.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 07:32:34 -0500
+Message-ID: <1280320354.30808.8.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Jul 2010 12:30:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2010-07-28 at 16:05 +1000, Stephen Rothwell wrote:
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
 
-On 07/27/2010 09:50 PM, Nils Radtke wrote:
-> # Which kernel version is this?  What was the configuration and what
-> # were the system doing?  Can you please post lspci -nn output and boot
-> # log?
-> Linux host 2.6.33.1 #3 PREEMPT Wed Mar 31 13:22:30 CEST 2010 i686 GNU/Linux
-> 
-> config: Internal sata disk.
-> 
-> action: iirc it was during a suspend/resume cycle or just during
-> normal operation.
+Yes, sorry.  Already being discussed in this thread ... please follow
+for resolution:
 
-How reproducible is the problem?  Was it an one time event or have you
-experienced it multiple times?
+http://marc.info/?t=128025755400005
 
-> the boot log of this particular boot/uptime when it happened isn't
-> available any more.  fastboot is enabled, hdparm, laptop-mode and
-> smartd are enabled (std debian config)
+James
 
-Can you please attach boot log of the same kernel?  It doesn't have to
-be from the same boot.
 
-Thanks.
-
--- 
-tejun
