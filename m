@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab0G1FYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:24:52 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50370 "EHLO gate.crashing.org"
+	id S1752050Ab0G1F0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:26:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59033 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab0G1FYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 01:24:48 -0400
-Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <1280294128.1970.237.camel@pasglop>
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-	 <1279822864-17154-29-git-send-email-yinghai@kernel.org>
-	 <1280294128.1970.237.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 15:24:22 +1000
-Message-ID: <1280294662.1970.240.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751087Ab0G1F0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:26:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,271,1278313200"; 
+   d="scan'208";a="305228740"
+Message-ID: <4C4FBF63.2040609@linux.intel.com>
+Date: Tue, 27 Jul 2010 22:25:55 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, tglx@linutronix.de
+Subject: Re: [tip:x86/build] x86, vdso: Error out if the vdso contains external
+ references
+References: <tip-*@vger.kernel.org>	<tip-05d0b0889ca9d033a960542af7f8a13b3ad4f630@git.kernel.org> <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
+In-Reply-To: <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-28 at 15:15 +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-07-22 at 11:21 -0700, Yinghai Lu wrote:
-> > will used by x86 memblock_x86_find_in_range_node and nobootmem replacement
-> > 
-> > -v2: use 0 instead -1ULL, Suggested by Linus, so we don't need cast them later to unsigned long
+Stephen Rothwell wrote:
+> Hi,
 > 
-> The patch in its current form is a NAK.
+> On Fri, 18 Jun 2010 22:16:05 GMT "tip-bot for H. Peter Anvin" <hpa@linux.intel.com> wrote:
+>> diff --git a/arch/x86/vdso/checkundef.sh b/arch/x86/vdso/checkundef.sh
+>> new file mode 100755
+>> index 0000000..490be1c
+>> --- /dev/null
+>> +++ b/arch/x86/vdso/checkundef.sh
+>> @@ -0,0 +1,10 @@
+>> +#!/bin/sh
+>> +nm="$1"
+>> +file="$2"
+>> +"$nm" "$file" | grep '^ *U' > /dev/null 2>&1
 > 
-> You can't just do those two things in one commit.
+> Quoting $nm here doesn't work if you are building with ccache like this:
 > 
-> If we're going to switch LMB errors to always be 0, we need to ensure we
-> cannot realistically hand out 0 as a result of lmb_alloc().
-> 
-> I'll cook up a patch to do that.
+> make CROSS_COMPILE="ccache ...."
 
-BTW. After that, maybe send a patch completely removing
-MEMBLOCK_ERROR ? 
+Hmmm... in some ways I'm not sure if that's a feature or a bug, but I 
+guess it's the only way currently provided.  Sigh.
 
-I find 0 to be self-explanatory enough.
-
-Cheers,
-Ben.
-
-> Ben.
-> 
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> > ---
-> >  include/linux/memblock.h |    1 +
-> >  mm/memblock.c            |    2 --
-> >  2 files changed, 1 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-> > index 70bc467..89749c4 100644
-> > --- a/include/linux/memblock.h
-> > +++ b/include/linux/memblock.h
-> > @@ -19,6 +19,7 @@
-> >  #include <asm/memblock.h>
-> >  
-> >  #define INIT_MEMBLOCK_REGIONS 128
-> > +#define MEMBLOCK_ERROR		0
-> >  
-> >  struct memblock_region {
-> >  	phys_addr_t base;
-> > diff --git a/mm/memblock.c b/mm/memblock.c
-> > index 796ef8c..3d0a754 100644
-> > --- a/mm/memblock.c
-> > +++ b/mm/memblock.c
-> > @@ -27,8 +27,6 @@ int memblock_can_resize;
-> >  static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
-> >  struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
-> >  
-> > -#define MEMBLOCK_ERROR	(~(phys_addr_t)0)
-> > -
-> >  /* inline so we don't get a warning when pr_debug is compiled out */
-> >  static inline const char *memblock_type_name(struct memblock_type *type)
-> >  {
-> 
-
-
+	-hpa
