@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0G1RcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 13:32:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46295 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751134Ab0G1RcG (ORCPT
+	id S1755926Ab0G1Riz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:38:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29030 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575Ab0G1Rix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 13:32:06 -0400
-Date: Wed, 28 Jul 2010 10:30:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, stable@kernel.org,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
-Message-Id: <20100728103056.c5511c78.akpm@linux-foundation.org>
-In-Reply-To: <20100728191322.4A85.A69D9226@jp.fujitsu.com>
-References: <20100728071705.GA22964@localhost>
-	<20100728191322.4A85.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 28 Jul 2010 13:38:53 -0400
+Message-ID: <4C506AD0.4070608@oracle.com>
+Date: Wed, 28 Jul 2010 13:37:20 -0400
+From: Chuck Lever <chuck.lever@oracle.com>
+Organization: Oracle USA
+User-Agent: Mozilla/5.0 (X11; U; SunOS i86pc; en-US; rv:1.9.1.10) Gecko/20100621 Lightning/1.0b1 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Andy Chittenden <andyc@bluearc.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        netdev <netdev@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
+Subject: Re: nfs client hang
+References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>	 <4C4E89D4.8040607@bluearc.com>	 <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com> <1280233276.2827.175.camel@edumazet-laptop> <4C4F174C.2000308@oracle.com> <ABFC24E4C13D81489F7F624E14891C8607DDF8D3D0@uk-ex-mbx1.terastack.bluearc.com>
+In-Reply-To: <ABFC24E4C13D81489F7F624E14891C8607DDF8D3D0@uk-ex-mbx1.terastack.bluearc.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C506B24.0045:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 20:40:21 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On 07/28/10 03:24 AM, Andy Chittenden wrote:
+> resending as it seems to have been corrupted on LKML!
+>
+>> The RPC client marks the socket closed. and the linger timeout is
+>> cancelled.  At this point, sk_shutdown should be set to zero, correct?
+>> I don't see an xs_error_report() call here, which would confirm that the
+>> socket took a trip through tcp_disconnect().
+>
+> From my reading of tcp_disconnect(), it calls sk->sk_error_report(sk)
+> unconditionally so as there's no xs_error_report(), that surely means
+> the exact opposite: tcp_disconnect() wasn't called. If it's not
+> called, sk_shutdown is not cleared. And my revised tracing confirmed
+> that it was set to SEND_SHUTDOWN.
 
-> 3. pageout() is intended anynchronous api. but doesn't works so.
-> 
-> pageout() call ->writepage with wbc->nonblocking=1. because if the system have
-> default vm.dirty_ratio (i.e. 20), we have 80% clean memory. so, getting stuck
-> on one page is stupid, we should scan much pages as soon as possible.
-> 
-> HOWEVER, block layer ignore this argument. if slow usb memory device connect
-> to the system, ->writepage() will sleep long time. because submit_bio() call
-> get_request_wait() unconditionally and it doesn't have any PF_MEMALLOC task
-> bonus.
+Sorry, that's what I meant above.
 
-The idea is that vmscan doesn't call ->writepage if the underlying
-queue is congested.  may_write_to_queue()->bdi_queue_congested() should
-return false and we skip the write.
-
-If that logic is broken then that would explain a few things...
+An xs_error_report() debugging message at that point in the log would 
+confirm that the socket took a trip through tcp_disconnect().  But I 
+don't see such a message.
