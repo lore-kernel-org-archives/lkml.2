@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab0G1Hjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:39:42 -0400
-Received: from mx02.infracom.it ([62.196.48.10]:43661 "EHLO mx02.infracom.it"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751407Ab0G1Hjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:39:39 -0400
-Message-ID: <4C4FDEB8.2000502@gmail.com>
-Date: Wed, 28 Jul 2010 09:39:36 +0200
-From: Roberto Oppedisano <roberto.oppedisano@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100710 Thunderbird/3.1
+	id S1753993Ab0G1Hno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:43:44 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51864 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753398Ab0G1Hnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 03:43:42 -0400
+Date: Wed, 28 Jul 2010 08:43:22 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: linux-next: manual merge of the async_tx tree with the arm tree
+Message-ID: <20100728074322.GA8147@flint.arm.linux.org.uk>
+References: <20100727120805.f583c70b.sfr@canb.auug.org.au> <AANLkTin4EAQ48HP3ETDUMqBe2AzcznRuZdBdG+_RhR8x@mail.gmail.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.35 suspend regression (bisected)
-References: <4C4C9E40.7070209@infracom.it> <201007272103.38448.rjw@sisk.pl> <4C4F38F1.105@gmail.com> <201007280037.30965.rjw@sisk.pl>
-In-Reply-To: <201007280037.30965.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin4EAQ48HP3ETDUMqBe2AzcznRuZdBdG+_RhR8x@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 28/07/2010 00:37, Rafael J. Wysocki wrote:
-> On Tuesday, July 27, 2010, Roberto Oppedisano wrote:
->>    On 27/07/2010 21:03, Rafael J. Wysocki wrote:
->>>> I did bisect again and I did get a different result:
->>>>
->>>> c1518f12bab97a6d409a25aaccb02dc8895800f3 is the first bad commit
->>>>
->>>> Trying to revert that commit gives:
->>>>
->>>> $ git bisect reset
->>>> $ git revert c1518f12bab97a6d409a25aaccb02dc8895800f3
->>>> fatal: Commit c1518f12bab97a6d409a25aaccb02dc8895800f3 is a merge but no
->>>> -m option was given.
->>>>
->>>> How am I supposed to proceed now ? (sorry I'm a git newbie)
->>> The bisect turned up a merge, which means it probably didn't really converge
->>> for you.
->>>
->>> Do you use a camera driver?
->> Yes, this laptop has an integrated webcam.
->>
->> Bus 001 Device 004: ID 04f2:b059 Chicony Electronics Co., Ltd
->>
->>
->> which i think is driven by uvcvideo.ko. I've tryed to rmmod uvcvideo,
->> videodev and
->>
->> v4l1_compat but on current git suspend still hangs in the same way
->> (screen black,
->> backlight on, fans at full speed, no response to ping and... nothing in
->> the logs).
-> Please try the current mainline with acpi_sleep=nonvs in the command line.
+On Wed, Jul 28, 2010 at 12:11:19AM -0700, Dan Williams wrote:
+> On Mon, Jul 26, 2010 at 7:08 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi Dan,
+> >
+> > Today's linux-next merge of the async_tx tree got a conflict in
+> > arch/arm/mach-ux500/devices-db8500.c between commit
+> > 6055930cba8fdb2c8855b32bae262aaf69c1fdb4 ("ARM: 6266/1: ux500: add
+> > separate irq lists for DB8500 and DB5500") from the arm tree and commit
+> > 5aa12e8c9c57741606e52f43e62ab1b9dc8e9dcc ("DMAENGINE: ste_dma40: arch
+> > updates for LCLA and LCPA") from the async_tx tree.
+> >
+> > I fixed it up (I think - see below) and can carry the fix as necessary.
+> > --
+> 
+> Thanks Stephen!
+> 
+> Russell, the dma40 driver updates and related arch fixups have been
+> sitting in next for a month, I'd prefer not to lose this baseline.
+> Assuming this change is brand new any chance the dma40 specific part
+> of this patch can be peeled off and sent through my tree, or are you
+> in a similar "can't/won't" rebase position?
 
-With:
+I don't see how the change in the ARM tree could be reasonably split.
+Up to Rabin/Linus to decide what they want to do about this.
 
-	acpi_sleep=nonvs console=tty0
-
-(kubuntu defaults to quiet spash) I was able to complete 3 suspend/resume cycles before hitting an hang. After a power cycle I was able to suspend again, so it seems that, albeit racy, this cmdline has a positive effect.
-
-With:
-	acpi_sleep=nonvs
-
-or
-
-	console=tty0
-
-alone I've never been able to suspend (only the combination of the two makes a difference).
-
-R
-
-
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
