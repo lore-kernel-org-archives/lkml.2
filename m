@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab0G1Xuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 19:50:50 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42744 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab0G1Xus (ORCPT
+	id S1754526Ab0G1X5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:57:23 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58953 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab0G1X5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 19:50:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=x5lUHX9SmCjxrnzHt7IAT50XfrzklcTTt/9YDY/qCtj0yE9P9xj0XhsRafoXomnZQP
-         SgBVDzwwk39akP9M/7t2ZRZOhDNs2hBBjcBXW2210PK23eUI9bHi33KVdY4gIQPjsQdM
-         vyYWqmnlG0Xwq/9AspEDsC4X1eim7PDiCpTPc=
+	Wed, 28 Jul 2010 19:57:20 -0400
+Date: Wed, 28 Jul 2010 19:57:16 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
+        jaxboe@fusionio.com, nauman@google.com, dpshah@google.com,
+        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com, czoccolo@gmail.com
+Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
+ group_idle tunable
+Message-ID: <20100728235716.GA12945@infradead.org>
+References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+ <20100723140343.GA8478@fancy-poultry.org>
+ <20100723141303.GB13104@redhat.com>
+ <20100723145631.GA8844@fancy-poultry.org>
+ <20100723183720.GD13104@redhat.com>
+ <20100724080613.GA6554@fancy-poultry.org>
+ <20100728202212.GD16314@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikZ_RHHv9cudUh8pp9H8MtKO8Rsr+eboupv49xD@mail.gmail.com>
-References: <20100727210210.58d3118c@infradead.org>
-	<AANLkTikZ_RHHv9cudUh8pp9H8MtKO8Rsr+eboupv49xD@mail.gmail.com>
-Date: Wed, 28 Jul 2010 16:50:40 -0700
-X-Google-Sender-Auth: Pu__bJS8OGTrYRytzgo0_tNQiAQ
-Message-ID: <AANLkTim3h4VNqF97d++k4_4g-4hnw57YXJSQgSEP4S7m@mail.gmail.com>
-Subject: Re: [patch] Remove the per cpu tick skew
-From: john stultz <johnstul@us.ibm.com>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100728202212.GD16314@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 1:26 PM, john stultz <johnstul@us.ibm.com> wrote:
-> On Tue, Jul 27, 2010 at 9:02 PM, Arjan van de Ven <arjan@infradead.org> wrote:
->> Historically, Linux has tried to make the regular timer tick on the various
->> CPUs not happen at the same time, to avoid contention on xtime_lock.
->>
->> Nowadays, with the tickless kernel, this contention no longer happens
->> since time keeping and updating are done differently. In addition,
->> this skew is actually hurting power consumption in a measurable
->> way on many-core systems.
->>
->
-> I'll give it a spin against -rt and see if we show any latency jumps.
+On Wed, Jul 28, 2010 at 04:22:12PM -0400, Vivek Goyal wrote:
+> I also did "time firefox &" testing to see how long firefox takes to
+> launch when linus torture test is running and without patch it took
+> around 20 seconds and with patch it took around 17 seconds. 
+> 
+> So to me above test results suggest that this patch does not worsen
+> the performance. In fact it helps. (at least on ext3 file system.)
+> 
+> Not sure why are you seeing different results with XFS.
 
-In my testing on a 8way box, I didn't see any concerning latencies
-with this patch running cyclictest or a FIFO99 gtod loop.
+So why didn't you test it with XFS to verify his results?  We all know
+that different filesystems have different I/O patters, and we have
+a history of really nasty regressions in one filesystem by good meaning
+changes to the I/O scheduler.
 
-thanks
--john
+ext3 in fact is a particularly bad test case as it not only doesn't have
+I/O barriers enabled, but also has particularly bad I/O patterns
+compared to modern filesystems.
+
