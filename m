@@ -1,112 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0G1P43 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 11:56:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36903 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab0G1P40 (ORCPT
+	id S1755444Ab0G1P54 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 11:57:56 -0400
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:35534 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709Ab0G1P5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 11:56:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lWcOelgOXrZB6UkpF3ST5Ah9/1rliXwTpuvIMVINCtM0A3n+N66adICTAVK9IbiZ0F
-         Awy8l5RRhKbyaWvUf6loRFzMFusfNrtTrbQg13yV0Woe+G46YvnWXXQ3kOjmA7pK0VP0
-         NDHx0CO3PfERwpaNWTfPmCnzoUV0iCZwme1hg=
-Date: Thu, 29 Jul 2010 00:56:17 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-Message-ID: <20100728155617.GA5401@barrios-desktop>
-References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com>
- <alpine.DEB.2.00.1007261136160.5438@router.home>
- <pfn.valid.v4.reply.1@mdm.bga.com>
- <AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com>
- <pfn.valid.v4.reply.2@mdm.bga.com>
- <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com>
- <alpine.DEB.2.00.1007270929290.28648@router.home>
- <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
- <alpine.DEB.2.00.1007281005440.21717@router.home>
+	Wed, 28 Jul 2010 11:57:54 -0400
+Message-ID: <4C50536A.1090205@linux.vnet.ibm.com>
+Date: Wed, 28 Jul 2010 17:57:30 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1007281005440.21717@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: GCOV doesn't seem to work on ARM with kernel 2.6.35-rc6
+References: <4C4D6458.6040402@samsung.com> <4C4D6554.30707@samsung.com> <4C4DBE8E.70102@linux.vnet.ibm.com> <4C4E8C2C.3000903@samsung.com> <4C502CC5.7070205@linux.vnet.ibm.com> <4C50342F.2080001@samsung.local>
+In-Reply-To: <4C50342F.2080001@samsung.local>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 10:14:51AM -0500, Christoph Lameter wrote:
-> On Wed, 28 Jul 2010, Minchan Kim wrote:
-> 
-> > static inline int memmap_valid(unsigned long pfn)
-> > {
-> >        struct page *page = pfn_to_page(pfn);
-> >        struct page *__pg = virt_to_page(page);
-> 
-> Does that work both for vmemmap and real mmapping?
+On 28.07.2010 15:44, Karol Lewandowski wrote:
+> On 07/28/2010 03:12 PM, Peter Oberparleiter wrote:
+>> On 27.07.2010 09:35, Karol Lewandowski wrote:
+>>> On 07/26/2010 06:57 PM, Peter Oberparleiter wrote:
+>>>> Karol Lewandowski wrote:
+>>>>> On 07/26/2010 12:32 PM, Karol Lewandowski wrote:
+>>>>>> I'm trying to use code coverage measurements with mainline Linux
+>>>>>> kernel
+>>>>>> 2.6.35-rc6 on ARM platform (specifically on Samsung's S5PC110 board).
+>>> ...
+>>>> I just tested gcov support for 2.6.35-rc6 on s390 and it works without
+>>>> a problem. My assumption would be that you are using an EABI-GCC to
+>>>> compile your kernel. Those compilers name their constructor symbols
+>>>
+>>> Exactly.
+>>>
+>>>> differently than the vanilla GCC so that the whole constructor calling
+>>>> mechanism on which the gcov support relies, will fail. If that is
+>>>> indeed the case, the following testing patch should solve your
+>>>> problem:
+>>>
+>>> Yes, that was the case and your patch indeed solved my problem.
+>>
+>> Excellent. I could imagine that other ARM users might also benefit from
+>> this patch. Before I submit it for integration though, I need to make
+>> sure that it also works for kernel modules. Could you enable profiling
+>> for a kernel module and verify that you are seeing files in
+>> /sys/kernel/debug/gcov belonging to that module??
+>
+> That does work too.
+>
+> However, having seen this[x] patch I would ask if constructor name might
+> be dynamically selected via user-(in)visible Kconfig option (like in
+> that patch?) I've tested it and it does seem to work too.
+>
+> [x]
+> http://groups.google.com/group/linux.kernel/browse_thread/thread/84439151c5386e0f/d7dbec62b9d7989f?show_docid=d7dbec62b9d7989f
+>
+>
+> I've copy pasted interesting parts from that patch below - I'm sure you
+> get the idea.
+>
+> Thanks.
+>
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -442,7 +442,7 @@
+> #ifdef CONFIG_CONSTRUCTORS
+> #define KERNEL_CTORS() . = ALIGN(8); \
+> VMLINUX_SYMBOL(__ctors_start) = .; \
+> - *(.ctors) \
+> + *(CONFIG_GCOV_CTORS) \
 
-When Kame suggested this idea, he doesn't consider vmemmap model. 
-(He prevent this featur's enabling by config !SPARSEMEM_VMEMMAP)
+This should be named differently - gcov uses constructors but this 
+doesn't mean that constructors rely on gcov at all.
 
-config SPARSEMEM_HAS_HOLE
-       bool "allow holes in sparsemem's memmap"
-       depends on ARM && SPARSEMEM && !SPARSEMEM_VMEMMAP
-       default n
+> --- a/kernel/gcov/Kconfig
+> +++ b/kernel/gcov/Kconfig
+> +config GCOV_CTORS
+> + string
+> + depends on GCOV_KERNEL
+> + default ".init_array" if ARM && AEABI
+> + default ".ctors"
 
-When I change it with ARCH_HAS_HOLES_MEMORYMODEL, it was my mistake.
-I can change it with ARCH_HAS_HOLES_MEMORYMODEL && !SPARSE_VMEMMAP. 
+Is it guaranteed that gcc will only create EABI compliant object files 
+if CONFIG_AEABI is defined? I don't have personal experience with arm so 
+my previous assumption was that if you're using an EABI gcc, you would 
+always get EABI object code, no matter what the compiler options were.
 
-I wonder whether we supports VMEMMAP. 
-That's because hole problem of sparsemem is specific on ARM. 
-ARM forks uses it for saving memory space but VMEMMAP does use more memory.
-I think it's irony. 
-
-> 
-> >        return page_private(__pg) == MAGIC_MEMMAP && PageReserved(__pg);
-> > }
-> 
-> Problem is that pages may be allocated for the mmap from a variety of
-> places. The pages in mmap_init_zone() and allocated during boot may have
-> PageReserved set whereas the page allocated via vmemmap_alloc_block() have
-> PageReserved cleared since they came from the page allocator.
-> 
-> You need to have consistent use of PageReserved in page structs for the
-> mmap in order to do this properly.
-
-Yes if we supports both model. 
-
-> 
-> Simplest scheme would be to clear PageReserved() in all page struct
-> associated with valid pages and clear those for page structs that do not
-> refer to valid pages.
-
-I can't understand your words.
-Clear PG_resereved in valid pages and invalid pages both?
-
-I guess your code look like that clear PG_revered on valid memmap
-but set PG_reserved on invalid memmap.
-Right?
-
-invalid memmap pages will be freed by free_memmap and will be used 
-on any place. How do we make sure it has PG_reserved?
-
-Maybe I don't understand your point. 
+>
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -2296,7 +2296,7 @@ static noinline struct module *load_module(void
+> __user *umod,
+> "__kcrctab_unused_gpl");
+> #endif
+> #ifdef CONFIG_CONSTRUCTORS
+> - mod->ctors = section_objs(hdr, sechdrs, secstrings, ".ctors",
+> + mod->ctors = section_objs(hdr, sechdrs, secstrings, CONFIG_GCOV_CTORS,
+> sizeof(*mod->ctors), &mod->num_ctors);
 
 
-> 
-> Then
-> 
-> mmap_valid = !PageReserved(xxx(pfn_to_page(pfn))
 
--- 
-Kind regards,
-Minchan Kim
+Regards,
+   Peter Oberparleiter
+
