@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab0G1Nof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 09:44:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56203 "EHLO mx1.redhat.com"
+	id S1754294Ab0G1NqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:46:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52005 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086Ab0G1NoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 09:44:25 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: michalj@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Make sure abs() always works on a signed argument
-References: <20100728123048.GA4127@quadria>
-X-Yow: Mmmmmm-MMMMMM!!  A plate of STEAMING PIECES of a PIG mixed
- with the shreds of SEVERAL CHICKENS!!...  Oh BOY!!  I'm
- about to swallow a TORN-OFF section of a COW'S LEFT LEG
- soaked in COTTONSEED OIL and SUGAR!!  ..  Let's see..
- Next, I'll have the GROUND-UP flesh of CUTE, BABY LAMBS
- fried in the MELTED, FATTY TISSUES from a warm-blooded
- animal someone once PETTED!!  ...  YUM!!  That was GOOD!!
- For DESSERT, I'll have a TOFU BURGER with BEAN SPROUTS
- on a stone-ground, WHOLE WHEAT BUN!!
-Date: Wed, 28 Jul 2010 15:44:22 +0200
-In-Reply-To: <20100728123048.GA4127@quadria> (Michal Januszewski's message of
-	"Wed, 28 Jul 2010 14:44:25 +0200")
-Message-ID: <m3eienu3ex.fsf@hase.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1754086Ab0G1NqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 09:46:10 -0400
+Message-ID: <4C50349F.7020002@suse.de>
+Date: Wed, 28 Jul 2010 15:46:07 +0200
+From: Tejun Heo <teheo@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>
+Cc: Jeff Garzik <jeff@garzik.org>, Greg KH <gregkh@suse.de>
+Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
+References: <4C5033D9.7030800@kernel.org>
+In-Reply-To: <4C5033D9.7030800@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Januszewski <michalj@gmail.com> writes:
+On 07/28/2010 03:42 PM, Tejun Heo wrote:
+> Hello, Thomas.
+> 
+> With Jeff's acks added, patches to make libata use irq-expect are
+> commited.  Please pull from the following branch to receive patches[1]
+> to improve lost/spurious irq handling.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git lost-spurious-irq
 
-> To fix this problem, explicitly cast the argument of abs() to signed, so
-> that it gets properly expanded to long in case the original argument was
-> an int.
+I'll ask Stephen to pull the above branch into linux-next until it
+shows up via tip so that we don't lose any more linux-next testing
+time.
 
-This will of course re-introduce the truncation, and effectively reverts
-a49c59c0.
-
-Andreas.
+Thank you.
 
 -- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+tejun
