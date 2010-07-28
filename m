@@ -1,265 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab0G1FfV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 01:35:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56288 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab0G1FfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 01:35:18 -0400
-Date: Wed, 28 Jul 2010 05:33:56 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, glommer@redhat.com,
-        alan@lxorguk.ukuu.org.uk, zamsden@redhat.com, stable@kernel.org,
-        mtosatti@redhat.com, gregkh@suse.de, tglx@linutronix.de,
-        peter@palfrader.org, avi@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, glommer@redhat.com,
-        alan@lxorguk.ukuu.org.uk, zamsden@redhat.com, stable@kernel.org,
-        mtosatti@redhat.com, gregkh@suse.de, peter@palfrader.org,
-        tglx@linutronix.de, avi@redhat.com
-In-Reply-To: <4C4F7277.8050306@zytor.com>
-References: <4C4F7277.8050306@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Add memory modify constraints to xchg() and cmpxchg()
-Message-ID: <tip-113fc5a6e8c2288619ff7e8187a6f556b7e0d372@git.kernel.org>
-Git-Commit-ID: 113fc5a6e8c2288619ff7e8187a6f556b7e0d372
-X-Mailer: tip-git-log-daemon
+	id S1753097Ab0G1Ffp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 01:35:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52503 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab0G1Ffm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 01:35:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=teBJjXWI4KRegbvX/pgcwz3Y1iNDC7SrwFJeV8v3utXGqxOGN6xOdx6HAtuJoWk8DT
+         unHZy3kzwp4AGdHXE7XSHjQ6vOEED+2UtTyCQpg5HkbLVNTx70OtLRTnk7uahja4iAd1
+         FuVcVNV2utp32ochtzHae3/RxltQg4fpGfpmE=
 MIME-Version: 1.0
+In-Reply-To: <4C4FBE2B.6030606@monstr.eu>
+References: <1274863724-14906-1-git-send-email-monstr@monstr.eu> 
+	<1274863724-14906-2-git-send-email-monstr@monstr.eu> <1274884963.22648.245.camel@gandalf.stny.rr.com> 
+	<20100526100805.171b3c48.akpm@linux-foundation.org> <4C4D4C2E.8010103@monstr.eu> 
+	<20100727161819.cf6feab1.akpm@linux-foundation.org> <4C4FBE2B.6030606@monstr.eu>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 28 Jul 2010 01:35:20 -0400
+Message-ID: <AANLkTimL92k-VnjXRqWsFTnqLcfYU=Ep3ScYLHQXVA9o@mail.gmail.com>
+Subject: Re: [PATCH] asm-generic: Use raw_local_irq_save/restore instead 
+	local_irq_save/restore
+To: monstr@monstr.eu
+Cc: Andrew Morton <akpm@linux-foundation.org>, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Jul 2010 05:33:57 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  113fc5a6e8c2288619ff7e8187a6f556b7e0d372
-Gitweb:     http://git.kernel.org/tip/113fc5a6e8c2288619ff7e8187a6f556b7e0d372
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Tue, 27 Jul 2010 17:01:49 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 27 Jul 2010 17:14:02 -0700
+On Wed, Jul 28, 2010 at 01:20, Michal Simek wrote:
+> Andrew Morton wrote:
+>> On Mon, 26 Jul 2010 10:49:50 +0200 Michal Simek wrote:
+>>> Signed-off-by: Michal Simek <monstr@monstr.eu>
+>>> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>>> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>>
+>> hm, I wonder how my signoff got there.  Doesn't matter.
+>
+> http://lkml.org/lkml/2010/5/26/364
 
-x86: Add memory modify constraints to xchg() and cmpxchg()
-
-xchg() and cmpxchg() modify their memory operands, not merely read
-them.  For some versions of gcc the "memory" clobber has apparently
-dealt with the situation, but not for all.
-
-Originally-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Glauber Costa <glommer@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Peter Palfrader <peter@palfrader.org>
-Cc: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Zachary Amsden <zamsden@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: <stable@kernel.org>
-LKML-Reference: <4C4F7277.8050306@zytor.com>
----
- arch/x86/include/asm/cmpxchg_32.h |   68 ++++++++++++++++++------------------
- arch/x86/include/asm/cmpxchg_64.h |   40 +++++++++++-----------
- 2 files changed, 54 insertions(+), 54 deletions(-)
-
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
-index 8859e12..c1cf59d 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -27,20 +27,20 @@ struct __xchg_dummy {
- 	switch (size) {							\
- 	case 1:								\
- 		asm volatile("xchgb %b0,%1"				\
--			     : "=q" (__x)				\
--			     : "m" (*__xg(ptr)), "0" (__x)		\
-+			     : "=q" (__x), "+m" (*__xg(ptr))		\
-+			     : "0" (__x)				\
- 			     : "memory");				\
- 		break;							\
- 	case 2:								\
- 		asm volatile("xchgw %w0,%1"				\
--			     : "=r" (__x)				\
--			     : "m" (*__xg(ptr)), "0" (__x)		\
-+			     : "=r" (__x), "+m" (*__xg(ptr))		\
-+			     : "0" (__x)				\
- 			     : "memory");				\
- 		break;							\
- 	case 4:								\
- 		asm volatile("xchgl %0,%1"				\
--			     : "=r" (__x)				\
--			     : "m" (*__xg(ptr)), "0" (__x)		\
-+			     : "=r" (__x), "+m" (*__xg(ptr))		\
-+			     : "0" (__x)				\
- 			     : "memory");				\
- 		break;							\
- 	default:							\
-@@ -70,14 +70,14 @@ static inline void __set_64bit(unsigned long long *ptr,
- 			       unsigned int low, unsigned int high)
- {
- 	asm volatile("\n1:\t"
--		     "movl (%0), %%eax\n\t"
--		     "movl 4(%0), %%edx\n\t"
--		     LOCK_PREFIX "cmpxchg8b (%0)\n\t"
-+		     "movl (%1), %%eax\n\t"
-+		     "movl 4(%1), %%edx\n\t"
-+		     LOCK_PREFIX "cmpxchg8b (%1)\n\t"
- 		     "jnz 1b"
--		     : /* no outputs */
--		     : "D"(ptr),
--		       "b"(low),
--		       "c"(high)
-+		     : "=m" (*ptr)
-+		     : "D" (ptr),
-+		       "b" (low),
-+		       "c" (high)
- 		     : "ax", "dx", "memory");
- }
- 
-@@ -121,21 +121,21 @@ extern void __cmpxchg_wrong_size(void);
- 	__typeof__(*(ptr)) __new = (new);				\
- 	switch (size) {							\
- 	case 1:								\
--		asm volatile(lock "cmpxchgb %b1,%2"			\
--			     : "=a"(__ret)				\
--			     : "q"(__new), "m"(*__xg(ptr)), "0"(__old)	\
-+		asm volatile(lock "cmpxchgb %b2,%1"			\
-+			     : "=a" (__ret), "+m" (*__xg(ptr))		\
-+			     : "q" (__new), "0" (__old)			\
- 			     : "memory");				\
- 		break;							\
- 	case 2:								\
--		asm volatile(lock "cmpxchgw %w1,%2"			\
--			     : "=a"(__ret)				\
--			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
-+		asm volatile(lock "cmpxchgw %w2,%1"			\
-+			     : "=a" (__ret), "+m" (*__xg(ptr))		\
-+			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
- 		break;							\
- 	case 4:								\
--		asm volatile(lock "cmpxchgl %1,%2"			\
--			     : "=a"(__ret)				\
--			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
-+		asm volatile(lock "cmpxchgl %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__xg(ptr))		\
-+			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
- 		break;							\
- 	default:							\
-@@ -180,12 +180,12 @@ static inline unsigned long long __cmpxchg64(volatile void *ptr,
- 					     unsigned long long new)
- {
- 	unsigned long long prev;
--	asm volatile(LOCK_PREFIX "cmpxchg8b %3"
--		     : "=A"(prev)
--		     : "b"((unsigned long)new),
--		       "c"((unsigned long)(new >> 32)),
--		       "m"(*__xg(ptr)),
--		       "0"(old)
-+	asm volatile(LOCK_PREFIX "cmpxchg8b %1"
-+		     : "=A" (prev),
-+		       "+m" (*__xg(ptr))
-+		     : "b" ((unsigned long)new),
-+		       "c" ((unsigned long)(new >> 32)),
-+		       "0" (old)
- 		     : "memory");
- 	return prev;
- }
-@@ -195,12 +195,12 @@ static inline unsigned long long __cmpxchg64_local(volatile void *ptr,
- 						   unsigned long long new)
- {
- 	unsigned long long prev;
--	asm volatile("cmpxchg8b %3"
--		     : "=A"(prev)
--		     : "b"((unsigned long)new),
--		       "c"((unsigned long)(new >> 32)),
--		       "m"(*__xg(ptr)),
--		       "0"(old)
-+	asm volatile("cmpxchg8b %1"
-+		     : "=A" (prev),
-+		       "+m" (*__xg(ptr))
-+		     : "b" ((unsigned long)new),
-+		       "c" ((unsigned long)(new >> 32)),
-+		       "0" (old)
- 		     : "memory");
- 	return prev;
- }
-diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
-index 485ae41..b92f147 100644
---- a/arch/x86/include/asm/cmpxchg_64.h
-+++ b/arch/x86/include/asm/cmpxchg_64.h
-@@ -26,26 +26,26 @@ extern void __cmpxchg_wrong_size(void);
- 	switch (size) {							\
- 	case 1:								\
- 		asm volatile("xchgb %b0,%1"				\
--			     : "=q" (__x)				\
--			     : "m" (*__xg(ptr)), "0" (__x)		\
-+			     : "=q" (__x), "+m" (*__xg(ptr))		\
-+			     : "0" (__x)				\
- 			     : "memory");				\
- 		break;							\
- 	case 2:								\
- 		asm volatile("xchgw %w0,%1"				\
--			     : "=r" (__x)				\
--			     : "m" (*__xg(ptr)), "0" (__x)		\
-+			     : "=r" (__x), "+m" (*__xg(ptr))		\
-+			     : "0" (__x)				\
- 			     : "memory");				\
- 		break;							\
- 	case 4:								\
- 		asm volatile("xchgl %k0,%1"				\
--			     : "=r" (__x)				\
--			     : "m" (*__xg(ptr)), "0" (__x)		\
-+			     : "=r" (__x), "+m" (*__xg(ptr))		\
-+			     : "0" (__x)				\
- 			     : "memory");				\
- 		break;							\
- 	case 8:								\
- 		asm volatile("xchgq %0,%1"				\
--			     : "=r" (__x)				\
--			     : "m" (*__xg(ptr)), "0" (__x)		\
-+			     : "=r" (__x), "+m" (*__xg(ptr))		\
-+			     : "0" (__x)				\
- 			     : "memory");				\
- 		break;							\
- 	default:							\
-@@ -71,27 +71,27 @@ extern void __cmpxchg_wrong_size(void);
- 	__typeof__(*(ptr)) __new = (new);				\
- 	switch (size) {							\
- 	case 1:								\
--		asm volatile(lock "cmpxchgb %b1,%2"			\
--			     : "=a"(__ret)				\
--			     : "q"(__new), "m"(*__xg(ptr)), "0"(__old)	\
-+		asm volatile(lock "cmpxchgb %b2,%1"			\
-+			     : "=a" (__ret), "+m" (*__xg(ptr))		\
-+			     : "q" (__new), "0" (__old)			\
- 			     : "memory");				\
- 		break;							\
- 	case 2:								\
--		asm volatile(lock "cmpxchgw %w1,%2"			\
--			     : "=a"(__ret)				\
--			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
-+		asm volatile(lock "cmpxchgw %w2,%1"			\
-+			     : "=a" (__ret), "+m" (*__xg(ptr))		\
-+			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
- 		break;							\
- 	case 4:								\
--		asm volatile(lock "cmpxchgl %k1,%2"			\
--			     : "=a"(__ret)				\
--			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
-+		asm volatile(lock "cmpxchgl %k2,%1"			\
-+			     : "=a" (__ret), "+m" (*__xg(ptr))		\
-+			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
- 		break;							\
- 	case 8:								\
--		asm volatile(lock "cmpxchgq %1,%2"			\
--			     : "=a"(__ret)				\
--			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
-+		asm volatile(lock "cmpxchgq %2,%1"			\
-+			     : "=a" (__ret), "+m" (*__xg(ptr))		\
-+			     : "r" (__new), "0" (__old)			\
- 			     : "memory");				\
- 		break;							\
- 	default:							\
+Sighed != Signed ;)
+-mike
