@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0G1NuZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 09:50:25 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:53255 "EHLO e1.ny.us.ibm.com"
+	id S1754521Ab0G1N4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:56:18 -0400
+Received: from kroah.org ([198.145.64.141]:47188 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754492Ab0G1NuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 09:50:21 -0400
-Message-ID: <4C503594.7040602@linux.vnet.ibm.com>
-Date: Wed, 28 Jul 2010 08:50:12 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1751134Ab0G1N4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 09:56:15 -0400
+Date: Wed, 28 Jul 2010 06:51:49 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: linux-next: manual merge of the staging-next tree with the
+	v4l-dvb tree
+Message-ID: <20100728135149.GA12904@kroah.com>
+References: <20100728152736.bcaa5d59.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Nathan Fontenot <nfont@austin.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        greg@kroah.com, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 6/8] v3 Update the node sysfs code
-References: <4C451BF5.50304@austin.ibm.com> <4C451EAF.1080505@austin.ibm.com>
-In-Reply-To: <4C451EAF.1080505@austin.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100728152736.bcaa5d59.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2010 10:57 PM, Nathan Fontenot wrote:
-> Index: linux-2.6/include/linux/node.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/node.h	2010-07-19 21:10:25.000000000 -0500
-> +++ linux-2.6/include/linux/node.h	2010-07-19 21:13:11.000000000 -0500
-> @@ -44,7 +44,8 @@ extern int register_cpu_under_node(unsig
->  extern int unregister_cpu_under_node(unsigned int cpu, unsigned int nid);
->  extern int register_mem_sect_under_node(struct memory_block *mem_blk,
->  						int nid);
-> -extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk);
-> +extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
-> +					   unsigned long phys_index);
+On Wed, Jul 28, 2010 at 03:27:36PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the staging-next tree got a conflict in
+> drivers/staging/Kconfig between commit
+> 44d349d2b19019e0b5912bc4e6c8531e50b394aa ("V4L/DVB: staging/lirc: wire up
+> Kconfig and Makefile bits") from the v4l-dvb tree and several commits
+> from the staging-next tree.
+> 
+> Just overlapping additions.  I fixed it up (see below) and can carry the
+> fix as necessary.
 
-You also need to update the inline definition of unregister_mem_sect_under_nodes
-for the !CONFIG_NUMA case.
+Looks good to me.
 
--Brian
+thanks,
 
--- 
-Brian King
-Linux on Power Virtualization
-IBM Linux Technology Center
-
-
+greg k-h
