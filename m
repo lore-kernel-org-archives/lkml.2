@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab0G1JaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 05:30:06 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59078 "EHLO gate.crashing.org"
+	id S1754537Ab0G1Jak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 05:30:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9616 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754476Ab0G1JaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:30:04 -0400
-Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: David Miller <davem@davemloft.net>, hpa@zytor.com, mingo@elte.hu,
-        tglx@linutronix.de, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-In-Reply-To: <4C4FCA7A.1020506@kernel.org>
-References: <1280294128.1970.237.camel@pasglop>
-	 <1280294376.1970.239.camel@pasglop>	<4C4FC5D1.3070708@zytor.com>
-	 <20100727.230120.43037767.davem@davemloft.net>
-	 <4C4FCA7A.1020506@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 19:29:02 +1000
-Message-ID: <1280309342.1970.283.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754168Ab0G1Jai (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 05:30:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,273,1278313200"; 
+   d="scan'208";a="305305360"
+Date: Wed, 28 Jul 2010 17:30:31 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Andy Whitcroft <apw@shadowen.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH] vmscan: remove wait_on_page_writeback() from pageout()
+Message-ID: <20100728093031.GA29551@localhost>
+References: <20100728071705.GA22964@localhost>
+ <AANLkTimaj6+MzY5Aa_xqi75zKy1fDOQV5QiQjdX8jgm7@mail.gmail.com>
+ <20100728084654.GA26776@localhost>
+ <20100728091032.GD5300@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100728091032.GD5300@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 23:13 -0700, Yinghai Lu wrote:
-> So still keep MEMBLOCK_ERROR to (~(phys_addr_t)0) ?
-
-No point for now. lmb_alloc() etc... are defined as returning 0 for
-failure so we would need to fix that too.
-
-As I said in a previous email we do need to revisit the memblock error
-handling.
-
-> We can change some variable from unsigned long to phys_addr_t that
-> will be assigned by memblock_find_base().
+On Wed, Jul 28, 2010 at 05:10:33PM +0800, Mel Gorman wrote:
+> On Wed, Jul 28, 2010 at 04:46:54PM +0800, Wu Fengguang wrote:
+> > The wait_on_page_writeback() call inside pageout() is virtually dead code.
+> > 
+> >         shrink_inactive_list()
+> >           shrink_page_list(PAGEOUT_IO_ASYNC)
+> >             pageout(PAGEOUT_IO_ASYNC)
+> >           shrink_page_list(PAGEOUT_IO_SYNC)
+> >             pageout(PAGEOUT_IO_SYNC)
+> > 
+> > Because shrink_page_list/pageout(PAGEOUT_IO_SYNC) is always called after
+> > a preceding shrink_page_list/pageout(PAGEOUT_IO_ASYNC), the first
+> > pageout(ASYNC) converts dirty pages into writeback pages, the second
+> > shrink_page_list(SYNC) waits on the clean of writeback pages before
+> > calling pageout(SYNC). The second shrink_page_list(SYNC) can hardly run
+> > into dirty pages for pageout(SYNC) unless in some race conditions.
+> > 
 > 
-> that could avoid casting too. 
+> It's possible for the second call to run into dirty pages as there is a
+> congestion_wait() call between the first shrink_page_list() call and the
+> second. That's a big window.
 
-That would be a good idea anyways if those are indeed carrying a
-physical address.
+OK there is a <=0.1s time window. Then what about the data set size?
+After first shrink_page_list(ASYNC), there will be hardly any pages
+left in the page_list except for the already under-writeback pages and
+other unreclaimable pages. So it still asks for some race conditions
+for hitting the second pageout(SYNC) -- some unreclaimable pages
+become reclaimable+dirty in the 0.1s time window.
 
-Ben.
+> > And the wait page-by-page behavior of pageout(SYNC) will lead to very
+> > long stall time if running into some range of dirty pages.
+> 
+> True, but this is also lumpy reclaim which is depending on a contiguous
+> range of pages. It's better for it to wait on the selected range of pages
+> which is known to contain at least one old page than excessively scan and
+> reclaim newer pages.
+> 
+> > So it's bad
+> > idea anyway to call wait_on_page_writeback() inside pageout().
+> > 
+> 
+> I recognise that you are probably thinking of the stall-due-to-fork problem
+> but I'd expect the patch that raises the bar for <= PAGE_ALLOC_COSTLY_ORDER
+> to be sufficient. If not, I think it still makes sense to call
+> wait_on_page_writeback() for > PAGE_ALLOC_COSTLY_ORDER.
 
+The main intention of this patch is to remove semi-dead code.
+I'm less disturbed by the long stall time now with the previous patch ;)
 
+Thanks,
+Fengguang
