@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab0G1HOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:14:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43838 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749Ab0G1HOL (ORCPT
+	id S1753810Ab0G1HPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:15:19 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41555 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab0G1HPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:14:11 -0400
-Message-ID: <4C4FD85C.2090603@kernel.org>
-Date: Wed, 28 Jul 2010 00:12:28 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Wed, 28 Jul 2010 03:15:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=sAb7jo7Q6Q7O8VfKS07p5flz24VBNvYKnf2XMXV0o6emLLEVpy2lTYO04yyCzN57MB
+         m7e1ZmUO+4e0kBcRRgpOExrcs8wI9ba0sqrloeDVN5m9Fe9q54WydPeu7ebXRUtEIxfJ
+         q2PUuYNKJyiBmj5Z+4czsz5C3W1mDmgytiB1k=
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>	 <1279822864-17154-32-git-send-email-yinghai@kernel.org> <1280295415.1970.245.camel@pasglop> <4C4FC95F.6040806@kernel.org> <4C4FD04B.5090503@zytor.com>
-In-Reply-To: <4C4FD04B.5090503@zytor.com>
+In-Reply-To: <20100728135850.7A92.A69D9226@jp.fujitsu.com>
+References: <20100727200804.2F40.A69D9226@jp.fujitsu.com> <AANLkTin47_htYK8eV-6C4QkRK_U__qYeWX16Ly=YK-0w@mail.gmail.com> 
+	<20100728135850.7A92.A69D9226@jp.fujitsu.com>
+From: dave b <db.pub.mail@gmail.com>
+Date: Wed, 28 Jul 2010 17:14:52 +1000
+Message-ID: <AANLkTi=fk8B-TnC6m3AoLT7k_G239rMaQA1COwHLxwRM@mail.gmail.com>
+Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C4FD8A6.01DD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2010 11:38 PM, H. Peter Anvin wrote:
-> On 07/27/2010 11:08 PM, Yinghai Lu wrote:
+On 28 July 2010 15:06, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On 27 July 2010 21:14, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> >> On 27 July 2010 18:09, dave b <db.pub.mail@gmail.com> wrote:
+>> >> > On 27 July 2010 16:09, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> >> >>> > Do you mean the issue will be gone if disabling intel graphics?
+>> >> >>> It may be a general issue or it could just be specific :)
+>> >> >
+>> >> > I will try with the latest ubuntu and report how that goes (that will
+>> >> > be using fairly new xorg etc.) it is likely to be hidden issue just
+>> >> > with the intel graphics driver. However, my concern is that it isn't -
+>> >> > and it is about how shared graphics memory is handled :)
+>> >>
+>> >>
+>> >> Ok my desktop still stalled and no oom killer was invoked when I added
+>> >> swap to a live-cd of 10.04 amd64.
+>> >>
+>> >> *Without* *swap* *on* - the oom killer was invoked - here is a copy of it.
+>> >
+>> > This stack seems similar following bug. can you please try to disable intel graphics
+>> > driver?
+>> >
+>> > https://bugzilla.kernel.org/show_bug.cgi?id=14933
 >>
->> for example: 
->> high/low allocation, from first kernel to kexec second kernel, always work fine except system with Qlogic card.
->> because Qlogic card is using main RAM as EFT etc for card's FW log trace. second kernel have not idea that those RAM
->>  is used by first kernel for that purpose. that the CARD still use that between two kernels.
->> second kernel could have crash it try to use those ram.
->>
-> 
-> Uhm, no.  That's a bug in the Qlogic driver not shutting the card down
-> cleanly.  Hacking around that in memory allocation order is braindamaged
-> in the extreme.  kexec *cannot* be safe in any way if we don't shut down
-> pending DMA, and what you describe above is DMA.
-> 
+>> Ok I am not sure how to do that :)
+>> I could revert the patch and see if it 'fixes' this :)
+>
+> Oops, no, revert is not good action. the patch is correct.
+> probably my explanation was not clear. sorry.
+>
+> I did hope to disable 'driver' (i.e. using vga), not disable the patch.
 
-the problem is later if the user hit the problem, it will be called "Regression" after bisecting to the memblock/x86 changes.
-because low/high does work before.
-
-BTW, that design from qlogic to save log in RAM is not good one, they may save some cents for the ram in card.
-
-other vendors seems put log/trace in the ram on card.
-
-Thanks
-
-Yinghai
+Oh you mean in xorg, I will also blacklist the module. Sure that patch
+might not it but in 2.6.26 the problem isn't there :)
