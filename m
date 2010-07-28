@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab0G1QtT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 12:49:19 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:14744 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755655Ab0G1QtN (ORCPT
+	id S1755657Ab0G1QxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 12:53:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48502 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab0G1QxI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 12:49:13 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz1432Nzz1202hzz15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L6A1DO-02-RBT-02
-X-M-MSG: 
-Date: Wed, 28 Jul 2010 18:48:15 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] x86: mce: fix error handling
-Message-ID: <20100728164815.GG16250@aftab>
-References: <1280335185-23265-1-git-send-email-segooon@gmail.com>
+	Wed, 28 Jul 2010 12:53:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=LdwAqCTjmExwuq4h9NTvhDR6/d+CN6Hi3KjKSNdOPrqzfBaDTN+6nYzmOhSGQzYDPw
+         SOBn4EWfcEG7ie5KbHOfJZmOBdbguxvPzytredEUWYvYymXjHP4QBjjquUNGXu8X7IR3
+         V+ylqasqKnEF1+pO9Q/XyXsXuUGoyyhqJ9rqY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1280335185-23265-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <1280335203-23305-1-git-send-email-segooon@gmail.com>
+References: <1280335203-23305-1-git-send-email-segooon@gmail.com>
+Date: Wed, 28 Jul 2010 19:53:06 +0300
+X-Google-Sender-Auth: YK1LCYzMJpDXH-XGVY3L3d7MdP4
+Message-ID: <AANLkTimhz5D4jthc8__HvHekznWSftXqqDihzjKbW9=P@mail.gmail.com>
+Subject: Re: [PATCH 05/10] mm: check kmalloc() return value
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Jan Beulich <jbeulich@novell.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kulikov Vasiliy <segooon@gmail.com>
-Date: Wed, Jul 28, 2010 at 12:39:44PM -0400
-
-> mcheck_init_device() poorly handles errors. If any request fails
-> unregister and free everything.
-> 
+On Wed, Jul 28, 2010 at 7:40 PM, Kulikov Vasiliy <segooon@gmail.com> wrote:
+> kmalloc() may fail, if so return -ENOMEM.
+>
 > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 
-Acked-by: Borislav Petkov <Borislav.Petkov@amd.com>
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
-
+> ---
+>  mm/vmalloc.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index b7e314b..f63684a 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -2437,8 +2437,11 @@ static int vmalloc_open(struct inode *inode, struct file *file)
+>        unsigned int *ptr = NULL;
+>        int ret;
+>
+> -       if (NUMA_BUILD)
+> +       if (NUMA_BUILD) {
+>                ptr = kmalloc(nr_node_ids * sizeof(unsigned int), GFP_KERNEL);
+> +               if (ptr == NULL)
+> +                       return -ENOMEM;
+> +       }
+>        ret = seq_open(file, &vmalloc_op);
+>        if (!ret) {
+>                struct seq_file *m = file->private_data;
+> --
+> 1.7.0.4
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
