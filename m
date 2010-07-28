@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab0G1KAB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:00:01 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35104 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab0G1J77 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 05:59:59 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] vmscan: remove wait_on_page_writeback() from pageout()
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Andy Whitcroft <apw@shadowen.org>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-In-Reply-To: <20100728095058.GF5300@csn.ul.ie>
-References: <20100728183625.4A7F.A69D9226@jp.fujitsu.com> <20100728095058.GF5300@csn.ul.ie>
-Message-Id: <20100728185457.4A82.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1754624Ab0G1KAo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:00:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:2152 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754569Ab0G1KAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 06:00:42 -0400
+Subject: Re: [Uclinux-dist-devel] [PATCH net-next] drivers/net/bfin_mac.c:
+ Use  pr_fmt, netdev_<level>
+From: Joe Perches <joe@perches.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Michael Hennerich <michael.hennerich@analog.com>,
+        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTi=p=-ovBaqyqBdEW=W4E1ArWsiyUBwy37GtXOyu@mail.gmail.com>
+References: <1280258531.24054.10.camel@Joe-Laptop.home>
+	 <AANLkTi=p=-ovBaqyqBdEW=W4E1ArWsiyUBwy37GtXOyu@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 03:00:40 -0700
+Message-ID: <1280311240.24054.103.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 28 Jul 2010 18:59:55 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Jul 28, 2010 at 06:43:41PM +0900, KOSAKI Motohiro wrote:
-> > > On Wed, Jul 28, 2010 at 04:46:54PM +0800, Wu Fengguang wrote:
-> > > > The wait_on_page_writeback() call inside pageout() is virtually dead code.
-> > > > 
-> > > >         shrink_inactive_list()
-> > > >           shrink_page_list(PAGEOUT_IO_ASYNC)
-> > > >             pageout(PAGEOUT_IO_ASYNC)
-> > > >           shrink_page_list(PAGEOUT_IO_SYNC)
-> > > >             pageout(PAGEOUT_IO_SYNC)
-> > > > 
-> > > > Because shrink_page_list/pageout(PAGEOUT_IO_SYNC) is always called after
-> > > > a preceding shrink_page_list/pageout(PAGEOUT_IO_ASYNC), the first
-> > > > pageout(ASYNC) converts dirty pages into writeback pages, the second
-> > > > shrink_page_list(SYNC) waits on the clean of writeback pages before
-> > > > calling pageout(SYNC). The second shrink_page_list(SYNC) can hardly run
-> > > > into dirty pages for pageout(SYNC) unless in some race conditions.
-> > > > 
-> > > 
-> > > It's possible for the second call to run into dirty pages as there is a
-> > > congestion_wait() call between the first shrink_page_list() call and the
-> > > second. That's a big window.
-> > > 
-> > > > And the wait page-by-page behavior of pageout(SYNC) will lead to very
-> > > > long stall time if running into some range of dirty pages.
-> > > 
-> > > True, but this is also lumpy reclaim which is depending on a contiguous
-> > > range of pages. It's better for it to wait on the selected range of pages
-> > > which is known to contain at least one old page than excessively scan and
-> > > reclaim newer pages.
-> > 
-> > Today, I was successful to reproduce the Andres's issue. and I disagree this
-> > opinion.
-> 
-> Is Andres's issue not covered by the patch "vmscan: raise the bar to
-> PAGEOUT_IO_SYNC stalls" because wait_on_page_writeback() was the
-> main problem?
+On Wed, 2010-07-28 at 03:50 -0400, Mike Frysinger wrote:
+> On Tue, Jul 27, 2010 at 15:22, Joe Perches wrote:
+> > $ ./scripts/checkpatch.pl -f drivers/net/bfin_mac.c | grep "^total:"
+> > total: 2 errors, 25 warnings, 1723 lines checked
+> > $ ./scripts/checkpatch.pl -f drivers/net/bfin_mac.c | grep "^total:"
+> > total: 0 errors, 0 warnings, 1743 lines checked
+> i dislike the mixing of whitespace and useful changes
+> if they were split, and they worked, then i wouldnt have a problem with them
 
-Well, "vmscan: raise the bar to PAGEOUT_IO_SYNC stalls" is completely bandaid and
-much IO under slow USB flash memory device still cause such problem even if the patch is applied.
+Is that a nak or a dislike?
 
-But removing wait_on_page_writeback() doesn't solve the issue perfectly because current
-lumpy reclaim have multiple sick. again, I'm writing explaining mail.....
+Also, is Michael Hennerich actually the maintainer for bfin_mac?
+He had been  listed as MAINTAINER for over a year but he hasn't
+ever written or acked a patch for this file.
+
+commit making Michael Hennerich bfin_mac MAINTAINER
+$ git log -1 6c83429a
+commit 6c83429a1c32c914dfb81939cc2ddece97e48294
+Author: Mike Frysinger <vapier@gentoo.org>
+Date:   Sun May 24 02:13:15 2009 -0400
+
+    MAINTAINERS: update Blackfin items
+    
+    With Bryan Wu having moved on to another job, push the slack onto some
+    other ADI lackeys.
+    
+    Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+
+$ ./scripts/get_maintainer.pl -f drivers/net/bfin_mac.c \
+	--rolestats --git-since=5-years-ago --nol
+Michael Hennerich <michael.hennerich@analog.com> (supporter:BLACKFIN EMAC DRIVER)
+"David S. Miller" <davem@davemloft.net> (commit_signer:41/65=63%)
+Jeff Garzik <jgarzik@redhat.com> (commit_signer:31/65=48%)
+Bryan Wu <cooloney@kernel.org> (commit_signer:26/65=40%)
+Mike Frysinger <vapier@gentoo.org> (commit_signer:20/65=31%)
+Sonic Zhang <sonic.zhang@analog.com> (commit_signer:8/65=12%)
 
 
 
