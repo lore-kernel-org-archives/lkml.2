@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab0G1GHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:07:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43303 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab0G1GG6 (ORCPT
+	id S1752904Ab0G1GJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:09:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25734 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab0G1GJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:06:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=g6R8g5t7sG5nXfuNw5oPHq835sPuknuRxZGMkNR4/VQvx7C3uk6Nb5ob2FZggy/xPl
-         VgtOLZXnzS9KyaTEVOvc5AVrvvcUCCMNj9A7eGjEESnPdYCQ9hvq+UcZXtVQi3z5SJml
-         UaTtqnGWHlHOBJAdQx0N1mhXzzr0oskv6BkN8=
-Date: Wed, 28 Jul 2010 08:03:51 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>, David Airlie <airlied@linux.ie>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Francisco Jerez <currojerez@riseup.net>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, nouveau@lists.freedesktop.org
-Subject: Re: mmotm 2010-07-27 - nouveau lockdep issues.
-Message-ID: <20100728060334.GA2756@joi.lan>
-References: <201007272226.o6RMQRBm008735@imap1.linux-foundation.org>
- <31845.1280295723@localhost>
+	Wed, 28 Jul 2010 02:09:25 -0400
+Message-ID: <4C4FC95F.6040806@kernel.org>
+Date: Tue, 27 Jul 2010 23:08:31 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <31845.1280295723@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>	 <1279822864-17154-32-git-send-email-yinghai@kernel.org> <1280295415.1970.245.camel@pasglop>
+In-Reply-To: <1280295415.1970.245.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C4FC979.0057,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 01:42:03AM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 27 Jul 2010 14:56:50 PDT, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2010-07-27-14-56 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
+On 07/27/2010 10:36 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-07-22 at 11:21 -0700, Yinghai Lu wrote:
+>> it is a wrapper for memblock_find_base
+>>
+>> make it more easy for x86 to use memblock. ( rebase )
+>> x86 early_res is using find/reserve pattern instead of alloc.
+>>
+>> keep it in weak version, so later We can use x86 own version if needed.
+>> also We need it in mm/memblock.c, so one caller mm/page_alloc.c could get compiled
+>>
+>> -v2: Change name to memblock_find_in_range() according to Michael Ellerman
+>> -v3: Add generic weak version __memblock_find_in_range()
+>>      so keep the path for fallback to x86 version that handle from low
+>> -v4: use 0 for failing path
+>> -v5: use MEMBLOCK_ERROR again
+>> -v6: remove __memblock_find_in_range()
 > 
-> Hit this while the X server was on its way down during a 'shutdown -r now'. Worked fine
-> in -rc5-mmotm0719. 'e16' is the Enlightenment window manager, if that matters.
+> It's very gross to have this weak and not memblock_find_base()... IE. 
 > 
-> [   93.181787] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-> [   99.802836] [drm] nouveau 0000:01:00.0: Allocating FIFO number 4
-> [   99.808875] [drm] nouveau 0000:01:00.0: nouveau_channel_alloc: initialised FIFO 4
-> [  103.262226] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-> [  113.341948] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-> [  123.421836] [drm:output_poll_execute] *ERROR* delayed enqueue failed 1
-> [  123.550520] [drm] nouveau 0000:01:00.0: nouveau_channel_free: freeing fifo 4
-> [  123.551253] 
-> [  123.551253] ======================================================
-> [  123.551253] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-> [  123.551253] 2.6.35-rc6-mmotm0727 #1
-> [  123.551253] ------------------------------------------------------
-> [  123.551253] e16/3822 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-> [  123.551253]  (&(&mm->unused_lock)->rlock){+.+...}, at: [<ffffffff812a94bc>] drm_mm_put_block+0x10e/0x142
-> [  123.551253] 
-> [  123.551253] and this task is already holding:
-> [  123.551253]  (&(&dev_priv->context_switch_lock)->rlock){-.....}, at: [<ffffffff812bdbab>] nouveau_channel_free+0x10f/0x233
-> [  123.551253] which would create a new lock dependency:
-> [  123.551253]  (&(&dev_priv->context_switch_lock)->rlock){-.....} -> (&(&mm->unused_lock)->rlock){+.+...}
-> [  123.551253] 
+> You create a new function defined as a wrapper on an existing one to
+> provide an easier set of arguments ... but also make it weak so the
+> arch can completely change its semantics without actually changing
+> the semantics of the function it wraps.
+> 
+> This is going to cause confusion and bugs. I'm adding the patch without
+> the weak bit to my branch for now, we need to discuss what is the best
+> approach for x86 here. Might be to use a different function. I don't
+> understand yet -why- x86 needs to override it, maybe the right way is
+> to reserve things more intelligently on x86 ?
 
-It's only theoritcal issue. If you want to quiet it down until it will be "fixed" properly, you can
-apply patch from http://lists.freedesktop.org/archives/nouveau/2010-July/005994.html
+again there is a difference between low/high to high/low.
 
-Marcin
+for example: 
+high/low allocation, from first kernel to kexec second kernel, always work fine except system with Qlogic card.
+because Qlogic card is using main RAM as EFT etc for card's FW log trace. second kernel have not idea that those RAM
+ is used by first kernel for that purpose. that the CARD still use that between two kernels.
+second kernel could have crash it try to use those ram.
+
+low/high allocation seems to be safe,  second kernel can slip to boot fine.
+
+Thanks
+
+Yinghai
 
