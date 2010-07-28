@@ -1,37 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab0G1TeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 15:34:18 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56963
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754451Ab0G1TeL (ORCPT
+	id S1752623Ab0G1Tpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 15:45:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57474 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751006Ab0G1Tp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 15:34:11 -0400
-Date: Wed, 28 Jul 2010 12:34:27 -0700 (PDT)
-Message-Id: <20100728.123427.63008085.davem@davemloft.net>
-To: jbaron@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-        hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-        mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com
-Subject: Re: [PATCH 00/12] jump label v10
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1280263065.git.jbaron@redhat.com>
-References: <cover.1280263065.git.jbaron@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 28 Jul 2010 15:45:29 -0400
+Date: Wed, 28 Jul 2010 12:45:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/7][memcg] virtually indexed array library.
+Message-Id: <20100728124513.85bfa047.akpm@linux-foundation.org>
+In-Reply-To: <20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 27 Jul 2010 16:53:03 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Can you please indicate which tree this is against when you post these
-patches?
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> This virt-array allocates a virtally contiguous array via get_vm_area()
+> and allows object allocation per an element of array.
+> Physical pages are used only for used items in the array.
+> 
+>  - At first, the user has to create an array by create_virt_array().
+>  - At using an element, virt_array_alloc_index(index) should be called.
+>  - At freeing an element, virt_array_free_index(index) should be called.
+>  - At destroying, destroy_virt_array() should be called.
+> 
+> Item used/unused status is controlled by bitmap and back-end physical
+> pages are automatically allocated/freed. This is useful when you
+> want to access objects by index in light weight. For example,
+> 
+> 	create_virt_array(va);
+> 	struct your_struct *objmap = va->address;
+> 	Then, you can access your objects by objmap[i].
+> 
+> In usual case, holding reference by index rather than pointer can save memory.
+> But index -> object lookup cost cannot be negligible. In such case,
+> this virt-array may be helpful. Ah yes, if lookup performance is not important,
+> using radix-tree will be better (from TLB point of view). This virty-array
+> may consume VMALLOC area too much. and alloc/free routine is very slow.
+> 
+> Changelog:
+>  - fixed bugs in bitmap ops.
+>  - add offset for find_free_index.
+> 
 
-They don't apply cleanly to Linus's current tree which is where I tend
-to try first when the tree is unspecified, as I imagine others do as
-well.
+My gut reaction to this sort of thing is "run away in terror".  It
+encourages kernel developers to operate like lackadaisical userspace
+developers and to assume that underlying code can perform heroic and
+immortal feats.  But it can't.  This is the kernel and the kernel is a
+tough and hostile place and callers should be careful and defensive and
+take great efforts to minimise the strain they put upon other systems.
+
+IOW, can we avoid doing this?
+
+>
+> ...
+>
+> +void free_varray_item(struct virt_array *v, int idx)
+> +{
+> +	mutex_lock(&v->mutex);
+> +	__free_unmap_entry(v, idx);
+> +	mutex_unlock(&v->mutex);
+> +}
+
+It's generally a bad idea for library code to perform its own locking. 
+In this case we've just made this whole facility inaccessible to code
+which runs from interrupt or atomic contexts.
+
+> +		pg[0] = alloc_page(GFP_KERNEL);
+
+And hard-wiring GFP_KERNEL makes this facility inaccessible to GFP_NOIO
+and GFP_NOFS contexts as well.
 
