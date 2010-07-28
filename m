@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab0G1SjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 14:39:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55590 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab0G1SjI (ORCPT
+	id S1756097Ab0G1SkX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 14:40:23 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49783 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab0G1SkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 14:39:08 -0400
+	Wed, 28 Jul 2010 14:40:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=TusbGR9ne18duR3mhIuZFkr5yhv9mkjUL0pwz5vA+KrQ3cTHLHq335Ex0CI6dK+gvu
-         0wna8MVoh1vtSXt3eNrYpcXdrHKy1V/Qdo2vxn3+bn+Xn0C41ls3VEgXW5dzfuQsxe/V
-         Xh2ocBdqf7xYpqp2k9fJsizGwYG1JnEBz7x2A=
+        b=LWfyIIXIWzSFUWoYuYw54IOKaLK5XatiK66j9ezMEObP93hW+9P55ARNCbIsjNYaJl
+         7TXcVBgQkvDIyAEw6W120sK1c7pAxuPG9peH4gXnrwJxOdee0HqacyimsTtSvAlHE4/4
+         04LISpxxLVoONSwbDfgZxisp0s9JukJmhiLA8=
 MIME-Version: 1.0
-In-Reply-To: <4C505F86.7050509@cs.helsinki.fi>
-References: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>
-	<4C505F86.7050509@cs.helsinki.fi>
-Date: Wed, 28 Jul 2010 19:39:02 +0100
-Message-ID: <AANLkTimQTwSXQXLzoHvmQ-L++O53w0S6jFRmpQ76-Qp3@mail.gmail.com>
-Subject: Re: [2.6.35-rc6 patch] increase kmemleak robustness at boot
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Catalin Marinas <catalin.marinas@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20100728150934.GA25299@suse.de>
+References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
+	<1280328052-31292-2-git-send-email-ernesto@ti.com>
+	<1280328052-31292-3-git-send-email-ernesto@ti.com>
+	<1280328052-31292-4-git-send-email-ernesto@ti.com>
+	<1280328052-31292-5-git-send-email-ernesto@ti.com>
+	<1280328052-31292-6-git-send-email-ernesto@ti.com>
+	<20100728150934.GA25299@suse.de>
+Date: Wed, 28 Jul 2010 21:40:19 +0300
+Message-ID: <AANLkTimNAoy7fJLeGeUPz2tZT9evUwD58tm7mOxTqqv2@mail.gmail.com>
+Subject: Re: [PATCH 5/5] staging:ti dspbridge: replace simple_strtoul by 
+	strict_strtoul
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Ernesto Ramos <ernesto@ti.com>, omar.ramirez@ti.com, ohad@wizery.com,
+        ameya.palande@nokia.com, felipe.contreras@nokia.com,
+        fernando.lugo@ti.com, linux-kernel@vger.kernel.org, nm@ti.com,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 July 2010 17:49, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> Daniel J Blueman wrote:
->>
->> I've consistently been experiencing kmemleak exhaust it's 400-entry
->> early-boot buffer and disabling itself; there have been reports of
->> this also, and I'm finding this on x86-64 with various debug options
->> enabled.
->>
->> If we issue a warning and allow the buffer to wrap, we don't need to
->> hit the kill-switch. While we lose track of some early potential
->> leaks, it's better than no functionality.
->>
->> Let me know if it's acceptable, and many thanks for such an excellent
->> tool,
+On Wed, Jul 28, 2010 at 6:09 PM, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Jul 28, 2010 at 09:40:52AM -0500, Ernesto Ramos wrote:
+>> Replace simple_strtoul by strict_strtoul in atoi function.
 >
-> Is it just potential leaks that we lose or can this cause false positives?
+> Why not use the built-in kernel function instead of having your own atoi
+> function?
+The commit message left opened questions about
+http://dev.omapzoom.org/?p=tidspbridge/kernel-dspbridge.git;a=commit;h=b8af1123b47741086ef5a307ad1ec8fec6fc7f0d
 
-I don't get any false positives having had the buffer wrap a number of
-times at early-boot; not to say this can't cause any.
-
-It seems that some kernel debug options are doing heavy early-boot
-allocations, so getting any false-positives would likely be a triple
-edge case.
-
-Thanks,
-  Daniel
 -- 
-Daniel J Blueman
+With Best Regards,
+Andy Shevchenko
