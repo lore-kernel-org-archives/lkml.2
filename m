@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0G1PFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 11:05:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36718 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab0G1PFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 11:05:04 -0400
-Message-ID: <4C504719.3020007@ti.com>
-Date: Wed, 28 Jul 2010 10:04:57 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1755331Ab0G1PFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 11:05:38 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:52030 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754748Ab0G1PFg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 11:05:36 -0400
+X-IronPort-AV: E=Sophos;i="4.55,274,1278288000"; 
+   d="scan'208";a="1115934"
+Date: Wed, 28 Jul 2010 16:06:26 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: linux-next: Tree for July 27 (xen)
+In-Reply-To: <4C504345.2050204@goop.org>
+Message-ID: <alpine.DEB.2.00.1007281601380.19809@kaball-desktop>
+References: <20100727160708.722c39c1.sfr@canb.auug.org.au> <4C4F27A3.5040109@oracle.com> <alpine.DEB.2.00.1007281410030.19809@kaball-desktop> <4C504345.2050204@goop.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Ramos Falcon, Ernesto" <ernesto@ti.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
- NULL pointer in cmm.c
-References: <1280328052-31292-1-git-send-email-ernesto@ti.com> <1280328052-31292-2-git-send-email-ernesto@ti.com> <1280328052-31292-3-git-send-email-ernesto@ti.com>
-In-Reply-To: <1280328052-31292-3-git-send-email-ernesto@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramos Falcon, Ernesto had written, on 07/28/2010 09:40 AM, the following:
-> Remove unnecessary check for NULL pointer in cmm.c.
+On Wed, 28 Jul 2010, Jeremy Fitzhardinge wrote:
+>   On 07/28/2010 06:11 AM, Stefano Stabellini wrote:
+> > On Tue, 27 Jul 2010, Randy Dunlap wrote:
+> >> Stephen Rothwell wrote:
+> >>> Hi all,
+> >>>
+> >>> Changes since 20100726:
+> >>>
+> >>>
+> >>> The xen tree lost its build problems but gained a conflict against Linus'
+> >>> tree.
+> >> when X86_32=y, SMP=n, X86_LOCAL_APIC=n:
+> >>
+> >> drivers/built-in.o: In function `xen_callback_vector':
+> >> (.text+0x41238): undefined reference to `first_system_vector'
+> >>
+> >> alloc_intr_gate() calls alloc_system_vector(), which uses first_system_vector.
+> > this patch should solve the issue:
 > 
-> Signed-off-by: Ernesto Ramos <ernesto@ti.com>
-> ---
->  drivers/staging/tidspbridge/pmgr/cmm.c |    8 ++------
->  1 files changed, 2 insertions(+), 6 deletions(-)
+> So this is a generic x86 build problem?
 > 
-> diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
-> index 8e808d9..874ed64 100644
-> --- a/drivers/staging/tidspbridge/pmgr/cmm.c
-> +++ b/drivers/staging/tidspbridge/pmgr/cmm.c
-> @@ -992,16 +992,12 @@ int cmm_xlator_create(struct cmm_xlatorobject **xlator,
->  int cmm_xlator_delete(struct cmm_xlatorobject *xlator, bool force)
->  {
->  	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
-> -	int status = 0;
->  
->  	DBC_REQUIRE(refs > 0);
->  
-> -	if (xlator_obj)
-> -		kfree(xlator_obj);
-> -	else
-> -		status = -EFAULT;
-> +	kfree(xlator_obj);
->  
-> -	return status;
-> +	return 0;
->  }
->  
->  /*
-which kind of begs the question - does this function need to any longer 
-return int?
 
--- 
-Regards,
-Nishanth Menon
+It is, but nobody else is calling alloc_intr_gate with X86_LOCAL_APIC=n;
+being a static inline function it didn't cause any problems.
+
