@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab0G1KzE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:55:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60496 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754953Ab0G1Ky5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 06:54:57 -0400
-Date: Wed, 28 Jul 2010 13:48:59 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with
- per-vhost kthread
-Message-ID: <20100728104858.GB30643@redhat.com>
-References: <20100726152510.GA26223@redhat.com>
- <4C4DAB14.5050809@kernel.org>
- <20100726155014.GA26412@redhat.com>
- <4C4DB247.9060709@kernel.org>
- <4C4DB466.6000409@kernel.org>
- <20100726165114.GA27353@redhat.com>
- <4C4DDE7E.8030406@kernel.org>
- <4C4DE2AE.40302@kernel.org>
- <20100727191911.GA16350@redhat.com>
- <4C4FE0CF.3070506@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4FE0CF.3070506@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1755057Ab0G1Kz1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:55:27 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:19098 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab0G1Kyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 06:54:36 -0400
+X-IronPort-AV: E=Sophos;i="4.55,273,1278302400"; 
+   d="scan'208";a="107382893"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ian Campbell <ian.campbell@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: [PATCH 2/4] ixp4xx-beeper: Use IRQF_NO_SUSPEND not IRQF_TIMER for non-timer interrupt
+Date: Wed, 28 Jul 2010 11:54:25 +0100
+Message-Id: <1280314467-5637-2-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1280314445.24292.90.camel@zakaz.uk.xensource.com>
+References: <1280314445.24292.90.camel@zakaz.uk.xensource.com>
+X-OriginalArrivalTime: 28 Jul 2010 10:54:35.0302 (UTC) FILETIME=[44417C60:01CB2E43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 09:48:31AM +0200, Tejun Heo wrote:
-> On 07/27/2010 09:19 PM, Michael S. Tsirkin wrote:
-> >> Thinking a bit more about it, it kind of sucks that queueing to
-> >> another worker from worker->func() breaks flush.  Maybe the right
-> >> thing to do there is using atomic_t for done_seq?
-> > 
-> > I don't believe it will help: we might have:
-> > 
-> > worker1 runs work
-> > work requeues itself queued index = 1
-> > worker1 reads queued index = 1
-> > worker2 runs work
-> > work requeues itself queued index = 2
-> > worker2 runs work
-> > worker2 reads queued index = 2
-> > worker2 writes done index = 2
-> > worker1 writes done index = 1
-> > 
-> > As you see, done index got moved back.
-> 
-> Yeah, I think the flushing logic should be moved to the worker.
-> Are you interested in doing it w/ your change?
-> 
-> Thanks.
+ixp4xx_spkr_interrupt is not a timer interrupt and therefore should
+not use IRQF_TIMER. Use the recently introduced IRQF_NO_SUSPEND
+instead since that is the actual desired behaviour.
 
-I'm unsure how flush_work operates under these conditions.  E.g. in
-workqueue.c, this seems to work by keeping a pointer to current
-workqueue in the work.  But what prevents us from destroying the
-workqueue when work might not be running?
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
+---
+ drivers/input/misc/ixp4xx-beeper.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Is this currently broken if you use multiple workqueues
-for the same work? If yes, I propose we do as I did,
-making flush_work get worker pointer, and only flushing
-on that worker.
+diff --git a/drivers/input/misc/ixp4xx-beeper.c b/drivers/input/misc/ixp4xx-beeper.c
+index 9946d73..5c5ea77 100644
+--- a/drivers/input/misc/ixp4xx-beeper.c
++++ b/drivers/input/misc/ixp4xx-beeper.c
+@@ -115,7 +115,7 @@ static int __devinit ixp4xx_spkr_probe(struct platform_device *dev)
+ 	input_dev->event = ixp4xx_spkr_event;
+ 
+ 	err = request_irq(IRQ_IXP4XX_TIMER2, &ixp4xx_spkr_interrupt,
+-			  IRQF_DISABLED | IRQF_TIMER, "ixp4xx-beeper", (void *) dev->id);
++			  IRQF_DISABLED | IRQF_NO_SUSPEND, "ixp4xx-beeper", (void *) dev->id);
+ 	if (err)
+ 		goto err_free_device;
+ 
+-- 
+1.5.6.5
 
-> -- 
-> tejun
