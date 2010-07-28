@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab0G1CGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 22:06:48 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58218 "EHLO e5.ny.us.ibm.com"
+	id S1752919Ab0G1COl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 22:14:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59038 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753558Ab0G1CGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 22:06:44 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Clark Williams <williams@redhat.com>
-Subject: [RFC][PATCH 1/2] Remove stop_machine from change_clocksource
-Date: Tue, 27 Jul 2010 19:06:41 -0700
-Message-Id: <1280282802-10618-1-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1751439Ab0G1COj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 22:14:39 -0400
+Date: Wed, 28 Jul 2010 12:14:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fbdev: Make jz4740-fb depends on MACH_JZ4740
+Message-Id: <20100728121431.8cb5554b.sfr@canb.auug.org.au>
+In-Reply-To: <20100728113136.97942d63.sfr@canb.auug.org.au>
+References: <20100727111422.673b4919.sfr@canb.auug.org.au>
+	<1280197979-24307-1-git-send-email-lars@metafoo.de>
+	<20100727055546.GA5469@linux-mips.org>
+	<20100728113136.97942d63.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Jul_2010_12_14_31_+1000_d67reDFEy785X0Ha"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To me, there isn't a clear reason why we're using stop_machine
-when changing clocksources instead of just taking the xtime_lock.
+--Signature=_Wed__28_Jul_2010_12_14_31_+1000_d67reDFEy785X0Ha
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Additionally, using stop_machine limits us from being able to
-register clocksources from timers (as needed for a following
-patch).
+Hi Ralf,
 
-This patch simply removes the stop_machine usage and instead
-directly calls change_clocksource, which now takes the xtime_lock.
+On Wed, 28 Jul 2010 11:31:36 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> On Tue, 27 Jul 2010 06:55:46 +0100 Ralf Baechle <ralf@linux-mips.org> wro=
+te:
+> >
+> > On Tue, Jul 27, 2010 at 04:32:59AM +0200, Lars-Peter Clausen wrote:
+> >=20
+> > > The jz4740-fb driver should only be selectabed of MACH_JZ4740 is sele=
+cted.
+> >=20
+> > Thanks, folded into the original patch.
+>=20
+> But it didn't make it into your mips-for-linux-next branch today?
 
-I could be totally missing something here that necessitates
-stop_machine, but in my testing it seems to function fine.
+I will apply that patch myself just for today.
 
-Any clarifications or corrections would be appreciated!
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Clark Williams <williams@redhat.com>
----
- kernel/time/timekeeping.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+--Signature=_Wed__28_Jul_2010_12_14_31_+1000_d67reDFEy785X0Ha
+Content-Type: application/pgp-signature
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index e14c839..fa2cc41 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -19,7 +19,6 @@
- #include <linux/jiffies.h>
- #include <linux/time.h>
- #include <linux/tick.h>
--#include <linux/stop_machine.h>
- 
- /* Structure holding internal timekeeping values. */
- struct timekeeper {
-@@ -345,12 +344,12 @@ EXPORT_SYMBOL(do_settimeofday);
-  *
-  * Accumulates current time interval and initializes new clocksource
-  */
--static int change_clocksource(void *data)
-+static int change_clocksource(struct clocksource *new)
- {
--	struct clocksource *new, *old;
--
--	new = (struct clocksource *) data;
-+	struct clocksource *old;
-+	unsigned long flags;
- 
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 	timekeeping_forward_now();
- 	if (!new->enable || new->enable(new) == 0) {
- 		old = timekeeper.clock;
-@@ -358,6 +357,7 @@ static int change_clocksource(void *data)
- 		if (old->disable)
- 			old->disable(old);
- 	}
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- 	return 0;
- }
- 
-@@ -372,7 +372,7 @@ void timekeeping_notify(struct clocksource *clock)
- {
- 	if (timekeeper.clock == clock)
- 		return;
--	stop_machine(change_clocksource, clock, NULL);
-+	change_clocksource(clock);
- 	tick_clock_notify();
- }
- 
--- 
-1.6.0.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMT5KHAAoJEDMEi1NhKgbsUfQH/Rj480z51khOP/Z/qZ+E4O/L
+WkYk9gc1NagnTbYco8zsWzf8uOlO1D/mHI2dassAMzIq6US1OhimMU7M2JBv6RrO
+SdPl3OVouot6qO8zeI9a03Q/eFN4k2QJMsgB+IYWQhQbeRnfbuBX3Kl/5uQLkwdK
+GrwiNwFdKOs6UHgDutn90bsy3WwNHb7k7qAfylVlAXeNGUqUT49qju/2CP8u95GR
+duVVHHxDuHqsMcYvItLIzJeoOcZ4V5KKD3XxcVWmJ/FQvwa/u5fefHuexxKXhArc
+ZRyIfCVF4q40prqyG24SXl6M2931zPwd9jIr7ZypylAfuImMiFr0dsxA359xMpE=
+=3WbO
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Jul_2010_12_14_31_+1000_d67reDFEy785X0Ha--
