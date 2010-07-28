@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab0G1Lo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 07:44:28 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47473 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab0G1Lo1 (ORCPT
+	id S1754992Ab0G1LwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 07:52:16 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:41182 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab0G1LwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 07:44:27 -0400
-Content-Type: text/plain; charset=UTF-8
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/2] ftrace: record command lines at more appropriate moment
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-In-reply-to: <4C4F9C3A.6020406@cn.fujitsu.com>
-References: <1280284180-17863-1-git-send-email-imunsie@au1.ibm.com> <4C4F9C3A.6020406@cn.fujitsu.com>
-Date: Wed, 28 Jul 2010 21:44:01 +1000
-Message-Id: <1280317404-sup-4657@au1.ibm.com>
-User-Agent: Sup/0.11
-Content-Transfer-Encoding: 8bit
+	Wed, 28 Jul 2010 07:52:15 -0400
+X-SpamScore: -34
+X-BigFish: VPS-34(zz1432N98dN936eM9371Pzz1202hzz15d4Rz32i2a8h87h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L69NHJ-01-BDJ-02
+X-M-MSG: 
+Date: Wed, 28 Jul 2010 13:51:33 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: SVM: Emulate next_rip svm feature
+Message-ID: <20100728115133.GG26098@amd.com>
+References: <1280247261-19115-1-git-send-email-joerg.roedel@amd.com>
+ <1280247261-19115-3-git-send-email-joerg.roedel@amd.com>
+ <4C4F2643.8080507@redhat.com>
+ <20100728093708.GD26098@amd.com>
+ <4C500636.1070708@redhat.com>
+ <20100728112540.GE26098@amd.com>
+ <4C5015B3.8010003@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4C5015B3.8010003@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Li Zefan's message of Wed Jul 28 12:55:54 +1000 2010:
-> > @@ -1112,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry *entry, unsigned long flags,
-> >  {
-> >      struct task_struct *tsk = current;
-> >  
-> > +    tracing_record_cmdline(tsk);
+On Wed, Jul 28, 2010 at 07:34:11AM -0400, Avi Kivity wrote:
+>   On 07/28/2010 02:25 PM, Roedel, Joerg wrote:
+> > On Wed, Jul 28, 2010 at 06:28:06AM -0400, Avi Kivity wrote:
+> >> We have a slightly different problem, if the nested guest manages to get
+> >> an instruction to be emulated by the host (if the guest assigned it the
+> >> cirrus framebuffer, for example, so from L1's point of view it is RAM,
+> >> but from L0's point of view it is emulated), then we miss the
+> >> intercept.  L2 could take over L1 this way.
+> > I wonder how this could happen. Shouldn't the shadow paging code take
+> > care of this?
+> >
 > 
-> Now this function is called everytime a tracepoint is triggered, so
-> did you run some benchmarks to see if the performance is improved
-> or even worse?
+> L1 thinks the memory is RAM, so it maps it directly and forgets about 
+> it.  L0 knows it isn't, so it leaves it unmapped and emulates any 
+> instruction which accesses it.  The emulator needs to check whether the 
+> instruction is intercepted or not.
 
-Admittedly when I posted the patch I had not done that. For the below
-benchmark I isolated the trace_sched_switch tracepoint from the
-context_switch function (since it is called often) into it's own function
-(tp_benchmark) which I could then run the ftrace function profiler on
-while the tracepoint was active through debugfs.
+Instruction intercepts take precedence over exception intercepts. So if
+the L2 executes an instruction which the L1 hypervisor wants to
+intercept we get this instruction intercept on the host side and
+re-inject it.
+To my understanding the fault-intercept which causes the emulator to run
+can only happen if the instruction causing the fault isn't intercepted
+itself.
 
-On my test system there is a performance hit for an active event of
-~0.233 us per event (which I have now reduced to ~0.127 us by inlining
-tracing_record_cmdline and trace_save_cmdline). At least that is only on
-active events as opposed to every single context switch as before.
+> Note, I think if the instruction operand is in mmio, we're safe, since 
+> the intercept has higher priority than memory access.  But if the 
+> instruction itself is on mmio, or if we entered the emulator through smp 
+> trickery, then the emulator will execute the instruction in nested guest 
+> context.
 
-Before:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  .tp_benchmark                         1494    2699.670 us     1.807 us        0.536 us    
-  .tp_benchmark                          212    357.546 us      1.686 us        0.363 us    
-  .tp_benchmark                          215    389.984 us      1.813 us        0.404 us    
-  .tp_benchmark                          649    1116.156 us     1.719 us        0.626 us    
-  .tp_benchmark                          273    483.530 us      1.771 us        0.350 us    
-  .tp_benchmark                          333    599.600 us      1.800 us        0.378 us    
-  .tp_benchmark                          203    355.038 us      1.748 us        0.351 us    
-  .tp_benchmark                          270    473.222 us      1.752 us        0.360 us   
+Right. But if the guest executes code which is on mmio we are doomed
+anyway because our instruction emulator does not emulate the whole x86
+instruction set, right?
 
-After existing patch:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  .tp_benchmark                         1427    2815.906 us     1.973 us        0.623 us    
-  .tp_benchmark                          358    645.550 us      1.803 us        0.240 us    
-  .tp_benchmark                          437    867.762 us      1.985 us        0.684 us    
-  .tp_benchmark                          701    1445.618 us     2.062 us        0.906 us    
-  .tp_benchmark                          121    257.166 us      2.125 us        0.949 us    
-  .tp_benchmark                          162    329.536 us      2.034 us        0.671 us    
-  .tp_benchmark                          216    448.420 us      2.076 us        0.754 us    
-  .tp_benchmark                          238    452.244 us      1.900 us        0.384 us    
+-- 
+Joerg Roedel - AMD Operating System Research Center
 
-With inlining:
-  Function                               Hit    Time            Avg             s^2
-  --------                               ---    ----            ---             ---
-  .tp_benchmark                         1478    2834.292 us     1.917 us        0.451 us    
-  .tp_benchmark                          316    583.166 us      1.845 us        0.227 us    
-  .tp_benchmark                          160    312.752 us      1.954 us        0.302 us    
-  .tp_benchmark                          687    1251.652 us     1.821 us        0.445 us    
-  .tp_benchmark                          177    352.310 us      1.990 us        0.451 us    
-  .tp_benchmark                          324    603.848 us      1.863 us        0.239 us    
-  .tp_benchmark                          150    284.444 us      1.896 us        0.343 us    
-  .tp_benchmark                          339    617.716 us      1.822 us        0.215 us    
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-
-> Another problem in this patch is, tracing_generic_entry_update() is also
-> called by perf, but cmdline recoding is not needed in perf.
-
-That's a good point - I could move the call into
-trace_buffer_lock_reserve so that perf does not get the unneeded
-overhead.  Actually there's probably no reason I couldn't put it in
-__trace_buffer_unlock_commit to avoid the overhead if the event has been
-filtered out.
-
-Anyway, what do you think? Is the extra overhead per event acceptable?
-I'll go ahead and respin the patch to remove the overhead in the perf
-case for the moment.
-
-Cheers,
--Ian
