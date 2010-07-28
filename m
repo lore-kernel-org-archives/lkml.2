@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab0G1XE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 19:04:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65184 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab0G1XEO convert rfc822-to-8bit (ORCPT
+	id S1756565Ab0G1XKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:10:22 -0400
+Received: from sj-iport-3.cisco.com ([171.71.176.72]:10737 "EHLO
+	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab0G1XKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 19:04:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=M827Ie66Tk6Zs1kRldWiEQAkGZ81jYmiUqbHHeZXql4CeVjA3KtQ5cBcS73B8/TrKU
-         3ifzQEbwYGVyoKBjCH0zMyV19nl5ySoKc2ZsodVT+uhGwbf1YBDF7yOKuLX17a73RWMF
-         RxVirqFq8dIWD8zwDIYXco3JosZjw9ppPiN4w=
+	Wed, 28 Jul 2010 19:10:17 -0400
+Authentication-Results: sj-iport-3.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAONVUEyrRN+K/2dsb2JhbACZS4Y9cahemnyFNgSEDg
+X-IronPort-AV: E=Sophos;i="4.55,276,1278288000"; 
+   d="scan'208";a="231970715"
+Date: Wed, 28 Jul 2010 16:10:17 -0700
+From: David VomLehn <dvomlehn@cisco.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Kernel GPLv question-"Prominent Notice"
+Message-ID: <20100728231017.GA23605@dvomlehn-lnx2.corp.sa.net>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikiV7+qvy8rG0nFqFoYxYqmwBswZK76abqj5DVb@mail.gmail.com>
-References: <1279906072-377-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTikiV7+qvy8rG0nFqFoYxYqmwBswZK76abqj5DVb@mail.gmail.com>
-Date: Thu, 29 Jul 2010 01:04:12 +0200
-Message-ID: <AANLkTikYj1rpUzsnzhc=ffWF3fL8YXwScXnmV_DTt3hL@mail.gmail.com>
-Subject: Re: [PATCH] DMAENGINE: generic slave channel control v3
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/28 Dan Williams <dan.j.williams@intel.com>:
+Not looking to be flamed, but I gotta ask. The GPLv2 has the sentence:
 
-> What are the rules for when a new dma_slave_config can be set?
+	You must cause the modified files to carry prominent notices
+	stating that you changed the files and the date of any change.
 
-My idea is that these are done immediately before any work
-to be carried out.
+My understanding of kernel community protocol is that you only put change
+info in the source file if you made a major change, not if you corrected
+something minor. IIRC, I even saw a patch bounced, in part, because it had
+a line of change info added for a minor fix. (Again, IIRC, it was accepted
+when it was resubmitted as modified)
 
-> Looking at the driver implementations it seems there is nothing
-> preventing a concurrent call to device_control to occur at "wrong
-> time"?  Is there a synchronization context I'm missing?
-
-I do imagine that the code using this will be naturally serialized,
-since you need to configure the channel before using it for
-something. i.e. the channel is typically STOPPED. If you like
-I can add checking for this to the coh901318 and ste_dma40
-patches. (It wouldn't affect this one though.)
-
-Drivers that want to support reconfiguring while a channel is
-running a transfer may have to look harder.
-
-Yours,
-Linus Walleij
+We've been sued a time or two, making our legal folk a bit sensitive and
+they want developers to follow the GPL to the letter. Now, they're not
+likely to post anything here, but I thought I might personally get some
+sense of what the future might hold. And I'm confident I can look
+forward to some clearly stated viewpoints.
+-- 
+David VL
