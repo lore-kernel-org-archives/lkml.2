@@ -1,119 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab0G1Lk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 07:40:26 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45557 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab0G1LkZ (ORCPT
+	id S1754832Ab0G1Lo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 07:44:28 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47473 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab0G1Lo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 07:40:25 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Subject: Why PAGEOUT_IO_SYNC stalls for a long time
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        stable@kernel.org, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-In-Reply-To: <20100728071705.GA22964@localhost>
-References: <20100728071705.GA22964@localhost>
-Message-Id: <20100728191322.4A85.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 28 Jul 2010 20:40:21 +0900 (JST)
+	Wed, 28 Jul 2010 07:44:27 -0400
+Content-Type: text/plain; charset=UTF-8
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/2] ftrace: record command lines at more appropriate moment
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+In-reply-to: <4C4F9C3A.6020406@cn.fujitsu.com>
+References: <1280284180-17863-1-git-send-email-imunsie@au1.ibm.com> <4C4F9C3A.6020406@cn.fujitsu.com>
+Date: Wed, 28 Jul 2010 21:44:01 +1000
+Message-Id: <1280317404-sup-4657@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this week, I've tested some IO congested workload for a while. and probably
-I did reproduced Andreas's issue.
+Excerpts from Li Zefan's message of Wed Jul 28 12:55:54 +1000 2010:
+> > @@ -1112,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry *entry, unsigned long flags,
+> >  {
+> >      struct task_struct *tsk = current;
+> >  
+> > +    tracing_record_cmdline(tsk);
+> 
+> Now this function is called everytime a tracepoint is triggered, so
+> did you run some benchmarks to see if the performance is improved
+> or even worse?
 
-So, I would like to explain current lumpy reclaim how works and why so much sucks.
+Admittedly when I posted the patch I had not done that. For the below
+benchmark I isolated the trace_sched_switch tracepoint from the
+context_switch function (since it is called often) into it's own function
+(tp_benchmark) which I could then run the ftrace function profiler on
+while the tracepoint was active through debugfs.
 
+On my test system there is a performance hit for an active event of
+~0.233 us per event (which I have now reduced to ~0.127 us by inlining
+tracing_record_cmdline and trace_save_cmdline). At least that is only on
+active events as opposed to every single context switch as before.
 
-1. Now isolate_lru_pages() have following pfn neighber grabbing logic.
+Before:
+  Function                               Hit    Time            Avg             s^2
+  --------                               ---    ----            ---             ---
+  .tp_benchmark                         1494    2699.670 us     1.807 us        0.536 us    
+  .tp_benchmark                          212    357.546 us      1.686 us        0.363 us    
+  .tp_benchmark                          215    389.984 us      1.813 us        0.404 us    
+  .tp_benchmark                          649    1116.156 us     1.719 us        0.626 us    
+  .tp_benchmark                          273    483.530 us      1.771 us        0.350 us    
+  .tp_benchmark                          333    599.600 us      1.800 us        0.378 us    
+  .tp_benchmark                          203    355.038 us      1.748 us        0.351 us    
+  .tp_benchmark                          270    473.222 us      1.752 us        0.360 us   
 
-                for (; pfn < end_pfn; pfn++) {
-(snip)
-                        if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-                                list_move(&cursor_page->lru, dst);
-                                mem_cgroup_del_lru(cursor_page);
-                                nr_taken++;
-                                nr_lumpy_taken++;
-                                if (PageDirty(cursor_page))
-                                        nr_lumpy_dirty++;
-                                scan++;
-                        } else {
-                                if (mode == ISOLATE_BOTH &&
-                                                page_count(cursor_page))
-                                        nr_lumpy_failed++;
-                        }
-                }
+After existing patch:
+  Function                               Hit    Time            Avg             s^2
+  --------                               ---    ----            ---             ---
+  .tp_benchmark                         1427    2815.906 us     1.973 us        0.623 us    
+  .tp_benchmark                          358    645.550 us      1.803 us        0.240 us    
+  .tp_benchmark                          437    867.762 us      1.985 us        0.684 us    
+  .tp_benchmark                          701    1445.618 us     2.062 us        0.906 us    
+  .tp_benchmark                          121    257.166 us      2.125 us        0.949 us    
+  .tp_benchmark                          162    329.536 us      2.034 us        0.671 us    
+  .tp_benchmark                          216    448.420 us      2.076 us        0.754 us    
+  .tp_benchmark                          238    452.244 us      1.900 us        0.384 us    
 
-Mainly, __isolate_lru_page() failure can be caused following reasons.
-  (1) the page have already been freed and is in buddy.
-  (2) the page is used for non user process purpose
-  (3) the page is unevictable (e.g. mlocked)
-
-(2), (3) have very different characteristic from (1). the lumpy reclaim
-mean 'contenious physical memory reclaiming'. that said, if we are trying
-order 9 reclaim, 512 pages reclaim success and 511 pages reclaim success
-are completely differennt. former mean lumpy reclaim successfull, latter mean
-failure. So, if (2) or (3) occur, that pfn have lost a possibility of lumpy
-reclaim successfull. then, we should stop pfn neighbor search immediately and
-try to get lru next page. (i.e. we should use 'break' statement instead 'continue')
-
-2. synchronous lumpy reclaim condition is insane.
-
-currently, synchrounous lumpy reclaim will be invoked when following
-condition.
-
-        if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
-                        sc->lumpy_reclaim_mode) {
-
-but "nr_reclaimed < nr_taken" is pretty stupid. if isolated pages have
-much dirty pages, pageout() only issue first 113 IOs.
-(if io queue have >113 requests, bdi_write_congested() return true and
- may_write_to_queue() return false)
-
-So, we haven't call ->writepage(), congestion_wait() and wait_on_page_writeback()
-are surely stupid.
-
-
-3. pageout() is intended anynchronous api. but doesn't works so.
-
-pageout() call ->writepage with wbc->nonblocking=1. because if the system have
-default vm.dirty_ratio (i.e. 20), we have 80% clean memory. so, getting stuck
-on one page is stupid, we should scan much pages as soon as possible.
-
-HOWEVER, block layer ignore this argument. if slow usb memory device connect
-to the system, ->writepage() will sleep long time. because submit_bio() call
-get_request_wait() unconditionally and it doesn't have any PF_MEMALLOC task
-bonus.
+With inlining:
+  Function                               Hit    Time            Avg             s^2
+  --------                               ---    ----            ---             ---
+  .tp_benchmark                         1478    2834.292 us     1.917 us        0.451 us    
+  .tp_benchmark                          316    583.166 us      1.845 us        0.227 us    
+  .tp_benchmark                          160    312.752 us      1.954 us        0.302 us    
+  .tp_benchmark                          687    1251.652 us     1.821 us        0.445 us    
+  .tp_benchmark                          177    352.310 us      1.990 us        0.451 us    
+  .tp_benchmark                          324    603.848 us      1.863 us        0.239 us    
+  .tp_benchmark                          150    284.444 us      1.896 us        0.343 us    
+  .tp_benchmark                          339    617.716 us      1.822 us        0.215 us    
 
 
-4. synchronous lumpy reclaim call clear_active_flags(). but it is also silly.
+> Another problem in this patch is, tracing_generic_entry_update() is also
+> called by perf, but cmdline recoding is not needed in perf.
 
-Now, page_check_references() ignore pte young bit when we are processing lumpy reclaim.
-Then, In almostly case, PageActive() mean "swap device is full". Therefore,
-waiting IO and retry pageout() are just silly.
+That's a good point - I could move the call into
+trace_buffer_lock_reserve so that perf does not get the unneeded
+overhead.  Actually there's probably no reason I couldn't put it in
+__trace_buffer_unlock_commit to avoid the overhead if the event has been
+filtered out.
 
+Anyway, what do you think? Is the extra overhead per event acceptable?
+I'll go ahead and respin the patch to remove the overhead in the perf
+case for the moment.
 
-In andres's case, congestion_wait() and get_request_wait() are root cause.
-Other issue is problematic when more higher order lumpy reclaim.
-
-
-Now, I'm preparing some patches and probably I can send them tommorow.
-
-
+Cheers,
+-Ian
