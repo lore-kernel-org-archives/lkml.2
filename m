@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0G1BPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 21:15:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43135 "EHLO mx2.suse.de"
+	id S1753608Ab0G1BRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 21:17:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38608 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335Ab0G1BPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 21:15:40 -0400
-Date: Wed, 28 Jul 2010 11:15:25 +1000
-From: Neil Brown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100728111525.355a2bd3@notabene>
-In-Reply-To: <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	<20100722162712.GB10352@jeremy-laptop>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
-	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752204Ab0G1BRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 21:17:33 -0400
+Date: Wed, 28 Jul 2010 04:12:04 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Subject: Re: Make vhost multi-threaded and associate each thread to its
+ guest's cgroup
+Message-ID: <20100728011203.GA22999@redhat.com>
+References: <20100727204254.GA17947@redhat.com>
+ <1280277701.27059.11.camel@w-sridhar.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280277701.27059.11.camel@w-sridhar.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 10:24:17 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> Of people can just use xattrs and do it all entirely in user space. I
-> assume that's what samba does now, even outside of birthtime.
-
-Much as I despise xattrs, this would definitely be my preference.
-
-ctime and mtime have real cache-coherence semantics which require them being
-updated by the kernel (whether the cache is on an NFS client, in a backup
-archive, or in a .o translation of a .c file).
-
-create-time, on the other hand, would never be updated by the kernel, and
-might sometimes be updated by an application.  So it is a very different sort
-of attribute, much like a hypothetical 'last archived' time.
-
-The only role the kernel might have would be setting the 'creation time' when
-the file was created, but it seems even that isn't always what is wanted,
-because people don't so much what the time of create of the
-container-on-disk, but the time of creation of the data-content.
-
-I would want to see a pretty convincing use-case that cannot be solved with
-xattrs before 'creation time' was added to a generic kernel interface.
-
-So just use xattrs and don't involve the kernel in any detailed knowledge of
-this value.
-
-Maybe xstat should take a list of xattrs to be retrieved as well??  or maybe
-not.
+On Tue, Jul 27, 2010 at 05:41:41PM -0700, Sridhar Samudrala wrote:
+> On Tue, 2010-07-27 at 23:42 +0300, Michael S. Tsirkin wrote:
+> > Sridhar,
+> > I pushed a patchset with all known issues fixed,
+> > on my vhost-net-next branch.
+> > 
+> > For now this ignores the cpu mask issue, addressing
+> > only the cgroups issue.
+> > 
+> > Would appreciate testing and reports.
+> 
+> I had to apply the following patch to get it build.
+> With this patch, i am seeing similar results as i saw earlier.
+> 
+> Thanks
+> Sridhar
 
 
-But I hope the xstat debate doesn't get bogged down about whether 'create
-time' is sensible or not.  Quite apart from the ability to return more
-attributes,  I think it has real value is being able to return fewer
-attributes, and being allowed to ask for 'best guess' values.  Being able to
-do an 'fstat' and being certain that you won't be blocked by a non-responsive
-NFS server would be a GOOD THING (TM).
+Excellent, thanks for the testing.
 
-NeilBrown
+
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 996e751..8543898 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/highmem.h>
+>  #include <linux/slab.h>
+>  #include <linux/kthread.h>
+> +#include <linux/cgroup.h>
+>  
+>  #include <linux/net.h>
+>  #include <linux/if_packet.h>
+> @@ -252,7 +253,7 @@ static long vhost_dev_set_owner(struct vhost_dev *dev)
+>  	}
+>  
+>  	dev->worker = worker;
+> -	err = cgroup_attach_task_current_cg(poller);
+> +	err = cgroup_attach_task_current_cg(worker);
+>  	if (err)
+>  		goto err_cgroup;
+>  	wake_up_process(worker);	/* avoid contributing to loadavg */
+> 
