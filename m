@@ -1,61 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab0G1XWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 19:22:53 -0400
-Received: from xenotime.net ([72.52.115.56]:53885 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752171Ab0G1XWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 19:22:50 -0400
-Date: Wed, 28 Jul 2010 16:22:46 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: David VomLehn <dvomlehn@cisco.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel GPLv question-"Prominent Notice"
-Message-Id: <20100728162246.33f1a937.rdunlap@xenotime.net>
-In-Reply-To: <20100728231017.GA23605@dvomlehn-lnx2.corp.sa.net>
-References: <20100728231017.GA23605@dvomlehn-lnx2.corp.sa.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756695Ab0G1XXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:23:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14533 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751933Ab0G1XXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 19:23:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,276,1278313200"; 
+   d="scan'208";a="539796803"
+Date: Wed, 28 Jul 2010 16:15:08 -0700
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Len Brown <lenb@kernel.org>, Chen Gong <gong.chen@linux.jf.intel.com>,
+        Jean Delvare <khali@linux-fr.org>, "Wan, Huaxu" <huaxu.wan@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATH V2 4/5] Package Level Thermal Control and Power Limit
+	Notification: power limit
+Message-ID: <20100728231508.GB13469@fenghua-desk.sc.intel.com>
+References: <1280343653-26380-1-git-send-email-fenghua.yu@intel.com> <1280343653-26380-5-git-send-email-fenghua.yu@intel.com> <1280351860.17322.1.camel@groeck-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280351860.17322.1.camel@groeck-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 16:10:17 -0700 David VomLehn wrote:
+On Wed, Jul 28, 2010 at 02:17:40PM -0700, Guenter Roeck wrote:
+> On Wed, 2010-07-28 at 15:00 -0400, Fenghua Yu wrote:
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> >
+> > -static int therm_throt_process(bool is_throttled, int level)
+> > +static int therm_throt_process(bool new_event, int event, int level)
+> >  {
+> >         struct _thermal_state *state;
+> > -       unsigned int this_cpu;
+> > -       bool was_throttled;
+> > +       unsigned int this_cpu = smp_processor_id();
+> > +       bool old_event;
+> >         u64 now;
+> > +       struct thermal_state *pstate = &per_cpu(thermal_state, this_cpu);
+> > +
+> > +       if (!new_event)
+> > +               return 0;
+> >
+> As a result of this check and return, events will never be reset.
 
-> Not looking to be flamed, but I gotta ask. The GPLv2 has the sentence:
+With the check, throttling returning to normal will not be reflected (i.e. only
+throttling event is shown). I'll remove this check.
 > 
-> 	You must cause the modified files to carry prominent notices
-> 	stating that you changed the files and the date of any change.
+> > -       this_cpu = smp_processor_id();
+> >         now = get_jiffies_64();
+> > -       if (level == CORE_LEVEL)
+> > -               state = &per_cpu(thermal_state, this_cpu).core;
+> > -       else
+> > -               state = &per_cpu(thermal_state, this_cpu).package;
+> > +       if (level == CORE_LEVEL) {
+> > +               if (event == THERMAL_THROTTLING_EVENT)
+> > +                       state = &pstate->core_throttle;
+> > +               else if (event == POWER_LIMIT_EVENT)
+> > +                       state = &pstate->core_power_limit;
+> > +               else
+> > +                        return 0;
+> > +       } else if (level == PACKAGE_LEVEL) {
+> > +               if (event == THERMAL_THROTTLING_EVENT)
+> > +                       state = &pstate->package_throttle;
+> > +               else if (event == POWER_LIMIT_EVENT)
+> > +                       state = &pstate->package_power_limit;
+> > +               else
+> > +                       return 0;
+> > +       } else
+> > +               return 0;
+> >
+> > -       was_throttled = state->is_throttled;
+> > -       state->is_throttled = is_throttled;
+> > +       old_event = state->new_event;
+> > +       state->new_event = new_event;
+> >
+> > -       if (is_throttled)
+> > -               state->throttle_count++;
+> > +       if (new_event)
+> > +               state->count++;
+> >
+> >         if (time_before64(now, state->next_check) &&
+> > -                       state->throttle_count != state->last_throttle_count)
+> > +                       state->count != state->last_count)
+> >                 return 0;
+> >
+> >         state->next_check = now + CHECK_INTERVAL;
+> > -       state->last_throttle_count = state->throttle_count;
+> > +       state->last_count = state->count;
+> >
+> >         /* if we just entered the thermal event */
+> > -       if (is_throttled) {
+> > -               printk(KERN_CRIT "CPU%d: %s temperature above threshold, cpu clock throttled (total events = %lu)\n",
+> > -                     this_cpu,
+> > -                     level == CORE_LEVEL ? "Core" : "Package",
+> > -                     state->throttle_count);
+> > +       if (new_event) {
+> > +               if (event == THERMAL_THROTTLING_EVENT)
+> > +                       printk(KERN_CRIT "CPU%d: %s temperature above threshold, cpu clock throttled (total events = %lu)\n",
+> > +                               this_cpu,
+> > +                               level == CORE_LEVEL ? "Core" : "Package",
+> > +                               state->count);
+> > +               else
+> > +                       printk(KERN_CRIT "CPU%d: %s power limit notification (total events = %lu)\n",
+> > +                               this_cpu,
+> > +                               level == CORE_LEVEL ? "Core" : "Package",
+> > +                               state->count);
+> >
+> >                 add_taint(TAINT_MACHINE_CHECK);
+> >                 return 1;
+> >         }
 > 
-> My understanding of kernel community protocol is that you only put change
-> info in the source file if you made a major change, not if you corrected
-> something minor. IIRC, I even saw a patch bounced, in part, because it had
-> a line of change info added for a minor fix. (Again, IIRC, it was accepted
-> when it was resubmitted as modified)
-> 
-> We've been sued a time or two, making our legal folk a bit sensitive and
-> they want developers to follow the GPL to the letter. Now, they're not
-> likely to post anything here, but I thought I might personally get some
-> sense of what the future might hold. And I'm confident I can look
-> forward to some clearly stated viewpoints.
-> -- 
-> David VL
-> --
+> Since new_event is always true, code below will never be executed.
+> That doesn't make sense to me.
+After removing the previous new_event check, this code should be fine.
 
-Yeah, we aren't lawyers here (or the ones who are here usually
-don't post anything -- they are read-only).  That makes these comments
-worth what you paid for them.
+Thanks.
 
-
-a.  Changelogs go into the (git) patch description, not in the source code.
-
-b.  Even if/when we put change comments in the source code, it's (usually) not
-done for trivial changes.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-Fenghua
