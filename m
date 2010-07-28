@@ -1,71 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab0G1TPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 15:15:33 -0400
-Received: from shutemov.name ([188.40.19.243]:33078 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751847Ab0G1TPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 15:15:32 -0400
-Date: Wed, 28 Jul 2010 22:15:31 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Huewe <PeterHuewe@gmx.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Tejun Heo <tj@kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] arm/mach-ixp2000: Add missing comma - fix build failure
-Message-ID: <20100728191531.GA10719@shutemov.name>
-References: <201007282043.13561.PeterHuewe@gmx.de>
+	id S1753873Ab0G1TQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 15:16:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63257 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab0G1TQ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 15:16:26 -0400
+Message-ID: <4C5081E4.4090205@kernel.org>
+Date: Wed, 28 Jul 2010 12:15:48 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007282043.13561.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Jan Beulich <jbeulich@novell.com>
+Subject: Re: [PATCH 05/16] x86, memblock: Add get_free_all_memory_range()
+References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>	 <1279824241-17582-6-git-send-email-yinghai@kernel.org> <1280293338.1970.235.camel@pasglop>
+In-Reply-To: <1280293338.1970.235.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C5081EE.01DD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 08:43:13PM +0200, Peter Huewe wrote:
-> From: Peter Huewe <peterhuewe@gmx.de>
+On 07/27/2010 10:02 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-07-22 at 11:43 -0700, Yinghai Lu wrote:
+>>
+>> +       /* Take out region array itself at first*/
+>> +       if (memblock.reserved.regions != memblock_reserved_init_regions)
+>> +               memblock_free(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
+>> +
 > 
-> This trivial patch fixes a build failure [1] by adding a missing comma.
+> More of that horror. Don't.
+> 
+> Another option from what i proposed earlier is to actually have a function
+> inside mm/memblock to free it (memblock_free_arrays()) that does nothing
+> if memblock is to survive init.
+> 
+> I hate exporting variables or data structures like that. Functions are
+> semantically a lot cleaner.
 
-It has been fixed by updated patch:
 
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6269/1
+Please check if you are ok with this one. if so please put it in your branch.
+then I could rebase the second half patchset and ask hpa to put all in tip.
 
-Thank you.
+Thanks
 
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
-> KernelVersion: linux-next-20100728
-> 
-> References:
-> [1] http://kisskb.ellerman.id.au/kisskb/buildresult/2980895/
-> 
-> BF introduced by 3cad685d - ARM: 6253/1: Add 'code' parameter for
-> hook_fault_code()
-> 
->  arch/arm/mach-ixp2000/pci.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-ixp2000/pci.c b/arch/arm/mach-ixp2000/pci.c
-> index 853fd90..f797c5f 100644
-> --- a/arch/arm/mach-ixp2000/pci.c
-> +++ b/arch/arm/mach-ixp2000/pci.c
-> @@ -209,7 +209,7 @@ ixp2000_pci_preinit(void)
->  			"the needed workaround has not been configured in");
->  #endif
->  
-> -	hook_fault_code(16+6, ixp2000_pci_abort_handler, SIGBUS, 0
-> +	hook_fault_code(16+6, ixp2000_pci_abort_handler, SIGBUS, 0,
->  				"PCI config cycle to non-existent device");
->  }
->  
-> -- 
-> 1.7.1
-> 
+Yinghai
 
--- 
- Kirill A. Shutemov
+[PATCH] memblock: Add memblock_free/reserve_reserved_resgions()
+
+So we can avoid export memblock_reserved_init_regions()
+Suggested by Ben.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ include/linux/memblock.h |    2 ++
+ mm/memblock.c            |   24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
+
+Index: linux-2.6/include/linux/memblock.h
+===================================================================
+--- linux-2.6.orig/include/linux/memblock.h
++++ linux-2.6/include/linux/memblock.h
+@@ -48,6 +48,8 @@ extern int memblock_can_resize;
+ 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+ 
+ u64 memblock_find_in_range(u64 start, u64 end, u64 size, u64 align);
++int memblock_free_reserved_regions(void);
++int memblock_reserve_reserved_regions(void);
+ 
+ extern void __init memblock_init(void);
+ extern void __init memblock_analyze(void);
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -170,6 +170,30 @@ u64 __init_memblock memblock_find_in_ran
+ 	return memblock_find_base(size, align, start, end);
+ }
+ 
++/*
++ * Free memblock.reserved.regions
++ */
++int memblock_free_reserved_regions(void)
++{
++	if (memblock.reserved.regions == memblock_reserved_init_regions)
++		return 0;
++
++	return memblock_free(__pa(memblock.reserved.regions),
++		 sizeof(struct memblock_region) * memblock.reserved.max);
++}
++
++/*
++ * Reserve memblock.reserved.regions
++ */
++int memblock_reserve_reserved_regions(void)
++{
++	if (memblock.reserved.regions == memblock_reserved_init_regions)
++		return 0;
++
++	return memblock_reserve(__pa(memblock.reserved.regions),
++		 sizeof(struct memblock_region) * memblock.reserved.max);
++}
++
+ static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
+ {
+ 	unsigned long i;
