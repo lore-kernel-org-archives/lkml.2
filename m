@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab0G1Xsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 19:48:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33096 "EHLO
+	id S1756728Ab0G1Xs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:48:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43782 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935Ab0G1XsV (ORCPT
+	with ESMTP id S1755841Ab0G1XsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 19:48:21 -0400
+	Wed, 28 Jul 2010 19:48:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=crwfNd0fiyxzWs2YBwH3n+tcrbG02l3BIdWUczX3vTZeVpsDqU2aSzzQ59G9hliJ/r
-         6VvWVZrsaYO8Mh4KPOhXERoR1DvO0D9dpmrll8NWcJ7PMADm+WfxYa3e01Z7O4hVXgzQ
-         Qtd8RV48/Gk8EI+ku6PWO41bzx2pYF7xLScfU=
+        b=QkKdPvct3ZBiBSDtvff6LXMWn9Y3RvrptYi69zKl2k9o6Qts8S9LwLN6ZlqIkKZooh
+         04RUT9SvRV98vKBn73yHZ2pApRMwIjcdXba0F0jYJxk48WBHrEHzKD8G4hn9OU1NrbPY
+         NXtY6R6TbwJyAi+r4WTIEC20XNtVsGVggsG0g=
 From: Denys Vlasenko <vda.linux@googlemail.com>
 To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
         linux-arch@vger.kernel.org, Parisc List <linux-parisc@vger.kernel.org>
@@ -23,9 +23,9 @@ Cc: lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
         Anders Kaseorg <andersk@mit.edu>, Andi Kleen <andi@firstfloor.org>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
         Denys Vlasenko <vda.linux@googlemail.com>
-Subject: [PATCH 4/4] boot linker stripts: accomodate function and data sections
-Date: Thu, 29 Jul 2010 01:47:56 +0200
-Message-Id: <1280360876-2571-5-git-send-email-vda.linux@googlemail.com>
+Subject: [PATCH 3/4] kernel linker stripts: accomodate function and data sections
+Date: Thu, 29 Jul 2010 01:47:55 +0200
+Message-Id: <1280360876-2571-4-git-send-email-vda.linux@googlemail.com>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1280360876-2571-1-git-send-email-vda.linux@googlemail.com>
 References: <1280360876-2571-1-git-send-email-vda.linux@googlemail.com>
@@ -37,449 +37,190 @@ gcc -ffunction-sections -fdata-sections places each function foo
 into separate section .text.foo, and every data object bar into
 separate section .data.bar, .rodata.bar or .bss.bar.
 
-Boot linker scripts were not ready for this.
+Kernel linker scripts were not ready for this and linker heuristics
+for orphaned sections were not good enough to result in bootable
+kernel.
 
 This fix adds *(.text.*), *(.data.*) etc patterns
 directly after corresponding *(.text), *(.data) etc patterns
-in all boot linker scripts.
+in all kernel linker scripts. Boot scripts will be handled
+in the next fix.
 
-This may be unnecessary, but I want to be
-function and data section-clean in all linker scripts,
-including boot ones.
+include/asm-generic/vmlinux.lds.h is a little bit more complicated.
+It needs to avoid collecting special kernel sections
+by using more restrictive patterns like *(.text.[A-Za-z0-9_$^]*)
+instead of simplistic *(.text.*): special kernel sections like
+.text..page_aligned contain double dots and won't be accidentally
+matched by them.
 
 Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
 Acked-by: Sam Ravnborg <sam@ravnborg.org>
 ---
- arch/alpha/boot/bootloader.lds               |    6 +++---
- arch/arm/boot/bootp/bootp.lds                |    1 +
- arch/cris/boot/compressed/decompress_v10.lds |    3 +++
- arch/cris/boot/compressed/decompress_v32.lds |    3 +++
- arch/cris/boot/rescue/rescue_v10.lds         |    2 ++
- arch/cris/boot/rescue/rescue_v32.lds         |    3 +++
- arch/h8300/boot/compressed/vmlinux.lds       |    2 ++
- arch/h8300/boot/compressed/vmlinux.scr       |    1 +
- arch/ia64/hp/sim/boot/bootloader.lds         |    6 +++---
- arch/m32r/boot/compressed/vmlinux.lds.S      |    6 +++---
- arch/m32r/boot/compressed/vmlinux.scr        |    1 +
- arch/mn10300/boot/compressed/vmlinux.lds     |    1 +
- arch/powerpc/boot/zImage.coff.lds.S          |    2 ++
- arch/powerpc/boot/zImage.lds.S               |    2 ++
- arch/powerpc/boot/zImage.ps3.lds.S           |    2 ++
- arch/sh/boot/compressed/vmlinux.scr          |    1 +
- arch/x86/boot/setup.ld                       |    3 ++-
- arch/xtensa/boot/boot-elf/boot.lds.S         |    5 ++++-
- arch/xtensa/boot/boot-redboot/boot.ld        |    5 ++++-
- 19 files changed, 43 insertions(+), 12 deletions(-)
+ arch/frv/kernel/vmlinux.lds.S              |    1 -
+ arch/ia64/scripts/check-segrel.lds         |    4 ++--
+ arch/m68knommu/kernel/vmlinux.lds.S        |    1 +
+ arch/mips/lasat/image/romscript.normal     |    1 +
+ arch/parisc/kernel/vmlinux.lds.S           |    1 +
+ arch/sh/kernel/vsyscall/vsyscall.lds.S     |    2 +-
+ arch/x86/kernel/acpi/realmode/wakeup.lds.S |    1 +
+ arch/x86/kernel/vmlinux.lds.S              |    1 +
+ include/asm-generic/vmlinux.lds.h          |   18 +++++++++++++++++-
+ 9 files changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/arch/alpha/boot/bootloader.lds b/arch/alpha/boot/bootloader.lds
-index 31c081c..ff5374d 100644
---- a/arch/alpha/boot/bootloader.lds
-+++ b/arch/alpha/boot/bootloader.lds
-@@ -4,17 +4,17 @@ printk = srm_printk;
- SECTIONS
- {
-   . = 0x20000000;
--  .text : { *(.text) }
-+  .text : { *(.text) *(.text.*) }
-   _etext = .;
-   PROVIDE (etext = .);
-   .rodata : { *(.rodata) *(.rodata.*) }
--  .data : { *(.data) CONSTRUCTORS }
-+  .data : { *(.data) *(.data.*) CONSTRUCTORS }
-   .got : { *(.got) }
-   .sdata : { *(.sdata) }
-   _edata = .;
-   PROVIDE (edata = .);
-   .sbss : { *(.sbss) *(.scommon) }
--  .bss : { *(.bss) *(COMMON) }
-+  .bss : { *(.bss) *(.bss.*) *(COMMON) }
-   _end = . ;
-   PROVIDE (end = .);
+diff --git a/arch/frv/kernel/vmlinux.lds.S b/arch/frv/kernel/vmlinux.lds.S
+index 8b973f3..9949f1a 100644
+--- a/arch/frv/kernel/vmlinux.lds.S
++++ b/arch/frv/kernel/vmlinux.lds.S
+@@ -114,7 +114,6 @@ SECTIONS
  
-diff --git a/arch/arm/boot/bootp/bootp.lds b/arch/arm/boot/bootp/bootp.lds
-index fc54394..14be7ff 100644
---- a/arch/arm/boot/bootp/bootp.lds
-+++ b/arch/arm/boot/bootp/bootp.lds
-@@ -16,6 +16,7 @@ SECTIONS
-    _stext = .;
-    *(.start)
-    *(.text)
-+   *(.text.*)
-    initrd_size = initrd_end - initrd_start;
-    _etext = .;
-   }
-diff --git a/arch/cris/boot/compressed/decompress_v10.lds b/arch/cris/boot/compressed/decompress_v10.lds
-index e80f459..d6022d9 100644
---- a/arch/cris/boot/compressed/decompress_v10.lds
-+++ b/arch/cris/boot/compressed/decompress_v10.lds
-@@ -13,6 +13,7 @@ SECTIONS
- 	{
- 		_stext = . ;
- 		*(.text)
-+		*(.text.*)
- 		*(.rodata)
- 		*(.rodata.*)
- 		_etext = . ;
-@@ -20,11 +21,13 @@ SECTIONS
- 	.data :
- 	{
- 		*(.data)
-+		*(.data.*)
- 		_edata = . ;
- 	} > dram
- 	.bss :
- 	{
- 		*(.bss)
-+		*(.bss.*)
- 		_end = ALIGN( 0x10 ) ;
- 	} > dram
- }
-diff --git a/arch/cris/boot/compressed/decompress_v32.lds b/arch/cris/boot/compressed/decompress_v32.lds
-index 3c837fe..b5cfeb4 100644
---- a/arch/cris/boot/compressed/decompress_v32.lds
-+++ b/arch/cris/boot/compressed/decompress_v32.lds
-@@ -13,6 +13,7 @@ SECTIONS
- 	{
- 		_stext = . ;
- 		*(.text)
-+		*(.text.*)
- 		*(.rodata)
- 		*(.rodata.*)
- 		_etext = . ;
-@@ -20,11 +21,13 @@ SECTIONS
- 	.data :
- 	{
- 		*(.data)
-+		*(.data.*)
- 		_edata = . ;
- 	} > dram
- 	.bss :
- 	{
- 		*(.bss)
-+		*(.bss.*)
- 		_end = ALIGN( 0x10 ) ;
- 	} > dram
- }
-diff --git a/arch/cris/boot/rescue/rescue_v10.lds b/arch/cris/boot/rescue/rescue_v10.lds
-index 0b52a94..42b03a3 100644
---- a/arch/cris/boot/rescue/rescue_v10.lds
-+++ b/arch/cris/boot/rescue/rescue_v10.lds
-@@ -10,11 +10,13 @@ SECTIONS
- 	{
- 		stext = . ;
- 		*(.text)
-+		*(.text.*)
- 		etext = . ;
- 	} > flash
- 	.data :
- 	{
- 		*(.data)
-+		*(.data.*)
- 		edata = . ;
- 	} > flash
- }
-diff --git a/arch/cris/boot/rescue/rescue_v32.lds b/arch/cris/boot/rescue/rescue_v32.lds
-index 8ac646b..440ea40 100644
---- a/arch/cris/boot/rescue/rescue_v32.lds
-+++ b/arch/cris/boot/rescue/rescue_v32.lds
-@@ -17,6 +17,7 @@ SECTIONS
- 	{
- 		_stext = . ;
- 		*(.text)
-+		*(.text.*)
- 		*(.init.text)
- 		*(.rodata)
- 		*(.rodata.*)
-@@ -25,12 +26,14 @@ SECTIONS
- 	.data :
- 	{
- 		*(.data)
-+		*(.data.*)
- 		_edata = . ;
- 	} > bootblk
- 	.bss :
- 	{
- 		_bss = . ;
- 		*(.bss)
-+		*(.bss.*)
- 		_end = ALIGN( 0x10 ) ;
- 	} > intmem
+   .sbss		: { *(.sbss .sbss.*) }
+   .bss		: { *(.bss .bss.*) }
+-  .bss..stack	: { *(.bss) }
  
-diff --git a/arch/h8300/boot/compressed/vmlinux.lds b/arch/h8300/boot/compressed/vmlinux.lds
-index a0a3a0e..6896c9a 100644
---- a/arch/h8300/boot/compressed/vmlinux.lds
-+++ b/arch/h8300/boot/compressed/vmlinux.lds
-@@ -6,12 +6,14 @@ SECTIONS
- 	__text = .;
- 	       *(.text..startup)
- 	       *(.text)
-+	       *(.text.*)
-         __etext = . ;
-         }
- 
- 	.rodata :
- 	{
- 		*(.rodata)
-+		*(.rodata.*)
- 	}
-         .data :
- 
-diff --git a/arch/h8300/boot/compressed/vmlinux.scr b/arch/h8300/boot/compressed/vmlinux.scr
-index a0f6962..f4cfb3f 100644
---- a/arch/h8300/boot/compressed/vmlinux.scr
-+++ b/arch/h8300/boot/compressed/vmlinux.scr
-@@ -4,6 +4,7 @@ SECTIONS
- 	_input_len = .;
- 	LONG(_input_data_end - _input_data) _input_data = .;
- 	*(.data)
-+	*(.data.*)
- 	_input_data_end = .;
- 	}
- }
-diff --git a/arch/ia64/hp/sim/boot/bootloader.lds b/arch/ia64/hp/sim/boot/bootloader.lds
-index 3977f25..56bf12c 100644
---- a/arch/ia64/hp/sim/boot/bootloader.lds
-+++ b/arch/ia64/hp/sim/boot/bootloader.lds
-@@ -7,13 +7,13 @@ SECTIONS
-   . = 0x100000;
- 
-   _text = .;
--  .text : { *(__ivt_section) *(.text) }
-+  .text : { *(__ivt_section) *(.text) *(.text.*) }
-   _etext = .;
- 
-   /* Global data */
-   _data = .;
-   .rodata : { *(.rodata) *(.rodata.*) }
--  .data    : { *(.data) *(.gnu.linkonce.d*) CONSTRUCTORS }
-+  .data    : { *(.data) *(.data.*) *(.gnu.linkonce.d*) CONSTRUCTORS }
-   __gp = ALIGN (8) + 0x200000;
-   .got           : { *(.got.plt) *(.got) }
-   /* We want the small data sections together, so single-instruction offsets
-@@ -24,7 +24,7 @@ SECTIONS
- 
-   __bss_start = .;
-   .sbss      : { *(.sbss) *(.scommon) }
--  .bss       : { *(.bss) *(COMMON) }
-+  .bss       : { *(.bss) *(.bss.*) *(COMMON) }
-   . = ALIGN(64 / 8);
    __bss_stop = .;
    _end = . ;
-diff --git a/arch/m32r/boot/compressed/vmlinux.lds.S b/arch/m32r/boot/compressed/vmlinux.lds.S
-index dd11963..d51580e 100644
---- a/arch/m32r/boot/compressed/vmlinux.lds.S
-+++ b/arch/m32r/boot/compressed/vmlinux.lds.S
-@@ -6,12 +6,12 @@ SECTIONS
-   . = CONFIG_MEMORY_START + 0x00400000;
- 
-   _text = .;
--  .text : { *(.text) } = 0
-+  .text : { *(.text) *(.text.*) } = 0
-   .rodata : { *(.rodata) *(.rodata.*) }
-   _etext = .;
- 
-   . = ALIGN(32 / 8);
--  .data : { *(.data) }
-+  .data : { *(.data) *(.data.*) }
-   . = ALIGN(32 / 8);
-   _got = .;
-   .got  : { *(.got) _egot = .; *(.got.*) }
-@@ -19,7 +19,7 @@ SECTIONS
- 
-   . = ALIGN(32 / 8);
-   __bss_start = .;
--  .bss : { *(.bss) *(.sbss) }
-+  .bss : { *(.bss) *(.bss.*) *(.sbss) }
-   . = ALIGN(32 / 8);
-   _ebss = .;
-   . = ALIGN(4096);
-diff --git a/arch/m32r/boot/compressed/vmlinux.scr b/arch/m32r/boot/compressed/vmlinux.scr
-index 924c799..253eff1 100644
---- a/arch/m32r/boot/compressed/vmlinux.scr
-+++ b/arch/m32r/boot/compressed/vmlinux.scr
-@@ -3,6 +3,7 @@ SECTIONS
-   .data : {
- 	zimage_data = .;
- 	*(.data)
-+	*(.data.*)
- 	zimage_data_end = .;
- 	}
-   zimage_len = zimage_data_end - zimage_data;
-diff --git a/arch/mn10300/boot/compressed/vmlinux.lds b/arch/mn10300/boot/compressed/vmlinux.lds
-index a084903..3e3e043 100644
---- a/arch/mn10300/boot/compressed/vmlinux.lds
-+++ b/arch/mn10300/boot/compressed/vmlinux.lds
-@@ -4,6 +4,7 @@ SECTIONS
- 	input_len = .;
- 	LONG(input_data_end - input_data) input_data = .;
- 	*(.data)
-+	*(.data.*)
- 	input_data_end = .;
- 	}
+diff --git a/arch/ia64/scripts/check-segrel.lds b/arch/ia64/scripts/check-segrel.lds
+index 85a0d54..1e23df4 100644
+--- a/arch/ia64/scripts/check-segrel.lds
++++ b/arch/ia64/scripts/check-segrel.lds
+@@ -1,9 +1,9 @@
+ SECTIONS {
+ 	. = SIZEOF_HEADERS;
+-	.rodata : { *(.rodata) } :ro
++	.rodata : { *(.rodata) *(.rodata.*) } :ro
+ 	.note : { *(.note*) }
+ 	. = 0xa0000;
+-	.data : { *(.data) } :dat
++	.data : { *(.data) *(.data.*) } :dat
+ 	/DISCARD/ : { *(*) }
  }
-diff --git a/arch/powerpc/boot/zImage.coff.lds.S b/arch/powerpc/boot/zImage.coff.lds.S
-index 856dc78..504183a 100644
---- a/arch/powerpc/boot/zImage.coff.lds.S
-+++ b/arch/powerpc/boot/zImage.coff.lds.S
-@@ -7,6 +7,7 @@ SECTIONS
-   .text      :
+ PHDRS {
+diff --git a/arch/m68knommu/kernel/vmlinux.lds.S b/arch/m68knommu/kernel/vmlinux.lds.S
+index a91b271..c095a5b 100644
+--- a/arch/m68knommu/kernel/vmlinux.lds.S
++++ b/arch/m68knommu/kernel/vmlinux.lds.S
+@@ -169,6 +169,7 @@ SECTIONS {
+ 		. = ALIGN(4);
+ 		_sbss = . ;
+ 		*(.bss)
++		*(.bss.*)
+ 		*(COMMON)
+ 		. = ALIGN(4) ;
+ 		_ebss = . ;
+diff --git a/arch/mips/lasat/image/romscript.normal b/arch/mips/lasat/image/romscript.normal
+index 0864c96..408e5ad 100644
+--- a/arch/mips/lasat/image/romscript.normal
++++ b/arch/mips/lasat/image/romscript.normal
+@@ -12,6 +12,7 @@ SECTIONS
+   .data ALIGN(0x10) :
    {
-     *(.text)
-+    *(.text.*)
-     *(.fixup)
+     *(.data)
++    *(.data.*)
    }
-   _etext = .;
-@@ -41,6 +42,7 @@ SECTIONS
-   {
-    *(.sbss)
-    *(.bss)
-+   *(.bss.*)
-   }
-   _end = . ;
- 
-diff --git a/arch/powerpc/boot/zImage.lds.S b/arch/powerpc/boot/zImage.lds.S
-index 0962d62..2815506 100644
---- a/arch/powerpc/boot/zImage.lds.S
-+++ b/arch/powerpc/boot/zImage.lds.S
-@@ -7,6 +7,7 @@ SECTIONS
-   .text      :
-   {
-     *(.text)
-+    *(.text.*)
-     *(.fixup)
-   }
-   _etext = .;
-@@ -45,6 +46,7 @@ SECTIONS
-   {
-    *(.sbss)
-    *(.bss)
-+   *(.bss.*)
-   }
-   . = ALIGN(4096);
-   _end = . ;
-diff --git a/arch/powerpc/boot/zImage.ps3.lds.S b/arch/powerpc/boot/zImage.ps3.lds.S
-index aaa469c..a29ce62 100644
---- a/arch/powerpc/boot/zImage.ps3.lds.S
-+++ b/arch/powerpc/boot/zImage.ps3.lds.S
-@@ -21,6 +21,7 @@ SECTIONS
-   .text      :
-   {
-     *(.text)
-+    *(.text.*)
-     *(.fixup)
-   }
-   _etext = .;
-@@ -44,6 +45,7 @@ SECTIONS
-   {
-    *(.sbss)
-    *(.bss)
-+   *(.bss.*)
-   }
-   . = ALIGN(4096);
-   _end = . ;
-diff --git a/arch/sh/boot/compressed/vmlinux.scr b/arch/sh/boot/compressed/vmlinux.scr
-index 862d748..e7d733f 100644
---- a/arch/sh/boot/compressed/vmlinux.scr
-+++ b/arch/sh/boot/compressed/vmlinux.scr
-@@ -4,6 +4,7 @@ SECTIONS
- 	input_len = .;
- 	LONG(input_data_end - input_data) input_data = .;
- 	*(.data)
-+	*(.data.*)
- 	output_len = . - 4;
- 	input_data_end = .;
+   _image_start = ADDR(.data);
+   _image_size = SIZEOF(.data);
+diff --git a/arch/parisc/kernel/vmlinux.lds.S b/arch/parisc/kernel/vmlinux.lds.S
+index d64a6bb..56d472c 100644
+--- a/arch/parisc/kernel/vmlinux.lds.S
++++ b/arch/parisc/kernel/vmlinux.lds.S
+@@ -112,6 +112,7 @@ SECTIONS
  	}
-diff --git a/arch/x86/boot/setup.ld b/arch/x86/boot/setup.ld
-index 03c0683..a4af992 100644
---- a/arch/x86/boot/setup.ld
-+++ b/arch/x86/boot/setup.ld
-@@ -20,7 +20,7 @@ SECTIONS
- 	.initdata	: { *(.initdata) }
- 	__end_init = .;
+ 	.bss : {
+ 		*(.bss)
++		*(.bss.*)
+ 		*(COMMON)
+ 	}
+ 	__bss_stop = .;
+diff --git a/arch/sh/kernel/vsyscall/vsyscall.lds.S b/arch/sh/kernel/vsyscall/vsyscall.lds.S
+index 6d59ee7..19ee0cb 100644
+--- a/arch/sh/kernel/vsyscall/vsyscall.lds.S
++++ b/arch/sh/kernel/vsyscall/vsyscall.lds.S
+@@ -35,7 +35,7 @@ SECTIONS
+ 	 */
+ 	. = 0x400;
  
--	.text		: { *(.text) }
-+	.text		: { *(.text) *(.text.*) }
- 	.text32		: { *(.text32) }
- 
- 	. = ALIGN(16);
-@@ -46,6 +46,7 @@ SECTIONS
- 	{
+-	.text		: { *(.text) } 			:text	=0x90909090
++	.text		: { *(.text) *(.text.*) }	:text	=0x90909090
+ 	.note		: { *(.note.*) }		:text	:note
+ 	.eh_frame_hdr	: { *(.eh_frame_hdr ) }		:text	:eh_frame_hdr
+ 	.eh_frame	: {
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.lds.S b/arch/x86/kernel/acpi/realmode/wakeup.lds.S
+index 060fff8..38f18e8 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.lds.S
++++ b/arch/x86/kernel/acpi/realmode/wakeup.lds.S
+@@ -42,6 +42,7 @@ SECTIONS
+ 	.bss :	{
  		__bss_start = .;
  		*(.bss)
 +		*(.bss.*)
  		__bss_end = .;
  	}
- 	. = ALIGN(16);
-diff --git a/arch/xtensa/boot/boot-elf/boot.lds.S b/arch/xtensa/boot/boot-elf/boot.lds.S
-index 4e53b74..368d766 100644
---- a/arch/xtensa/boot/boot-elf/boot.lds.S
-+++ b/arch/xtensa/boot/boot-elf/boot.lds.S
-@@ -10,19 +10,21 @@ SECTIONS
- 	{
- 		__reloc_start = . ;
- 		_text_start = . ;
--		*(.literal .text.literal .text)
-+		*(.literal .text.literal .text .text.*)
- 		_text_end = . ;
- 	}
  
- 	.rodata ALIGN(0x04):
- 	{
- 		*(.rodata)
-+		*(.rodata.*)
- 		*(.rodata1)
- 	}
- 
- 	.data ALIGN(0x04):
- 	{
- 		*(.data)
-+		*(.data.*)
- 		*(.data1)
- 		*(.sdata)
- 		*(.sdata2)
-@@ -58,6 +60,7 @@ SECTIONS
- 		*(.scommon)
- 		*(.dynbss)
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index d0bb522..eb5b2a6 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -307,6 +307,7 @@ SECTIONS
+ 		__bss_start = .;
+ 		*(.bss..page_aligned)
  		*(.bss)
 +		*(.bss.*)
- 		__bss_end = .;
+ 		. = ALIGN(4);
+ 		__bss_stop = .;
  	}
- 	_end = .;
-diff --git a/arch/xtensa/boot/boot-redboot/boot.ld b/arch/xtensa/boot/boot-redboot/boot.ld
-index 774db20..8747b68 100644
---- a/arch/xtensa/boot/boot-redboot/boot.ld
-+++ b/arch/xtensa/boot/boot-redboot/boot.ld
-@@ -8,19 +8,21 @@ SECTIONS
- 	{
- 		__reloc_start = . ;
- 		_text_start = . ;
--		*(.literal .text.literal .text)
-+		*(.literal .text.literal .text .text.*)
- 		_text_end = . ;
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 030a954..079895a 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -146,9 +146,22 @@
+ #define TRACE_SYSCALLS()
+ #endif
+ 
++/* .data.foo are generated by gcc itself with -fdata-sections,
++ * whereas double-dot sections (like .data..percpu) are generated
++ * by kernel's magic macros.
++ *
++ * arch/.../vmlinux.lds.S decides where to place various double-dot sections
++ * as needed by its arch, here DATA_DATA needs to be careful and collect
++ * only .data and .data.foo sections, skipping .data..foo
++ *
++ * Same goes for .text, .bss and .rodata. In case of .rodata, various
++ * .rodata.foo sections are generated by gcc even without -fdata-sections
++ */
++
+ /* .data section */
+ #define DATA_DATA							\
+ 	*(.data)							\
++	*(.data.[A-Za-z0-9_$^]*)					\
+ 	*(.ref.data)							\
+ 	DEV_KEEP(init.data)						\
+ 	DEV_KEEP(exit.data)						\
+@@ -212,7 +225,8 @@
+ 	. = ALIGN((align));						\
+ 	.rodata           : AT(ADDR(.rodata) - LOAD_OFFSET) {		\
+ 		VMLINUX_SYMBOL(__start_rodata) = .;			\
+-		*(.rodata) *(.rodata.*)					\
++		*(.rodata)						\
++		*(.rodata.[A-Za-z0-9_$^]*)				\
+ 		*(__vermagic)		/* Kernel version magic */	\
+ 		*(__markers_strings)	/* Markers: strings */		\
+ 		*(__tracepoints_strings)/* Tracepoints: strings */	\
+@@ -379,6 +393,7 @@
+ 		ALIGN_FUNCTION();					\
+ 		*(.text.hot)						\
+ 		*(.text)						\
++		*(.text.[A-Za-z0-9_$^]*)				\
+ 		*(.ref.text)						\
+ 	DEV_KEEP(init.text)						\
+ 	DEV_KEEP(exit.text)						\
+@@ -512,6 +527,7 @@
+ 		*(.bss..page_aligned)					\
+ 		*(.dynbss)						\
+ 		*(.bss)							\
++		*(.bss.[A-Za-z0-9_$^]*)					\
+ 		*(COMMON)						\
  	}
  
- 	.rodata ALIGN(0x04):
- 	{
- 		*(.rodata)
-+		*(.rodata.*)
- 		*(.rodata1)
- 	}
- 
- 	.data ALIGN(0x04):
- 	{
- 		*(.data)
-+		*(.data.*)
- 		*(.data1)
- 		*(.sdata)
- 		*(.sdata2)
-@@ -56,6 +58,7 @@ SECTIONS
- 		*(.scommon)
- 		*(.dynbss)
- 		*(.bss)
-+		*(.bss.*)
- 		__bss_end = .;
- 	}
- 	_end = .;
 -- 
 1.6.2.4
 
