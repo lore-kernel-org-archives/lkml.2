@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0G1BRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 21:17:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38608 "EHLO mx1.redhat.com"
+	id S1753769Ab0G1BTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 21:19:30 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40582 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab0G1BRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 21:17:33 -0400
-Date: Wed, 28 Jul 2010 04:12:04 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sridhar Samudrala <sri@us.ibm.com>
-Cc: netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: Make vhost multi-threaded and associate each thread to its
- guest's cgroup
-Message-ID: <20100728011203.GA22999@redhat.com>
-References: <20100727204254.GA17947@redhat.com>
- <1280277701.27059.11.camel@w-sridhar.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280277701.27059.11.camel@w-sridhar.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753377Ab0G1BT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 21:19:26 -0400
+Date: Wed, 28 Jul 2010 11:19:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: linux-next: build failure after merge of the tty tree
+Message-Id: <20100728111918.daa8dc69.sfr@canb.auug.org.au>
+In-Reply-To: <20100727164717.GB9541@kroah.com>
+References: <20100727151843.7d253148.sfr@canb.auug.org.au>
+	<20100727084353.5b14224a@lxorguk.ukuu.org.uk>
+	<20100727164717.GB9541@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Jul_2010_11_19_18_+1000_LQ9tukJ_J.cw6oN5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 05:41:41PM -0700, Sridhar Samudrala wrote:
-> On Tue, 2010-07-27 at 23:42 +0300, Michael S. Tsirkin wrote:
-> > Sridhar,
-> > I pushed a patchset with all known issues fixed,
-> > on my vhost-net-next branch.
-> > 
-> > For now this ignores the cpu mask issue, addressing
-> > only the cgroups issue.
-> > 
-> > Would appreciate testing and reports.
-> 
-> I had to apply the following patch to get it build.
-> With this patch, i am seeing similar results as i saw earlier.
-> 
-> Thanks
-> Sridhar
+--Signature=_Wed__28_Jul_2010_11_19_18_+1000_LQ9tukJ_J.cw6oN5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Greg, Alan,
 
-Excellent, thanks for the testing.
+On Tue, 27 Jul 2010 09:47:17 -0700 Greg KH <greg@kroah.com> wrote:
+>
+> On Tue, Jul 27, 2010 at 08:43:53AM +0100, Alan Cox wrote:
+> >=20
+> > Will send Greg and updated set of those patches versus todays -next
+>=20
+> Now fixed up, sorry for missing this.
 
+Thanks guys.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-> index 996e751..8543898 100644
-> --- a/drivers/vhost/vhost.c
-> +++ b/drivers/vhost/vhost.c
-> @@ -23,6 +23,7 @@
->  #include <linux/highmem.h>
->  #include <linux/slab.h>
->  #include <linux/kthread.h>
-> +#include <linux/cgroup.h>
->  
->  #include <linux/net.h>
->  #include <linux/if_packet.h>
-> @@ -252,7 +253,7 @@ static long vhost_dev_set_owner(struct vhost_dev *dev)
->  	}
->  
->  	dev->worker = worker;
-> -	err = cgroup_attach_task_current_cg(poller);
-> +	err = cgroup_attach_task_current_cg(worker);
->  	if (err)
->  		goto err_cgroup;
->  	wake_up_process(worker);	/* avoid contributing to loadavg */
-> 
+--Signature=_Wed__28_Jul_2010_11_19_18_+1000_LQ9tukJ_J.cw6oN5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMT4WWAAoJEDMEi1NhKgbsXBoH/RhnJQBC3niZ5VFO13HYQE/Y
+PaE7TtaNjBc8K74BxdpV+ckj5JF+8BvFINXxISZ33Kik17fkZUES9oaGmQvTu0J5
+qTTIaahpieccxJ/Dz5Tl3d9gtexcnPyTr6KjJAvJnm2C15zW2fLezK5uisNSsKcy
+pEKZhZ7RZ+1cOoZAJhE/0ygLj5QsPEMCSx3QQadCkFveeBZXQONc0qtMv/tjCTKc
+HY0cIzope69AWDAFpSiVv/qcLXVo5vC+vW2w1qeAcVOaicJUrIEEY3WXQs4WdspN
+/sBGn+B+bYcuPPpdRmJ+OmNQs8ca8zdtcYw73hNmP11S8yCtL7Pnzehn3AHFdRk=
+=23ZV
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Jul_2010_11_19_18_+1000_LQ9tukJ_J.cw6oN5--
