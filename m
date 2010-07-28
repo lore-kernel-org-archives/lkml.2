@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab0G1H2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:28:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63366 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297Ab0G1H2E (ORCPT
+	id S1754339Ab0G1H2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:28:14 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:59812 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754294Ab0G1H2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:28:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=kiBNZhhfkZqg1Z/Z1INsNF7ZDVGcFfVK+Da//VkbnGVnaO8B3+e4TGwPQjBQ4PfvpF
-         GMGAPlR5kDR5j7oyRbKbMmdPCYFC1GwKm1R4NyBAa4u/jzF7KJy4BjYmT5rQWjDaNsCP
-         JV9N3+QCiB1Nd2bAXP5/WG/UtWvc2bKfboW+A=
+	Wed, 28 Jul 2010 03:28:10 -0400
+X-Sasl-enc: CfiPCmeCDREV7wfEeW5K9eIcPAWUyWg7YBbthQCXzEmr 1280302089
+Message-ID: <4C4FDC06.3050703@ladisch.de>
+Date: Wed, 28 Jul 2010 09:28:06 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <1279906072-377-1-git-send-email-linus.walleij@stericsson.com>
-References: <1279906072-377-1-git-send-email-linus.walleij@stericsson.com>
-Date: Wed, 28 Jul 2010 00:28:03 -0700
-X-Google-Sender-Auth: -nlQO26X6ytRv_2YSq552Kq130I
-Message-ID: <AANLkTikiV7+qvy8rG0nFqFoYxYqmwBswZK76abqj5DVb@mail.gmail.com>
-Subject: Re: [PATCH] DMAENGINE: generic slave channel control v3
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
+Subject: Re: [PATCH + an old question] firewire: ohci: use memory barriers
+ to order descriptor updates
+References: <tkrat.21d3972644f46dc9@s5r6.in-berlin.de>
+In-Reply-To: <tkrat.21d3972644f46dc9@s5r6.in-berlin.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 10:27 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> This adds an interface to the DMAengine to make it possible to
-> reconfigure a slave channel at runtime. We add a few foreseen
-> config parameters to the passed struct, with a void * pointer
-> for custom per-device or per-platform runtime slave data.
->
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+Stefan Richter wrote:
+> We need:
+> 2. a write memory barrier between branch_address update and wake-up of
+>    the DMA unit by MMIO register write.
+> 
+> Barrier 2 is implicit in writel() on most machines --- or at least I
+> think it is.  See this from arch/x86/include/asm/io.h:
+> 
+>     #define build_mmio_write(name, size, type, reg, barrier) \
+>     static inline void name(type val, volatile void __iomem *addr) \
+>     { asm volatile("mov" size " %0,%1": :reg (val), \
+>     "m" (*(volatile type __force *)addr) barrier); }
+> 
+>     build_mmio_write(writel, "l", unsigned int, "r", :"memory")
+> 
+> Does this order the mmio write relative to previous memory writes?
 
-Ok, let's go with this version, but one question before I apply it:
+This asm barrier prevents the compiler from reordering.
 
-What are the rules for when a new dma_slave_config can be set?
-Looking at the driver implementations it seems there is nothing
-preventing a concurrent call to device_control to occur at "wrong
-time"?  Is there a synchronization context I'm missing?
+The main purpose of writel() and friends is to access the address space
+where memory-mapped I/O ranges reside; there are architectures where the
+normal memory access commands cannot be used.  This does not necessarily
+imply anything about reordering semantics.
 
---
-Dan
+However, PCI address ranges are marked by the device's config registers
+as either cacheable or not, and the kernel heeds this when mapping these
+ranges.  Registers are, of course, marked as uncacheable.
+
+
+Regards,
+Clemens
