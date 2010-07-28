@@ -1,75 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab0G1MP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 08:15:56 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:29633
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754699Ab0G1MPz (ORCPT
+	id S1755129Ab0G1MR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 08:17:29 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52786 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754699Ab0G1MR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 08:15:55 -0400
-X-SpamScore: -15
-X-BigFish: VPS-15(zz98dNzz1202hzz15d4Rz32i2a8h87h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L69OQ7-02-7UW-02
-X-M-MSG: 
-Date: Wed, 28 Jul 2010 14:18:22 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM: SVM: Emulate next_rip svm feature
-Message-ID: <20100728121822.GH26098@amd.com>
-References: <1280247261-19115-1-git-send-email-joerg.roedel@amd.com>
- <1280247261-19115-3-git-send-email-joerg.roedel@amd.com>
- <4C4F2643.8080507@redhat.com>
- <20100728093708.GD26098@amd.com>
- <4C500636.1070708@redhat.com>
- <20100728112540.GE26098@amd.com>
- <4C5015B3.8010003@redhat.com>
- <20100728115133.GG26098@amd.com>
- <4C501B30.6020900@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C501B30.6020900@redhat.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Wed, 28 Jul 2010 08:17:26 -0400
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ian Munsie <imunsie@au1.ibm.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH v2] ftrace: record command lines at more appropriate moment
+Date: Wed, 28 Jul 2010 22:16:49 +1000
+Message-Id: <1280319410-18120-1-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1280317404-sup-4657@au1.ibm.com>
+References: <1280317404-sup-4657@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 07:57:36AM -0400, Avi Kivity wrote:
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-> If the instruction opcode is on mmio, the processor never sees the 
-> opcode and thus can not intercept.  Or the processor may see one 
-> instruction, which is not intercepted, but by the time the emulator 
-> kicks in a different instruction takes its place, since another vcpu is 
-> evilly cross-modifying the code.
+Previously, when tracing was activated through debugfs, regardless of
+which tracing plugin (if any) were activated, the probe_sched_switch and
+probe_sched_wakeup probes from the sched_switch plugin would be
+activated. This appears to have been a hack to use them to record the
+command lines of active processes as they were scheduled.
 
-Right. X-modifying code is a problem too.
+That approach would suffer if many processes were being scheduled that
+were not generating events as they would consume entries in the
+saved_cmdlines buffer that could otherwise have been used by other
+processes that were actually generating events.
 
-> The guest (L2 in this case) is doomed since it execution cannot 
-> continue.  But L1 and L0 are fine.  The problem with L2 avoiding 
-> intercepts is that L2 can change control registers and take over L1.
+It also had the problem that events could be mis-attributed - in the
+common situation of a process forking then execing a new process, the
+change of the process command would not be noticed for some time after
+the exec until the process was next scheduled.
 
-Right too. We can not ignore it. The right fix is probably a check for
-the instruction intercepts right after the decoder has run and before
-the emulator ran.
+If the trace was read after the fact this would generally go unnoticed
+because at some point the process would be scheduled and the entry in
+the saved_cmdlines buffer would be updated so that the new command would
+be reported when the trace was eventually read. However, if the events
+were being read live (e.g. through trace_pipe), the events just after
+the exec and before the process was next scheduled would show the
+incorrect command (though the PID would be correct).
 
-	Joer
+This patch removes the sched_switch hack altogether and instead records
+the commands at a more appropriate moment - when a new trace event is
+committed onto the ftrace ring buffer. This means that the recorded
+command line is much more likely to be correct when the trace is read,
+either live or after the fact, so long as the command line still resides
+in the saved_cmdlines buffer.
 
+It is still not guaranteed to be correct in all situations. For instance
+if the trace is read after the fact rather than live (consider events
+generated by a process before an exec - in the below example they would
+be attributed to sleep rather than stealpid since the entry in
+saved_cmdlines would have changed before the event was read), but this
+is no different to the current situation and the alternative would be to
+store the command line with each and every event.
+
+terminal 1: grep '\-12345' /sys/kernel/debug/tracing/trace_pipe
+terminal 2: ./stealpid 12345 `which sleep` 0.1
+
+Before:
+        stealpid-12345 [003]    86.001826: sys_clone -> 0x0
+        stealpid-12345 [003]    86.002013: compat_sys_execve(ufilename: ffaaabef, argv: ffaaa7ec, envp: ffaaa7f8)
+        stealpid-12345 [002]    86.002292: sys_restart_syscall -> 0x0
+        stealpid-12345 [002]    86.002336: sys_brk(brk: 0)
+        stealpid-12345 [002]    86.002338: sys_brk -> 0x1007a000
+        ...
+        stealpid-12345 [002]    86.002582: sys_mmap(addr: 0, len: 1000, prot: 3, flags: 22, fd: ffffffff, offset: 0)
+        stealpid-12345 [002]    86.002586: sys_mmap -> 0xf7c21000
+           sleep-12345 [002]    86.002771: sys_mprotect(start: ffe8000, len: 4000, prot: 1)
+           sleep-12345 [002]    86.002780: sys_mprotect -> 0x0
+           ...
+
+After:
+        stealpid-12345 [003]  1368.823626: sys_clone -> 0x0
+        stealpid-12345 [003]  1368.823820: compat_sys_execve(ufilename: fffa6bef, argv: fffa5afc, envp: fffa5b08)
+           sleep-12345 [002]  1368.824125: sys_restart_syscall -> 0x0
+           sleep-12345 [002]  1368.824173: sys_brk(brk: 0)
+           sleep-12345 [002]  1368.824175: sys_brk -> 0x104ae000
+           ...
+
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+
+Changes since v1 addressing feedback from Li Zefan:
+ * Inline trace_save_cmdline and tracing_record_cmdline for a marginal speed
+   gain when recording command lines.
+ * Move call to tracing_record_cmdline from tracing_generic_entry_update to
+   __trace_buffer_unlock_commit to avoid the overhead when using perf or if the
+   event was filtered out.
+
+ kernel/trace/trace.c                 |    7 +++----
+ kernel/trace/trace_events.c          |   11 -----------
+ kernel/trace/trace_functions.c       |    2 --
+ kernel/trace/trace_functions_graph.c |    2 --
+ kernel/trace/trace_sched_switch.c    |   10 ----------
+ 5 files changed, 3 insertions(+), 29 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 4b1122d..dfbc62c 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1023,9 +1023,7 @@ void tracing_stop(void)
+ 	spin_unlock_irqrestore(&tracing_start_lock, flags);
+ }
+ 
+-void trace_stop_cmdline_recording(void);
+-
+-static void trace_save_cmdline(struct task_struct *tsk)
++static inline void trace_save_cmdline(struct task_struct *tsk)
+ {
+ 	unsigned pid, idx;
+ 
+@@ -1097,7 +1095,7 @@ void trace_find_cmdline(int pid, char comm[])
+ 	preempt_enable();
+ }
+ 
+-void tracing_record_cmdline(struct task_struct *tsk)
++inline void tracing_record_cmdline(struct task_struct *tsk)
+ {
+ 	if (atomic_read(&trace_record_cmdline_disabled) || !tracer_enabled ||
+ 	    !tracing_is_on())
+@@ -1152,6 +1150,7 @@ __trace_buffer_unlock_commit(struct ring_buffer *buffer,
+ 			     unsigned long flags, int pc,
+ 			     int wake)
+ {
++	tracing_record_cmdline(current);
+ 	ring_buffer_unlock_commit(buffer, event);
+ 
+ 	ftrace_trace_stack(buffer, flags, 6, pc);
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 09b4fa6..2c0cf38 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -180,10 +180,8 @@ void trace_event_enable_cmd_record(bool enable)
+ 			continue;
+ 
+ 		if (enable) {
+-			tracing_start_cmdline_record();
+ 			call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
+ 		} else {
+-			tracing_stop_cmdline_record();
+ 			call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
+ 		}
+ 	}
+@@ -199,22 +197,13 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 	case 0:
+ 		if (call->flags & TRACE_EVENT_FL_ENABLED) {
+ 			call->flags &= ~TRACE_EVENT_FL_ENABLED;
+-			if (call->flags & TRACE_EVENT_FL_RECORDED_CMD) {
+-				tracing_stop_cmdline_record();
+-				call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
+-			}
+ 			call->class->reg(call, TRACE_REG_UNREGISTER);
+ 		}
+ 		break;
+ 	case 1:
+ 		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
+-			if (trace_flags & TRACE_ITER_RECORD_CMD) {
+-				tracing_start_cmdline_record();
+-				call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
+-			}
+ 			ret = call->class->reg(call, TRACE_REG_REGISTER);
+ 			if (ret) {
+-				tracing_stop_cmdline_record();
+ 				pr_info("event trace: Could not enable event "
+ 					"%s\n", call->name);
+ 				break;
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index 16aee4d..0800e91 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -31,7 +31,6 @@ static int function_trace_init(struct trace_array *tr)
+ 	tr->cpu = get_cpu();
+ 	put_cpu();
+ 
+-	tracing_start_cmdline_record();
+ 	tracing_start_function_trace();
+ 	return 0;
+ }
+@@ -39,7 +38,6 @@ static int function_trace_init(struct trace_array *tr)
+ static void function_trace_reset(struct trace_array *tr)
+ {
+ 	tracing_stop_function_trace();
+-	tracing_stop_cmdline_record();
+ }
+ 
+ static void function_trace_start(struct trace_array *tr)
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 6bff236..4bb8811 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -321,14 +321,12 @@ static int graph_trace_init(struct trace_array *tr)
+ 					    &trace_graph_entry);
+ 	if (ret)
+ 		return ret;
+-	tracing_start_cmdline_record();
+ 
+ 	return 0;
+ }
+ 
+ static void graph_trace_reset(struct trace_array *tr)
+ {
+-	tracing_stop_cmdline_record();
+ 	unregister_ftrace_graph();
+ }
+ 
+diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
+index 8f758d0..9a5cb2c 100644
+--- a/kernel/trace/trace_sched_switch.c
++++ b/kernel/trace/trace_sched_switch.c
+@@ -190,16 +190,6 @@ static void tracing_stop_sched_switch(void)
+ 	mutex_unlock(&sched_register_mutex);
+ }
+ 
+-void tracing_start_cmdline_record(void)
+-{
+-	tracing_start_sched_switch();
+-}
+-
+-void tracing_stop_cmdline_record(void)
+-{
+-	tracing_stop_sched_switch();
+-}
+-
+ /**
+  * tracing_start_sched_switch_record - start tracing context switches
+  *
 -- 
-Joerg Roedel - AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+1.7.1
 
