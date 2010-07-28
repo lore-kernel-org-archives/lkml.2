@@ -1,67 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab0G1Cb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 22:31:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61091 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751439Ab0G1Cb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 22:31:27 -0400
-Date: Tue, 27 Jul 2010 22:30:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/7][memcg] cgroup arbitarary ID allocation
-Message-ID: <20100728023027.GD12642@redhat.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
- <20100727165417.dacbe199.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727165417.dacbe199.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753317Ab0G1Cbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 22:31:42 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:51499 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab0G1Cbj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 22:31:39 -0400
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ian Munsie <imunsie@au1.ibm.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/2] ftrace: record command lines at more appropriate moment
+Date: Wed, 28 Jul 2010 12:29:38 +1000
+Message-Id: <1280284180-17863-1-git-send-email-imunsie@au1.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 04:54:17PM +0900, KAMEZAWA Hiroyuki wrote:
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> When a subsystem want to make use of "id" more, it's necessary to
-> manage the id at cgroup subsystem creation time. But, now,
-> because of the order of cgroup creation callback, subsystem can't
-> declare the id it wants. This patch allows subsystem to use customized
-> ID for themselves.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-[..]
-> Index: mmotm-2.6.35-0719/Documentation/cgroups/cgroups.txt
-> ===================================================================
-> --- mmotm-2.6.35-0719.orig/Documentation/cgroups/cgroups.txt
-> +++ mmotm-2.6.35-0719/Documentation/cgroups/cgroups.txt
-> @@ -621,6 +621,15 @@ and root cgroup. Currently this will onl
->  the default hierarchy (which never has sub-cgroups) and a hierarchy
->  that is being created/destroyed (and hence has no sub-cgroups).
->  
-> +void custom_id(struct cgroup_subsys *ss, struct cgroup *cgrp)
-> +
-> +Called at assigning a new ID to cgroup subsystem state struct. This
-> +is called when ss->use_id == true. If this function is not provided,
-> +a new ID is automatically assigned. If you enable ss->use_id,
-> +you can use css_lookup()  and css_get_next() to access "css" objects
-> +via IDs.
-> +
+Previously, when tracing was activated through debugfs, regardless of
+which tracing plugin (if any) were activated, the probe_sched_switch and
+probe_sched_wakeup probes from the sched_switch plugin would be
+activated. This appears to have been a hack to use them to record the
+command lines of active processes as they were scheduled.
 
-Couple of lines to explain why a subsystem would like to assign its
-own ids and not be happy with generic cgroup assigned id be helpful.
-In this case, I think you are using this id as index into array
-and want to control the index, hence you seem to be doing it.
+That approach would suffer if many processes were being scheduled that
+were not generating events as they would consume entries in the
+saved_cmdlines buffer that could otherwise have been used by other
+processes that were actually generating events.
 
-But I am not sure again why do you want to control index?
+It also had the problem that events could be mis-attributed - in the
+common situation of a process forking then execing a new process, the
+change of the process command would not be noticed for some time after
+the exec until the process was next scheduled.
 
-Vivek
+If the trace was read after the fact this would generally go unnoticed
+because at some point the process would be scheduled and the entry in
+the saved_cmdlines buffer would be updated so that the new command would
+be reported when the trace was eventually read. However, if the events
+were being read live (e.g. through trace_pipe), the events just after
+the exec and before the process was next scheduled would show the
+incorrect command (though the PID would be correct).
+
+This patch removes the sched_switch hack altogether and instead records
+the commands at a more appropriate moment - at the same time the PID of
+the process is recorded (i.e. when an entry on the ring buffer is
+reserved). This means that the recorded command line is much more likely
+to be correct when the trace is read, either live or after the fact, so
+long as the command line still resides in the saved_cmdlines buffer.
+
+It is still not guaranteed to be correct in all situations. For instance
+if the trace is read after the fact rather than live (consider events
+generated by a process before an exec - in the below example they would
+be attributed to sleep rather than stealpid since the entry in
+saved_cmdlines would have changed before the event was read), but this
+is no different to the current situation and the alternative would be to
+store the command line with each and every event.
+
+terminal 1: grep '\-12345' /sys/kernel/debug/tracing/trace_pipe
+terminal 2: ./stealpid 12345 `which sleep` 0.1
+
+Before:
+        stealpid-12345 [003]    86.001826: sys_clone -> 0x0
+        stealpid-12345 [003]    86.002013: compat_sys_execve(ufilename: ffaaabef, argv: ffaaa7ec, envp: ffaaa7f8)
+        stealpid-12345 [002]    86.002292: sys_restart_syscall -> 0x0
+        stealpid-12345 [002]    86.002336: sys_brk(brk: 0)
+        stealpid-12345 [002]    86.002338: sys_brk -> 0x1007a000
+        ...
+        stealpid-12345 [002]    86.002582: sys_mmap(addr: 0, len: 1000, prot: 3, flags: 22, fd: ffffffff, offset: 0)
+        stealpid-12345 [002]    86.002586: sys_mmap -> 0xf7c21000
+           sleep-12345 [002]    86.002771: sys_mprotect(start: ffe8000, len: 4000, prot: 1)
+           sleep-12345 [002]    86.002780: sys_mprotect -> 0x0
+           ...
+
+After:
+        stealpid-12345 [003]  1368.823626: sys_clone -> 0x0
+        stealpid-12345 [003]  1368.823820: compat_sys_execve(ufilename: fffa6bef, argv: fffa5afc, envp: fffa5b08)
+           sleep-12345 [002]  1368.824125: sys_restart_syscall -> 0x0
+           sleep-12345 [002]  1368.824173: sys_brk(brk: 0)
+           sleep-12345 [002]  1368.824175: sys_brk -> 0x104ae000
+           ...
+
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ kernel/trace/trace.c                 |    3 +--
+ kernel/trace/trace_events.c          |   11 -----------
+ kernel/trace/trace_functions.c       |    2 --
+ kernel/trace/trace_functions_graph.c |    2 --
+ kernel/trace/trace_sched_switch.c    |   10 ----------
+ 5 files changed, 1 insertions(+), 27 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 4b1122d..f8458c3 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1023,8 +1023,6 @@ void tracing_stop(void)
+ 	spin_unlock_irqrestore(&tracing_start_lock, flags);
+ }
+ 
+-void trace_stop_cmdline_recording(void);
+-
+ static void trace_save_cmdline(struct task_struct *tsk)
+ {
+ 	unsigned pid, idx;
+@@ -1112,6 +1110,7 @@ tracing_generic_entry_update(struct trace_entry *entry, unsigned long flags,
+ {
+ 	struct task_struct *tsk = current;
+ 
++	tracing_record_cmdline(tsk);
+ 	entry->preempt_count		= pc & 0xff;
+ 	entry->pid			= (tsk) ? tsk->pid : 0;
+ 	entry->lock_depth		= (tsk) ? tsk->lock_depth : 0;
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 09b4fa6..2c0cf38 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -180,10 +180,8 @@ void trace_event_enable_cmd_record(bool enable)
+ 			continue;
+ 
+ 		if (enable) {
+-			tracing_start_cmdline_record();
+ 			call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
+ 		} else {
+-			tracing_stop_cmdline_record();
+ 			call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
+ 		}
+ 	}
+@@ -199,22 +197,13 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 	case 0:
+ 		if (call->flags & TRACE_EVENT_FL_ENABLED) {
+ 			call->flags &= ~TRACE_EVENT_FL_ENABLED;
+-			if (call->flags & TRACE_EVENT_FL_RECORDED_CMD) {
+-				tracing_stop_cmdline_record();
+-				call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
+-			}
+ 			call->class->reg(call, TRACE_REG_UNREGISTER);
+ 		}
+ 		break;
+ 	case 1:
+ 		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
+-			if (trace_flags & TRACE_ITER_RECORD_CMD) {
+-				tracing_start_cmdline_record();
+-				call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
+-			}
+ 			ret = call->class->reg(call, TRACE_REG_REGISTER);
+ 			if (ret) {
+-				tracing_stop_cmdline_record();
+ 				pr_info("event trace: Could not enable event "
+ 					"%s\n", call->name);
+ 				break;
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index 16aee4d..0800e91 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -31,7 +31,6 @@ static int function_trace_init(struct trace_array *tr)
+ 	tr->cpu = get_cpu();
+ 	put_cpu();
+ 
+-	tracing_start_cmdline_record();
+ 	tracing_start_function_trace();
+ 	return 0;
+ }
+@@ -39,7 +38,6 @@ static int function_trace_init(struct trace_array *tr)
+ static void function_trace_reset(struct trace_array *tr)
+ {
+ 	tracing_stop_function_trace();
+-	tracing_stop_cmdline_record();
+ }
+ 
+ static void function_trace_start(struct trace_array *tr)
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 6bff236..4bb8811 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -321,14 +321,12 @@ static int graph_trace_init(struct trace_array *tr)
+ 					    &trace_graph_entry);
+ 	if (ret)
+ 		return ret;
+-	tracing_start_cmdline_record();
+ 
+ 	return 0;
+ }
+ 
+ static void graph_trace_reset(struct trace_array *tr)
+ {
+-	tracing_stop_cmdline_record();
+ 	unregister_ftrace_graph();
+ }
+ 
+diff --git a/kernel/trace/trace_sched_switch.c b/kernel/trace/trace_sched_switch.c
+index 8f758d0..9a5cb2c 100644
+--- a/kernel/trace/trace_sched_switch.c
++++ b/kernel/trace/trace_sched_switch.c
+@@ -190,16 +190,6 @@ static void tracing_stop_sched_switch(void)
+ 	mutex_unlock(&sched_register_mutex);
+ }
+ 
+-void tracing_start_cmdline_record(void)
+-{
+-	tracing_start_sched_switch();
+-}
+-
+-void tracing_stop_cmdline_record(void)
+-{
+-	tracing_stop_sched_switch();
+-}
+-
+ /**
+  * tracing_start_sched_switch_record - start tracing context switches
+  *
+-- 
+1.7.1
+
