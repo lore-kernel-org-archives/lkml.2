@@ -1,127 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab0G1S3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 14:29:01 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:46826 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab0G1S27 (ORCPT
+	id S1756054Ab0G1S3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 14:29:23 -0400
+Received: from ppsw-30.csi.cam.ac.uk ([131.111.8.130]:38389 "EHLO
+	ppsw-30.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab0G1S3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 14:28:59 -0400
-Date: Wed, 28 Jul 2010 20:28:58 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Cc: David Howells <dhowells@redhat.com>
-Subject: [PATCH 3/3] frv: clean up arch/frv/Makefile
-Message-ID: <20100728182858.GC29232@merkur.ravnborg.org>
-References: <20100728182523.GA29198@merkur.ravnborg.org>
+	Wed, 28 Jul 2010 14:29:22 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C5077A0.7090701@cam.ac.uk>
+Date: Wed, 28 Jul 2010 19:32:00 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100726 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100728182523.GA29198@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-iio@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: mmotm 2010-07-27-14-56 uploaded (staging/iio)
+References: <201007272226.o6RMQRBm008735@imap1.linux-foundation.org> <20100728085428.1e50a262.randy.dunlap@oracle.com>
+In-Reply-To: <20100728085428.1e50a262.randy.dunlap@oracle.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 2193dfaff6e2260a3ac1d2f578616640d601db55 Mon Sep 17 00:00:00 2001
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Wed, 28 Jul 2010 19:33:00 +0200
-Subject: [PATCH 3/3] frv: clean up arch/frv/Makefile
+Thanks,
 
-- removed a lot of unused variable assignmnets
-- removed unused bootstrap target
-- replaced ARCHMODFLAGS with proper KBUILD_{A,C}FLAGS_MODULE assignmnets
+Sorry, my bad, will send fix out shortly.
 
-The resuting Makefile has not been tested due to lack of toolchain,
-but these were all trivial changes.
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: David Howells <dhowells@redhat.com>
----
- arch/frv/Makefile |   22 ++--------------------
- 1 files changed, 2 insertions(+), 20 deletions(-)
-
-diff --git a/arch/frv/Makefile b/arch/frv/Makefile
-index 310c47a..7ff8457 100644
---- a/arch/frv/Makefile
-+++ b/arch/frv/Makefile
-@@ -23,20 +23,14 @@
- # Copyright (C) 1994 by Hamish Macdonald
- #
- 
--CCSPECS	:= $(shell $(CC) -v 2>&1 | grep "^Reading specs from " | head -1 | cut -c20-)
--CCDIR	:= $(strip $(patsubst %/specs,%,$(CCSPECS)))
--CPUCLASS := fr400
--
--# test for cross compiling
--COMPILE_ARCH = $(shell uname -m)
--
- ifdef CONFIG_MMU
- UTS_SYSNAME = -DUTS_SYSNAME=\"Linux\"
- else
- UTS_SYSNAME = -DUTS_SYSNAME=\"uClinux\"
- endif
- 
--ARCHMODFLAGS	+= -G0 -mlong-calls
-+KBUILD_AFLAGS_MODULE += -G0 -mlong-calls
-+KBUILD_CFLAGS_MODULE += -G0 -mlong-calls
- 
- ifdef CONFIG_GPREL_DATA_8
- KBUILD_CFLAGS	+= -G8
-@@ -54,7 +48,6 @@ endif
- 
- ifdef CONFIG_GC_SECTIONS
- KBUILD_CFLAGS	+= -ffunction-sections -fdata-sections
--LINKFLAGS	+= --gc-sections
- endif
- 
- ifndef CONFIG_FRAME_POINTER
-@@ -64,16 +57,13 @@ endif
- ifdef CONFIG_CPU_FR451_COMPILE
- KBUILD_CFLAGS	+= -mcpu=fr450
- KBUILD_AFLAGS	+= -mcpu=fr450
--ASFLAGS		+= -mcpu=fr450
- else
- ifdef CONFIG_CPU_FR551_COMPILE
- KBUILD_CFLAGS	+= -mcpu=fr550
- KBUILD_AFLAGS	+= -mcpu=fr550
--ASFLAGS		+= -mcpu=fr550
- else
- KBUILD_CFLAGS	+= -mcpu=fr400
- KBUILD_AFLAGS	+= -mcpu=fr400
--ASFLAGS		+= -mcpu=fr400
- endif
- endif
- 
-@@ -83,14 +73,12 @@ endif
- KBUILD_CFLAGS	+= -mno-fdpic -mgpr-32 -msoft-float -mno-media
- KBUILD_CFLAGS	+= -ffixed-fcc3 -ffixed-cc3 -ffixed-gr15 -ffixed-icc2
- KBUILD_AFLAGS	+= -mno-fdpic
--ASFLAGS		+= -mno-fdpic
- 
- # make sure the .S files get compiled with debug info
- # and disable optimisations that are unhelpful whilst debugging
- ifdef CONFIG_DEBUG_INFO
- #KBUILD_CFLAGS	+= -O1
- KBUILD_AFLAGS	+= -Wa,--gdwarf2
--ASFLAGS		+= -Wa,--gdwarf2
- endif
- 
- head-y		:= arch/frv/kernel/head.o arch/frv/kernel/init_task.o
-@@ -105,11 +93,5 @@ all: Image
- Image: vmlinux
- 	$(Q)$(MAKE) $(build)=arch/frv/boot $@
- 
--bootstrap:
--	$(Q)$(MAKEBOOT) bootstrap
--
- archclean:
- 	$(Q)$(MAKE) $(clean)=arch/frv/boot
--
--archdep: scripts/mkdep symlinks
--	$(Q)$(MAKE) $(build)=arch/frv/boot dep
--- 
-1.6.0.6
+Jonathan
+> On Tue, 27 Jul 2010 14:56:50 -0700 akpm@linux-foundation.org wrote:
+> 
+>> The mm-of-the-moment snapshot 2010-07-27-14-56 has been uploaded to
+>>
+>>    http://userweb.kernel.org/~akpm/mmotm/
+>>
+>> and will soon be available at
+>>
+>>    git://zen-kernel.org/kernel/mmotm.git
+> 
+> 
+> (from linux-next.patch ?)
+> 
+> In file included from drivers/staging/iio/accel/lis3l02dq_core.c:31:
+> drivers/staging/iio/accel/../ring_sw.h:223: warning: 'struct iio_ring_access_funcs' declared inside parameter list
+> drivers/staging/iio/accel/../ring_sw.h:223: warning: its scope is only this definition or declaration, which is probably not what you want
+> In file included from drivers/staging/iio/accel/lis3l02dq_core.c:35:
+> drivers/staging/iio/accel/lis3l02dq.h:161: error: field 'help' has incomplete type
+> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_read_reg_8':
+> drivers/staging/iio/accel/lis3l02dq_core.c:54: warning: type defaults to 'int' in declaration of '__mptr'
+> drivers/staging/iio/accel/lis3l02dq_core.c:54: warning: initialization from incompatible pointer type
+> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_write_reg_8':
+> drivers/staging/iio/accel/lis3l02dq_core.c:92: warning: type defaults to 'int' in declaration of '__mptr'
+> drivers/staging/iio/accel/lis3l02dq_core.c:92: warning: initialization from incompatible pointer type
+> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_write_reg_s16':
+> drivers/staging/iio/accel/lis3l02dq_core.c:128: warning: type defaults to 'int' in declaration of '__mptr'
+> drivers/staging/iio/accel/lis3l02dq_core.c:128: warning: initialization from incompatible pointer type
+> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_spi_read_reg_s16':
+> drivers/staging/iio/accel/lis3l02dq_core.c:172: warning: type defaults to 'int' in declaration of '__mptr'
+> drivers/staging/iio/accel/lis3l02dq_core.c:172: warning: initialization from incompatible pointer type
+> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_thresh_handler_th':
+> drivers/staging/iio/accel/lis3l02dq_core.c:615: warning: type defaults to 'int' in declaration of '__mptr'
+> drivers/staging/iio/accel/lis3l02dq_core.c:615: warning: initialization from incompatible pointer type
+> drivers/staging/iio/accel/lis3l02dq_core.c:618: error: dereferencing pointer to incomplete type
+> drivers/staging/iio/accel/lis3l02dq_core.c: In function 'lis3l02dq_stop_device':
+> drivers/staging/iio/accel/lis3l02dq_core.c:865: warning: type defaults to 'int' in declaration of '__mptr'
+> drivers/staging/iio/accel/lis3l02dq_core.c:865: warning: initialization from incompatible pointer type
+> drivers/staging/iio/imu/adis16350_core.c: In function 'adis16350_probe':
+> drivers/staging/iio/imu/adis16350_core.c:614: error: implicit declaration of function 'adis16350_configure_ring'
+> drivers/staging/iio/imu/adis16350_core.c:657: error: implicit declaration of function 'adis16350_unconfigure_ring'
+> 
+> 
+> config attached.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
