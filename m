@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab0G1ASV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 20:18:21 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37473 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab0G1AST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 20:18:19 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Jul 2010 09:13:30 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        gthelen@google.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 0/7][memcg] towards I/O aware memory cgroup
-Message-Id: <20100728091330.b8197d15.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753177Ab0G1AUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 20:20:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43954 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132Ab0G1AUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 20:20:35 -0400
+Message-ID: <4C4F779D.9060908@zytor.com>
+Date: Tue, 27 Jul 2010 17:19:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: konrad.wilk@oracle.com, jeremy@goop.org, Ian.Campbell@citrix.com,
+        albert_herranz@yahoo.es, x86@kernel.org, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
+References: <1280250002-20279-10-git-send-email-konrad.wilk@oracle.com>	<4C4F2D9C.4020303@zytor.com>	<20100727194105.GA18647@phenom.dumpdata.com> <20100728083526J.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100728083526J.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 16:51:55 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
+On 07/27/2010 04:36 PM, FUJITA Tomonori wrote:
+>>>
+>>> Is there any way we can abstract this out a bit more instead of crapping
+>>> on generic code?
 > 
-> From a view of patch management, this set is a mixture of a few features for
-> memcg, and I should divide them to some groups. But, at first, I'd like to
-> show the total view. This set is consists from 5 sets. Main purpose is
-> create a room in page_cgroup for I/O tracking and add light-weight access method
-> for file-cache related accounting. 
+> I don't like this change much too, however I think that this is the
+> most simple and straightforward.
 > 
-> 1.   An virtual-indexed array.
-> 2,3. Use virtual-indexed array for id-to-memory_cgroup detection.
-> 4.   modify page_cgroup to use ID instead of pointer, this gives us enough
->      spaces for further memory tracking.
-> 5,6   Use light-weight locking mechanism for file related accounting.
-> 7.   use spin_lock instead of bit_spinlock.
-> 
-> 
-> As a function,  patch 5,6 can be an independent patch and I'll accept
-> reordering series of patch if someone requests.
-> But we'll need all, I think.
-> (irq_save for patch 7 will be required later.)
-> 
-> Any comments are welcome.
+> Basically, Xen's swiotlb works like a new IOMMU implementation so we
+> need to initialize it like other IOMMU implementations (call the
+> detect and init functions in order).
 > 
 
-This was onto mmotm-0719..but mmotm-0727 is shipped. I'll post rebased one
-if someone wants to test.
+Even mentioning "xen" in generic code should be considered a bug.  I
+think we *do* need to driverize the iommu stuff, and yes, Xen's swiotlb
+should just be handled like one in the list.
 
-Thanks,
--Kame
+> 
+>> I was toying with something like this:
+>>
+>> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+>> index 9f07cfc..e0cd388 100644
+>> --- a/arch/x86/kernel/pci-dma.c
+>> +++ b/arch/x86/kernel/pci-dma.c
+>> @@ -45,6 +45,25 @@ int iommu_detected __read_mostly = 0;
+>>   */
+>>  int iommu_pass_through __read_mostly;
+>>  
+>> +initcall_t __swiotlb_initcall_detect[] =
+>> +	{pci_xen_swiotlb_detect,
+>> +	 pci_swiotlb_detect,
+>> +	NULL};
+>> +
+>> +initcall_t __swiotlb_initcall_init[] = {
+>> +	pci_xen_swiotlb_init,
+>> +	pci_swiotlb_init,
+>> +	NULL};
+>> +
+>> +
+>> +initcall_t __iommu_initcall_detect[] = {
+>> +	gart_iommu_hole_init,
+>> +	detect_calgary,
+>> +	detect_intel_iommu,
+>> +	/* needs to be called after gart_iommu_hole_init */
+>> +	amd_iommu_detect,
+>> +	NULL};
+> 
+> I really don't think that this makes the code better. I prefer the
+> current simple (dumb) code.
+> 
+
+The special handling of swiotlb here really looks wrong, but otherwise I
+think it's the right idea.
+
+> btw, this comment is wrong. We check if we are forced to use SWIOTLB
+> by kernel command line here.
+> 
+> Even if SWIOTLB works, we see if hardware IOMMU is available. SWIOTLB
+> is a last resort. We prefer hardware IOMMU.
+
+Any reason to not just handle swiotlb like any of the other iommus, at
+the bottom of the list?
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
