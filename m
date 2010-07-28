@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab0G1KCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:02:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42320 "EHLO gate.crashing.org"
+	id S1754613Ab0G1KKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:10:40 -0400
+Received: from sh.osrg.net ([192.16.179.4]:55619 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754641Ab0G1KCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 06:02:42 -0400
-Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-In-Reply-To: <4C4FC95F.6040806@kernel.org>
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-	 <1279822864-17154-32-git-send-email-yinghai@kernel.org>
-	 <1280295415.1970.245.camel@pasglop>  <4C4FC95F.6040806@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Jul 2010 19:27:55 +1000
-Message-ID: <1280309275.1970.282.camel@pasglop>
+	id S1752934Ab0G1KKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 06:10:37 -0400
+Date: Wed, 28 Jul 2010 19:10:19 +0900
+To: ak@linux.intel.com
+Cc: konrad.wilk@oracle.com, akataria@vmware.com, fujita.tomonori@lab.ntt.co.jp,
+        lenb@kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, petr@vmware.com
+Subject: Re: swiotlb detection should be memory hotplug aware ?
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C49B3F5.3030904@linux.intel.com>
+References: <4C49A83C.8070203@linux.intel.com>
+	<20100723145945.GA31857@phenom.dumpdata.com>
+	<4C49B3F5.3030904@linux.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100728190939D.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 28 Jul 2010 19:10:21 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 23:08 -0700, Yinghai Lu wrote:
+On Fri, 23 Jul 2010 17:23:33 +0200
+Andi Kleen <ak@linux.intel.com> wrote:
+
 > 
-> for example: 
-> high/low allocation, from first kernel to kexec second kernel, always
-> work fine except system with Qlogic card.
-> because Qlogic card is using main RAM as EFT etc for card's FW log
-> trace. second kernel have not idea that those RAM
->  is used by first kernel for that purpose. that the CARD still use
-> that between two kernels.
-> second kernel could have crash it try to use those ram.
+> > I was thinking about this at some point. I think the first step is to
+> > make SWIOTLB use the debugfs to actually print out how much of its
+> > buffers are used - and see if the 64MB is a good fit.
 > 
-> low/high allocation seems to be safe,  second kernel can slip to boot
-> fine.
+> swiotlb is near always wrongly sized. For most system it's far too much, 
+> but for some
+> not enough. I have some systemtap scripts around to instrument it.
 
-No, it works 'by chance'. You need kexec to somewhat mark those regions
-as reserved. I don't know how x86 does those things, on architectures
-using the flat device-tree, we have added a concept of "reserve map" to
-the flat device tree blob to mark that kind of region.
+True, it's impossible to preallocate the best iotlb size statically.
 
-Also, because you mark your new function as weak but not the one that's
-actually used by memblock_alloc(), it will still end up being top-down,
-so if you want to switch to bottom up, make the internal function weak,
-not the wrapper.
-
-Cheers,
-Ben.
  
+> Also it depends on the IO load, so if you size it reasonable you
+> risk overflow on large IO (however these days this very rarely happens 
+> because
+> all "serious" IO devices don't need swiotlb anymore)
 
+Yeah, nowadays it's pointless to try to get the good performance with
+swiotlb.
+
+
+> The other problem is that using only  two bits for the needed address 
+> space is also extremly
+> inefficient (4GB and 16MB on x86). Really want masks everywhere and 
+> optimize for the
+> actual requirements.
+
+swiotlb doesn't allocate GFP_DMA memory. It handles only GFP_DMA32.
+
+swiotlb doesn't work for drivers with some odd dma mask (non 32bit)
+but we have been lived with it so I don't think that it's a big issue.
+
+
+I think, supporting expanding swiotlb dynamically is enough. The
+default swiotlb size, 64MB is too large for majority.
+
+I have a half-baked patch for it. I'll send it later.
