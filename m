@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0G1PFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 11:05:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54067 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754687Ab0G1PFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 11:05:46 -0400
-Date: Tue, 27 Jul 2010 18:40:31 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Avi Kivity <avi@redhat.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: fix compile warning
-Message-ID: <20100727214031.GB12889@amt.cnet>
-References: <20100726151405.2dfd20ee.sfr@canb.auug.org.au>
- <4C4D216B.5040004@cn.fujitsu.com>
+	id S1755359Ab0G1PPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 11:15:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37412 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755242Ab0G1PPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 11:15:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=msqC3pDESjf5G9xrjmqQFV5HZADuLLQCbYGX83y3+vpaCrzWvMTO/FyQt7dSCVroIi
+         w0rUhDSAi/64sAYRkKjWFydMaZj5lmaL0+M3q/e+UIH51No0+gdWIt1dJU93aHv12Q+2
+         OpP7pWUpbaSTjekph98jfIS7wa7lRaVwfGSAk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C4D216B.5040004@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <86bp9rhew1.fsf@peer.zerties.org>
+References: <86bp9rhew1.fsf@peer.zerties.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 28 Jul 2010 11:14:43 -0400
+Message-ID: <AANLkTi=AsMKL9vdfiFaetmns1D4t4f46VMfyvunsSfBR@mail.gmail.com>
+Subject: Re: CONFIG_IPIPE
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+        vamos-dev@i4.informatik.uni-erlangen.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 26, 2010 at 01:47:23PM +0800, Xiao Guangrong wrote:
-> 
-> Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > After merging the kvm tree, today's linux-next build (x86_64
-> > allmodconfig) produced this warning:
-> > 
-> > arch/x86/kvm/mmu.c: In function 'kvm_mmu_pte_write':
-> > arch/x86/kvm/mmu.c:2908: warning: suggest parentheses around operand of '!' or change '&' to '&&' or '!' to '~'
-> > 
-> > Introduced by commit af8720393c71a8f81ade71c404798d80c68c5d73 ("KVM: MMU:
-> > add missing reserved bits check in speculative path").
-> 
-> Hi Stephen,
-> 
-> Thanks for your report, this patch can fix it.
-> 
-> Subject: [PATCH] KVM: fix compile warning
-> 
-> Fix:
-> arch/x86/kvm/mmu.c: In function 'kvm_mmu_pte_write':
-> arch/x86/kvm/mmu.c:2908: warning: suggest parentheses around operand of '!' or change '&' to '&&' or '!' to '~'
-> 
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/mmu.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+On Wed, Jul 28, 2010 at 10:14, Christian Dietrich wrote:
+> I've seen, that there is no configuration Option for CONFIG_IPIPE in the
+> vanilla kernel. There are 36 cases of dead blocks within arch/blackfin
+> referencing CONFIG_IPIPE. So i thought, i ask, if this is a out of tree
+> development, which should be merged in the future, before i start
+> writing patches.
 
-Applied, thanks.
-
+this is expected behavior.  apply the xenomai patch.
+-mike
