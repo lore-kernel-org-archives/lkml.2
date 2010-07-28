@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab0G1Riz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 13:38:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29030 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab0G1Rix (ORCPT
+	id S1755972Ab0G1RjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:39:05 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:15846 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab0G1RjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 13:38:53 -0400
-Message-ID: <4C506AD0.4070608@oracle.com>
-Date: Wed, 28 Jul 2010 13:37:20 -0400
-From: Chuck Lever <chuck.lever@oracle.com>
-Organization: Oracle USA
-User-Agent: Mozilla/5.0 (X11; U; SunOS i86pc; en-US; rv:1.9.1.10) Gecko/20100621 Lightning/1.0b1 Thunderbird/3.0.5
+	Wed, 28 Jul 2010 13:39:00 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6057"; a="49091575"
+Message-ID: <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
+In-Reply-To: <201007281039.44883.arnd@arndb.de>
+References: <1280270466-13503-1-git-send-email-stepanm@codeaurora.org>
+    <201007281039.44883.arnd@arndb.de>
+Date: Wed, 28 Jul 2010 10:39:24 -0700 (PDT)
+Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
+From: stepanm@codeaurora.org
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Stepan Moskovchenko" <stepanm@codeaurora.org>, dwalker@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Andy Chittenden <andyc@bluearc.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        netdev <netdev@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Subject: Re: nfs client hang
-References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>	 <4C4E89D4.8040607@bluearc.com>	 <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com> <1280233276.2827.175.camel@edumazet-laptop> <4C4F174C.2000308@oracle.com> <ABFC24E4C13D81489F7F624E14891C8607DDF8D3D0@uk-ex-mbx1.terastack.bluearc.com>
-In-Reply-To: <ABFC24E4C13D81489F7F624E14891C8607DDF8D3D0@uk-ex-mbx1.terastack.bluearc.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C506B24.0045:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/10 03:24 AM, Andy Chittenden wrote:
-> resending as it seems to have been corrupted on LKML!
+> On Wednesday 28 July 2010 00:41:06 Stepan Moskovchenko wrote:
+>> Add support for the System MMUs found on the 8x60 and 8x72
+>> families of Qualcomm chips. These SMMUs allow virtualization
+>> of the address space used by most of the multimedia cores
+>> on these chips.
 >
->> The RPC client marks the socket closed. and the linger timeout is
->> cancelled.  At this point, sk_shutdown should be set to zero, correct?
->> I don't see an xs_error_report() call here, which would confirm that the
->> socket took a trip through tcp_disconnect().
+> How is this different from an IOMMU?
 >
-> From my reading of tcp_disconnect(), it calls sk->sk_error_report(sk)
-> unconditionally so as there's no xs_error_report(), that surely means
-> the exact opposite: tcp_disconnect() wasn't called. If it's not
-> called, sk_shutdown is not cleared. And my revised tracing confirmed
-> that it was set to SEND_SHUTDOWN.
+> From a very brief look, it seems that you should be using the
+> existing dma-mapping APIs here instead of making up your own.
+>
+> 	Arnd
 
-Sorry, that's what I meant above.
 
-An xs_error_report() debugging message at that point in the log would 
-confirm that the socket took a trip through tcp_disconnect().  But I 
-don't see such a message.
+These are just SMMU APIs, and the DMA-mapping API is one layer above this.
+
+We have our own SMMU API for the MSM SoCs because we have muliple IOMMUs,
+each one having multiple contexts, or even having multiple instances of
+the same context. Our usage model is also quite a bit different from how
+the DMA APIs are set up. I believe only two IOMMU drivers actually make
+use of the DMA API (Intel and AMD) and the other ones (OMAP and other
+SoCs) have their own APIs for their specific use cases.
+
+Steve
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
