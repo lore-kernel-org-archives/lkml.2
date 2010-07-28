@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab0G1DkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 23:40:20 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49081 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab0G1DkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 23:40:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C4FA663.9090204@jp.fujitsu.com>
-Date: Wed, 28 Jul 2010 12:39:15 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-pci@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        linux-pm@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [RFC][PATCH] PCI / PCIe: Ask BIOS for control of all native services
- simultaneously
-References: <201007250105.23610.rjw@sisk.pl>
-In-Reply-To: <201007250105.23610.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753839Ab0G1DnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 23:43:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46013 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752579Ab0G1DnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Jul 2010 23:43:04 -0400
+Date: Wed, 28 Jul 2010 13:42:52 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: hpa@linux.intel.com
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [tip:x86/build] x86, vdso: Error out if the vdso contains
+ external references
+Message-Id: <20100728134252.2e4c27cf.sfr@canb.auug.org.au>
+In-Reply-To: <tip-05d0b0889ca9d033a960542af7f8a13b3ad4f630@git.kernel.org>
+References: <tip-*@vger.kernel.org>
+	<tip-05d0b0889ca9d033a960542af7f8a13b3ad4f630@git.kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__28_Jul_2010_13_42_52_+1000_hT=ruXfas0NS_LZy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__28_Jul_2010_13_42_52_+1000_hT=ruXfas0NS_LZy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi,
 
-(2010/07/25 8:05), Rafael J. Wysocki wrote:
-> It turns out that asking ACPI BIOS, through _OSC, for control of each
-> PCIe port native service individually sometimes confuses the BIOS if
-> one sevice is requested while the others are not (eg. requesting
-> control of the native PCIe PME without requesting control of the
-> native PCIe hot-plug at the same time leads to interrupt storms on
-> some systems).
+On Fri, 18 Jun 2010 22:16:05 GMT "tip-bot for H. Peter Anvin" <hpa@linux.in=
+tel.com> wrote:
+>
+> diff --git a/arch/x86/vdso/checkundef.sh b/arch/x86/vdso/checkundef.sh
+> new file mode 100755
+> index 0000000..490be1c
+> --- /dev/null
+> +++ b/arch/x86/vdso/checkundef.sh
+> @@ -0,0 +1,10 @@
+> +#!/bin/sh
+> +nm=3D"$1"
+> +file=3D"$2"
+> +"$nm" "$file" | grep '^ *U' > /dev/null 2>&1
 
-Then why not invent quirks or something for such systems?
+Quoting $nm here doesn't work if you are building with ccache like this:
 
-IMHO it sounds like a BIOS bug since it should grant PME control to
-OS only when both of PME and pciehp (plus PCIe caps) are requested
-at same time.
+make CROSS_COMPILE=3D"ccache ...."
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Did you confirm that the system also confuses when pciehp is requested
-without requesting PME?
-e.g. assume that some BIOS might behave:
-  _OSC(pciehp)         =>  OK
-  _OSC(PME)            =>  NG (bugs on shared interrupt?)
-  _OSC(pciehp|PME)     =>  OK
-  _OSC(SHPC)           =>  OK
-  _OSC(pciehp|SHPC)    =>  NG (must choose one, not both)
-  _OSC(AER|SHPC)       =>  OK
+--Signature=_Wed__28_Jul_2010_13_42_52_+1000_hT=ruXfas0NS_LZy
+Content-Type: application/pgp-signature
 
-I don't doubt that handling of _OSC needs some improvement...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMT6c8AAoJEDMEi1NhKgbsbM0IAIsjBwAkBhBKGsYjdyS3Qwgz
+BK1dprgZCvMfGo/xiQrwfVWnh6h2q769eROIoaqs25qUcZRlArqftMdecL1GeGO4
++1tpoey+gcTee+7C+ia8GnnZiAZ1T+HiRV3DmpP70nGaHXTpV5EBW6j40L8RNVMU
+vX4GJsycLxDdx039fa2iU2KsxpEwymYw/vzTc8J6Pctw00KYpcaleOZXmCs2bgy0
+J8DnD3oVeWRMyd244X01tgn+jm76E0zQs0JfUxpriPf6j2OhCUD16w2hM8GlIKMn
+6+avIwU0F9zjztOz5Dgm70Tq/ZqDlq6xRHCZUAz5hew/ij4ARyHlHGlmO0VF12A=
+=oU2y
+-----END PGP SIGNATURE-----
 
-Thanks,
-H.Seto
-
-
+--Signature=_Wed__28_Jul_2010_13_42_52_+1000_hT=ruXfas0NS_LZy--
