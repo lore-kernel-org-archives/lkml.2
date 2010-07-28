@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab0G1Ru1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 13:50:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58011 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755965Ab0G1RuX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 13:50:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Date: Wed, 28 Jul 2010 19:50:20 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: stepanm@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        dwalker@codeaurora.org, linux-kernel@vger.kernel.org
-References: <1280270466-13503-1-git-send-email-stepanm@codeaurora.org> <201007281039.44883.arnd@arndb.de> <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
-In-Reply-To: <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
+	id S1756021Ab0G1Rys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:54:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57386 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab0G1Ryq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 13:54:46 -0400
+Message-ID: <4C506E9B.4070501@zytor.com>
+Date: Wed, 28 Jul 2010 10:53:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 31/31] memblock: Add memblock_find_in_range()
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>	 <1279822864-17154-32-git-send-email-yinghai@kernel.org>	 <1280295415.1970.245.camel@pasglop> <4C4FC95F.6040806@kernel.org>	 <4C4FD04B.5090503@zytor.com> <1280336548.30808.489.camel@mulgrave.site>
+In-Reply-To: <1280336548.30808.489.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007281950.20847.arnd@arndb.de>
-X-Provags-ID: V02:K0:HPUJaNUI6nNzLeOBLbeRUD02+LHcPIOjNLxPoSOoJtj
- B3RiOW49+ZeeYoieKRFjYlzfLx42pgnrM3q1N5uwF/zAtlbMkD
- OYA187HKHdzXNtscHVcknBeV7e/zpJtMyRR7xV3McoA9OUSgyn
- fMUbtL5vdlxMnMP+ex1+71oLiZmlCsFRvEHWXWUd0GjiXzb60v
- dPzM2ZKn+HZqCRglrXI2w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 July 2010, stepanm@codeaurora.org wrote:
-> > On Wednesday 28 July 2010 00:41:06 Stepan Moskovchenko wrote:
-> >> Add support for the System MMUs found on the 8x60 and 8x72
-> >> families of Qualcomm chips. These SMMUs allow virtualization
-> >> of the address space used by most of the multimedia cores
-> >> on these chips.
-> >
-> > How is this different from an IOMMU?
-> >
-> > From a very brief look, it seems that you should be using the
-> > existing dma-mapping APIs here instead of making up your own.
-> >
-> > 	Arnd
+On 07/28/2010 10:02 AM, James Bottomley wrote:
+> On Tue, 2010-07-27 at 23:38 -0700, H. Peter Anvin wrote:
+>> On 07/27/2010 11:08 PM, Yinghai Lu wrote:
+>>>
+>>> for example: 
+>>> high/low allocation, from first kernel to kexec second kernel, always work fine except system with Qlogic card.
+>>> because Qlogic card is using main RAM as EFT etc for card's FW log trace. second kernel have not idea that those RAM
+>>>  is used by first kernel for that purpose. that the CARD still use that between two kernels.
+>>> second kernel could have crash it try to use those ram.
+>>>
+>>
+>> Uhm, no.  That's a bug in the Qlogic driver not shutting the card down
+>> cleanly.  Hacking around that in memory allocation order is braindamaged
+>> in the extreme.  kexec *cannot* be safe in any way if we don't shut down
+>> pending DMA, and what you describe above is DMA.
 > 
+> That's not the kexec for crash dump requirement as it was communicated
+> to us.  We were specifically told that the shutdown routines *may* not
+> be called before booting the kexec kernel and thus we have to take
+> action to stop the DMA engines in the init routines so the kexec kernel
+> can halt all in-progress DMA as it boots.  This implies that kexec must
+> be able to cope with in-progress DMA.
 > 
-> These are just SMMU APIs, and the DMA-mapping API is one layer above this.
-> 
-> We have our own SMMU API for the MSM SoCs because we have muliple IOMMUs,
-> each one having multiple contexts, or even having multiple instances of
-> the same context. Our usage model is also quite a bit different from how
-> the DMA APIs are set up. I believe only two IOMMU drivers actually make
-> use of the DMA API (Intel and AMD) and the other ones (OMAP and other
-> SoCs) have their own APIs for their specific use cases.
 
-The DMA API is extremely flexible, it works just fine with all the
-IOMMUs that I've seen so far. Please take a look at
-include/asm-generic/dma-mapping-common.h and its users to see how
-to use multiple IOMMUs depending on the device.
+kexec for crash dump is a special case: for crash dump, there is a chunk
+of memory pre-reserved for the crash kernel, and that is the *only*
+memory that the crash kernel will use.  In other words, everything else
+is reserved memory as far as the crash kernel is concerned.  As such, it
+should not be affected; there may be DMA still pending to the main
+kernel's memory area, of course, but as far as the crash kernel is
+concerned, that should just be input data.
 
-If the OMAP developers got this wrong, that's not your problem :-)
+If allocation order somehow matters for the *crash kernel*, then we have
+even more fundamental problems...
 
-	Arnd
+Obviously, if there is DMA going on to the crash kernel reserved region
+then all bets are off, but at that point the system is so screwed anyway
+that it shouldn't matter.
+
+	-hpa
+
