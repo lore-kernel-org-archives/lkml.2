@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0G1GOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:14:32 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:56865 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753324Ab0G1GO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:14:29 -0400
-Date: Tue, 27 Jul 2010 23:14:27 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34.1+hacks:  kernel deadlock related to file-IO?
-Message-ID: <20100727231427.1f3eb97b@nehalam>
-In-Reply-To: <4C4F767D.4020002@candelatech.com>
-References: <4C4F67B3.50101@candelatech.com>
-	<20100727165146.71e46170@nehalam>
-	<4C4F767D.4020002@candelatech.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753442Ab0G1GPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:15:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24322 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab0G1GPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 02:15:19 -0400
+Message-ID: <4C4FCA7A.1020506@kernel.org>
+Date: Tue, 27 Jul 2010 23:13:14 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: hpa@zytor.com, benh@kernel.crashing.org, mingo@elte.hu, tglx@linutronix.de,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
+References: <1280294128.1970.237.camel@pasglop>	<1280294376.1970.239.camel@pasglop>	<4C4FC5D1.3070708@zytor.com> <20100727.230120.43037767.davem@davemloft.net>
+In-Reply-To: <20100727.230120.43037767.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C4FCAD8.0221,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 17:14:53 -0700
-Ben Greear <greearb@candelatech.com> wrote:
+On 07/27/2010 11:01 PM, David Miller wrote:
+> From: "H. Peter Anvin" <hpa@zytor.com>
+> Date: Tue, 27 Jul 2010 22:53:21 -0700
+> 
+>> On 07/27/2010 10:19 PM, Benjamin Herrenschmidt wrote:
+>>>
+>>> Screw it, I don't like it but I'll just split your patch in two for now
+>>> and keep 0. It's a bit fishy but memblock does mostly top-down
+>>> allocations and so shouldn't hit 0, and in practice the region at 0 is,
+>>> I beleive, reserved, but we need to be extra careful and might need to
+>>> revisit that a bit.
+>>>
+>>> That's an area where I don't completely agree with Linus, ie, 0 is a
+>>> perfectly valid physical address for memblock to return :-)
+>>>
+>>
+>> On x86, physical address 0 contains the real-mode IVT and will thus be
+>> reserved, at least for the forseeable future.  Other architectures may
+>> very well have non-special RAM there.
+> 
+> 0 is very much possible on sparc64
 
-> On 07/27/2010 04:51 PM, Stephen Hemminger wrote:
-> > On Tue, 27 Jul 2010 16:11:47 -0700
-> > Ben Greear<greearb@candelatech.com>  wrote:
-> >
-> >> NOTE:  This is from a hacked 2.6.34.1 kernel, with
-> >> a module of my own devising loaded and in active use.
-> >
-> > Ben please don't ask LKML for help with problems when
-> > you have a binary only module loaded...
-> 
-> Yeah, I know..but I spent all day hacking .34 enough to
-> run lockdep and get those backtraces..and they *might* be
-> valid.  There's a small chance someone else has seen similar
-> things but not reported it for whatever reason, so maybe
-> they will chime in.
-> 
-> And finally, I will attempt to reproduce with some official
-> kernels, and will report what I find one way or another.
-> 
-> The .34 kernel has been a real bitch to get stable  (You
-> know things must be bad when my name's on -stable patches),
-> so I wouldn't be surprised if I'm hitting another real bug.
+So still keep MEMBLOCK_ERROR to (~(phys_addr_t)0) ?
 
-Understand your pain. The hardest problem is often finding a reproducible case.
-If the problem is not reproducible it is hard to add trace info
-or use bisection.
+We can change some variable from unsigned long to phys_addr_t that will be
+ assigned by memblock_find_base().
+
+that could avoid casting too.
+
+Thanks
+
+Yinghai
