@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab0G1Xsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 19:48:50 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41607 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab0G1XsY (ORCPT
+	id S1756732Ab0G1XtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 19:49:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33096 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab0G1XsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 19:48:24 -0400
+	Wed, 28 Jul 2010 19:48:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=m5h18NwWVdJTg1JjTfSc7z/z0ip8Qo9Rzpru+h76GWaOXyoKXIChv+nOdJYxHzuEDQ
-         uQZVAULIU/Jd3Yotewbm89jqP5l2FUxBPcM2e6ngMFHp9UzY9DvrYd1YGpcvtyqP62+O
-         /f6Vhkr/O1J8BiGJQZUsYwF7wgRgn79UoVgNM=
-Subject: Re: [ath5k-devel] [PATCH v3] ath5k: disable ASPM
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        David Quan <David.Quan@atheros.com>,
-        "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "tim.gardner@canonical.com" <tim.gardner@canonical.com>
-In-Reply-To: <AANLkTim1sZ5ZoGcrsdCw8dFSzUj4igZOiq7irKsdbfXR@mail.gmail.com>
-References: <20100726210651.GJ14855@tux>
-	 <1280179033.3721.15.camel@maxim-laptop>
-	 <20100726212543.GA5424@srcf.ucam.org>
-	 <AANLkTi=5_Dc8SumPi7cr8u7=DmnOHgSo6C76w9b0E4Kj@mail.gmail.com>
-	 <20100726222113.GA6487@srcf.ucam.org>
-	 <AANLkTinq-SxMHTrJM23WaeRMkU-2cySiVrkwCjDRS_o+@mail.gmail.com>
-	 <20100726222909.GA6773@srcf.ucam.org>
-	 <AANLkTinysGjYS7RKN4X_7T2q+rw_-OWdn-UJYM0poWXu@mail.gmail.com>
-	 <20100726223326.GA6904@srcf.ucam.org>
-	 <AANLkTinChEx_B9wa-n+a6xDr1vLOBOD3Mhcs=iqcYwen@mail.gmail.com>
-	 <20100726225057.GA7268@srcf.ucam.org>
-	 <1280223313.3721.83.camel@maxim-laptop>
-	 <AANLkTim1sZ5ZoGcrsdCw8dFSzUj4igZOiq7irKsdbfXR@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 29 Jul 2010 02:48:15 +0300
-Message-ID: <1280360895.8891.19.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        d=googlemail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=iS0s8917TVLBBIOinlFXnQdLZA6zc7onc2TgpNJcvu4M56ruHTtYRTkYvZS25886uh
+         d/lBijZAYeBXKLs849J728I0ujhx0JnUbvdJsoSNyCk2PMBDXw37z0D1ct2+W7aMD78v
+         soun2N+recsj5RlGq5YlUYxn4CwibJlO70TY8=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Parisc List <linux-parisc@vger.kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Tim Abbott <tabbott@ksplice.com>, Tim Bird <tim.bird@am.sony.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Matt Fleming <matt@console-pimps.org>, Arnd Bergmann <arnd@arndb.de>,
+        Anders Kaseorg <andersk@mit.edu>, Andi Kleen <andi@firstfloor.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Denys Vlasenko <vda.linux@googlemail.com>
+Subject: [PATCH 2/4] module linker script: coalesce function and data sections
+Date: Thu, 29 Jul 2010 01:47:54 +0200
+Message-Id: <1280360876-2571-3-git-send-email-vda.linux@googlemail.com>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1280360876-2571-1-git-send-email-vda.linux@googlemail.com>
+References: <1280360876-2571-1-git-send-email-vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-27 at 08:57 -0700, Luis R. Rodriguez wrote: 
-> On Tue, Jul 27, 2010 at 2:35 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > On Mon, 2010-07-26 at 23:50 +0100, Matthew Garrett wrote:
-> >> On Mon, Jul 26, 2010 at 03:43:04PM -0700, Luis R. Rodriguez wrote:
-> >>
-> >> > I see.. thanks Mathew... in that case since L1 works on all devices we
-> >> > could just force enable L1 for all PCIE devices. What do you think?
-> >>
-> >> Works for me.
-> >>
-> >
-> > On the second thought, there is no 'pci_enable_link_state' :-)
-> > I afraid that if I add it, I might not do that right for all cases, thus
-> > do more harm that good...
-> 
-> I'm sorry, can you elaborate?
+gcc -ffunction-sections -fdata-sections places each function foo
+into separate section .text.foo, and every data object bar into
+separate section .data.bar, .rodata.bar or .bss.bar.
 
-I mean ASPM code doesn't have a function to undo effects of the
-blacklist (due to pre 1.1 pcie device).
+This fix prevents kernel modules from having unnecessarily many
+sections and thus prevents module size growth when we pass
+-ffunction-sections -fdata-sections to gcc.
 
-Its not that simple to write such function.
+Module linker script needs to avoid collecting special kernel sections,
+therefore it uses more restrictive patterns like *(.text.[A-Za-z0-9_$^]*)
+instead of simplistic *(.text.*): special kernel sections like
+.text..page_aligned contain double dots and won't be accidentally
+matched by them.
 
-Best regards,
-Maxim Levitsky
+Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+---
+ scripts/module-common.lds |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/module-common.lds b/scripts/module-common.lds
+index 47a1f9a..4a197e8 100644
+--- a/scripts/module-common.lds
++++ b/scripts/module-common.lds
+@@ -3,6 +3,29 @@
+  * Archs are free to supply their own linker scripts.  ld will
+  * combine them automatically.
+  */
++
++/* .data.foo are generated by gcc itself with -fdata-sections,
++ * whereas double-dot sections (like .data..percpu) are generated
++ * by kernel's magic macros.
++ *
++ * Since this script does not specify what to do with double-dot sections,
++ * ld -r will coalesce all .data..foo input sections into one .data..foo
++ * output section, all .data..bar input sections into one .data..bar
++ * output section and so on. This is exactly what we want.
++ *
++ * Same goes for .text, .bss and .rodata. In case of .rodata, various
++ * .rodata.foo sections are generated by gcc even without -fdata-sections
++ */
++
+ SECTIONS {
++
++	/* Coalesce sections produced by gcc -ffunction-sections */
++	.text   0 : AT(0) { *(.text .text.[A-Za-z0-9_$^]*) }
++
++	/* Coalesce sections produced by gcc -fdata-sections */
++	.rodata 0 : AT(0) { *(.rodata .rodata.[A-Za-z0-9_$^]*) }
++	.data   0 : AT(0) { *(.data .data.[A-Za-z0-9_$^]*) }
++	.bss    0 : AT(0) { *(.bss .bss.[A-Za-z0-9_$^]*) }
++
+ 	/DISCARD/ : { *(.discard) }
+ }
+-- 
+1.6.2.4
 
