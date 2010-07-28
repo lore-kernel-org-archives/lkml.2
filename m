@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab0G1BnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Jul 2010 21:43:21 -0400
+	id S1754058Ab0G1Bnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Jul 2010 21:43:37 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:52417 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab0G1BnT (ORCPT
+	with ESMTP id S1753936Ab0G1BnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Jul 2010 21:43:19 -0400
+	Tue, 27 Jul 2010 21:43:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:content-type;
-        b=AUs2gJ5WJ0jcT3MxtxGsD0sQwTXs1e+qATxcErYNKF1hpQP8ZxZ4xYHquq7j/RlnaB
-         bCg7gA5In6x0KcQROmwB+ellVe4jvLfirEsukPob3H/Yv6qF8pXYD6nYsXzVliB6GG4n
-         7RUN4+NcWzlLc1pwlY7dnnhqcWqL4CRQLQ7S0=
+        b=NPK1Lj0oSOM/SJubZ+GZz96h8yvLrZarq6Hlb8OqK6lKZ2Qr8VIRQPmQ3PoTUvz5HI
+         raHcKvxRe7pCOosqpiv0WiJOTh2EnEIuk+KM6dHbuOS79gkoNWMdLEPTvXx5zmwOavA7
+         8RhgC/ooVeADfnPvrCKoBhDdC1dWmx5ytvnkU=
 MIME-Version: 1.0
-Date: Tue, 27 Jul 2010 19:43:17 -0600
-Message-ID: <AANLkTi=Ojnj62WPUL12-DQdpY4=aVmWLiM+48tmcf+xR@mail.gmail.com>
-Subject: [ANNOUNCE] Open CWorthy Libraries 07-27-2010
+Date: Tue, 27 Jul 2010 19:43:23 -0600
+Message-ID: <AANLkTinm+Qv3r1d+-tgK7tR8FU_LVpVKWAFAA6MU+eQZ@mail.gmail.com>
+Subject: [ANNOUNCE] Open CWorthy Packet Generator for Linux 07-27-2010
 From: Jeffrey Merkey <jeffmerkey@gmail.com>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -25,11 +25,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 CURRENT
-http://cworthylinux.googlecode.com/files/cworthy-07-27-2010.tar.gz
+http://open-cworthy-linux-packet-generator.googlecode.com/files/cwgen-07-27-2010.tar.gz
 
 REPOSITORIES
-http://code.google.com/p/cworthylinux/
-http://sourceforge.net/projects/opencworthy/
+http://code.google.com/p/open-cworthy-linux-packet-generator/
+http://sourceforge.net/projects/cworthypktgen/
 
 FIXES
 - fix pthread_mutex_lock deadlock in refresh_screen() wen called from
@@ -53,3 +53,11 @@ TODO
 - write another cworthy kernel app and think about more
 - write cworthy application version of net-tools for network monitoring
 - write cworthy application for monitoring disk and lan throughput totals
+
+More flexible and better than pktgen for demos because you can see what is
+happening.  Also supports concurrent generation sessions over the same adapter.
+
+I use this tool for my internal use, but its a good example of a useful CWorthy
+app on Linux.
+
+Jeff Merkey
