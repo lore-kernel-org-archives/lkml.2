@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab0G1Lap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 07:30:45 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55142 "EHLO gir.skynet.ie"
+	id S1754907Ab0G1LeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 07:34:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10019 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753896Ab0G1Lam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 07:30:42 -0400
-Date: Wed, 28 Jul 2010 12:30:26 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 9/9] writeback: Prioritise dirty inodes encountered by
-	reclaim for background flushing
-Message-ID: <20100728113026.GH5300@csn.ul.ie>
-References: <1280312843-11789-1-git-send-email-mel@csn.ul.ie> <1280312843-11789-10-git-send-email-mel@csn.ul.ie> <20100728110807.GB31360@infradead.org>
+	id S1753896Ab0G1LeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 07:34:18 -0400
+Message-ID: <4C5015B3.8010003@redhat.com>
+Date: Wed, 28 Jul 2010 14:34:11 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100728110807.GB31360@infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: SVM: Emulate next_rip svm feature
+References: <1280247261-19115-1-git-send-email-joerg.roedel@amd.com> <1280247261-19115-3-git-send-email-joerg.roedel@amd.com> <4C4F2643.8080507@redhat.com> <20100728093708.GD26098@amd.com> <4C500636.1070708@redhat.com> <20100728112540.GE26098@amd.com>
+In-Reply-To: <20100728112540.GE26098@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 07:08:07AM -0400, Christoph Hellwig wrote:
-> On Wed, Jul 28, 2010 at 11:27:23AM +0100, Mel Gorman wrote:
-> > It is preferable that as few dirty pages are dispatched for cleaning from
-> > the page reclaim path. When dirty pages are encountered by page reclaim,
-> > this patch marks the inodes that they should be dispatched immediately. When
-> > the background flusher runs, it moves such inodes immediately to the dispatch
-> > queue regardless of inode age.
-> 
-> Thus whole thing looks rather hacky to me.  Does it really give a large
-> enough benefit to be worth all the hacks?
-> 
+  On 07/28/2010 02:25 PM, Roedel, Joerg wrote:
+> On Wed, Jul 28, 2010 at 06:28:06AM -0400, Avi Kivity wrote:
+>> We have a slightly different problem, if the nested guest manages to get
+>> an instruction to be emulated by the host (if the guest assigned it the
+>> cirrus framebuffer, for example, so from L1's point of view it is RAM,
+>> but from L0's point of view it is emulated), then we miss the
+>> intercept.  L2 could take over L1 this way.
+> I wonder how this could happen. Shouldn't the shadow paging code take
+> care of this?
+>
 
-Not enough benefit in enough situations - at least based on my tests but
-it's possible my systems are just not large enough to detect anything.
-The figures in the leader show that the patch does reduce the number of dirty
-pages encountered by page reclaim in many cases but only in one instance,
-PPC64 running sysbench, was it a really big difference.
+L1 thinks the memory is RAM, so it maps it directly and forgets about 
+it.  L0 knows it isn't, so it leaves it unmapped and emulates any 
+instruction which accesses it.  The emulator needs to check whether the 
+instruction is intercepted or not.
 
-I included this patch because Wu suggested that that page reclaim
-waking threads to clean X pages depends on luck to get the right pages.
-He suggested prioritising inodes with known dirty LRU pages and this was a
-first prototype. It only takes inodes into account and the figures didn't
-really hold up on the hardware I was using. He suggested ways that page
-offset could be taken into account with some invasiveness so I'm inclined
-to drop this patch for now because better ideas exist.
+Note, I think if the instruction operand is in mmio, we're safe, since 
+the intercept has higher priority than memory access.  But if the 
+instruction itself is on mmio, or if we entered the emulator through smp 
+trickery, then the emulator will execute the instruction in nested guest 
+context.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
