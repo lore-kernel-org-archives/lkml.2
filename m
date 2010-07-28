@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab0G1Hdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:33:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39058 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158Ab0G1Hdb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:33:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=osn3zmWneLGol3ZerboMkFbI0xCMclgjb9GLsbEdMHiBW9NHTGE8pTalS7co93x2rm
-         HW7HShx1FM+KoDppl145zanWhYEJ8982kTczn9nUZb9bD3BdvNf2XSmxMxyZCmL1OYqj
-         kIGyzZUmrEjxinB6sv3KK58lJe8BFjpiVrv/Y=
+	id S1753595Ab0G1Hjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:39:42 -0400
+Received: from mx02.infracom.it ([62.196.48.10]:43661 "EHLO mx02.infracom.it"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751407Ab0G1Hjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 03:39:39 -0400
+Message-ID: <4C4FDEB8.2000502@gmail.com>
+Date: Wed, 28 Jul 2010 09:39:36 +0200
+From: Roberto Oppedisano <roberto.oppedisano@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100710 Thunderbird/3.1
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiniwW+r1G40QvA+oja=1YDkykNWRahHL4LuiCAU@mail.gmail.com>
-References: <AANLkTiniwW+r1G40QvA+oja=1YDkykNWRahHL4LuiCAU@mail.gmail.com>
-Date: Wed, 28 Jul 2010 15:33:30 +0800
-Message-ID: <AANLkTi=x0D_5yd7pWmYAcD2eeQN3HC9ecBXWEY-TpyYO@mail.gmail.com>
-Subject: Re: BUG: 'Unknown symbol in module' happens after reloading ehci-hcd 
-	module
-From: Ming Lei <tom.leiming@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-usb <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.35 suspend regression (bisected)
+References: <4C4C9E40.7070209@infracom.it> <201007272103.38448.rjw@sisk.pl> <4C4F38F1.105@gmail.com> <201007280037.30965.rjw@sisk.pl>
+In-Reply-To: <201007280037.30965.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/28 Ming Lei <tom.leiming@gmail.com>:
-> Hi,
->
-> 'Unknown symbol in module'  happens after the actions below:
->
->         rmmod ehci-hcd
->         modprobe ehci-hcd
->
+  On 28/07/2010 00:37, Rafael J. Wysocki wrote:
+> On Tuesday, July 27, 2010, Roberto Oppedisano wrote:
+>>    On 27/07/2010 21:03, Rafael J. Wysocki wrote:
+>>>> I did bisect again and I did get a different result:
+>>>>
+>>>> c1518f12bab97a6d409a25aaccb02dc8895800f3 is the first bad commit
+>>>>
+>>>> Trying to revert that commit gives:
+>>>>
+>>>> $ git bisect reset
+>>>> $ git revert c1518f12bab97a6d409a25aaccb02dc8895800f3
+>>>> fatal: Commit c1518f12bab97a6d409a25aaccb02dc8895800f3 is a merge but no
+>>>> -m option was given.
+>>>>
+>>>> How am I supposed to proceed now ? (sorry I'm a git newbie)
+>>> The bisect turned up a merge, which means it probably didn't really converge
+>>> for you.
+>>>
+>>> Do you use a camera driver?
+>> Yes, this laptop has an integrated webcam.
+>>
+>> Bus 001 Device 004: ID 04f2:b059 Chicony Electronics Co., Ltd
+>>
+>>
+>> which i think is driven by uvcvideo.ko. I've tryed to rmmod uvcvideo,
+>> videodev and
+>>
+>> v4l1_compat but on current git suspend still hangs in the same way
+>> (screen black,
+>> backlight on, fans at full speed, no response to ping and... nothing in
+>> the logs).
+> Please try the current mainline with acpi_sleep=nonvs in the command line.
 
-The issue is caused by returning failure of debugfs_create_dir, and
-which may be fixed by replacing debugfs_remove with
-debugfs_remove_recursive in ehci_hcd_cleanup.
+With:
 
-Why does insmod show 'Unknown symbol in module'  when module .init
-return -ENOENT?  The message does make us confused.
+	acpi_sleep=nonvs console=tty0
 
--- 
-Lei Ming
+(kubuntu defaults to quiet spash) I was able to complete 3 suspend/resume cycles before hitting an hang. After a power cycle I was able to suspend again, so it seems that, albeit racy, this cmdline has a positive effect.
+
+With:
+	acpi_sleep=nonvs
+
+or
+
+	console=tty0
+
+alone I've never been able to suspend (only the combination of the two makes a difference).
+
+R
+
+
+
