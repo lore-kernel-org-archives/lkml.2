@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab0G1SnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 14:43:20 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:48390 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752170Ab0G1SnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 14:43:19 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19mVTAeqEZm6Tp2zRqv06Fg5SM8lczzMhvM3OJ2kl
-	QnsrBmQsKzI9SA
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH] arm/mach-ixp2000: Add missing comma - fix build failure
-Date: Wed, 28 Jul 2010 20:43:13 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Tejun Heo <tj@kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+	id S1756137Ab0G1Sn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 14:43:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50734 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab0G1Sn4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 14:43:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HxRWVGPejEX46cL2Ct4F3a1OjI9xvXU3B6Oi4M0eu+fwQPw0GLCffbxgpppvHPwt10
+         lsTN3lqdPr4SsCdmf2/GnQYFPwhqhf6DNpcDanfc4ahjXMoJsrB6GOjURCmdILY1cX4d
+         ijx0kqhhDBi7vsUEx99Da2hso/L8zguDe7oy8=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007282043.13561.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+In-Reply-To: <1280328052-31292-6-git-send-email-ernesto@ti.com>
+References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
+	<1280328052-31292-2-git-send-email-ernesto@ti.com>
+	<1280328052-31292-3-git-send-email-ernesto@ti.com>
+	<1280328052-31292-4-git-send-email-ernesto@ti.com>
+	<1280328052-31292-5-git-send-email-ernesto@ti.com>
+	<1280328052-31292-6-git-send-email-ernesto@ti.com>
+Date: Wed, 28 Jul 2010 21:43:54 +0300
+Message-ID: <AANLkTin-2_JC0-18QWAdo9r36Jx0QdnDwnB2+2AdePyc@mail.gmail.com>
+Subject: Re: [PATCH 5/5] staging:ti dspbridge: replace simple_strtoul by 
+	strict_strtoul
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Ernesto Ramos <ernesto@ti.com>
+Cc: gregkh@suse.de, omar.ramirez@ti.com, ohad@wizery.com,
+        ameya.palande@nokia.com, felipe.contreras@nokia.com,
+        fernando.lugo@ti.com, linux-kernel@vger.kernel.org, nm@ti.com,
+        linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On Wed, Jul 28, 2010 at 5:40 PM, Ernesto Ramos <ernesto@ti.com> wrote:
+> Replace simple_strtoul by strict_strtoul in atoi function.
+In general the question what is the purpose here to do the change?
 
-This trivial patch fixes a build failure [1] by adding a missing comma.
+> @@ -1023,7 +1025,9 @@ static s32 atoi(char *psz_buf)
+>                base = 16;
+>        }
+>
+> -       return simple_strtoul(pch, NULL, base);
+> +       ret_val = strict_strtoul(pch, base, &res);
+> +
+> +       return ret_val ? : res;
+May be better to use explicit values in condition?
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-KernelVersion: linux-next-20100728
-
-References:
-[1] http://kisskb.ellerman.id.au/kisskb/buildresult/2980895/
-
-BF introduced by 3cad685d - ARM: 6253/1: Add 'code' parameter for
-hook_fault_code()
-
- arch/arm/mach-ixp2000/pci.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-ixp2000/pci.c b/arch/arm/mach-ixp2000/pci.c
-index 853fd90..f797c5f 100644
---- a/arch/arm/mach-ixp2000/pci.c
-+++ b/arch/arm/mach-ixp2000/pci.c
-@@ -209,7 +209,7 @@ ixp2000_pci_preinit(void)
- 			"the needed workaround has not been configured in");
- #endif
- 
--	hook_fault_code(16+6, ixp2000_pci_abort_handler, SIGBUS, 0
-+	hook_fault_code(16+6, ixp2000_pci_abort_handler, SIGBUS, 0,
- 				"PCI config cycle to non-existent device");
- }
- 
 -- 
-1.7.1
-
+With Best Regards,
+Andy Shevchenko
