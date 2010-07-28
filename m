@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab0G1Iao (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 04:30:44 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.61]:53821 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab0G1Ial (ORCPT
+	id S1754150Ab0G1IkY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 04:40:24 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50177 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab0G1IkV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 04:30:41 -0400
-Date: Wed, 28 Jul 2010 04:29:53 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-        matthltc@us.ibm.com, menage@google.com, oleg@redhat.com
-Subject: Re: [RFC] [PATCH v3 1/2] cgroups: read-write lock CLONE_THREAD
- forking per threadgroup
-Message-ID: <20100728082953.GA15455@ghc01.ghc.andrew.cmu.edu>
-References: <20100625054541.GA20610@ghc01.ghc.andrew.cmu.edu>
- <20100625054654.GB20610@ghc01.ghc.andrew.cmu.edu>
- <20100628161031.a8c71fce.kamezawa.hiroyu@jp.fujitsu.com>
- <20100628154359.GA24629@ghc01.ghc.andrew.cmu.edu>
+	Wed, 28 Jul 2010 04:40:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
+Date: Wed, 28 Jul 2010 10:39:44 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.90; x86_64; ; )
+Cc: dwalker@codeaurora.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+References: <1280270466-13503-1-git-send-email-stepanm@codeaurora.org>
+In-Reply-To: <1280270466-13503-1-git-send-email-stepanm@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100628154359.GA24629@ghc01.ghc.andrew.cmu.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.7.28.81815
-X-SMTP-Spam-Clean: 8% (
- FROM_SAME_AS_TO 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1400_1499 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __FRAUD_MONEY 0, __FRAUD_MONEY_VALUE 0, __FROM_SAME_AS_TO2 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201007281039.44883.arnd@arndb.de>
+X-Provags-ID: V02:K0:Zk4c8yL4q8Kw4lrmHLoBNvHiDhbsXlFqMsWwQiZr8n1
+ 21awm+2aIi7CJWxTK4+CdwGEF6wroGRAw9ivKf0+XSTkemv0rt
+ rmf4LLOl+g5BAyDCezPEuSGafJlmvmXBmYYc1wNDLW/9Hpnf3S
+ g28P2edM5zJeLl88ZTO7TZKg9GA/cXtNqeX57ND4POQ3WwVJU5
+ DKKg0NmIAMimBfxfEx6ww==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 11:43:59AM -0400, Ben Blum wrote:
-> On Mon, Jun 28, 2010 at 04:10:31PM +0900, KAMEZAWA Hiroyuki wrote:
-> > By the way, IMHO, hiding lock in cgroup_fork() and cgroup_post_fork() doesn't
-> > seem good idea. How about a code like this ?
-> > 
-> >   read_lock_thread_clone(current);
-> >   cgroup_fork();
-> >  .....
-> >   cgroup_post_fork();
-> >   read_unlock_thrad_clone(current);
-> > 
-> > We may have chances to move these lock to better position if cgroup is
-> > an only user.
+On Wednesday 28 July 2010 00:41:06 Stepan Moskovchenko wrote:
 > 
-> I didn't do that out of a desire to change fork.c as little as possible,
-> but that does look better than what I've got. Those two functions should
-> be in fork.c under #ifdef CONFIG_CGROUPS.
-
-I'm looking at this now and am not sure where the best place to put
-these is:
-
-1) Don't make new functions, just put:
-
-    #ifdef CONFIG_CGROUPS
-        if (clone_flags & CLONE_THREAD)
-            down/up_read(...);
-    #endif
-
-directly in copy_process() in fork.c. Simplest, but uglifies the code.
-
-2) Make static helper functions in fork.c. Good, but not consistent with
-directly using the lock in write-side (attach_proc).
-
-3) Define inline functions under #ifdef CONFIG_CGROUPS in sched.h, just
-under the declaration of the lock. Most robust, but I'm hesitant to add
-unneeded stuff to such a popular header file.
-
-Any opinions?
-
--- Ben
-
+> Add support for the System MMUs found on the 8x60 and 8x72
+> families of Qualcomm chips. These SMMUs allow virtualization
+> of the address space used by most of the multimedia cores
+> on these chips.
 > 
-> > 
-> > Thanks,
-> > -Kame
-> 
-> Thanks,
-> -- Ben
-> 
+
+How is this different from an IOMMU?
+
+>From a very brief look, it seems that you should be using the
+existing dma-mapping APIs here instead of making up your own.
+
+	Arnd
