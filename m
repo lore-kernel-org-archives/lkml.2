@@ -1,226 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab0G1HRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:17:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46274 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749Ab0G1HRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:17:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 28 Jul 2010 16:13:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 5/7][memcg] memcg lockless update of file mapped
-Message-Id: <20100728161301.c9cfd3e6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr93pqy8krq6.fsf@ninji.mtv.corp.google.com>
-References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100727165938.633a1ede.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93pqy8krq6.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754178Ab0G1HS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:18:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42161 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746Ab0G1HS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 03:18:57 -0400
+Date: Wed, 28 Jul 2010 07:18:41 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de
+In-Reply-To: <tip-*@vger.kernel.org>
+References: <tip-*@vger.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86, asm: Clean up and simplify set_64bit()
+Message-ID: <tip-69309a05907546fb686b251d4ab041c26afe1e1d@git.kernel.org>
+Git-Commit-ID: 69309a05907546fb686b251d4ab041c26afe1e1d
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 28 Jul 2010 07:18:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 00:09:21 -0700
-Greg Thelen <gthelen@google.com> wrote:
+Commit-ID:  69309a05907546fb686b251d4ab041c26afe1e1d
+Gitweb:     http://git.kernel.org/tip/69309a05907546fb686b251d4ab041c26afe1e1d
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Tue, 27 Jul 2010 23:29:52 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 27 Jul 2010 23:29:52 -0700
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > At accounting file events per memory cgroup, we need to find memory cgroup
-> > via page_cgroup->mem_cgroup. Now, we use lock_page_cgroup().
-> >
-> > But, considering the context which page-cgroup for files are accessed,
-> > we can use alternative light-weight mutual execusion in the most case.
-> > At handling file-caches, the only race we have to take care of is "moving"
-> > account, IOW, overwriting page_cgroup->mem_cgroup. Because file status
-> > update is done while the page-cache is in stable state, we don't have to
-> > take care of race with charge/uncharge.
-> >
-> > Unlike charge/uncharge, "move" happens not so frequently. It happens only when
-> > rmdir() and task-moving (with a special settings.)
-> > This patch adds a race-checker for file-cache-status accounting v.s. account
-> > moving. The new per-cpu-per-memcg counter MEM_CGROUP_ON_MOVE is added.
-> > The routine for account move 
-> >   1. Increment it before start moving
-> >   2. Call synchronize_rcu()
-> >   3. Decrement it after the end of moving.
-> > By this, file-status-counting routine can check it needs to call
-> > lock_page_cgroup(). In most case, I doesn't need to call it.
-> >
-> > Note: update_file_mapped is safe against charge/uncharge even if it's
-> > not under address_space->tree_lock or lock_page(). Because it's under
-> > page_table_lock(), anyone can't unmap it...then, anyone can't uncharge().
-> >
-> >
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |   64 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
-> >  1 file changed, 60 insertions(+), 4 deletions(-)
-> >
-> > Index: mmotm-0719/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0719.orig/mm/memcontrol.c
-> > +++ mmotm-0719/mm/memcontrol.c
-> > @@ -89,6 +89,7 @@ enum mem_cgroup_stat_index {
-> >  	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
-> >  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
-> >  	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
-> > +	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
-> >  
-> >  	MEM_CGROUP_STAT_NSTATS,
-> >  };
-> > @@ -1071,7 +1072,48 @@ static unsigned int get_swappiness(struc
-> >  	return swappiness;
-> >  }
-> >  
-> > -/* A routine for testing mem is not under move_account */
-> > +static void mem_cgroup_start_move(struct mem_cgroup *mem)
-> > +{
-> > +	int cpu;
-> > +	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
-> > +	spin_lock(&mc.lock);
-> > +	for_each_possible_cpu(cpu)
-> > +		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) += 1;
-> > +	spin_unlock(&mc.lock);
-> > +
-> > +	synchronize_rcu();
-> > +}
-> > +
-> > +static void mem_cgroup_end_move(struct mem_cgroup *mem)
-> > +{
-> > +	int cpu;
-> > +
-> > +	if (!mem)
-> > +		return;
-> > +	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
-> > +	spin_lock(&mc.lock);
-> > +	for_each_possible_cpu(cpu)
-> > +		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) -= 1;
-> > +	spin_unlock(&mc.lock);
-> > +}
-> > +
-> > +/*
-> > + * mem_cgroup_is_moved -- checking a cgroup is mc.from target or not.
-> > + *                          used for avoiding race.
-> > + * mem_cgroup_under_move -- checking a cgroup is mc.from or mc.to or
-> > + *			    under hierarchy of them. used for waiting at
-> > + *			    memory pressure.
-> > + * Result of is_moved can be trusted until the end of rcu_read_unlock().
-> > + * The caller must do
-> > + *	rcu_read_lock();
-> > + *	result = mem_cgroup_is_moved();
-> > + *	.....make use of result here....
-> > + *	rcu_read_unlock();
-> > + */
-> > +static bool mem_cgroup_is_moved(struct mem_cgroup *mem)
-> > +{
-> 
-> Could we add an assertion to confirm locking contract is upheld:
-> 	VM_BUG_ON(!rcu_read_lock_held());
-> 
+x86, asm: Clean up and simplify set_64bit()
 
-Hmm. there is an only one caller...I'll add one or I don't make
-this as a funciton.
+Clean up and simplify set_64bit().  This code is quite old (1.3.11)
+and contains a fair bit of auxilliary machinery that current versions
+of gcc handle just fine automatically.  Worse, the auxilliary
+machinery can actually cause an unnecessary spill to memory.
 
+Furthermore, the loading of the old value inside the loop in the
+32-bit case is unnecessary: if the value doesn't match, the CMPXCHG8B
+instruction will already have loaded the "new previous" value for us.
 
-> > +	return this_cpu_read(mem->stat->count[MEM_CGROUP_ON_MOVE]) > 0;
-> > +}
-> >  
-> >  static bool mem_cgroup_under_move(struct mem_cgroup *mem)
-> >  {
-> > @@ -1470,13 +1512,21 @@ void mem_cgroup_update_file_mapped(struc
-> >  {
-> >  	struct mem_cgroup *mem;
-> >  	struct page_cgroup *pc;
-> > +	bool need_lock = false;
-> >  
-> >  	pc = lookup_page_cgroup(page);
-> >  	if (unlikely(!pc))
-> >  		return;
-> > -
-> > -	lock_page_cgroup(pc);
-> > +	rcu_read_lock();
-> >  	mem = id_to_mem(pc->mem_cgroup);
-> > +	if (!mem)
-> > +		goto done;
-> > +	need_lock = mem_cgroup_is_moved(mem);
-> > +	if (need_lock) {
-> > +		/* need to serialize with move_account */
-> > +		lock_page_cgroup(pc);
-> > +		mem = id_to_mem(pc->mem_cgroup);
-> > +	}
-> >  	if (!mem || !PageCgroupUsed(pc))
-> >  		goto done;
-> 
-> Could we add a preemption() check here to ensure that the
-> __this_cpu_xxx() is safe to use?
-> 
-Hmm, ok.
+Clean up the comment, too, and remove page references to obsolete
+versions of the Intel SDM.
 
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+LKML-Reference: <tip-*@vger.kernel.org>
+---
+ arch/x86/include/asm/cmpxchg_32.h |   67 +++++++++++--------------------------
+ arch/x86/include/asm/cmpxchg_64.h |    4 +--
+ 2 files changed, 21 insertions(+), 50 deletions(-)
 
-Thanks,
--Kame
-> 	/*
-> 	 * Preemption is already disabled. We can use __this_cpu_xxx
-> 	 */
-> +        VM_BUG_ON(preemptible());
-> 
-> > @@ -1492,7 +1542,9 @@ void mem_cgroup_update_file_mapped(struc
-> >  	}
-> >  
-> >  done:
-> > -	unlock_page_cgroup(pc);
-> > +	if (need_lock)
-> > +		unlock_page_cgroup(pc);
-> > +	rcu_read_unlock();
-> >  }
-> >  
-> >  /*
-> > @@ -3024,6 +3076,7 @@ move_account:
-> >  		lru_add_drain_all();
-> >  		drain_all_stock_sync();
-> >  		ret = 0;
-> > +		mem_cgroup_start_move(mem);
-> >  		for_each_node_state(node, N_HIGH_MEMORY) {
-> >  			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
-> >  				enum lru_list l;
-> > @@ -3037,6 +3090,7 @@ move_account:
-> >  			if (ret)
-> >  				break;
-> >  		}
-> > +		mem_cgroup_end_move(mem);
-> >  		memcg_oom_recover(mem);
-> >  		/* it seems parent cgroup doesn't have enough mem */
-> >  		if (ret == -ENOMEM)
-> > @@ -4503,6 +4557,7 @@ static void mem_cgroup_clear_mc(void)
-> >  	mc.to = NULL;
-> >  	mc.moving_task = NULL;
-> >  	spin_unlock(&mc.lock);
-> > +	mem_cgroup_end_move(from);
-> >  	memcg_oom_recover(from);
-> >  	memcg_oom_recover(to);
-> >  	wake_up_all(&mc.waitq);
-> > @@ -4533,6 +4588,7 @@ static int mem_cgroup_can_attach(struct 
-> >  			VM_BUG_ON(mc.moved_charge);
-> >  			VM_BUG_ON(mc.moved_swap);
-> >  			VM_BUG_ON(mc.moving_task);
-> > +			mem_cgroup_start_move(from);
-> >  			spin_lock(&mc.lock);
-> >  			mc.from = from;
-> >  			mc.to = mem;
-> 
-
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index c1cf59d..20955ea 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -53,60 +53,33 @@ struct __xchg_dummy {
+ 	__xchg((v), (ptr), sizeof(*ptr))
+ 
+ /*
+- * The semantics of XCHGCMP8B are a bit strange, this is why
+- * there is a loop and the loading of %%eax and %%edx has to
+- * be inside. This inlines well in most cases, the cached
+- * cost is around ~38 cycles. (in the future we might want
+- * to do an SIMD/3DNOW!/MMX/FPU 64-bit store here, but that
+- * might have an implicit FPU-save as a cost, so it's not
+- * clear which path to go.)
++ * CMPXCHG8B only writes to the target if we had the previous
++ * value in registers, otherwise it acts as a read and gives us the
++ * "new previous" value.  That is why there is a loop.  Preloading
++ * EDX:EAX is a performance optimization: in the common case it means
++ * we need only one locked operation.
+  *
+- * cmpxchg8b must be used with the lock prefix here to allow
+- * the instruction to be executed atomically, see page 3-102
+- * of the instruction set reference 24319102.pdf. We need
+- * the reader side to see the coherent 64bit value.
++ * A SIMD/3DNOW!/MMX/FPU 64-bit store here would require at the very
++ * least an FPU save and/or %cr0.ts manipulation.
++ *
++ * cmpxchg8b must be used with the lock prefix here to allow the
++ * instruction to be executed atomically.  We need to have the reader
++ * side to see the coherent 64bit value.
+  */
+-static inline void __set_64bit(unsigned long long *ptr,
+-			       unsigned int low, unsigned int high)
++static inline void set_64bit(volatile u64 *ptr, u64 value)
+ {
++	u32 low  = value;
++	u32 high = value >> 32;
++	u64 prev = *ptr;
++
+ 	asm volatile("\n1:\t"
+-		     "movl (%1), %%eax\n\t"
+-		     "movl 4(%1), %%edx\n\t"
+-		     LOCK_PREFIX "cmpxchg8b (%1)\n\t"
++		     LOCK_PREFIX "cmpxchg8b %0\n\t"
+ 		     "jnz 1b"
+-		     : "=m" (*ptr)
+-		     : "D" (ptr),
+-		       "b" (low),
+-		       "c" (high)
+-		     : "ax", "dx", "memory");
+-}
+-
+-static inline void __set_64bit_constant(unsigned long long *ptr,
+-					unsigned long long value)
+-{
+-	__set_64bit(ptr, (unsigned int)value, (unsigned int)(value >> 32));
+-}
+-
+-#define ll_low(x)	*(((unsigned int *)&(x)) + 0)
+-#define ll_high(x)	*(((unsigned int *)&(x)) + 1)
+-
+-static inline void __set_64bit_var(unsigned long long *ptr,
+-				   unsigned long long value)
+-{
+-	__set_64bit(ptr, ll_low(value), ll_high(value));
++		     : "=m" (*ptr), "+A" (prev)
++		     : "b" (low), "c" (high)
++		     : "memory");
+ }
+ 
+-#define set_64bit(ptr, value)			\
+-	(__builtin_constant_p((value))		\
+-	 ? __set_64bit_constant((ptr), (value))	\
+-	 : __set_64bit_var((ptr), (value)))
+-
+-#define _set_64bit(ptr, value)						\
+-	(__builtin_constant_p(value)					\
+-	 ? __set_64bit(ptr, (unsigned int)(value),			\
+-		       (unsigned int)((value) >> 32))			\
+-	 : __set_64bit(ptr, ll_low((value)), ll_high((value))))
+-
+ extern void __cmpxchg_wrong_size(void);
+ 
+ /*
+diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
+index b92f147..9596e7c 100644
+--- a/arch/x86/include/asm/cmpxchg_64.h
++++ b/arch/x86/include/asm/cmpxchg_64.h
+@@ -5,13 +5,11 @@
+ 
+ #define __xg(x) ((volatile long *)(x))
+ 
+-static inline void set_64bit(volatile unsigned long *ptr, unsigned long val)
++static inline void set_64bit(volatile u64 *ptr, u64 val)
+ {
+ 	*ptr = val;
+ }
+ 
+-#define _set_64bit set_64bit
+-
+ extern void __xchg_wrong_size(void);
+ extern void __cmpxchg_wrong_size(void);
+ 
