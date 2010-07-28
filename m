@@ -1,70 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab0G1Grc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 02:47:32 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55741 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab0G1Gr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 02:47:29 -0400
-Date: Wed, 28 Jul 2010 08:47:23 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Roman Zippel <zippel@linux-m68k.org>, Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] kconfig: introduce alldefconfig + savedefconfig
-Message-ID: <20100728064723.GA14914@pengutronix.de>
-References: <20100725213808.GA5814@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100725213808.GA5814@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753991Ab0G1Gsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 02:48:31 -0400
+Received: from wine.ocn.ne.jp ([122.1.235.145]:61659 "EHLO smtp.wine.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729Ab0G1Gs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 02:48:29 -0400
+To: john.johansen@canonical.com, linux-security-module@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [AppArmor #6 0/13] AppArmor security module
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
+In-Reply-To: <1280199468-19680-1-git-send-email-john.johansen@canonical.com>
+Message-Id: <201007281548.HFC39035.LHMFOFtJOFVQOS@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 28 Jul 2010 15:48:22 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+John Johansen wrote:
+> With this submission we believe AppArmor is ready for inclusion into
+> the kernel.
+If nobody has objection, I think it is time to add AppArmor for Linux 2.6.36.
 
-On Sun, Jul 25, 2010 at 11:38:08PM +0200, Sam Ravnborg wrote:
-> After reading some of the mails about the
-> defconfig files I decided to take a look at kconfig.
-> 
-> We already decided to go for a solution where the defconfig
-> files contains only the minimal configuration.
-> Uwe developed a script to assist but having native support
-> in kconfig is preferable.
-> 
-> This patch set introduce "alldefconfig".
-> alldefconfig create a configuration with all values set
-> to default values.
-> This can be usefull when we check if we do have a sane
-> set of default values. Rhe config can be inspected
-> using menuconfig.
-> 
-> The patches also introduce "savedefconfig" which
-> reads the current configuration and save it
-> as a minimal configuration.
-> 
-> In my testing I benchmarked it with one
-> of the arm defconfings and the final result is
-> the same (symbols appear in different order).
-I would prefer to have them in the same order.  I havn't checked the
-details, but I really like getting support for minimal defconfigs done
-in kconfig directly.
 
-Thanks
-Uwe
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+LXR as of 9788eb59 "AppArmor: Remove delegate information from permission struct"
+is at http://tomoyo.sourceforge.jp/cgi-bin/lxr/source/?v=apparmor-dev .
+
+Comments listed below. All trivial.
+
+
+
+Regarding apparmorfs.c
+
+142 static struct dentry *aa_fs_dentry;
+
+You can add "__initdata".
+
+static void aafs_remove(const char *name)
+
+You can add "__init".
+
+163 static int aafs_create(const char *name, int mask,
+164                        const struct file_operations *fops)
+
+You can add "__init".
+
+179 void aa_destroy_aafs(void)
+
+You can add "__init".
+
+198 int aa_create_aafs(void)
+
+You can add "static" and "__init".
+
+
+
+Regarding audit.c
+
+179 int aa_audit(int type, struct aa_profile *profile, gfp_t gfp,
+180              struct common_audit_data *sa,
+181              void (*cb) (struct audit_buffer *, void *))
+182 {
+183         BUG_ON(!profile);
+(...snipped...)
+200         if (profile && KILL_MODE(profile) && type == AUDIT_APPARMOR_DENIED)
+201                 type = AUDIT_APPARMOR_KILL;
+202 
+203         if (profile && !unconfined(profile))
+204                 sa->aad.profile = profile;
+
+profile != NULL already chedked.
+
+
+
+Regarding capability.c
+
+ 59  * Returns: 0 or sa->error on succes,  error code on failure
+
+s/succes/success/
+
+
+
+Regarding domain.c
+
+201  * Either the profile or namespace name may be optional but if the namespace
+202  * is specified the profile name termination must be present.  This results
+203  * in the following possible encodings:
+204  * profile_name\0
+205  * :ns_name\0profile_name\0
+206  * :ns_name\0\0
+207  *
+208  * NOTE: the xtable fqname is prevalidated at load time in unpack_trans_table
+209  *
+210  * Returns: profile name if it is specified else NULL
+211  */
+212 static const char *separate_fqname(const char *fqname, const char **ns_name)
+213 {
+214         const char *name;
+215 
+216         if (fqname[0] == ':') {
+217                 *ns_name = fqname + 1;          /* skip : */
+
+Maybe
+
+	BUG_ON(!*ns_name);
+
+or something is wanted in case fqname by error received ':' + '\0' rather than
+':' + '\0' + '\0'.
+
+218                 name = *ns_name + strlen(*ns_name) + 1;
+219                 if (!*name)
+220                         name = NULL;
+
+
+
+Regarding lib.c
+
+ 61 void aa_info_message(const char *str)
+ 62 {
+ 63         if (audit_enabled) {
+ 64                 struct common_audit_data sa;
+ 65                 COMMON_AUDIT_DATA_INIT(&sa, NONE);
+ 66                 sa.aad.info = str;
+ 67                 printk(KERN_INFO "AppArmor: %s\n", str);
+
+You want to skip printk() if !audit_enabled?
+
+ 68                 aa_audit_msg(AUDIT_APPARMOR_STATUS, &sa, NULL);
+ 69         }
+ 70 }
+
+ 81 void *kvmalloc(size_t size)
+ 82 {
+ 83         void *buffer = NULL;
+ 84 
+ 85         if (size == 0)
+ 86                 return NULL;
+ 87 
+ 88         /* do not attempt kmalloc if we need more than 16 pages at once */
+ 89         if (size <= (16*PAGE_SIZE))
+ 90                 buffer = kmalloc(size, GFP_NOIO | __GFP_NOWARN);
+ 91         if (!buffer) {
+
+Please add "/* See kvfree() for reason to round up. */" or something.
+
+ 92                 if (size < sizeof(struct work_struct))
+ 93                         size = sizeof(struct work_struct);
+ 94                 buffer = vmalloc(size);
+
+
+
+Regarding lsm.c
+
+ 39 int apparmor_initialized;
+
+You can add "__initdata".
+
+
+
+Regarding policy_unpack.c
+
+361  * Returns: 1 if table succesfully unpacked
+
+s/succesfully/successfully/
+
+
+
+Regarding include/apparmor.h
+
+ 50 extern int apparmor_initialized;
+
+You can add "__initdata".
+
+
+
+Regarding include/apparmorfs.h
+
+ 18 extern void aa_destroy_aafs(void);
+
+You can add "__init".
+
+
+
+Regarding include/policy.h
+
+ 71 #define AA_NEW_SID 0
+
+This symbol is not used.
+
+254  * @profile: the profile to check for newer versions of (NOT NULL)
+(...snipped...)
+263 static inline struct aa_profile *aa_newest_version(struct aa_profile *profile)
+264 {
+265         if (unlikely(profile && profile->replacedby))
+266                 for (; profile->replacedby; profile = profile->replacedby)
+
+Comment says profile != NULL. Maybe
+
+static inline struct aa_profile *aa_newest_version(struct aa_profile *profile)
+{
+	while (profile->replacedby)
+		profile = profile->replacedby;
+}
+
+?
