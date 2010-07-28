@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab0G1R2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 13:28:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2300 "EHLO mx1.redhat.com"
+	id S1755925Ab0G1R3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:29:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38810 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753089Ab0G1R2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 13:28:30 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100728111525.355a2bd3@notabene>
-References: <20100728111525.355a2bd3@notabene> <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com> <E1Obxpd-00CRIo-SF@intern.SerNet.DE> <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com> <20100722162712.GB10352@jeremy-laptop> <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> <alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr> <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com> 
-To: Neil Brown <neilb@suse.de>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
-        Volker.Lendecke@sernet.de, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
-Date: Wed, 28 Jul 2010 18:28:02 +0100
-Message-ID: <13591.1280338082@redhat.com>
+	id S1754312Ab0G1R3t convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 13:29:49 -0400
+From: "Ramos Falcon, Ernesto" <ernesto@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: "Menon, Nishanth" <nm@ti.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Wed, 28 Jul 2010 12:29:39 -0500
+Subject: RE: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
+ 	NULL pointer in cmm.c
+Thread-Topic: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
+ 	NULL pointer in cmm.c
+Thread-Index: Acsud/bWPxNi/21iS6q5A0etqORMlQAAjlSA
+Message-ID: <B852767254C5C94EBB1040EE0EFA060094B73BAD@dlee01.ent.ti.com>
+References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
+	<1280328052-31292-2-git-send-email-ernesto@ti.com>
+	<1280328052-31292-3-git-send-email-ernesto@ti.com>	<4C504719.3020007@ti.com>
+	<4C504D66.8090302@ti.com>
+	<B852767254C5C94EBB1040EE0EFA060094B73B31@dlee01.ent.ti.com>
+ <AANLkTi=3K1NC4nGnuTBdVmTOmmG0JEZrG9vKhOvYgXhf@mail.gmail.com>
+In-Reply-To: <AANLkTi=3K1NC4nGnuTBdVmTOmmG0JEZrG9vKhOvYgXhf@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Neil Brown <neilb@suse.de> wrote:
+Agree! I'll send new version of this patch.
 
-> ctime and mtime have real cache-coherence semantics which require them being
-> updated by the kernel (whether the cache is on an NFS client, in a backup
-> archive, or in a .o translation of a .c file).
-
-So does creation time, at least for CIFS caching.  Creation time has potential
-for spotting when the object at a pathname has changed for something else,
-given the lack of inode number and inode generation from windows servers.
-Creation time gives us one more datum to use.
-
-> The only role the kernel might have would be setting the 'creation time' when
-> the file was created, but it seems even that isn't always what is wanted,
-> because people don't so much what the time of create of the
-> container-on-disk, but the time of creation of the data-content.
-
-That should be a timestamp in the content itself, not a filesystem metadata
-timestamp.
-
-> I would want to see a pretty convincing use-case that cannot be solved with
-> xattrs before 'creation time' was added to a generic kernel interface.
-
-Then there's no point even considering this.  You could emulate the entirety
-of stat() with getxattr().  I've previously posted a patch to implement the
-retrieval of creation time, inode gen and data version as xattrs and been told
-that it's the wrong way to do it and I should extend stat instead.
-
-> So just use xattrs and don't involve the kernel in any detailed knowledge of
-> this value.
-
-Why not?  BSD has it in its stat struct.  Windows has it in its Win32
-equivalents.  Samba for one will look for it there, and use it if it is.
-
-Using an xattr means an extra pathwalk and extra locking per access for any
-program that wants it.  It's a reasonable bet such a program will also be
-stat'ing the file it wants the creation time for.
-
-If we are going to extend stat anyway, then why not make out a short list of
-extra things we could usefully return and consider adding them?  Something
-like creation time is reasonably easy to come by for little extra overhead.
-Ext4, for example, retains a copy of it in RAM in its inode struct.
-
-> Maybe xstat should take a list of xattrs to be retrieved as well??  or maybe
-> not.
-
-The idea of xstat() having a variable-length buffer and variable arguments has
-been well derided.  It ain't going to happen, much though I'd like it to.  I'd
-quite like to offer the opportunity to return the security label, for example.
-
-David
+>-----Original Message-----
+>From: Felipe Contreras [mailto:felipe.contreras@gmail.com]
+>Sent: Wednesday, July 28, 2010 12:12 PM
+>To: Ramos Falcon, Ernesto
+>Cc: Menon, Nishanth; gregkh@suse.de; Ramirez Luna, Omar; ohad@wizery.com;
+>ameya.palande@nokia.com; felipe.contreras@nokia.com; Guzman Lugo, Fernando;
+>linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux-
+>omap@vger.kernel.org
+>Subject: Re: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
+>NULL pointer in cmm.c
+>
+>Hi Ernesto,
+>
+>On Wed, Jul 28, 2010 at 7:53 PM, Ramos Falcon, Ernesto <ernesto@ti.com>
+>wrote:
+>>>here is a better approach:
+>>>remove cmm_xlator_delete altogether
+>
+>[...]
+>
+>> I considered this approach before but in terms of maintainability I
+>thought it was easier to locate where translator tables are destroy if we
+>keep cmm_xlator_delete function.
+>
+>That's not maintainability, that's debugging convenience. AFAIU linux
+>is all about maintenance, because that provides real, tangible, and
+>proven gains. Debugging convenience gains are hypothetical; you don't
+>really know how useful it will be to have a separate free function.
+>
+>And please avoid bottom-posting, instead use interleaved style,
+>otherwise people see a comment, and then have to scroll down to see
+>the answer.
+>http://en.wikipedia.org/wiki/Posting_style#Interleaved_style
+>
+>--
+>Felipe Contreras
