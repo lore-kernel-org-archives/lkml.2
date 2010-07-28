@@ -1,194 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab0G1Qxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 12:53:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36928 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752771Ab0G1Qxt convert rfc822-to-8bit (ORCPT
+	id S1755681Ab0G1RCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 13:02:21 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:47297 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751894Ab0G1RCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 12:53:49 -0400
-From: "Ramos Falcon, Ernesto" <ernesto@ti.com>
-To: "Menon, Nishanth" <nm@ti.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Wed, 28 Jul 2010 11:53:38 -0500
-Subject: RE: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
- NULL pointer in cmm.c
-Thread-Topic: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
- NULL pointer in cmm.c
-Thread-Index: Acsuaf/aO6GEXd5sSF+6E/3m5klX6AACnVAw
-Message-ID: <B852767254C5C94EBB1040EE0EFA060094B73B31@dlee01.ent.ti.com>
-References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
- <1280328052-31292-2-git-send-email-ernesto@ti.com>
- <1280328052-31292-3-git-send-email-ernesto@ti.com> <4C504719.3020007@ti.com>
- <4C504D66.8090302@ti.com>
-In-Reply-To: <4C504D66.8090302@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Jul 2010 13:02:19 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: L61aQ_8VM1n1nNRDGxlIFKZRPUo3gKIiShBJrzxr3llAN0l
+ 24Vb1wTBOOuG1sZWQKYY7rqisPOdEIyHZleB5qBueTryEYokyoL2y1T1fFKU
+ b6cAHcgfw3y6dcq1dZNBMVfyy4v.4Xky4bcCAVyYSGheDie4xNHUd8jMgMeF
+ lsIRmPEXUVzzrs2CSCVhatGk5aBycLpdcmH8dJAoTxpl5QXEXenu_Hjf9BaZ
+ _2j_DGtm7UDd8KAhgLsBVwPC0uM3l
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 28 Jul 2010 12:02:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+In-Reply-To: <20100728155617.GA5401@barrios-desktop>
+Message-ID: <alpine.DEB.2.00.1007281158150.21717@router.home>
+References: <1280159163-23386-1-git-send-email-minchan.kim@gmail.com> <alpine.DEB.2.00.1007261136160.5438@router.home> <pfn.valid.v4.reply.1@mdm.bga.com> <AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com> <pfn.valid.v4.reply.2@mdm.bga.com>
+ <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com> <alpine.DEB.2.00.1007270929290.28648@router.home> <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
+ <alpine.DEB.2.00.1007281005440.21717@router.home> <20100728155617.GA5401@barrios-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 29 Jul 2010, Minchan Kim wrote:
 
-
->-----Original Message-----
->From: Menon, Nishanth
->Sent: Wednesday, July 28, 2010 10:32 AM
->To: Ramos Falcon, Ernesto
->Cc: gregkh@suse.de; Ramirez Luna, Omar; ohad@wizery.com;
->ameya.palande@nokia.com; felipe.contreras@nokia.com; Guzman Lugo, Fernando;
->linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux-
->omap@vger.kernel.org
->Subject: Re: [PATCH 2/5] staging:ti dspbridge: remove unnecessary check for
->NULL pointer in cmm.c
+> > Simplest scheme would be to clear PageReserved() in all page struct
+> > associated with valid pages and clear those for page structs that do not
+> > refer to valid pages.
 >
->Nishanth Menon had written, on 07/28/2010 10:04 AM, the following:
->> Ramos Falcon, Ernesto had written, on 07/28/2010 09:40 AM, the following:
->>> Remove unnecessary check for NULL pointer in cmm.c.
->>>
->>> Signed-off-by: Ernesto Ramos <ernesto@ti.com>
->>> ---
->>>  drivers/staging/tidspbridge/pmgr/cmm.c |    8 ++------
->>>  1 files changed, 2 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c
->b/drivers/staging/tidspbridge/pmgr/cmm.c
->>> index 8e808d9..874ed64 100644
->>> --- a/drivers/staging/tidspbridge/pmgr/cmm.c
->>> +++ b/drivers/staging/tidspbridge/pmgr/cmm.c
->>> @@ -992,16 +992,12 @@ int cmm_xlator_create(struct cmm_xlatorobject
->**xlator,
->>>  int cmm_xlator_delete(struct cmm_xlatorobject *xlator, bool force)
->>>  {
->>>  	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
->>> -	int status = 0;
->>>
->>>  	DBC_REQUIRE(refs > 0);
->>>
->>> -	if (xlator_obj)
->>> -		kfree(xlator_obj);
->>> -	else
->>> -		status = -EFAULT;
->>> +	kfree(xlator_obj);
->>>
->>> -	return status;
->>> +	return 0;
->>>  }
->>>
->>>  /*
->> which kind of begs the question - does this function need to any longer
->> return int?
->>
->here is a better approach:
->remove cmm_xlator_delete altogether
->diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c
->b/drivers/staging/tidspbridge/pmgr/cmm.c
->index 8e808d9..1a4ebca 100644
->--- a/drivers/staging/tidspbridge/pmgr/cmm.c
->+++ b/drivers/staging/tidspbridge/pmgr/cmm.c
->@@ -984,27 +984,6 @@ int cmm_xlator_create(struct cmm_xlatorobject
->**xlator,
->  }
->
->  /*
->- *  ======== cmm_xlator_delete ========
->- *  Purpose:
->- *      Free the Xlator resources.
->- *      VM gets freed later.
->- */
->-int cmm_xlator_delete(struct cmm_xlatorobject *xlator, bool force)
->-{
->-	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
->-	int status = 0;
->-
->-	DBC_REQUIRE(refs > 0);
->-
->-	if (xlator_obj)
->-		kfree(xlator_obj);
->-	else
->-		status = -EFAULT;
->-
->-	return status;
->-}
->-
->-/*
->   *  ======== cmm_xlator_alloc_buf ========
->   */
->  void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *va_buf,
->diff --git a/drivers/staging/tidspbridge/rmgr/node.c
->b/drivers/staging/tidspbridge/rmgr/node.c
->index 9f07c81..0c39288 100644
->--- a/drivers/staging/tidspbridge/rmgr/node.c
->+++ b/drivers/staging/tidspbridge/rmgr/node.c
->@@ -2503,7 +2503,6 @@ static void delete_node(struct node_object *hnode,
->  			struct process_context *pr_ctxt)
->  {
->  	struct node_mgr *hnode_mgr;
->-	struct cmm_xlatorobject *xlator;
->  	struct bridge_drv_interface *intf_fxns;
->  	u32 i;
->  	enum node_type node_type;
->@@ -2521,7 +2520,6 @@ static void delete_node(struct node_object *hnode,
->  	hnode_mgr = hnode->hnode_mgr;
->  	if (!hnode_mgr)
->  		goto func_end;
->-	xlator = hnode->xlator;
->  	node_type = node_get_type(hnode);
->  	if (node_type != NODE_DEVICE) {
->  		node_msg_args = hnode->create_args.asa.node_msg_args;
->@@ -2617,10 +2615,7 @@ static void delete_node(struct node_object *hnode,
->  	hnode->dcd_props.obj_data.node_obj.pstr_i_alg_name = NULL;
->
->  	/* Free all SM address translator resources */
->-	if (xlator) {
->-		(void)cmm_xlator_delete(xlator, true);	/* force free */
->-		xlator = NULL;
->-	}
->+	kfree(hnode->xlator);
->
->  	kfree(hnode->nldr_node_obj);
->  	hnode->nldr_node_obj = NULL;
->diff --git a/drivers/staging/tidspbridge/rmgr/strm.c
->b/drivers/staging/tidspbridge/rmgr/strm.c
->index 73888e3..05a8d13 100644
->--- a/drivers/staging/tidspbridge/rmgr/strm.c
->+++ b/drivers/staging/tidspbridge/rmgr/strm.c
->@@ -844,14 +844,8 @@ static int delete_strm(struct strm_object *stream_obj)
->  			status = (*intf_fxns->pfn_chnl_close)
->  					(stream_obj->chnl_obj);
->  			/* Free all SM address translator resources */
->-			if (DSP_SUCCEEDED(status)) {
->-				if (stream_obj->xlator) {
->-					/* force free */
->-					(void)cmm_xlator_delete(stream_obj->
->-								xlator,
->-								true);
->-				}
->-			}
->+			if (DSP_SUCCEEDED(status))
->+				kfree(stream_obj->xlator);
->  		}
->  		kfree(stream_obj);
->  	} else {
->--
->Regards,
->Nishanth Menon
+> I can't understand your words.
+> Clear PG_resereved in valid pages and invalid pages both?
 
-Thanks Nishanth,
+Argh sorry. No. Set PageReserved for pages that do not refer to reserved
+pages.
 
-I considered this approach before but in terms of maintainability I thought it was easier to locate where translator tables are destroy if we keep cmm_xlator_delete function.
+> I guess your code look like that clear PG_revered on valid memmap
+> but set PG_reserved on invalid memmap.
+> Right?
 
-/Ernesto
+Right.
+
+> invalid memmap pages will be freed by free_memmap and will be used
+> on any place. How do we make sure it has PG_reserved?
+
+Not present memmap pages make pfn_valid fail already since there is no
+entry for the page table (vmemmap) or blocks are missing in the sparsemem
+tables.
+
+> Maybe I don't understand your point.
+
+I thought we are worrying about holes in the memmap blocks containing page
+structs. Some page structs point to valid pages and some are not. The
+invalid page structs need to be marked consistently to allow the check.
+
+
