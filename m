@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab0G1QmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 12:42:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33864 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab0G1QmO (ORCPT
+	id S1755623Ab0G1QqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 12:46:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49243 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754246Ab0G1QqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 12:42:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Wcd1fvkJySXJLno4bwoeB9Yz1FTP0/SRbI52EmAyQTu8ZUrj5/z7PqPKQI9hfCK1ya
-         f72uws3hUFIvAqgDyCs2cT2U9bpm/F24253wUIlG00+oiQASzqdQgkRbVYKwOOln5bgD
-         KUE2vaD0sb2DITzdtBFnDS6StySN/TL0pNgUM=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Eliot Blennerhassett <eblennerhassett@audioscience.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/10] ALSA: asihpi: check return value of get_user()
-Date: Wed, 28 Jul 2010 20:41:56 +0400
-Message-Id: <1280335316-23515-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 28 Jul 2010 12:46:04 -0400
+From: Ernesto Ramos <ernesto@ti.com>
+To: gregkh@suse.de
+Cc: omar.ramirez@ti.com, ohad@wizery.com, ameya.palande@nokia.com,
+        felipe.contreras@nokia.com, fernando.lugo@ti.com,
+        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com, nm@ti.com,
+        linux-omap@vger.kernel.org, Ernesto Ramos <ernesto@ti.com>
+Subject: [PATCH] staging:ti dspbridge: avoid possible NULL dereference panic
+Date: Wed, 28 Jul 2010 11:50:36 -0500
+Message-Id: <1280335836-31801-1-git-send-email-ernesto@ti.com>
+X-Mailer: git-send-email 1.5.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_user() may fail, if so return -EFAULT.
+When dsp_notifications array is received from user,
+dspbridge verifies the array has valid pointers
+and dsp_notification structures. However, these
+structures contain pointers that need to be
+checked for valid handles.
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+Signed-off-by: Ernesto Ramos <ernesto@ti.com>
 ---
- sound/pci/asihpi/hpioctl.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+ drivers/staging/tidspbridge/pmgr/dspapi.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/sound/pci/asihpi/hpioctl.c b/sound/pci/asihpi/hpioctl.c
-index 3114999..62895a7 100644
---- a/sound/pci/asihpi/hpioctl.c
-+++ b/sound/pci/asihpi/hpioctl.c
-@@ -121,11 +121,17 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	phpi_ioctl_data = (struct hpi_ioctl_linux __user *)arg;
- 
- 	/* Read the message and response pointers from user space.  */
--	get_user(puhm, &phpi_ioctl_data->phm);
--	get_user(puhr, &phpi_ioctl_data->phr);
-+	if (get_user(puhm, &phpi_ioctl_data->phm) ||
-+	    get_user(puhr, &phpi_ioctl_data->phr)) {
-+		err = -EFAULT;
-+		goto out;
-+	}
- 
- 	/* Now read the message size and data from user space.  */
--	get_user(hm->h.size, (u16 __user *)puhm);
-+	if (get_user(hm->h.size, (u16 __user *)puhm)) {
-+		err = -EFAULT;
-+		goto out;
-+	}
- 	if (hm->h.size > sizeof(*hm))
- 		hm->h.size = sizeof(*hm);
- 
-@@ -138,7 +144,10 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 		goto out;
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index 1b0ab4a..da08dfc 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -539,7 +539,7 @@ func_end:
+  */
+ u32 mgrwrap_wait_for_bridge_events(union trapped_args *args, void *pr_ctxt)
+ {
+-	int status = 0, real_status = 0;
++	int status = 0;
+ 	struct dsp_notification *anotifications[MAX_EVENTS];
+ 	struct dsp_notification notifications[MAX_EVENTS];
+ 	u32 index, i;
+@@ -554,19 +554,21 @@ u32 mgrwrap_wait_for_bridge_events(union trapped_args *args, void *pr_ctxt)
+ 	/* get the events */
+ 	for (i = 0; i < count; i++) {
+ 		CP_FM_USR(&notifications[i], anotifications[i], status, 1);
+-		if (!status) {
+-			/* set the array of pointers to kernel structures */
+-			anotifications[i] = &notifications[i];
++		if (status || !notifications[i].handle) {
++			status = -EINVAL;
++			break;
+ 		}
++		/* set the array of pointers to kernel structures */
++		anotifications[i] = &notifications[i];
  	}
+ 	if (!status) {
+-		real_status = mgr_wait_for_bridge_events(anotifications, count,
++		status = mgr_wait_for_bridge_events(anotifications, count,
+ 							 &index,
+ 							 args->args_mgr_wait.
+ 							 utimeout);
+ 	}
+ 	CP_TO_USR(args->args_mgr_wait.pu_index, &index, status, 1);
+-	return real_status;
++	return status;
+ }
  
--	get_user(res_max_size, (u16 __user *)puhr);
-+	if (get_user(res_max_size, (u16 __user *)puhr)) {
-+		err = -EFAULT;
-+		goto out;
-+	}
- 	/* printk(KERN_INFO "user response size %d\n", res_max_size); */
- 	if (res_max_size < sizeof(struct hpi_response_header)) {
- 		HPI_DEBUG_LOG(WARNING, "small res size %d\n", res_max_size);
+ /*
 -- 
-1.7.0.4
+1.5.4.5
 
