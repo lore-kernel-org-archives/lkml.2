@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab0G1NiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 09:38:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753604Ab0G1NiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 09:38:06 -0400
-Date: Wed, 28 Jul 2010 16:32:31 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, krkumar2@in.ibm.com
-Subject: [GIT PULL net-next-2.6] vhost-net patchset for 2.6.36
-Message-ID: <20100728133231.GA1932@redhat.com>
-References: <20100701164127.GA3199@redhat.com>
+	id S1754156Ab0G1Nmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 09:42:36 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57672 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab0G1Nmf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 09:42:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ojguiQagjTqwrT5v822s93trUAcL4CCEDuqCdRbrZrTy+WUnhTrgpJBEobLFTNk6yp
+         RVXKbwntK5iUpeKp18zu0VpfU1VUVaWsNnQizqENhT9wT20S/oRLjUQU9CdmYNOnbJq5
+         si9xmcPbjswhcZcZlvdLevxjpBaEzDm8Y6HUQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100701164127.GA3199@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <op.vgj05nev7p4s8u@pikus>
+References: <38424b23c94ddcff6f1808161912f362c2ccae39.1280316431.git.m.nazarewicz@samsung.com>
+	<7b3ddf05e135e8147d1011a81f9069d9cd78aa62.1280316431.git.m.nazarewicz@samsung.com>
+	<d7a11c97d1b28c7a0336c747de57a9a17dcc7604.1280316431.git.m.nazarewicz@samsung.com>
+	<AANLkTikW8eSn3fgRqJsXwp=+ZMjKgojHDP6+DsDMtg4y@mail.gmail.com>
+	<op.vgj05nev7p4s8u@pikus>
+Date: Wed, 28 Jul 2010 16:42:33 +0300
+Message-ID: <AANLkTimavNK1cFhOndEBJrz0NWDn+GUYsLkBDEN9XFwr@mail.gmail.com>
+Subject: Re: [PATCHv5 3/3] USB: gadget: storage_common: fixed warning building 
+	mass storage function
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: =?UTF-8?Q?Micha=C5=82_Nazarewicz?= <m.nazarewicz@samsung.com>
+Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
-The following tree includes the current vhost-net patchset.
-Please merge it for 2.6.36.
-Thanks!
+2010/7/28 Michał Nazarewicz <m.nazarewicz@samsung.com>:
+>> Why the warning happens for those two only?
+>> There are two more parameters (four methods) to handle 'ro' and 'file'
+>> which are done in the same way.
+>
+> Those are the only ones that are not used by the mass storage function.
+Now I got it.
 
-The following changes since commit 4cfa580e7eebb8694b875d2caff3b989ada2efac:
+I'm just wondering if it somehow useful to append similar parameter to
+that function.
 
-  r6040: Fix args to phy_mii_ioctl(). (2010-07-21 21:10:49 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
-
-David Stevens (1):
-      vhost-net: mergeable buffers support
-
-Michael S. Tsirkin (1):
-      vhost: apply cgroup to vhost workers
-
-Sridhar Samudrala (1):
-      cgroups: Add an API to attach a task to current task's cgroup
-
-Tejun Heo (1):
-      vhost: replace vhost_workqueue with per-vhost kthread
-
- drivers/vhost/net.c    |  293 +++++++++++++++++++++++++++++++++++++++++-------
- drivers/vhost/vhost.c  |  228 ++++++++++++++++++++++++++++++++-----
- drivers/vhost/vhost.h  |   55 ++++++---
- include/linux/cgroup.h |    7 +
- kernel/cgroup.c        |   23 ++++
- 5 files changed, 515 insertions(+), 91 deletions(-)
-
+-- 
+With Best Regards,
+Andy Shevchenko
