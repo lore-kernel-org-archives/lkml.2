@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab0G1Ern (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 00:47:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:40942 "EHLO ozlabs.org"
+	id S1751388Ab0G1Et5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 00:49:57 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57763 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab0G1Erl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 00:47:41 -0400
-Date: Wed, 28 Jul 2010 14:47:31 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Kumar Gala <kumar.gala@freescale.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: Please pull my perf.git urgent branch
-Message-ID: <20100728044731.GA2408@brick.ozlabs.ibm.com>
-References: <20100727124019.GB14947@brick.ozlabs.ibm.com>
- <20100727112854.7bf97d48@schlenkerla.am.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727112854.7bf97d48@schlenkerla.am.freescale.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750944Ab0G1Etx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 00:49:53 -0400
+Subject: Re: [PATCH 01/16] x86, memblock: Add
+ memblock_x86_find_in_range_size()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1279824241-17582-2-git-send-email-yinghai@kernel.org>
+References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
+	 <1279824241-17582-2-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 28 Jul 2010 14:49:18 +1000
+Message-ID: <1280292558.1970.222.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 27, 2010 at 11:28:54AM -0500, Scott Wood wrote:
+On Thu, 2010-07-22 at 11:43 -0700, Yinghai Lu wrote:
+> size is returned according free range.
+> Will be used to find free ranges for early_memtest and memory corruption check
+> 
+> Do not mess it up with lib/memblock.c yet.
 
-> Doesn't the setting of .period need to be maintained (it is in the other
-> powerpc perf_event implementation that this is derived from)?
+So I'm readying my branch which incudes your 6 patches, however I'm
+still not happy with a few things.
 
-Gah, yes it does.
+For example, I really really don't like exporting
+memblock_reserved_init_regions.
 
-> I don't see how this is a security fix -- the existing initializer above
-> should zero-fill the fields that are not explicitly initialized.  In fact,
-> it's taking other fields that were previously initialized to zero and is
-> making them uninitialized, since perf_sample_data_init only sets addr and
-> raw.
+So you do those things for the sake of x86, so let's walk through your
+x86 patches and see if I can figure out what you do wrong :-)
 
-So I misunderstood how an initializer for an automatic struct works.
-Brown paper bag time for me... :(
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/include/asm/memblock.h |    8 ++++
+>  arch/x86/mm/Makefile            |    2 +
+>  arch/x86/mm/memblock.c          |   88 +++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 98 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/include/asm/memblock.h
+>  create mode 100644 arch/x86/mm/memblock.c
+> 
+> diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+> new file mode 100644
+> index 0000000..c14219a
+> --- /dev/null
+> +++ b/arch/x86/include/asm/memblock.h
+> @@ -0,0 +1,8 @@
+> +#ifndef _X86_MEMBLOCK_H
+> +#define _X86_MEMBLOCK_H
+> +
+> +#define ARCH_DISCARD_MEMBLOCK
 
-Regarding the other fields, I assume Peter et al. have checked that
-they don't need to be cleared, so it's a microoptimization to not
-clear them.
+So I'm no fan of this ARCH_DISCARD_MEMBLOCK, especially since it makes a
+lot of sense to keep the debugfs files around or maybe even move to
+sysfs for diagnostic purposes.
 
-> CCing linuxppc-dev on the original patch would have been nice...
+Maybe we should consider something better by having memblock always be
+init/initdata but we copy the arrays to a "final" location from an
+initcall ? We can keep your patches for now, but I think we should
+improve on that.
+ 
+> +u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
 
-True, but at least I can blame Peter Z. for that. :)
+I really really don't like your function naming. The above doesn't give
+me any bloody idea about what the purpose of the function is...
 
-Kumar and Ben, how do you want to proceed on this one?
+Cheers,
+Ben.
 
-Paul.
+
