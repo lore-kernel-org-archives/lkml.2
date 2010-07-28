@@ -1,282 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab0G1HJP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 03:09:15 -0400
-Received: from p01c12o145.mxlogic.net ([208.65.145.68]:40229 "EHLO
-	p01c12o145.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab0G1HJN (ORCPT
+	id S1752974Ab0G1HJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 03:09:52 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:59629 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844Ab0G1HJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 03:09:13 -0400
-X-MXL-Hash: 4c4fd799597bf852-98ef09ffa9eb1899636ab770e72e743b4f5545ae
-X-MXL-Hash: 4c4fd78d165c8893-a3aa5f05c3d08e15536dfbbee0d2740293d93ad3
-From: Andy Chittenden <andyc@bluearc.com>
-To: Chuck Lever <chuck.lever@oracle.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-CC: "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        netdev <netdev@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>
-Date: Wed, 28 Jul 2010 08:08:53 +0100
-Subject: RE: nfs client hang
-Thread-Topic: nfs client hang
-Thread-Index: AcstsUyl/yRExswGQ6eSTBlV8RAxswAcbnQg
-Message-ID: <ABFC24E4C13D81489F7F624E14891C8607DDF8D3BF@uk-ex-mbx1.terastack.bluearc.com>
-References: <99613C19B13C5D40914FB8930657FA9303365708DE@uk-ex-mbx1.terastack.bluearc.com>
-	 <4C4E89D4.8040607@bluearc.com>
-	 <ABFC24E4C13D81489F7F624E14891C8607DDF8D1E4@uk-ex-mbx1.terastack.bluearc.com>
- <1280233276.2827.175.camel@edumazet-laptop> <4C4F174C.2000308@oracle.com>
-In-Reply-To: <4C4F174C.2000308@oracle.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="utf-8"
+	Wed, 28 Jul 2010 03:09:48 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=LfKUFoiMi8LsDti5NqILNfNROplkTlXv1BpoRZSEk3zFMZmfd++2F2B1x3AoiHSjA
+	TrlMrR9k9FlOXJS2WhQ8g==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        m-ikeda@ds.jp.nec.com,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 5/7][memcg] memcg lockless update of file mapped
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727165938.633a1ede.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 28 Jul 2010 00:09:21 -0700
+In-Reply-To: <20100727165938.633a1ede.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Tue, 27 Jul 2010 16:59:38 +0900")
+Message-ID: <xr93pqy8krq6.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
-X-MAIL-FROM: <andyc@bluearc.com>
-X-SOURCE-IP: [213.121.168.131]
-X-AnalysisOut: [v=1.0 c=1 a=VphdPIyG4kEA:10 a=IkcTkHD0fZMA:10 a=sIqM7rbIUs]
-X-AnalysisOut: [2FIam8obyq6w==:17 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=2rkc]
-X-AnalysisOut: [7xNEJ2adBM6uFcQA:9 a=VwZIr3yhQyK-KNNJQO0A:7 a=CN-866SFEB7a]
-X-AnalysisOut: [z-mrHxs12f0b1h0A:4 a=QEXdDO2ut3YA:10 a=7DSvI1NPTFQA:10]
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o6S79TXB026607
 
-> I don't see an xs_error_report() call here, which would confirm that the socket took a trip through tcp_disconnect().
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
->From my reading of tcp_disconnect(), it calls sk->sk_error_report(sk) unconditionally so as there's no xs_error_report(), that surely means the exact opposite: tcp_disconnect() wasn't called. If it's not called, sk_shutdown is not cleared. And my revised tracing confirmed that it was set to 
-SEND_SHUTDOWN.
-
--- 
-Andy, BlueArc Engineering
-
-
------Original Message-----
-From: Chuck Lever [mailto:chuck.lever@oracle.com] 
-Sent: 27 July 2010 18:29
-To: Eric Dumazet
-Cc: Andy Chittenden; Linux Kernel Mailing List (linux-kernel@vger.kernel.org); Trond Myklebust; netdev; Linux NFS Mailing List
-Subject: Re: nfs client hang
-
-Add CC: linux-nfs@vger.kernel.org
-
-On 07/27/10 08:21 AM, Eric Dumazet wrote:
-> Le mardi 27 juillet 2010 Ã  11:53 +0100, Andy Chittenden a Ã©crit :
->>>>> IE the client starts a connection and then closes it again without sending data.
->>>> Once this happens, here's some rpcdebug info for the rpc module using 2.6.34.1 kernel:
->>>>
->>>> ... lots of the following nfsv3 WRITE requests:
->>>> [ 7670.026741] 57793 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026759] 57794 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026778] 57795 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026797] 57796 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026815] 57797 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026834] 57798 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026853] 57799 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026871] 57800 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026890] 57801 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7670.026909] 57802 0001    -11 ffff88012e32b000   (null)        0 ffffffffa03beb10 nfsv3 WRITE a:call_reserveresult q:xprt_backlog
->>>> [ 7680.520042] RPC:       worker connecting xprt ffff88013e62d800 via tcp to 10.1.6.102 (port 2049)
->>>> [ 7680.520066] RPC:       ffff88013e62d800 connect status 99 connected 0 sock state 7
->>>> [ 7680.520074] RPC: 33550 __rpc_wake_up_task (now 4296812426)
->>>> [ 7680.520079] RPC: 33550 disabling timer
->>>> [ 7680.520084] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
->>>> [ 7680.520089] RPC:       __rpc_wake_up_task done
->>>> [ 7680.520094] RPC: 33550 __rpc_execute flags=0x1
->>>> [ 7680.520098] RPC: 33550 xprt_connect_status: retrying
->>>> [ 7680.520103] RPC: 33550 call_connect_status (status -11)
->>>> [ 7680.520108] RPC: 33550 call_transmit (status 0)
->>>> [ 7680.520112] RPC: 33550 xprt_prepare_transmit
->>>> [ 7680.520118] RPC: 33550 rpc_xdr_encode (status 0)
->>>> [ 7680.520123] RPC: 33550 marshaling UNIX cred ffff88012e002300
->>>> [ 7680.520130] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
->>>> [ 7680.520136] RPC: 33550 xprt_transmit(32920)
->>>> [ 7680.520145] RPC:       xs_tcp_send_request(32920) = -32
->>>> [ 7680.520151] RPC:       xs_tcp_state_change client ffff88013e62d800...
->>>> [ 7680.520156] RPC:       state 7 conn 0 dead 0 zapped 1
->>
->>> I changed that debug to output sk_shutdown too. That has a value of 2
->>> (IE SEND_SHUTDOWN). Looking at tcp_sendmsg(), I see this:
->>
->>>           err = -EPIPE;
->>>           if (sk->sk_err || (sk->sk_shutdown&  SEND_SHUTDOWN))
->>>                   goto out_err;
->>
->>> which correlates with the trace "xs_tcp_send_request(32920) = -32". So,
->>> this looks like a problem in the sockets/tcp layer. The rpc layer issues
->>> a shutdown and then reconnects using the same socket. So either
->>> sk_shutdown needs zeroing once the shutdown completes or should be
->>> zeroed on subsequent connect. The latter sounds safer.
-
->> This patch for 2.6.34.1 fixes the issue:
->>
->> --- /home/company/software/src/linux-2.6.34.1/net/ipv4/tcp_output.c     2010-07-27 08:46:46.917000000 +0100
->> +++ net/ipv4/tcp_output.c       2010-07-27 09:19:16.000000000 +0100
->> @@ -2522,6 +2522,13 @@
->>          struct tcp_sock *tp = tcp_sk(sk);
->>          __u8 rcv_wscale;
->>
->> +       /* clear down any previous shutdown attempts so that
->> +        * reconnects on a socket that's been shutdown leave the
->> +        * socket in a usable state (otherwise tcp_sendmsg() returns
->> +        * -EPIPE).
->> +        */
->> +       sk->sk_shutdown = 0;
->> +
->>          /* We'll fix this up when we get a response from the other end.
->>           * See tcp_input.c:tcp_rcv_state_process case TCP_SYN_SENT.
->>           */
->>
->> As I mentioned in my first message, we first saw this issue in 2.6.32 as supplied by debian (linux-image-2.6.32-5-amd64 Version: 2.6.32-17). It looks like the same patch would fix the problem there too.
->>
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 >
-> CC netdev
+> At accounting file events per memory cgroup, we need to find memory cgroup
+> via page_cgroup->mem_cgroup. Now, we use lock_page_cgroup().
 >
-> This reminds me a similar problem we had in the past, fixed with commit
-> 1fdf475a (tcp: tcp_disconnect() should clear window_clamp)
+> But, considering the context which page-cgroup for files are accessed,
+> we can use alternative light-weight mutual execusion in the most case.
+> At handling file-caches, the only race we have to take care of is "moving"
+> account, IOW, overwriting page_cgroup->mem_cgroup. Because file status
+> update is done while the page-cache is in stable state, we don't have to
+> take care of race with charge/uncharge.
 >
-> But tcp_disconnect() already clears sk->sk_shutdown
+> Unlike charge/uncharge, "move" happens not so frequently. It happens only when
+> rmdir() and task-moving (with a special settings.)
+> This patch adds a race-checker for file-cache-status accounting v.s. account
+> moving. The new per-cpu-per-memcg counter MEM_CGROUP_ON_MOVE is added.
+> The routine for account move 
+>   1. Increment it before start moving
+>   2. Call synchronize_rcu()
+>   3. Decrement it after the end of moving.
+> By this, file-status-counting routine can check it needs to call
+> lock_page_cgroup(). In most case, I doesn't need to call it.
 >
-> If NFS calls tcp_disconnect(), then shutdown(), there is a problem.
-
-If tcp_disconnect() was called at some point, I would expect to see a 
-message from xs_error_report() in the debugging output.  Perhaps 
-tcp_disconnect() is not being invoked at all?
-
-> Maybe xs_tcp_shutdown() should make some sanity tests ?
+> Note: update_file_mapped is safe against charge/uncharge even if it's
+> not under address_space->tree_lock or lock_page(). Because it's under
+> page_table_lock(), anyone can't unmap it...then, anyone can't uncharge().
 >
-> Following sequence is legal, and your patch might break it.
 >
-> fd = socket(...);
-> shutdown(fd, SHUT_WR);
-> ...
-> connect(fd, ...);
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   64 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 60 insertions(+), 4 deletions(-)
+>
+> Index: mmotm-0719/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0719.orig/mm/memcontrol.c
+> +++ mmotm-0719/mm/memcontrol.c
+> @@ -89,6 +89,7 @@ enum mem_cgroup_stat_index {
+>  	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
+>  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+>  	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
+> +	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
+>  
+>  	MEM_CGROUP_STAT_NSTATS,
+>  };
+> @@ -1071,7 +1072,48 @@ static unsigned int get_swappiness(struc
+>  	return swappiness;
+>  }
+>  
+> -/* A routine for testing mem is not under move_account */
+> +static void mem_cgroup_start_move(struct mem_cgroup *mem)
+> +{
+> +	int cpu;
+> +	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
+> +	spin_lock(&mc.lock);
+> +	for_each_possible_cpu(cpu)
+> +		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) += 1;
+> +	spin_unlock(&mc.lock);
+> +
+> +	synchronize_rcu();
+> +}
+> +
+> +static void mem_cgroup_end_move(struct mem_cgroup *mem)
+> +{
+> +	int cpu;
+> +
+> +	if (!mem)
+> +		return;
+> +	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
+> +	spin_lock(&mc.lock);
+> +	for_each_possible_cpu(cpu)
+> +		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) -= 1;
+> +	spin_unlock(&mc.lock);
+> +}
+> +
+> +/*
+> + * mem_cgroup_is_moved -- checking a cgroup is mc.from target or not.
+> + *                          used for avoiding race.
+> + * mem_cgroup_under_move -- checking a cgroup is mc.from or mc.to or
+> + *			    under hierarchy of them. used for waiting at
+> + *			    memory pressure.
+> + * Result of is_moved can be trusted until the end of rcu_read_unlock().
+> + * The caller must do
+> + *	rcu_read_lock();
+> + *	result = mem_cgroup_is_moved();
+> + *	.....make use of result here....
+> + *	rcu_read_unlock();
+> + */
+> +static bool mem_cgroup_is_moved(struct mem_cgroup *mem)
+> +{
 
+Could we add an assertion to confirm locking contract is upheld:
+	VM_BUG_ON(!rcu_read_lock_held());
 
-I looked closely at some of Andy's debugging output from the 
-linux-kernel mailing list archive.  I basically agree that the network 
-layer is returning -EPIPE from tcp_sendmsg(), which the RPC client logic 
-does not expect. But it's not clear to me how it gets into this state.
+> +	return this_cpu_read(mem->stat->count[MEM_CGROUP_ON_MOVE]) > 0;
+> +}
+>  
+>  static bool mem_cgroup_under_move(struct mem_cgroup *mem)
+>  {
+> @@ -1470,13 +1512,21 @@ void mem_cgroup_update_file_mapped(struc
+>  {
+>  	struct mem_cgroup *mem;
+>  	struct page_cgroup *pc;
+> +	bool need_lock = false;
+>  
+>  	pc = lookup_page_cgroup(page);
+>  	if (unlikely(!pc))
+>  		return;
+> -
+> -	lock_page_cgroup(pc);
+> +	rcu_read_lock();
+>  	mem = id_to_mem(pc->mem_cgroup);
+> +	if (!mem)
+> +		goto done;
+> +	need_lock = mem_cgroup_is_moved(mem);
+> +	if (need_lock) {
+> +		/* need to serialize with move_account */
+> +		lock_page_cgroup(pc);
+> +		mem = id_to_mem(pc->mem_cgroup);
+> +	}
+>  	if (!mem || !PageCgroupUsed(pc))
+>  		goto done;
 
-> [ 7728.520042] RPC:       worker connecting xprt ffff88013e62d800 via tcp to 10.1.6.102 (port 2049)
- > [ 7728.520093] RPC:       ffff88013e62d800 connect status 115 
-connected 0 sock state 2
+Could we add a preemption() check here to ensure that the
+__this_cpu_xxx() is safe to use?
 
-"sock state 2" => sk->sk_state == TCP_SYN_SENT
+	/*
+	 * Preemption is already disabled. We can use __this_cpu_xxx
+	 */
++        VM_BUG_ON(preemptible());
 
- > [ 7728.520884] RPC:       xs_tcp_state_change client ffff88013e62d800...
- > [ 7728.520889] RPC:       state 1 conn 0 dead 0 zapped 1
-
-"state 1" => sk->sk_state == TCP_ESTABLISHED
-
-RPC client wakes up this RPC task now that the connection is established.
-
-> [ 7728.520896] RPC: 33550 __rpc_wake_up_task (now 4296824426)
-> [ 7728.520900] RPC: 33550 disabling timer
-> [ 7728.520906] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
-> [ 7728.520912] RPC:       __rpc_wake_up_task done
-> [ 7728.520932] RPC: 33550 __rpc_execute flags=0x1
-> [ 7728.520937] RPC: 33550 xprt_connect_status: retrying
-> [ 7728.520942] RPC: 33550 call_connect_status (status -11)
-
-The awoken RPC task's status is -EAGAIN, which prevents a reconnection 
-attempt.
-
-> [ 7728.520947] RPC: 33550 call_transmit (status 0)
-> [ 7728.520951] RPC: 33550 xprt_prepare_transmit
-> [ 7728.520957] RPC: 33550 rpc_xdr_encode (status 0)
-> [ 7728.520962] RPC: 33550 marshaling UNIX cred ffff88012e002300
-> [ 7728.520969] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
-> [ 7728.520976] RPC: 33550 xprt_transmit(32920)
-
-RPC client encodes the request and attempts to send it.
-
-> [ 7728.520984] RPC:       xs_tcp_send_request(32920) = -32
-
-Network layer says -EPIPE, for some reason.  RPC client calls 
-kernel_sock_shutdown(SHUT_WR).
-
-> [ 7728.520997] RPC:       xs_tcp_state_change client ffff88013e62d800...
-> [ 7728.521007] RPC:       state 4 conn 1 dead 0 zapped 1
-
-"state 4" => sk->sk_state == TCP_FIN_WAIT1
-
-The RPC client sets up a linger timeout.
-
-> [ 7728.521013] RPC: 33550 call_status (status -32)
-> [ 7728.521018] RPC: 33550 call_bind (status 0)
-> [ 7728.521023] RPC: 33550 call_connect xprt ffff88013e62d800 is not connected
-> [ 7728.521028] RPC: 33550 xprt_connect xprt ffff88013e62d800 is not connected
-> [ 7728.521035] RPC: 33550 sleep_on(queue "xprt_pending" time 4296824426)
-> [ 7728.521040] RPC: 33550 added to queue ffff88013e62db20 "xprt_pending"
-> [ 7728.521045] RPC: 33550 setting alarm for 60000 ms
-
-RPC client puts this RPC task to sleep.
-
-> [ 7728.521439] RPC:       xs_tcp_state_change client ffff88013e62d800...
-> [ 7728.521444] RPC:       state 5 conn 0 dead 0 zapped 1
-
-"state 5" => sk->sk_state == TCP_FIN_WAIT2
-
-> [ 7728.521602] RPC:       xs_tcp_state_change client ffff88013e62d800...
-> [ 7728.521608] RPC:       state 7 conn 0 dead 0 zapped 1
-> [ 7728.521612] RPC:       disconnected transport ffff88013e62d800
-
-"state 7" => sk->sk_state == TCP_CLOSE
-
-The RPC client marks the socket closed. and the linger timeout is 
-cancelled.  At this point, sk_shutdown should be set to zero, correct? 
-I don't see an xs_error_report() call here, which would confirm that the 
-socket took a trip through tcp_disconnect().
-
-> [ 7728.521617] RPC: 33550 __rpc_wake_up_task (now 4296824426)
-> [ 7728.521621] RPC: 33550 disabling timer
-> [ 7728.521626] RPC: 33550 removed from queue ffff88013e62db20 "xprt_pending"
-> [ 7728.521631] RPC:       __rpc_wake_up_task done
-
-RPC client wakes up the RPC task.  Meanwhile...
-
-> [ 7728.521636] RPC:       xs_tcp_state_change client ffff88013e62d800...
-> [ 7728.521641] RPC:       state 7 conn 0 dead 0 zapped 1
-> [ 7728.521645] RPC:       disconnected transport ffff88013e62d800
-> [ 7728.521649] RPC:       xs_tcp_data_ready...
-
-... network layer calls closed socket's data_ready method... while the 
-awoken RPC task gets underway.
-
-> [ 7728.521662] RPC: 33550 __rpc_execute flags=0x1
-> [ 7728.521666] RPC: 33550 xprt_connect_status: retrying
-> [ 7728.521671] RPC: 33550 call_connect_status (status -11)
-
-The awoken RPC task's status is -EAGAIN, which prevents a reconnection 
-attempt, even though there is no established connection.
-
-RPC client barrels on to send the request again.
-
-> [ 7728.521675] RPC: 33550 call_transmit (status 0)
-> [ 7728.521679] RPC: 33550 xprt_prepare_transmit
-> [ 7728.521683] RPC: 33550 rpc_xdr_encode (status 0)
-> [ 7728.521688] RPC: 33550 marshaling UNIX cred ffff88012e002300
-> [ 7728.521694] RPC: 33550 using AUTH_UNIX cred ffff88012e002300 to wrap rpc data
-> [ 7728.521699] RPC: 33550 xprt_transmit(32920)
-> [ 7728.521704] RPC:       xs_tcp_send_request(32920) = -32
-
-RPC client attempts to send again, gets -EPIPE, and calls 
-kernel_sock_shutdown(SHUT_WR).  If there is no connection established, 
-the RPC client expects -ENOTCONN, in which case it will attempt to 
-reconnect here.
-
-> [ 7728.521709] RPC:       xs_tcp_state_change client ffff88013e62d800...
-> [ 7728.521714] RPC:       state 7 conn 0 dead 0 zapped 1
-> [ 7728.521718] RPC:       disconnected transport ffff88013e62d800
-
-"state 7" => sk->sk_state == TCP_CLOSE
-
-Following this, the RPC client attempts to retransmit the request 
-repeatedly, but the socket remains in the TCP_CLOSE state.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> @@ -1492,7 +1542,9 @@ void mem_cgroup_update_file_mapped(struc
+>  	}
+>  
+>  done:
+> -	unlock_page_cgroup(pc);
+> +	if (need_lock)
+> +		unlock_page_cgroup(pc);
+> +	rcu_read_unlock();
+>  }
+>  
+>  /*
+> @@ -3024,6 +3076,7 @@ move_account:
+>  		lru_add_drain_all();
+>  		drain_all_stock_sync();
+>  		ret = 0;
+> +		mem_cgroup_start_move(mem);
+>  		for_each_node_state(node, N_HIGH_MEMORY) {
+>  			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
+>  				enum lru_list l;
+> @@ -3037,6 +3090,7 @@ move_account:
+>  			if (ret)
+>  				break;
+>  		}
+> +		mem_cgroup_end_move(mem);
+>  		memcg_oom_recover(mem);
+>  		/* it seems parent cgroup doesn't have enough mem */
+>  		if (ret == -ENOMEM)
+> @@ -4503,6 +4557,7 @@ static void mem_cgroup_clear_mc(void)
+>  	mc.to = NULL;
+>  	mc.moving_task = NULL;
+>  	spin_unlock(&mc.lock);
+> +	mem_cgroup_end_move(from);
+>  	memcg_oom_recover(from);
+>  	memcg_oom_recover(to);
+>  	wake_up_all(&mc.waitq);
+> @@ -4533,6 +4588,7 @@ static int mem_cgroup_can_attach(struct 
+>  			VM_BUG_ON(mc.moved_charge);
+>  			VM_BUG_ON(mc.moved_swap);
+>  			VM_BUG_ON(mc.moving_task);
+> +			mem_cgroup_start_move(from);
+>  			spin_lock(&mc.lock);
+>  			mc.from = from;
+>  			mc.to = mem;
