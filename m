@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab0G1K2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 06:28:06 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34671 "EHLO gir.skynet.ie"
+	id S1754847Ab0G1K2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 06:28:09 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:34656 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab0G1K13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754741Ab0G1K13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Jul 2010 06:27:29 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrew Morton <akpm@linux-foundation.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 7/9] writeback: Roll up of writeback: try to write older pages first
-Date: Wed, 28 Jul 2010 11:27:21 +0100
-Message-Id: <1280312843-11789-8-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 6/9] writeback: Roll up of writeback changes in next-20100722 versus 2.6.35-rc5
+Date: Wed, 28 Jul 2010 11:27:20 +0100
+Message-Id: <1280312843-11789-7-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1280312843-11789-1-git-send-email-mel@csn.ul.ie>
 References: <1280312843-11789-1-git-send-email-mel@csn.ul.ie>
@@ -27,300 +27,917 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Mostly Christoph Hellwig <hch@lst.de>
 
-This is a roll-up of the series entitled "[RFC] writeback: try to write
-older pages first".
+This is a roll-up of patches in linux-next that Wu's patches depend on. They
+are included here for convenience of testing against mainline. They should
+be unnecessary for testing against mmotm.
 
-No signoff required
+No signoff-required.
 ---
- fs/fs-writeback.c                |   83 ++++++++++++++++++++------------------
- include/linux/writeback.h        |    4 +-
- include/trace/events/writeback.h |    9 +----
- mm/backing-dev.c                 |    1 -
- mm/page-writeback.c              |    1 -
- 5 files changed, 46 insertions(+), 52 deletions(-)
+ fs/btrfs/inode.c                 |    2 +-
+ fs/drop_caches.c                 |    2 +-
+ fs/fs-writeback.c                |   90 ++++++++++++++++++----
+ fs/gfs2/inode.c                  |    2 +-
+ fs/inode.c                       |   16 ++--
+ fs/nilfs2/gcdat.c                |    2 +-
+ fs/notify/inode_mark.c           |    6 +-
+ fs/notify/inotify/inotify.c      |    7 +-
+ fs/quota/dquot.c                 |    2 +-
+ fs/xfs/linux-2.6/xfs_iops.c      |    4 +-
+ include/linux/backing-dev.h      |    7 +-
+ include/linux/fs.h               |    4 +-
+ include/trace/events/writeback.h |  155 ++++++++++++++++++++++++++++++++++++++
+ mm/backing-dev.c                 |  114 ++++++----------------------
+ mm/page-writeback.c              |    4 +
+ 15 files changed, 284 insertions(+), 133 deletions(-)
+ create mode 100644 include/trace/events/writeback.h
 
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 1bff92a..ecf556d 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -3858,7 +3858,7 @@ again:
+ 			p = &parent->rb_right;
+ 		else {
+ 			WARN_ON(!(entry->vfs_inode.i_state &
+-				  (I_WILL_FREE | I_FREEING | I_CLEAR)));
++				  (I_WILL_FREE | I_FREEING)));
+ 			rb_erase(parent, &root->inode_tree);
+ 			RB_CLEAR_NODE(parent);
+ 			spin_unlock(&root->inode_lock);
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index 83c4f60..2195c21 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -18,7 +18,7 @@ static void drop_pagecache_sb(struct super_block *sb, void *unused)
+ 
+ 	spin_lock(&inode_lock);
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+-		if (inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE|I_NEW))
++		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
+ 			continue;
+ 		if (inode->i_mapping->nrpages == 0)
+ 			continue;
 diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 10f939a..5a3c764 100644
+index d5be169..10f939a 100644
 --- a/fs/fs-writeback.c
 +++ b/fs/fs-writeback.c
-@@ -213,20 +213,34 @@ static bool inode_dirtied_after(struct inode *inode, unsigned long t)
-  * Move expired dirty inodes from @delaying_queue to @dispatch_queue.
-  */
- static void move_expired_inodes(struct list_head *delaying_queue,
--			       struct list_head *dispatch_queue,
--				unsigned long *older_than_this)
-+				struct list_head *dispatch_queue,
-+				struct writeback_control *wbc)
- {
-+	unsigned long expire_interval = 0;
-+	unsigned long older_than_this = 0; /* reset to kill gcc warning */
- 	LIST_HEAD(tmp);
- 	struct list_head *pos, *node;
- 	struct super_block *sb = NULL;
- 	struct inode *inode;
- 	int do_sb_sort = 0;
+@@ -26,15 +26,9 @@
+ #include <linux/blkdev.h>
+ #include <linux/backing-dev.h>
+ #include <linux/buffer_head.h>
++#include <linux/tracepoint.h>
+ #include "internal.h"
  
-+	if (wbc->for_kupdate || wbc->for_background) {
-+		expire_interval = msecs_to_jiffies(dirty_expire_interval * 10);
-+		older_than_this = jiffies - expire_interval;
-+	}
-+
- 	while (!list_empty(delaying_queue)) {
- 		inode = list_entry(delaying_queue->prev, struct inode, i_list);
--		if (older_than_this &&
--		    inode_dirtied_after(inode, *older_than_this))
--			break;
-+		if (expire_interval &&
-+		    inode_dirtied_after(inode, older_than_this)) {
-+			if (wbc->for_background &&
-+			    list_empty(dispatch_queue) && list_empty(&tmp)) {
-+				expire_interval >>= 1;
-+				older_than_this = jiffies - expire_interval;
-+				continue;
-+			} else
-+				break;
-+		}
- 		if (sb && sb != inode->i_sb)
- 			do_sb_sort = 1;
- 		sb = inode->i_sb;
-@@ -254,10 +268,10 @@ static void move_expired_inodes(struct list_head *delaying_queue,
+-#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+-
+-/*
+- * We don't actually have pdflush, but this one is exported though /proc...
+- */
+-int nr_pdflush_threads;
+-
  /*
-  * Queue all expired dirty inodes for io, eldest first.
+  * Passed into wb_writeback(), essentially a subset of writeback_control
   */
--static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
-+static void queue_io(struct bdi_writeback *wb, struct writeback_control *wbc)
- {
- 	list_splice_init(&wb->b_more_io, wb->b_io.prev);
--	move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
-+	move_expired_inodes(&wb->b_dirty, &wb->b_io, wbc);
- }
- 
- static int write_inode(struct inode *inode, struct writeback_control *wbc)
-@@ -362,6 +376,8 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 		int err = write_inode(inode, wbc);
- 		if (ret == 0)
- 			ret = err;
-+		if (!err)
-+			wbc->inodes_written++;
- 	}
- 
- 	spin_lock(&inode_lock);
-@@ -528,12 +544,8 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
- 		iput(inode);
- 		cond_resched();
- 		spin_lock(&inode_lock);
--		if (wbc->nr_to_write <= 0) {
--			wbc->more_io = 1;
-+		if (wbc->nr_to_write <= 0)
- 			return 1;
--		}
--		if (!list_empty(&wb->b_more_io))
--			wbc->more_io = 1;
- 	}
- 	/* b_io is empty */
- 	return 1;
-@@ -546,8 +558,9 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
- 
- 	wbc->wb_start = jiffies; /* livelock avoidance */
- 	spin_lock(&inode_lock);
--	if (!wbc->for_kupdate || list_empty(&wb->b_io))
--		queue_io(wb, wbc->older_than_this);
-+
-+	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
-+		queue_io(wb, wbc);
- 
- 	while (!list_empty(&wb->b_io)) {
- 		struct inode *inode = list_entry(wb->b_io.prev,
-@@ -575,8 +588,8 @@ static void __writeback_inodes_sb(struct super_block *sb,
- 
- 	wbc->wb_start = jiffies; /* livelock avoidance */
- 	spin_lock(&inode_lock);
--	if (!wbc->for_kupdate || list_empty(&wb->b_io))
--		queue_io(wb, wbc->older_than_this);
-+	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
-+		queue_io(wb, wbc);
- 	writeback_sb_inodes(sb, wb, wbc, true);
- 	spin_unlock(&inode_lock);
- }
-@@ -611,29 +624,19 @@ static inline bool over_bground_thresh(void)
-  * Try to run once per dirty_writeback_interval.  But if a writeback event
-  * takes longer than a dirty_writeback_interval interval, then leave a
-  * one-second gap.
-- *
-- * older_than_this takes precedence over nr_to_write.  So we'll only write back
-- * all dirty pages if they are all attached to "old" mappings.
-  */
- static long wb_writeback(struct bdi_writeback *wb,
- 			 struct wb_writeback_work *work)
- {
- 	struct writeback_control wbc = {
- 		.sync_mode		= work->sync_mode,
--		.older_than_this	= NULL,
- 		.for_kupdate		= work->for_kupdate,
- 		.for_background		= work->for_background,
- 		.range_cyclic		= work->range_cyclic,
- 	};
--	unsigned long oldest_jif;
- 	long wrote = 0;
- 	struct inode *inode;
- 
--	if (wbc.for_kupdate) {
--		wbc.older_than_this = &oldest_jif;
--		oldest_jif = jiffies -
--				msecs_to_jiffies(dirty_expire_interval * 10);
--	}
- 	if (!wbc.range_cyclic) {
- 		wbc.range_start = 0;
- 		wbc.range_end = LLONG_MAX;
-@@ -653,9 +656,9 @@ static long wb_writeback(struct bdi_writeback *wb,
- 		if (work->for_background && !over_bground_thresh())
- 			break;
- 
--		wbc.more_io = 0;
- 		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
- 		wbc.pages_skipped = 0;
-+		wbc.inodes_written = 0;
- 
- 		trace_wbc_writeback_start(&wbc, wb->bdi);
- 		if (work->sb)
-@@ -668,20 +671,25 @@ static long wb_writeback(struct bdi_writeback *wb,
- 		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
- 
- 		/*
--		 * If we consumed everything, see if we have more
-+		 * Did we write something? Try for more
-+		 *
-+		 * This is needed _before_ the b_more_io test because the
-+		 * background writeback moves inodes to b_io and works on
-+		 * them in batches (in order to sync old pages first).  The
-+		 * completion of the current batch does not necessarily mean
-+		 * the overall work is done.
- 		 */
--		if (wbc.nr_to_write <= 0)
-+		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
-+			continue;
-+		if (wbc.inodes_written)
- 			continue;
-+
- 		/*
--		 * Didn't write everything and we don't have more IO, bail
-+		 * Nothing written and no more inodes for IO, bail
- 		 */
--		if (!wbc.more_io)
-+		if (list_empty(&wb->b_more_io))
- 			break;
--		/*
--		 * Did we write something? Try for more
--		 */
--		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
--			continue;
-+
- 		/*
- 		 * Nothing written. Wait for some inode to
- 		 * become available for writeback. Otherwise
-@@ -1026,9 +1034,6 @@ EXPORT_SYMBOL(__mark_inode_dirty);
-  * Write out a superblock's list of dirty inodes.  A wait will be performed
-  * upon no inodes, all inodes or the final one, depending upon sync_mode.
-  *
-- * If older_than_this is non-NULL, then only write out inodes which
-- * had their first dirtying at a time earlier than *older_than_this.
-- *
-  * If `bdi' is non-zero then we're being asked to writeback a specific queue.
-  * This function assumes that the blockdev superblock's inodes are backed by
-  * a variety of queues, so all inodes are searched.  For other superblocks,
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index c24eca7..494edd6 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -28,14 +28,13 @@ enum writeback_sync_modes {
-  */
- struct writeback_control {
- 	enum writeback_sync_modes sync_mode;
--	unsigned long *older_than_this;	/* If !NULL, only write back inodes
--					   older than this */
- 	unsigned long wb_start;         /* Time writeback_inodes_wb was
- 					   called. This is needed to avoid
- 					   extra jobs and livelock */
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
- 	long pages_skipped;		/* Pages which were not written */
-+	long inodes_written;		/* Number of inodes(metadata) synced */
- 
- 	/*
- 	 * For a_ops->writepages(): is start or end are non-zero then this is
-@@ -51,7 +50,6 @@ struct writeback_control {
- 	unsigned for_background:1;	/* A background writeback */
- 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
- 	unsigned range_cyclic:1;	/* range_start is cyclic */
--	unsigned more_io:1;		/* more io to be dispatched */
+@@ -50,6 +44,21 @@ struct wb_writeback_work {
+ 	struct completion *done;	/* set if the caller waits */
  };
  
- /*
-diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
-index 0be26ac..dc8001f 100644
---- a/include/trace/events/writeback.h
-+++ b/include/trace/events/writeback.h
-@@ -99,8 +99,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__field(int, for_background)
- 		__field(int, for_reclaim)
- 		__field(int, range_cyclic)
--		__field(int, more_io)
--		__field(unsigned long, older_than_this)
- 		__field(long, range_start)
- 		__field(long, range_end)
- 	),
-@@ -114,15 +112,12 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_background	= wbc->for_background;
- 		__entry->for_reclaim	= wbc->for_reclaim;
- 		__entry->range_cyclic	= wbc->range_cyclic;
--		__entry->more_io	= wbc->more_io;
--		__entry->older_than_this = wbc->older_than_this ?
--						*wbc->older_than_this : 0;
- 		__entry->range_start	= (long)wbc->range_start;
- 		__entry->range_end	= (long)wbc->range_end;
- 	),
++/*
++ * Include the creation of the trace points after defining the
++ * wb_writeback_work structure so that the definition remains local to this
++ * file.
++ */
++#define CREATE_TRACE_POINTS
++#include <trace/events/writeback.h>
++
++#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
++
++/*
++ * We don't actually have pdflush, but this one is exported though /proc...
++ */
++int nr_pdflush_threads;
++
+ /**
+  * writeback_in_progress - determine whether there is writeback in progress
+  * @bdi: the device's backing_dev_info structure.
+@@ -65,6 +74,8 @@ int writeback_in_progress(struct backing_dev_info *bdi)
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 		struct wb_writeback_work *work)
+ {
++	trace_writeback_queue(bdi, work);
++
+ 	spin_lock(&bdi->wb_lock);
+ 	list_add_tail(&work->list, &bdi->work_list);
+ 	spin_unlock(&bdi->wb_lock);
+@@ -73,9 +84,10 @@ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 	 * If the default thread isn't there, make sure we add it. When
+ 	 * it gets created and wakes up, we'll run this work.
+ 	 */
+-	if (unlikely(list_empty_careful(&bdi->wb_list)))
++	if (unlikely(!bdi->wb.task)) {
++		trace_writeback_nothread(bdi, work);
+ 		wake_up_process(default_backing_dev_info.wb.task);
+-	else {
++	} else {
+ 		struct bdi_writeback *wb = &bdi->wb;
  
- 	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
--		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
-+		"bgrd=%d reclm=%d cyclic=%d "
- 		"start=0x%lx end=0x%lx",
- 		__entry->name,
- 		__entry->nr_to_write,
-@@ -132,8 +127,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_background,
- 		__entry->for_reclaim,
- 		__entry->range_cyclic,
--		__entry->more_io,
--		__entry->older_than_this,
- 		__entry->range_start,
- 		__entry->range_end)
- )
+ 		if (wb->task)
+@@ -95,8 +107,10 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+ 	 */
+ 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (!work) {
+-		if (bdi->wb.task)
++		if (bdi->wb.task) {
++			trace_writeback_nowork(bdi);
+ 			wake_up_process(bdi->wb.task);
++		}
+ 		return;
+ 	}
+ 
+@@ -352,7 +366,7 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+ 
+ 	spin_lock(&inode_lock);
+ 	inode->i_state &= ~I_SYNC;
+-	if (!(inode->i_state & (I_FREEING | I_CLEAR))) {
++	if (!(inode->i_state & I_FREEING)) {
+ 		if ((inode->i_state & I_DIRTY_PAGES) && wbc->for_kupdate) {
+ 			/*
+ 			 * More pages get dirtied by a fast dirtier.
+@@ -499,7 +513,7 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
+ 		if (inode_dirtied_after(inode, wbc->wb_start))
+ 			return 1;
+ 
+-		BUG_ON(inode->i_state & (I_FREEING | I_CLEAR));
++		BUG_ON(inode->i_state & I_FREEING);
+ 		__iget(inode);
+ 		pages_skipped = wbc->pages_skipped;
+ 		writeback_single_inode(inode, wbc);
+@@ -642,10 +656,14 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		wbc.more_io = 0;
+ 		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
+ 		wbc.pages_skipped = 0;
++
++		trace_wbc_writeback_start(&wbc, wb->bdi);
+ 		if (work->sb)
+ 			__writeback_inodes_sb(work->sb, wb, &wbc);
+ 		else
+ 			writeback_inodes_wb(wb, &wbc);
++		trace_wbc_writeback_written(&wbc, wb->bdi);
++
+ 		work->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+ 		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+ 
+@@ -673,6 +691,7 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		if (!list_empty(&wb->b_more_io))  {
+ 			inode = list_entry(wb->b_more_io.prev,
+ 						struct inode, i_list);
++			trace_wbc_writeback_wait(&wbc, wb->bdi);
+ 			inode_wait_for_writeback(inode);
+ 		}
+ 		spin_unlock(&inode_lock);
+@@ -751,6 +770,8 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+ 		if (force_wait)
+ 			work->sync_mode = WB_SYNC_ALL;
+ 
++		trace_writeback_exec(bdi, work);
++
+ 		wrote += wb_writeback(wb, work);
+ 
+ 		/*
+@@ -775,15 +796,43 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
+  * Handle writeback of dirty data for the device backed by this bdi. Also
+  * wakes up periodically and does kupdated style flushing.
+  */
+-int bdi_writeback_task(struct bdi_writeback *wb)
++int bdi_writeback_thread(void *data)
+ {
++	struct bdi_writeback *wb = data;
++	struct backing_dev_info *bdi = wb->bdi;
+ 	unsigned long last_active = jiffies;
+ 	unsigned long wait_jiffies = -1UL;
+ 	long pages_written;
+ 
++	/*
++	 * Add us to the active bdi_list
++	 */
++	spin_lock_bh(&bdi_lock);
++	list_add_rcu(&bdi->bdi_list, &bdi_list);
++	spin_unlock_bh(&bdi_lock);
++
++	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
++	set_freezable();
++
++	/*
++	 * Our parent may run at a different priority, just set us to normal
++	 */
++	set_user_nice(current, 0);
++
++	/*
++	 * Clear pending bit and wakeup anybody waiting to tear us down
++	 */
++	clear_bit(BDI_pending, &bdi->state);
++	smp_mb__after_clear_bit();
++	wake_up_bit(&bdi->state, BDI_pending);
++
++	trace_writeback_thread_start(bdi);
++
+ 	while (!kthread_should_stop()) {
+ 		pages_written = wb_do_writeback(wb, 0);
+ 
++		trace_writeback_pages_written(pages_written);
++
+ 		if (pages_written)
+ 			last_active = jiffies;
+ 		else if (wait_jiffies != -1UL) {
+@@ -813,9 +862,20 @@ int bdi_writeback_task(struct bdi_writeback *wb)
+ 		try_to_freeze();
+ 	}
+ 
++	wb->task = NULL;
++
++	/*
++	 * Flush any work that raced with us exiting. No new work
++	 * will be added, since this bdi isn't discoverable anymore.
++	 */
++	if (!list_empty(&bdi->work_list))
++		wb_do_writeback(wb, 1);
++
++	trace_writeback_thread_stop(bdi);
+ 	return 0;
+ }
+ 
++
+ /*
+  * Start writeback of `nr_pages' pages.  If `nr_pages' is zero, write back
+  * the whole world.
+@@ -935,7 +995,7 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 			if (hlist_unhashed(&inode->i_hash))
+ 				goto out;
+ 		}
+-		if (inode->i_state & (I_FREEING|I_CLEAR))
++		if (inode->i_state & I_FREEING)
+ 			goto out;
+ 
+ 		/*
+@@ -1001,7 +1061,7 @@ static void wait_sb_inodes(struct super_block *sb)
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+ 		struct address_space *mapping;
+ 
+-		if (inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE|I_NEW))
++		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
+ 			continue;
+ 		mapping = inode->i_mapping;
+ 		if (mapping->nrpages == 0)
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index f03afd9..edc30b2 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -84,7 +84,7 @@ static int iget_skip_test(struct inode *inode, void *opaque)
+ 	struct gfs2_skip_data *data = opaque;
+ 
+ 	if (ip->i_no_addr == data->no_addr) {
+-		if (inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE)){
++		if (inode->i_state & (I_FREEING|I_WILL_FREE)){
+ 			data->skipped = 1;
+ 			return 0;
+ 		}
+diff --git a/fs/inode.c b/fs/inode.c
+index 722860b..71fe079 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -317,7 +317,7 @@ void clear_inode(struct inode *inode)
+ 		bd_forget(inode);
+ 	if (S_ISCHR(inode->i_mode) && inode->i_cdev)
+ 		cd_forget(inode);
+-	inode->i_state = I_CLEAR;
++	inode->i_state = I_FREEING | I_CLEAR;
+ }
+ EXPORT_SYMBOL(clear_inode);
+ 
+@@ -553,7 +553,7 @@ repeat:
+ 			continue;
+ 		if (!test(inode, data))
+ 			continue;
+-		if (inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE)) {
++		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+ 		}
+@@ -578,7 +578,7 @@ repeat:
+ 			continue;
+ 		if (inode->i_sb != sb)
+ 			continue;
+-		if (inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE)) {
++		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+ 		}
+@@ -840,7 +840,7 @@ EXPORT_SYMBOL(iunique);
+ struct inode *igrab(struct inode *inode)
+ {
+ 	spin_lock(&inode_lock);
+-	if (!(inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE)))
++	if (!(inode->i_state & (I_FREEING|I_WILL_FREE)))
+ 		__iget(inode);
+ 	else
+ 		/*
+@@ -1089,7 +1089,7 @@ int insert_inode_locked(struct inode *inode)
+ 				continue;
+ 			if (old->i_sb != sb)
+ 				continue;
+-			if (old->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE))
++			if (old->i_state & (I_FREEING|I_WILL_FREE))
+ 				continue;
+ 			break;
+ 		}
+@@ -1128,7 +1128,7 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 				continue;
+ 			if (!test(old, data))
+ 				continue;
+-			if (old->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE))
++			if (old->i_state & (I_FREEING|I_WILL_FREE))
+ 				continue;
+ 			break;
+ 		}
+@@ -1218,7 +1218,7 @@ void generic_delete_inode(struct inode *inode)
+ 	hlist_del_init(&inode->i_hash);
+ 	spin_unlock(&inode_lock);
+ 	wake_up_inode(inode);
+-	BUG_ON(inode->i_state != I_CLEAR);
++	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
+ 	destroy_inode(inode);
+ }
+ EXPORT_SYMBOL(generic_delete_inode);
+@@ -1322,7 +1322,7 @@ static inline void iput_final(struct inode *inode)
+ void iput(struct inode *inode)
+ {
+ 	if (inode) {
+-		BUG_ON(inode->i_state == I_CLEAR);
++		BUG_ON(inode->i_state & I_CLEAR);
+ 
+ 		if (atomic_dec_and_lock(&inode->i_count, &inode_lock))
+ 			iput_final(inode);
+diff --git a/fs/nilfs2/gcdat.c b/fs/nilfs2/gcdat.c
+index dd5f7e0..84a45d1 100644
+--- a/fs/nilfs2/gcdat.c
++++ b/fs/nilfs2/gcdat.c
+@@ -78,7 +78,7 @@ void nilfs_clear_gcdat_inode(struct the_nilfs *nilfs)
+ 	struct inode *gcdat = nilfs->ns_gc_dat;
+ 	struct nilfs_inode_info *gii = NILFS_I(gcdat);
+ 
+-	gcdat->i_state = I_CLEAR;
++	gcdat->i_state = I_FREEING | I_CLEAR;
+ 	gii->i_flags = 0;
+ 
+ 	nilfs_palloc_clear_cache(gcdat);
+diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
+index 0399bcb..152b83e 100644
+--- a/fs/notify/inode_mark.c
++++ b/fs/notify/inode_mark.c
+@@ -369,11 +369,11 @@ void fsnotify_unmount_inodes(struct list_head *list)
+ 		struct inode *need_iput_tmp;
+ 
+ 		/*
+-		 * We cannot __iget() an inode in state I_CLEAR, I_FREEING,
++		 * We cannot __iget() an inode in state I_FREEING,
+ 		 * I_WILL_FREE, or I_NEW which is fine because by that point
+ 		 * the inode cannot have any associated watches.
+ 		 */
+-		if (inode->i_state & (I_CLEAR|I_FREEING|I_WILL_FREE|I_NEW))
++		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
+ 			continue;
+ 
+ 		/*
+@@ -397,7 +397,7 @@ void fsnotify_unmount_inodes(struct list_head *list)
+ 		/* In case the dropping of a reference would nuke next_i. */
+ 		if ((&next_i->i_sb_list != list) &&
+ 		    atomic_read(&next_i->i_count) &&
+-		    !(next_i->i_state & (I_CLEAR | I_FREEING | I_WILL_FREE))) {
++		    !(next_i->i_state & (I_FREEING | I_WILL_FREE))) {
+ 			__iget(next_i);
+ 			need_iput = next_i;
+ 		}
+diff --git a/fs/notify/inotify/inotify.c b/fs/notify/inotify/inotify.c
+index 27b75eb..cf6b042 100644
+--- a/fs/notify/inotify/inotify.c
++++ b/fs/notify/inotify/inotify.c
+@@ -377,11 +377,11 @@ void inotify_unmount_inodes(struct list_head *list)
+ 		struct list_head *watches;
+ 
+ 		/*
+-		 * We cannot __iget() an inode in state I_CLEAR, I_FREEING,
++		 * We cannot __iget() an inode in state I_FREEING,
+ 		 * I_WILL_FREE, or I_NEW which is fine because by that point
+ 		 * the inode cannot have any associated watches.
+ 		 */
+-		if (inode->i_state & (I_CLEAR|I_FREEING|I_WILL_FREE|I_NEW))
++		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
+ 			continue;
+ 
+ 		/*
+@@ -403,8 +403,7 @@ void inotify_unmount_inodes(struct list_head *list)
+ 		/* In case the dropping of a reference would nuke next_i. */
+ 		if ((&next_i->i_sb_list != list) &&
+ 				atomic_read(&next_i->i_count) &&
+-				!(next_i->i_state & (I_CLEAR | I_FREEING |
+-					I_WILL_FREE))) {
++				!(next_i->i_state & (I_FREEING|I_WILL_FREE))) {
+ 			__iget(next_i);
+ 			need_iput = next_i;
+ 		}
+diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
+index 437d2ca..5cec3e2 100644
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -885,7 +885,7 @@ static void add_dquot_ref(struct super_block *sb, int type)
+ 
+ 	spin_lock(&inode_lock);
+ 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
+-		if (inode->i_state & (I_FREEING|I_CLEAR|I_WILL_FREE|I_NEW))
++		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW))
+ 			continue;
+ #ifdef CONFIG_QUOTA_DEBUG
+ 		if (unlikely(inode_get_rsv_space(inode) > 0))
+diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
+index 44f0b2d..f4f0a41 100644
+--- a/fs/xfs/linux-2.6/xfs_iops.c
++++ b/fs/xfs/linux-2.6/xfs_iops.c
+@@ -88,7 +88,7 @@ xfs_mark_inode_dirty_sync(
+ {
+ 	struct inode	*inode = VFS_I(ip);
+ 
+-	if (!(inode->i_state & (I_WILL_FREE|I_FREEING|I_CLEAR)))
++	if (!(inode->i_state & (I_WILL_FREE|I_FREEING)))
+ 		mark_inode_dirty_sync(inode);
+ }
+ 
+@@ -98,7 +98,7 @@ xfs_mark_inode_dirty(
+ {
+ 	struct inode	*inode = VFS_I(ip);
+ 
+-	if (!(inode->i_state & (I_WILL_FREE|I_FREEING|I_CLEAR)))
++	if (!(inode->i_state & (I_WILL_FREE|I_FREEING)))
+ 		mark_inode_dirty(inode);
+ }
+ 
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index e9aec0d..e536f3a 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -45,8 +45,6 @@ enum bdi_stat_item {
+ #define BDI_STAT_BATCH (8*(1+ilog2(nr_cpu_ids)))
+ 
+ struct bdi_writeback {
+-	struct list_head list;			/* hangs off the bdi */
+-
+ 	struct backing_dev_info *bdi;		/* our parent bdi */
+ 	unsigned int nr;
+ 
+@@ -80,8 +78,7 @@ struct backing_dev_info {
+ 	unsigned int max_ratio, max_prop_frac;
+ 
+ 	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-	spinlock_t wb_lock;	  /* protects update side of wb_list */
+-	struct list_head wb_list; /* the flusher threads hanging off this bdi */
++	spinlock_t wb_lock;	  /* protects work_list */
+ 
+ 	struct list_head work_list;
+ 
+@@ -105,7 +102,7 @@ void bdi_unregister(struct backing_dev_info *bdi);
+ int bdi_setup_and_register(struct backing_dev_info *, char *, unsigned int);
+ void bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages);
+ void bdi_start_background_writeback(struct backing_dev_info *bdi);
+-int bdi_writeback_task(struct bdi_writeback *wb);
++int bdi_writeback_thread(void *data);
+ int bdi_has_dirty_io(struct backing_dev_info *bdi);
+ void bdi_arm_supers_timer(void);
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 68ca1b0..e29f0ed 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1615,8 +1615,8 @@ struct super_operations {
+  * I_FREEING		Set when inode is about to be freed but still has dirty
+  *			pages or buffers attached or the inode itself is still
+  *			dirty.
+- * I_CLEAR		Set by clear_inode().  In this state the inode is clean
+- *			and can be destroyed.
++ * I_CLEAR		Added by clear_inode().  In this state the inode is clean
++ *			and can be destroyed.  Inode keeps I_FREEING.
+  *
+  *			Inodes that are I_WILL_FREE, I_FREEING or I_CLEAR are
+  *			prohibited for many purposes.  iget() must wait for
+diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+new file mode 100644
+index 0000000..0be26ac
+--- /dev/null
++++ b/include/trace/events/writeback.h
+@@ -0,0 +1,155 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM writeback
++
++#if !defined(_TRACE_WRITEBACK_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_WRITEBACK_H
++
++#include <linux/backing-dev.h>
++#include <linux/writeback.h>
++
++struct wb_writeback_work;
++
++DECLARE_EVENT_CLASS(writeback_work_class,
++	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_work *work),
++	TP_ARGS(bdi, work),
++	TP_STRUCT__entry(
++		__array(char, name, 32)
++		__field(long, nr_pages)
++		__field(dev_t, sb_dev)
++		__field(int, sync_mode)
++		__field(int, for_kupdate)
++		__field(int, range_cyclic)
++		__field(int, for_background)
++	),
++	TP_fast_assign(
++		strncpy(__entry->name, dev_name(bdi->dev), 32);
++		__entry->nr_pages = work->nr_pages;
++		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
++		__entry->sync_mode = work->sync_mode;
++		__entry->for_kupdate = work->for_kupdate;
++		__entry->range_cyclic = work->range_cyclic;
++		__entry->for_background	= work->for_background;
++	),
++	TP_printk("bdi %s: sb_dev %d:%d nr_pages=%ld sync_mode=%d "
++		  "kupdate=%d range_cyclic=%d background=%d",
++		  __entry->name,
++		  MAJOR(__entry->sb_dev), MINOR(__entry->sb_dev),
++		  __entry->nr_pages,
++		  __entry->sync_mode,
++		  __entry->for_kupdate,
++		  __entry->range_cyclic,
++		  __entry->for_background
++	)
++);
++#define DEFINE_WRITEBACK_WORK_EVENT(name) \
++DEFINE_EVENT(writeback_work_class, name, \
++	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_work *work), \
++	TP_ARGS(bdi, work))
++DEFINE_WRITEBACK_WORK_EVENT(writeback_nothread);
++DEFINE_WRITEBACK_WORK_EVENT(writeback_queue);
++DEFINE_WRITEBACK_WORK_EVENT(writeback_exec);
++
++TRACE_EVENT(writeback_pages_written,
++	TP_PROTO(long pages_written),
++	TP_ARGS(pages_written),
++	TP_STRUCT__entry(
++		__field(long,		pages)
++	),
++	TP_fast_assign(
++		__entry->pages		= pages_written;
++	),
++	TP_printk("%ld", __entry->pages)
++);
++
++DECLARE_EVENT_CLASS(writeback_class,
++	TP_PROTO(struct backing_dev_info *bdi),
++	TP_ARGS(bdi),
++	TP_STRUCT__entry(
++		__array(char, name, 32)
++	),
++	TP_fast_assign(
++		strncpy(__entry->name, dev_name(bdi->dev), 32);
++	),
++	TP_printk("bdi %s",
++		  __entry->name
++	)
++);
++#define DEFINE_WRITEBACK_EVENT(name) \
++DEFINE_EVENT(writeback_class, name, \
++	TP_PROTO(struct backing_dev_info *bdi), \
++	TP_ARGS(bdi))
++
++DEFINE_WRITEBACK_EVENT(writeback_nowork);
++DEFINE_WRITEBACK_EVENT(writeback_bdi_register);
++DEFINE_WRITEBACK_EVENT(writeback_bdi_unregister);
++DEFINE_WRITEBACK_EVENT(writeback_thread_start);
++DEFINE_WRITEBACK_EVENT(writeback_thread_stop);
++
++DECLARE_EVENT_CLASS(wbc_class,
++	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi),
++	TP_ARGS(wbc, bdi),
++	TP_STRUCT__entry(
++		__array(char, name, 32)
++		__field(long, nr_to_write)
++		__field(long, pages_skipped)
++		__field(int, sync_mode)
++		__field(int, nonblocking)
++		__field(int, encountered_congestion)
++		__field(int, for_kupdate)
++		__field(int, for_background)
++		__field(int, for_reclaim)
++		__field(int, range_cyclic)
++		__field(int, more_io)
++		__field(unsigned long, older_than_this)
++		__field(long, range_start)
++		__field(long, range_end)
++	),
++
++	TP_fast_assign(
++		strncpy(__entry->name, dev_name(bdi->dev), 32);
++		__entry->nr_to_write	= wbc->nr_to_write;
++		__entry->pages_skipped	= wbc->pages_skipped;
++		__entry->sync_mode	= wbc->sync_mode;
++		__entry->for_kupdate	= wbc->for_kupdate;
++		__entry->for_background	= wbc->for_background;
++		__entry->for_reclaim	= wbc->for_reclaim;
++		__entry->range_cyclic	= wbc->range_cyclic;
++		__entry->more_io	= wbc->more_io;
++		__entry->older_than_this = wbc->older_than_this ?
++						*wbc->older_than_this : 0;
++		__entry->range_start	= (long)wbc->range_start;
++		__entry->range_end	= (long)wbc->range_end;
++	),
++
++	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
++		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
++		"start=0x%lx end=0x%lx",
++		__entry->name,
++		__entry->nr_to_write,
++		__entry->pages_skipped,
++		__entry->sync_mode,
++		__entry->for_kupdate,
++		__entry->for_background,
++		__entry->for_reclaim,
++		__entry->range_cyclic,
++		__entry->more_io,
++		__entry->older_than_this,
++		__entry->range_start,
++		__entry->range_end)
++)
++
++#define DEFINE_WBC_EVENT(name) \
++DEFINE_EVENT(wbc_class, name, \
++	TP_PROTO(struct writeback_control *wbc, struct backing_dev_info *bdi), \
++	TP_ARGS(wbc, bdi))
++DEFINE_WBC_EVENT(wbc_writeback_start);
++DEFINE_WBC_EVENT(wbc_writeback_written);
++DEFINE_WBC_EVENT(wbc_writeback_wait);
++DEFINE_WBC_EVENT(wbc_balance_dirty_start);
++DEFINE_WBC_EVENT(wbc_balance_dirty_written);
++DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
++
++#endif /* _TRACE_WRITEBACK_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index ac78a33..eaea7e0 100644
+index 123bcef..ac78a33 100644
 --- a/mm/backing-dev.c
 +++ b/mm/backing-dev.c
-@@ -270,7 +270,6 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/writeback.h>
+ #include <linux/device.h>
++#include <trace/events/writeback.h>
+ 
+ static atomic_long_t bdi_seq = ATOMIC_LONG_INIT(0);
+ 
+@@ -65,28 +66,21 @@ static void bdi_debug_init(void)
+ static int bdi_debug_stats_show(struct seq_file *m, void *v)
  {
- 	struct writeback_control wbc = {
- 		.sync_mode		= WB_SYNC_NONE,
--		.older_than_this	= NULL,
- 		.range_cyclic		= 1,
- 		.nr_to_write		= 1024,
- 	};
+ 	struct backing_dev_info *bdi = m->private;
+-	struct bdi_writeback *wb;
++	struct bdi_writeback *wb = &bdi->wb;
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
+ 	unsigned long nr_dirty, nr_io, nr_more_io, nr_wb;
+ 	struct inode *inode;
+ 
+-	/*
+-	 * inode lock is enough here, the bdi->wb_list is protected by
+-	 * RCU on the reader side
+-	 */
+ 	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
+ 	spin_lock(&inode_lock);
+-	list_for_each_entry(wb, &bdi->wb_list, list) {
+-		nr_wb++;
+-		list_for_each_entry(inode, &wb->b_dirty, i_list)
+-			nr_dirty++;
+-		list_for_each_entry(inode, &wb->b_io, i_list)
+-			nr_io++;
+-		list_for_each_entry(inode, &wb->b_more_io, i_list)
+-			nr_more_io++;
+-	}
++	list_for_each_entry(inode, &wb->b_dirty, i_list)
++		nr_dirty++;
++	list_for_each_entry(inode, &wb->b_io, i_list)
++		nr_io++;
++	list_for_each_entry(inode, &wb->b_more_io, i_list)
++		nr_more_io++;
+ 	spin_unlock(&inode_lock);
+ 
+ 	get_dirty_limits(&background_thresh, &dirty_thresh, &bdi_thresh, bdi);
+@@ -98,19 +92,16 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
+ 		   "BdiDirtyThresh:   %8lu kB\n"
+ 		   "DirtyThresh:      %8lu kB\n"
+ 		   "BackgroundThresh: %8lu kB\n"
+-		   "WritebackThreads: %8lu\n"
+ 		   "b_dirty:          %8lu\n"
+ 		   "b_io:             %8lu\n"
+ 		   "b_more_io:        %8lu\n"
+ 		   "bdi_list:         %8u\n"
+-		   "state:            %8lx\n"
+-		   "wb_list:          %8u\n",
++		   "state:            %8lx\n",
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+ 		   K(bdi_thresh), K(dirty_thresh),
+-		   K(background_thresh), nr_wb, nr_dirty, nr_io, nr_more_io,
+-		   !list_empty(&bdi->bdi_list), bdi->state,
+-		   !list_empty(&bdi->wb_list));
++		   K(background_thresh), nr_dirty, nr_io, nr_more_io,
++		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
+ 
+ 	return 0;
+@@ -270,66 +261,6 @@ static void bdi_wb_init(struct bdi_writeback *wb, struct backing_dev_info *bdi)
+ 	INIT_LIST_HEAD(&wb->b_more_io);
+ }
+ 
+-static void bdi_task_init(struct backing_dev_info *bdi,
+-			  struct bdi_writeback *wb)
+-{
+-	struct task_struct *tsk = current;
+-
+-	spin_lock(&bdi->wb_lock);
+-	list_add_tail_rcu(&wb->list, &bdi->wb_list);
+-	spin_unlock(&bdi->wb_lock);
+-
+-	tsk->flags |= PF_FLUSHER | PF_SWAPWRITE;
+-	set_freezable();
+-
+-	/*
+-	 * Our parent may run at a different priority, just set us to normal
+-	 */
+-	set_user_nice(tsk, 0);
+-}
+-
+-static int bdi_start_fn(void *ptr)
+-{
+-	struct bdi_writeback *wb = ptr;
+-	struct backing_dev_info *bdi = wb->bdi;
+-	int ret;
+-
+-	/*
+-	 * Add us to the active bdi_list
+-	 */
+-	spin_lock_bh(&bdi_lock);
+-	list_add_rcu(&bdi->bdi_list, &bdi_list);
+-	spin_unlock_bh(&bdi_lock);
+-
+-	bdi_task_init(bdi, wb);
+-
+-	/*
+-	 * Clear pending bit and wakeup anybody waiting to tear us down
+-	 */
+-	clear_bit(BDI_pending, &bdi->state);
+-	smp_mb__after_clear_bit();
+-	wake_up_bit(&bdi->state, BDI_pending);
+-
+-	ret = bdi_writeback_task(wb);
+-
+-	/*
+-	 * Remove us from the list
+-	 */
+-	spin_lock(&bdi->wb_lock);
+-	list_del_rcu(&wb->list);
+-	spin_unlock(&bdi->wb_lock);
+-
+-	/*
+-	 * Flush any work that raced with us exiting. No new work
+-	 * will be added, since this bdi isn't discoverable anymore.
+-	 */
+-	if (!list_empty(&bdi->work_list))
+-		wb_do_writeback(wb, 1);
+-
+-	wb->task = NULL;
+-	return ret;
+-}
+-
+ int bdi_has_dirty_io(struct backing_dev_info *bdi)
+ {
+ 	return wb_has_dirty_io(&bdi->wb);
+@@ -391,7 +322,13 @@ static int bdi_forker_task(void *ptr)
+ {
+ 	struct bdi_writeback *me = ptr;
+ 
+-	bdi_task_init(me->bdi, me);
++	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
++	set_freezable();
++
++	/*
++	 * Our parent may run at a different priority, just set us to normal
++	 */
++	set_user_nice(current, 0);
+ 
+ 	for (;;) {
+ 		struct backing_dev_info *bdi, *tmp;
+@@ -447,7 +384,7 @@ static int bdi_forker_task(void *ptr)
+ 		spin_unlock_bh(&bdi_lock);
+ 
+ 		wb = &bdi->wb;
+-		wb->task = kthread_run(bdi_start_fn, wb, "flush-%s",
++		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
+ 					dev_name(bdi->dev));
+ 		/*
+ 		 * If task creation fails, then readd the bdi to
+@@ -582,6 +519,7 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+ 
+ 	bdi_debug_register(bdi, dev_name(dev));
+ 	set_bit(BDI_registered, &bdi->state);
++	trace_writeback_bdi_register(bdi);
+ exit:
+ 	return ret;
+ }
+@@ -598,8 +536,6 @@ EXPORT_SYMBOL(bdi_register_dev);
+  */
+ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ {
+-	struct bdi_writeback *wb;
+-
+ 	if (!bdi_cap_writeback_dirty(bdi))
+ 		return;
+ 
+@@ -615,14 +551,14 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ 	bdi_remove_from_list(bdi);
+ 
+ 	/*
+-	 * Finally, kill the kernel threads. We don't need to be RCU
++	 * Finally, kill the kernel thread. We don't need to be RCU
+ 	 * safe anymore, since the bdi is gone from visibility. Force
+ 	 * unfreeze of the thread before calling kthread_stop(), otherwise
+ 	 * it would never exet if it is currently stuck in the refrigerator.
+ 	 */
+-	list_for_each_entry(wb, &bdi->wb_list, list) {
+-		thaw_process(wb->task);
+-		kthread_stop(wb->task);
++	if (bdi->wb.task) {
++		thaw_process(bdi->wb.task);
++		kthread_stop(bdi->wb.task);
+ 	}
+ }
+ 
+@@ -644,6 +580,7 @@ static void bdi_prune_sb(struct backing_dev_info *bdi)
+ void bdi_unregister(struct backing_dev_info *bdi)
+ {
+ 	if (bdi->dev) {
++		trace_writeback_bdi_unregister(bdi);
+ 		bdi_prune_sb(bdi);
+ 
+ 		if (!bdi_cap_flush_forker(bdi))
+@@ -667,7 +604,6 @@ int bdi_init(struct backing_dev_info *bdi)
+ 	spin_lock_init(&bdi->wb_lock);
+ 	INIT_RCU_HEAD(&bdi->rcu_head);
+ 	INIT_LIST_HEAD(&bdi->bdi_list);
+-	INIT_LIST_HEAD(&bdi->wb_list);
+ 	INIT_LIST_HEAD(&bdi->work_list);
+ 
+ 	bdi_wb_init(&bdi->wb, bdi);
 diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index d556cd8..d4a9e3d 100644
+index 37498ef..d556cd8 100644
 --- a/mm/page-writeback.c
 +++ b/mm/page-writeback.c
-@@ -497,7 +497,6 @@ static void balance_dirty_pages(struct address_space *mapping,
- 	for (;;) {
- 		struct writeback_control wbc = {
- 			.sync_mode	= WB_SYNC_NONE,
--			.older_than_this = NULL,
- 			.nr_to_write	= write_chunk,
- 			.range_cyclic	= 1,
- 		};
+@@ -34,6 +34,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/buffer_head.h>
+ #include <linux/pagevec.h>
++#include <trace/events/writeback.h>
+ 
+ /*
+  * After a CPU has dirtied this many pages, balance_dirty_pages_ratelimited
+@@ -535,11 +536,13 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 		 * threshold otherwise wait until the disk writes catch
+ 		 * up.
+ 		 */
++		trace_wbc_balance_dirty_start(&wbc, bdi);
+ 		if (bdi_nr_reclaimable > bdi_thresh) {
+ 			writeback_inodes_wb(&bdi->wb, &wbc);
+ 			pages_written += write_chunk - wbc.nr_to_write;
+ 			get_dirty_limits(&background_thresh, &dirty_thresh,
+ 				       &bdi_thresh, bdi);
++			trace_wbc_balance_dirty_written(&wbc, bdi);
+ 		}
+ 
+ 		/*
+@@ -565,6 +568,7 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 		if (pages_written >= write_chunk)
+ 			break;		/* We've done our duty */
+ 
++		trace_wbc_balance_dirty_wait(&wbc, bdi);
+ 		__set_current_state(TASK_INTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
+ 
 -- 
 1.7.1
 
