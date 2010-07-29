@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab0G2OPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 10:15:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:45390 "EHLO e8.ny.us.ibm.com"
+	id S1757572Ab0G2ORU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 10:17:20 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:60312 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754381Ab0G2OPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 10:15:46 -0400
-Date: Thu, 29 Jul 2010 19:43:51 +0530
+	id S1754583Ab0G2ORS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 10:17:18 -0400
+Date: Thu, 29 Jul 2010 19:45:24 +0530
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
@@ -17,36 +17,38 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
         Mark Wielaard <mjw@redhat.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Naren A Devaiah <naren.devaiah@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         "Frank Ch. Eigler" <fche@redhat.com>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv10 2.6.35-rc6-tip 10/14]  perf: rename common
- fields/functions from kprobe to probe.
-Message-ID: <20100729141351.GG21723@linux.vnet.ibm.com>
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 9/14]  trace: uprobes trace_event
+ interface
+Message-ID: <20100729141524.GH21723@linux.vnet.ibm.com>
 Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
- <20100727111055.24690.20846.sendpatchset@localhost6.localdomain6>
- <4C516B33.9000007@hitachi.com>
+ <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6>
+ <4C510BEE.3000108@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4C516B33.9000007@hitachi.com>
+In-Reply-To: <4C510BEE.3000108@hitachi.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> 
+> Possible enhancement: Moving this config right after KPROBE_EVENT, because
+>  those two provide similar dynamic events.
+> 
+
 Masami, 
  Below patch should address the comments raised by you.
-
-Ingo, Arnaldo, 
-Please let me know if you want this to be sent as a new patchset.
 
 --
 Thanks and Regards
@@ -55,721 +57,911 @@ Srikar
 ---
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-As a precursor for perf to support uprobes, rename fields/functions
-that had kprobe in their name but can be shared across perf-kprobes
-and perf-uprobes to probe.
+
+Implements trace_event support for uprobes. In its
+current form it can be used to put probes at a specified text address
+in a process and dump the required registers when the code flow reaches
+the probed address.
+
+TODO: Documentation/trace/uprobetrace.txt
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
 
- tools/perf/builtin-probe.c     |    1 
- tools/perf/util/probe-event.c  |  135 ++++++++++++++++++++--------------------
- tools/perf/util/probe-event.h  |   27 +++-----
- tools/perf/util/probe-finder.c |   34 +++++-----
- tools/perf/util/probe-finder.h |   10 +--
- 5 files changed, 101 insertions(+), 106 deletions(-)
+Changelog from v5: Addressed comments from Masami Hiramatsu and Steven
+      Rostedt. Some changes because of changes in common probe events.
+
+Changelog from v4: (Merged to 2.6.35-rc3-tip)
+
+Changelog from v2/v3: (Addressing comments from Steven Rostedt
+					and Frederic Weisbecker)
+	* removed pit field from uprobe_trace_entry.
+	* share common parts with kprobe trace events.
+	* use trace_create_file instead of debugfs_create_file.
 
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 5455186..199d5e1 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -267,4 +267,3 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	}
- 	return 0;
- }
--
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 4445a1e..2e665cb 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1,5 +1,5 @@
+The following example shows how to dump the instruction pointer and %ax a
+register at the probed text address.
+
+Start a process to trace. Get the address to trace.
+  [Here pid is asssumed as 6016]
+  [Address to trace is 0x0000000000446420]
+  [Registers to be dumped are %ip and %ax]
+
+# cd /sys/kernel/debug/tracing/
+# echo 'p 6016:0x0000000000446420 %ip %ax' > uprobe_events
+# cat uprobe_events
+p:uprobes/p_6016_0x0000000000446420 6016:0x0000000000446420 %ip=%ip %ax=%ax
+# cat events/uprobes/p_6016_0x0000000000446420/enable
+0
+[enable the event]
+# echo 1 > events/uprobes/p_6016_0x0000000000446420/enable
+# cat events/uprobes/p_6016_0x0000000000446420/enable
+1
+# #### do some activity on the program so that it hits the breakpoint
+# cat uprobe_profile
+  6016 p_6016_0x0000000000446420                                234
+# tracer: nop
+#
+#           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+#              | |       |          |         |
+             zsh-6016  [004] 227931.093579: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+             zsh-6016  [005] 227931.097541: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+             zsh-6016  [000] 227931.124909: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+             zsh-6016  [001] 227933.128565: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+             zsh-6016  [004] 227933.132756: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+             zsh-6016  [000] 227933.158802: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+             zsh-6016  [001] 227935.161602: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+             zsh-6016  [004] 227935.165229: p_6016_0x0000000000446420: (0x446420) %ip=446421 %ax=79
+
+ arch/Kconfig                |   11 -
+ kernel/trace/Kconfig        |   16 +
+ kernel/trace/Makefile       |    1 
+ kernel/trace/trace.h        |    5 
+ kernel/trace/trace_probe.h  |    2 
+ kernel/trace/trace_uprobe.c |  739 +++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 764 insertions(+), 10 deletions(-)
+ create mode 100644 kernel/trace/trace_uprobe.c
+
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index c8c8e3f..af167f8 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -48,16 +48,7 @@ config OPTPROBES
+ 	select KALLSYMS_ALL
+ 
+ config UPROBES
+-	bool "User-space probes (EXPERIMENTAL)"
+-	default n
+-	depends on ARCH_SUPPORTS_UPROBES
+-	depends on MMU
+-	help
+-	  Uprobes enables kernel subsystems to establish probepoints
+-	  in user applications and execute handler functions when
+-	  the probepoints are hit. For more information, refer to
+-	  Documentation/uprobes.txt.
+-	  If in doubt, say "N".
++	def_bool n
+ 
+ config HAVE_EFFICIENT_UNALIGNED_ACCESS
+ 	bool
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index c681fa7..c77ba2d 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -377,6 +377,22 @@ config KPROBE_EVENT
+ 	  This option is also required by perf-probe subcommand of perf tools.
+ 	  If you want to use perf tools, this option is strongly recommended.
+ 
++config UPROBE_EVENT
++	bool "Enable uprobes-based dynamic events"
++	depends on ARCH_SUPPORTS_UPROBES
++	depends on MMU
++	select UPROBES
++	select PROBE_EVENTS
++	select TRACING
++	default n
++	help
++	  This allows the user to add tracing events on top of userspace dynamic
++	  events (similar to tracepoints) on the fly via the traceevents interface.
++	  Those events can be inserted wherever uprobes can probe, and record
++	  various registers.
++	  This option is required if you plan to use perf-probe subcommand of perf
++	  tools on user space applications.
++
+ config PROBE_EVENTS
+ 	def_bool n
+ 
+diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+index eb11f7d..63d423b 100644
+--- a/kernel/trace/Makefile
++++ b/kernel/trace/Makefile
+@@ -54,5 +54,6 @@ obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+ obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+ obj-$(CONFIG_EVENT_TRACING) += power-traces.o
+ obj-$(CONFIG_PROBE_EVENTS) +=trace_probe.o
++obj-$(CONFIG_UPROBE_EVENT) += trace_uprobe.o
+ 
+ libftrace-y := ftrace.o
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index d05c873..ad8a307 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -97,6 +97,11 @@ struct kretprobe_trace_entry_head {
+ 	unsigned long		ret_ip;
+ };
+ 
++struct uprobe_trace_entry_head {
++	struct trace_entry	ent;
++	unsigned long		ip;
++};
++
  /*
-- * probe-event.c : perf-probe definition to kprobe_events format converter
-+ * probe-event.c : perf-probe definition to probe_events format converter
-  *
-  * Written by Masami Hiramatsu <mhiramat@redhat.com>
-  *
-@@ -120,8 +120,11 @@ static int open_vmlinux(void)
- 	return open(machine.vmlinux_maps[MAP__FUNCTION]->dso->long_name, O_RDONLY);
- }
+  * trace_flag_type is an enumeration that holds different
+  * states when a trace occurs. These are:
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index b3e30dc..d905386 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -48,6 +48,7 @@
+ #define FIELD_STRING_IP "__probe_ip"
+ #define FIELD_STRING_RETIP "__probe_ret_ip"
+ #define FIELD_STRING_FUNC "__probe_func"
++#define FIELD_STRING_PID "__probe_pid"
  
--/* Convert trace point to probe point with debuginfo */
--static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
+ #undef DEFINE_FIELD
+ #define DEFINE_FIELD(type, item, name, is_signed)			\
+@@ -64,6 +65,7 @@
+ /* Flags for trace_probe */
+ #define TP_FLAG_TRACE	1
+ #define TP_FLAG_PROFILE	2
++#define TP_FLAG_UPROBE	4
+ 
+ 
+ /* data_rloc: data relative location, compatible with u32 */
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+new file mode 100644
+index 0000000..3aadac7
+--- /dev/null
++++ b/kernel/trace/trace_uprobe.c
+@@ -0,0 +1,739 @@
 +/*
-+ * Convert trace point to probe point with debuginfo
-+ * Currently only handles kprobes.
++ * uprobes-based tracing events
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * Copyright (C) IBM Corporation, 2010
++ * Author:	Srikar Dronamraju
 + */
-+static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
- 				       struct perf_probe_point *pp)
- {
- 	struct symbol *sym;
-@@ -151,8 +154,8 @@ static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
- }
- 
- /* Try to find perf_probe_event with debuginfo */
--static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
--					   struct kprobe_trace_event **tevs,
-+static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
-+					   struct probe_trace_event **tevs,
- 					   int max_tevs)
- {
- 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
-@@ -169,11 +172,11 @@ static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
- 	}
- 
- 	/* Searching trace events corresponding to probe event */
--	ntevs = find_kprobe_trace_events(fd, pev, tevs, max_tevs);
-+	ntevs = find_probe_trace_events(fd, pev, tevs, max_tevs);
- 	close(fd);
- 
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
--		pr_debug("find %d kprobe_trace_events.\n", ntevs);
-+		pr_debug("find %d probe_trace_events.\n", ntevs);
- 		return ntevs;
- 	}
- 
-@@ -377,8 +380,8 @@ end:
- 
- #else	/* !DWARF_SUPPORT */
- 
--static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
--					struct perf_probe_point *pp)
-+static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
-+				       struct perf_probe_point *pp)
- {
- 	pp->function = strdup(tp->symbol);
- 	if (pp->function == NULL)
-@@ -389,8 +392,8 @@ static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
- 	return 0;
- }
- 
--static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
--				struct kprobe_trace_event **tevs __unused,
-+static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
-+				struct probe_trace_event **tevs __unused,
- 				int max_tevs __unused)
- {
- 	if (perf_probe_event_need_dwarf(pev)) {
-@@ -781,16 +784,17 @@ bool perf_probe_event_need_dwarf(struct perf_probe_event *pev)
- 	return false;
- }
- 
--/* Parse kprobe_events event into struct probe_point */
--int parse_kprobe_trace_command(const char *cmd, struct kprobe_trace_event *tev)
-+/* Parse probe_events event into struct probe_point */
-+static int parse_probe_trace_command(const char *cmd,
-+					struct probe_trace_event *tev)
- {
--	struct kprobe_trace_point *tp = &tev->point;
-+	struct probe_trace_point *tp = &tev->point;
- 	char pr;
- 	char *p;
- 	int ret, i, argc;
- 	char **argv;
- 
--	pr_debug("Parsing kprobe_events: %s\n", cmd);
-+	pr_debug("Parsing probe_events: %s\n", cmd);
- 	argv = argv_split(cmd, &argc);
- 	if (!argv) {
- 		pr_debug("Failed to split arguments.\n");
-@@ -822,7 +826,7 @@ int parse_kprobe_trace_command(const char *cmd, struct kprobe_trace_event *tev)
- 		tp->offset = 0;
- 
- 	tev->nargs = argc - 2;
--	tev->args = zalloc(sizeof(struct kprobe_trace_arg) * tev->nargs);
-+	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
- 	if (tev->args == NULL) {
- 		ret = -ENOMEM;
- 		goto out;
-@@ -968,13 +972,13 @@ char *synthesize_perf_probe_command(struct perf_probe_event *pev)
- }
- #endif
- 
--static int __synthesize_kprobe_trace_arg_ref(struct kprobe_trace_arg_ref *ref,
-+static int __synthesize_probe_trace_arg_ref(struct probe_trace_arg_ref *ref,
- 					     char **buf, size_t *buflen,
- 					     int depth)
- {
- 	int ret;
- 	if (ref->next) {
--		depth = __synthesize_kprobe_trace_arg_ref(ref->next, buf,
-+		depth = __synthesize_probe_trace_arg_ref(ref->next, buf,
- 							 buflen, depth + 1);
- 		if (depth < 0)
- 			goto out;
-@@ -992,10 +996,10 @@ out:
- 
- }
- 
--static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
-+static int synthesize_probe_trace_arg(struct probe_trace_arg *arg,
- 				       char *buf, size_t buflen)
- {
--	struct kprobe_trace_arg_ref *ref = arg->ref;
-+	struct probe_trace_arg_ref *ref = arg->ref;
- 	int ret, depth = 0;
- 	char *tmp = buf;
- 
-@@ -1015,7 +1019,7 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
- 
- 	/* Dereferencing arguments */
- 	if (ref) {
--		depth = __synthesize_kprobe_trace_arg_ref(ref, &buf,
-+		depth = __synthesize_probe_trace_arg_ref(ref, &buf,
- 							  &buflen, 1);
- 		if (depth < 0)
- 			return depth;
-@@ -1051,9 +1055,9 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
- 	return buf - tmp;
- }
- 
--char *synthesize_kprobe_trace_command(struct kprobe_trace_event *tev)
-+char *synthesize_probe_trace_command(struct probe_trace_event *tev)
- {
--	struct kprobe_trace_point *tp = &tev->point;
-+	struct probe_trace_point *tp = &tev->point;
- 	char *buf;
- 	int i, len, ret;
- 
-@@ -1069,7 +1073,7 @@ char *synthesize_kprobe_trace_command(struct kprobe_trace_event *tev)
- 		goto error;
- 
- 	for (i = 0; i < tev->nargs; i++) {
--		ret = synthesize_kprobe_trace_arg(&tev->args[i], buf + len,
-+		ret = synthesize_probe_trace_arg(&tev->args[i], buf + len,
- 						  MAX_CMDLEN - len);
- 		if (ret <= 0)
- 			goto error;
-@@ -1082,7 +1086,7 @@ error:
- 	return NULL;
- }
- 
--int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
-+static int convert_to_perf_probe_event(struct probe_trace_event *tev,
- 				struct perf_probe_event *pev)
- {
- 	char buf[64] = "";
-@@ -1095,7 +1099,7 @@ int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
- 		return -ENOMEM;
- 
- 	/* Convert trace_point to probe_point */
--	ret = convert_to_perf_probe_point(&tev->point, &pev->point);
-+	ret = kprobe_convert_to_perf_probe(&tev->point, &pev->point);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -1108,7 +1112,7 @@ int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
- 		if (tev->args[i].name)
- 			pev->args[i].name = strdup(tev->args[i].name);
- 		else {
--			ret = synthesize_kprobe_trace_arg(&tev->args[i],
-+			ret = synthesize_probe_trace_arg(&tev->args[i],
- 							  buf, 64);
- 			pev->args[i].name = strdup(buf);
- 		}
-@@ -1159,9 +1163,9 @@ void clear_perf_probe_event(struct perf_probe_event *pev)
- 	memset(pev, 0, sizeof(*pev));
- }
- 
--void clear_kprobe_trace_event(struct kprobe_trace_event *tev)
-+static void clear_probe_trace_event(struct probe_trace_event *tev)
- {
--	struct kprobe_trace_arg_ref *ref, *next;
-+	struct probe_trace_arg_ref *ref, *next;
- 	int i;
- 
- 	if (tev->event)
-@@ -1222,7 +1226,7 @@ static int open_kprobe_events(bool readwrite)
- }
- 
- /* Get raw string list of current kprobe_events */
--static struct strlist *get_kprobe_trace_command_rawlist(int fd)
-+static struct strlist *get_probe_trace_command_rawlist(int fd)
- {
- 	int ret, idx;
- 	FILE *fp;
-@@ -1290,7 +1294,7 @@ static int show_perf_probe_event(struct perf_probe_event *pev)
- int show_perf_probe_events(void)
- {
- 	int fd, ret;
--	struct kprobe_trace_event tev;
-+	struct probe_trace_event tev;
- 	struct perf_probe_event pev;
- 	struct strlist *rawlist;
- 	struct str_node *ent;
-@@ -1307,20 +1311,20 @@ int show_perf_probe_events(void)
- 	if (fd < 0)
- 		return fd;
- 
--	rawlist = get_kprobe_trace_command_rawlist(fd);
-+	rawlist = get_probe_trace_command_rawlist(fd);
- 	close(fd);
- 	if (!rawlist)
- 		return -ENOENT;
- 
- 	strlist__for_each(ent, rawlist) {
--		ret = parse_kprobe_trace_command(ent->s, &tev);
-+		ret = parse_probe_trace_command(ent->s, &tev);
- 		if (ret >= 0) {
- 			ret = convert_to_perf_probe_event(&tev, &pev);
- 			if (ret >= 0)
- 				ret = show_perf_probe_event(&pev);
- 		}
- 		clear_perf_probe_event(&pev);
--		clear_kprobe_trace_event(&tev);
-+		clear_probe_trace_event(&tev);
- 		if (ret < 0)
- 			break;
- 	}
-@@ -1330,20 +1334,19 @@ int show_perf_probe_events(void)
- }
- 
- /* Get current perf-probe event names */
--static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
-+static struct strlist *get_probe_trace_event_names(int fd, bool include_group)
- {
- 	char buf[128];
- 	struct strlist *sl, *rawlist;
- 	struct str_node *ent;
--	struct kprobe_trace_event tev;
-+	struct probe_trace_event tev;
- 	int ret = 0;
- 
- 	memset(&tev, 0, sizeof(tev));
--
--	rawlist = get_kprobe_trace_command_rawlist(fd);
-+	rawlist = get_probe_trace_command_rawlist(fd);
- 	sl = strlist__new(true, NULL);
- 	strlist__for_each(ent, rawlist) {
--		ret = parse_kprobe_trace_command(ent->s, &tev);
-+		ret = parse_probe_trace_command(ent->s, &tev);
- 		if (ret < 0)
- 			break;
- 		if (include_group) {
-@@ -1353,7 +1356,7 @@ static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
- 				ret = strlist__add(sl, buf);
- 		} else
- 			ret = strlist__add(sl, tev.event);
--		clear_kprobe_trace_event(&tev);
-+		clear_probe_trace_event(&tev);
- 		if (ret < 0)
- 			break;
- 	}
-@@ -1366,13 +1369,13 @@ static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
- 	return sl;
- }
- 
--static int write_kprobe_trace_event(int fd, struct kprobe_trace_event *tev)
-+static int write_probe_trace_event(int fd, struct probe_trace_event *tev)
- {
- 	int ret = 0;
--	char *buf = synthesize_kprobe_trace_command(tev);
-+	char *buf = synthesize_probe_trace_command(tev);
- 
- 	if (!buf) {
--		pr_debug("Failed to synthesize kprobe trace event.\n");
-+		pr_debug("Failed to synthesize probe trace event.\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1425,12 +1428,12 @@ static int get_new_event_name(char *buf, size_t len, const char *base,
- 	return ret;
- }
- 
--static int __add_kprobe_trace_events(struct perf_probe_event *pev,
--				     struct kprobe_trace_event *tevs,
-+static int __add_probe_trace_events(struct perf_probe_event *pev,
-+				     struct probe_trace_event *tevs,
- 				     int ntevs, bool allow_suffix)
- {
- 	int i, fd, ret;
--	struct kprobe_trace_event *tev = NULL;
-+	struct probe_trace_event *tev = NULL;
- 	char buf[64];
- 	const char *event, *group;
- 	struct strlist *namelist;
-@@ -1439,7 +1442,7 @@ static int __add_kprobe_trace_events(struct perf_probe_event *pev,
- 	if (fd < 0)
- 		return fd;
- 	/* Get current event names */
--	namelist = get_kprobe_trace_event_names(fd, false);
-+	namelist = get_probe_trace_event_names(fd, false);
- 	if (!namelist) {
- 		pr_debug("Failed to get current event list.\n");
- 		return -EIO;
-@@ -1474,7 +1477,7 @@ static int __add_kprobe_trace_events(struct perf_probe_event *pev,
- 			ret = -ENOMEM;
- 			break;
- 		}
--		ret = write_kprobe_trace_event(fd, tev);
-+		ret = write_probe_trace_event(fd, tev);
- 		if (ret < 0)
- 			break;
- 		/* Add added event name to namelist */
-@@ -1511,21 +1514,21 @@ static int __add_kprobe_trace_events(struct perf_probe_event *pev,
- 	return ret;
- }
- 
--static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
--					  struct kprobe_trace_event **tevs,
-+static int convert_to_probe_trace_events(struct perf_probe_event *pev,
-+					  struct probe_trace_event **tevs,
- 					  int max_tevs)
- {
- 	struct symbol *sym;
- 	int ret = 0, i;
--	struct kprobe_trace_event *tev;
-+	struct probe_trace_event *tev;
- 
- 	/* Convert perf_probe_event with debuginfo */
--	ret = try_to_find_kprobe_trace_events(pev, tevs, max_tevs);
-+	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs);
- 	if (ret != 0)
- 		return ret;
- 
- 	/* Allocate trace event buffer */
--	tev = *tevs = zalloc(sizeof(struct kprobe_trace_event));
-+	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
- 	if (tev == NULL)
- 		return -ENOMEM;
- 
-@@ -1538,7 +1541,7 @@ static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
- 	tev->point.offset = pev->point.offset;
- 	tev->nargs = pev->nargs;
- 	if (tev->nargs) {
--		tev->args = zalloc(sizeof(struct kprobe_trace_arg)
-+		tev->args = zalloc(sizeof(struct probe_trace_arg)
- 				   * tev->nargs);
- 		if (tev->args == NULL) {
- 			ret = -ENOMEM;
-@@ -1579,7 +1582,7 @@ static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
- 
- 	return 1;
- error:
--	clear_kprobe_trace_event(tev);
-+	clear_probe_trace_event(tev);
- 	free(tev);
- 	*tevs = NULL;
- 	return ret;
-@@ -1587,7 +1590,7 @@ error:
- 
- struct __event_package {
- 	struct perf_probe_event		*pev;
--	struct kprobe_trace_event	*tevs;
-+	struct probe_trace_event	*tevs;
- 	int				ntevs;
- };
- 
-@@ -1610,7 +1613,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- 	for (i = 0; i < npevs; i++) {
- 		pkgs[i].pev = &pevs[i];
- 		/* Convert with or without debuginfo */
--		ret  = convert_to_kprobe_trace_events(pkgs[i].pev,
-+		ret  = convert_to_probe_trace_events(pkgs[i].pev,
- 						      &pkgs[i].tevs, max_tevs);
- 		if (ret < 0)
- 			goto end;
-@@ -1619,24 +1622,24 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- 
- 	/* Loop 2: add all events */
- 	for (i = 0; i < npevs && ret >= 0; i++)
--		ret = __add_kprobe_trace_events(pkgs[i].pev, pkgs[i].tevs,
-+		ret = __add_probe_trace_events(pkgs[i].pev, pkgs[i].tevs,
- 						pkgs[i].ntevs, force_add);
- end:
- 	/* Loop 3: cleanup trace events  */
- 	for (i = 0; i < npevs; i++)
- 		for (j = 0; j < pkgs[i].ntevs; j++)
--			clear_kprobe_trace_event(&pkgs[i].tevs[j]);
-+			clear_probe_trace_event(&pkgs[i].tevs[j]);
- 
- 	return ret;
- }
- 
--static int __del_trace_kprobe_event(int fd, struct str_node *ent)
-+static int __del_trace_probe_event(int fd, struct str_node *ent)
- {
- 	char *p;
- 	char buf[128];
- 	int ret;
- 
--	/* Convert from perf-probe event to trace-kprobe event */
-+	/* Convert from perf-probe event to trace-probe event */
- 	ret = e_snprintf(buf, 128, "-:%s", ent->s);
- 	if (ret < 0)
- 		goto error;
-@@ -1662,7 +1665,7 @@ error:
- 	return ret;
- }
- 
--static int del_trace_kprobe_event(int fd, const char *group,
-+static int del_trace_probe_event(int fd, const char *group,
- 				  const char *event, struct strlist *namelist)
- {
- 	char buf[128];
-@@ -1679,7 +1682,7 @@ static int del_trace_kprobe_event(int fd, const char *group,
- 		strlist__for_each_safe(ent, n, namelist)
- 			if (strglobmatch(ent->s, buf)) {
- 				found++;
--				ret = __del_trace_kprobe_event(fd, ent);
-+				ret = __del_trace_probe_event(fd, ent);
- 				if (ret < 0)
- 					break;
- 				strlist__remove(namelist, ent);
-@@ -1688,7 +1691,7 @@ static int del_trace_kprobe_event(int fd, const char *group,
- 		ent = strlist__find(namelist, buf);
- 		if (ent) {
- 			found++;
--			ret = __del_trace_kprobe_event(fd, ent);
-+			ret = __del_trace_probe_event(fd, ent);
- 			if (ret >= 0)
- 				strlist__remove(namelist, ent);
- 		}
-@@ -1712,7 +1715,7 @@ int del_perf_probe_events(struct strlist *dellist)
- 		return fd;
- 
- 	/* Get current event names */
--	namelist = get_kprobe_trace_event_names(fd, true);
-+	namelist = get_probe_trace_event_names(fd, true);
- 	if (namelist == NULL)
- 		return -EINVAL;
- 
-@@ -1733,7 +1736,7 @@ int del_perf_probe_events(struct strlist *dellist)
- 			event = str;
- 		}
- 		pr_debug("Group: %s, Event: %s\n", group, event);
--		ret = del_trace_kprobe_event(fd, group, event, namelist);
-+		ret = del_trace_probe_event(fd, group, event, namelist);
- 		free(str);
- 		if (ret < 0)
- 			break;
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index ed362ac..5af3924 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -7,33 +7,33 @@
- extern bool probe_event_dry_run;
- 
- /* kprobe-tracer tracing point */
--struct kprobe_trace_point {
-+struct probe_trace_point {
- 	char		*symbol;	/* Base symbol */
- 	unsigned long	offset;		/* Offset from symbol */
- 	bool		retprobe;	/* Return probe flag */
- };
- 
--/* kprobe-tracer tracing argument referencing offset */
--struct kprobe_trace_arg_ref {
--	struct kprobe_trace_arg_ref	*next;	/* Next reference */
-+/* probe-tracer tracing argument referencing offset */
-+struct probe_trace_arg_ref {
-+	struct probe_trace_arg_ref	*next;	/* Next reference */
- 	long				offset;	/* Offset value */
- };
- 
- /* kprobe-tracer tracing argument */
--struct kprobe_trace_arg {
-+struct probe_trace_arg {
- 	char				*name;	/* Argument name */
- 	char				*value;	/* Base value */
- 	char				*type;	/* Type name */
--	struct kprobe_trace_arg_ref	*ref;	/* Referencing offset */
-+	struct probe_trace_arg_ref	*ref;	/* Referencing offset */
- };
- 
- /* kprobe-tracer tracing event (point + arg) */
--struct kprobe_trace_event {
-+struct probe_trace_event {
- 	char				*event;	/* Event name */
- 	char				*group;	/* Group name */
--	struct kprobe_trace_point	point;	/* Trace point */
-+	struct probe_trace_point	point;	/* Trace point */
- 	int				nargs;	/* Number of args */
--	struct kprobe_trace_arg		*args;	/* Arguments */
-+	struct probe_trace_arg		*args;	/* Arguments */
- };
- 
- /* Perf probe probing point */
-@@ -93,25 +93,18 @@ struct line_range {
- /* Command string to events */
- extern int parse_perf_probe_command(const char *cmd,
- 				    struct perf_probe_event *pev);
--extern int parse_kprobe_trace_command(const char *cmd,
--				      struct kprobe_trace_event *tev);
- 
- /* Events to command string */
- extern char *synthesize_perf_probe_command(struct perf_probe_event *pev);
--extern char *synthesize_kprobe_trace_command(struct kprobe_trace_event *tev);
-+extern char *synthesize_probe_trace_command(struct probe_trace_event *tev);
- extern int synthesize_perf_probe_arg(struct perf_probe_arg *pa, char *buf,
- 				     size_t len);
- 
- /* Check the perf_probe_event needs debuginfo */
- extern bool perf_probe_event_need_dwarf(struct perf_probe_event *pev);
- 
--/* Convert from kprobe_trace_event to perf_probe_event */
--extern int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
--				       struct perf_probe_event *pev);
--
- /* Release event contents */
- extern void clear_perf_probe_event(struct perf_probe_event *pev);
--extern void clear_kprobe_trace_event(struct kprobe_trace_event *tev);
- 
- /* Command string to line-range */
- extern int parse_line_range_desc(const char *cmd, struct line_range *lr);
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index f88070e..840f1aa 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -366,10 +366,10 @@ static Dwarf_Die *die_find_member(Dwarf_Die *st_die, const char *name,
-  * Probe finder related functions
-  */
- 
--static struct kprobe_trace_arg_ref *alloc_trace_arg_ref(long offs)
-+static struct probe_trace_arg_ref *alloc_trace_arg_ref(long offs)
- {
--	struct kprobe_trace_arg_ref *ref;
--	ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
-+	struct probe_trace_arg_ref *ref;
-+	ref = zalloc(sizeof(struct probe_trace_arg_ref));
- 	if (ref != NULL)
- 		ref->offset = offs;
- 	return ref;
-@@ -385,7 +385,7 @@ static int convert_variable_location(Dwarf_Die *vr_die, struct probe_finder *pf)
- 	Dwarf_Word offs = 0;
- 	bool ref = false;
- 	const char *regs;
--	struct kprobe_trace_arg *tvar = pf->tvar;
-+	struct probe_trace_arg *tvar = pf->tvar;
- 	int ret;
- 
- 	/* TODO: handle more than 1 exprs */
-@@ -459,10 +459,10 @@ static int convert_variable_location(Dwarf_Die *vr_die, struct probe_finder *pf)
- }
- 
- static int convert_variable_type(Dwarf_Die *vr_die,
--				 struct kprobe_trace_arg *tvar,
-+				 struct probe_trace_arg *tvar,
- 				 const char *cast)
- {
--	struct kprobe_trace_arg_ref **ref_ptr = &tvar->ref;
-+	struct probe_trace_arg_ref **ref_ptr = &tvar->ref;
- 	Dwarf_Die type;
- 	char buf[16];
- 	int ret;
-@@ -500,7 +500,7 @@ static int convert_variable_type(Dwarf_Die *vr_die,
- 			while (*ref_ptr)
- 				ref_ptr = &(*ref_ptr)->next;
- 			/* Add new reference with offset +0 */
--			*ref_ptr = zalloc(sizeof(struct kprobe_trace_arg_ref));
-+			*ref_ptr = zalloc(sizeof(struct probe_trace_arg_ref));
- 			if (*ref_ptr == NULL) {
- 				pr_warning("Out of memory error\n");
- 				return -ENOMEM;
-@@ -545,10 +545,10 @@ static int convert_variable_type(Dwarf_Die *vr_die,
- 
- static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 				    struct perf_probe_arg_field *field,
--				    struct kprobe_trace_arg_ref **ref_ptr,
-+				    struct probe_trace_arg_ref **ref_ptr,
- 				    Dwarf_Die *die_mem)
- {
--	struct kprobe_trace_arg_ref *ref = *ref_ptr;
-+	struct probe_trace_arg_ref *ref = *ref_ptr;
- 	Dwarf_Die type;
- 	Dwarf_Word offs;
- 	int ret, tag;
-@@ -574,7 +574,7 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 		pr_debug2("Array real type: (%x)\n",
- 			 (unsigned)dwarf_dieoffset(&type));
- 		if (tag == DW_TAG_pointer_type) {
--			ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
-+			ref = zalloc(sizeof(struct probe_trace_arg_ref));
- 			if (ref == NULL)
- 				return -ENOMEM;
- 			if (*ref_ptr)
-@@ -605,7 +605,7 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
- 			return -EINVAL;
- 		}
- 
--		ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
-+		ref = zalloc(sizeof(struct probe_trace_arg_ref));
- 		if (ref == NULL)
- 			return -ENOMEM;
- 		if (*ref_ptr)
-@@ -738,7 +738,7 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
- /* Show a probe point to output buffer */
- static int convert_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
- {
--	struct kprobe_trace_event *tev;
-+	struct probe_trace_event *tev;
- 	Dwarf_Addr eaddr;
- 	Dwarf_Die die_mem;
- 	const char *name;
-@@ -803,7 +803,7 @@ static int convert_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
- 
- 	/* Find each argument */
- 	tev->nargs = pf->pev->nargs;
--	tev->args = zalloc(sizeof(struct kprobe_trace_arg) * tev->nargs);
-+	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
- 	if (tev->args == NULL)
- 		return -ENOMEM;
- 	for (i = 0; i < pf->pev->nargs; i++) {
-@@ -1060,9 +1060,9 @@ static int find_probe_point_by_func(struct probe_finder *pf)
- 	return _param.retval;
- }
- 
--/* Find kprobe_trace_events specified by perf_probe_event from debuginfo */
--int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
--			     struct kprobe_trace_event **tevs, int max_tevs)
-+/* Find probe_trace_events specified by perf_probe_event from debuginfo */
-+int find_probe_trace_events(int fd, struct perf_probe_event *pev,
-+			     struct probe_trace_event **tevs, int max_tevs)
- {
- 	struct probe_finder pf = {.pev = pev, .max_tevs = max_tevs};
- 	struct perf_probe_point *pp = &pev->point;
-@@ -1072,7 +1072,7 @@ int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
- 	Dwarf *dbg;
- 	int ret = 0;
- 
--	pf.tevs = zalloc(sizeof(struct kprobe_trace_event) * max_tevs);
-+	pf.tevs = zalloc(sizeof(struct probe_trace_event) * max_tevs);
- 	if (pf.tevs == NULL)
- 		return -ENOMEM;
- 	*tevs = pf.tevs;
-diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-index e1f61dc..4507d51 100644
---- a/tools/perf/util/probe-finder.h
-+++ b/tools/perf/util/probe-finder.h
-@@ -16,9 +16,9 @@ static inline int is_c_varname(const char *name)
- }
- 
- #ifdef DWARF_SUPPORT
--/* Find kprobe_trace_events specified by perf_probe_event from debuginfo */
--extern int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
--				    struct kprobe_trace_event **tevs,
-+/* Find probe_trace_events specified by perf_probe_event from debuginfo */
-+extern int find_probe_trace_events(int fd, struct perf_probe_event *pev,
-+				    struct probe_trace_event **tevs,
- 				    int max_tevs);
- 
- /* Find a perf_probe_point from debuginfo */
-@@ -33,7 +33,7 @@ extern int find_line_range(int fd, struct line_range *lr);
- 
- struct probe_finder {
- 	struct perf_probe_event	*pev;		/* Target probe event */
--	struct kprobe_trace_event *tevs;	/* Result trace events */
-+	struct probe_trace_event *tevs;		/* Result trace events */
- 	int			ntevs;		/* Number of trace events */
- 	int			max_tevs;	/* Max number of trace events */
- 
-@@ -50,7 +50,7 @@ struct probe_finder {
- #endif
- 	Dwarf_Op		*fb_ops;	/* Frame base attribute */
- 	struct perf_probe_arg	*pvar;		/* Current target variable */
--	struct kprobe_trace_arg	*tvar;		/* Current result variable */
-+	struct probe_trace_arg	*tvar;		/* Current result variable */
- };
- 
- struct line_finder {
++
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <linux/uprobes.h>
++
++#include "trace_probe.h"
++
++#define UPROBE_EVENT_SYSTEM "uprobes"
++
++/**
++ * uprobe event core functions
++ */
++
++struct trace_uprobe {
++	struct list_head	list;
++	struct uprobe		up;
++	unsigned long		nhit;
++	unsigned int		flags;	/* For TP_FLAG_* */
++	struct ftrace_event_class	class;
++	struct ftrace_event_call	call;
++	ssize_t			size;		/* trace entry size */
++	unsigned int		nr_args;
++	struct probe_arg	args[];
++};
++
++#define SIZEOF_TRACE_UPROBE(n)			\
++	(offsetof(struct trace_uprobe, args) +	\
++	(sizeof(struct probe_arg) * (n)))
++
++static int register_uprobe_event(struct trace_uprobe *tp);
++static void unregister_uprobe_event(struct trace_uprobe *tp);
++
++static DEFINE_MUTEX(uprobe_lock);
++static LIST_HEAD(uprobe_list);
++
++static void uprobe_dispatcher(struct uprobe *up, struct pt_regs *regs);
++
++/*
++ * Allocate new trace_uprobe and initialize it (including uprobes).
++ */
++static struct trace_uprobe *alloc_trace_uprobe(const char *group,
++					const char *event,
++					void *addr,
++					pid_t pid, int nargs)
++{
++	struct trace_uprobe *tp;
++
++	if (!event || !check_event_name(event))
++		return ERR_PTR(-EINVAL);
++
++	if (!group || !check_event_name(group))
++		return ERR_PTR(-EINVAL);
++
++	tp = kzalloc(SIZEOF_TRACE_UPROBE(nargs), GFP_KERNEL);
++	if (!tp)
++		return ERR_PTR(-ENOMEM);
++
++	tp->up.vaddr = (unsigned long)addr;
++	tp->up.pid = pid;
++	tp->up.handler = uprobe_dispatcher;
++
++	tp->call.class = &tp->class;
++	tp->call.name = kstrdup(event, GFP_KERNEL);
++	if (!tp->call.name)
++		goto error;
++
++	tp->class.system = kstrdup(group, GFP_KERNEL);
++	if (!tp->class.system)
++		goto error;
++
++	INIT_LIST_HEAD(&tp->list);
++	return tp;
++error:
++	kfree(tp->call.name);
++	kfree(tp);
++	return ERR_PTR(-ENOMEM);
++}
++
++static void free_trace_uprobe(struct trace_uprobe *tp)
++{
++	int i;
++
++	for (i = 0; i < tp->nr_args; i++)
++		traceprobe_free_probe_arg(&tp->args[i]);
++
++	kfree(tp->call.class->system);
++	kfree(tp->call.name);
++	kfree(tp);
++}
++
++static struct trace_uprobe *find_probe_event(const char *event,
++					const char *group)
++{
++	struct trace_uprobe *tp;
++
++	list_for_each_entry(tp, &uprobe_list, list)
++		if (strcmp(tp->call.name, event) == 0 &&
++		    strcmp(tp->call.class->system, group) == 0)
++			return tp;
++	return NULL;
++}
++
++/* Unregister a trace_uprobe and probe_event: call with locking uprobe_lock */
++static void unregister_trace_uprobe(struct trace_uprobe *tp)
++{
++	if (tp->flags & TP_FLAG_UPROBE)
++		unregister_uprobe(&tp->up);
++	list_del(&tp->list);
++	unregister_uprobe_event(tp);
++}
++
++/* Register a trace_uprobe and probe_event */
++static int register_trace_uprobe(struct trace_uprobe *tp)
++{
++	struct trace_uprobe *old_tp;
++	int ret;
++
++	mutex_lock(&uprobe_lock);
++
++	/* register as an event */
++	old_tp = find_probe_event(tp->call.name, tp->call.class->system);
++	if (old_tp) {
++		/* delete old event */
++		unregister_trace_uprobe(old_tp);
++		free_trace_uprobe(old_tp);
++	}
++	ret = register_uprobe_event(tp);
++	if (ret) {
++		pr_warning("Failed to register probe event(%d)\n", ret);
++		goto end;
++	}
++
++	list_add_tail(&tp->list, &uprobe_list);
++end:
++	mutex_unlock(&uprobe_lock);
++	return ret;
++}
++
++static int create_trace_uprobe(int argc, char **argv)
++{
++	/*
++	 * Argument syntax:
++	 *  - Add uprobe: p[:[GRP/]EVENT] VADDR@PID [%REG]
++	 *
++	 *  - Remove uprobe: -:[GRP/]EVENT
++	 */
++	struct trace_uprobe *tp;
++	int i, ret = 0;
++	int is_delete = 0;
++	char *arg = NULL, *event = NULL, *group = NULL;
++	void *addr = NULL;
++	pid_t pid = 0;
++	char buf[MAX_EVENT_NAME_LEN];
++	char *tmp;
++
++	/* argc must be >= 1 */
++	if (argv[0][0] == '-')
++		is_delete = 1;
++	else if (argv[0][0] != 'p') {
++		pr_info("Probe definition must be started with 'p', 'r' or"
++			" '-'.\n");
++		return -EINVAL;
++	}
++
++	if (argv[0][1] == ':') {
++		event = &argv[0][2];
++		if (strchr(event, '/')) {
++			group = event;
++			event = strchr(group, '/') + 1;
++			event[-1] = '\0';
++			if (strlen(group) == 0) {
++				pr_info("Group name is not specified\n");
++				return -EINVAL;
++			}
++		}
++		if (strlen(event) == 0) {
++			pr_info("Event name is not specified\n");
++			return -EINVAL;
++		}
++	}
++	if (!group)
++		group = UPROBE_EVENT_SYSTEM;
++
++	if (is_delete) {
++		if (!event) {
++			pr_info("Delete command needs an event name.\n");
++			return -EINVAL;
++		}
++		mutex_lock(&uprobe_lock);
++		tp = find_probe_event(event, group);
++		if (!tp) {
++			mutex_unlock(&uprobe_lock);
++			pr_info("Event %s/%s doesn't exist.\n", group, event);
++			return -ENOENT;
++		}
++		/* delete an event */
++		unregister_trace_uprobe(tp);
++		free_trace_uprobe(tp);
++		mutex_unlock(&uprobe_lock);
++		return 0;
++	}
++
++	if (argc < 2) {
++		pr_info("Probe point is not specified.\n");
++		return -EINVAL;
++	}
++	if (isdigit(argv[1][0])) {
++		/* an address specified */
++		arg = strchr(argv[1], ':');
++		if (!arg)
++			goto fail_address_parse;
++
++		*arg++ = '\0';
++		ret = strict_strtoul(&argv[1][0], 0, (unsigned long *)&pid);
++		if (ret)
++			goto fail_address_parse;
++
++		ret = strict_strtoul(arg, 0, (unsigned long *)&addr);
++		if (ret)
++			goto fail_address_parse;
++	}
++	argc -= 2; argv += 2;
++
++	/* setup a probe */
++	if (!event) {
++		snprintf(buf, MAX_EVENT_NAME_LEN, "%c_%d_0x%p", 'p',
++							pid, addr);
++		event = buf;
++	}
++	tp = alloc_trace_uprobe(group, event, addr, pid, argc);
++	if (IS_ERR(tp)) {
++		pr_info("Failed to allocate trace_uprobe.(%d)\n",
++			(int)PTR_ERR(tp));
++		return PTR_ERR(tp);
++	}
++
++	/* parse arguments */
++	ret = 0;
++	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
++		/* Parse argument name */
++		arg = strchr(argv[i], '=');
++		if (arg)
++			*arg++ = '\0';
++		else
++			arg = argv[i];
++
++		tp->args[i].name = kstrdup(argv[i], GFP_KERNEL);
++		if (!tp->args[i].name) {
++			pr_info("Failed to allocate argument%d name '%s'.\n",
++				i, argv[i]);
++			ret = -ENOMEM;
++			goto error;
++		}
++		tmp = strchr(tp->args[i].name, ':');
++		if (tmp)
++			*tmp = '_';	/* convert : to _ */
++
++		if (traceprobe_conflict_field_name(tp->args[i].name,
++							tp->args, i)) {
++			pr_info("Argument%d name '%s' conflicts with "
++				"another field.\n", i, argv[i]);
++			ret = -EINVAL;
++			goto error;
++		}
++
++		/* Parse fetch argument */
++		ret = traceprobe_parse_probe_arg(arg, &tp->size, &tp->args[i],
++								false, false);
++		if (ret) {
++			pr_info("Parse error at argument%d. (%d)\n", i, ret);
++			kfree(tp->args[i].name);
++			goto error;
++		}
++
++		tp->nr_args++;
++	}
++
++	ret = register_trace_uprobe(tp);
++	if (ret)
++		goto error;
++	return 0;
++
++error:
++	free_trace_uprobe(tp);
++	return ret;
++
++fail_address_parse:
++	pr_info("Failed to parse address.\n");
++	return ret;
++}
++
++static void cleanup_all_probes(void)
++{
++	struct trace_uprobe *tp;
++
++	mutex_lock(&uprobe_lock);
++	/* TODO: Use batch unregistration */
++	while (!list_empty(&uprobe_list)) {
++		tp = list_entry(uprobe_list.next, struct trace_uprobe, list);
++		unregister_trace_uprobe(tp);
++		free_trace_uprobe(tp);
++	}
++	mutex_unlock(&uprobe_lock);
++}
++
++
++/* Probes listing interfaces */
++static void *probes_seq_start(struct seq_file *m, loff_t *pos)
++{
++	mutex_lock(&uprobe_lock);
++	return seq_list_start(&uprobe_list, *pos);
++}
++
++static void *probes_seq_next(struct seq_file *m, void *v, loff_t *pos)
++{
++	return seq_list_next(v, &uprobe_list, pos);
++}
++
++static void probes_seq_stop(struct seq_file *m, void *v)
++{
++	mutex_unlock(&uprobe_lock);
++}
++
++static int probes_seq_show(struct seq_file *m, void *v)
++{
++	struct trace_uprobe *tp = v;
++	int i;
++
++	seq_printf(m, "%c", 'p');
++	seq_printf(m, ":%s/%s", tp->call.class->system, tp->call.name);
++
++	seq_printf(m, " %d:0x%p", tp->up.pid, (void *)tp->up.vaddr);
++
++	for (i = 0; i < tp->nr_args; i++)
++		seq_printf(m, " %s=%s", tp->args[i].name, tp->args[i].comm);
++	seq_printf(m, "\n");
++
++	return 0;
++}
++
++static const struct seq_operations probes_seq_op = {
++	.start  = probes_seq_start,
++	.next   = probes_seq_next,
++	.stop   = probes_seq_stop,
++	.show   = probes_seq_show
++};
++
++static int probes_open(struct inode *inode, struct file *file)
++{
++	if ((file->f_mode & FMODE_WRITE) &&
++	    (file->f_flags & O_TRUNC))
++		cleanup_all_probes();
++
++	return seq_open(file, &probes_seq_op);
++}
++
++static ssize_t probes_write(struct file *file, const char __user *buffer,
++			    size_t count, loff_t *ppos)
++{
++	return traceprobe_probes_write(file, buffer, count, ppos,
++			create_trace_uprobe);
++}
++
++static const struct file_operations uprobe_events_ops = {
++	.owner          = THIS_MODULE,
++	.open           = probes_open,
++	.read           = seq_read,
++	.llseek         = seq_lseek,
++	.release        = seq_release,
++	.write		= probes_write,
++};
++
++/* Probes profiling interfaces */
++static int probes_profile_seq_show(struct seq_file *m, void *v)
++{
++	struct trace_uprobe *tp = v;
++
++	seq_printf(m, "  %d %-44s %15lu\n", tp->up.pid, tp->call.name,
++								tp->nhit);
++	return 0;
++}
++
++static const struct seq_operations profile_seq_op = {
++	.start  = probes_seq_start,
++	.next   = probes_seq_next,
++	.stop   = probes_seq_stop,
++	.show   = probes_profile_seq_show
++};
++
++static int profile_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &profile_seq_op);
++}
++
++static const struct file_operations uprobe_profile_ops = {
++	.owner          = THIS_MODULE,
++	.open           = profile_open,
++	.read           = seq_read,
++	.llseek         = seq_lseek,
++	.release        = seq_release,
++};
++
++/* uprobe handler */
++static void uprobe_trace_func(struct uprobe *up, struct pt_regs *regs)
++{
++	struct trace_uprobe *tp = container_of(up, struct trace_uprobe, up);
++	struct uprobe_trace_entry_head *entry;
++	struct ring_buffer_event *event;
++	struct ring_buffer *buffer;
++	u8 *data;
++	int size, i, pc;
++	unsigned long irq_flags;
++	struct ftrace_event_call *call = &tp->call;
++
++	tp->nhit++;
++
++	local_save_flags(irq_flags);
++	pc = preempt_count();
++
++	size = sizeof(*entry) + tp->size;
++
++	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
++						  size, irq_flags, pc);
++	if (!event)
++		return;
++
++	entry = ring_buffer_event_data(event);
++	entry->ip = (unsigned long)up->vaddr;
++	data = (u8 *)&entry[1];
++	for (i = 0; i < tp->nr_args; i++)
++		call_fetch(&tp->args[i].fetch, regs,
++						data + tp->args[i].offset);
++
++	if (!filter_current_check_discard(buffer, call, entry, event))
++		trace_buffer_unlock_commit(buffer, event, irq_flags, pc);
++}
++
++/* Event entry printers */
++enum print_line_t
++print_uprobe_event(struct trace_iterator *iter, int flags,
++		   struct trace_event *event)
++{
++	struct uprobe_trace_entry_head *field;
++	struct trace_seq *s = &iter->seq;
++	struct trace_uprobe *tp;
++	u8 *data;
++	int i;
++
++	field = (struct uprobe_trace_entry_head *)iter->ent;
++	tp = container_of(event, struct trace_uprobe, call.event);
++
++	if (!trace_seq_printf(s, "%s: (", tp->call.name))
++		goto partial;
++
++	if (!seq_print_ip_sym(s, field->ip, flags | TRACE_ITER_SYM_OFFSET))
++		goto partial;
++
++	if (!trace_seq_puts(s, ")"))
++		goto partial;
++
++	data = (u8 *)&field[1];
++	for (i = 0; i < tp->nr_args; i++)
++		if (!tp->args[i].type->print(s, tp->args[i].name,
++					     data + tp->args[i].offset, field))
++			goto partial;
++
++	if (!trace_seq_puts(s, "\n"))
++		goto partial;
++
++	return TRACE_TYPE_HANDLED;
++partial:
++	return TRACE_TYPE_PARTIAL_LINE;
++}
++
++
++static int probe_event_enable(struct ftrace_event_call *call)
++{
++	int ret = 0;
++	struct trace_uprobe *tp = (struct trace_uprobe *)call->data;
++
++	if (!(tp->flags & TP_FLAG_UPROBE)) {
++		ret = register_uprobe(&tp->up);
++		if (!ret)
++			tp->flags |= (TP_FLAG_UPROBE | TP_FLAG_TRACE);
++	}
++	return ret;
++}
++
++static void probe_event_disable(struct ftrace_event_call *call)
++{
++	struct trace_uprobe *tp = (struct trace_uprobe *)call->data;
++
++	if (tp->flags & TP_FLAG_UPROBE) {
++		unregister_uprobe(&tp->up);
++		tp->flags &= ~(TP_FLAG_UPROBE | TP_FLAG_TRACE);
++	}
++}
++
++static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
++{
++	int ret, i;
++	struct uprobe_trace_entry_head field;
++	struct trace_uprobe *tp = (struct trace_uprobe *)event_call->data;
++
++	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
++	/* Set argument names as fields */
++	for (i = 0; i < tp->nr_args; i++) {
++		ret = trace_define_field(event_call, tp->args[i].type->fmttype,
++					 tp->args[i].name,
++					 sizeof(field) + tp->args[i].offset,
++					 tp->args[i].type->size,
++					 tp->args[i].type->is_signed,
++					 FILTER_OTHER);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++static int __set_print_fmt(struct trace_uprobe *tp, char *buf, int len)
++{
++	int i;
++	int pos = 0;
++
++	const char *fmt, *arg;
++
++	fmt = "(%lx)";
++	arg = "REC->" FIELD_STRING_IP;
++
++	/* When len=0, we just calculate the needed length */
++#define LEN_OR_ZERO (len ? len - pos : 0)
++
++	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
++
++	for (i = 0; i < tp->nr_args; i++) {
++		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
++				tp->args[i].name, tp->args[i].type->fmt);
++	}
++
++	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
++
++	for (i = 0; i < tp->nr_args; i++) {
++		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
++				tp->args[i].name);
++	}
++
++#undef LEN_OR_ZERO
++
++	/* return the length of print_fmt */
++	return pos;
++}
++
++static int set_print_fmt(struct trace_uprobe *tp)
++{
++	int len;
++	char *print_fmt;
++
++	/* First: called with 0 length to calculate the needed length */
++	len = __set_print_fmt(tp, NULL, 0);
++	print_fmt = kmalloc(len + 1, GFP_KERNEL);
++	if (!print_fmt)
++		return -ENOMEM;
++
++	/* Second: actually write the @print_fmt */
++	__set_print_fmt(tp, print_fmt, len + 1);
++	tp->call.print_fmt = print_fmt;
++
++	return 0;
++}
++
++#ifdef CONFIG_PERF_EVENTS
++
++/* uprobe profile handler */
++static void uprobe_perf_func(struct uprobe *up,
++					 struct pt_regs *regs)
++{
++	struct trace_uprobe *tp = container_of(up, struct trace_uprobe, up);
++	struct ftrace_event_call *call = &tp->call;
++	struct uprobe_trace_entry_head *entry;
++	struct hlist_head *head;
++	u8 *data;
++	int size, __size, i;
++	int rctx;
++
++	__size = sizeof(*entry) + tp->size;
++	size = ALIGN(__size + sizeof(u32), sizeof(u64));
++	size -= sizeof(u32);
++	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
++		     "profile buffer not large enough"))
++		return;
++
++	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
++	if (!entry)
++		return;
++
++	entry->ip = (unsigned long)up->vaddr;
++	data = (u8 *)&entry[1];
++	for (i = 0; i < tp->nr_args; i++)
++		call_fetch(&tp->args[i].fetch, regs,
++						data + tp->args[i].offset);
++
++	head = this_cpu_ptr(call->perf_events);
++	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head);
++}
++
++static int probe_perf_enable(struct ftrace_event_call *call)
++{
++	int ret = 0;
++	struct trace_uprobe *tp = (struct trace_uprobe *)call->data;
++
++	if (!(tp->flags & TP_FLAG_UPROBE)) {
++		ret = register_uprobe(&tp->up);
++		if (!ret)
++			tp->flags |= (TP_FLAG_UPROBE | TP_FLAG_PROFILE);
++	}
++	return ret;
++}
++
++static void probe_perf_disable(struct ftrace_event_call *call)
++{
++	struct trace_uprobe *tp = (struct trace_uprobe *)call->data;
++
++	if (tp->flags & TP_FLAG_UPROBE) {
++		unregister_uprobe(&tp->up);
++		tp->flags &= ~(TP_FLAG_UPROBE | TP_FLAG_PROFILE);
++	}
++}
++#endif	/* CONFIG_PERF_EVENTS */
++
++static
++int uprobe_register(struct ftrace_event_call *event, enum trace_reg type)
++{
++	switch (type) {
++	case TRACE_REG_REGISTER:
++		return probe_event_enable(event);
++	case TRACE_REG_UNREGISTER:
++		probe_event_disable(event);
++		return 0;
++
++#ifdef CONFIG_PERF_EVENTS
++	case TRACE_REG_PERF_REGISTER:
++		return probe_perf_enable(event);
++	case TRACE_REG_PERF_UNREGISTER:
++		probe_perf_disable(event);
++		return 0;
++#endif
++	}
++	return 0;
++}
++
++static void uprobe_dispatcher(struct uprobe *up, struct pt_regs *regs)
++{
++	struct trace_uprobe *tp = container_of(up, struct trace_uprobe, up);
++
++	if (tp->flags & TP_FLAG_TRACE)
++		uprobe_trace_func(up, regs);
++#ifdef CONFIG_PERF_EVENTS
++	if (tp->flags & TP_FLAG_PROFILE)
++		uprobe_perf_func(up, regs);
++#endif
++}
++
++
++static struct trace_event_functions uprobe_funcs = {
++	.trace		= print_uprobe_event
++};
++
++static int register_uprobe_event(struct trace_uprobe *tp)
++{
++	struct ftrace_event_call *call = &tp->call;
++	int ret;
++
++	/* Initialize ftrace_event_call */
++	INIT_LIST_HEAD(&call->class->fields);
++	call->event.funcs = &uprobe_funcs;
++	call->class->define_fields = uprobe_event_define_fields;
++	if (set_print_fmt(tp) < 0)
++		return -ENOMEM;
++	ret = register_ftrace_event(&call->event);
++	if (!ret) {
++		kfree(call->print_fmt);
++		return -ENODEV;
++	}
++	call->flags = 0;
++	call->class->reg = uprobe_register;
++	call->data = tp;
++	ret = trace_add_event_call(call);
++	if (ret) {
++		pr_info("Failed to register uprobe event: %s\n", call->name);
++		kfree(call->print_fmt);
++		unregister_ftrace_event(&call->event);
++	}
++	return ret;
++}
++
++static void unregister_uprobe_event(struct trace_uprobe *tp)
++{
++	/* tp->event is unregistered in trace_remove_event_call() */
++	trace_remove_event_call(&tp->call);
++	kfree(tp->call.print_fmt);
++}
++
++/* Make a trace interface for controling probe points */
++static __init int init_uprobe_trace(void)
++{
++	struct dentry *d_tracer;
++	struct dentry *entry;
++
++	d_tracer = tracing_init_dentry();
++	if (!d_tracer)
++		return 0;
++
++	entry = trace_create_file("uprobe_events", 0644, d_tracer,
++				    NULL, &uprobe_events_ops);
++	/* Profile interface */
++	entry = trace_create_file("uprobe_profile", 0444, d_tracer,
++				    NULL, &uprobe_profile_ops);
++	return 0;
++}
++fs_initcall(init_uprobe_trace);
