@@ -1,204 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab0G2SEs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:04:48 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:22337 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab0G2SEq (ORCPT
+	id S1754948Ab0G2SGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:06:05 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:24486 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751142Ab0G2SGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:04:46 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:message-id:user-agent:
-	mime-version:content-type;
-	b=lFD0u5wCkYvHhm9FU7xB+CStPXLzNrj4rOG/xYVXZAnXnsEB6ubTuz7MtPgstVWI7
-	tROUCB6msLBNjpsUjmlzg==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] memcg id quick lookup
-References: <20100729184250.acdff587.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100729184500.a3e4acb4.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 29 Jul 2010 11:03:26 -0700
-Message-ID: <xr93zkxamahd.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 29 Jul 2010 14:06:01 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOZfUUzZiBZX/2dsb2JhbACgCXLAXQ2FKwSEOg
+Date: Thu, 29 Jul 2010 20:05:59 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
+Subject: [WATCHDOG] Update Maintainers info
+Message-ID: <20100729180559.GD30740@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+Hi Linus,
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> Now, memory cgroup has an ID per cgroup and make use of it at
->  - hierarchy walk,
->  - swap recording.
->
-> This patch is for making more use of it. The final purpose is
-> to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
->
-> This patch caches a pointer of memcg in an array. By this, we
-> don't have to call css_lookup() which requires radix-hash walk.
-> This saves some amount of memory footprint at lookup memcg via id.
-> It's called in very fast path and need to be quick AMAP.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  init/Kconfig    |   11 +++++++++++
->  mm/memcontrol.c |   46 ++++++++++++++++++++++++++++++++--------------
->  2 files changed, 43 insertions(+), 14 deletions(-)
->
-> Index: mmotm-0727/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0727.orig/mm/memcontrol.c
-> +++ mmotm-0727/mm/memcontrol.c
-> @@ -292,6 +292,27 @@ static bool move_file(void)
->  					&mc.to->move_charge_at_immigrate);
->  }
->  
-> +atomic_t mem_cgroup_num;
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-Maybe static and init?
-+ static atomic_t mem_cgroup_num = ATOMIC_INIT(0);
+This will update the following files:
 
-> +struct mem_cgroup *mem_cgroups[CONFIG_MEM_CGROUP_MAX_GROUPS] __read_mostly;
+ MAINTAINERS |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Make this static?
+with these Changes:
 
-Because value [0] is reserved, maybe this should be:
-+struct mem_cgroup *mem_cgroups[CONFIG_MEM_CGROUP_MAX_GROUPS+1] __read_mostly;
+Author: Wim Van Sebroeck <wim@iguana.be>
+Date:   Thu Jul 29 18:02:51 2010 +0000
 
-> +
-> +static struct mem_cgroup* id_to_memcg(unsigned short id)
-> +{
-> +	/*
-> +	 * This array is set to NULL when mem_cgroup is freed.
-> +	 * IOW, there are no more references && rcu_synchronized().
-> +	 * This lookup-caching is safe.
-> +	 */
-> +	if (unlikely(!mem_cgroups[id])) {
-> +		struct cgroup_subsys_state *css;
-> +		rcu_read_lock();
-> +		css = css_lookup(&mem_cgroup_subsys, id);
-> +		if (!css)
-> +			return NULL;
-> +		rcu_read_unlock();
+    watchdog: update MAINTAINERS entry
+    
+    Add Mailing-list and website to watchdog MAINTAINERS entry.
+    
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 
-I think we should move rcu_read_unlock() above to just before "if
-(!css)" to unlock rcu when returning NULL.
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
 
-> +		mem_cgroups[id] = container_of(css, struct mem_cgroup, css);
-> +	}
-> +	return mem_cgroups[id];
-> +}
->  /*
->   * Maximum loops in mem_cgroup_hierarchical_reclaim(), used for soft
->   * limit reclaim to prevent infinite loops, if they ever occur.
-> @@ -1824,18 +1845,7 @@ static void mem_cgroup_cancel_charge(str
->   * it's concern. (dropping refcnt from swap can be called against removed
->   * memcg.)
->   */
-> -static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
-> -{
-> -	struct cgroup_subsys_state *css;
->  
-> -	/* ID 0 is unused ID */
-> -	if (!id)
-> -		return NULL;
-> -	css = css_lookup(&mem_cgroup_subsys, id);
-> -	if (!css)
-> -		return NULL;
-> -	return container_of(css, struct mem_cgroup, css);
-> -}
->  
->  struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->  {
-> @@ -1856,7 +1866,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
->  		ent.val = page_private(page);
->  		id = lookup_swap_cgroup(ent);
->  		rcu_read_lock();
-> -		mem = mem_cgroup_lookup(id);
-> +		mem = id_to_memcg(id);
->  		if (mem && !css_tryget(&mem->css))
->  			mem = NULL;
->  		rcu_read_unlock();
-> @@ -2208,7 +2218,7 @@ __mem_cgroup_commit_charge_swapin(struct
->  
->  		id = swap_cgroup_record(ent, 0);
->  		rcu_read_lock();
-> -		memcg = mem_cgroup_lookup(id);
-> +		memcg = id_to_memcg(id);
->  		if (memcg) {
->  			/*
->  			 * This recorded memcg can be obsolete one. So, avoid
-> @@ -2472,7 +2482,7 @@ void mem_cgroup_uncharge_swap(swp_entry_
->  
->  	id = swap_cgroup_record(ent, 0);
->  	rcu_read_lock();
-> -	memcg = mem_cgroup_lookup(id);
-> +	memcg = id_to_memcg(id);
->  	if (memcg) {
->  		/*
->  		 * We uncharge this because swap is freed.
-> @@ -3988,6 +3998,10 @@ static struct mem_cgroup *mem_cgroup_all
->  	struct mem_cgroup *mem;
->  	int size = sizeof(struct mem_cgroup);
->  
-> +	/* 0 is unused */
-> +	if (atomic_read(&mem_cgroup_num) == CONFIG_MEM_CGROUP_MAX_GROUPS-1)
-> +		return NULL;
-> +
->  	/* Can be very big if MAX_NUMNODES is very big */
->  	if (size < PAGE_SIZE)
->  		mem = kmalloc(size, GFP_KERNEL);
-> @@ -4025,7 +4039,10 @@ static void __mem_cgroup_free(struct mem
->  	int node;
->  
->  	mem_cgroup_remove_from_trees(mem);
-> +	/* No more lookup against this ID */
-> +	mem_cgroups[css_id(&mem->css)] = NULL;
+For completeness, I added the overal diff below.
 
-Are css_id() values tightly packed?  If there are 4 memcg allocated, are
-we guaranteed that all of their id's have value 1..4?
+Greetings,
+Wim.
 
->  	free_css_id(&mem_cgroup_subsys, &mem->css);
-> +	atomic_dec(&mem_cgroup_num);
->  
->  	for_each_node_state(node, N_POSSIBLE)
->  		free_mem_cgroup_per_zone_info(mem, node);
-> @@ -4162,6 +4179,7 @@ mem_cgroup_create(struct cgroup_subsys *
->  	atomic_set(&mem->refcnt, 1);
->  	mem->move_charge_at_immigrate = 0;
->  	mutex_init(&mem->thresholds_lock);
-> +	atomic_inc(&mem_cgroup_num);
->  	return &mem->css;
->  free_out:
->  	__mem_cgroup_free(mem);
-> Index: mmotm-0727/init/Kconfig
-> ===================================================================
-> --- mmotm-0727.orig/init/Kconfig
-> +++ mmotm-0727/init/Kconfig
-> @@ -594,6 +594,17 @@ config CGROUP_MEM_RES_CTLR_SWAP
->  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
->  	  size is 4096bytes, 512k per 1Gbytes of swap.
->  
-> +config MEM_CGROUP_MAX_GROUPS
-> +	int "Maximum number of memory cgroups on a system"
-> +	range 1 65535
-> +	default 8192 if 64BIT
-> +	default 2048 if 32BIT
-> +	help
-> +	  Memory cgroup has limitation of the number of groups created.
-> +	  Please select your favorite value. The more you allow, the more
-> +	  memory will be consumed. This consumes vmalloc() area, so,
-> +	  this should be small on 32bit arch.
-> +
->  menuconfig CGROUP_SCHED
->  	bool "Group CPU scheduler"
->  	depends on EXPERIMENTAL && CGROUPS
+================================================================================
+diff --git a/MAINTAINERS b/MAINTAINERS
+index db3d0f5..02f75fc 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6243,6 +6243,8 @@ F:	drivers/mmc/host/wbsd.*
+ 
+ WATCHDOG DEVICE DRIVERS
+ M:	Wim Van Sebroeck <wim@iguana.be>
++L:	linux-watchdog@vger.kernel.org
++W:	http://www.linux-watchdog.org/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+ S:	Maintained
+ F:	Documentation/watchdog/
