@@ -1,36 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab0G2X61 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 19:58:27 -0400
-Received: from mail.perches.com ([173.55.12.10]:2164 "EHLO mail.perches.com"
+	id S1758152Ab0G2X6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 19:58:33 -0400
+Received: from mail.perches.com ([173.55.12.10]:2171 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755080Ab0G2X60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 19:58:26 -0400
+	id S1755194Ab0G2X62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 19:58:28 -0400
 From: Joe Perches <joe@perches.com>
 To: Michael Hennerich <michael.hennerich@analog.com>
 Cc: Mike Frysinger <vapier.adi@gmail.com>,
         uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 0/3] drivers/net/bfin_mac.c: Neatening
-Date: Thu, 29 Jul 2010 16:58:21 -0700
-Message-Id: <cover.1280447281.git.joe@perches.com>
+Subject: [PATCH net-next 2/3] drivers/net/bfin_mac.c: Use pr_<level>, netdev_<level>
+Date: Thu, 29 Jul 2010 16:58:23 -0700
+Message-Id: <61ca890fdbff3397e15328685ba6d86eaabf8fec.1280447281.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.2.19.g9a302
+In-Reply-To: <cover.1280447281.git.joe@perches.com>
+References: <cover.1280447281.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ho-hum, broken up into pieces just for Mike Frysinger.
+Add and use pr_fmt, pr_<level> and netdev_<level>
 
-Still uncompiled, untested
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/bfin_mac.c |   56 +++++++++++++++++++++--------------------------
+ 1 files changed, 25 insertions(+), 31 deletions(-)
 
-Joe Perches (3):
-  drivers/net/bfin_mac.c: Neatening
-  drivers/net/bfin_mac.c: Use pr_<level>, netdev_<level>
-  drivers/net/bfin_mac.c: Misc function cleanups, neatening
-
- drivers/net/bfin_mac.c |  329 ++++++++++++++++++++++++++----------------------
- 1 files changed, 176 insertions(+), 153 deletions(-)
-
+diff --git a/drivers/net/bfin_mac.c b/drivers/net/bfin_mac.c
+index 0b032a5..a1d8119 100644
+--- a/drivers/net/bfin_mac.c
++++ b/drivers/net/bfin_mac.c
+@@ -195,8 +195,7 @@ static int desc_list_init(void)
+ 		/* allocate a new skb for next time receive */
+ 		new_skb = dev_alloc_skb(PKT_BUF_SZ + NET_IP_ALIGN);
+ 		if (!new_skb) {
+-			printk(KERN_NOTICE DRV_NAME
+-			       ": init: low on mem - packet dropped\n");
++			pr_notice("init: low on mem - packet dropped\n");
+ 			goto init_error;
+ 		}
+ 		skb_reserve(new_skb, NET_IP_ALIGN);
+@@ -247,7 +246,7 @@ static int desc_list_init(void)
+ 
+ init_error:
+ 	desc_list_free();
+-	printk(KERN_ERR DRV_NAME ": kmalloc failed\n");
++	pr_err("kmalloc failed\n");
+ 	return -ENOMEM;
+ }
+ 
+@@ -264,12 +263,11 @@ static int bfin_mdio_poll(void)
+ 
+ 	/* poll the STABUSY bit */
+ 	while ((bfin_read_EMAC_STAADD()) & STABUSY) {
+-		udelay(1);
+ 		if (timeout_cnt-- < 0) {
+-			printk(KERN_ERR DRV_NAME
+-			": wait MDC/MDIO transaction to complete timeout\n");
++			pr_err("wait MDC/MDIO transaction to complete timeout\n");
+ 			return -ETIMEDOUT;
+ 		}
++		udelay(1);
+ 	}
+ 
+ 	return 0;
+@@ -357,9 +355,9 @@ static void bfin_mac_adjust_link(struct net_device *dev)
+ 				opmode &= ~(RMII_10);
+ 				break;
+ 			default:
+-				printk(KERN_WARNING
+-					"%s: Ack!  Speed (%d) is not 10/100!\n",
+-					DRV_NAME, phydev->speed);
++				netdev_warn(dev,
++					    "Ack!  Speed (%d) is not 10/100!\n",
++					    phydev->speed);
+ 				break;
+ 			}
+ 			bfin_write_EMAC_OPMODE(opmode);
+@@ -383,7 +381,7 @@ static void bfin_mac_adjust_link(struct net_device *dev)
+ 	if (new_state) {
+ 		u32 opmode = bfin_read_EMAC_OPMODE();
+ 		phy_print_status(phydev);
+-		pr_debug("EMAC_OPMODE = 0x%08x\n", opmode);
++		netdev_dbg(dev, "EMAC_OPMODE = 0x%08x\n", opmode);
+ 	}
+ 
+ 	spin_unlock_irqrestore(&lp->lock, flags);
+@@ -424,8 +422,7 @@ static int mii_probe(struct net_device *dev)
+ 
+ 	/* now we are supposed to have a proper phydev to attach to... */
+ 	if (!phydev) {
+-		printk(KERN_INFO "%s: Don't found any phy device at all\n",
+-			dev->name);
++		netdev_info(dev, "No PHY device found\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -438,7 +435,7 @@ static int mii_probe(struct net_device *dev)
+ #endif
+ 
+ 	if (IS_ERR(phydev)) {
+-		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
++		netdev_err(dev, "Could not attach to PHY\n");
+ 		return PTR_ERR(phydev);
+ 	}
+ 
+@@ -460,11 +457,11 @@ static int mii_probe(struct net_device *dev)
+ 	lp->old_duplex = -1;
+ 	lp->phydev = phydev;
+ 
+-	printk(KERN_INFO "%s: attached PHY driver [%s] "
+-	       "(mii_bus:phy_addr=%s, irq=%d, mdc_clk=%dHz(mdc_div=%d)"
+-	       "@sclk=%dMHz)\n",
+-	       DRV_NAME, phydev->drv->name, dev_name(&phydev->dev), phydev->irq,
+-	       MDC_CLK, mdc_div, sclk/1000000);
++	netdev_info(dev, "attached PHY driver [%s] "
++		    "(mii_bus:phy_addr=%s, irq=%d, mdc_clk=%dHz(mdc_div=%d)"
++		    "@sclk=%dMHz)\n",
++		    phydev->drv->name, dev_name(&phydev->dev), phydev->irq,
++		    MDC_CLK, mdc_div, sclk/1000000);
+ 
+ 	return 0;
+ }
+@@ -833,8 +830,7 @@ static void bfin_tx_hwtstamp(struct net_device *netdev, struct sk_buff *skb)
+ 		       (--timeout_cnt))
+ 			udelay(1);
+ 		if (timeout_cnt == 0)
+-			printk(KERN_ERR DRV_NAME
+-					": fails to timestamp the TX packet\n");
++			pr_err("failed to timestamp the TX packet\n");
+ 		else {
+ 			struct skb_shared_hwtstamps shhwtstamps;
+ 			u64 ns;
+@@ -1091,8 +1087,7 @@ static void bfin_mac_rx(struct net_device *dev)
+ 	 * we which case we simply drop the packet
+ 	 */
+ 	if (current_rx_ptr->status.status_word & RX_ERROR_MASK) {
+-		printk(KERN_NOTICE DRV_NAME
+-		       ": rx: receive error - packet dropped\n");
++		netdev_notice(dev, "rx: receive error - packet dropped\n");
+ 		dev->stats.rx_dropped++;
+ 		goto out;
+ 	}
+@@ -1102,8 +1097,7 @@ static void bfin_mac_rx(struct net_device *dev)
+ 
+ 	new_skb = dev_alloc_skb(PKT_BUF_SZ + NET_IP_ALIGN);
+ 	if (!new_skb) {
+-		printk(KERN_NOTICE DRV_NAME
+-		       ": rx: low on mem - packet dropped\n");
++		pr_notice("rx: low on mem - packet dropped\n");
+ 		dev->stats.rx_dropped++;
+ 		goto out;
+ 	}
+@@ -1226,7 +1220,7 @@ static int bfin_mac_enable(void)
+ 	int ret;
+ 	u32 opmode;
+ 
+-	pr_debug("%s: %s\n", DRV_NAME, __func__);
++	pr_debug("%s\n", __func__);
+ 
+ 	/* Set RX DMA */
+ 	bfin_write_DMA1_NEXT_DESC_PTR(&(rx_list_head->desc_a));
+@@ -1268,7 +1262,7 @@ static void bfin_mac_timeout(struct net_device *dev)
+ {
+ 	struct bfin_mac_local *lp = netdev_priv(dev);
+ 
+-	pr_debug("%s: %s\n", dev->name, __func__);
++	netdev_dbg(dev, "%s\n", __func__);
+ 
+ 	bfin_mac_disable();
+ 
+@@ -1335,7 +1329,7 @@ static void bfin_mac_set_multicast_list(struct net_device *dev)
+ 	u32 sysctl;
+ 
+ 	if (dev->flags & IFF_PROMISC) {
+-		printk(KERN_INFO "%s: set to promisc mode\n", dev->name);
++		netdev_info(dev, "set to promisc mode\n");
+ 		sysctl = bfin_read_EMAC_OPMODE();
+ 		sysctl |= PR;
+ 		bfin_write_EMAC_OPMODE(sysctl);
+@@ -1389,7 +1383,7 @@ static int bfin_mac_open(struct net_device *dev)
+ {
+ 	struct bfin_mac_local *lp = netdev_priv(dev);
+ 	int ret;
+-	pr_debug("%s: %s\n", dev->name, __func__);
++	netdev_dbg(dev, "%s\n", __func__);
+ 
+ 	/*
+ 	 * Check that the address is valid.  If its not, refuse
+@@ -1397,7 +1391,7 @@ static int bfin_mac_open(struct net_device *dev)
+ 	 * address using ifconfig eth0 hw ether xx:xx:xx:xx:xx:xx
+ 	 */
+ 	if (!is_valid_ether_addr(dev->dev_addr)) {
+-		printk(KERN_WARNING DRV_NAME ": no valid ethernet hw addr\n");
++		netdev_warn(dev, "no valid ethernet hw addr\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1415,7 +1409,7 @@ static int bfin_mac_open(struct net_device *dev)
+ 	ret = bfin_mac_enable();
+ 	if (ret)
+ 		return ret;
+-	pr_debug("hardware init finished\n");
++	netdev_dbg(dev, "hardware init finished\n");
+ 
+ 	netif_start_queue(dev);
+ 	netif_carrier_on(dev);
+@@ -1431,7 +1425,7 @@ static int bfin_mac_open(struct net_device *dev)
+ static int bfin_mac_close(struct net_device *dev)
+ {
+ 	struct bfin_mac_local *lp = netdev_priv(dev);
+-	pr_debug("%s: %s\n", dev->name, __func__);
++	netdev_dbg(dev, "%s\n", __func__);
+ 
+ 	netif_stop_queue(dev);
+ 	netif_carrier_off(dev);
 -- 
 1.7.2.19.g9a302
 
