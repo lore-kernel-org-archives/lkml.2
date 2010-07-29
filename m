@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758132Ab0G2RQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:16:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64294 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856Ab0G2RQ4 (ORCPT
+	id S1757871Ab0G2Rab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:30:31 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:36300 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754186Ab0G2Raa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:16:56 -0400
-Date: Thu, 29 Jul 2010 10:16:09 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
-        Jayamohan Kallickal <jayamohank@serverengines.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        jejbscsi <james.bottomley@suse.de>
-Subject: [PATCH -next] scsi: be2iscsi needs ISCSI_BOOT_SYSFS
-Message-Id: <20100729101609.965dbe48.randy.dunlap@oracle.com>
-In-Reply-To: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
-References: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C51B77F.0225:SCFMA4539814,ss=1,fgs=0
+	Thu, 29 Jul 2010 13:30:30 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: kcfl9IMVM1kpEP2BCIWV0LES5CJIFxcb8DKLP6ln_t7EDkx
+ kNAQMz8bzBG2ve703SZfU4QrQShWU5IilgxqAExPuBWwDyRk0vnJRoinRHFZ
+ .7llfFHRYSAI6ReUme7HGWWk.ZnaZNcU1xYhrW5uqM1tt14B_f8xaGYeYCgT
+ 5IUErgBWAMl3MBEQ.m5adHR3t.Oo1XT.n_M4LXnh6RyLi5IxgaKFtebVDw.E
+ iA8nRe3bFUbPNmJh.zx5MN05mwA08quXAvbUL
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 29 Jul 2010 12:30:23 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+In-Reply-To: <20100729170313.GB16420@barrios-desktop>
+Message-ID: <alpine.DEB.2.00.1007291222410.17734@router.home>
+References: <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com> <alpine.DEB.2.00.1007270929290.28648@router.home> <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com> <alpine.DEB.2.00.1007281005440.21717@router.home>
+ <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop> <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home>
+ <20100729170313.GB16420@barrios-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, 30 Jul 2010, Minchan Kim wrote:
 
-be2iscsi uses iscsi_boot_*() interfaces, so it should ensure that
-ISCSI_BOOT_SYSFS is enabled.
+> But Russell doesn't want it.
+> Please, look at the discussion.
+>
+> http://www.spinics.net/lists/arm-kernel/msg93026.html
+>
+> In fact, we didn't determine the approache at that time.
+> But I think we can't give up ARM's usecase although sparse model
+> dosn't be desinged to the such granularity. and I think this approach
 
-ERROR: "iscsi_boot_create_target" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-ERROR: "iscsi_boot_create_ethernet" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-ERROR: "iscsi_boot_create_host_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-ERROR: "iscsi_boot_create_initiator" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-ERROR: "iscsi_boot_destroy_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
+The sparse model goes down to page size memmap granularity. The problem
+that you may have is with aligning the maximum allocation unit of the
+page allocator with the section size of sparsemem. If you reduce your
+maximum allocation units then you can get more granularity.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/scsi/be2iscsi/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+> can solve ARM's FLATMEM's pfn_valid problem which is doing binar search.
 
---- linux-next-20100729.orig/drivers/scsi/be2iscsi/Kconfig
-+++ linux-next-20100729/drivers/scsi/be2iscsi/Kconfig
-@@ -2,6 +2,7 @@ config BE2ISCSI
- 	tristate "ServerEngines' 10Gbps iSCSI - BladeEngine 2"
- 	depends on PCI && SCSI && NET
- 	select SCSI_ISCSI_ATTRS
-+	select ISCSI_BOOT_SYSFS
- 
- 	help
- 	This driver implements the iSCSI functionality for ServerEngines'
----
+OMG.
+
