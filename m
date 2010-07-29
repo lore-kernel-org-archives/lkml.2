@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab0G2FWh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:22:37 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56554 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab0G2FWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:22:36 -0400
-Date: Thu, 29 Jul 2010 10:50:43 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	id S1753037Ab0G2FXh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:23:37 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59752 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287Ab0G2FXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:23:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+Cc: kosaki.motohiro@jp.fujitsu.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv10 2.6.35-rc6-tip 9/14]  trace: uprobes trace_event
- interface
-Message-ID: <20100729052043.GE21723@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
- <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6>
- <4C510BEE.3000108@hitachi.com>
+        Balbir Singh <balbir@in.ibm.com>
+In-Reply-To: <20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
+References: <201007282334.08063.rjw@sisk.pl> <20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20100729142245.4AA5.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4C510BEE.3000108@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 29 Jul 2010 14:23:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Possible enhancement: Moving this config right after KPROBE_EVENT, because
->  those two provide similar dynamic events.
+> Index: linux-2.6.34.org/mm/swapfile.c
+> ===================================================================
+> --- linux-2.6.34.org.orig/mm/swapfile.c
+> +++ linux-2.6.34.org/mm/swapfile.c
+> @@ -316,7 +316,9 @@ checks:
+>  		scan_base = offset = si->lowest_bit;
+>  
+>  	/* reuse swap entry of cache-only swap if not busy. */
+> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +	if (vm_swap_full()
+> +		&& usage == SWAP_HAS_CACHE
+> +		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  		int swap_was_freed;
+>  		spin_unlock(&swap_lock);
+>  		swap_was_freed = __try_to_reclaim_swap(si, offset);
 
-Agree. 
+Can you please add explicit commenting in the code?
 
 
---
-Thanks and Regards
-Srikar
+
