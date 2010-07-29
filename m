@@ -1,143 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab0G2DE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 23:04:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42085 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab0G2DEz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 23:04:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nbSNCAeY73FsKc6hnDeH6eR7OX036kN0KFSfthDYwRjq8Gm8qlDFeoELhJnVNioZZK
-         XpXTCC3YpIZHS/xYGz1WXbxGRCl64wMLf/Wvzy1jrAFvJIXscSFX2oB5Q3RN3yysPtLL
-         v2fb6luhDg+rq8YYvzB5phs/hzAUL/HT2qHt0=
-Date: Thu, 29 Jul 2010 05:04:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2] ftrace: record command lines at more appropriate
-	moment
-Message-ID: <20100729030457.GG13088@nowhere>
-References: <1280317404-sup-4657@au1.ibm.com> <1280319410-18120-1-git-send-email-imunsie@au1.ibm.com> <4C50EF21.1020202@cn.fujitsu.com>
+	id S1753579Ab0G2DOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 23:14:35 -0400
+Received: from tuxonice.net ([74.207.252.127]:46159 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310Ab0G2DOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 23:14:34 -0400
+X-Greylist: delayed 383 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Jul 2010 23:14:34 EDT
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4C50F09C.6050201@tuxonice.net>
+Date: Thu, 29 Jul 2010 13:08:12 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C50EF21.1020202@cn.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Pedro Ribeiro <pedrib@gmail.com>, tuxonice-devel@tuxonice.net,
+        kgdb-bugreport@lists.sourceforge.net,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        dm-crypt@saout.de
+Subject: Re: kcryptd oops when resuming with TuxOnIce with KDB oops afterwards
+References: <AANLkTikjSiVXW+iGX-ofBs00crqiyT_d+DLpCBzFk4Ne@mail.gmail.com> <20100729024951.GC6247@khazad-dum.debian.net>
+In-Reply-To: <20100729024951.GC6247@khazad-dum.debian.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 11:01:53AM +0800, Li Zefan wrote:
-> Ian Munsie wrote:
-> > From: Ian Munsie <imunsie@au1.ibm.com>
-> > 
-> > Previously, when tracing was activated through debugfs, regardless of
-> > which tracing plugin (if any) were activated, the probe_sched_switch and
-> > probe_sched_wakeup probes from the sched_switch plugin would be
-> > activated. This appears to have been a hack to use them to record the
-> > command lines of active processes as they were scheduled.
-> > 
-> > That approach would suffer if many processes were being scheduled that
-> > were not generating events as they would consume entries in the
-> > saved_cmdlines buffer that could otherwise have been used by other
-> > processes that were actually generating events.
-> > 
-> > It also had the problem that events could be mis-attributed - in the
-> > common situation of a process forking then execing a new process, the
-> > change of the process command would not be noticed for some time after
-> > the exec until the process was next scheduled.
-> > 
-> > If the trace was read after the fact this would generally go unnoticed
-> > because at some point the process would be scheduled and the entry in
-> > the saved_cmdlines buffer would be updated so that the new command would
-> > be reported when the trace was eventually read. However, if the events
-> > were being read live (e.g. through trace_pipe), the events just after
-> > the exec and before the process was next scheduled would show the
-> > incorrect command (though the PID would be correct).
-> > 
-> > This patch removes the sched_switch hack altogether and instead records
-> > the commands at a more appropriate moment - when a new trace event is
-> > committed onto the ftrace ring buffer. This means that the recorded
-> > command line is much more likely to be correct when the trace is read,
-> > either live or after the fact, so long as the command line still resides
-> > in the saved_cmdlines buffer.
-> > 
-> > It is still not guaranteed to be correct in all situations. For instance
-> > if the trace is read after the fact rather than live (consider events
-> > generated by a process before an exec - in the below example they would
-> > be attributed to sleep rather than stealpid since the entry in
-> > saved_cmdlines would have changed before the event was read), but this
-> > is no different to the current situation and the alternative would be to
-> > store the command line with each and every event.
-> > 
-> > terminal 1: grep '\-12345' /sys/kernel/debug/tracing/trace_pipe
-> > terminal 2: ./stealpid 12345 `which sleep` 0.1
-> > 
-> > Before:
-> >         stealpid-12345 [003]    86.001826: sys_clone -> 0x0
-> >         stealpid-12345 [003]    86.002013: compat_sys_execve(ufilename: ffaaabef, argv: ffaaa7ec, envp: ffaaa7f8)
-> >         stealpid-12345 [002]    86.002292: sys_restart_syscall -> 0x0
-> >         stealpid-12345 [002]    86.002336: sys_brk(brk: 0)
-> >         stealpid-12345 [002]    86.002338: sys_brk -> 0x1007a000
-> >         ...
-> >         stealpid-12345 [002]    86.002582: sys_mmap(addr: 0, len: 1000, prot: 3, flags: 22, fd: ffffffff, offset: 0)
-> >         stealpid-12345 [002]    86.002586: sys_mmap -> 0xf7c21000
-> >            sleep-12345 [002]    86.002771: sys_mprotect(start: ffe8000, len: 4000, prot: 1)
-> >            sleep-12345 [002]    86.002780: sys_mprotect -> 0x0
-> >            ...
-> > 
-> > After:
-> >         stealpid-12345 [003]  1368.823626: sys_clone -> 0x0
-> >         stealpid-12345 [003]  1368.823820: compat_sys_execve(ufilename: fffa6bef, argv: fffa5afc, envp: fffa5b08)
-> >            sleep-12345 [002]  1368.824125: sys_restart_syscall -> 0x0
-> >            sleep-12345 [002]  1368.824173: sys_brk(brk: 0)
-> >            sleep-12345 [002]  1368.824175: sys_brk -> 0x104ae000
-> >            ...
-> > 
-> > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> 
-> I've tested your patch using lmbench(ctx):
-> 
-> Context switching - times in microseconds - smaller is better
-> -------------------------------------------------------------------------
-> Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
->                          ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
-> --------- ------------- ------ ------ ------ ------ ------ ------- -------
-> (trace-off)
->           Linux 2.6.35- 2.1300 2.2100 2.0800 2.5900 2.1400 2.59000 2.19000
->           Linux 2.6.35- 2.1400 2.2000 2.0800 2.6000 2.0900 2.56000 2.15000
-> 
-> (all events on)
->           Linux 2.6.35- 2.8000 2.9600 2.7200 3.2500 2.8200 3.24000 2.98000
->           Linux 2.6.35- 2.7100 2.6900 2.7300 3.2200 2.8500 3.25000 2.79000
-> 
-> (all events on without cmdline-recording)
->           Linux 2.6.35- 2.6100 2.6900 2.5800 3.0300 2.5800 3.04000 2.67000
->           Linux 2.6.35- 2.5800 2.5900 2.5600 3.0300 2.6600 3.04000 2.61000
-> 
-> (your patch applied)
->           Linux 2.6.35- 2.7100 2.8000 2.7200 3.2100 2.8400 3.24000 2.82000
->           Linux 2.6.35- 2.6600 2.8400 2.6900 3.1900 2.7600 3.27000 2.78000
-> 
-> So with your patch applied, the performance is still worse than just disabling
-> cmdline-recording.
-> 
-> The performance may be worse if I choose some other benchmarks.
-> 
-> I'd suggest another approch, that we add a tracepiont in set_task_comm()
-> to record cmdname, and that's how perf does.
+Hi Henrique.
 
+On 29/07/10 12:49, Henrique de Moraes Holschuh wrote:
+> On Thu, 29 Jul 2010, Pedro Ribeiro wrote:
+>> I hit a bug when resuming with TuxOnIce. At the middle of a resume, it
+>> says Compress Read -22 and locks up. I caught the stack trace with kdb
+>> and took photos of that.
+>
+> Maybe this?
+> http://lkml.org/lkml/2010/7/28/398
 
-That works for tasks that exec() after tracing get enabled, but not for the others.
-We need to first walk the tasklist to catch up with running tasks, and then
-hook on the exec and fork tracepoints.
+I don't think so. This issue has been around for a fair while. It's just 
+impossible to reliably reproduce, and I haven't yet found the time to 
+put some serious effort into tracking down the cause and fixing it.
 
-I think this would be welcome.
+Regards,
 
+Nigel
