@@ -1,65 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab0G2Sjc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:39:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59499 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab0G2Sjb (ORCPT
+	id S1756597Ab0G2SpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:45:10 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:39430 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab0G2SpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:39:31 -0400
-Date: Thu, 29 Jul 2010 19:39:22 +0100 (BST)
-From: James Simmons <jsimmons@infradead.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Mattia Jona-Lasinio <mattia.jona@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-kernel@vger.kernel.org, lcd-linux-users@lists.sourceforge.net
-Subject: Re: Introducing the LCD-Linux project
-In-Reply-To: <20100729190515.6ec85db2@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LFD.2.00.1007291934310.16616@casper.infradead.org>
-References: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com> <20100722122111.4cf4ca2f@lxorguk.ukuu.org.uk> <AANLkTilKJx18oyc815DhKfPv-Yjdv8UmfJ4WTDxZxaab@mail.gmail.com> <AANLkTimnxkn5eLRHOAs6v_TJE0hM5=dQ3OWaiQP6tPJd@mail.gmail.com>
- <loom.20100724T155117-833@post.gmane.org> <AANLkTi=LAHhHEK3vbtwefroOrpoKpUs5B5=iu5_asMp6@mail.gmail.com> <AANLkTimHQ5DoqXikCu7=Nse16axKYYTJZEBJsSxFEH2y@mail.gmail.com> <20100728203921.0dd6562d@lxorguk.ukuu.org.uk> <alpine.LFD.2.00.1007291659400.16616@casper.infradead.org>
- <20100729190515.6ec85db2@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 29 Jul 2010 14:45:08 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Xah32nOTX6boX4Vt2iTN2fqAcGubcNK44VF+hMHT7nuGKW1hMMx4cmxmKBoHRqp0Z
+	uxGzjf15NDteOSjdoTUmQ==
+Date: Thu, 29 Jul 2010 11:44:31 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+In-Reply-To: <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.1.00.1007291027410.7491@tigran.mtv.corp.google.com>
+References: <201007282334.08063.rjw@sisk.pl> <20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com> <20100729142245.4AA5.A69D9226@jp.fujitsu.com> <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > 3) Invert the VT layer. Currently the console/printk driver is on top of
-> >    the tty layer. It would be nice to be able to only use a very light 
-> >    weight vt printk without the VT tty on top for embedded platforms.
+On Thu, 29 Jul 2010, KAMEZAWA Hiroyuki wrote:
+> On Thu, 29 Jul 2010 14:23:33 +0900 (JST)
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 > 
-> No. printk hits console drivers why may or may not be frame buffer
-> interfaces. Has done for a very long time. Keith Packard has also been
-> doing stuff with crash time oops displays etc over an X display.
-
-Correct. What I mean is have the ability to just register the console 
-driver but not the tty driver.
-  
-> > 4) Seperate out the VT emulation layer. Related to 3.
+> > Can you please add explicit commenting in the code?
+> > 
+> How about this ?
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> Separate from what ?
-
-We can still have a basic tty layer without the control characters, think 
-do_con_trol in vt.c, junk compiled into the kernel. Make it a options for 
-userland to do the vt100 emulation.
-
-> > 5) Multiple independent VT support. Which brings up the question what 
-> >    should the mapping of VCs to a VT look like. 
+> At hibernation, all pages-should-be-saved are written into a image (here, swap).
+> Then, swap_map[], memmap etcs are also saved into disks.
 > 
-> I would suggest we borrow the X idea and each VC is
+> But, swap allocation happens one by one. So, the final image of swap_map[] is
+> different from saved one and the commit c9e444103b5e7a5a3519f9913f59767f92e33baf
+> changes page's state while assiging swap. Because memory can be modified in
+> hibernation is only not-to-be-save memory. it's a breakage.
 > 
-> 	int display;	/* Display it is on (for console flipping) */
-> 	struct something *vt;	/* VT which it is displaying */
-> 	int x,y,w,h;	/* Window onto vt */
+> This patch fixes it by disabling swap entry reuse at hibernation.
+> 
+> 
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/swapfile.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6.34.org/mm/swapfile.c
+> ===================================================================
+> --- linux-2.6.34.org.orig/mm/swapfile.c
+> +++ linux-2.6.34.org/mm/swapfile.c
+> @@ -315,8 +315,15 @@ checks:
+>  	if (offset > si->highest_bit)
+>  		scan_base = offset = si->lowest_bit;
+>  
+> -	/* reuse swap entry of cache-only swap if not busy. */
+> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +	/*
+> + 	 * reuse swap entry of cache-only swap if not busy &&
+> + 	 * when we're called via pageout(). At hibernation, swap-reuse
+> + 	 * is harmful because it changes memory status...which may
+> + 	 * be saved already.
+> + 	 */
+> +	if (vm_swap_full()
+> +		&& usage == SWAP_HAS_CACHE
+> +		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  		int swap_was_freed;
+>  		spin_unlock(&swap_lock);
+>  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+> 
+> --
 
-/dev/tty[0-16]  -> VT display 0
-/dev/tty[17-31] -> VT display 1
+KAMEZAWA-San, that is a brilliant realization, I salute you.
 
-etc.
+So, in between snapshotting the image and actually hibernating, we have
+two parallel universes, one frozen in the image, the other writing that
+out to swap: with the danger that the latter (which is about to die)
+will introduce fatal inconsistencies in the former by placing pages in
+swap locations innocently reallocated from it.  (Excuse me while I go
+write the movie script.)
 
-At least that is how I handled it  several years ago.
+I'd never got to think about that before.
 
+Your fix is neat though hacky (it's somewhat of a coincidence that the
+usage arg happens to distinguish the hibernation case), and should be
+enough to fix "your" regression, but is it really enough?
+
+I'm worrying about the try_to_free_swap() calls in shrink_page_list():
+can't those get called from direct reclaim (even if GFP_NOIO), and can't
+direct reclaim get invoked from somewhere in the I/O path below
+swap_writepage(), used for writing out the hibernation image?
+
+Direct reclaim because kswapd does set_freezable(), so should itself
+be out of the picture.  But we cannot freeze writing the hibernation
+image, and its occasional need for memory, so maybe a different approach
+is required.
+
+I've CC'ed Andrea because we were having an offline conversation about
+whether ksmd (and his khugepaged) need to set_freezable(); and I wonder
+if this swap bug underlies his interest, though he was mainly worrying
+about I/O in progress.
+
+Despite reading Documentation/power/freezing-of-tasks.txt, I have no
+clear idea of what really needs freezing, and whether freezing can
+fully handle the issues.  Rafael, please can you advise?
+
+Thanks,
+Hugh
