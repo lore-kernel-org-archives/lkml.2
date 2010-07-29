@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab0G2LvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:51:25 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:48232 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756930Ab0G2LvX (ORCPT
+	id S1757085Ab0G2L5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:57:45 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:63123 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753404Ab0G2L5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:51:23 -0400
-X-AuditID: b753bd60-a82c0ba000005a63-c4-4c516b36d9cc
-Message-ID: <4C516B33.9000007@hitachi.com>
-Date: Thu, 29 Jul 2010 20:51:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Thu, 29 Jul 2010 07:57:44 -0400
+Date: Thu, 29 Jul 2010 13:57:43 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
+Message-ID: <20100729115743.GB13192@faui48a.informatik.uni-erlangen.de>
+References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com>
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv10 2.6.35-rc6-tip 10/14]  perf: rename common fields/functions
- from kprobe to probe.
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6> <20100727111055.24690.20846.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20100727111055.24690.20846.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar Dronamraju wrote:
-> As a precursor for perf to support uprobes, rename fields/functions
-> that had kprobe in their name but can be shared across perf-kprobes
-> and perf-uprobes to probe.
+On Thu, Jul 29, 2010 at 07:26:00PM +0800, Américo Wang wrote:
+> On Thu, Jul 29, 2010 at 6:52 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> > Hi all!
+> >
+> >    Building the linux kernel, as well as doing a"make allyesconfig"
+> > on a fresh checkout of linux HEAD results in the same Bus Error in
+> > fixdep (details below). This is a i5 box running 32bit Ubuntu Lucid
+> > with plenty of (free) RAM. Haven't found any hints to what might be
+> > wrong on scanning over the web archives.
+> >
+> > Regards
+> >
+> >    Christoph
+> >
+> > -----
+> >  % make allyesconfig
+> >  HOSTCC  scripts/basic/fixdep
+> > fixdep: mmap: Cannot allocate memory
+> 
+> So what does 'ls -lh scripts/basic/.fixdep.d' say?
+> Seems this file is too big...
 
-Yeah, renaming itself is OK for me. But please do it carefully,
-I can see some gaps between 1st line and 2nd line like below
-after applying this patch...
+% ls -lh scripts/basic/.fixdep.d
+-rw-r--r-- 1 siccegge immdstud 2.4K 2010-07-29 12:51 scripts/basic/.fixdep.d
 
-static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
-                                       struct perf_probe_point *pp)
-
-But just a trivial style issue. :)
-
--- 
-Masami HIRAMATSU
-2nd Research Dept.
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Doesn't really look that big to me
