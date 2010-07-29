@@ -1,80 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab0G2JFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 05:05:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49895 "EHLO song.cn.fujitsu.com"
+	id S1755429Ab0G2JFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 05:05:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55718 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755110Ab0G2JEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 05:04:47 -0400
-Message-ID: <4C513C66.8010109@cn.fujitsu.com>
-Date: Thu, 29 Jul 2010 16:31:34 +0800
+	id S1754767Ab0G2JEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 05:04:46 -0400
+Message-ID: <4C513C21.7040004@cn.fujitsu.com>
+Date: Thu, 29 Jul 2010 16:30:25 +0800
 From: Miao Xie <miaox@cn.fujitsu.com>
 Reply-To: miaox@cn.fujitsu.com
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
 To: Chris Mason <chris.mason@oracle.com>, Yan Zheng <zheng.yan@oracle.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>
-Subject: [PATCH 6/7] btrfs: check the return value of btrfs_start_workers()
- in open_ctree()
+CC: Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 5/7] btrfs: fix bad exception handling of __btrfs_start_workers()
 Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If btrfs_start_workers() failed, we must stop mounting the btrfs, otherwise
-the btrfs can't run well because there is no kthread to deal with the request
-submited by it.
+If we stop all of the kthread when creating a new kthread fails, the btrfs
+will hangup because there is no kthread to deal with the requests submited
+by the btrfs.
+
+And the best way to handle kthread-creating failure is "don't do anything",
+because there are other kthreads in the kthread pool to deal with the
+requests.
 
 Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
 ---
- fs/btrfs/disk-io.c |   33 ++++++++++++++++++++++++---------
- 1 files changed, 24 insertions(+), 9 deletions(-)
+ fs/btrfs/async-thread.c |   51 +++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 39 insertions(+), 12 deletions(-)
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 280de15..4dd6bf0 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1775,15 +1775,30 @@ struct btrfs_root *open_ctree(struct super_block *sb,
- 	fs_info->endio_write_workers.idle_thresh = 2;
- 	fs_info->endio_meta_write_workers.idle_thresh = 2;
+diff --git a/fs/btrfs/async-thread.c b/fs/btrfs/async-thread.c
+index eb3ec2d..49d25e6 100644
+--- a/fs/btrfs/async-thread.c
++++ b/fs/btrfs/async-thread.c
+@@ -157,27 +157,45 @@ static void check_pending_worker_creates(struct btrfs_worker_thread *worker)
+ {
+ 	struct btrfs_workers *workers = worker->workers;
+ 	unsigned long flags;
++	int ret;
  
--	btrfs_start_workers(&fs_info->workers, 1);
--	btrfs_start_workers(&fs_info->generic_worker, 1);
--	btrfs_start_workers(&fs_info->submit_workers, 1);
--	btrfs_start_workers(&fs_info->delalloc_workers, 1);
--	btrfs_start_workers(&fs_info->fixup_workers, 1);
--	btrfs_start_workers(&fs_info->endio_workers, 1);
--	btrfs_start_workers(&fs_info->endio_meta_workers, 1);
--	btrfs_start_workers(&fs_info->endio_meta_write_workers, 1);
--	btrfs_start_workers(&fs_info->endio_write_workers, 1);
+ 	rmb();
+ 	if (!workers->atomic_start_pending)
+ 		return;
+ 
+-	spin_lock_irqsave(&workers->lock, flags);
++	spin_lock_irqsave(&worker->lock, flags);
++	spin_lock(&workers->lock);
+ 	if (!workers->atomic_start_pending)
+ 		goto out;
+ 
+-	workers->atomic_start_pending = 0;
+-	if (workers->num_workers + workers->num_workers_starting >=
+-	    workers->max_workers)
 +	/*
-+	 * We must start generic_worker first because it is used to create
-+	 * other workers.
++	 * If the worker is going to be idle, or the number of the workers is
++	 * greater than the max number, we needn't create any worker.
 +	 */
-+	ret = btrfs_start_workers(&fs_info->generic_worker, 1);
-+	if (ret) {
-+		printk(KERN_INFO "btrfs: start generic workers failed on %s\n",
-+		       sb->s_id);
-+		goto fail_iput;
-+	}
-+
-+	ret |= btrfs_start_workers(&fs_info->workers, 1);
-+	ret |= btrfs_start_workers(&fs_info->submit_workers, 1);
-+	ret |= btrfs_start_workers(&fs_info->delalloc_workers, 1);
-+	ret |= btrfs_start_workers(&fs_info->fixup_workers, 1);
-+	ret |= btrfs_start_workers(&fs_info->endio_workers, 1);
-+	ret |= btrfs_start_workers(&fs_info->endio_meta_workers, 1);
-+	ret |= btrfs_start_workers(&fs_info->endio_meta_write_workers, 1);
-+	ret |= btrfs_start_workers(&fs_info->endio_write_workers, 1);
-+	if (ret) {
-+		printk(KERN_INFO "btrfs: start other workers failed on %s\n",
-+		       sb->s_id);
-+		goto fail_sb_buffer;
++	if (atomic_read(&worker->num_pending) < workers->idle_thresh / 2 ||
++	    workers->num_workers + workers->num_workers_starting >=
++	    workers->max_workers) {
++		workers->atomic_start_pending = 0;
+ 		goto out;
 +	}
  
- 	fs_info->bdi.ra_pages *= btrfs_super_num_devices(disk_super);
- 	fs_info->bdi.ra_pages = max(fs_info->bdi.ra_pages,
+-	workers->num_workers_starting += 1;
+-	spin_unlock_irqrestore(&workers->lock, flags);
+-	start_new_worker(workers);
++	workers->atomic_start_pending = 0;
++	workers->num_workers_starting++;
++	spin_unlock(&workers->lock);
++	spin_unlock_irqrestore(&worker->lock, flags);
++
++	ret = start_new_worker(workers);
++	if (ret) {
++		spin_lock_irqsave(&workers->lock, flags);
++		workers->num_workers_starting--;
++		workers->atomic_start_pending = 1;
++		spin_unlock_irqrestore(&workers->lock, flags);
++	}
+ 	return;
+ 
+ out:
+-	spin_unlock_irqrestore(&workers->lock, flags);
++	spin_unlock(&workers->lock);
++	spin_unlock_irqrestore(&worker->lock, flags);
+ }
+ 
+ static noinline int run_ordered_completions(struct btrfs_workers *workers,
+@@ -489,7 +507,7 @@ static int __btrfs_start_workers(struct btrfs_workers *workers,
+ 		worker->workers = workers;
+ 		worker->task = kthread_run(worker_loop, worker,
+ 					   "btrfs-%s-%d", workers->name,
+-					   workers->num_workers + i);
++					   workers->num_workers);
+ 		if (IS_ERR(worker->task)) {
+ 			ret = PTR_ERR(worker->task);
+ 			kfree(worker);
+@@ -505,7 +523,12 @@ static int __btrfs_start_workers(struct btrfs_workers *workers,
+ 	}
+ 	return 0;
+ fail:
+-	btrfs_stop_workers(workers);
++	spin_lock_irq(&workers->lock);
++	if (workers->atomic_worker_start && workers->num_workers)
++		workers->atomic_start_pending = 1;
++	workers->num_workers_starting -= num_workers - i;
++	WARN_ON(workers->num_workers_starting < 0);
++	spin_unlock_irq(&workers->lock);
+ 	return ret;
+ }
+ 
+@@ -571,6 +594,7 @@ static struct btrfs_worker_thread *find_worker(struct btrfs_workers *workers)
+ 	struct btrfs_worker_thread *worker;
+ 	unsigned long flags;
+ 	struct list_head *fallback;
++	int ret;
+ 
+ again:
+ 	spin_lock_irqsave(&workers->lock, flags);
+@@ -587,8 +611,11 @@ again:
+ 			workers->num_workers_starting++;
+ 			spin_unlock_irqrestore(&workers->lock, flags);
+ 			/* we're below the limit, start another worker */
+-			__btrfs_start_workers(workers, 1);
+-			goto again;
++			ret = __btrfs_start_workers(workers, 1);
++			if (ret)
++				goto fallback;
++			else
++				goto again;
+ 		}
+ 	}
+ 	goto found;
 -- 
 1.7.0.1
