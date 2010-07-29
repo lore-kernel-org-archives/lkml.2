@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab0G2ROo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:14:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61098 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758107Ab0G2ROi (ORCPT
+	id S1758127Ab0G2RPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:15:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59592 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758116Ab0G2RPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:14:38 -0400
-Date: Thu, 29 Jul 2010 10:14:27 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, davem@davemloft.net
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: [PATCH -next] net: ks8842 depends on DMA_ENGINE
-Message-Id: <20100729101427.2aafd6e7.randy.dunlap@oracle.com>
-In-Reply-To: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
-References: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C51B6F9.01D7:SCFMA4539814,ss=1,fgs=0
+	Thu, 29 Jul 2010 13:15:43 -0400
+Date: Thu, 29 Jul 2010 10:15:54 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dtor@mail.ru>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 4/6] regulator: Remove owner field from attribute
+ initialization in regulator core driver
+Message-ID: <20100729171553.GA24781@opensource.wolfsonmicro.com>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+ <1280380166-29196-5-git-send-email-guenter.roeck@ericsson.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280380166-29196-5-git-send-email-guenter.roeck@ericsson.com>
+X-Cookie: You will be run over by a bus.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, Jul 28, 2010 at 10:09:24PM -0700, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
-ks8842 uses dma channel functions, so it should depend on DMA_ENGINE.
-
-ERROR: "__dma_request_channel" [drivers/net/ks8842.ko] undefined!
-ERROR: "dma_release_channel" [drivers/net/ks8842.ko] undefined!
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/net/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20100729.orig/drivers/net/Kconfig
-+++ linux-next-20100729/drivers/net/Kconfig
-@@ -1751,7 +1751,7 @@ config TLAN
- 
- config KS8842
- 	tristate "Micrel KSZ8841/42 with generic bus interface"
--	depends on HAS_IOMEM
-+	depends on HAS_IOMEM && DMA_ENGINE
- 	help
- 	 This platform driver is for KSZ8841(1-port) / KS8842(2-port)
- 	 ethernet switch chip (managed, VLAN, QoS) from Micrel or
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
