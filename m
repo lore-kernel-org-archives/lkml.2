@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab0G2L7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:59:39 -0400
-Received: from mail-vw0-f66.google.com ([209.85.212.66]:54912 "EHLO
-	mail-vw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149Ab0G2L7i convert rfc822-to-8bit (ORCPT
+	id S1757241Ab0G2MBz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 08:01:55 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41912 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab0G2MBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:59:38 -0400
+	Thu, 29 Jul 2010 08:01:54 -0400
+X-AuditID: b753bd60-a8cc1ba000005a63-4e-4c516daeee03
+Message-ID: <4C516DAA.7030202@hitachi.com>
+Date: Thu, 29 Jul 2010 21:01:46 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-X-Originating-IP: [212.34.100.113]
-Date: Thu, 29 Jul 2010 15:59:36 +0400
-Message-ID: <AANLkTinHWJviHmhVcFQkobsgxa4-AaFUpHmd1wybiB+u@mail.gmail.com>
-Subject: [PATCH] tcp: cookie transactions setsockopt memory leak
-From: Dmitry Popov <dp@highloadlab.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>, Patrick McHardy <kaber@trash.net>
-Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?ISO-8859-1?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Steven J. Magnani" <steve@digidescorp.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        William Allen Simpson <william.allen.simpson@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 11/14]  perf: perf interface for uprobes
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6> <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <dp@highloadlab.com>
+Hi Srikar,
 
-There is a bug in do_tcp_setsockopt(net/ipv4/tcp.c),
-TCP_COOKIE_TRANSACTIONS case.
-In some cases (when tp->cookie_values == NULL) new tcp_cookie_values
-structure can be allocated (at cvp), but not bound to
-tp->cookie_values. So a memory leak occurs.
+Srikar Dronamraju wrote:
+> Enhances perf probe to accept pid and user vaddr.
+> Provides very basic support for uprobes.
+[...]
+> @@ -162,6 +190,14 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+>  	bool need_dwarf = perf_probe_event_need_dwarf(pev);
+>  	int fd, ntevs;
+>  
+> +	if (pev->upid) {
+> +		if (need_dwarf) {
+> +			pr_warning("Debuginfo-analysis is not supported.\n");
 
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
----
-tp->cookie_values can be NULL if socket was initialized with
-sysctl_tcp_cookie_size == 0 (tcp_v4_init_sock, net/ipv4/tcp_ipv4.c)
-Buggy releases: 2.6.33+ (since commit e56fb50f2b7958b931c8a2fc0966061b3f3c8f3a)
+This should be "Debuginfo-analysis is not supported with -p/--pid option.\n"
 
- net/ipv4/tcp.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 83d0213..9c490a1 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2179,6 +2179,8 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
- 				      GFP_KERNEL);
- 			if (cvp == NULL)
- 				return -ENOMEM;
-+
-+			kref_init(&cvp->kref);
- 		}
- 		lock_sock(sk);
- 		tp->rx_opt.cookie_in_always =
-@@ -2193,12 +2195,11 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
- 				 */
- 				kref_put(&tp->cookie_values->kref,
- 					 tcp_cookie_values_release);
--				kref_init(&cvp->kref);
--				tp->cookie_values = cvp;
- 			} else {
- 				cvp = tp->cookie_values;
- 			}
- 		}
-+
- 		if (cvp != NULL) {
- 			cvp->cookie_desired = ctd.tcpct_cookie_desired;
+> +			return -ENOSYS;
+> +		}
+> +		return convert_name_to_addr(pev);
+> +	}
+> +
 
-@@ -2212,6 +2213,8 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
- 				cvp->s_data_desired = ctd.tcpct_s_data_desired;
- 				cvp->s_data_constant = 0; /* false */
- 			}
-+
-+			tp->cookie_values = cvp;
- 		}
- 		release_sock(sk);
- 		return err;
+
+
+And I found a small bug.
+
+# ./perf probe -vf -p 3199 "setenv %ax"
+probe-definition(0): setenv %ax
+symbol:setenv file:(null) line:0 offset:0 return:0 lazy:(null)
+parsing arg: %ax into %ax
+1 arguments
+Opening /debug/tracing/uprobe_events write=1
+Add new event:
+Writing event: p:probe_3199/setenv 3199:0x47e680
+ %ax
+Failed to write event: Invalid argument
+  Error: Failed to add events. (-1)
+
+# ./perf probe -l
+  probe_3199:setenv    (on 3199:0x000000000047e680)
+
+When writing an event, there is a "\n" right after probe point (3199:0x47e680\n)
+
+> @@ -1066,10 +1213,22 @@ char *synthesize_probe_trace_command(struct probe_trace_event *tev)
+>  	if (buf == NULL)
+>  		return NULL;
+>  
+> -	len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s+%lu",
+> -			 tp->retprobe ? 'r' : 'p',
+> -			 tev->group, tev->event,
+> -			 tp->symbol, tp->offset);
+> +	if (tev->upid)
+> +		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %d:%s\n",
+
+Here is a "\n".
+
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+2nd Research Dept.
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
