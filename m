@@ -1,179 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab0G2T5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:57:45 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40431 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757641Ab0G2T5n (ORCPT
+	id S1758168Ab0G2T5w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:57:52 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58253 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757894Ab0G2T5t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:57:43 -0400
-Date: Thu, 29 Jul 2010 14:57:36 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Paul Menage <menage@google.com>
-Subject: [PATCH 2/3] cgroup : make the mount options parsing more accurate
-Message-ID: <20100729195736.GA19015@hallyn.com>
-References: <20100729195629.GA13378@hallyn.com>
+	Thu, 29 Jul 2010 15:57:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PVezscbelB+e4HWUvYzz3Were2M+JbXAbhTrcyiMS5Xe6j5wlmD66PuHIyW6zkfp2g
+         Ckf4WfDDAyi70V5Sc5NXeQ/6pSJ4DEvEDsUq36skqDS/ErUoH7zTrGhgYgvPtoEfb1rI
+         jruYfSHiotFNNCJ6tJFiJfM+PkWxiFcJgCtkA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729195629.GA13378@hallyn.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100726143300.GG12449@redhat.com>
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+	<20100722055602.GA18566@infradead.org>
+	<20100722140044.GA28684@redhat.com>
+	<20100724085135.GB32006@infradead.org>
+	<AANLkTi=d-2-1R_Bpk_1J7AXhTc2Kv3p8S7tE0ZsFKFDe@mail.gmail.com>
+	<20100726143300.GG12449@redhat.com>
+Date: Thu, 29 Jul 2010 21:57:43 +0200
+Message-ID: <AANLkTinwcGdvp-Q+-dqNHAjL1O4oDbi-8GkyyV=k6-Pc@mail.gmail.com>
+Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle 
+	tunable V3
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, nauman@google.com, dpshah@google.com,
+        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The actual code does not detect 'all' with one subsystem name, which
-is IMHO mutually exclusive and when an option is specified even if it
-is not a subsystem name, we have to specify the 'all' option with the
-other option.
-eg:
- not detected : mount -t cgroup -o all,freezer cgroup /cgroup
- not flexible : mount -t cgroup -o noprefix,all cgroup /cgroup
+On Mon, Jul 26, 2010 at 4:33 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Sat, Jul 24, 2010 at 11:07:07AM +0200, Corrado Zoccolo wrote:
+>> On Sat, Jul 24, 2010 at 10:51 AM, Christoph Hellwig <hch@infradead.org> wrote:
+>> > To me this sounds like slice_idle=0 is the right default then, as it
+>> > gives useful behaviour for all systems linux runs on.
+>> No, it will give bad performance on single disks, possibly worse than
+>> deadline (deadline at least sorts the requests between different
+>> queues, while CFQ with slice_idle=0 doesn't even do this for readers).
+>
+> Not sure if CFQ will be worse than deadline with slice_idle=0. CFQ has
+> some inbuilt things which should help.
+>
+> - Readers preempt Writers
+> - All writers go in one single queue (at one prio level), readers get
+>  their individual queues and can outnumber writers.
+>
+> So I guess CFQ with slice_idle=0 should not be worse than deadline in terms
+> of read latencies.
 
-This patch fix this and makes the code a bit more clear by replacing
-'else if' indentation by 'continue' blocks in the loop.
+I was thinking more to the fact that read requests are not sorted:
+they will basically be serviced in FIFO order, while deadline will
+sort them and possibly increase locality. In the reader vs writer
+case, cfq may have a small edge. Basically, they will severely
+underperform vs. cfq with slice != 0, though.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Paul Menage <menage@google.com>
----
- kernel/cgroup.c |   91 +++++++++++++++++++++++++++++++++++++------------------
- 1 files changed, 61 insertions(+), 30 deletions(-)
+>
+> Vivek
+>
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index dfbff78..09fb6f9 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1074,7 +1074,8 @@ struct cgroup_sb_opts {
-  */
- static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- {
--	char *token, *o = data ?: "all";
-+	char *token, *o = data;
-+	bool all_ss = false, one_ss = false;
- 	unsigned long mask = (unsigned long)-1;
- 	int i;
- 	bool module_pin_failed = false;
-@@ -1088,26 +1089,30 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 	memset(opts, 0, sizeof(*opts));
- 
- 	while ((token = strsep(&o, ",")) != NULL) {
-+
- 		if (!*token)
- 			return -EINVAL;
--		if (!strcmp(token, "all")) {
--			/* Add all non-disabled subsystems */
--			opts->subsys_bits = 0;
--			for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--				struct cgroup_subsys *ss = subsys[i];
--				if (ss == NULL)
--					continue;
--				if (!ss->disabled)
--					opts->subsys_bits |= 1ul << i;
--			}
--		} else if (!strcmp(token, "none")) {
-+		if (!strcmp(token, "none")) {
- 			/* Explicitly have no subsystems */
- 			opts->none = true;
--		} else if (!strcmp(token, "noprefix")) {
-+			continue;
-+		}
-+		if (!strcmp(token, "all")) {
-+			/* Mutually exclusive option 'all' + subsystem name */
-+			if (one_ss)
-+				return -EINVAL;
-+			all_ss = true;
-+			continue;
-+		}
-+		if (!strcmp(token, "noprefix")) {
- 			set_bit(ROOT_NOPREFIX, &opts->flags);
--		} else if (!strcmp(token, "clone_children")) {
-+			continue;
-+		}
-+		if (!strcmp(token, "clone_children")) {
- 			set_bit(ROOT_CLONE_CHILDREN, &opts->flags);
--		} else if (!strncmp(token, "release_agent=", 14)) {
-+			continue;
-+		}
-+		if (!strncmp(token, "release_agent=", 14)) {
- 			/* Specifying two release agents is forbidden */
- 			if (opts->release_agent)
- 				return -EINVAL;
-@@ -1115,7 +1120,9 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 				kstrndup(token + 14, PATH_MAX, GFP_KERNEL);
- 			if (!opts->release_agent)
- 				return -ENOMEM;
--		} else if (!strncmp(token, "name=", 5)) {
-+			continue;
-+		}
-+		if (!strncmp(token, "name=", 5)) {
- 			const char *name = token + 5;
- 			/* Can't specify an empty name */
- 			if (!strlen(name))
-@@ -1137,20 +1144,44 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 					      GFP_KERNEL);
- 			if (!opts->name)
- 				return -ENOMEM;
--		} else {
--			struct cgroup_subsys *ss;
--			for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--				ss = subsys[i];
--				if (ss == NULL)
--					continue;
--				if (!strcmp(token, ss->name)) {
--					if (!ss->disabled)
--						set_bit(i, &opts->subsys_bits);
--					break;
--				}
--			}
--			if (i == CGROUP_SUBSYS_COUNT)
--				return -ENOENT;
-+
-+			continue;
-+		}
-+
-+		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
-+			struct cgroup_subsys *ss = subsys[i];
-+			if (ss == NULL)
-+				continue;
-+			if (strcmp(token, ss->name))
-+				continue;
-+			if (ss->disabled)
-+				continue;
-+
-+			/* Mutually exclusive option 'all' + subsystem name */
-+			if (all_ss)
-+				return -EINVAL;
-+			set_bit(i, &opts->subsys_bits);
-+			one_ss = true;
-+
-+			break;
-+		}
-+		if (i == CGROUP_SUBSYS_COUNT)
-+			return -ENOENT;
-+	}
-+
-+	/*
-+	 * If the 'all' option was specified select all the subsystems,
-+	 * otherwise 'all, 'none' and a subsystem name options were not
-+	 * specified, let's default to 'all'
-+	 */
-+	if (all_ss || (!all_ss && !one_ss && !opts->none)) {
-+		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
-+			struct cgroup_subsys *ss = subsys[i];
-+			if (ss == NULL)
-+				continue;
-+			if (ss->disabled)
-+				continue;
-+			set_bit(i, &opts->subsys_bits);
- 		}
- 	}
- 
+
+
 -- 
-1.7.0.4
+__________________________________________________________________________
 
+dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
+PhD - Department of Computer Science - University of Pisa, Italy
+--------------------------------------------------------------------------
+The self-confidence of a warrior is not the self-confidence of the average
+man. The average man seeks certainty in the eyes of the onlooker and calls
+that self-confidence. The warrior seeks impeccability in his own eyes and
+calls that humbleness.
+                               Tales of Power - C. Castaneda
