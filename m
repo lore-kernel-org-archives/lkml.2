@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab0G2GGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 02:06:20 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:49220 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750815Ab0G2GGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 02:06:18 -0400
-Date: Wed, 28 Jul 2010 23:00:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-Message-ID: <20100729060004.GD2447@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <18537.1280318862@redhat.com>
- <AANLkTikB9Msot4m_oaw+V+dvEg+SzyXHb0cqhKQqUtC2@mail.gmail.com>
- <20100727155023.GF1967@jolsa.brq.redhat.com>
- <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com>
- <24865.1280249187@redhat.com>
- <32758.1280321226@redhat.com>
+	id S1753926Ab0G2GQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 02:16:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50702 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab0G2GQg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 02:16:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <32758.1280321226@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+Date: Wed, 28 Jul 2010 23:16:35 -0700
+Message-ID: <AANLkTinM+m15QbAg+J3YyHWnObsxtHYYU6p6C89p8wjp@mail.gmail.com>
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+From: Eric Biederman <ebiederm@aristanetworks.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dtor@mail.ru>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 01:47:06PM +0100, David Howells wrote:
-> David Howells <dhowells@redhat.com> wrote:
-> 
-> > Yeah.  I think there are three alternatives:
-> 
-> There's a fourth alternative too:
-> 
->  (4) I could try and make it so that if the RCU cleanup routine sees it with a
->      non-zero usage count, then it just ignores it.  This, however, would
->      require call_rcu() to be able to cope with requeueing.
+On Wed, Jul 28, 2010 at 10:09 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+> The following comment is found in include/linux/sysfs.h:
+>
+>   /* FIXME
+>    * The *owner field is no longer used.
+>    * x86 tree has been cleaned up. The owner
+>    * attribute is still left for other arches.
+>    */
+>
+> As it turns out, the *owner field is (again?) initialized in several modules,
+> suggesting that such initialization may be creeping back into the code.
+>
+> This patch set removes the above comment, the *owner field, and each instance
+> in the code where it was found to be initialized.
+>
+> Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
+> and sparc defconfig builds.
 
-It is perfectly legal for an RCU callback to invoke call_rcu().  However,
-this should be used -only- to wait for RCU readers.  If there are no
-RCU readers, the callback might be re-invoked in very short order,
-expecially on UP systems.
+This seems reasonable to me.  Can we get this in linux-next?
 
-Or am I misunderstanding what you mean by "require call_rcu() to be
-able to cope iwth requeueing"?
-
-							Thanx, Paul
+Eric
