@@ -1,88 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757395Ab0G2MmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 08:42:20 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:43982 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab0G2MmT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 08:42:19 -0400
-Subject: Re: [tpmdd-devel] [RFC] tpm_tis: Fix subsequent suspend failures
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-In-Reply-To: <7842A755-42A7-4882-8726-45CADDB4E1E2@linux.vnet.ibm.com>
-Date: Thu, 29 Jul 2010 09:42:05 -0300
-Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
-        David Safford <safford@watson.ibm.com>, linux-kernel@vger.kernel.org,
-        jmorris@namei.org, tpmdd-devel@lists.sourceforge.net,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3C97F229-2E8B-44E7-941C-B5CC77C24657@linux.vnet.ibm.com>
-References: <201006091227.15729.helmut.schaa@googlemail.com> <5204AD54-F4BF-49A8-9168-3FCA112AAA2B@linux.vnet.ibm.com> <20100623130700.a032c373.akpm@linux-foundation.org> <201007231407.51605.helmut.schaa@googlemail.com> <7842A755-42A7-4882-8726-45CADDB4E1E2@linux.vnet.ibm.com>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-X-Mailer: Apple Mail (2.1081)
+	id S1757406Ab0G2Mnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 08:43:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753935Ab0G2Mni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 08:43:38 -0400
+From: Xiaotian Feng <dfeng@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Roland McGrath <roland@redhat.com>
+Subject: [RFC PATCH] core_pattern: fix long parameters was truncated by core_pattern handler
+Date: Thu, 29 Jul 2010 20:42:44 +0800
+Message-Id: <1280407364-32466-1-git-send-email-dfeng@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nevermind,
+We met a parameter truncated issue, consider following:
+> echo "|/root/core_pattern_pipe_test %p /usr/libexec/blah-blah-blah \
+%s %c %p %u %g %t 11 1234567890123456789012345678901234567890" > \
+/proc/sys/kernel/core_pattern
 
-I've just read Andrew's previous email that it's parked in James' tree.
+This is okay because the strings is less than CORENAME_MAX_SIZE.
+"cat /proc/sys/kernel/core_pattern" shows the whole string. but
+after we run core_pattern_pipe_test in man page, we found last
+parameter was truncated like below:
+	argc[10]=<12345678901234567890123456789012345678>
 
-Thanks,
-Rajiv
-On Jul 29, 2010, at 7:53 AM, Rajiv Andrade wrote:
+The root cause is core_pattern allows % specifiers, which need to be
+replaced during parse time, but the replace may expand the strings
+to larger than CORENAME_MAX_SIZE.
 
-> 
-> On Jul 23, 2010, at 9:07 AM, Helmut Schaa wrote:
-> 
->> Hi,
->> 
->> Am Mittwoch 23 Juni 2010 schrieb Andrew Morton:
->>> On Wed, 23 Jun 2010 16:55:54 -0300
->>> Rajiv Andrade <srajiv@linux.vnet.ibm.com> wrote:
->>> 
->>>>> (top-posting repaired.  Please don't do that).
->>>>> 
->>>>> This wasn't a very good way to send a patch.  I edited the diff,
->>>>> reconstructed the patch and then assembled a decent-looking changelog. 
->>>>> I also changed your acked-by to the required signed-off-by, because you
->>>>> were on the patch's delivery path.
->>>>> 
->>>>> Pretty please: next time, prepare a proper mergeable patch with the
->>>>> correct attributions and signoffs?  Thanks.
->>>> 
->>>> Sure, sorry. I was just not certain if I could just resent Helmut's patch to LKML without messing with his authorship.
->>> 
->>> You can.  Put his "From:" line right at the top of the changelog and
->>> everyone's patch-receiving tools will honour that.  If the From: at the
->>> top of the changelog is absent, the tools will fall back to using the
->>> From: line in the mail headers.
->> 
->> This patch still didn't make it into mainline and it fixes a regression.
->> Rajiv, do you plan to resubmit the patch or did you expect it to go through
->> Andrew's tree?
->> 
-> 
-> Hi Helmut,
-> 
-> I expected it to make into Andrew's tree, since his recommendations were for the next time I submit a patch that matched the circumstances of this one, also, he mentioned he had to fix the issues by hand.
-> 
-> Andrew, do you want me to resubmit it? If so, I'm more than ok with that too though.
-> 
-> Thanks,
-> Rajiv
-> 
-> 
-> 
-> ------------------------------------------------------------------------------
-> The Palm PDK Hot Apps Program offers developers who use the
-> Plug-In Development Kit to bring their C/C++ apps to Palm for a share
-> of $1 Million in cash or HP Products. Visit us here for more details:
-> http://p.sf.net/sfu/dev2dev-palm
-> _______________________________________________
-> tpmdd-devel mailing list
-> tpmdd-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
+This patch expands the size of parsing array, and makes the cursor
+out_end shift when we replace % specifiers.
+
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Roland McGrath <roland@redhat.com>
+---
+ fs/exec.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index e19de6a..e67e4b5 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1441,7 +1441,7 @@ EXPORT_SYMBOL(set_binfmt);
+ 
+ /* format_corename will inspect the pattern parameter, and output a
+  * name into corename, which must have space for at least
+- * CORENAME_MAX_SIZE bytes plus one byte for the zero terminator.
++ * CORENAME_MAX_SIZE * 3 bytes because of % specifiers.
+  */
+ static int format_corename(char *corename, long signr)
+ {
+@@ -1449,7 +1449,7 @@ static int format_corename(char *corename, long signr)
+ 	const char *pat_ptr = core_pattern;
+ 	int ispipe = (*pat_ptr == '|');
+ 	char *out_ptr = corename;
+-	char *const out_end = corename + CORENAME_MAX_SIZE;
++	char *out_end = corename + CORENAME_MAX_SIZE;
+ 	int rc;
+ 	int pid_in_pattern = 0;
+ 
+@@ -1478,6 +1478,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			/* uid */
+ 			case 'u':
+@@ -1486,6 +1487,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			/* gid */
+ 			case 'g':
+@@ -1494,6 +1496,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			/* signal that caused the coredump */
+ 			case 's':
+@@ -1502,6 +1505,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			/* UNIX time of coredump */
+ 			case 't': {
+@@ -1512,6 +1516,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			}
+ 			/* hostname */
+@@ -1523,6 +1528,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			/* executable */
+ 			case 'e':
+@@ -1531,6 +1537,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			/* core limit size */
+ 			case 'c':
+@@ -1539,6 +1546,7 @@ static int format_corename(char *corename, long signr)
+ 				if (rc > out_end - out_ptr)
+ 					goto out;
+ 				out_ptr += rc;
++				out_end += rc - 2;
+ 				break;
+ 			default:
+ 				break;
+@@ -1836,7 +1844,7 @@ static int umh_pipe_setup(struct subprocess_info *info)
+ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+ {
+ 	struct core_state core_state;
+-	char corename[CORENAME_MAX_SIZE + 1];
++	char corename[CORENAME_MAX_SIZE * 3];
+ 	struct mm_struct *mm = current->mm;
+ 	struct linux_binfmt * binfmt;
+ 	const struct cred *old_cred;
+-- 
+1.7.2
 
