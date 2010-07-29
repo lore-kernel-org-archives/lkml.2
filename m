@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab0G2Tu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:50:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55365 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757788Ab0G2Tuw convert rfc822-to-8bit (ORCPT
+	id S1757770Ab0G2Tz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:55:59 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:36868 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755287Ab0G2Tz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:50:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xEH0+ebymNX133WirjmYOXD/sBlp6ywRO8EAKKuQYk1tA8lM8crDevU2IRPL4/NPwX
-         bjDLRR2Ysl/p0RCsSTGJ5JRTefDkuQweLkhMxDOWXOMWpNhSvVH1AfZL4kQ4pzzCH/ki
-         fuKuq6I7o8Q64GIlv3EgQJR7/puAH/qFSZKTA=
+	Thu, 29 Jul 2010 15:55:58 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: JzCH1PIVM1k6jHZyMRguU4BuTzRwplpAbvQ46xDoZD3pKdk
+ 2kZmbh67Mwduvp0IzMRgNjtg01UKlMo70TQNWwn4r4gY0adXXj0bKOD_E8QD
+ hKmAbpx8MEV6CuZnIqGNDqNejw3.C7qSR9x8fojiio6LdcbKJXVZ4trd_Xyx
+ IyllAE6UGBUKrSnF4ao_bCp28pKoZhyiTwSXVyrFDcXzAry6xhYufG0nsRfY
+ 0p0_QuqOzCAjQk7M2UC1vfVXeQU4B
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 29 Jul 2010 14:55:53 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+In-Reply-To: <20100729183320.GH18923@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1007291438290.21024@router.home>
+References: <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com> <alpine.DEB.2.00.1007281005440.21717@router.home> <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop>
+ <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home> <20100729170313.GB16420@barrios-desktop> <alpine.DEB.2.00.1007291222410.17734@router.home>
+ <20100729183320.GH18923@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100729071914.bf615447.rdunlap@xenotime.net>
-References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>
-	<20100727165549.GC26649@merkur.ravnborg.org>
-	<AANLkTimmLLJ9VrbD94GA3ZH2XvBwEAAcrrL_etWAoEea@mail.gmail.com>
-	<4C500E41.40708@suse.cz>
-	<AANLkTi=rPP7OfoNoyVkM0XR08ns6p0+cENzcdk7gY8TE@mail.gmail.com>
-	<4C504FBB.3020600@suse.cz>
-	<20100728185505.GF29266@merkur.ravnborg.org>
-	<AANLkTikpm8St4egQ7PpExzKkSTff5VZN-dKjAAA0nwoN@mail.gmail.com>
-	<AANLkTimhKT=mmL7Q5D1z2mzu7wt25_NzA328Tp3T8y0v@mail.gmail.com>
-	<4C51362E.5010009@suse.cz>
-	<AANLkTi=7ioo3HPVhWYu5OmyoOcaedzyQQ9z=5w2MrTt4@mail.gmail.com>
-	<20100729071914.bf615447.rdunlap@xenotime.net>
-Date: Thu, 29 Jul 2010 22:50:50 +0300
-Message-ID: <AANLkTik1p0oK=-msd0a-4wA88Z-Cv29qHVNUYeEETcJD@mail.gmail.com>
-Subject: Re: Small typo in kernel [current source from git] .config option
-From: Nir Tzachar <nir.tzachar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Michal Marek <mmarek@suse.cz>, trapdoor6@gmail.com,
-        Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 5:19 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Thu, 29 Jul 2010 13:33:49 +0300 Nir Tzachar wrote:
->
->> On Thu, Jul 29, 2010 at 11:05 AM, Michal Marek <mmarek@suse.cz> wrote:
->> > On 29.7.2010 08:20, trapDoor wrote:
->> >> On Thu, Jul 29, 2010 at 6:04 AM, Nir Tzachar <nir.tzachar@gmail.com> wrote:
->> >>> On Wed, Jul 28, 2010 at 9:55 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
->> >>>> The capitilazing is the main reason why I have
->> >>>> not recommended nconfig to be default.
->> >>>>
->> >>>> And I doubt the shortcut letters are used that often.
->> >>>> One idea could be to drop the shortcut for the individual menus.
->> >>>
->> >>> I almost never use them and removing them will have the benefit of
->> >>> cleaning the code.
->> >>
->> >> Neither do I. And I don't know anyone who would find them very useful.
->> >
->> > I actually do. Unlike menuconfig, nconfig will jump to a menu item even
->> > if it is not currently visible in the screen. Useful if you know the
->> > option name but don't want to scroll down and look for it. But I would
->> > accept a patch to remove the shortcut if there is no better way of
->> > marking the shortcuts than the capital letters.
->> >
->> > Michal
->> >
->>
->> There is a middle ground here: keep the shortcuts, but give no visual
->> indication (either capitalization or coloring).
->
-> How do you tell libmenue what the shortcut character is?
-> Is that a different attribute/field/specifier?
+On Thu, 29 Jul 2010, Russell King - ARM Linux wrote:
 
-You can feed ascii chars to the menu_driver, which then employs a
-pattern match to jump to a matched item. However, I have not used this
-logic as I needed to implement the m,y,n etc. shortcuts.
+> And no, setting the sparse section size to 512kB doesn't work - memory is
+> offset by 256MB already, so you need a sparsemem section array of 1024
+> entries just to cover that - with the full 256MB populated, that's 512
+> unused entries followed by 512 used entries.  That too is going to waste
+> memory like nobodies business.
 
-Coming to think about it, it might be possible to use the built-in
-pattern matching of libmenu by first pressing the '/' key, and then
-feeding consecutive key presses to the menu_driver routine. I'll try
-to come up with a patch.
+SPARSEMEM EXTREME does not handle that?
 
-> If so, how about just adding the shortcut key in parentheses [or square
-> brackets] after its word or phrase?  E.g.:
->
->        Hardware Error Device [A]
->
+Some ARMs seem to have MMUs. If so then use SPARSEMEM_VMEMMAP. You can map
+4k pages for the mmap through a page table. Redirect unused 4k blocks to
+the NULL page.
 
-This might be a problem, as there are options which are longer than
-the width of a regular terminal..
-
-
-Cheers.
