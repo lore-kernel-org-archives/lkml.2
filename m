@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab0G2QNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 12:13:23 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:35524 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757955Ab0G2QNW (ORCPT
+	id S932073Ab0G2QON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 12:14:13 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:35190 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757875Ab0G2QOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 12:13:22 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C51A88B.3040807@s5r6.in-berlin.de>
-Date: Thu, 29 Jul 2010 18:12:59 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Thu, 29 Jul 2010 12:14:12 -0400
+X-Sasl-enc: ekB8xV/bj/J3QWwzk/rR3UIeLhvA+VjrI5g72rBX/KC5 1280420051
+Date: Thu, 29 Jul 2010 13:14:08 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Fernand LONE SANG <fernand.lone-sang@laas.fr>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: i2cdetect outputs on Intel x58 chipsets wanted
+Message-ID: <20100729161408.GA26738@khazad-dum.debian.net>
+References: <20100729081626.GE4966@laas.fr>
 MIME-Version: 1.0
-To: linux1394-devel@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org, Jay Fenlason <fenlason@redhat.com>
-Subject: Re: [PATCH rfc] firewire: add isochronous multichannel reception
-References: <tkrat.c7f7ffc33f9f1ed2@s5r6.in-berlin.de>
-In-Reply-To: <tkrat.c7f7ffc33f9f1ed2@s5r6.in-berlin.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100729081626.GE4966@laas.fr>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Richter wrote:
->  static int ohci_queue_iso(struct fw_iso_context *base,
->  			  struct fw_iso_packet *packet,
->  			  struct fw_iso_buffer *buffer,
-> @@ -2587,14 +2761,17 @@ static int ohci_queue_iso(struct fw_iso_
->  {
->  	struct iso_context *ctx = container_of(base, struct iso_context, base);
->  	unsigned long flags;
-> -	int ret;
-> +	int ret = -ENOSYS;
->  
->  	spin_lock_irqsave(&ctx->context.ohci->lock, flags);
-> -	if (base->type == FW_ISO_CONTEXT_TRANSMIT)
-> -		ret = ohci_queue_iso_transmit(base, packet, buffer, payload);
-> -	else
-> -		ret = ohci_queue_iso_receive_packet_per_buffer(base, packet,
-> -							buffer, payload);
-> +	switch (base->type) {
-> +	case FW_ISO_CONTEXT_TRANSMIT:
-> +		ret = queue_iso_transmit(base, packet, buffer, payload);
-> +	case FW_ISO_CONTEXT_RECEIVE:
-> +		ret = queue_iso_packet_per_buffer(base, packet, buffer, payload);
-> +	case FW_ISO_CONTEXT_RECEIVE_MULTICHANNEL:
-> +		ret = queue_iso_buffer_fill(base, packet, buffer, payload);
-> +	}
->  	spin_unlock_irqrestore(&ctx->context.ohci->lock, flags);
->  
->  	return ret;
+On Thu, 29 Jul 2010, Fernand LONE SANG wrote:
+> help, i'm looking for some kind people, with an Intel x58 chipset, who
+> can send me by email their outputs from the i2cdectect tool so i can
+> identify the motherboard version that have this component.
 
-Where is the brown paper bag...
-There should be break; at each case.  Updated patch is at
-http://user.in-berlin.de/~s5r6/linux1394/pending/1171-firewire-add-isochronous-multichannel-reception.patch
+SuperMicro C7X58 v1.0 (there is a V1.1 board now), latest BIOS (1.1a).
+dmidecode information is useless on this board.
+
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- -- -- 08 -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- 18 -- 1a -- 1c -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- 2e -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- 3e -- 
+40: -- -- -- -- 44 -- -- -- -- -- -- -- -- -- -- -- 
+50: 50 -- 52 -- 54 -- -- -- -- -- -- -- -- -- -- -- 
+60: -- 61 -- -- -- -- -- -- -- 69 -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --                         
+
+This is a X58 IOH rev 12 (there is a newer stepping of the X58).
+
+Also, it could well be that the BIOS can configure the X58 IOH to hide
+devices.  May also depend on what the firmware is doing to the X58 embedded
+controller.
+
 -- 
-Stefan Richter
--=====-==-=- -=== ===-=
-http://arcgraph.de/sr/
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
