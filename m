@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab0G2L0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:26:07 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51162 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756968Ab0G2L0B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:26:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Y6XlBAyOec3k8nXGGbs9WSrYFLG7O3vB+3oOh98xkoWuKFFZ2IVL7drOct4mBrw4/c
-         M0HLgdANauKSk5HW8WmJT0Z0Fp/mqsn97VALERxhsIU2yjDi51lPR+Q12JUvCuibnt9C
-         ezd3Y5bY7a4zvxJiIdTtVjZrxFYO06TqISwkc=
+	id S1756988Ab0G2LbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:31:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44745 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755665Ab0G2LbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 07:31:10 -0400
+Date: Thu, 29 Jul 2010 11:30:47 GMT
+From: tip-bot for Ian Campbell <ian.campbell@citrix.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, ian.campbell@citrix.com,
+        jeremy@goop.org, dmitry.torokhov@gmail.com, benh@kernel.crashing.org,
+        tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        ian.campbell@citrix.com, jeremy@goop.org, dmitry.torokhov@gmail.com,
+        benh@kernel.crashing.org, tglx@linutronix.de
+In-Reply-To: <1280398595-29708-1-git-send-email-ian.campbell@citrix.com>
+References: <1280398595-29708-1-git-send-email-ian.campbell@citrix.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] irq: Add new IRQ flag IRQF_NO_SUSPEND
+Message-ID: <tip-685fd0b4ea3f0f1d5385610b0d5b57775a8d5842@git.kernel.org>
+Git-Commit-ID: 685fd0b4ea3f0f1d5385610b0d5b57775a8d5842
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-In-Reply-To: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de>
-References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de>
-Date: Thu, 29 Jul 2010 19:26:00 +0800
-Message-ID: <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com>
-Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 29 Jul 2010 11:30:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 6:52 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
-> Hi all!
->
->    Building the linux kernel, as well as doing a"make allyesconfig"
-> on a fresh checkout of linux HEAD results in the same Bus Error in
-> fixdep (details below). This is a i5 box running 32bit Ubuntu Lucid
-> with plenty of (free) RAM. Haven't found any hints to what might be
-> wrong on scanning over the web archives.
->
-> Regards
->
->    Christoph
->
-> -----
->  % make allyesconfig
->  HOSTCC  scripts/basic/fixdep
-> fixdep: mmap: Cannot allocate memory
+Commit-ID:  685fd0b4ea3f0f1d5385610b0d5b57775a8d5842
+Gitweb:     http://git.kernel.org/tip/685fd0b4ea3f0f1d5385610b0d5b57775a8d5842
+Author:     Ian Campbell <ian.campbell@citrix.com>
+AuthorDate: Thu, 29 Jul 2010 11:16:32 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 29 Jul 2010 13:24:57 +0200
 
-So what does 'ls -lh scripts/basic/.fixdep.d' say?
-Seems this file is too big...
+irq: Add new IRQ flag IRQF_NO_SUSPEND
+
+A small number of users of IRQF_TIMER are using it for the implied no
+suspend behaviour on interrupts which are not timer interrupts.
+
+Therefore add a new IRQF_NO_SUSPEND flag, rename IRQF_TIMER to
+__IRQF_TIMER and redefine IRQF_TIMER in terms of these new flags.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: xen-devel@lists.xensource.com
+Cc: linux-input@vger.kernel.org
+Cc: linuxppc-dev@ozlabs.org
+Cc: devicetree-discuss@lists.ozlabs.org
+LKML-Reference: <1280398595-29708-1-git-send-email-ian.campbell@citrix.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/interrupt.h |    7 ++++++-
+ kernel/irq/manage.c       |    2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index c233113..a0384a4 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -53,16 +53,21 @@
+  * IRQF_ONESHOT - Interrupt is not reenabled after the hardirq handler finished.
+  *                Used by threaded interrupts which need to keep the
+  *                irq line disabled until the threaded handler has been run.
++ * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
++ *
+  */
+ #define IRQF_DISABLED		0x00000020
+ #define IRQF_SAMPLE_RANDOM	0x00000040
+ #define IRQF_SHARED		0x00000080
+ #define IRQF_PROBE_SHARED	0x00000100
+-#define IRQF_TIMER		0x00000200
++#define __IRQF_TIMER		0x00000200
+ #define IRQF_PERCPU		0x00000400
+ #define IRQF_NOBALANCING	0x00000800
+ #define IRQF_IRQPOLL		0x00001000
+ #define IRQF_ONESHOT		0x00002000
++#define IRQF_NO_SUSPEND		0x00004000
++
++#define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
+ 
+ /*
+  * Bits used by threaded handlers:
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index e149748..c3003e9 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -216,7 +216,7 @@ static inline int setup_affinity(unsigned int irq, struct irq_desc *desc)
+ void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
+ {
+ 	if (suspend) {
+-		if (!desc->action || (desc->action->flags & IRQF_TIMER))
++		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
+ 			return;
+ 		desc->status |= IRQ_SUSPENDED;
+ 	}
