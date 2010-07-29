@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab0G2XZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 19:25:20 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:34732 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758100Ab0G2XZS (ORCPT
+	id S1758194Ab0G2X0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 19:26:04 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:32908 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755427Ab0G2X0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 19:25:18 -0400
-Date: Fri, 30 Jul 2010 09:23:30 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/5]  [RFC] transfer ASYNC vmscan writeback IO to the
- flusher threads
-Message-ID: <20100729232330.GO655@dastard>
-References: <20100729115142.102255590@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729115142.102255590@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 29 Jul 2010 19:26:01 -0400
+Subject: Re: [RFC][PATCH 1/2] Remove stop_machine from change_clocksource
+From: john stultz <johnstul@us.ibm.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+In-Reply-To: <1280444895.2829.164.camel@localhost.localdomain>
+References: <1280282802-10618-1-git-send-email-johnstul@us.ibm.com>
+	 <20100728091733.56004b06@mschwide.boeblingen.de.ibm.com>
+	 <1280333569.1848.34.camel@work-vm>
+	 <20100729091125.6e25368e@mschwide.boeblingen.de.ibm.com>
+	 <1280436547.2829.72.camel@localhost.localdomain>
+	 <1280444895.2829.164.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 29 Jul 2010 16:25:37 -0700
+Message-ID: <1280445937.2829.172.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 07:51:42PM +0800, Wu Fengguang wrote:
-> Andrew,
+On Thu, 2010-07-29 at 16:08 -0700, john stultz wrote:
+> On Thu, 2010-07-29 at 13:49 -0700, john stultz wrote:
+> > On Thu, 2010-07-29 at 09:11 +0200, Martin Schwidefsky wrote:
+> > > What about a clocksource_unregister while a cpu is in the middle of a
+> > > read_seqbegin/timekeeping_get_ns/read_seqretry? The clocksource structure
+> > > is "free" after the successful call to the unregister. At least in theory
+> > > this could be a use after free. The race window is tiny but on virtual
+> > > systems there can be an arbitrary delay in the ktime_get sequence.
+> >
+> > So yes, unregister has been contentious in the past for this very
+> > reason. Once registered, its really hard to find a safe point when it
+> > can be un-registered. Stop machine mostly solves this (although one
+> > should note: vsyscall enabled clocksources really can't be freed, as
+> > their vread() page needs to be statically mapped into userspace).
+> > 
+> > So while stop_machine is a solution here, it would make more sense to me
+> > to use stop_machine (or maybe even a different method, as it sort of
+> > screams RCU to me) to make sure all the cpus are out of the xtime_lock
+> > critical section prior to returning from unregister_clocksource, rather
+> > then stopping everything for the clocksource change.
 > 
-> It's possible to transfer ASYNC vmscan writeback IOs to the flusher threads.
-> This simple patchset shows the basic idea. Since it's a big behavior change,
-> there are inevitably lots of details to sort out. I don't know where it will
-> go after tests and discussions, so the patches are intentionally kept simple.
 > 
-> sync livelock avoidance (need more to be complete, but this is minimal required for the last two patches)
-> 	[PATCH 1/5] writeback: introduce wbc.for_sync to cover the two sync stages
-> 	[PATCH 2/5] writeback: stop periodic/background work on seeing sync works
-> 	[PATCH 3/5] writeback: prevent sync livelock with the sync_after timestamp
+> Below is a rough patch to use stop_machine to get the same level of race
+> protection for clocksource_unregister as we have currently in Linus's
+> tree (which may possibly have holes in it?).
 > 
-> let the flusher threads do ASYNC writeback for pageout()
-> 	[PATCH 4/5] writeback: introduce bdi_start_inode_writeback()
-> 	[PATCH 5/5] vmscan: transfer async file writeback to the flusher
+> Comments or suggestions for other ideas would be appreciated.
+> 
+> I'm thinking RCU might be really close to what we actually want here,
+> but I'd like to be able to avoid any extra work on the read-side (ie:
+> even the preempt_disable()), and would even be more prone to disallowing
+> clocksource unregistration then impacting the xtime_lock read side.
+> 
+> 
+> Any other thoughts?
 
-I really do not like this - all it does is transfer random page writeback
-from vmscan to the flusher threads rather than avoiding random page
-writeback altogether. Random page writeback is nasty - just say no.
+Actually, the more I think about it.. The more I really just think we
+should kill clocksource_unregister and simply not allow it.
 
-Cheers,
+Part of the reason is that we have other issues lurking under here, such
+as: "what do we do if someone unregisters the only HRT capable
+clocksource? As there's currently no way to fall back from HRT mode to
+non HRT mode."
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+It just adds a ton of complexity and issues for really zero gain. The
+only reasonable use-case I can come up with is having a clocksource
+loaded via a module, and then wanting to unload it.
+
+So while loading clocksources as a module is a nice feature that could
+save folks in a pinch (think old distro kernels needing a clock fix on
+new hardware), unregister and removal really doesn't have much
+functional use. Its just only nice an symmetrical.
+
+So unless anyone else objects, I'm prone to kill off unregister (and
+change the single user's error-handling path to delay registration until
+the hardware is known to be good).
+
+Any counter points?
+
+thanks
+-john
+
