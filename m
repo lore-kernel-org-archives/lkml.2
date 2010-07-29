@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab0G2I1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 04:27:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65484 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab0G2I11 (ORCPT
+	id S1754649Ab0G2I1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:27:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37019 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754426Ab0G2I1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 04:27:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Date: Thu, 29 Jul 2010 10:26:55 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.90; x86_64; ; )
-Cc: stepanm@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, dwalker@codeaurora.org,
-        linux-kernel@vger.kernel.org
-References: <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org> <bad58db98c165a61860827d4e720acf8.squirrel@www.codeaurora.org> <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 29 Jul 2010 04:27:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Q8Ljl0ZSTBFgEk3k4wFn01JJEVs3Tazs4C+7olHiRqlHRqv0cBru2n51dluAUvtTao
+         T0aFa1JcEUWfgSHHHtlF/NMvaSxGHIbPTzwwMd65twadMSsG43RtlKWVwbbsKR5WjwFc
+         iY5slpuSrVSZi0eGVkk1C+zjZay5kbySZF/6s=
+Subject: [PATCH 2/2] jz4740-adc: fix resource reclaim in jz4740_adc_probe
+	error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lars-Peter Clausen <lars@metafoo.de>
+Content-Type: text/plain
+Date: Thu, 29 Jul 2010 16:28:25 +0800
+Message-Id: <1280392105.21676.6.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007291026.55928.arnd@arndb.de>
-X-Provags-ID: V02:K0:uQfZNwR+/kwqpb1SfIR1OcJBfkeJwaFGiRs13b8jguI
- BO8qeFxX4Wk92tzv/rQ/iykmr8RpjynL9/8qZx+WBKvsTPDUJO
- tB5VhD+xHWX8SZdk7s7n5pxBoL1iDSG1nzD+795hAPinDWlumC
- egS/aaQQylfUUCBPRe4xw0OYHzpR7MCe+vqVxnhyyUyRDW53+7
- GM2Mp+R7ne5E/3k0cwVWQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 July 2010 05:35:48 FUJITA Tomonori wrote:
-> > 
-> > From what I have been able to tell, the IOMMU interface was written by
-> > AMD/Intel to allow the kvm code to work with a common IOMMU interface. To
-> 
-> Don't confuse the IOMMU interface with the DMA API that Arnd
-> mentioned.
-> 
-> They are not related at all.
+If mfd_add_devices() fail, we need to relese allocated resources.
 
-Exactly, thanks for the clarification. I also didn't realize that there
-is now an include/linux/iommu.h file that only describes the PCI SR-IOV
-interfaces, unlike the generic IOMMU support that we have in your
-include/linux/dma-mapping.h file.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch is against linux-next.
+ drivers/mfd/jz4740-adc.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-Maybe we should rename linux/iommu.h to something more specific so we
-can reduce this confusion in the future.
+diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
+index 2846d24..3ad492c 100644
+--- a/drivers/mfd/jz4740-adc.c
++++ b/drivers/mfd/jz4740-adc.c
+@@ -326,9 +326,15 @@ static int __devinit jz4740_adc_probe(struct platform_device *pdev)
+ 	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
+ 	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
+ 
+-	return mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
++	ret = mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
+ 		ARRAY_SIZE(jz4740_adc_cells), mem_base, adc->irq_base);
++	if (ret < 0)
++		goto err_clk_put;
+ 
++	return 0;
++
++err_clk_put:
++	clk_put(adc->clk);
+ err_iounmap:
+ 	platform_set_drvdata(pdev, NULL);
+ 	iounmap(adc->base);
+-- 
+1.5.4.3
 
-	Arnd
+
+
