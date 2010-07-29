@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575Ab0G2AHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 20:07:05 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55161 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab0G2AG5 (ORCPT
+	id S1751821Ab0G2APi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 20:15:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:43142 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab0G2APh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 20:06:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=oks4528PXq0lWGHms/LACuyWYGY8rDZbcBUrSgKgoxVzoKLPMIHGeTvtAEQYtTiKff
-         XNiVKZvXIPTfeEHopiFMpszP5lU8lhqnKtgrjofS20QvB0TW8oAWQp+ozK1Esk3NImdv
-         +9leonzpAbFUNw5jYR2FPUeZLVyZzmnYsk3rg=
+	Wed, 28 Jul 2010 20:15:37 -0400
+Message-ID: <4C50C7F2.8020305@windriver.com>
+Date: Wed, 28 Jul 2010 19:14:42 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-In-Reply-To: <1280360895.8891.19.camel@maxim-laptop>
-References: <20100726210651.GJ14855@tux> <1280179033.3721.15.camel@maxim-laptop> 
-	<20100726212543.GA5424@srcf.ucam.org> <AANLkTi=5_Dc8SumPi7cr8u7=DmnOHgSo6C76w9b0E4Kj@mail.gmail.com> 
-	<20100726222113.GA6487@srcf.ucam.org> <AANLkTinq-SxMHTrJM23WaeRMkU-2cySiVrkwCjDRS_o+@mail.gmail.com> 
-	<20100726222909.GA6773@srcf.ucam.org> <AANLkTinysGjYS7RKN4X_7T2q+rw_-OWdn-UJYM0poWXu@mail.gmail.com> 
-	<20100726223326.GA6904@srcf.ucam.org> <AANLkTinChEx_B9wa-n+a6xDr1vLOBOD3Mhcs=iqcYwen@mail.gmail.com> 
-	<20100726225057.GA7268@srcf.ucam.org> <1280223313.3721.83.camel@maxim-laptop> 
-	<AANLkTim1sZ5ZoGcrsdCw8dFSzUj4igZOiq7irKsdbfXR@mail.gmail.com> 
-	<1280360895.8891.19.camel@maxim-laptop>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 28 Jul 2010 17:06:36 -0700
-Message-ID: <AANLkTikkN4qZefACF+piz-a4sdABd85rYUbjQG295u4L@mail.gmail.com>
-Subject: Re: [ath5k-devel] [PATCH v3] ath5k: disable ASPM
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "ath5k-devel@lists.ath5k.org" <ath5k-devel@venema.h4ckr.net>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        David Quan <David.Quan@atheros.com>,
-        "Luis R. Rodriguez" <mcgrof@bombadil.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "tim.gardner@canonical.com" <tim.gardner@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: Re: [GIT PULL] kgdb regression fixes for 2.6.35-rc5
+References: <1280349590-27754-1-git-send-email-jason.wessel@windriver.com> <20100728211725.GF5394@nowhere> <AANLkTikXGm0WK+N=YMWJc+hBgVAyLc0adu4K1iX5UMW=@mail.gmail.com>
+In-Reply-To: <AANLkTikXGm0WK+N=YMWJc+hBgVAyLc0adu4K1iX5UMW=@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Jul 2010 00:14:44.0237 (UTC) FILETIME=[0BCF9BD0:01CB2EB3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 4:48 PM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> On Tue, 2010-07-27 at 08:57 -0700, Luis R. Rodriguez wrote:
->> On Tue, Jul 27, 2010 at 2:35 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
->> > On Mon, 2010-07-26 at 23:50 +0100, Matthew Garrett wrote:
->> >> On Mon, Jul 26, 2010 at 03:43:04PM -0700, Luis R. Rodriguez wrote:
->> >>
->> >> > I see.. thanks Mathew... in that case since L1 works on all devices we
->> >> > could just force enable L1 for all PCIE devices. What do you think?
->> >>
->> >> Works for me.
->> >>
->> >
->> > On the second thought, there is no 'pci_enable_link_state' :-)
->> > I afraid that if I add it, I might not do that right for all cases, thus
->> > do more harm that good...
+On 07/28/2010 04:26 PM, Linus Torvalds wrote:
+> On Wed, Jul 28, 2010 at 2:17 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> I'm sorry I spot it a bit late.
+>> There is a little issue in this patch, irqs won't
+>> be restored:
 >>
->> I'm sorry, can you elaborate?
->
-> I mean ASPM code doesn't have a function to undo effects of the
-> blacklist (due to pre 1.1 pcie device).
->
-> Its not that simple to write such function.
+>> @@ -588,9 +588,10 @@ int kgdb_ll_trap(int cmd, const char *str,
+>>        if (!kgdb_io_module_registered)
+>>                return NOTIFY_DONE;
+>>
+>> +       local_irq_save(flags);
+>>        return __kgdb_notify(&args, cmd);
+>> +       local_irq_restore(flags);
+>>  }
+> 
+> Yeah, that's obviously crap. I also wonder why __kgdb_notify messes up
+> the flags to begin with.
+> 
 
-Ah good catch... pcie_aspm_sanity_check() will actually be used to
-adjust the device link capability... So even if we do try to insist it
-wouldn't work. I'm happy if we deal with this separately, its a
-reasonable compromise to fix issues with existing devices out there.
+This should not be needed as the irqs should already be off while in the overflow handler.
 
-  Luis
+Sorry for the noise on the one.   I updated the for_linus branch with the final version.
+
+
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+
+--
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -572,7 +572,6 @@ static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+ 	return NOTIFY_STOP;
+ }
+ 
+-#ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+ int kgdb_ll_trap(int cmd, const char *str,
+ 		 struct pt_regs *regs, long err, int trap, int sig)
+ {
+@@ -590,7 +589,6 @@ int kgdb_ll_trap(int cmd, const char *str,
+ 
+ 	return __kgdb_notify(&args, cmd);
+ }
+-#endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
+ 
+ static int
+ kgdb_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
+@@ -625,6 +623,12 @@ int kgdb_arch_init(void)
+ 	return register_die_notifier(&kgdb_notifier);
+ }
+ 
++static void kgdb_hw_overflow_handler(struct perf_event *event, int nmi,
++		struct perf_sample_data *data, struct pt_regs *regs)
++{
++	kgdb_ll_trap(DIE_DEBUG, "debug", regs, 0, 0, SIGTRAP);
++}
++
+ void kgdb_arch_late(void)
+ {
+ 	int i, cpu;
+@@ -655,6 +659,7 @@ void kgdb_arch_late(void)
+ 		for_each_online_cpu(cpu) {
+ 			pevent = per_cpu_ptr(breakinfo[i].pev, cpu);
+ 			pevent[0]->hw.sample_period = 1;
++			pevent[0]->overflow_handler = kgdb_hw_overflow_handler;
+ 			if (pevent[0]->destroy != NULL) {
+ 				pevent[0]->destroy = NULL;
+ 				release_bp_slot(*pevent);
