@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab0G2Gia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 02:38:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42962 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753866Ab0G2GiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 02:38:25 -0400
-Message-ID: <4C5122D1.8080203@redhat.com>
-Date: Thu, 29 Jul 2010 14:42:25 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
-MIME-Version: 1.0
-To: Milton Miller <miltonm@bga.com>
-CC: Neil Horman <nhorman@tuxdriver.com>, Neil Horman <nhorman@redhat.com>,
-        huang ying <huang.ying.caritas@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        kexec@lists.infadead.org
-Subject: Re: [Patch v2] kexec: increase max of kexec segments and use dynamic
- allocation
-References: <kexec-nrseg-reply1@mdm.bga.com>
-In-Reply-To: <kexec-nrseg-reply1@mdm.bga.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752854Ab0G2HL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 03:11:29 -0400
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:43363 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab0G2HL2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 03:11:28 -0400
+Date: Thu, 29 Jul 2010 09:11:25 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [RFC][PATCH 1/2] Remove stop_machine from change_clocksource
+Message-ID: <20100729091125.6e25368e@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1280333569.1848.34.camel@work-vm>
+References: <1280282802-10618-1-git-send-email-johnstul@us.ibm.com>
+	<20100728091733.56004b06@mschwide.boeblingen.de.ibm.com>
+	<1280333569.1848.34.camel@work-vm>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/10 18:00, Milton Miller wrote:
-> [ Added kexec at lists.infradead.org and linuxppc-dev@lists.ozlabs.org ]
->
->>
->> Currently KEXEC_SEGMENT_MAX is only 16 which is too small for machine with
->> many memory ranges.  When hibernate on a machine with disjoint memory we do
->> need one segment for each memory region. Increase this hard limit to 16K
->> which is reasonably large.
->>
->> And change ->segment from a static array to a dynamically allocated memory.
->>
->> Cc: Neil Horman<nhorman@redhat.com>
->> Cc: huang ying<huang.ying.caritas@gmail.com>
->> Cc: Eric W. Biederman<ebiederm@xmission.com>
->> Signed-off-by: WANG Cong<amwang@redhat.com>
->>
->> ---
->> diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
->> index ed31a29..f115585 100644
->> --- a/arch/powerpc/kernel/machine_kexec_64.c
->> +++ b/arch/powerpc/kernel/machine_kexec_64.c
->> @@ -131,10 +131,7 @@ static void copy_segments(unsigned long ind)
->>   void kexec_copy_flush(struct kimage *image)
->>   {
->>   	long i, nr_segments = image->nr_segments;
->> -	struct  kexec_segment ranges[KEXEC_SEGMENT_MAX];
->> -
->> -	/* save the ranges on the stack to efficiently flush the icache */
->> -	memcpy(ranges, image->segment, sizeof(ranges));
->> +	struct  kexec_segment range;
->
-> I'm glad you found our copy on the stack and removed the stack overflow
-> that comes with this bump, but ...
->
->>
->>   	/*
->>   	 * After this call we may not use anything allocated in dynamic
->> @@ -148,9 +145,11 @@ void kexec_copy_flush(struct kimage *image)
->>   	 * we need to clear the icache for all dest pages sometime,
->>   	 * including ones that were in place on the original copy
->>   	 */
->> -	for (i = 0; i<  nr_segments; i++)
->> -		flush_icache_range((unsigned long)__va(ranges[i].mem),
->> -			(unsigned long)__va(ranges[i].mem + ranges[i].memsz));
->> +	for (i = 0; i<  nr_segments; i++) {
->> +		memcpy(&range,&image->segment[i], sizeof(range));
->> +		flush_icache_range((unsigned long)__va(range.mem),
->> +			(unsigned long)__va(range.mem + range.memsz));
->> +	}
->>   }
->
-> This is executed after the copy, so as it says,
-> "we may not use anything allocated in dynamic memory".
->
-> We could allocate control pages to copy the segment list into.
-> Actually ppc64 doesn't use the existing control page, but that
-> is only 4kB today.
->
-> We need the list to icache flush all the pages in all the segments.
-> The as the indirect list doesn't have pages that were allocated at
-> their destination.
->
-> Or maybe the icache flush should be done in the generic code
-> like it does for crash load segments?
->
+On Wed, 28 Jul 2010 09:12:49 -0700
+john stultz <johnstul@us.ibm.com> wrote:
 
-I don't get the point here, according to the comments,
-it is copied into stack because of efficiency.
+> On Wed, 2010-07-28 at 09:17 +0200, Martin Schwidefsky wrote:
+> > On Tue, 27 Jul 2010 19:06:41 -0700
+> > John Stultz <johnstul@us.ibm.com> wrote:
+> > 
+> > If I look at
+> > timekeeping_get_ns I don't see anything that prevents the
+> > compiler from generating code that reads timekeeper.clock
+> > multiple times. Which would mix the read function from one
+> > clocksource with the cycle_last / mask values from the new
+> > clock. Now if we add code that prevents the compiler from
+> > reading from timekeeper.clock multiple times we might get
+> > away with it.
+> 
+> Right, but this should be ok. timekeeping_get_ns is a helper that
+> requires the xtime_lock to be held (such a comment is probably needed,
+> but there is no usage of it when the xtime_lock isn't held). While the
+> function may actually mix values from two clocksources in a calculation,
+> the results of those calculations will be thrown out and re-done via the
+> xtime_lock seqlock.
+
+Ok, all callers to timekeeping_get_ns use an xtime_lock loop to
+make sure that no inconsistent result gets returned.
+ 
+> > The reasoning for stop_machine is that the change of a
+> > clocksource is a major change which has subtle side effects
+> > so we want to make sure that nothing breaks. It is a very rare
+> > event, we can afford to spent a little bit of time there.
+> > Ergo stop_machine.
+> 
+> I do agree that there can be subtle side effects when dealing with
+> clocksources (part of why I'm being so cautious introducing this
+> change), and when the stop_machine code was added it seemed reasonable.
+> But given the limitations of stop_machine, the more I look at the
+> clocksource_change code, the more I suspect stop_machine is overkill and
+> we can safely just take the write lock on xtime_lock.
+> 
+> If I'm still missing something, do let me know.
+
+What about a clocksource_unregister while a cpu is in the middle of a
+read_seqbegin/timekeeping_get_ns/read_seqretry? The clocksource structure
+is "free" after the successful call to the unregister. At least in theory
+this could be a use after free. The race window is tiny but on virtual
+systems there can be an arbitrary delay in the ktime_get sequence.
+
+I agree that stop_machine is the big gun and restricts the code in the way
+how the clocksource functions may be call. But it is safe, no?
 
 -- 
-The opposite of love is not hate, it's indifference.
-  - Elie Wiesel
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
