@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab0G2StS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:49:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60657 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab0G2StQ (ORCPT
+	id S1756777Ab0G2Su6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:50:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56894 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755002Ab0G2Su4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:49:16 -0400
-Message-ID: <4C51CD2E.2020505@vlnb.net>
-Date: Thu, 29 Jul 2010 22:49:18 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Thu, 29 Jul 2010 14:50:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=w/xE48fzadRqY/1wTYDbAajkF2eH39JqJvTLRq8Y8hjdT34OVMb+ATZHBaexnL8arf
+         YJnAE3MeTnWLYM9b9nLPx1SedGbSNxIW7lzduQMQdH3e1M9hZ7SYq7BmKqyIp0/4rcVK
+         yK57cy8s3hvx1zIy3Z/2ubVMg///syJTaDop4=
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Christoph Hellwig <hch@lst.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        jaxboe@fusionio.com, James.Bottomley@suse.de,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        kernel-bugs@lists.ubuntu.com
-Subject: Re: extfs reliability
-References: <20100728085048.GA8884@lst.de> <4C4FF136.5000205@kernel.org> <20100728090025.GA9252@lst.de> <4C4FF592.9090800@kernel.org> <20100728092859.GA11096@lst.de> <20100729014431.GD4506@thunk.org> <20100729083142.GA30077@lst.de> <4C517B5A.3020905@vlnb.net> <20100729130852.GA11852@lst.de> <4C518C4D.6050607@vlnb.net> <20100729143456.GB12690@quack.suse.cz>
-In-Reply-To: <20100729143456.GB12690@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:tQ3zvT9heVBS3Cq9Q9hbjsRPQc/yFAkk0fnGcV9i57w
- AKACTncKIzNoR1+yQVou9eVtmKP6YWTYFQMKSeqybOgmmj64TN
- vqFyrJ0yBTEOTB6LcHaNFi0dvtS6ahmHoJk52uG5PdtxWfkwL+
- q9HJTZa7niPf9WVEM4cTuWiYvq/f70YpjB23PbPO77CuevpINh
- KRYCWiUfcCGHTTWsnqlqw==
+In-Reply-To: <AANLkTik4oyv4edZ6dyKiA59C9TSHWn2grQqTh30MRmC=@mail.gmail.com>
+References: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>
+	<4C505F86.7050509@cs.helsinki.fi>
+	<AANLkTintAmpBcxbZUmMd7B7yHpVKs77xHgkjSxMY_O6J@mail.gmail.com>
+	<AANLkTik-M_=G4Ks=U6hRm1dBTzbzovR47jdhjTjNqekX@mail.gmail.com>
+	<4C519A6E.8000002@cs.helsinki.fi>
+	<AANLkTik4oyv4edZ6dyKiA59C9TSHWn2grQqTh30MRmC=@mail.gmail.com>
+Date: Thu, 29 Jul 2010 21:50:54 +0300
+X-Google-Sender-Auth: ccyLoDZyupmDLh9U9eDDZMWpIEQ
+Message-ID: <AANLkTinAtDQoB9VhX4J=HJSkYTM8ERBDXG8ZYng1SGYL@mail.gmail.com>
+Subject: Re: [2.6.35-rc6 patch] increase kmemleak robustness at boot
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara, on 07/29/2010 06:34 PM wrote:
-> On Thu 29-07-10 18:12:29, Vladislav Bolkhovitin wrote:
->>
->> Christoph Hellwig, on 07/29/2010 05:08 PM wrote:
->>> On Thu, Jul 29, 2010 at 05:00:10PM +0400, Vladislav Bolkhovitin wrote:
->>>> You can find full kernel logs starting from iSCSI load in the attachments.
->>>>
->>>> I already reported such issues some time ago, but my reports were not too much welcomed, so I gave up. Anyway, anybody can easily do my tests at any time. They don't need any special hardware, just 2 Linux boxes: one for iSCSI target and one for iSCSI initiator (the test box itself). But they are generic for other transports as well. You can see there's nothing iSCSI specific in the traces.
->>>
->>> I was only talking about ext3.
->>
->> Yes, now ext3 is a lot more reliable. The only how I was able to confuse it was:
->>
->> ...
->> (2197) nb_write: handle 4272 was not open size=65475 ofs=0
->> (2199) nb_write: handle 4272 was not open size=65475 ofs=65534
->> (2201) nb_write: handle 4272 was not open size=65475 ofs=131068
->> (2203) nb_write: handle 4272 was not open size=65475 ofs=196602
->> (2205) nb_write: handle 4272 was not open size=65475 ofs=262136^C
->> ^C
->> root@ini:/mnt/dbench-mod# ^C
->> root@ini:/mnt/dbench-mod# ^C
->> root@ini:/mnt/dbench-mod# cd
->> root@ini:~# umount /mnt
->>
->> <- recover device
->>
->> root@ini:~# mount -t ext3 -o barrier=1 /dev/sdb /mnt
->> mount: wrong fs type, bad option, bad superblock on /dev/sdb,
->>         missing codepage or helper program, or other error
->>         In some cases useful info is found in syslog - try
->>         dmesg | tail  or so
->>
->> Kernel log: "Jul 29 22:05:32 ini kernel: [ 2905.423092] JBD: recovery failed"
->    Hmm, this is strange. Are there more messages around this one?
+On Thu, Jul 29, 2010 at 9:03 PM, Daniel J Blueman
+<daniel.blueman@gmail.com> wrote:
+>> If it's just kmemleak_init() we're talking about, slab caches are up at that
+>> point so you can just use kmalloc().
+>
+> The slab allocator isn't up at this point. With
+> CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE set to 16K elements, an extra 3MB
+> of __initdata memory is used, but freed afterwards, and it works
+> great.
 
-I'd encourage you to reproduce similar setup and perform various failure 
-injection testings. I promise you, you'll find a lot of strange and 
-interesting ;). Software devices give unique opportunities for that.
-
-Vlad
+Right. I guess the required earlylog buffer size would be smaller if
+we initialized kmemleak earlier. Can we do that in mm_init() after
+kmem_cache_init()?
