@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab0G2KQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:16:39 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:42652 "EHLO
+	id S1756768Ab0G2KQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 06:16:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:28824 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab0G2KQf (ORCPT
+	with ESMTP id S1756647Ab0G2KQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:16:35 -0400
+	Thu, 29 Jul 2010 06:16:48 -0400
 X-IronPort-AV: E=Sophos;i="4.55,279,1278302400"; 
-   d="scan'208";a="107549355"
-Subject: [GIT/PATCH 0/4] Do not use IRQF_TIMER for non timer interrupts
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+   d="scan'208";a="107549400"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ian Campbell <ian.campbell@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-In-Reply-To: <alpine.LFD.2.00.1007291045060.2471@localhost.localdomain>
-References: <1280314445.24292.90.camel@zakaz.uk.xensource.com>
-	 <1280314467-5637-1-git-send-email-ian.campbell@citrix.com>
-	 <alpine.LFD.2.00.1007291045060.2471@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Thu, 29 Jul 2010 11:16:13 +0100
-Message-ID: <1280398573.24292.1684.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+        Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 3/4] powerpc: Use IRQF_NO_SUSPEND not IRQF_TIMER for non-timer interrupts
+Date: Thu, 29 Jul 2010 11:16:34 +0100
+Message-Id: <1280398595-29708-3-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1280398573.24292.1684.camel@zakaz.uk.xensource.com>
+References: <1280398573.24292.1684.camel@zakaz.uk.xensource.com>
+X-OriginalArrivalTime: 29 Jul 2010 10:16:47.0601 (UTC) FILETIME=[27038610:01CB2F07]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-29 at 09:49 +0100, Thomas Gleixner wrote:
-> On Wed, 28 Jul 2010, Ian Campbell wrote:
-> 
-> > Continue to provide IRQF_TIMER as an alias to IRQF_NO_SUSPEND since I
-> > think it is worth preserving the nice self-documenting name (where it
-> > is used appropriately). It also avoid needing to patch all the many
-> > users who are using the flag for an actual timer interrupt.
-> 
-> I'm not happy about the alias. What about:
-> 
-> #define __IRQF_TIMER		0x00000200
-> #define IRQF_NO_SUSPEND		0x00000400
-> 
-> #define IRQF_TIMER    (__IRQF_TIMER | IRQF_NO_SUSPEND)
+kw_i2c_irq and via_pmu_interrupt are not timer interrupts and
+therefore should not use IRQF_TIMER. Use the recently introduced
+IRQF_NO_SUSPEND instead since that is the actual desired behaviour.
 
-Resending with this change. Plus I ran checkpatch on the whole lot (I
-previously managed to run it only on the first patch) and fixed the
-complaints.
-
-Ian.
-
-The following changes since commit fc0f5ac8fe693d1b05f5a928cc48135d1c8b7f2e:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../ericvh/v9fs
-
-are available in the git repository at:
-
-  git://xenbits.xensource.com/people/ianc/linux-2.6.git for-irq/irqf-no-suspend
-
-Ian Campbell (4):
-      irq: Add new IRQ flag IRQF_NO_SUSPEND
-      ixp4xx-beeper: Use IRQF_NO_SUSPEND not IRQF_TIMER for non-timer interrupt
-      powerpc: Use IRQF_NO_SUSPEND not IRQF_TIMER for non-timer interrupts
-      xen: do not suspend IPI IRQs.
-
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: linuxppc-dev@ozlabs.org
+Cc: devicetree-discuss@lists.ozlabs.org
+---
  arch/powerpc/platforms/powermac/low_i2c.c |    5 +++--
- drivers/input/misc/ixp4xx-beeper.c        |    3 ++-
  drivers/macintosh/via-pmu.c               |    9 +++++----
- drivers/xen/events.c                      |    1 +
- include/linux/interrupt.h                 |    7 ++++++-
- kernel/irq/manage.c                       |    2 +-
- 6 files changed, 18 insertions(+), 9 deletions(-)
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
+diff --git a/arch/powerpc/platforms/powermac/low_i2c.c b/arch/powerpc/platforms/powermac/low_i2c.c
+index 06a137c..480567e 100644
+--- a/arch/powerpc/platforms/powermac/low_i2c.c
++++ b/arch/powerpc/platforms/powermac/low_i2c.c
+@@ -542,11 +542,12 @@ static struct pmac_i2c_host_kw *__init kw_i2c_host_init(struct device_node *np)
+ 	/* Make sure IRQ is disabled */
+ 	kw_write_reg(reg_ier, 0);
+ 
+-	/* Request chip interrupt. We set IRQF_TIMER because we don't
++	/* Request chip interrupt. We set IRQF_NO_SUSPEND because we don't
+ 	 * want that interrupt disabled between the 2 passes of driver
+ 	 * suspend or we'll have issues running the pfuncs
+ 	 */
+-	if (request_irq(host->irq, kw_i2c_irq, IRQF_TIMER, "keywest i2c", host))
++	if (request_irq(host->irq, kw_i2c_irq, IRQF_NO_SUSPEND,
++			"keywest i2c", host))
+ 		host->irq = NO_IRQ;
+ 
+ 	printk(KERN_INFO "KeyWest i2c @0x%08x irq %d %s\n",
+diff --git a/drivers/macintosh/via-pmu.c b/drivers/macintosh/via-pmu.c
+index 3d4fc0f..35bc273 100644
+--- a/drivers/macintosh/via-pmu.c
++++ b/drivers/macintosh/via-pmu.c
+@@ -400,11 +400,12 @@ static int __init via_pmu_start(void)
+ 		printk(KERN_ERR "via-pmu: can't map interrupt\n");
+ 		return -ENODEV;
+ 	}
+-	/* We set IRQF_TIMER because we don't want the interrupt to be disabled
+-	 * between the 2 passes of driver suspend, we control our own disabling
+-	 * for that one
++	/* We set IRQF_NO_SUSPEND because we don't want the interrupt
++	 * to be disabled between the 2 passes of driver suspend, we
++	 * control our own disabling for that one
+ 	 */
+-	if (request_irq(irq, via_pmu_interrupt, IRQF_TIMER, "VIA-PMU", (void *)0)) {
++	if (request_irq(irq, via_pmu_interrupt, IRQF_NO_SUSPEND,
++			"VIA-PMU", (void *)0)) {
+ 		printk(KERN_ERR "via-pmu: can't request irq %d\n", irq);
+ 		return -ENODEV;
+ 	}
+-- 
+1.5.6.5
 
