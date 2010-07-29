@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab0G2IfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 04:35:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43645 "EHLO mx1.redhat.com"
+	id S1754744Ab0G2Ife (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:35:34 -0400
+Received: from sh.osrg.net ([192.16.179.4]:39710 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653Ab0G2IfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 04:35:03 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100729060004.GD2447@linux.vnet.ibm.com>
-References: <20100729060004.GD2447@linux.vnet.ibm.com> <18537.1280318862@redhat.com> <AANLkTikB9Msot4m_oaw+V+dvEg+SzyXHb0cqhKQqUtC2@mail.gmail.com> <20100727155023.GF1967@jolsa.brq.redhat.com> <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com> <24865.1280249187@redhat.com> <32758.1280321226@redhat.com> 
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-Date: Thu, 29 Jul 2010 09:34:20 +0100
-Message-ID: <30107.1280392460@redhat.com>
+	id S1750938Ab0G2Ifc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 04:35:32 -0400
+Date: Thu, 29 Jul 2010 17:35:10 +0900
+To: arnd@arndb.de
+Cc: fujita.tomonori@lab.ntt.co.jp, joerg.roedel@amd.com,
+        stepanm@codeaurora.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, dwalker@codeaurora.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <201007291026.55928.arnd@arndb.de>
+References: <bad58db98c165a61860827d4e720acf8.squirrel@www.codeaurora.org>
+	<20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
+	<201007291026.55928.arnd@arndb.de>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100729173431Q.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 29 Jul 2010 17:35:11 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Thu, 29 Jul 2010 10:26:55 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-> It is perfectly legal for an RCU callback to invoke call_rcu().  However,
-> this should be used -only- to wait for RCU readers.  If there are no
-> RCU readers, the callback might be re-invoked in very short order,
-> expecially on UP systems.
+> On Thursday 29 July 2010 05:35:48 FUJITA Tomonori wrote:
+> > > 
+> > > From what I have been able to tell, the IOMMU interface was written by
+> > > AMD/Intel to allow the kvm code to work with a common IOMMU interface. To
+> > 
+> > Don't confuse the IOMMU interface with the DMA API that Arnd
+> > mentioned.
+> > 
+> > They are not related at all.
 > 
-> Or am I misunderstanding what you mean by "require call_rcu() to be
-> able to cope iwth requeueing"?
+> Exactly, thanks for the clarification. I also didn't realize that there
+> is now an include/linux/iommu.h file that only describes the PCI SR-IOV
+> interfaces, unlike the generic IOMMU support that we have in your
+> include/linux/dma-mapping.h file.
+> 
+> Maybe we should rename linux/iommu.h to something more specific so we
+> can reduce this confusion in the future.
 
-I mean for call_rcu() to be called on an object that's already been
-call_rcu()'d but not yet processed.
-
-For example if struct cred gets its usage count reduced to 0, __put_cred()
-will call_rcu() it, but what happens if someone comes along and resurrects it
-by increasing its usage count again?  And what happens if the usage count is
-reduced back to zero and __put_cred() calls call_rcu() again before
-put_cred_rcu() has a chance to run?
-
-David
+I also said that linux/iommu.h was a bad name when it was introduced
+:) Well, the author disagreed. Now the name actually confuse
+developers. The author might rethink.
