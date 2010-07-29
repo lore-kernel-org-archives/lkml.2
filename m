@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab0G2BGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 21:06:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56780 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab0G2BGJ (ORCPT
+	id S1752715Ab0G2BLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 21:11:14 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41204 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab0G2BLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 21:06:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=n6YsuKEIIDdXSXAGh32zQzA07QURqoFH7crJsLkj81oQq6u3z7/Hq84NL3531ykQR+
-         FEIw7apMUNUwUzoQJYGtY1UFUm3KOASo1Smh8pdXTdDHfBcVsK5R/woPRzdT5AXrRhvr
-         wwd0Iadr7OzLj06Y7MF7nFpSxeKvF2sPDsxkQ=
-Date: Thu, 29 Jul 2010 03:06:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [GIT PULL] kgdb regression fixes for 2.6.35-rc5
-Message-ID: <20100729010607.GB13088@nowhere>
-References: <1280349590-27754-1-git-send-email-jason.wessel@windriver.com> <20100728211725.GF5394@nowhere> <AANLkTikXGm0WK+N=YMWJc+hBgVAyLc0adu4K1iX5UMW=@mail.gmail.com> <4C50C7F2.8020305@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C50C7F2.8020305@windriver.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 28 Jul 2010 21:11:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 29 Jul 2010 10:06:26 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+Message-Id: <20100729100626.945da6e1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201007282338.12098.linux@rainbow-software.org>
+References: <201007282320.39528.linux@rainbow-software.org>
+	<201007282334.08063.rjw@sisk.pl>
+	<201007282338.12098.linux@rainbow-software.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 07:14:42PM -0500, Jason Wessel wrote:
-> On 07/28/2010 04:26 PM, Linus Torvalds wrote:
-> > On Wed, Jul 28, 2010 at 2:17 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> I'm sorry I spot it a bit late.
-> >> There is a little issue in this patch, irqs won't
-> >> be restored:
-> >>
-> >> @@ -588,9 +588,10 @@ int kgdb_ll_trap(int cmd, const char *str,
-> >>        if (!kgdb_io_module_registered)
-> >>                return NOTIFY_DONE;
-> >>
-> >> +       local_irq_save(flags);
-> >>        return __kgdb_notify(&args, cmd);
-> >> +       local_irq_restore(flags);
-> >>  }
-> > 
-> > Yeah, that's obviously crap. I also wonder why __kgdb_notify messes up
-> > the flags to begin with.
-> > 
+On Wed, 28 Jul 2010 23:38:09 +0200
+Ondrej Zary <linux@rainbow-software.org> wrote:
+
+> On Wednesday 28 July 2010 23:34:07 Rafael J. Wysocki wrote:
+> > On Wednesday, July 28, 2010, Ondrej Zary wrote:
+> > > Hello,
+> > > after very long bisection, I finally found what's causing memory
+> > > corruption during hibernation on my machine sice 2.6.31:
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=15753
+> > >
+> > > It's commit c9e444103b5e7a5a3519f9913f59767f92e33baf (mm: reuse unused
+> > > swap entry if necessary).
+> > >
+> > > I don't know anything about swapping in Linux so I don't have a clue
+> > > what's wrong with that commit.
+> >
+> > Thanks for bisecting!
+> >
+> > This looks rather serious.  I'd be grateful from any clues from the mm guys
+> > involved (CCed).
+> >
+> > Do you use s2disk or the built-in hibernation code?
 > 
-> This should not be needed as the irqs should already be off while in the overflow handler.
+> I use built-in code (echo disk >/sys/power/state). The machine has 256MB RAM 
+> and 256MB swap partition.
+> 
+
+I don't know much about hibernation but it seems my code break something, sorry.
+
+The commit does
+	if swap_map[] shows that there is only SwapCache, no real swap users,
+	try to reuse it by detaching a page from SwapCache.
+ 
+In usual cases,
+
+	lock_page(page):
+	add_to_swap(page); // assign swap offset and mark as SwapCache
+	try_to_unmap();    // swap's usage count +1 (swap_duplicate())
+	unlock_page(page);
+
+Then, SwapCache will not be reused in usual cases.
+
+What code should I look into ? kernel/power/swap.c ??
+
+Thanks,
+-Kame
 
 
 
-Interrupts are not disabled in the debug exception handler.
 
-I'm not sure what would be the state of dr6 if a nested debug exception
-would happen while do_debug() is interrupted.
-
-Perhaps the previous dr6 value is dropped. Intel manuals don't seem to say anything
-about that.
-
-Anyway that's a separate issue. The current patch fixes a regression and
-it looks good.
-
-Thanks.
 
