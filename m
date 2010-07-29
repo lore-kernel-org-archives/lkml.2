@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab0G2KRY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:17:24 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34795 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756613Ab0G2KRU (ORCPT
+	id S1756778Ab0G2KRB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 06:17:01 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:28824 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756648Ab0G2KQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:17:20 -0400
-Date: Thu, 29 Jul 2010 12:16:04 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Vasiliy Kulikov <segooon@gmail.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] x86: mce: fix error handling
-Message-ID: <20100729101604.GA26495@aftab>
-References: <1280335185-23265-1-git-send-email-segooon@gmail.com>
- <4C5063D4.4070108@linux.intel.com>
- <20100728171327.GA24149@albatros>
- <4C5066CB.7010009@linux.intel.com>
- <20100729093511.GB7143@albatros>
- <4C514F04.80603@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C514F04.80603@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 29 Jul 2010 06:16:49 -0400
+X-IronPort-AV: E=Sophos;i="4.55,279,1278302400"; 
+   d="scan'208";a="107549401"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ian Campbell <ian.campbell@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com
+Subject: [PATCH 4/4] xen: do not suspend IPI IRQs.
+Date: Thu, 29 Jul 2010 11:16:35 +0100
+Message-Id: <1280398595-29708-4-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1280398573.24292.1684.camel@zakaz.uk.xensource.com>
+References: <1280398573.24292.1684.camel@zakaz.uk.xensource.com>
+X-OriginalArrivalTime: 29 Jul 2010 10:16:48.0913 (UTC) FILETIME=[27CBB810:01CB2F07]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
-Date: Thu, Jul 29, 2010 at 05:51:00AM -0400
+In general the semantics of IPIs are that they are are expected to
+continue functioning after dpm_suspend_noirq().
 
-> 
-> > IMO memmory allocation fails are dangerous in kernel mode. As it is
-> > probably not exploitable because of boot time, it can destroy some
-> > sensitive data like dirty disk caches those are going to be written on
-> > disk.
-> 
-> It's true for runtime, but not for normal boot time.
-> 
-> Anyways if it happens on boot time the only thing you can do is panic, 
-> but someone else
-> will likely panic anyways for you. Just ignoring it like your patch 
-> effectively does
-> (because nothing will ever look at the ENOMEMs for an initcall)
+Specifically I have seen a deadlock between the callfunc IPI and the
+stop machine used by xen's do_suspend() routine. If one CPU has already
+called dpm_suspend_noirq() then there is a window where it can be sent
+a callfunc IPI before all the other CPUs have entered stop_cpu().
 
-Not true, initcall_debug will at least dump the -ENOMEM or the other
--E's if enabled on the cmdline. So even only for that case does the
-patch make sense.
+If this happens then the first CPU ends up spinning in stop_cpu()
+waiting for the other to rendezvous in state STOPMACHINE_PREPARE while
+the other is spinning in csd_lock_wait().
 
-It's a whole different question whether it actually is prudent to turn
-on error reporting of failed initcalls unconditionally.
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+Cc: <stable@kernel.org> # .32.x+: ab68ca3d: irq: Add new IRQ flag IRQF_NO_SUSPEND
+Cc: <stable@kernel.org> # .32.x+
+---
+ drivers/xen/events.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index db8f506..28f133a 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -536,6 +536,7 @@ int bind_ipi_to_irqhandler(enum ipi_vector ipi,
+ 	if (irq < 0)
+ 		return irq;
+ 
++	irqflags |= IRQF_NO_SUSPEND;
+ 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
+ 	if (retval != 0) {
+ 		unbind_from_irq(irq);
 -- 
-Regards/Gruss,
-Boris.
+1.5.6.5
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
