@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628Ab0G2JPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 05:15:14 -0400
-Received: from sh.osrg.net ([192.16.179.4]:37283 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198Ab0G2JPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 05:15:09 -0400
-Date: Thu, 29 Jul 2010 18:14:49 +0900
-To: Joerg.Roedel@amd.com
-Cc: fujita.tomonori@lab.ntt.co.jp, arnd@arndb.de, stepanm@codeaurora.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        dwalker@codeaurora.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100729090607.GN26098@amd.com>
-References: <20100729084018.GM26098@amd.com>
-	<20100729174621W.fujita.tomonori@lab.ntt.co.jp>
-	<20100729090607.GN26098@amd.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100729181412H.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 29 Jul 2010 18:14:51 +0900 (JST)
+	id S1755719Ab0G2JP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 05:15:27 -0400
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:34389 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab0G2JPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 05:15:24 -0400
+Date: Thu, 29 Jul 2010 11:15:17 +0200
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] Regression 2.6.35-rc6: ALSA Intel HDA/Realtek:
+ missing	Beep
+Message-ID: <20100729091517.GA8902@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+	alsa-devel@alsa-project.org
+References: <20100728144903.GA18170@darkside.kls.lan>
+ <s5hzkxbtya9.wl%tiwai@suse.de>
+ <s5htynjtwz2.wl%tiwai@suse.de>
+ <20100728212745.GA15394@darkside.kls.lan>
+ <s5hd3u6alkp.wl%tiwai@suse.de>
+ <20100729080930.GA20619@darkside.kls.lan>
+ <s5h7hkeae35.wl%tiwai@suse.de>
+ <20100729084138.GA15456@darkside.kls.lan>
+ <s5h39v2acvf.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
+Content-Disposition: inline
+In-Reply-To: <s5h39v2acvf.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 11:06:08 +0200
-"Roedel, Joerg" <Joerg.Roedel@amd.com> wrote:
 
-> On Thu, Jul 29, 2010 at 04:46:59AM -0400, FUJITA Tomonori wrote:
-> > On Thu, 29 Jul 2010 10:40:19 +0200
-> > "Roedel, Joerg" <Joerg.Roedel@amd.com> wrote:
-> > 
-> > > The IOMMU-API is not about SR-IOV.
-> > 
-> > That's true. However, the point is that include/iommu.h is far from
-> > the IOMMU-API.
-> > 
-> > You could still insist that include/iommu.h is designed for the
-> > generic IOMMU-API. But the fact is that it's designed for very
-> > specific purposes. No intention to make it for generic purposes.
-> 
-> I have no clue about the ARM iommus on the omap-platform. From a quick
-> look into the header file I see some similarities to the IOMMU-API. I am
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ARM's iommu stuff might be more appropriate as the IOMMU-API than
-include/linux/iommu.h
+On Thu, Jul 29, 2010 at 10:52:36AM +0200, Takashi Iwai wrote:
+> Usually the codec SSID isn't checked in other places, so passing a
+> bogus value should be OK.  Pass a value like 2:
+
+Mh, 1 probably :)
+
+$ cat /etc/modprobe.d/local-alsa.conf=20
+options snd-hda-intel model=3Dasus-p5q
+install snd-hda-intel /sbin/modprobe --ignore-install snd-hda-intel $CMDLIN=
+E_OPTS && { cd /sys/class/sound/hwC0D0; echo -n 1 > subsystem_id; echo -n 1=
+ > reconfig; : ; }
+
+Yep, Beep is back :)
+
+Btw...
+
+On Thu, Jul 29, 2010 at 10:26:22AM +0200, Takashi Iwai wrote:
+> So, the fix is likely to override SSID value, or create a special
+> quirk rule to enable PC-beep for known white-list, supposing BIOS
+> won't be fixed in any future...
+
+Well, the Board is from 2007, the last BIOS is from Aug 2009. I don't
+think Asus will provide an update just for that :)
 
 
-> also very open for discussions about how the IOMMU-API could be extended
-> to fit the needs of other platforms. Only because nobody has tried to
-> discuss about such an effort is no reason to push the IOMMU-API back.
+Thanks for your help
+   Mario
+--=20
+Unfortunately, the chip vendors have delayed the availability of the
+long-promised crystal-ball peripherals yet again, forcing the governor
+code to rely on heuristics; once again, software must make up for
+deficiencies in the hardware.                  -- Jonathan Corbet, LWN
 
-Well, the reason (nobody has tried) might be that linux/iommu.h
-doesn't look something intended for the generic IOMMU-API.
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEVAwUBTFFGpRS+e2HeSPbpAQLGsQf/dAsW94fg4LqJkoh8tAuAL0Hdj/LrD7BJ
+wO3pBQgcfad40KUEVxWTKrelou0HRYWFamZbeOcbjO2sLBKyP8P4ITD3vaT+U746
+aG3P1AEGGu22+S0DOldGZY/oRSAqF/ldkNeqb2Han4yGhFj5mJWhpJrPV1IUgFG6
+96MsKC1i8w4ksyVNu35Vcmeb/eVWbc0MKKJCDKPun1ExogBwv9135gpKxeuP4kbw
+WMeR4TL6CVkOojvvKyonE2ejPjVov8j4CpPv1zoaGYQEtNaIYUhie5tvL0vDp0Mf
+DcgHe0Jk6MEqywSUlEuUyHSZVhenq4139KKVCtGdnrUCPOwIL7eIEg==
+=cUhG
+-----END PGP SIGNATURE-----
+
+--YZ5djTAD1cGYuMQK--
