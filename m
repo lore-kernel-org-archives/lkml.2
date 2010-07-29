@@ -1,103 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab0G2NB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 09:01:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54272 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab0G2NB5 (ORCPT
+	id S1757455Ab0G2NDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 09:03:18 -0400
+Received: from mtagate4.de.ibm.com ([195.212.17.164]:35829 "EHLO
+	mtagate4.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757411Ab0G2NDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 09:01:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Date: Thu, 29 Jul 2010 15:01:35 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20100729090607.GN26098@amd.com> <201007291325.48129.arnd@arndb.de> <20100729121202.GR26098@amd.com>
-In-Reply-To: <20100729121202.GR26098@amd.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 29 Jul 2010 09:03:16 -0400
+Date: Thu, 29 Jul 2010 15:03:09 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 2.6.35-rc6
+Message-ID: <20100729150309.4b2ea955@mschwide.boeblingen.de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007291501.35583.arnd@arndb.de>
-X-Provags-ID: V02:K0:5uPOzchc3DHkChYxGwoyzSf64HwJkuwAvST46T5ZrA8
- rEhIHd905DeFkBHIMjAphFwl5CB+28BAmZc+ZP8j2GxNW0y9/0
- yGdSqw53tsF57QSh6NU3DJDLnPDPfW0iWo4yFVofHfw12Vt+zX
- 5D8sCYNMgwlNq94W7pgXnHtSF4Y6OE86FMePMHIzckK0XDGL1H
- hge+42dhvCTf6ILCKBBPw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 July 2010, Roedel, Joerg wrote:
-> On Thu, Jul 29, 2010 at 07:25:47AM -0400, Arnd Bergmann wrote:
-> > On Thursday 29 July 2010, Roedel, Joerg wrote:
-> > 
-> > > > You designed it for what you need at the time. It should have been
-> > > > named appropriately to avoid confusion. Later, when we actually
-> > > > understand what other IOMMUs need, we can evolve the specific API for
-> > > > generic purposes. Then we can rename the API to more generic.
-> > > 
-> > > At the time the iommu-api was written is was generic enough for what we
-> > > had. So it was designed as an generic API. At this point in time nobody
-> > > knew what the future requirements would we. So today it turns out that
-> > > it is not generic enough anymore for latest hardware. The logical
-> > > consequence is to fix this in the iommu-api.
-> > 
-> > Well, I think the real question is why we have two APIs that both claim
-> > to work with IOMMUs in a generic way and how we could unify the two.
-> 
-> The DMA-API itself does not claim to be an iommu-frontend. The purpose
-> of the DMA-API is to convert physical memory addresses into dma handles
-> and do all the management of these handles. Backend implementations can
-> use hardware iommus for this task. But depending on the hardware in the
-> system the DMA-API can very well be implemented without any hardware
-> support. This is an important difference to the IOMMU-API which needs
-> hardware because it exposes hardware iommu features to software.
+Hi Linus,
 
-Well, you could call that a limitation in the IOMMU API ;-)
+please pull from 'for-linus' branch of
 
-The idea behind the DMA mapping API is to allow a device driver
-to work without knowing if the hardware can, cannot or must use
-an IOMMU.
+	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
 
-> > I really think we should not extend the (KVM) IOMMU API further but
-> > just use the generic DMA mapping api for KVM and extend it as necessary.
-> > It already has the concept of cache coherency and mapping/unmapping
-> > that are in the IOMMU API and could be extended to support domains
-> > as well, through the use of dma_attrs.
-> 
-> If we find a nice and clean way to expose lower-level iommu
-> functionality through the DMA-API, thats fine. We could certainly
-> discuss ideas in this direction.  I think this is going to be hard
-> because the DMA-API today does not provide enough flexibility to let the
-> user choose both sides of a io-virtual<->cpu-physical address mapping.
-> Thats fine for most drivers because it makes sense for them to use the
-> generic io-address-allocator the DMA-API provides but not for KVM which
-> needs this flexibility.
+to receive the following updates:
 
-One way to do this would be to add a new attribute, e.g.
+Heiko Carstens (1):
+      [S390] Fix IRQ tracing in case of PER
 
-enum dma_attr {
-        DMA_ATTR_WRITE_BARRIER,
-        DMA_ATTR_WEAK_ORDERING,
-	DMA_ATTR_FIXED_MAPPING, /* this one is new */
-        DMA_ATTR_MAX,
-};
+Martin Schwidefsky (1):
+      [S390] etr: fix clock synchronization race
 
-struct dma_attrs {
-        unsigned long flags[__DMA_ATTRS_LONGS];
-	dma_add_t dest;
-};
+ arch/s390/kernel/entry.S   |   12 ++++++++++--
+ arch/s390/kernel/entry64.S |   12 ++++++++++--
+ arch/s390/kernel/time.c    |   18 ++++++++++++------
+ 3 files changed, 32 insertions(+), 10 deletions(-)
 
-Nothing except for KVM would need to use that attribute, and KVM would
-obviously need a way to check if this is supported by the underlying
-implementation.
-
-	Arnd
+diff --git a/arch/s390/kernel/entry.S b/arch/s390/kernel/entry.S
+index d5e3e60..bea9ee3 100644
+--- a/arch/s390/kernel/entry.S
++++ b/arch/s390/kernel/entry.S
+@@ -535,8 +535,16 @@ pgm_no_vtime2:
+ 	l	%r3,__LC_PGM_ILC	# load program interruption code
+ 	la	%r8,0x7f
+ 	nr	%r8,%r3 		# clear per-event-bit and ilc
+-	be	BASED(pgm_exit)		# only per or per+check ?
+-	b	BASED(pgm_do_call)
++	be	BASED(pgm_exit2)	# only per or per+check ?
++	l	%r7,BASED(.Ljump_table)
++	sll	%r8,2
++	l	%r7,0(%r8,%r7)		# load address of handler routine
++	la	%r2,SP_PTREGS(%r15)	# address of register-save area
++	basr	%r14,%r7		# branch to interrupt-handler
++pgm_exit2:
++	TRACE_IRQS_ON
++	stosm	__SF_EMPTY(%r15),0x03	# reenable interrupts
++	b	BASED(sysc_return)
+ 
+ #
+ # it was a single stepped SVC that is causing all the trouble
+diff --git a/arch/s390/kernel/entry64.S b/arch/s390/kernel/entry64.S
+index e7192e1..8bccec1 100644
+--- a/arch/s390/kernel/entry64.S
++++ b/arch/s390/kernel/entry64.S
+@@ -544,8 +544,16 @@ pgm_no_vtime2:
+ 	lgf	%r3,__LC_PGM_ILC	# load program interruption code
+ 	lghi	%r8,0x7f
+ 	ngr	%r8,%r3			# clear per-event-bit and ilc
+-	je	pgm_exit
+-	j	pgm_do_call
++	je	pgm_exit2
++	sll	%r8,3
++	larl	%r1,pgm_check_table
++	lg	%r1,0(%r8,%r1)		# load address of handler routine
++	la	%r2,SP_PTREGS(%r15)	# address of register-save area
++	basr	%r14,%r1		# branch to interrupt-handler
++pgm_exit2:
++	TRACE_IRQS_ON
++	stosm	__SF_EMPTY(%r15),0x03	# reenable interrupts
++	j	sysc_return
+ 
+ #
+ # it was a single stepped SVC that is causing all the trouble
+diff --git a/arch/s390/kernel/time.c b/arch/s390/kernel/time.c
+index a2163c9..15a7536 100644
+--- a/arch/s390/kernel/time.c
++++ b/arch/s390/kernel/time.c
+@@ -524,8 +524,11 @@ void etr_switch_to_local(void)
+ 	if (!etr_eacr.sl)
+ 		return;
+ 	disable_sync_clock(NULL);
+-	set_bit(ETR_EVENT_SWITCH_LOCAL, &etr_events);
+-	queue_work(time_sync_wq, &etr_work);
++	if (!test_and_set_bit(ETR_EVENT_SWITCH_LOCAL, &etr_events)) {
++		etr_eacr.es = etr_eacr.sl = 0;
++		etr_setr(&etr_eacr);
++		queue_work(time_sync_wq, &etr_work);
++	}
+ }
+ 
+ /*
+@@ -539,8 +542,11 @@ void etr_sync_check(void)
+ 	if (!etr_eacr.es)
+ 		return;
+ 	disable_sync_clock(NULL);
+-	set_bit(ETR_EVENT_SYNC_CHECK, &etr_events);
+-	queue_work(time_sync_wq, &etr_work);
++	if (!test_and_set_bit(ETR_EVENT_SYNC_CHECK, &etr_events)) {
++		etr_eacr.es = 0;
++		etr_setr(&etr_eacr);
++		queue_work(time_sync_wq, &etr_work);
++	}
+ }
+ 
+ /*
+@@ -902,7 +908,7 @@ static struct etr_eacr etr_handle_update(struct etr_aib *aib,
+ 	 * Do not try to get the alternate port aib if the clock
+ 	 * is not in sync yet.
+ 	 */
+-	if (!check_sync_clock())
++	if (!eacr.es || !check_sync_clock())
+ 		return eacr;
+ 
+ 	/*
+@@ -1064,7 +1070,7 @@ static void etr_work_fn(struct work_struct *work)
+ 	 * If the clock is in sync just update the eacr and return.
+ 	 * If there is no valid sync port wait for a port update.
+ 	 */
+-	if (check_sync_clock() || sync_port < 0) {
++	if ((eacr.es && check_sync_clock()) || sync_port < 0) {
+ 		etr_update_eacr(eacr);
+ 		etr_set_tolec_timeout(now);
+ 		goto out_unlock;
