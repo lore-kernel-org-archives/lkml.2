@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab0G2Tqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:46:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19530 "EHLO
+	id S1757843Ab0G2TtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:49:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22084 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757405Ab0G2Tqq (ORCPT
+	with ESMTP id S1758048Ab0G2TtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:46:46 -0400
+	Thu, 29 Jul 2010 15:49:00 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,99 +16,67 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 08/17] memblock: Add find_memory_core_early()
-Date: Thu, 29 Jul 2010 12:45:28 -0700
-Message-Id: <1280432737-1808-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 09/17] x86, memblock: Add memblock_x86_find_in_range_node()
+Date: Thu, 29 Jul 2010 12:45:29 -0700
+Message-Id: <1280432737-1808-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
 References: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C51DA78.0052,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4C51DAF2.0005,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to node range in early_node_map[] with __memblock_find_in_range
-to find free range.
+It can be used to find NODE_DATA for numa.
 
-Will be used by memblock_x86_find_in_range_node()
-
-memblock_x86_find_in_range_node will be used to find right buffer for NODE_DATA
+Need to make sure early_node_map[] is filled before it is called, otherwise
+it will fallback to memblock_find_in_range(), with node range.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/mm.h |    2 ++
- mm/page_alloc.c    |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/memblock.h |    1 +
+ arch/x86/mm/memblock.c          |   15 +++++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index a2b4804..993e85f 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1164,6 +1164,8 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- int add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid);
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit);
- void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
- 				 u64 goal, u64 limit);
- typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9bd339e..8c9b346 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -21,6 +21,7 @@
- #include <linux/pagemap.h>
- #include <linux/jiffies.h>
- #include <linux/bootmem.h>
-+#include <linux/memblock.h>
- #include <linux/compiler.h>
- #include <linux/kernel.h>
- #include <linux/kmemcheck.h>
-@@ -3612,6 +3613,41 @@ void __init free_bootmem_with_active_regions(int nid,
- 	}
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index 16af28d..3a86b10 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -14,5 +14,6 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
+ void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
+ u64 memblock_x86_hole_size(u64 start, u64 end);
++u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+ 
+ #endif
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index c29c4e0..723a2fc 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -234,6 +234,21 @@ void __init memblock_x86_free_range(u64 start, u64 end)
  }
  
-+#ifdef CONFIG_HAVE_MEMBLOCK
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit)
+ /*
++ * Need to call this function after memblock_x86_register_active_regions,
++ * so early_node_map[] is filled already.
++ */
++u64 __init memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align)
 +{
-+	int i;
-+
-+	/* Need to go over early_node_map to find out good range for node */
-+	for_each_active_range_index_in_nid(i, nid) {
-+		u64 addr;
-+		u64 ei_start, ei_last;
-+		u64 final_start, final_end;
-+
-+		ei_last = early_node_map[i].end_pfn;
-+		ei_last <<= PAGE_SHIFT;
-+		ei_start = early_node_map[i].start_pfn;
-+		ei_start <<= PAGE_SHIFT;
-+
-+		final_start = max(ei_start, goal);
-+		final_end = min(ei_last, limit);
-+
-+		if (final_start >= final_end)
-+			continue;
-+
-+		addr = memblock_find_in_range(final_start, final_end, size, align);
-+
-+		if (addr == MEMBLOCK_ERROR)
-+			continue;
-+
++	u64 addr;
++	addr = find_memory_core_early(nid, size, align, start, end);
++	if (addr != MEMBLOCK_ERROR)
 +		return addr;
-+	}
 +
-+	return MEMBLOCK_ERROR;
++	/* Fallback, should already have start end within node range */
++	return memblock_find_in_range(start, end, size, align);
 +}
-+#endif
 +
- int __init add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid)
- {
++/*
+  * Finds an active region in the address range from start_pfn to last_pfn and
+  * returns its range in ei_startpfn and ei_endpfn for the memblock entry.
+  */
 -- 
 1.6.4.2
 
