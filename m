@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab0G2Sdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:33:50 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33300 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab0G2Sdt (ORCPT
+	id S1756143Ab0G2Sjc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:39:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59499 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754680Ab0G2Sjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:33:49 -0400
-Date: Thu, 29 Jul 2010 19:33:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-Message-ID: <20100729183320.GH18923@n2100.arm.linux.org.uk>
-References: <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com> <alpine.DEB.2.00.1007281005440.21717@router.home> <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop> <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home> <20100729170313.GB16420@barrios-desktop> <alpine.DEB.2.00.1007291222410.17734@router.home>
+	Thu, 29 Jul 2010 14:39:31 -0400
+Date: Thu, 29 Jul 2010 19:39:22 +0100 (BST)
+From: James Simmons <jsimmons@infradead.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Mattia Jona-Lasinio <mattia.jona@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-kernel@vger.kernel.org, lcd-linux-users@lists.sourceforge.net
+Subject: Re: Introducing the LCD-Linux project
+In-Reply-To: <20100729190515.6ec85db2@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LFD.2.00.1007291934310.16616@casper.infradead.org>
+References: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com> <20100722122111.4cf4ca2f@lxorguk.ukuu.org.uk> <AANLkTilKJx18oyc815DhKfPv-Yjdv8UmfJ4WTDxZxaab@mail.gmail.com> <AANLkTimnxkn5eLRHOAs6v_TJE0hM5=dQ3OWaiQP6tPJd@mail.gmail.com>
+ <loom.20100724T155117-833@post.gmane.org> <AANLkTi=LAHhHEK3vbtwefroOrpoKpUs5B5=iu5_asMp6@mail.gmail.com> <AANLkTimHQ5DoqXikCu7=Nse16axKYYTJZEBJsSxFEH2y@mail.gmail.com> <20100728203921.0dd6562d@lxorguk.ukuu.org.uk> <alpine.LFD.2.00.1007291659400.16616@casper.infradead.org>
+ <20100729190515.6ec85db2@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1007291222410.17734@router.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 12:30:23PM -0500, Christoph Lameter wrote:
-> On Fri, 30 Jul 2010, Minchan Kim wrote:
+
+> > 3) Invert the VT layer. Currently the console/printk driver is on top of
+> >    the tty layer. It would be nice to be able to only use a very light 
+> >    weight vt printk without the VT tty on top for embedded platforms.
 > 
-> > But Russell doesn't want it.
-> > Please, look at the discussion.
-> >
-> > http://www.spinics.net/lists/arm-kernel/msg93026.html
-> >
-> > In fact, we didn't determine the approache at that time.
-> > But I think we can't give up ARM's usecase although sparse model
-> > dosn't be desinged to the such granularity. and I think this approach
+> No. printk hits console drivers why may or may not be frame buffer
+> interfaces. Has done for a very long time. Keith Packard has also been
+> doing stuff with crash time oops displays etc over an X display.
+
+Correct. What I mean is have the ability to just register the console 
+driver but not the tty driver.
+  
+> > 4) Seperate out the VT emulation layer. Related to 3.
 > 
-> The sparse model goes down to page size memmap granularity. The problem
-> that you may have is with aligning the maximum allocation unit of the
-> page allocator with the section size of sparsemem. If you reduce your
-> maximum allocation units then you can get more granularity.
+> Separate from what ?
 
-Then why is there no advantage to adding 512kB memory modules in a machine
-with memory spaced at 64MB apart with sparsemem - the mem_map array for
-each sparsemem section is 512kB in size.  So the additional 512kB memory
-modules give you nothing because they're completely full of mem_map array.
+We can still have a basic tty layer without the control characters, think 
+do_con_trol in vt.c, junk compiled into the kernel. Make it a options for 
+userland to do the vt100 emulation.
 
-_That's_ the kind of problem that makes sparsemem unsuitable for... sparse
-memory layouts found in the embedded world.
-
-And that also makes flatmem unsuitable for use on ARM when you have such
-memory layouts - four banks of discrete memory spaced at 64MB over a 256MB
-range, which can have a size down to 512kB each.
-
-And no, setting the sparse section size to 512kB doesn't work - memory is
-offset by 256MB already, so you need a sparsemem section array of 1024
-entries just to cover that - with the full 256MB populated, that's 512
-unused entries followed by 512 used entries.  That too is going to waste
-memory like nobodies business.
-
-Basically, what's come out of this discussion is that the kernel really
-_sucks_ when it comes to handling sparse memory layouts found in on ARM.
-
-> > can solve ARM's FLATMEM's pfn_valid problem which is doing binar search.
+> > 5) Multiple independent VT support. Which brings up the question what 
+> >    should the mapping of VCs to a VT look like. 
 > 
-> OMG.
+> I would suggest we borrow the X idea and each VC is
+> 
+> 	int display;	/* Display it is on (for console flipping) */
+> 	struct something *vt;	/* VT which it is displaying */
+> 	int x,y,w,h;	/* Window onto vt */
 
-No, it is NOT that expensive.  Most people go "omg, binary search on
-a cached architecture, that's insane".  That statement is soo far from
-reality that the statement itself is insane.
+/dev/tty[0-16]  -> VT display 0
+/dev/tty[17-31] -> VT display 1
 
-The binary search operates on a very small amount of data, and results
-in two or possibly three cache lines at the most being loaded, assuming
-a full 8 banks of memory information passed.  Most systems pass one or
-maybe two banks - so the _entire_ thing fits within one cache line - a
-cache line which will have already been loaded.
+etc.
 
-So no, this binary search is not as expensive as you think it is.
+At least that is how I handled it  several years ago.
+
