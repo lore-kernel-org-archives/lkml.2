@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0G2Jix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 05:38:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51635 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932Ab0G2Jiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 05:38:50 -0400
-Date: Thu, 29 Jul 2010 11:38:37 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
-Message-ID: <20100729093837.GA2086@jolsa.brq.redhat.com>
-References: <18537.1280318862@redhat.com>
- <AANLkTikB9Msot4m_oaw+V+dvEg+SzyXHb0cqhKQqUtC2@mail.gmail.com>
- <20100727155023.GF1967@jolsa.brq.redhat.com>
- <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com>
- <24865.1280249187@redhat.com>
- <19398.1280323047@redhat.com>
- <20100728144627.GB6391@jolsa.Belkin>
+	id S1755954Ab0G2Jjx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 05:39:53 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:58791 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab0G2Jjs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 05:39:48 -0400
+Date: Thu, 29 Jul 2010 11:39:46 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+Message-ID: <20100729093946.GA6725@merkur.ravnborg.org>
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <4C51473A.4000605@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100728144627.GB6391@jolsa.Belkin>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C51473A.4000605@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 04:46:27PM +0200, Jiri Olsa wrote:
-> On Wed, Jul 28, 2010 at 02:17:27PM +0100, David Howells wrote:
+On Thu, Jul 29, 2010 at 11:17:46AM +0200, Michal Marek wrote:
+> On 28.7.2010 22:36, Sam Ravnborg wrote:
+> > Hi Michal.
 > > 
-> > The attached patch should suffice to fix get_task_cred(), and should render
-> > Jiri's patch unnecessary.
-> > 
-> > David
-> > ---
-> > From: David Howells <dhowells@redhat.com>
-> > Subject: [PATCH] CRED: Move get_task_cred() out of line and make it use atomic_inc_not_zero()
-> > 
-> > It's possible for get_task_cred() as it currently stands to 'corrupt' a set of
-> > credentials by incrementing their usage count after their replacement by the
-> > task being accessed.
-> > 
-> > What happens is that get_task_cred() engages the RCU read lock, accesses the cred
-> > 
-> > 
-> > 	TASK_1			TASK_2			RCU_CLEANER
-> > 	-->get_task_cred(TASK_2)
-> > 	rcu_read_lock()
-> > 	__cred = __task_cred(TASK_2)
-> > 				-->commit_creds()
-> > 				old_cred = TASK_2->real_cred
-> > 				TASK_2->real_cred = ...
-> > 				put_cred(old_cred)
-> > 				  call_rcu(old_cred)
-> > 		[__cred->usage == 0]
-> > 	get_cred(__cred)
-> > 		[__cred->usage == 1]
-> > 	rcu_read_unlock()
-> > 							-->put_cred_rcu()
-> > 							[__cred->usage == 1]
-> > 							panic()
-> > 
-> > However, since a tasks credentials are generally not changed very often, we can
-> > reasonably make use of a loop involving reading the creds pointer and using
-> > atomic_inc_not_zero() to attempt to increment it if it hasn't already hit zero.
-> > 
-> > If successful, we can safely return the credentials in the knowledge that, even
-> > if the task we're accessing has released them, they haven't gone to the RCU
-> > cleanup code.
+> > I cooked up the following to introduce long options in conf.
+> > But in the process I dropped the short options. Is this OK?
 > 
-> looks ok, I changed the task_state to use this and I'm running the
-> bug reproducer... so far so good ;)
+> Nice! I would probably name the option and the enum value for randconfig
+> simply --randconfig to not introduce new names (the scripts/kconfig/conf
+> call is displayed to the user).
 
-the test did not hit the issue, so we are good probably
+I had in mind to deprecate randconfig in favour of allrandconfig
+to get more consitency in the names.
+But I failed to document this in the changelog.
 
-thanks,
-jirka
+I can submit the following as a real patch if you agree.
+
+	Sam
+
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 1290ac3..9670323 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -101,12 +101,12 @@ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
+ 	$(Q)rm -f arch/um/Kconfig.arch
+ 	$(Q)rm -f $(obj)/config.pot
+ 
+-PHONY += randconfig allyesconfig allnoconfig allmodconfig defconfig
++PHONY += allnoconfig allyesconfig allmodconfig allrandconfig randconfig defconfig
+ 
+-randconfig: $(obj)/conf
+-	$< --allrandconfig $(Kconfig)
++# Support deprecated randconfig target
++randconfig: allrandconfig
+ 
+-allnoconfig allyesconfig allmodconfig: $(obj)/conf
++allnoconfig allyesconfig allmodconfig allrandconfig: $(obj)/conf
+ 	$< --$@ $(Kconfig)
+ 
+ defconfig: $(obj)/conf
+@@ -131,7 +131,7 @@ help:
+ 	@echo  '  localmodconfig  - Update current config disabling modules not loaded'
+ 	@echo  '  localyesconfig  - Update current config converting local mods to core'
+ 	@echo  '  silentoldconfig - Same as oldconfig, but quietly, additionally update deps'
+-	@echo  '  randconfig	  - New config with random answer to all options'
++	@echo  '  allrandconfig	  - New config with random answer to all options'
+ 	@echo  '  defconfig	  - New config with default answer to all options'
+ 	@echo  '  allmodconfig	  - New config selecting modules when possible'
+ 	@echo  '  allyesconfig	  - New config where all options are accepted with yes'
