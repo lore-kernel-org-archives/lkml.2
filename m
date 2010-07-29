@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab0G2Id6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 04:33:58 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:48886 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab0G2Id4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 04:33:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=wuv9XYPN2hMrRzatlVANhVftYLEtkYXoWdHKNGdjTPMSYJeaIXkjWtlfHCkH9v8lBi
-         TlpDfPi+GdJSauDc7RMk7Cqaq9vVVQB/lcM8iy963sfv50I77nU0Y7jKa9yKKTNeCqzv
-         JMXADT5PxIxx0MN3BcApn9UaIoshT+JY0F51s=
-MIME-Version: 1.0
-Date: Thu, 29 Jul 2010 16:33:54 +0800
-Message-ID: <AANLkTingz+eHho5A180HCWHJHgpy__6cv2WSHaaVdWdN@mail.gmail.com>
-Subject: reasonable to compile out trace_irqflags completely ?
-From: Luming Yu <luming.yu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754719Ab0G2IfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:35:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751653Ab0G2IfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 04:35:03 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100729060004.GD2447@linux.vnet.ibm.com>
+References: <20100729060004.GD2447@linux.vnet.ibm.com> <18537.1280318862@redhat.com> <AANLkTikB9Msot4m_oaw+V+dvEg+SzyXHb0cqhKQqUtC2@mail.gmail.com> <20100727155023.GF1967@jolsa.brq.redhat.com> <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com> <24865.1280249187@redhat.com> <32758.1280321226@redhat.com> 
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
+Date: Thu, 29 Jul 2010 09:34:20 +0100
+Message-ID: <30107.1280392460@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Anyone knows if there is value to have a patch to compile out
-TRACE_IRQFLAGS_SUPPORT?
-if there is one already, please share it with me, since I'm wondering
-if it could be casuing
-some performance problem I've.
+> It is perfectly legal for an RCU callback to invoke call_rcu().  However,
+> this should be used -only- to wait for RCU readers.  If there are no
+> RCU readers, the callback might be re-invoked in very short order,
+> expecially on UP systems.
+> 
+> Or am I misunderstanding what you mean by "require call_rcu() to be
+> able to cope iwth requeueing"?
 
-Thanks,
-Luming
+I mean for call_rcu() to be called on an object that's already been
+call_rcu()'d but not yet processed.
 
-  CHK     include/linux/version.h
-  CHK     include/linux/utsrelease.h
-  SYMLINK include/asm -> include/asm-x86
-  CC      arch/x86/kernel/asm-offsets.s
-In file included from /root/linux-2.6.32/arch/x86/include/asm/system.h:304,
-                 from /root/linux-2.6.32/arch/x86/include/asm/processor.h:17,
-                 from include/linux/prefetch.h:14,
-                 from include/linux/list.h:6,
-                 from include/linux/module.h:9,
-                 from include/linux/crypto.h:21,
-                 from arch/x86/kernel/asm-offsets_64.c:8,
-                 from arch/x86/kernel/asm-offsets.c:4:
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:846: error:
-expected identifier or â(â before âdoâ
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:846: error:
-expected identifier or â(â before âwhileâ
-In file included from /root/linux-2.6.32/arch/x86/include/asm/system.h:304,
-                 from /root/linux-2.6.32/arch/x86/include/asm/processor.h:17,
-                 from include/linux/prefetch.h:14,
-                 from include/linux/list.h:6,
-                 from include/linux/module.h:9,
-                 from include/linux/crypto.h:21,
-                 from arch/x86/kernel/asm-offsets_64.c:8,
-                 from arch/x86/kernel/asm-offsets.c:4:
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:851:46: error:
-macro "raw_local_irq_disable" passed 1 arguments, but takes just 0
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:852: error:
-expected â=â, â,â, â;â, âasmâ or â__attribute__â before â{â token
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:856:45: error:
-macro "raw_local_irq_enable" passed 1 arguments, but takes just 0
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:857: error:
-expected â=â, â,â, â;â, âasmâ or â__attribute__â before â{â token
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h: In function
-â__raw_local_irq_saveâ:
-/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:866: error:
-implicit declaration of function âlocal_irq_disableâ
-In file included from include/linux/spinlock.h:344,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:8,
-                 from include/linux/stat.h:60,
-                 from include/linux/module.h:10,
-                 from include/linux/crypto.h:21,
-                 from arch/x86/kernel/asm-offsets_64.c:8,
-                 from arch/x86/kernel/asm-offsets.c:4:
-include/linux/spinlock_api_smp.h: In function â__spin_lock_irqsaveâ:
-include/linux/spinlock_api_smp.h:245: error: implicit declaration of
-function âlocal_irq_saveâ
-include/linux/spinlock_api_smp.h: In function â__spin_unlock_irqrestoreâ:
-include/linux/spinlock_api_smp.h:375: error: implicit declaration of
-function âlocal_irq_restoreâ
-include/linux/spinlock_api_smp.h: In function â__spin_unlock_irqâ:
-include/linux/spinlock_api_smp.h:383: error: implicit declaration of
-function âlocal_irq_enableâ
-make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
-[root@localhost linux-2.6.32]# grep -i trace_irqflag .config
-# CONFIG_TRACE_IRQFLAGS_SUPPORT is not set
+For example if struct cred gets its usage count reduced to 0, __put_cred()
+will call_rcu() it, but what happens if someone comes along and resurrects it
+by increasing its usage count again?  And what happens if the usage count is
+reduced back to zero and __put_cred() calls call_rcu() again before
+put_cred_rcu() has a chance to run?
+
+David
