@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab0G2QhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 12:37:05 -0400
-Received: from p01c11o144.mxlogic.net ([208.65.144.67]:57595 "EHLO
-	p01c11o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab0G2QhD (ORCPT
+	id S1758070Ab0G2Qrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 12:47:33 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:20833 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754695Ab0G2Qrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 12:37:03 -0400
-X-MXL-Hash: 4c51ae2f64ba6452-b32e88bca7fddaf473b3588eea246f508e671dec
-X-MXL-Hash: 4c51ae27786c9b59-0ba37c6cc41b3caef5b09bcce03a812e1ad2278d
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Staging: dt3155: remove useless dt3155_major parameter
-Date: Thu, 29 Jul 2010 09:35:57 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <gregkh@suse.de>, <ss@aao.gov.au>
+	Thu, 29 Jul 2010 12:47:32 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: lVTCpO0VM1nQippHLLz9ldEN3qcZfD.FO8nN5QpIrkqvCxK
+ 4moVGxg6AM9CDRlQMGvAJz2LwWniUuG84nZefMHi7ChY496Vdz.lY4DjW85.
+ AABTur_IjD8S4qFJZjbNzcHpyj.to6OviBXHxDuCfr1cIKoQ.54pLcfX8Txk
+ pIUm.lLeAg9m55HqLGctCggw9ldnbhYwL4.sodtWpb4Avx5gCnNpULsKlVcw
+ Q
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 29 Jul 2010 11:47:26 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+In-Reply-To: <20100729161856.GA16420@barrios-desktop>
+Message-ID: <alpine.DEB.2.00.1007291132210.17734@router.home>
+References: <pfn.valid.v4.reply.2@mdm.bga.com> <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com> <alpine.DEB.2.00.1007270929290.28648@router.home> <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
+ <alpine.DEB.2.00.1007281005440.21717@router.home> <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop> <alpine.DEB.2.00.1007291038100.16510@router.home>
+ <20100729161856.GA16420@barrios-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201007290935.57883.hartleys@visionengravers.com>
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.32]
-X-AnalysisOut: [v=1.0 c=1 a=dU6_AAMVDREA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
-X-AnalysisOut: [MA:10 a=zbe46bahRtDx8aUBN1lPzQ==:17 a=i00gxMtYAAAA:8 a=N_b]
-X-AnalysisOut: [b6REVpTXJPe_PrGoA:9 a=yAeFqUUhPl2ItOOVgMkA:7 a=qxwlUsHgtkE]
-X-AnalysisOut: [W4LVixjPInIRxOVIA:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=]
-X-AnalysisOut: [0kPLrQdw3YYA:10]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dt3155_major variable was never exposed as a parameter so just make it
-static and always allocate a dynamic major when registering the driver.
+On Fri, 30 Jul 2010, Minchan Kim wrote:
 
-Also, remove a couple unnecessary comments and printk noise associated with
-the major/minor numbers and registration.
+> The thing is valid section also have a invalid memmap.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Scott Smedley <ss@aao.gov.au>
+Oww... . A valid section points to a valid memmap memory block (the page
+structs) but the underlying memory pages may not present. So you can check
+the (useless) page structs for the page state of the not present pages in
+the memory map. If the granularity of the sparsemem mapping is not
+sufficient for your purpose then you can change the sparsemem config
+(configuration is in arch/<arch>/include/asm/sparsemem.h but does not
+exist for arm).
 
----
+>      It means section 0 is an incompletely filled section.
+>      Nontheless, current pfn_valid of sparsemem checks pfn loosely.
+>      It checks only mem_section's validation but ARM can free mem_map on hole
+>      to save memory space. So in above case, pfn on 0x25000000 can pass pfn_valid's
+>      validation check. It's not what we want.
 
-diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-index 7316996..95f9f0c 100644
---- a/drivers/staging/dt3155/dt3155_drv.c
-+++ b/drivers/staging/dt3155/dt3155_drv.c
-@@ -97,14 +97,7 @@ int dt3155_errno = 0;
- /* wait queue for interrupts */
- wait_queue_head_t dt3155_read_wait_queue[MAXBOARDS];
- 
--/* set to dynamicaly allocate, but it is tunable: */
--/* insmod DT_3155 dt3155 dt3155_major=XX */
--int dt3155_major = 0;
--
--/* The minor numbers are 0 and 1 ... they are not tunable.
-- * They are used as the indices for the structure vectors,
-- * and register address vectors
-- */
-+static int dt3155_major;
- 
- /* Global structures and variables */
- 
-@@ -955,16 +948,9 @@ static int __init dt3155_init(void)
-   printk(KERN_INFO "DT3155: Loading module...\n");
- 
-   /* Register the device driver */
--  rcode = register_chrdev(dt3155_major, "dt3155", &dt3155_fops);
--  if(rcode < 0)
--    {
--      printk(KERN_INFO "DT3155: register_chrdev failed \n");
--      return rcode;
--    }
--
--  if(dt3155_major == 0)
--    dt3155_major = rcode; /* dynamic */
--
-+  dt3155_major = register_chrdev(0, "dt3155", &dt3155_fops);
-+  if (dt3155_major < 0)
-+      return dt3155_major;
- 
-   /* init the status variables.                     */
-   /* DMA memory is taken care of in setup_buffers() */
+IMHO ARM should not poke holes in the memmap sections. The guarantee of
+the full presence of the section is intentional to avoid having to do
+these checks that you are proposing. The page allocator typically expects
+to be able to check all page structs in one basic allocation unit.
+
+Also pfn_valid then does not have to touch the pag struct to perform its
+function as long as we guarantee the presence of the memmap section.
