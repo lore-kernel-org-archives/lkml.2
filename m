@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab0G2XVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 19:21:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:61600 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab0G2XVe (ORCPT
+	id S1758186Ab0G2XZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 19:25:20 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:34732 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758100Ab0G2XZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 19:21:34 -0400
-X-Authority-Analysis: v=1.1 cv=rsPCLZWyMDYHS6UYEmJ4E6URGqccNA0A37lrbq4bmic= c=1 sm=0 a=BtHjyF6zVRsA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=QmGmV2LSw2OV1NK-1mwA:9 a=k1OY8TEASf_YsEAof-4A:7 a=MK5ZSFKKvayEB0D_C6OqdYF150EA:4 a=CjuIK1q_8ugA:10 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Thu, 29 Jul 2010 18:23:52 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <dlezcano@free.fr>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Paul Menage <menage@google.com>
-Subject: Re: Remaining work for userns (WAS Re: [PATCH 3/3] cgroup : remove
- the ns_cgroup)
-Message-ID: <20100729232352.GC13902@hallyn.com>
-References: <20100729195629.GA13378@hallyn.com>
- <20100729195812.GB19015@hallyn.com>
- <20100729214008.GA2785@count0.beaverton.ibm.com>
- <20100729223957.GA12387@hallyn.com>
- <20100729230052.GB2785@count0.beaverton.ibm.com>
+	Thu, 29 Jul 2010 19:25:18 -0400
+Date: Fri, 30 Jul 2010 09:23:30 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/5]  [RFC] transfer ASYNC vmscan writeback IO to the
+ flusher threads
+Message-ID: <20100729232330.GO655@dastard>
+References: <20100729115142.102255590@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100729230052.GB2785@count0.beaverton.ibm.com>
+In-Reply-To: <20100729115142.102255590@intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Matt Helsley (matthltc@us.ibm.com):
-> On Thu, Jul 29, 2010 at 05:39:57PM -0500, Serge E. Hallyn wrote:
-> > Quoting Matt Helsley (matthltc@us.ibm.com):
-> > > On Thu, Jul 29, 2010 at 02:58:12PM -0500, Serge E. Hallyn wrote:
+On Thu, Jul 29, 2010 at 07:51:42PM +0800, Wu Fengguang wrote:
+> Andrew,
 > 
-> <snip>
+> It's possible to transfer ASYNC vmscan writeback IOs to the flusher threads.
+> This simple patchset shows the basic idea. Since it's a big behavior change,
+> there are inevitably lots of details to sort out. I don't know where it will
+> go after tests and discussions, so the patches are intentionally kept simple.
 > 
-> > 
-> > BTW in the past the only reason I saw for keeping ns cgroup was
-> > to lock tasks into a devices cgroup.  Until that lazy guy who was
-> > going to do it gets off his butt and implements user namespaces,
-> > you'll just have to use LSMs, which is the right way.
+> sync livelock avoidance (need more to be complete, but this is minimal required for the last two patches)
+> 	[PATCH 1/5] writeback: introduce wbc.for_sync to cover the two sync stages
+> 	[PATCH 2/5] writeback: stop periodic/background work on seeing sync works
+> 	[PATCH 3/5] writeback: prevent sync livelock with the sync_after timestamp
 > 
-> And the only missing piece of userns is replacing the cred checks
-> right? If so, it might be possible to come up with a coccinelle semantic
-> patch which would do all/most of the hard work -- depends on whether the
-> all the checks fit a small number of semantic patterns.
+> let the flusher threads do ASYNC writeback for pageout()
+> 	[PATCH 4/5] writeback: introduce bdi_start_inode_writeback()
+> 	[PATCH 5/5] vmscan: transfer async file writeback to the flusher
 
-I think the thing that always puts the brakes on when I get started
-is siginfo_t.  We need some way to reference user namespaces in there,
-without enforcing lifetime rules on siginfo.
+I really do not like this - all it does is transfer random page writeback
+from vmscan to the flusher threads rather than avoiding random page
+writeback altogether. Random page writeback is nasty - just say no.
 
-What you mention is definately a chunk as well, so if you are interested
-in pursuing that that'd be great.
+Cheers,
 
-Also, reviewing the patches at the top of
-http://git.kernel.org/?p=linux/kernel/git/sergeh/linux-cr.git;a=shortlog;h=refs/heads/userns.feb16.1
-to give us some fresh feedback on the general approach is
-valuable.
-
-And from there, the whole discussion (which we've had several times
-in the past) about how to have the VFS map userids should probably be
-had again.  (I believe august 2008 was the last time we really got
-into that)
-
-thanks,
--serge
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
