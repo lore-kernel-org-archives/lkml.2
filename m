@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab0G2I1n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 04:27:43 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:37019 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab0G2I1i (ORCPT
+	id S1754691Ab0G2Id6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:33:58 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:48886 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab0G2Id4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 04:27:38 -0400
+	Thu, 29 Jul 2010 04:33:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Q8Ljl0ZSTBFgEk3k4wFn01JJEVs3Tazs4C+7olHiRqlHRqv0cBru2n51dluAUvtTao
-         T0aFa1JcEUWfgSHHHtlF/NMvaSxGHIbPTzwwMd65twadMSsG43RtlKWVwbbsKR5WjwFc
-         iY5slpuSrVSZi0eGVkk1C+zjZay5kbySZF/6s=
-Subject: [PATCH 2/2] jz4740-adc: fix resource reclaim in jz4740_adc_probe
-	error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lars-Peter Clausen <lars@metafoo.de>
-Content-Type: text/plain
-Date: Thu, 29 Jul 2010 16:28:25 +0800
-Message-Id: <1280392105.21676.6.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=wuv9XYPN2hMrRzatlVANhVftYLEtkYXoWdHKNGdjTPMSYJeaIXkjWtlfHCkH9v8lBi
+         TlpDfPi+GdJSauDc7RMk7Cqaq9vVVQB/lcM8iy963sfv50I77nU0Y7jKa9yKKTNeCqzv
+         JMXADT5PxIxx0MN3BcApn9UaIoshT+JY0F51s=
+MIME-Version: 1.0
+Date: Thu, 29 Jul 2010 16:33:54 +0800
+Message-ID: <AANLkTingz+eHho5A180HCWHJHgpy__6cv2WSHaaVdWdN@mail.gmail.com>
+Subject: reasonable to compile out trace_irqflags completely ?
+From: Luming Yu <luming.yu@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If mfd_add_devices() fail, we need to relese allocated resources.
+Hi there,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-This patch is against linux-next.
- drivers/mfd/jz4740-adc.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+Anyone knows if there is value to have a patch to compile out
+TRACE_IRQFLAGS_SUPPORT?
+if there is one already, please share it with me, since I'm wondering
+if it could be casuing
+some performance problem I've.
 
-diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
-index 2846d24..3ad492c 100644
---- a/drivers/mfd/jz4740-adc.c
-+++ b/drivers/mfd/jz4740-adc.c
-@@ -326,9 +326,15 @@ static int __devinit jz4740_adc_probe(struct platform_device *pdev)
- 	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
- 	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
- 
--	return mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
-+	ret = mfd_add_devices(&pdev->dev, 0, jz4740_adc_cells,
- 		ARRAY_SIZE(jz4740_adc_cells), mem_base, adc->irq_base);
-+	if (ret < 0)
-+		goto err_clk_put;
- 
-+	return 0;
-+
-+err_clk_put:
-+	clk_put(adc->clk);
- err_iounmap:
- 	platform_set_drvdata(pdev, NULL);
- 	iounmap(adc->base);
--- 
-1.5.4.3
+Thanks,
+Luming
 
-
-
+  CHK     include/linux/version.h
+  CHK     include/linux/utsrelease.h
+  SYMLINK include/asm -> include/asm-x86
+  CC      arch/x86/kernel/asm-offsets.s
+In file included from /root/linux-2.6.32/arch/x86/include/asm/system.h:304,
+                 from /root/linux-2.6.32/arch/x86/include/asm/processor.h:17,
+                 from include/linux/prefetch.h:14,
+                 from include/linux/list.h:6,
+                 from include/linux/module.h:9,
+                 from include/linux/crypto.h:21,
+                 from arch/x86/kernel/asm-offsets_64.c:8,
+                 from arch/x86/kernel/asm-offsets.c:4:
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:846: error:
+expected identifier or â(â before âdoâ
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:846: error:
+expected identifier or â(â before âwhileâ
+In file included from /root/linux-2.6.32/arch/x86/include/asm/system.h:304,
+                 from /root/linux-2.6.32/arch/x86/include/asm/processor.h:17,
+                 from include/linux/prefetch.h:14,
+                 from include/linux/list.h:6,
+                 from include/linux/module.h:9,
+                 from include/linux/crypto.h:21,
+                 from arch/x86/kernel/asm-offsets_64.c:8,
+                 from arch/x86/kernel/asm-offsets.c:4:
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:851:46: error:
+macro "raw_local_irq_disable" passed 1 arguments, but takes just 0
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:852: error:
+expected â=â, â,â, â;â, âasmâ or â__attribute__â before â{â token
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:856:45: error:
+macro "raw_local_irq_enable" passed 1 arguments, but takes just 0
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:857: error:
+expected â=â, â,â, â;â, âasmâ or â__attribute__â before â{â token
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h: In function
+â__raw_local_irq_saveâ:
+/root/linux-2.6.32/arch/x86/include/asm/paravirt.h:866: error:
+implicit declaration of function âlocal_irq_disableâ
+In file included from include/linux/spinlock.h:344,
+                 from include/linux/seqlock.h:29,
+                 from include/linux/time.h:8,
+                 from include/linux/stat.h:60,
+                 from include/linux/module.h:10,
+                 from include/linux/crypto.h:21,
+                 from arch/x86/kernel/asm-offsets_64.c:8,
+                 from arch/x86/kernel/asm-offsets.c:4:
+include/linux/spinlock_api_smp.h: In function â__spin_lock_irqsaveâ:
+include/linux/spinlock_api_smp.h:245: error: implicit declaration of
+function âlocal_irq_saveâ
+include/linux/spinlock_api_smp.h: In function â__spin_unlock_irqrestoreâ:
+include/linux/spinlock_api_smp.h:375: error: implicit declaration of
+function âlocal_irq_restoreâ
+include/linux/spinlock_api_smp.h: In function â__spin_unlock_irqâ:
+include/linux/spinlock_api_smp.h:383: error: implicit declaration of
+function âlocal_irq_enableâ
+make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+make: *** [prepare0] Error 2
+[root@localhost linux-2.6.32]# grep -i trace_irqflag .config
+# CONFIG_TRACE_IRQFLAGS_SUPPORT is not set
