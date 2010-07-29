@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858Ab0G2Pvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 11:51:53 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60636 "EHLO
+	id S1757877Ab0G2PzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:55:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38102 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab0G2Pvv (ORCPT
+	with ESMTP id S1757614Ab0G2PzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 11:51:51 -0400
+	Thu, 29 Jul 2010 11:55:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type;
-        b=vU4KP7HZTu1egdcwc1GxE/ELs8WVSNdOCXyftNArjUIylWshpI4O+a1M1ZdfEZFvER
-         J9WxitYnvT/qVxMDCFz5+31tWpMBaGnwlI6XYY4H3YepFRSqRzMqBtyHBm9Pq/eO+SiJ
-         W5nJFSDru5NJuosxaMImnh+tMusB4i9jeVGuM=
-MIME-Version: 1.0
-Date: Thu, 29 Jul 2010 12:51:49 -0300
-X-Google-Sender-Auth: IlKVRPGlKuKUHQvfmJokjmlozL8
-Message-ID: <AANLkTiko540hMAUhaJr5mNKzFK2-vBOTZmEOxZWZv7ci@mail.gmail.com>
-Subject: [PATCH] drivers: Fixes a typo from "dev" to "ndev" that caused 
-	compilation erros.
-From: Henrique Camargo <henrique.camargo@ensitec.com.br>
-To: "David S. Miller" <davem@davemloft.net>,
-        Chaithrika U S <chaithrika@ti.com>, Sriramakrishnan <srk@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: segooon@gmail.com
-Content-Type: text/plain; charset=UTF-8
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=smsJjTbKCGAuXHnLHRvKXO0Wk6G9S7xO8EiMxU9p5yn01qW4YS+vO1e4WYD7k8LKlO
+         DGWnPLsojLw3oxNpUP9mGTOb0xOd/MeM2rxhUBQT9OWgFCkn1Wqc66jD5AnXoXftzQJ6
+         BxlxOczWc4s0+wC0EJ1Wb87G2951M+4fAtnaY=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Chirag Kantharia <chirag.kantharia@hp.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        iss_storagedev@hp.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] cpqarray: check put_user() result
+Date: Thu, 29 Jul 2010 19:54:44 +0400
+Message-Id: <1280418885-5630-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Henrique Camargo
+put_user() may fail, if so return -EFAULT.
 
-Fixes a typo from "dev" to "ndev" that caused compilation errors.
-
-Signed-off-by: Henrique Camargo <henrique.camargo@ensitec.com.br>
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/davinci_emac.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/cpqarray.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/davinci_emac.c b/drivers/net/davinci_emac.c
-index 25e14d2..b89b7bf 100644
---- a/drivers/net/davinci_emac.c
-+++ b/drivers/net/davinci_emac.c
-@@ -1182,8 +1182,8 @@ static int emac_net_tx_complete(struct emac_priv *priv,
-        struct net_device *ndev = priv->ndev;
-        u32 cnt;
-
--       if (unlikely(num_tokens && netif_queue_stopped(dev)))
--               netif_start_queue(dev);
-+       if (unlikely(num_tokens && netif_queue_stopped(ndev)))
-+               netif_start_queue(ndev);
-        for (cnt = 0; cnt < num_tokens; cnt++) {
-                struct sk_buff *skb = (struct sk_buff *)net_data_tokens[cnt];
-                if (skb == NULL)
+diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
+index 9473215..d53b029 100644
+--- a/drivers/block/cpqarray.c
++++ b/drivers/block/cpqarray.c
+@@ -1179,7 +1179,8 @@ out_passthru:
+ 		return error;
+ 	case IDAGETCTLRSIG:
+ 		if (!arg) return -EINVAL;
+-		put_user(host->ctlr_sig, (int __user *)arg);
++		if (put_user(host->ctlr_sig, (int __user *)arg))
++			return -EFAULT;
+ 		return 0;
+ 	case IDAREVALIDATEVOLS:
+ 		if (MINOR(bdev->bd_dev) != 0)
+@@ -1187,7 +1188,8 @@ out_passthru:
+ 		return revalidate_allvol(host);
+ 	case IDADRIVERVERSION:
+ 		if (!arg) return -EINVAL;
+-		put_user(DRIVER_VERSION, (unsigned long __user *)arg);
++		if (put_user(DRIVER_VERSION, (unsigned long __user *)arg))
++			return -EFAULT;
+ 		return 0;
+ 	case IDAGETPCIINFO:
+ 	{
 -- 
 1.7.0.4
+
