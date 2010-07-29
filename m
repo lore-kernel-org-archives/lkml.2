@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab0G2KrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:47:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57002 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756819Ab0G2KrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:47:07 -0400
-Message-ID: <4C515C34.9090005@cn.fujitsu.com>
-Date: Thu, 29 Jul 2010 18:47:16 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Yan, Zheng" <zheng.yan@oracle.com>
-CC: Chris Mason <chris.mason@oracle.com>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] btrfs: fix a wrong error check in add_ra_bio_pages()
-References: <4C513C95.3080403@cn.fujitsu.com> <AANLkTim+U2s5-vHhmPqam9wj0+0_=01bq3JjnR=xB8T2@mail.gmail.com>
-In-Reply-To: <AANLkTim+U2s5-vHhmPqam9wj0+0_=01bq3JjnR=xB8T2@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756880Ab0G2Krc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 06:47:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59468 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab0G2Kra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 06:47:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Qbg/UgOAVj2WAq6E5cxsLS4Bl2BzydOQwaF33Y/yy74MHHsKcU+3TDPjb5PU3iMvzq
+         nKwTlrg6PRCJu1F1A7LDvpkevgqSucDlfVsTSzDLhvlvFVIT+OsDk9P4g2Nix6t8CCWn
+         PZ7DvY53ZiZIB3iAaxm14PHgyZ5cOKkkpM58w=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Andrew Veliath <andrewtv@usa.net>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 09/10 v2] oss: msnd: check request_region() return value
+Date: Thu, 29 Jul 2010 14:45:50 +0400
+Message-Id: <1280400351-11652-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 18:38:39 +0800, Yan, Zheng wrote:
-> 2010/7/29 Miao Xie<miaox@cn.fujitsu.com>:
->> From: Liu Bo<liubo2009@cn.fujitsu.com>
->>
->> Only when a page is not found by page_index, we'll go to the error check.
->>
->> Signed-off-by: Liu Bo<liubo2009@cn.fujitsu.com>
->> Signed-off-by: Miao Xie<miaox@cn.fujitsu.com>
->> ---
->>   fs/btrfs/compression.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
->> index cb3877c..8458840 100644
->> --- a/fs/btrfs/compression.c
->> +++ b/fs/btrfs/compression.c
->> @@ -467,7 +467,7 @@ static noinline int add_ra_bio_pages(struct inode *inode,
->>                 rcu_read_lock();
->>                 page = radix_tree_lookup(&mapping->page_tree, page_index);
->>                 rcu_read_unlock();
->> -               if (page) {
->> +               if (!page) {
->>   check_misses:
->>                         misses++;
->>                         if (misses>  4)
->
-> This patch is wrong. The word "miss" here means "miss for read-ahead because
-> the page is already in the page cache"
+request_region() may fail, if so return -EBUSY.
 
-Oh, my mistake. Sorry!
-Please ignore this patch.
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ sound/oss/msnd_pinnacle.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-Thanks for your review! How about the others?
-Miao
-
->
-> Yan, Zheng
->
->
+diff --git a/sound/oss/msnd_pinnacle.c b/sound/oss/msnd_pinnacle.c
+index bfaac5f..cd70b9a 100644
+--- a/sound/oss/msnd_pinnacle.c
++++ b/sound/oss/msnd_pinnacle.c
+@@ -1400,9 +1400,13 @@ static int __init attach_multisound(void)
+ 		printk(KERN_ERR LOGNAME ": Couldn't grab IRQ %d\n", dev.irq);
+ 		return err;
+ 	}
+-	request_region(dev.io, dev.numio, dev.name);
++	if (request_region(dev.io, dev.numio, dev.name) == NULL) {
++		free_irq(dev.irq, &dev);
++		return -EBUSY;
++	}
+ 
+-        if ((err = dsp_full_reset()) < 0) {
++	err = dsp_full_reset();
++	if (err < 0) {
+ 		release_region(dev.io, dev.numio);
+ 		free_irq(dev.irq, &dev);
+ 		return err;
+-- 
+1.7.0.4
 
