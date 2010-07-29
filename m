@@ -1,70 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304Ab0G2KAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:00:40 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:53419 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab0G2KAj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:00:39 -0400
-Message-ID: <4C515137.707@cs.helsinki.fi>
-Date: Thu, 29 Jul 2010 13:00:23 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1756277Ab0G2KJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 06:09:14 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37125 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753125Ab0G2KJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 06:09:12 -0400
+Message-ID: <4C515318.40706@suse.cz>
+Date: Thu, 29 Jul 2010 12:08:24 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: linux-mm@kvack.org, jamal <hadi@cyberus.ca>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: slub numa: Fix rare allocation from unexpected node
-References: <alpine.DEB.2.00.1007261040430.5438@router.home>
-In-Reply-To: <alpine.DEB.2.00.1007261040430.5438@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <4C51473A.4000605@suse.cz> <20100729093946.GA6725@merkur.ravnborg.org>
+In-Reply-To: <20100729093946.GA6725@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Lameter wrote:
-> Subject: slub numa: Fix rare allocation from unexpected node
+On 29.7.2010 11:39, Sam Ravnborg wrote:
+> I had in mind to deprecate randconfig in favour of allrandconfig
+> to get more consitency in the names.
+> But I failed to document this in the changelog.
 > 
-> The network developers have seen sporadic allocations resulting in objects
-> coming from unexpected NUMA nodes despite asking for objects from a
-> specific node.
-> 
-> This is due to get_partial() calling get_any_partial() if partial
-> slabs are exhausted for a node even if a node was specified and therefore
-> one would expect allocations only from the specified node.
-> 
-> get_any_partial() sporadically may return a slab from a foreign
-> node to gradually reduce the size of partial lists on remote nodes
-> and thereby reduce total memory use for a slab cache.
-> 
-> The behavior is controlled by the remote_defrag_ratio of each cache.
-> 
-> Strictly speaking this is permitted behavior since __GFP_THISNODE was
-> not specified for the allocation but it is certain surprising.
-> 
-> This patch makes sure that the remote defrag behavior only occurs
-> if no node was specified.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
-> 
-> ---
->  mm/slub.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2010-07-23 09:24:11.000000000 -0500
-> +++ linux-2.6/mm/slub.c	2010-07-23 09:25:15.000000000 -0500
-> @@ -1390,7 +1390,7 @@ static struct page *get_partial(struct k
->  	int searchnode = (node == -1) ? numa_node_id() : node;
-> 
->  	page = get_partial_node(get_node(s, searchnode));
-> -	if (page || (flags & __GFP_THISNODE))
-> +	if (page || node != -1)
->  		return page;
-> 
->  	return get_any_partial(s, flags);
+> I can submit the following as a real patch if you agree.
 
-Applied, thanks!
+To me it seems like a change for the sake of change :), but if you like
+to have the targets named all*config consistenly, I'm OK with it.
+
+Michal
