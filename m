@@ -1,55 +1,718 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab0G2VdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 17:33:06 -0400
-Received: from email.campuscruiser.com ([216.35.68.59]:43973 "EHLO
-	ccprodrelay1.campuscruiser.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753075Ab0G2VdF (ORCPT
+	id S1754316Ab0G2VkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 17:40:21 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:49170 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309Ab0G2VkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 17:33:05 -0400
-X-Greylist: delayed 2570 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jul 2010 17:33:05 EDT
-Date: Thu, 29 Jul 2010 16:49:55 -0400 (EDT)
-From: DeAnna Murphy <dgmurphy@mail.widener.edu>
-Message-ID: <27356217.75071280436595570.JavaMail.root@ccprodapp31>
-Subject: CONGRATULATIONS YOUR EMAIL JUST WON!!!
+	Thu, 29 Jul 2010 17:40:20 -0400
+Date: Thu, 29 Jul 2010 14:40:08 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Paul Menage <menage@google.com>, Daniel Lezcano <dlezcano@free.fr>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 3/3] cgroup : remove the ns_cgroup
+Message-ID: <20100729214008.GA2785@count0.beaverton.ibm.com>
+References: <20100729195629.GA13378@hallyn.com>
+ <20100729195812.GB19015@hallyn.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: CC Mailer IV 3.0
-X-TCC-Signature: 27b663cf6ed9564052b2a5975ead636e
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100729195812.GB19015@hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 29, 2010 at 02:58:12PM -0500, Serge E. Hallyn wrote:
+> The ns_cgroup is an annoying cgroup at the namespace / cgroup frontier.
+> 
+> For example, a single process can not handle a big amount of namespaces
+> without interacting with this cgroup and falling in an exponential creation
+> time due to the nested cgroup directory depth (eg. /cgroup/<pid>/.../<pid>/...).
+> 
+> That was spotted when creating a single process using multiple network namespaces,
+> the objective was 4096 network namespaces, but at 820 netns, the creation time
+> was dramatically slow and the creation time for a namespace increased from 10msec
+> to 10sec. After five hours, the expected numbers of netns was not reached.
+> Without the ns_cgroup interaction, 4K netns are created after 2 minutes.
 
+Is this problem related to Andrew's post here re:
 
+[Bugme-new] [Bug 16417] New: Slow context switches with SMP and CONFIG_FAIR_GROUP_SCHED
 
-United-Nation-Development-Program
-UN House,-London,-United-Kingdom.
+> 
+> In order to solve that, we have to mount the cgroup with all the subsystems
+> except the ns_cgroup, it's a little weird and hard to manage from an administration
+> pov because we have to know what are the cgroup available on the system and we
+> can't do a simple 'mount -t cgroup cgroup /cgroup'.
+> 
+> With the previous patch which adds a 'clone_children' parameter to a cgroup,
+> we should be able to remove the ns_cgroup and manage manually the creation +
+> adding a task to the cgroup consistenly with the rest of the subsystems.
+> 
+> This patch removes the ns_cgroup as suggested in the following thread:
+> 
+> https://lists.linux-foundation.org/pipermail/containers/2009-June/018616.html
+> 
+> The 'cgroup_clone' function is removed because it is no longer used.
+> 
+> Changelog: Jul 29 (seh): remove references to ns_cgroup_clone(), fix up
+> 	   some documentation, and remove CONFIG_CGROUP_NS references.
+> 
+> Signed-off-by: Daniel Lezcano <dlezcano@free.fr>
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Paul Menage <menage@google.com>
+> Cc: Jamal Hadi Salim <hadi@cyberus.ca>
 
-The-UNITED-NATION-DEVELOPMENT-PROGRAM-would-like-to-notify-you-that-your
-email-address-just-won-the-sum-of-$400,000-(Four-hundred-thousand-USD).
-The-email-address-was-selected-from-an-exclusive-list-of-250,000-e-mail
-addresses-of-individual-and-corporate-bodies-picked-by-an-advanced-automated
-random-computer-balloting-system.
+Good riddance to cgroup_clone(). I seem to recall it required some
+fairly nasty code contortions and only the ns cgroup needed/used it.
 
-Contact-Mr-Thompson-Powell-via-Email-with-the-below-information-for-claim:
+Acked-by: Matt Helsley <matthltc@us.ibm.com>
 
-1.FULL NAME
-2.ADDRESS
-3.COUNTRY
-4.SEX
-5.AGE
-6.OCCUPATION
-7.TELEPHONE
-
-NAME:Mr-Thompson-Powell
-Email:undpverificationdep1001@live.com
-Claims-Processing-Agent,
-Verifications/Logistic-Department.
-
-Warm Regards.
-DeAnna Murphy
-(Online-Announcer-UNDP)
-
+> ---
+>  Documentation/cgroups/cgroups.txt        |    2 +-
+>  arch/ia64/configs/generic_defconfig      |    1 -
+>  arch/mips/configs/bcm47xx_defconfig      |    1 -
+>  arch/mips/configs/ip27_defconfig         |    1 -
+>  arch/mips/configs/sb1250-swarm_defconfig |    1 -
+>  arch/powerpc/configs/cell_defconfig      |    1 -
+>  arch/powerpc/configs/ppc64_defconfig     |    1 -
+>  arch/powerpc/configs/ppc64e_defconfig    |    1 -
+>  arch/powerpc/configs/ppc6xx_defconfig    |    1 -
+>  arch/powerpc/configs/pseries_defconfig   |    1 -
+>  arch/s390/defconfig                      |    1 -
+>  arch/sh/configs/sdk7786_defconfig        |    1 -
+>  arch/sh/configs/se7206_defconfig         |    1 -
+>  arch/sh/configs/sh7724_generic_defconfig |    1 -
+>  arch/sh/configs/sh7770_generic_defconfig |    1 -
+>  arch/sh/configs/shx3_defconfig           |    1 -
+>  arch/sh/configs/urquell_defconfig        |    1 -
+>  arch/x86/configs/i386_defconfig          |    1 -
+>  arch/x86/configs/x86_64_defconfig        |    1 -
+>  include/linux/cgroup.h                   |    3 -
+>  include/linux/cgroup_subsys.h            |    6 --
+>  include/linux/nsproxy.h                  |    9 ---
+>  init/Kconfig                             |    9 ---
+>  kernel/Makefile                          |    1 -
+>  kernel/cgroup.c                          |  116 ------------------------------
+>  kernel/cpuset.c                          |    7 +-
+>  kernel/fork.c                            |    6 --
+>  kernel/ns_cgroup.c                       |  110 ----------------------------
+>  kernel/nsproxy.c                         |    4 -
+>  29 files changed, 4 insertions(+), 287 deletions(-)
+>  delete mode 100644 kernel/ns_cgroup.c
+> 
+> diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+> index 190018b..6a5ba63 100644
+> --- a/Documentation/cgroups/cgroups.txt
+> +++ b/Documentation/cgroups/cgroups.txt
+> @@ -618,7 +618,7 @@ always handled well.
+>  void post_clone(struct cgroup_subsys *ss, struct cgroup *cgrp)
+>  (cgroup_mutex held by caller)
+> 
+> -Called at the end of cgroup_clone() to do any parameter
+> +Called during cgroup_create() to do any parameter
+>  initialization which might be required before a task could attach.  For
+>  example in cpusets, no task may attach before 'cpus' and 'mems' are set
+>  up.
+> diff --git a/arch/ia64/configs/generic_defconfig b/arch/ia64/configs/generic_defconfig
+> index 6a4cc50..d257546 100644
+> --- a/arch/ia64/configs/generic_defconfig
+> +++ b/arch/ia64/configs/generic_defconfig
+> @@ -25,7 +25,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=20
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/mips/configs/bcm47xx_defconfig b/arch/mips/configs/bcm47xx_defconfig
+> index bbd826b..cb75ade 100644
+> --- a/arch/mips/configs/bcm47xx_defconfig
+> +++ b/arch/mips/configs/bcm47xx_defconfig
+> @@ -199,7 +199,6 @@ CONFIG_TINY_RCU=y
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -CONFIG_CGROUP_NS=y
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  # CONFIG_CPUSETS is not set
+> diff --git a/arch/mips/configs/ip27_defconfig b/arch/mips/configs/ip27_defconfig
+> index 84b6503..036ad3e 100644
+> --- a/arch/mips/configs/ip27_defconfig
+> +++ b/arch/mips/configs/ip27_defconfig
+> @@ -209,7 +209,6 @@ CONFIG_LOG_BUF_SHIFT=15
+>  # CONFIG_GROUP_SCHED is not set
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/mips/configs/sb1250-swarm_defconfig b/arch/mips/configs/sb1250-swarm_defconfig
+> index 7f07bf0..0f059f2 100644
+> --- a/arch/mips/configs/sb1250-swarm_defconfig
+> +++ b/arch/mips/configs/sb1250-swarm_defconfig
+> @@ -197,7 +197,6 @@ CONFIG_SYSVIPC_SYSCTL=y
+>  CONFIG_LOG_BUF_SHIFT=15
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  CONFIG_CPUSETS=y
+>  CONFIG_GROUP_SCHED=y
+>  CONFIG_FAIR_GROUP_SCHED=y
+> diff --git a/arch/powerpc/configs/cell_defconfig b/arch/powerpc/configs/cell_defconfig
+> index 9433719..cfa9177 100644
+> --- a/arch/powerpc/configs/cell_defconfig
+> +++ b/arch/powerpc/configs/cell_defconfig
+> @@ -76,7 +76,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=15
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  CONFIG_CPUSETS=y
+>  # CONFIG_GROUP_SCHED is not set
+>  # CONFIG_USER_SCHED is not set
+> diff --git a/arch/powerpc/configs/ppc64_defconfig b/arch/powerpc/configs/ppc64_defconfig
+> index 369f4e0..2bc8f44 100644
+> --- a/arch/powerpc/configs/ppc64_defconfig
+> +++ b/arch/powerpc/configs/ppc64_defconfig
+> @@ -86,7 +86,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/powerpc/configs/ppc64e_defconfig b/arch/powerpc/configs/ppc64e_defconfig
+> index 403e82e..ac0f13d 100644
+> --- a/arch/powerpc/configs/ppc64e_defconfig
+> +++ b/arch/powerpc/configs/ppc64e_defconfig
+> @@ -100,7 +100,6 @@ CONFIG_LOG_BUF_SHIFT=17
+>  # CONFIG_GROUP_SCHED is not set
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/powerpc/configs/ppc6xx_defconfig b/arch/powerpc/configs/ppc6xx_defconfig
+> index 12dc7c4..8175eba 100644
+> --- a/arch/powerpc/configs/ppc6xx_defconfig
+> +++ b/arch/powerpc/configs/ppc6xx_defconfig
+> @@ -88,7 +88,6 @@ CONFIG_AUDIT_TREE=y
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -CONFIG_CGROUP_NS=y
+>  # CONFIG_CGROUP_FREEZER is not set
+>  CONFIG_CGROUP_DEVICE=y
+>  CONFIG_GROUP_SCHED=y
+> diff --git a/arch/powerpc/configs/pseries_defconfig b/arch/powerpc/configs/pseries_defconfig
+> index 16ae717..6d96b61 100644
+> --- a/arch/powerpc/configs/pseries_defconfig
+> +++ b/arch/powerpc/configs/pseries_defconfig
+> @@ -85,7 +85,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -CONFIG_CGROUP_NS=y
+>  CONFIG_CGROUP_FREEZER=y
+>  CONFIG_CGROUP_DEVICE=y
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/s390/defconfig b/arch/s390/defconfig
+> index 253f158..08e9f82 100644
+> --- a/arch/s390/defconfig
+> +++ b/arch/s390/defconfig
+> @@ -72,7 +72,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -CONFIG_CGROUP_NS=y
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  # CONFIG_CPUSETS is not set
+> diff --git a/arch/sh/configs/sdk7786_defconfig b/arch/sh/configs/sdk7786_defconfig
+> index 2698245..0f6894e 100644
+> --- a/arch/sh/configs/sdk7786_defconfig
+> +++ b/arch/sh/configs/sdk7786_defconfig
+> @@ -84,7 +84,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  CONFIG_CGROUP_DEBUG=y
+> -CONFIG_CGROUP_NS=y
+>  CONFIG_CGROUP_FREEZER=y
+>  CONFIG_CGROUP_DEVICE=y
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/sh/configs/se7206_defconfig b/arch/sh/configs/se7206_defconfig
+> index 910eaec..d2c0fc8 100644
+> --- a/arch/sh/configs/se7206_defconfig
+> +++ b/arch/sh/configs/se7206_defconfig
+> @@ -77,7 +77,6 @@ CONFIG_TREE_RCU_TRACE=y
+>  CONFIG_LOG_BUF_SHIFT=14
+>  CONFIG_CGROUPS=y
+>  CONFIG_CGROUP_DEBUG=y
+> -CONFIG_CGROUP_NS=y
+>  # CONFIG_CGROUP_FREEZER is not set
+>  CONFIG_CGROUP_DEVICE=y
+>  # CONFIG_CPUSETS is not set
+> diff --git a/arch/sh/configs/sh7724_generic_defconfig b/arch/sh/configs/sh7724_generic_defconfig
+> index a6a9e68..c3a2f67 100644
+> --- a/arch/sh/configs/sh7724_generic_defconfig
+> +++ b/arch/sh/configs/sh7724_generic_defconfig
+> @@ -70,7 +70,6 @@ CONFIG_RCU_FANOUT=32
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  # CONFIG_CPUSETS is not set
+> diff --git a/arch/sh/configs/sh7770_generic_defconfig b/arch/sh/configs/sh7770_generic_defconfig
+> index 4327f89..ce2357f 100644
+> --- a/arch/sh/configs/sh7770_generic_defconfig
+> +++ b/arch/sh/configs/sh7770_generic_defconfig
+> @@ -69,7 +69,6 @@ CONFIG_RCU_FANOUT=32
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -# CONFIG_CGROUP_NS is not set
+>  # CONFIG_CGROUP_FREEZER is not set
+>  # CONFIG_CGROUP_DEVICE is not set
+>  # CONFIG_CPUSETS is not set
+> diff --git a/arch/sh/configs/shx3_defconfig b/arch/sh/configs/shx3_defconfig
+> index 42f6bd3..05ced6a 100644
+> --- a/arch/sh/configs/shx3_defconfig
+> +++ b/arch/sh/configs/shx3_defconfig
+> @@ -84,7 +84,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=14
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -CONFIG_CGROUP_NS=y
+>  CONFIG_CGROUP_FREEZER=y
+>  CONFIG_CGROUP_DEVICE=y
+>  # CONFIG_CPUSETS is not set
+> diff --git a/arch/sh/configs/urquell_defconfig b/arch/sh/configs/urquell_defconfig
+> index 28bb19d..e698dff 100644
+> --- a/arch/sh/configs/urquell_defconfig
+> +++ b/arch/sh/configs/urquell_defconfig
+> @@ -82,7 +82,6 @@ CONFIG_IKCONFIG_PROC=y
+>  CONFIG_LOG_BUF_SHIFT=14
+>  CONFIG_CGROUPS=y
+>  CONFIG_CGROUP_DEBUG=y
+> -CONFIG_CGROUP_NS=y
+>  CONFIG_CGROUP_FREEZER=y
+>  CONFIG_CGROUP_DEVICE=y
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+> index d28fad1..4428d5c 100644
+> --- a/arch/x86/configs/i386_defconfig
+> +++ b/arch/x86/configs/i386_defconfig
+> @@ -105,7 +105,6 @@ CONFIG_FAIR_GROUP_SCHED=y
+>  CONFIG_CGROUP_SCHED=y
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -CONFIG_CGROUP_NS=y
+>  CONFIG_CGROUP_FREEZER=y
+>  # CONFIG_CGROUP_DEVICE is not set
+>  CONFIG_CPUSETS=y
+> diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+> index 6c86acd..2ff947f 100644
+> --- a/arch/x86/configs/x86_64_defconfig
+> +++ b/arch/x86/configs/x86_64_defconfig
+> @@ -105,7 +105,6 @@ CONFIG_FAIR_GROUP_SCHED=y
+>  CONFIG_CGROUP_SCHED=y
+>  CONFIG_CGROUPS=y
+>  # CONFIG_CGROUP_DEBUG is not set
+> -CONFIG_CGROUP_NS=y
+>  CONFIG_CGROUP_FREEZER=y
+>  # CONFIG_CGROUP_DEVICE is not set
+>  CONFIG_CPUSETS=y
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index f3cbd73..ddbdb77 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -552,9 +552,6 @@ static inline struct cgroup* task_cgroup(struct task_struct *task,
+>  	return task_subsys_state(task, subsys_id)->cgroup;
+>  }
+> 
+> -int cgroup_clone(struct task_struct *tsk, struct cgroup_subsys *ss,
+> -							char *nodename);
+> -
+>  /* A cgroup_iter should be treated as an opaque object */
+>  struct cgroup_iter {
+>  	struct list_head *cg_link;
+> diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+> index ccefff0..4ba5259 100644
+> --- a/include/linux/cgroup_subsys.h
+> +++ b/include/linux/cgroup_subsys.h
+> @@ -19,12 +19,6 @@ SUBSYS(debug)
+> 
+>  /* */
+> 
+> -#ifdef CONFIG_CGROUP_NS
+> -SUBSYS(ns)
+> -#endif
+> -
+> -/* */
+> -
+>  #ifdef CONFIG_CGROUP_SCHED
+>  SUBSYS(cpu_cgroup)
+>  #endif
+> diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+> index 7b370c7..50d20ab 100644
+> --- a/include/linux/nsproxy.h
+> +++ b/include/linux/nsproxy.h
+> @@ -81,13 +81,4 @@ static inline void get_nsproxy(struct nsproxy *ns)
+>  	atomic_inc(&ns->count);
+>  }
+> 
+> -#ifdef CONFIG_CGROUP_NS
+> -int ns_cgroup_clone(struct task_struct *tsk, struct pid *pid);
+> -#else
+> -static inline int ns_cgroup_clone(struct task_struct *tsk, struct pid *pid)
+> -{
+> -	return 0;
+> -}
+> -#endif
+> -
+>  #endif
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 5cff9a9..1124656 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -496,15 +496,6 @@ config CGROUP_DEBUG
+> 
+>  	  Say N if unsure.
+> 
+> -config CGROUP_NS
+> -	bool "Namespace cgroup subsystem"
+> -	depends on CGROUPS
+> -	help
+> -	  Provides a simple namespace cgroup subsystem to
+> -	  provide hierarchical naming of sets of namespaces,
+> -	  for instance virtual servers and checkpoint/restart
+> -	  jobs.
+> -
+>  config CGROUP_FREEZER
+>  	bool "Freezer cgroup subsystem"
+>  	depends on CGROUPS
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index 057472f..a7ee5f4 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -62,7 +62,6 @@ obj-$(CONFIG_COMPAT) += compat.o
+>  obj-$(CONFIG_CGROUPS) += cgroup.o
+>  obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
+>  obj-$(CONFIG_CPUSETS) += cpuset.o
+> -obj-$(CONFIG_CGROUP_NS) += ns_cgroup.o
+>  obj-$(CONFIG_UTS_NS) += utsname.o
+>  obj-$(CONFIG_USER_NS) += user_namespace.o
+>  obj-$(CONFIG_PID_NS) += pid_namespace.o
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 09fb6f9..7ec5bad 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4212,122 +4212,6 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+>  }
+> 
+>  /**
+> - * cgroup_clone - clone the cgroup the given subsystem is attached to
+> - * @tsk: the task to be moved
+> - * @subsys: the given subsystem
+> - * @nodename: the name for the new cgroup
+> - *
+> - * Duplicate the current cgroup in the hierarchy that the given
+> - * subsystem is attached to, and move this task into the new
+> - * child.
+> - */
+> -int cgroup_clone(struct task_struct *tsk, struct cgroup_subsys *subsys,
+> -							char *nodename)
+> -{
+> -	struct dentry *dentry;
+> -	int ret = 0;
+> -	struct cgroup *parent, *child;
+> -	struct inode *inode;
+> -	struct css_set *cg;
+> -	struct cgroupfs_root *root;
+> -	struct cgroup_subsys *ss;
+> -
+> -	/* We shouldn't be called by an unregistered subsystem */
+> -	BUG_ON(!subsys->active);
+> -
+> -	/* First figure out what hierarchy and cgroup we're dealing
+> -	 * with, and pin them so we can drop cgroup_mutex */
+> -	mutex_lock(&cgroup_mutex);
+> - again:
+> -	root = subsys->root;
+> -	if (root == &rootnode) {
+> -		mutex_unlock(&cgroup_mutex);
+> -		return 0;
+> -	}
+> -
+> -	/* Pin the hierarchy */
+> -	if (!atomic_inc_not_zero(&root->sb->s_active)) {
+> -		/* We race with the final deactivate_super() */
+> -		mutex_unlock(&cgroup_mutex);
+> -		return 0;
+> -	}
+> -
+> -	/* Keep the cgroup alive */
+> -	task_lock(tsk);
+> -	parent = task_cgroup(tsk, subsys->subsys_id);
+> -	cg = tsk->cgroups;
+> -	get_css_set(cg);
+> -	task_unlock(tsk);
+> -
+> -	mutex_unlock(&cgroup_mutex);
+> -
+> -	/* Now do the VFS work to create a cgroup */
+> -	inode = parent->dentry->d_inode;
+> -
+> -	/* Hold the parent directory mutex across this operation to
+> -	 * stop anyone else deleting the new cgroup */
+> -	mutex_lock(&inode->i_mutex);
+> -	dentry = lookup_one_len(nodename, parent->dentry, strlen(nodename));
+> -	if (IS_ERR(dentry)) {
+> -		printk(KERN_INFO
+> -		       "cgroup: Couldn't allocate dentry for %s: %ld\n", nodename,
+> -		       PTR_ERR(dentry));
+> -		ret = PTR_ERR(dentry);
+> -		goto out_release;
+> -	}
+> -
+> -	/* Create the cgroup directory, which also creates the cgroup */
+> -	ret = vfs_mkdir(inode, dentry, 0755);
+> -	child = __d_cgrp(dentry);
+> -	dput(dentry);
+> -	if (ret) {
+> -		printk(KERN_INFO
+> -		       "Failed to create cgroup %s: %d\n", nodename,
+> -		       ret);
+> -		goto out_release;
+> -	}
+> -
+> -	/* The cgroup now exists. Retake cgroup_mutex and check
+> -	 * that we're still in the same state that we thought we
+> -	 * were. */
+> -	mutex_lock(&cgroup_mutex);
+> -	if ((root != subsys->root) ||
+> -	    (parent != task_cgroup(tsk, subsys->subsys_id))) {
+> -		/* Aargh, we raced ... */
+> -		mutex_unlock(&inode->i_mutex);
+> -		put_css_set(cg);
+> -
+> -		deactivate_super(root->sb);
+> -		/* The cgroup is still accessible in the VFS, but
+> -		 * we're not going to try to rmdir() it at this
+> -		 * point. */
+> -		printk(KERN_INFO
+> -		       "Race in cgroup_clone() - leaking cgroup %s\n",
+> -		       nodename);
+> -		goto again;
+> -	}
+> -
+> -	/* do any required auto-setup */
+> -	for_each_subsys(root, ss) {
+> -		if (ss->post_clone)
+> -			ss->post_clone(ss, child);
+> -	}
+> -
+> -	/* All seems fine. Finish by moving the task into the new cgroup */
+> -	ret = cgroup_attach_task(child, tsk);
+> -	mutex_unlock(&cgroup_mutex);
+> -
+> - out_release:
+> -	mutex_unlock(&inode->i_mutex);
+> -
+> -	mutex_lock(&cgroup_mutex);
+> -	put_css_set(cg);
+> -	mutex_unlock(&cgroup_mutex);
+> -	deactivate_super(root->sb);
+> -	return ret;
+> -}
+> -
+> -/**
+>   * cgroup_is_descendant - see if @cgrp is a descendant of @task's cgrp
+>   * @cgrp: the cgroup in question
+>   * @task: the task in question
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 02b9611..4613840 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -1829,10 +1829,9 @@ static int cpuset_populate(struct cgroup_subsys *ss, struct cgroup *cont)
+>  }
+> 
+>  /*
+> - * post_clone() is called at the end of cgroup_clone().
+> - * 'cgroup' was just created automatically as a result of
+> - * a cgroup_clone(), and the current task is about to
+> - * be moved into 'cgroup'.
+> + * post_clone() is called during cgroup_create() when the
+> + * clone_children mount argument was specified.  The cgroup
+> + * can not yet have any tasks.
+>   *
+>   * Currently we refuse to set up the cgroup - thereby
+>   * refusing the task to be entered, and as a result refusing
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index b6cce14..c391b1d 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1167,12 +1167,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  	if (clone_flags & CLONE_THREAD)
+>  		p->tgid = current->tgid;
+> 
+> -	if (current->nsproxy != p->nsproxy) {
+> -		retval = ns_cgroup_clone(p, pid);
+> -		if (retval)
+> -			goto bad_fork_free_pid;
+> -	}
+> -
+>  	p->set_child_tid = (clone_flags & CLONE_CHILD_SETTID) ? child_tidptr : NULL;
+>  	/*
+>  	 * Clear TID on mm_release()?
+> diff --git a/kernel/ns_cgroup.c b/kernel/ns_cgroup.c
+> deleted file mode 100644
+> index 2a5dfec..0000000
+> --- a/kernel/ns_cgroup.c
+> +++ /dev/null
+> @@ -1,110 +0,0 @@
+> -/*
+> - * ns_cgroup.c - namespace cgroup subsystem
+> - *
+> - * Copyright 2006, 2007 IBM Corp
+> - */
+> -
+> -#include <linux/module.h>
+> -#include <linux/cgroup.h>
+> -#include <linux/fs.h>
+> -#include <linux/proc_fs.h>
+> -#include <linux/slab.h>
+> -#include <linux/nsproxy.h>
+> -
+> -struct ns_cgroup {
+> -	struct cgroup_subsys_state css;
+> -};
+> -
+> -struct cgroup_subsys ns_subsys;
+> -
+> -static inline struct ns_cgroup *cgroup_to_ns(
+> -		struct cgroup *cgroup)
+> -{
+> -	return container_of(cgroup_subsys_state(cgroup, ns_subsys_id),
+> -			    struct ns_cgroup, css);
+> -}
+> -
+> -int ns_cgroup_clone(struct task_struct *task, struct pid *pid)
+> -{
+> -	char name[PROC_NUMBUF];
+> -
+> -	snprintf(name, PROC_NUMBUF, "%d", pid_vnr(pid));
+> -	return cgroup_clone(task, &ns_subsys, name);
+> -}
+> -
+> -/*
+> - * Rules:
+> - *   1. you can only enter a cgroup which is a descendant of your current
+> - *     cgroup
+> - *   2. you can only place another process into a cgroup if
+> - *     a. you have CAP_SYS_ADMIN
+> - *     b. your cgroup is an ancestor of task's destination cgroup
+> - *       (hence either you are in the same cgroup as task, or in an
+> - *        ancestor cgroup thereof)
+> - */
+> -static int ns_can_attach(struct cgroup_subsys *ss, struct cgroup *new_cgroup,
+> -			 struct task_struct *task, bool threadgroup)
+> -{
+> -	if (current != task) {
+> -		if (!capable(CAP_SYS_ADMIN))
+> -			return -EPERM;
+> -
+> -		if (!cgroup_is_descendant(new_cgroup, current))
+> -			return -EPERM;
+> -	}
+> -
+> -	if (!cgroup_is_descendant(new_cgroup, task))
+> -		return -EPERM;
+> -
+> -	if (threadgroup) {
+> -		struct task_struct *c;
+> -		rcu_read_lock();
+> -		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
+> -			if (!cgroup_is_descendant(new_cgroup, c)) {
+> -				rcu_read_unlock();
+> -				return -EPERM;
+> -			}
+> -		}
+> -		rcu_read_unlock();
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+> -/*
+> - * Rules: you can only create a cgroup if
+> - *     1. you are capable(CAP_SYS_ADMIN)
+> - *     2. the target cgroup is a descendant of your own cgroup
+> - */
+> -static struct cgroup_subsys_state *ns_create(struct cgroup_subsys *ss,
+> -						struct cgroup *cgroup)
+> -{
+> -	struct ns_cgroup *ns_cgroup;
+> -
+> -	if (!capable(CAP_SYS_ADMIN))
+> -		return ERR_PTR(-EPERM);
+> -	if (!cgroup_is_descendant(cgroup, current))
+> -		return ERR_PTR(-EPERM);
+> -
+> -	ns_cgroup = kzalloc(sizeof(*ns_cgroup), GFP_KERNEL);
+> -	if (!ns_cgroup)
+> -		return ERR_PTR(-ENOMEM);
+> -	return &ns_cgroup->css;
+> -}
+> -
+> -static void ns_destroy(struct cgroup_subsys *ss,
+> -			struct cgroup *cgroup)
+> -{
+> -	struct ns_cgroup *ns_cgroup;
+> -
+> -	ns_cgroup = cgroup_to_ns(cgroup);
+> -	kfree(ns_cgroup);
+> -}
+> -
+> -struct cgroup_subsys ns_subsys = {
+> -	.name = "ns",
+> -	.can_attach = ns_can_attach,
+> -	.create = ns_create,
+> -	.destroy  = ns_destroy,
+> -	.subsys_id = ns_subsys_id,
+> -};
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index f74e6c0..014a90d 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -198,10 +198,6 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+>  		goto out;
+>  	}
+> 
+> -	err = ns_cgroup_clone(current, task_pid(current));
+> -	if (err)
+> -		put_nsproxy(*new_nsp);
+> -
+>  out:
+>  	return err;
+>  }
+> -- 
+> 1.7.0.4
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
