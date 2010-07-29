@@ -1,152 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab0G2EfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 00:35:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28042 "EHLO mx1.redhat.com"
+	id S1751356Ab0G2FBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:01:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:41504 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab0G2EfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 00:35:05 -0400
-Date: Thu, 29 Jul 2010 00:34:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
-        jaxboe@fusionio.com, nauman@google.com, dpshah@google.com,
-        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com, czoccolo@gmail.com
-Subject: cfq fsync patch testing results (Was: Re: [RFC PATCH] cfq-iosched:
- IOPS mode for group scheduling and new group_idle tunable)
-Message-ID: <20100729043443.GB21736@redhat.com>
-References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
- <20100723140343.GA8478@fancy-poultry.org>
- <20100723141303.GB13104@redhat.com>
- <20100723145631.GA8844@fancy-poultry.org>
- <20100723183720.GD13104@redhat.com>
- <20100724080613.GA6554@fancy-poultry.org>
- <20100728202212.GD16314@redhat.com>
- <20100728235716.GA12945@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100728235716.GA12945@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1750824Ab0G2FA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:00:58 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Simon Horman <horms@verge.net.au>
+cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Biederman <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [patch] MAINTAINERS: kexec-tools has moved
+In-reply-to: <20100729041641.GA32220@verge.net.au>
+References: <20100729041641.GA32220@verge.net.au>
+Comments: In-reply-to Simon Horman <horms@verge.net.au>
+   message dated "Thu, 29 Jul 2010 13:16:41 +0900."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
+Date: Thu, 29 Jul 2010 15:00:56 +1000
+Message-ID: <24707.1280379656@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 07:57:16PM -0400, Christoph Hellwig wrote:
-> On Wed, Jul 28, 2010 at 04:22:12PM -0400, Vivek Goyal wrote:
-> > I also did "time firefox &" testing to see how long firefox takes to
-> > launch when linus torture test is running and without patch it took
-> > around 20 seconds and with patch it took around 17 seconds. 
-> > 
-> > So to me above test results suggest that this patch does not worsen
-> > the performance. In fact it helps. (at least on ext3 file system.)
-> > 
-> > Not sure why are you seeing different results with XFS.
+
+
+In message <20100729041641.GA32220@verge.net.au> you wrote:
+> Kexec tools has been moved to http://kernel.org/pub/linux/utils/kernel/kexec/
+> as user-space code shouldn't be in /pub/linux/kernel
 > 
-> So why didn't you test it with XFS to verify his results?
-
-Just got little lazy. Find the testing results with ext3, ext4 and
-xfs below.
-
->  We all know
-> that different filesystems have different I/O patters, and we have
-> a history of really nasty regressions in one filesystem by good meaning
-> changes to the I/O scheduler.
+> Signed-off-by: Simon Horman <horms@verge.net.au>
 > 
-> ext3 in fact is a particularly bad test case as it not only doesn't have
-> I/O barriers enabled, but also has particularly bad I/O patterns
-> compared to modern filesystems.
+> Index: linux-2.6/MAINTAINERS
+> ===================================================================
+> --- linux-2.6.orig/MAINTAINERS	2010-07-29 13:10:04.000000000 +0900
+> +++ linux-2.6/MAINTAINERS	2010-07-29 13:11:40.000000000 +0900
+> @@ -3334,7 +3334,7 @@ F:	drivers/s390/kvm/
+>  
+>  KEXEC
+>  M:	Eric Biederman <ebiederm@xmission.com>
 
-Ext3 results
-============
-ext3 (2.6.35-rc6)	ext3 (35-rc6-fsync)
------------------	-------------------
-fsync time: 3.4173	fsync time: 0.0171
-fsync time: 0.8831	fsync time: 0.0951
-fsync time: 0.6985	fsync time: 0.0848
-fsync time: 8.9449	fsync time: 0.1206
-fsync time: 4.3075	fsync time: 0.4150
-fsync time: 6.0146	fsync time: 0.0856
-fsync time: 9.7134	fsync time: 0.1151
-fsync time: 9.2247	fsync time: 0.1083
-fsync time: 6.5061	fsync time: 0.1218
-fsync time: 6.1862	fsync time: 4.1666
-fsync time: 6.1136	fsync time: 0.1075
-fsync time: 3.3593	fsync time: 0.3442
-fsync time: 4.3309	fsync time: 0.1062
-fsync time: 2.3596	fsync time: 2.8502
-fsync time: 0.0151	fsync time: 0.0433
-fsync time: 0.0180	fsync time: 4.0526
-fsync time: 0.3685	fsync time: 0.1819
-fsync time: 2.7396	fsync time: 0.1479
-fsync time: 3.1537	fsync time: 0.1480
-fsync time: 2.4474	fsync time: 0.1715
-fsync time: 2.7085	fsync time: 0.0079
-fsync time: 3.1629	fsync time: 0.0181
-fsync time: 2.9186	fsync time: 0.0134
+I think it's time to change or at least add you as a maintainer, Simon
+:-)
 
-XFS results
-==========
-XFS (2.6.35-rc6)	XFS (with fsync patch)
-fsync time: 5.0746	fsync time: 1.8025
-fsync time: 3.0057	fsync time: 2.3392
-fsync time: 3.0960	fsync time: 2.2810
-fsync time: 2.8392	fsync time: 2.2894
-fsync time: 2.4901	fsync time: 2.3059
-fsync time: 2.3151	fsync time: 2.3061
-fsync time: 2.3066	fsync time: 2.9825
-fsync time: 0.6608	fsync time: 2.3144
-fsync time: 0.0595	fsync time: 2.2894
-fsync time: 2.0977	fsync time: 0.0508
-fsync time: 2.3236	fsync time: 2.3396
-fsync time: 2.3229	fsync time: 2.3310
-fsync time: 2.3065	fsync time: 2.3061
-fsync time: 2.3234	fsync time: 2.3060
-fsync time: 2.3150	fsync time: 2.3561
-fsync time: 2.3149	fsync time: 2.3313
-fsync time: 2.3234	fsync time: 2.0221
-fsync time: 2.3066	fsync time: 2.2891
-fsync time: 2.3232	fsync time: 2.3144
-fsync time: 2.3317	fsync time: 2.3144
-fsync time: 2.3321	fsync time: 2.2894
-fsync time: 2.3232	fsync time: 2.3228
-fsync time: 0.0514	fsync time: 2.3144
-fsync time: 2.2480	fsync time: 0.0506
+Mikey
 
-Ext4
-====
-ext4 (vanilla)		ext4 (patched)
-fsync time: 3.4080	fsync time: 2.9109
-fsync time: 17.8330	fsync time: 25.0503
-fsync time: 0.0922	fsync time: 2.5495
-fsync time: 0.0710	fsync time: 0.0943
-fsync time: 19.7977	fsync time: 0.0770
-fsync time: 20.6592	fsync time: 16.3287
-fsync time: 0.1020	fsync time: 24.4983
-fsync time: 0.0689	fsync time: 0.1006
-fsync time: 19.9981	fsync time: 0.0783
-fsync time: 20.6605	fsync time: 19.1181
-fsync time: 0.0930	fsync time: 22.0860
-fsync time: 0.0776	fsync time: 0.0909
-
-
-Notes:
-======
-- Above results are with and without corrado's fsync issue patch. We
-  happen to be discussing it in a different thread though, hence
-  specifying it specifically.
-
-- I am running linus torture test and also running ted so's fsync-tester
-  to monitor fsync latencies.
-
-- Looks like ext3 fsync times have improved.
-- XFS fsync times have remained unchanged.
-- ext4 fsync times seems to have gone up a bit.
-
-I used default mount options. So I am assuming high fsync times of ext4
-comes from the fact that barriers much be enabled by default. Will do
-some blktracing on ext4 case tomorrow, otherwise I think this patch
-looks good.
-
-Thanks
-Vivek 
+> -W:	http://ftp.kernel.org/pub/linux/kernel/people/horms/kexec-tools/
+> +W:	http://kernel.org/pub/linux/utils/kernel/kexec/
+>  L:	kexec@lists.infradead.org
+>  S:	Maintained
+>  F:	include/linux/kexec.h
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
