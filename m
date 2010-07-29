@@ -1,180 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403Ab0G2MjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 08:39:05 -0400
-Received: from tichy.grunau.be ([85.131.189.73]:47875 "EHLO tichy.grunau.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754186Ab0G2MjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 08:39:01 -0400
-Date: Thu, 29 Jul 2010 14:39:41 +0200
-From: Janne Grunau <j@jannau.net>
-To: Jarod Wilson <jarod@wilsonet.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        lirc-list@lists.sourceforge.net, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: linux-next: Tree for July 28 (lirc #2)
-Message-ID: <20100729123941.GL8564@aniel.lan>
-References: <20100728162855.4968e561.sfr@canb.auug.org.au>
- <20100728102417.be60049a.randy.dunlap@oracle.com>
- <20100728220454.GK8564@aniel.lan>
- <4C50AC26.1080100@oracle.com>
- <AANLkTi=DLHOnzgXmpzNE3PQXp-xSkm8vLdxBBf1mcFuO@mail.gmail.com>
- <AANLkTimTbZ6Vjqe5rqNVtNwPV=qoo=BOsOwG_6fS1SZU@mail.gmail.com>
-MIME-Version: 1.0
+	id S1757395Ab0G2MmU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 08:42:20 -0400
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:43982 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab0G2MmT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 08:42:19 -0400
+Subject: Re: [tpmdd-devel] [RFC] tpm_tis: Fix subsequent suspend failures
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimTbZ6Vjqe5rqNVtNwPV=qoo=BOsOwG_6fS1SZU@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+In-Reply-To: <7842A755-42A7-4882-8726-45CADDB4E1E2@linux.vnet.ibm.com>
+Date: Thu, 29 Jul 2010 09:42:05 -0300
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
+        David Safford <safford@watson.ibm.com>, linux-kernel@vger.kernel.org,
+        jmorris@namei.org, tpmdd-devel@lists.sourceforge.net,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3C97F229-2E8B-44E7-941C-B5CC77C24657@linux.vnet.ibm.com>
+References: <201006091227.15729.helmut.schaa@googlemail.com> <5204AD54-F4BF-49A8-9168-3FCA112AAA2B@linux.vnet.ibm.com> <20100623130700.a032c373.akpm@linux-foundation.org> <201007231407.51605.helmut.schaa@googlemail.com> <7842A755-42A7-4882-8726-45CADDB4E1E2@linux.vnet.ibm.com>
+To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 12:27:01AM -0400, Jarod Wilson wrote:
-> On Wed, Jul 28, 2010 at 6:27 PM, Jarod Wilson <jarod@wilsonet.com> wrote:
-> > On Wed, Jul 28, 2010 at 6:16 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> >> On 07/28/10 15:04, Janne Grunau wrote:
-> >>> On Wed, Jul 28, 2010 at 10:24:17AM -0700, Randy Dunlap wrote:
-> >>>> On Wed, 28 Jul 2010 16:28:55 +1000 Stephen Rothwell wrote:
-> >>>>
-> >>>>> Hi all,
-> >>>>>
-> >>>>> Changes since 20100727:
-> >>>>
-> >>>>
-> >>>> When USB_SUPPORT is not enabled and MEDIA_SUPPORT is not enabled:
-> >>>>
-> >>>
-> >>> following patch should fix it
-> >>>
-> >>> Janne
-> >>
-> >> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> >>
-> >> Thanks.
-> >
-> > Acked-by: Jarod Wilson <jarod@redhat.com>
-> >
-> > Indeed, thanks much, Janne!
+Nevermind,
+
+I've just read Andrew's previous email that it's parked in James' tree.
+
+Thanks,
+Rajiv
+On Jul 29, 2010, at 7:53 AM, Rajiv Andrade wrote:
+
 > 
-> D'oh, I should have looked a bit closer... What if instead of making
-> all the drivers depend on both LIRC && LIRC_STAGING, LIRC_STAGING just
-> depends on LIRC?
-
-I started adding LIRC to each driver by one. Adding LIRC as LIRC_STAGING
-dependency is simpler. See updated patch.
-
-> And there are a few depends lines with duplicate
-> USB's in them and LIRC_IMON should have USB added to it (technically,
-
-D'oh, I've must have stopped reading after LIRC_STAG...
-
-fixed and added additional dependencies
-
-Janne
-
-
->From 45d384de90e3709a986700db14888eff77bb7e1f Mon Sep 17 00:00:00 2001
-From: Janne Grunau <j@jannau.net>
-Date: Wed, 28 Jul 2010 23:53:35 +0200
-Subject: [PATCH 1/2] V4L/DVB: staging/lirc: fix Kconfig dependencies
-
-Signed-off-by: Janne Grunau <j@jannau.net>
----
- drivers/staging/lirc/Kconfig |   19 ++++++++++---------
- 1 files changed, 10 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/staging/lirc/Kconfig b/drivers/staging/lirc/Kconfig
-index 968c2ade..ab30a09 100644
---- a/drivers/staging/lirc/Kconfig
-+++ b/drivers/staging/lirc/Kconfig
-@@ -3,6 +3,7 @@
- #
- menuconfig LIRC_STAGING
- 	bool "Linux Infrared Remote Control IR receiver/transmitter drivers"
-+	depends on LIRC
- 	help
- 	  Say Y here, and all supported Linux Infrared Remote Control IR and
- 	  RF receiver and transmitter drivers will be displayed. When paired
-@@ -13,13 +14,13 @@ if LIRC_STAGING
- 
- config LIRC_BT829
-         tristate "BT829 based hardware"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && PCI
- 	help
- 	  Driver for the IR interface on BT829-based hardware
- 
- config LIRC_ENE0100
- 	tristate "ENE KB3924/ENE0100 CIR Port Reciever"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && PNP
- 	help
- 	  This is a driver for CIR port handled by ENE KB3924 embedded
- 	  controller found on some notebooks.
-@@ -27,7 +28,7 @@ config LIRC_ENE0100
- 
- config LIRC_I2C
- 	tristate "I2C Based IR Receivers"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && I2C
- 	help
- 	  Driver for I2C-based IR receivers, such as those commonly
- 	  found onboard Hauppauge PVR-150/250/350 video capture cards
-@@ -40,7 +41,7 @@ config LIRC_IGORPLUGUSB
- 
- config LIRC_IMON
- 	tristate "Legacy SoundGraph iMON Receiver and Display"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && USB
- 	help
- 	  Driver for the original SoundGraph iMON IR Receiver and Display
- 
-@@ -48,7 +49,7 @@ config LIRC_IMON
- 
- config LIRC_IT87
- 	tristate "ITE IT87XX CIR Port Receiver"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && PNP
- 	help
- 	  Driver for the ITE IT87xx IR Receiver
- 
-@@ -60,13 +61,13 @@ config LIRC_ITE8709
- 
- config LIRC_PARALLEL
- 	tristate "Homebrew Parallel Port Receiver"
--	depends on LIRC_STAGING && !SMP
-+	depends on LIRC_STAGING && PARPORT && !SMP
- 	help
- 	  Driver for Homebrew Parallel Port Receivers
- 
- config LIRC_SASEM
- 	tristate "Sasem USB IR Remote"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && USB
- 	help
- 	  Driver for the Sasem OnAir Remocon-V or Dign HV5 HTPC IR/VFD Module
- 
-@@ -91,7 +92,7 @@ config LIRC_SIR
- 
- config LIRC_STREAMZAP
- 	tristate "Streamzap PC Receiver"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && USB
- 	help
- 	  Driver for the Streamzap PC Receiver
- 
-@@ -103,7 +104,7 @@ config LIRC_TTUSBIR
- 
- config LIRC_ZILOG
- 	tristate "Zilog/Hauppauge IR Transmitter"
--	depends on LIRC_STAGING
-+	depends on LIRC_STAGING && I2C
- 	help
- 	  Driver for the Zilog/Hauppauge IR Transmitter, found on
- 	  PVR-150/500, HVR-1200/1250/1700/1800, HD-PVR and other cards
--- 
-1.7.2
+> On Jul 23, 2010, at 9:07 AM, Helmut Schaa wrote:
+> 
+>> Hi,
+>> 
+>> Am Mittwoch 23 Juni 2010 schrieb Andrew Morton:
+>>> On Wed, 23 Jun 2010 16:55:54 -0300
+>>> Rajiv Andrade <srajiv@linux.vnet.ibm.com> wrote:
+>>> 
+>>>>> (top-posting repaired.  Please don't do that).
+>>>>> 
+>>>>> This wasn't a very good way to send a patch.  I edited the diff,
+>>>>> reconstructed the patch and then assembled a decent-looking changelog. 
+>>>>> I also changed your acked-by to the required signed-off-by, because you
+>>>>> were on the patch's delivery path.
+>>>>> 
+>>>>> Pretty please: next time, prepare a proper mergeable patch with the
+>>>>> correct attributions and signoffs?  Thanks.
+>>>> 
+>>>> Sure, sorry. I was just not certain if I could just resent Helmut's patch to LKML without messing with his authorship.
+>>> 
+>>> You can.  Put his "From:" line right at the top of the changelog and
+>>> everyone's patch-receiving tools will honour that.  If the From: at the
+>>> top of the changelog is absent, the tools will fall back to using the
+>>> From: line in the mail headers.
+>> 
+>> This patch still didn't make it into mainline and it fixes a regression.
+>> Rajiv, do you plan to resubmit the patch or did you expect it to go through
+>> Andrew's tree?
+>> 
+> 
+> Hi Helmut,
+> 
+> I expected it to make into Andrew's tree, since his recommendations were for the next time I submit a patch that matched the circumstances of this one, also, he mentioned he had to fix the issues by hand.
+> 
+> Andrew, do you want me to resubmit it? If so, I'm more than ok with that too though.
+> 
+> Thanks,
+> Rajiv
+> 
+> 
+> 
+> ------------------------------------------------------------------------------
+> The Palm PDK Hot Apps Program offers developers who use the
+> Plug-In Development Kit to bring their C/C++ apps to Palm for a share
+> of $1 Million in cash or HP Products. Visit us here for more details:
+> http://p.sf.net/sfu/dev2dev-palm
+> _______________________________________________
+> tpmdd-devel mailing list
+> tpmdd-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
 
