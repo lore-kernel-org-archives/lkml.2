@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab0G2Azu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 20:55:50 -0400
-Received: from p01c11o142.mxlogic.net ([208.65.144.65]:56600 "EHLO
-	p01c11o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab0G2Azs convert rfc822-to-8bit (ORCPT
+	id S1752158Ab0G2A6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 20:58:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:36768 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab0G2A6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 20:55:48 -0400
-X-MXL-Hash: 4c50d194575978bb-683e9bd637320ed23e46fb0ca0989efc3f63c688
-X-MXL-Hash: 4c50d19158d1e0f8-73000a0b9ca637af2cd3caa5d32428546b6f4f63
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "ss@aao.gov.au" <ss@aao.gov.au>, "gregkh@suse.de" <gregkh@suse.de>
-Date: Wed, 28 Jul 2010 19:55:32 -0500
-Subject: RE: [PATCH] Staging: dt3155: properly export the module parameter
-Thread-Topic: [PATCH] Staging: dt3155: properly export the module parameter
-Thread-Index: Acsul7unryPQX+JTTQ6L+NL2ksnxvgAILO+A
-Message-ID: <0D753D10438DA54287A00B027084269763743B4D7C@AUSP01VMBX24.collaborationhost.net>
-References: <201007280948.33247.hartleys@visionengravers.com>
- <4C509A18.3090607@gmail.com>
-In-Reply-To: <4C509A18.3090607@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 28 Jul 2010 20:58:25 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6057"; a="49137832"
+Message-ID: <bad58db98c165a61860827d4e720acf8.squirrel@www.codeaurora.org>
+In-Reply-To: <201007281950.20847.arnd@arndb.de>
+References: <1280270466-13503-1-git-send-email-stepanm@codeaurora.org>
+    <201007281039.44883.arnd@arndb.de>
+    <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
+    <201007281950.20847.arnd@arndb.de>
+Date: Wed, 28 Jul 2010 17:58:50 -0700 (PDT)
+Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
+From: stepanm@codeaurora.org
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, stepanm@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, dwalker@codeaurora.org,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.99]
-X-AnalysisOut: [v=1.0 c=1 a=eHIE_8wBqtgA:10 a=VphdPIyG4kEA:10 a=8nJEP1OIZ-]
-X-AnalysisOut: [IA:10 a=MfCJKx98tC58LqYwCYfhJw==:17 a=i00gxMtYAAAA:8 a=TXa]
-X-AnalysisOut: [lIxSw47Pc0gzAtmwA:9 a=LCXlue5KYLOLV5AudjKDt-9VH9EA:4 a=wPN]
-X-AnalysisOut: [LvfGTeEIA:10 a=x1WnkoZAwusA:10 a=0kPLrQdw3YYA:10]
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 28, 2010 1:59 PM, Jiri Slaby wrote:
-> On 07/28/2010 06:48 PM, H Hartley Sweeten wrote:
->> Make the module parameter dt3155_major static and add the proper
->> wrappers to export it.
->> 
->> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->> Cc: Greg Kroah-Hartman <gregkh@suse.de>
->> Cc: Scott Smedley <ss@aao.gov.au>
->> ---
->> 
->> diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
->> index 7316996..220eaf9 100644
->> --- a/drivers/staging/dt3155/dt3155_drv.c
->> +++ b/drivers/staging/dt3155/dt3155_drv.c
->> @@ -99,7 +99,9 @@ wait_queue_head_t dt3155_read_wait_queue[MAXBOARDS];
->>  
->>  /* set to dynamicaly allocate, but it is tunable: */
->>  /* insmod DT_3155 dt3155 dt3155_major=XX */
->> -int dt3155_major = 0;
->> +static int dt3155_major;
->> +module_param(dt3155_major, int, 0);
->> +MODULE_PARM_DESC(dt3155_major, "Major device number");
+> On Wednesday 28 July 2010, stepanm@codeaurora.org wrote:
+>> > On Wednesday 28 July 2010 00:41:06 Stepan Moskovchenko wrote:
+>> >> Add support for the System MMUs found on the 8x60 and 8x72
+>> >> families of Qualcomm chips. These SMMUs allow virtualization
+>> >> of the address space used by most of the multimedia cores
+>> >> on these chips.
+>> >
+>> > How is this different from an IOMMU?
+>> >
+>> > From a very brief look, it seems that you should be using the
+>> > existing dma-mapping APIs here instead of making up your own.
+>> >
+>> > 	Arnd
+>>
+>>
+>> These are just SMMU APIs, and the DMA-mapping API is one layer above
+>> this.
+>>
+>> We have our own SMMU API for the MSM SoCs because we have muliple
+>> IOMMUs,
+>> each one having multiple contexts, or even having multiple instances of
+>> the same context. Our usage model is also quite a bit different from how
+>> the DMA APIs are set up. I believe only two IOMMU drivers actually make
+>> use of the DMA API (Intel and AMD) and the other ones (OMAP and other
+>> SoCs) have their own APIs for their specific use cases.
 >
-> Is it necessary in the age of udev?
+> The DMA API is extremely flexible, it works just fine with all the
+> IOMMUs that I've seen so far. Please take a look at
+> include/asm-generic/dma-mapping-common.h and its users to see how
+> to use multiple IOMMUs depending on the device.
 >
-> I would personally get rid of that completely...
+> If the OMAP developers got this wrong, that's not your problem :-)
+>
+> 	Arnd
 
-I agree but I'm not quite sure if the user space app is ready to handle that.
+Hi Arnd,
 
-Scott, can you provide any input?
+>From what I have been able to tell, the IOMMU interface was written by
+AMD/Intel to allow the kvm code to work with a common IOMMU interface. To
+that end, it isn't really a generic IOMMU interface. We have chosen to use
+our own interface because it provides us with a lightweight way of
+managing mappings for more esoteric MSM-specific use cases.
 
-Regards,
-Hartley
+These map functions also take into account the way in which we map buffers
+that we get from our own physical pool, because the current API was not
+intended to deal with prioritized allocation of things like on/off-chip
+memory. We are currently evaluating how to use the DMA API with our own
+specialized allocator, which has been undergoing some discussion on the
+other lists. We would like to use this allocator to maximize TLB
+performance, as well as to prioritize the allocation from several
+different memory pools.
+
+Steve
+
