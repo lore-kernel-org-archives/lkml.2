@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab0G2Trs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:47:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19762 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757965Ab0G2TrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:47:10 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	id S1757898Ab0G2TsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:48:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3518 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758102Ab0G2Trp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 15:47:45 -0400
+Date: Thu, 29 Jul 2010 15:50:52 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 12/17] x86, memblock: Use memblock_debug to control debug message print out
-Date: Thu, 29 Jul 2010 12:45:32 -0700
-Message-Id: <1280432737-1808-13-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
-References: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C51DA7E.00D5,ss=1,fgs=0
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+Message-ID: <20100729195052.GB20261@redhat.com>
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <20100729081316.GA4990@merkur.ravnborg.org> <4C5148A5.10809@suse.cz> <20100729144748.GI6249@redhat.com> <4C519899.9020206@suse.cz> <20100729151650.GA20261@redhat.com> <20100729193454.GC7877@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100729193454.GC7877@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also let memblock_x86_reserve_range/memblock_x86_free_range could print out name if memblock=debug is
-specified
+On Thu, Jul 29, 2010 at 09:34:55PM +0200, Sam Ravnborg wrote:
+> If you have a simple command that give you a list of new
+> symbols then this is easy to script as Michal also
+> shows with the below example.
+> 
+> > > How about
+> > > new=$(make listnewconfig)
+> > > if test -n "$new"; then
+> > >     echo "Please set the following options:" >&2
+> > >     echo "$new" >&2
+> > >     exit 1
+> > > fi
+> > > ? Wouldn't that be the same as nonint_oldconfig before?
+> > what's the other use cases for listnewconfig (other than a incomplete
+> > nonint_oldconfig)?
+> 
+> listnewconfig is for everyone that like to see a list of new
+> config options - without touching the current configuration.
+> 
+> By limiting listnewconfig to do only one thing you actually
+> create further uses than before.
+> 
+> This is not about how well it applies to the tailored
+> use in redhat's current scripts.
+*sigh* I think we have people able to handle such complex changes.
 
-will also print ther name when reserve_memblock_area/free_memblock_area are called.
+this is not what it's about. I don't care how it's called or if scripts
+will need to be changed. What I want to know is if either:
+a) we're reducing functionality of something in order to support more *real*
+   use cases with the same code, making it more generic;
+or
+b) we're reducing functionality based in theorical use cases.
 
--v2: according to Ingo, put " if (memblock_debug) " in one place
+if it's (a), you get my ACK
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/memblock.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index e36a10a..37dfa23 100644
---- a/arch/x86/mm/memblock.c
-+++ b/arch/x86/mm/memblock.c
-@@ -118,10 +118,10 @@ static void __init memblock_x86_subtract_reserved(struct range *range, int az)
- 	/* Take out region array itself at first*/
- 	memblock_free_reserved_regions();
- 
--	pr_info("Subtract (%ld early reservations)\n", memblock.reserved.cnt);
-+	memblock_dbg("Subtract (%ld early reservations)\n", memblock.reserved.cnt);
- 
- 	for_each_memblock(reserved, r) {
--		pr_info("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
-+		memblock_dbg("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
- 		final_start = PFN_DOWN(r->base);
- 		final_end = PFN_UP(r->base + r->size);
- 		if (final_start >= final_end)
-@@ -193,16 +193,16 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
- 	memblock_free_reserved_regions();
- 
- 	count  = memblock.reserved.cnt;
--	pr_info("(%d early reservations) ==> bootmem [%010llx-%010llx]\n", count, start, end - 1);
-+	memblock_dbg("(%d early reservations) ==> bootmem [%#010llx-%#010llx]\n", count, start, end - 1);
- 	for_each_memblock(reserved, r) {
--		pr_info("  [%010llx-%010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
-+		memblock_dbg("  [%#010llx-%#010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
- 		final_start = max(start, r->base);
- 		final_end = min(end, r->base + r->size);
- 		if (final_start >= final_end) {
--			pr_cont("\n");
-+			memblock_dbg("\n");
- 			continue;
- 		}
--		pr_cont(" ==> [%010llx-%010llx]\n", final_start, final_end - 1);
-+		memblock_dbg(" ==> [%#010llx-%#010llx]\n", final_start, final_end - 1);
- 		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
- 	}
- 
-@@ -280,9 +280,11 @@ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
- 	if (start == end)
- 		return;
- 
--	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
-+	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx)\n", start, end))
- 		return;
- 
-+	memblock_dbg("    memblock_x86_reserve_range: [%#010llx-%#010llx] %16s\n", start, end - 1, name);
-+
- 	memblock_reserve(start, end - start);
- }
- 
-@@ -291,9 +293,11 @@ void __init memblock_x86_free_range(u64 start, u64 end)
- 	if (start == end)
- 		return;
- 
--	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx]\n", start, end))
-+	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx)\n", start, end))
- 		return;
- 
-+	memblock_dbg("       memblock_x86_free_range: [%#010llx-%#010llx]\n", start, end - 1);
-+
- 	memblock_free(start, end - start);
- }
- 
 -- 
-1.6.4.2
+Aristeu
 
