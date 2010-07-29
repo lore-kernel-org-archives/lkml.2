@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab0G2LFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:05:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58755 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756915Ab0G2LB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:01:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,279,1278313200"; 
-   d="scan'208";a="590877561"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v8 08/16] Modify netdev_free_page() to release external buffer
-Date: Thu, 29 Jul 2010 19:14:40 +0800
-Message-Id: <1280402088-5849-9-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1280402088-5849-8-git-send-email-xiaohui.xin@intel.com>
-References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-2-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-3-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-4-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-5-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-6-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-7-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-8-git-send-email-xiaohui.xin@intel.com>
+	id S1756948Ab0G2LZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:25:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59088 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab0G2LZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 07:25:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
+Date: Thu, 29 Jul 2010 13:25:47 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20100729090607.GN26098@amd.com> <20100729184336N.fujita.tomonori@lab.ntt.co.jp> <20100729100108.GQ26098@amd.com>
+In-Reply-To: <20100729100108.GQ26098@amd.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007291325.48129.arnd@arndb.de>
+X-Provags-ID: V02:K0:e3oKlfHQhVHUQSkRx8oqTR76HnM3dRa+1aRoCeWawgZ
+ MN9u+6qYHnulz2h3nRuTeVfMhtKDxIWBSDynJ2Pz4/CgTWi/vP
+ eILIrIojfQTfF3jhzp335uFRda2CmtNYL9ssxzpuTBuFmFJpOa
+ fG5AtEyKfR/sgdVAPfkQHufdWj7wKU198Zkv0rnoSYBeyLoSKV
+ CqJNxGsjLgCPaCdTPr1wA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+On Thursday 29 July 2010, Roedel, Joerg wrote:
 
-Currently, it can get external buffers from mp device.
+> > You designed it for what you need at the time. It should have been
+> > named appropriately to avoid confusion. Later, when we actually
+> > understand what other IOMMUs need, we can evolve the specific API for
+> > generic purposes. Then we can rename the API to more generic.
+> 
+> At the time the iommu-api was written is was generic enough for what we
+> had. So it was designed as an generic API. At this point in time nobody
+> knew what the future requirements would we. So today it turns out that
+> it is not generic enough anymore for latest hardware. The logical
+> consequence is to fix this in the iommu-api.
 
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-Reviewed-by: Jeff Dike <jdike@linux.intel.com>
----
- include/linux/skbuff.h |    4 +++-
- net/core/skbuff.c      |   24 ++++++++++++++++++++++++
- 2 files changed, 27 insertions(+), 1 deletions(-)
+Well, I think the real question is why we have two APIs that both claim
+to work with IOMMUs in a generic way and how we could unify the two.
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index ab29675..3d7f70e 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -1512,9 +1512,11 @@ static inline struct page *netdev_alloc_page(struct net_device *dev)
- 	return __netdev_alloc_page(dev, GFP_ATOMIC);
- }
- 
-+extern void __netdev_free_page(struct net_device *dev, struct page *page);
-+
- static inline void netdev_free_page(struct net_device *dev, struct page *page)
- {
--	__free_page(page);
-+	__netdev_free_page(dev, page);
- }
- 
- /**
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 1a61e2b..bbf4707 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -306,6 +306,30 @@ struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
- }
- EXPORT_SYMBOL(__netdev_alloc_page);
- 
-+void netdev_free_ext_page(struct net_device *dev, struct page *page)
-+{
-+	struct skb_ext_page *ext_page = NULL;
-+	if (dev_is_mpassthru(dev) && dev->mp_port->hash) {
-+		ext_page = dev->mp_port->hash(dev, page);
-+		if (ext_page)
-+			ext_page->dtor(ext_page);
-+		else
-+			__free_page(page);
-+	}
-+}
-+EXPORT_SYMBOL(netdev_free_ext_page);
-+
-+void __netdev_free_page(struct net_device *dev, struct page *page)
-+{
-+	if (dev_is_mpassthru(dev)) {
-+		netdev_free_ext_page(dev, page);
-+		return;
-+	}
-+
-+	__free_page(page);
-+}
-+EXPORT_SYMBOL(__netdev_free_page);
-+
- void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
- 		int size)
- {
--- 
-1.5.4.4
+The Intel and AMD IOMMU drivers currently register at both the DMA
+API and the IOMMU API. The first one is used by everything except
+KVM and the second is only used by KVM.
 
+I really think we should not extend the (KVM) IOMMU API further but
+just use the generic DMA mapping api for KVM and extend it as necessary.
+It already has the concept of cache coherency and mapping/unmapping
+that are in the IOMMU API and could be extended to support domains
+as well, through the use of dma_attrs.
+
+	Arnd
