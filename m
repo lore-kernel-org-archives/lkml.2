@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab0G2WH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 18:07:58 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:52316 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab0G2WH5 (ORCPT
+	id S1755034Ab0G2WPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 18:15:05 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46086 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab0G2WPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 18:07:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6058"; a="49121866"
-Subject: Re: [PATCH v2] cpuidle: extend cpuidle and menu governor to handle
- dynamic states
-From: Ai Li <aili@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: dwalker@codeaurora.org, arjan@linux.intel.com, mingo@elte.hu,
-        shemminger@vyatta.com, czoccolo@gmail.com, len.brown@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-In-Reply-To: <20100729124141.ee20b34b.akpm@linux-foundation.org>
-References: <1280352443-28044-1-git-send-email-aili@codeaurora.org>
-	 <20100728145545.35caf67a.akpm@linux-foundation.org>
-	 <1280426600.22142.27.camel@ali-lnx.qualcomm.com>
-	 <20100729114306.093cc58c.akpm@linux-foundation.org>
-	 <1280430929.22142.51.camel@ali-lnx.qualcomm.com>
-	 <20100729124141.ee20b34b.akpm@linux-foundation.org>
-Content-Type: text/plain
-Date: Thu, 29 Jul 2010 16:07:55 -0600
-Message-Id: <1280441275.22142.75.camel@ali-lnx.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Jul 2010 18:15:02 -0400
+Date: Thu, 29 Jul 2010 23:14:26 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
+Message-ID: <20100729221426.GA28699@n2100.arm.linux.org.uk>
+References: <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop> <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home> <20100729170313.GB16420@barrios-desktop> <alpine.DEB.2.00.1007291222410.17734@router.home> <20100729183320.GH18923@n2100.arm.linux.org.uk> <1280436919.16922.11246.camel@nimitz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280436919.16922.11246.camel@nimitz>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-29 at 12:41 -0700, Andrew Morton wrote:
+On Thu, Jul 29, 2010 at 01:55:19PM -0700, Dave Hansen wrote:
+> Could you give some full examples of how the memory is laid out on these
+> systems?  I'm having a bit of a hard time visualizing it.
 
-> On Thu, 29 Jul 2010 13:15:29 -0600
-> Ai Li <aili@codeaurora.org> wrote:
-> 
-> > On Thu, 2010-07-29 at 11:43 -0700, Andrew Morton wrote:
-> > 
-> > > I'd be reluctant to merge this code without also having code which uses
-> > > it.  As it is the change is useless and untestable.
-> > 
-> > We have local code in the arch/arm/mach-msm branch that uses the new
-> > cpuidle code.  We are still developing and testing the MSM patches, and
-> > hope to upstream them in a few weeks.
-> > 
-> 
-> grumble.
-> 
-> Well, please at least explain all this in the changelogs when you send
-> out the next version.
+In the example I quote, there are four banks of memory, which start at
+0x10000000, 0x14000000, 0x18000000 and 0x1c000000 physical, which can
+be populated or empty, each one in multiples of 512KB up to the maximum
+64MB.
 
-Sure.  Or ...
+There are other systems where memory starts at 0xc0000000 and 0xc8000000
+physical, and the memory size is either 32MB or 64MB.
 
-On Thu, 2010-07-29 at 12:25 -0700, Daniel Walker wrote:
-> On Thu, 2010-07-29 at 13:15 -0600, Ai Li wrote:
-> > On Thu, 2010-07-29 at 11:43 -0700, Andrew Morton wrote:
-> > 
-> > > I'd be reluctant to merge this code without also having code which uses
-> > > it.  As it is the change is useless and untestable.
-> > 
-> > We have local code in the arch/arm/mach-msm branch that uses the new
-> > cpuidle code.  We are still developing and testing the MSM patches, and
-> > hope to upstream them in a few weeks.
-> 
-> We can just re-submit this patch with our msm cpuidle code when that is
-> finished.
+We also have one class of systems where memory starts at 0xc0000000,
+0xc1000000, 0xc2000000, etc - but I don't know what the minimum
+populated memory size in any one region is.
 
-If the consensus is that this is the better way, I can resubmit at the later
-time.  I'll send out a new version of the patch this week so to incorporate
-Andrew's comments.
+Things that we've tried over the years:
+1. flatmem, remapping memory into one contiguous chunk (which can cause
+   problems when parts of the kernel assume that the underlying phys
+   space is contiguous.)
+2. flatmem with holes and a 1:1 v:p mapping (was told we shouldn't be
+   doing this - and it becomes impossible with sparsely populated banks
+   of memory split over a large range.)
+3. discontigmem (was told this was too heavy, we're not NUMA, we shouldn't
+   be using this, and it will be deprecated, use sparsemem instead)
+4. sparsemem
 
-~Ai
+What we need is something which allows us to handle memory scattered
+in several regions of the physical memory map, each bank being a
+variable size.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+>From what I've seen through this thread, there is no support for such
+a setup.  (People seem to have their opinions on this, and will tell
+you what you should be using, only for someone else to tell you that
+you shouldn't be using that! - *)  This isn't something new for ARM,
+we've had these kinds of issues for the last 10 or more years.
 
+What is new is that we're now seeing systems where the first bank of
+memory to be populated is at a higher physical address than the second
+bank, and therefore people are setting up v:p mappings which switch the
+ordering of these - but this I think is unrelated to the discussion at
+hand.
+
+* - this is why I'm exasperated with this latest discussion on it.
+
+While we're here, I'll repeat a point made earlier.
+
+We don't map lowmem in using 4K pages.  That would be utter madness
+given the small TLB size ARM processors tend to have.  Instead, we
+map lowmem using 1MB section mappings (which occupy one entry in the
+L1 page table.)  Modifying these mappings requires all page tables
+in the system to be updated - which given that we're SMP etc. now
+is not practical.
+
+So the idea that we can remap a section of memory for the mem_map
+struct (as suggested several times in this thread) isn't possible
+without having it allocated in something like vmalloc space.
+Plus, of course, that if you did such a remapping in the lowmem
+mapping, the pages which were there become unusable as they lose
+their virtual mapping (thereby causing phys_to_virt/virt_to_phys
+on their addresses to break.)  Therefore, you only gain even more
+problems by this method.
