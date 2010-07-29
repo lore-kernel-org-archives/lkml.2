@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab0G2Fvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:51:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43465 "EHLO mx1.redhat.com"
+	id S1753216Ab0G2F4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:56:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54191 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750815Ab0G2Fvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:51:52 -0400
-Date: Thu, 29 Jul 2010 07:51:43 +0200
-From: Jiri Pirko <jpirko@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephen hemminger <shemminger@vyatta.com>
-Subject: Re: linux-next: manual merge of the net tree with the net-current
- tree
-Message-ID: <20100729055143.GB2647@psychotron.redhat.com>
-References: <20100729110504.df0b5791.sfr@canb.auug.org.au>
+	id S1751149Ab0G2F4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:56:51 -0400
+Date: Thu, 29 Jul 2010 08:56:41 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 5/6] kvm, x86: use ro page and don't copy shared page
+Message-ID: <20100729055641.GK31711@redhat.com>
+References: <4C3FC033.3000605@cn.fujitsu.com>
+ <20100716071936.GE17894@redhat.com>
+ <4C50E43A.4020106@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100729110504.df0b5791.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C50E43A.4020106@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me.
+On Thu, Jul 29, 2010 at 10:15:22AM +0800, Lai Jiangshan wrote:
+> On 07/16/2010 03:19 PM, Gleb Natapov wrote:
+> 
+> >> +/* get a current mapped page fast, and test whether the page is writable. */
+> >> +static struct page *get_user_page_and_protection(unsigned long addr,
+> >> +	int *writable)
+> >> +{
+> >> +	struct page *page[1];
+> >> +
+> >> +	if (__get_user_pages_fast(addr, 1, 1, page) == 1) {
+> >> +		*writable = 1;
+> >> +		return page[0];
+> >> +	}
+> >> +	if (__get_user_pages_fast(addr, 1, 0, page) == 1) {
+> >> +		*writable = 0;
+> >> +		return page[0];
+> >> +	}
+> >> +	return NULL;
+> >> +}
+> >> +
+> >> +static pfn_t kvm_get_pfn_for_page_fault(struct kvm *kvm, gfn_t gfn,
+> >> +		int write_fault, int *host_writable)
+> >> +{
+> >> +	unsigned long addr;
+> >> +	struct page *page;
+> >> +
+> >> +	if (!write_fault) {
+> >> +		addr = gfn_to_hva(kvm, gfn);
+> >> +		if (kvm_is_error_hva(addr)) {
+> >> +			get_page(bad_page);
+> >> +			return page_to_pfn(bad_page);
+> >> +		}
+> >> +
+> >> +		page = get_user_page_and_protection(addr, host_writable);
+> >> +		if (page)
+> >> +			return page_to_pfn(page);
+> >> +	}
+> >> +
+> >> +	*host_writable = 1;
+> >> +	return kvm_get_pfn_for_gfn(kvm, gfn);
+> >> +}
+> >> +
+> > kvm_get_pfn_for_gfn() returns fault_page if page is mapped RO, so caller
+> > of kvm_get_pfn_for_page_fault() and kvm_get_pfn_for_gfn() will get
+> > different results when called on the same page. Not good.
+> > kvm_get_pfn_for_page_fault() logic should be folded into
+> > kvm_get_pfn_for_gfn().
+> > 
+> 
+> 
+> The different results are the things we just need.
+How so? Users of kvm_get_pfn_for_gfn() will think that page is invalid
+and may report misconfiguration to userspace and users of
+kvm_get_pfn_for_page_fault() will think that the access to page is OK.
+There are no many users of kvm_get_pfn_for_gfn() and may be your patch
+replace all of them with kvm_get_pfn_for_page_fault(), but this just
+strengthen the point that they should be merged.
 
-Thu, Jul 29, 2010 at 03:05:04AM CEST, sfr@canb.auug.org.au wrote:
->Hi all,
->
->Today's linux-next merge of the net tree got a conflict in
->net/bridge/br_input.c between commit
->eeaf61d8891f9c9ed12c1a667e72bf83f0857954 ("bridge: add rcu_read_lock on
->transmit") from the net-current tree and commit
->ab95bfe01f9872459c8678572ccadbf646badad0 ("net: replace hooks in
->__netif_receive_skb V5") from the net tree.
->
->Just overlapping changes in a comment.  I fixed it up (see below) and can
->carry the fix for a while.
->-- 
->Cheers,
->Stephen Rothwell                    sfr@canb.auug.org.au
->
->diff --cc net/bridge/br_input.c
->index 114365c,5fc1c5b..0000000
->--- a/net/bridge/br_input.c
->+++ b/net/bridge/br_input.c
->@@@ -108,13 -110,12 +110,12 @@@ drop
->  	goto out;
->  }
->  
-> -/* note: already called with rcu_read_lock (preempt_disabled) */
-> +/* note: already called with rcu_read_lock */
->  static int br_handle_local_finish(struct sk_buff *skb)
->  {
->- 	struct net_bridge_port *p = rcu_dereference(skb->dev->br_port);
->+ 	struct net_bridge_port *p = br_port_get_rcu(skb->dev);
->  
->- 	if (p)
->- 		br_fdb_update(p->br, p, eth_hdr(skb)->h_source);
->+ 	br_fdb_update(p->br, p, eth_hdr(skb)->h_source);
->  	return 0;	 /* process further */
->  }
->  
->@@@ -131,12 -132,13 +132,12 @@@ static inline int is_link_local(const u
->  }
->  
->  /*
->-  * Called via br_handle_frame_hook.
->   * Return NULL if skb is handled
->-  * note: already called with rcu_read_lock
-> - * note: already called with rcu_read_lock (preempt_disabled) from
-> - * netif_receive_skb
->++ * note: already called with rcu_read_lock from netif_receive_skb
->   */
->- struct sk_buff *br_handle_frame(struct net_bridge_port *p, struct sk_buff *skb)
->+ struct sk_buff *br_handle_frame(struct sk_buff *skb)
->  {
->+ 	struct net_bridge_port *p;
->  	const unsigned char *dest = eth_hdr(skb)->h_dest;
->  	int (*rhook)(struct sk_buff *skb);
->  
+> We don't want to copy and write a page which is mapped RO when
+> only read fault.
+I don't see how returning inconsistent results helps us achieving that.
+
+BTW since kvm_get_pfn_for_gfn() will never map RO page
+get_user_page_and_protection() will never find any RO pages. Looks like
+kvm_get_pfn_for_page_fault() is equivalent to kvm_get_pfn_for_gfn()
+since !write_fault section will at best find mapped RW page.
+
+--
+			Gleb.
