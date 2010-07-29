@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab0G2QKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 12:10:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52017 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab0G2QKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 12:10:18 -0400
-Date: Thu, 29 Jul 2010 18:09:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/5]  [RFC] transfer ASYNC vmscan writeback IO to the
- flusher threads
-Message-ID: <20100729160947.GE12690@quack.suse.cz>
-References: <20100729115142.102255590@intel.com>
+	id S1758017Ab0G2QNX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 12:13:23 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:35524 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757955Ab0G2QNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 12:13:22 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C51A88B.3040807@s5r6.in-berlin.de>
+Date: Thu, 29 Jul 2010 18:12:59 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729115142.102255590@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux1394-devel@lists.sourceforge.net
+CC: linux-kernel@vger.kernel.org, Jay Fenlason <fenlason@redhat.com>
+Subject: Re: [PATCH rfc] firewire: add isochronous multichannel reception
+References: <tkrat.c7f7ffc33f9f1ed2@s5r6.in-berlin.de>
+In-Reply-To: <tkrat.c7f7ffc33f9f1ed2@s5r6.in-berlin.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 29-07-10 19:51:42, Wu Fengguang wrote:
-> Andrew,
-> 
-> It's possible to transfer ASYNC vmscan writeback IOs to the flusher threads.
-> This simple patchset shows the basic idea. Since it's a big behavior change,
-> there are inevitably lots of details to sort out. I don't know where it will
-> go after tests and discussions, so the patches are intentionally kept simple.
-> 
-> sync livelock avoidance (need more to be complete, but this is minimal required for the last two patches)
-> 	[PATCH 1/5] writeback: introduce wbc.for_sync to cover the two sync stages
-> 	[PATCH 2/5] writeback: stop periodic/background work on seeing sync works
-> 	[PATCH 3/5] writeback: prevent sync livelock with the sync_after timestamp
-  Well, essentially any WB_SYNC_NONE writeback is still livelockable if you
-just grow a file constantly. So your changes are a step in the right
-direction but won't fix the issue completely. But what we could do to fix
-the issue completely would be to just set wbc->nr_to_write to LONG_MAX
-before writing inode for sync use my livelock avoidance using page-tagging
-for this case (it wouldn't have the possible performance issue because we
-are going to write all the inode anyway).
-  I can write the patch but frankly there are so many patches floating
-around that I'm not sure what I should base it on...
+Stefan Richter wrote:
+>  static int ohci_queue_iso(struct fw_iso_context *base,
+>  			  struct fw_iso_packet *packet,
+>  			  struct fw_iso_buffer *buffer,
+> @@ -2587,14 +2761,17 @@ static int ohci_queue_iso(struct fw_iso_
+>  {
+>  	struct iso_context *ctx = container_of(base, struct iso_context, base);
+>  	unsigned long flags;
+> -	int ret;
+> +	int ret = -ENOSYS;
+>  
+>  	spin_lock_irqsave(&ctx->context.ohci->lock, flags);
+> -	if (base->type == FW_ISO_CONTEXT_TRANSMIT)
+> -		ret = ohci_queue_iso_transmit(base, packet, buffer, payload);
+> -	else
+> -		ret = ohci_queue_iso_receive_packet_per_buffer(base, packet,
+> -							buffer, payload);
+> +	switch (base->type) {
+> +	case FW_ISO_CONTEXT_TRANSMIT:
+> +		ret = queue_iso_transmit(base, packet, buffer, payload);
+> +	case FW_ISO_CONTEXT_RECEIVE:
+> +		ret = queue_iso_packet_per_buffer(base, packet, buffer, payload);
+> +	case FW_ISO_CONTEXT_RECEIVE_MULTICHANNEL:
+> +		ret = queue_iso_buffer_fill(base, packet, buffer, payload);
+> +	}
+>  	spin_unlock_irqrestore(&ctx->context.ohci->lock, flags);
+>  
+>  	return ret;
 
-								Honza
-
+Where is the brown paper bag...
+There should be break; at each case.  Updated patch is at
+http://user.in-berlin.de/~s5r6/linux1394/pending/1171-firewire-add-isochronous-multichannel-reception.patch
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Stefan Richter
+-=====-==-=- -=== ===-=
+http://arcgraph.de/sr/
