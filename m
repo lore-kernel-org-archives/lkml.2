@@ -1,123 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab0G2Pqf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 11:46:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57322 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757390Ab0G2Pqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 11:46:33 -0400
-Date: Thu, 29 Jul 2010 11:35:35 -0400
-From: Jarod Wilson <jarod@redhat.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: sfr@canb.auug.org.au, lirc-list@lists.sourceforge.net,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, mchehab@redhat.com
-Subject: [PATCH] staging/lirc: fix non-CONFIG_MODULES build horkage
-Message-ID: <20100729153535.GB7507@redhat.com>
+	id S1757858Ab0G2Pvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:51:53 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60636 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740Ab0G2Pvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 11:51:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=vU4KP7HZTu1egdcwc1GxE/ELs8WVSNdOCXyftNArjUIylWshpI4O+a1M1ZdfEZFvER
+         J9WxitYnvT/qVxMDCFz5+31tWpMBaGnwlI6XYY4H3YepFRSqRzMqBtyHBm9Pq/eO+SiJ
+         W5nJFSDru5NJuosxaMImnh+tMusB4i9jeVGuM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100728101358.e0dcd54d.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Thu, 29 Jul 2010 12:51:49 -0300
+X-Google-Sender-Auth: IlKVRPGlKuKUHQvfmJokjmlozL8
+Message-ID: <AANLkTiko540hMAUhaJr5mNKzFK2-vBOTZmEOxZWZv7ci@mail.gmail.com>
+Subject: [PATCH] drivers: Fixes a typo from "dev" to "ndev" that caused 
+	compilation erros.
+From: Henrique Camargo <henrique.camargo@ensitec.com.br>
+To: "David S. Miller" <davem@davemloft.net>,
+        Chaithrika U S <chaithrika@ti.com>, Sriramakrishnan <srk@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Jiri Pirko <jpirko@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: segooon@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix when CONFIG_MODULES is not enabled:
+From: Henrique Camargo
 
-drivers/staging/lirc/lirc_parallel.c:243: error: implicit declaration of function 'module_refcount'
-drivers/staging/lirc/lirc_it87.c:150: error: implicit declaration of function 'module_refcount'
-drivers/built-in.o: In function `it87_probe':
-lirc_it87.c:(.text+0x4079b0): undefined reference to `init_chrdev'
-lirc_it87.c:(.text+0x4079cc): undefined reference to `drop_chrdev'
-drivers/built-in.o: In function `lirc_it87_exit':
-lirc_it87.c:(.exit.text+0x38a5): undefined reference to `drop_chrdev'
+Fixes a typo from "dev" to "ndev" that caused compilation errors.
 
-Its a quick hack and untested beyond building, since I don't have the
-hardware, but it should do the trick.
-
-Signed-off-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Henrique Camargo <henrique.camargo@ensitec.com.br>
 ---
- drivers/staging/lirc/lirc_it87.c     |    9 ++++++---
- drivers/staging/lirc/lirc_parallel.c |    4 ++--
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/davinci_emac.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/lirc/lirc_it87.c b/drivers/staging/lirc/lirc_it87.c
-index 781abc3..72f07f1 100644
---- a/drivers/staging/lirc/lirc_it87.c
-+++ b/drivers/staging/lirc/lirc_it87.c
-@@ -109,6 +109,7 @@ static DECLARE_WAIT_QUEUE_HEAD(lirc_read_queue);
- 
- static DEFINE_SPINLOCK(hardware_lock);
- static DEFINE_SPINLOCK(dev_lock);
-+static bool device_open;
- 
- static int rx_buf[RBUF_LEN];
- unsigned int rx_tail, rx_head;
-@@ -147,10 +148,11 @@ static void drop_port(void);
- static int lirc_open(struct inode *inode, struct file *file)
- {
- 	spin_lock(&dev_lock);
--	if (module_refcount(THIS_MODULE)) {
-+	if (device_open) {
- 		spin_unlock(&dev_lock);
- 		return -EBUSY;
- 	}
-+	device_open = true;
- 	spin_unlock(&dev_lock);
- 	return 0;
- }
-@@ -158,6 +160,9 @@ static int lirc_open(struct inode *inode, struct file *file)
- 
- static int lirc_close(struct inode *inode, struct file *file)
- {
-+	spin_lock(&dev_lock);
-+	device_open = false;
-+	spin_unlock(&dev_lock);
- 	return 0;
- }
- 
-@@ -363,7 +368,6 @@ static struct lirc_driver driver = {
- };
- 
- 
--#ifdef MODULE
- static int init_chrdev(void)
- {
- 	driver.minor = lirc_register_driver(&driver);
-@@ -380,7 +384,6 @@ static void drop_chrdev(void)
- {
- 	lirc_unregister_driver(driver.minor);
- }
--#endif
- 
- 
- /* SECTION: Hardware */
-diff --git a/drivers/staging/lirc/lirc_parallel.c b/drivers/staging/lirc/lirc_parallel.c
-index df12e7b..04ce97713 100644
---- a/drivers/staging/lirc/lirc_parallel.c
-+++ b/drivers/staging/lirc/lirc_parallel.c
-@@ -240,7 +240,7 @@ static void irq_handler(void *blah)
- 	unsigned int level, newlevel;
- 	unsigned int timeout;
- 
--	if (!module_refcount(THIS_MODULE))
-+	if (!is_open)
- 		return;
- 
- 	if (!is_claimed)
-@@ -515,7 +515,7 @@ static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
- 
- static int lirc_open(struct inode *node, struct file *filep)
- {
--	if (module_refcount(THIS_MODULE) || !lirc_claim())
-+	if (is_open || !lirc_claim())
- 		return -EBUSY;
- 
- 	parport_enable_irq(pport);
+diff --git a/drivers/net/davinci_emac.c b/drivers/net/davinci_emac.c
+index 25e14d2..b89b7bf 100644
+--- a/drivers/net/davinci_emac.c
++++ b/drivers/net/davinci_emac.c
+@@ -1182,8 +1182,8 @@ static int emac_net_tx_complete(struct emac_priv *priv,
+        struct net_device *ndev = priv->ndev;
+        u32 cnt;
 
-
+-       if (unlikely(num_tokens && netif_queue_stopped(dev)))
+-               netif_start_queue(dev);
++       if (unlikely(num_tokens && netif_queue_stopped(ndev)))
++               netif_start_queue(ndev);
+        for (cnt = 0; cnt < num_tokens; cnt++) {
+                struct sk_buff *skb = (struct sk_buff *)net_data_tokens[cnt];
+                if (skb == NULL)
 -- 
-Jarod Wilson
-jarod@redhat.com
-
+1.7.0.4
