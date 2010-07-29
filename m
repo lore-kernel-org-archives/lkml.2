@@ -1,67 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab0G2Oom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 10:44:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754214Ab0G2Ook (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 10:44:40 -0400
-Date: Thu, 29 Jul 2010 10:47:49 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH] kconfig: use long options in conf
-Message-ID: <20100729144748.GI6249@redhat.com>
-References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <20100729081316.GA4990@merkur.ravnborg.org> <4C5148A5.10809@suse.cz>
+	id S1757715Ab0G2OxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 10:53:24 -0400
+Received: from fall-pradero.atl.sa.earthlink.net ([207.69.195.104]:34233 "EHLO
+	fall-pradero.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757687Ab0G2OxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 10:53:22 -0400
+X-Greylist: delayed 690 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jul 2010 10:53:22 EDT
+Date: Thu, 29 Jul 2010 10:41:50 -0400 (EDT)
+From: Mark Whitis <whitis@freelabs.com>
+X-X-Sender: whitis@cervantes
+To: linux-kernel@vger.kernel.org
+Subject: Re: usbtmc makes Rigol DS1052E oscilloscope crash
+Message-ID: <alpine.DEB.2.00.1007290906210.25904@cervantes>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C5148A5.10809@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 11:23:49AM +0200, Michal Marek wrote:
-> On 29.7.2010 10:13, Sam Ravnborg wrote:
-> > On Wed, Jul 28, 2010 at 10:36:22PM +0200, Sam Ravnborg wrote:
-> >> Hi Michal.
-> >>
-> >> I cooked up the following to introduce long options in conf.
-> >> But in the process I dropped the short options. Is this OK?
-> > 
-> > On top of this patch I did another two.
-> > They fixup the *nonint_oldconfig targets:
-> > 
-> > nonint_oldconfig:
-> > - renamed to listnewconfig
-> > - print new options to stdout (to better support redirect)
-> > - no longer saves a new configuration
-> > - does ot exist with a failure code if there is new options
-but this kills its usefulness. nonint_oldconfig is used so you can script
-the use of a generated configuration (think distro kernel RPMs). if something
-is not set, it fails listing what's not set. otherwise it'll save the
-configuration and whatever script is using it can proceed.
-"listnewconfig" is a new, different target to me.
+On May 25, 2010, 10:34 AM dfnsonfsduifb at gmx wrote:
+> I'm experiencing trouble connecting to a Rigol DS1052E oscilloscope via
+> the usbtmc USB class driver. When requesting small amounts of data it
+> works quite nicely, but when requesting a large chunk (i.e. when
+> requesting the whole memory to be transferred), the read aborts, the
+> connection times out and ultimately this leads to the oscilloscope 
+> crashing.
 
-> > loose_noninit_oldconfig:
-> > - renamed to oldnoconfig
-> > - does ot exist with a failure code if there is new options
-> > 
-> > This is a lot cleaner and much more sensible names.
-> > And they still support the suecase where they
-> > list new options and can set them to n per default.
-> 
-> I do not object, these new targets are only in the kbuild tree atm, so
-> users are not relying on them yet. And the new names indeed describe
-> better what they do. Aristeu?
-oldnoconfig is fine to me.
+On my system, I have a similar problem but with somewhat different 
+symptoms.
 
--- 
-Aristeu
+I only get 2018 bytes back, whether the scope sends 8192 or 
+524288 bytes.    610 bytes and 1210 bytes read ok.
 
+In the source for this module, I notice that there is a 2048 byte buffer 
+and a 10ms timeout, either of which could cause trouble depending on how 
+they are used.
+
+Linux cervantes 2.6.28-11-generic #42-Ubuntu SMP Fri Apr 17 01:58:03 UTC 
+2009 x86_64 GNU/Linux
+
+./rigolterm
+Rigol Technologies,DS1052E,DS1ED122307041,00.02.04.00.01
+Rigol Technologies,DS1052E,DS1ED122307041,00.02.04.00.01
+rigol> *IDN?
+[56]:Rigol Technologies,DS1052E,DS1ED122307041,00.02.04.00.01
+rigol> :ACQUIRE:MEMDEPTH LONG
+No response
+[-1]:
+rigol> :WAVFORM:POINTS:MODE RAW
+No response
+[-1]:
+rigol> :RUN
+No response
+[-1]:
+rigol> :FORCE
+No response
+[-1]:
+rigol> :STOP
+No response
+[-1]:
+rigol> :CHAN1:MEMD?
+No response
+[-1]:
+rigol> :CHAN1:MEMD?
+No response
+[-1]:
+rigol> :CHAN1:MEMD?
+No response
+[-1]:
+rigol> :CHAN1:MEMD?
+No response
+[-1]:
+rigol> :CHAN1:MEMD?
+[6]:524288
+rigol> :WAV:DATA? CHANNEL1
+No response
+[-1]:
+rigol> :WAV:DATA? CHANNEL1
+No response
+[-1]:
+rigol> :WAV:DATA? CHANNEL1
+[2018]:
+23 38 30 30 35 32 34 32 38 38 CA CA CA CA CA CA
+CA CA CA CA CA CA CA CA CA CA CA CA CA CA CA CA
+CA C9 CA C9 CA C9 CA CA C9 CA CA CA CA C9 C9 CA
+CA C9 C9 C9 C9 C9 CA CA C9 CA CA CA C9 C9 C9 C9
+C9 CA CA CA CA C9 CA CA C9 CA CA CA CA C9 CA C9
+CA C9 CA CA CA CA C9 C9 C9 CA CA C9 C9 CA C9 CA
+CA C9 CA CA CA CA C9 CA CA CA CA CA CA C9 CA C9
+CA C9 C9 C9 C9 CA CA C9 C9 CA CA CA CA CA C9 C9
+CA CA CA C9 CA C9 CA C9 CA C9 C9 CA C9 CA CA C9
+C9 CA C9 CA C9 C9 C9 CA C9 CA CA C9 C9 CA CA CA
+C9 C9 C9 CA CA CA CA CA CA CA C9 C9 C9 CA C9 C9
+C9 C9 CA CA C9 C9 C9 CA C9 CA C9 C9 CA C9 CA CA
+C9 C9 CA CA C9 C9 CA CA CA C9 CA C9 CA CA CA CA
+C9 C9 CA CA CA CA CA CA C9 CA C9 CA C9 CA CA C9
+C9 CA CA CA CA CA C9 CA C9 C9 CA CA C9 C9 CA CA
+CA CA C9 C9 C9 CA C9 CA C9 C9 C9 CA CA C9 C9 C9
+C9 C9 CA CA CA CA C9 C9 CA C9 C9 C9 C9 C9 CA C9
+CA C9 C9 CA CA CA CA C9 CA CA CA CA C9 CA CA CA
+C9 C9 CA C9 C9 CA C9 CA CA CA C9 C9 CA C9 CA CA
+CA CA C9 CA CA C9 C9 C9 C9 C9 C9 CA CA CA C9 C9
+C9 CA CA C9 CA C9 CA C9 C9 C9 C9 C9 C9 CA C9 CA
+C9 C9 CA C9 C9 C9 CA CA C9 CA CA CA CA CA CA CA
+C9 C9 C9 C9 C9 CA CA CA CA C9 C9 C9 CA CA CA CA
+C9 C9 C9 C9 C9 CA CA CA CA CA CA C9 CA C9 C9 C9
+CA CA CA CA C9 CA CA CA C9 CA C9 C9 C9 C9 C9 C9
+C9 CA C9 CA C9 CA C9 C9 C9 CA CA CA CA CA CA CA
+C9 C9 C9 C9 C9 C9 CA C9 C9 C9 C9 CA CA CA CA CA
+C9 C9 C9 C9 CA CA CA CA CA CA CA C9 CA CA CA C9
+CA CA C9 CA C9 C9 C9 CA CA C9 CA CA C9 CA C9 CA
+CA CA CA C9 C9 CA C9 CA CA C9 C9 CA CA CA CA CA
+CA CA CA CA C9 CA C9 CA CA CA CA CA CA CA CA CA
+CA C9 CA CA CA CA CA CA C9 C9 CA C9 CA C9 C9 CA
+CA C9 C9 CA C9 CA CA CA C9 C9 CA C9 C9 CA CA CA
+CA CA C9 CA CA CA CA C9 C9 C9 CA CA C9 C9 CA CA
+CA CA CA C9 C9 C9 C9 CA CA C9 C9 C9 C9 C9 CA C9
+C9 C9 CA CA CA CA CA CA CA CA C9 CA CA CA C9 C9
+CA CA C9 CA CA CA CA CA CA C9 C9 CA CA C9 CA CA
+CA CA C9 CA C9 C9 CA CA C9 CA C9 CA CA CA C9 C9
+CA CA C9 CA CA CA C9 C9 C9 CA C9 C9 CA C9 CA CA
+C9 CA C9 CA CA C9 C9 CA C9 CA C9 CA CA CA CA C9
+C9 C9 CA CA CA CA CA CA CA CA CA CA CA CA CA CA
+CA CA CA CA C9 CA CA CA CA C9 CA CA CA C9 CA C9
+CA C9 C9 CA C9 CA CA CA CA C9 CA C9 CA CA CA CA
+CA CA CA C9 CA CA CA C9 C9 C9 C9 C9 CA CA CA C9
+CA C9 CA C9 C9 CA CA CA C9 C9 CA CA C9 C9 C9 C9
+CA CA CA CA CA CA CA CA CA C9 C9 CA C9 C9 C9 C9
+CA CA CA C9 C9 C9 CA CA CA CA CA CA CA CA CA C9
+CA C9 C9 CA CA C9 C9 CA CA CA CA CA CA CA CA C9
+C9 C9 C9 C9 C9 CA C9 CA C9 C9 CA CA C9 C9 C9 CA
+CA CA CA C9 C9 CA CA C9 C9 CA CA C9 C9 C9 CA CA
+CA CA C9 CA C9 CA C9 C9 C9 CA CA C9 CA C9 C9 CA
+CA C9 C9 C9 CA CA C9 CA C9 CA C9 C9 C9 C9 CA CA
+C9 C9 C9 CA CA CA C9 CA C9 CA CA C9 C9 C9 C9 CA
+C9 CA CA C9 CA C9 CA C9 C9 C9 CA CA C9 C9 C9 CA
+CA CA C9 C9 CA CA CA C9 C9 CA CA CA C9 C9 C9 C9
+C9 C9 C9 CA C9 C9 CA CA CA CA C9 CA C9 CA CA C9
+C9 CA CA CA C9 C9 CA C9 CA CA CA CA C9 CA C9 CA
+C9 CA CA C9 C9 C9 C9 C9 C9 CA CA CA C9 C9 C9 C9
+C9 C9 CA C9 C9 CA C9 CA CA CA C9 C9 CA CA C9 CA
+C9 CA C9 C9 C9 C9 CA C9 C9 CA C9 C9 C9 CA CA C9
+C9 CA CA C9 C9 CA CA CA C9 C9 C9 CA C9 C9 CA C9
+C9 CA CA C9 C9 C9 CA CA CA C9 C9 C9 CA C9 C9 C9
+CA C9 C9 CA C9 C9 C9 CA C9 C9 C9 C9 C9 C9 CA CA
+C9 C9 C9 C9 CA C9 C9 C9 C9 C9 C9 CA CA CA C9 CA
+CA CA C9 C9 C9 C9 CA C9 CA CA C9 C9 C9 C9 C9 C9
+CA CA C9 C9 CA CA C9 C9 C9 C9 CA C9 C9 CA CA C9
+C9 C9 C9 CA CA C9 C9 C9 CA C9 C9 C9 C9 CA C9 C9
+C9 C9 CA C9 C9 C9 C9 CA C9 C9 CA C9 C9 C9 C9 C9
+CA C9 C9 C9 C9 C9 C9 CA CA CA C9 C9 CA CA CA CA
+CA C9 C9 C9 C9 CA C9 C9 C9 C9 C9 CA C9 C9 C9 CA
+C9 CA C9 CA CA C9 CA CA C9 C9 CA C9 C9 CA C9 C9
+C9 C9 CA CA C9 C9 C9 C9 CA C9 C9 CA CA CA C9 C9
+CA C9 C9 CA C9 C9 CA C9 C9 CA CA C9 C9 C9 C9 CA
+CA CA C9 CA C9 C9 CA CA CA C9 CA CA C9 CA CA C9
+C9 C9 C9 CA C9 C9 CA C9 C9 C9 C9 C9 CA CA CA CA
+C9 CA CA CA C9 C9 C9 C9 CA C9 CA C9 C9 C9 C9 C9
+CA CA C9 C9 C9 CA C9 CA CA C9 C9 CA CA C9 C9 C9
+C9 C9 C9 C9 C9 C9 CA CA C9 C9 C9 C9 CA C9 C9 CA
+CA C9 C9 C9 C9 C9 CA C9 CA CA C9 C9 C9 C9 C9 C9
+CA C9 CA C9 C9 C9 C9 C9 C9 CA CA C9 C9 C9 C9 C9
+CA CA C9 CA CA C9 C9 C9 C9 C9 CA C9 CA C9 C9 C9
+C9 CA CA CA C9 C9 C9 C9 CA CA CA CA C9 CA C9 C9
+C9 C9 CA C9 CA C9 C9 CA C9 C9 CA C9 CA CA C9 C9
+CA CA CA CA C9 C9 CA C9 C9 C9 CA C9 C9 C9 C9 C9
+CA CA C9 C9 C9 CA CA C9 C9 C9 C9 CA C9 CA C9 C9
+CA CA C9 CA C9 CA CA C9 C9 C9 CA C9 C9 CA C9 C9
+C9 C9 C9 C9 C9 CA C9 C9 C9 CA CA CA C9 C9 CA C9
+C9 C9 CA CA C9 CA CA C9 CA C9 C9 CA C9 CA C9 CA
+C9 C9 C9 C9 CA C9 C9 CA C9 CA C9 C9 C9 C9 CA C9
+CA C9 CA C9 CA C9 C9 C9 C9 CA C9 C9 C9 C9 C9 C9
+C9 C9 C9 C9 C9 C9 C9 C9 C9 C9 C9 C9 C9 CA C9 C9
+CA C9 C9 C9 CA CA C9 CA CA C9 C9 CA C9 C9 CA CA
+C9 C9 CA CA C9 C9 C9 C9 CA C9 C9 CA CA C9 CA C9
+C9 C9 CA CA C9 C9 C9 C9 C9 CA C9 C9 C9 CA CA CA
+C9 C9 CA CA C9 CA CA C9 C9 CA C9 CA C9 C9 CA C9
+C9 C9 CA C9 CA C9 C9 C9 C9 C9 CA C9 C9 C9 C9 C9
+C9 C9 C9 C9 C9 C9 C9 C9 C9 CA CA C9 C9 C9 CA C9
+C9 CA C9 C9 CA C9 C9 C9 C9 C9 C9 C9 C9 C9 C9 C9
+CA C9 C9 CA C9 C9 CA CA C9 C9 CA C9 C9 C9 C9 C9
+CA C9 CA C9 C9 C9 C9 C9 C9 CA C9 C9 C9 C9 CA CA
+C9 CA C9 C9 C9 CA C9 C9 CA CA C9 C9 C9 C9 CA C9
+C9 CA C9 C9 C9 C9 CA CA C9 C9 C9 C9 CA C9 C9 CA
+C9 C9 C9 C9 C9 C9 C9 CA CA C9 C9 CA C9 CA CA C9
+C9 C9 C9 C9 C9 CA C9 C9 CA C9 C9 C9 CA CA C9 C9
+C9 C9 CA C9 CA CA C9 CA CA C9 C9 CA C9 CA CA CA
+CA CA CA C9 C9 C9 C9 C9 CA C9 C9 CA C9 C9 C9 C9
+C9 C9 C9 C9 CA CA CA C9 C9 CA C9 C9 CA C9 CA C9
+C9 CA C9 CA C9 CA C9 C9 C9 C9 CA C9 CA CA CA C9
+C9 C9 C9 C9 C9 CA CA CA C9 C9 C9 C9 C9 CA C9 C9
+C9 C9 CA CA C9 CA C9 CA C9 C9 CA C9 CA C9 C9 C9
+C9 C9 C9 CA C9 CA C9 C9 CA C9 CA C9 C9 CA C9 CA
+C9 CA C9 CA C9 C9 CA C9 CA CA CA C9 CA C9 CA C9
+C9 C9 C9 C9 CA CA C9 C9 C9 C9 C9 C9 CA CA C9 C9
+CA CA CA C9 C9 CA CA CA CA C9 CA CA C9 CA CA CA
+C9 CA C9 C9 C9 C9 C9 CA C9 C9 CA CA CA C9 C9 C9
+CA CA C9 CA C9 C9 C9 CA CA CA C9 CA C9 C9 CA C9
+C9 C9 CA C9 C9 C9 C9 C9 CA CA C9 C9 CA C9 C9 C9
+C9 C9 C9 C9 C9 C9 CA CA C9 C9 C9 CA CA C9 C9 CA
+CA C9 C9 C9 C9 CA C9 CA C9 C9 CA C9 CA C9 C9 C9
+C9 C9 C9 C9 CA C9 CA C9 C9 CA CA C9 C9 CA CA CA
+C9 CA CA CA C9 CA CA CA C9 CA C9 C9 CA CA C9 CA
+CA CA C9 C9 CA CA C9 C9 CA C9 C9 CA CA C9 C9 C9
+C9 C9 C9 CA C9 CA C9 C9 CA CA C9 C9 C9 C9 CA C9
+CA CA C9 C9 C9 C9 CA CA C9 C9 CA C9 CA C9 C9 CA
+CA CA C9 CA CA CA C9 C9 C9 CA CA C9 CA C9 C9 C9
+CA C9 C9 C9 CA C9 C9 C9 C9 C9 C9 C9 CA CA C9 C9
+C9 CA
+rigol>
+
+
+rigol> :WAVE:DATA? CHANNEL1
+No response
+[-1]:
+rigol> :WAVE:DATA? CHANNEL1
+No response
+[-1]:
+rigol> *IDN?
+No response
+[-1]:
+rigol> *IDN?
+No response
+[-1]:
+rigol> *IDN?
+[56]:Rigol Technologies,DS1052E,DS1ED122307041,00.02.04.00.01
+rigol> :WAV:DATA? CHANNEL1
+[2018]:
+23 38 30 30 35 32 34 32 38 38 CA CA CA CA CA CA
+CA CA CA CA CA CA CA CA CA CA CA CA CA CA CA CA
+CA C9 CA C9 CA C9 CA CA C9 CA CA CA CA C9 C9 CA
+...
+
+
+Bytes 2-9 (starting at 0) in the response are the length of the following 
+data in ASCII digits: 00524288. Some flakyness on intermittently responding
+to commands is also evident.    This seems to happen after a big data
+transfer.
+
+Intermittent response to commands continues if the program is exited and 
+restarted or the scope power cycled.   Even after removing and reloading 
+the kernel module.
+
+
+
+// rigolterm.c - Copyright 2010 by Mark Whitis
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <errno.h>
+#include <linux/usb/tmc.h>
+
+char *new_fgets(char *s, int size, FILE *stream)
+{
+   char *rc;
+   int i;
+   s[0]=0;
+   rc=fgets(s,size,stream);
+   // remove newline
+   for(i=0;i<size;i++) {
+     if(s[i]==0) break;
+     if(s[i]=='\n') s[i]=0;
+   }
+   // make sure string is terminated
+   s[size-1]=0;
+   return(rc);
+}
+
+int rigol_write(int handle, unsigned char *string)
+{
+   int rc;
+   unsigned char buf[256];
+   strncpy(buf,string,sizeof(buf));
+   buf[sizeof(buf)-1]=0;
+   strncat(buf,"\n",sizeof(buf));
+   buf[sizeof(buf)-1]=0;
+   //printf("rigol_write(): \"%s\"\n",buf);
+   rc=write(handle, buf, strlen(buf));
+   if(rc<0) perror("write error");
+   return(rc);
+}
+
+int rigol_read(int handle, unsigned char *buf, size_t size)
+{
+   int rc;
+   if(!size) return(-1);
+   buf[0]=0;
+   rc=read(handle, buf, size);
+   if((rc>0) && (rc<size)) buf[rc]=0;
+   if(rc<0) {
+      if(errno==ETIMEDOUT) {
+        printf("No response\n");
+      } else {
+        perror("read error");
+      }
+   }
+   // printf("rc=%d\n",rc);
+   return(rc);
+}
+
+const max_response_length=2097152;
+
+const max_command_length=128;
+main()
+{
+   int handle;
+   int rc;
+   int i;
+   unsigned char buf[max_response_length];
+   unsigned char cmd[max_command_length];
+   handle=open("/dev/usbtmc0", O_RDWR);
+   if(handle<0) {
+      perror("error opening device");
+      exit(1);
+   }
+
+   rigol_write(handle, "*IDN?");
+   rigol_read(handle, buf, sizeof(buf));
+   printf("%s\n", buf);
+   rigol_write(handle, "*IDN?");
+   rigol_read(handle, buf, sizeof(buf));
+   printf("%s\n", buf);
+   while(1) {
+      printf("rigol> ");
+      new_fgets(cmd,sizeof(cmd),stdin);
+      rigol_write(handle, cmd);
+      rc=rigol_read(handle, buf,sizeof(buf));
+      if(rc<256) {
+        // Assume text
+        printf("[%d]:%s\n", rc,buf);
+      } else {
+        printf("[%d]:\n",rc);
+        for(i=0;i<rc;i++) {
+ 	 printf("%02X ",buf[i]);
+          if( (i%16)==15 ) printf("\n");
+        }
+        printf("\n");
+      }
+   }
+
+}
+
+Previous poster probivided packet captures and debugging output:
+http://www.gossamer-threads.com/lists/linux/kernel/1230111?do=post_view_threaded
+
+One note: when you send usb commands to the scope, it locks out the front 
+panel.  You need to use :KEY:LOCK DISABLE to unlock it (repeatedly, as 
+subsequent commands will lock it again).   This could make the scope 
+appear crashed when it isn't.   The letters "Rmt" appear in the upper 
+right corner of the screen when the front panel is locked out.
+
+For now, I think I will try the libusb route.   The kernel driver has too 
+many bugs and isn't portable across OSes.
+
+The usbtmc kernel driver, when loaded, interferes with communicating with 
+the device via libusb even if no programs have the device open.   It fails 
+to release the device when not in use.   This is a serious problem. 
+Different software talking to the same device may use a mix of kernel 
+driver and libusb drivers.   Worse, you may have one piece of software 
+which uses the kernel driver to talk to one device and another piece of 
+software which uses libusb to talk to another device, concurrently.   In 
+that case, you can not rmmod the kernel driver as that would prevent the 
+first device from working.
