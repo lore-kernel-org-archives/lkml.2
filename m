@@ -1,103 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab0G2GUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 02:20:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55386 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab0G2GUU (ORCPT
+	id S1753491Ab0G2GiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 02:38:12 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:17881 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab0G2GiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 02:20:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=ElUenwinKLJcBW+z0lZztEzhXiAiGgmuc8BeqBe5NLO5mXeCj5V0Qt8GlcvFmUOG9C
-         brrEPI8pLl7u0pEpFJq52eO9JH45Q1NVEvg1kQnSV/Zr29G/KQGnO/N36fzhkz809hQQ
-         alG4bj03dK4NCWh2SOxJ80Gf9WLNzh5VkGJFc=
+	Thu, 29 Jul 2010 02:38:06 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=DrKlWpZn/KDHQzn8D+0uusVT0DatdNJvM4E9C7QKAR9koF8uq3KGmEVpqvwhxctQL
+	BVAflUle01msmywV7Z6VQ==
+Date: Wed, 28 Jul 2010 20:50:18 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: dann frazier <dannf@debian.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: ia64 hang/mca running gdb 'make check'
+In-Reply-To: <20100727144326.GC22945@lackof.org>
+Message-ID: <alpine.DEB.1.00.1007282031130.4207@tigran.mtv.corp.google.com>
+References: <20100720173512.GF26783@ldl.fc.hp.com> <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com> <20100721030629.GA9987@lackof.org> <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com> <20100727071914.GB22945@lackof.org>
+ <20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com> <20100727144326.GC22945@lackof.org>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
 MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-In-Reply-To: <AANLkTikpm8St4egQ7PpExzKkSTff5VZN-dKjAAA0nwoN@mail.gmail.com>
-References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>
-	<20100727165549.GC26649@merkur.ravnborg.org>
-	<AANLkTimmLLJ9VrbD94GA3ZH2XvBwEAAcrrL_etWAoEea@mail.gmail.com>
-	<4C500E41.40708@suse.cz>
-	<AANLkTi=rPP7OfoNoyVkM0XR08ns6p0+cENzcdk7gY8TE@mail.gmail.com>
-	<4C504FBB.3020600@suse.cz>
-	<20100728185505.GF29266@merkur.ravnborg.org>
-	<AANLkTikpm8St4egQ7PpExzKkSTff5VZN-dKjAAA0nwoN@mail.gmail.com>
-Date: Thu, 29 Jul 2010 07:20:19 +0100
-Message-ID: <AANLkTimhKT=mmL7Q5D1z2mzu7wt25_NzA328Tp3T8y0v@mail.gmail.com>
-Subject: Re: Small typo in kernel [current source from git] .config option
-From: trapDoor <trapdoor6@gmail.com>
-To: Nir Tzachar <nir.tzachar@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 27 Jul 2010, dann frazier wrote:
+> On Tue, Jul 27, 2010 at 06:03:30PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Tue, 27 Jul 2010 01:19:15 -0600
+> > dann frazier <dannf@debian.org> wrote:
+> > > On Tue, Jul 20, 2010 at 09:19:50PM -0700, Hugh Dickins wrote:
+> > > > On Tue, 20 Jul 2010, dann frazier wrote:
+> > > > > On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > > On Tue, 20 Jul 2010 11:35:12 -0600
+> > > > > > dann frazier <dannf@debian.org> wrote:
+> > > > > > 
+> > > > > > > Debian's ia64 autobuilders have been experiencing system crashes while
+> > > > > > > trying to run the gdb test suite:
+> > > > > > >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
+> > > > > > > 
+> > > > > > > I was able to reproduce this w/ the latest git tree, and bisected it
+> > > > > > > down to this commit, introduced in 2.6.32:
+> > > > > > > 
+> > > > > > >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
+> > > > > > >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+> > > > > > >   Date:   Mon Sep 21 17:03:34 2009 -0700
+> > > > > > > 
+> > > > > > >     mm: ZERO_PAGE without PTE_SPECIAL
+> > > > > > > 
+> > > > > > >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
+> > > > > > >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
+> > > > > > > 
+> > > > > > >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
+> > > > > > >     zero_pfn test built into one or another block of vm_normal_page().
+> > > > > > > 
+> > > > > > >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
+> > > > > > >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
+> > > > > > >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
+> > > > > > >     that: it would have to take vm_flags to weed out some cases.
+> > > > > > > 
+> > > > > > > fyi, I found this to not be reproducible on SLES11 SP1 (which is
+> > > > > > > 2.6.32-based). I compared the .configs and found that the relevant
+> > > > > > > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
+> > > > > > > reliably fails w/ 16KB pages.
+> > > > > > > 
+> > > > > > 
+> > > > > > Sorry, I have no idea...
+> > > > > > Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
+> > > > > 
+> > > > > 
+> > > > > dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley 
+> > > > > a0000001008784c0 d __ksymtab_empty_zero_page
+> > > > > a000000100882688 d __kcrctab_empty_zero_page
+> > > > > a000000100884ca4 r __kstrtab_empty_zero_page
+> > > > > a000000100974000 D empty_zero_page
+> > > > 
+> > > > Thanks a lot for reporting this, but I too have no idea yet.
+> > > > 
+> > > > It is likely that the bug is not to be found in that 62eede62, but
+> > > > rather in one of the preceding patches to mm/memory.c which 62eede62
+> > > > was extending to ia64 and other architectures without PTE_SPECIAL.
+> > > > 
+> > > > I wonder, from looking at that gdb testsuite log, is it plausible
+> > > > that all these hangs/crashes occurred when writing out a coredump?
+> > > > Is that something you could check for us? or rule out the possibility.
+> > > 
+> > > Yep, seems so. I've reduced it down to this test case:
+> > > 
+> > > dannf@rx2600:~> cat > foo.c
+> > > int leaf(void) {
+> > >   return 0;
+> > > }
+> > > 
+> > > int main(void) {
+> > >   leaf();
+> > > }
+> > > dannf@rx2600:~> gcc -g foo.c -o foo
+> > > dannf@rx2600:~> gdb ./foo 
+> > > GNU gdb (GDB) SUSE (7.0-0.4.16)
+> > > Copyright (C) 2009 Free Software Foundation, Inc.
+> > > License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+> > > This is free software: you are free to change and redistribute it.
+> > > There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> > > and "show warranty" for details.
+> > > This GDB was configured as "ia64-suse-linux".
+> > > For bug reporting instructions, please see:
+> > > <http://www.gnu.org/software/gdb/bugs/>...
+> > > Reading symbols from /home/dannf/foo...done.
+> > > (gdb) break leaf
+> > > Breakpoint 1 at 0x40000000000005c1: file foo.c, line 2.
+> > > (gdb) run
+> > > Starting program: /home/dannf/foo 
+> > > Missing separate debuginfo for /lib/ld-linux-ia64.so.2
+> > > Try: zypper install -C "debuginfo(build-id)=d5bfb8b5940e174d54b978ca515dc0df76c7618c"
+> > > Missing separate debuginfo for /lib/libc.so.6.1
+> > > Try: zypper install -C "debuginfo(build-id)=ca78657bd9173653d95f8504a313d2b6db8cb1d6"
+> > > 
+> > > Breakpoint 1, leaf () at foo.c:2
+> > > 2	     return 0;
+> > > (gdb) gcore /tmp/save
+> > > 
+> > > [bang]
+> > > 
+> > 
+> > Does this happen on 2.6.34 or 2.6.35-rc kernel ?
+> 
+> I've been testing w/ a 2.6.35-rc4+, though it was originally reported
+> on a 2.6.32.
 
-On Thu, Jul 29, 2010 at 6:04 AM, Nir Tzachar <nir.tzachar@gmail.com> wrote:
-> Hello.
->
-> On Wed, Jul 28, 2010 at 9:55 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
->> On Wed, Jul 28, 2010 at 05:41:47PM +0200, Michal Marek wrote:
->>> (adding Nir, who wrote nconfig, to CC).
->>>
->>> On 28.7.2010 14:17, trapDoor wrote:
->>> > On Wed, Jul 28, 2010 at 12:02 PM, Michal Marek <mmarek@suse.cz> wrote:
->>> >> respectively). Unfortunatelly, there doesn't seem to be a way to
->>> >> highlight single letters in an ncurses menu, hence the strange
->>> >> cApitalization :(.
->>> >
->>> > I wonder how is this resolved in other console applications such as
->>> > Midnight Commander. Does it have its own implementation for
->>> > highlighting characters (it uses coloured mnemonics e.g. in menus) or
->>> > it's based on some common Linux/Unix library which perhaps could be
->>> > used for the nconfig as well?
->>>
->>> The problem is that nconfig uses the higher-level ncurses libraries
->>> libmenu and libpanel, which make some things easier, but aren't as
->>> flexible as using ncurses directly. Patches are welcome of course :-).
->
-> The problem does arise from the use of libmenue, which gives you no
-> control over the rendering of menue items. You can not specify any
-> attributes for specific menu item's letters.
->
->> The capitilazing is the main reason why I have
->> not recommended nconfig to be default.
->>
->> And I doubt the shortcut letters are used that often.
->> One idea could be to drop the shortcut for the individual menus.
->
-> I almost never use them and removing them will have the benefit of
-> cleaning the code.
->
+Thanks a lot for narrowing down to that simple testcase, and
+thanks a lot for checking it's just as bad on recent kernels.
 
-Neither do I. And I don't know anyone who would find them very useful.
-Anyway, if you compile kernel regularly, especially from git, you
-usually keep the same .config from previous compilations, and just run
-make oldconfig rather than any of the graphical tools. Unless you want
-to do some major changes. But even then I don't think many people
-would care about key shortcuts.
+I'm sorry to say that I'm still just as baffled.
 
-Only if they were going to be kept in nconfig I'd say that fixing the
-capitalisation somehow would be a good thing to do. But if you are
-going to remove them and thus make the fix possible and the code
-cleaner - that suits me. I will still prefer the simple and clean
-nconfig's interface over menuconfig with mnemonics.
+Let's note that gdb's gcore is building up its own version of a
+coredump, not going through the get_dump_page() code I was wondering
+about.  If I read gcore correctly (possibly not!), it will be reading
+selected areas from /proc/<pid>/mem i.e. using access_process_vm().
 
-> A different approach may be to reimplement libmenu's logic (recreating
-> the old lxdialog code), but avoiding this was part of the reason for
-> writing nconfig....
->
-> In any way, I am happy people are starting to use nconfig.
-> Cheers.
->
+But why the (16kB but not 64kB!) zero page should make that freeze
+or reboot, I have no idea.
 
--- 
-Thanks,
-trapDoor
+What would I be doing if I had an Itanium?  I think I'd be trying to
+narrow down exactly where it goes bad (tedious when the penalty is
+a freeze or reboot).
+
+As it is, I'm hoping that someone with an ia64 can investigate...
+
+Hugh
