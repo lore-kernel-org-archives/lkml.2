@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab0G2SAN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:00:13 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49510 "EHLO
+	id S1756738Ab0G2SAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:00:47 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:49539 "EHLO
 	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab0G2SAB (ORCPT
+	with ESMTP id S1756546Ab0G2SAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:00:01 -0400
+	Thu, 29 Jul 2010 14:00:16 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
         sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -V3 13/17] richacl: xattr mapping functions
-Date: Thu, 29 Jul 2010 23:27:51 +0530
-Message-Id: <1280426275-4602-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V3 16/17] vfs: Cache richacl in struct inode
+Date: Thu, 29 Jul 2010 23:27:54 +0530
+Message-Id: <1280426275-4602-17-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,246 +26,291 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-Map between "system.richacl" xattrs and the in-kernel representation.
+Cache richacls in struct inode and not individually in each filesystem.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/Makefile                   |    2 +-
- fs/richacl_xattr.c            |  156 +++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl_xattr.h |   47 ++++++++++++
- 3 files changed, 204 insertions(+), 1 deletions(-)
- create mode 100644 fs/richacl_xattr.c
- create mode 100644 include/linux/richacl_xattr.h
+ fs/ext4/ext4.h          |    4 ----
+ fs/ext4/inode.c         |    3 ---
+ fs/ext4/richacl.c       |   34 ++++------------------------------
+ fs/ext4/richacl.h       |    3 ---
+ fs/ext4/super.c         |   10 ----------
+ fs/inode.c              |   24 +++++++++++++++++++-----
+ include/linux/fs.h      |   12 ++++++++++--
+ include/linux/richacl.h |   41 +++++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 74 insertions(+), 57 deletions(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index b38cfc7..35ac29d 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -52,7 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 966d0cb..651379b 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -836,10 +836,6 @@ struct ext4_inode_info {
+ 	 */
+ 	tid_t i_sync_tid;
+ 	tid_t i_datasync_tid;
+-#ifdef CONFIG_EXT4_FS_RICHACL
+-	struct richacl   *i_richacl;
+-#endif
+-
+ };
  
- obj-$(CONFIG_FS_RICHACL)	+= richacl.o
--richacl-y			:= richacl_base.o richacl_inode.o
-+richacl-y			:= richacl_base.o richacl_inode.o richacl_xattr.o
+ /*
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 93550e3..66a8c57 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -5021,9 +5021,6 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 	inode->i_nlink = le16_to_cpu(raw_inode->i_links_count);
  
- obj-y				+= quota/
+ 	ei->i_state_flags = 0;
+-#ifdef CONFIG_EXT4_FS_RICHACL
+-	ei->i_richacl = EXT4_RICHACL_NOT_CACHED;
+-#endif
+ 	ei->i_dir_start_lookup = 0;
+ 	ei->i_dtime = le32_to_cpu(raw_inode->i_dtime);
+ 	/* We now have enough fields to check if the inode was active or not.
+diff --git a/fs/ext4/richacl.c b/fs/ext4/richacl.c
+index 5dfba2b..5b9e839 100644
+--- a/fs/ext4/richacl.c
++++ b/fs/ext4/richacl.c
+@@ -22,32 +22,6 @@
+ #include "acl.h"
+ #include "richacl.h"
  
-diff --git a/fs/richacl_xattr.c b/fs/richacl_xattr.c
-new file mode 100644
-index 0000000..51d1c3c
---- /dev/null
-+++ b/fs/richacl_xattr.c
-@@ -0,0 +1,156 @@
-+/*
-+ * Copyright (C) 2006, 2010  Novell, Inc.
-+ * Written by Andreas Gruenbacher <agruen@suse.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/richacl_xattr.h>
-+
-+MODULE_LICENSE("GPL");
-+
-+/**
-+ * richacl_from_xattr  -  convert a richacl xattr into the in-memory representation
-+ */
-+struct richacl *
-+richacl_from_xattr(const void *value, size_t size)
-+{
-+	const struct richacl_xattr *xattr_acl = value;
-+	const struct richace_xattr *xattr_ace = (void *)(xattr_acl + 1);
-+	struct richacl *acl;
-+	struct richace *ace;
-+	int count;
-+
-+	if (size < sizeof(struct richacl_xattr) ||
-+	    xattr_acl->a_version != ACL4_XATTR_VERSION ||
-+	    (xattr_acl->a_flags & ~ACL4_VALID_FLAGS))
-+		return ERR_PTR(-EINVAL);
-+
-+	count = le16_to_cpu(xattr_acl->a_count);
-+	if (count > ACL4_XATTR_MAX_COUNT)
-+		return ERR_PTR(-EINVAL);
-+
-+	acl = richacl_alloc(count);
-+	if (!acl)
-+		return ERR_PTR(-ENOMEM);
-+
-+	acl->a_flags = xattr_acl->a_flags;
-+	acl->a_owner_mask = le32_to_cpu(xattr_acl->a_owner_mask);
-+	if (acl->a_owner_mask & ~ACE4_VALID_MASK)
-+		goto fail_einval;
-+	acl->a_group_mask = le32_to_cpu(xattr_acl->a_group_mask);
-+	if (acl->a_group_mask & ~ACE4_VALID_MASK)
-+		goto fail_einval;
-+	acl->a_other_mask = le32_to_cpu(xattr_acl->a_other_mask);
-+	if (acl->a_other_mask & ~ACE4_VALID_MASK)
-+		goto fail_einval;
-+
-+	richacl_for_each_entry(ace, acl) {
-+		const char *who = (void *)(xattr_ace + 1), *end;
-+		ssize_t used = (void *)who - value;
-+
-+		if (used > size)
-+			goto fail_einval;
-+		end = memchr(who, 0, size - used);
-+		if (!end)
-+			goto fail_einval;
-+
-+		ace->e_type = le16_to_cpu(xattr_ace->e_type);
-+		ace->e_flags = le16_to_cpu(xattr_ace->e_flags);
-+		ace->e_mask = le32_to_cpu(xattr_ace->e_mask);
-+		ace->u.e_id = le32_to_cpu(xattr_ace->e_id);
-+
-+		if (ace->e_flags & ~ACE4_VALID_FLAGS)
-+			goto fail_einval;
-+		if (ace->e_type > ACE4_ACCESS_DENIED_ACE_TYPE ||
-+		    (ace->e_mask & ~ACE4_VALID_MASK))
-+			goto fail_einval;
-+
-+		if (who == end) {
-+			if (ace->u.e_id == -1)
-+				goto fail_einval;  /* uid/gid needed */
-+		} else if (richace_set_who(ace, who))
-+			goto fail_einval;
-+
-+		xattr_ace = (void *)who + ALIGN(end - who + 1, 4);
-+	}
-+
-+	return acl;
-+
-+fail_einval:
-+	richacl_put(acl);
-+	return ERR_PTR(-EINVAL);
-+}
-+EXPORT_SYMBOL_GPL(richacl_from_xattr);
-+
-+/**
-+ * richacl_xattr_size  -  compute the size of the xattr representation of @acl
-+ */
-+size_t
-+richacl_xattr_size(const struct richacl *acl)
-+{
-+	size_t size = sizeof(struct richacl_xattr);
-+	const struct richace *ace;
-+
-+	richacl_for_each_entry(ace, acl) {
-+		size += sizeof(struct richace_xattr) +
-+			(richace_is_unix_id(ace) ? 4 :
-+			 ALIGN(strlen(ace->u.e_who) + 1, 4));
-+	}
-+	return size;
-+}
-+EXPORT_SYMBOL_GPL(richacl_xattr_size);
-+
-+/**
-+ * richacl_to_xattr  -  convert @acl into its xattr representation
-+ * @acl:	the richacl to convert
-+ * @buffer:	buffer of size richacl_xattr_size(@acl) for the result
-+ */
-+void
-+richacl_to_xattr(const struct richacl *acl, void *buffer)
-+{
-+	struct richacl_xattr *xattr_acl = buffer;
-+	struct richace_xattr *xattr_ace;
-+	const struct richace *ace;
-+
-+	xattr_acl->a_version = ACL4_XATTR_VERSION;
-+	xattr_acl->a_flags = acl->a_flags;
-+	xattr_acl->a_count = cpu_to_le16(acl->a_count);
-+
-+	xattr_acl->a_owner_mask = cpu_to_le32(acl->a_owner_mask);
-+	xattr_acl->a_group_mask = cpu_to_le32(acl->a_group_mask);
-+	xattr_acl->a_other_mask = cpu_to_le32(acl->a_other_mask);
-+
-+	xattr_ace = (void *)(xattr_acl + 1);
-+	richacl_for_each_entry(ace, acl) {
-+		xattr_ace->e_type = cpu_to_le16(ace->e_type);
-+		xattr_ace->e_flags = cpu_to_le16(ace->e_flags &
-+						 ACE4_VALID_FLAGS);
-+		xattr_ace->e_mask = cpu_to_le32(ace->e_mask);
-+		if (richace_is_unix_id(ace)) {
-+			xattr_ace->e_id = cpu_to_le32(ace->u.e_id);
-+			memset(xattr_ace->e_who, 0, 4);
-+			xattr_ace = (void *)xattr_ace->e_who + 4;
-+		} else {
-+			int sz = ALIGN(strlen(ace->u.e_who) + 1, 4);
-+
-+			xattr_ace->e_id = cpu_to_le32(-1);
-+			memset(xattr_ace->e_who + sz - 4, 0, 4);
-+			strcpy(xattr_ace->e_who, ace->u.e_who);
-+			xattr_ace = (void *)xattr_ace->e_who + sz;
-+		}
-+	}
-+}
-+EXPORT_SYMBOL_GPL(richacl_to_xattr);
-diff --git a/include/linux/richacl_xattr.h b/include/linux/richacl_xattr.h
-new file mode 100644
-index 0000000..e038a7c
---- /dev/null
-+++ b/include/linux/richacl_xattr.h
-@@ -0,0 +1,47 @@
-+/*
-+ * Copyright (C) 2006, 2010  Novell, Inc.
-+ * Written by Andreas Gruenbacher <agruen@suse.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#ifndef __RICHACL_XATTR_H
-+#define __RICHACL_XATTR_H
-+
+-static inline struct richacl *
+-ext4_iget_richacl(struct inode *inode)
+-{
+-	struct richacl *acl = EXT4_RICHACL_NOT_CACHED;
+-	struct ext4_inode_info *ei = EXT4_I(inode);
+-
+-	spin_lock(&inode->i_lock);
+-	if (ei->i_richacl != EXT4_RICHACL_NOT_CACHED)
+-		acl = richacl_get(ei->i_richacl);
+-	spin_unlock(&inode->i_lock);
+-
+-	return acl;
+-}
+-
+-static inline void
+-ext4_iset_richacl(struct inode *inode, struct richacl *acl)
+-{
+-	struct ext4_inode_info *ei = EXT4_I(inode);
+-
+-	spin_lock(&inode->i_lock);
+-	if (ei->i_richacl != EXT4_RICHACL_NOT_CACHED)
+-		richacl_put(ei->i_richacl);
+-	ei->i_richacl = richacl_get(acl);
+-	spin_unlock(&inode->i_lock);
+-}
+-
+ static struct richacl *
+ ext4_get_richacl(struct inode *inode)
+ {
+@@ -58,8 +32,8 @@ ext4_get_richacl(struct inode *inode)
+ 
+ 	if (!IS_RICHACL(inode))
+ 		return ERR_PTR(-EOPNOTSUPP);
+-	acl = ext4_iget_richacl(inode);
+-	if (acl != EXT4_RICHACL_NOT_CACHED)
++	acl = get_cached_richacl(inode);
++	if (acl != ACL_NOT_CACHED)
+ 		return acl;
+ 	retval = ext4_xattr_get(inode, name_index, "", NULL, 0);
+ 	if (retval > 0) {
+@@ -79,7 +53,7 @@ ext4_get_richacl(struct inode *inode)
+ 	kfree(value);
+ 
+ 	if (!IS_ERR_OR_NULL(acl))
+-		ext4_iset_richacl(inode, acl);
++		set_cached_richacl(inode, acl);
+ 
+ 	return acl;
+ }
+@@ -114,7 +88,7 @@ ext4_set_richacl(handle_t *handle, struct inode *inode, struct richacl *acl)
+ 		retval = ext4_xattr_set(inode, name_index, "", value, size, 0);
+ 	kfree(value);
+ 	if (!retval)
+-		ext4_iset_richacl(inode, acl);
++		set_cached_richacl(inode, acl);
+ 
+ 	return retval;
+ }
+diff --git a/fs/ext4/richacl.h b/fs/ext4/richacl.h
+index 00d89f2..1d52914 100644
+--- a/fs/ext4/richacl.h
++++ b/fs/ext4/richacl.h
+@@ -21,9 +21,6 @@
+ 
+ # define EXT4_IS_RICHACL(inode) IS_RICHACL(inode)
+ 
+-/* Value for i_richacl if RICHACL has not been cached */
+-# define EXT4_RICHACL_NOT_CACHED ((void *)-1)
+-
+ extern int ext4_permission(struct inode *, int);
+ extern int ext4_richacl_permission(struct inode *, unsigned int);
+ extern int ext4_may_create(struct inode *, int);
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 520ab44..d0d3766 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -741,9 +741,6 @@ static struct inode *ext4_alloc_inode(struct super_block *sb)
+ 	ei = kmem_cache_alloc(ext4_inode_cachep, GFP_NOFS);
+ 	if (!ei)
+ 		return NULL;
+-#ifdef CONFIG_EXT4_FS_RICHACL
+-	ei->i_richacl = EXT4_RICHACL_NOT_CACHED;
+-#endif
+ 	ei->vfs_inode.i_version = 1;
+ 	ei->vfs_inode.i_data.writeback_index = 0;
+ 	memset(&ei->i_cached_extent, 0, sizeof(struct ext4_ext_cache));
+@@ -819,13 +816,6 @@ static void destroy_inodecache(void)
+ static void ext4_clear_inode(struct inode *inode)
+ {
+ 	dquot_drop(inode);
+-#ifdef CONFIG_EXT4_FS_RICHACL
+-	if (EXT4_I(inode)->i_richacl &&
+-		EXT4_I(inode)->i_richacl != EXT4_RICHACL_NOT_CACHED) {
+-		richacl_put(EXT4_I(inode)->i_richacl);
+-		EXT4_I(inode)->i_richacl = EXT4_RICHACL_NOT_CACHED;
+-	}
+-#endif
+ 	ext4_discard_preallocations(inode);
+ 	if (EXT4_JOURNAL(inode))
+ 		jbd2_journal_release_jbd_inode(EXT4_SB(inode->i_sb)->s_journal,
+diff --git a/fs/inode.c b/fs/inode.c
+index 2bee20a..796f4a8 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -25,6 +25,7 @@
+ #include <linux/mount.h>
+ #include <linux/async.h>
+ #include <linux/posix_acl.h>
 +#include <linux/richacl.h>
+ 
+ /*
+  * This is needed for the following functions:
+@@ -186,7 +187,12 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
+ 	inode->i_private = NULL;
+ 	inode->i_mapping = mapping;
+ #ifdef CONFIG_FS_POSIX_ACL
+-	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
++	if (IS_POSIXACL(inode))
++		inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
++#endif
++#ifdef CONFIG_FS_RICHACL
++	if (IS_RICHACL(inode))
++		inode->i_richacl = ACL_NOT_CACHED;
+ #endif
+ 
+ #ifdef CONFIG_FSNOTIFY
+@@ -228,10 +234,18 @@ void __destroy_inode(struct inode *inode)
+ 	security_inode_free(inode);
+ 	fsnotify_inode_delete(inode);
+ #ifdef CONFIG_FS_POSIX_ACL
+-	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+-		posix_acl_release(inode->i_acl);
+-	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
+-		posix_acl_release(inode->i_default_acl);
++	if (IS_POSIXACL(inode)) {
++		if (inode->i_acl != ACL_NOT_CACHED)
++			posix_acl_release(inode->i_acl);
++		if (inode->i_default_acl != ACL_NOT_CACHED)
++			posix_acl_release(inode->i_default_acl);
++	}
++#endif
++#ifdef CONFIG_FS_RICHACL
++	if (IS_RICHACL(inode)) {
++		if (inode->i_richacl != ACL_NOT_CACHED)
++			richacl_put(inode->i_richacl);
++	}
+ #endif
+ }
+ EXPORT_SYMBOL(__destroy_inode);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 2a65863..745adfd 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -728,6 +728,7 @@ static inline int mapping_writably_mapped(struct address_space *mapping)
+ #endif
+ 
+ struct posix_acl;
++struct richacl;
+ #define ACL_NOT_CACHED ((void *)(-1))
+ 
+ struct inode {
+@@ -793,10 +794,17 @@ struct inode {
+ #ifdef CONFIG_SECURITY
+ 	void			*i_security;
+ #endif
++	union {
+ #ifdef CONFIG_FS_POSIX_ACL
+-	struct posix_acl	*i_acl;
+-	struct posix_acl	*i_default_acl;
++		struct {
++			struct posix_acl *i_acl;
++			struct posix_acl *i_default_acl;
++		};
+ #endif
++#ifdef CONFIG_FS_RICHACL
++		struct richacl	*i_richacl;
++#endif
++	};
+ 	void			*i_private; /* fs or device private pointer */
+ };
+ 
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index bb0c9b2..93634bc 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -189,6 +189,47 @@ richacl_put(struct richacl *acl)
+ 		kfree(acl);
+ }
+ 
++#ifdef CONFIG_FS_RICHACL
++static inline struct richacl *get_cached_richacl(struct inode *inode)
++{
++	struct richacl **p, *acl;
 +
-+#define RICHACL_XATTR "system.richacl"
++	p = &inode->i_richacl;
++	acl = ACCESS_ONCE(*p);
++	if (acl) {
++		spin_lock(&inode->i_lock);
++		acl = *p;
++		if (acl != ACL_NOT_CACHED)
++			acl = richacl_get(acl);
++		spin_unlock(&inode->i_lock);
++	}
++	return acl;
++}
 +
-+struct richace_xattr {
-+	__le16		e_type;
-+	__le16		e_flags;
-+	__le32		e_mask;
-+	__le32		e_id;
-+	char		e_who[0];
-+};
++static inline void set_cached_richacl(struct inode *inode,
++				      struct richacl *acl)
++{
++	struct richacl *old = NULL;
++	spin_lock(&inode->i_lock);
++	old = inode->i_richacl;
++	inode->i_richacl = richacl_get(acl);
++	spin_unlock(&inode->i_lock);
++	if (old != ACL_NOT_CACHED)
++		richacl_put(old);
++}
 +
-+struct richacl_xattr {
-+	unsigned char	a_version;
-+	unsigned char	a_flags;
-+	__le16		a_count;
-+	__le32		a_owner_mask;
-+	__le32		a_group_mask;
-+	__le32		a_other_mask;
-+};
++static inline void forget_cached_richacl(struct inode *inode)
++{
++	struct richacl *old = NULL;
++	spin_lock(&inode->i_lock);;
++	old = inode->i_richacl;
++	inode->i_richacl = ACL_NOT_CACHED;
++	spin_unlock(&inode->i_lock);
++	if (old != ACL_NOT_CACHED)
++		richacl_put(old);
++}
++#endif
 +
-+#define ACL4_XATTR_VERSION	0
-+#define ACL4_XATTR_MAX_COUNT	1024
-+
-+extern struct richacl *richacl_from_xattr(const void *, size_t);
-+extern size_t richacl_xattr_size(const struct richacl *acl);
-+extern void richacl_to_xattr(const struct richacl *, void *);
-+
-+#endif /* __RICHACL_XATTR_H */
+ static inline int
+ richacl_is_auto_inherit(const struct richacl *acl)
+ {
 -- 
 1.7.0.4
 
