@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0G2FFB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:05:01 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:60715 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab0G2FE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:04:56 -0400
-X-AuditID: b753bd60-a96c2ba000005a63-db-4c510bf2becf
-Message-ID: <4C510BEE.3000108@hitachi.com>
-Date: Thu, 29 Jul 2010 14:04:46 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752385Ab0G2FN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:13:59 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:45806 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751287Ab0G2FNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:13:53 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH 3/6] leds: Remove owner field from attribute initialization in bd2802 driver
+Date: Wed, 28 Jul 2010 22:09:23 -0700
+Message-ID: <1280380166-29196-4-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.0.87.g0901d
+In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv10 2.6.35-rc6-tip 9/14]  trace: uprobes trace_event interface
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6> <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar Dronamraju wrote:
-> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-> index c681fa7..16e2a8c 100644
-> --- a/kernel/trace/Kconfig
-> +++ b/kernel/trace/Kconfig
-> @@ -482,6 +482,22 @@ config RING_BUFFER_BENCHMARK
->  
->  	  If unsure, say N.
->  
-> +config UPROBE_EVENT
-> +	bool "Enable uprobes-based dynamic events"
-> +	depends on ARCH_SUPPORTS_UPROBES
-> +	depends on MMU
-> +	select UPROBES
-> +	select PROBE_EVENTS
-> +	select TRACING
-> +	default n
-> +	help
-> +	  This allows the user to add tracing events on top of userspace dynamic
-> +	  events (similar to tracepoints) on the fly via the traceevents interface.
-> +	  Those events can be inserted wherever uprobes can probe, and record
-> +	  various registers.
-> +	  This option is required if you plan to use perf-probe subcommand of perf
-> +	  tools on user space applications.
-> +
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ drivers/leds/leds-bd2802.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Possible enhancement: Moving this config right after KPROBE_EVENT, because
- those two provide similar dynamic events.
-
-Thank you,
+diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
+index 5dcdf9d..19dc4b6 100644
+--- a/drivers/leds/leds-bd2802.c
++++ b/drivers/leds/leds-bd2802.c
+@@ -351,7 +351,7 @@ static ssize_t bd2802_store_reg##reg_addr(struct device *dev,		\
+ 	return count;							\
+ }									\
+ static struct device_attribute bd2802_reg##reg_addr##_attr = {		\
+-	.attr = {.name = reg_name, .mode = 0644, .owner = THIS_MODULE},	\
++	.attr = {.name = reg_name, .mode = 0644},			\
+ 	.store = bd2802_store_reg##reg_addr,				\
+ };
+ 
+@@ -482,7 +482,6 @@ static struct device_attribute bd2802_adv_conf_attr = {
+ 	.attr = {
+ 		.name = "advanced_configuration",
+ 		.mode = 0644,
+-		.owner = THIS_MODULE
+ 	},
+ 	.show = bd2802_show_adv_conf,
+ 	.store = bd2802_store_adv_conf,
+@@ -519,7 +518,6 @@ static struct device_attribute bd2802_##attr_name##_attr = {		\
+ 	.attr = {							\
+ 		.name = name_str,					\
+ 		.mode = 0644,						\
+-		.owner = THIS_MODULE					\
+ 	},								\
+ 	.show = bd2802_show_##attr_name,				\
+ 	.store = bd2802_store_##attr_name,				\
 -- 
-Masami HIRAMATSU
-2nd Research Dept.
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.0.87.g0901d
 
