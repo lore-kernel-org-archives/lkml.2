@@ -1,87 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab0G2A6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 20:58:30 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:36768 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab0G2A6Z (ORCPT
+	id S1752206Ab0G2BBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 21:01:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37159 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab0G2BBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 20:58:25 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6057"; a="49137832"
-Message-ID: <bad58db98c165a61860827d4e720acf8.squirrel@www.codeaurora.org>
-In-Reply-To: <201007281950.20847.arnd@arndb.de>
-References: <1280270466-13503-1-git-send-email-stepanm@codeaurora.org>
-    <201007281039.44883.arnd@arndb.de>
-    <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
-    <201007281950.20847.arnd@arndb.de>
-Date: Wed, 28 Jul 2010 17:58:50 -0700 (PDT)
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-From: stepanm@codeaurora.org
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, stepanm@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, dwalker@codeaurora.org,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Wed, 28 Jul 2010 21:01:37 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
+Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+        stable@kernel.org, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+In-Reply-To: <20100728103056.c5511c78.akpm@linux-foundation.org>
+References: <20100728191322.4A85.A69D9226@jp.fujitsu.com> <20100728103056.c5511c78.akpm@linux-foundation.org>
+Message-Id: <20100729084230.4A8B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 29 Jul 2010 10:01:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wednesday 28 July 2010, stepanm@codeaurora.org wrote:
->> > On Wednesday 28 July 2010 00:41:06 Stepan Moskovchenko wrote:
->> >> Add support for the System MMUs found on the 8x60 and 8x72
->> >> families of Qualcomm chips. These SMMUs allow virtualization
->> >> of the address space used by most of the multimedia cores
->> >> on these chips.
->> >
->> > How is this different from an IOMMU?
->> >
->> > From a very brief look, it seems that you should be using the
->> > existing dma-mapping APIs here instead of making up your own.
->> >
->> > 	Arnd
->>
->>
->> These are just SMMU APIs, and the DMA-mapping API is one layer above
->> this.
->>
->> We have our own SMMU API for the MSM SoCs because we have muliple
->> IOMMUs,
->> each one having multiple contexts, or even having multiple instances of
->> the same context. Our usage model is also quite a bit different from how
->> the DMA APIs are set up. I believe only two IOMMU drivers actually make
->> use of the DMA API (Intel and AMD) and the other ones (OMAP and other
->> SoCs) have their own APIs for their specific use cases.
->
-> The DMA API is extremely flexible, it works just fine with all the
-> IOMMUs that I've seen so far. Please take a look at
-> include/asm-generic/dma-mapping-common.h and its users to see how
-> to use multiple IOMMUs depending on the device.
->
-> If the OMAP developers got this wrong, that's not your problem :-)
->
-> 	Arnd
+> On Wed, 28 Jul 2010 20:40:21 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+> > 3. pageout() is intended anynchronous api. but doesn't works so.
+> > 
+> > pageout() call ->writepage with wbc->nonblocking=1. because if the system have
+> > default vm.dirty_ratio (i.e. 20), we have 80% clean memory. so, getting stuck
+> > on one page is stupid, we should scan much pages as soon as possible.
+> > 
+> > HOWEVER, block layer ignore this argument. if slow usb memory device connect
+> > to the system, ->writepage() will sleep long time. because submit_bio() call
+> > get_request_wait() unconditionally and it doesn't have any PF_MEMALLOC task
+> > bonus.
+> 
+> The idea is that vmscan doesn't call ->writepage if the underlying
+> queue is congested.  may_write_to_queue()->bdi_queue_congested() should
+> return false and we skip the write.
+> 
+> If that logic is broken then that would explain a few things...
 
-Hi Arnd,
+we already have it in may_write_to_queue(). but kswapd and zone-reclaim have
+PF_SWAPWRITE then ignore queue congestion. (btw, I believe zone-reclaim 
+shouldn't use PF_SWAPWRITE). so, kswapd get stuck in get_request_wait() frequently. 
 
->From what I have been able to tell, the IOMMU interface was written by
-AMD/Intel to allow the kvm code to work with a common IOMMU interface. To
-that end, it isn't really a generic IOMMU interface. We have chosen to use
-our own interface because it provides us with a lightweight way of
-managing mappings for more esoteric MSM-specific use cases.
+following commit explain why kswapd have to ignore queue congestion....
 
-These map functions also take into account the way in which we map buffers
-that we get from our own physical pool, because the current API was not
-intended to deal with prioritized allocation of things like on/off-chip
-memory. We are currently evaluating how to use the DMA API with our own
-specialized allocator, which has been undergoing some discussion on the
-other lists. We would like to use this allocator to maximize TLB
-performance, as well as to prioritize the allocation from several
-different memory pools.
+commit c4e2d7ddde9693a4c05da7afd485db02c27a7a09
+Author: akpm <akpm>
+Date:   Sun Dec 22 01:07:33 2002 +0000
 
-Steve
+    [PATCH] Give kswapd writeback higher priority than pdflush
+
+    The `low latency page reclaim' design works by preventing page
+    allocators from blocking on request queues (and by preventing them from
+    blocking against writeback of individual pages, but that is immaterial
+    here).
+
+    This has a problem under some situations.  pdflush (or a write(2)
+    caller) could be saturating the queue with highmem pages.  This
+    prevents anyone from writing back ZONE_NORMAL pages.  We end up doing
+    enormous amounts of scenning.
+
+
+And following commit made hard limit in io queue and changed vmscan writeout
+behavior a lot if my understanding is correct. 
+
+
+commit 082cf69eb82681f4eacb3a5653834c7970714bef
+Author: Jens Axboe <axboe@suse.de>
+Date:   Tue Jun 28 16:35:11 2005 +0200
+
+    [PATCH] ll_rw_blk: prevent huge request allocations
+
+    Currently we cap request allocations at q->nr_requests, but we allow a
+    batching io context to allocate up to 32 more (default setting).  This
+    can flood the queue with request allocations, with only a few batching
+    processes.  The real fix would be to limit the number of batchers, but
+    as that isn't currently tracked, I suggest we just cap the maximum
+    number of allocated requests to eg 50% over the limit.
+
+    This was observed in real life, users typically see this as vmstat bo
+    numbers going off the wall with seconds of no queueing afterwards.
+    Behaviour this bursty is not beneficial.
+
+    Signed-off-by: Jens Axboe <axboe@suse.de>
+    Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+
+diff --git a/drivers/block/ll_rw_blk.c b/drivers/block/ll_rw_blk.c
+index 234fdcf..6c98cf0 100644
+--- a/drivers/block/ll_rw_blk.c
++++ b/drivers/block/ll_rw_blk.c
+@@ -1912,6 +1912,15 @@ static struct request *get_request(request_queue_t *q, int rw, struct bio *bio,
+        }
+
+ get_rq:
++       /*
++        * Only allow batching queuers to allocate up to 50% over the defined
++        * limit of requests, otherwise we could have thousands of requests
++        * allocated with any setting of ->nr_requests
++        */
++       if (rl->count[rw] >= (3 * q->nr_requests / 2)) {
++               spin_unlock_irq(q->queue_lock);
++               goto out;
++       }
+        rl->count[rw]++;
+        rl->starved[rw] = 0;
+        if (rl->count[rw] >= queue_congestion_on_threshold(q))
+
+
+
+So, I think we still have highmem issue. then I did think kswapd writebacking
+still need to have higher priority than flusher. Am I missing something?
+
+
 
