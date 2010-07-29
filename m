@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab0G2PqT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 11:46:19 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:37027 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757390Ab0G2PqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 11:46:17 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: YhVCajYVM1nD2MLUEk1of.fVOLyXILAtzEzTUfIhalwkgGz
- Hvph4GTB2ZGa_YPRw0aS61NoaKA0U6UIMNOiDBqlIEdkFY4W4HxLrf5CA92B
- megWldrH5haCc5UYfrzqZUUugWG5xbirdLl3mtsXAwZqZlnDwEEhIVlhniO1
- FD.6pktqJuQAAA5VlD0W9iWLQpDefAYxQNyXuW.jyCeikehXAikUAeuFvFFN
- r
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 29 Jul 2010 10:46:13 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-In-Reply-To: <20100728225756.GA6108@barrios-desktop>
-Message-ID: <alpine.DEB.2.00.1007291038100.16510@router.home>
-References: <pfn.valid.v4.reply.1@mdm.bga.com> <AANLkTimtTVvorrR9pDVTyPKj0HbYOYY3aR7B-QWGhTei@mail.gmail.com> <pfn.valid.v4.reply.2@mdm.bga.com> <20100727171351.98d5fb60.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com>
- <alpine.DEB.2.00.1007270929290.28648@router.home> <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com> <alpine.DEB.2.00.1007281005440.21717@router.home> <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home>
- <20100728225756.GA6108@barrios-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757880Ab0G2Pqf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:46:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57322 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757390Ab0G2Pqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 11:46:33 -0400
+Date: Thu, 29 Jul 2010 11:35:35 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: sfr@canb.auug.org.au, lirc-list@lists.sourceforge.net,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, mchehab@redhat.com
+Subject: [PATCH] staging/lirc: fix non-CONFIG_MODULES build horkage
+Message-ID: <20100729153535.GB7507@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100728101358.e0dcd54d.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010, Minchan Kim wrote:
+Fix when CONFIG_MODULES is not enabled:
 
-> On Wed, Jul 28, 2010 at 12:02:16PM -0500, Christoph Lameter wrote:
-> > On Thu, 29 Jul 2010, Minchan Kim wrote:
-> > > invalid memmap pages will be freed by free_memmap and will be used
-> > > on any place. How do we make sure it has PG_reserved?
-> >
-> > Not present memmap pages make pfn_valid fail already since there is no
-> > entry for the page table (vmemmap) or blocks are missing in the sparsemem
-> > tables.
-> >
-> > > Maybe I don't understand your point.
-> >
-> > I thought we are worrying about holes in the memmap blocks containing page
-> > structs. Some page structs point to valid pages and some are not. The
-> > invalid page structs need to be marked consistently to allow the check.
->
-> The thing is that memmap pages which contains struct page array on hole will be
-> freed by free_memmap in ARM. Please loot at arch/arm/mm/init.c.
-> And it will be used by page allocator as free pages.
+drivers/staging/lirc/lirc_parallel.c:243: error: implicit declaration of function 'module_refcount'
+drivers/staging/lirc/lirc_it87.c:150: error: implicit declaration of function 'module_refcount'
+drivers/built-in.o: In function `it87_probe':
+lirc_it87.c:(.text+0x4079b0): undefined reference to `init_chrdev'
+lirc_it87.c:(.text+0x4079cc): undefined reference to `drop_chrdev'
+drivers/built-in.o: In function `lirc_it87_exit':
+lirc_it87.c:(.exit.text+0x38a5): undefined reference to `drop_chrdev'
 
-Arg thats the solution to the mystery. freememmap() is arm specific hack!
+Its a quick hack and untested beyond building, since I don't have the
+hardware, but it should do the trick.
 
-Sparsemem allows you to properly handle holes already and then pfn_valid
-will work correctly.
+Signed-off-by: Jarod Wilson <jarod@redhat.com>
+---
+ drivers/staging/lirc/lirc_it87.c     |    9 ++++++---
+ drivers/staging/lirc/lirc_parallel.c |    4 ++--
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
-Why are the ways to manage holes in the core not used by arm?
+diff --git a/drivers/staging/lirc/lirc_it87.c b/drivers/staging/lirc/lirc_it87.c
+index 781abc3..72f07f1 100644
+--- a/drivers/staging/lirc/lirc_it87.c
++++ b/drivers/staging/lirc/lirc_it87.c
+@@ -109,6 +109,7 @@ static DECLARE_WAIT_QUEUE_HEAD(lirc_read_queue);
+ 
+ static DEFINE_SPINLOCK(hardware_lock);
+ static DEFINE_SPINLOCK(dev_lock);
++static bool device_open;
+ 
+ static int rx_buf[RBUF_LEN];
+ unsigned int rx_tail, rx_head;
+@@ -147,10 +148,11 @@ static void drop_port(void);
+ static int lirc_open(struct inode *inode, struct file *file)
+ {
+ 	spin_lock(&dev_lock);
+-	if (module_refcount(THIS_MODULE)) {
++	if (device_open) {
+ 		spin_unlock(&dev_lock);
+ 		return -EBUSY;
+ 	}
++	device_open = true;
+ 	spin_unlock(&dev_lock);
+ 	return 0;
+ }
+@@ -158,6 +160,9 @@ static int lirc_open(struct inode *inode, struct file *file)
+ 
+ static int lirc_close(struct inode *inode, struct file *file)
+ {
++	spin_lock(&dev_lock);
++	device_open = false;
++	spin_unlock(&dev_lock);
+ 	return 0;
+ }
+ 
+@@ -363,7 +368,6 @@ static struct lirc_driver driver = {
+ };
+ 
+ 
+-#ifdef MODULE
+ static int init_chrdev(void)
+ {
+ 	driver.minor = lirc_register_driver(&driver);
+@@ -380,7 +384,6 @@ static void drop_chrdev(void)
+ {
+ 	lirc_unregister_driver(driver.minor);
+ }
+-#endif
+ 
+ 
+ /* SECTION: Hardware */
+diff --git a/drivers/staging/lirc/lirc_parallel.c b/drivers/staging/lirc/lirc_parallel.c
+index df12e7b..04ce97713 100644
+--- a/drivers/staging/lirc/lirc_parallel.c
++++ b/drivers/staging/lirc/lirc_parallel.c
+@@ -240,7 +240,7 @@ static void irq_handler(void *blah)
+ 	unsigned int level, newlevel;
+ 	unsigned int timeout;
+ 
+-	if (!module_refcount(THIS_MODULE))
++	if (!is_open)
+ 		return;
+ 
+ 	if (!is_claimed)
+@@ -515,7 +515,7 @@ static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+ 
+ static int lirc_open(struct inode *node, struct file *filep)
+ {
+-	if (module_refcount(THIS_MODULE) || !lirc_claim())
++	if (is_open || !lirc_claim())
+ 		return -EBUSY;
+ 
+ 	parport_enable_irq(pport);
 
-sparsemem does a table lookup to determine valid and invalid sections of
-the memmp.
 
-from include/linux/mmzone.h:
-
-static inline int pfn_valid(unsigned long pfn)
-{
-        if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
-                return 0;
-        return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
-}
-
+-- 
+Jarod Wilson
+jarod@redhat.com
 
