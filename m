@@ -1,107 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab0G2SVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:21:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56710 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab0G2SVK (ORCPT
+	id S1755481Ab0G2S2n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:28:43 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:56005 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754742Ab0G2S2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:21:10 -0400
-Message-ID: <4C51C689.9020300@vlnb.net>
-Date: Thu, 29 Jul 2010 22:20:57 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Christoph Hellwig <hch@lst.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        jaxboe@fusionio.com, James.Bottomley@suse.de,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, linux-kernel@vger.kernel.org
-Subject: Re: extfs reliability
-References: <20100728085048.GA8884@lst.de> <4C4FF136.5000205@kernel.org> <20100728090025.GA9252@lst.de> <4C4FF592.9090800@kernel.org> <20100728092859.GA11096@lst.de> <20100729014431.GD4506@thunk.org> <20100729083142.GA30077@lst.de> <4C517B5A.3020905@vlnb.net> <20100729130852.GA11852@lst.de> <4C518C4D.6050607@vlnb.net> <20100729143456.GB12690@quack.suse.cz>
-In-Reply-To: <20100729143456.GB12690@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 29 Jul 2010 14:28:41 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=lXmcfiEtnV9MvSIDNdZC1LkJK9Rh9w4Ut/6ivpHCQSSTU8HiENYC+7fBZXv95vNiv5tlhyQCV3AU2pi5iEmDXcjZgY5TaaRoAAlQ72T/rpBoykD228xU/NrwcMZnaKeq;
+Date: Thu, 29 Jul 2010 11:28:37 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Kan-Ru Chen <kanru@kanru.info>
+Cc: Enrico Bandiello <enban@postal.uv.es>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Enrico Bandiello <enban@alumni.uv.es>
+Subject: Re: [Bug #16307] i915 in kernel 2.6.35-rc3, high number of wakeups
+Message-ID: <20100729112837.0d010cc7@virtuousgeek.org>
+In-Reply-To: <87sk38b7ai.fsf@anar.kanru.info>
+References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
+	<tneGvaw1wLL.A.mXB.p3XSMB@chimera>
+	<20100723102532.6bfade32@virtuousgeek.org>
+	<4C4AB036.3060003@postal.uv.es>
+	<87sk38b7ai.fsf@anar.kanru.info>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:v5HDdVPPrgrD3BTOOpXKYVSU+0x6+RGarwaBpMRRjbw
- pguB2/+gd9/oOfcgxxuPEmVb8EVQdr+iPb+fGSPbioaHuGwso+
- RiX7mcE8r42cSKS4npRsgJistrkrBzdwd8AOsR1BcfHANWhmY7
- cbFpCSFf9gm3r+Xvs0b/v54nZahhegjlfn/8O4oTGfJkO/dz+b
- 2CNsyPYcBEKqgHQMFQIOw==
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Kara, on 07/29/2010 06:34 PM wrote:
-> On Thu 29-07-10 18:12:29, Vladislav Bolkhovitin wrote:
->>
->> Christoph Hellwig, on 07/29/2010 05:08 PM wrote:
->>> On Thu, Jul 29, 2010 at 05:00:10PM +0400, Vladislav Bolkhovitin wrote:
->>>> You can find full kernel logs starting from iSCSI load in the attachments.
->>>>
->>>> I already reported such issues some time ago, but my reports were not too much welcomed, so I gave up. Anyway, anybody can easily do my tests at any time. They don't need any special hardware, just 2 Linux boxes: one for iSCSI target and one for iSCSI initiator (the test box itself). But they are generic for other transports as well. You can see there's nothing iSCSI specific in the traces.
->>>
->>> I was only talking about ext3.
->>
->> Yes, now ext3 is a lot more reliable. The only how I was able to confuse it was:
->>
->> ...
->> (2197) nb_write: handle 4272 was not open size=65475 ofs=0
->> (2199) nb_write: handle 4272 was not open size=65475 ofs=65534
->> (2201) nb_write: handle 4272 was not open size=65475 ofs=131068
->> (2203) nb_write: handle 4272 was not open size=65475 ofs=196602
->> (2205) nb_write: handle 4272 was not open size=65475 ofs=262136^C
->> ^C
->> root@ini:/mnt/dbench-mod# ^C
->> root@ini:/mnt/dbench-mod# ^C
->> root@ini:/mnt/dbench-mod# cd
->> root@ini:~# umount /mnt
->>
->> <- recover device
->>
->> root@ini:~# mount -t ext3 -o barrier=1 /dev/sdb /mnt
->> mount: wrong fs type, bad option, bad superblock on /dev/sdb,
->>         missing codepage or helper program, or other error
->>         In some cases useful info is found in syslog - try
->>         dmesg | tail  or so
->>
->> Kernel log: "Jul 29 22:05:32 ini kernel: [ 2905.423092] JBD: recovery failed"
->    Hmm, this is strange. Are there more messages around this one?
+On Sun, 25 Jul 2010 10:54:13 +0800
+Kan-Ru Chen <kanru@kanru.info> wrote:
 
-Rather none:
+> Hi,
+> 
+> On Sat, 24 Jul 2010 11:19:50 +0200, Enrico Bandiello <enban@postal.uv.es> wrote:
+> > On 07/23/2010 07:25 PM, Jesse Barnes wrote:
+> > > On Fri, 23 Jul 2010 13:47:31 +0200 (CEST)
+> > > "Rafael J. Wysocki"<rjw@sisk.pl>  wrote:
+> > >
+> > >> This message has been generated automatically as a part of a summary report
+> > >> of recent regressions.
+> > >>
+> > >> The following bug entry is on the current list of known regressions
+> > >> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> > >> know (either way).
+> > >>
+> > >>
+> > >> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16307
+> > >> Subject		: i915 in kernel 2.6.35-rc3, high number of wakeups
+> > >> Submitter	: Enrico Bandiello<enban@postal.uv.es>
+> > >> Date		: 2010-06-26 16:57 (28 days old)
+> > >> Message-ID	:<4C26317A.5070309@postal.uv.es>
+> > >> References	: http://marc.info/?l=linux-kernel&m=127757403404259&w=2
+> > >
+> > > Just updated the bug for this one.  Enrico, you say this behavior is
+> > > recent.  Can you bisect between 2.6.34 and when the problem started?
+> > >
+> > Hi. I just tried, but can't find anything useful until now (surely it's 
+> > my fault: it was my first attempt at bisection). Please let me try again 
+> > in the next days.
+> 
+> I also noticed that interrupts keeps high in powertop. I bisected it
+> today:
+> 
+> # bad: [e44a21b7268a022c7749f521c06214145bd161e4] Linux 2.6.35-rc2
+> # good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
+> git bisect start 'v2.6.35-rc2' 'v2.6.34'
+> # good: [2086ca482f89950410527425913ca48d948e9622] i2c-algo-pca: Fix coding style issues
+> git bisect good 2086ca482f89950410527425913ca48d948e9622
+> # bad: [1756ac3d3c41341297ea25b818b7fce505bb2a9a] Merge branch 'virtio' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus
+> git bisect bad 1756ac3d3c41341297ea25b818b7fce505bb2a9a
+> # bad: [ec2a7587e0a91d5c1afe23a0a73edfce06c5e4e0] Merge branch 'msm-video' of git://codeaurora.org/quic/kernel/dwalker/linux-msm
+> git bisect bad ec2a7587e0a91d5c1afe23a0a73edfce06c5e4e0
+> # good: [e0bc5d4a54938eedcde14005210e6c08aa9727e4] Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging
+> git bisect good e0bc5d4a54938eedcde14005210e6c08aa9727e4
+> # good: [ac3ee84c604502240122c47b52f0542ec8774f15] Merge branch 'dbg-early-merge' of git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb
+> git bisect good ac3ee84c604502240122c47b52f0542ec8774f15
+> # bad: [f4b7fb94c576265ceffc43031805ade32fa80c6a] drm/radeon/kms: take vram mutex pointer before derefing object.
+> git bisect bad f4b7fb94c576265ceffc43031805ade32fa80c6a
+> # bad: [0bcb1d844ac638a4c4280f697d5bfac9791e9a70] Merge branch 'drm-radeon-lockup' into drm-core-next
+> git bisect bad 0bcb1d844ac638a4c4280f697d5bfac9791e9a70
+> # bad: [77ffb5979de59efd1a6b280b10d647b09285bee0] drm/i915/pch: Use minimal number of FDI lanes (v2)
+> git bisect bad 77ffb5979de59efd1a6b280b10d647b09285bee0
+> # bad: [ab00a9ef8d4ce7de4d5b15cbf4101feeb8cf7f4d] drm/i915: Un-magic a DPCD register write
+> git bisect bad ab00a9ef8d4ce7de4d5b15cbf4101feeb8cf7f4d
+> # skip: [0f3ee801b332d6ff22285386675fe5aaedf035c3] drm/i915: Allow LVDS on pipe A on gen4+
+> git bisect skip 0f3ee801b332d6ff22285386675fe5aaedf035c3
+> # good: [5bf4c9c469ffc64b85fed1f3d2b0c8b19909ed13] drm/i915: use encoder_list for hotplug callback
+> git bisect good 5bf4c9c469ffc64b85fed1f3d2b0c8b19909ed13
+> # bad: [d275f6614e160fa71d6e2201eb34c9b41fd8473c] drm/i915: Clear the LVDS pipe B select bit when moving the LVDS to pipe A.
+> git bisect bad d275f6614e160fa71d6e2201eb34c9b41fd8473c
+> # good: [c1c43977e6fc789cbde094303fa9ace629a35aca] drm/i915: passing drm connector param for load detection
+> git bisect good c1c43977e6fc789cbde094303fa9ace629a35aca
+> # good: [6443170f6d862a1cc89e61e4bb2410b714b875f4] drm/i915: Remove dead KMS encoder save/restore code.
+> git bisect good 6443170f6d862a1cc89e61e4bb2410b714b875f4
+> 
+> The bisect stopped between d275f66 and 0f3ee80 so I reverted the
+> following three commits:
+> 
+> b3b095b drm/i915: enable LVDS on Cougarpoint
+> d275f66 drm/i915: Clear the LVDS pipe B select bit when moving the LVDS to pipe A.
+> 0f3ee80 drm/i915: Allow LVDS on pipe A on gen4+
+> 
+> Now the powertop only shows about 0.2 interrupts per second. Hope this
+> information is useful.
 
-Jul 29 22:02:05 ini kernel: [ 2698.488446] sd 7:0:0:0: [sdb] CDB: Read(10): 28 00 00 07 88 69 00 00 01 00
-Jul 29 22:02:05 ini kernel: [ 2698.505470] sd 7:0:0:0: [sdb] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-Jul 29 22:02:05 ini kernel: [ 2698.505480] sd 7:0:0:0: [sdb] Sense Key : Illegal Request [current]
-Jul 29 22:02:05 ini kernel: [ 2698.505488] sd 7:0:0:0: [sdb] Add. Sense: Logical unit not supported
-Jul 29 22:02:05 ini kernel: [ 2698.505497] sd 7:0:0:0: [sdb] CDB: Read(10): 28 00 00 07 88 69 00 00 01 00
-Jul 29 22:02:05 ini kernel: [ 2698.555147] sd 7:0:0:0: [sdb] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-Jul 29 22:02:05 ini kernel: [ 2698.555157] sd 7:0:0:0: [sdb] Sense Key : Illegal Request [current]
-Jul 29 22:02:05 ini kernel: [ 2698.555165] sd 7:0:0:0: [sdb] Add. Sense: Logical unit not supported
-Jul 29 22:02:05 ini kernel: [ 2698.555175] sd 7:0:0:0: [sdb] CDB: Read(10): 28 00 00 07 88 69 00 00 01 00
-Jul 29 22:02:05 ini kernel: [ 2698.582241] sd 7:0:0:0: [sdb] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-Jul 29 22:02:05 ini kernel: [ 2698.582251] sd 7:0:0:0: [sdb] Sense Key : Illegal Request [current]
-Jul 29 22:02:05 ini kernel: [ 2698.582259] sd 7:0:0:0: [sdb] Add. Sense: Logical unit not supported
-Jul 29 22:02:05 ini kernel: [ 2698.582268] sd 7:0:0:0: [sdb] CDB: Read(10): 28 00 00 07 88 69 00 00 01 00
-Jul 29 22:02:05 ini kernel: [ 2698.614789] sd 7:0:0:0: [sdb] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-Jul 29 22:02:05 ini kernel: [ 2698.614799] sd 7:0:0:0: [sdb] Sense Key : Illegal Request [current]
-Jul 29 22:02:05 ini kernel: [ 2698.614807] sd 7:0:0:0: [sdb] Add. Sense: Logical unit not supported
-Jul 29 22:02:05 ini kernel: [ 2698.614817] sd 7:0:0:0: [sdb] CDB: Read(10): 28 00 00 07 88 69 00 00 01 00
-Jul 29 22:02:45 ini kernel: [ 2738.474386] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474529] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474536] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474570] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474583] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474603] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474615] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474621] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474633] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:02:45 ini kernel: [ 2738.474659] __journal_remove_journal_head: freeing b_committed_data
-Jul 29 22:05:32 ini kernel: [ 2905.423092] JBD: recovery failed
-Jul 29 22:05:54 ini kernel: [ 2927.832893] kjournald starting.  Commit interval 5 seconds
-Jul 29 22:05:54 ini kernel: [ 2927.833430] EXT3 FS on sdb, internal journal
-Jul 29 22:05:54 ini kernel: [ 2927.833499] EXT3-fs: sdb: 1 orphan inode deleted
-Jul 29 22:05:54 ini kernel: [ 2927.833503] EXT3-fs: recovery complete.
-Jul 29 22:05:54 ini kernel: [ 2927.838122] EXT3-fs: mounted filesystem with ordered data mode.
+Hm that doesn't make much sense.  Can you collect register dumps using
+intel_reg_dumper between the two cases?  I'd expect the LVDS to be on
+pipe b after the revert, but maybe before the revert we're leaving pipe
+b enabled and getting spurious interrupts?
 
+-- 
+Jesse Barnes, Intel Open Source Technology Center
