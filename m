@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab0G2Iup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 04:50:45 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64309 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab0G2Iul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 04:50:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=oBlotbdo7hApPcQtl7DAu46u6Cl8+Kqatahhrh4FfDgTvp007Sq6ILGt6UiCZE1O2M
-         +iixfIyK9WH9gEUE9FULy8UpD+5Y+abtGyi5mQvyuRT/k1QWKj9IlYZ9m+qE9PxQO7Rn
-         ulkpVgXGctjJojBO7Okvjn3T73hO0ymUHlFPU=
-Date: Thu, 29 Jul 2010 10:50:14 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Debora Velarde <debora@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] tmp_atmel: request correct region
-Message-ID: <20100729085014.GT26313@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Debora Velarde <debora@linux.vnet.ibm.com>,
-	Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-	Marcel Selhorst <m.selhorst@sirrix.com>,
-	tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	id S1754892Ab0G2IvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:51:20 -0400
+Received: from laas.laas.fr ([140.93.0.15]:43098 "EHLO laas.laas.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab0G2IvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 04:51:19 -0400
+X-Greylist: delayed 2140 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jul 2010 04:51:19 EDT
+Date: Thu, 29 Jul 2010 10:16:26 +0200
+From: Fernand LONE SANG <fernand.lone-sang@laas.fr>
+To: linux-kernel@vger.kernel.org
+Subject: i2cdetect outputs on Intel x58 chipsets wanted
+Message-ID: <20100729081626.GE4966@laas.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We wanted to request "base".  "tpm_atmel.base" is zero here.  This bug
-was introduced by e0dd03caf20d "[PATCH] tpm: return chip from
-tpm_register_hardware".
+Hello everyone.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
----
-Found with a static checker.  I don't have the hardware to test this.
+My apology for multiple reception of this mail. As i did not get much
+answer from the linux-i2c mailing list, i try this one which is
+bigger. I am probably off-topic so feel free to skip to the next
+thread ;)
 
-diff --git a/drivers/char/tpm/tpm_atmel.c b/drivers/char/tpm/tpm_atmel.c
-index c64a1bc..090b3ec 100644
---- a/drivers/char/tpm/tpm_atmel.c
-+++ b/drivers/char/tpm/tpm_atmel.c
-@@ -205,7 +205,7 @@ static int __init init_atmel(void)
- 
- 	have_region =
- 	    (atmel_request_region
--	     (tpm_atmel.base, region_size, "tpm_atmel0") == NULL) ? 0 : 1;
-+	     (base, region_size, "tpm_atmel0") == NULL) ? 0 : 1;
- 
- 	pdev = platform_device_register_simple("tpm_atmel", -1, NULL, 0);
- 	if (IS_ERR(pdev)) {
+I am currently trying to reach a SMBus slave component located in the
+I/O Hub (IOH) on Intel x58 chipsets. According to Intel
+specifications, this component enable server manageability. As my
+motherboard (DX58SO E29331-503) does not seem to have this component
+and as I did not manage to get in touch with an Intel technician for
+help, i'm looking for some kind people, with an Intel x58 chipset, who
+can send me by email their outputs from the i2cdectect tool so i can
+identify the motherboard version that have this component.
+
+For ones who can help me, you should first load the i2c-dev and
+i2c-i801 kernel modules:
+      
+  $ sudo modprobe i2c-dev
+  $ sudo modprobe i2c-i801
+
+Then, you should install i2c-tools to get i2cdetect. e.g., for debian
+based distribution:
+
+  $ sudo apt-get install i2c-tools
+
+Now i would like you to run "i2cdetect -l" to identify the i2c adapter
+available on your computer and then run i2cdetect on the Intel i801
+adapter. For example:
+
+  $ sudo i2cdetect -l
+  i2c-0	   i2c	    nouveau-0000:02:00.0-0	  I2C adapter
+  i2c-1	   i2c      nouveau-0000:02:00.0-1        I2C adapter
+  i2c-2	   smbus    SMBus I801 adapter at 3000    SMBus adapter
+
+  $ sudo i2cdetect 2
+  ...
+
+At this stage, a warning message will appear stating that this
+manipulation can confuse your i2c bus and it will ask you whether to
+continue or not. Type 'Yes'. Then, it will output some numbers on the
+screen. It is this output what i need. Additionnally, if you can send
+me the output of dmidecode so i can identify the exact motherboard
+model you have, it will be perfect.
+
+  $ sudo i2cdetect 2 > i2cdetect.out
+  $ sudo dmidecode > dmidecode.out
+
+Thanks everyone for your help. I really appreciate. Sorry again for
+being off-topic.
+
+--
+Fernand LONE SANG
