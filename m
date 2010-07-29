@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab0G2Of1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 10:35:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48855 "EHLO mx1.suse.de"
+	id S1757678Ab0G2Oom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 10:44:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63058 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757658Ab0G2OfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 10:35:25 -0400
-Date: Thu, 29 Jul 2010 16:34:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: Christoph Hellwig <hch@lst.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Jan Kara <jack@suse.cz>, jaxboe@fusionio.com, James.Bottomley@suse.de,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        kernel-bugs@lists.ubuntu.com
-Subject: Re: extfs reliability
-Message-ID: <20100729143456.GB12690@quack.suse.cz>
-References: <20100728085048.GA8884@lst.de>
- <4C4FF136.5000205@kernel.org>
- <20100728090025.GA9252@lst.de>
- <4C4FF592.9090800@kernel.org>
- <20100728092859.GA11096@lst.de>
- <20100729014431.GD4506@thunk.org>
- <20100729083142.GA30077@lst.de>
- <4C517B5A.3020905@vlnb.net>
- <20100729130852.GA11852@lst.de>
- <4C518C4D.6050607@vlnb.net>
+	id S1754214Ab0G2Ook (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 10:44:40 -0400
+Date: Thu, 29 Jul 2010 10:47:49 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+Message-ID: <20100729144748.GI6249@redhat.com>
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <20100729081316.GA4990@merkur.ravnborg.org> <4C5148A5.10809@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C518C4D.6050607@vlnb.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C5148A5.10809@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 29-07-10 18:12:29, Vladislav Bolkhovitin wrote:
-> 
-> Christoph Hellwig, on 07/29/2010 05:08 PM wrote:
-> > On Thu, Jul 29, 2010 at 05:00:10PM +0400, Vladislav Bolkhovitin wrote:
-> >> You can find full kernel logs starting from iSCSI load in the attachments.
+On Thu, Jul 29, 2010 at 11:23:49AM +0200, Michal Marek wrote:
+> On 29.7.2010 10:13, Sam Ravnborg wrote:
+> > On Wed, Jul 28, 2010 at 10:36:22PM +0200, Sam Ravnborg wrote:
+> >> Hi Michal.
 > >>
-> >> I already reported such issues some time ago, but my reports were not too much welcomed, so I gave up. Anyway, anybody can easily do my tests at any time. They don't need any special hardware, just 2 Linux boxes: one for iSCSI target and one for iSCSI initiator (the test box itself). But they are generic for other transports as well. You can see there's nothing iSCSI specific in the traces.
+> >> I cooked up the following to introduce long options in conf.
+> >> But in the process I dropped the short options. Is this OK?
 > > 
-> > I was only talking about ext3.
-> 
-> Yes, now ext3 is a lot more reliable. The only how I was able to confuse it was:
-> 
-> ...
-> (2197) nb_write: handle 4272 was not open size=65475 ofs=0
-> (2199) nb_write: handle 4272 was not open size=65475 ofs=65534
-> (2201) nb_write: handle 4272 was not open size=65475 ofs=131068
-> (2203) nb_write: handle 4272 was not open size=65475 ofs=196602
-> (2205) nb_write: handle 4272 was not open size=65475 ofs=262136^C
-> ^C
-> root@ini:/mnt/dbench-mod# ^C
-> root@ini:/mnt/dbench-mod# ^C
-> root@ini:/mnt/dbench-mod# cd
-> root@ini:~# umount /mnt
-> 
-> <- recover device
-> 
-> root@ini:~# mount -t ext3 -o barrier=1 /dev/sdb /mnt
-> mount: wrong fs type, bad option, bad superblock on /dev/sdb,
->        missing codepage or helper program, or other error
->        In some cases useful info is found in syslog - try
->        dmesg | tail  or so
-> 
-> Kernel log: "Jul 29 22:05:32 ini kernel: [ 2905.423092] JBD: recovery failed"
-  Hmm, this is strange. Are there more messages around this one?
+> > On top of this patch I did another two.
+> > They fixup the *nonint_oldconfig targets:
+> > 
+> > nonint_oldconfig:
+> > - renamed to listnewconfig
+> > - print new options to stdout (to better support redirect)
+> > - no longer saves a new configuration
+> > - does ot exist with a failure code if there is new options
+but this kills its usefulness. nonint_oldconfig is used so you can script
+the use of a generated configuration (think distro kernel RPMs). if something
+is not set, it fails listing what's not set. otherwise it'll save the
+configuration and whatever script is using it can proceed.
+"listnewconfig" is a new, different target to me.
 
-									Honza
+> > loose_noninit_oldconfig:
+> > - renamed to oldnoconfig
+> > - does ot exist with a failure code if there is new options
+> > 
+> > This is a lot cleaner and much more sensible names.
+> > And they still support the suecase where they
+> > list new options and can set them to n per default.
+> 
+> I do not object, these new targets are only in the kbuild tree atm, so
+> users are not relying on them yet. And the new names indeed describe
+> better what they do. Aristeu?
+oldnoconfig is fine to me.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Aristeu
+
