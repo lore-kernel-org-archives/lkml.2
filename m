@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab0G2QGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 12:06:16 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:52055 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757864Ab0G2QGO (ORCPT
+	id S1758010Ab0G2QHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 12:07:54 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49180 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757990Ab0G2QHs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 12:06:14 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: mmotm 2010-07-27 - hda-intel audio fails to initialize
-In-Reply-To: Your message of "Thu, 29 Jul 2010 07:37:56 +0200."
-             <s5hhbjialvv.wl%tiwai@suse.de>
-From: Valdis.Kletnieks@vt.edu
-References: <201007272226.o6RMQRBm008735@imap1.linux-foundation.org> <22094.1280355787@localhost>
-            <s5hhbjialvv.wl%tiwai@suse.de>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1280419527_4412P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 29 Jul 2010 12:05:27 -0400
-Message-ID: <6177.1280419527@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020204.4C51A6C9.0221,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 29 Jul 2010 12:07:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100729145827.GB1981@nb.net.home>
+References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> 
+	<AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> 
+	<4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> 
+	<20100729145827.GB1981@nb.net.home>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 29 Jul 2010 18:07:31 +0200
+Message-ID: <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com>
+Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
+To: Karel Zak <kzak@redhat.com>
+Cc: Milan Broz <mbroz@redhat.com>, util-linux-ng@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1280419527_4412P
-Content-Type: text/plain; charset=us-ascii
+On Thu, Jul 29, 2010 at 16:58, Karel Zak <kzak@redhat.com> wrote:
+> On Thu, Jul 29, 2010 at 04:22:50PM +0200, Kay Sievers wrote:
+>> On Thu, Jul 29, 2010 at 16:06, Milan Broz <mbroz@redhat.com> wrote:
+>> > On 07/29/2010 03:47 PM, Kay Sievers wrote:
+>> >> On Thu, Jul 29, 2010 at 15:33, Milan Broz <mbroz@redhat.com> wrote:
+>> >>> Create /sys/block/loopX/loop directory and provide these attributes:
+>> >>>  - backing_file
+>> >>>  - autoclear
+>> >>>  - offset
+>> >>>  - sizelimit
+>> >>>
+>> >>> To be used in util-linux-ng (and possibly elsewhere like udev rules)
+>> >>> where code need to get loop attributes from kernel (and not store
+>> >>> duplicate info in userspace).
+>> >>
+>> >> Isn't it that the loop attributes are created _after_ the loopdev is
+>> >> registered? That would make it hard to use these attributes from udev,
+>> >> as the event is already running while they are created.
+>> >
+>> > First 8 loop devices are registered always (without backing file),
+>> > so you have wait for change event initiated from fd set ioctl anyway...
+>> > (backing file attribute is empty in that case)
+>>
+>> Ah, so we are sure, we always get a 'change' event, and before that,
+>> none of these values are ever useful to read? I mean, there will not
+>> be attributes that are interesting during an 'add' event?
+>
+> I think the patch does not change the current behavior. It exports
+> details about loopdevs to userspace by /sys. This is the primary goal
+> of the patch.
 
-On Thu, 29 Jul 2010 07:37:56 +0200, Takashi Iwai said:
+Sure it does. Sysfs attributes need to be created _before_ uevents are
+sent out. The current behavior is that all blockdev attributes are
+safely created before the event is sent. These loop attributes are
+created _after_ the event is sent.
 
-> This was already fixed, but in the same date (July 27) as mmotm was
-> created.  The commit is:
-> 
->     cd7643bfb772dc7103ed6fc8dda6b233a8e14178
->     Author:     Jaroslav Kysela <perex@perex.cz>
->     ALSA: hda-intel - fix function_id rework (add missing bitmask)
+The question is if we can rely on the fact, that 'add' events never
+want to look at any of these attributes, and all can be deferred to
+later 'change' events. If we can't be fully certain about this, this
+stuff must be changed to happen before the event for the blockdev is
+sent out.
 
-Thanks, I cherry-picked that commit and my sound now works.
-
---==_Exmh_1280419527_4412P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMUabHcC3lWbTT17ARAnTiAJ4yHuLTy0BBPEzHBk7srLPlbbvmDACcCgm/
-1D4rivpYNySBY5xGrLC4/+I=
-=aWIq
------END PGP SIGNATURE-----
-
---==_Exmh_1280419527_4412P--
-
+Kay
