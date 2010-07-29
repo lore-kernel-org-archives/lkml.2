@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801Ab0G2XEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 19:04:22 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:35653 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757389Ab0G2XEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 19:04:21 -0400
-Date: Fri, 30 Jul 2010 01:04:19 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH] kconfig: use long options in conf
-Message-ID: <20100729230419.GA9357@merkur.ravnborg.org>
-References: <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <20100729081316.GA4990@merkur.ravnborg.org> <4C5148A5.10809@suse.cz> <20100729144748.GI6249@redhat.com> <4C519899.9020206@suse.cz> <20100729151650.GA20261@redhat.com> <20100729193454.GC7877@merkur.ravnborg.org> <20100729195052.GB20261@redhat.com>
+	id S1757926Ab0G2XF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 19:05:26 -0400
+Received: from tundra.namei.org ([65.99.196.166]:49524 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754641Ab0G2XFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 19:05:25 -0400
+Date: Fri, 30 Jul 2010 09:05:23 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: John Johansen <john.johansen@canonical.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [AppArmor #7 0/13] AppArmor security module
+In-Reply-To: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
+Message-ID: <alpine.LRH.2.00.1007300903440.7719@tundra.namei.org>
+References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729195052.GB20261@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 03:50:52PM -0400, Aristeu Rozanski wrote:
-> On Thu, Jul 29, 2010 at 09:34:55PM +0200, Sam Ravnborg wrote:
-> > If you have a simple command that give you a list of new
-> > symbols then this is easy to script as Michal also
-> > shows with the below example.
-> > 
-> > > > How about
-> > > > new=$(make listnewconfig)
-> > > > if test -n "$new"; then
-> > > >     echo "Please set the following options:" >&2
-> > > >     echo "$new" >&2
-> > > >     exit 1
-> > > > fi
-> > > > ? Wouldn't that be the same as nonint_oldconfig before?
-> > > what's the other use cases for listnewconfig (other than a incomplete
-> > > nonint_oldconfig)?
-> > 
-> > listnewconfig is for everyone that like to see a list of new
-> > config options - without touching the current configuration.
-> > 
-> > By limiting listnewconfig to do only one thing you actually
-> > create further uses than before.
+On Thu, 29 Jul 2010, John Johansen wrote:
 
-First off let me correct myself.
-nonint_oldconfig does the following:
-- print any new options to stderr
-- if tere are any new options exit with exit code 2
-- it does _not_ touch the current configuration (as I wrongly implied above)
+> This is the seveth general posting of the newest version of the
+> AppArmor security module it has been rewritten to use the security_path
+> hooks instead of the previous vfs approach.  The current implementation
+> is aimed at being as semantically close to previous versions of AppArmor
+> as possible while using the existing LSM infrastructure.
 
-listnewconfig does the following:
-- print any new options to stdout
-- return with exit code 0 (success)
-- it does not touch the current configuration
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
 
-So the change we discuss is only the exit code.
-You indicated you were OK with the name change,
-and I assume the change from stderr => stdout is OK too.
+Please carry out any further development against the above tree.
 
-> > 
-> > This is not about how well it applies to the tailored
-> > use in redhat's current scripts.
-> *sigh* I think we have people able to handle such complex changes.
-> 
-> this is not what it's about. I don't care how it's called or if scripts
-> will need to be changed. What I want to know is if either:
-> a) we're reducing functionality of something in order to support more *real*
->    use cases with the same code, making it more generic;
-> or
-> b) we're reducing functionality based in theorical use cases.
-> 
-> if it's (a), you get my ACK
-
-I can try to come up with some use cases that I consider real...
-
-a) List the number of new options after I upgraded my kernel.
-   It can be used to judge the amount of time used to answer
-   oldconfig manually.
-   If make tells me that conf had an exit code != success how
-   do I then know the list is complete?
-
-b) List the number of new options when I bring in an old config.
-   Same comment as in a) about the exit code.
-
-c) List the options I need to carefully lookup to judge what to do about them.
-   A variant of a) and b) - the one I expect all distributions uses in some way.
-   [scripts/diffconfig is one way]
-
-d) We can use listnewconfig in scripts without failing due to
-   conf exit with an error code when there are new options.
-   And use of stdout is thus more convinient.
-   [And I know the counter argument is that with the exit code it is easy
-   to judge if there is any new options].
+Note that I added the patch below to update AA against the latest 
+version of path_truncate:
 
 
-I hope this shows enough examples that you consider in the _real_
-category that you can give it your ack.
+commit 08c702abe63c2da88f811d5c9f98eb01eb8edc77
+Author: James Morris <jmorris@namei.org>
+Date:   Fri Jul 30 09:02:04 2010 +1000
 
-	Sam
+    AppArmor: update path_truncate method to latest version
+    
+    Remove extraneous path_truncate arguments from the AppArmor hook,
+    as they've been removed from the LSM API.
+    
+    Signed-off-by: James Morris <jmorris@namei.org>
+
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index 7daf0d5..8db33a8 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -278,8 +278,7 @@ static int apparmor_path_mknod(struct path *dir, struct dentry *dentry,
+ 	return common_perm_create(OP_MKNOD, dir, dentry, AA_MAY_CREATE, mode);
+ }
+ 
+-static int apparmor_path_truncate(struct path *path, loff_t length,
+-				  unsigned int time_attrs)
++static int apparmor_path_truncate(struct path *path)
+ {
+ 	struct path_cond cond = { path->dentry->d_inode->i_uid,
+ 				  path->dentry->d_inode->i_mode
+
+
+-- 
+James Morris
+<jmorris@namei.org>
