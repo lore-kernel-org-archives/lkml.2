@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab0G2JQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 05:16:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59533 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526Ab0G2JQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 05:16:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=bjCHnpqUHaQ5ndUMhlyJLSuwMR/Pai4y8V12aWgF98z3gLjSsqH6ySJJK3K8IGwEon
-         hAVit463+oTv4PeL+yrvSiDoV1iYhY96SosEjqYoBIm7z39s+XhAUZZ8Lu64+FhZ1s8L
-         m68fB3+K34z3PL5rsR5//15mfMjs4tfT7UknU=
-From: Huang Shijie <shijie8@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Huang Shijie <shijie8@gmail.com>
-Subject: [PATCH] update document
-Date: Thu, 29 Jul 2010 17:18:25 +0800
-Message-Id: <1280395105-4002-1-git-send-email-shijie8@gmail.com>
-X-Mailer: git-send-email 1.6.6.1
+	id S1755801Ab0G2JSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 05:18:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48568 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755629Ab0G2JSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 05:18:37 -0400
+Message-ID: <4C51473A.4000605@suse.cz>
+Date: Thu, 29 Jul 2010 11:17:46 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org>
+In-Reply-To: <20100728203622.GA32086@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	The exception.txt has been removed from the Documentation directory.
-So update the index file for it.
+On 28.7.2010 22:36, Sam Ravnborg wrote:
+> Hi Michal.
+> 
+> I cooked up the following to introduce long options in conf.
+> But in the process I dropped the short options. Is this OK?
 
-Signed-off-by: Huang Shijie <shijie8@gmail.com>
----
- Documentation/00-INDEX |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Nice! I would probably name the option and the enum value for randconfig
+simply --randconfig to not introduce new names (the scripts/kconfig/conf
+call is displayed to the user).
 
-diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-index 5405f7a..9e642c5 100644
---- a/Documentation/00-INDEX
-+++ b/Documentation/00-INDEX
-@@ -130,8 +130,6 @@ edac.txt
- 	- information on EDAC - Error Detection And Correction
- eisa.txt
- 	- info on EISA bus support.
--exception.txt
--	- how Linux v2.2 handles exceptions without verify_area etc.
- fault-injection/
- 	- dir with docs about the fault injection capabilities infrastructure.
- fb/
--- 
-1.6.6.1
 
+> Usign the same name in conf.c as used as make target really
+> helped the readability.
+
+Indeed.
+
+Michal
