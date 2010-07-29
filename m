@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab0G2SC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:02:28 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:49348 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602Ab0G2R73 (ORCPT
+	id S1753349Ab0G2R7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:59:07 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34038 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab0G2R66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:59:29 -0400
+	Thu, 29 Jul 2010 13:58:58 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
         sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -V3 07/17] richacl: Update the file masks in chmod()
-Date: Thu, 29 Jul 2010 23:27:45 +0530
-Message-Id: <1280426275-4602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V3 01/17] vfs: Hooks for more fine-grained directory permission checking
+Date: Thu, 29 Jul 2010 23:27:39 +0530
+Message-Id: <1280426275-4602-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,87 +26,226 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-Doing a chmod() sets the file mode, which includes the file permission
-bits.  When a file has a richacl, the permissions that the richacl
-grants need to be limited to what the new file permission bits allow.
+Add iop->may_create and iop->may_delete for overriding the POSIX file
+permission checks when creating and deleting files.  File systems can
+implement these hooks to support permission models which use different
+rules for file creation and deletion.
 
-This is done by setting the file masks in the richacl to what the file
-permission bits map to.  The richacl access check algorithm takes the
-file masks into account, which ensures that the richacl cannot grant too
-many permissions.
-
-It is possible to explicitly add permissions to the file masks which go
-beyond what the file permission bits can grant (like the ACE4_WRITE_ACL
-permission).  The POSIX.1 standard calls this an alternate file access
-control mechanism.  A subsequent chmod() would ensure that those
-permissions are disabled again.
+When these hooks are not used, the vfs behavior remains unchanged.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/richacl_base.c       |   40 ++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl.h |    1 +
- 2 files changed, 41 insertions(+), 0 deletions(-)
+ fs/namei.c         |   82 +++++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/fs.h |    4 ++
+ 2 files changed, 69 insertions(+), 17 deletions(-)
 
-diff --git a/fs/richacl_base.c b/fs/richacl_base.c
-index 7c77ff0..bb17037 100644
---- a/fs/richacl_base.c
-+++ b/fs/richacl_base.c
-@@ -333,3 +333,43 @@ restart:
- 	acl->a_flags &= ~ACL4_MASKED;
+diff --git a/fs/namei.c b/fs/namei.c
+index 1821d81..29e3461 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1292,6 +1292,26 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
  }
- EXPORT_SYMBOL_GPL(richacl_compute_max_masks);
-+
-+/**
-+ * richacl_chmod  -  update the file masks to reflect the new mode
-+ * @mode:	new file permission bits
-+ *
-+ * Return a copy of @acl where the file masks have been replaced by the file
-+ * masks corresponding to the file permission bits in @mode, or returns @acl
-+ * itself if the file masks are already up to date.  Takes over a reference
-+ * to @acl.
-+ */
-+struct richacl *
-+richacl_chmod(struct richacl *acl, mode_t mode)
-+{
-+	unsigned int owner_mask, group_mask, other_mask;
-+	struct richacl *clone;
-+
-+	owner_mask = richacl_mode_to_mask(mode >> 6) |
-+		     ACE4_POSIX_OWNER_ALLOWED;
-+	group_mask = richacl_mode_to_mask(mode >> 3);
-+	other_mask = richacl_mode_to_mask(mode);
-+
-+	if (acl->a_owner_mask == owner_mask &&
-+	    acl->a_group_mask == group_mask &&
-+	    acl->a_other_mask == other_mask &&
-+	    (acl->a_flags & ACL4_MASKED))
-+		return acl;
-+
-+	clone = richacl_clone(acl);
-+	richacl_put(acl);
-+	if (!clone)
-+		return ERR_PTR(-ENOMEM);
-+
-+	clone->a_flags |= ACL4_MASKED;
-+	clone->a_owner_mask = owner_mask;
-+	clone->a_group_mask = group_mask;
-+	clone->a_other_mask = other_mask;
-+
-+	return clone;
-+}
-+EXPORT_SYMBOL_GPL(richacl_chmod);
-diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index f491e59..3aa165b 100644
---- a/include/linux/richacl.h
-+++ b/include/linux/richacl.h
-@@ -288,5 +288,6 @@ extern int richacl_masks_to_mode(const struct richacl *);
- extern unsigned int richacl_mode_to_mask(mode_t);
- extern unsigned int richacl_want_to_mask(int);
- extern void richacl_compute_max_masks(struct richacl *);
-+extern struct richacl *richacl_chmod(struct richacl *, mode_t);
  
- #endif /* __RICHACL_H */
+ /*
++ * Do the directory specific tests of inode_permission() and call the
++ * may_delete inode operation.  The may_delete inode operation must do the
++ * sticky check when needed.
++ */
++static int may_delete_iop(struct inode *dir, struct inode *inode, int replace)
++{
++	int error;
++
++	if (IS_RDONLY(dir))
++		return -EROFS;
++	if (IS_IMMUTABLE(dir))
++		return -EACCES;
++	error = dir->i_op->may_delete(dir, inode, replace);
++	if (!error)
++		error = security_inode_permission(dir, MAY_WRITE | MAY_EXEC);
++
++	return error;
++}
++
++/*
+  *	Check whether we can remove a link victim from directory dir, check
+  *  whether the type of victim is right.
+  *  1. We can't do it if dir is read-only (done in permission())
+@@ -1310,7 +1330,8 @@ static inline int check_sticky(struct inode *dir, struct inode *inode)
+  * 10. We don't allow removal of NFS sillyrenamed files; it's handled by
+  *     nfs_async_unlink().
+  */
+-static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
++static int may_delete(struct inode *dir, struct dentry *victim,
++		      int isdir, int replace)
+ {
+ 	int error;
+ 
+@@ -1319,14 +1340,19 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+ 
+ 	BUG_ON(victim->d_parent->d_inode != dir);
+ 	audit_inode_child(victim, dir);
+-
+-	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
++	if (dir->i_op->may_delete)
++		error = may_delete_iop(dir, victim->d_inode, replace);
++	else {
++		error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
++		if (!error && check_sticky(dir, victim->d_inode))
++			error = -EPERM;
++	}
+ 	if (error)
+ 		return error;
+ 	if (IS_APPEND(dir))
+ 		return -EPERM;
+-	if (check_sticky(dir, victim->d_inode)||IS_APPEND(victim->d_inode)||
+-	    IS_IMMUTABLE(victim->d_inode) || IS_SWAPFILE(victim->d_inode))
++	if (IS_APPEND(victim->d_inode) || IS_IMMUTABLE(victim->d_inode) ||
++		IS_SWAPFILE(victim->d_inode))
+ 		return -EPERM;
+ 	if (isdir) {
+ 		if (!S_ISDIR(victim->d_inode->i_mode))
+@@ -1342,6 +1368,25 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+ 	return 0;
+ }
+ 
++/*
++ * Do the directory specific tests of inode_permission() and call the
++ * may_create inode operation.
++ */
++static int may_create_iop(struct inode *dir, int isdir)
++{
++	int error;
++
++	if (IS_RDONLY(dir))
++		return -EROFS;
++	if (IS_IMMUTABLE(dir))
++		return -EACCES;
++	error = dir->i_op->may_create(dir, isdir);
++	if (!error)
++		error = security_inode_permission(dir, MAY_WRITE | MAY_EXEC);
++
++	return error;
++}
++
+ /*	Check whether we can create an object with dentry child in directory
+  *  dir.
+  *  1. We can't do it if child already exists (open has special treatment for
+@@ -1350,13 +1395,16 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+  *  3. We should have write and exec permissions on dir
+  *  4. We can't do it if dir is immutable (done in permission())
+  */
+-static inline int may_create(struct inode *dir, struct dentry *child)
++static inline int may_create(struct inode *dir, struct dentry *child, int isdir)
+ {
+ 	if (child->d_inode)
+ 		return -EEXIST;
+ 	if (IS_DEADDIR(dir))
+ 		return -ENOENT;
+-	return inode_permission(dir, MAY_WRITE | MAY_EXEC);
++	if (dir->i_op->may_create)
++		return may_create_iop(dir, isdir);
++	else
++		return inode_permission(dir, MAY_WRITE | MAY_EXEC);
+ }
+ 
+ /*
+@@ -1404,7 +1452,7 @@ void unlock_rename(struct dentry *p1, struct dentry *p2)
+ int vfs_create(struct inode *dir, struct dentry *dentry, int mode,
+ 		struct nameidata *nd)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -1967,7 +2015,7 @@ EXPORT_SYMBOL_GPL(lookup_create);
+ 
+ int vfs_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -2071,7 +2119,7 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, int, mode, unsigned, dev)
+ 
+ int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 1);
+ 
+ 	if (error)
+ 		return error;
+@@ -2161,7 +2209,7 @@ void dentry_unhash(struct dentry *dentry)
+ 
+ int vfs_rmdir(struct inode *dir, struct dentry *dentry)
+ {
+-	int error = may_delete(dir, dentry, 1);
++	int error = may_delete(dir, dentry, 1, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -2248,7 +2296,7 @@ SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
+ 
+ int vfs_unlink(struct inode *dir, struct dentry *dentry)
+ {
+-	int error = may_delete(dir, dentry, 0);
++	int error = may_delete(dir, dentry, 0, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -2356,7 +2404,7 @@ SYSCALL_DEFINE1(unlink, const char __user *, pathname)
+ 
+ int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
+ {
+-	int error = may_create(dir, dentry);
++	int error = may_create(dir, dentry, 0);
+ 
+ 	if (error)
+ 		return error;
+@@ -2429,7 +2477,7 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
+ 	if (!inode)
+ 		return -ENOENT;
+ 
+-	error = may_create(dir, new_dentry);
++	error = may_create(dir, new_dentry, S_ISDIR(inode->i_mode));
+ 	if (error)
+ 		return error;
+ 
+@@ -2640,14 +2688,14 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	if (old_dentry->d_inode == new_dentry->d_inode)
+  		return 0;
+  
+-	error = may_delete(old_dir, old_dentry, is_dir);
++	error = may_delete(old_dir, old_dentry, is_dir, 0);
+ 	if (error)
+ 		return error;
+ 
+ 	if (!new_dentry->d_inode)
+-		error = may_create(new_dir, new_dentry);
++		error = may_create(new_dir, new_dentry, is_dir);
+ 	else
+-		error = may_delete(new_dir, new_dentry, is_dir);
++		error = may_delete(new_dir, new_dentry, is_dir, 1);
+ 	if (error)
+ 		return error;
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 68ca1b0..6744ace 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1539,6 +1539,10 @@ struct inode_operations {
+ 			  loff_t len);
+ 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
+ 		      u64 len);
++	int (*may_create) (struct inode *, int);
++	int (*may_delete) (struct inode *, struct inode *, int);
++
++
+ };
+ 
+ struct seq_file;
 -- 
 1.7.0.4
 
