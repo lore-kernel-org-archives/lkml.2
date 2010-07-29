@@ -1,97 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab0G2Cp3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 22:45:29 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37890 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab0G2Cp0 (ORCPT
+	id S1753337Ab0G2CuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 22:50:07 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:54275 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753197Ab0G2CuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 22:45:26 -0400
-Message-ID: <4C50EC4E.6090004@windriver.com>
-Date: Thu, 29 Jul 2010 10:49:50 +0800
-From: DDD <dongdong.deng@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Jason Wessel <jason.wessel@windriver.com>,
+	Wed, 28 Jul 2010 22:50:03 -0400
+X-Sasl-enc: 3F5eblRIawk/o3VRsn1uGPgz6Z+Z0aHcYhKG5GIuXqjJ 1280371796
+Date: Wed, 28 Jul 2010 23:49:51 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Pedro Ribeiro <pedrib@gmail.com>
+Cc: Nigel Cunningham <nigel@tuxonice.net>, tuxonice-devel@tuxonice.net,
         kgdb-bugreport@lists.sourceforge.net,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Kgdb-bugreport] [GIT PULL] kgdb regression fixes for 2.6.35-rc5
-References: <1280349590-27754-1-git-send-email-jason.wessel@windriver.com>	<20100728211725.GF5394@nowhere>	<AANLkTikXGm0WK+N=YMWJc+hBgVAyLc0adu4K1iX5UMW=@mail.gmail.com>	<4C50C7F2.8020305@windriver.com> <20100729010607.GB13088@nowhere>
-In-Reply-To: <20100729010607.GB13088@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Jul 2010 02:45:08.0149 (UTC) FILETIME=[0E7B4E50:01CB2EC8]
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        dm-crypt@saout.de
+Subject: Re: kcryptd oops when resuming with TuxOnIce with KDB oops
+ afterwards
+Message-ID: <20100729024951.GC6247@khazad-dum.debian.net>
+References: <AANLkTikjSiVXW+iGX-ofBs00crqiyT_d+DLpCBzFk4Ne@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikjSiVXW+iGX-ofBs00crqiyT_d+DLpCBzFk4Ne@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker wrote:
-> On Wed, Jul 28, 2010 at 07:14:42PM -0500, Jason Wessel wrote:
->> On 07/28/2010 04:26 PM, Linus Torvalds wrote:
->>> On Wed, Jul 28, 2010 at 2:17 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->>>> I'm sorry I spot it a bit late.
->>>> There is a little issue in this patch, irqs won't
->>>> be restored:
->>>>
->>>> @@ -588,9 +588,10 @@ int kgdb_ll_trap(int cmd, const char *str,
->>>>        if (!kgdb_io_module_registered)
->>>>                return NOTIFY_DONE;
->>>>
->>>> +       local_irq_save(flags);
->>>>        return __kgdb_notify(&args, cmd);
->>>> +       local_irq_restore(flags);
->>>>  }
->>> Yeah, that's obviously crap. I also wonder why __kgdb_notify messes up
->>> the flags to begin with.
->>>
->> This should not be needed as the irqs should already be off while in the overflow handler.
-> 
-> 
-> 
-> Interrupts are not disabled in the debug exception handler.
+On Thu, 29 Jul 2010, Pedro Ribeiro wrote:
+> I hit a bug when resuming with TuxOnIce. At the middle of a resume, it
+> says Compress Read -22 and locks up. I caught the stack trace with kdb
+> and took photos of that.
 
-Hi Frederic,
+Maybe this?
+http://lkml.org/lkml/2010/7/28/398
 
-The debug was initialized as an intr gate, thus the interrupts have been 
-disabled in the debug exception handler. :-)
-
-arch/x86/kernel/traps.c:
-820 /* Set of traps needed for early debugging. */
-821 void __init early_trap_init(void)
-822 {
-823     set_intr_gate_ist(1, &debug, DEBUG_STACK);
-824     /* int3 can be called from all */
-825     set_system_intr_gate_ist(3, &int3, DEBUG_STACK);
-826     set_intr_gate(14, &page_fault);
-827     load_idt(&idt_descr);
-828 }
-
-Thanks,
-Dongdong
-
-> 
-> I'm not sure what would be the state of dr6 if a nested debug exception
-> would happen while do_debug() is interrupted.
-> 
-> Perhaps the previous dr6 value is dropped. Intel manuals don't seem to say anything
-> about that.
-> 
-> Anyway that's a separate issue. The current patch fixes a regression and
-> it looks good.
-> 
-> Thanks.
-> 
-> 
-> ------------------------------------------------------------------------------
-> The Palm PDK Hot Apps Program offers developers who use the
-> Plug-In Development Kit to bring their C/C++ apps to Palm for a share
-> of $1 Million in cash or HP Products. Visit us here for more details:
-> http://p.sf.net/sfu/dev2dev-palm
-> _______________________________________________
-> Kgdb-bugreport mailing list
-> Kgdb-bugreport@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/kgdb-bugreport
-> 
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
