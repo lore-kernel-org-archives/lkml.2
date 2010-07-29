@@ -1,58 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab0G2A0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 20:26:25 -0400
-Received: from claw.goop.org ([74.207.240.146]:55099 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab0G2A0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 20:26:24 -0400
-Message-ID: <4C50CAAE.7020103@goop.org>
-Date: Wed, 28 Jul 2010 17:26:22 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Xen-devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Stodden <daniel.stodden@citrix.com>
-Subject: Re: [PATCH 00/16] xen/blkfront: various bugfixes and patches for
- blkfront
-References: <cover.1279658231.git.jeremy.fitzhardinge@citrix.com> <4C46577F.7050909@kernel.dk>
-In-Reply-To: <4C46577F.7050909@kernel.dk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1751862Ab0G2AhU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 20:37:20 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:39152 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab0G2AhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 20:37:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 29 Jul 2010 09:32:26 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/7][memcg] virtually indexed array library.
+Message-Id: <20100729093226.7b899930.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100728124513.85bfa047.akpm@linux-foundation.org>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100728124513.85bfa047.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/20/2010 07:12 PM, Jens Axboe wrote:
-> On 07/20/2010 02:42 PM, Jeremy Fitzhardinge wrote:
->> From: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
->>
->> Hi Jens,
->>
->> This series has various updates to blkfront, including:
->>   - support for dynamic device resizing
->>   - bugfixes for device hotplug
->>   - various races and bugs fixed
->>
->> It can be pulled from:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/blkfront
-> They don't apply cleanly to the for-2.6.36 branch, it fails at patch 2:
->
-> patching file drivers/block/xen-blkfront.c
-> Hunk #1 succeeded at 105 (offset 1 line).
-> Hunk #2 succeeded at 143 (offset 1 line).
-> Hunk #9 FAILED at 1080.
-> Hunk #10 succeeded at 1106 with fuzz 1 (offset 5 lines).
-> 1 out of 10 hunks FAILED -- saving rejects to file drivers/block/xen-blkfront.c.rej
+On Wed, 28 Jul 2010 12:45:13 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Could you pull again?  I've merged it into your branch (we don't need 
-any BKL locking), and added a couple of changes to fix some barrier 
-issues up.
+> On Tue, 27 Jul 2010 16:53:03 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > This virt-array allocates a virtally contiguous array via get_vm_area()
+> > and allows object allocation per an element of array.
+> > Physical pages are used only for used items in the array.
+> > 
+> >  - At first, the user has to create an array by create_virt_array().
+> >  - At using an element, virt_array_alloc_index(index) should be called.
+> >  - At freeing an element, virt_array_free_index(index) should be called.
+> >  - At destroying, destroy_virt_array() should be called.
+> > 
+> > Item used/unused status is controlled by bitmap and back-end physical
+> > pages are automatically allocated/freed. This is useful when you
+> > want to access objects by index in light weight. For example,
+> > 
+> > 	create_virt_array(va);
+> > 	struct your_struct *objmap = va->address;
+> > 	Then, you can access your objects by objmap[i].
+> > 
+> > In usual case, holding reference by index rather than pointer can save memory.
+> > But index -> object lookup cost cannot be negligible. In such case,
+> > this virt-array may be helpful. Ah yes, if lookup performance is not important,
+> > using radix-tree will be better (from TLB point of view). This virty-array
+> > may consume VMALLOC area too much. and alloc/free routine is very slow.
+> > 
+> > Changelog:
+> >  - fixed bugs in bitmap ops.
+> >  - add offset for find_free_index.
+> > 
+> 
+> My gut reaction to this sort of thing is "run away in terror".  It
+> encourages kernel developers to operate like lackadaisical userspace
+> developers and to assume that underlying code can perform heroic and
+> immortal feats.  But it can't.  This is the kernel and the kernel is a
+> tough and hostile place and callers should be careful and defensive and
+> take great efforts to minimise the strain they put upon other systems.
+> 
+> IOW, can we avoid doing this?
+> 
+
+Hmm. To pack more information into page_cgroup, I'd like reduce the size of it.
+One candidate is pc->mem_cgroup, a pointer. mem_cgroup has its own ID already.
+
+If we replace pc->mem_cgroup from a pointer to ID,
+-	struct mem_cgroup *mem = pc->mem_cgroup;
++	struct mem_cgroup *mem = id_to_mem_cgroup(pc->mem_cgroup);
+
+call will be added.
+
+The problem is that we have to call id_to_mem_cgroup routine even in
+add_to_lru() and delete_from_lru(). Any kind of "lookup" routines aren't
+enough fast. So, I'd like to use an array[].
+(mem_cgroup_add_to_lru(), delete_from_lru() has been slow codes already...
+ andI hear there is a brave guy who uses 2000+ memory cgroup on a host.
+
+With this, we just pay pointer calculation cost but have no more memory access.
+
+The basic idea of this virt-array[] implemenation is vmemmap(virtual memmap).
+But it's highly hard-coded per architecture and use very-very big space.
+So, I wrote a generic library routine.
+
+One another idea I thought of a technique making this kind of lookup
+is to prepare per-cpu lookup cache. But it adds much more complicated
+controls and can't garantee "works well always".
+
+IOW, I love this virt-array[]. But it's okay to move this routine to
+memcontrol.c and don't show any interface to others if you have concerns.
+
+If you recommened more 16bytes cost per page rather than implementing a
+thing like this, okay, it's much easier.
+
+
+
+> >
+> > ...
+> >
+> > +void free_varray_item(struct virt_array *v, int idx)
+> > +{
+> > +	mutex_lock(&v->mutex);
+> > +	__free_unmap_entry(v, idx);
+> > +	mutex_unlock(&v->mutex);
+> > +}
+> 
+> It's generally a bad idea for library code to perform its own locking. 
+> In this case we've just made this whole facility inaccessible to code
+> which runs from interrupt or atomic contexts.
+> 
+hmm, IIUC, because this use codes like vmalloc, this can't be used in atomic
+context.  But ok, I'll move this lock and adds comment.
+
+
+> > +		pg[0] = alloc_page(GFP_KERNEL);
+> 
+> And hard-wiring GFP_KERNEL makes this facility inaccessible to GFP_NOIO
+> and GFP_NOFS contexts as well.
+> 
+ok, I'll pass gfp mask.
 
 Thanks,
-     J
+-Kame
 
