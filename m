@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab0G2NNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 09:13:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53024 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab0G2NNm (ORCPT
+	id S1757371Ab0G2NXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 09:23:03 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50527 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab0G2NXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 09:13:42 -0400
-Message-ID: <4C517F59.5060507@ontolinux.com>
-Date: Thu, 29 Jul 2010 15:17:13 +0200
-From: Christian Stroetmann <stroetmann@ontolinux.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	Thu, 29 Jul 2010 09:23:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=hd7uRz9cyjBRBUCM3N20yk+8kvC8dDX9XtGOv1u42+gsNx2eY+xMtMBhyF+y+U1+nB
+         KmCuWAE3aXJSuTDkeyLnrhFmnTIwnZ0CM58MbwPBi5nNj1uM5ZyaWzLSh30dfuVRVNm0
+         mrRaZ8OhJfeoj7MxgptF2eOjcSNFJ8pEun9lE=
+Date: Thu, 29 Jul 2010 17:22:23 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Jiri Slaby <jslaby@suse.cz>, Stefani Seibold <stefani@seibold.net>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [bug] Fixing mutex_lock() under held spinlock
+Message-ID: <20100729132223.GA19715@albatros>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>, Minming Cao <bchociej@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
-References: <1280268023-18408-1-git-send-email-bchociej@gmail.com> <4C4F6DF2.6090905@ontolinux.com> <1280354448.7694.4.camel@mingming-laptop> <20100729121729.GK655@dastard>
-In-Reply-To: <20100729121729.GK655@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:ytNPSzsAyK9iseTZfm241cdcndZuwPW/e0n2FOV8YGg
- KCDnS3qJXzbE9+L2pTdlpXtrCy85TPZ30AOYSvJ08GtqGZgutQ
- 3OllAju4ytsK1BOIVZHLlokcPAJaCIIqXaScBMi+mpGT25XAKf
- i8hXQa1NL4x3fm2ehh/ARougHOw6AqshBnIiMlo4DdhZa7SZRw
- 06RDQ3JzjUDEXMbDV3AYA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aloha Mingming, Aloha Dave;
+Hi,
 
-On the 29.07.2010 14:17, Dave Chinner wrote:
-> On Wed, Jul 28, 2010 at 03:00:48PM -0700, Mingming Cao wrote:
->    
->> On Wed, 2010-07-28 at 01:38 +0200, Christian Stroetmann wrote:
->>      
->>> At the 28.07.2010 00:00, Ben Chociej wrote:
->>> Wouldn't this feature be useful for other file systems as well, so that
->>> a more general and not an only Btrfs related solution is preferable?
->>>
->>>        
->> Would certainly nice to add this feature to all filesystem, but right
->> now btrfs is the only fs which have multiple device support in itself.
->>      
->    
+I've found that cfi_cmdset and lpddr_cmds call mutex_lock() under held
+spinlock(). Maybe it was designed as a special locking scheme, so I
+don't try to fix it as I might create new complex locking problem.
 
-Thanks for your explanation, Mingming. And I had further questions to 
-this point, but didn't know exactly how to formulate them in a short 
-way. But luckily Dave has a possible solution that is related with my 
-questions around the multiple device feature of Btrfs and hot data handling.
 
-> Why does it even need multiple devices in the filesystem?
+--- ./drivers/mtd/chips/cfi_cmdset_0001.c	2010-07-06 16:45:43.000000000 +0400
++++ /tmp/cocci-output-8818-2d9c62-cfi_cmdset_0001.c	2010-07-29 16:30:47.000000000 +0400
+@@ -959,14 +959,12 @@ static void put_chip(struct map_info *ma
+ 
+ 	if (chip->priv) {
+ 		struct flchip_shared *shared = chip->priv;
+-		spin_lock(&shared->lock);
+ 		if (shared->writing == chip && chip->oldstate == FL_READY) {
+ 			/* We own the ability to write, but we're done */
+ 			shared->writing = shared->erasing;
+ 			if (shared->writing && shared->writing != chip) {
+ 				/* give back ownership to who we loaned it from */
+ 				struct flchip *loaner = shared->writing;
+-				mutex_lock(&loaner->mutex);
+ 				spin_unlock(&shared->lock);
+ 				mutex_unlock(&chip->mutex);
+ 				put_chip(map, loaner, loaner->start);
+--- ./drivers/mtd/lpddr/lpddr_cmds.c	2010-07-06 16:45:43.000000000 +0400
++++ /tmp/cocci-output-8953-56b3dd-lpddr_cmds.c	2010-07-29 16:30:57.000000000 +0400
+@@ -348,14 +348,12 @@ static void put_chip(struct map_info *ma
+ {
+ 	if (chip->priv) {
+ 		struct flchip_shared *shared = chip->priv;
+-		spin_lock(&shared->lock);
+ 		if (shared->writing == chip && chip->oldstate == FL_READY) {
+ 			/* We own the ability to write, but we're done */
+ 			shared->writing = shared->erasing;
+ 			if (shared->writing && shared->writing != chip) {
+ 				/* give back the ownership */
+ 				struct flchip *loaner = shared->writing;
+-				mutex_lock(&loaner->mutex);
+ 				spin_unlock(&shared->lock);
+ 				mutex_unlock(&chip->mutex);
+ 				put_chip(map, loaner);
 
-Yes, that was the point I asked myself after reading about this in the 
-Btrfs wiki 
-(https://btrfs.wiki.kernel.org/index.php/Using_Btrfs_with_Multiple_Devices) 
-and how ZFS does it.
 
->   All the
-> filesystem needs to know is the relative speed of regions of it's
-> block address space and to be provided allocation hints. everything
-> else is just movement of data. You could keep the speed information
-> in the device mapper table and add an interface for filesystems to
-> query it, and then you've got infrastructure  that all filesystems
-> could hook into.
->    
-
-Yes indeed, something like this general solution that doesn't need the 
-multiple device feature at all.
-
-> The tracking features dont' appear to have anything btrfs specific
-> in them, so t iseems wrong to implement it there just because you're
-> only looking at btrfs' method of tracking multiple block devices
-> and moving blocks....
->
-> Cheers,
->
-> Dave.
->    
-
-Thank you very much for being creative. :D
-
-Cheerio
-Christian *<:o)   O>-<    -(D)>-<
-
+thanks,
+Vasiliy
