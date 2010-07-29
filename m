@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab0G2Kxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:53:30 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:53690 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752731Ab0G2Kx3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:53:29 -0400
-Subject: Re: [RFC] tpm_tis: Fix subsequent suspend failures
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-In-Reply-To: <201007231407.51605.helmut.schaa@googlemail.com>
-Date: Thu, 29 Jul 2010 07:53:21 -0300
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        tpmdd-devel@lists.sourceforge.net,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        David Safford <safford@watson.ibm.com>, jmorris@namei.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7842A755-42A7-4882-8726-45CADDB4E1E2@linux.vnet.ibm.com>
-References: <201006091227.15729.helmut.schaa@googlemail.com> <5204AD54-F4BF-49A8-9168-3FCA112AAA2B@linux.vnet.ibm.com> <20100623130700.a032c373.akpm@linux-foundation.org> <201007231407.51605.helmut.schaa@googlemail.com>
-To: Helmut Schaa <helmut.schaa@googlemail.com>
-X-Mailer: Apple Mail (2.1081)
+	id S1756897Ab0G2LBS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:01:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58755 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752211Ab0G2LBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 07:01:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,279,1278313200"; 
+   d="scan'208";a="590877445"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Subject: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM virtio-net.
+Date: Thu, 29 Jul 2010 19:14:32 +0800
+Message-Id: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.5.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We provide an zero-copy method which driver side may get external
+buffers to DMA. Here external means driver don't use kernel space
+to allocate skb buffers. Currently the external buffer can be from
+guest virtio-net driver.
 
-On Jul 23, 2010, at 9:07 AM, Helmut Schaa wrote:
+The idea is simple, just to pin the guest VM user space and then
+let host NIC driver has the chance to directly DMA to it. 
+The patches are based on vhost-net backend driver. We add a device
+which provides proto_ops as sendmsg/recvmsg to vhost-net to
+send/recv directly to/from the NIC driver. KVM guest who use the
+vhost-net backend may bind any ethX interface in the host side to
+get copyless data transfer thru guest virtio-net frontend.
 
-> Hi,
-> 
-> Am Mittwoch 23 Juni 2010 schrieb Andrew Morton:
->> On Wed, 23 Jun 2010 16:55:54 -0300
->> Rajiv Andrade <srajiv@linux.vnet.ibm.com> wrote:
->> 
->>>> (top-posting repaired.  Please don't do that).
->>>> 
->>>> This wasn't a very good way to send a patch.  I edited the diff,
->>>> reconstructed the patch and then assembled a decent-looking changelog. 
->>>> I also changed your acked-by to the required signed-off-by, because you
->>>> were on the patch's delivery path.
->>>> 
->>>> Pretty please: next time, prepare a proper mergeable patch with the
->>>> correct attributions and signoffs?  Thanks.
->>> 
->>> Sure, sorry. I was just not certain if I could just resent Helmut's patch to LKML without messing with his authorship.
->> 
->> You can.  Put his "From:" line right at the top of the changelog and
->> everyone's patch-receiving tools will honour that.  If the From: at the
->> top of the changelog is absent, the tools will fall back to using the
->> From: line in the mail headers.
-> 
-> This patch still didn't make it into mainline and it fixes a regression.
-> Rajiv, do you plan to resubmit the patch or did you expect it to go through
-> Andrew's tree?
-> 
+patch 01-10:  	net core and kernel changes.
+patch 11-13:  	new device as interface to mantpulate external buffers.
+patch 14: 	for vhost-net.
+patch 15:	An example on modifying NIC driver to using napi_gro_frags().
+patch 16:	An example how to get guest buffers based on driver
+		who using napi_gro_frags().
 
-Hi Helmut,
+The guest virtio-net driver submits multiple requests thru vhost-net
+backend driver to the kernel. And the requests are queued and then
+completed after corresponding actions in h/w are done.
 
-I expected it to make into Andrew's tree, since his recommendations were for the next time I submit a patch that matched the circumstances of this one, also, he mentioned he had to fix the issues by hand.
+For read, user space buffers are dispensed to NIC driver for rx when
+a page constructor API is invoked. Means NICs can allocate user buffers
+from a page constructor. We add a hook in netif_receive_skb() function
+to intercept the incoming packets, and notify the zero-copy device.
 
-Andrew, do you want me to resubmit it? If so, I'm more than ok with that too though.
+For write, the zero-copy deivce may allocates a new host skb and puts
+payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
+The request remains pending until the skb is transmitted by h/w.
 
-Thanks,
-Rajiv
+We provide multiple submits and asynchronous notifiicaton to 
+vhost-net too.
 
+Our goal is to improve the bandwidth and reduce the CPU usage.
+Exact performance data will be provided later.
 
+What we have not done yet:
+	Performance tuning
+
+what we have done in v1:
+	polish the RCU usage
+	deal with write logging in asynchroush mode in vhost
+	add notifier block for mp device
+	rename page_ctor to mp_port in netdevice.h to make it looks generic
+	add mp_dev_change_flags() for mp device to change NIC state
+	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
+	a small fix for missing dev_put when fail
+	using dynamic minor instead of static minor number
+	a __KERNEL__ protect to mp_get_sock()
+
+what we have done in v2:
+	
+	remove most of the RCU usage, since the ctor pointer is only
+	changed by BIND/UNBIND ioctl, and during that time, NIC will be
+	stopped to get good cleanup(all outstanding requests are finished),
+	so the ctor pointer cannot be raced into wrong situation.
+
+	Remove the struct vhost_notifier with struct kiocb.
+	Let vhost-net backend to alloc/free the kiocb and transfer them
+	via sendmsg/recvmsg.
+
+	use get_user_pages_fast() and set_page_dirty_lock() when read.
+
+	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
+
+what we have done in v3:
+	the async write logging is rewritten 
+	a drafted synchronous write function for qemu live migration
+	a limit for locked pages from get_user_pages_fast() to prevent Dos
+	by using RLIMIT_MEMLOCK
+	
+
+what we have done in v4:
+	add iocb completion callback from vhost-net to queue iocb in mp device
+	replace vq->receiver by mp_sock_data_ready()
+	remove stuff in mp device which access structures from vhost-net
+	modify skb_reserve() to ignore host NIC driver reserved space
+	rebase to the latest vhost tree
+	split large patches into small pieces, especially for net core part.
+	
+
+what we have done in v5:
+	address Arnd Bergmann's comments
+		-remove IFF_MPASSTHRU_EXCL flag in mp device
+		-Add CONFIG_COMPAT macro
+		-remove mp_release ops
+	move dev_is_mpassthru() as inline func
+	fix a bug in memory relinquish
+	Apply to current git (2.6.34-rc6) tree.
+
+what we have done in v6:
+	move create_iocb() out of page_dtor which may happen in interrupt context
+	-This remove the potential issues which lock called in interrupt context
+	make the cache used by mp, vhost as static, and created/destoryed during
+	modules init/exit functions.
+	-This makes multiple mp guest created at the same time.
+
+what we have done in v7:
+	some cleanup prepared to suppprt PS mode
+
+what we have done in v8
+	discarding the modifications to point skb->data to guest buffer directly.
+	Add code to modify driver to support napi_gro_frags() with Herbert's comments.
+	To support PS mode.
+	Add mergeable buffer support in mp device.
+	Add GSO/GRO support in mp deice.
+	Address comments from Eric Dumazet about cache line and rcu usage.
+
+		
