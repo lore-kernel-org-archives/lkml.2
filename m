@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab0G2LZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:25:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59088 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab0G2LZz (ORCPT
+	id S1757026Ab0G2L0H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:26:07 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51162 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756968Ab0G2L0B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:25:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Date: Thu, 29 Jul 2010 13:25:47 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20100729090607.GN26098@amd.com> <20100729184336N.fujita.tomonori@lab.ntt.co.jp> <20100729100108.GQ26098@amd.com>
-In-Reply-To: <20100729100108.GQ26098@amd.com>
+	Thu, 29 Jul 2010 07:26:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Y6XlBAyOec3k8nXGGbs9WSrYFLG7O3vB+3oOh98xkoWuKFFZ2IVL7drOct4mBrw4/c
+         M0HLgdANauKSk5HW8WmJT0Z0Fp/mqsn97VALERxhsIU2yjDi51lPR+Q12JUvCuibnt9C
+         ezd3Y5bY7a4zvxJiIdTtVjZrxFYO06TqISwkc=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007291325.48129.arnd@arndb.de>
-X-Provags-ID: V02:K0:e3oKlfHQhVHUQSkRx8oqTR76HnM3dRa+1aRoCeWawgZ
- MN9u+6qYHnulz2h3nRuTeVfMhtKDxIWBSDynJ2Pz4/CgTWi/vP
- eILIrIojfQTfF3jhzp335uFRda2CmtNYL9ssxzpuTBuFmFJpOa
- fG5AtEyKfR/sgdVAPfkQHufdWj7wKU198Zkv0rnoSYBeyLoSKV
- CqJNxGsjLgCPaCdTPr1wA==
+In-Reply-To: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de>
+References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de>
+Date: Thu, 29 Jul 2010 19:26:00 +0800
+Message-ID: <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com>
+Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 July 2010, Roedel, Joerg wrote:
+On Thu, Jul 29, 2010 at 6:52 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
+> Hi all!
+>
+>    Building the linux kernel, as well as doing a"make allyesconfig"
+> on a fresh checkout of linux HEAD results in the same Bus Error in
+> fixdep (details below). This is a i5 box running 32bit Ubuntu Lucid
+> with plenty of (free) RAM. Haven't found any hints to what might be
+> wrong on scanning over the web archives.
+>
+> Regards
+>
+>    Christoph
+>
+> -----
+>  % make allyesconfig
+>  HOSTCC  scripts/basic/fixdep
+> fixdep: mmap: Cannot allocate memory
 
-> > You designed it for what you need at the time. It should have been
-> > named appropriately to avoid confusion. Later, when we actually
-> > understand what other IOMMUs need, we can evolve the specific API for
-> > generic purposes. Then we can rename the API to more generic.
-> 
-> At the time the iommu-api was written is was generic enough for what we
-> had. So it was designed as an generic API. At this point in time nobody
-> knew what the future requirements would we. So today it turns out that
-> it is not generic enough anymore for latest hardware. The logical
-> consequence is to fix this in the iommu-api.
-
-Well, I think the real question is why we have two APIs that both claim
-to work with IOMMUs in a generic way and how we could unify the two.
-
-The Intel and AMD IOMMU drivers currently register at both the DMA
-API and the IOMMU API. The first one is used by everything except
-KVM and the second is only used by KVM.
-
-I really think we should not extend the (KVM) IOMMU API further but
-just use the generic DMA mapping api for KVM and extend it as necessary.
-It already has the concept of cache coherency and mapping/unmapping
-that are in the IOMMU API and could be extended to support domains
-as well, through the use of dma_attrs.
-
-	Arnd
+So what does 'ls -lh scripts/basic/.fixdep.d' say?
+Seems this file is too big...
