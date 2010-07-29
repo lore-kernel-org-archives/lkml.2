@@ -1,54 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab0G2Lij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:38:39 -0400
-Received: from tuxonice.net ([74.207.252.127]:55301 "EHLO mail.tuxonice.net"
+	id S1756942Ab0G2Lqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:46:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62175 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756831Ab0G2Lih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:38:37 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C516839.1060909@tuxonice.net>
-Date: Thu, 29 Jul 2010 21:38:33 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1753404Ab0G2Lq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 07:46:29 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/2] CRED: Fix get_task_cred() and task_state() to not
+	resurrect dead credentials
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Jiri Olsa <jolsa@redhat.com>
+Date: Thu, 29 Jul 2010 12:45:49 +0100
+Message-ID: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Milan Broz <mbroz@redhat.com>
-CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, dm-crypt@saout.de,
-        Pedro Ribeiro <pedrib@gmail.com>, tuxonice-devel@tuxonice.net,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        kgdb-bugreport@lists.sourceforge.net
-Subject: Re: [dm-crypt] kcryptd oops when resuming with TuxOnIce with KDB
- oops afterwards
-References: <AANLkTikjSiVXW+iGX-ofBs00crqiyT_d+DLpCBzFk4Ne@mail.gmail.com>	<20100729024951.GC6247@khazad-dum.debian.net> <4C50F09C.6050201@tuxonice.net> <4C515877.5040101@redhat.com>
-In-Reply-To: <4C515877.5040101@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+It's possible for get_task_cred() as it currently stands to 'corrupt' a set of
+credentials by incrementing their usage count after their replacement by the
+task being accessed.
 
-On 29/07/10 20:31, Milan Broz wrote:
-> On 07/29/2010 05:08 AM, Nigel Cunningham wrote:
->> On 29/07/10 12:49, Henrique de Moraes Holschuh wrote:
->>> On Thu, 29 Jul 2010, Pedro Ribeiro wrote:
->>>> I hit a bug when resuming with TuxOnIce. At the middle of a resume, it
->>>> says Compress Read -22 and locks up. I caught the stack trace with kdb
->>>> and took photos of that.
->>>
->>> Maybe this?
->>> http://lkml.org/lkml/2010/7/28/398
->>
->> I don't think so. This issue has been around for a fair while. It's just
->> impossible to reliably reproduce, and I haven't yet found the time to
->> put some serious effort into tracking down the cause and fixing it.
->
-> Is it TuxOnIce only problem?
-> Or there is similar report with unpatched kernel?
+What happens is that get_task_cred() can race with commit_creds():
 
-It's TuxOnIce specific.
+	TASK_1			TASK_2			RCU_CLEANER
+	-->get_task_cred(TASK_2)
+	rcu_read_lock()
+	__cred = __task_cred(TASK_2)
+				-->commit_creds()
+				old_cred = TASK_2->real_cred
+				TASK_2->real_cred = ...
+				put_cred(old_cred)
+				  call_rcu(old_cred)
+		[__cred->usage == 0]
+	get_cred(__cred)
+		[__cred->usage == 1]
+	rcu_read_unlock()
+							-->put_cred_rcu()
+							[__cred->usage == 1]
+							panic()
 
-Regards,
+However, since a tasks credentials are generally not changed very often, we can
+reasonably make use of a loop involving reading the creds pointer and using
+atomic_inc_not_zero() to attempt to increment it if it hasn't already hit zero.
 
-Nigel
+If successful, we can safely return the credentials in the knowledge that, even
+if the task we're accessing has released them, they haven't gone to the RCU
+cleanup code.
+
+We then change task_state() in procfs to use get_task_cred() rather than
+calling get_cred() on the result of __task_cred(), as that suffers from the
+same problem.
+
+
+Without this change, a BUG_ON in __put_cred() or in put_cred_rcu() can be
+tripped when it is noticed that the usage count is not zero as it ought to be,
+for example:
+
+kernel BUG at kernel/cred.c:168!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/kernel/mm/ksm/run
+CPU 0
+Pid: 2436, comm: master Not tainted 2.6.33.3-85.fc13.x86_64 #1 0HR330/OptiPlex
+745
+RIP: 0010:[<ffffffff81069881>]  [<ffffffff81069881>] __put_cred+0xc/0x45
+RSP: 0018:ffff88019e7e9eb8  EFLAGS: 00010202
+RAX: 0000000000000001 RBX: ffff880161514480 RCX: 00000000ffffffff
+RDX: 00000000ffffffff RSI: ffff880140c690c0 RDI: ffff880140c690c0
+RBP: ffff88019e7e9eb8 R08: 00000000000000d0 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000040 R12: ffff880140c690c0
+R13: ffff88019e77aea0 R14: 00007fff336b0a5c R15: 0000000000000001
+FS:  00007f12f50d97c0(0000) GS:ffff880007400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f8f461bc000 CR3: 00000001b26ce000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process master (pid: 2436, threadinfo ffff88019e7e8000, task ffff88019e77aea0)
+Stack:
+ ffff88019e7e9ec8 ffffffff810698cd ffff88019e7e9ef8 ffffffff81069b45
+<0> ffff880161514180 ffff880161514480 ffff880161514180 0000000000000000
+<0> ffff88019e7e9f28 ffffffff8106aace 0000000000000001 0000000000000246
+Call Trace:
+ [<ffffffff810698cd>] put_cred+0x13/0x15
+ [<ffffffff81069b45>] commit_creds+0x16b/0x175
+ [<ffffffff8106aace>] set_current_groups+0x47/0x4e
+ [<ffffffff8106ac89>] sys_setgroups+0xf6/0x105
+ [<ffffffff81009b02>] system_call_fastpath+0x16/0x1b
+Code: 48 8d 71 ff e8 7e 4e 15 00 85 c0 78 0b 8b 75 ec 48 89 df e8 ef 4a 15 00
+48 83 c4 18 5b c9 c3 55 8b 07 8b 07 48 89 e5 85 c0 74 04 <0f> 0b eb fe 65 48 8b
+04 25 00 cc 00 00 48 3b b8 58 04 00 00 75
+RIP  [<ffffffff81069881>] __put_cred+0xc/0x45
+ RSP <ffff88019e7e9eb8>
+---[ end trace df391256a100ebdd ]---
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+---
+
+ fs/proc/array.c      |    2 +-
+ include/linux/cred.h |   21 +--------------------
+ kernel/cred.c        |   25 +++++++++++++++++++++++++
+ 3 files changed, 27 insertions(+), 21 deletions(-)
+
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 9b58d38..fff6572 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -176,7 +176,7 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		if (tracer)
+ 			tpid = task_pid_nr_ns(tracer, ns);
+ 	}
+-	cred = get_cred((struct cred *) __task_cred(p));
++	cred = get_task_cred(p);
+ 	seq_printf(m,
+ 		"State:\t%s\n"
+ 		"Tgid:\t%d\n"
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 75c0fa8..ce40cbc 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -153,6 +153,7 @@ struct cred {
+ extern void __put_cred(struct cred *);
+ extern void exit_creds(struct task_struct *);
+ extern int copy_creds(struct task_struct *, unsigned long);
++extern const struct cred *get_task_cred(struct task_struct *);
+ extern struct cred *cred_alloc_blank(void);
+ extern struct cred *prepare_creds(void);
+ extern struct cred *prepare_exec_creds(void);
+@@ -282,26 +283,6 @@ static inline void put_cred(const struct cred *_cred)
+ 	((const struct cred *)(rcu_dereference_check((task)->real_cred, rcu_read_lock_held() || lockdep_tasklist_lock_is_held())))
+ 
+ /**
+- * get_task_cred - Get another task's objective credentials
+- * @task: The task to query
+- *
+- * Get the objective credentials of a task, pinning them so that they can't go
+- * away.  Accessing a task's credentials directly is not permitted.
+- *
+- * The caller must make sure task doesn't go away, either by holding a ref on
+- * task or by holding tasklist_lock to prevent it from being unlinked.
+- */
+-#define get_task_cred(task)				\
+-({							\
+-	struct cred *__cred;				\
+-	rcu_read_lock();				\
+-	__cred = (struct cred *) __task_cred((task));	\
+-	get_cred(__cred);				\
+-	rcu_read_unlock();				\
+-	__cred;						\
+-})
+-
+-/**
+  * get_current_cred - Get the current task's subjective credentials
+  *
+  * Get the subjective credentials of the current task, pinning them so that
+diff --git a/kernel/cred.c b/kernel/cred.c
+index a2d5504..60bc8b1 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -209,6 +209,31 @@ void exit_creds(struct task_struct *tsk)
+ 	}
+ }
+ 
++/**
++ * get_task_cred - Get another task's objective credentials
++ * @task: The task to query
++ *
++ * Get the objective credentials of a task, pinning them so that they can't go
++ * away.  Accessing a task's credentials directly is not permitted.
++ *
++ * The caller must also make sure task doesn't get deleted, either by holding a
++ * ref on task or by holding tasklist_lock to prevent it from being unlinked.
++ */
++const struct cred *get_task_cred(struct task_struct *task)
++{
++	const struct cred *cred;
++
++	rcu_read_lock();
++
++	do {
++		cred = __task_cred((task));
++		BUG_ON(!cred);
++	} while (!atomic_inc_not_zero(&((struct cred *)cred)->usage));
++
++	rcu_read_unlock();
++	return cred;
++}
++
+ /*
+  * Allocate blank credentials, such that the credentials can be filled in at a
+  * later date without risk of ENOMEM.
+
