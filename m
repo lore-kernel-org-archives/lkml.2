@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab0G2FN7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:13:59 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:45806 "EHLO imr3.ericy.com"
+	id S1753413Ab0G2FOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:14:32 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:45808 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287Ab0G2FNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:13:53 -0400
+	id S1751978Ab0G2FN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:13:56 -0400
 From: Guenter Roeck <guenter.roeck@ericsson.com>
 To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
         Richard Purdie <rpurdie@rpsys.net>,
@@ -25,9 +25,9 @@ CC: Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
         Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
         linuxppc-dev@ozlabs.org, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH 3/6] leds: Remove owner field from attribute initialization in bd2802 driver
-Date: Wed, 28 Jul 2010 22:09:23 -0700
-Message-ID: <1280380166-29196-4-git-send-email-guenter.roeck@ericsson.com>
+Subject: [PATCH 5/6] powerpc/pci: Remove owner field from attribute initialization in PCI bridge init
+Date: Wed, 28 Jul 2010 22:09:25 -0700
+Message-ID: <1280380166-29196-6-git-send-email-guenter.roeck@ericsson.com>
 X-Mailer: git-send-email 1.7.0.87.g0901d
 In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
 References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
@@ -39,38 +39,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 ---
- drivers/leds/leds-bd2802.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ arch/powerpc/sysdev/mv64x60_pci.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
-index 5dcdf9d..19dc4b6 100644
---- a/drivers/leds/leds-bd2802.c
-+++ b/drivers/leds/leds-bd2802.c
-@@ -351,7 +351,7 @@ static ssize_t bd2802_store_reg##reg_addr(struct device *dev,		\
- 	return count;							\
- }									\
- static struct device_attribute bd2802_reg##reg_addr##_attr = {		\
--	.attr = {.name = reg_name, .mode = 0644, .owner = THIS_MODULE},	\
-+	.attr = {.name = reg_name, .mode = 0644},			\
- 	.store = bd2802_store_reg##reg_addr,				\
- };
- 
-@@ -482,7 +482,6 @@ static struct device_attribute bd2802_adv_conf_attr = {
+diff --git a/arch/powerpc/sysdev/mv64x60_pci.c b/arch/powerpc/sysdev/mv64x60_pci.c
+index 198f288..77bb3f4 100644
+--- a/arch/powerpc/sysdev/mv64x60_pci.c
++++ b/arch/powerpc/sysdev/mv64x60_pci.c
+@@ -73,7 +73,6 @@ static struct bin_attribute mv64x60_hs_reg_attr = { /* Hotswap register */
  	.attr = {
- 		.name = "advanced_configuration",
- 		.mode = 0644,
--		.owner = THIS_MODULE
+ 		.name = "hs_reg",
+ 		.mode = S_IRUGO | S_IWUSR,
+-		.owner = THIS_MODULE,
  	},
- 	.show = bd2802_show_adv_conf,
- 	.store = bd2802_store_adv_conf,
-@@ -519,7 +518,6 @@ static struct device_attribute bd2802_##attr_name##_attr = {		\
- 	.attr = {							\
- 		.name = name_str,					\
- 		.mode = 0644,						\
--		.owner = THIS_MODULE					\
- 	},								\
- 	.show = bd2802_show_##attr_name,				\
- 	.store = bd2802_store_##attr_name,				\
+ 	.size  = MV64X60_VAL_LEN_MAX,
+ 	.read  = mv64x60_hs_reg_read,
 -- 
 1.7.0.87.g0901d
 
