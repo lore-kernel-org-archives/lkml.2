@@ -1,35 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757778Ab0G2PTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 11:19:35 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33804 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757701Ab0G2PTc (ORCPT
+	id S1757555Ab0G2P2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:28:44 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40012 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753848Ab0G2P2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 11:19:32 -0400
-Date: Thu, 29 Jul 2010 16:31:48 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Philippe Langlais <philippe.langlais@stericsson.com>
-Cc: <linux-kernel@vger.kernel.org>, <gregkh@suse.de>,
-        <ludovic.barre@stericsson.com>, <vincent.guittot@stericsson.com>
-Subject: Re: [PATCH] U6715 16550A serial driver support
-Message-ID: <20100729163148.3b26e379@lxorguk.ukuu.org.uk>
-In-Reply-To: <1280416437-25364-1-git-send-email-philippe.langlais@stericsson.com>
-References: <1280416437-25364-1-git-send-email-philippe.langlais@stericsson.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Jul 2010 11:28:43 -0400
+Date: Thu, 29 Jul 2010 17:28:40 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Jeff Dike <jdike@addtoit.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 0/3] Removing dead code
+Message-ID: <cover.1280417117.git.siccegge@cs.fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 17:13:57 +0200
-Philippe Langlais <philippe.langlais@stericsson.com> wrote:
+Hi all!
+       
+        As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-> UART Features extract from STEricsson U6715 data-sheet (arm926 SoC for mobile phone):
-> * Fully compatible with industry standard 16C550 and 16C450 from various
+        I've been running a check on the arch/um sourcetree for config
+Items not defined in Kconfig and found 10 such cases. Sourcecode
+blocks depending on these Items are not reachable from a vanilla
+kernel -- dead code. I've seen such dead blocks made on purpose
+e.g. while integrating new features into the kernel but generally
+they're just useless.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+        Each of the patches in this patchset removes on such dead
+config Item, I'd be glad if you consider applying them. I've been
+doing deeper analysis of such issues before and can do so again but
+I'm not so sure they were fastly usefull.
+
+        I build the patches against a vanilla kernel in order to
+try if the kernel compiles with this patches. As reported earlier
+today the build currently fails for plain um but adding this patchset
+doesn't change the failing in any way. That was a i386 build.
+
+        Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
+
+Regards
+
+        Christoph Egger
+
+[0] http://vamos1.informatik.uni-erlangen.de/
+
+Christoph Egger (3):
+  Removing dead PROC_MM
+  Removing conditionalizing containing exactly the same code
+  Removing dead copy&paste code
+
+ arch/um/kernel/ptrace.c                   |   21 ---------------------
+ arch/um/sys-i386/asm/archparam.h          |    4 ----
+ arch/um/sys-i386/shared/sysdep/system.h   |   11 +----------
+ arch/um/sys-ppc/misc.S                    |    6 ------
+ arch/um/sys-ppc/shared/sysdep/ptrace.h    |    5 +----
+ arch/um/sys-x86_64/shared/sysdep/system.h |   10 +---------
+ 6 files changed, 3 insertions(+), 54 deletions(-)
 
