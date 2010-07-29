@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab0G2FNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:13:55 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:45805 "EHLO imr3.ericy.com"
+	id S1753583Ab0G2FOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:14:40 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:45824 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab0G2FNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:13:53 -0400
+	id S1753150Ab0G2FO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:14:27 -0400
 From: Guenter Roeck <guenter.roeck@ericsson.com>
 To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
         Richard Purdie <rpurdie@rpsys.net>,
@@ -25,9 +25,9 @@ CC: Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
         Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
         linuxppc-dev@ozlabs.org, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH 6/6] Remove owner field from sysfs struct attribute
-Date: Wed, 28 Jul 2010 22:09:26 -0700
-Message-ID: <1280380166-29196-7-git-send-email-guenter.roeck@ericsson.com>
+Subject: [PATCH 1/6] scsi: Remove owner field from attribute initialization in LPFC driver
+Date: Wed, 28 Jul 2010 22:09:21 -0700
+Message-ID: <1280380166-29196-2-git-send-email-guenter.roeck@ericsson.com>
 X-Mailer: git-send-email 1.7.0.87.g0901d
 In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
 References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
@@ -39,28 +39,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 ---
- include/linux/sysfs.h |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/scsi/lpfc/lpfc_attr.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index f2694eb..880fa1a 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -22,14 +22,8 @@ struct kobject;
- struct module;
- enum kobj_ns_type;
- 
--/* FIXME
-- * The *owner field is no longer used.
-- * x86 tree has been cleaned up. The owner
-- * attribute is still left for other arches.
-- */
- struct attribute {
- 	const char		*name;
--	struct module		*owner;
- 	mode_t			mode;
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lock_class_key	*key;
+diff --git a/drivers/scsi/lpfc/lpfc_attr.c b/drivers/scsi/lpfc/lpfc_attr.c
+index bf33b31..8f89edf 100644
+--- a/drivers/scsi/lpfc/lpfc_attr.c
++++ b/drivers/scsi/lpfc/lpfc_attr.c
+@@ -2720,7 +2720,6 @@ static struct bin_attribute sysfs_drvr_stat_data_attr = {
+ 	.attr = {
+ 		.name = "lpfc_drvr_stat_data",
+ 		.mode = S_IRUSR,
+-		.owner = THIS_MODULE,
+ 	},
+ 	.size = LPFC_MAX_TARGET * MAX_STAT_DATA_SIZE_PER_TARGET,
+ 	.read = sysfs_drvr_stat_data_read,
 -- 
 1.7.0.87.g0901d
 
