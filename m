@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab0G2IDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 04:03:03 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33884 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab0G2IC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 04:02:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 29 Jul 2010 16:58:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: dann frazier <dannf@debian.org>, Hugh Dickins <hughd@google.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: ia64 hang/mca running gdb 'make check'
-Message-Id: <20100729165801.f3a6dfe9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTi=5tYjnvg2UyLUD7eEFgn-qzkiAWzUyp4F+Yjzw@mail.gmail.com>
-References: <20100720173512.GF26783@ldl.fc.hp.com>
-	<20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100721030629.GA9987@lackof.org>
-	<alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
-	<20100727071914.GB22945@lackof.org>
-	<20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTi=5tYjnvg2UyLUD7eEFgn-qzkiAWzUyp4F+Yjzw@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754027Ab0G2IFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:05:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46133 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800Ab0G2IFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 04:05:49 -0400
+Message-ID: <4C51362E.5010009@suse.cz>
+Date: Thu, 29 Jul 2010 10:05:02 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: trapdoor6@gmail.com
+Cc: Nir Tzachar <nir.tzachar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>, trivial@kernel.org
+Subject: Re: Small typo in kernel [current source from git] .config option
+References: <AANLkTi=ON+60QM9Ooepwr7FLr+RV1TN6X-6D78tuNfCS@mail.gmail.com>	<20100727165549.GC26649@merkur.ravnborg.org>	<AANLkTimmLLJ9VrbD94GA3ZH2XvBwEAAcrrL_etWAoEea@mail.gmail.com>	<4C500E41.40708@suse.cz>	<AANLkTi=rPP7OfoNoyVkM0XR08ns6p0+cENzcdk7gY8TE@mail.gmail.com>	<4C504FBB.3020600@suse.cz>	<20100728185505.GF29266@merkur.ravnborg.org>	<AANLkTikpm8St4egQ7PpExzKkSTff5VZN-dKjAAA0nwoN@mail.gmail.com> <AANLkTimhKT=mmL7Q5D1z2mzu7wt25_NzA328Tp3T8y0v@mail.gmail.com>
+In-Reply-To: <AANLkTimhKT=mmL7Q5D1z2mzu7wt25_NzA328Tp3T8y0v@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 15:38:06 +0800
-Luming Yu <luming.yu@gmail.com> wrote:
-
-> On Tue, Jul 27, 2010 at 5:03 PM, KAMEZAWA Hiroyuki
-
-> # gdb ./foo
-> GNU gdb (GDB) Red Hat Enterprise Linux (7.0.1-23.el5)
-> Copyright (C) 2009 Free Software Foundation, Inc.
-> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-> This is free software: you are free to change and redistribute it.
-> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-> and "show warranty" for details.
-> This GDB was configured as "ia64-redhat-linux-gnu".
-> For bug reporting instructions, please see:
-> <http://www.gnu.org/software/gdb/bugs/>...
-> Reading symbols from /root/foo...done.
-> (gdb) break leaf
-> Breakpoint 1 at 0x40000000000005a1: file foo.c, line 2.
-> (gdb) run
-> Starting program: /root/foo
+On 29.7.2010 08:20, trapDoor wrote:
+> On Thu, Jul 29, 2010 at 6:04 AM, Nir Tzachar <nir.tzachar@gmail.com> wrote:
+>> On Wed, Jul 28, 2010 at 9:55 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>>> The capitilazing is the main reason why I have
+>>> not recommended nconfig to be default.
+>>>
+>>> And I doubt the shortcut letters are used that often.
+>>> One idea could be to drop the shortcut for the individual menus.
+>>
+>> I almost never use them and removing them will have the benefit of
+>> cleaning the code.
 > 
-> Breakpoint 1, leaf () at foo.c:2
-> 2       }
-> (gdb) gcore /tmp/save
-> Segmentation fault
-> # cat /proc/version
-> Linux version 2.6.35-rc3+ ...
-> 
-> 
+> Neither do I. And I don't know anyone who would find them very useful.
 
-Hmm. What is EXEC_PAGESIZE installed in /usr/include/asm-generic/param.h ?
-And what happnes when modify it to 16k if it's 64k ?
+I actually do. Unlike menuconfig, nconfig will jump to a menu item even
+if it is not currently visible in the screen. Useful if you know the
+option name but don't want to scroll down and look for it. But I would
+accept a patch to remove the shortcut if there is no better way of
+marking the shortcuts than the capital letters.
 
-Thanks
--Kame
-
-
-
-
+Michal
