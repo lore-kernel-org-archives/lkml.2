@@ -1,119 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab0G2LBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:01:36 -0400
+	id S1756928Ab0G2LB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:01:29 -0400
 Received: from mga11.intel.com ([192.55.52.93]:58755 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756903Ab0G2LBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:01:22 -0400
+	id S1752211Ab0G2LBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 07:01:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,279,1278313200"; 
-   d="scan'208";a="590877525"
+   d="scan'208";a="590877497"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v8 04/16] Add a function make external buffer owner to query capability.
-Date: Thu, 29 Jul 2010 19:14:36 +0800
-Message-Id: <1280402088-5849-5-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC PATCH v8 02/16] Add a new struct for device to manipulate external buffer.
+Date: Thu, 29 Jul 2010 19:14:34 +0800
+Message-Id: <1280402088-5849-3-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1280402088-5849-4-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1280402088-5849-2-git-send-email-xiaohui.xin@intel.com>
 References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
  <1280402088-5849-2-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-3-git-send-email-xiaohui.xin@intel.com>
- <1280402088-5849-4-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-    The external buffer owner can use the functions to get
-    the capability of the underlying NIC driver.
-
-    Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-    Signed-off-by: Zhao Yu <yzhaonew@gmail.com>
-    Reviewed-by: Jeff Dike <jdike@linux.intel.com>
-
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |    2 +
- net/core/dev.c            |   49 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+), 0 deletions(-)
+ include/linux/netdevice.h |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index aba0308..5f192de 100644
+index fa8b476..ba582e1 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
-@@ -1599,6 +1599,8 @@ extern gro_result_t	napi_frags_finish(struct napi_struct *napi,
- 					  gro_result_t ret);
- extern struct sk_buff *	napi_frags_skb(struct napi_struct *napi);
- extern gro_result_t	napi_gro_frags(struct napi_struct *napi);
-+extern int netdev_mp_port_prep(struct net_device *dev,
-+				struct mpassthru_port *port);
+@@ -530,6 +530,25 @@ struct netdev_queue {
+ 	unsigned long		tx_dropped;
+ } ____cacheline_aligned_in_smp;
  
- static inline void napi_free_frags(struct napi_struct *napi)
- {
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 264137f..636f11b 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2468,6 +2468,55 @@ void netif_nit_deliver(struct sk_buff *skb)
- 	rcu_read_unlock();
- }
- 
-+/* To support meidate passthru(zero-copy) with NIC driver,
-+ * we'd better query NIC driver for the capability it can
-+ * provide, especially for packet split mode, now we only
-+ * query for the header size, and the payload a descriptor
-+ * may carry. If a driver does not use the API to export,
-+ * then we may try to use a default value, currently,
-+ * we use the default value from an IGB driver. Now,
-+ * it's only called by mpassthru device.
++/* Add a structure in structure net_device, the new field is
++ * named as mp_port. It's for mediate passthru (zero-copy).
++ * It contains the capability for the net device driver,
++ * a socket, and an external buffer creator, external means
++ * skb buffer belongs to the device may not be allocated from
++ * kernel space.
 + */
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+int netdev_mp_port_prep(struct net_device *dev,
-+		struct mpassthru_port *port)
-+{
-+	int rc;
-+	int npages, data_len;
-+	const struct net_device_ops *ops = dev->netdev_ops;
-+
-+	if (ops->ndo_mp_port_prep) {
-+		rc = ops->ndo_mp_port_prep(dev, port);
-+		if (rc)
-+			return rc;
-+	} else {
-+		/* If the NIC driver did not report this,
-+		 * then we try to use default value.
-+		 */
-+		port->hdr_len = 128;
-+		port->data_len = 2048;
-+		port->npages = 1;
-+	}
-+
-+	if (port->hdr_len <= 0)
-+		goto err;
-+
-+	npages = port->npages;
-+	data_len = port->data_len;
-+	if (npages <= 0 || npages > MAX_SKB_FRAGS ||
-+			(data_len < PAGE_SIZE * (npages - 1) ||
-+			 data_len > PAGE_SIZE * npages))
-+		goto err;
-+
-+	return 0;
-+err:
-+	dev_warn(&dev->dev, "invalid page constructor parameters\n");
-+
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(netdev_mp_port_prep);
-+#endif
-+
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
++struct mpassthru_port	{
++	int		hdr_len;
++	int		data_len;
++	int		npages;
++	unsigned	flags;
++	struct socket	*sock;
++	int		vnet_hlen;
++	struct skb_ext_page *(*ctor)(struct mpassthru_port *,
++				struct sk_buff *, int);
++	struct skb_ext_page *(*hash)(struct net_device *,
++				struct page *);
++};
+ 
+ /*
+  * This structure defines the management hooks for network devices.
+@@ -952,7 +971,8 @@ struct net_device {
+ 	struct macvlan_port	*macvlan_port;
+ 	/* GARP */
+ 	struct garp_port	*garp_port;
+-
++	/* mpassthru */
++	struct mpassthru_port	*mp_port;
+ 	/* class/net/name entry */
+ 	struct device		dev;
+ 	/* space for optional device, statistics, and wireless sysfs groups */
 -- 
 1.5.4.4
 
