@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755Ab0G2PDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 11:03:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35130 "EHLO mx2.suse.de"
+	id S1757789Ab0G2PEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:04:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35182 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754429Ab0G2PDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 11:03:11 -0400
-Date: Thu, 29 Jul 2010 17:02:41 +0200
+	id S1754396Ab0G2PEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 11:04:41 -0400
+Date: Thu, 29 Jul 2010 17:04:13 +0200
 From: Jan Kara <jack@suse.cz>
 To: Wu Fengguang <fengguang.wu@intel.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -21,48 +21,101 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
         Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/5] writeback: prevent sync livelock with the
- sync_after timestamp
-Message-ID: <20100729150241.GC12690@quack.suse.cz>
+Subject: Re: [PATCH 1/5] writeback: introduce wbc.for_sync to cover the two
+ sync stages
+Message-ID: <20100729150413.GD12690@quack.suse.cz>
 References: <20100729115142.102255590@intel.com>
- <20100729121423.471866750@intel.com>
+ <20100729121423.184456417@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100729121423.471866750@intel.com>
+In-Reply-To: <20100729121423.184456417@intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Fengguang,
-
-On Thu 29-07-10 19:51:45, Wu Fengguang wrote:
-> The start time in writeback_inodes_wb() is not very useful because it
-> slips at each invocation time. Preferrably one _constant_ time shall be
-> used at the beginning to cover the whole sync() work.
+On Thu 29-07-10 19:51:43, Wu Fengguang wrote:
+> The sync() is performed in two stages: the WB_SYNC_NONE sync and
+> the WB_SYNC_ALL sync. It is necessary to tag both stages with
+> wbc.for_sync, so as to prevent either of them being livelocked.
 > 
-> The newly dirtied inodes are now guarded at the queue_io() time instead
-> of the b_io walk time. This is more natural: non-empty b_io/b_more_io
-> means "more work pending".
+> The basic livelock scheme will be based on the sync_after timestamp.
+> Inodes dirtied after that won't be queued for IO. The timestamp could be
+> recorded as early as the sync() time, this patch lazily sets it in
+> writeback_inodes_sb()/sync_inodes_sb(). This will stop livelock, but
+> may do more work than necessary.
 > 
-> The timestamp is now grabbed the sync work submission time, and may be
-> further optimized to the initial sync() call time.
-  The patch seems to have some issues...
-
-> +	if (wbc->for_sync) {
-  For example this is never set. You only set wb->for_sync.
-
-> +		expire_interval = 1;
-> +		older_than_this = wbc->sync_after;
-  And sync_after is never set either???
-
-> -	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
-> +	if (list_empty(&wb->b_io))
->  		queue_io(wb, wbc);
-  And what is the purpose of this? It looks as an unrelated change to me.
+> Note that writeback_inodes_sb() is called by not only sync(), they
+> are treated the same because the other callers need the same livelock
+> prevention.
+  OK, but the patch does nothing, doesn't it? I'd prefer if the fields
+you introduce were actually used in this patch.
 
 								Honza
+
+> CC: Jan Kara <jack@suse.cz>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/fs-writeback.c         |   21 ++++++++++++---------
+>  include/linux/writeback.h |    1 +
+>  2 files changed, 13 insertions(+), 9 deletions(-)
+> 
+> --- linux-next.orig/fs/fs-writeback.c	2010-07-28 17:05:17.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2010-07-28 21:21:31.000000000 +0800
+> @@ -36,6 +36,8 @@ struct wb_writeback_work {
+>  	long nr_pages;
+>  	struct super_block *sb;
+>  	enum writeback_sync_modes sync_mode;
+> +	unsigned long sync_after;
+> +	unsigned int for_sync:1;
+>  	unsigned int for_kupdate:1;
+>  	unsigned int range_cyclic:1;
+>  	unsigned int for_background:1;
+> @@ -1086,20 +1090,17 @@ static void wait_sb_inodes(struct super_
+>   */
+>  void writeback_inodes_sb(struct super_block *sb)
+>  {
+> -	unsigned long nr_dirty = global_page_state(NR_FILE_DIRTY);
+> -	unsigned long nr_unstable = global_page_state(NR_UNSTABLE_NFS);
+>  	DECLARE_COMPLETION_ONSTACK(done);
+>  	struct wb_writeback_work work = {
+>  		.sb		= sb,
+>  		.sync_mode	= WB_SYNC_NONE,
+> +		.for_sync	= 1,
+> +		.sync_after	= jiffies,
+>  		.done		= &done,
+>  	};
+>  
+>  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+>  
+> -	work.nr_pages = nr_dirty + nr_unstable +
+> -			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
+> -
+>  	bdi_queue_work(sb->s_bdi, &work);
+>  	wait_for_completion(&done);
+>  }
+> @@ -1137,6 +1138,8 @@ void sync_inodes_sb(struct super_block *
+>  	struct wb_writeback_work work = {
+>  		.sb		= sb,
+>  		.sync_mode	= WB_SYNC_ALL,
+> +		.for_sync	= 1,
+> +		.sync_after	= jiffies,
+>  		.nr_pages	= LONG_MAX,
+>  		.range_cyclic	= 0,
+>  		.done		= &done,
+> --- linux-next.orig/include/linux/writeback.h	2010-07-28 17:05:17.000000000 +0800
+> +++ linux-next/include/linux/writeback.h	2010-07-28 21:24:54.000000000 +0800
+> @@ -48,6 +48,7 @@ struct writeback_control {
+>  	unsigned encountered_congestion:1; /* An output: a queue is full */
+>  	unsigned for_kupdate:1;		/* A kupdate writeback */
+>  	unsigned for_background:1;	/* A background writeback */
+> +	unsigned for_sync:1;		/* A writeback for sync */
+>  	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+>  	unsigned range_cyclic:1;	/* range_start is cyclic */
+>  };
+> 
+> 
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
