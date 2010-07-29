@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab0G2FOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:14:40 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:45824 "EHLO imr3.ericy.com"
+	id S1752294Ab0G2FSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:18:32 -0400
+Received: from imr1.ericy.com ([198.24.6.9]:37099 "EHLO imr1.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753150Ab0G2FO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:14:27 -0400
+	id S1750845Ab0G2FSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:18:30 -0400
 From: Guenter Roeck <guenter.roeck@ericsson.com>
 To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
         Richard Purdie <rpurdie@rpsys.net>,
@@ -25,9 +25,9 @@ CC: Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
         Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
         linuxppc-dev@ozlabs.org, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH 1/6] scsi: Remove owner field from attribute initialization in LPFC driver
-Date: Wed, 28 Jul 2010 22:09:21 -0700
-Message-ID: <1280380166-29196-2-git-send-email-guenter.roeck@ericsson.com>
+Subject: [PATCH 4/6] regulator: Remove owner field from attribute initialization in regulator core driver
+Date: Wed, 28 Jul 2010 22:09:24 -0700
+Message-ID: <1280380166-29196-5-git-send-email-guenter.roeck@ericsson.com>
 X-Mailer: git-send-email 1.7.0.87.g0901d
 In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
 References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
@@ -39,21 +39,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 ---
- drivers/scsi/lpfc/lpfc_attr.c |    1 -
+ drivers/regulator/core.c |    1 -
  1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_attr.c b/drivers/scsi/lpfc/lpfc_attr.c
-index bf33b31..8f89edf 100644
---- a/drivers/scsi/lpfc/lpfc_attr.c
-+++ b/drivers/scsi/lpfc/lpfc_attr.c
-@@ -2720,7 +2720,6 @@ static struct bin_attribute sysfs_drvr_stat_data_attr = {
- 	.attr = {
- 		.name = "lpfc_drvr_stat_data",
- 		.mode = S_IRUSR,
--		.owner = THIS_MODULE,
- 	},
- 	.size = LPFC_MAX_TARGET * MAX_STAT_DATA_SIZE_PER_TARGET,
- 	.read = sysfs_drvr_stat_data_read,
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 2248087..422a709 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1025,7 +1025,6 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
+ 		if (regulator->dev_attr.attr.name == NULL)
+ 			goto attr_name_err;
+ 
+-		regulator->dev_attr.attr.owner = THIS_MODULE;
+ 		regulator->dev_attr.attr.mode = 0444;
+ 		regulator->dev_attr.show = device_requested_uA_show;
+ 		err = device_create_file(dev, &regulator->dev_attr);
 -- 
 1.7.0.87.g0901d
 
