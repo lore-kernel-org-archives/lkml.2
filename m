@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab0G2R65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:58:57 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:41756 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab0G2R6z (ORCPT
+	id S1753580Ab0G2R7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:59:10 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:58017 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab0G2R7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:58:55 -0400
+	Thu, 29 Jul 2010 13:59:08 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
         sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
@@ -14,59 +14,57 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -V3 00/17]  New ACL format for better NFSv4 acl
-Date: Thu, 29 Jul 2010 23:27:38 +0530
-Message-Id: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V3 03/17] vfs: Add IS_RICHACL() test for richacl support
+Date: Thu, 29 Jul 2010 23:27:41 +0530
+Message-Id: <1280426275-4602-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Andreas Gruenbacher <agruen@suse.de>
 
-The following set of patches implements a new acl model for linux. Rich ACLs
-are an implementation of NFSv4 ACLs, extended by file masks to fit into the
-standard POSIX file permission model.  They are designed to work seamlessly
-locally as well as across the NFSv4 and CIFS/SMB2 network file system protocols.
+Introduce a new MS_RICHACL super-block flag and a new IS_RICHACL() test
+which file systems like nfs can use.  IS_ACL() is true if IS_POSIXACL()
+or IS_RICHACL() is true.
 
-The patch set consists of three parts:
+Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ include/linux/fs.h |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-The first set of patches, posted as a follow up, contains the Rich ACL model
-and Ext4 implementation. The second set [1] contains mapping of Rich ACL to
-NFSv4 ACL (how to apply file mask to access mask) and implementation of
-Richacl ACL for NFS server and client. The third set [2] contains POSIX ACL
-to Rich ACL mapping and its ext4 usage.
-
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-upstream
-[2] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-fullset
-
-A user-space utility for displaying and changing richacls is available at [3]
-(a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-
-[3] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/richacl.git master
-
-To test richacl on ext4 use -o richacl mount option. This mount option may later be
-dropped in favour of a feature flag.
-
-More details regarding richacl can be found at 
-http://acl.bestbits.at/richacl/
-
-Changes from V2:
-1) Git repo include check-acl branch that drop newly added inode_operations
-   callback in favour for additional access check flags (MAY_CREATE_FILE,
-   MAY_CREATE_DIR, MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_TAKE_OWNERSHIP,
-   MAY_CHMOD, and MAY_SET_TIMES)
-2) richacl is now cached in the vfs inode instead of file system inode.
-   (currently kept as a separate patch. We may want to fold that later)
-3) Added a new acl flag ACL4_MASKED. richacl_apply_masks() can skip transforming acls
-   without this flag, which speeds things up and avoids modifying those acls unnecessarily.
-4) Owner always allowed permissions are now explicitly included when synthesizing an acl
-   from file mode.
-
-Changes from V1:
-1) Split the patches into smaller patches
-2) Added extensive documentation to the patches.
-
--aneesh
-
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index dd32bf7..2a65863 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -209,6 +209,7 @@ struct inodes_stat_t {
+ #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
+ #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
+ #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
++#define MS_RICHACL	(1<<25) /* Supports richacls */
+ #define MS_ACTIVE	(1<<30)
+ #define MS_NOUSER	(1<<31)
+ 
+@@ -264,6 +265,7 @@ struct inodes_stat_t {
+ #define IS_APPEND(inode)	((inode)->i_flags & S_APPEND)
+ #define IS_IMMUTABLE(inode)	((inode)->i_flags & S_IMMUTABLE)
+ #define IS_POSIXACL(inode)	__IS_FLG(inode, MS_POSIXACL)
++#define IS_RICHACL(inode)	__IS_FLG(inode, MS_RICHACL)
+ 
+ #define IS_DEADDIR(inode)	((inode)->i_flags & S_DEAD)
+ #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
+@@ -274,7 +276,7 @@ struct inodes_stat_t {
+  * IS_ACL() tells the VFS to not apply the umask
+  * and use iop->check_acl for acl permission checks when defined.
+  */
+-#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
++#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL | MS_RICHACL)
+ 
+ /* the read-only stuff doesn't really belong here, but any other place is
+    probably as bad and I don't want to create yet another include file. */
+-- 
+1.7.0.4
 
