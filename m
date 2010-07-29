@@ -1,124 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab0G2F3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:29:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52308 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab0G2F3R (ORCPT
+	id S1753890Ab0G2F3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:29:21 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55015 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab0G2F3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:29:17 -0400
+	Thu, 29 Jul 2010 01:29:19 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+Date: Thu, 29 Jul 2010 14:24:29 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH 4/5] memcg: remove nid and zid argument from mem_cgroup_soft_limit_reclaim()
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100729140700.4AA2.A69D9226@jp.fujitsu.com>
-References: <20100729140700.4AA2.A69D9226@jp.fujitsu.com>
-Message-Id: <20100729142810.4AB1.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+        Balbir Singh <balbir@in.ibm.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+Message-Id: <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100729142245.4AA5.A69D9226@jp.fujitsu.com>
+References: <201007282334.08063.rjw@sisk.pl>
+	<20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100729142245.4AA5.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 29 Jul 2010 14:29:13 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_cgroup_soft_limit_reclaim() has zone, nid and zid argument. but nid
-and zid can be calculated from zone. So remove it.
+On Thu, 29 Jul 2010 14:23:33 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Can you please add explicit commenting in the code?
+> 
+How about this ?
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
+At hibernation, all pages-should-be-saved are written into a image (here, swap).
+Then, swap_map[], memmap etcs are also saved into disks.
+
+But, swap allocation happens one by one. So, the final image of swap_map[] is
+different from saved one and the commit c9e444103b5e7a5a3519f9913f59767f92e33baf
+changes page's state while assiging swap. Because memory can be modified in
+hibernation is only not-to-be-save memory. it's a breakage.
+
+This patch fixes it by disabling swap entry reuse at hibernation.
+
+
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/memcontrol.h |    6 +++---
- mm/memcontrol.c            |    5 ++---
- mm/vmscan.c                |    7 ++-----
- 3 files changed, 7 insertions(+), 11 deletions(-)
+ mm/swapfile.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 9f1afd3..fd8ddbd 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -123,8 +123,8 @@ static inline bool mem_cgroup_disabled(void)
+Index: linux-2.6.34.org/mm/swapfile.c
+===================================================================
+--- linux-2.6.34.org.orig/mm/swapfile.c
++++ linux-2.6.34.org/mm/swapfile.c
+@@ -315,8 +315,15 @@ checks:
+ 	if (offset > si->highest_bit)
+ 		scan_base = offset = si->lowest_bit;
  
- void mem_cgroup_update_file_mapped(struct page *page, int val);
- unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
--						gfp_t gfp_mask, int nid,
--						int zid);
-+					    gfp_t gfp_mask);
-+
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
- struct mem_cgroup;
- 
-@@ -299,7 +299,7 @@ static inline void mem_cgroup_update_file_mapped(struct page *page,
- 
- static inline
- unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
--					    gfp_t gfp_mask, int nid, int zid)
-+					    gfp_t gfp_mask)
- {
- 	return 0;
- }
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index fee5cfa..b9ffc0c 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2847,8 +2847,7 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
- }
- 
- unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
--						gfp_t gfp_mask, int nid,
--						int zid)
-+					    gfp_t gfp_mask)
- {
- 	unsigned long nr_reclaimed = 0;
- 	struct mem_cgroup_per_zone *mz, *next_mz = NULL;
-@@ -2860,7 +2859,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- 	if (order > 0)
- 		return 0;
- 
--	mctz = soft_limit_tree_node_zone(nid, zid);
-+	mctz = soft_limit_tree_node_zone(zone_to_nid(zone), zone_idx(zone));
- 	/*
- 	 * This loop can run a while, specially if mem_cgroup's continuously
- 	 * keep exceeding their soft limit and putting the system under
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5e37c84..6faae10 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2131,7 +2131,6 @@ loop_again:
- 		for (i = 0; i <= end_zone; i++) {
- 			struct zone *zone = pgdat->node_zones + i;
- 			int nr_slab;
--			int nid, zid;
- 
- 			if (!populated_zone(zone))
- 				continue;
-@@ -2141,14 +2140,12 @@ loop_again:
- 
- 			sc.nr_scanned = 0;
- 
--			nid = pgdat->node_id;
--			zid = zone_idx(zone);
- 			/*
- 			 * Call soft limit reclaim before calling shrink_zone.
- 			 * For now we ignore the return value
- 			 */
--			mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask,
--							nid, zid);
-+			mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask);
-+
- 			/*
- 			 * We put equal pressure on every zone, unless one
- 			 * zone has way too many pages free already.
--- 
-1.6.5.2
-
-
+-	/* reuse swap entry of cache-only swap if not busy. */
+-	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
++	/*
++ 	 * reuse swap entry of cache-only swap if not busy &&
++ 	 * when we're called via pageout(). At hibernation, swap-reuse
++ 	 * is harmful because it changes memory status...which may
++ 	 * be saved already.
++ 	 */
++	if (vm_swap_full()
++		&& usage == SWAP_HAS_CACHE
++		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+ 		int swap_was_freed;
+ 		spin_unlock(&swap_lock);
+ 		swap_was_freed = __try_to_reclaim_swap(si, offset);
 
