@@ -1,84 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab0G2Hgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 03:36:50 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38684 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab0G2Hgr (ORCPT
+	id S1753830Ab0G2HiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 03:38:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40878 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab0G2HiJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 03:36:47 -0400
+	Thu, 29 Jul 2010 03:38:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=lT8LZFehb5uthKvO6wxzc5u3UA9oO4dlfE3eNsqPD04B4VX4Tk83l99kdXS9NMb3mj
-         mMjFLATvVTr/p97xnHYz8R6mVdiSEq/hP0Bmomh79CnxOToiUAwyIHiScZtI8N08KWnh
-         48AMIyRmy3MVFt+3lQ8L/BXu2XGRO9caTJvTg=
-Date: Thu, 29 Jul 2010 09:36:10 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] kexec: return -EFAULT on copy_to_user() failures
-Message-ID: <20100729073609.GR26313@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Simon Kagstrom <simon.kagstrom@netinsight.net>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SINvWEXxjkAf04Ka5LfCiGig4kiu+FYrJWg3POraMlGPBW+Hm6fg9jNImmZBED0SKO
+         hK6STnH3+jVVOGWf7QYlktolHOKgZMS7uciF/Onj8lHiemW8SLCrY18T92Msh9oud6b3
+         EvSLkIBmVBONbr4pdstz9nOY8PTr30obv4CX0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100720173512.GF26783@ldl.fc.hp.com>
+	<20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100721030629.GA9987@lackof.org>
+	<alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
+	<20100727071914.GB22945@lackof.org>
+	<20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 29 Jul 2010 15:38:06 +0800
+Message-ID: <AANLkTi=5tYjnvg2UyLUD7eEFgn-qzkiAWzUyp4F+Yjzw@mail.gmail.com>
+Subject: Re: ia64 hang/mca running gdb 'make check'
+From: Luming Yu <luming.yu@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: dann frazier <dannf@debian.org>, Hugh Dickins <hughd@google.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_to/from_user() returns the number of bytes remaining to be copied.
-It never returns a negative value.  The correct return code is -EFAULT
-and not -EIO.
+On Tue, Jul 27, 2010 at 5:03 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Tue, 27 Jul 2010 01:19:15 -0600
+> dann frazier <dannf@debian.org> wrote:
+>
+>> On Tue, Jul 20, 2010 at 09:19:50PM -0700, Hugh Dickins wrote:
+>> > On Tue, 20 Jul 2010, dann frazier wrote:
+>> > > On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
+>> > > > On Tue, 20 Jul 2010 11:35:12 -0600
+>> > > > dann frazier <dannf@debian.org> wrote:
+>> > > >
+>> > > > > Debian's ia64 autobuilders have been experiencing system crashes while
+>> > > > > trying to run the gdb test suite:
+>> > > > >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
+>> > > > >
+>> > > > > I was able to reproduce this w/ the latest git tree, and bisected it
+>> > > > > down to this commit, introduced in 2.6.32:
+>> > > > >
+>> > > > >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
+>> > > > >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+>> > > > >   Date:   Mon Sep 21 17:03:34 2009 -0700
+>> > > > >
+>> > > > >     mm: ZERO_PAGE without PTE_SPECIAL
+>> > > > >
+>> > > > >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
+>> > > > >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
+>> > > > >
+>> > > > >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
+>> > > > >     zero_pfn test built into one or another block of vm_normal_page().
+>> > > > >
+>> > > > >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
+>> > > > >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
+>> > > > >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
+>> > > > >     that: it would have to take vm_flags to weed out some cases.
+>> > > > >
+>> > > > > fyi, I found this to not be reproducible on SLES11 SP1 (which is
+>> > > > > 2.6.32-based). I compared the .configs and found that the relevant
+>> > > > > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
+>> > > > > reliably fails w/ 16KB pages.
+>> > > > >
+>> > > >
+>> > > > Sorry, I have no idea...
+>> > > > Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
+>> > >
+>> > >
+>> > > dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley
+>> > > a0000001008784c0 d __ksymtab_empty_zero_page
+>> > > a000000100882688 d __kcrctab_empty_zero_page
+>> > > a000000100884ca4 r __kstrtab_empty_zero_page
+>> > > a000000100974000 D empty_zero_page
+>> >
+>> > Thanks a lot for reporting this, but I too have no idea yet.
+>> >
+>> > It is likely that the bug is not to be found in that 62eede62, but
+>> > rather in one of the preceding patches to mm/memory.c which 62eede62
+>> > was extending to ia64 and other architectures without PTE_SPECIAL.
+>> >
+>> > I wonder, from looking at that gdb testsuite log, is it plausible
+>> > that all these hangs/crashes occurred when writing out a coredump?
+>> > Is that something you could check for us? or rule out the possibility.
+>>
+>> Yep, seems so. I've reduced it down to this test case:
+>>
+>> dannf@rx2600:~> cat > foo.c
+>> int leaf(void) {
+>>   return 0;
+>> }
+>>
+>> int main(void) {
+>>   leaf();
+>> }
+>> dannf@rx2600:~> gcc -g foo.c -o foo
+>> dannf@rx2600:~> gdb ./foo
+>> GNU gdb (GDB) SUSE (7.0-0.4.16)
+>> Copyright (C) 2009 Free Software Foundation, Inc.
+>> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+>> This is free software: you are free to change and redistribute it.
+>> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+>> and "show warranty" for details.
+>> This GDB was configured as "ia64-suse-linux".
+>> For bug reporting instructions, please see:
+>> <http://www.gnu.org/software/gdb/bugs/>...
+>> Reading symbols from /home/dannf/foo...done.
+>> (gdb) break leaf
+>> Breakpoint 1 at 0x40000000000005c1: file foo.c, line 2.
+>> (gdb) run
+>> Starting program: /home/dannf/foo
+>> Missing separate debuginfo for /lib/ld-linux-ia64.so.2
+>> Try: zypper install -C "debuginfo(build-id)=d5bfb8b5940e174d54b978ca515dc0df76c7618c"
+>> Missing separate debuginfo for /lib/libc.so.6.1
+>> Try: zypper install -C "debuginfo(build-id)=ca78657bd9173653d95f8504a313d2b6db8cb1d6"
+>>
+>> Breakpoint 1, leaf () at foo.c:2
+>> 2          return 0;
+>> (gdb) gcore /tmp/save
+>>
+>> [bang]
+>>
+>
+> Does this happen on 2.6.34 or 2.6.35-rc kernel ?
 
-All the callers check for non-zero returns so that's Ok, but the return
-code is passed to the user so we should fix this.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+# gdb ./foo
+GNU gdb (GDB) Red Hat Enterprise Linux (7.0.1-23.el5)
+Copyright (C) 2009 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "ia64-redhat-linux-gnu".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /root/foo...done.
+(gdb) break leaf
+Breakpoint 1 at 0x40000000000005a1: file foo.c, line 2.
+(gdb) run
+Starting program: /root/foo
 
-diff --git a/kernel/kexec.c b/kernel/kexec.c
-index 474a847..ab2258b 100644
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -151,8 +151,10 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
- 	image->nr_segments = nr_segments;
- 	segment_bytes = nr_segments * sizeof(*segments);
- 	result = copy_from_user(image->segment, segments, segment_bytes);
--	if (result)
-+	if (result) {
-+		result = -EFAULT;
- 		goto out;
-+	}
- 
- 	/*
- 	 * Verify we have good destination addresses.  The caller is
-@@ -827,7 +829,7 @@ static int kimage_load_normal_segment(struct kimage *image,
- 		result = copy_from_user(ptr, buf, uchunk);
- 		kunmap(page);
- 		if (result) {
--			result = (result < 0) ? result : -EIO;
-+			result = -EFAULT;
- 			goto out;
- 		}
- 		ubytes -= uchunk;
-@@ -882,7 +884,7 @@ static int kimage_load_crash_segment(struct kimage *image,
- 		kexec_flush_icache_page(page);
- 		kunmap(page);
- 		if (result) {
--			result = (result < 0) ? result : -EIO;
-+			result = -EFAULT;
- 			goto out;
- 		}
- 		ubytes -= uchunk;
+Breakpoint 1, leaf () at foo.c:2
+2       }
+(gdb) gcore /tmp/save
+Segmentation fault
+# cat /proc/version
+Linux version 2.6.35-rc3+ ...
+
+
+Is the "segmentation fault" to be called reproduced?
+
+>
+> Thanks,
+> -Kame
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ia64" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
