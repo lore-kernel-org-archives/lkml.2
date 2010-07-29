@@ -1,64 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab0G2Tne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:43:34 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:34501 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757408Ab0G2Tnc (ORCPT
+	id S1757816Ab0G2Tqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:46:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19540 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757634Ab0G2Tqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:43:32 -0400
-X-Greylist: delayed 537 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jul 2010 15:43:32 EDT
-Date: Thu, 29 Jul 2010 15:34:20 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
-        Jayamohan Kallickal <jayamohank@serverengines.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        jejbscsi <james.bottomley@suse.de>
-Subject: Re: [PATCH -next] scsi: be2iscsi needs ISCSI_BOOT_SYSFS
-Message-ID: <20100729193420.GB13308@andromeda.dapyr.net>
-References: <20100729143211.9e7edaed.sfr@canb.auug.org.au> <20100729101609.965dbe48.randy.dunlap@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729101609.965dbe48.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.9i
+	Thu, 29 Jul 2010 15:46:48 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 16/17] x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
+Date: Thu, 29 Jul 2010 12:45:36 -0700
+Message-Id: <1280432737-1808-17-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
+References: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C51DA83.0113,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 10:16:09AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> be2iscsi uses iscsi_boot_*() interfaces, so it should ensure that
-> ISCSI_BOOT_SYSFS is enabled.
-> 
-> ERROR: "iscsi_boot_create_target" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-> ERROR: "iscsi_boot_create_ethernet" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-> ERROR: "iscsi_boot_create_host_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-> ERROR: "iscsi_boot_create_initiator" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-> ERROR: "iscsi_boot_destroy_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+memblock_memory_size() will return memory size in memblock.memory.region.
+memblock_free_memory_size() will return free memory size in memblock.memory.region.
 
-Acked-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
+So We can get exact reseved size in specified range.
 
-> ---
->  drivers/scsi/be2iscsi/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20100729.orig/drivers/scsi/be2iscsi/Kconfig
-> +++ linux-next-20100729/drivers/scsi/be2iscsi/Kconfig
-> @@ -2,6 +2,7 @@ config BE2ISCSI
->  	tristate "ServerEngines' 10Gbps iSCSI - BladeEngine 2"
->  	depends on PCI && SCSI && NET
->  	select SCSI_ISCSI_ATTRS
-> +	select ISCSI_BOOT_SYSFS
->  
->  	help
->  	This driver implements the iSCSI functionality for ServerEngines'
-> ---
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Set the size right after initmem_init(), because later bootmem API will
+get area above 16M. (except some fallback).
+
+Later after we remove the bootmem, We could call that just before paging_init().
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/kernel/e820.c      |   17 +++++++++++++++++
+ arch/x86/kernel/setup.c     |    1 +
+ arch/x86/mm/init_64.c       |    7 -------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 7186463..5be1542 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -117,6 +117,8 @@ extern unsigned long e820_end_of_low_ram_pfn(void);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+ 
+ void memblock_x86_fill(void);
++void memblock_find_dma_reserve(void);
++
+ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index d5fd894..f0db4c4 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1105,3 +1105,20 @@ void __init memblock_x86_fill(void)
+ 	memblock_analyze();
+ 	memblock_dump_all();
+ }
++
++void __init memblock_find_dma_reserve(void)
++{
++#ifdef CONFIG_X86_64
++	u64 free_size_pfn;
++	u64 mem_size_pfn;
++	/*
++	 * need to find out used area below MAX_DMA_PFN
++	 * need to use memblock to get free size in [0, MAX_DMA_PFN]
++	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
++	 */
++	mem_size_pfn = memblock_x86_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	free_size_pfn = memblock_x86_free_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	set_dma_reserve(mem_size_pfn - free_size_pfn);
++#endif
++}
++
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index cac2c4c..58d7ece 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1019,6 +1019,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 
+ 	initmem_init(0, max_pfn, acpi, k8);
++	memblock_find_dma_reserve();
+ #ifndef CONFIG_NO_BOOTMEM
+ 	memblock_x86_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
+ #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 592b236..d6d4084 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -53,8 +53,6 @@
+ #include <asm/init.h>
+ #include <linux/bootmem.h>
+ 
+-static unsigned long dma_reserve __initdata;
+-
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	reserve_bootmem(phys, len, flags);
+ 
+-	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+-		dma_reserve += len / PAGE_SIZE;
+-		set_dma_reserve(dma_reserve);
+-	}
+-
+ 	return 0;
+ }
+ #endif
+-- 
+1.6.4.2
+
