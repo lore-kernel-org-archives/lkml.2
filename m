@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab0G2MKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 08:10:06 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:63606 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757261Ab0G2MKE (ORCPT
+	id S1757212Ab0G2MRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 08:17:34 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:54211 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753125Ab0G2MRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 08:10:04 -0400
-Date: Thu, 29 Jul 2010 14:10:02 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
-Message-ID: <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de>
-References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de> <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com>
+	Thu, 29 Jul 2010 08:17:33 -0400
+Date: Thu, 29 Jul 2010 22:17:29 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mingming Cao <cmm@us.ibm.com>
+Cc: Christian Stroetmann <stroetmann@ontolinux.com>, bchociej@gmail.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] Btrfs: Add hot data tracking functionality
+Message-ID: <20100729121729.GK655@dastard>
+References: <1280268023-18408-1-git-send-email-bchociej@gmail.com>
+ <4C4F6DF2.6090905@ontolinux.com>
+ <1280354448.7694.4.camel@mingming-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1280354448.7694.4.camel@mingming-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 07:26:00PM +0800, Américo Wang wrote:
-> On Thu, Jul 29, 2010 at 6:52 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
-> > Hi all!
-> >
-> >    Building the linux kernel, as well as doing a"make allyesconfig"
-> > on a fresh checkout of linux HEAD results in the same Bus Error in
-> > fixdep (details below). This is a i5 box running 32bit Ubuntu Lucid
-> > with plenty of (free) RAM. Haven't found any hints to what might be
-> > wrong on scanning over the web archives.
-> >
-> > Regards
-> >
-> >    Christoph
-> >
-> > -----
-> >  % make allyesconfig
-> >  HOSTCC  scripts/basic/fixdep
-> > fixdep: mmap: Cannot allocate memory
+On Wed, Jul 28, 2010 at 03:00:48PM -0700, Mingming Cao wrote:
+> On Wed, 2010-07-28 at 01:38 +0200, Christian Stroetmann wrote:
+> > At the 28.07.2010 00:00, Ben Chociej wrote:
+> > Wouldn't this feature be useful for other file systems as well, so that 
+> > a more general and not an only Btrfs related solution is preferable?
+> > 
 > 
-> So what does 'ls -lh scripts/basic/.fixdep.d' say?
-> Seems this file is too big...
+> Would certainly nice to add this feature to all filesystem, but right
+> now btrfs is the only fs which have multiple device support in itself.
 
-Also I don't get the mmap stuff if I call fixdep directly (the way I
-think it is called staring at the build system) -- it still dies with
-an bus error:
+Why does it even need multiple devices in the filesystem? All the
+filesystem needs to know is the relative speed of regions of it's
+block address space and to be provided allocation hints. everything
+else is just movement of data. You could keep the speed information
+in the device mapper table and add an interface for filesystems to
+query it, and then you've got infrastructure  that all filesystems
+could hook into.
 
-=======
-% scripts/basic/fixdep scripts/basic/.fixdep.d scripts/basic/fixdep "gcc -Wp,-MD,scripts/basic/.fixdep.d -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer     -o  scripts/basic/fixdep scripts/basic/fixdep.c" 
-cmd_scripts/basic/fixdep := gcc -Wp,-MD,scripts/basic/.fixdep.d -Wall  -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer  -o scripts/basic/fixdep scripts/basic/fixdep.c
+The tracking features dont' appear to have anything btrfs specific
+in them, so t iseems wrong to implement it there just because you're
+only looking at btrfs' method of tracking multiple block devices
+and moving blocks....
 
-deps_scripts/basic/fixdep := \
-  scripts/basic/fixdep.c \
-    $(wildcard include/config/his/driver.h) \
-    $(wildcard include/config/my/option.h) \
-    $(wildcard include/config/.h) \
-    $(wildcard include/config/foo.h) \
-    $(wildcard include/config/boom.h) \
-zsh: bus error  scripts/basic/fixdep scripts/basic/.fixdep.d  scripts/basic/fixdep
-=======
+Cheers,
 
-gdb isn't of any use for that unfortunately
-
-valgrund:
-=======
-==11601== Process terminating with default action of signal 7 (SIGBUS)
-==11601==  Non-existent physical address at address 0x64F2B000
-==11601==    at 0x8048BF0: parse_dep_file (in /var/tmp/siccegge/letssee/scripts/basic/fixdep)
-=======
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
