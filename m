@@ -1,132 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab0G2BBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 21:01:38 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37159 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab0G2BBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 21:01:37 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
-        stable@kernel.org, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-In-Reply-To: <20100728103056.c5511c78.akpm@linux-foundation.org>
-References: <20100728191322.4A85.A69D9226@jp.fujitsu.com> <20100728103056.c5511c78.akpm@linux-foundation.org>
-Message-Id: <20100729084230.4A8B.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1752598Ab0G2BFL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 21:05:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43763 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751163Ab0G2BFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 21:05:09 -0400
+Date: Thu, 29 Jul 2010 11:05:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stephen hemminger <shemminger@vyatta.com>,
+        Jiri Pirko <jpirko@redhat.com>
+Subject: linux-next: manual merge of the net tree with the net-current tree
+Message-Id: <20100729110504.df0b5791.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 29 Jul 2010 10:01:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 28 Jul 2010 20:40:21 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> 
-> > 3. pageout() is intended anynchronous api. but doesn't works so.
-> > 
-> > pageout() call ->writepage with wbc->nonblocking=1. because if the system have
-> > default vm.dirty_ratio (i.e. 20), we have 80% clean memory. so, getting stuck
-> > on one page is stupid, we should scan much pages as soon as possible.
-> > 
-> > HOWEVER, block layer ignore this argument. if slow usb memory device connect
-> > to the system, ->writepage() will sleep long time. because submit_bio() call
-> > get_request_wait() unconditionally and it doesn't have any PF_MEMALLOC task
-> > bonus.
-> 
-> The idea is that vmscan doesn't call ->writepage if the underlying
-> queue is congested.  may_write_to_queue()->bdi_queue_congested() should
-> return false and we skip the write.
-> 
-> If that logic is broken then that would explain a few things...
+Hi all,
 
-we already have it in may_write_to_queue(). but kswapd and zone-reclaim have
-PF_SWAPWRITE then ignore queue congestion. (btw, I believe zone-reclaim 
-shouldn't use PF_SWAPWRITE). so, kswapd get stuck in get_request_wait() frequently. 
+Today's linux-next merge of the net tree got a conflict in
+net/bridge/br_input.c between commit
+eeaf61d8891f9c9ed12c1a667e72bf83f0857954 ("bridge: add rcu_read_lock on
+transmit") from the net-current tree and commit
+ab95bfe01f9872459c8678572ccadbf646badad0 ("net: replace hooks in
+__netif_receive_skb V5") from the net tree.
 
-following commit explain why kswapd have to ignore queue congestion....
+Just overlapping changes in a comment.  I fixed it up (see below) and can
+carry the fix for a while.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-commit c4e2d7ddde9693a4c05da7afd485db02c27a7a09
-Author: akpm <akpm>
-Date:   Sun Dec 22 01:07:33 2002 +0000
-
-    [PATCH] Give kswapd writeback higher priority than pdflush
-
-    The `low latency page reclaim' design works by preventing page
-    allocators from blocking on request queues (and by preventing them from
-    blocking against writeback of individual pages, but that is immaterial
-    here).
-
-    This has a problem under some situations.  pdflush (or a write(2)
-    caller) could be saturating the queue with highmem pages.  This
-    prevents anyone from writing back ZONE_NORMAL pages.  We end up doing
-    enormous amounts of scenning.
-
-
-And following commit made hard limit in io queue and changed vmscan writeout
-behavior a lot if my understanding is correct. 
-
-
-commit 082cf69eb82681f4eacb3a5653834c7970714bef
-Author: Jens Axboe <axboe@suse.de>
-Date:   Tue Jun 28 16:35:11 2005 +0200
-
-    [PATCH] ll_rw_blk: prevent huge request allocations
-
-    Currently we cap request allocations at q->nr_requests, but we allow a
-    batching io context to allocate up to 32 more (default setting).  This
-    can flood the queue with request allocations, with only a few batching
-    processes.  The real fix would be to limit the number of batchers, but
-    as that isn't currently tracked, I suggest we just cap the maximum
-    number of allocated requests to eg 50% over the limit.
-
-    This was observed in real life, users typically see this as vmstat bo
-    numbers going off the wall with seconds of no queueing afterwards.
-    Behaviour this bursty is not beneficial.
-
-    Signed-off-by: Jens Axboe <axboe@suse.de>
-    Signed-off-by: Linus Torvalds <torvalds@osdl.org>
-
-diff --git a/drivers/block/ll_rw_blk.c b/drivers/block/ll_rw_blk.c
-index 234fdcf..6c98cf0 100644
---- a/drivers/block/ll_rw_blk.c
-+++ b/drivers/block/ll_rw_blk.c
-@@ -1912,6 +1912,15 @@ static struct request *get_request(request_queue_t *q, int rw, struct bio *bio,
-        }
-
- get_rq:
-+       /*
-+        * Only allow batching queuers to allocate up to 50% over the defined
-+        * limit of requests, otherwise we could have thousands of requests
-+        * allocated with any setting of ->nr_requests
-+        */
-+       if (rl->count[rw] >= (3 * q->nr_requests / 2)) {
-+               spin_unlock_irq(q->queue_lock);
-+               goto out;
-+       }
-        rl->count[rw]++;
-        rl->starved[rw] = 0;
-        if (rl->count[rw] >= queue_congestion_on_threshold(q))
-
-
-
-So, I think we still have highmem issue. then I did think kswapd writebacking
-still need to have higher priority than flusher. Am I missing something?
-
-
-
+diff --cc net/bridge/br_input.c
+index 114365c,5fc1c5b..0000000
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@@ -108,13 -110,12 +110,12 @@@ drop
+  	goto out;
+  }
+  
+ -/* note: already called with rcu_read_lock (preempt_disabled) */
+ +/* note: already called with rcu_read_lock */
+  static int br_handle_local_finish(struct sk_buff *skb)
+  {
+- 	struct net_bridge_port *p = rcu_dereference(skb->dev->br_port);
++ 	struct net_bridge_port *p = br_port_get_rcu(skb->dev);
+  
+- 	if (p)
+- 		br_fdb_update(p->br, p, eth_hdr(skb)->h_source);
++ 	br_fdb_update(p->br, p, eth_hdr(skb)->h_source);
+  	return 0;	 /* process further */
+  }
+  
+@@@ -131,12 -132,13 +132,12 @@@ static inline int is_link_local(const u
+  }
+  
+  /*
+-  * Called via br_handle_frame_hook.
+   * Return NULL if skb is handled
+-  * note: already called with rcu_read_lock
+ - * note: already called with rcu_read_lock (preempt_disabled) from
+ - * netif_receive_skb
+++ * note: already called with rcu_read_lock from netif_receive_skb
+   */
+- struct sk_buff *br_handle_frame(struct net_bridge_port *p, struct sk_buff *skb)
++ struct sk_buff *br_handle_frame(struct sk_buff *skb)
+  {
++ 	struct net_bridge_port *p;
+  	const unsigned char *dest = eth_hdr(skb)->h_dest;
+  	int (*rhook)(struct sk_buff *skb);
+  
