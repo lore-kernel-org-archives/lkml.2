@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab0G2F7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:59:53 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56720 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab0G2F7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:59:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4C5118A1.7030204@jp.fujitsu.com>
-Date: Thu, 29 Jul 2010 14:58:57 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
+	id S1753709Ab0G2GGU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 02:06:20 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:49220 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab0G2GGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 02:06:18 -0400
+Date: Wed, 28 Jul 2010 23:00:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] cred - synchronize rcu before releasing cred
+Message-ID: <20100729060004.GD2447@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <18537.1280318862@redhat.com>
+ <AANLkTikB9Msot4m_oaw+V+dvEg+SzyXHb0cqhKQqUtC2@mail.gmail.com>
+ <20100727155023.GF1967@jolsa.brq.redhat.com>
+ <AANLkTineVrcffFWGxQ+EzYno6xvcNS9=M7hn_KddASnQ@mail.gmail.com>
+ <24865.1280249187@redhat.com>
+ <32758.1280321226@redhat.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, hpa@linux.intel.com, tglx@linutronix.de,
-        mingo@redhat.com
-CC: kaneshige.kenji@jp.fujitsu.com
-Subject: Re: [PATCH] x86: ioremap: fix wrong physical address handling in
- PAT code
-References: <4C47DDCF.80300@jp.fujitsu.com>
-In-Reply-To: <4C47DDCF.80300@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <32758.1280321226@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 28, 2010 at 01:47:06PM +0100, David Howells wrote:
+> David Howells <dhowells@redhat.com> wrote:
+> 
+> > Yeah.  I think there are three alternatives:
+> 
+> There's a fourth alternative too:
+> 
+>  (4) I could try and make it so that if the RCU cleanup routine sees it with a
+>      non-zero usage count, then it just ignores it.  This, however, would
+>      require call_rcu() to be able to cope with requeueing.
 
-Does anybody see the following patch? It's obviously a bug. Please apply it.
+It is perfectly legal for an RCU callback to invoke call_rcu().  However,
+this should be used -only- to wait for RCU readers.  If there are no
+RCU readers, the callback might be re-invoked in very short order,
+expecially on UP systems.
 
-Thanks,
-Yasuaki Ishimatsu
+Or am I misunderstanding what you mean by "require call_rcu() to be
+able to cope iwth requeueing"?
 
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> The following two commits fixed a problem that x86 ioremap() doesn't handle
-> physical address higher than 32-bit properly in X86_32 PAE mode.
-> 
-> ffa71f33a820d1ab3f2fc5723819ac60fb76080b (x86, ioremap: Fix incorrect physical address handling in
-> PAE mode)
-> 35be1b716a475717611b2dc04185e9d80b9cb693 (x86, ioremap: Fix normal ram range check)
-> 
-> But these fixes are not enough, since pat_pagerange_is_ram() in PAT code
-> also has a same problem. This patch fixes it.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> ---
-> 
-> It is for -tip tree.
-> 
-> Index: linux-2.6-x86/arch/x86/mm/pat.c
-> ===================================================================
-> --- linux-2.6-x86.orig/arch/x86/mm/pat.c	2010-07-22 03:04:38.000000000 +0900
-> +++ linux-2.6-x86/arch/x86/mm/pat.c	2010-07-22 03:47:36.000000000 +0900
-> @@ -158,7 +158,7 @@ static unsigned long pat_x_mtrr_type(u64
->  	return req_type;
->  }
-> 
-> -static int pat_pagerange_is_ram(unsigned long start, unsigned long end)
-> +static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
->  {
->  	int ram_page = 0, not_rampage = 0;
->  	unsigned long page_nr;
-> 
-
-
+							Thanx, Paul
