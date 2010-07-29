@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757653Ab0G2OfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 10:35:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52018 "EHLO mx1.redhat.com"
+	id S1757684Ab0G2Of1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 10:35:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48855 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757595Ab0G2OfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 10:35:21 -0400
-Message-ID: <4C5191A3.9070303@redhat.com>
-Date: Thu, 29 Jul 2010 16:35:15 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1757658Ab0G2OfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 10:35:25 -0400
+Date: Thu, 29 Jul 2010 16:34:56 +0200
+From: Jan Kara <jack@suse.cz>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: Christoph Hellwig <hch@lst.de>, "Ted Ts'o" <tytso@mit.edu>,
+        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jan Kara <jack@suse.cz>, jaxboe@fusionio.com, James.Bottomley@suse.de,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        kernel-bugs@lists.ubuntu.com
+Subject: Re: extfs reliability
+Message-ID: <20100729143456.GB12690@quack.suse.cz>
+References: <20100728085048.GA8884@lst.de>
+ <4C4FF136.5000205@kernel.org>
+ <20100728090025.GA9252@lst.de>
+ <4C4FF592.9090800@kernel.org>
+ <20100728092859.GA11096@lst.de>
+ <20100729014431.GD4506@thunk.org>
+ <20100729083142.GA30077@lst.de>
+ <4C517B5A.3020905@vlnb.net>
+ <20100729130852.GA11852@lst.de>
+ <4C518C4D.6050607@vlnb.net>
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: util-linux-ng@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kzak@redhat.com, axboe@kernel.dk
-Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
-References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> 	<AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> 	<4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com>
-In-Reply-To: <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C518C4D.6050607@vlnb.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2010 04:22 PM, Kay Sievers wrote:
->> First 8 loop devices are registered always (without backing file),
->> so you have wait for change event initiated from fd set ioctl anyway...
->> (backing file attribute is empty in that case)
+On Thu 29-07-10 18:12:29, Vladislav Bolkhovitin wrote:
 > 
-> Ah, so we are sure, we always get a 'change' event, and before that,
-> none of these values are ever useful to read? I mean, there will not
-> be attributes that are interesting during an 'add' event?
+> Christoph Hellwig, on 07/29/2010 05:08 PM wrote:
+> > On Thu, Jul 29, 2010 at 05:00:10PM +0400, Vladislav Bolkhovitin wrote:
+> >> You can find full kernel logs starting from iSCSI load in the attachments.
+> >>
+> >> I already reported such issues some time ago, but my reports were not too much welcomed, so I gave up. Anyway, anybody can easily do my tests at any time. They don't need any special hardware, just 2 Linux boxes: one for iSCSI target and one for iSCSI initiator (the test box itself). But they are generic for other transports as well. You can see there's nothing iSCSI specific in the traces.
+> > 
+> > I was only talking about ext3.
+> 
+> Yes, now ext3 is a lot more reliable. The only how I was able to confuse it was:
+> 
+> ...
+> (2197) nb_write: handle 4272 was not open size=65475 ofs=0
+> (2199) nb_write: handle 4272 was not open size=65475 ofs=65534
+> (2201) nb_write: handle 4272 was not open size=65475 ofs=131068
+> (2203) nb_write: handle 4272 was not open size=65475 ofs=196602
+> (2205) nb_write: handle 4272 was not open size=65475 ofs=262136^C
+> ^C
+> root@ini:/mnt/dbench-mod# ^C
+> root@ini:/mnt/dbench-mod# ^C
+> root@ini:/mnt/dbench-mod# cd
+> root@ini:~# umount /mnt
+> 
+> <- recover device
+> 
+> root@ini:~# mount -t ext3 -o barrier=1 /dev/sdb /mnt
+> mount: wrong fs type, bad option, bad superblock on /dev/sdb,
+>        missing codepage or helper program, or other error
+>        In some cases useful info is found in syslog - try
+>        dmesg | tail  or so
+> 
+> Kernel log: "Jul 29 22:05:32 ini kernel: [ 2905.423092] JBD: recovery failed"
+  Hmm, this is strange. Are there more messages around this one?
 
-I think it was already that way for all loop block devices...
-
-See loop block devices registered during module init
-(up to max_loop - which is 8 by default) and later configured by losetup.
-
-Milan
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
