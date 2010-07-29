@@ -1,73 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab0G2C4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 22:56:34 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44067 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab0G2C4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 22:56:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 29 Jul 2010 11:51:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>
-Subject: Re: Memory corruption during hibernation since 2.6.31
-Message-Id: <20100729115142.00a83b40.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100729100626.945da6e1.kamezawa.hiroyu@jp.fujitsu.com>
-References: <201007282320.39528.linux@rainbow-software.org>
-	<201007282334.08063.rjw@sisk.pl>
-	<201007282338.12098.linux@rainbow-software.org>
-	<20100729100626.945da6e1.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753641Ab0G2C5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 22:57:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64172 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753296Ab0G2C5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 22:57:01 -0400
+Message-ID: <4C50EF21.1020202@cn.fujitsu.com>
+Date: Thu, 29 Jul 2010 11:01:53 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Ian Munsie <imunsie@au1.ibm.com>
+CC: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v2] ftrace: record command lines at more appropriate moment
+References: <1280317404-sup-4657@au1.ibm.com> <1280319410-18120-1-git-send-email-imunsie@au1.ibm.com>
+In-Reply-To: <1280319410-18120-1-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 10:06:26 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Wed, 28 Jul 2010 23:38:09 +0200
-> Ondrej Zary <linux@rainbow-software.org> wrote:
+Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
 > 
-> > On Wednesday 28 July 2010 23:34:07 Rafael J. Wysocki wrote:
-> > > On Wednesday, July 28, 2010, Ondrej Zary wrote:
-> > > > Hello,
-> > > > after very long bisection, I finally found what's causing memory
-> > > > corruption during hibernation on my machine sice 2.6.31:
-> > > > https://bugzilla.kernel.org/show_bug.cgi?id=15753
-> > > >
-> > > > It's commit c9e444103b5e7a5a3519f9913f59767f92e33baf (mm: reuse unused
-> > > > swap entry if necessary).
-> > > >
-> > > > I don't know anything about swapping in Linux so I don't have a clue
-> > > > what's wrong with that commit.
-> > >
-> > > Thanks for bisecting!
-> > >
-> > > This looks rather serious.  I'd be grateful from any clues from the mm guys
-> > > involved (CCed).
-> > >
-> > > Do you use s2disk or the built-in hibernation code?
-> > 
-> > I use built-in code (echo disk >/sys/power/state). The machine has 256MB RAM 
-> > and 256MB swap partition.
-> > 
+> Previously, when tracing was activated through debugfs, regardless of
+> which tracing plugin (if any) were activated, the probe_sched_switch and
+> probe_sched_wakeup probes from the sched_switch plugin would be
+> activated. This appears to have been a hack to use them to record the
+> command lines of active processes as they were scheduled.
+> 
+> That approach would suffer if many processes were being scheduled that
+> were not generating events as they would consume entries in the
+> saved_cmdlines buffer that could otherwise have been used by other
+> processes that were actually generating events.
+> 
+> It also had the problem that events could be mis-attributed - in the
+> common situation of a process forking then execing a new process, the
+> change of the process command would not be noticed for some time after
+> the exec until the process was next scheduled.
+> 
+> If the trace was read after the fact this would generally go unnoticed
+> because at some point the process would be scheduled and the entry in
+> the saved_cmdlines buffer would be updated so that the new command would
+> be reported when the trace was eventually read. However, if the events
+> were being read live (e.g. through trace_pipe), the events just after
+> the exec and before the process was next scheduled would show the
+> incorrect command (though the PID would be correct).
+> 
+> This patch removes the sched_switch hack altogether and instead records
+> the commands at a more appropriate moment - when a new trace event is
+> committed onto the ftrace ring buffer. This means that the recorded
+> command line is much more likely to be correct when the trace is read,
+> either live or after the fact, so long as the command line still resides
+> in the saved_cmdlines buffer.
+> 
+> It is still not guaranteed to be correct in all situations. For instance
+> if the trace is read after the fact rather than live (consider events
+> generated by a process before an exec - in the below example they would
+> be attributed to sleep rather than stealpid since the entry in
+> saved_cmdlines would have changed before the event was read), but this
+> is no different to the current situation and the alternative would be to
+> store the command line with each and every event.
+> 
+> terminal 1: grep '\-12345' /sys/kernel/debug/tracing/trace_pipe
+> terminal 2: ./stealpid 12345 `which sleep` 0.1
+> 
+> Before:
+>         stealpid-12345 [003]    86.001826: sys_clone -> 0x0
+>         stealpid-12345 [003]    86.002013: compat_sys_execve(ufilename: ffaaabef, argv: ffaaa7ec, envp: ffaaa7f8)
+>         stealpid-12345 [002]    86.002292: sys_restart_syscall -> 0x0
+>         stealpid-12345 [002]    86.002336: sys_brk(brk: 0)
+>         stealpid-12345 [002]    86.002338: sys_brk -> 0x1007a000
+>         ...
+>         stealpid-12345 [002]    86.002582: sys_mmap(addr: 0, len: 1000, prot: 3, flags: 22, fd: ffffffff, offset: 0)
+>         stealpid-12345 [002]    86.002586: sys_mmap -> 0xf7c21000
+>            sleep-12345 [002]    86.002771: sys_mprotect(start: ffe8000, len: 4000, prot: 1)
+>            sleep-12345 [002]    86.002780: sys_mprotect -> 0x0
+>            ...
+> 
+> After:
+>         stealpid-12345 [003]  1368.823626: sys_clone -> 0x0
+>         stealpid-12345 [003]  1368.823820: compat_sys_execve(ufilename: fffa6bef, argv: fffa5afc, envp: fffa5b08)
+>            sleep-12345 [002]  1368.824125: sys_restart_syscall -> 0x0
+>            sleep-12345 [002]  1368.824173: sys_brk(brk: 0)
+>            sleep-12345 [002]  1368.824175: sys_brk -> 0x104ae000
+>            ...
+> 
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 
-BTW, what happens at resume ? How to page-in and remap ?
+I've tested your patch using lmbench(ctx):
 
-Thanks,
--Kame
+Context switching - times in microseconds - smaller is better
+-------------------------------------------------------------------------
+Host                 OS  2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
+                         ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
+--------- ------------- ------ ------ ------ ------ ------ ------- -------
+(trace-off)
+          Linux 2.6.35- 2.1300 2.2100 2.0800 2.5900 2.1400 2.59000 2.19000
+          Linux 2.6.35- 2.1400 2.2000 2.0800 2.6000 2.0900 2.56000 2.15000
 
+(all events on)
+          Linux 2.6.35- 2.8000 2.9600 2.7200 3.2500 2.8200 3.24000 2.98000
+          Linux 2.6.35- 2.7100 2.6900 2.7300 3.2200 2.8500 3.25000 2.79000
 
+(all events on without cmdline-recording)
+          Linux 2.6.35- 2.6100 2.6900 2.5800 3.0300 2.5800 3.04000 2.67000
+          Linux 2.6.35- 2.5800 2.5900 2.5600 3.0300 2.6600 3.04000 2.61000
 
+(your patch applied)
+          Linux 2.6.35- 2.7100 2.8000 2.7200 3.2100 2.8400 3.24000 2.82000
+          Linux 2.6.35- 2.6600 2.8400 2.6900 3.1900 2.7600 3.27000 2.78000
 
+So with your patch applied, the performance is still worse than just disabling
+cmdline-recording.
 
+The performance may be worse if I choose some other benchmarks.
+
+I'd suggest another approch, that we add a tracepiont in set_task_comm()
+to record cmdname, and that's how perf does.
+
+> ---
+> 
+> Changes since v1 addressing feedback from Li Zefan:
+>  * Inline trace_save_cmdline and tracing_record_cmdline for a marginal speed
+>    gain when recording command lines.
+>  * Move call to tracing_record_cmdline from tracing_generic_entry_update to
+>    __trace_buffer_unlock_commit to avoid the overhead when using perf or if the
+>    event was filtered out.
+> 
+>  kernel/trace/trace.c                 |    7 +++----
+>  kernel/trace/trace_events.c          |   11 -----------
+>  kernel/trace/trace_functions.c       |    2 --
+>  kernel/trace/trace_functions_graph.c |    2 --
+>  kernel/trace/trace_sched_switch.c    |   10 ----------
+>  5 files changed, 3 insertions(+), 29 deletions(-)
