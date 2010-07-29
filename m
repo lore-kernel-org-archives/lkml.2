@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab0G2O60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 10:58:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41511 "EHLO mx1.redhat.com"
+	id S1757755Ab0G2PDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:03:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35130 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757657Ab0G2O6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 10:58:25 -0400
-Date: Thu, 29 Jul 2010 16:58:27 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Milan Broz <mbroz@redhat.com>, util-linux-ng@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk
-Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
-Message-ID: <20100729145827.GB1981@nb.net.home>
-References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> <AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> <4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com>
+	id S1754429Ab0G2PDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 11:03:11 -0400
+Date: Thu, 29 Jul 2010 17:02:41 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 3/5] writeback: prevent sync livelock with the
+ sync_after timestamp
+Message-ID: <20100729150241.GC12690@quack.suse.cz>
+References: <20100729115142.102255590@intel.com>
+ <20100729121423.471866750@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100729121423.471866750@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 04:22:50PM +0200, Kay Sievers wrote:
-> On Thu, Jul 29, 2010 at 16:06, Milan Broz <mbroz@redhat.com> wrote:
-> > On 07/29/2010 03:47 PM, Kay Sievers wrote:
-> >> On Thu, Jul 29, 2010 at 15:33, Milan Broz <mbroz@redhat.com> wrote:
-> >>> Create /sys/block/loopX/loop directory and provide these attributes:
-> >>>  - backing_file
-> >>>  - autoclear
-> >>>  - offset
-> >>>  - sizelimit
-> >>>
-> >>> To be used in util-linux-ng (and possibly elsewhere like udev rules)
-> >>> where code need to get loop attributes from kernel (and not store
-> >>> duplicate info in userspace).
-> >>
-> >> Isn't it that the loop attributes are created _after_ the loopdev is
-> >> registered? That would make it hard to use these attributes from udev,
-> >> as the event is already running while they are created.
-> >
-> > First 8 loop devices are registered always (without backing file),
-> > so you have wait for change event initiated from fd set ioctl anyway...
-> > (backing file attribute is empty in that case)
+  Hi Fengguang,
+
+On Thu 29-07-10 19:51:45, Wu Fengguang wrote:
+> The start time in writeback_inodes_wb() is not very useful because it
+> slips at each invocation time. Preferrably one _constant_ time shall be
+> used at the beginning to cover the whole sync() work.
 > 
-> Ah, so we are sure, we always get a 'change' event, and before that,
-> none of these values are ever useful to read? I mean, there will not
-> be attributes that are interesting during an 'add' event?
+> The newly dirtied inodes are now guarded at the queue_io() time instead
+> of the b_io walk time. This is more natural: non-empty b_io/b_more_io
+> means "more work pending".
+> 
+> The timestamp is now grabbed the sync work submission time, and may be
+> further optimized to the initial sync() call time.
+  The patch seems to have some issues...
 
-I think the patch does not change the current behavior. It exports
-details about loopdevs to userspace by /sys. This is the primary goal
-of the patch.
+> +	if (wbc->for_sync) {
+  For example this is never set. You only set wb->for_sync.
 
-    Karel
+> +		expire_interval = 1;
+> +		older_than_this = wbc->sync_after;
+  And sync_after is never set either???
 
+> -	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
+> +	if (list_empty(&wb->b_io))
+>  		queue_io(wb, wbc);
+  And what is the purpose of this? It looks as an unrelated change to me.
+
+								Honza
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
