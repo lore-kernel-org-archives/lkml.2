@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab0G2BFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 21:05:11 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43763 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab0G2BFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 21:05:09 -0400
-Date: Thu, 29 Jul 2010 11:05:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stephen hemminger <shemminger@vyatta.com>,
-        Jiri Pirko <jpirko@redhat.com>
-Subject: linux-next: manual merge of the net tree with the net-current tree
-Message-Id: <20100729110504.df0b5791.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752549Ab0G2BGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 21:06:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56780 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab0G2BGJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jul 2010 21:06:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=n6YsuKEIIDdXSXAGh32zQzA07QURqoFH7crJsLkj81oQq6u3z7/Hq84NL3531ykQR+
+         FEIw7apMUNUwUzoQJYGtY1UFUm3KOASo1Smh8pdXTdDHfBcVsK5R/woPRzdT5AXrRhvr
+         wwd0Iadr7OzLj06Y7MF7nFpSxeKvF2sPDsxkQ=
+Date: Thu, 29 Jul 2010 03:06:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
+Subject: Re: [GIT PULL] kgdb regression fixes for 2.6.35-rc5
+Message-ID: <20100729010607.GB13088@nowhere>
+References: <1280349590-27754-1-git-send-email-jason.wessel@windriver.com> <20100728211725.GF5394@nowhere> <AANLkTikXGm0WK+N=YMWJc+hBgVAyLc0adu4K1iX5UMW=@mail.gmail.com> <4C50C7F2.8020305@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C50C7F2.8020305@windriver.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, Jul 28, 2010 at 07:14:42PM -0500, Jason Wessel wrote:
+> On 07/28/2010 04:26 PM, Linus Torvalds wrote:
+> > On Wed, Jul 28, 2010 at 2:17 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> >> I'm sorry I spot it a bit late.
+> >> There is a little issue in this patch, irqs won't
+> >> be restored:
+> >>
+> >> @@ -588,9 +588,10 @@ int kgdb_ll_trap(int cmd, const char *str,
+> >>        if (!kgdb_io_module_registered)
+> >>                return NOTIFY_DONE;
+> >>
+> >> +       local_irq_save(flags);
+> >>        return __kgdb_notify(&args, cmd);
+> >> +       local_irq_restore(flags);
+> >>  }
+> > 
+> > Yeah, that's obviously crap. I also wonder why __kgdb_notify messes up
+> > the flags to begin with.
+> > 
+> 
+> This should not be needed as the irqs should already be off while in the overflow handler.
 
-Today's linux-next merge of the net tree got a conflict in
-net/bridge/br_input.c between commit
-eeaf61d8891f9c9ed12c1a667e72bf83f0857954 ("bridge: add rcu_read_lock on
-transmit") from the net-current tree and commit
-ab95bfe01f9872459c8678572ccadbf646badad0 ("net: replace hooks in
-__netif_receive_skb V5") from the net tree.
 
-Just overlapping changes in a comment.  I fixed it up (see below) and can
-carry the fix for a while.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc net/bridge/br_input.c
-index 114365c,5fc1c5b..0000000
---- a/net/bridge/br_input.c
-+++ b/net/bridge/br_input.c
-@@@ -108,13 -110,12 +110,12 @@@ drop
-  	goto out;
-  }
-  
- -/* note: already called with rcu_read_lock (preempt_disabled) */
- +/* note: already called with rcu_read_lock */
-  static int br_handle_local_finish(struct sk_buff *skb)
-  {
-- 	struct net_bridge_port *p = rcu_dereference(skb->dev->br_port);
-+ 	struct net_bridge_port *p = br_port_get_rcu(skb->dev);
-  
-- 	if (p)
-- 		br_fdb_update(p->br, p, eth_hdr(skb)->h_source);
-+ 	br_fdb_update(p->br, p, eth_hdr(skb)->h_source);
-  	return 0;	 /* process further */
-  }
-  
-@@@ -131,12 -132,13 +132,12 @@@ static inline int is_link_local(const u
-  }
-  
-  /*
--  * Called via br_handle_frame_hook.
-   * Return NULL if skb is handled
--  * note: already called with rcu_read_lock
- - * note: already called with rcu_read_lock (preempt_disabled) from
- - * netif_receive_skb
-++ * note: already called with rcu_read_lock from netif_receive_skb
-   */
-- struct sk_buff *br_handle_frame(struct net_bridge_port *p, struct sk_buff *skb)
-+ struct sk_buff *br_handle_frame(struct sk_buff *skb)
-  {
-+ 	struct net_bridge_port *p;
-  	const unsigned char *dest = eth_hdr(skb)->h_dest;
-  	int (*rhook)(struct sk_buff *skb);
-  
+Interrupts are not disabled in the debug exception handler.
+
+I'm not sure what would be the state of dr6 if a nested debug exception
+would happen while do_debug() is interrupted.
+
+Perhaps the previous dr6 value is dropped. Intel manuals don't seem to say anything
+about that.
+
+Anyway that's a separate issue. The current patch fixes a regression and
+it looks good.
+
+Thanks.
+
