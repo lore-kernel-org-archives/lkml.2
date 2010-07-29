@@ -1,151 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab0G2Mnk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 08:43:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753935Ab0G2Mni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 08:43:38 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Roland McGrath <roland@redhat.com>
-Subject: [RFC PATCH] core_pattern: fix long parameters was truncated by core_pattern handler
-Date: Thu, 29 Jul 2010 20:42:44 +0800
-Message-Id: <1280407364-32466-1-git-send-email-dfeng@redhat.com>
+	id S1757503Ab0G2MtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 08:49:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33994 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165Ab0G2MsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 08:48:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=BSJ2eJf4R69dFGLKTe6pt7ekeZ3RZZ64gTdgs2bhcK6lce3+CdBhmk844wGwbvqW+k
+         j69fCRHKxTw4AAG5TT9IzpMg4312RDk06s0EU/oClrzsa+Iy2Bo8bEa4pl9oYyy1u+mh
+         CCMPJVLm5k7d4aJEBS+aLT3uBwmEA1CWg5NlI=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTintAmpBcxbZUmMd7B7yHpVKs77xHgkjSxMY_O6J@mail.gmail.com>
+References: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>
+	<4C505F86.7050509@cs.helsinki.fi>
+	<AANLkTintAmpBcxbZUmMd7B7yHpVKs77xHgkjSxMY_O6J@mail.gmail.com>
+Date: Thu, 29 Jul 2010 13:48:06 +0100
+Message-ID: <AANLkTik-M_=G4Ks=U6hRm1dBTzbzovR47jdhjTjNqekX@mail.gmail.com>
+Subject: Re: [2.6.35-rc6 patch] increase kmemleak robustness at boot
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Catalin Marinas <catalin.marinas@gmail.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We met a parameter truncated issue, consider following:
-> echo "|/root/core_pattern_pipe_test %p /usr/libexec/blah-blah-blah \
-%s %c %p %u %g %t 11 1234567890123456789012345678901234567890" > \
-/proc/sys/kernel/core_pattern
+On 29 July 2010 12:34, Catalin Marinas <catalin.marinas@gmail.com> wrote:
+> On 28 July 2010 17:49, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+>> Daniel J Blueman wrote:
+>>>
+>>> I've consistently been experiencing kmemleak exhaust it's 400-entry
+>>> early-boot buffer and disabling itself; there have been reports of
+>>> this also, and I'm finding this on x86-64 with various debug options
+>>> enabled.
+>>>
+>>> If we issue a warning and allow the buffer to wrap, we don't need to
+>>> hit the kill-switch. While we lose track of some early potential
+>>> leaks, it's better than no functionality.
+>>>
+>>> Let me know if it's acceptable, and many thanks for such an excellent
+>>> tool,
+>>
+>> Is it just potential leaks that we lose or can this cause false positives?
+>
+> I wouldn't go this route, it's a great source of false positives.
+> Given that it's not always easy to investigate a memory leak, adding
+> more false positives would just make people turn the tool off. There
+> are several things in place like crc checking and maybe that's why
+> Daniel doesn't get false positives but that's not always the case.
+>
+> I would rather change the static early alloc buffer with something
+> like bootmem allocation (the recursiveness should be bound, kmemleak
+> tracks bootmem allocations as well). But I'm on holiday until middle
+> of August and not able to do any tests in this area.
 
-This is okay because the strings is less than CORENAME_MAX_SIZE.
-"cat /proc/sys/kernel/core_pattern" shows the whole string. but
-after we run core_pattern_pipe_test in man page, we found last
-parameter was truncated like below:
-	argc[10]=<12345678901234567890123456789012345678>
+Indeed, moving to dynamic early allocation is all the more better. For
+now, I'll increase the early allocation to 15200 elements, as the
+400-entry buffer wraps 38.
 
-The root cause is core_pattern allows % specifiers, which need to be
-replaced during parse time, but the replace may expand the strings
-to larger than CORENAME_MAX_SIZE.
-
-This patch expands the size of parsing array, and makes the cursor
-out_end shift when we replace % specifiers.
-
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Roland McGrath <roland@redhat.com>
----
- fs/exec.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index e19de6a..e67e4b5 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1441,7 +1441,7 @@ EXPORT_SYMBOL(set_binfmt);
- 
- /* format_corename will inspect the pattern parameter, and output a
-  * name into corename, which must have space for at least
-- * CORENAME_MAX_SIZE bytes plus one byte for the zero terminator.
-+ * CORENAME_MAX_SIZE * 3 bytes because of % specifiers.
-  */
- static int format_corename(char *corename, long signr)
- {
-@@ -1449,7 +1449,7 @@ static int format_corename(char *corename, long signr)
- 	const char *pat_ptr = core_pattern;
- 	int ispipe = (*pat_ptr == '|');
- 	char *out_ptr = corename;
--	char *const out_end = corename + CORENAME_MAX_SIZE;
-+	char *out_end = corename + CORENAME_MAX_SIZE;
- 	int rc;
- 	int pid_in_pattern = 0;
- 
-@@ -1478,6 +1478,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			/* uid */
- 			case 'u':
-@@ -1486,6 +1487,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			/* gid */
- 			case 'g':
-@@ -1494,6 +1496,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			/* signal that caused the coredump */
- 			case 's':
-@@ -1502,6 +1505,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			/* UNIX time of coredump */
- 			case 't': {
-@@ -1512,6 +1516,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			}
- 			/* hostname */
-@@ -1523,6 +1528,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			/* executable */
- 			case 'e':
-@@ -1531,6 +1537,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			/* core limit size */
- 			case 'c':
-@@ -1539,6 +1546,7 @@ static int format_corename(char *corename, long signr)
- 				if (rc > out_end - out_ptr)
- 					goto out;
- 				out_ptr += rc;
-+				out_end += rc - 2;
- 				break;
- 			default:
- 				break;
-@@ -1836,7 +1844,7 @@ static int umh_pipe_setup(struct subprocess_info *info)
- void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- {
- 	struct core_state core_state;
--	char corename[CORENAME_MAX_SIZE + 1];
-+	char corename[CORENAME_MAX_SIZE * 3];
- 	struct mm_struct *mm = current->mm;
- 	struct linux_binfmt * binfmt;
- 	const struct cred *old_cred;
+Thanks again,
+  Daniel
 -- 
-1.7.2
-
+Daniel J Blueman
