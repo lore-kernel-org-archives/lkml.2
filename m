@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab0G2Tz7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:55:59 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:36868 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755287Ab0G2Tz6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:55:58 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: JzCH1PIVM1k6jHZyMRguU4BuTzRwplpAbvQ46xDoZD3pKdk
- 2kZmbh67Mwduvp0IzMRgNjtg01UKlMo70TQNWwn4r4gY0adXXj0bKOD_E8QD
- hKmAbpx8MEV6CuZnIqGNDqNejw3.C7qSR9x8fojiio6LdcbKJXVZ4trd_Xyx
- IyllAE6UGBUKrSnF4ao_bCp28pKoZhyiTwSXVyrFDcXzAry6xhYufG0nsRfY
- 0p0_QuqOzCAjQk7M2UC1vfVXeQU4B
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 29 Jul 2010 14:55:53 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-In-Reply-To: <20100729183320.GH18923@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1007291438290.21024@router.home>
-References: <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com> <alpine.DEB.2.00.1007281005440.21717@router.home> <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop>
- <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home> <20100729170313.GB16420@barrios-desktop> <alpine.DEB.2.00.1007291222410.17734@router.home>
- <20100729183320.GH18923@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758030Ab0G2T4Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:56:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757923Ab0G2T4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 15:56:22 -0400
+Date: Thu, 29 Jul 2010 21:56:16 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Milan Broz <mbroz@redhat.com>, util-linux-ng@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk
+Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
+Message-ID: <20100729195616.GF1981@nb.net.home>
+References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> <AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> <4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> <20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010, Russell King - ARM Linux wrote:
+On Thu, Jul 29, 2010 at 06:07:31PM +0200, Kay Sievers wrote:
+> On Thu, Jul 29, 2010 at 16:58, Karel Zak <kzak@redhat.com> wrote:
+> > On Thu, Jul 29, 2010 at 04:22:50PM +0200, Kay Sievers wrote:
+> >> On Thu, Jul 29, 2010 at 16:06, Milan Broz <mbroz@redhat.com> wrote:
+> >> > On 07/29/2010 03:47 PM, Kay Sievers wrote:
+> >> >> On Thu, Jul 29, 2010 at 15:33, Milan Broz <mbroz@redhat.com> wrote:
+> >> >>> Create /sys/block/loopX/loop directory and provide these attributes:
+> >> >>>  - backing_file
+> >> >>>  - autoclear
+> >> >>>  - offset
+> >> >>>  - sizelimit
+> >> >>>
+> >> >>> To be used in util-linux-ng (and possibly elsewhere like udev rules)
+> >> >>> where code need to get loop attributes from kernel (and not store
+> >> >>> duplicate info in userspace).
+> >> >>
+> >> >> Isn't it that the loop attributes are created _after_ the loopdev is
+> >> >> registered? That would make it hard to use these attributes from udev,
+> >> >> as the event is already running while they are created.
+> >> >
+> >> > First 8 loop devices are registered always (without backing file),
+> >> > so you have wait for change event initiated from fd set ioctl anyway...
+> >> > (backing file attribute is empty in that case)
+> >>
+> >> Ah, so we are sure, we always get a 'change' event, and before that,
+> >> none of these values are ever useful to read? I mean, there will not
+> >> be attributes that are interesting during an 'add' event?
+> >
+> > I think the patch does not change the current behavior. It exports
+> > details about loopdevs to userspace by /sys. This is the primary goal
+> > of the patch.
+> 
+> Sure it does. Sysfs attributes need to be created _before_ uevents are
+> sent out. The current behavior is that all blockdev attributes are
+> safely created before the event is sent. These loop attributes are
+> created _after_ the event is sent.
+> 
+> The question is if we can rely on the fact, that 'add' events never
+> want to look at any of these attributes, and all can be deferred to
 
-> And no, setting the sparse section size to 512kB doesn't work - memory is
-> offset by 256MB already, so you need a sparsemem section array of 1024
-> entries just to cover that - with the full 256MB populated, that's 512
-> unused entries followed by 512 used entries.  That too is going to waste
-> memory like nobodies business.
+ I think we can rely on this fact, 'add' does not mean that the device
+ is ready. BTW, why there is /sys/block/loopN at all if the device
+ is not associated with any backing file?
 
-SPARSEMEM EXTREME does not handle that?
+ Note that /sys/block/loopN/ro is there for years and depends on
+ backing file as well (so it's useless after "add").
 
-Some ARMs seem to have MMUs. If so then use SPARSEMEM_VMEMMAP. You can map
-4k pages for the mmap through a page table. Redirect unused 4k blocks to
-the NULL page.
+> later 'change' events. If we can't be fully certain about this, this
+> stuff must be changed to happen before the event for the blockdev is
+> sent out.
 
+ The primary goal is to use the attributes in mount(8) and losetup(8). I 
+ have doubts that we will use it udev rules.
+
+    Karel
+
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
