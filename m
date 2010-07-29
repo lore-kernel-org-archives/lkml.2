@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab0G2HyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 03:54:15 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37587 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab0G2HyM (ORCPT
+	id S1754002Ab0G2IDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:03:03 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33884 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab0G2IC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 03:54:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gBTzCgX0sVSyxF+pkT7o51gWmLLTdz7nA5+mnJRotk85/baUhocctSxrPvchzQwRBE
-         5USmmVjhDkGFuI41ko5urxk5he4CDGi/je3D9HXIiCUc04UkinsiNJM/b9jivH04TSr/
-         DyCn1Z6LwEmFy2ReJY2FzKZe+CsW8sClszess=
-Date: Thu, 29 Jul 2010 15:58:15 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Dan Carpenter <error27@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] kexec: return -EFAULT on copy_to_user() failures
-Message-ID: <20100729075815.GA5555@cr0.nay.redhat.com>
-References: <20100729073609.GR26313@bicker>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729073609.GR26313@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 29 Jul 2010 04:02:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 29 Jul 2010 16:58:01 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: dann frazier <dannf@debian.org>, Hugh Dickins <hughd@google.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: ia64 hang/mca running gdb 'make check'
+Message-Id: <20100729165801.f3a6dfe9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTi=5tYjnvg2UyLUD7eEFgn-qzkiAWzUyp4F+Yjzw@mail.gmail.com>
+References: <20100720173512.GF26783@ldl.fc.hp.com>
+	<20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100721030629.GA9987@lackof.org>
+	<alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
+	<20100727071914.GB22945@lackof.org>
+	<20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTi=5tYjnvg2UyLUD7eEFgn-qzkiAWzUyp4F+Yjzw@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 09:36:10AM +0200, Dan Carpenter wrote:
->copy_to/from_user() returns the number of bytes remaining to be copied.
->It never returns a negative value.  The correct return code is -EFAULT
->and not -EIO.
->
->All the callers check for non-zero returns so that's Ok, but the return
->code is passed to the user so we should fix this.
->
->Signed-off-by: Dan Carpenter <error27@gmail.com>
+On Thu, 29 Jul 2010 15:38:06 +0800
+Luming Yu <luming.yu@gmail.com> wrote:
 
+> On Tue, Jul 27, 2010 at 5:03 PM, KAMEZAWA Hiroyuki
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-
->
->diff --git a/kernel/kexec.c b/kernel/kexec.c
->index 474a847..ab2258b 100644
->--- a/kernel/kexec.c
->+++ b/kernel/kexec.c
->@@ -151,8 +151,10 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
-> 	image->nr_segments = nr_segments;
-> 	segment_bytes = nr_segments * sizeof(*segments);
-> 	result = copy_from_user(image->segment, segments, segment_bytes);
->-	if (result)
->+	if (result) {
->+		result = -EFAULT;
-> 		goto out;
->+	}
+> # gdb ./foo
+> GNU gdb (GDB) Red Hat Enterprise Linux (7.0.1-23.el5)
+> Copyright (C) 2009 Free Software Foundation, Inc.
+> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+> This is free software: you are free to change and redistribute it.
+> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> and "show warranty" for details.
+> This GDB was configured as "ia64-redhat-linux-gnu".
+> For bug reporting instructions, please see:
+> <http://www.gnu.org/software/gdb/bugs/>...
+> Reading symbols from /root/foo...done.
+> (gdb) break leaf
+> Breakpoint 1 at 0x40000000000005a1: file foo.c, line 2.
+> (gdb) run
+> Starting program: /root/foo
 > 
-> 	/*
-> 	 * Verify we have good destination addresses.  The caller is
->@@ -827,7 +829,7 @@ static int kimage_load_normal_segment(struct kimage *image,
-> 		result = copy_from_user(ptr, buf, uchunk);
-> 		kunmap(page);
-> 		if (result) {
->-			result = (result < 0) ? result : -EIO;
->+			result = -EFAULT;
-> 			goto out;
-> 		}
-> 		ubytes -= uchunk;
->@@ -882,7 +884,7 @@ static int kimage_load_crash_segment(struct kimage *image,
-> 		kexec_flush_icache_page(page);
-> 		kunmap(page);
-> 		if (result) {
->-			result = (result < 0) ? result : -EIO;
->+			result = -EFAULT;
-> 			goto out;
-> 		}
-> 		ubytes -= uchunk;
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+> Breakpoint 1, leaf () at foo.c:2
+> 2       }
+> (gdb) gcore /tmp/save
+> Segmentation fault
+> # cat /proc/version
+> Linux version 2.6.35-rc3+ ...
+> 
+> 
+
+Hmm. What is EXEC_PAGESIZE installed in /usr/include/asm-generic/param.h ?
+And what happnes when modify it to 16k if it's 64k ?
+
+Thanks
+-Kame
+
+
+
+
