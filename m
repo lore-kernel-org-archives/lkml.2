@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab0G2UYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 16:24:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752940Ab0G2UYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 16:24:19 -0400
-Message-ID: <4C51E36F.6060906@redhat.com>
-Date: Thu, 29 Jul 2010 22:24:15 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1758146Ab0G2UZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 16:25:36 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:28706 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab0G2UZe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 16:25:34 -0400
+X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jul 2010 16:25:34 EDT
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: Kulikov Vasiliy <segooon@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+CC: Chirag Kantharia <chirag.kantharia@hp.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
+        ISS StorageDev <iss_storagedev@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 29 Jul 2010 20:16:53 +0000
+Subject: RE: [PATCH] cpqarray: check put_user() result
+Thread-Topic: [PATCH] cpqarray: check put_user() result
+Thread-Index: AcsvNnGdJXCKdC4nRL6G0skyEcmyUAAJHlwQ
+Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D05640118@GVW0547EXC.americas.hpqcorp.net>
+References: <1280418885-5630-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1280418885-5630-1-git-send-email-segooon@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Karel Zak <kzak@redhat.com>
-CC: Kay Sievers <kay.sievers@vrfy.org>, util-linux-ng@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk
-Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
-References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> <AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> <4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> <20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com> <20100729195616.GF1981@nb.net.home>
-In-Reply-To: <20100729195616.GF1981@nb.net.home>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2010 09:56 PM, Karel Zak wrote:
->> Sure it does. Sysfs attributes need to be created _before_ uevents are
->> sent out. The current behavior is that all blockdev attributes are
->> safely created before the event is sent. These loop attributes are
->> created _after_ the event is sent.
->>
->> The question is if we can rely on the fact, that 'add' events never
->> want to look at any of these attributes, and all can be deferred to
+ 
 
-The problem is that add_disk() initializes kobject and announces device.
-How can I add some new attributes (subdir) with the current code
-before it happens?
-
-And why it is problem at all? After configuration there is always change
-event and at this time attributes are there.
-
-Milan
+> -----Original Message-----
+> From: Kulikov Vasiliy [mailto:segooon@gmail.com] 
+> Sent: Thursday, July 29, 2010 10:55 AM
+> To: kernel-janitors@vger.kernel.org
+> Cc: Chirag Kantharia; Jens Axboe; Andrew Morton; Alexey 
+> Dobriyan; Christoph Hellwig; Arnd Bergmann; ISS StorageDev; 
+> linux-kernel@vger.kernel.org
+> Subject: [PATCH] cpqarray: check put_user() result
+> 
+> put_user() may fail, if so return -EFAULT.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/block/cpqarray.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/cpqarray.c 
+> b/drivers/block/cpqarray.c index 9473215..d53b029 100644
+> --- a/drivers/block/cpqarray.c
+> +++ b/drivers/block/cpqarray.c
+> @@ -1179,7 +1179,8 @@ out_passthru:
+>  		return error;
+>  	case IDAGETCTLRSIG:
+>  		if (!arg) return -EINVAL;
+> -		put_user(host->ctlr_sig, (int __user *)arg);
+> +		if (put_user(host->ctlr_sig, (int __user *)arg))
+> +			return -EFAULT;
+>  		return 0;
+>  	case IDAREVALIDATEVOLS:
+>  		if (MINOR(bdev->bd_dev) != 0)
+> @@ -1187,7 +1188,8 @@ out_passthru:
+>  		return revalidate_allvol(host);
+>  	case IDADRIVERVERSION:
+>  		if (!arg) return -EINVAL;
+> -		put_user(DRIVER_VERSION, (unsigned long __user *)arg);
+> +		if (put_user(DRIVER_VERSION, (unsigned long 
+> __user *)arg))
+> +			return -EFAULT;
+>  		return 0;
+>  	case IDAGETPCIINFO:
+>  	{
+> --
+> 1.7.0.4
+> 
+> 
+Acked-by: Mike Miller <mike.miller@hp.com>
