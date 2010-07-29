@@ -1,45 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab0G2CuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Jul 2010 22:50:07 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:54275 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753197Ab0G2CuD (ORCPT
+	id S1753477Ab0G2Cuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jul 2010 22:50:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52017 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab0G2Cug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Jul 2010 22:50:03 -0400
-X-Sasl-enc: 3F5eblRIawk/o3VRsn1uGPgz6Z+Z0aHcYhKG5GIuXqjJ 1280371796
-Date: Wed, 28 Jul 2010 23:49:51 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Pedro Ribeiro <pedrib@gmail.com>
-Cc: Nigel Cunningham <nigel@tuxonice.net>, tuxonice-devel@tuxonice.net,
-        kgdb-bugreport@lists.sourceforge.net,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        dm-crypt@saout.de
-Subject: Re: kcryptd oops when resuming with TuxOnIce with KDB oops
- afterwards
-Message-ID: <20100729024951.GC6247@khazad-dum.debian.net>
-References: <AANLkTikjSiVXW+iGX-ofBs00crqiyT_d+DLpCBzFk4Ne@mail.gmail.com>
+	Wed, 28 Jul 2010 22:50:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jiXLRNVfhlY0Ag3uKhRjoQ7jDaQT+It1n+FNRBR3dY8jUWDHPFw8T4fjm/PmJSK8Ap
+         YiFRgc23gAJcRiwOzY7TzqmEubBME4R2ju0mzoeRuHbz43G5eChWIldA+hgcrfJisK9s
+         K5za9fbu9NU0lLfJeg5NfYExNM4bNmyoWWiUA=
+Date: Thu, 29 Jul 2010 04:50:41 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v2] ftrace: record command lines at more appropriate
+	moment
+Message-ID: <20100729025039.GD13088@nowhere>
+References: <1280317404-sup-4657@au1.ibm.com> <1280319410-18120-1-git-send-email-imunsie@au1.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikjSiVXW+iGX-ofBs00crqiyT_d+DLpCBzFk4Ne@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1280319410-18120-1-git-send-email-imunsie@au1.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010, Pedro Ribeiro wrote:
-> I hit a bug when resuming with TuxOnIce. At the middle of a resume, it
-> says Compress Read -22 and locks up. I caught the stack trace with kdb
-> and took photos of that.
+On Wed, Jul 28, 2010 at 10:16:49PM +1000, Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
+> 
+> Previously, when tracing was activated through debugfs, regardless of
+> which tracing plugin (if any) were activated, the probe_sched_switch and
+> probe_sched_wakeup probes from the sched_switch plugin would be
+> activated. This appears to have been a hack to use them to record the
+> command lines of active processes as they were scheduled.
+> 
+> That approach would suffer if many processes were being scheduled that
+> were not generating events as they would consume entries in the
+> saved_cmdlines buffer that could otherwise have been used by other
+> processes that were actually generating events.
+> 
+> It also had the problem that events could be mis-attributed - in the
+> common situation of a process forking then execing a new process, the
+> change of the process command would not be noticed for some time after
+> the exec until the process was next scheduled.
+> 
+> If the trace was read after the fact this would generally go unnoticed
+> because at some point the process would be scheduled and the entry in
+> the saved_cmdlines buffer would be updated so that the new command would
+> be reported when the trace was eventually read. However, if the events
+> were being read live (e.g. through trace_pipe), the events just after
+> the exec and before the process was next scheduled would show the
+> incorrect command (though the PID would be correct).
+> 
+> This patch removes the sched_switch hack altogether and instead records
+> the commands at a more appropriate moment - when a new trace event is
+> committed onto the ftrace ring buffer. This means that the recorded
+> command line is much more likely to be correct when the trace is read,
+> either live or after the fact, so long as the command line still resides
+> in the saved_cmdlines buffer.
+> 
+> It is still not guaranteed to be correct in all situations. For instance
+> if the trace is read after the fact rather than live (consider events
+> generated by a process before an exec - in the below example they would
+> be attributed to sleep rather than stealpid since the entry in
+> saved_cmdlines would have changed before the event was read), but this
+> is no different to the current situation and the alternative would be to
+> store the command line with each and every event.
+> 
+> terminal 1: grep '\-12345' /sys/kernel/debug/tracing/trace_pipe
+> terminal 2: ./stealpid 12345 `which sleep` 0.1
+> 
+> Before:
+>         stealpid-12345 [003]    86.001826: sys_clone -> 0x0
+>         stealpid-12345 [003]    86.002013: compat_sys_execve(ufilename: ffaaabef, argv: ffaaa7ec, envp: ffaaa7f8)
+>         stealpid-12345 [002]    86.002292: sys_restart_syscall -> 0x0
+>         stealpid-12345 [002]    86.002336: sys_brk(brk: 0)
+>         stealpid-12345 [002]    86.002338: sys_brk -> 0x1007a000
+>         ...
+>         stealpid-12345 [002]    86.002582: sys_mmap(addr: 0, len: 1000, prot: 3, flags: 22, fd: ffffffff, offset: 0)
+>         stealpid-12345 [002]    86.002586: sys_mmap -> 0xf7c21000
+>            sleep-12345 [002]    86.002771: sys_mprotect(start: ffe8000, len: 4000, prot: 1)
+>            sleep-12345 [002]    86.002780: sys_mprotect -> 0x0
+>            ...
+> 
+> After:
+>         stealpid-12345 [003]  1368.823626: sys_clone -> 0x0
+>         stealpid-12345 [003]  1368.823820: compat_sys_execve(ufilename: fffa6bef, argv: fffa5afc, envp: fffa5b08)
+>            sleep-12345 [002]  1368.824125: sys_restart_syscall -> 0x0
+>            sleep-12345 [002]  1368.824173: sys_brk(brk: 0)
+>            sleep-12345 [002]  1368.824175: sys_brk -> 0x104ae000
+>            ...
+> 
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 
-Maybe this?
-http://lkml.org/lkml/2010/7/28/398
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+
+
+So, in fact we can't do this. There is a strong reason that makes us maintaining
+the cmdline resolution on sched switch rather than on tracing time: for
+performances and scalability.
+
+Look at what does tracing_record_cmdline():
+
+- it's one more call
+- it checks a lot of conditions
+- takes a spinlock (gives up if already in use, but that's still bad for the cache
+  in a tracing path)
+- deref a shared hashlist
+...
+
+
+Currently that is made on sched switch time, which means quite often.
+Now imagine you turn on the function tracer: this is going to happen
+for _every_ function called in the kernel. There is going to be a lot
+of cache ping pong between CPUs due to the spinlock for example, for
+every function this is clearly unacceptable (it would be twice per
+function with the function graph tracer).
+
+And still there are also all the things with the hashlist deref, the checks,
+etc...
+
+It's not only the function tracers. The lock events will also show you very
+bad results. Same if you enable all the others together.
+
+
+Better have a new call to tracing_record_cmdline() made from the fork
+and exec tracepoints to solve this problem.
+But still, that only solves the lazy update and not all the problems
+you've listed in this changelog.
+
+In fact cmdline tracking would grow in complexity in the kernel if we had
+to make it correctly. Ideally:
+
+* dump every tasks when we start tracing, and map their cmdlines
+* do the pid mapping per time interval. Keys in the hlist must be
+  pid/start_time:end_time, not only pid anymore.
+* map new cmdlines from fork and exec events. If exec, we must open
+  a new entry for our pid, closing noting end_time of this previous
+  pid entry and open a new start_time for the new entry.
+
+
+And this would be way much more efficient than the sched_switch based
+thing we have. More efficient in terms of performance and per timeslice
+granularity.
+
+That's the kind of thing we'd better do from userspace, for tools like
+perf tools or trace-cmd. And perf tools do, partially (no time
+granularity yet).
+
+But still, in-kernel made cmdline resolution is cool to have on
+some circumstances, especially on ascii tracing and dump. But
+for that I think we should just don't care further and keep this
+basic and non-perfect cmdline tracking, sufficient for most uses.
+
+In fact we could fix it by dumping the tasks comm from tasklist
+and hook on the fork and exec events, rather than sched switch.
+It would be better for performances, and then appreciated.
+
+But for those who want an advanced comm resolution, I mean something
+that takes the timeslices into account, I think switching to
+userspace tools is a better direction. In fact they need enhancing
+in this regard.
+
+Thanks.
+
