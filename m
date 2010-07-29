@@ -1,84 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab0G2PLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 11:11:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64941 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab0G2PLI (ORCPT
+	id S1757441Ab0G2PNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:13:05 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:41079 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab0G2PND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 11:11:08 -0400
+	Thu, 29 Jul 2010 11:13:03 -0400
+Message-ID: <4C519A6E.8000002@cs.helsinki.fi>
+Date: Thu, 29 Jul 2010 18:12:46 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-X-Originating-IP: [66.187.234.200]
-In-Reply-To: <20100729123941.GL8564@aniel.lan>
-References: <20100728162855.4968e561.sfr@canb.auug.org.au>
-	<20100728102417.be60049a.randy.dunlap@oracle.com>
-	<20100728220454.GK8564@aniel.lan>
-	<4C50AC26.1080100@oracle.com>
-	<AANLkTi=DLHOnzgXmpzNE3PQXp-xSkm8vLdxBBf1mcFuO@mail.gmail.com>
-	<AANLkTimTbZ6Vjqe5rqNVtNwPV=qoo=BOsOwG_6fS1SZU@mail.gmail.com>
-	<20100729123941.GL8564@aniel.lan>
-Date: Thu, 29 Jul 2010 11:11:06 -0400
-Message-ID: <AANLkTinBmLd0GnoiPNm5=UhakSVo-wEJDSA-5E+ufPGQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for July 28 (lirc #2)
-From: Jarod Wilson <jarod@wilsonet.com>
-To: Janne Grunau <j@jannau.net>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        lirc-list@lists.sourceforge.net, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+CC: Catalin Marinas <catalin.marinas@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.35-rc6 patch] increase kmemleak robustness at boot
+References: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>	<4C505F86.7050509@cs.helsinki.fi>	<AANLkTintAmpBcxbZUmMd7B7yHpVKs77xHgkjSxMY_O6J@mail.gmail.com> <AANLkTik-M_=G4Ks=U6hRm1dBTzbzovR47jdhjTjNqekX@mail.gmail.com>
+In-Reply-To: <AANLkTik-M_=G4Ks=U6hRm1dBTzbzovR47jdhjTjNqekX@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 8:39 AM, Janne Grunau <j@jannau.net> wrote:
-> On Thu, Jul 29, 2010 at 12:27:01AM -0400, Jarod Wilson wrote:
->> On Wed, Jul 28, 2010 at 6:27 PM, Jarod Wilson <jarod@wilsonet.com> wrote:
->> > On Wed, Jul 28, 2010 at 6:16 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> >> On 07/28/10 15:04, Janne Grunau wrote:
->> >>> On Wed, Jul 28, 2010 at 10:24:17AM -0700, Randy Dunlap wrote:
->> >>>> On Wed, 28 Jul 2010 16:28:55 +1000 Stephen Rothwell wrote:
->> >>>>
->> >>>>> Hi all,
->> >>>>>
->> >>>>> Changes since 20100727:
->> >>>>
->> >>>>
->> >>>> When USB_SUPPORT is not enabled and MEDIA_SUPPORT is not enabled:
->> >>>>
->> >>>
->> >>> following patch should fix it
->> >>>
->> >>> Janne
->> >>
->> >> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
->> >>
->> >> Thanks.
->> >
->> > Acked-by: Jarod Wilson <jarod@redhat.com>
->> >
->> > Indeed, thanks much, Janne!
->>
->> D'oh, I should have looked a bit closer... What if instead of making
->> all the drivers depend on both LIRC && LIRC_STAGING, LIRC_STAGING just
->> depends on LIRC?
->
-> I started adding LIRC to each driver by one. Adding LIRC as LIRC_STAGING
-> dependency is simpler. See updated patch.
->
->> And there are a few depends lines with duplicate
->> USB's in them and LIRC_IMON should have USB added to it (technically,
->
-> D'oh, I've must have stopped reading after LIRC_STAG...
->
-> fixed and added additional dependencies
+Daniel J Blueman wrote:
+>> I would rather change the static early alloc buffer with something
+>> like bootmem allocation (the recursiveness should be bound, kmemleak
+>> tracks bootmem allocations as well). But I'm on holiday until middle
+>> of August and not able to do any tests in this area.
+> 
+> Indeed, moving to dynamic early allocation is all the more better. For
+> now, I'll increase the early allocation to 15200 elements, as the
+> 400-entry buffer wraps 38.
 
-Yeah, that looks better, thanks! (And this time I looked more carefully).
-
-Acked-by: Jarod Wilson <jarod@redhat.com>
-
--- 
-Jarod Wilson
-jarod@wilsonet.com
+If it's just kmemleak_init() we're talking about, slab caches are up at 
+that point so you can just use kmalloc().
