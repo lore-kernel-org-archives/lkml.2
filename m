@@ -1,117 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab0G2X3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 19:29:09 -0400
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:36794 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757876Ab0G2X3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 19:29:07 -0400
-Date: Fri, 30 Jul 2010 09:28:56 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-Cc: linux <linux-kernel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Karsten Schaefer <karsten.schaefer@uni-konstanz.de>
-Subject: Re: ext4 performance regression 2.6.27-stable versus 2.6.32 and
- later
-Message-ID: <20100729232856.GP655@dastard>
-References: <4C508A54.7070002@uni-konstanz.de>
+	id S1758199Ab0G2XbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 19:31:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45078 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755451Ab0G2XbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 19:31:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+Date: Fri, 30 Jul 2010 01:29:33 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+References: <201007282334.08063.rjw@sisk.pl> <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com> <alpine.DEB.1.00.1007291027410.7491@tigran.mtv.corp.google.com>
+In-Reply-To: <alpine.DEB.1.00.1007291027410.7491@tigran.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C508A54.7070002@uni-konstanz.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007300129.33912.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 09:51:48PM +0200, Kay Diederichs wrote:
-> Dear all,
+On Thursday, July 29, 2010, Hugh Dickins wrote:
+> On Thu, 29 Jul 2010, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 29 Jul 2010 14:23:33 +0900 (JST)
+> > KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > 
+> > > Can you please add explicit commenting in the code?
+> > > 
+> > How about this ?
+> > ==
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > At hibernation, all pages-should-be-saved are written into a image (here, swap).
+> > Then, swap_map[], memmap etcs are also saved into disks.
+> > 
+> > But, swap allocation happens one by one. So, the final image of swap_map[] is
+> > different from saved one and the commit c9e444103b5e7a5a3519f9913f59767f92e33baf
+> > changes page's state while assiging swap. Because memory can be modified in
+> > hibernation is only not-to-be-save memory. it's a breakage.
+> > 
+> > This patch fixes it by disabling swap entry reuse at hibernation.
+> > 
+> > 
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  mm/swapfile.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6.34.org/mm/swapfile.c
+> > ===================================================================
+> > --- linux-2.6.34.org.orig/mm/swapfile.c
+> > +++ linux-2.6.34.org/mm/swapfile.c
+> > @@ -315,8 +315,15 @@ checks:
+> >  	if (offset > si->highest_bit)
+> >  		scan_base = offset = si->lowest_bit;
+> >  
+> > -	/* reuse swap entry of cache-only swap if not busy. */
+> > -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> > +	/*
+> > + 	 * reuse swap entry of cache-only swap if not busy &&
+> > + 	 * when we're called via pageout(). At hibernation, swap-reuse
+> > + 	 * is harmful because it changes memory status...which may
+> > + 	 * be saved already.
+> > + 	 */
+> > +	if (vm_swap_full()
+> > +		&& usage == SWAP_HAS_CACHE
+> > +		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+> >  		int swap_was_freed;
+> >  		spin_unlock(&swap_lock);
+> >  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+> > 
+> > --
 > 
-> we reproducibly find significantly worse ext4 performance when our
-> fileservers run 2.6.32 or later kernels, when compared to the
-> 2.6.27-stable series.
+> KAMEZAWA-San, that is a brilliant realization, I salute you.
 > 
-> The hardware is RAID5 of 5 1TB WD10EACS disks (giving almost 4TB) in an
-> external eSATA enclosure (STARDOM ST6600); disks are not partitioned but
-> rather the complete disks are used:
-> md5 : active raid5 sde[0] sdg[5] sdd[3] sdc[2] sdf[1]
->     3907045376 blocks super 1.2 level 5, 512k chunk, algorithm 2 [5/5]
-> [UUUUU]
+> So, in between snapshotting the image and actually hibernating, we have
+> two parallel universes, one frozen in the image, the other writing that
+> out to swap: with the danger that the latter (which is about to die)
+> will introduce fatal inconsistencies in the former by placing pages in
+> swap locations innocently reallocated from it.  (Excuse me while I go
+> write the movie script.)
 > 
-> The enclosure is connected using a Silicon Image (supported by
-> sata_sil24) PCIe-X1 adapter to one of our fileservers (either the backup
-> fileserver, 32bit desktop hardware with Intel(R) Pentium(R) D CPU
-> 3.40GHz, or a production-fileserver 64bit Precision WorkStation 670 w/ 2
-> Xeon 3.2GHz).
+> I'd never got to think about that before.
 > 
-> The ext4 filesystem was created using
-> mke2fs -j -T largefile -E stride=128,stripe_width=512 -O extent,uninit_bg
-> It is mounted with noatime,data=writeback
+> Your fix is neat though hacky (it's somewhat of a coincidence that the
+> usage arg happens to distinguish the hibernation case), and should be
+> enough to fix "your" regression, but is it really enough?
 > 
-> As operating system we usually use RHEL5.5, but to exclude problems with
-> self-compiled kernels, we also booted USB sticks with latest Fedora12
-> and FC13 .
+> I'm worrying about the try_to_free_swap() calls in shrink_page_list():
+> can't those get called from direct reclaim (even if GFP_NOIO), and can't
+> direct reclaim get invoked from somewhere in the I/O path below
+> swap_writepage(), used for writing out the hibernation image?
 > 
-> Our benchmarks consist of copying 100 6MB files from and to the RAID5,
-> over NFS (NVSv3, GB ethernet, TCP, async export), and tar-ing and
-> rsync-ing kernel trees back and forth. Before and after each individual
-> benchmark part, we "sync" and "echo 3 > /proc/sys/vm/drop_caches" on
-> both the client and the server.
-> 
-> The problem:
-> with 2.6.27.48 we typically get:
->  44 seconds for preparations
->  23 seconds to rsync 100 frames with 597M from nfs directory
->  33 seconds to rsync 100 frames with 595M to nfs directory
->  50 seconds to untar 24353 kernel files with 323M to nfs directory
->  56 seconds to rsync 24353 kernel files with 323M from nfs directory
->  67 seconds to run xds_par in nfs directory (reads and writes 600M)
-> 301 seconds to run the script
-> 
-> with 2.6.32.16 we find:
->  49 seconds for preparations
->  23 seconds to rsync 100 frames with 597M from nfs directory
-> 261 seconds to rsync 100 frames with 595M to nfs directory
->  74 seconds to untar 24353 kernel files with 323M to nfs directory
->  67 seconds to rsync 24353 kernel files with 323M from nfs directory
-> 290 seconds to run xds_par in nfs directory (reads and writes 600M)
-> 797 seconds to run the script
-> 
-> This is quite reproducible (times varying about 1-2% or so). All times
-> include reading and writing on the client side (stock CentOS5.5 Nehalem
-> machines with fast single SATA disks). The 2.6.32.16 times are the same
-> with FC12 and FC13 (booted from USB stick).
-> 
-> The 2.6.27-versus-2.6.32+ regression cannot be due to barriers because
-> md RAID5 does not support barriers ("JBD: barrier-based sync failed on
-> md5 - disabling barriers").
-> 
-> What we tried: noop and deadline schedulers instead of cfq;
-> modifications of /sys/block/sd[c-g]/queue/max_sectors_kb; switching
-> on/off NCQ; blockdev --setra 8192 /dev/md5; increasing
-> /sys/block/md5/md/stripe_cache_size
-> 
-> When looking at the I/O statistics while the benchmark is running, we
-> see very choppy patterns for 2.6.32, but quite smooth stats for
-> 2.6.27-stable.
-> 
-> It is not an NFS problem; we see the same effect when transferring the
-> data using an rsync daemon. We believe, but are not sure, that the
-> problem does not exist with ext3 - it's not so quick to re-format a 4 TB
-> volume.
-> 
-> Any ideas? We cannot believe that a general ext4 regression should have
-> gone unnoticed. So is it due to the interaction of ext4 with md-RAID5 ?
+> Direct reclaim because kswapd does set_freezable(), so should itself
+> be out of the picture.  But we cannot freeze writing the hibernation
+> image, and its occasional need for memory, so maybe a different approach
+> is required.
 
-Try reverting 50797481a7bdee548589506d7d7b48b08bc14dcd (ext4: Avoid
-group preallocation for closed files). IIRC it caused the same sort
-of isevere performance regressions for postmark....
+We preallocate memory for the I/O related to the writing of hibernation
+images, so swapping things out shouldn't be necessary at that time just for
+this purpose.  The I/O itself is done directly at the block layer level and it
+will never be frozen, because it is done by the hibernate process itself.
 
-Cheers,
+> I've CC'ed Andrea because we were having an offline conversation about
+> whether ksmd (and his khugepaged) need to set_freezable(); and I wonder
+> if this swap bug underlies his interest, though he was mainly worrying
+> about I/O in progress.
+> 
+> Despite reading Documentation/power/freezing-of-tasks.txt, I have no
+> clear idea of what really needs freezing, and whether freezing can
+> fully handle the issues.  Rafael, please can you advise?
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Well, the rule of thumb (if it can be called this way) is that the contents of
+the image has to be consistent with whatever is stored in permanent storage.
+So, for example, filesystems that were mounted before creating the image
+cannot be modified until the image is restored.  Consequently, if there are
+any kernel threads that might cause that to happen, they need to be frozen.
+
+Now, if I understand it correctly, the failure mode is that certain page had
+been swapped out before the image was created and then it was swapped in
+while we were writing the image out and the slot occupied by it was re-used.
+In that case the image would contain wrong information on the state of the
+swap and that would result in wrong data being loaded into memory on an attempt
+to swap that page in after resume.
+
+So, generally, we have to avoid doing things that would result in swapping
+memory pages out after we have created a hibernation image.  If that can be
+achieved by freezing certain kernel threads, that probably is the simplest
+approach.
+
+Thanks,
+Rafael
