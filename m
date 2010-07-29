@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab0G2F4w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:56:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54191 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149Ab0G2F4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:56:51 -0400
-Date: Thu, 29 Jul 2010 08:56:41 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 5/6] kvm, x86: use ro page and don't copy shared page
-Message-ID: <20100729055641.GK31711@redhat.com>
-References: <4C3FC033.3000605@cn.fujitsu.com>
- <20100716071936.GE17894@redhat.com>
- <4C50E43A.4020106@cn.fujitsu.com>
+	id S1753534Ab0G2F7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:59:53 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56720 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab0G2F7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:59:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4C5118A1.7030204@jp.fujitsu.com>
+Date: Thu, 29 Jul 2010 14:58:57 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C50E43A.4020106@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org, hpa@linux.intel.com, tglx@linutronix.de,
+        mingo@redhat.com
+CC: kaneshige.kenji@jp.fujitsu.com
+Subject: Re: [PATCH] x86: ioremap: fix wrong physical address handling in
+ PAT code
+References: <4C47DDCF.80300@jp.fujitsu.com>
+In-Reply-To: <4C47DDCF.80300@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 10:15:22AM +0800, Lai Jiangshan wrote:
-> On 07/16/2010 03:19 PM, Gleb Natapov wrote:
-> 
-> >> +/* get a current mapped page fast, and test whether the page is writable. */
-> >> +static struct page *get_user_page_and_protection(unsigned long addr,
-> >> +	int *writable)
-> >> +{
-> >> +	struct page *page[1];
-> >> +
-> >> +	if (__get_user_pages_fast(addr, 1, 1, page) == 1) {
-> >> +		*writable = 1;
-> >> +		return page[0];
-> >> +	}
-> >> +	if (__get_user_pages_fast(addr, 1, 0, page) == 1) {
-> >> +		*writable = 0;
-> >> +		return page[0];
-> >> +	}
-> >> +	return NULL;
-> >> +}
-> >> +
-> >> +static pfn_t kvm_get_pfn_for_page_fault(struct kvm *kvm, gfn_t gfn,
-> >> +		int write_fault, int *host_writable)
-> >> +{
-> >> +	unsigned long addr;
-> >> +	struct page *page;
-> >> +
-> >> +	if (!write_fault) {
-> >> +		addr = gfn_to_hva(kvm, gfn);
-> >> +		if (kvm_is_error_hva(addr)) {
-> >> +			get_page(bad_page);
-> >> +			return page_to_pfn(bad_page);
-> >> +		}
-> >> +
-> >> +		page = get_user_page_and_protection(addr, host_writable);
-> >> +		if (page)
-> >> +			return page_to_pfn(page);
-> >> +	}
-> >> +
-> >> +	*host_writable = 1;
-> >> +	return kvm_get_pfn_for_gfn(kvm, gfn);
-> >> +}
-> >> +
-> > kvm_get_pfn_for_gfn() returns fault_page if page is mapped RO, so caller
-> > of kvm_get_pfn_for_page_fault() and kvm_get_pfn_for_gfn() will get
-> > different results when called on the same page. Not good.
-> > kvm_get_pfn_for_page_fault() logic should be folded into
-> > kvm_get_pfn_for_gfn().
-> > 
-> 
-> 
-> The different results are the things we just need.
-How so? Users of kvm_get_pfn_for_gfn() will think that page is invalid
-and may report misconfiguration to userspace and users of
-kvm_get_pfn_for_page_fault() will think that the access to page is OK.
-There are no many users of kvm_get_pfn_for_gfn() and may be your patch
-replace all of them with kvm_get_pfn_for_page_fault(), but this just
-strengthen the point that they should be merged.
+Hi,
 
-> We don't want to copy and write a page which is mapped RO when
-> only read fault.
-I don't see how returning inconsistent results helps us achieving that.
+Does anybody see the following patch? It's obviously a bug. Please apply it.
 
-BTW since kvm_get_pfn_for_gfn() will never map RO page
-get_user_page_and_protection() will never find any RO pages. Looks like
-kvm_get_pfn_for_page_fault() is equivalent to kvm_get_pfn_for_gfn()
-since !write_fault section will at best find mapped RW page.
+Thanks,
+Yasuaki Ishimatsu
 
---
-			Gleb.
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> The following two commits fixed a problem that x86 ioremap() doesn't handle
+> physical address higher than 32-bit properly in X86_32 PAE mode.
+> 
+> ffa71f33a820d1ab3f2fc5723819ac60fb76080b (x86, ioremap: Fix incorrect physical address handling in
+> PAE mode)
+> 35be1b716a475717611b2dc04185e9d80b9cb693 (x86, ioremap: Fix normal ram range check)
+> 
+> But these fixes are not enough, since pat_pagerange_is_ram() in PAT code
+> also has a same problem. This patch fixes it.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> 
+> ---
+> 
+> It is for -tip tree.
+> 
+> Index: linux-2.6-x86/arch/x86/mm/pat.c
+> ===================================================================
+> --- linux-2.6-x86.orig/arch/x86/mm/pat.c	2010-07-22 03:04:38.000000000 +0900
+> +++ linux-2.6-x86/arch/x86/mm/pat.c	2010-07-22 03:47:36.000000000 +0900
+> @@ -158,7 +158,7 @@ static unsigned long pat_x_mtrr_type(u64
+>  	return req_type;
+>  }
+> 
+> -static int pat_pagerange_is_ram(unsigned long start, unsigned long end)
+> +static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
+>  {
+>  	int ram_page = 0, not_rampage = 0;
+>  	unsigned long page_nr;
+> 
+
+
