@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab0G2IM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 04:12:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:54210 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab0G2IMz (ORCPT
+	id S1754180Ab0G2INY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 04:13:24 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:44160 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab0G2INT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 04:12:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Date: Thu, 29 Jul 2010 10:12:05 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.90; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-arm-msm@vger.kernel.org, dwalker@codeaurora.org,
-        stepanm@codeaurora.org, linux-kernel@vger.kernel.org
-References: <1280270466-13503-1-git-send-email-stepanm@codeaurora.org> <201007281950.20847.arnd@arndb.de> <20100728212156.GA6729@n2100.arm.linux.org.uk>
-In-Reply-To: <20100728212156.GA6729@n2100.arm.linux.org.uk>
+	Thu, 29 Jul 2010 04:13:19 -0400
+Date: Thu, 29 Jul 2010 10:13:16 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Aristeu Rozanski <aris@redhat.com>
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+Message-ID: <20100729081316.GA4990@merkur.ravnborg.org>
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007291012.05986.arnd@arndb.de>
-X-Provags-ID: V02:K0:B0lj18c3zyyLGGCVrkVrSQlyQLz51KlfmG9rbxmJIqO
- /0YlteJC0ASqF2cZnmZwDzn5PLmjcEHz/2lq0Y96s1QlIfQSNB
- yQU+vrs6UW8EWdk69TEM6c1coDnjv8UoCshpubAZ3lsJhVnNEH
- nTVvNA9JlpwA4kkgY5bkbSARrcnbgCUC/Ztcn3MOLCwW6Y1n4W
- V3mCLLnFmKWTTBHYTDIZQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100728203622.GA32086@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 July 2010 23:21:56 Russell King - ARM Linux wrote:
-> On Wed, Jul 28, 2010 at 07:50:20PM +0200, Arnd Bergmann wrote:
-> > The DMA API is extremely flexible, it works just fine with all the
-> > IOMMUs that I've seen so far. Please take a look at
-> > include/asm-generic/dma-mapping-common.h and its users to see how
-> > to use multiple IOMMUs depending on the device.
+On Wed, Jul 28, 2010 at 10:36:22PM +0200, Sam Ravnborg wrote:
+> Hi Michal.
 > 
-> We don't yet use those DMA API interface extensions because we haven't
-> had the need.  If someone who has the need wants to put the effort in
-> though...
+> I cooked up the following to introduce long options in conf.
+> But in the process I dropped the short options. Is this OK?
 
-Right, it shouldn't be hard now that the groundwork for that is done.
-Also, it's only really needed if you have IOMMUs of different types in the
-same system. If msm doesn't have any swiotlb or dmabounce devices,
-it could always use the same implementation for all devices.
+On top of this patch I did another two.
+They fixup the *nonint_oldconfig targets:
 
-> One of the problems with it though is the abstraction of the sync*
-> operations is the wrong way around for stuff like dmabounce - we want
-> to be passed the base address of the buffer (so we can look this up),
-> plus offset and length.  We don't want to know just the region which
-> is affected.
+nonint_oldconfig:
+- renamed to listnewconfig
+- print new options to stdout (to better support redirect)
+- no longer saves a new configuration
+- does ot exist with a failure code if there is new options
 
-Yes, but that is an unrelated (dmabounce specific) problem that seems to
-be fixed by an existing patch.
+loose_noninit_oldconfig:
+- renamed to oldnoconfig
+- does ot exist with a failure code if there is new options
 
-The driver posted by Stepan doesn't even support the dma_sync_single_*
-style operations, and I don't think it can run into that specific problem.
-Are there even (hardware) IOMMUs that are connected to noncoherent
-buses? AFAICT, anything that needs to flush a dcache range in dma_sync_*
-has a trivial mapping between bus and phys addresses.
+This is a lot cleaner and much more sensible names.
+And they still support the suecase where they
+list new options and can set them to n per default.
 
-	Arnd
+[cc: list trimmed on patches]
+
+	Sam
+
+Sam Ravnborg (2):
+      kconfig: rename loose_nonint_oldconfig => oldnoconfig
+      kconfig: change nonint_oldconfig to listnewconfig
+
+ scripts/kconfig/Makefile |   12 +++++-------
+ scripts/kconfig/conf.c   |   46 +++++++++++++++++-----------------------------
+ 2 files changed, 22 insertions(+), 36 deletions(-)
+
