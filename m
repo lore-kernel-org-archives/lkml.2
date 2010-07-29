@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab0G2KbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:31:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51610 "EHLO mx2.suse.de"
+	id S1756791Ab0G2Kbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 06:31:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51633 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756725Ab0G2KbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:31:01 -0400
-Date: Thu, 29 Jul 2010 12:31:00 +0200
-Message-ID: <s5h62zytw9n.wl%tiwai@suse.de>
+	id S1756676Ab0G2Kbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 06:31:33 -0400
+Date: Thu, 29 Jul 2010 12:31:32 +0200
+Message-ID: <s5h4ofitw8r.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Kulikov Vasiliy <segooon@gmail.com>
 Cc: kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org,
+        Roel Kluin <roel.kluin@gmail.com>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/10] ALSA: sb: check get_user() return value
-In-Reply-To: <1280335251-23385-1-git-send-email-segooon@gmail.com>
-References: <1280335251-23385-1-git-send-email-segooon@gmail.com>
+Subject: Re: [PATCH 08/10] oss: midi_synth: check get_user() return value
+In-Reply-To: <1280335277-23435-1-git-send-email-segooon@gmail.com>
+References: <1280335277-23435-1-git-send-email-segooon@gmail.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,46 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed, 28 Jul 2010 20:40:51 +0400,
+At Wed, 28 Jul 2010 20:41:17 +0400,
 Kulikov Vasiliy wrote:
 > 
 > get_user() may fail, if so return -EFAULT.
 > 
 > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 
-Thanks, applied this one (with one additional fix for get_user() there).
+Applied now.  Thanks.
 
 
 Takashi
 
+
 > ---
->  sound/isa/sb/emu8000_pcm.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
+>  sound/oss/midi_synth.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> diff --git a/sound/isa/sb/emu8000_pcm.c b/sound/isa/sb/emu8000_pcm.c
-> index ccedbfe..ae6fa9f 100644
-> --- a/sound/isa/sb/emu8000_pcm.c
-> +++ b/sound/isa/sb/emu8000_pcm.c
-> @@ -433,7 +433,8 @@ static int emu8k_transfer_block(struct snd_emu8000 *emu, int offset, unsigned sh
->  	while (count > 0) {
->  		unsigned short sval;
->  		CHECK_SCHEDULER();
-> -		get_user(sval, buf);
-> +		if (get_user(sval, buf))
+> diff --git a/sound/oss/midi_synth.c b/sound/oss/midi_synth.c
+> index 3bc7104..3c09374 100644
+> --- a/sound/oss/midi_synth.c
+> +++ b/sound/oss/midi_synth.c
+> @@ -523,7 +523,9 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
+>  	{
+>  		unsigned char   data;
+>  
+> -		get_user(*(unsigned char *) &data, (unsigned char __user *) &((addr)[hdr_size + i]));
+> +		if (get_user(data,
+> +		    (unsigned char __user *)(addr + hdr_size + i)))
 > +			return -EFAULT;
->  		EMU8000_SMLD_WRITE(emu, sval);
->  		buf++;
->  		count--;
-> @@ -525,7 +526,8 @@ static int emu8k_pcm_copy(struct snd_pcm_substream *subs,
->  	while (count-- > 0) {
->  		unsigned short sval;
->  		CHECK_SCHEDULER();
-> -		get_user(sval, buf);
-> +		if (get_user(sval, buf))
-> +			return -EFAULT;
->  		EMU8000_SMLD_WRITE(emu, sval);
->  		buf++;
->  		if (rec->voices > 1) {
+>  
+>  		eox_seen = (i > 0 && data & 0x80);	/* End of sysex */
+>  
 > -- 
 > 1.7.0.4
 > 
