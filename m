@@ -1,85 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab0G2T4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:56:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757923Ab0G2T4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:56:22 -0400
-Date: Thu, 29 Jul 2010 21:56:16 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Milan Broz <mbroz@redhat.com>, util-linux-ng@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk
-Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
-Message-ID: <20100729195616.GF1981@nb.net.home>
-References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> <AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> <4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> <20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com>
+	id S1758069Ab0G2T4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:56:45 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:42984 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab0G2T4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 15:56:43 -0400
+Date: Thu, 29 Jul 2010 14:56:29 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Paul Menage <menage@google.com>
+Subject: [PATCH 1/3] cgroup : add clone_children control file
+Message-ID: <20100729195629.GA13378@hallyn.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 06:07:31PM +0200, Kay Sievers wrote:
-> On Thu, Jul 29, 2010 at 16:58, Karel Zak <kzak@redhat.com> wrote:
-> > On Thu, Jul 29, 2010 at 04:22:50PM +0200, Kay Sievers wrote:
-> >> On Thu, Jul 29, 2010 at 16:06, Milan Broz <mbroz@redhat.com> wrote:
-> >> > On 07/29/2010 03:47 PM, Kay Sievers wrote:
-> >> >> On Thu, Jul 29, 2010 at 15:33, Milan Broz <mbroz@redhat.com> wrote:
-> >> >>> Create /sys/block/loopX/loop directory and provide these attributes:
-> >> >>>  - backing_file
-> >> >>>  - autoclear
-> >> >>>  - offset
-> >> >>>  - sizelimit
-> >> >>>
-> >> >>> To be used in util-linux-ng (and possibly elsewhere like udev rules)
-> >> >>> where code need to get loop attributes from kernel (and not store
-> >> >>> duplicate info in userspace).
-> >> >>
-> >> >> Isn't it that the loop attributes are created _after_ the loopdev is
-> >> >> registered? That would make it hard to use these attributes from udev,
-> >> >> as the event is already running while they are created.
-> >> >
-> >> > First 8 loop devices are registered always (without backing file),
-> >> > so you have wait for change event initiated from fd set ioctl anyway...
-> >> > (backing file attribute is empty in that case)
-> >>
-> >> Ah, so we are sure, we always get a 'change' event, and before that,
-> >> none of these values are ever useful to read? I mean, there will not
-> >> be attributes that are interesting during an 'add' event?
-> >
-> > I think the patch does not change the current behavior. It exports
-> > details about loopdevs to userspace by /sys. This is the primary goal
-> > of the patch.
-> 
-> Sure it does. Sysfs attributes need to be created _before_ uevents are
-> sent out. The current behavior is that all blockdev attributes are
-> safely created before the event is sent. These loop attributes are
-> created _after_ the event is sent.
-> 
-> The question is if we can rely on the fact, that 'add' events never
-> want to look at any of these attributes, and all can be deferred to
+This patch is sent as an answer to a previous thread around the ns_cgroup.
 
- I think we can rely on this fact, 'add' does not mean that the device
- is ready. BTW, why there is /sys/block/loopN at all if the device
- is not associated with any backing file?
+https://lists.linux-foundation.org/pipermail/containers/2009-June/018627.html
 
- Note that /sys/block/loopN/ro is there for years and depends on
- backing file as well (so it's useless after "add").
+It adds a control file 'clone_children' for a cgroup.
+This control file is a boolean specifying if the child cgroup should
+be a clone of the parent cgroup or not. The default value is 'false'.
 
-> later 'change' events. If we can't be fully certain about this, this
-> stuff must be changed to happen before the event for the blockdev is
-> sent out.
+This flag makes the child cgroup to call the post_clone callback of all
+the subsystem, if it is available.
 
- The primary goal is to use the attributes in mount(8) and losetup(8). I 
- have doubts that we will use it udev rules.
+At present, the cpuset is the only one which had implemented the post_clone
+callback.
 
-    Karel
+The option can be set at mount time by specifying the 'clone_children' mount
+option.
 
+Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Paul Menage <menage@google.com>
+---
+ Documentation/cgroups/cgroups.txt |   14 +++++++++++-
+ include/linux/cgroup.h            |    4 +++
+ kernel/cgroup.c                   |   39 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 55 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+index b34823f..190018b 100644
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -18,7 +18,8 @@ CONTENTS:
+   1.2 Why are cgroups needed ?
+   1.3 How are cgroups implemented ?
+   1.4 What does notify_on_release do ?
+-  1.5 How do I use cgroups ?
++  1.5 What does clone_children do ?
++  1.6 How do I use cgroups ?
+ 2. Usage Examples and Syntax
+   2.1 Basic Usage
+   2.2 Attaching processes
+@@ -293,7 +294,16 @@ notify_on_release in the root cgroup at system boot is disabled
+ value of their parents notify_on_release setting. The default value of
+ a cgroup hierarchy's release_agent path is empty.
+ 
+-1.5 How do I use cgroups ?
++1.5 What does clone_children do ?
++---------------------------------
++
++If the clone_children flag is enabled (1) in a cgroup, then all
++cgroups created beneath will call the post_clone callbacks for each
++subsystem of the newly created cgroup. Usually when this callback is
++implemented for a subsystem, it copies the values of the parent
++subsystem, this is the case for the cpuset.
++
++1.6 How do I use cgroups ?
+ --------------------------
+ 
+ To start a new job that is to be contained within a cgroup, using
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index e3d00fd..f3cbd73 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -154,6 +154,10 @@ enum {
+ 	 * A thread in rmdir() is wating for this cgroup.
+ 	 */
+ 	CGRP_WAIT_ON_RMDIR,
++	/*
++	 * Clone cgroup values when creating a new child cgroup
++	 */
++	CGRP_CLONE_CHILDREN,
+ };
+ 
+ /* which pidlist file are we talking about? */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 3ac6f5b..dfbff78 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -229,6 +229,7 @@ inline int cgroup_is_removed(const struct cgroup *cgrp)
+ /* bits in struct cgroupfs_root flags field */
+ enum {
+ 	ROOT_NOPREFIX, /* mounted subsystems have no named prefix */
++	ROOT_CLONE_CHILDREN, /* mounted subsystems will inherit from parent */
+ };
+ 
+ static int cgroup_is_releasable(const struct cgroup *cgrp)
+@@ -244,6 +245,11 @@ static int notify_on_release(const struct cgroup *cgrp)
+ 	return test_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+ }
+ 
++static int clone_children(const struct cgroup *cgrp)
++{
++	return test_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
++}
++
+ /*
+  * for_each_subsys() allows you to iterate on each subsystem attached to
+  * an active hierarchy
+@@ -1038,6 +1044,8 @@ static int cgroup_show_options(struct seq_file *seq, struct vfsmount *vfs)
+ 		seq_printf(seq, ",%s", ss->name);
+ 	if (test_bit(ROOT_NOPREFIX, &root->flags))
+ 		seq_puts(seq, ",noprefix");
++	if (test_bit(ROOT_CLONE_CHILDREN, &root->flags))
++		seq_puts(seq, ",clone_children");
+ 	if (strlen(root->release_agent_path))
+ 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
+ 	if (strlen(root->name))
+@@ -1097,6 +1105,8 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+ 			opts->none = true;
+ 		} else if (!strcmp(token, "noprefix")) {
+ 			set_bit(ROOT_NOPREFIX, &opts->flags);
++		} else if (!strcmp(token, "clone_children")) {
++			set_bit(ROOT_CLONE_CHILDREN, &opts->flags);
+ 		} else if (!strncmp(token, "release_agent=", 14)) {
+ 			/* Specifying two release agents is forbidden */
+ 			if (opts->release_agent)
+@@ -1357,6 +1367,8 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
+ 		strcpy(root->release_agent_path, opts->release_agent);
+ 	if (opts->name)
+ 		strcpy(root->name, opts->name);
++	if (test_bit(ROOT_CLONE_CHILDREN, &opts->flags))
++		set_bit(CGRP_CLONE_CHILDREN, &root->top_cgroup.flags);
+ 	return root;
+ }
+ 
+@@ -3150,6 +3162,23 @@ fail:
+ 	return ret;
+ }
+ 
++static u64 cgroup_clone_children_read(struct cgroup *cgrp,
++				    struct cftype *cft)
++{
++	return clone_children(cgrp);
++}
++
++static int cgroup_clone_children_write(struct cgroup *cgrp,
++				     struct cftype *cft,
++				     u64 val)
++{
++	if (val)
++		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
++	else
++		clear_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
++	return 0;
++}
++
+ /*
+  * for the common functions, 'private' gives the type of file
+  */
+@@ -3180,6 +3209,11 @@ static struct cftype files[] = {
+ 		.write_string = cgroup_write_event_control,
+ 		.mode = S_IWUGO,
+ 	},
++	{
++		.name = "cgroup.clone_children",
++		.read_u64 = cgroup_clone_children_read,
++		.write_u64 = cgroup_clone_children_write,
++	},
+ };
+ 
+ static struct cftype cft_release_agent = {
+@@ -3309,6 +3343,9 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	if (notify_on_release(parent))
+ 		set_bit(CGRP_NOTIFY_ON_RELEASE, &cgrp->flags);
+ 
++	if (clone_children(parent))
++		set_bit(CGRP_CLONE_CHILDREN, &cgrp->flags);
++
+ 	for_each_subsys(root, ss) {
+ 		struct cgroup_subsys_state *css = ss->create(ss, cgrp);
+ 
+@@ -3323,6 +3360,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 				goto err_destroy;
+ 		}
+ 		/* At error, ->destroy() callback has to free assigned ID. */
++		if (clone_children(parent) && ss->post_clone)
++			ss->post_clone(ss, cgrp);
+ 	}
+ 
+ 	cgroup_lock_hierarchy(root);
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+1.7.0.4
+
