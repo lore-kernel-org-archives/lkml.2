@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751190Ab0G2EQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 00:16:48 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:57323 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab0G2EQr (ORCPT
+	id S1751317Ab0G2E1G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 00:27:06 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53560 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab0G2E1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 00:16:47 -0400
-Date: Thu, 29 Jul 2010 13:16:41 +0900
-From: Simon Horman <horms@verge.net.au>
-To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [patch] MAINTAINERS: kexec-tools has moved
-Message-ID: <20100729041641.GA32220@verge.net.au>
+	Thu, 29 Jul 2010 00:27:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [72.93.233.2]
+In-Reply-To: <AANLkTi=DLHOnzgXmpzNE3PQXp-xSkm8vLdxBBf1mcFuO@mail.gmail.com>
+References: <20100728162855.4968e561.sfr@canb.auug.org.au>
+	<20100728102417.be60049a.randy.dunlap@oracle.com>
+	<20100728220454.GK8564@aniel.lan>
+	<4C50AC26.1080100@oracle.com>
+	<AANLkTi=DLHOnzgXmpzNE3PQXp-xSkm8vLdxBBf1mcFuO@mail.gmail.com>
+Date: Thu, 29 Jul 2010 00:27:01 -0400
+Message-ID: <AANLkTimTbZ6Vjqe5rqNVtNwPV=qoo=BOsOwG_6fS1SZU@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 28 (lirc #2)
+From: Jarod Wilson <jarod@wilsonet.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Janne Grunau <j@jannau.net>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        lirc-list@lists.sourceforge.net, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kexec tools has been moved to http://kernel.org/pub/linux/utils/kernel/kexec/
-as user-space code shouldn't be in /pub/linux/kernel
+On Wed, Jul 28, 2010 at 6:27 PM, Jarod Wilson <jarod@wilsonet.com> wrote:
+> On Wed, Jul 28, 2010 at 6:16 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> On 07/28/10 15:04, Janne Grunau wrote:
+>>> On Wed, Jul 28, 2010 at 10:24:17AM -0700, Randy Dunlap wrote:
+>>>> On Wed, 28 Jul 2010 16:28:55 +1000 Stephen Rothwell wrote:
+>>>>
+>>>>> Hi all,
+>>>>>
+>>>>> Changes since 20100727:
+>>>>
+>>>>
+>>>> When USB_SUPPORT is not enabled and MEDIA_SUPPORT is not enabled:
+>>>>
+>>>
+>>> following patch should fix it
+>>>
+>>> Janne
+>>
+>> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> Thanks.
+>
+> Acked-by: Jarod Wilson <jarod@redhat.com>
+>
+> Indeed, thanks much, Janne!
 
-Signed-off-by: Simon Horman <horms@verge.net.au>
+D'oh, I should have looked a bit closer... What if instead of making
+all the drivers depend on both LIRC && LIRC_STAGING, LIRC_STAGING just
+depends on LIRC? And there are a few depends lines with duplicate
+USB's in them and LIRC_IMON should have USB added to it (technically,
+I think ene0100 should also have a PNP, but we already have patches
+pending that move it from staging to an ir-core driver).
 
-Index: linux-2.6/MAINTAINERS
-===================================================================
---- linux-2.6.orig/MAINTAINERS	2010-07-29 13:10:04.000000000 +0900
-+++ linux-2.6/MAINTAINERS	2010-07-29 13:11:40.000000000 +0900
-@@ -3334,7 +3334,7 @@ F:	drivers/s390/kvm/
- 
- KEXEC
- M:	Eric Biederman <ebiederm@xmission.com>
--W:	http://ftp.kernel.org/pub/linux/kernel/people/horms/kexec-tools/
-+W:	http://kernel.org/pub/linux/utils/kernel/kexec/
- L:	kexec@lists.infradead.org
- S:	Maintained
- F:	include/linux/kexec.h
+-- 
+Jarod Wilson
+jarod@wilsonet.com
