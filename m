@@ -1,59 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab0G2FSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 01:18:32 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:37099 "EHLO imr1.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab0G2FSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 01:18:30 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-CC: Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Nick Cheng <nick.cheng@areca.com.tw>,
-        James Smart <james.smart@emulex.com>,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-        Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH 4/6] regulator: Remove owner field from attribute initialization in regulator core driver
-Date: Wed, 28 Jul 2010 22:09:24 -0700
-Message-ID: <1280380166-29196-5-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.0.87.g0901d
-In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752969Ab0G2FUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 01:20:55 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36831
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750845Ab0G2FUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 01:20:53 -0400
+Date: Wed, 28 Jul 2010 22:21:05 -0700 (PDT)
+Message-Id: <20100728.222105.26961969.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry@broadcom.com, eilong@broadcom.com
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100729141306.f27fad7a.sfr@canb.auug.org.au>
+References: <20100729141306.f27fad7a.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
- drivers/regulator/core.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 29 Jul 2010 14:13:06 +1000
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 2248087..422a709 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1025,7 +1025,6 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 		if (regulator->dev_attr.attr.name == NULL)
- 			goto attr_name_err;
- 
--		regulator->dev_attr.attr.owner = THIS_MODULE;
- 		regulator->dev_attr.attr.mode = 0444;
- 		regulator->dev_attr.show = device_requested_uA_show;
- 		err = device_create_file(dev, &regulator->dev_attr);
--- 
-1.7.0.87.g0901d
+> net: bnx2x_cmn.c needs net/ip6_checksum.h for csum_ipv6_magic
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
+Applied, thanks Stephen.
