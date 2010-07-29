@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab0G2Vsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 17:48:47 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43810 "EHLO
+	id S1757681Ab0G2Vsy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 17:48:54 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:43919 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756879Ab0G2Vsm (ORCPT
+	with ESMTP id S1756879Ab0G2Vst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 17:48:42 -0400
+	Thu, 29 Jul 2010 17:48:49 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 08/13] AppArmor: file enforcement routines
-Date: Thu, 29 Jul 2010 14:48:04 -0700
-Message-Id: <1280440089-3203-9-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 10/13] AppArmor: functions for domain transitions
+Date: Thu, 29 Jul 2010 14:48:06 -0700
+Message-Id: <1280440089-3203-11-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
 References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
@@ -20,38 +20,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AppArmor does files enforcement via pathname matching.  Matching is done
-at file open using a dfa match engine.  Permission is against the final
-file object not parent directories, ie. the traversal of directories
-as part of the file match is implicitly allowed.  In the case of nonexistant
-files (creation) permissions are checked against the target file not the
-directory.  eg. In case of creating the file /dir/new, permissions are
-checked against the match /dir/new not against /dir/.
+AppArmor routines for controling domain transitions, which can occur at
+exec or through self directed change_profile/change_hat calls.
 
-The permissions for matches are currently stored in the dfa accept table,
-but this will change to allow for dfa reuse and also to allow for sharing
-of wider accept states.
+Unconfined tasks are checked at exec against the profiles in the confining
+profile namespace to determine if a profile should be attached to the task.
+
+Confined tasks execs are controlled by the profile which provides rules
+determining which execs are allowed and if so which profiles should be
+transitioned to.
+
+Self directed domain transitions allow a task to request transition
+to a given profile.  If the transition is allowed then the profile will
+be applied, either immeditately or at exec time depending on the request.
+Immeditate self directed transitions have several security limitations
+but have uses in setting up stub transition profiles and other limited
+cases.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/file.c         |  457 ++++++++++++++++++++++++++++++++++++++
- security/apparmor/include/file.h |  217 ++++++++++++++++++
- 2 files changed, 674 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/file.c
- create mode 100644 security/apparmor/include/file.h
+ security/apparmor/domain.c         |  823 ++++++++++++++++++++++++++++++++++++
+ security/apparmor/include/domain.h |   36 ++
+ 2 files changed, 859 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/domain.c
+ create mode 100644 security/apparmor/include/domain.h
 
-diff --git a/security/apparmor/file.c b/security/apparmor/file.c
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
 new file mode 100644
-index 0000000..7312db7
+index 0000000..08bbe63
 --- /dev/null
-+++ b/security/apparmor/file.c
-@@ -0,0 +1,457 @@
++++ b/security/apparmor/domain.c
+@@ -0,0 +1,823 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor mediation of files
++ * This file contains AppArmor policy attachment and domain transitions
 + *
-+ * Copyright (C) 1998-2008 Novell/SUSE
++ * Copyright (C) 2002-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
 + *
 + * This program is free software; you can redistribute it and/or
@@ -60,459 +65,825 @@ index 0000000..7312db7
 + * License.
 + */
 +
-+#include "include/apparmor.h"
++#include <linux/errno.h>
++#include <linux/fdtable.h>
++#include <linux/file.h>
++#include <linux/mount.h>
++#include <linux/syscalls.h>
++#include <linux/tracehook.h>
++#include <linux/personality.h>
++
 +#include "include/audit.h"
++#include "include/apparmorfs.h"
++#include "include/context.h"
++#include "include/domain.h"
 +#include "include/file.h"
++#include "include/ipc.h"
 +#include "include/match.h"
 +#include "include/path.h"
 +#include "include/policy.h"
 +
-+struct file_perms nullperms;
-+
-+
 +/**
-+ * audit_file_mask - convert mask to permission string
-+ * @buffer: buffer to write string to (NOT NULL)
-+ * @mask: permission mask to convert
++ * aa_free_domain_entries - free entries in a domain table
++ * @domain: the domain table to free  (MAYBE NULL)
 + */
-+static void audit_file_mask(struct audit_buffer *ab, u32 mask)
++void aa_free_domain_entries(struct aa_domain *domain)
 +{
-+	char str[10];
++	int i;
++	if (domain) {
++		if (!domain->table)
++			return;
 +
-+	char *m = str;
-+
-+	if (mask & AA_EXEC_MMAP)
-+		*m++ = 'm';
-+	if (mask & (MAY_READ | AA_MAY_META_READ))
-+		*m++ = 'r';
-+	if (mask & (MAY_WRITE | AA_MAY_META_WRITE | AA_MAY_CHMOD |
-+		    AA_MAY_CHOWN))
-+		*m++ = 'w';
-+	else if (mask & MAY_APPEND)
-+		*m++ = 'a';
-+	if (mask & AA_MAY_CREATE)
-+		*m++ = 'c';
-+	if (mask & AA_MAY_DELETE)
-+		*m++ = 'd';
-+	if (mask & AA_MAY_LINK)
-+		*m++ = 'l';
-+	if (mask & AA_MAY_LOCK)
-+		*m++ = 'k';
-+	if (mask & MAY_EXEC)
-+		*m++ = 'x';
-+	*m = '\0';
-+
-+	audit_log_string(ab, str);
-+}
-+
-+/**
-+ * file_audit_cb - call back for file specific audit fields
-+ * @ab: audit_buffer  (NOT NULL)
-+ * @va: audit struct to audit values of  (NOT NULL)
-+ */
-+static void file_audit_cb(struct audit_buffer *ab, void *va)
-+{
-+	struct common_audit_data *sa = va;
-+	uid_t fsuid = current_fsuid();
-+
-+	if (sa->aad.fs.request & AA_AUDIT_FILE_MASK) {
-+		audit_log_format(ab, " requested_mask=");
-+		audit_file_mask(ab, sa->aad.fs.request);
-+	}
-+	if (sa->aad.fs.denied & AA_AUDIT_FILE_MASK) {
-+		audit_log_format(ab, " denied_mask=");
-+		audit_file_mask(ab, sa->aad.fs.denied);
-+	}
-+	if (sa->aad.fs.request & AA_AUDIT_FILE_MASK) {
-+		audit_log_format(ab, " fsuid=%d", fsuid);
-+		audit_log_format(ab, " ouid=%d", sa->aad.fs.ouid);
-+	}
-+
-+	if (sa->aad.fs.target) {
-+		audit_log_format(ab, " target=");
-+		audit_log_untrustedstring(ab, sa->aad.fs.target);
++		for (i = 0; i < domain->size; i++)
++			kzfree(domain->table[i]);
++		kzfree(domain->table);
++		domain->table = NULL;
 +	}
 +}
 +
 +/**
-+ * aa_audit_file - handle the auditing of file operations
-+ * @profile: the profile being enforced  (NOT NULL)
-+ * @perms: the permissions computed for the request (NOT NULL)
-+ * @gfp: allocation flags
-+ * @op: operation being mediated
-+ * @request: permissions requested
-+ * @name: name of object being mediated (MAYBE NULL)
-+ * @target: name of target (MAYBE NULL)
-+ * @ouid: object uid
-+ * @info: extra information message (MAYBE NULL)
-+ * @error: 0 if operation allowed else failure error code
++ * may_change_ptraced_domain - check if can change profile on ptraced task
++ * @task: task we want to change profile of   (NOT NULL)
++ * @to_profile: profile to change to  (NOT NULL)
 + *
-+ * Returns: %0 or error on failure
++ * Check if the task is ptraced and if so if the tracing task is allowed
++ * to trace the new domain
++ *
++ * Returns: %0 or error if change not allowed
 + */
-+int aa_audit_file(struct aa_profile *profile, struct file_perms *perms,
-+		  gfp_t gfp, int op, u32 request, const char *name,
-+		  const char *target, uid_t ouid, const char *info, int error)
++static int may_change_ptraced_domain(struct task_struct *task,
++				     struct aa_profile *to_profile)
 +{
-+	int type = AUDIT_APPARMOR_AUTO;
-+	struct common_audit_data sa;
-+	COMMON_AUDIT_DATA_INIT(&sa, NONE);
-+	sa.aad.op = op,
-+	sa.aad.fs.request = request;
-+	sa.aad.name = name;
-+	sa.aad.fs.target = target;
-+	sa.aad.fs.ouid = ouid;
-+	sa.aad.info = info;
-+	sa.aad.error = error;
++	struct task_struct *tracer;
++	struct cred *cred = NULL;
++	struct aa_profile *tracerp = NULL;
++	int error = 0;
 +
-+	if (likely(!sa.aad.error)) {
-+		u32 mask = perms->audit;
-+
-+		if (unlikely(AUDIT_MODE(profile) == AUDIT_ALL))
-+			mask = 0xffff;
-+
-+		/* mask off perms that are not being force audited */
-+		sa.aad.fs.request &= mask;
-+
-+		if (likely(!sa.aad.fs.request))
-+			return 0;
-+		type = AUDIT_APPARMOR_AUDIT;
-+	} else {
-+		/* only report permissions that were denied */
-+		sa.aad.fs.request = sa.aad.fs.request & ~perms->allow;
-+
-+		if (sa.aad.fs.request & perms->kill)
-+			type = AUDIT_APPARMOR_KILL;
-+
-+		/* quiet known rejects, assumes quiet and kill do not overlap */
-+		if ((sa.aad.fs.request & perms->quiet) &&
-+		    AUDIT_MODE(profile) != AUDIT_NOQUIET &&
-+		    AUDIT_MODE(profile) != AUDIT_ALL)
-+			sa.aad.fs.request &= ~perms->quiet;
-+
-+		if (!sa.aad.fs.request)
-+			return COMPLAIN_MODE(profile) ? 0 : sa.aad.error;
++	rcu_read_lock();
++	tracer = tracehook_tracer_task(task);
++	if (tracer) {
++		/* released below */
++		cred = get_task_cred(tracer);
++		tracerp = aa_cred_profile(cred);
 +	}
++	rcu_read_unlock();
 +
-+	sa.aad.fs.denied = sa.aad.fs.request & ~perms->allow;
-+	return aa_audit(type, profile, gfp, &sa, file_audit_cb);
++	/* not ptraced */
++	if (!tracer || unconfined(tracerp))
++		goto out;
++
++	error = aa_may_ptrace(tracer, tracerp, to_profile, PTRACE_MODE_ATTACH);
++
++out:
++	if (cred)
++		put_cred(cred);
++
++	return error;
 +}
 +
 +/**
-+ * map_old_perms - map old file perms layout to the new layout
-+ * @old: permission set in old mapping
++ * change_profile_perms - find permissions for change_profile
++ * @profile: the current profile  (NOT NULL)
++ * @ns: the namespace being switched to  (NOT NULL)
++ * @name: the name of the profile to change to  (NOT NULL)
++ * @request: requested perms
++ * @start: state to start matching in
 + *
-+ * Returns: new permission mapping
++ * Returns: permission set
 + */
-+static u32 map_old_perms(u32 old)
-+{
-+	u32 new = old & 0xf;
-+	if (old & MAY_READ)
-+		new |= AA_MAY_META_READ;
-+	if (old & MAY_WRITE)
-+		new |= AA_MAY_META_WRITE | AA_MAY_CREATE | AA_MAY_DELETE |
-+			AA_MAY_CHMOD | AA_MAY_CHOWN;
-+	if (old & 0x10)
-+		new |= AA_MAY_LINK;
-+	/* the old mapping lock and link_subset flags where overlaid
-+	 * and use was determined by part of a pair that they were in
-+	 */
-+	if (old & 0x20)
-+		new |= AA_MAY_LOCK | AA_LINK_SUBSET;
-+	if (old & 0x40)	/* AA_EXEC_MMAP */
-+		new |= AA_EXEC_MMAP;
-+
-+	new |= AA_MAY_META_READ;
-+
-+	return new;
-+}
-+
-+/**
-+ * compute_perms - convert dfa compressed perms to internal perms
-+ * @dfa: dfa to compute perms for   (NOT NULL)
-+ * @state: state in dfa
-+ * @cond:  conditions to consider  (NOT NULL)
-+ *
-+ * TODO: convert from dfa + state to permission entry, do computation conversion
-+ *       at load time.
-+ *
-+ * Returns: computed permission set
-+ */
-+static struct file_perms compute_perms(struct aa_dfa *dfa, unsigned int state,
-+				       struct path_cond *cond)
++static struct file_perms change_profile_perms(struct aa_profile *profile,
++					      struct aa_namespace *ns,
++					      const char *name, u32 request,
++					      unsigned int start)
 +{
 +	struct file_perms perms;
++	struct path_cond cond = { };
++	unsigned int state;
 +
-+	/* FIXME: change over to new dfa format
-+	 * currently file perms are encoded in the dfa, new format
-+	 * splits the permissions from the dfa.  This mapping can be
-+	 * done at profile load
-+	 */
-+	perms.kill = 0;
-+
-+	if (current_fsuid() == cond->uid) {
-+		perms.allow = map_old_perms(dfa_user_allow(dfa, state));
-+		perms.audit = map_old_perms(dfa_user_audit(dfa, state));
-+		perms.quiet = map_old_perms(dfa_user_quiet(dfa, state));
-+		perms.xindex = dfa_user_xindex(dfa, state);
-+	} else {
-+		perms.allow = map_old_perms(dfa_other_allow(dfa, state));
-+		perms.audit = map_old_perms(dfa_other_audit(dfa, state));
-+		perms.quiet = map_old_perms(dfa_other_quiet(dfa, state));
-+		perms.xindex = dfa_other_xindex(dfa, state);
++	if (unconfined(profile)) {
++		perms.allow = AA_MAY_CHANGE_PROFILE | AA_MAY_ONEXEC;
++		perms.audit = perms.quiet = perms.kill = 0;
++		return perms;
++	} else if (!profile->file.dfa) {
++		return nullperms;
++	} else if ((ns == profile->ns)) {
++		/* try matching against rules with out namespace prepended */
++		aa_str_perms(profile->file.dfa, start, name, &cond, &perms);
++		if (COMBINED_PERM_MASK(perms) & request)
++			return perms;
 +	}
 +
-+	/* change_profile wasn't determined by ownership in old mapping */
-+	if (ACCEPT_TABLE(dfa)[state] & 0x80000000)
-+		perms.allow |= AA_MAY_CHANGE_PROFILE;
++	/* try matching with namespace name and then profile */
++	state = aa_dfa_match(profile->file.dfa, start, ns->base.name);
++	state = aa_dfa_match_len(profile->file.dfa, state, ":", 1);
++	aa_str_perms(profile->file.dfa, state, name, &cond, &perms);
 +
 +	return perms;
 +}
 +
 +/**
-+ * aa_str_perms - find permission that match @name
-+ * @dfa: to match against  (MAYBE NULL)
-+ * @state: state to start matching in
-+ * @name: string to match against dfa  (NOT NULL)
-+ * @cond: conditions to consider for permission set computation  (NOT NULL)
-+ * @perms: Returns - the permissions found when matching @name
++ * __attach_match_ - find an attachment match
++ * @name - to match against  (NOT NULL)
++ * @head - profile list to walk  (NOT NULL)
 + *
-+ * Returns: the final state in @dfa when beginning @start and walking @name
++ * Do a linear search on the profiles in the list.  There is a matching
++ * preference where an exact match is preferred over a name which uses
++ * expressions to match, and matching expressions with the greatest
++ * xmatch_len are preferred.
++ *
++ * Requires: @head not be shared or have appropriate locks held
++ *
++ * Returns: profile or NULL if no match found
 + */
-+unsigned int aa_str_perms(struct aa_dfa *dfa, unsigned int start,
-+			  const char *name, struct path_cond *cond,
-+			  struct file_perms *perms)
++static struct aa_profile *__attach_match(const char *name,
++					 struct list_head *head)
 +{
-+	unsigned int state;
-+	if (!dfa) {
-+		*perms = nullperms;
-+		return DFA_NOMATCH;
++	int len = 0;
++	struct aa_profile *profile, *candidate = NULL;
++
++	list_for_each_entry(profile, head, base.list) {
++		if (profile->flags & PFLAG_NULL)
++			continue;
++		if (profile->xmatch && profile->xmatch_len > len) {
++			unsigned int state = aa_dfa_match(profile->xmatch,
++							  DFA_START, name);
++			u32 perm = dfa_user_allow(profile->xmatch, state);
++			/* any accepting state means a valid match. */
++			if (perm & MAY_EXEC) {
++				candidate = profile;
++				len = profile->xmatch_len;
++			}
++		} else if (!strcmp(profile->base.name, name))
++			/* exact non-re match, no more searching required */
++			return profile;
 +	}
 +
-+	state = aa_dfa_match(dfa, start, name);
-+	*perms = compute_perms(dfa, state, cond);
-+
-+	return state;
++	return candidate;
 +}
 +
 +/**
-+ * is_deleted - test if a file has been completely unlinked
-+ * @dentry: dentry of file to test for deletion  (NOT NULL)
++ * find_attach - do attachment search for unconfined processes
++ * @ns: the current namespace  (NOT NULL)
++ * @list: list to search  (NOT NULL)
++ * @name: the executable name to match against  (NOT NULL)
 + *
-+ * Returns: %1 if deleted else %0
++ * Returns: profile or NULL if no match found
 + */
-+static inline bool is_deleted(struct dentry *dentry)
++static struct aa_profile *find_attach(struct aa_namespace *ns,
++				      struct list_head *list, const char *name)
 +{
-+	if (d_unlinked(dentry) && dentry->d_inode->i_nlink == 0)
-+		return 1;
-+	return 0;
++	struct aa_profile *profile;
++
++	read_lock(&ns->lock);
++	profile = aa_get_profile(__attach_match(name, list));
++	read_unlock(&ns->lock);
++
++	return profile;
 +}
 +
 +/**
-+ * aa_path_perm - do permissions check & audit for @path
-+ * @op: operation being checked
-+ * @profile: profile being enforced  (NOT NULL)
-+ * @path: path to check permissions of  (NOT NULL)
-+ * @flags: any additional path flags beyond what the profile specifies
-+ * @request: requested permissions
-+ * @cond: conditional info for this request  (NOT NULL)
++ * separate_fqname - separate the namespace and profile names
++ * @fqname: the fqname name to split  (NOT NULL)
++ * @ns_name: the namespace name if it exists  (NOT NULL)
 + *
-+ * Returns: %0 else error if access denied or other error
++ * This is the xtable equivalent routine of aa_split_fqname.  It finds the
++ * split in an xtable fqname which contains an embedded \0 instead of a :
++ * if a namespace is specified.  This is done so the xtable is constant and
++ * isn't re-split on every lookup.
++ *
++ * Either the profile or namespace name may be optional but if the namespace
++ * is specified the profile name termination must be present.  This results
++ * in the following possible encodings:
++ * profile_name\0
++ * :ns_name\0profile_name\0
++ * :ns_name\0\0
++ *
++ * NOTE: the xtable fqname is pre-validated at load time in unpack_trans_table
++ *
++ * Returns: profile name if it is specified else NULL
 + */
-+int aa_path_perm(int op, struct aa_profile *profile, struct path *path,
-+		 int flags, u32 request, struct path_cond *cond)
++static const char *separate_fqname(const char *fqname, const char **ns_name)
 +{
-+	char *buffer = NULL;
-+	struct file_perms perms = {};
-+	const char *name, *info = NULL;
-+	int error;
++	const char *name;
 +
-+	flags |= profile->path_flags | (S_ISDIR(cond->mode) ? PATH_IS_DIR : 0);
-+	error = aa_get_name(path, flags, &buffer, &name);
-+	if (error) {
-+		if (error == -ENOENT && is_deleted(path->dentry)) {
-+			/* Access to open files that are deleted are
-+			 * give a pass (implicit delegation)
-+			 */
-+			error = 0;
-+			perms.allow = request;
-+		} else if (error == -ENOENT)
-+			info = "Failed name lookup - deleted entry";
-+		else if (error == -ESTALE)
-+			info = "Failed name lookup - disconnected path";
-+		else if (error == -ENAMETOOLONG)
-+			info = "Failed name lookup - name too long";
-+		else
-+			info = "Failed name lookup";
++	if (fqname[0] == ':') {
++		/* In this case there is guaranteed to be two \0 terminators
++		 * in the string.  They are verified at load time by
++		 * by unpack_trans_table
++		 */
++		*ns_name = fqname + 1;		/* skip : */
++		name = *ns_name + strlen(*ns_name) + 1;
++		if (!*name)
++			name = NULL;
 +	} else {
-+		aa_str_perms(profile->file.dfa, profile->file.start, name, cond,
-+			     &perms);
-+		if (request & ~perms.allow)
-+			error = -EACCES;
++		*ns_name = NULL;
++		name = fqname;
 +	}
-+	error = aa_audit_file(profile, &perms, GFP_KERNEL, op, request, name,
-+			      NULL, cond->uid, info, error);
-+	kfree(buffer);
 +
-+	return error;
++	return name;
++}
++
++static const char *next_name(int xtype, const char *name)
++{
++	return NULL;
 +}
 +
 +/**
-+ * xindex_is_subset - helper for aa_path_link
-+ * @link: link permission set
-+ * @target: target permission set
++ * x_table_lookup - lookup an x transition name via transition table
++ * @profile: current profile (NOT NULL)
++ * @xindex: index into x transition table
 + *
-+ * test target x permissions are equal OR a subset of link x permissions
-+ * this is done as part of the subset test, where a hardlink must have
-+ * a subset of permissions that the target has.
-+ *
-+ * Returns: %1 if subset else %0
++ * Returns: refcounted profile, or NULL on failure (MAYBE NULL)
 + */
-+static inline bool xindex_is_subset(u32 link, u32 target)
++static struct aa_profile *x_table_lookup(struct aa_profile *profile, u32 xindex)
 +{
-+	if (((link & ~AA_X_UNSAFE) != (target & ~AA_X_UNSAFE)) ||
-+	    ((link & AA_X_UNSAFE) && !(target & AA_X_UNSAFE)))
++	struct aa_profile *new_profile = NULL;
++	struct aa_namespace *ns = profile->ns;
++	u32 xtype = xindex & AA_X_TYPE_MASK;
++	int index = xindex & AA_X_INDEX_MASK;
++	const char *name;
++
++	/* index is guaranteed to be in range, validated at load time */
++	for (name = profile->file.trans.table[index]; !new_profile && name;
++	     name = next_name(xtype, name)) {
++		struct aa_namespace *new_ns;
++		const char *xname = NULL;
++
++		new_ns = NULL;
++		if (xindex & AA_X_CHILD) {
++			/* release by caller */
++			new_profile = aa_find_child(profile, name);
++			continue;
++		} else if (*name == ':') {
++			/* switching namespace */
++			const char *ns_name;
++			xname = name = separate_fqname(name, &ns_name);
++			if (!xname)
++				/* no name so use profile name */
++				xname = profile->base.hname;
++			if (*ns_name == '@') {
++				/* TODO: variable support */
++				;
++			}
++			/* released below */
++			new_ns = aa_find_namespace(ns, ns_name);
++			if (!new_ns)
++				continue;
++		} else if (*name == '@') {
++			/* TODO: variable support */
++			continue;
++		} else {
++			/* basic namespace lookup */
++			xname = name;
++		}
++
++		/* released by caller */
++		new_profile = aa_lookup_profile(new_ns ? new_ns : ns, xname);
++		aa_put_namespace(new_ns);
++	}
++
++	/* released by caller */
++	return new_profile;
++}
++
++/**
++ * x_to_profile - get target profile for a given xindex
++ * @profile: current profile  (NOT NULL)
++ * @name: name to lookup (NOT NULL)
++ * @xindex: index into x transition table
++ *
++ * find profile for a transition index
++ *
++ * Returns: refcounted profile or NULL if not found available
++ */
++static struct aa_profile *x_to_profile(struct aa_profile *profile,
++				       const char *name, u32 xindex)
++{
++	struct aa_profile *new_profile = NULL;
++	struct aa_namespace *ns = profile->ns;
++	u32 xtype = xindex & AA_X_TYPE_MASK;
++
++	switch (xtype) {
++	case AA_X_NONE:
++		/* fail exec unless ix || ux fallback - handled by caller */
++		return NULL;
++	case AA_X_NAME:
++		if (xindex & AA_X_CHILD)
++			/* released by caller */
++			new_profile = find_attach(ns, &profile->base.profiles,
++						  name);
++		else
++			/* released by caller */
++			new_profile = find_attach(ns, &ns->base.profiles,
++						  name);
++		break;
++	case AA_X_TABLE:
++		/* released by caller */
++		new_profile = x_table_lookup(profile, xindex);
++		break;
++	}
++
++	/* released by caller */
++	return new_profile;
++}
++
++/**
++ * apparmor_bprm_set_creds - set the new creds on the bprm struct
++ * @bprm: binprm for the exec  (NOT NULL)
++ *
++ * Returns: %0 or error on failure
++ */
++int apparmor_bprm_set_creds(struct linux_binprm *bprm)
++{
++	struct aa_task_cxt *cxt;
++	struct aa_profile *profile, *new_profile = NULL;
++	struct aa_namespace *ns;
++	char *buffer = NULL;
++	unsigned int state;
++	struct file_perms perms = {};
++	struct path_cond cond = {
++		bprm->file->f_path.dentry->d_inode->i_uid,
++		bprm->file->f_path.dentry->d_inode->i_mode
++	};
++	const char *name = NULL, *target = NULL, *info = NULL;
++	int error = cap_bprm_set_creds(bprm);
++	if (error)
++		return error;
++
++	if (bprm->cred_prepared)
 +		return 0;
 +
-+	return 1;
-+}
++	cxt = bprm->cred->security;
++	BUG_ON(!cxt);
 +
-+/**
-+ * aa_path_link - Handle hard link permission check
-+ * @profile: the profile being enforced  (NOT NULL)
-+ * @old_dentry: the target dentry  (NOT NULL)
-+ * @new_dir: directory the new link will be created in  (NOT NULL)
-+ * @new_dentry: the link being created  (NOT NULL)
-+ *
-+ * Handle the permission test for a link & target pair.  Permission
-+ * is encoded as a pair where the link permission is determined
-+ * first, and if allowed, the target is tested.  The target test
-+ * is done from the point of the link match (not start of DFA)
-+ * making the target permission dependent on the link permission match.
-+ *
-+ * The subset test if required forces that permissions granted
-+ * on link are a subset of the permission granted to target.
-+ *
-+ * Returns: %0 if allowed else error
-+ */
-+int aa_path_link(struct aa_profile *profile, struct dentry *old_dentry,
-+		 struct path *new_dir, struct dentry *new_dentry)
-+{
-+	struct path link = { new_dir->mnt, new_dentry };
-+	struct path target = { new_dir->mnt, old_dentry };
-+	struct path_cond cond = {
-+		old_dentry->d_inode->i_uid,
-+		old_dentry->d_inode->i_mode
-+	};
-+	char *buffer = NULL, *buffer2 = NULL;
-+	const char *lname, *tname = NULL, *info = NULL;
-+	struct file_perms lperms, perms;
-+	u32 request = AA_MAY_LINK;
-+	unsigned int state;
-+	int error;
-+
-+	lperms = nullperms;
-+
-+	/* buffer freed below, lname is pointer in buffer */
-+	error = aa_get_name(&link, profile->path_flags, &buffer, &lname);
-+	if (error)
-+		goto audit;
-+
-+	/* buffer2 freed below, tname is pointer in buffer2 */
-+	error = aa_get_name(&target, profile->path_flags, &buffer2, &tname);
-+	if (error)
-+		goto audit;
-+
-+	error = -EACCES;
-+	/* aa_str_perms - handles the case of the dfa being NULL */
-+	state = aa_str_perms(profile->file.dfa, profile->file.start, lname,
-+			     &cond, &lperms);
-+
-+	if (!(lperms.allow & AA_MAY_LINK))
-+		goto audit;
-+
-+	/* test to see if target can be paired with link */
-+	state = aa_dfa_null_transition(profile->file.dfa, state);
-+	aa_str_perms(profile->file.dfa, state, tname, &cond, &perms);
-+
-+	/* force audit/quiet masks for link are stored in the second entry
-+	 * in the link pair.
++	profile = aa_get_profile(aa_newest_version(cxt->profile));
++	/*
++	 * get the namespace from the replacement profile as replacement
++	 * can change the namespace
 +	 */
-+	lperms.audit = perms.audit;
-+	lperms.quiet = perms.quiet;
-+	lperms.kill = perms.kill;
++	ns = profile->ns;
++	state = profile->file.start;
 +
-+	if (!(perms.allow & AA_MAY_LINK)) {
-+		info = "target restricted";
++	/* buffer freed below, name is pointer into buffer */
++	error = aa_get_name(&bprm->file->f_path, profile->path_flags, &buffer,
++			    &name);
++	if (error) {
++		if (profile->flags &
++		    (PFLAG_IX_ON_NAME_ERROR | PFLAG_UNCONFINED))
++			error = 0;
++		info = "Exec failed name resolution";
++		name = bprm->filename;
 +		goto audit;
 +	}
 +
-+	/* done if link subset test is not required */
-+	if (!(perms.allow & AA_LINK_SUBSET))
-+		goto done_tests;
-+
-+	/* Do link perm subset test requiring allowed permission on link are a
-+	 * subset of the allowed permissions on target.
++	/* Test for onexec first as onexec directives override other
++	 * x transitions.
 +	 */
-+	aa_str_perms(profile->file.dfa, profile->file.start, tname, &cond,
-+		     &perms);
-+
-+	/* AA_MAY_LINK is not considered in the subset test */
-+	request = lperms.allow & ~AA_MAY_LINK;
-+	lperms.allow &= perms.allow | AA_MAY_LINK;
-+
-+	request |= AA_AUDIT_FILE_MASK & (lperms.allow & ~perms.allow);
-+	if (request & ~lperms.allow) {
-+		goto audit;
-+	} else if ((lperms.allow & MAY_EXEC) &&
-+		   !xindex_is_subset(lperms.xindex, perms.xindex)) {
-+		lperms.allow &= ~MAY_EXEC;
-+		request |= MAY_EXEC;
-+		info = "link not subset of target";
-+		goto audit;
++	if (unconfined(profile)) {
++		/* unconfined task */
++		if (cxt->onexec)
++			/* change_profile on exec already been granted */
++			new_profile = aa_get_profile(cxt->onexec);
++		else
++			new_profile = find_attach(ns, &ns->base.profiles, name);
++		if (!new_profile)
++			goto cleanup;
++		goto apply;
 +	}
 +
-+done_tests:
-+	error = 0;
++	/* find exec permissions for name */
++	state = aa_str_perms(profile->file.dfa, state, name, &cond, &perms);
++	if (cxt->onexec) {
++		struct file_perms cp;
++		info = "change_profile onexec";
++		if (!(perms.allow & AA_MAY_ONEXEC))
++			goto audit;
++
++		/* test if this exec can be paired with change_profile onexec.
++		 * onexec permission is linked to exec with a standard pairing
++		 * exec\0change_profile
++		 */
++		state = aa_dfa_null_transition(profile->file.dfa, state);
++		cp = change_profile_perms(profile, cxt->onexec->ns, name,
++					  AA_MAY_ONEXEC, state);
++
++		if (!(cp.allow & AA_MAY_ONEXEC))
++			goto audit;
++		new_profile = aa_get_profile(aa_newest_version(cxt->onexec));
++		goto apply;
++	}
++
++	if (perms.allow & MAY_EXEC) {
++		/* exec permission determine how to transition */
++		new_profile = x_to_profile(profile, name, perms.xindex);
++		if (!new_profile) {
++			if (perms.xindex & AA_X_INHERIT) {
++				/* (p|c|n)ix - don't change profile but do
++				 * use the newest version, which was picked
++				 * up above when getting profile
++				 */
++				info = "ix fallback";
++				new_profile = aa_get_profile(profile);
++				goto x_clear;
++			} else if (perms.xindex & AA_X_UNCONFINED) {
++				new_profile = aa_get_profile(ns->unconfined);
++				info = "ux fallback";
++			} else {
++				error = -ENOENT;
++				info = "profile not found";
++			}
++		}
++	} else if (COMPLAIN_MODE(profile)) {
++		/* no exec permission - are we in learning mode */
++		new_profile = aa_new_null_profile(profile, 0);
++		if (!new_profile) {
++			error = -ENOMEM;
++			info = "could not create null profile";
++		} else {
++			error = -EACCES;
++			target = new_profile->base.hname;
++		}
++		perms.xindex |= AA_X_UNSAFE;
++	} else
++		/* fail exec */
++		error = -EACCES;
++
++	if (!new_profile)
++		goto audit;
++
++	if (bprm->unsafe & LSM_UNSAFE_SHARE) {
++		/* FIXME: currently don't mediate shared state */
++		;
++	}
++
++	if (bprm->unsafe & (LSM_UNSAFE_PTRACE | LSM_UNSAFE_PTRACE_CAP)) {
++		error = may_change_ptraced_domain(current, new_profile);
++		if (error) {
++			aa_put_profile(new_profile);
++			goto audit;
++		}
++	}
++
++	/* Determine if secure exec is needed.
++	 * Can be at this point for the following reasons:
++	 * 1. unconfined switching to confined
++	 * 2. confined switching to different confinement
++	 * 3. confined switching to unconfined
++	 *
++	 * Cases 2 and 3 are marked as requiring secure exec
++	 * (unless policy specified "unsafe exec")
++	 *
++	 * bprm->unsafe is used to cache the AA_X_UNSAFE permission
++	 * to avoid having to recompute in secureexec
++	 */
++	if (!(perms.xindex & AA_X_UNSAFE)) {
++		AA_DEBUG("scrubbing environment variables for %s profile=%s\n",
++			 name, new_profile->base.hname);
++		bprm->unsafe |= AA_SECURE_X_NEEDED;
++	}
++apply:
++	target = new_profile->base.hname;
++	/* when transitioning profiles clear unsafe personality bits */
++	bprm->per_clear |= PER_CLEAR_ON_SETID;
++
++x_clear:
++	aa_put_profile(cxt->profile);
++	/* transfer new profile reference will be released when cxt is freed */
++	cxt->profile = new_profile;
++
++	/* clear out all temporary/transitional state from the context */
++	aa_put_profile(cxt->previous);
++	aa_put_profile(cxt->onexec);
++	cxt->previous = NULL;
++	cxt->onexec = NULL;
++	cxt->token = 0;
 +
 +audit:
-+	error = aa_audit_file(profile, &lperms, GFP_KERNEL, OP_LINK, request,
-+			      lname, tname, cond.uid, info, error);
++	error = aa_audit_file(profile, &perms, GFP_KERNEL, OP_EXEC, MAY_EXEC,
++			      name, target, cond.uid, info, error);
++
++cleanup:
++	aa_put_profile(profile);
 +	kfree(buffer);
-+	kfree(buffer2);
 +
 +	return error;
 +}
 +
 +/**
-+ * aa_file_perm - do permission revalidation check & audit for @file
-+ * @op: operation being checked
-+ * @profile: profile being enforced   (NOT NULL)
-+ * @file: file to revalidate access permissions on  (NOT NULL)
-+ * @request: requested permissions
++ * apparmor_bprm_secureexec - determine if secureexec is needed
++ * @bprm: binprm for exec  (NOT NULL)
 + *
-+ * Returns: %0 if access allowed else error
++ * Returns: %1 if secureexec is needed else %0
 + */
-+int aa_file_perm(int op, struct aa_profile *profile, struct file *file,
-+		 u32 request)
++int apparmor_bprm_secureexec(struct linux_binprm *bprm)
 +{
-+	struct path_cond cond = {
-+		.uid = file->f_path.dentry->d_inode->i_uid,
-+		.mode = file->f_path.dentry->d_inode->i_mode
-+	};
++	int ret = cap_bprm_secureexec(bprm);
 +
-+	return aa_path_perm(op, profile, &file->f_path, PATH_DELEGATE_DELETED,
-+			    request, &cond);
++	/* the decision to use secure exec is computed in set_creds
++	 * and stored in bprm->unsafe.
++	 */
++	if (!ret && (bprm->unsafe & AA_SECURE_X_NEEDED))
++		ret = 1;
++
++	return ret;
 +}
-diff --git a/security/apparmor/include/file.h b/security/apparmor/include/file.h
++
++/**
++ * apparmor_bprm_committing_creds - do task cleanup on committing new creds
++ * @bprm: binprm for the exec  (NOT NULL)
++ */
++void apparmor_bprm_committing_creds(struct linux_binprm *bprm)
++{
++	struct aa_profile *profile = __aa_current_profile();
++	struct aa_task_cxt *new_cxt = bprm->cred->security;
++
++	/* bail out if unconfined or not changing profile */
++	if ((new_cxt->profile == profile) ||
++	    (unconfined(new_cxt->profile)))
++		return;
++
++	current->pdeath_signal = 0;
++
++	/* reset soft limits and set hard limits for the new profile */
++	__aa_transition_rlimits(profile, new_cxt->profile);
++}
++
++/**
++ * apparmor_bprm_commited_cred - do cleanup after new creds committed
++ * @bprm: binprm for the exec  (NOT NULL)
++ */
++void apparmor_bprm_committed_creds(struct linux_binprm *bprm)
++{
++	/* TODO: cleanup signals - ipc mediation */
++	return;
++}
++
++/*
++ * Functions for self directed profile change
++ */
++
++/**
++ * new_compound_name - create an hname with @n2 appended to @n1
++ * @n1: base of hname  (NOT NULL)
++ * @n2: name to append (NOT NULL)
++ *
++ * Returns: new name or NULL on error
++ */
++static char *new_compound_name(const char *n1, const char *n2)
++{
++	char *name = kmalloc(strlen(n1) + strlen(n2) + 3, GFP_KERNEL);
++	if (name)
++		sprintf(name, "%s//%s", n1, n2);
++	return name;
++}
++
++/**
++ * aa_change_hat - change hat to/from subprofile
++ * @hats: vector of hat names to try changing into (MAYBE NULL if @count == 0)
++ * @count: number of hat names in @hats
++ * @token: magic value to validate the hat change
++ * @permtest: true if this is just a permission test
++ *
++ * Change to the first profile specified in @hats that exists, and store
++ * the @hat_magic in the current task context.  If the count == 0 and the
++ * @token matches that stored in the current task context, return to the
++ * top level profile.
++ *
++ * Returns %0 on success, error otherwise.
++ */
++int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
++{
++	const struct cred *cred;
++	struct aa_task_cxt *cxt;
++	struct aa_profile *profile, *previous_profile, *hat = NULL;
++	char *name = NULL;
++	int i;
++	struct file_perms perms = {};
++	const char *target = NULL, *info = NULL;
++	int error = 0;
++
++	/* released below */
++	cred = get_current_cred();
++	cxt = cred->security;
++	profile = aa_cred_profile(cred);
++	previous_profile = cxt->previous;
++
++	if (unconfined(profile)) {
++		info = "unconfined";
++		error = -EPERM;
++		goto audit;
++	}
++
++	if (count) {
++		/* attempting to change into a new hat or switch to a sibling */
++		struct aa_profile *root;
++		root = PROFILE_IS_HAT(profile) ? profile->parent : profile;
++
++		/* find first matching hat */
++		for (i = 0; i < count && !hat; i++)
++			/* released below */
++			hat = aa_find_child(root, hats[i]);
++		if (!hat) {
++			if (!COMPLAIN_MODE(root) || permtest) {
++				if (list_empty(&root->base.profiles))
++					error = -ECHILD;
++				else
++					error = -ENOENT;
++				goto out;
++			}
++
++			/*
++			 * In complain mode and failed to match any hats.
++			 * Audit the failure is based off of the first hat
++			 * supplied.  This is done due how userspace
++			 * interacts with change_hat.
++			 *
++			 * TODO: Add logging of all failed hats
++			 */
++
++			/* freed below */
++			name = new_compound_name(root->base.hname, hats[0]);
++			target = name;
++			/* released below */
++			hat = aa_new_null_profile(profile, 1);
++			if (!hat) {
++				info = "failed null profile create";
++				error = -ENOMEM;
++				goto audit;
++			}
++		} else {
++			target = hat->base.hname;
++			if (!PROFILE_IS_HAT(hat)) {
++				info = "target not hat";
++				error = -EPERM;
++				goto audit;
++			}
++		}
++
++		error = may_change_ptraced_domain(current, hat);
++		if (error) {
++			info = "ptraced";
++			error = -EPERM;
++			goto audit;
++		}
++
++		if (!permtest) {
++			error = aa_set_current_hat(hat, token);
++			if (error == -EACCES)
++				/* kill task in case of brute force attacks */
++				perms.kill = AA_MAY_CHANGEHAT;
++			else if (name && !error)
++				/* reset error for learning of new hats */
++				error = -ENOENT;
++		}
++	} else if (previous_profile) {
++		/* Return to saved profile.  Kill task if restore fails
++		 * to avoid brute force attacks
++		 */
++		target = previous_profile->base.hname;
++		error = aa_restore_previous_profile(token);
++		perms.kill = AA_MAY_CHANGEHAT;
++	} else
++		/* ignore restores when there is no saved profile */
++		goto out;
++
++audit:
++	if (!permtest)
++		error = aa_audit_file(profile, &perms, GFP_KERNEL,
++				      OP_CHANGE_HAT, AA_MAY_CHANGEHAT, NULL,
++				      target, 0, info, error);
++
++out:
++	aa_put_profile(hat);
++	kfree(name);
++	put_cred(cred);
++
++	return error;
++}
++
++/**
++ * aa_change_profile - perform a one-way profile transition
++ * @ns_name: name of the profile namespace to change to (MAYBE NULL)
++ * @hname: name of profile to change to (MAYBE NULL)
++ * @onexec: whether this transition is to take place immediately or at exec
++ * @permtest: true if this is just a permission test
++ *
++ * Change to new profile @name.  Unlike with hats, there is no way
++ * to change back.  If @name isn't specified the current profile name is
++ * used.
++ * If @onexec then the transition is delayed until
++ * the next exec.
++ *
++ * Returns %0 on success, error otherwise.
++ */
++int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
++		      bool permtest)
++{
++	const struct cred *cred;
++	struct aa_task_cxt *cxt;
++	struct aa_profile *profile, *target = NULL;
++	struct aa_namespace *ns = NULL;
++	struct file_perms perms = {};
++	const char *name = NULL, *info = NULL;
++	int op, error = 0;
++	u32 request;
++
++	if (!hname && !ns_name)
++		return -EINVAL;
++
++	if (onexec) {
++		request = AA_MAY_ONEXEC;
++		op = OP_CHANGE_ONEXEC;
++	} else {
++		request = AA_MAY_CHANGE_PROFILE;
++		op = OP_CHANGE_PROFILE;
++	}
++
++	cred = get_current_cred();
++	cxt = cred->security;
++	profile = aa_cred_profile(cred);
++
++	if (ns_name) {
++		/* released below */
++		ns = aa_find_namespace(profile->ns, ns_name);
++		if (!ns) {
++			/* we don't create new namespace in complain mode */
++			name = ns_name;
++			info = "namespace not found";
++			error = -ENOENT;
++			goto audit;
++		}
++	} else
++		/* released below */
++		ns = aa_get_namespace(profile->ns);
++
++	/* if the name was not specified, use the name of the current profile */
++	if (!hname) {
++		if (unconfined(profile))
++			hname = ns->unconfined->base.hname;
++		else
++			hname = profile->base.hname;
++	}
++
++	perms = change_profile_perms(profile, ns, hname, request,
++				     profile->file.start);
++	if (!(perms.allow & request)) {
++		error = -EACCES;
++		goto audit;
++	}
++
++	/* released below */
++	target = aa_lookup_profile(ns, hname);
++	if (!target) {
++		info = "profile not found";
++		error = -ENOENT;
++		if (permtest || !COMPLAIN_MODE(profile))
++			goto audit;
++		/* released below */
++		target = aa_new_null_profile(profile, 0);
++		if (!target) {
++			info = "failed null profile create";
++			error = -ENOMEM;
++			goto audit;
++		}
++	}
++
++	/* check if tracing task is allowed to trace target domain */
++	error = may_change_ptraced_domain(current, target);
++	if (error) {
++		info = "ptrace prevents transition";
++		goto audit;
++	}
++
++	if (permtest)
++		goto audit;
++
++	if (onexec)
++		error = aa_set_current_onexec(target);
++	else
++		error = aa_replace_current_profile(target);
++
++audit:
++	if (!permtest)
++		error = aa_audit_file(profile, &perms, GFP_KERNEL, op, request,
++				      name, hname, 0, info, error);
++
++	aa_put_namespace(ns);
++	aa_put_profile(target);
++	put_cred(cred);
++
++	return error;
++}
+diff --git a/security/apparmor/include/domain.h b/security/apparmor/include/domain.h
 new file mode 100644
-index 0000000..be36fea
+index 0000000..de04464
 --- /dev/null
-+++ b/security/apparmor/include/file.h
-@@ -0,0 +1,217 @@
++++ b/security/apparmor/include/domain.h
+@@ -0,0 +1,36 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor file mediation function definitions.
++ * This file contains AppArmor security domain transition function definitions.
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -523,209 +894,28 @@ index 0000000..be36fea
 + * License.
 + */
 +
-+#ifndef __AA_FILE_H
-+#define __AA_FILE_H
++#include <linux/binfmts.h>
++#include <linux/types.h>
 +
-+#include <linux/path.h>
++#ifndef __AA_DOMAIN_H
++#define __AA_DOMAIN_H
 +
-+#include "domain.h"
-+#include "match.h"
-+
-+struct aa_profile;
-+
-+/*
-+ * We use MAY_EXEC, MAY_WRITE, MAY_READ, MAY_APPEND and the following flags
-+ * for profile permissions
-+ */
-+#define AA_MAY_CREATE                  0x0010
-+#define AA_MAY_DELETE                  0x0020
-+#define AA_MAY_META_WRITE              0x0040
-+#define AA_MAY_META_READ               0x0080
-+
-+#define AA_MAY_CHMOD                   0x0100
-+#define AA_MAY_CHOWN                   0x0200
-+#define AA_MAY_LOCK                    0x0400
-+#define AA_EXEC_MMAP                   0x0800
-+
-+#define AA_MAY_LINK			0x1000
-+#define AA_LINK_SUBSET			AA_MAY_LOCK	/* overlaid */
-+#define AA_MAY_ONEXEC			0x40000000	/* exec allows onexec */
-+#define AA_MAY_CHANGE_PROFILE		0x80000000
-+#define AA_MAY_CHANGEHAT		0x80000000	/* ctrl auditing only */
-+
-+#define AA_AUDIT_FILE_MASK	(MAY_READ | MAY_WRITE | MAY_EXEC | MAY_APPEND |\
-+				 AA_MAY_CREATE | AA_MAY_DELETE |	\
-+				 AA_MAY_META_READ | AA_MAY_META_WRITE | \
-+				 AA_MAY_CHMOD | AA_MAY_CHOWN | AA_MAY_LOCK | \
-+				 AA_EXEC_MMAP | AA_MAY_LINK)
-+
-+/*
-+ * The xindex is broken into 3 parts
-+ * - index - an index into either the exec name table or the variable table
-+ * - exec type - which determines how the executable name and index are used
-+ * - flags - which modify how the destination name is applied
-+ */
-+#define AA_X_INDEX_MASK		0x03ff
-+
-+#define AA_X_TYPE_MASK		0x0c00
-+#define AA_X_TYPE_SHIFT		10
-+#define AA_X_NONE		0x0000
-+#define AA_X_NAME		0x0400	/* use executable name px */
-+#define AA_X_TABLE		0x0800	/* use a specified name ->n# */
-+
-+#define AA_X_UNSAFE		0x1000
-+#define AA_X_CHILD		0x2000	/* make >AA_X_NONE apply to children */
-+#define AA_X_INHERIT		0x4000
-+#define AA_X_UNCONFINED		0x8000
-+
-+/* AA_SECURE_X_NEEDED - is passed in the bprm->unsafe field */
-+#define AA_SECURE_X_NEEDED	0x8000
-+
-+/* need to make conditional which ones are being set */
-+struct path_cond {
-+	uid_t uid;
-+	umode_t mode;
++struct aa_domain {
++	int size;
++	char **table;
 +};
 +
-+/* struct file_perms - file permission
-+ * @allow: mask of permissions that are allowed
-+ * @audit: mask of permissions to force an audit message for
-+ * @quiet: mask of permissions to quiet audit messages for
-+ * @kill: mask of permissions that when matched will kill the task
-+ * @xindex: exec transition index if @allow contains MAY_EXEC
-+ *
-+ * The @audit and @queit mask should be mutually exclusive.
-+ */
-+struct file_perms {
-+	u32 allow;
-+	u32 audit;
-+	u32 quiet;
-+	u32 kill;
-+	u16 xindex;
-+};
++int apparmor_bprm_set_creds(struct linux_binprm *bprm);
++int apparmor_bprm_secureexec(struct linux_binprm *bprm);
++void apparmor_bprm_committing_creds(struct linux_binprm *bprm);
++void apparmor_bprm_committed_creds(struct linux_binprm *bprm);
 +
-+extern struct file_perms nullperms;
++void aa_free_domain_entries(struct aa_domain *domain);
++int aa_change_hat(const char *hats[], int count, u64 token, bool permtest);
++int aa_change_profile(const char *ns_name, const char *name, bool onexec,
++		      bool permtest);
 +
-+#define COMBINED_PERM_MASK(X) ((X).allow | (X).audit | (X).quiet | (X).kill)
-+
-+/* FIXME: split perms from dfa and match this to description
-+ *        also add delegation info.
-+ */
-+static inline u16 dfa_map_xindex(u16 mask)
-+{
-+	u16 old_index = (mask >> 10) & 0xf;
-+	u16 index = 0;
-+
-+	if (mask & 0x100)
-+		index |= AA_X_UNSAFE;
-+	if (mask & 0x200)
-+		index |= AA_X_INHERIT;
-+	if (mask & 0x80)
-+		index |= AA_X_UNCONFINED;
-+
-+	if (old_index == 1) {
-+		index |= AA_X_UNCONFINED;
-+	} else if (old_index == 2) {
-+		index |= AA_X_NAME;
-+	} else if (old_index == 3) {
-+		index |= AA_X_NAME | AA_X_CHILD;
-+	} else {
-+		index |= AA_X_TABLE;
-+		index |= old_index - 4;
-+	}
-+
-+	return index;
-+}
-+
-+/*
-+ * map old dfa inline permissions to new format
-+ */
-+#define dfa_user_allow(dfa, state) (((ACCEPT_TABLE(dfa)[state]) & 0x7f) | \
-+				    ((ACCEPT_TABLE(dfa)[state]) & 0x80000000))
-+#define dfa_user_audit(dfa, state) ((ACCEPT_TABLE2(dfa)[state]) & 0x7f)
-+#define dfa_user_quiet(dfa, state) (((ACCEPT_TABLE2(dfa)[state]) >> 7) & 0x7f)
-+#define dfa_user_xindex(dfa, state) \
-+	(dfa_map_xindex(ACCEPT_TABLE(dfa)[state] & 0x3fff))
-+
-+#define dfa_other_allow(dfa, state) ((((ACCEPT_TABLE(dfa)[state]) >> 14) & \
-+				      0x7f) |				\
-+				     ((ACCEPT_TABLE(dfa)[state]) & 0x80000000))
-+#define dfa_other_audit(dfa, state) (((ACCEPT_TABLE2(dfa)[state]) >> 14) & 0x7f)
-+#define dfa_other_quiet(dfa, state) \
-+	((((ACCEPT_TABLE2(dfa)[state]) >> 7) >> 14) & 0x7f)
-+#define dfa_other_xindex(dfa, state) \
-+	dfa_map_xindex((ACCEPT_TABLE(dfa)[state] >> 14) & 0x3fff)
-+
-+int aa_audit_file(struct aa_profile *profile, struct file_perms *perms,
-+		  gfp_t gfp, int op, u32 request, const char *name,
-+		  const char *target, uid_t ouid, const char *info, int error);
-+
-+/**
-+ * struct aa_file_rules - components used for file rule permissions
-+ * @dfa: dfa to match path names and conditionals against
-+ * @perms: permission table indexed by the matched state accept entry of @dfa
-+ * @trans: transition table for indexed by named x transitions
-+ *
-+ * File permission are determined by matching a path against @dfa and then
-+ * then using the value of the accept entry for the matching state as
-+ * an index into @perms.  If a named exec transition is required it is
-+ * looked up in the transition table.
-+ */
-+struct aa_file_rules {
-+	unsigned int start;
-+	struct aa_dfa *dfa;
-+	/* struct perms perms; */
-+	struct aa_domain trans;
-+	/* TODO: add delegate table */
-+};
-+
-+unsigned int aa_str_perms(struct aa_dfa *dfa, unsigned int start,
-+			  const char *name, struct path_cond *cond,
-+			  struct file_perms *perms);
-+
-+int aa_path_perm(int op, struct aa_profile *profile, struct path *path,
-+		 int flags, u32 request, struct path_cond *cond);
-+
-+int aa_path_link(struct aa_profile *profile, struct dentry *old_dentry,
-+		 struct path *new_dir, struct dentry *new_dentry);
-+
-+int aa_file_perm(int op, struct aa_profile *profile, struct file *file,
-+		 u32 request);
-+
-+static inline void aa_free_file_rules(struct aa_file_rules *rules)
-+{
-+	aa_put_dfa(rules->dfa);
-+	aa_free_domain_entries(&rules->trans);
-+}
-+
-+#define ACC_FMODE(x) (("\000\004\002\006"[(x)&O_ACCMODE]) | (((x) << 1) & 0x40))
-+
-+/* from namei.c */
-+#define MAP_OPEN_FLAGS(x) ((((x) + 1) & O_ACCMODE) ? (x) + 1 : (x))
-+
-+/**
-+ * aa_map_file_perms - map file flags to AppArmor permissions
-+ * @file: open file to map flags to AppArmor permissions
-+ *
-+ * Returns: apparmor permission set for the file
-+ */
-+static inline u32 aa_map_file_to_perms(struct file *file)
-+{
-+	int flags = MAP_OPEN_FLAGS(file->f_flags);
-+	u32 perms = ACC_FMODE(file->f_mode);
-+
-+	if ((flags & O_APPEND) && (perms & MAY_WRITE))
-+		perms = (perms & ~MAY_WRITE) | MAY_APPEND;
-+	/* trunc implies write permission */
-+	if (flags & O_TRUNC)
-+		perms |= MAY_WRITE;
-+	if (flags & O_CREAT)
-+		perms |= AA_MAY_CREATE;
-+
-+	return perms;
-+}
-+
-+#endif /* __AA_FILE_H */
++#endif /* __AA_DOMAIN_H */
 -- 
 1.7.1
 
