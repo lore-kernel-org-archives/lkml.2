@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab0G2Rab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:30:31 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:36300 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754186Ab0G2Raa (ORCPT
+	id S1752202Ab0G2Rdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:33:35 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53831 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751173Ab0G2Rdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:30:30 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: kcfl9IMVM1kpEP2BCIWV0LES5CJIFxcb8DKLP6ln_t7EDkx
- kNAQMz8bzBG2ve703SZfU4QrQShWU5IilgxqAExPuBWwDyRk0vnJRoinRHFZ
- .7llfFHRYSAI6ReUme7HGWWk.ZnaZNcU1xYhrW5uqM1tt14B_f8xaGYeYCgT
- 5IUErgBWAMl3MBEQ.m5adHR3t.Oo1XT.n_M4LXnh6RyLi5IxgaKFtebVDw.E
- iA8nRe3bFUbPNmJh.zx5MN05mwA08quXAvbUL
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 29 Jul 2010 12:30:23 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Minchan Kim <minchan.kim@gmail.com>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-In-Reply-To: <20100729170313.GB16420@barrios-desktop>
-Message-ID: <alpine.DEB.2.00.1007291222410.17734@router.home>
-References: <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com> <alpine.DEB.2.00.1007270929290.28648@router.home> <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com> <alpine.DEB.2.00.1007281005440.21717@router.home>
- <20100728155617.GA5401@barrios-desktop> <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop> <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home>
- <20100729170313.GB16420@barrios-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 29 Jul 2010 13:33:33 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+Date: Thu, 29 Jul 2010 19:33:18 +0200
+User-Agent: KMail/1.9.10
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>
+References: <201007282334.08063.rjw@sisk.pl> <20100729142245.4AA5.A69D9226@jp.fujitsu.com> <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201007291933.21568.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Jul 2010, Minchan Kim wrote:
-
-> But Russell doesn't want it.
-> Please, look at the discussion.
+On Thursday 29 July 2010 07:24:29 KAMEZAWA Hiroyuki wrote:
+> On Thu, 29 Jul 2010 14:23:33 +0900 (JST)
 >
-> http://www.spinics.net/lists/arm-kernel/msg93026.html
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > Can you please add explicit commenting in the code?
 >
-> In fact, we didn't determine the approache at that time.
-> But I think we can't give up ARM's usecase although sparse model
-> dosn't be desinged to the such granularity. and I think this approach
+> How about this ?
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> At hibernation, all pages-should-be-saved are written into a image (here,
+> swap). Then, swap_map[], memmap etcs are also saved into disks.
+>
+> But, swap allocation happens one by one. So, the final image of swap_map[]
+> is different from saved one and the commit
+> c9e444103b5e7a5a3519f9913f59767f92e33baf changes page's state while
+> assiging swap. Because memory can be modified in hibernation is only
+> not-to-be-save memory. it's a breakage.
+>
+> This patch fixes it by disabling swap entry reuse at hibernation.
 
-The sparse model goes down to page size memmap granularity. The problem
-that you may have is with aligning the maximum allocation unit of the
-page allocator with the section size of sparsemem. If you reduce your
-maximum allocation units then you can get more granularity.
 
-> can solve ARM's FLATMEM's pfn_valid problem which is doing binar search.
+Thanks for the patch, I'm going to test it for a few days. It didn't compile 
+with 2.6.32 (because of missing "usage" parameter) so I tried 2.6.35-rc6 only 
+to find that there's regression since 2.6.34 that causes console font 
+corruption with matroxfb. Almost every new kernel means new regressions on 
+this machine. Looks like something is wrong with the development process...
 
-OMG.
+So at least the patch compiles with 2.6.33 where the console works - so that's 
+going to be tested.
 
+
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/swapfile.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> Index: linux-2.6.34.org/mm/swapfile.c
+> ===================================================================
+> --- linux-2.6.34.org.orig/mm/swapfile.c
+> +++ linux-2.6.34.org/mm/swapfile.c
+> @@ -315,8 +315,15 @@ checks:
+>  	if (offset > si->highest_bit)
+>  		scan_base = offset = si->lowest_bit;
+>
+> -	/* reuse swap entry of cache-only swap if not busy. */
+> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +	/*
+> + 	 * reuse swap entry of cache-only swap if not busy &&
+> + 	 * when we're called via pageout(). At hibernation, swap-reuse
+> + 	 * is harmful because it changes memory status...which may
+> + 	 * be saved already.
+> + 	 */
+> +	if (vm_swap_full()
+> +		&& usage == SWAP_HAS_CACHE
+> +		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  		int swap_was_freed;
+>  		spin_unlock(&swap_lock);
+>  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Ondrej Zary
