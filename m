@@ -1,121 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab0G2S2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:28:43 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:56005 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754742Ab0G2S2l (ORCPT
+	id S1755837Ab0G2Scm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:32:42 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:9434 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913Ab0G2Scl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:28:41 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=lXmcfiEtnV9MvSIDNdZC1LkJK9Rh9w4Ut/6ivpHCQSSTU8HiENYC+7fBZXv95vNiv5tlhyQCV3AU2pi5iEmDXcjZgY5TaaRoAAlQ72T/rpBoykD228xU/NrwcMZnaKeq;
-Date: Thu, 29 Jul 2010 11:28:37 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Kan-Ru Chen <kanru@kanru.info>
-Cc: Enrico Bandiello <enban@postal.uv.es>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Enrico Bandiello <enban@alumni.uv.es>
-Subject: Re: [Bug #16307] i915 in kernel 2.6.35-rc3, high number of wakeups
-Message-ID: <20100729112837.0d010cc7@virtuousgeek.org>
-In-Reply-To: <87sk38b7ai.fsf@anar.kanru.info>
-References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
-	<tneGvaw1wLL.A.mXB.p3XSMB@chimera>
-	<20100723102532.6bfade32@virtuousgeek.org>
-	<4C4AB036.3060003@postal.uv.es>
-	<87sk38b7ai.fsf@anar.kanru.info>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Thu, 29 Jul 2010 14:32:41 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=UPTvrTpCScTNpv9PbwdzofUaN5APfyC683KbAH4TgJ1ANWtiiieZvvCxjSZfT7T0u
+	GcbsJZHU9P+NI+2exC7Aw==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5]  use ID in page cgroup
+References: <20100729184250.acdff587.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100729184606.df7e639f.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 29 Jul 2010 11:31:15 -0700
+Message-ID: <xr9339v2m970.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Jul 2010 10:54:13 +0800
-Kan-Ru Chen <kanru@kanru.info> wrote:
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-> Hi,
-> 
-> On Sat, 24 Jul 2010 11:19:50 +0200, Enrico Bandiello <enban@postal.uv.es> wrote:
-> > On 07/23/2010 07:25 PM, Jesse Barnes wrote:
-> > > On Fri, 23 Jul 2010 13:47:31 +0200 (CEST)
-> > > "Rafael J. Wysocki"<rjw@sisk.pl>  wrote:
-> > >
-> > >> This message has been generated automatically as a part of a summary report
-> > >> of recent regressions.
-> > >>
-> > >> The following bug entry is on the current list of known regressions
-> > >> from 2.6.34.  Please verify if it still should be listed and let the tracking team
-> > >> know (either way).
-> > >>
-> > >>
-> > >> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16307
-> > >> Subject		: i915 in kernel 2.6.35-rc3, high number of wakeups
-> > >> Submitter	: Enrico Bandiello<enban@postal.uv.es>
-> > >> Date		: 2010-06-26 16:57 (28 days old)
-> > >> Message-ID	:<4C26317A.5070309@postal.uv.es>
-> > >> References	: http://marc.info/?l=linux-kernel&m=127757403404259&w=2
-> > >
-> > > Just updated the bug for this one.  Enrico, you say this behavior is
-> > > recent.  Can you bisect between 2.6.34 and when the problem started?
-> > >
-> > Hi. I just tried, but can't find anything useful until now (surely it's 
-> > my fault: it was my first attempt at bisection). Please let me try again 
-> > in the next days.
-> 
-> I also noticed that interrupts keeps high in powertop. I bisected it
-> today:
-> 
-> # bad: [e44a21b7268a022c7749f521c06214145bd161e4] Linux 2.6.35-rc2
-> # good: [e40152ee1e1c7a63f4777791863215e3faa37a86] Linus 2.6.34
-> git bisect start 'v2.6.35-rc2' 'v2.6.34'
-> # good: [2086ca482f89950410527425913ca48d948e9622] i2c-algo-pca: Fix coding style issues
-> git bisect good 2086ca482f89950410527425913ca48d948e9622
-> # bad: [1756ac3d3c41341297ea25b818b7fce505bb2a9a] Merge branch 'virtio' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus
-> git bisect bad 1756ac3d3c41341297ea25b818b7fce505bb2a9a
-> # bad: [ec2a7587e0a91d5c1afe23a0a73edfce06c5e4e0] Merge branch 'msm-video' of git://codeaurora.org/quic/kernel/dwalker/linux-msm
-> git bisect bad ec2a7587e0a91d5c1afe23a0a73edfce06c5e4e0
-> # good: [e0bc5d4a54938eedcde14005210e6c08aa9727e4] Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging
-> git bisect good e0bc5d4a54938eedcde14005210e6c08aa9727e4
-> # good: [ac3ee84c604502240122c47b52f0542ec8774f15] Merge branch 'dbg-early-merge' of git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb
-> git bisect good ac3ee84c604502240122c47b52f0542ec8774f15
-> # bad: [f4b7fb94c576265ceffc43031805ade32fa80c6a] drm/radeon/kms: take vram mutex pointer before derefing object.
-> git bisect bad f4b7fb94c576265ceffc43031805ade32fa80c6a
-> # bad: [0bcb1d844ac638a4c4280f697d5bfac9791e9a70] Merge branch 'drm-radeon-lockup' into drm-core-next
-> git bisect bad 0bcb1d844ac638a4c4280f697d5bfac9791e9a70
-> # bad: [77ffb5979de59efd1a6b280b10d647b09285bee0] drm/i915/pch: Use minimal number of FDI lanes (v2)
-> git bisect bad 77ffb5979de59efd1a6b280b10d647b09285bee0
-> # bad: [ab00a9ef8d4ce7de4d5b15cbf4101feeb8cf7f4d] drm/i915: Un-magic a DPCD register write
-> git bisect bad ab00a9ef8d4ce7de4d5b15cbf4101feeb8cf7f4d
-> # skip: [0f3ee801b332d6ff22285386675fe5aaedf035c3] drm/i915: Allow LVDS on pipe A on gen4+
-> git bisect skip 0f3ee801b332d6ff22285386675fe5aaedf035c3
-> # good: [5bf4c9c469ffc64b85fed1f3d2b0c8b19909ed13] drm/i915: use encoder_list for hotplug callback
-> git bisect good 5bf4c9c469ffc64b85fed1f3d2b0c8b19909ed13
-> # bad: [d275f6614e160fa71d6e2201eb34c9b41fd8473c] drm/i915: Clear the LVDS pipe B select bit when moving the LVDS to pipe A.
-> git bisect bad d275f6614e160fa71d6e2201eb34c9b41fd8473c
-> # good: [c1c43977e6fc789cbde094303fa9ace629a35aca] drm/i915: passing drm connector param for load detection
-> git bisect good c1c43977e6fc789cbde094303fa9ace629a35aca
-> # good: [6443170f6d862a1cc89e61e4bb2410b714b875f4] drm/i915: Remove dead KMS encoder save/restore code.
-> git bisect good 6443170f6d862a1cc89e61e4bb2410b714b875f4
-> 
-> The bisect stopped between d275f66 and 0f3ee80 so I reverted the
-> following three commits:
-> 
-> b3b095b drm/i915: enable LVDS on Cougarpoint
-> d275f66 drm/i915: Clear the LVDS pipe B select bit when moving the LVDS to pipe A.
-> 0f3ee80 drm/i915: Allow LVDS on pipe A on gen4+
-> 
-> Now the powertop only shows about 0.2 interrupts per second. Hope this
-> information is useful.
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> Now, addresses of memory cgroup can be calculated by their ID without complex.
+> This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
+> On 64bit architecture, this offers us more 6bytes room per page_cgroup.
+> Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
+> some light-weight concurrent access.
+>
+> We may able to move this id onto flags field but ...go step by step.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/page_cgroup.h |    3 ++-
+>  mm/memcontrol.c             |   40 +++++++++++++++++++++++++---------------
+>  mm/page_cgroup.c            |    2 +-
+>  3 files changed, 28 insertions(+), 17 deletions(-)
+>
+> Index: mmotm-0727/include/linux/page_cgroup.h
+> ===================================================================
+> --- mmotm-0727.orig/include/linux/page_cgroup.h
+> +++ mmotm-0727/include/linux/page_cgroup.h
+> @@ -12,7 +12,8 @@
+>   */
+>  struct page_cgroup {
+>  	unsigned long flags;
+> -	struct mem_cgroup *mem_cgroup;
+> +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
+> +	unsigned short blk_cgroup;	/* Not Used..but will be. */
+>  	struct page *page;
+>  	struct list_head lru;		/* per cgroup LRU list */
+>  };
+> Index: mmotm-0727/mm/page_cgroup.c
+> ===================================================================
+> --- mmotm-0727.orig/mm/page_cgroup.c
+> +++ mmotm-0727/mm/page_cgroup.c
+> @@ -15,7 +15,7 @@ static void __meminit
+>  __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
+>  {
+>  	pc->flags = 0;
+> -	pc->mem_cgroup = NULL;
+> +	pc->mem_cgroup = 0;
+>  	pc->page = pfn_to_page(pfn);
+>  	INIT_LIST_HEAD(&pc->lru);
+>  }
+> Index: mmotm-0727/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0727.orig/mm/memcontrol.c
+> +++ mmotm-0727/mm/memcontrol.c
+> @@ -376,7 +376,7 @@ struct cgroup_subsys_state *mem_cgroup_c
+>  static struct mem_cgroup_per_zone *
+>  page_cgroup_zoneinfo(struct page_cgroup *pc)
+>  {
+> -	struct mem_cgroup *mem = pc->mem_cgroup;
+> +	struct mem_cgroup *mem = id_to_memcg(pc->mem_cgroup);
+>  	int nid = page_cgroup_nid(pc);
+>  	int zid = page_cgroup_zid(pc);
+>  
+> @@ -581,7 +581,11 @@ static void mem_cgroup_charge_statistics
+>  					 bool charge)
+>  {
+>  	int val = (charge) ? 1 : -1;
+> -
+> +	if (pc->mem_cgroup == 0) {
+> +		show_stack(NULL, NULL);
+> +		printk("charge to 0\n");
+> +		while(1);
+> +	}
+Why hang the task here.  If this is bad then maybe BUG_ON()?
+>  	preempt_disable();
+>  
+>  	if (PageCgroupCache(pc))
+> @@ -718,6 +722,11 @@ static inline bool mem_cgroup_is_root(st
+>  	return (mem == root_mem_cgroup);
+>  }
+>  
+> +static inline bool mem_cgroup_is_rootid(unsigned short id)
+> +{
+> +	return (id == 1);
+> +}
+> +
+>  /*
+>   * Following LRU functions are allowed to be used without PCG_LOCK.
+>   * Operations are called by routine of global LRU independently from memcg.
+> @@ -750,7 +759,7 @@ void mem_cgroup_del_lru_list(struct page
+>  	 */
+>  	mz = page_cgroup_zoneinfo(pc);
+>  	MEM_CGROUP_ZSTAT(mz, lru) -= 1;
+> -	if (mem_cgroup_is_root(pc->mem_cgroup))
+> +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
+>  		return;
+>  	VM_BUG_ON(list_empty(&pc->lru));
+>  	list_del_init(&pc->lru);
+> @@ -777,7 +786,7 @@ void mem_cgroup_rotate_lru_list(struct p
+>  	 */
+>  	smp_rmb();
+>  	/* unused or root page is not rotated. */
+> -	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
+> +	if (!PageCgroupUsed(pc) || mem_cgroup_is_rootid(pc->mem_cgroup))
+>  		return;
+>  	mz = page_cgroup_zoneinfo(pc);
+>  	list_move(&pc->lru, &mz->lists[lru]);
+> @@ -803,7 +812,7 @@ void mem_cgroup_add_lru_list(struct page
+>  	mz = page_cgroup_zoneinfo(pc);
+>  	MEM_CGROUP_ZSTAT(mz, lru) += 1;
+>  	SetPageCgroupAcctLRU(pc);
+> -	if (mem_cgroup_is_root(pc->mem_cgroup))
+> +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
+>  		return;
+>  	list_add(&pc->lru, &mz->lists[lru]);
+>  }
+> @@ -1471,7 +1480,7 @@ void mem_cgroup_update_file_mapped(struc
+>  		return;
+>  
+>  	lock_page_cgroup(pc);
+> -	mem = pc->mem_cgroup;
+> +	mem = id_to_memcg(pc->mem_cgroup);
+>  	if (!mem || !PageCgroupUsed(pc))
+>  		goto done;
+>  
+> @@ -1859,7 +1868,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
+>  	pc = lookup_page_cgroup(page);
+>  	lock_page_cgroup(pc);
+>  	if (PageCgroupUsed(pc)) {
+> -		mem = pc->mem_cgroup;
+> +		mem = id_to_memcg(pc->mem_cgroup);
+>  		if (mem && !css_tryget(&mem->css))
+>  			mem = NULL;
+>  	} else if (PageSwapCache(page)) {
+> @@ -1895,7 +1904,7 @@ static void __mem_cgroup_commit_charge(s
+>  		return;
+>  	}
+>  
+> -	pc->mem_cgroup = mem;
+> +	pc->mem_cgroup = css_id(&mem->css);
+>  	/*
+>  	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+>  	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+> @@ -1953,7 +1962,7 @@ static void __mem_cgroup_move_account(st
+>  	VM_BUG_ON(PageLRU(pc->page));
+>  	VM_BUG_ON(!PageCgroupLocked(pc));
+>  	VM_BUG_ON(!PageCgroupUsed(pc));
+> -	VM_BUG_ON(pc->mem_cgroup != from);
+> +	VM_BUG_ON(id_to_memcg(pc->mem_cgroup) != from);
+>  
+>  	if (PageCgroupFileMapped(pc)) {
+>  		/* Update mapped_file data for mem_cgroup */
+> @@ -1968,7 +1977,7 @@ static void __mem_cgroup_move_account(st
+>  		mem_cgroup_cancel_charge(from);
+>  
+>  	/* caller should have done css_get */
+> -	pc->mem_cgroup = to;
+> +	pc->mem_cgroup = css_id(&to->css);
+>  	mem_cgroup_charge_statistics(to, pc, true);
+>  	/*
+>  	 * We charges against "to" which may not have any tasks. Then, "to"
+> @@ -1988,7 +1997,7 @@ static int mem_cgroup_move_account(struc
+>  {
+>  	int ret = -EINVAL;
+>  	lock_page_cgroup(pc);
+> -	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
+> +	if (PageCgroupUsed(pc) && id_to_memcg(pc->mem_cgroup) == from) {
+>  		__mem_cgroup_move_account(pc, from, to, uncharge);
+>  		ret = 0;
+>  	}
+> @@ -2327,9 +2336,9 @@ __mem_cgroup_uncharge_common(struct page
+>  
+>  	lock_page_cgroup(pc);
+>  
+> -	mem = pc->mem_cgroup;
+> +	mem = id_to_memcg(pc->mem_cgroup);
+>  
+> -	if (!PageCgroupUsed(pc))
+> +	if (!mem || !PageCgroupUsed(pc))
+Why add the extra !mem check here?
 
-Hm that doesn't make much sense.  Can you collect register dumps using
-intel_reg_dumper between the two cases?  I'd expect the LVDS to be on
-pipe b after the revert, but maybe before the revert we're leaving pipe
-b enabled and getting spurious interrupts?
+Can PageCgroupUsed() return true if mem==NULL?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+>  		goto unlock_out;
+>  
+>  	switch (ctype) {
+> @@ -2572,7 +2581,7 @@ int mem_cgroup_prepare_migration(struct 
+>  	pc = lookup_page_cgroup(page);
+>  	lock_page_cgroup(pc);
+>  	if (PageCgroupUsed(pc)) {
+> -		mem = pc->mem_cgroup;
+> +		mem = id_to_memcg(pc->mem_cgroup);
+>  		css_get(&mem->css);
+>  		/*
+>  		 * At migrating an anonymous page, its mapcount goes down
+> @@ -4396,7 +4405,8 @@ static int is_target_pte_for_mc(struct v
+>  		 * mem_cgroup_move_account() checks the pc is valid or not under
+>  		 * the lock.
+>  		 */
+> -		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
+> +		if (PageCgroupUsed(pc) &&
+> +			id_to_memcg(pc->mem_cgroup) == mc.from) {
+>  			ret = MC_TARGET_PAGE;
+>  			if (target)
+>  				target->page = page;
