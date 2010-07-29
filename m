@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093Ab0G2Qtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 12:49:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51874 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754739Ab0G2Qti (ORCPT
+	id S932086Ab0G2Q5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 12:57:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57231 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab0G2Q5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 12:49:38 -0400
-Date: Thu, 29 Jul 2010 17:49:31 +0100 (BST)
-From: James Simmons <jsimmons@infradead.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Mattia Jona-Lasinio <mattia.jona@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-kernel@vger.kernel.org, lcd-linux-users@lists.sourceforge.net
-Subject: Re: Introducing the LCD-Linux project
-In-Reply-To: <20100728203921.0dd6562d@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LFD.2.00.1007291659400.16616@casper.infradead.org>
-References: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com> <20100722122111.4cf4ca2f@lxorguk.ukuu.org.uk> <AANLkTilKJx18oyc815DhKfPv-Yjdv8UmfJ4WTDxZxaab@mail.gmail.com> <AANLkTimnxkn5eLRHOAs6v_TJE0hM5=dQ3OWaiQP6tPJd@mail.gmail.com>
- <loom.20100724T155117-833@post.gmane.org> <AANLkTi=LAHhHEK3vbtwefroOrpoKpUs5B5=iu5_asMp6@mail.gmail.com> <AANLkTimHQ5DoqXikCu7=Nse16axKYYTJZEBJsSxFEH2y@mail.gmail.com> <20100728203921.0dd6562d@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 29 Jul 2010 12:57:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=FWmJy3GSoYSbvsupUT1JwNqzrNxueB43OooL14OWuHjiGqdUuResPSuEsnrIjoz4M7
+         GlZ6sEF39NGCVFzE6fL9ya9S9y8scnZ1lm3NbmZGXtV4MNkC4LJVbBw0L2nwBC+9hGwn
+         1JvcE3VFEcqhzKUW0MyIn3Vl+MjuDnpeZqSbU=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1280422122.17322.14.camel@groeck-laptop>
+References: <1280422122.17322.14.camel@groeck-laptop>
+From: Matt Turner <mattst88@gmail.com>
+Date: Thu, 29 Jul 2010 12:56:54 -0400
+Message-ID: <AANLkTi=zaf-hGOuNX05Qq+dw3Wq_xYxT5EvKTS_dRV0s@mail.gmail.com>
+Subject: Re: alpha defconfig build broken in 2.6.35-rc6
+To: guenter.roeck@ericsson.com
+Cc: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org,
+        "Morten H. Larsen" <m-larsen@post6.tele.dk>,
+        Richard Henderson <rth@twiddle.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 29, 2010 at 12:48 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+> During unrelated testing, I noticed that the alpha defconfig build is
+> broken in 2.6.35-rc6. I get the following error message.
+>
+> arch/alpha/kernel/built-in.o: In function `cia_cab_init_pci':
+> /opt/scratch/groeck/linux-2.6/arch/alpha/kernel/sys_cabriolet.c:249:
+> undefined reference to `ns87312_enable_ide'
+> /opt/scratch/groeck/linux-2.6/arch/alpha/kernel/sys_cabriolet.c:249:
+> undefined reference to `ns87312_enable_ide'
+> arch/alpha/kernel/built-in.o: In function `cabriolet_init_pci':
+> /opt/scratch/groeck/linux-2.6/arch/alpha/kernel/sys_cabriolet.c:242:
+> undefined reference to `ns87312_enable_ide'
+> /opt/scratch/groeck/linux-2.6/arch/alpha/kernel/sys_cabriolet.c:242:
+> undefined reference to `ns87312_enable_ide'
+> arch/alpha/kernel/built-in.o: In function `takara_init_pci':
+> /opt/scratch/groeck/linux-2.6/arch/alpha/kernel/sys_takara.c:267:
+> undefined reference to `ns87312_enable_ide'
+> arch/alpha/kernel/built-in.o:/opt/scratch/groeck/linux-2.6/arch/alpha/kernel/sys_takara.c:267: more undefined references to `ns87312_enable_ide' follow
+>
+> Not surprising since ns87312.c and thus ns87312_enable_ide() no longer
+> exist. The problem was introduced with commit
+> 932e0c201d28a728e25d3b641aa95bd28ceb08b4 (alpha: Detect Super IO chip,
+> no IDE on Avanti, enable EPP19).
+>
+> Guenter
 
-> > was born. Implementing this  in the standard Linux terminal emulation
-> > would require
-> > a rewrite of most of the code, which I personally would do only if
-> > there is some interest from
-> > the community in improving the standard Linux console
-> 
-> There is a great deal of interest. Most of the console (as in
-> framebuffer) activity moved to the 3D direct rendering world some time
-> ago.
+Ah, thanks for the report. Either I or Morten will knock this out quickly.
 
-Really. I didn't expect the console to be of much interest.
- 
-> Let's start at the beginning. What console layer things need fixing to
-> make the LCD Linux project able to use them ?
-> 
-> Multiple displays live at once is an obvious one - the 3D graphics folks
-> also want some of that too.
-
-Okay you asked for it. 
-
-1) To do multiple displays will require the console tool updates.
-
-2) Kill the big ugly console lock. One lock for not only multiple 
-   VTs but even multiple types of consoles is horrible. I seen on 
-   embedded board using the framebuffer device take the console
-   lock thus block the serial port.
-
-3) Invert the VT layer. Currently the console/printk driver is on top of
-   the tty layer. It would be nice to be able to only use a very light 
-   weight vt printk without the VT tty on top for embedded platforms.
-
-4) Seperate out the VT emulation layer. Related to 3.
-
-5) Multiple independent VT support. Which brings up the question what 
-   should the mapping of VCs to a VT look like. 
-
-6) A nice scrollback buffer on the VT layer level instead of the hacks we 
-   have in fbcon and vgacon.
-
+Thanks,
+Matt
