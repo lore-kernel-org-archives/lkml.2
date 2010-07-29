@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615Ab0G2Oa2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 10:30:28 -0400
-Received: from xenotime.net ([72.52.115.56]:42413 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757340Ab0G2Oa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 10:30:27 -0400
-Date: Thu, 29 Jul 2010 07:30:16 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH] kconfig: use long options in conf
-Message-Id: <20100729073016.ba265b59.rdunlap@xenotime.net>
-In-Reply-To: <4C515318.40706@suse.cz>
-References: <20100725213808.GA5814@merkur.ravnborg.org>
-	<20100725214021.GD5834@merkur.ravnborg.org>
-	<4C4EFE80.7050808@suse.cz>
-	<20100728203622.GA32086@merkur.ravnborg.org>
-	<4C51473A.4000605@suse.cz>
-	<20100729093946.GA6725@merkur.ravnborg.org>
-	<4C515318.40706@suse.cz>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757642Ab0G2OdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 10:33:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757537Ab0G2OdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 10:33:14 -0400
+Date: Thu, 29 Jul 2010 17:27:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, randy.dunlap@oracle.com, arnd@arndb.de,
+        chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de,
+        avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
+Subject: Re: [PATCH V3] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100729142705.GA25879@redhat.com>
+References: <4c40d618./j7HFMCg9NusCIiB%pugs@cisco.com>
+ <201007271513.15093.pugs@cisco.com>
+ <20100727235322.GB19930@redhat.com>
+ <201007281414.22335.pugs@cisco.com>
+ <1280354222.3919.12.camel@x201>
+ <20100728215739.GA9671@redhat.com>
+ <1280355199.3919.22.camel@x201>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280355199.3919.22.camel@x201>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 12:08:24 +0200 Michal Marek wrote:
-
-> On 29.7.2010 11:39, Sam Ravnborg wrote:
-> > I had in mind to deprecate randconfig in favour of allrandconfig
-> > to get more consitency in the names.
-> > But I failed to document this in the changelog.
+On Wed, Jul 28, 2010 at 04:13:19PM -0600, Alex Williamson wrote:
+> On Thu, 2010-07-29 at 00:57 +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jul 28, 2010 at 03:57:02PM -0600, Alex Williamson wrote:
+> > > 
+> > > Something like GET_MSIX_VECTORS seems like a user library routine to me.
+> > > The PCI config space is well specified and if we try to do more than
+> > > shortcut trivial operations (like getting the BAR length), we risk
+> > > losing functionality.  And for my purposes, translating to and from a
+> > > made up API to PCI for the guest seems like a pain.
 > > 
-> > I can submit the following as a real patch if you agree.
+> > Won't a userspace library do just as well for you?
 > 
-> To me it seems like a change for the sake of change :), but if you like
-> to have the targets named all*config consistenly, I'm OK with it.
+> You mean aside from qemu's reluctance to add dependencies for more
+> libraries?
 
+Main reason is portability. So as long as it's kvm-only stuff, they
+likely won't care.
 
-Well, there are scripts that know the old name, so if it's just change
-for the sake of change, let's not.
+> My only concern is that I want enough virtualized/raw config
+> space that I'm not always translating PCI config accesses from the guest
+> into some userspace API.  If it makes sense to do this for things like
+> MSI, since I need someone to figure out what resources can actually be
+> allocated on the host, then maybe the library makes sense for that.
+> Then again, if every user needs to do this, let the vfio kernel driver
+> check what it can get and virtualize the available MSIs in exposed
+> config space, and my driver would be even happier.
+> 
+> Alex
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+It would?  guest driver might or might not work if you reduce the number
+of vectors for device.  So I think you need an API to find out whether
+all vectors can be allocated.
+
+And these are examples of why virtualizing is wrong:
+1. hides real hardware
+2. no way to report errors
+
+-- 
+MST
