@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757029Ab0G2LBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:01:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58755 "EHLO mga11.intel.com"
+	id S1757094Ab0G2LCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:02:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14693 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756907Ab0G2LBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:01:25 -0400
+	id S1756907Ab0G2LBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 07:01:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,279,1278313200"; 
-   d="scan'208";a="590877540"
+   d="scan'208";a="590877617"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v8 06/16] Use callback to deal with skb_release_data() specially.
-Date: Thu, 29 Jul 2010 19:14:38 +0800
-Message-Id: <1280402088-5849-7-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC PATCH v8 16/16] An example how to alloc user buffer based on napi_gro_frags() interface.
+Date: Thu, 29 Jul 2010 19:14:48 +0800
+Message-Id: <1280402088-5849-17-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1280402088-5849-6-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1280402088-5849-16-git-send-email-xiaohui.xin@intel.com>
 References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
  <1280402088-5849-2-git-send-email-xiaohui.xin@intel.com>
  <1280402088-5849-3-git-send-email-xiaohui.xin@intel.com>
  <1280402088-5849-4-git-send-email-xiaohui.xin@intel.com>
  <1280402088-5849-5-git-send-email-xiaohui.xin@intel.com>
  <1280402088-5849-6-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-7-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-8-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-9-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-10-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-11-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-12-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-13-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-14-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-15-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-16-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-    If buffer is external, then use the callback to destruct
-    buffers.
+This example is made on ixgbe driver which using napi_gro_frags().
+It can get buffers from guest side directly using netdev_alloc_page()
+and release guest buffers using netdev_free_page().
 
-    Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-    Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-    Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/skbuff.h |    3 ++-
- net/core/skbuff.c      |    8 ++++++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
+ drivers/net/ixgbe/ixgbe_main.c |   19 +++++++++++++++----
+ 1 files changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 74af06c..ab29675 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -197,10 +197,11 @@ struct skb_shared_info {
- 	union skb_shared_tx tx_flags;
- 	struct sk_buff	*frag_list;
- 	struct skb_shared_hwtstamps hwtstamps;
--	skb_frag_t	frags[MAX_SKB_FRAGS];
- 	/* Intermediate layers must ensure that destructor_arg
- 	 * remains valid until skb destructor */
- 	void *		destructor_arg;
+diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
+index cfe6853..de5c6d0 100644
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -691,7 +691,14 @@ static inline void ixgbe_release_rx_desc(struct ixgbe_hw *hw,
+ static bool is_rx_buffer_mapped_as_page(struct ixgbe_rx_buffer *bi,
+ 					struct net_device *dev)
+ {
+-	return true;
++	return dev_is_mpassthru(dev);
++}
 +
-+	skb_frag_t	frags[MAX_SKB_FRAGS];
- };
- 
- /* The structure is for a skb which pages may point to
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 93c4e06..117d82b 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -217,6 +217,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	shinfo->gso_type = 0;
- 	shinfo->ip6_frag_id = 0;
- 	shinfo->tx_flags.flags = 0;
-+	shinfo->destructor_arg = NULL;
- 	skb_frag_list_init(skb);
- 	memset(&shinfo->hwtstamps, 0, sizeof(shinfo->hwtstamps));
- 
-@@ -350,6 +351,13 @@ static void skb_release_data(struct sk_buff *skb)
- 		if (skb_has_frags(skb))
- 			skb_drop_fraglist(skb);
- 
-+		if (skb->dev && dev_is_mpassthru(skb->dev)) {
-+			struct skb_ext_page *ext_page =
-+				skb_shinfo(skb)->destructor_arg;
-+			if (ext_page && ext_page->dtor)
-+				ext_page->dtor(ext_page);
-+		}
-+
- 		kfree(skb->head);
- 	}
++static u32 get_page_skb_offset(struct net_device *dev)
++{
++	if (!dev_is_mpassthru(dev))
++		return 0;
++	return dev->mp_port->vnet_hlen;
  }
+ 
+ /**
+@@ -764,7 +771,8 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
+ 				adapter->alloc_rx_page_failed++;
+ 				goto no_buffers;
+ 			}
+-			bi->page_skb_offset = 0;
++			bi->page_skb_offset =
++				get_page_skb_offset(adapter->netdev);
+ 			bi->dma = pci_map_page(pdev, bi->page_skb,
+ 					bi->page_skb_offset,
+ 					(PAGE_SIZE / 2),
+@@ -899,8 +907,10 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 			len = le16_to_cpu(rx_desc->wb.upper.length);
+ 		}
+ 
+-		if (is_no_buffer(rx_buffer_info))
++		if (is_no_buffer(rx_buffer_info)) {
++			printk("no buffers\n");
+ 			break;
++		}
+ 
+ 		cleaned = true;
+ 
+@@ -962,7 +972,8 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 			                   upper_len);
+ 
+ 			if ((rx_ring->rx_buf_len > (PAGE_SIZE / 2)) ||
+-			    (page_count(rx_buffer_info->page) != 1))
++			    (page_count(rx_buffer_info->page) != 1) ||
++				dev_is_mpassthru(netdev))
+ 				rx_buffer_info->page = NULL;
+ 			else
+ 				get_page(rx_buffer_info->page);
 -- 
 1.5.4.4
 
