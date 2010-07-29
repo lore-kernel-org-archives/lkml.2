@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757068Ab0G2LBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 07:01:52 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:32824 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1757051Ab0G2LBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 07:01:50 -0400
-X-Authenticated: #4630777
-X-Provags-ID: V01U2FsdGVkX19xVZtqdpRxjQfdPWFkQAn8U15QGg/7G3VN/3hLSi
-	I1AgefUgFGn6OS
-Date: Thu, 29 Jul 2010 13:01:36 +0200
-From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
-To: tyhicks@linux.vnet.ibm.com
-Cc: kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ecryptfs (repost): release reference to lower mount if
-	interpose fails
-Message-ID: <20100729110136.GC8337@lsanfilippo.unix.rd.tt.avira.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Y-GMX-Trusted: 0
+	id S1757029Ab0G2LBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 07:01:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58755 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756907Ab0G2LBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 07:01:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,279,1278313200"; 
+   d="scan'208";a="590877540"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [RFC PATCH v8 06/16] Use callback to deal with skb_release_data() specially.
+Date: Thu, 29 Jul 2010 19:14:38 +0800
+Message-Id: <1280402088-5849-7-git-send-email-xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.5.4.4
+In-Reply-To: <1280402088-5849-6-git-send-email-xiaohui.xin@intel.com>
+References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-2-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-3-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-4-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-5-git-send-email-xiaohui.xin@intel.com>
+ <1280402088-5849-6-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-In ecryptfs_lookup_and_interpose_lower() the lower mount is not decremented
-if allocation of a dentry info struct failed. As a result the lower filesystem
-cant be unmounted any more (since it is considered busy). This patch corrects
-the reference counting.
+    If buffer is external, then use the callback to destruct
+    buffers.
 
-Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+    Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+    Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+    Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
-This patch is against 2.6.35-rc5.
+ include/linux/skbuff.h |    3 ++-
+ net/core/skbuff.c      |    8 ++++++++
+ 2 files changed, 10 insertions(+), 1 deletions(-)
 
---- a/fs/ecryptfs/inode.c	2010-07-12 23:55:33.000000000 +0200
-+++ b/fs/ecryptfs/inode.c	2010-07-19 19:21:16.000000000 +0200
-@@ -264,7 +264,7 @@ int ecryptfs_lookup_and_interpose_lower(
- 		printk(KERN_ERR "%s: Out of memory whilst attempting "
- 		       "to allocate ecryptfs_dentry_info struct\n",
- 			__func__);
--		goto out_dput;
-+		goto out_put;
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 74af06c..ab29675 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -197,10 +197,11 @@ struct skb_shared_info {
+ 	union skb_shared_tx tx_flags;
+ 	struct sk_buff	*frag_list;
+ 	struct skb_shared_hwtstamps hwtstamps;
+-	skb_frag_t	frags[MAX_SKB_FRAGS];
+ 	/* Intermediate layers must ensure that destructor_arg
+ 	 * remains valid until skb destructor */
+ 	void *		destructor_arg;
++
++	skb_frag_t	frags[MAX_SKB_FRAGS];
+ };
+ 
+ /* The structure is for a skb which pages may point to
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 93c4e06..117d82b 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -217,6 +217,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+ 	shinfo->gso_type = 0;
+ 	shinfo->ip6_frag_id = 0;
+ 	shinfo->tx_flags.flags = 0;
++	shinfo->destructor_arg = NULL;
+ 	skb_frag_list_init(skb);
+ 	memset(&shinfo->hwtstamps, 0, sizeof(shinfo->hwtstamps));
+ 
+@@ -350,6 +351,13 @@ static void skb_release_data(struct sk_buff *skb)
+ 		if (skb_has_frags(skb))
+ 			skb_drop_fraglist(skb);
+ 
++		if (skb->dev && dev_is_mpassthru(skb->dev)) {
++			struct skb_ext_page *ext_page =
++				skb_shinfo(skb)->destructor_arg;
++			if (ext_page && ext_page->dtor)
++				ext_page->dtor(ext_page);
++		}
++
+ 		kfree(skb->head);
  	}
- 	ecryptfs_set_dentry_lower(ecryptfs_dentry, lower_dentry);
- 	ecryptfs_set_dentry_lower_mnt(ecryptfs_dentry, lower_mnt);
-@@ -339,8 +339,9 @@ int ecryptfs_lookup_and_interpose_lower(
- out_free_kmem:
- 	kmem_cache_free(ecryptfs_header_cache_2, page_virt);
- 	goto out;
--out_dput:
-+out_put:
- 	dput(lower_dentry);
-+	mntput(lower_mnt);
- 	d_drop(ecryptfs_dentry);
- out:
- 	return rc;
+ }
+-- 
+1.5.4.4
+
