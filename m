@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758146Ab0G2UZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 16:25:36 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:28706 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab0G2UZe convert rfc822-to-8bit (ORCPT
+	id S1755261Ab0G2Ub5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 16:31:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47641 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab0G2Ubz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 16:25:34 -0400
-X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Jul 2010 16:25:34 EDT
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: Kulikov Vasiliy <segooon@gmail.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-CC: Chirag Kantharia <chirag.kantharia@hp.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        ISS StorageDev <iss_storagedev@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Jul 2010 20:16:53 +0000
-Subject: RE: [PATCH] cpqarray: check put_user() result
-Thread-Topic: [PATCH] cpqarray: check put_user() result
-Thread-Index: AcsvNnGdJXCKdC4nRL6G0skyEcmyUAAJHlwQ
-Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D05640118@GVW0547EXC.americas.hpqcorp.net>
-References: <1280418885-5630-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1280418885-5630-1-git-send-email-segooon@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Jul 2010 16:31:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=q2hMX7fUXYqxdTknIZUMeFC1Rhhj6XMMZO8NdjwJtE8nCGuNGmVfvwq19hXnqlY1b5
+         w1wguN/i32Sq6x6R4Fd6JqFKyavjDFqj0J0tJBYV0GvFuZIlAcQIhXjsiagsJ/q2fa5g
+         gi7xlbr6092vVE/NOEtDpc6P56oiVOpYt8lE0=
+Message-ID: <4C51E537.9000701@gmail.com>
+Date: Thu, 29 Jul 2010 22:31:51 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Kees Cook <kees.cook@canonical.com>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [Bug #16294] [Q35 bisected] hang at init of i915 driver
+References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera> <tneGvaw1wLL.A.9fB.v3XSMB@chimera> <20100723131825.GT3948@outflux.net> <201007232205.14936.rjw@sisk.pl>
+In-Reply-To: <201007232205.14936.rjw@sisk.pl>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On 07/23/2010 10:05 PM, Rafael J. Wysocki wrote:
+> On Friday, July 23, 2010, Kees Cook wrote:
+>> On Fri, Jul 23, 2010 at 01:47:30PM +0200, Rafael J. Wysocki wrote:
+>>> This message has been generated automatically as a part of a summary report
+>>> of recent regressions.
+>>>
+>>> The following bug entry is on the current list of known regressions
+>>> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+>>> know (either way).
+>>
+>> The regression still exists[1] in the mainline kernel -- the confirmed fix
+>> mentioned below has not been committed.
+> 
+> That's why the bug entry hasn't been closed yet. :-)
 
-> -----Original Message-----
-> From: Kulikov Vasiliy [mailto:segooon@gmail.com] 
-> Sent: Thursday, July 29, 2010 10:55 AM
-> To: kernel-janitors@vger.kernel.org
-> Cc: Chirag Kantharia; Jens Axboe; Andrew Morton; Alexey 
-> Dobriyan; Christoph Hellwig; Arnd Bergmann; ISS StorageDev; 
-> linux-kernel@vger.kernel.org
-> Subject: [PATCH] cpqarray: check put_user() result
-> 
-> put_user() may fail, if so return -EFAULT.
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/block/cpqarray.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/block/cpqarray.c 
-> b/drivers/block/cpqarray.c index 9473215..d53b029 100644
-> --- a/drivers/block/cpqarray.c
-> +++ b/drivers/block/cpqarray.c
-> @@ -1179,7 +1179,8 @@ out_passthru:
->  		return error;
->  	case IDAGETCTLRSIG:
->  		if (!arg) return -EINVAL;
-> -		put_user(host->ctlr_sig, (int __user *)arg);
-> +		if (put_user(host->ctlr_sig, (int __user *)arg))
-> +			return -EFAULT;
->  		return 0;
->  	case IDAREVALIDATEVOLS:
->  		if (MINOR(bdev->bd_dev) != 0)
-> @@ -1187,7 +1188,8 @@ out_passthru:
->  		return revalidate_allvol(host);
->  	case IDADRIVERVERSION:
->  		if (!arg) return -EINVAL;
-> -		put_user(DRIVER_VERSION, (unsigned long __user *)arg);
-> +		if (put_user(DRIVER_VERSION, (unsigned long 
-> __user *)arg))
-> +			return -EFAULT;
->  		return 0;
->  	case IDAGETPCIINFO:
->  	{
-> --
-> 1.7.0.4
-> 
-> 
-Acked-by: Mike Miller <mike.miller@hp.com>
+Finally, it's merged as e7b96f28c...
+
+regards,
+-- 
+js
