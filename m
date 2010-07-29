@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab0G2Vsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 17:48:30 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43514 "EHLO
+	id S1756770Ab0G2Vsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 17:48:36 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:43639 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755533Ab0G2VsY (ORCPT
+	with ESMTP id S1756384Ab0G2Vsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 17:48:24 -0400
+	Thu, 29 Jul 2010 17:48:31 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 03/13] AppArmor: contexts used in attaching policy to system objects
-Date: Thu, 29 Jul 2010 14:47:59 -0700
-Message-Id: <1280440089-3203-4-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 05/13] AppArmor: dfa match engine
+Date: Thu, 29 Jul 2010 14:48:01 -0700
+Message-Id: <1280440089-3203-6-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
 References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
@@ -20,249 +20,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AppArmor contexts attach profiles and state to tasks, files, etc. when
-a direct profile reference is not sufficient.
+A basic dfa matching engine based off the dfa engine in the Dragon
+Book.  It uses simple row comb compression with a check field.
+
+This allows AppArmor to do pattern matching in linear time, and also
+avoids stack issues that an nfa based engine may have.  The dfa
+engine uses a byte based comparison, with all values being valid.
+Any potential character encoding are handled user side when the dfa
+tables are created.  By convention AppArmor uses \0 to separate two
+dependent path matches since \0 is not a valid path character
+(this is done in the link permission check).
+
+The dfa tables are generated in user space and are verified at load
+time to be internally consistent.
+
+There are several future improvements planned for the dfa engine:
+* The dfa engine may be converted to a hybrid nfa-dfa engine, with
+  a fixed size limited stack.  This would allow for size time
+  tradeoffs, by inserting limited nfa states to help control
+  state explosion that can occur with dfas.
+* The dfa engine may pickup the ability to do limited dynamic
+  variable matching, instead of fixing all variables at policy
+  load time.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/context.c         |  216 +++++++++++++++++++++++++++++++++++
- security/apparmor/include/context.h |  154 +++++++++++++++++++++++++
- 2 files changed, 370 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/context.c
- create mode 100644 security/apparmor/include/context.h
+ security/apparmor/include/match.h |  132 ++++++++++++++
+ security/apparmor/match.c         |  353 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 485 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/include/match.h
+ create mode 100644 security/apparmor/match.c
 
-diff --git a/security/apparmor/context.c b/security/apparmor/context.c
+diff --git a/security/apparmor/include/match.h b/security/apparmor/include/match.h
 new file mode 100644
-index 0000000..8a9b502
+index 0000000..734a6d3
 --- /dev/null
-+++ b/security/apparmor/context.c
-@@ -0,0 +1,216 @@
++++ b/security/apparmor/include/match.h
+@@ -0,0 +1,132 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor functions used to manipulate object security
-+ * contexts.
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ *
-+ *
-+ * AppArmor sets confinement on every task, via the the aa_task_cxt and
-+ * the aa_task_cxt.profile, both of which are required and are not allowed
-+ * to be NULL.  The aa_task_cxt is not reference counted and is unique
-+ * to each cred (which is reference count).  The profile pointed to by
-+ * the task_cxt is reference counted.
-+ *
-+ * TODO
-+ * If a task uses change_hat it currently does not return to the old
-+ * cred or task context but instead creates a new one.  Ideally the task
-+ * should return to the previous cred if it has not been modified.
-+ *
-+ */
-+
-+#include "include/context.h"
-+#include "include/policy.h"
-+
-+/**
-+ * aa_alloc_task_context - allocate a new task_cxt
-+ * @flags: gfp flags for allocation
-+ *
-+ * Returns: allocated buffer or NULL on failure
-+ */
-+struct aa_task_cxt *aa_alloc_task_context(gfp_t flags)
-+{
-+	return kzalloc(sizeof(struct aa_task_cxt), flags);
-+}
-+
-+/**
-+ * aa_free_task_context - free a task_cxt
-+ * @cxt: task_cxt to free (MAYBE NULL)
-+ */
-+void aa_free_task_context(struct aa_task_cxt *cxt)
-+{
-+	if (cxt) {
-+		aa_put_profile(cxt->profile);
-+		aa_put_profile(cxt->previous);
-+		aa_put_profile(cxt->onexec);
-+
-+		kzfree(cxt);
-+	}
-+}
-+
-+/**
-+ * aa_dup_task_context - duplicate a task context, incrementing reference counts
-+ * @new: a blank task context      (NOT NULL)
-+ * @old: the task context to copy  (NOT NULL)
-+ */
-+void aa_dup_task_context(struct aa_task_cxt *new, const struct aa_task_cxt *old)
-+{
-+	*new = *old;
-+	aa_get_profile(new->profile);
-+	aa_get_profile(new->previous);
-+	aa_get_profile(new->onexec);
-+}
-+
-+/**
-+ * aa_replace_current_profile - replace the current tasks profiles
-+ * @profile: new profile  (NOT NULL)
-+ *
-+ * Returns: 0 or error on failure
-+ */
-+int aa_replace_current_profile(struct aa_profile *profile)
-+{
-+	struct aa_task_cxt *cxt = current_cred()->security;
-+	struct cred *new;
-+	BUG_ON(!profile);
-+
-+	if (cxt->profile == profile)
-+		return 0;
-+
-+	new  = prepare_creds();
-+	if (!new)
-+		return -ENOMEM;
-+
-+	cxt = new->security;
-+	if (unconfined(profile) || (cxt->profile->ns != profile->ns)) {
-+		/* if switching to unconfined or a different profile namespace
-+		 * clear out context state
-+		 */
-+		aa_put_profile(cxt->previous);
-+		aa_put_profile(cxt->onexec);
-+		cxt->previous = NULL;
-+		cxt->onexec = NULL;
-+		cxt->token = 0;
-+	}
-+	/* be careful switching cxt->profile, when racing replacement it
-+	 * is possible that cxt->profile->replacedby is the reference keeping
-+	 * @profile valid, so make sure to get its reference before dropping
-+	 * the reference on cxt->profile */
-+	aa_get_profile(profile);
-+	aa_put_profile(cxt->profile);
-+	cxt->profile = profile;
-+
-+	commit_creds(new);
-+	return 0;
-+}
-+
-+/**
-+ * aa_set_current_onexec - set the tasks change_profile to happen onexec
-+ * @profile: system profile to set at exec  (MAYBE NULL to clear value)
-+ *
-+ * Returns: 0 or error on failure
-+ */
-+int aa_set_current_onexec(struct aa_profile *profile)
-+{
-+	struct aa_task_cxt *cxt;
-+	struct cred *new = prepare_creds();
-+	if (!new)
-+		return -ENOMEM;
-+
-+	cxt = new->security;
-+	aa_get_profile(profile);
-+	aa_put_profile(cxt->onexec);
-+	cxt->onexec = profile;
-+
-+	commit_creds(new);
-+	return 0;
-+}
-+
-+/**
-+ * aa_set_current_hat - set the current tasks hat
-+ * @profile: profile to set as the current hat  (NOT NULL)
-+ * @token: token value that must be specified to change from the hat
-+ *
-+ * Do switch of tasks hat.  If the task is currently in a hat
-+ * validate the token to match.
-+ *
-+ * Returns: 0 or error on failure
-+ */
-+int aa_set_current_hat(struct aa_profile *profile, u64 token)
-+{
-+	struct aa_task_cxt *cxt;
-+	struct cred *new = prepare_creds();
-+	if (!new)
-+		return -ENOMEM;
-+	BUG_ON(!profile);
-+
-+	cxt = new->security;
-+	if (!cxt->previous) {
-+		/* transfer refcount */
-+		cxt->previous = cxt->profile;
-+		cxt->token = token;
-+	} else if (cxt->token == token) {
-+		aa_put_profile(cxt->profile);
-+	} else {
-+		/* previous_profile && cxt->token != token */
-+		abort_creds(new);
-+		return -EACCES;
-+	}
-+	cxt->profile = aa_get_profile(aa_newest_version(profile));
-+	/* clear exec on switching context */
-+	aa_put_profile(cxt->onexec);
-+	cxt->onexec = NULL;
-+
-+	commit_creds(new);
-+	return 0;
-+}
-+
-+/**
-+ * aa_restore_previous_profile - exit from hat context restoring the profile
-+ * @token: the token that must be matched to exit hat context
-+ *
-+ * Attempt to return out of a hat to the previous profile.  The token
-+ * must match the stored token value.
-+ *
-+ * Returns: 0 or error of failure
-+ */
-+int aa_restore_previous_profile(u64 token)
-+{
-+	struct aa_task_cxt *cxt;
-+	struct cred *new = prepare_creds();
-+	if (!new)
-+		return -ENOMEM;
-+
-+	cxt = new->security;
-+	if (cxt->token != token) {
-+		abort_creds(new);
-+		return -EACCES;
-+	}
-+	/* ignore restores when there is no saved profile */
-+	if (!cxt->previous) {
-+		abort_creds(new);
-+		return 0;
-+	}
-+
-+	aa_put_profile(cxt->profile);
-+	cxt->profile = aa_newest_version(cxt->previous);
-+	BUG_ON(!cxt->profile);
-+	if (unlikely(cxt->profile != cxt->previous)) {
-+		aa_get_profile(cxt->profile);
-+		aa_put_profile(cxt->previous);
-+	}
-+	/* clear exec && prev information when restoring to previous context */
-+	cxt->previous = NULL;
-+	cxt->token = 0;
-+	aa_put_profile(cxt->onexec);
-+	cxt->onexec = NULL;
-+
-+	commit_creds(new);
-+	return 0;
-+}
-diff --git a/security/apparmor/include/context.h b/security/apparmor/include/context.h
-new file mode 100644
-index 0000000..a9cbee4
---- /dev/null
-+++ b/security/apparmor/include/context.h
-@@ -0,0 +1,154 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor contexts used to associate "labels" to objects.
++ * This file contains AppArmor policy dfa matching engine definitions.
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -273,146 +71,483 @@ index 0000000..a9cbee4
 + * License.
 + */
 +
-+#ifndef __AA_CONTEXT_H
-+#define __AA_CONTEXT_H
++#ifndef __AA_MATCH_H
++#define __AA_MATCH_H
 +
-+#include <linux/cred.h>
++#include <linux/workqueue.h>
++
++#define DFA_NOMATCH			0
++#define DFA_START			1
++
++#define DFA_VALID_PERM_MASK		0xffffffff
++#define DFA_VALID_PERM2_MASK		0xffffffff
++
++/**
++ * The format used for transition tables is based on the GNU flex table
++ * file format (--tables-file option; see Table File Format in the flex
++ * info pages and the flex sources for documentation). The magic number
++ * used in the header is 0x1B5E783D insted of 0xF13C57B1 though, because
++ * the YY_ID_CHK (check) and YY_ID_DEF (default) tables are used
++ * slightly differently (see the apparmor-parser package).
++ */
++
++#define YYTH_MAGIC	0x1B5E783D
++#define YYTH_DEF_RECURSE 0x1			/* DEF Table is recursive */
++
++struct table_set_header {
++	u32 th_magic;		/* YYTH_MAGIC */
++	u32 th_hsize;
++	u32 th_ssize;
++	u16 th_flags;
++	char th_version[];
++};
++
++/* The YYTD_ID are one less than flex table mappings.  The flex id
++ * has 1 subtracted at table load time, this allows us to directly use the
++ * ID's as indexes.
++ */
++#define	YYTD_ID_ACCEPT	0
++#define YYTD_ID_BASE	1
++#define YYTD_ID_CHK	2
++#define YYTD_ID_DEF	3
++#define YYTD_ID_EC	4
++#define YYTD_ID_META	5
++#define YYTD_ID_ACCEPT2 6
++#define YYTD_ID_NXT	7
++#define YYTD_ID_TSIZE	8
++
++#define YYTD_DATA8	1
++#define YYTD_DATA16	2
++#define YYTD_DATA32	4
++#define YYTD_DATA64	8
++
++/* Each ACCEPT2 table gets 6 dedicated flags, YYTD_DATAX define the
++ * first flags
++ */
++#define ACCEPT1_FLAGS(X) ((X) & 0x3f)
++#define ACCEPT2_FLAGS(X) ACCEPT1_FLAGS((X) >> YYTD_ID_ACCEPT2)
++#define TO_ACCEPT1_FLAG(X) ACCEPT1_FLAGS(X)
++#define TO_ACCEPT2_FLAG(X) (ACCEPT1_FLAGS(X) << YYTD_ID_ACCEPT2)
++#define DFA_FLAG_VERIFY_STATES 0x1000
++
++struct table_header {
++	u16 td_id;
++	u16 td_flags;
++	u32 td_hilen;
++	u32 td_lolen;
++	char td_data[];
++};
++
++#define DEFAULT_TABLE(DFA) ((u16 *)((DFA)->tables[YYTD_ID_DEF]->td_data))
++#define BASE_TABLE(DFA) ((u32 *)((DFA)->tables[YYTD_ID_BASE]->td_data))
++#define NEXT_TABLE(DFA) ((u16 *)((DFA)->tables[YYTD_ID_NXT]->td_data))
++#define CHECK_TABLE(DFA) ((u16 *)((DFA)->tables[YYTD_ID_CHK]->td_data))
++#define EQUIV_TABLE(DFA) ((u8 *)((DFA)->tables[YYTD_ID_EC]->td_data))
++#define ACCEPT_TABLE(DFA) ((u32 *)((DFA)->tables[YYTD_ID_ACCEPT]->td_data))
++#define ACCEPT_TABLE2(DFA) ((u32 *)((DFA)->tables[YYTD_ID_ACCEPT2]->td_data))
++
++struct aa_dfa {
++	struct kref count;
++	u16 flags;
++	struct table_header *tables[YYTD_ID_TSIZE];
++};
++
++#define byte_to_byte(X) (X)
++
++#define UNPACK_ARRAY(TABLE, BLOB, LEN, TYPE, NTOHX) \
++	do { \
++		typeof(LEN) __i; \
++		TYPE *__t = (TYPE *) TABLE; \
++		TYPE *__b = (TYPE *) BLOB; \
++		for (__i = 0; __i < LEN; __i++) { \
++			__t[__i] = NTOHX(__b[__i]); \
++		} \
++	} while (0)
++
++static inline size_t table_size(size_t len, size_t el_size)
++{
++	return ALIGN(sizeof(struct table_header) + len * el_size, 8);
++}
++
++struct aa_dfa *aa_dfa_unpack(void *blob, size_t size, int flags);
++unsigned int aa_dfa_match_len(struct aa_dfa *dfa, unsigned int start,
++			      const char *str, int len);
++unsigned int aa_dfa_match(struct aa_dfa *dfa, unsigned int start,
++			  const char *str);
++void aa_dfa_free_kref(struct kref *kref);
++
++/**
++ * aa_put_dfa - put a dfa refcount
++ * @dfa: dfa to put refcount   (MAYBE NULL)
++ *
++ * Requires: if @dfa != NULL that a valid refcount be held
++ */
++static inline void aa_put_dfa(struct aa_dfa *dfa)
++{
++	if (dfa)
++		kref_put(&dfa->count, aa_dfa_free_kref);
++}
++
++#endif /* __AA_MATCH_H */
+diff --git a/security/apparmor/match.c b/security/apparmor/match.c
+new file mode 100644
+index 0000000..5cb4dc1
+--- /dev/null
++++ b/security/apparmor/match.c
+@@ -0,0 +1,353 @@
++/*
++ * AppArmor security module
++ *
++ * This file contains AppArmor dfa based regular expression matching engine
++ *
++ * Copyright (C) 1998-2008 Novell/SUSE
++ * Copyright 2009-2010 Canonical Ltd.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ */
++
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
 +#include <linux/slab.h>
-+#include <linux/sched.h>
++#include <linux/vmalloc.h>
++#include <linux/err.h>
++#include <linux/kref.h>
 +
-+#include "policy.h"
-+
-+/* struct aa_file_cxt - the AppArmor context the file was opened in
-+ * @perms: the permission the file was opened with
-+ *
-+ * The file_cxt could currently be directly stored in file->f_security
-+ * as the profile reference is now stored in the f_cred.  However the
-+ * cxt struct will expand in the future so we keep the struct.
-+ */
-+struct aa_file_cxt {
-+	u16 allow;
-+};
++#include "include/apparmor.h"
++#include "include/match.h"
 +
 +/**
-+ * aa_alloc_file_context - allocate file_cxt
-+ * @gfp: gfp flags for allocation
++ * unpack_table - unpack a dfa table (one of accept, default, base, next check)
++ * @blob: data to unpack (NOT NULL)
++ * @bsize: size of blob
 + *
-+ * Returns: file_cxt or NULL on failure
++ * Returns: pointer to table else NULL on failure
++ *
++ * NOTE: must be freed by kvfree (not kmalloc)
 + */
-+static inline struct aa_file_cxt *aa_alloc_file_context(gfp_t gfp)
++static struct table_header *unpack_table(char *blob, size_t bsize)
 +{
-+	return kzalloc(sizeof(struct aa_file_cxt), gfp);
++	struct table_header *table = NULL;
++	struct table_header th;
++	size_t tsize;
++
++	if (bsize < sizeof(struct table_header))
++		goto out;
++
++	/* loaded td_id's start at 1, subtract 1 now to avoid doing
++	 * it every time we use td_id as an index
++	 */
++	th.td_id = be16_to_cpu(*(u16 *) (blob)) - 1;
++	th.td_flags = be16_to_cpu(*(u16 *) (blob + 2));
++	th.td_lolen = be32_to_cpu(*(u32 *) (blob + 8));
++	blob += sizeof(struct table_header);
++
++	if (!(th.td_flags == YYTD_DATA16 || th.td_flags == YYTD_DATA32 ||
++	      th.td_flags == YYTD_DATA8))
++		goto out;
++
++	tsize = table_size(th.td_lolen, th.td_flags);
++	if (bsize < tsize)
++		goto out;
++
++	table = kvmalloc(tsize);
++	if (table) {
++		*table = th;
++		if (th.td_flags == YYTD_DATA8)
++			UNPACK_ARRAY(table->td_data, blob, th.td_lolen,
++				     u8, byte_to_byte);
++		else if (th.td_flags == YYTD_DATA16)
++			UNPACK_ARRAY(table->td_data, blob, th.td_lolen,
++				     u16, be16_to_cpu);
++		else if (th.td_flags == YYTD_DATA32)
++			UNPACK_ARRAY(table->td_data, blob, th.td_lolen,
++				     u32, be32_to_cpu);
++		else
++			goto fail;
++	}
++
++out:
++	/* if table was vmalloced make sure the page tables are synced
++	 * before it is used, as it goes live to all cpus.
++	 */
++	if (is_vmalloc_addr(table))
++		vm_unmap_aliases();
++	return table;
++fail:
++	kvfree(table);
++	return NULL;
 +}
 +
 +/**
-+ * aa_free_file_context - free a file_cxt
-+ * @cxt: file_cxt to free  (MAYBE_NULL)
++ * verify_dfa - verify that transitions and states in the tables are in bounds.
++ * @dfa: dfa to test  (NOT NULL)
++ * @flags: flags controlling what type of accept table are acceptable
++ *
++ * Assumes dfa has gone through the first pass verification done by unpacking
++ * NOTE: this does not valid accept table values
++ *
++ * Returns: %0 else error code on failure to verify
 + */
-+static inline void aa_free_file_context(struct aa_file_cxt *cxt)
++static int verify_dfa(struct aa_dfa *dfa, int flags)
 +{
-+	if (cxt)
-+		kzfree(cxt);
++	size_t i, state_count, trans_count;
++	int error = -EPROTO;
++
++	/* check that required tables exist */
++	if (!(dfa->tables[YYTD_ID_DEF] &&
++	      dfa->tables[YYTD_ID_BASE] &&
++	      dfa->tables[YYTD_ID_NXT] && dfa->tables[YYTD_ID_CHK]))
++		goto out;
++
++	/* accept.size == default.size == base.size */
++	state_count = dfa->tables[YYTD_ID_BASE]->td_lolen;
++	if (ACCEPT1_FLAGS(flags)) {
++		if (!dfa->tables[YYTD_ID_ACCEPT])
++			goto out;
++		if (state_count != dfa->tables[YYTD_ID_ACCEPT]->td_lolen)
++			goto out;
++	}
++	if (ACCEPT2_FLAGS(flags)) {
++		if (!dfa->tables[YYTD_ID_ACCEPT2])
++			goto out;
++		if (state_count != dfa->tables[YYTD_ID_ACCEPT2]->td_lolen)
++			goto out;
++	}
++	if (state_count != dfa->tables[YYTD_ID_DEF]->td_lolen)
++		goto out;
++
++	/* next.size == chk.size */
++	trans_count = dfa->tables[YYTD_ID_NXT]->td_lolen;
++	if (trans_count != dfa->tables[YYTD_ID_CHK]->td_lolen)
++		goto out;
++
++	/* if equivalence classes then its table size must be 256 */
++	if (dfa->tables[YYTD_ID_EC] &&
++	    dfa->tables[YYTD_ID_EC]->td_lolen != 256)
++		goto out;
++
++	if (flags & DFA_FLAG_VERIFY_STATES) {
++		for (i = 0; i < state_count; i++) {
++			if (DEFAULT_TABLE(dfa)[i] >= state_count)
++				goto out;
++			/* TODO: do check that DEF state recursion terminates */
++			if (BASE_TABLE(dfa)[i] + 255 >= trans_count) {
++				printk(KERN_ERR "AppArmor DFA next/check upper "
++				       "bounds error\n");
++				goto out;
++			}
++		}
++
++		for (i = 0; i < trans_count; i++) {
++			if (NEXT_TABLE(dfa)[i] >= state_count)
++				goto out;
++			if (CHECK_TABLE(dfa)[i] >= state_count)
++				goto out;
++		}
++	}
++
++	error = 0;
++out:
++	return error;
 +}
 +
 +/**
-+ * struct aa_task_cxt - primary label for confined tasks
-+ * @profile: the current profile   (NOT NULL)
-+ * @exec: profile to transition to on next exec  (MAYBE NULL)
-+ * @previous: profile the task may return to     (MAYBE NULL)
-+ * @token: magic value the task must know for returning to @previous_profile
++ * dfa_free - free a dfa allocated by aa_dfa_unpack
++ * @dfa: the dfa to free  (MAYBE NULL)
 + *
-+ * Contains the task's current profile (which could change due to
-+ * change_hat).  Plus the hat_magic needed during change_hat.
-+ *
-+ * TODO: make so a task can be confined by a stack of contexts
++ * Requires: reference count to dfa == 0
 + */
-+struct aa_task_cxt {
-+	struct aa_profile *profile;
-+	struct aa_profile *onexec;
-+	struct aa_profile *previous;
-+	u64 token;
-+};
++static void dfa_free(struct aa_dfa *dfa)
++{
++	if (dfa) {
++		int i;
 +
-+struct aa_task_cxt *aa_alloc_task_context(gfp_t flags);
-+void aa_free_task_context(struct aa_task_cxt *cxt);
-+void aa_dup_task_context(struct aa_task_cxt *new,
-+			 const struct aa_task_cxt *old);
-+int aa_replace_current_profile(struct aa_profile *profile);
-+int aa_set_current_onexec(struct aa_profile *profile);
-+int aa_set_current_hat(struct aa_profile *profile, u64 token);
-+int aa_restore_previous_profile(u64 cookie);
++		for (i = 0; i < ARRAY_SIZE(dfa->tables); i++) {
++			kvfree(dfa->tables[i]);
++			dfa->tables[i] = NULL;
++		}
++		kfree(dfa);
++	}
++}
 +
 +/**
-+ * __aa_task_is_confined - determine if @task has any confinement
-+ * @task: task to check confinement of  (NOT NULL)
-+ *
-+ * If @task != current needs to be called in RCU safe critical section
++ * aa_dfa_free_kref - free aa_dfa by kref (called by aa_put_dfa)
++ * @kr: kref callback for freeing of a dfa  (NOT NULL)
 + */
-+static inline bool __aa_task_is_confined(struct task_struct *task)
++void aa_dfa_free_kref(struct kref *kref)
 +{
-+	struct aa_task_cxt *cxt = __task_cred(task)->security;
++	struct aa_dfa *dfa = container_of(kref, struct aa_dfa, count);
++	dfa_free(dfa);
++}
 +
-+	BUG_ON(!cxt || !cxt->profile);
-+	if (unconfined(aa_newest_version(cxt->profile)))
++/**
++ * aa_dfa_unpack - unpack the binary tables of a serialized dfa
++ * @blob: aligned serialized stream of data to unpack  (NOT NULL)
++ * @size: size of data to unpack
++ * @flags: flags controlling what type of accept tables are acceptable
++ *
++ * Unpack a dfa that has been serialized.  To find information on the dfa
++ * format look in Documentation/apparmor.txt
++ * Assumes the dfa @blob stream has been aligned on a 8 byte boundry
++ *
++ * Returns: an unpacked dfa ready for matching or ERR_PTR on failure
++ */
++struct aa_dfa *aa_dfa_unpack(void *blob, size_t size, int flags)
++{
++	int hsize;
++	int error = -ENOMEM;
++	char *data = blob;
++	struct table_header *table = NULL;
++	struct aa_dfa *dfa = kzalloc(sizeof(struct aa_dfa), GFP_KERNEL);
++	if (!dfa)
++		goto fail;
++
++	kref_init(&dfa->count);
++
++	error = -EPROTO;
++
++	/* get dfa table set header */
++	if (size < sizeof(struct table_set_header))
++		goto fail;
++
++	if (ntohl(*(u32 *) data) != YYTH_MAGIC)
++		goto fail;
++
++	hsize = ntohl(*(u32 *) (data + 4));
++	if (size < hsize)
++		goto fail;
++
++	dfa->flags = ntohs(*(u16 *) (data + 12));
++	data += hsize;
++	size -= hsize;
++
++	while (size > 0) {
++		table = unpack_table(data, size);
++		if (!table)
++			goto fail;
++
++		switch (table->td_id) {
++		case YYTD_ID_ACCEPT:
++			if (!(table->td_flags & ACCEPT1_FLAGS(flags)))
++				goto fail;
++			break;
++		case YYTD_ID_ACCEPT2:
++			if (!(table->td_flags & ACCEPT2_FLAGS(flags)))
++				goto fail;
++			break;
++		case YYTD_ID_BASE:
++			if (table->td_flags != YYTD_DATA32)
++				goto fail;
++			break;
++		case YYTD_ID_DEF:
++		case YYTD_ID_NXT:
++		case YYTD_ID_CHK:
++			if (table->td_flags != YYTD_DATA16)
++				goto fail;
++			break;
++		case YYTD_ID_EC:
++			if (table->td_flags != YYTD_DATA8)
++				goto fail;
++			break;
++		default:
++			goto fail;
++		}
++		/* check for duplicate table entry */
++		if (dfa->tables[table->td_id])
++			goto fail;
++		dfa->tables[table->td_id] = table;
++		data += table_size(table->td_lolen, table->td_flags);
++		size -= table_size(table->td_lolen, table->td_flags);
++		table = NULL;
++	}
++
++	error = verify_dfa(dfa, flags);
++	if (error)
++		goto fail;
++
++	return dfa;
++
++fail:
++	kvfree(table);
++	dfa_free(dfa);
++	return ERR_PTR(error);
++}
++
++/**
++ * aa_dfa_match_len - traverse @dfa to find state @str stops at
++ * @dfa: the dfa to match @str against  (NOT NULL)
++ * @start: the state of the dfa to start matching in
++ * @str: the string of bytes to match against the dfa  (NOT NULL)
++ * @len: length of the string of bytes to match
++ *
++ * aa_dfa_match_len will match @str against the dfa and return the state it
++ * finished matching in. The final state can be used to look up the accepting
++ * label, or as the start state of a continuing match.
++ *
++ * This function will happily match again the 0 byte and only finishes
++ * when @len input is consumed.
++ *
++ * Returns: final state reached after input is consumed
++ */
++unsigned int aa_dfa_match_len(struct aa_dfa *dfa, unsigned int start,
++			      const char *str, int len)
++{
++	u16 *def = DEFAULT_TABLE(dfa);
++	u32 *base = BASE_TABLE(dfa);
++	u16 *next = NEXT_TABLE(dfa);
++	u16 *check = CHECK_TABLE(dfa);
++	unsigned int state = start, pos;
++
++	if (state == 0)
 +		return 0;
 +
-+	return 1;
++	/* current state is <state>, matching character *str */
++	if (dfa->tables[YYTD_ID_EC]) {
++		/* Equivalence class table defined */
++		u8 *equiv = EQUIV_TABLE(dfa);
++		/* default is direct to next state */
++		for (; len; len--) {
++			pos = base[state] + equiv[(u8) *str++];
++			if (check[pos] == state)
++				state = next[pos];
++			else
++				state = def[state];
++		}
++	} else {
++		/* default is direct to next state */
++		for (; len; len--) {
++			pos = base[state] + (u8) *str++;
++			if (check[pos] == state)
++				state = next[pos];
++			else
++				state = def[state];
++		}
++	}
++
++	return state;
 +}
 +
 +/**
-+ * aa_cred_profile - obtain cred's profiles
-+ * @cred: cred to obtain profiles from  (NOT NULL)
++ * aa_dfa_next_state - traverse @dfa to find state @str stops at
++ * @dfa: the dfa to match @str against  (NOT NULL)
++ * @start: the state of the dfa to start matching in
++ * @str: the null terminated string of bytes to match against the dfa (NOT NULL)
 + *
-+ * Returns: confining profile
++ * aa_dfa_next_state will match @str against the dfa and return the state it
++ * finished matching in. The final state can be used to look up the accepting
++ * label, or as the start state of a continuing match.
 + *
-+ * does NOT increment reference count
++ * Returns: final state reached after input is consumed
 + */
-+static inline struct aa_profile *aa_cred_profile(const struct cred *cred)
++unsigned int aa_dfa_match(struct aa_dfa *dfa, unsigned int start,
++			  const char *str)
 +{
-+	struct aa_task_cxt *cxt = cred->security;
-+	BUG_ON(!cxt || !cxt->profile);
-+	return aa_newest_version(cxt->profile);
++	return aa_dfa_match_len(dfa, start, str, strlen(str));
 +}
-+
-+/**
-+ * __aa_current_profile - find the current tasks confining profile
-+ *
-+ * Returns: up to date confining profile or the ns unconfined profile (NOT NULL)
-+ *
-+ * This fn will not update the tasks cred to the most up to date version
-+ * of the profile so it is safe to call when inside of locks.
-+ */
-+static inline struct aa_profile *__aa_current_profile(void)
-+{
-+	return aa_cred_profile(current_cred());
-+}
-+
-+/**
-+ * aa_current_profile - find the current tasks confining profile and do updates
-+ *
-+ * Returns: up to date confining profile or the ns unconfined profile (NOT NULL)
-+ *
-+ * This fn will update the tasks cred structure if the profile has been
-+ * replaced.  Not safe to call inside locks
-+ */
-+static inline struct aa_profile *aa_current_profile(void)
-+{
-+	const struct aa_task_cxt *cxt = current_cred()->security;
-+	struct aa_profile *profile;
-+	BUG_ON(!cxt || !cxt->profile);
-+
-+	profile = aa_newest_version(cxt->profile);
-+	/*
-+	 * Whether or not replacement succeeds, use newest profile so
-+	 * there is no need to update it after replacement.
-+	 */
-+	if (unlikely((cxt->profile != profile)))
-+		aa_replace_current_profile(profile);
-+
-+	return profile;
-+}
-+
-+#endif /* __AA_CONTEXT_H */
 -- 
 1.7.1
 
