@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757843Ab0G2TtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 15:49:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22084 "EHLO
+	id S1758148Ab0G2TtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 15:49:13 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22080 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758048Ab0G2TtA (ORCPT
+	with ESMTP id S1757957Ab0G2Ts7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 15:49:00 -0400
+	Thu, 29 Jul 2010 15:48:59 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,68 +15,157 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 09/17] x86, memblock: Add memblock_x86_find_in_range_node()
-Date: Thu, 29 Jul 2010 12:45:29 -0700
-Message-Id: <1280432737-1808-10-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Jan Beulich <jbeulich@novell.com>
+Subject: [PATCH 06/17] x86, memblock: Add get_free_all_memory_range()
+Date: Thu, 29 Jul 2010 12:45:26 -0700
+Message-Id: <1280432737-1808-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
 References: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C51DAF2.0005,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4C51DAE2.011F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It can be used to find NODE_DATA for numa.
+get_free_all_memory_range is for CONFIG_NO_BOOTMEM=y, and will be called by
+free_all_memory_core_early().
 
-Need to make sure early_node_map[] is filled before it is called, otherwise
-it will fallback to memblock_find_in_range(), with node range.
+It will use early_node_map aka active ranges subtract memblock.reserved to
+get all free range, and those ranges will convert to slab pages.
+
+-v4: increase range size
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Jan Beulich <jbeulich@novell.com>
 ---
- arch/x86/include/asm/memblock.h |    1 +
- arch/x86/mm/memblock.c          |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/memblock.h |    2 +
+ arch/x86/mm/memblock.c          |   98 ++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 99 insertions(+), 1 deletions(-)
 
 diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-index 16af28d..3a86b10 100644
+index e11ddf0..72639ce 100644
 --- a/arch/x86/include/asm/memblock.h
 +++ b/arch/x86/include/asm/memblock.h
-@@ -14,5 +14,6 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
- void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
- 					 unsigned long last_pfn);
- u64 memblock_x86_hole_size(u64 start, u64 end);
-+u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+@@ -8,5 +8,7 @@ void memblock_x86_to_bootmem(u64 start, u64 end);
+ 
+ void memblock_x86_reserve_range(u64 start, u64 end, char *name);
+ void memblock_x86_free_range(u64 start, u64 end);
++struct range;
++int get_free_all_memory_range(struct range **rangep, int nodeid);
  
  #endif
 diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index c29c4e0..723a2fc 100644
+index 9829eaf..b450060 100644
 --- a/arch/x86/mm/memblock.c
 +++ b/arch/x86/mm/memblock.c
-@@ -234,6 +234,21 @@ void __init memblock_x86_free_range(u64 start, u64 end)
+@@ -86,7 +86,103 @@ u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
+ 	return MEMBLOCK_ERROR;
  }
  
- /*
-+ * Need to call this function after memblock_x86_register_active_regions,
-+ * so early_node_map[] is filled already.
-+ */
-+u64 __init memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align)
+-#ifndef CONFIG_NO_BOOTMEM
++static __init struct range *find_range_array(int count)
 +{
-+	u64 addr;
-+	addr = find_memory_core_early(nid, size, align, start, end);
-+	if (addr != MEMBLOCK_ERROR)
-+		return addr;
++	u64 end, size, mem;
++	struct range *range;
 +
-+	/* Fallback, should already have start end within node range */
-+	return memblock_find_in_range(start, end, size, align);
++	size = sizeof(struct range) * count;
++	end = memblock.current_limit;
++
++	mem = memblock_find_in_range(0, end, size, sizeof(struct range));
++	if (mem == MEMBLOCK_ERROR)
++		panic("can not find more space for range array");
++
++	/*
++	 * This range is tempoaray, so don't reserve it, it will not be
++	 * overlapped because We will not alloccate new buffer before
++	 * We discard this one
++	 */
++	range = __va(mem);
++	memset(range, 0, size);
++
++	return range;
 +}
 +
-+/*
-  * Finds an active region in the address range from start_pfn to last_pfn and
-  * returns its range in ei_startpfn and ei_endpfn for the memblock entry.
-  */
++#ifdef CONFIG_NO_BOOTMEM
++static void __init memblock_x86_subtract_reserved(struct range *range, int az)
++{
++	u64 final_start, final_end;
++	struct memblock_region *r;
++
++	/* Take out region array itself at first*/
++	memblock_free_reserved_regions();
++
++	pr_info("Subtract (%ld early reservations)\n", memblock.reserved.cnt);
++
++	for_each_memblock(reserved, r) {
++		pr_info("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		subtract_range(range, az, final_start, final_end);
++	}
++
++	/* Put region array back ? */
++	memblock_reserve_reserved_regions();
++}
++
++struct count_data {
++	int nr;
++};
++
++static int __init count_work_fn(unsigned long start_pfn,
++				unsigned long end_pfn, void *datax)
++{
++	struct count_data *data = datax;
++
++	data->nr++;
++
++	return 0;
++}
++
++static int __init count_early_node_map(int nodeid)
++{
++	struct count_data data;
++
++	data.nr = 0;
++	work_with_active_regions(nodeid, count_work_fn, &data);
++
++	return data.nr;
++}
++
++int __init get_free_all_memory_range(struct range **rangep, int nodeid)
++{
++	int count;
++	struct range *range;
++	int nr_range;
++
++	count = (memblock.reserved.cnt + count_early_node_map(nodeid)) * 2;
++
++	range = find_range_array(count);
++	nr_range = 0;
++
++	/*
++	 * Use early_node_map[] and memblock.reserved.region to get range array
++	 * at first
++	 */
++	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
++#ifdef CONFIG_X86_32
++	subtract_range(range, count, max_low_pfn, -1ULL);
++#endif
++	memblock_x86_subtract_reserved(range, count);
++	nr_range = clean_sort_range(range, count);
++
++	*rangep = range;
++	return nr_range;
++}
++#else
+ void __init memblock_x86_to_bootmem(u64 start, u64 end)
+ {
+ 	int count;
 -- 
 1.6.4.2
 
