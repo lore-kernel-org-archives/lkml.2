@@ -1,59 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0G2SDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 14:03:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65012 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694Ab0G2SDQ (ORCPT
+	id S1753516Ab0G2SEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:04:48 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:22337 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab0G2SEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 14:03:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=SchNJ+jhPWAiX+U5b0485YRWvDEk055rhYauqiPisdShcDlvoNtIHKhrOklVmZQhjs
-         /k9QO/usy//jcLoPss9KzKHOe52B8UEK8d8S4JveouoUepEgvvUfYlIC+CQ3bT0Axf9E
-         x4+pCeB1OT0dp+GrfjAws5v32Cls30WyCtFMs=
+	Thu, 29 Jul 2010 14:04:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:message-id:user-agent:
+	mime-version:content-type;
+	b=lFD0u5wCkYvHhm9FU7xB+CStPXLzNrj4rOG/xYVXZAnXnsEB6ubTuz7MtPgstVWI7
+	tROUCB6msLBNjpsUjmlzg==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com,
+        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] memcg id quick lookup
+References: <20100729184250.acdff587.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100729184500.a3e4acb4.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 29 Jul 2010 11:03:26 -0700
+Message-ID: <xr93zkxamahd.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <4C519A6E.8000002@cs.helsinki.fi>
-References: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>
-	<4C505F86.7050509@cs.helsinki.fi>
-	<AANLkTintAmpBcxbZUmMd7B7yHpVKs77xHgkjSxMY_O6J@mail.gmail.com>
-	<AANLkTik-M_=G4Ks=U6hRm1dBTzbzovR47jdhjTjNqekX@mail.gmail.com>
-	<4C519A6E.8000002@cs.helsinki.fi>
-Date: Thu, 29 Jul 2010 19:03:14 +0100
-Message-ID: <AANLkTik4oyv4edZ6dyKiA59C9TSHWn2grQqTh30MRmC=@mail.gmail.com>
-Subject: Re: [2.6.35-rc6 patch] increase kmemleak robustness at boot
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Catalin Marinas <catalin.marinas@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 July 2010 16:12, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> Daniel J Blueman wrote:
->>>
->>> I would rather change the static early alloc buffer with something
->>> like bootmem allocation (the recursiveness should be bound, kmemleak
->>> tracks bootmem allocations as well). But I'm on holiday until middle
->>> of August and not able to do any tests in this area.
->>
->> Indeed, moving to dynamic early allocation is all the more better. For
->> now, I'll increase the early allocation to 15200 elements, as the
->> 400-entry buffer wraps 38.
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 >
-> If it's just kmemleak_init() we're talking about, slab caches are up at that
-> point so you can just use kmalloc().
+> Now, memory cgroup has an ID per cgroup and make use of it at
+>  - hierarchy walk,
+>  - swap recording.
+>
+> This patch is for making more use of it. The final purpose is
+> to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
+>
+> This patch caches a pointer of memcg in an array. By this, we
+> don't have to call css_lookup() which requires radix-hash walk.
+> This saves some amount of memory footprint at lookup memcg via id.
+> It's called in very fast path and need to be quick AMAP.
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  init/Kconfig    |   11 +++++++++++
+>  mm/memcontrol.c |   46 ++++++++++++++++++++++++++++++++--------------
+>  2 files changed, 43 insertions(+), 14 deletions(-)
+>
+> Index: mmotm-0727/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-0727.orig/mm/memcontrol.c
+> +++ mmotm-0727/mm/memcontrol.c
+> @@ -292,6 +292,27 @@ static bool move_file(void)
+>  					&mc.to->move_charge_at_immigrate);
+>  }
+>  
+> +atomic_t mem_cgroup_num;
 
-The slab allocator isn't up at this point. With
-CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE set to 16K elements, an extra 3MB
-of __initdata memory is used, but freed afterwards, and it works
-great.
+Maybe static and init?
++ static atomic_t mem_cgroup_num = ATOMIC_INIT(0);
 
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
+> +struct mem_cgroup *mem_cgroups[CONFIG_MEM_CGROUP_MAX_GROUPS] __read_mostly;
+
+Make this static?
+
+Because value [0] is reserved, maybe this should be:
++struct mem_cgroup *mem_cgroups[CONFIG_MEM_CGROUP_MAX_GROUPS+1] __read_mostly;
+
+> +
+> +static struct mem_cgroup* id_to_memcg(unsigned short id)
+> +{
+> +	/*
+> +	 * This array is set to NULL when mem_cgroup is freed.
+> +	 * IOW, there are no more references && rcu_synchronized().
+> +	 * This lookup-caching is safe.
+> +	 */
+> +	if (unlikely(!mem_cgroups[id])) {
+> +		struct cgroup_subsys_state *css;
+> +		rcu_read_lock();
+> +		css = css_lookup(&mem_cgroup_subsys, id);
+> +		if (!css)
+> +			return NULL;
+> +		rcu_read_unlock();
+
+I think we should move rcu_read_unlock() above to just before "if
+(!css)" to unlock rcu when returning NULL.
+
+> +		mem_cgroups[id] = container_of(css, struct mem_cgroup, css);
+> +	}
+> +	return mem_cgroups[id];
+> +}
+>  /*
+>   * Maximum loops in mem_cgroup_hierarchical_reclaim(), used for soft
+>   * limit reclaim to prevent infinite loops, if they ever occur.
+> @@ -1824,18 +1845,7 @@ static void mem_cgroup_cancel_charge(str
+>   * it's concern. (dropping refcnt from swap can be called against removed
+>   * memcg.)
+>   */
+> -static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+> -{
+> -	struct cgroup_subsys_state *css;
+>  
+> -	/* ID 0 is unused ID */
+> -	if (!id)
+> -		return NULL;
+> -	css = css_lookup(&mem_cgroup_subsys, id);
+> -	if (!css)
+> -		return NULL;
+> -	return container_of(css, struct mem_cgroup, css);
+> -}
+>  
+>  struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+>  {
+> @@ -1856,7 +1866,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
+>  		ent.val = page_private(page);
+>  		id = lookup_swap_cgroup(ent);
+>  		rcu_read_lock();
+> -		mem = mem_cgroup_lookup(id);
+> +		mem = id_to_memcg(id);
+>  		if (mem && !css_tryget(&mem->css))
+>  			mem = NULL;
+>  		rcu_read_unlock();
+> @@ -2208,7 +2218,7 @@ __mem_cgroup_commit_charge_swapin(struct
+>  
+>  		id = swap_cgroup_record(ent, 0);
+>  		rcu_read_lock();
+> -		memcg = mem_cgroup_lookup(id);
+> +		memcg = id_to_memcg(id);
+>  		if (memcg) {
+>  			/*
+>  			 * This recorded memcg can be obsolete one. So, avoid
+> @@ -2472,7 +2482,7 @@ void mem_cgroup_uncharge_swap(swp_entry_
+>  
+>  	id = swap_cgroup_record(ent, 0);
+>  	rcu_read_lock();
+> -	memcg = mem_cgroup_lookup(id);
+> +	memcg = id_to_memcg(id);
+>  	if (memcg) {
+>  		/*
+>  		 * We uncharge this because swap is freed.
+> @@ -3988,6 +3998,10 @@ static struct mem_cgroup *mem_cgroup_all
+>  	struct mem_cgroup *mem;
+>  	int size = sizeof(struct mem_cgroup);
+>  
+> +	/* 0 is unused */
+> +	if (atomic_read(&mem_cgroup_num) == CONFIG_MEM_CGROUP_MAX_GROUPS-1)
+> +		return NULL;
+> +
+>  	/* Can be very big if MAX_NUMNODES is very big */
+>  	if (size < PAGE_SIZE)
+>  		mem = kmalloc(size, GFP_KERNEL);
+> @@ -4025,7 +4039,10 @@ static void __mem_cgroup_free(struct mem
+>  	int node;
+>  
+>  	mem_cgroup_remove_from_trees(mem);
+> +	/* No more lookup against this ID */
+> +	mem_cgroups[css_id(&mem->css)] = NULL;
+
+Are css_id() values tightly packed?  If there are 4 memcg allocated, are
+we guaranteed that all of their id's have value 1..4?
+
+>  	free_css_id(&mem_cgroup_subsys, &mem->css);
+> +	atomic_dec(&mem_cgroup_num);
+>  
+>  	for_each_node_state(node, N_POSSIBLE)
+>  		free_mem_cgroup_per_zone_info(mem, node);
+> @@ -4162,6 +4179,7 @@ mem_cgroup_create(struct cgroup_subsys *
+>  	atomic_set(&mem->refcnt, 1);
+>  	mem->move_charge_at_immigrate = 0;
+>  	mutex_init(&mem->thresholds_lock);
+> +	atomic_inc(&mem_cgroup_num);
+>  	return &mem->css;
+>  free_out:
+>  	__mem_cgroup_free(mem);
+> Index: mmotm-0727/init/Kconfig
+> ===================================================================
+> --- mmotm-0727.orig/init/Kconfig
+> +++ mmotm-0727/init/Kconfig
+> @@ -594,6 +594,17 @@ config CGROUP_MEM_RES_CTLR_SWAP
+>  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+>  	  size is 4096bytes, 512k per 1Gbytes of swap.
+>  
+> +config MEM_CGROUP_MAX_GROUPS
+> +	int "Maximum number of memory cgroups on a system"
+> +	range 1 65535
+> +	default 8192 if 64BIT
+> +	default 2048 if 32BIT
+> +	help
+> +	  Memory cgroup has limitation of the number of groups created.
+> +	  Please select your favorite value. The more you allow, the more
+> +	  memory will be consumed. This consumes vmalloc() area, so,
+> +	  this should be small on 32bit arch.
+> +
+>  menuconfig CGROUP_SCHED
+>  	bool "Group CPU scheduler"
+>  	depends on EXPERIMENTAL && CGROUPS
