@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab0G2RPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:15:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59592 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758116Ab0G2RPn (ORCPT
+	id S1758132Ab0G2RQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:16:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64294 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856Ab0G2RQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:15:43 -0400
-Date: Thu, 29 Jul 2010 10:15:54 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dtor@mail.ru>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Nick Cheng <nick.cheng@areca.com.tw>,
-        James Smart <james.smart@emulex.com>,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-        Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 4/6] regulator: Remove owner field from attribute
- initialization in regulator core driver
-Message-ID: <20100729171553.GA24781@opensource.wolfsonmicro.com>
-References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
- <1280380166-29196-5-git-send-email-guenter.roeck@ericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280380166-29196-5-git-send-email-guenter.roeck@ericsson.com>
-X-Cookie: You will be run over by a bus.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 29 Jul 2010 13:16:56 -0400
+Date: Thu, 29 Jul 2010 10:16:09 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
+        Jayamohan Kallickal <jayamohank@serverengines.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        jejbscsi <james.bottomley@suse.de>
+Subject: [PATCH -next] scsi: be2iscsi needs ISCSI_BOOT_SYSFS
+Message-Id: <20100729101609.965dbe48.randy.dunlap@oracle.com>
+In-Reply-To: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
+References: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4C51B77F.0225:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 10:09:24PM -0700, Guenter Roeck wrote:
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+be2iscsi uses iscsi_boot_*() interfaces, so it should ensure that
+ISCSI_BOOT_SYSFS is enabled.
+
+ERROR: "iscsi_boot_create_target" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
+ERROR: "iscsi_boot_create_ethernet" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
+ERROR: "iscsi_boot_create_host_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
+ERROR: "iscsi_boot_create_initiator" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
+ERROR: "iscsi_boot_destroy_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/scsi/be2iscsi/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20100729.orig/drivers/scsi/be2iscsi/Kconfig
++++ linux-next-20100729/drivers/scsi/be2iscsi/Kconfig
+@@ -2,6 +2,7 @@ config BE2ISCSI
+ 	tristate "ServerEngines' 10Gbps iSCSI - BladeEngine 2"
+ 	depends on PCI && SCSI && NET
+ 	select SCSI_ISCSI_ATTRS
++	select ISCSI_BOOT_SYSFS
+ 
+ 	help
+ 	This driver implements the iSCSI functionality for ServerEngines'
+---
