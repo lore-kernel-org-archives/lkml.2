@@ -1,121 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab0G2PEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 11:04:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35182 "EHLO mx2.suse.de"
+	id S1756971Ab0G2PFu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 11:05:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35231 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab0G2PEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 11:04:41 -0400
-Date: Thu, 29 Jul 2010 17:04:13 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 1/5] writeback: introduce wbc.for_sync to cover the two
- sync stages
-Message-ID: <20100729150413.GD12690@quack.suse.cz>
-References: <20100729115142.102255590@intel.com>
- <20100729121423.184456417@intel.com>
+	id S1751566Ab0G2PFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 11:05:48 -0400
+Message-ID: <4C519899.9020206@suse.cz>
+Date: Thu, 29 Jul 2010 17:04:57 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729121423.184456417@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+References: <20100725213808.GA5814@merkur.ravnborg.org> <20100725214021.GD5834@merkur.ravnborg.org> <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <20100729081316.GA4990@merkur.ravnborg.org> <4C5148A5.10809@suse.cz> <20100729144748.GI6249@redhat.com>
+In-Reply-To: <20100729144748.GI6249@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 29-07-10 19:51:43, Wu Fengguang wrote:
-> The sync() is performed in two stages: the WB_SYNC_NONE sync and
-> the WB_SYNC_ALL sync. It is necessary to tag both stages with
-> wbc.for_sync, so as to prevent either of them being livelocked.
-> 
-> The basic livelock scheme will be based on the sync_after timestamp.
-> Inodes dirtied after that won't be queued for IO. The timestamp could be
-> recorded as early as the sync() time, this patch lazily sets it in
-> writeback_inodes_sb()/sync_inodes_sb(). This will stop livelock, but
-> may do more work than necessary.
-> 
-> Note that writeback_inodes_sb() is called by not only sync(), they
-> are treated the same because the other callers need the same livelock
-> prevention.
-  OK, but the patch does nothing, doesn't it? I'd prefer if the fields
-you introduce were actually used in this patch.
+On 29.7.2010 16:47, Aristeu Rozanski wrote:
+> On Thu, Jul 29, 2010 at 11:23:49AM +0200, Michal Marek wrote:
+>> On 29.7.2010 10:13, Sam Ravnborg wrote:
+>>> On Wed, Jul 28, 2010 at 10:36:22PM +0200, Sam Ravnborg wrote:
+>>>> Hi Michal.
+>>>>
+>>>> I cooked up the following to introduce long options in conf.
+>>>> But in the process I dropped the short options. Is this OK?
+>>>
+>>> On top of this patch I did another two.
+>>> They fixup the *nonint_oldconfig targets:
+>>>
+>>> nonint_oldconfig:
+>>> - renamed to listnewconfig
+>>> - print new options to stdout (to better support redirect)
+>>> - no longer saves a new configuration
+>>> - does ot exist with a failure code if there is new options
+> but this kills its usefulness. nonint_oldconfig is used so you can script
+> the use of a generated configuration (think distro kernel RPMs). if something
+> is not set, it fails listing what's not set. otherwise it'll save the
+> configuration and whatever script is using it can proceed.
+> "listnewconfig" is a new, different target to me.
 
-								Honza
+How about
+new=$(make listnewconfig)
+if test -n "$new"; then
+    echo "Please set the following options:" >&2
+    echo "$new" >&2
+    exit 1
+fi
+? Wouldn't that be the same as nonint_oldconfig before?
 
-> CC: Jan Kara <jack@suse.cz>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  fs/fs-writeback.c         |   21 ++++++++++++---------
->  include/linux/writeback.h |    1 +
->  2 files changed, 13 insertions(+), 9 deletions(-)
-> 
-> --- linux-next.orig/fs/fs-writeback.c	2010-07-28 17:05:17.000000000 +0800
-> +++ linux-next/fs/fs-writeback.c	2010-07-28 21:21:31.000000000 +0800
-> @@ -36,6 +36,8 @@ struct wb_writeback_work {
->  	long nr_pages;
->  	struct super_block *sb;
->  	enum writeback_sync_modes sync_mode;
-> +	unsigned long sync_after;
-> +	unsigned int for_sync:1;
->  	unsigned int for_kupdate:1;
->  	unsigned int range_cyclic:1;
->  	unsigned int for_background:1;
-> @@ -1086,20 +1090,17 @@ static void wait_sb_inodes(struct super_
->   */
->  void writeback_inodes_sb(struct super_block *sb)
->  {
-> -	unsigned long nr_dirty = global_page_state(NR_FILE_DIRTY);
-> -	unsigned long nr_unstable = global_page_state(NR_UNSTABLE_NFS);
->  	DECLARE_COMPLETION_ONSTACK(done);
->  	struct wb_writeback_work work = {
->  		.sb		= sb,
->  		.sync_mode	= WB_SYNC_NONE,
-> +		.for_sync	= 1,
-> +		.sync_after	= jiffies,
->  		.done		= &done,
->  	};
->  
->  	WARN_ON(!rwsem_is_locked(&sb->s_umount));
->  
-> -	work.nr_pages = nr_dirty + nr_unstable +
-> -			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
-> -
->  	bdi_queue_work(sb->s_bdi, &work);
->  	wait_for_completion(&done);
->  }
-> @@ -1137,6 +1138,8 @@ void sync_inodes_sb(struct super_block *
->  	struct wb_writeback_work work = {
->  		.sb		= sb,
->  		.sync_mode	= WB_SYNC_ALL,
-> +		.for_sync	= 1,
-> +		.sync_after	= jiffies,
->  		.nr_pages	= LONG_MAX,
->  		.range_cyclic	= 0,
->  		.done		= &done,
-> --- linux-next.orig/include/linux/writeback.h	2010-07-28 17:05:17.000000000 +0800
-> +++ linux-next/include/linux/writeback.h	2010-07-28 21:24:54.000000000 +0800
-> @@ -48,6 +48,7 @@ struct writeback_control {
->  	unsigned encountered_congestion:1; /* An output: a queue is full */
->  	unsigned for_kupdate:1;		/* A kupdate writeback */
->  	unsigned for_background:1;	/* A background writeback */
-> +	unsigned for_sync:1;		/* A writeback for sync */
->  	unsigned for_reclaim:1;		/* Invoked from the page allocator */
->  	unsigned range_cyclic:1;	/* range_start is cyclic */
->  };
-> 
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Michal
