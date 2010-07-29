@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab0G2RDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:03:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42800 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab0G2RDY (ORCPT
+	id S932105Ab0G2RIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:08:40 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:54344 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758086Ab0G2RIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:03:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MKCyESGuAkWvyNJnvMWWLuafN/n4YxL+RTEHoUwoJ60INNDnf+BDD615sMQEJA5Dk1
-         lS4YiZAQfqDVQLkCGzsm6OIq8SIqbUGvagIxxnK6UMrHBo0m4zPEcCgJsltT3i+xkKyO
-         iMhl/QlhkZ7xUMnj/lfjFaHJ5zHKON+dAkyjA=
-Date: Fri, 30 Jul 2010 02:03:13 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-Message-ID: <20100729170313.GB16420@barrios-desktop>
-References: <AANLkTikCsGHshU8v86SQiuO+UZBCbdjOKN=GyJFPb7rY@mail.gmail.com>
- <alpine.DEB.2.00.1007270929290.28648@router.home>
- <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
- <alpine.DEB.2.00.1007281005440.21717@router.home>
- <20100728155617.GA5401@barrios-desktop>
- <alpine.DEB.2.00.1007281158150.21717@router.home>
- <20100728225756.GA6108@barrios-desktop>
- <alpine.DEB.2.00.1007291038100.16510@router.home>
- <20100729161856.GA16420@barrios-desktop>
- <alpine.DEB.2.00.1007291132210.17734@router.home>
+	Thu, 29 Jul 2010 13:08:38 -0400
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: miaox@cn.fujitsu.com
+Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
+Date: Thu, 29 Jul 2010 19:09:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6; KDE/4.4.5; i686; ; )
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        zheng.yan@oracle.com, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel@vger.kernel.org
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <4C44066A.3080701@cn.fujitsu.com> <201007222007.24574.johannes.hirte@fem.tu-ilmenau.de>
+In-Reply-To: <201007222007.24574.johannes.hirte@fem.tu-ilmenau.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1007291132210.17734@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007291909.51978.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 11:47:26AM -0500, Christoph Lameter wrote:
-> On Fri, 30 Jul 2010, Minchan Kim wrote:
+Am Donnerstag 22 Juli 2010, 20:07:23 schrieb Johannes Hirte:
+> Am Montag 19 Juli 2010, 10:01:46 schrieb Miao Xie:
+> > On Thu, 15 Jul 2010 20:14:51 +0200, Johannes Hirte wrote:
+> > > Am Donnerstag 15 Juli 2010, 02:11:04 schrieb Dave Chinner:
+> > >> On Wed, Jul 14, 2010 at 05:25:23PM +0200, Johannes Hirte wrote:
+> > >>> Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
+> > >>> I'm not sure if btrfs is to blame for this error. After the errors I
+> > >>> switched to XFS on this system and got now this error:
+> > >>> 
+> > >>> ls -l .kde4/share/apps/akregator/data/
+> > >>> ls: cannot access .kde4/share/apps/akregator/data/feeds.opml:
+> > >>> Structure needs cleaning
+> > >>> total 4
+> > >>> ?????????? ? ?    ?        ?            ? feeds.opml
+> > >> 
+> > >> What is the error reported in dmesg when the XFS filesytem shuts down?
+> > > 
+> > > Nothing. I double checked the logs. There are only the messages when
+> > > mounting the filesystem. No other errors are reported than the
+> > > inaccessible file and the output from xfs_check.
+> > 
+> > Is there anything wrong with your disks or memory?
+> > Sometimes the bad memory can break the filesystem. I have met this kind
+> > of problem some time ago.
 > 
-> > The thing is valid section also have a invalid memmap.
-> 
-> Oww... . A valid section points to a valid memmap memory block (the page
-> structs) but the underlying memory pages may not present. So you can check
-> the (useless) page structs for the page state of the not present pages in
-> the memory map. If the granularity of the sparsemem mapping is not
-> sufficient for your purpose then you can change the sparsemem config
-> (configuration is in arch/<arch>/include/asm/sparsemem.h but does not
-> exist for arm).
-> 
-> >      It means section 0 is an incompletely filled section.
-> >      Nontheless, current pfn_valid of sparsemem checks pfn loosely.
-> >      It checks only mem_section's validation but ARM can free mem_map on hole
-> >      to save memory space. So in above case, pfn on 0x25000000 can pass pfn_valid's
-> >      validation check. It's not what we want.
-> 
-> IMHO ARM should not poke holes in the memmap sections. The guarantee of
-> the full presence of the section is intentional to avoid having to do
-> these checks that you are proposing. The page allocator typically expects
-> to be able to check all page structs in one basic allocation unit.
-> 
-> Also pfn_valid then does not have to touch the pag struct to perform its
-> function as long as we guarantee the presence of the memmap section.
+> I don't think that's the case. I've checked the RAM with memtest86+ and got
+> no errors. I got the errors with two different disks, the first one with
+> btrfs the second one now with XFS. Before changing to the second disk,
+> I've run badblocks on it to be sure it has no errors.
 
-Absolutely Right. Many mm guys wanted to do it. 
-But Russell doesn't want it. 
-Please, look at the discussion. 
+I think I've found it. The bug was introduced by 
 
-http://www.spinics.net/lists/arm-kernel/msg93026.html
+commit 7f0e7bed936a0c422641a046551829a01341dd80
+Author: Christoph Hellwig <hch@lst.de>
+Date:   Tue Jun 8 18:14:34 2010 +0200
 
-In fact, we didn't determine the approache at that time.
-But I think we can't give up ARM's usecase although sparse model
-dosn't be desinged to the such granularity. and I think this approach
-can solve ARM's FLATMEM's pfn_valid problem which is doing binar search. 
-So I just tried to solve this problem. But Russell still be quiet. 
+    writeback: fix writeback completion notifications
+    
+    The code dealing with bdi_work->state and completion of a bdi_work is a
+    major mess currently.  This patch makes sure we directly use one set of
+    flags to deal with it, and use it consistently, which means:
+    
+     - always notify about completion from the rcu callback.  We only ever
+       wait for it from on-stack callers, so this simplification does not
+       even cause a theoretical slowdown currently.  It also makes sure we
+       don't miss out on the notification if we ever add other callers to
+       wait for it.
+     - make earlier completion notification depending on the on-stack
+       allocation, not the sync mode.  If we introduce new callers that
+       want to do WB_SYNC_NONE writeback from on-stack callers this will
+       be nessecary.
+    
+    Also rename bdi_wait_on_work_clear to bdi_wait_on_work_done and inline
+    a few small functions into their only caller to make the code
+    understandable.
+    
+    Signed-off-by: Christoph Hellwig <hch@lst.de>
+    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 
-Okay. I will wait other's opinion. 
-First of all, let's fix the approach.
-Russell, Could you speak your opinion about this approach or your suggestion?
+and seems to be fixed by
 
--- 
-Kind regards,
-Minchan Kim
+commit 83ba7b071f30f7c01f72518ad72d5cd203c27502
+Author: Christoph Hellwig <hch@lst.de>
+Date:   Tue Jul 6 08:59:53 2010 +0200
+
+    writeback: simplify the write back thread queue
+    
+    First remove items from work_list as soon as we start working on them.This
+    means we don't have to track any pending or visited state and can get
+    rid of all the RCU magic freeing the work items - we can simply free
+    them once the operation has finished.  Second use a real completion for
+    tracking synchronous requests - if the caller sets the completion pointer
+    we complete it, otherwise use it as a boolean indicator that we can free
+    the work item directly.  Third unify struct wb_writeback_args and struct
+    bdi_work into a single data structure, wb_writeback_work.  Previous we
+    set all parameters into a struct wb_writeback_args, copied it into
+    struct bdi_work, copied it again on the stack to use it there.  Instead
+    of just allocate one structure dynamically or on the stack and use it
+    all the way through the stack.
+    
+    Signed-off-by: Christoph Hellwig <hch@lst.de>
+    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+
+I was able to reproduce the bug by unpacking a big tar-file and deleting this files multiple times. Normally with btrfs the kernel crashed within 20 runs. After commit 83ba7b071f30f7c01f72518ad72d5cd203c27502 it survived more than 500 runs.
+
+
+regards,
+  Johannes
