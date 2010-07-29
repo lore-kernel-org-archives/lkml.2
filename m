@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0G2JJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 05:09:55 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:50336 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab0G2JJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 05:09:54 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 1/1] Char: nozomi, fix tty->count counting
-Date: Thu, 29 Jul 2010 11:09:47 +0200
-Message-Id: <1280394587-31670-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.2
+	id S1755591Ab0G2JKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 05:10:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754638Ab0G2JK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 05:10:28 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <201007290324.36745.vda.linux@googlemail.com>
+References: <201007290324.36745.vda.linux@googlemail.com> <1280360876-2571-3-git-send-email-vda.linux@googlemail.com> <1280360876-2571-1-git-send-email-vda.linux@googlemail.com> <29025.1280363105@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: dhowells@redhat.com, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Parisc List <linux-parisc@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Tim Abbott <tabbott@ksplice.com>, Tim Bird <tim.bird@am.sony.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Matt Fleming <matt@console-pimps.org>, Arnd Bergmann <arnd@arndb.de>,
+        Anders Kaseorg <andersk@mit.edu>, Andi Kleen <andi@firstfloor.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 2/4] module linker script: coalesce function and data sections
+Date: Thu, 29 Jul 2010 10:09:57 +0100
+Message-ID: <30881.1280394597@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently ntty_install omits to increment tty count and we get the
-following warnings:
-Warning: dev (noz2) tty->count(0) != #fd's(1) in tty_open
+Denys Vlasenko <vda.linux@googlemail.com> wrote:
 
-So to fix that, add one tty->count++ there.
+> linker groups all similarly-named input sections into one output section
+> with the same name, if the name does not match any rule in the linker
+> script.
+> 
+> Basically, it should work as if there is a rule:
+> 
+> .sbss    0 : AT(0) { *(.sbss) }
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@linux.intel.com>
----
- drivers/char/nozomi.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Okay, thanks.
 
-diff --git a/drivers/char/nozomi.c b/drivers/char/nozomi.c
-index d578449..7f9b858 100644
---- a/drivers/char/nozomi.c
-+++ b/drivers/char/nozomi.c
-@@ -1611,6 +1611,7 @@ static int ntty_install(struct tty_driver *driver, struct tty_struct *tty)
- 	ret = tty_init_termios(tty);
- 	if (ret == 0) {
- 		tty_driver_kref_get(driver);
-+		tty->count++;
- 		driver->ttys[tty->index] = tty;
- 	}
- 	return ret;
--- 
-1.7.2
-
-
+David
