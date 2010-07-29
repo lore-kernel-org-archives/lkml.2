@@ -1,117 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab0G2RIk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:08:40 -0400
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:54344 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758086Ab0G2RIi (ORCPT
+	id S1758104Ab0G2ROh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 13:14:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61048 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848Ab0G2ROf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:08:38 -0400
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: miaox@cn.fujitsu.com
-Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
-Date: Thu, 29 Jul 2010 19:09:50 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6; KDE/4.4.5; i686; ; )
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        zheng.yan@oracle.com, Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel@vger.kernel.org
-References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <4C44066A.3080701@cn.fujitsu.com> <201007222007.24574.johannes.hirte@fem.tu-ilmenau.de>
-In-Reply-To: <201007222007.24574.johannes.hirte@fem.tu-ilmenau.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 29 Jul 2010 13:14:35 -0400
+Date: Thu, 29 Jul 2010 10:13:06 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH -next] mtd: redwood depends on MTD_PARTITIONS
+Message-Id: <20100729101306.36c20611.randy.dunlap@oracle.com>
+In-Reply-To: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
+References: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007291909.51978.johannes.hirte@fem.tu-ilmenau.de>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C51B6ED.01CE:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 22 Juli 2010, 20:07:23 schrieb Johannes Hirte:
-> Am Montag 19 Juli 2010, 10:01:46 schrieb Miao Xie:
-> > On Thu, 15 Jul 2010 20:14:51 +0200, Johannes Hirte wrote:
-> > > Am Donnerstag 15 Juli 2010, 02:11:04 schrieb Dave Chinner:
-> > >> On Wed, Jul 14, 2010 at 05:25:23PM +0200, Johannes Hirte wrote:
-> > >>> Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
-> > >>> I'm not sure if btrfs is to blame for this error. After the errors I
-> > >>> switched to XFS on this system and got now this error:
-> > >>> 
-> > >>> ls -l .kde4/share/apps/akregator/data/
-> > >>> ls: cannot access .kde4/share/apps/akregator/data/feeds.opml:
-> > >>> Structure needs cleaning
-> > >>> total 4
-> > >>> ?????????? ? ?    ?        ?            ? feeds.opml
-> > >> 
-> > >> What is the error reported in dmesg when the XFS filesytem shuts down?
-> > > 
-> > > Nothing. I double checked the logs. There are only the messages when
-> > > mounting the filesystem. No other errors are reported than the
-> > > inaccessible file and the output from xfs_check.
-> > 
-> > Is there anything wrong with your disks or memory?
-> > Sometimes the bad memory can break the filesystem. I have met this kind
-> > of problem some time ago.
-> 
-> I don't think that's the case. I've checked the RAM with memtest86+ and got
-> no errors. I got the errors with two different disks, the first one with
-> btrfs the second one now with XFS. Before changing to the second disk,
-> I've run badblocks on it to be sure it has no errors.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I think I've found it. The bug was introduced by 
+redwood uses add/del_mtd_partitions(), so it should depend on
+MTD_PARTITIONS.
 
-commit 7f0e7bed936a0c422641a046551829a01341dd80
-Author: Christoph Hellwig <hch@lst.de>
-Date:   Tue Jun 8 18:14:34 2010 +0200
+ERROR: "add_mtd_partitions" [drivers/mtd/maps/redwood.ko] undefined!
+ERROR: "del_mtd_partitions" [drivers/mtd/maps/redwood.ko] undefined!
 
-    writeback: fix writeback completion notifications
-    
-    The code dealing with bdi_work->state and completion of a bdi_work is a
-    major mess currently.  This patch makes sure we directly use one set of
-    flags to deal with it, and use it consistently, which means:
-    
-     - always notify about completion from the rcu callback.  We only ever
-       wait for it from on-stack callers, so this simplification does not
-       even cause a theoretical slowdown currently.  It also makes sure we
-       don't miss out on the notification if we ever add other callers to
-       wait for it.
-     - make earlier completion notification depending on the on-stack
-       allocation, not the sync mode.  If we introduce new callers that
-       want to do WB_SYNC_NONE writeback from on-stack callers this will
-       be nessecary.
-    
-    Also rename bdi_wait_on_work_clear to bdi_wait_on_work_done and inline
-    a few small functions into their only caller to make the code
-    understandable.
-    
-    Signed-off-by: Christoph Hellwig <hch@lst.de>
-    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/mtd/maps/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-and seems to be fixed by
-
-commit 83ba7b071f30f7c01f72518ad72d5cd203c27502
-Author: Christoph Hellwig <hch@lst.de>
-Date:   Tue Jul 6 08:59:53 2010 +0200
-
-    writeback: simplify the write back thread queue
-    
-    First remove items from work_list as soon as we start working on them.This
-    means we don't have to track any pending or visited state and can get
-    rid of all the RCU magic freeing the work items - we can simply free
-    them once the operation has finished.  Second use a real completion for
-    tracking synchronous requests - if the caller sets the completion pointer
-    we complete it, otherwise use it as a boolean indicator that we can free
-    the work item directly.  Third unify struct wb_writeback_args and struct
-    bdi_work into a single data structure, wb_writeback_work.  Previous we
-    set all parameters into a struct wb_writeback_args, copied it into
-    struct bdi_work, copied it again on the stack to use it there.  Instead
-    of just allocate one structure dynamically or on the stack and use it
-    all the way through the stack.
-    
-    Signed-off-by: Christoph Hellwig <hch@lst.de>
-    Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-
-I was able to reproduce the bug by unpacking a big tar-file and deleting this files multiple times. Normally with btrfs the kernel crashed within 20 runs. After commit 83ba7b071f30f7c01f72518ad72d5cd203c27502 it survived more than 500 runs.
-
-
-regards,
-  Johannes
+--- linux-next-20100729.orig/drivers/mtd/maps/Kconfig
++++ linux-next-20100729/drivers/mtd/maps/Kconfig
+@@ -321,7 +321,7 @@ config MTD_CFI_FLAGADM
+ 
+ config MTD_REDWOOD
+ 	tristate "CFI Flash devices mapped on IBM Redwood"
+-	depends on MTD_CFI
++	depends on MTD_CFI && MTD_PARTITIONS
+ 	help
+ 	  This enables access routines for the flash chips on the IBM
+ 	  Redwood board. If you have one of these boards and would like to
