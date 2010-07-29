@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab0G2R7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 13:59:45 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34147 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab0G2R7l (ORCPT
+	id S1754801Ab0G2SAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 14:00:09 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:58412 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab0G2R7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 13:59:41 -0400
+	Thu, 29 Jul 2010 13:59:55 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
         sandeen@redhat.com, tytso@mit.edu, bfields@citi.umich.edu,
@@ -14,9 +14,9 @@ To: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         nfsv4@linux-nfs.org, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH -V3 09/17] richacl: Helper functions for implementing richacl inode operations
-Date: Thu, 29 Jul 2010 23:27:47 +0530
-Message-Id: <1280426275-4602-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V3 12/17] richacl: Automatic Inheritance
+Date: Thu, 29 Jul 2010 23:27:50 +0530
+Message-Id: <1280426275-4602-13-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1280426275-4602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,262 +26,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@suse.de>
 
-These functions are supposed to be used by file systems so that the file
-system independent code remains in the vfs.
+Automatic Inheritance (AI) allows changes to the acl of a directory to
+recursively propagate down to files and directories in the directory.
+
+To implement this, the kernel keeps track of which permissions have been
+inherited, and makes sure that permission propagation is turned off when
+the file permission bits of a file are changed (upon create or chmod).
+
+The actual permission propagation is implemented in user space.
+
+AI works as follows:
+
+ - When the ACL4_AUTO_INHERIT flag in the acl of a file is cleared, the
+   file is not affected by AI.
+
+ - When the ACL4_AUTO_INHERIT flag in the acl of a directory is set and
+   a file or subdirectory is created in that directory, files created in
+   the directory will have the ACL4_AUTO_INHERIT flag set, and all
+   inherited aces will have the ACE4_INHERITED_ACE flag set.  This
+   allows user space to distinguish between aces which have been
+   inherited, and aces which have been explicitly added.
+
+ - When the ACL4_PROTECTED acl flag in the acl of a file is set, AI will
+   not modify the acl of the file.  This does not affect propagation of
+   permissions from the file to its children (if the file is a
+   directory).
+
+Linux does not have a way of creating files without setting the file
+permission bits, so all files created inside a directory with
+ACL4_AUTO_INHERIT set will also have the ACL4_PROTECTED flag set.  This
+effectively disables AI.
+
+Protocols which support creating files without specifying permissions
+can explicitly clear the ACL4_PROTECTED flag after creating a file (and
+reset the file masks to "undo" applying the create mode; see
+richacl_compute_max_masks()).  This is a workaround; a per-create or
+per-process flag indicating to ignore the create mode when AI is in
+effect would fix this problem.
 
 Signed-off-by: Andreas Gruenbacher <agruen@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/Makefile             |    2 +-
- fs/richacl_inode.c      |  195 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl.h |   21 +++++
- 3 files changed, 217 insertions(+), 1 deletions(-)
- create mode 100644 fs/richacl_inode.c
+ fs/richacl_base.c       |   10 +++++++++-
+ fs/richacl_inode.c      |    7 ++++++-
+ include/linux/richacl.h |   25 +++++++++++++++++++++++--
+ 3 files changed, 38 insertions(+), 4 deletions(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index 9ecd045..b38cfc7 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -52,7 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
- obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index 5afdc5a..27dd2f1 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -357,7 +357,8 @@ richacl_chmod(struct richacl *acl, mode_t mode)
+ 	if (acl->a_owner_mask == owner_mask &&
+ 	    acl->a_group_mask == group_mask &&
+ 	    acl->a_other_mask == other_mask &&
+-	    (acl->a_flags & ACL4_MASKED))
++	    (acl->a_flags & ACL4_MASKED) &&
++	    (!richacl_is_auto_inherit(acl) || richacl_is_protected(acl)))
+ 		return acl;
  
- obj-$(CONFIG_FS_RICHACL)	+= richacl.o
--richacl-y			:= richacl_base.o
-+richacl-y			:= richacl_base.o richacl_inode.o
+ 	clone = richacl_clone(acl);
+@@ -369,6 +370,8 @@ richacl_chmod(struct richacl *acl, mode_t mode)
+ 	clone->a_owner_mask = owner_mask;
+ 	clone->a_group_mask = group_mask;
+ 	clone->a_other_mask = other_mask;
++	if (richacl_is_auto_inherit(clone))
++		clone->a_flags |= ACL4_PROTECTED;
  
- obj-y				+= quota/
+ 	return clone;
+ }
+@@ -538,6 +541,11 @@ richacl_inherit(const struct richacl *dir_acl, int isdir)
+ 			ace++;
+ 		}
+ 	}
++	if (richacl_is_auto_inherit(dir_acl)) {
++		acl->a_flags = ACL4_AUTO_INHERIT;
++		richacl_for_each_entry(ace, acl)
++			ace->e_flags |= ACE4_INHERITED_ACE;
++	}
  
+ 	return acl;
+ }
 diff --git a/fs/richacl_inode.c b/fs/richacl_inode.c
-new file mode 100644
-index 0000000..9e80b33
---- /dev/null
+index f5dd95a..2101832 100644
+--- a/fs/richacl_inode.c
 +++ b/fs/richacl_inode.c
-@@ -0,0 +1,195 @@
-+/*
-+ * Copyright (C) 2010  Novell, Inc.
-+ * Written by Andreas Gruenbacher <agruen@suse.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/sched.h>
-+#include <linux/module.h>
-+#include <linux/fs.h>
-+#include <linux/richacl.h>
-+
-+/**
-+ * richacl_may_create  -  helper for implementing iop->may_create
-+ */
-+int
-+richacl_may_create(struct inode *dir, int isdir,
-+		int (*richacl_permission)(struct inode *, unsigned int))
-+{
-+	if (IS_RICHACL(dir))
-+		return richacl_permission(dir,
-+				ACE4_EXECUTE | (isdir ?
-+				ACE4_ADD_SUBDIRECTORY : ACE4_ADD_FILE));
-+	else
-+		return generic_permission(dir, MAY_WRITE | MAY_EXEC,
-+					  dir->i_op->check_acl);
-+}
-+EXPORT_SYMBOL(richacl_may_create);
-+
-+static int
-+check_sticky(struct inode *dir, struct inode *inode)
-+{
-+	if (!(dir->i_mode & S_ISVTX))
-+		return 0;
-+	if (inode->i_uid == current_fsuid())
-+		return 0;
-+	if (dir->i_uid == current_fsuid())
-+		return 0;
-+	return !capable(CAP_FOWNER);
-+}
-+
-+/**
-+ * richacl_may_delete  -  helper for implementing iop->may_delete
-+ */
-+int
-+richacl_may_delete(struct inode *dir, struct inode *inode, int replace,
-+		   int (*richacl_permission)(struct inode *, unsigned int))
-+{
-+	int error;
-+
-+	if (IS_RICHACL(inode)) {
-+		unsigned int mask = ACE4_EXECUTE | ACE4_DELETE_CHILD;
-+		if (replace)
-+			mask |= S_ISDIR(inode->i_mode) ?
-+				ACE4_ADD_SUBDIRECTORY : ACE4_ADD_FILE;
-+		error = richacl_permission(dir, mask);
-+		if (error &&
-+		    !richacl_permission(dir, ACE4_EXECUTE) &&
-+		    !richacl_permission(inode, ACE4_DELETE))
-+			error = 0;
-+		else if (!error && check_sticky(dir, inode))
-+			error = -EPERM;
-+	} else {
-+		error = generic_permission(dir, MAY_WRITE | MAY_EXEC,
-+					   dir->i_op->check_acl);
-+		if (!error && check_sticky(dir, inode))
-+			error = -EPERM;
-+	}
-+
-+	return error;
-+}
-+EXPORT_SYMBOL(richacl_may_delete);
-+
-+/**
-+ * richacl_inode_permission  -  helper for implementing iop->permission
-+ * @inode:	inode to check
-+ * @acl:	rich acl of the inode (may be NULL)
-+ * @mask:	requested access (ACE4_* bitmask)
-+ *
-+ * This function is supposed to be used by file systems for implementing the
-+ * permission inode operation.
-+ */
-+int
-+richacl_inode_permission(struct inode *inode, const struct richacl *acl,
-+			 unsigned int mask)
-+{
-+	if (acl) {
-+		if (!richacl_permission(inode, acl, mask))
-+			return 0;
-+	} else {
-+		int mode = inode->i_mode;
-+
-+		if (current_fsuid() == inode->i_uid)
-+			mode >>= 6;
-+		else if (in_group_p(inode->i_gid))
-+			mode >>= 3;
-+		if (!(mask & ~richacl_mode_to_mask(mode)))
-+			return 0;
-+	}
-+
-+	/*
-+	 * Keep in sync with the capability checks in generic_permission().
-+	 */
-+	if (!(mask & ~ACE4_POSIX_MODE_ALL)) {
+@@ -213,9 +213,14 @@ richacl_inherit_inode(const struct richacl *dir_acl, struct inode *inode)
+ 
+ 	acl = richacl_inherit(dir_acl, S_ISDIR(inode->i_mode));
+ 	if (acl) {
 +		/*
-+		 * Read/write DACs are always overridable.
-+		 * Executable DACs are overridable if at
-+		 * least one exec bit is set.
++		 * We need to set ACL4_PROTECTED because we are
++		 * doing an implicit chmod
 +		 */
-+		if (!(mask & ACE4_POSIX_MODE_EXEC) || execute_ok(inode))
-+			if (capable(CAP_DAC_OVERRIDE))
-+				return 0;
-+	}
-+	/*
-+	 * Searching includes executable on directories, else just read.
-+	 */
-+	if (!(mask & ~(ACE4_READ_DATA | ACE4_LIST_DIRECTORY | ACE4_EXECUTE)) &&
-+	    (S_ISDIR(inode->i_mode) || !(mask & ACE4_EXECUTE)))
-+		if (capable(CAP_DAC_READ_SEARCH))
-+			return 0;
-+
-+	return -EACCES;
-+}
-+EXPORT_SYMBOL_GPL(richacl_inode_permission);
-+
-+/**
-+ * richacl_inode_change_ok  -  helper for implementing iop->setattr
-+ * @inode:	inode to check
-+ * @attr:	requested inode attribute changes
-+ * @richacl_permission:	permission function taking an inode and ACE4_* flags
-+ *
-+ * Keep in sync with inode_change_ok().
-+ */
-+int
-+richacl_inode_change_ok(struct inode *inode, struct iattr *attr,
-+			int (*richacl_permission)(struct inode *, unsigned int))
-+{
-+	unsigned int ia_valid = attr->ia_valid;
-+
-+	/* If force is set do it anyway. */
-+	if (ia_valid & ATTR_FORCE)
-+		return 0;
-+
-+	/* Make sure a caller can chown. */
-+	if ((ia_valid & ATTR_UID) &&
-+	    (current_fsuid() != inode->i_uid ||
-+	     attr->ia_uid != inode->i_uid) &&
-+	    (current_fsuid() != attr->ia_uid ||
-+	     richacl_permission(inode, ACE4_WRITE_OWNER)) &&
-+	    !capable(CAP_CHOWN))
-+		goto error;
-+
-+	/* Make sure caller can chgrp. */
-+	if ((ia_valid & ATTR_GID)) {
-+		int in_group = in_group_p(attr->ia_gid);
-+		if ((current_fsuid() != inode->i_uid ||
-+		    (!in_group && attr->ia_gid != inode->i_gid)) &&
-+		    (!in_group ||
-+		     richacl_permission(inode, ACE4_WRITE_OWNER)) &&
-+		    !capable(CAP_CHOWN))
-+			goto error;
-+	}
-+
-+	/* Make sure a caller can chmod. */
-+	if (ia_valid & ATTR_MODE) {
-+		if (current_fsuid() != inode->i_uid &&
-+		    richacl_permission(inode, ACE4_WRITE_ACL) &&
-+		    !capable(CAP_FOWNER))
-+			goto error;
-+		/* Also check the setgid bit! */
-+		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
-+				inode->i_gid) && !capable(CAP_FSETID))
-+			attr->ia_mode &= ~S_ISGID;
-+	}
-+
-+	/* Check for setting the inode time. */
-+	if (ia_valid & (ATTR_MTIME_SET | ATTR_ATIME_SET)) {
-+		if (current_fsuid() != inode->i_uid &&
-+		    richacl_permission(inode, ACE4_WRITE_ATTRIBUTES) &&
-+		    !capable(CAP_FOWNER))
-+			goto error;
-+	}
-+	return 0;
-+error:
-+	return -EPERM;
-+}
-+EXPORT_SYMBOL_GPL(richacl_inode_change_ok);
++		if (richacl_is_auto_inherit(acl))
++			acl->a_flags |= ACL4_PROTECTED;
+ 
+ 		richacl_compute_max_masks(acl);
+-
+ 		/*
+ 		 * Ensure that the acl will not grant any permissions beyond
+ 		 * the create mode.
 diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index c9d2761..f6f892d 100644
+index 6151770..bb0c9b2 100644
 --- a/include/linux/richacl.h
 +++ b/include/linux/richacl.h
-@@ -292,4 +292,25 @@ extern struct richacl *richacl_chmod(struct richacl *, mode_t);
- extern int richacl_permission(struct inode *, const struct richacl *,
- 			      unsigned int);
+@@ -47,10 +47,16 @@ struct richacl {
+ 	     _ace != _acl->a_entries - 1; \
+ 	     _ace--)
  
-+/* richacl_inode.c */
-+
-+#ifdef CONFIG_FS_RICHACL
-+extern int richacl_may_create(struct inode *, int,
-+			      int (*)(struct inode *, unsigned int));
-+extern int richacl_may_delete(struct inode *, struct inode *, int,
-+			      int (*)(struct inode *, unsigned int));
-+extern int richacl_inode_permission(struct inode *, const struct richacl *,
-+				    unsigned int);
-+extern int richacl_inode_change_ok(struct inode *, struct iattr *,
-+				   int (*)(struct inode *, unsigned int));
-+#else
++/* a_flags values */
++#define ACL4_AUTO_INHERIT		0x01
++#define ACL4_PROTECTED			0x02
++/* #define ACL4_DEFAULTED			0x04 */
+ /* Flag values defined by rich-acl */
+ #define ACL4_MASKED			0x80
+ 
+ #define ACL4_VALID_FLAGS (			\
++		ACL4_AUTO_INHERIT |		\
++		ACL4_PROTECTED |		\
+ 		ACL4_MASKED)
+ 
+ /* e_type values */
+@@ -67,6 +73,7 @@ struct richacl {
+ /*#define ACE4_SUCCESSFUL_ACCESS_ACE_FLAG	0x0010*/
+ /*#define ACE4_FAILED_ACCESS_ACE_FLAG	0x0020*/
+ #define ACE4_IDENTIFIER_GROUP		0x0040
++#define ACE4_INHERITED_ACE		0x0080
+ /* in-memory representation only */
+ #define ACE4_SPECIAL_WHO		0x4000
+ 
+@@ -75,7 +82,8 @@ struct richacl {
+ 	ACE4_DIRECTORY_INHERIT_ACE |		\
+ 	ACE4_NO_PROPAGATE_INHERIT_ACE |		\
+ 	ACE4_INHERIT_ONLY_ACE |			\
+-	ACE4_IDENTIFIER_GROUP)
++	ACE4_IDENTIFIER_GROUP |			\
++	ACE4_INHERITED_ACE)
+ 
+ /* e_mask bitflags */
+ #define ACE4_READ_DATA			0x00000001
+@@ -181,6 +189,18 @@ richacl_put(struct richacl *acl)
+ 		kfree(acl);
+ }
+ 
 +static inline int
-+richacl_inode_change_ok(struct inode *inode, struct iattr *attr,
-+			int (*richacl_permission)(struct inode *inode,
-+						  unsigned int mask))
++richacl_is_auto_inherit(const struct richacl *acl)
 +{
-+	return -EPERM;
++	return acl->a_flags & ACL4_AUTO_INHERIT;
 +}
-+#endif
 +
- #endif /* __RICHACL_H */
++static inline int
++richacl_is_protected(const struct richacl *acl)
++{
++	return acl->a_flags & ACL4_PROTECTED;
++}
++
+ /*
+  * Special e_who identifiers: we use these pointer values in comparisons
+  * instead of doing a strcmp.
+@@ -259,7 +279,8 @@ richace_clear_inheritance_flags(struct richace *ace)
+ 	ace->e_flags &= ~(ACE4_FILE_INHERIT_ACE |
+ 			  ACE4_DIRECTORY_INHERIT_ACE |
+ 			  ACE4_NO_PROPAGATE_INHERIT_ACE |
+-			  ACE4_INHERIT_ONLY_ACE);
++			  ACE4_INHERIT_ONLY_ACE |
++			  ACE4_INHERITED_ACE);
+ }
+ 
+ /**
 -- 
 1.7.0.4
 
