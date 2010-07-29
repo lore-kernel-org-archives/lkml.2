@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab0G2KQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:16:58 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:28824 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab0G2KQs (ORCPT
+	id S1756781Ab0G2KRY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 06:17:24 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34795 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756613Ab0G2KRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:16:48 -0400
-X-IronPort-AV: E=Sophos;i="4.55,279,1278302400"; 
-   d="scan'208";a="107549400"
-From: Ian Campbell <ian.campbell@citrix.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 3/4] powerpc: Use IRQF_NO_SUSPEND not IRQF_TIMER for non-timer interrupts
-Date: Thu, 29 Jul 2010 11:16:34 +0100
-Message-Id: <1280398595-29708-3-git-send-email-ian.campbell@citrix.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1280398573.24292.1684.camel@zakaz.uk.xensource.com>
-References: <1280398573.24292.1684.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 29 Jul 2010 10:16:47.0601 (UTC) FILETIME=[27038610:01CB2F07]
+	Thu, 29 Jul 2010 06:17:20 -0400
+Date: Thu, 29 Jul 2010 12:16:04 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Vasiliy Kulikov <segooon@gmail.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] x86: mce: fix error handling
+Message-ID: <20100729101604.GA26495@aftab>
+References: <1280335185-23265-1-git-send-email-segooon@gmail.com>
+ <4C5063D4.4070108@linux.intel.com>
+ <20100728171327.GA24149@albatros>
+ <4C5066CB.7010009@linux.intel.com>
+ <20100729093511.GB7143@albatros>
+ <4C514F04.80603@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C514F04.80603@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kw_i2c_irq and via_pmu_interrupt are not timer interrupts and
-therefore should not use IRQF_TIMER. Use the recently introduced
-IRQF_NO_SUSPEND instead since that is the actual desired behaviour.
+From: Andi Kleen <ak@linux.intel.com>
+Date: Thu, Jul 29, 2010 at 05:51:00AM -0400
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: linuxppc-dev@ozlabs.org
-Cc: devicetree-discuss@lists.ozlabs.org
----
- arch/powerpc/platforms/powermac/low_i2c.c |    5 +++--
- drivers/macintosh/via-pmu.c               |    9 +++++----
- 2 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> > IMO memmory allocation fails are dangerous in kernel mode. As it is
+> > probably not exploitable because of boot time, it can destroy some
+> > sensitive data like dirty disk caches those are going to be written on
+> > disk.
+> 
+> It's true for runtime, but not for normal boot time.
+> 
+> Anyways if it happens on boot time the only thing you can do is panic, 
+> but someone else
+> will likely panic anyways for you. Just ignoring it like your patch 
+> effectively does
+> (because nothing will ever look at the ENOMEMs for an initcall)
 
-diff --git a/arch/powerpc/platforms/powermac/low_i2c.c b/arch/powerpc/platforms/powermac/low_i2c.c
-index 06a137c..480567e 100644
---- a/arch/powerpc/platforms/powermac/low_i2c.c
-+++ b/arch/powerpc/platforms/powermac/low_i2c.c
-@@ -542,11 +542,12 @@ static struct pmac_i2c_host_kw *__init kw_i2c_host_init(struct device_node *np)
- 	/* Make sure IRQ is disabled */
- 	kw_write_reg(reg_ier, 0);
- 
--	/* Request chip interrupt. We set IRQF_TIMER because we don't
-+	/* Request chip interrupt. We set IRQF_NO_SUSPEND because we don't
- 	 * want that interrupt disabled between the 2 passes of driver
- 	 * suspend or we'll have issues running the pfuncs
- 	 */
--	if (request_irq(host->irq, kw_i2c_irq, IRQF_TIMER, "keywest i2c", host))
-+	if (request_irq(host->irq, kw_i2c_irq, IRQF_NO_SUSPEND,
-+			"keywest i2c", host))
- 		host->irq = NO_IRQ;
- 
- 	printk(KERN_INFO "KeyWest i2c @0x%08x irq %d %s\n",
-diff --git a/drivers/macintosh/via-pmu.c b/drivers/macintosh/via-pmu.c
-index 3d4fc0f..35bc273 100644
---- a/drivers/macintosh/via-pmu.c
-+++ b/drivers/macintosh/via-pmu.c
-@@ -400,11 +400,12 @@ static int __init via_pmu_start(void)
- 		printk(KERN_ERR "via-pmu: can't map interrupt\n");
- 		return -ENODEV;
- 	}
--	/* We set IRQF_TIMER because we don't want the interrupt to be disabled
--	 * between the 2 passes of driver suspend, we control our own disabling
--	 * for that one
-+	/* We set IRQF_NO_SUSPEND because we don't want the interrupt
-+	 * to be disabled between the 2 passes of driver suspend, we
-+	 * control our own disabling for that one
- 	 */
--	if (request_irq(irq, via_pmu_interrupt, IRQF_TIMER, "VIA-PMU", (void *)0)) {
-+	if (request_irq(irq, via_pmu_interrupt, IRQF_NO_SUSPEND,
-+			"VIA-PMU", (void *)0)) {
- 		printk(KERN_ERR "via-pmu: can't request irq %d\n", irq);
- 		return -ENODEV;
- 	}
+Not true, initcall_debug will at least dump the -ENOMEM or the other
+-E's if enabled on the cmdline. So even only for that case does the
+patch make sense.
+
+It's a whole different question whether it actually is prudent to turn
+on error reporting of failed initcalls unconditionally.
+
 -- 
-1.5.6.5
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
