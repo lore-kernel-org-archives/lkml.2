@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab0G2Krc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 06:47:32 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59468 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab0G2Kra (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 06:47:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Qbg/UgOAVj2WAq6E5cxsLS4Bl2BzydOQwaF33Y/yy74MHHsKcU+3TDPjb5PU3iMvzq
-         nKwTlrg6PRCJu1F1A7LDvpkevgqSucDlfVsTSzDLhvlvFVIT+OsDk9P4g2Nix6t8CCWn
-         PZ7DvY53ZiZIB3iAaxm14PHgyZ5cOKkkpM58w=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Andrew Veliath <andrewtv@usa.net>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 09/10 v2] oss: msnd: check request_region() return value
-Date: Thu, 29 Jul 2010 14:45:50 +0400
-Message-Id: <1280400351-11652-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756920Ab0G2KsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 06:48:01 -0400
+Received: from sh.osrg.net ([192.16.179.4]:60129 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756898Ab0G2Kr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Jul 2010 06:47:58 -0400
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+To: akpm@linux-foundation.org, fujita.tomonori@lab.ntt.co.jp
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -mm 2/2] PCI: add PCI DMA unamp state API to feature-removal-schedule.txt
+Date: Thu, 29 Jul 2010 19:45:08 +0900
+Message-Id: <1280400308-16114-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1280400308-16114-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+References: <1280400308-16114-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 29 Jul 2010 19:47:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-request_region() may fail, if so return -EBUSY.
+It was replaced with the DMA unamp state API (which can be used for
+any bus).
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 ---
- sound/oss/msnd_pinnacle.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ Documentation/feature-removal-schedule.txt |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/sound/oss/msnd_pinnacle.c b/sound/oss/msnd_pinnacle.c
-index bfaac5f..cd70b9a 100644
---- a/sound/oss/msnd_pinnacle.c
-+++ b/sound/oss/msnd_pinnacle.c
-@@ -1400,9 +1400,13 @@ static int __init attach_multisound(void)
- 		printk(KERN_ERR LOGNAME ": Couldn't grab IRQ %d\n", dev.irq);
- 		return err;
- 	}
--	request_region(dev.io, dev.numio, dev.name);
-+	if (request_region(dev.io, dev.numio, dev.name) == NULL) {
-+		free_irq(dev.irq, &dev);
-+		return -EBUSY;
-+	}
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 887c668..23a8f8d 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -532,3 +532,12 @@ Why:	superseded by acpi_sleep=nonvs
+ Who:	Rafael J. Wysocki <rjw@sisk.pl>
  
--        if ((err = dsp_full_reset()) < 0) {
-+	err = dsp_full_reset();
-+	if (err < 0) {
- 		release_region(dev.io, dev.numio);
- 		free_irq(dev.irq, &dev);
- 		return err;
+ ----------------------------
++
++What: 	PCI DMA unmap state API
++When:	August 2012
++Why:	PCI DMA unmap state API (include/linux/pci-dma.h) was replaced
++	with DMA unmap state API (DMA unmap state API can be used for
++	any bus).
++Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
++
++----------------------------
 -- 
-1.7.0.4
+1.6.5
 
