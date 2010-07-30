@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab0G3NcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 09:32:12 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34406 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab0G3NcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 09:32:08 -0400
-Date: Fri, 30 Jul 2010 14:31:50 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: [PATCH] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
-Message-ID: <20100730133149.GF3571@csn.ul.ie>
-References: <20100728071705.GA22964@localhost> <20100730131735.GZ16655@random.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100730131735.GZ16655@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1758619Ab0G3NcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 09:32:10 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:36018 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753351Ab0G3NcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 09:32:07 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18IVnByjjoInoPDI703HsE26bkTSr0gsnGbNtlQCT
+	CvrfPQEvRkz8Ju
+Subject: Re: [PATCH 0/6] [RFC] Large weight differential leads to
+ inefficient load balancing
+From: Mike Galbraith <efault@gmx.de>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>,
+        Ken Chen <kenchen@google.com>, Paul Turner <pjt@google.com>
+In-Reply-To: <1280467146-32218-1-git-send-email-ncrao@google.com>
+References: <1280467146-32218-1-git-send-email-ncrao@google.com>
+Content-Type: text/plain
+Date: Fri, 30 Jul 2010 15:32:19 +0200
+Message-Id: <1280496739.10435.10.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 03:17:35PM +0200, Andrea Arcangeli wrote:
-> On Wed, Jul 28, 2010 at 03:17:05PM +0800, Wu Fengguang wrote:
-> > Fix "system goes unresponsive under memory pressure and lots of
-> > dirty/writeback pages" bug.
-> > 
-> > 	http://lkml.org/lkml/2010/4/4/86
-> > 
-> > In the above thread, Andreas Mohr described that
-> > 
-> > 	Invoking any command locked up for minutes (note that I'm
-> > 	talking about attempted additional I/O to the _other_,
-> > 	_unaffected_ main system HDD - such as loading some shell
-> > 	binaries -, NOT the external SSD18M!!).
-> > 
-> > This happens when the two conditions are both meet:
-> > - under memory pressure
-> > - writing heavily to a slow device
-> > 
-> > OOM also happens in Andreas' system. The OOM trace shows that 3
-> > processes are stuck in wait_on_page_writeback() in the direct reclaim
-> > path. One in do_fork() and the other two in unix_stream_sendmsg(). They
-> > are blocked on this condition:
-> > 
-> > 	(sc->order && priority < DEF_PRIORITY - 2)
-> > 
-> > which was introduced in commit 78dc583d (vmscan: low order lumpy reclaim
-> > also should use PAGEOUT_IO_SYNC) one year ago. That condition may be too
-> > permissive. In Andreas' case, 512MB/1024 = 512KB. If the direct reclaim
-> > for the order-1 fork() allocation runs into a range of 512KB
-> > hard-to-reclaim LRU pages, it will be stalled.
-> > 
-> > It's a severe problem in three ways.
+On Thu, 2010-07-29 at 22:19 -0700, Nikhil Rao wrote:
+> Hi all,
 > 
-> Lumpy reclaim just made the system totally unusable with frequent
-> order 9 allocations.
-
-Yes, it's very disruptive and has been for a while. It was not much of a
-problem when resizing the static hugepage pool but is a disaster for
-transparent huge pages.
-
-> I nuked it long ago and replaced it with mem
-> compaction. You may try aa.git to test how thing goes without lumpy
-> reclaim. I recently also started to use mem compaction for order 1/2/3
-> allocations as there's no point not to use it for them, and to call
-> mem compaction from kswapd to satisfy order 2 GFP_ATOMIC in
-> replacement of blind responsiveness-destroyer lumpy.
+> We have observed that a large weight differential between tasks on a runqueue
+> leads to sub-optimal machine utilization and poor load balancing. For example,
+> if you have lots of SCHED_IDLE tasks (sufficient number to keep the machine 100%
+> busy) and a few SCHED_NORMAL soaker tasks, we see that the machine has
+> significant idle time.
 > 
-
-A full-scale replacement is overkill but I can see why it would be done
-in the short-term. There are times when lumpy reclaim is still needed -
-specifically when the allocation failure is due to a lack of memory rather
-than fragmentation. There will also be cases where compaction can't work
-because there are too many movable pages  to move into too few pageblocks.
-
-> Not sure why people insists on lumpy when we've memory compaction that
-> won't alter the working set and it's more effective.
+> The data below highlights this problem. The test machine is a 4 socket quad-core
+> box (16 cpus). These experiemnts were done with v2.6.25-rc6. We spawn 16
+> SCHED_IDLE soaker threads (one per-cpu) to completely fill up the machine. CPU
+> utilization numbers gathered from mpstat for 10s are:
 > 
+> 03:30:24 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
+> 03:30:25 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16234.65
+> 03:30:26 PM  all   99.88    0.06    0.06    0.00    0.00    0.00    0.00    0.00  16374.00
+> 03:30:27 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16392.00
+> 03:30:28 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16612.12
+> 03:30:29 PM  all   99.88    0.00    0.12    0.00    0.00    0.00    0.00    0.00  16375.00
+> 03:30:30 PM  all   99.94    0.06    0.00    0.00    0.00    0.00    0.00    0.00  16440.00
+> 03:30:31 PM  all   99.81    0.00    0.19    0.00    0.00    0.00    0.00    0.00  16237.62
+> 03:30:32 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16360.00
+> 03:30:33 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16405.00
+> 03:30:34 PM  all   99.38    0.06    0.50    0.00    0.00    0.00    0.00    0.06  18881.82
+> Average:     all   99.86    0.02    0.12    0.00    0.00    0.00    0.00    0.01  16628.20
+> 
+> We then spawn one SCHED_NORMAL while-1 task (the absolute number does not matter
+> so long as we introduce some large weight differential).
+> 
+> 03:40:57 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
+> 03:40:58 PM  all   83.06    0.00    0.06    0.00    0.00    0.00    0.00   16.88  14555.00
+> 03:40:59 PM  all   78.25    0.00    0.06    0.00    0.00    0.00    0.00   21.69  14527.00
+> 03:41:00 PM  all   82.71    0.06    0.06    0.00    0.00    0.00    0.00   17.17  14879.00
+> 03:41:01 PM  all   87.34    0.00    0.06    0.00    0.00    0.00    0.00   12.59  15466.00
+> 03:41:02 PM  all   80.80    0.06    0.19    0.00    0.00    0.00    0.00   18.95  14584.00
+> 03:41:03 PM  all   82.90    0.00    0.06    0.00    0.00    0.00    0.00   17.04  14570.00
+> 03:41:04 PM  all   79.45    0.00    0.06    0.00    0.00    0.00    0.00   20.49  14536.00
+> 03:41:05 PM  all   86.48    0.00    0.07    0.00    0.00    0.00    0.00   13.46  14577.00
+> 03:41:06 PM  all   76.73    0.06    0.06    0.00    0.00    0.06    0.00   23.10  14594.00
+> 03:41:07 PM  all   86.48    0.00    0.07    0.00    0.00    0.00    0.00   13.45  14703.03
+> Average:     all   82.31    0.02    0.08    0.00    0.00    0.01    0.00   17.59  14699.10
 
-Compaction is preferred, no doubt about it but lumpy reclaim cannot be
-dismissed. I know lumpy reclaim is too disruptive and Kosaki noticed the same
-and it's currently doing some pretty stupid things. There are a few ideas
-knocking around publicly on how to reduce its impact while increasing its
-effectiveness. I have a few old ideas knocking around as well that I just
-need the time to get around to. I hope to get at it after the fuss over
-writeback is addressed.
+What happens with s/SCHED_IDLE/nice 19?
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+	-Mike
+
