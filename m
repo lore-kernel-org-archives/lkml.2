@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab0G3Rvo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:51:44 -0400
-Received: from kroah.org ([198.145.64.141]:35965 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932332Ab0G3RfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:20 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:10 2010
-Message-Id: <20100730173110.590259844@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [087/140] ASoC: Remove duplicate AUX definition from WM8776
-In-Reply-To: <20100730173205.GA22581@kroah.com>
+	id S1753111Ab0G3RxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:53:00 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:54582 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab0G3Rwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:52:51 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=igxgjavibO9ruSrdB4BaYbCKDkOEE3ckn9ZRpBTxXcFONGYu2llJdDne/gEiUY5ex
+	RKOpYHmJYd+xMXyMe+7Rw==
+Date: Fri, 30 Jul 2010 10:52:36 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: dann frazier <dannf@dannf.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: ia64 hang/mca running gdb 'make check'
+In-Reply-To: <20100730043423.GH20265@lackof.org>
+Message-ID: <alpine.DEB.1.00.1007301049230.21157@tigran.mtv.corp.google.com>
+References: <20100720173512.GF26783@ldl.fc.hp.com> <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com> <20100721030629.GA9987@lackof.org> <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com> <20100727071914.GB22945@lackof.org>
+ <20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com> <20100727144326.GC22945@lackof.org> <alpine.DEB.1.00.1007282031130.4207@tigran.mtv.corp.google.com> <20100729192216.GF20265@lackof.org> <alpine.DEB.1.00.1007291853450.4466@tigran.mtv.corp.google.com>
+ <20100730043423.GH20265@lackof.org>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+On Thu, 29 Jul 2010, dann frazier wrote:
+> 
+> dannf@rx2600:~> gdb foo
+> GNU gdb (GDB) SUSE (7.0-0.4.16)
+> Copyright (C) 2009 Free Software Foundation, Inc.
+> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+> This is free software: you are free to change and redistribute it.
+> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> and "show warranty" for details.
+> This GDB was configured as "ia64-suse-linux".
+> For bug reporting instructions, please see:
+> <http://www.gnu.org/software/gdb/bugs/>...
+> Reading symbols from /home/dannf/foo...done.
+> (gdb) break leaf
+> Breakpoint 1 at 0x4000000000000401: file foo.c, line 2.
+> (gdb) run
+> Starting program: /home/dannf/foo 
+> 
+> Breakpoint 1, leaf () at foo.c:2
+> 2	     return 0;
+> (gdb) gcore
+> Saved corefile core.3952
+> (gdb) 
 
-------------------
+Many thanks for pursuing this and reporting back, dann.
+Patch to Linus follows in a few moments.
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-commit 3c0709396df0869786f83e4b2d2d687c70ee886d upstream.
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/soc/codecs/wm8776.c |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/sound/soc/codecs/wm8776.c
-+++ b/sound/soc/codecs/wm8776.c
-@@ -93,7 +93,6 @@ SOC_DAPM_SINGLE("Bypass Switch", WM8776_
- 
- static const struct snd_soc_dapm_widget wm8776_dapm_widgets[] = {
- SND_SOC_DAPM_INPUT("AUX"),
--SND_SOC_DAPM_INPUT("AUX"),
- 
- SND_SOC_DAPM_INPUT("AIN1"),
- SND_SOC_DAPM_INPUT("AIN2"),
-
-
+Hugh
