@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab0G3Ex0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 00:53:26 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40704 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab0G3ExY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 00:53:24 -0400
-Message-ID: <4C525AAF.6020102@canonical.com>
-Date: Fri, 30 Jul 2010 12:53:03 +0800
-From: Bryan Wu <bryan.wu@canonical.com>
-Reply-To: bryan.wu@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>, felipe.balbi@nokia.com
-CC: linux-usb@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        linux-kernel@vger.kernel.org, ricardo.salveti@canonical.com,
-        david-b@pacbell.net
-Subject: Re: [PATCH] musb: move usb_add_hcd to the core init code from gadget
- code (v2)
-References: <1279895783-7313-1-git-send-email-bryan.wu@canonical.com> <4C49B529.8080408@ru.mvista.com>
-In-Reply-To: <4C49B529.8080408@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752690Ab0G3EyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 00:54:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35550 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752153Ab0G3EyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 00:54:23 -0400
+Date: Fri, 30 Jul 2010 14:54:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the devicetree tree
+Message-Id: <20100730145415.8ed17b7e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__30_Jul_2010_14_54_15_+1000_xENWtqD8Gt9xZUPw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 11:28 PM, Sergei Shtylyov wrote:
-> Hello.
-> 
-> Bryan Wu wrote:
-> 
->> BugLink: http://bugs.launchpad.net/bugs/608312
-> 
->> v2:
->> fix the building error on latest 2.6.35-rc kernel, since v1 was
->> generated in
->> 2.6.33 kernel.
-> 
->    The remarks about patch changes should follow the --- tear line.
-> 
+--Signature=_Fri__30_Jul_2010_14_54_15_+1000_xENWtqD8Gt9xZUPw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Sergei, I will take care of it in the future.
+Hi Grant,
 
-Any other comments about this patch?
+After merging the devicetree tree, today's linux-next build (powerpc64
+allnoconfig) produced this warning:
 
-Felipe, could you please take a look? or need I ping you in the Facebook, -:))
+drivers/of/irq.c: In function 'of_irq_map_raw':
+drivers/of/irq.c:102: warning: cast from pointer to integer of different si=
+ze
 
--Bryan
+Introduced by commit 7d12c3ee9e1843b1d19d9c308988bb163fb9aa0b ("of/irq:
+Fix endian issues in parsing interrupt specifiers").
 
->> v1:
->> usb_add_hcd was only called when we insmod the gadget class module or
->> built-in
->> that gadget class driver. If musb is configured as OTG controller, we
->> need to
->> insmod or built-in gadget class driver to make our Host mode fucntion
->> works.
-> 
->> In our Ubuntu system, normally we compiled all the gadget class
->> drivers as
->> modules. Then users can insmod the gadget modules as they want. But
->> without the
->> gadget class driver running, we needs host function to support common USB
->> devices.
-> 
->> This patch fix this issue and tested on omap3 beagle board and Gumstix
->> board.
-> 
->> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-> 
-> WBR, Sergei
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__30_Jul_2010_14_54_15_+1000_xENWtqD8Gt9xZUPw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMUlr3AAoJEDMEi1NhKgbs/ZgIAIf0hiVYA+l3pwOmtCBb/Qk4
+hiA+ovDKB9FjfEWzWBpKJMklJMS4NqA2xU5bFa9YZDgeRie4E/HQz4xOx3RWzOee
+tKeWCfD43Q/HlyM6CimlOzYt2DmVdfSXdGyU1uYr7wx1CTvoz8gU2SMoSq+0wC+c
+aite7JHYFX/MFiQKhZyEYmVCVkaMTxBRvP3aAI1jqAmbwhL7TFuvKLm/sFbPaysC
+y1fQ/oHzEQoNbGAS6CebmCRPI25COH5nacfFjno607vpPE48eLoEihQ69tqqJGBa
+hR5E9Y0Qv2FPbn/yJ9qfTveJ2PHIsTBDIFkcpXLutKw6oybzYTlo2lTzE9AXD9s=
+=4X3I
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Jul_2010_14_54_15_+1000_xENWtqD8Gt9xZUPw--
