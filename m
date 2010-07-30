@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932559Ab0G3Rhs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:37:48 -0400
-Received: from kroah.org ([198.145.64.141]:36248 "EHLO coco.kroah.org"
+	id S1759600Ab0G3Rho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:37:44 -0400
+Received: from kroah.org ([198.145.64.141]:36231 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759481Ab0G3RgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:36:17 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:15 2010
-Message-Id: <20100730173114.997342299@clark.site>
+	id S1759280Ab0G3RgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:36:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:14 2010
+Message-Id: <20100730173114.740734116@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:42 -0700
+Date: Fri, 30 Jul 2010 10:31:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andre Osterhues <aosterhues@escrypt.com>,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [137/140] ecryptfs: Bugfix for error related to ecryptfs_hash_buckets
+        Shanyu Zhao <shanyu.zhao@intel.com>,
+        Pradeep Kulkarni <pradeepx.kulkarni@intel.com>,
+        Reinette Chatre <reinette.chatre@intel.com>
+Subject: [134/140] iwlagn: verify flow id in compressed BA packet
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,75 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Osterhues <aosterhues@escrypt.com>
+From: Shanyu Zhao <shanyu.zhao@intel.com>
 
-commit a6f80fb7b5986fda663d94079d3bba0937a6b6ff upstream.
+commit b561e8274f75831ee87e4ea378cbb1f9f050a51a upstream.
 
-The function ecryptfs_uid_hash wrongly assumes that the
-second parameter to hash_long() is the number of hash
-buckets instead of the number of hash bits.
-This patch fixes that and renames the variable
-ecryptfs_hash_buckets to ecryptfs_hash_bits to make it
-clearer.
+The flow id (scd_flow) in a compressed BA packet should match the txq_id
+of the queue from which the aggregated packets were sent. However, in
+some hardware like the 1000 series, sometimes the flow id is 0 for the
+txq_id (10 to 19). This can cause the annoying message:
+[ 2213.306191] iwlagn 0000:01:00.0: Received BA when not expected
+[ 2213.310178] iwlagn 0000:01:00.0: Read index for DMA queue txq id (0),
+index 5, is out of range [0-256] 7 7.
 
-Fixes: CVE-2010-2492
+And even worse, if agg->wait_for_ba is true when the bad BA is arriving,
+this can cause system hang due to NULL pointer dereference because the
+code is operating in a wrong tx queue!
 
-Signed-off-by: Andre Osterhues <aosterhues@escrypt.com>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shanyu Zhao <shanyu.zhao@intel.com>
+Signed-off-by: Pradeep Kulkarni <pradeepx.kulkarni@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/messaging.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-tx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/ecryptfs/messaging.c
-+++ b/fs/ecryptfs/messaging.c
-@@ -30,9 +30,9 @@ static struct mutex ecryptfs_msg_ctx_lis
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -1553,6 +1553,11 @@ void iwl_rx_reply_compressed_ba(struct i
+ 	sta_id = ba_resp->sta_id;
+ 	tid = ba_resp->tid;
+ 	agg = &priv->stations[sta_id].tid[tid].agg;
++	if (unlikely(agg->txq_id != scd_flow)) {
++		IWL_ERR(priv, "BA scd_flow %d does not match txq_id %d\n",
++			scd_flow, agg->txq_id);
++		return;
++	}
  
- static struct hlist_head *ecryptfs_daemon_hash;
- struct mutex ecryptfs_daemon_hash_mux;
--static int ecryptfs_hash_buckets;
-+static int ecryptfs_hash_bits;
- #define ecryptfs_uid_hash(uid) \
--        hash_long((unsigned long)uid, ecryptfs_hash_buckets)
-+        hash_long((unsigned long)uid, ecryptfs_hash_bits)
- 
- static u32 ecryptfs_msg_counter;
- static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
-@@ -485,18 +485,19 @@ int ecryptfs_init_messaging(void)
- 	}
- 	mutex_init(&ecryptfs_daemon_hash_mux);
- 	mutex_lock(&ecryptfs_daemon_hash_mux);
--	ecryptfs_hash_buckets = 1;
--	while (ecryptfs_number_of_users >> ecryptfs_hash_buckets)
--		ecryptfs_hash_buckets++;
-+	ecryptfs_hash_bits = 1;
-+	while (ecryptfs_number_of_users >> ecryptfs_hash_bits)
-+		ecryptfs_hash_bits++;
- 	ecryptfs_daemon_hash = kmalloc((sizeof(struct hlist_head)
--					* ecryptfs_hash_buckets), GFP_KERNEL);
-+					* (1 << ecryptfs_hash_bits)),
-+				       GFP_KERNEL);
- 	if (!ecryptfs_daemon_hash) {
- 		rc = -ENOMEM;
- 		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
- 		mutex_unlock(&ecryptfs_daemon_hash_mux);
- 		goto out;
- 	}
--	for (i = 0; i < ecryptfs_hash_buckets; i++)
-+	for (i = 0; i < (1 << ecryptfs_hash_bits); i++)
- 		INIT_HLIST_HEAD(&ecryptfs_daemon_hash[i]);
- 	mutex_unlock(&ecryptfs_daemon_hash_mux);
- 	ecryptfs_msg_ctx_arr = kmalloc((sizeof(struct ecryptfs_msg_ctx)
-@@ -553,7 +554,7 @@ void ecryptfs_release_messaging(void)
- 		int i;
- 
- 		mutex_lock(&ecryptfs_daemon_hash_mux);
--		for (i = 0; i < ecryptfs_hash_buckets; i++) {
-+		for (i = 0; i < (1 << ecryptfs_hash_bits); i++) {
- 			int rc;
- 
- 			hlist_for_each_entry(daemon, elem,
+ 	/* Find index just before block-ack window */
+ 	index = iwl_queue_dec_wrap(ba_resp_scd_ssn & 0xff, txq->q.n_bd);
 
 
