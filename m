@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760047Ab0G3SWt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:22:49 -0400
-Received: from kroah.org ([198.145.64.141]:58661 "EHLO coco.kroah.org"
+	id S933128Ab0G3SXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:23:14 -0400
+Received: from kroah.org ([198.145.64.141]:58621 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932389Ab0G3R4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:17 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:43 2010
-Message-Id: <20100730175143.125651296@clark.site>
+	id S932349Ab0G3R4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
+Message-Id: <20100730175142.514245900@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:00 -0700
+Date: Fri, 30 Jul 2010 10:51:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [103/205] kmemleak: Add support for NO_BOOTMEM configurations
+        Tejun Heo <tj@kernel.org>, Peer Chen <pchen@nvidia.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [097/205] ahci,ata_generic: let ata_generic handle new MBP w/ MCP89
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,68 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 9078370c0d2cfe4a905aa34f398bbb0d65921a2b upstream.
+commit c6353b4520788e34098bbf61c73fb9618ca7fdd6 upstream.
 
-With commits 08677214 and 59be5a8e, alloc_bootmem()/free_bootmem() and
-friends use the early_res functions for memory management when
-NO_BOOTMEM is enabled. This patch adds the kmemleak calls in the
-corresponding code paths for bootmem allocations.
+For yet unknown reason, MCP89 on MBP 7,1 doesn't work w/ ahci under
+linux but the controller doesn't require explicit mode setting and
+works fine with ata_generic.  Make ahci ignore the controller on MBP
+7,1 and let ata_generic take it for now.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
+Reported in bko#15923.
+
+  https://bugzilla.kernel.org/show_bug.cgi?id=15923
+
+NVIDIA is investigating why ahci mode doesn't work.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Peer Chen <pchen@nvidia.com>
+Reported-by: Anders Østhus <grapz666@gmail.com>
+Reported-by: Andreas Graf <andreas_graf@csgraf.de>
+Reported-by: Benoit Gschwind <gschwind@gnu-log.net>
+Reported-by: Damien Cassou <damien.cassou@gmail.com>
+Reported-by: tixetsal@juno.com
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/early_res.c |    6 ++++++
- mm/page_alloc.c    |    5 +++++
- 2 files changed, 11 insertions(+)
+ drivers/ata/ahci.c        |   10 ++++++++++
+ drivers/ata/ata_generic.c |    6 ++++++
+ include/linux/pci_ids.h   |    1 +
+ 3 files changed, 17 insertions(+)
 
---- a/kernel/early_res.c
-+++ b/kernel/early_res.c
-@@ -7,6 +7,8 @@
- #include <linux/bootmem.h>
- #include <linux/mm.h>
- #include <linux/early_res.h>
-+#include <linux/slab.h>
-+#include <linux/kmemleak.h>
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -3249,6 +3249,16 @@ static int ahci_init_one(struct pci_dev
+ 	if (pdev->vendor == PCI_VENDOR_ID_MARVELL && !marvell_enable)
+ 		return -ENODEV;
  
- /*
-  * Early reserved memory areas.
-@@ -319,6 +321,8 @@ void __init free_early(u64 start, u64 en
- 	struct early_res *r;
- 	int i;
- 
-+	kmemleak_free_part(__va(start), end - start);
++	/*
++	 * For some reason, MCP89 on MacBook 7,1 doesn't work with
++	 * ahci, use ata_generic instead.
++	 */
++	if (pdev->vendor == PCI_VENDOR_ID_NVIDIA &&
++	    pdev->device == PCI_DEVICE_ID_NVIDIA_NFORCE_MCP89_SATA &&
++	    pdev->subsystem_vendor == PCI_VENDOR_ID_APPLE &&
++	    pdev->subsystem_device == 0xcb89)
++		return -ENODEV;
 +
- 	i = find_overlapped_early(start, end);
- 	r = &early_res[i];
- 	if (i >= max_early_res || r->end != end || r->start != start)
-@@ -333,6 +337,8 @@ void __init free_early_partial(u64 start
- 	struct early_res *r;
- 	int i;
+ 	/* Promise's PDC42819 is a SAS/SATA controller that has an AHCI mode.
+ 	 * At the moment, we can only use the AHCI mode. Let the users know
+ 	 * that for SAS drives they're out of luck.
+--- a/drivers/ata/ata_generic.c
++++ b/drivers/ata/ata_generic.c
+@@ -168,6 +168,12 @@ static struct pci_device_id ata_generic[
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_VIA,    PCI_DEVICE_ID_VIA_82C561), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_OPTI,   PCI_DEVICE_ID_OPTI_82C558), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_CENATEK,PCI_DEVICE_ID_CENATEK_IDE), },
++	/*
++	 * For some reason, MCP89 on MacBook 7,1 doesn't work with
++	 * ahci, use ata_generic instead.
++	 */
++	{ PCI_VENDOR_ID_NVIDIA, PCI_DEVICE_ID_NVIDIA_NFORCE_MCP89_SATA,
++	  PCI_VENDOR_ID_APPLE, 0xcb89, },
+ #if !defined(CONFIG_PATA_TOSHIBA) && !defined(CONFIG_PATA_TOSHIBA_MODULE)
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA,PCI_DEVICE_ID_TOSHIBA_PICCOLO_1), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA,PCI_DEVICE_ID_TOSHIBA_PICCOLO_2),  },
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1261,6 +1261,7 @@
+ #define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP77_IDE       0x0759
+ #define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP73_SMBUS     0x07D8
+ #define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP79_SMBUS     0x0AA2
++#define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP89_SATA	    0x0D85
  
-+	kmemleak_free_part(__va(start), end - start);
-+
- 	if (start == end)
- 		return;
- 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3440,6 +3440,11 @@ void * __init __alloc_memory_core_early(
- 		ptr = phys_to_virt(addr);
- 		memset(ptr, 0, size);
- 		reserve_early_without_check(addr, addr + size, "BOOTMEM");
-+		/*
-+		 * The min_count is set to 0 so that bootmem allocated blocks
-+		 * are never reported as leaks.
-+		 */
-+		kmemleak_alloc(ptr, size, 0, 0);
- 		return ptr;
- 	}
- 
+ #define PCI_VENDOR_ID_IMS		0x10e0
+ #define PCI_DEVICE_ID_IMS_TT128		0x9128
 
 
