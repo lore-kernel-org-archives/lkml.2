@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab0G3Rg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:36:26 -0400
-Received: from kroah.org ([198.145.64.141]:35809 "EHLO coco.kroah.org"
+	id S932493Ab0G3RlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:41:05 -0400
+Received: from kroah.org ([198.145.64.141]:36253 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759214Ab0G3Rew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:52 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:08 2010
-Message-Id: <20100730173108.317079201@clark.site>
+	id S1759486Ab0G3RgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:36:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:15 2010
+Message-Id: <20100730173115.095911468@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:27 -0700
+Date: Fri, 30 Jul 2010 10:31:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sven Wegener <sven.wegener@stealer.net>,
-        Simon Horman <horms@verge.net.au>, Patrick McHardy <kaber@trash.net>
-Subject: [062/140] ipvs: Add missing locking during connection table hashing and unhashing
+        Bob Copeland <me@bobcopeland.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [138/140] ath5k: initialize ah->ah_current_channel
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,126 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Bob Copeland <me@bobcopeland.com>
 
-commit aea9d711f3d68c656ad31ab578ecfb0bb5cd7f97 upstream.
+commit b6855772f4a22c4fbdd4fcaceff5c8a527035123 upstream.
 
-The code that hashes and unhashes connections from the connection table
-is missing locking of the connection being modified, which opens up a
-race condition and results in memory corruption when this race condition
-is hit.
+ath5k assumes ah_current_channel is always a valid pointer in
+several places, but a newly created interface may not have a
+channel.  To avoid null pointer dereferences, set it up to point
+to the first available channel until later reconfigured.
 
-Here is what happens in pretty verbose form:
+This fixes the following oops:
+$ rmmod ath5k
+$ insmod ath5k
+$ iw phy0 set distance 11000
 
-CPU 0					CPU 1
-------------				------------
-An active connection is terminated and
-we schedule ip_vs_conn_expire() on this
-CPU to expire this connection.
+BUG: unable to handle kernel NULL pointer dereference at 00000006
+IP: [<d0a1ff24>] ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k]
+*pde = 00000000
+Oops: 0000 [#1]
+last sysfs file: /sys/devices/pci0000:00/0000:00:0e.0/ieee80211/phy0/index
+Modules linked in: usbhid option usb_storage usbserial usblp evdev lm90
+scx200_acb i2c_algo_bit i2c_dev i2c_core via_rhine ohci_hcd ne2k_pci
+8390 leds_alix2 xt_IMQ imq nf_nat_tftp nf_conntrack_tftp nf_nat_irc nf_cc
 
-					IRQ assignment is changed to this CPU,
-					but the expire timer stays scheduled on
-					the other CPU.
+Pid: 1597, comm: iw Not tainted (2.6.32.14 #8)
+EIP: 0060:[<d0a1ff24>] EFLAGS: 00010296 CPU: 0
+EIP is at ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k]
+EAX: 000000c2 EBX: 00000000 ECX: ffffffff EDX: c12d2080
+ESI: 00000019 EDI: cf8c0000 EBP: d0a30edc ESP: cfa09bf4
+  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
+Process iw (pid: 1597, ti=cfa09000 task=cf88a000 task.ti=cfa09000)
+Stack:
+  d0a34f35 d0a353f8 d0a30edc 000000fe cf8c0000 00000000 1900063d cfa8c9e0
+<0> cfa8c9e8 cfa8c0c0 cfa8c000 d0a27f0c 199d84b4 cfa8c200 00000010 d09bfdc7
+<0> 00000000 00000000 ffffffff d08e0d28 cf9263c0 00000001 cfa09cc4 00000000
+Call Trace:
+  [<d0a27f0c>] ? ath5k_hw_attach+0xc8c/0x3c10 [ath5k]
+  [<d09bfdc7>] ? __ieee80211_request_smps+0x1347/0x1580 [mac80211]
+  [<d08e0d28>] ? nl80211_send_scan_start+0x7b8/0x4520 [cfg80211]
+  [<c10f5db9>] ? nla_parse+0x59/0xc0
+  [<c11ca8d9>] ? genl_rcv_msg+0x169/0x1a0
+  [<c11ca770>] ? genl_rcv_msg+0x0/0x1a0
+  [<c11c7e68>] ? netlink_rcv_skb+0x38/0x90
+  [<c11c9649>] ? genl_rcv+0x19/0x30
+  [<c11c7c03>] ? netlink_unicast+0x1b3/0x220
+  [<c11c893e>] ? netlink_sendmsg+0x26e/0x290
+  [<c11a409e>] ? sock_sendmsg+0xbe/0xf0
+  [<c1032780>] ? autoremove_wake_function+0x0/0x50
+  [<c104d846>] ? __alloc_pages_nodemask+0x106/0x530
+  [<c1074933>] ? do_lookup+0x53/0x1b0
+  [<c10766f9>] ? __link_path_walk+0x9b9/0x9e0
+  [<c11acab0>] ? verify_iovec+0x50/0x90
+  [<c11a42b1>] ? sys_sendmsg+0x1e1/0x270
+  [<c1048e50>] ? find_get_page+0x10/0x50
+  [<c104a96f>] ? filemap_fault+0x5f/0x370
+  [<c1059159>] ? __do_fault+0x319/0x370
+  [<c11a55b4>] ? sys_socketcall+0x244/0x290
+  [<c101962c>] ? do_page_fault+0x1ec/0x270
+  [<c1019440>] ? do_page_fault+0x0/0x270
+  [<c1002ae5>] ? syscall_call+0x7/0xb
+Code: 00 b8 fe 00 00 00 b9 f8 53 a3 d0 89 5c 24 14 89 7c 24 10 89 44 24
+0c 89 6c 24 08 89 4c 24 04 c7 04 24 35 4f a3 d0 e8 7c 30 60 f0 <0f> b7
+43 06 ba 06 00 00 00 a8 10 75 0e 83 e0 20 83 f8 01 19 d2
+EIP: [<d0a1ff24>] ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k] SS:ESP
+0068:cfa09bf4
+CR2: 0000000000000006
+---[ end trace 54f73d6b10ceb87b ]---
 
-					New connection from same ip:port comes
-					in right before the timer expires, we
-					find the inactive connection in our
-					connection table and get a reference to
-					it. We proper lock the connection in
-					tcp_state_transition() and read the
-					connection flags in set_tcp_state().
-
-ip_vs_conn_expire() gets called, we
-unhash the connection from our
-connection table and remove the hashed
-flag in ip_vs_conn_unhash(), without
-proper locking!
-
-					While still holding proper locks we
-					write the connection flags in
-					set_tcp_state() and this sets the hashed
-					flag again.
-
-ip_vs_conn_expire() fails to expire the
-connection, because the other CPU has
-incremented the reference count. We try
-to re-insert the connection into our
-connection table, but this fails in
-ip_vs_conn_hash(), because the hashed
-flag has been set by the other CPU. We
-re-schedule execution of
-ip_vs_conn_expire(). Now this connection
-has the hashed flag set, but isn't
-actually hashed in our connection table
-and has a dangling list_head.
-
-					We drop the reference we held on the
-					connection and schedule the expire timer
-					for timeouting the connection on this
-					CPU. Further packets won't be able to
-					find this connection in our connection
-					table.
-
-					ip_vs_conn_expire() gets called again,
-					we think it's already hashed, but the
-					list_head is dangling and while removing
-					the connection from our connection table
-					we write to the memory location where
-					this list_head points to.
-
-The result will probably be a kernel oops at some other point in time.
-
-This race condition is pretty subtle, but it can be triggered remotely.
-It needs the IRQ assignment change or another circumstance where packets
-coming from the same ip:port for the same service are being processed on
-different CPUs. And it involves hitting the exact time at which
-ip_vs_conn_expire() gets called. It can be avoided by making sure that
-all packets from one connection are always processed on the same CPU and
-can be made harder to exploit by changing the connection timeouts to
-some custom values.
-
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Acked-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Reported-by: Steve Brown <sbrown@cortland.com>
+Signed-off-by: Bob Copeland <me@bobcopeland.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/ipvs/ip_vs_conn.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/ath/ath5k/attach.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/netfilter/ipvs/ip_vs_conn.c
-+++ b/net/netfilter/ipvs/ip_vs_conn.c
-@@ -146,6 +146,7 @@ static inline int ip_vs_conn_hash(struct
- 	hash = ip_vs_conn_hashkey(cp->af, cp->protocol, &cp->caddr, cp->cport);
+--- a/drivers/net/wireless/ath/ath5k/attach.c
++++ b/drivers/net/wireless/ath/ath5k/attach.c
+@@ -123,6 +123,7 @@ int ath5k_hw_attach(struct ath5k_softc *
+ 	ah->ah_cw_min = AR5K_TUNE_CWMIN;
+ 	ah->ah_limit_tx_retries = AR5K_INIT_TX_RETRY;
+ 	ah->ah_software_retry = false;
++	ah->ah_current_channel = &sc->channels[0];
  
- 	ct_write_lock(hash);
-+	spin_lock(&cp->lock);
- 
- 	if (!(cp->flags & IP_VS_CONN_F_HASHED)) {
- 		list_add(&cp->c_list, &ip_vs_conn_tab[hash]);
-@@ -158,6 +159,7 @@ static inline int ip_vs_conn_hash(struct
- 		ret = 0;
- 	}
- 
-+	spin_unlock(&cp->lock);
- 	ct_write_unlock(hash);
- 
- 	return ret;
-@@ -177,6 +179,7 @@ static inline int ip_vs_conn_unhash(stru
- 	hash = ip_vs_conn_hashkey(cp->af, cp->protocol, &cp->caddr, cp->cport);
- 
- 	ct_write_lock(hash);
-+	spin_lock(&cp->lock);
- 
- 	if (cp->flags & IP_VS_CONN_F_HASHED) {
- 		list_del(&cp->c_list);
-@@ -186,6 +189,7 @@ static inline int ip_vs_conn_unhash(stru
- 	} else
- 		ret = 0;
- 
-+	spin_unlock(&cp->lock);
- 	ct_write_unlock(hash);
- 
- 	return ret;
+ 	/*
+ 	 * Find the mac version
 
 
