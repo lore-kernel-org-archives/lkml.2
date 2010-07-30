@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760348Ab0G3TEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:04:10 -0400
-Received: from kroah.org ([198.145.64.141]:51668 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757996Ab0G3RSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:06 2010
-Message-Id: <20100730171505.989307303@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:58 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Povey <jon.povey@racelogic.co.uk>, Maulik Mankad <x0082077@ti.com>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: [070/165] USB: g_serial: dont set low_latency flag
-In-Reply-To: <20100730171550.GA1299@kroah.com
+	id S1760422Ab0G3TEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:04:25 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50931 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933438Ab0G3TD5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 15:03:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Q6cRMY+2pb7Cs8HCHEPxswr7vxUO27hTDgg0HJD6P3gDdLuyNnCyKHJE+Oyq2laaKU
+         WxNSvUSQwpdb7u7pgXhwcYTlFndnbWkkQ/q/d55vAD/aun+CszMSBVx16E5JJHCwsYq3
+         Cg8m2OuDCup/JR5kO2o7/x0oPc/da2fpX3r88=
+Date: Fri, 30 Jul 2010 21:05:58 +0200
+From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] jornada720_bl/jornada720_lcd: make needlessly global
+ symbols static
+Message-ID: <20100730190557.GA980@boggieman>
+Reply-To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+References: <1280458823.7632.3.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1280458823.7632.3.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Jul 30, 2010 at 11:00:23AM +0800, Axel Lin wrote:
+> The following symbols are needlessly defined global:
+> jornada_bl_init
+> jornada_bl_exit
+> jornada_lcd_init
+> jornada_lcd_exit
+> 
+> This patch makes the symbols static.
 
-------------------
+Acked-by: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+Thx.
 
-From: Jon Povey <jon.povey@racelogic.co.uk>
-
-commit 44a0c0190b500ee6bcfc0976fe540f65dee2cd67 upstream.
-
-No longer set low_latency flag as it causes this warning backtrace:
-
-  WARNING: at kernel/mutex.c:207 __mutex_lock_slowpath+0x6c/0x288()
-
-Fix associated locking and wakeups.
-
-Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
-Cc: Maulik Mankad <x0082077@ti.com>
-Acked-by: David Brownell <dbrownell@users.sourceforge.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/gadget/u_serial.c |   15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
-
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -535,17 +535,11 @@ recycle:
- 		list_move(&req->list, &port->read_pool);
- 	}
- 
--	/* Push from tty to ldisc; this is immediate with low_latency, and
--	 * may trigger callbacks to this driver ... so drop the spinlock.
-+	/* Push from tty to ldisc; without low_latency set this is handled by
-+	 * a workqueue, so we won't get callbacks and can hold port_lock
- 	 */
- 	if (tty && do_push) {
--		spin_unlock_irq(&port->port_lock);
- 		tty_flip_buffer_push(tty);
--		wake_up_interruptible(&tty->read_wait);
--		spin_lock_irq(&port->port_lock);
--
--		/* tty may have been closed */
--		tty = port->port_tty;
- 	}
- 
- 
-@@ -783,11 +777,6 @@ static int gs_open(struct tty_struct *tt
- 	port->open_count = 1;
- 	port->openclose = false;
- 
--	/* low_latency means ldiscs work in tasklet context, without
--	 * needing a workqueue schedule ... easier to keep up.
--	 */
--	tty->low_latency = 1;
--
- 	/* if connected, start the I/O stream */
- 	if (port->port_usb) {
- 		struct gserial	*gser = port->port_usb;
-
-
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/video/backlight/jornada720_bl.c  |    4 ++--
+>  drivers/video/backlight/jornada720_lcd.c |    4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/jornada720_bl.c b/drivers/video/backlight/jornada720_bl.c
+> index 60e1d28..a20a01a 100644
+> --- a/drivers/video/backlight/jornada720_bl.c
+> +++ b/drivers/video/backlight/jornada720_bl.c
+> @@ -146,12 +146,12 @@ static struct platform_driver jornada_bl_driver = {
+>  	},
+>  };
+>  
+> -int __init jornada_bl_init(void)
+> +static int __init jornada_bl_init(void)
+>  {
+>  	return platform_driver_register(&jornada_bl_driver);
+>  }
+>  
+> -void __exit jornada_bl_exit(void)
+> +static void __exit jornada_bl_exit(void)
+>  {
+>  	platform_driver_unregister(&jornada_bl_driver);
+>  }
+> diff --git a/drivers/video/backlight/jornada720_lcd.c b/drivers/video/backlight/jornada720_lcd.c
+> index 8fe0181..9fd7af2 100644
+> --- a/drivers/video/backlight/jornada720_lcd.c
+> +++ b/drivers/video/backlight/jornada720_lcd.c
+> @@ -135,12 +135,12 @@ static struct platform_driver jornada_lcd_driver = {
+>  	},
+>  };
+>  
+> -int __init jornada_lcd_init(void)
+> +static int __init jornada_lcd_init(void)
+>  {
+>  	return platform_driver_register(&jornada_lcd_driver);
+>  }
+>  
+> -void __exit jornada_lcd_exit(void)
+> +static void __exit jornada_lcd_exit(void)
+>  {
+>  	platform_driver_unregister(&jornada_lcd_driver);
+>  }
+> -- 
+> 1.5.4.3
+> 
+> 
