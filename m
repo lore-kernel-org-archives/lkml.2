@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759526Ab0G3Rsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:48:41 -0400
-Received: from kroah.org ([198.145.64.141]:36036 "EHLO coco.kroah.org"
+	id S932626Ab0G3Rso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:48:44 -0400
+Received: from kroah.org ([198.145.64.141]:36030 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932389Ab0G3Rfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:36 -0400
+	id S932386Ab0G3Rff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:35 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:11 2010
-Message-Id: <20100730173111.671121057@clark.site>
+Message-Id: <20100730173111.572059486@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:04 -0700
+Date: Fri, 30 Jul 2010 10:31:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Omer Sezgin Ugurlu <omer.ugurlu@a-kent.com>
-Subject: [099/140] USB: option: add support for 1da5:4518
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Daniel Mack <daniel@caiaq.de>
+Subject: [098/140] USB: ehci-mxc: bail out on transceiver problems
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?=C3=96mer=20Sezgin=20Ugurlu?= <omer.ugurlu@a-kent.com>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit 646d90e2b925578abef5c45853e0b166b6a450bf upstream.
+commit 4c9715de52b9b6256bf1e9510917111a47b0c176 upstream.
 
-Signed-off-by: Omer Sezgin Ugurlu <omer.ugurlu@a-kent.com>
+The old code registered the hcd even if there were no transceivers
+detected, leading to oopses like this if we try to probe a non-existant
+ULPI:
+
+[    2.730000] mxc-ehci mxc-ehci.0: unable to init transceiver
+[    2.740000] timeout polling for ULPI device
+[    2.740000] timeout polling for ULPI device
+[    2.750000] mxc-ehci mxc-ehci.0: unable to enable vbus on transceiver
+[    2.750000] mxc-ehci mxc-ehci.0: Freescale On-Chip EHCI Host Controller
+[    2.760000] mxc-ehci mxc-ehci.0: new USB bus registered, assigned bus number 2
+[    2.770000] Unhandled fault: external abort on non-linefetch (0x808) at 0xc4876184
+[    2.770000] Internal error: : 808 [#1] PREEMPT
+[    2.770000] last sysfs file:
+[    2.770000] Modules linked in:
+[    2.770000] CPU: 0    Not tainted  (2.6.33.5 #5)
+[    2.770000] PC is at ehci_hub_control+0x4d4/0x8f8
+[    2.770000] LR is at ehci_mxc_setup+0xbc/0xdc
+[    2.770000] pc : [<c0196dfc>]    lr : [<c019bc8c>]    psr: 00000093
+[    2.770000] sp : c3815e40  ip : 00000001  fp : 60000013
+[    2.770000] r10: c4876184  r9 : 00000000  r8 : c3814000
+[    2.770000] r7 : c391d2cc  r6 : 00000001  r5 : 00000001  r4 : 00000000
+[    2.770000] r3 : 80000000  r2 : 00000007  r1 : 80000000  r0 : c4876184
+[    2.770000] Flags: nzcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM Segment kernel
+[    2.770000] Control: 0005317f  Table: a0004000  DAC: 00000017
+[    2.770000] Process swapper (pid: 1, stack limit = 0xc3814270)
+...
+
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Acked-by: Daniel Mack <daniel@caiaq.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/ehci-mxc.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -316,6 +316,7 @@ static int  option_resume(struct usb_ser
- #define QISDA_PRODUCT_H21_4512			0x4512
- #define QISDA_PRODUCT_H21_4523			0x4523
- #define QISDA_PRODUCT_H20_4515			0x4515
-+#define QISDA_PRODUCT_H20_4518			0x4518
- #define QISDA_PRODUCT_H20_4519			0x4519
+--- a/drivers/usb/host/ehci-mxc.c
++++ b/drivers/usb/host/ehci-mxc.c
+@@ -207,10 +207,17 @@ static int ehci_mxc_drv_probe(struct pla
+ 	/* Initialize the transceiver */
+ 	if (pdata->otg) {
+ 		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
+-		if (otg_init(pdata->otg) != 0)
+-			dev_err(dev, "unable to init transceiver\n");
+-		else if (otg_set_vbus(pdata->otg, 1) != 0)
++		ret = otg_init(pdata->otg);
++		if (ret) {
++			dev_err(dev, "unable to init transceiver, probably missing\n");
++			ret = -ENODEV;
++			goto err_add;
++		}
++		ret = otg_set_vbus(pdata->otg, 1);
++		if (ret) {
+ 			dev_err(dev, "unable to enable vbus on transceiver\n");
++			goto err_add;
++		}
+ 	}
  
- /* TLAYTECH PRODUCTS */
-@@ -836,6 +837,7 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H21_4512) },
- 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H21_4523) },
- 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H20_4515) },
-+	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H20_4518) },
- 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H20_4519) },
- 	{ USB_DEVICE(TOSHIBA_VENDOR_ID, TOSHIBA_PRODUCT_G450) },
- 	{ USB_DEVICE(TOSHIBA_VENDOR_ID, TOSHIBA_PRODUCT_HSDPA_MINICARD ) }, /* Toshiba 3G HSDPA == Novatel Expedite EU870D MiniCard */
+ 	priv->hcd = hcd;
 
 
