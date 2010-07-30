@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab0G3QsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 12:48:01 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:55970 "HELO
+	id S1754306Ab0G3Qsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 12:48:42 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:51624 "HELO
 	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753615Ab0G3Qr7 (ORCPT
+	by vger.kernel.org with SMTP id S1754149Ab0G3Qsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 12:47:59 -0400
+	Fri, 30 Jul 2010 12:48:40 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=naLRoPcm/mFJXmaa216YqtmlIYlP1Q6h5ECNvg1mZhjyuvpPb9b+qayGumJGlTrBoLPaeDEfVo9gURB5LIm6x1oguSo7Gd2h4b1U99WsKB5NTLKVumammjCgfGd9vC2y;
-Date: Fri, 30 Jul 2010 09:47:55 -0700
+	b=NV5+NT4DRZWzZw+7WMkRz6WYBPlnMCDh6/ri30fw8r+JALUGW568Xsdgun60AZrI2QJVf04bUXCYgpgxz8xgC2393xmGvhNYzr+QfKuof7dLlQleLSWKHxVMVKddH0nA;
+Date: Fri, 30 Jul 2010 09:48:33 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Do not run NVidia quirks related to MSI with MSI
- disabled
-Message-ID: <20100730094755.7f53b7d8@virtuousgeek.org>
-In-Reply-To: <201007232219.55331.rjw@sisk.pl>
-References: <201007232219.55331.rjw@sisk.pl>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/19] drivers/pci: use for_each_pci_dev()
+Message-ID: <20100730094833.47a3e638@virtuousgeek.org>
+In-Reply-To: <1278173080-11983-1-git-send-email-segooon@gmail.com>
+References: <1278173080-11983-1-git-send-email-segooon@gmail.com>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -29,40 +28,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 22:19:55 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Sat,  3 Jul 2010 20:04:39 +0400
+Kulikov Vasiliy <segooon@gmail.com> wrote:
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Use for_each_pci_dev() to simplify the code.
 > 
-> There is no reason to run NVidia-specific quirks related to HT MSI
-> mappings with MSI disabled via pci=nomsi, so make
-> __nv_msi_ht_cap_quirk() return immediately in that case.
-> 
-> This allows at least one machine to boot 100% of the time with
-> pci=nomsi (it still doesn't boot reliably without that).
-> 
-> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16443 .
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 > ---
->  drivers/pci/quirks.c |    3 +++
->  1 file changed, 3 insertions(+)
+>  drivers/pci/setup-irq.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 > 
-> Index: linux-2.6/drivers/pci/quirks.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/pci/quirks.c
-> +++ linux-2.6/drivers/pci/quirks.c
-> @@ -2390,6 +2390,9 @@ static void __devinit __nv_msi_ht_cap_qu
->  	int pos;
->  	int found;
->  
-> +	if (!pci_msi_enabled())
-> +		return;
-> +
->  	/* check if there is HT MSI cap or enabled on this device */
->  	found = ht_check_msi_mapping(dev);
+> diff --git a/drivers/pci/setup-irq.c b/drivers/pci/setup-irq.c
+> index aa795fd..eec9738 100644
+> --- a/drivers/pci/setup-irq.c
+> +++ b/drivers/pci/setup-irq.c
+> @@ -59,7 +59,6 @@ pci_fixup_irqs(u8 (*swizzle)(struct pci_dev *, u8 *),
+>  	       int (*map_irq)(struct pci_dev *, u8, u8))
+>  {
+>  	struct pci_dev *dev = NULL;
+> -	while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL) {
+> +	for_each_pci_dev(dev)
+>  		pdev_fixup_irq(dev, swizzle, map_irq);
+> -	}
+>  }
 
-applied to linux-next with a cc: stable.  Thanks.
+Applied all of these to my linux-next branch.  I squashed all the PCI
+ones into a single commit, keeping only the x86 one separate.
 
 -- 
 Jesse Barnes, Intel Open Source Technology Center
