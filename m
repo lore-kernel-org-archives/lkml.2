@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab0G3Hbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 03:31:42 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:37733 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab0G3Hbl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 03:31:41 -0400
-Message-ID: <4C527FD9.3060708@canonical.com>
-Date: Fri, 30 Jul 2010 00:31:37 -0700
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the security-testing
- tree
-References: <20100730120624.f3112742.sfr@canb.auug.org.au> <alpine.LRH.2.00.1007301353340.8846@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.00.1007301353340.8846@tundra.namei.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752852Ab0G3Hfy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 03:35:54 -0400
+Received: from sh.osrg.net ([192.16.179.4]:44612 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751397Ab0G3Hfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 03:35:53 -0400
+Date: Fri, 30 Jul 2010 16:35:46 +0900
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH -mm] add DMA_xxBIT_MASK to feature-removal-schedule.txt
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100730163339C.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 30 Jul 2010 16:35:47 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2010 08:54 PM, James Morris wrote:
-> On Fri, 30 Jul 2010, Stephen Rothwell wrote:
-> 
->> Hi James,
->>
->> After merging the security-testing tree, today's linux-next build
->> (powerpc ppc64_defconfig) failed like this:
->>
->> security/Kconfig:144: can't open file "security/apparmor/Kconfig"
->>
->> Caused by commit 32bd8e5273c0be4189274ab55c4d16862f0dd87d ("AppArmor:
->> Enable configuring and building of the AppArmor security module").  Looks
->> like a file was missed.
-> 
-> I don't know how to use git.
-> 
-> Should be fixed now.
-> 
-works for me,
+DMA_xxBIT_MASK macros were marked as deprecated in June 2009. One more
+year is long enough, I think.
 
-thanks James
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ Documentation/feature-removal-schedule.txt |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 23a8f8d..a94c2ad 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -541,3 +541,11 @@ Why:	PCI DMA unmap state API (include/linux/pci-dma.h) was replaced
+ Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+ 
+ ----------------------------
++
++What: 	DMA_xxBIT_MASK macros
++When:	Jun 2011
++Why:	DMA_xxBIT_MASK macros were replaced with DMA_BIT_MASK() macros.
++Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
++
++----------------------------
++
+-- 
+1.6.5
+
