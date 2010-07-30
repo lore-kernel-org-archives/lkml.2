@@ -1,240 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab0G3SrX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:47:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60149 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932290Ab0G3SrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 14:47:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,288,1278313200"; 
-   d="scan'208";a="540548311"
-Subject: [patch] x86, mtrr: use stop machine context to rendezvous all the
- cpu's
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Prarit Bhargava <prarit@redhat.com>,
-        "stable@kernel.org" <stable@kernel.org>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Fri, 30 Jul 2010 11:46:42 -0700
-Message-Id: <1280515602.2682.10.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S933440Ab0G3Sq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:46:56 -0400
+Received: from exprod7ob116.obsmtp.com ([64.18.2.218]:60030 "EHLO
+	exprod7ob116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759736Ab0G3Sqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 14:46:39 -0400
+Message-ID: <4C52ED8C.9070709@genband.com>
+Date: Fri, 30 Jul 2010 09:19:40 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net
+Subject: where are the memory barriers in net driver rx DMA operations?
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Jul 2010 15:19:41.0984 (UTC) FILETIME=[A2340A00:01CB2FFA]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17538.007
+X-TM-AS-Result: No-1.374100-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the stop machine context rather than IPI's to rendezvous all the cpus for
-MTRR initialization that happens during cpu bringup or for MTRR modifications
-during runtime.
 
-This avoids deadlock scenario (reported by Prarit) like:
-    
-cpu A holds a read_lock (tasklist_lock for example) with irqs enabled
-cpu B waits for the same lock with irqs disabled using write_lock_irq
-cpu C doing set_mtrr() (during AP bringup for example), which will try to
-rendezvous all the cpus using IPI's
-    
-This will result in C and A come to the rendezvous point and waiting
-for B. B is stuck forever waiting for the lock and thus not
-reaching the rendezvous point.
+Documentation/DMA-API-HOWTO.txt says that memory barriers are still
+required when accessing consistent mappings.  The example they give is
+for reordering stores to consistent memory but I assume this also
+applies to reordering loads.
 
-Using stop cpu (run in the process context of per cpu based keventd) to do
-this rendezvous, avoids this deadlock scenario.
+However, I see many net drivers accessing the descriptor ring (in
+consistent memory), checking the status bit for the buffer, then calling
+dma_unmap_single() and accessing the data without any explicit memory
+barrier.  Does the unmapping call act as a barrier in this case?
 
-Also make sure all the cpu's are in the rendezvous handler before we proceed
-with the local_irq_save() on each cpu. This lock step disabling irqs on all
-the cpus will avoid other deadlock scenarios (for example involving
-with the blocking smp_call_function's etc).
+Thanks,
 
-   [ This problem is very old. Marking -stable only for 2.6.35 as the
-     stop_one_cpu_nowait() API is present only in 2.6.35. Any older
-     kernel interested in this fix need to do some more work in backporting
-     this patch. ]
+Chris
 
-Reported-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@kernel.org	[2.6.35]
----
- arch/x86/kernel/cpu/mtrr/main.c |   56 ++++++++++++++++++++++++++++++----------
- arch/x86/kernel/smpboot.c       |    7 +++++
- 2 files changed, 50 insertions(+), 13 deletions(-)
-
-Index: tip/arch/x86/kernel/cpu/mtrr/main.c
-===================================================================
---- tip.orig/arch/x86/kernel/cpu/mtrr/main.c
-+++ tip/arch/x86/kernel/cpu/mtrr/main.c
-@@ -35,6 +35,7 @@
- 
- #include <linux/types.h> /* FIXME: kvm_para.h needs this */
- 
-+#include <linux/stop_machine.h>
- #include <linux/kvm_para.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
-@@ -143,22 +144,28 @@ struct set_mtrr_data {
- 	mtrr_type	smp_type;
- };
- 
-+static DEFINE_PER_CPU(struct cpu_stop_work, mtrr_work);
-+
- /**
-- * ipi_handler - Synchronisation handler. Executed by "other" CPUs.
-+ * mtrr_work_handler - Synchronisation handler. Executed by "other" CPUs.
-  * @info: pointer to mtrr configuration data
-  *
-  * Returns nothing.
-  */
--static void ipi_handler(void *info)
-+static int mtrr_work_handler(void *info)
- {
- #ifdef CONFIG_SMP
- 	struct set_mtrr_data *data = info;
- 	unsigned long flags;
- 
-+	atomic_dec(&data->count);
-+	while (!atomic_read(&data->gate))
-+		cpu_relax();
-+
- 	local_irq_save(flags);
- 
- 	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
-+	while (atomic_read(&data->gate))
- 		cpu_relax();
- 
- 	/*  The master has cleared me to execute  */
-@@ -173,12 +180,13 @@ static void ipi_handler(void *info)
- 	}
- 
- 	atomic_dec(&data->count);
--	while (atomic_read(&data->gate))
-+	while (!atomic_read(&data->gate))
- 		cpu_relax();
- 
- 	atomic_dec(&data->count);
- 	local_irq_restore(flags);
- #endif
-+	return 0;
- }
- 
- static inline int types_compatible(mtrr_type type1, mtrr_type type2)
-@@ -198,7 +206,7 @@ static inline int types_compatible(mtrr_
-  *
-  * This is kinda tricky, but fortunately, Intel spelled it out for us cleanly:
-  *
-- * 1. Send IPI to do the following:
-+ * 1. Queue work to do the following on all processors:
-  * 2. Disable Interrupts
-  * 3. Wait for all procs to do so
-  * 4. Enter no-fill cache mode
-@@ -215,14 +223,17 @@ static inline int types_compatible(mtrr_
-  * 15. Enable interrupts.
-  *
-  * What does that mean for us? Well, first we set data.count to the number
-- * of CPUs. As each CPU disables interrupts, it'll decrement it once. We wait
-- * until it hits 0 and proceed. We set the data.gate flag and reset data.count.
-- * Meanwhile, they are waiting for that flag to be set. Once it's set, each
-+ * of CPUs. As each CPU announces that it started the rendezvous handler by
-+ * decrementing the count, We reset data.count and set the data.gate flag
-+ * allowing all the cpu's to proceed with the work. As each cpu disables
-+ * interrupts, it'll decrement data.count once. We wait until it hits 0 and
-+ * proceed. We clear the data.gate flag and reset data.count. Meanwhile, they
-+ * are waiting for that flag to be cleared. Once it's cleared, each
-  * CPU goes through the transition of updating MTRRs.
-  * The CPU vendors may each do it differently,
-  * so we call mtrr_if->set() callback and let them take care of it.
-  * When they're done, they again decrement data->count and wait for data.gate
-- * to be reset.
-+ * to be set.
-  * When we finish, we wait for data.count to hit 0 and toggle the data.gate flag
-  * Everyone then enables interrupts and we all continue on.
-  *
-@@ -234,6 +245,9 @@ set_mtrr(unsigned int reg, unsigned long
- {
- 	struct set_mtrr_data data;
- 	unsigned long flags;
-+	int cpu;
-+
-+	preempt_disable();
- 
- 	data.smp_reg = reg;
- 	data.smp_base = base;
-@@ -246,10 +260,15 @@ set_mtrr(unsigned int reg, unsigned long
- 	atomic_set(&data.gate, 0);
- 
- 	/* Start the ball rolling on other CPUs */
--	if (smp_call_function(ipi_handler, &data, 0) != 0)
--		panic("mtrr: timed out waiting for other CPUs\n");
-+	for_each_online_cpu(cpu) {
-+		struct cpu_stop_work *work = &per_cpu(mtrr_work, cpu);
-+
-+		if (cpu == smp_processor_id())
-+			continue;
-+
-+		stop_one_cpu_nowait(cpu, mtrr_work_handler, &data, work);
-+	}
- 
--	local_irq_save(flags);
- 
- 	while (atomic_read(&data.count))
- 		cpu_relax();
-@@ -259,6 +278,16 @@ set_mtrr(unsigned int reg, unsigned long
- 	smp_wmb();
- 	atomic_set(&data.gate, 1);
- 
-+	local_irq_save(flags);
-+
-+	while (atomic_read(&data.count))
-+		cpu_relax();
-+
-+	/* Ok, reset count and toggle gate */
-+	atomic_set(&data.count, num_booting_cpus() - 1);
-+	smp_wmb();
-+	atomic_set(&data.gate, 0);
-+
- 	/* Do our MTRR business */
- 
- 	/*
-@@ -279,7 +308,7 @@ set_mtrr(unsigned int reg, unsigned long
- 
- 	atomic_set(&data.count, num_booting_cpus() - 1);
- 	smp_wmb();
--	atomic_set(&data.gate, 0);
-+	atomic_set(&data.gate, 1);
- 
- 	/*
- 	 * Wait here for everyone to have seen the gate change
-@@ -289,6 +318,7 @@ set_mtrr(unsigned int reg, unsigned long
- 		cpu_relax();
- 
- 	local_irq_restore(flags);
-+	preempt_enable();
- }
- 
- /**
-Index: tip/arch/x86/kernel/smpboot.c
-===================================================================
---- tip.orig/arch/x86/kernel/smpboot.c
-+++ tip/arch/x86/kernel/smpboot.c
-@@ -816,6 +816,13 @@ do_rest:
- 			if (cpumask_test_cpu(cpu, cpu_callin_mask))
- 				break;	/* It has booted */
- 			udelay(100);
-+			/*
-+			 * Allow other tasks to run while we wait for the
-+			 * AP to come online. This also gives a chance
-+			 * for the MTRR work(triggered by the AP coming online)
-+			 * to be completed in the stop machine context.
-+			 */
-+			schedule();
- 		}
- 
- 		if (cpumask_test_cpu(cpu, cpu_callin_mask))
-
-
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
