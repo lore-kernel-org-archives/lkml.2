@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760021Ab0G3R4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:56:36 -0400
-Received: from kroah.org ([198.145.64.141]:58545 "EHLO coco.kroah.org"
+	id S1760044Ab0G3R4o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:56:44 -0400
+Received: from kroah.org ([198.145.64.141]:58554 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759970Ab0G3Rzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:45 -0400
+	id S1759974Ab0G3Rzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:46 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:41 2010
-Message-Id: <20100730175141.631228575@clark.site>
+Message-Id: <20100730175141.715008212@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:45 -0700
+Date: Fri, 30 Jul 2010 10:51:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Corey Minyard <cminyard@mvista.com>
-Subject: [088/205] ipmi: set schedule_timeout_wait() value back to one
+        Alex Shi <alex.shi@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [089/205] sched: Fix over-scheduling bug
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Wilck <martin.wilck@ts.fujitsu.com>
+From: Alex,Shi <alex.shi@intel.com>
 
-commit 8d1f66dc9b4f80a1441bc1c33efa98aca99e8813 upstream.
+commit 3c93717cfa51316e4dbb471e7c0f9d243359d5f8 upstream.
 
-Fix a regression introduced by ae74e823cb7d ("ipmi: add parameter to limit
-CPU usage in kipmid").
+Commit e70971591 ("sched: Optimize unused cgroup configuration") introduced
+an imbalanced scheduling bug.
 
-Some systems were seeing CPU usage go up dramatically with the recent
-changes to try to reduce timer usage in the IPMI driver.  This was traced
-down to schedule_timeout_interruptible(1) being changed to
-schedule_timeout_interruptbile(0).  Revert that part of the change.
+If we do not use CGROUP, function update_h_load won't update h_load. When the
+system has a large number of tasks far more than logical CPU number, the
+incorrect cfs_rq[cpu]->h_load value will cause load_balance() to pull too
+many tasks to the local CPU from the busiest CPU. So the busiest CPU keeps
+going in a round robin. That will hurt performance.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16147
+The issue was found originally by a scientific calculation workload that
+developed by Yanmin. With that commit, the workload performance drops
+about 40%.
 
-Reported-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Tested-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+ CPU  before    after
+
+ 00   : 2       : 7
+ 01   : 1       : 7
+ 02   : 11      : 6
+ 03   : 12      : 7
+ 04   : 6       : 6
+ 05   : 11      : 7
+ 06   : 10      : 6
+ 07   : 12      : 7
+ 08   : 11      : 6
+ 09   : 12      : 6
+ 10   : 1       : 6
+ 11   : 1       : 6
+ 12   : 6       : 6
+ 13   : 2       : 6
+ 14   : 2       : 6
+ 15   : 1       : 6
+
+Reviewed-by: Yanmin zhang <yanmin.zhang@intel.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1276754893.9452.5442.camel@debian>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/ipmi/ipmi_si_intf.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -1003,7 +1003,7 @@ static int ipmi_thread(void *data)
- 		else if (smi_result == SI_SM_CALL_WITH_DELAY && busy_wait)
- 			schedule();
- 		else
--			schedule_timeout_interruptible(0);
-+			schedule_timeout_interruptible(1);
- 	}
- 	return 0;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1675,9 +1675,6 @@ static void update_shares(struct sched_d
+ 
+ static void update_h_load(long cpu)
+ {
+-	if (root_task_group_empty())
+-		return;
+-
+ 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
  }
+ 
 
 
