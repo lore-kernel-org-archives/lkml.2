@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933327Ab0G3SoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:44:14 -0400
-Received: from kroah.org ([198.145.64.141]:35891 "EHLO coco.kroah.org"
+	id S933447Ab0G3Sow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:44:52 -0400
+Received: from kroah.org ([198.145.64.141]:35849 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758816Ab0G3RfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:07 -0400
+	id S932304Ab0G3RfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:09 2010
-Message-Id: <20100730173109.573358136@clark.site>
+Message-Id: <20100730173109.035373791@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:41 -0700
+Date: Fri, 30 Jul 2010 10:30:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>
-Subject: [076/140] genirq: Deal with desc->set_type() changing desc->chip
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prasad <prasad@linux.vnet.ibm.com>
+Subject: [070/140] x86: Send a SIGTRAP for user icebp traps
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 4673247562e39a17e09440fa1400819522ccd446 upstream.
+commit a1e80fafc9f0742a1776a0490258cb64912411b0 upstream.
 
-The set_type() function can change the chip implementation when the
-trigger mode changes. That might result in using an non-initialized
-irq chip when called from __setup_irq() or when called via
-set_irq_type() on an already enabled irq.
+Before we had a generic breakpoint layer, x86 used to send a
+sigtrap for any debug event that happened in userspace,
+except if it was caused by lazy dr7 switches.
 
-The set_irq_type() function should not be called on an enabled irq,
-but because we forgot to put a check into it, we have a bunch of users
-which grew the habit of doing that and it never blew up as the
-function is serialized via desc->lock against all users of desc->chip
-and they never hit the non-initialized irq chip issue.
+Currently we only send such signal for single step or breakpoint
+events.
 
-The easy fix for the __setup_irq() issue would be to move the
-irq_chip_set_defaults(desc->chip) call after the trigger setting to
-make sure that a chip change is covered.
+However, there are three other kind of debug exceptions:
 
-But as we have already users, which do the type setting after
-request_irq(), the safe fix for now is to call irq_chip_set_defaults()
-from __irq_set_trigger() when desc->set_type() changed the irq chip.
+- debug register access detected: trigger an exception if the
+  next instruction touches the debug registers. We don't use
+  it.
+- task switch, but we don't use tss.
+- icebp/int01 trap. This instruction (0xf1) is undocumented and
+  generates an int 1 exception. Unlike single step through TF
+  flag, it doesn't set the single step origin of the exception
+  in dr6.
 
-It needs a deeper analysis whether we should refuse to change the chip
-on an already enabled irq, but that'd be a large scale change to fix
-all the existing users. So that's neither stable nor 2.6.35 material.
+icebp then used to be reported in userspace using trap signals
+but this have been incidentally broken with the new breakpoint
+code. Reenable this. Since this is the only debug event that
+doesn't set anything in dr6, this is all we have to check.
 
-Reported-by: Esben Haabendal <eha@doredevelopment.dk>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>
+This fixes a regression in Wine where World Of Warcraft got broken
+as it uses this for software protection checks purposes. And
+probably other apps do.
+
+Reported-and-tested-by: Alexandre Julliard <julliard@winehq.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/irq/manage.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/traps.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -436,6 +436,9 @@ int __irq_set_trigger(struct irq_desc *d
- 		/* note that IRQF_TRIGGER_MASK == IRQ_TYPE_SENSE_MASK */
- 		desc->status &= ~(IRQ_LEVEL | IRQ_TYPE_SENSE_MASK);
- 		desc->status |= flags;
-+
-+		if (chip != desc->chip)
-+			irq_chip_set_defaults(desc->chip);
- 	}
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -529,11 +529,20 @@ asmlinkage __kprobes struct pt_regs *syn
+ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ {
+ 	struct task_struct *tsk = current;
++	int user_icebp = 0;
+ 	unsigned long dr6;
+ 	int si_code;
  
- 	return ret;
+ 	get_debugreg(dr6, 6);
+ 
++	/*
++	 * If dr6 has no reason to give us about the origin of this trap,
++	 * then it's very likely the result of an icebp/int01 trap.
++	 * User wants a sigtrap for that.
++	 */
++	if (!(dr6 & ~0xffff0ff0) && user_mode(regs))
++		user_icebp = 1;
++
+ 	/* Catch kmemcheck conditions first of all! */
+ 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
+ 		return;
+@@ -575,7 +584,7 @@ dotraplinkage void __kprobes do_debug(st
+ 		regs->flags &= ~X86_EFLAGS_TF;
+ 	}
+ 	si_code = get_si_code(tsk->thread.debugreg6);
+-	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS))
++	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
+ 		send_sigtrap(tsk, regs, error_code, si_code);
+ 	preempt_conditional_cli(regs);
+ 
 
 
