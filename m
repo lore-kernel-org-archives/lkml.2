@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758669Ab0G3OHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 10:07:33 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63021 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758561Ab0G3OHb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 10:07:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=LtXmqWASBl+r/l/OVJEVUaJBwEOfKPHlNk3Fc9hCB4edYUHfACz9YsHUDH4T+0j2d9
-         1n9vE1wwkldYBUav38E0tHN57VDHRUGv4KiiMCqTsGHemGOrYt/+xg2lG98hk008Ydvi
-         FN7D5j3OqV59KQJUNgiVQ0Dg+3pRADKsaQap8=
-Date: Fri, 30 Jul 2010 16:07:04 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Beregalov <a.beregalov@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Mithlesh Thukral <mithlesh@linsyssoft.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/9] staging: otus: check kmalloc() return value
-Message-ID: <20100730140704.GB26313@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Kulikov Vasiliy <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Alexander Beregalov <a.beregalov@gmail.com>,
-	Tejun Heo <tj@kernel.org>,
-	Mithlesh Thukral <mithlesh@linsyssoft.com>,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1280488080-20777-1-git-send-email-segooon@gmail.com>
+	id S932151Ab0G3OMf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 10:12:35 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:56367 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752801Ab0G3OMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 10:12:34 -0400
+Date: Fri, 30 Jul 2010 15:12:18 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 1/6] vmscan: tracing: Roll up of patches currently in
+	mmotm
+Message-ID: <20100730141217.GG3571@csn.ul.ie>
+References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie> <1280497020-22816-2-git-send-email-mel@csn.ul.ie> <20100730140441.GB5269@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1280488080-20777-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100730140441.GB5269@nowhere>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 03:08:00PM +0400, Kulikov Vasiliy wrote:
->  	if (size > 0) {
->  		buf = kmalloc(size, GFP_KERNEL);
-> +		if (buf == NULL) {
-> +			pr_err("zfwUsbSubmitControl() failed, "
-> +				  "kmalloc() returned NULL\n");
+On Fri, Jul 30, 2010 at 04:04:42PM +0200, Frederic Weisbecker wrote:
+> On Fri, Jul 30, 2010 at 02:36:55PM +0100, Mel Gorman wrote:
+> > This is a roll-up of patches currently in mmotm related to stack reduction and
+> > tracing reclaim. It is based on 2.6.35-rc6 and included for the convenience
+> > of testing.
+> > 
+> > No signed off required.
+> > ---
+> >  .../trace/postprocess/trace-vmscan-postprocess.pl  |  654 ++++++++++++++++++++
+> 
+> I have the feeling you've made an ad-hoc post processing script that seems
+> to rewrite all the format parsing, debugfs, stream handling, etc... we
+> have that in perf tools already.
+> 
 
-This isn't a big deal, but the pr_err() isn't needed.  kmalloc() already
-prints a message unless __GFP_NOWARN is used.
+It's an hoc adaption of trace-pagealloc-postprocess.pl which was developed
+before the perf scripting report. It's a bit klunky.
 
-regards,
-dan carpenter
+> May be you weren't aware of what we have in perf in terms of scripting support.
+> 
 
+I'm aware, I just haven't gotten around to adapting what the script does
+to the perf scripting support. The existance of the script I have means
+people can reproduce my results without having to wait for me to rewrite
+the post-processing scripts for perf.
 
+> First, launch perf list and spot the events you're interested in, let's
+> say you're interested in irqs:
+> 
+> $ perf list
+>   [...]
+>   irq:irq_handler_entry                      [Tracepoint event]
+>   irq:irq_handler_exit                       [Tracepoint event]
+>   irq:softirq_entry                          [Tracepoint event]
+>   irq:softirq_exit                           [Tracepoint event]
+>   [...]
+> 
+> Now do a trace record:
+> 
+> # perf record -e irq:irq_handler_entry -e irq:irq_handler_exit -e irq:softirq_entry -e irq:softirq_exit cmd
+> 
+> or more simple:
+> 
+> # perf record -e irq:* cmd
+> 
+> You can use -a instead of cmd for wide tracing.
+> 
+> Now generate a perf parsing script on top of these traces:
+> 
+> # perf trace -g perl
+> generated Perl script: perf-trace.pl
+> 
+> Fill up the trace handlers inside perf-trace.pl and just run it:
+> 
+> # perf trace -s perf-trace.pl
+> 
+> Once ready, you can place your script in the script directory.
+> 
+
+Ultimately, the post-processing scripts should be adapted to perf but it
+could be a while before I get around to it.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
