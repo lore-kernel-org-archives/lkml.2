@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab0G3RUd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:20:33 -0400
-Received: from kroah.org ([198.145.64.141]:52218 "EHLO coco.kroah.org"
+	id S1758082Ab0G3RUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:20:38 -0400
+Received: from kroah.org ([198.145.64.141]:52248 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753767Ab0G3RUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:11 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:12 2010
-Message-Id: <20100730171512.693905979@clark.site>
+	id S1758887Ab0G3RUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:15 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:13 2010
+Message-Id: <20100730171512.953090891@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:12 -0700
+Date: Fri, 30 Jul 2010 10:16:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Ming Lei <tom.leiming@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [144/165] firmware_class: fix memory leak - free allocated pages
+        Ang Way Chuang <wcang@nav6.org>, Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [147/165] V4L/DVB: dvb-core: Fix ULE decapsulation bug
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,112 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <David.Woodhouse@intel.com>
+From: Ang Way Chuang <wcang79@gmail.com>
 
-commit dd336c554d8926c3348a2d5f2a5ef5597f6d1a06 upstream.
+commit 5c331fc8c19e181bffab46e9d18e1637cdc47170 upstream.
 
-fix memory leak introduced by the patch 6e03a201bbe:
-firmware: speed up request_firmware()
+Fix ULE decapsulation bug when less than 4 bytes of ULE SNDU is packed
+into the remaining bytes of a MPEG2-TS frame
 
-1. vfree won't release pages there were allocated explicitly and mapped
-using vmap. The memory has to be vunmap-ed and the pages needs
-to be freed explicitly
+ULE (Unidirectional Lightweight Encapsulation RFC 4326) decapsulation
+code has a bug that incorrectly treats ULE SNDU packed into the
+remaining 2 or 3 bytes of a MPEG2-TS frame as having invalid pointer
+field on the subsequent MPEG2-TS frame.
 
-2. page array is moved into the 'struct
-firmware' so that we can free it from release_firmware()
-and not only in fw_dev_release()
-
-The fix doesn't break the firmware load speed.
-
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: Ming Lei <tom.leiming@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Singed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Ang Way Chuang <wcang@nav6.org>
+Acked-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/firmware_class.c |   26 ++++++++++++++++++++------
- include/linux/firmware.h      |    1 +
- 2 files changed, 21 insertions(+), 6 deletions(-)
+ drivers/media/dvb/dvb-core/dvb_net.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -125,6 +125,17 @@ static ssize_t firmware_loading_show(str
- 	return sprintf(buf, "%d\n", loading);
- }
+--- a/drivers/media/dvb/dvb-core/dvb_net.c
++++ b/drivers/media/dvb/dvb-core/dvb_net.c
+@@ -350,6 +350,7 @@ static void dvb_net_ule( struct net_devi
+ 	const u8 *ts, *ts_end, *from_where = NULL;
+ 	u8 ts_remain = 0, how_much = 0, new_ts = 1;
+ 	struct ethhdr *ethh = NULL;
++	bool error = false;
  
-+static void firmware_free_data(const struct firmware *fw)
-+{
-+	int i;
-+	vunmap(fw->data);
-+	if (fw->pages) {
-+		for (i = 0; i < PFN_UP(fw->size); i++)
-+			__free_page(fw->pages[i]);
-+		kfree(fw->pages);
-+	}
-+}
+ #ifdef ULE_DEBUG
+ 	/* The code inside ULE_DEBUG keeps a history of the last 100 TS cells processed. */
+@@ -459,10 +460,16 @@ static void dvb_net_ule( struct net_devi
+ 
+ 						/* Drop partly decoded SNDU, reset state, resync on PUSI. */
+ 						if (priv->ule_skb) {
+-							dev_kfree_skb( priv->ule_skb );
++							error = true;
++							dev_kfree_skb(priv->ule_skb);
++						}
 +
- /* Some architectures don't have PAGE_KERNEL_RO */
- #ifndef PAGE_KERNEL_RO
- #define PAGE_KERNEL_RO PAGE_KERNEL
-@@ -157,21 +168,21 @@ static ssize_t firmware_loading_store(st
- 			mutex_unlock(&fw_lock);
- 			break;
- 		}
--		vfree(fw_priv->fw->data);
--		fw_priv->fw->data = NULL;
-+		firmware_free_data(fw_priv->fw);
-+		memset(fw_priv->fw, 0, sizeof(struct firmware));
-+		/* If the pages are not owned by 'struct firmware' */
- 		for (i = 0; i < fw_priv->nr_pages; i++)
- 			__free_page(fw_priv->pages[i]);
- 		kfree(fw_priv->pages);
- 		fw_priv->pages = NULL;
- 		fw_priv->page_array_size = 0;
- 		fw_priv->nr_pages = 0;
--		fw_priv->fw->size = 0;
- 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
- 		mutex_unlock(&fw_lock);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
--			vfree(fw_priv->fw->data);
-+			vunmap(fw_priv->fw->data);
- 			fw_priv->fw->data = vmap(fw_priv->pages,
- 						 fw_priv->nr_pages,
- 						 0, PAGE_KERNEL_RO);
-@@ -179,7 +190,10 @@ static ssize_t firmware_loading_store(st
- 				dev_err(dev, "%s: vmap() failed\n", __func__);
- 				goto err;
++						if (error || priv->ule_sndu_remain) {
+ 							dev->stats.rx_errors++;
+ 							dev->stats.rx_frame_errors++;
++							error = false;
+ 						}
++
+ 						reset_ule(priv);
+ 						priv->need_pusi = 1;
+ 						continue;
+@@ -534,6 +541,7 @@ static void dvb_net_ule( struct net_devi
+ 				from_where += 2;
  			}
--			/* Pages will be freed by vfree() */
-+			/* Pages are now owned by 'struct firmware' */
-+			fw_priv->fw->pages = fw_priv->pages;
-+			fw_priv->pages = NULL;
-+
- 			fw_priv->page_array_size = 0;
- 			fw_priv->nr_pages = 0;
- 			complete(&fw_priv->completion);
-@@ -572,7 +586,7 @@ release_firmware(const struct firmware *
- 			if (fw->data == builtin->data)
- 				goto free_fw;
- 		}
--		vfree(fw->data);
-+		firmware_free_data(fw);
- 	free_fw:
- 		kfree(fw);
- 	}
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -11,6 +11,7 @@
- struct firmware {
- 	size_t size;
- 	const u8 *data;
-+	struct page **pages;
- };
  
- struct device;
++			priv->ule_sndu_remain = priv->ule_sndu_len + 2;
+ 			/*
+ 			 * State of current TS:
+ 			 *   ts_remain (remaining bytes in the current TS cell)
+@@ -543,6 +551,7 @@ static void dvb_net_ule( struct net_devi
+ 			 */
+ 			switch (ts_remain) {
+ 				case 1:
++					priv->ule_sndu_remain--;
+ 					priv->ule_sndu_type = from_where[0] << 8;
+ 					priv->ule_sndu_type_1 = 1; /* first byte of ule_type is set. */
+ 					ts_remain -= 1; from_where += 1;
+@@ -556,6 +565,7 @@ static void dvb_net_ule( struct net_devi
+ 				default: /* complete ULE header is present in current TS. */
+ 					/* Extract ULE type field. */
+ 					if (priv->ule_sndu_type_1) {
++						priv->ule_sndu_type_1 = 0;
+ 						priv->ule_sndu_type |= from_where[0];
+ 						from_where += 1; /* points to payload start. */
+ 						ts_remain -= 1;
 
 
