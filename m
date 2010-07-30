@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab0G3S0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:26:23 -0400
-Received: from kroah.org ([198.145.64.141]:58382 "EHLO coco.kroah.org"
+	id S1759932Ab0G3Rz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:55:28 -0400
+Received: from kroah.org ([198.145.64.141]:58059 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759946Ab0G3Rzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:40 2010
-Message-Id: <20100730175140.795118576@clark.site>
+	id S1759832Ab0G3Ryw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
+Message-Id: <20100730175137.751114444@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:36 -0700
+Date: Fri, 30 Jul 2010 10:51:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [079/205] amd64_edac: Fix syndrome calculation on K8
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [046/205] mac80211: do not wip out old supported rates
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 41c310447fe06bcedc22b75752c18b60e0b9521b upstream.
+commit f0b058b61711ebf5be94d6865ca7b2c259b71d37 upstream.
 
-When calculating the DCT channel from the syndrome we need to know the
-syndrome type (x4 vs x8). On F10h, this is read out from extended PCI
-cfg space register F3x180 while on K8 we only support x4 syndromes and
-don't have extended PCI config space anyway.
+Use old supported rates, if AP do not provide supported rates
+information element in a new managment frame.
 
-Make the code accessing F3x180 F10h only and fall back to x4 syndromes
-on everything else.
-
-Reported-by: Jeffrey Merkey <jeffmerkey@gmail.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/amd64_edac.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ net/mac80211/scan.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1958,20 +1958,20 @@ static int get_channel_from_ecc_syndrome
- 	u32 value = 0;
- 	int err_sym = 0;
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -83,7 +83,7 @@ ieee80211_bss_info_update(struct ieee802
+ {
+ 	struct cfg80211_bss *cbss;
+ 	struct ieee80211_bss *bss;
+-	int clen;
++	int clen, srlen;
+ 	s32 signal = 0;
  
--	amd64_read_pci_cfg(pvt->misc_f3_ctl, 0x180, &value);
-+	if (boot_cpu_data.x86 == 0x10) {
- 
--	/* F3x180[EccSymbolSize]=1, x8 symbols */
--	if (boot_cpu_data.x86 == 0x10 &&
--	    boot_cpu_data.x86_model > 7 &&
--	    value & BIT(25)) {
--		err_sym = decode_syndrome(syndrome, x8_vectors,
--					  ARRAY_SIZE(x8_vectors), 8);
--		return map_err_sym_to_channel(err_sym, 8);
--	} else {
--		err_sym = decode_syndrome(syndrome, x4_vectors,
--					  ARRAY_SIZE(x4_vectors), 4);
--		return map_err_sym_to_channel(err_sym, 4);
-+		amd64_read_pci_cfg(pvt->misc_f3_ctl, 0x180, &value);
-+
-+		/* F3x180[EccSymbolSize]=1 => x8 symbols */
-+		if (boot_cpu_data.x86_model > 7 &&
-+		    value & BIT(25)) {
-+			err_sym = decode_syndrome(syndrome, x8_vectors,
-+						  ARRAY_SIZE(x8_vectors), 8);
-+			return map_err_sym_to_channel(err_sym, 8);
-+		}
+ 	if (local->hw.flags & IEEE80211_HW_SIGNAL_DBM)
+@@ -112,23 +112,24 @@ ieee80211_bss_info_update(struct ieee802
+ 		bss->dtim_period = tim_ie->dtim_period;
  	}
-+	err_sym = decode_syndrome(syndrome, x4_vectors, ARRAY_SIZE(x4_vectors), 4);
-+	return map_err_sym_to_channel(err_sym, 4);
- }
  
- /*
+-	bss->supp_rates_len = 0;
++	/* replace old supported rates if we get new values */
++	srlen = 0;
+ 	if (elems->supp_rates) {
+-		clen = IEEE80211_MAX_SUPP_RATES - bss->supp_rates_len;
++		clen = IEEE80211_MAX_SUPP_RATES;
+ 		if (clen > elems->supp_rates_len)
+ 			clen = elems->supp_rates_len;
+-		memcpy(&bss->supp_rates[bss->supp_rates_len], elems->supp_rates,
+-		       clen);
+-		bss->supp_rates_len += clen;
++		memcpy(bss->supp_rates, elems->supp_rates, clen);
++		srlen += clen;
+ 	}
+ 	if (elems->ext_supp_rates) {
+-		clen = IEEE80211_MAX_SUPP_RATES - bss->supp_rates_len;
++		clen = IEEE80211_MAX_SUPP_RATES - srlen;
+ 		if (clen > elems->ext_supp_rates_len)
+ 			clen = elems->ext_supp_rates_len;
+-		memcpy(&bss->supp_rates[bss->supp_rates_len],
+-		       elems->ext_supp_rates, clen);
+-		bss->supp_rates_len += clen;
++		memcpy(bss->supp_rates + srlen, elems->ext_supp_rates, clen);
++		srlen += clen;
+ 	}
++	if (srlen)
++		bss->supp_rates_len = srlen;
+ 
+ 	bss->wmm_used = elems->wmm_param || elems->wmm_info;
+ 	bss->uapsd_supported = is_uapsd_supported(elems);
 
 
