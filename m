@@ -1,145 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759853Ab0G3Sxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:53:41 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:58877 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759887Ab0G3Sxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 14:53:30 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Maharana, Parag" <Parag.Maharana@lsi.com>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Fri, 30 Jul 2010 12:53:10 -0600
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Index: AcsQugUgIYpmrjuMSDS98Q9uUzoT2QAnKKmwBa1whLACAt2o4A==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBCC8483@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-	 <1277046060.5242.18.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
-	 <1277063250.5242.25.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
- <1277066924.5242.41.camel@mulgrave.site>  
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1760209Ab0G3SyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:54:04 -0400
+Received: from kroah.org ([198.145.64.141]:35583 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759338Ab0G3ReP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:15 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
+Message-Id: <20100730173105.192832960@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:29:52 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Doug Kehn <rdkehn@yahoo.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [027/140] net/core: neighbour update Oops
+In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o6UIrwUr019976
 
-James,
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-Do you know when those patches (12 patches) will be pushed to upstream?
+------------------
 
-Thanks,
+From: Doug Kehn <rdkehn@yahoo.com>
 
-Bo Yang
+commit 91a72a70594e5212c97705ca6a694bd307f7a26b upstream.
 
------Original Message-----
-From: Yang, Bo 
-Sent: Tuesday, July 20, 2010 9:08 AM
-To: Yang, Bo; 'James Bottomley'
-Cc: 'Yinghai Lu'; 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
+When configuring DMVPN (GRE + openNHRP) and a GRE remote
+address is configured a kernel Oops is observed.  The
+obserseved Oops is caused by a NULL header_ops pointer
+(neigh->dev->header_ops) in neigh_update_hhs() when
 
-James,
+void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
+= neigh->dev->header_ops->cache_update;
 
-Do you get chances to view this changes and apply the patches to the main tree?
+is executed.  The dev associated with the NULL header_ops is
+the GRE interface.  This patch guards against the
+possibility that header_ops is NULL.
 
-Thanks,
+This Oops was first observed in kernel version 2.6.26.8.
 
-Bo Yang
-
------Original Message-----
-From: Yang, Bo 
-Sent: Monday, June 21, 2010 11:36 AM
-To: 'James Bottomley'
-Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
-
-James,
-
-Attached is the changelog for OCR. 
-
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+Signed-off-by: Doug Kehn <rdkehn@yahoo.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
-Documentation/scsi/ChangeLog.megaraid_sas |   33 ++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ net/core/neighbour.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas new/Documentation/scsi/ChangeLog.megaraid_sas
---- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-06-20 03:41:31.000000000 -0400
-+++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-06-20 03:55:42.000000000 -0400
-@@ -1,3 +1,36 @@
-+1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
-+			(emaild-id:megaraidlinux@lsi.com)
-+			Bo Yang
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -945,7 +945,10 @@ static void neigh_update_hhs(struct neig
+ {
+ 	struct hh_cache *hh;
+ 	void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
+-		= neigh->dev->header_ops->cache_update;
++		= NULL;
 +
-+2 Current Version : 00.00.04.17.1-rc1
-+3 Older Version   : 00.00.04.17.1-rc1
-+
-+1.	Add the Online Controller Reset (OCR) to the Driver.
-+	OCR is the new feature for megaraid_sas driver which
-+	will allow the fw to do the chip reset which will not
-+	affact the OS behavious.
-+
-+	To add the OCR support, driver need to do: 
-+		a). reset the controller chips -- Xscale and Gen2 which
-+		will change the function calls and add the reset function
-+		related to this two chips.
-+		
-+		b). during the reset, driver will store the pending cmds
-+		which not returned by FW to driver's pending queue.  Driver
-+		will re-issue those pending cmds again to FW after the OCR
-+		finished.
-+		
-+		c). In driver's timeout routine, driver will report to
-+		OS as reset. Also driver's queue routine will block the
-+		cmds until the OCR finished.
-+		
-+		d). in Driver's ISR routine, if driver get the FW state as
-+		state change, FW in Failure status and FW support online controller
-+		reset (OCR), driver will start to do the controller reset.
-+		
-+		e). In driver's IOCTL routine, the application cmds will wait for the
-+		OCR to finish, then issue the cmds to FW.
-+		 
- 1 Release Date    : Thur.  Oct 29, 2009 09:12:45 PST 2009 -
- 			(emaild-id:megaraidlinux@lsi.com)
- 			Bo Yang
++	if (neigh->dev->header_ops)
++		update = neigh->dev->header_ops->cache_update;
+ 
+ 	if (update) {
+ 		for (hh = neigh->hh; hh; hh = hh->hh_next) {
 
 
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@suse.de] 
-Sent: Sunday, June 20, 2010 4:49 PM
-To: Yang, Bo
-Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
-
-On Sun, 2010-06-20 at 14:19 -0600, Yang, Bo wrote:
-> Yes.  
-
-OK, can you give me the single changelog for this one commit, then,
-please?
-
-Thanks,
-
-James
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
