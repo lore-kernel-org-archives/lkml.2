@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab0G3RDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:03:46 -0400
-Received: from kroah.org ([198.145.64.141]:35552 "EHLO coco.kroah.org"
+	id S1755287Ab0G3RDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:03:38 -0400
+Received: from kroah.org ([198.145.64.141]:35496 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755423Ab0G3RDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:03:40 -0400
+	id S1753979Ab0G3RDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:03:31 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:54 2010
-Message-Id: <20100730165954.885078145@clark.site>
+Message-Id: <20100730165954.122456275@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 09:57:28 -0700
+Date: Fri, 30 Jul 2010 09:57:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        Muli Ben-Yehuda <muli@il.ibm.com>,
-        Corinna Schultz <cschultz@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [12/17] x86, Calgary: Increase max PHB number
+        Jeff Layton <jlayton@redhat.com>
+Subject: [03/17] cifs: remove bogus first_time check in NTLMv2 session setup code
 In-Reply-To: <20100730170054.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,49 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darrick J. Wong <djwong@us.ibm.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 499a00e92dd9a75395081f595e681629eb1eebad upstream.
+commit 8a224d489454b7457105848610cfebebdec5638d upstream.
 
-Newer systems (x3950M2) can have 48 PHBs per chassis and 8
-chassis, so bump the limits up and provide an explanation
-of the requirements for each class.
+This bug appears to be the result of a cut-and-paste mistake from the
+NTLMv1 code. The function to generate the MAC key was commented out, but
+not the conditional above it. The conditional then ended up causing the
+session setup key not to be copied to the buffer unless this was the
+first session on the socket, and that made all but the first NTLMv2
+session setup fail.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-Acked-by: Muli Ben-Yehuda <muli@il.ibm.com>
-Cc: Corinna Schultz <cschultz@linux.vnet.ibm.com>
-LKML-Reference: <20100624212647.GI15515@tux1.beaverton.ibm.com>
-[ v2: Fixed build bug, added back PHBS_PER_CALGARY == 4 ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Fix this by removing the conditional and all of the commented clutter
+that made it difficult to see.
+
+Reported-by: Gunther Deschner <gdeschne@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/pci-calgary_64.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ fs/cifs/sess.c |   10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -102,11 +102,16 @@ int use_calgary __read_mostly = 0;
- #define PMR_SOFTSTOPFAULT	0x40000000
- #define PMR_HARDSTOP		0x20000000
+--- a/fs/cifs/sess.c
++++ b/fs/cifs/sess.c
+@@ -482,15 +482,7 @@ CIFS_SessSetup(unsigned int xid, struct
  
--#define MAX_NUM_OF_PHBS		8 /* how many PHBs in total? */
--#define MAX_NUM_CHASSIS		8 /* max number of chassis */
--/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
--#define MAX_PHB_BUS_NUM		(MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
--#define PHBS_PER_CALGARY	4
-+/*
-+ * The maximum PHB bus number.
-+ * x3950M2 (rare): 8 chassis, 48 PHBs per chassis = 384
-+ * x3950M2: 4 chassis, 48 PHBs per chassis        = 192
-+ * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
-+ * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
-+ */
-+#define MAX_PHB_BUS_NUM		384
-+
-+#define PHBS_PER_CALGARY	  4
- 
- /* register offsets in Calgary's internal register space */
- static const unsigned long tar_offsets[] = {
+ 		/* calculate session key */
+ 		setup_ntlmv2_rsp(ses, v2_sess_key, nls_cp);
+-		if (first_time) /* should this be moved into common code
+-				   with similar ntlmv2 path? */
+-		/*   cifs_calculate_ntlmv2_mac_key(ses->server->mac_signing_key,
+-				response BB FIXME, v2_sess_key); */
+-
+-		/* copy session key */
+-
+-	/*	memcpy(bcc_ptr, (char *)ntlm_session_key,LM2_SESS_KEY_SIZE);
+-		bcc_ptr += LM2_SESS_KEY_SIZE; */
++		/* FIXME: calculate MAC key */
+ 		memcpy(bcc_ptr, (char *)v2_sess_key,
+ 		       sizeof(struct ntlmv2_resp));
+ 		bcc_ptr += sizeof(struct ntlmv2_resp);
 
 
