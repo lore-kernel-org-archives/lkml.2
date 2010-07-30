@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab0G3EhN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 00:37:13 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49474 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab0G3EhL (ORCPT
+	id S1752137Ab0G3EqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 00:46:15 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:28536 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab0G3EqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 00:37:11 -0400
+	Fri, 30 Jul 2010 00:46:13 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=quqWIlYCOaa8SM6iGdkxH3WryUfPTfKI3yCqc0qI96SrnUB68geMYjD+HMR0r1z/+
+	qUKaAzfgxV0kgoZA6Xbaw==
 MIME-Version: 1.0
-In-Reply-To: <4C51E36F.6060906@redhat.com>
-References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> 
-	<AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> 
-	<4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> 
-	<20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com> 
-	<20100729195616.GF1981@nb.net.home> <4C51E36F.6060906@redhat.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 30 Jul 2010 06:36:55 +0200
-Message-ID: <AANLkTimq0UVtR-ooutKTfOOE=cS-vxR4gR-aVc1feOzJ@mail.gmail.com>
-Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
-To: Milan Broz <mbroz@redhat.com>
-Cc: Karel Zak <kzak@redhat.com>, util-linux-ng@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk
+In-Reply-To: <20100730131432.891df49a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <201007282334.08063.rjw@sisk.pl>
+	<20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100729142245.4AA5.A69D9226@jp.fujitsu.com>
+	<20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.DEB.1.00.1007291027410.7491@tigran.mtv.corp.google.com>
+	<20100730090146.7e65d1c1.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTing_3HoC9oWNheHJPgQWp2xmN6-C_cyZxoJUqc_@mail.gmail.com>
+	<20100730131432.891df49a.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 29 Jul 2010 21:46:10 -0700
+Message-ID: <AANLkTimvZSFHCZZ=SCQF8DtZ3vVYJmA=4qWs2SDAgvKi@mail.gmail.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+From: Hugh Dickins <hughd@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
 Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 22:24, Milan Broz <mbroz@redhat.com> wrote:
-> On 07/29/2010 09:56 PM, Karel Zak wrote:
->>> Sure it does. Sysfs attributes need to be created _before_ uevents are
->>> sent out. The current behavior is that all blockdev attributes are
->>> safely created before the event is sent. These loop attributes are
->>> created _after_ the event is sent.
->>>
->>> The question is if we can rely on the fact, that 'add' events never
->>> want to look at any of these attributes, and all can be deferred to
->
-> The problem is that add_disk() initializes kobject and announces device.
-> How can I add some new attributes (subdir) with the current code
-> before it happens?
+On Thu, Jul 29, 2010 at 9:14 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> I'll prepare a routine not-quick-fix.
 
-Use attribute groups, and assign them to the class, or in this case to
-the device before it is registered. All this stuff is created by the
-core before the event is sent out. It also takes care of the subdir,
-instead rolling your own kobject stuff, does proper error handling,
-and cleans-up things in the proper order, without any further custom
-code.
+Thank you!
 
-Alternatively, these attributes could be created and removed/created
-with the ioctl, and before the 'change' event, only if there is an
-active backing file, but I would expect the attribute group at the
-device to work just fine.
+> BTW, after reading mail between you and Andrea, kernel threads are not guaranteed
+> to be stopped when memory-dump is running ?
 
-> And why it is problem at all? After configuration there is always change
-> event and at this time attributes are there.
+Depends on what you mean by memory-dump, I think.
 
-As said, if we can rely on this fact, and there will never be any
-attribute now, or added in the future, to this block of attributes,
-this might be just fine, that's why I ask ...
+The hibernation sequence is quite confusing to follow, but Rafael can
+correct me if I'm wrong.  create_image() in kernel/power/snapshot.c
+does disable_nonboot_cpus() and local_irq_disable() and
+sysdev_suspend() and save_processor_state() and dives into
+swsusp_arch_suspend() to create the image in memory with everything
+else stopped; and it's from there that the system will later resume.
+But it also emerges from there in the parallel universe that goes on
+to allocate swap and copy the memory image to disk - at that time,
+you'll not be surprised to learn that interrupts are enabled, and I
+suppose other threads may be running, in a rather futile way.
 
-We spent a lot of time to get the sysfs timing right, fix all the
-subsystems, and make udev work with all sorts of attributes which have
-been created like this. To add out-of-band attribute creation timing
-today, there needs to be a very good reason to do so.
-
-If you need any help with a try to a switch to the attribute group,
-please let me know.
-
-Kay
+Hugh
