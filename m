@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab0G3Rtv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:49:51 -0400
-Received: from kroah.org ([198.145.64.141]:36004 "EHLO coco.kroah.org"
+	id S1759537Ab0G3RuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:50:08 -0400
+Received: from kroah.org ([198.145.64.141]:35995 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932371Ab0G3Rfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:31 -0400
+	id S932366Ab0G3Rf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:29 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:11 2010
-Message-Id: <20100730173111.188448913@clark.site>
+Message-Id: <20100730173111.106701013@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:59 -0700
+Date: Fri, 30 Jul 2010 10:30:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [094/140] x86: Do not try to disable hpet if it hasnt been initialized before
+        Bin Yang <bin.yang@marvell.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [093/140] ARM: 6226/1: fix kprobe bug in ldr instruction emulation
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Nicolas Pitre <nico@fluxnic.net>
 
-commit ff4878089e1eaeac79d57878ad4ea32910fb4037 upstream.
+commit 0ebe25f90cd99bb1bcf622ec8a841421d48380d6 upstream.
 
-hpet_disable is called unconditionally on machine reboot if hpet support
-is compiled in the kernel.
-hpet_disable only checks if the machine is hpet capable but doesn't make
-sure that hpet has been initialized.
+From: Bin Yang <bin.yang@marvell.com>
 
-[ tglx: Made it a one liner and removed the redundant hpet_address check ]
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Venkatesh Pallipadi <venki@google.com>
-LKML-Reference: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Bin Yang <bin.yang@marvell.com>
+Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/hpet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/kprobes-decode.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -958,7 +958,7 @@ fs_initcall(hpet_late_init);
- 
- void hpet_disable(void)
+--- a/arch/arm/kernel/kprobes-decode.c
++++ b/arch/arm/kernel/kprobes-decode.c
+@@ -583,13 +583,14 @@ static void __kprobes emulate_ldr(struct
  {
--	if (is_hpet_capable()) {
-+	if (is_hpet_capable() && hpet_virt_address) {
- 		unsigned int cfg = hpet_readl(HPET_CFG);
+ 	insn_llret_3arg_fn_t *i_fn = (insn_llret_3arg_fn_t *)&p->ainsn.insn[0];
+ 	kprobe_opcode_t insn = p->opcode;
++	long ppc = (long)p->addr + 8;
+ 	union reg_pair fnr;
+ 	int rd = (insn >> 12) & 0xf;
+ 	int rn = (insn >> 16) & 0xf;
+ 	int rm = insn & 0xf;
+ 	long rdv;
+-	long rnv  = regs->uregs[rn];
+-	long rmv  = regs->uregs[rm]; /* rm/rmv may be invalid, don't care. */
++	long rnv = (rn == 15) ? ppc : regs->uregs[rn];
++	long rmv = (rm == 15) ? ppc : regs->uregs[rm];
+ 	long cpsr = regs->ARM_cpsr;
  
- 		if (hpet_legacy_int_enabled) {
+ 	fnr.dr = insnslot_llret_3arg_rflags(rnv, 0, rmv, cpsr, i_fn);
 
 
