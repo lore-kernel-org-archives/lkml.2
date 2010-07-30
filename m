@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab0G3RSf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:18:35 -0400
-Received: from kroah.org ([198.145.64.141]:51542 "EHLO coco.kroah.org"
+	id S1757914Ab0G3RSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:18:47 -0400
+Received: from kroah.org ([198.145.64.141]:51614 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757420Ab0G3RSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:32 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:04 2010
-Message-Id: <20100730171504.419758074@clark.site>
+	id S1757734Ab0G3RSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:42 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:05 2010
+Message-Id: <20100730171505.304876606@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:40 -0700
+Date: Fri, 30 Jul 2010 10:14:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [052/165] cmd640: fix kernel oops in test_irq() method
+        Kamal Mostafa <kamal@canonical.com>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [062/165] Input: i8042 - add Gigabyte Spring Peak to dmi_noloop_table
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: Kamal Mostafa <kamal@canonical.com>
 
-commit a9ddabc52ce3757a4331d6c1e8bf4065333cc51b upstream.
+commit 3e1bbc8d5018a05c0793c8a32b777a1396eb4414 upstream.
 
-When implementing the test_iqr() method, I forgot that this driver is not an
-ordinary PCI driver and also needs to support VLB variant of the chip. Moreover,
-'hwif->dev' should be NULL, potentially causing oops in pci_read_config_byte().
+Gigabyte "Spring Peak" notebook indicates wrong chassis-type, tripping up
+i8042 and breaking the touchpad.  Add this model to i8042_dmi_noloop_table[]
+to resolve.
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+BugLink: https://bugs.launchpad.net/bugs/580664
+
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ide/cmd640.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/ide/cmd640.c
-+++ b/drivers/ide/cmd640.c
-@@ -632,12 +632,10 @@ static void cmd640_init_dev(ide_drive_t
- 
- static int cmd640_test_irq(ide_hwif_t *hwif)
- {
--	struct pci_dev *dev	= to_pci_dev(hwif->dev);
- 	int irq_reg		= hwif->channel ? ARTTIM23 : CFR;
--	u8  irq_stat, irq_mask	= hwif->channel ? ARTTIM23_IDE23INTR :
-+	u8  irq_mask		= hwif->channel ? ARTTIM23_IDE23INTR :
- 						  CFR_IDE01INTR;
--
--	pci_read_config_byte(dev, irq_reg, &irq_stat);
-+	u8  irq_stat		= get_cmd640_reg(irq_reg);
- 
- 	return (irq_stat & irq_mask) ? 1 : 0;
- }
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -166,6 +166,13 @@ static const struct dmi_system_id __init
+ 		},
+ 	},
+ 	{
++		/* Gigabyte Spring Peak - defines wrong chassis type */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Spring Peak"),
++		},
++	},
++	{
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv9700"),
 
 
