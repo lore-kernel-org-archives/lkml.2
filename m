@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab0G3Qzh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 12:55:37 -0400
-Received: from kroah.org ([198.145.64.141]:54999 "EHLO coco.kroah.org"
+	id S1752877Ab0G3RCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:02:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33536 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab0G3Qzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 12:55:35 -0400
-Date: Fri, 30 Jul 2010 09:54:50 -0700
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: David Brownell <david-b@pacbell.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCHv5 2/3] USB: gadget: Use new composite features in some
- gadgets
-Message-ID: <20100730165450.GA4943@kroah.com>
-References: <231296.268.qm@web180308.mail.gq1.yahoo.com>
- <op.vgn0zfyq7p4s8u@pikus>
+	id S1751360Ab0G3RCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:02:17 -0400
+Message-ID: <4C53058A.2050408@zytor.com>
+Date: Fri, 30 Jul 2010 10:02:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <op.vgn0zfyq7p4s8u@pikus>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Shaohua Li <shaohua.li@intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [trival patch]x86: unmap vdso pages are missed
+References: <1280476549.10564.2.camel@sli10-desk.sh.intel.com>
+In-Reply-To: <1280476549.10564.2.camel@sli10-desk.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 06:48:41PM +0200, Michał Nazarewicz wrote:
-> >>-static unsigned short gfs_vendor_id    = 0x0525;    /* XXX NetChip */
-> >>-static unsigned short gfs_product_id   = 0xa4ac;    /* XXX */
+On 07/30/2010 12:55 AM, Shaohua Li wrote:
+> The memory hasn't been unmapped.
 > 
-> >Look -- you can't assign NetChip numbers!!!
-> 
-> /me ashamed
-> 
-> Obviously, you're absolutely right.  I left the XXX mark to remember
-> to clear the situation with the IDs but then completely forgot about
-> it after g_multi got pulled. (It's especially bad since there is a
-> conflict with hid.c).
-> 
-> So, to fix the situation, I need to ask Greg for the IDs?
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-Yes you do.  We shouldn't be using _any_ netchip ids anymore now that we
-have our own vendor id assigned to us.
+Looks right, but it would be really good if you could provide a more
+verbose description about why this is the right thing to do.
 
-thanks,
+	-hpa
 
-greg k-h
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
