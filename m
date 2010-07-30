@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab0G3RXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:23:52 -0400
-Received: from kroah.org ([198.145.64.141]:52298 "EHLO coco.kroah.org"
+	id S1758874Ab0G3RUG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:20:06 -0400
+Received: from kroah.org ([198.145.64.141]:52119 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758908Ab0G3RUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:13 2010
-Message-Id: <20100730171513.483499600@clark.site>
+	id S1756930Ab0G3RT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:58 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:11 2010
+Message-Id: <20100730171511.621396813@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:21 -0700
+Date: Fri, 30 Jul 2010 10:16:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        Divy Le Ray <divy@chelsio.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [153/165] cxgb3: fix linkup issue
+        Frank Mayhar <fmayhar@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [132/165] ext4: Make fsync sync new parent directories in no-journal mode
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,35 +25,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+commit 14ece1028b3ed53ffec1b1213ffc6acaf79ad77c upstream (as of v2.6.34-git13)
 
-commit 9441cad99b4b09d6b627351c2d282833868c116c upstream.
+Add a new ext4 state to tell us when a file has been newly created; use
+that state in ext4_sync_file in no-journal mode to tell us when we need
+to sync the parent directory as well as the inode and data itself.  This
+fixes a problem in which a panic or power failure may lose the entire
+file even when using fsync, since the parent directory entry is lost.
 
-I encountered an issue that not to link up on cxgb3 fabric.
-I bisected and found that this regression was introduced by
-0f07c4ee8c800923ae7918c231532a9256233eed.
+Addresses-Google-Bug: #2480057
 
-Correct to pass phy_addr to cphy_init() at t3_xaui_direct_phy_prep().
-
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Acked-by: Divy Le Ray <divy@chelsio.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Frank Mayhar <fmayhar@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/net/cxgb3/ael1002.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ext4.h  |    1 +
+ fs/ext4/fsync.c |   31 +++++++++++++++++++++++++++++--
+ fs/ext4/namei.c |    2 ++
+ 3 files changed, 32 insertions(+), 2 deletions(-)
 
---- a/drivers/net/cxgb3/ael1002.c
-+++ b/drivers/net/cxgb3/ael1002.c
-@@ -934,7 +934,7 @@ static struct cphy_ops xaui_direct_ops =
- int t3_xaui_direct_phy_prep(struct cphy *phy, struct adapter *adapter,
- 			    int phy_addr, const struct mdio_ops *mdio_ops)
- {
--	cphy_init(phy, adapter, MDIO_PRTAD_NONE, &xaui_direct_ops, mdio_ops,
-+	cphy_init(phy, adapter, phy_addr, &xaui_direct_ops, mdio_ops,
- 		  SUPPORTED_10000baseT_Full | SUPPORTED_AUI | SUPPORTED_TP,
- 		  "10GBASE-CX4");
- 	return 0;
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1142,6 +1142,7 @@ enum {
+ 	EXT4_STATE_DA_ALLOC_CLOSE,	/* Alloc DA blks on close */
+ 	EXT4_STATE_EXT_MIGRATE,		/* Inode is migrating */
+ 	EXT4_STATE_DIO_UNWRITTEN,	/* need convert on dio done*/
++	EXT4_STATE_NEWENTRY,		/* File just added to dir */
+ };
+ 
+ #define EXT4_INODE_BIT_FNS(name, field)					\
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -35,6 +35,29 @@
+ #include <trace/events/ext4.h>
+ 
+ /*
++ * If we're not journaling and this is a just-created file, we have to
++ * sync our parent directory (if it was freshly created) since
++ * otherwise it will only be written by writeback, leaving a huge
++ * window during which a crash may lose the file.  This may apply for
++ * the parent directory's parent as well, and so on recursively, if
++ * they are also freshly created.
++ */
++static void ext4_sync_parent(struct inode *inode)
++{
++	struct dentry *dentry = NULL;
++
++	while (inode && ext4_test_inode_state(inode, EXT4_STATE_NEWENTRY)) {
++		ext4_clear_inode_state(inode, EXT4_STATE_NEWENTRY);
++		dentry = list_entry(inode->i_dentry.next,
++				    struct dentry, d_alias);
++		if (!dentry || !dentry->d_parent || !dentry->d_parent->d_inode)
++			break;
++		inode = dentry->d_parent->d_inode;
++		sync_mapping_buffers(inode->i_mapping);
++	}
++}
++
++/*
+  * akpm: A new design for ext4_sync_file().
+  *
+  * This is only called from sys_fsync(), sys_fdatasync() and sys_msync().
+@@ -67,8 +90,12 @@ int ext4_sync_file(struct file *file, st
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (!journal)
+-		return simple_fsync(file, dentry, datasync);
++	if (!journal) {
++		ret = simple_fsync(file, dentry, datasync);
++		if (!ret && !list_empty(&inode->i_dentry))
++			ext4_sync_parent(inode);
++		return ret;
++	}
+ 
+ 	/*
+ 	 * data=writeback,ordered:
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1525,6 +1525,8 @@ static int ext4_add_entry(handle_t *hand
+ 	de->rec_len = ext4_rec_len_to_disk(blocksize, blocksize);
+ 	retval = add_dirent_to_buf(handle, dentry, inode, de, bh);
+ 	brelse(bh);
++	if (retval == 0)
++		ext4_set_inode_state(inode, EXT4_STATE_NEWENTRY);
+ 	return retval;
+ }
+ 
 
 
