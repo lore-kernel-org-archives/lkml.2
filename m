@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab0G3Reh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:34:37 -0400
-Received: from kroah.org ([198.145.64.141]:35470 "EHLO coco.kroah.org"
+	id S932274Ab0G3Rel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:34:41 -0400
+Received: from kroah.org ([198.145.64.141]:35477 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759313Ab0G3Rd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:33:58 -0400
+	id S1758788Ab0G3Rd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:33:59 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
-Message-Id: <20100730173103.773376830@clark.site>
+Message-Id: <20100730173103.858348406@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:36 -0700
+Date: Fri, 30 Jul 2010 10:29:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [011/140] veth: Dont kfree_skb() after dev_forward_skb()
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [012/140] ssb: Handle Netbook devices where the SPROM address is changed
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +25,234 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Christoph Fritz <chf.fritz@googlemail.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+For some Netbook computers with Broadcom BCM4312 wireless interfaces,
+the SPROM has been moved to a new location. When the ssb driver tries to
+read the old location, the systems hangs when trying to read a
+non-existent location. Such freezes are particularly bad as they do not
+log the failure.
 
-[ Upstream commit 6ec82562ffc6f297d0de36d65776cff8e5704867 ]
+This patch is modified from commit
+da1fdb02d9200ff28b6f3a380d21930335fe5429 with some pieces from other
+mainline changes so that it can be applied to stable 2.6.34.Y.
 
-In case of congestion, netif_rx() frees the skb, so we must assume
-dev_forward_skb() also consume skb.
-
-Bug introduced by commit 445409602c092
-(veth: move loopback logic to common location)
-
-We must change dev_forward_skb() to always consume skb, and veth to not
-double free it.
-
-Bug report : http://marc.info/?l=linux-netdev&m=127310770900442&w=3
-
-Reported-by: Martín Ferrari <martin.ferrari@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/veth.c |    1 -
- net/core/dev.c     |   10 +++++-----
- 2 files changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/net/veth.c
-+++ b/drivers/net/veth.c
-@@ -186,7 +186,6 @@ tx_drop:
- 	return NETDEV_TX_OK;
- 
- rx_drop:
--	kfree_skb(skb);
- 	rcv_stats->rx_dropped++;
- 	return NETDEV_TX_OK;
- }
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1428,7 +1428,7 @@ static inline void net_timestamp(struct
-  *
-  * return values:
-  *	NET_RX_SUCCESS	(no congestion)
-- *	NET_RX_DROP     (packet was dropped)
-+ *	NET_RX_DROP     (packet was dropped, but freed)
-  *
-  * dev_forward_skb can be used for injecting an skb from the
-  * start_xmit function of one device into the receive queue
-@@ -1442,11 +1442,11 @@ int dev_forward_skb(struct net_device *d
+---
+ drivers/ssb/driver_chipcommon.c           |    3 +
+ drivers/ssb/driver_chipcommon_pmu.c       |   17 ++++-------
+ drivers/ssb/pci.c                         |   46 ++++++++++++++++++++++++++----
+ drivers/ssb/sprom.c                       |   15 +++++++++
+ include/linux/ssb/ssb.h                   |    1 
+ include/linux/ssb/ssb_driver_chipcommon.h |    2 +
+ include/linux/ssb/ssb_regs.h              |    3 +
+ 7 files changed, 70 insertions(+), 17 deletions(-)
+
+--- a/drivers/ssb/driver_chipcommon.c
++++ b/drivers/ssb/driver_chipcommon.c
+@@ -233,6 +233,9 @@ void ssb_chipcommon_init(struct ssb_chip
  {
- 	skb_orphan(skb);
+ 	if (!cc->dev)
+ 		return; /* We don't have a ChipCommon */
++	if (cc->dev->id.revision >= 11)
++		cc->status = chipco_read32(cc, SSB_CHIPCO_CHIPSTAT);
++	ssb_dprintk(KERN_INFO PFX "chipcommon status is 0x%x\n", cc->status);
+ 	ssb_pmu_init(cc);
+ 	chipco_powercontrol_init(cc);
+ 	ssb_chipco_set_clockmode(cc, SSB_CLKMODE_FAST);
+--- a/drivers/ssb/driver_chipcommon_pmu.c
++++ b/drivers/ssb/driver_chipcommon_pmu.c
+@@ -495,9 +495,9 @@ static void ssb_pmu_resources_init(struc
+ 		chipco_write32(cc, SSB_CHIPCO_PMU_MAXRES_MSK, max_msk);
+ }
  
--	if (!(dev->flags & IFF_UP))
--		return NET_RX_DROP;
--
--	if (skb->len > (dev->mtu + dev->hard_header_len))
-+	if (!(dev->flags & IFF_UP) ||
-+	    (skb->len > (dev->mtu + dev->hard_header_len))) {
-+		kfree_skb(skb);
- 		return NET_RX_DROP;
++/* http://bcm-v4.sipsolutions.net/802.11/SSB/PmuInit */
+ void ssb_pmu_init(struct ssb_chipcommon *cc)
+ {
+-	struct ssb_bus *bus = cc->dev->bus;
+ 	u32 pmucap;
+ 
+ 	if (!(cc->capabilities & SSB_CHIPCO_CAP_PMU))
+@@ -509,15 +509,12 @@ void ssb_pmu_init(struct ssb_chipcommon
+ 	ssb_dprintk(KERN_DEBUG PFX "Found rev %u PMU (capabilities 0x%08X)\n",
+ 		    cc->pmu.rev, pmucap);
+ 
+-	if (cc->pmu.rev >= 1) {
+-		if ((bus->chip_id == 0x4325) && (bus->chip_rev < 2)) {
+-			chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,
+-				      ~SSB_CHIPCO_PMU_CTL_NOILPONW);
+-		} else {
+-			chipco_set32(cc, SSB_CHIPCO_PMU_CTL,
+-				     SSB_CHIPCO_PMU_CTL_NOILPONW);
+-		}
+-	}
++	if (cc->pmu.rev == 1)
++		chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,
++			      ~SSB_CHIPCO_PMU_CTL_NOILPONW);
++	else
++		chipco_set32(cc, SSB_CHIPCO_PMU_CTL,
++			     SSB_CHIPCO_PMU_CTL_NOILPONW);
+ 	ssb_pmu_pll_init(cc);
+ 	ssb_pmu_resources_init(cc);
+ }
+--- a/drivers/ssb/pci.c
++++ b/drivers/ssb/pci.c
+@@ -22,6 +22,7 @@
+ 
+ #include "ssb_private.h"
+ 
++bool ssb_is_sprom_available(struct ssb_bus *bus);
+ 
+ /* Define the following to 1 to enable a printk on each coreswitch. */
+ #define SSB_VERBOSE_PCICORESWITCH_DEBUG		0
+@@ -167,7 +168,7 @@ err_pci:
+ }
+ 
+ /* Get the word-offset for a SSB_SPROM_XXX define. */
+-#define SPOFF(offset)	(((offset) - SSB_SPROM_BASE) / sizeof(u16))
++#define SPOFF(offset)	((offset) / sizeof(u16))
+ /* Helper to extract some _offset, which is one of the SSB_SPROM_XXX defines. */
+ #define SPEX16(_outvar, _offset, _mask, _shift)	\
+ 	out->_outvar = ((in[SPOFF(_offset)] & (_mask)) >> (_shift))
+@@ -252,8 +253,13 @@ static int sprom_do_read(struct ssb_bus
+ {
+ 	int i;
+ 
++	/* Check if SPROM can be read */
++	if (ioread16(bus->mmio + bus->sprom_offset) == 0xFFFF) {
++		ssb_printk(KERN_ERR PFX "Unable to read SPROM\n");
++		return -ENODEV;
 +	}
+ 	for (i = 0; i < bus->sprom_size; i++)
+-		sprom[i] = ioread16(bus->mmio + SSB_SPROM_BASE + (i * 2));
++		sprom[i] = ioread16(bus->mmio + bus->sprom_offset + (i * 2));
  
- 	skb_dst_drop(skb);
- 	skb->tstamp.tv64 = 0;
+ 	return 0;
+ }
+@@ -284,7 +290,7 @@ static int sprom_do_write(struct ssb_bus
+ 			ssb_printk("75%%");
+ 		else if (i % 2)
+ 			ssb_printk(".");
+-		writew(sprom[i], bus->mmio + SSB_SPROM_BASE + (i * 2));
++		writew(sprom[i], bus->mmio + bus->sprom_offset + (i * 2));
+ 		mmiowb();
+ 		msleep(20);
+ 	}
+@@ -620,21 +626,49 @@ static int ssb_pci_sprom_get(struct ssb_
+ 	int err = -ENOMEM;
+ 	u16 *buf;
+ 
++	if (!ssb_is_sprom_available(bus)) {
++		ssb_printk(KERN_ERR PFX "No SPROM available!\n");
++		return -ENODEV;
++	}
++	if (bus->chipco.dev) {	/* can be unavailible! */
++		/*
++		 * get SPROM offset: SSB_SPROM_BASE1 except for
++		 * chipcommon rev >= 31 or chip ID is 0x4312 and
++		 * chipcommon status & 3 == 2
++		 */
++		if (bus->chipco.dev->id.revision >= 31)
++			bus->sprom_offset = SSB_SPROM_BASE31;
++		else if (bus->chip_id == 0x4312 &&
++			 (bus->chipco.status & 0x03) == 2)
++			bus->sprom_offset = SSB_SPROM_BASE31;
++		else
++			bus->sprom_offset = SSB_SPROM_BASE1;
++	} else {
++		bus->sprom_offset = SSB_SPROM_BASE1;
++	}
++	ssb_dprintk(KERN_INFO PFX "SPROM offset is 0x%x\n", bus->sprom_offset);
++
+ 	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
+ 	if (!buf)
+ 		goto out;
+ 	bus->sprom_size = SSB_SPROMSIZE_WORDS_R123;
+-	sprom_do_read(bus, buf);
++	err = sprom_do_read(bus, buf);
++	if (err)
++		goto out_free;
+ 	err = sprom_check_crc(buf, bus->sprom_size);
+ 	if (err) {
+ 		/* try for a 440 byte SPROM - revision 4 and higher */
+ 		kfree(buf);
+ 		buf = kcalloc(SSB_SPROMSIZE_WORDS_R4, sizeof(u16),
+ 			      GFP_KERNEL);
+-		if (!buf)
++		if (!buf) {
++			err = -ENOMEM;
+ 			goto out;
++		}
+ 		bus->sprom_size = SSB_SPROMSIZE_WORDS_R4;
+-		sprom_do_read(bus, buf);
++		err = sprom_do_read(bus, buf);
++		if (err)
++			goto out_free;
+ 		err = sprom_check_crc(buf, bus->sprom_size);
+ 		if (err) {
+ 			/* All CRC attempts failed.
+--- a/drivers/ssb/sprom.c
++++ b/drivers/ssb/sprom.c
+@@ -175,3 +175,18 @@ const struct ssb_sprom *ssb_get_fallback
+ {
+ 	return fallback_sprom;
+ }
++
++/* http://bcm-v4.sipsolutions.net/802.11/IsSpromAvailable */
++bool ssb_is_sprom_available(struct ssb_bus *bus)
++{
++	/* status register only exists on chipcomon rev >= 11 and we need check
++	   for >= 31 only */
++	/* this routine differs from specs as we do not access SPROM directly
++	   on PCMCIA */
++	if (bus->bustype == SSB_BUSTYPE_PCI &&
++	    bus->chipco.dev &&	/* can be unavailible! */
++	    bus->chipco.dev->id.revision >= 31)
++		return bus->chipco.capabilities & SSB_CHIPCO_CAP_SPROM;
++
++	return true;
++}
+--- a/include/linux/ssb/ssb.h
++++ b/include/linux/ssb/ssb.h
+@@ -306,6 +306,7 @@ struct ssb_bus {
+ 	u16 chip_id;
+ 	u16 chip_rev;
+ 	u16 sprom_size;		/* number of words in sprom */
++	u16 sprom_offset;
+ 	u8 chip_package;
+ 
+ 	/* List of devices (cores) on the backplane. */
+--- a/include/linux/ssb/ssb_driver_chipcommon.h
++++ b/include/linux/ssb/ssb_driver_chipcommon.h
+@@ -46,6 +46,7 @@
+ #define   SSB_PLLTYPE_7			0x00038000	/* 25Mhz, 4 dividers */
+ #define  SSB_CHIPCO_CAP_PCTL		0x00040000	/* Power Control */
+ #define  SSB_CHIPCO_CAP_OTPS		0x00380000	/* OTP size */
++#define  SSB_CHIPCO_CAP_SPROM		0x40000000	/* SPROM present */
+ #define  SSB_CHIPCO_CAP_OTPS_SHIFT	19
+ #define  SSB_CHIPCO_CAP_OTPS_BASE	5
+ #define  SSB_CHIPCO_CAP_JTAGM		0x00400000	/* JTAG master present */
+@@ -564,6 +565,7 @@ struct ssb_chipcommon_pmu {
+ struct ssb_chipcommon {
+ 	struct ssb_device *dev;
+ 	u32 capabilities;
++	u32 status;
+ 	/* Fast Powerup Delay constant */
+ 	u16 fast_pwrup_delay;
+ 	struct ssb_chipcommon_pmu pmu;
+--- a/include/linux/ssb/ssb_regs.h
++++ b/include/linux/ssb/ssb_regs.h
+@@ -170,7 +170,8 @@
+ #define SSB_SPROMSIZE_WORDS_R4		220
+ #define SSB_SPROMSIZE_BYTES_R123	(SSB_SPROMSIZE_WORDS_R123 * sizeof(u16))
+ #define SSB_SPROMSIZE_BYTES_R4		(SSB_SPROMSIZE_WORDS_R4 * sizeof(u16))
+-#define SSB_SPROM_BASE			0x1000
++#define SSB_SPROM_BASE1			0x1000
++#define SSB_SPROM_BASE31		0x0800
+ #define SSB_SPROM_REVISION		0x107E
+ #define  SSB_SPROM_REVISION_REV		0x00FF	/* SPROM Revision number */
+ #define  SSB_SPROM_REVISION_CRC		0xFF00	/* SPROM CRC8 value */
 
 
