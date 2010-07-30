@@ -1,121 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab0G3FSn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 01:18:43 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:42383 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752697Ab0G3FSm (ORCPT
+	id S1753976Ab0G3FTn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 01:19:43 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:22966 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab0G3FTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 01:18:42 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6058"; a="49163858"
-Message-ID: <d493494df33aaf65e526181b1dbafce3.squirrel@www.codeaurora.org>
-In-Reply-To: <20100729090607.GN26098@amd.com>
-References: <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
-    <201007291026.55928.arnd@arndb.de> <20100729084018.GM26098@amd.com>
-    <20100729174621W.fujita.tomonori@lab.ntt.co.jp>
-    <20100729090607.GN26098@amd.com>
-Date: Thu, 29 Jul 2010 22:19:06 -0700 (PDT)
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-From: stepanm@codeaurora.org
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+	Fri, 30 Jul 2010 01:19:41 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=Ua98+F3pjnLZsJy4srdnQWdIwXrN9s4gKvGUVq9GxBCVZSAXYYkfcEZFFP8H5Y/8f
+	kPUMLU6qtuU9M6Q6R2CWw==
+From: Nikhil Rao <ncrao@google.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Cc: Venkatesh Pallipadi <venki@google.com>, Ken Chen <kenchen@google.com>,
+        Paul Turner <pjt@google.com>, Nikhil Rao <ncrao@google.com>
+Subject: [PATCH 2/6] sched: add SD_IDLE_LOAD_BALANCE to sched domain flags
+Date: Thu, 29 Jul 2010 22:19:02 -0700
+Message-Id: <1280467146-32218-3-git-send-email-ncrao@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1280467146-32218-1-git-send-email-ncrao@google.com>
+References: <1280467146-32218-1-git-send-email-ncrao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg,
+Add a new sched domain flag called SD_IDLE_LOAD_BALANCE. SCHED_IDLE tasks are
+balanced by the SCHED_IDLE balancer on this domain when enabled, and are handled
+by the SCHED_NORMAL load balancer when disabled.
 
-Thanks for the information. I have been trying to adapt the MSM IOMMU
-driver to use your IOMMU interface, and it looks like it might work, with
-one minor modification.
+This patch also adds this flag to sched domain init functions in
+include/linux/topology.h and arch/x86/include/asm/topology.h (disabled by
+default).
 
-Unlike a more traditional system with one IOMMU between the bus and
-memory, MSM has multiple IOMMUs, with each one hard-wired to a dedicated
-device. Furthermore, each IOMMU can have more than one translation
-context. One of the use cases is being able to create mappings within
-multiple instances of one context, and arbitrarily context-switch the
-IOMMU on the fly.
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+---
+ arch/x86/include/asm/topology.h |    1 +
+ include/linux/sched.h           |    1 +
+ include/linux/topology.h        |    4 ++++
+ 3 files changed, 6 insertions(+), 0 deletions(-)
 
-It sounds like the domain abstraction and attach_device/detach_device can
-encapsulate this rather nicely and I am in the process of updating my
-driver to fit this framework.
-
-My problem, however, is with iommu_domain_alloc(). This will set up a
-domain and call the ops function to initialize it, but I want to be able
-to pass it an “IOMMU id" that will tell the underlying driver which IOMMU
-(and which "stream id") is to be associated with that domain instance.
-This can be a void* parameter that gets passed through to domain_init. I
-feel like this change will make it easy to deal with multiple
-IOMMUs/translation contexts, and implementations that have only a singular
-IOMMU/translation context are free to ignore that parameter.
-
-The alternative for me is to have a separate msm_iommu_domain_alloc(void
-*context_id) function, to which I can specify which IOMMU I want to use,
-but I would like to fully use your API if possible.
-
-What are your thoughts? I can prepare a patch if you like - the
-domain_alloc change looks like it will be very innocuous.
-
-Thanks
-Steve
-
-
-> On Thu, Jul 29, 2010 at 04:46:59AM -0400, FUJITA Tomonori wrote:
->> On Thu, 29 Jul 2010 10:40:19 +0200
->> "Roedel, Joerg" <Joerg.Roedel@amd.com> wrote:
->>
->> > The IOMMU-API is not about SR-IOV.
->>
->> That's true. However, the point is that include/iommu.h is far from
->> the IOMMU-API.
->>
->> You could still insist that include/iommu.h is designed for the
->> generic IOMMU-API. But the fact is that it's designed for very
->> specific purposes. No intention to make it for generic purposes.
->
-> I have no clue about the ARM iommus on the omap-platform. From a quick
-> look into the header file I see some similarities to the IOMMU-API. I am
-> also very open for discussions about how the IOMMU-API could be extended
-> to fit the needs of other platforms. Only because nobody has tried to
-> discuss about such an effort is no reason to push the IOMMU-API back.
->
->>
->> Since you added it two years ago, nobody has tried to extend
->> it. Instead, we have something like
->> arch/arm/plat-omap/include/plat/iommu.h.
->
-> And I think we should try to merge this platform-specific functionality
-> into the IOMMU-API.
->
-> 	Joerg
->
-> --
-> Joerg Roedel - AMD Operating System Research Center
->
-> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-> General Managers: Alberto Bozzo, Andrew Bowd
-> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr.
-> 43632
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-
+diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+index 21899cc..9f29b4e 100644
+--- a/arch/x86/include/asm/topology.h
++++ b/arch/x86/include/asm/topology.h
+@@ -150,6 +150,7 @@ extern unsigned long node_remap_size[];
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 1*SD_SERIALIZE			\
+ 				| 0*SD_PREFER_SIBLING			\
++				| 0*SD_IDLE_LOAD_BALANCE		\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 747fcae..badf2a7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -806,6 +806,7 @@ enum cpu_idle_type {
+ #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
+ 
+ #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
++#define SD_IDLE_LOAD_BALANCE	0x2000	/* Idle load balance on this domain */
+ 
+ enum powersavings_balance_level {
+ 	POWERSAVINGS_BALANCE_NONE = 0,  /* No power saving load balance */
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index c44df50..97fbb1b 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -103,6 +103,7 @@ int arch_update_cpu_topology(void);
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
+ 				| 0*SD_PREFER_SIBLING			\
++				| 0*SD_IDLE_LOAD_BALANCE		\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 1,					\
+@@ -134,6 +135,7 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 1*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
++				| 0*SD_IDLE_LOAD_BALANCE		\
+ 				| sd_balance_for_mc_power()		\
+ 				| sd_power_saving_flags()		\
+ 				,					\
+@@ -167,6 +169,7 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_CPUPOWER			\
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 0*SD_SERIALIZE			\
++				| 0*SD_IDLE_LOAD_BALANCE		\
+ 				| sd_balance_for_package_power()	\
+ 				| sd_power_saving_flags()		\
+ 				,					\
+@@ -195,6 +198,7 @@ int arch_update_cpu_topology(void);
+ 				| 0*SD_SHARE_PKG_RESOURCES		\
+ 				| 1*SD_SERIALIZE			\
+ 				| 0*SD_PREFER_SIBLING			\
++				| 0*SD_IDLE_LOAD_BALANCE		\
+ 				,					\
+ 	.last_balance		= jiffies,				\
+ 	.balance_interval	= 64,					\
+-- 
+1.7.1
 
