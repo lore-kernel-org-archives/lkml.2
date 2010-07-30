@@ -1,90 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760752Ab0G3TV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:21:27 -0400
-Received: from mail.windriver.com ([147.11.1.11]:33840 "EHLO
+	id S1760739Ab0G3TVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:21:17 -0400
+Received: from mail.windriver.com ([147.11.1.11]:33860 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782Ab0G3TSE (ORCPT
+	with ESMTP id S1760628Ab0G3TSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Jul 2010 15:18:04 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: linux-kernel@vger.kernel.org
-Cc: kgdb-bugreport@lists.sourceforge.net, mingo@elte.hu
-Subject: [PATCH 0/15] kgdb,kdb: proposed merge set for 2.6.36
-Date: Fri, 30 Jul 2010 14:17:21 -0500
-Message-Id: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net, mingo@elte.hu,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 07/15] gdbstub,x86: Implement gdbserial 'p' and 'P' packets
+Date: Fri, 30 Jul 2010 14:17:28 -0500
+Message-Id: <1280517456-1167-8-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 30 Jul 2010 19:17:39.0486 (UTC) FILETIME=[E041F3E0:01CB301B]
+In-Reply-To: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
+References: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 30 Jul 2010 19:17:45.0345 (UTC) FILETIME=[E3BFF710:01CB301B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the patches for kgdb we have so far which have passed
-regression testing during the 2.6.35 cycle. 
+The gdbserial 'p' and 'P' packets allow gdb to individually get and
+set registers instead of querying for all the available registers.
 
-The key new features here are:
-
-  * ftdump command for kdb
-    - dumps the ftrace buffer for all cpus or an indivdual cpu
-  * Individual register read / read in kdb (x86, mips, arm)
-  * Generic plumbing for gdb serial register packets 'p' and 'P'
-    - implmentations for x86, mips and arm
-  * A new console poll driver for the sunhv serial console (sparc)
-  * ARM kgdb makes use of die notifiers
-  * Optimize gdbserial response packets contaning "thread:"
-
-The remainders of the patches contain miscelaenous cleanups.
-optimation for the gdb serial packets which contain the "thread:"
-
-Jason.
-
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
-The following changes since commit a2dccdb2055abeb8a7ce8e45e5f83de9c980a00c:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git390.marist.edu/pub/scm/linux-2.6
+ include/linux/kgdb.h   |    2 +-
+ kernel/debug/gdbstub.c |   97 ++++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 78 insertions(+), 21 deletions(-)
 
-are available in the git repository at:
+diff --git a/include/linux/kgdb.h b/include/linux/kgdb.h
+index d5eb882..cc96f0f 100644
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -294,7 +294,7 @@ extern void kgdb_unregister_io_module(struct kgdb_io *local_kgdb_io_ops);
+ extern struct kgdb_io *dbg_io_ops;
+ 
+ extern int kgdb_hex2long(char **ptr, unsigned long *long_val);
+-extern int kgdb_mem2hex(char *mem, char *buf, int count);
++extern char *kgdb_mem2hex(char *mem, char *buf, int count);
+ extern int kgdb_hex2mem(char *buf, char *mem, int count);
+ 
+ extern int kgdb_isremovedbreak(unsigned long addr);
+diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
+index 006bad8..4ef9ddd 100644
+--- a/kernel/debug/gdbstub.c
++++ b/kernel/debug/gdbstub.c
+@@ -225,7 +225,7 @@ void gdbstub_msg_write(const char *s, int len)
+  * buf.  Return a pointer to the last char put in buf (null). May
+  * return an error.
+  */
+-int kgdb_mem2hex(char *mem, char *buf, int count)
++char *kgdb_mem2hex(char *mem, char *buf, int count)
+ {
+ 	char *tmp;
+ 	int err;
+@@ -237,17 +237,16 @@ int kgdb_mem2hex(char *mem, char *buf, int count)
+ 	tmp = buf + count;
+ 
+ 	err = probe_kernel_read(tmp, mem, count);
+-	if (!err) {
+-		while (count > 0) {
+-			buf = pack_hex_byte(buf, *tmp);
+-			tmp++;
+-			count--;
+-		}
+-
+-		*buf = 0;
++	if (err)
++		return NULL;
++	while (count > 0) {
++		buf = pack_hex_byte(buf, *tmp);
++		tmp++;
++		count--;
+ 	}
++	*buf = 0;
+ 
+-	return err;
++	return buf;
+ }
+ 
+ /*
+@@ -481,8 +480,7 @@ static void gdb_cmd_status(struct kgdb_state *ks)
+ 	pack_hex_byte(&remcom_out_buffer[1], ks->signo);
+ }
+ 
+-/* Handle the 'g' get registers request */
+-static void gdb_cmd_getregs(struct kgdb_state *ks)
++static void gdb_get_regs_helper(struct kgdb_state *ks)
+ {
+ 	struct task_struct *thread;
+ 	void *local_debuggerinfo;
+@@ -523,6 +521,12 @@ static void gdb_cmd_getregs(struct kgdb_state *ks)
+ 		 */
+ 		sleeping_thread_to_gdb_regs(gdb_regs, thread);
+ 	}
++}
++
++/* Handle the 'g' get registers request */
++static void gdb_cmd_getregs(struct kgdb_state *ks)
++{
++	gdb_get_regs_helper(ks);
+ 	kgdb_mem2hex((char *)gdb_regs, remcom_out_buffer, NUMREGBYTES);
+ }
+ 
+@@ -545,13 +549,13 @@ static void gdb_cmd_memread(struct kgdb_state *ks)
+ 	char *ptr = &remcom_in_buffer[1];
+ 	unsigned long length;
+ 	unsigned long addr;
+-	int err;
++	char *err;
+ 
+ 	if (kgdb_hex2long(&ptr, &addr) > 0 && *ptr++ == ',' &&
+ 					kgdb_hex2long(&ptr, &length) > 0) {
+ 		err = kgdb_mem2hex((char *)addr, remcom_out_buffer, length);
+-		if (err)
+-			error_packet(remcom_out_buffer, err);
++		if (!err)
++			error_packet(remcom_out_buffer, -EINVAL);
+ 	} else {
+ 		error_packet(remcom_out_buffer, -EINVAL);
+ 	}
+@@ -568,6 +572,52 @@ static void gdb_cmd_memwrite(struct kgdb_state *ks)
+ 		strcpy(remcom_out_buffer, "OK");
+ }
+ 
++#if DBG_MAX_REG_NUM > 0
++static char *gdb_hex_reg_helper(int regnum, char *out)
++{
++	int i;
++	int offset = 0;
++
++	for (i = 0; i < regnum; i++)
++		offset += dbg_reg_def[i].size;
++	return kgdb_mem2hex((char *)gdb_regs + offset, out,
++			    dbg_reg_def[i].size);
++}
++
++/* Handle the 'p' individual regster get */
++static void gdb_cmd_reg_get(struct kgdb_state *ks)
++{
++	unsigned long regnum;
++	char *ptr = &remcom_in_buffer[1];
++
++	kgdb_hex2long(&ptr, &regnum);
++	if (regnum >= DBG_MAX_REG_NUM) {
++		error_packet(remcom_out_buffer, -EINVAL);
++		return;
++	}
++	gdb_get_regs_helper(ks);
++	gdb_hex_reg_helper(regnum, remcom_out_buffer);
++}
++
++/* Handle the 'P' individual regster set */
++static void gdb_cmd_reg_set(struct kgdb_state *ks)
++{
++	unsigned long regnum;
++	char *ptr = &remcom_in_buffer[1];
++
++	kgdb_hex2long(&ptr, &regnum);
++	if (*ptr++ != '=' ||
++	    !(!kgdb_usethread || kgdb_usethread == current) ||
++	    !dbg_get_reg(regnum, gdb_regs, ks->linux_regs)) {
++		error_packet(remcom_out_buffer, -EINVAL);
++		return;
++	}
++	kgdb_hex2mem(ptr, (char *)gdb_regs, dbg_reg_def[regnum].size);
++	dbg_set_reg(regnum, gdb_regs, ks->linux_regs);
++	strcpy(remcom_out_buffer, "OK");
++}
++#endif /* DBG_MAX_REG_NUM > 0 */
++
+ /* Handle the 'X' memory binary write bytes */
+ static void gdb_cmd_binwrite(struct kgdb_state *ks)
+ {
+@@ -874,8 +924,11 @@ int gdb_serial_stub(struct kgdb_state *ks)
+ 	int error = 0;
+ 	int tmp;
+ 
+-	/* Clear the out buffer. */
++	/* Initialize comm buffer and globals. */
+ 	memset(remcom_out_buffer, 0, sizeof(remcom_out_buffer));
++	kgdb_usethread = kgdb_info[ks->cpu].task;
++	ks->kgdb_usethreadid = shadow_pid(kgdb_info[ks->cpu].task->pid);
++	ks->pass_exception = 0;
+ 
+ 	if (kgdb_connected) {
+ 		unsigned char thref[BUF_THREAD_ID_SIZE];
+@@ -892,10 +945,6 @@ int gdb_serial_stub(struct kgdb_state *ks)
+ 		put_packet(remcom_out_buffer);
+ 	}
+ 
+-	kgdb_usethread = kgdb_info[ks->cpu].task;
+-	ks->kgdb_usethreadid = shadow_pid(kgdb_info[ks->cpu].task->pid);
+-	ks->pass_exception = 0;
+-
+ 	while (1) {
+ 		error = 0;
+ 
+@@ -920,6 +969,14 @@ int gdb_serial_stub(struct kgdb_state *ks)
+ 		case 'M': /* MAA..AA,LLLL: Write LLLL bytes at address AA..AA */
+ 			gdb_cmd_memwrite(ks);
+ 			break;
++#if DBG_MAX_REG_NUM > 0
++		case 'p': /* pXX Return gdb register XX (in hex) */
++			gdb_cmd_reg_get(ks);
++			break;
++		case 'P': /* PXX=aaaa Set gdb register XX to aaaa (in hex) */
++			gdb_cmd_reg_set(ks);
++			break;
++#endif /* DBG_MAX_REG_NUM > 0 */
+ 		case 'X': /* XAA..AA,LLLL: Write LLLL bytes at address AA..AA */
+ 			gdb_cmd_binwrite(ks);
+ 			break;
+-- 
+1.6.4.rc1
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git kgdb-next
-
-Andi Kleen (1):
-      KGDB: Remove set but unused newPC
-
-Andy Shevchenko (1):
-      kgdb: remove custom hex_to_bin()implementation
-
-Jason Wessel (12):
-      gdbstub: Optimize kgdb's "thread:" response for the gdb serial protocol
-      kgdb,kdb: individual register set and and get API
-      x86,kgdb: Individual register get/set for x86
-      mips,kgdb: Individual register get/set for mips
-      arm,kgdb: Individual register get/set for arm
-      gdbstub,x86: Implement gdbserial 'p' and 'P' packets
-      gdbstub: do not directly use dbg_reg_def[] in gdb_cmd_reg_set()
-      arm,kgdb: Add ability to trap into debugger on notify_die
-      ftrace,kdb: Extend kdb to be able to dump the ftrace buffer
-      ftrace,kdb: Allow dumping a specific cpu's buffer with ftdump
-      sunhv,kgdboc: Add sunhv console poll hooks for kgdboc
-      mm,kdb,kgdb: Add a debug reference for the kdb kmap usage
-
-Michal Simek (1):
-      powerpc: Replace hardcoded offset by BREAK_INSTR_SIZE
-
- arch/arm/include/asm/kgdb.h  |    6 +-
- arch/arm/kernel/kgdb.c       |  124 +++++++++++++++++---------
- arch/mips/include/asm/kgdb.h |   19 ++--
- arch/mips/kernel/kgdb.c      |  203 ++++++++++++++++++++++++++++++------------
- arch/powerpc/kernel/kgdb.c   |    2 +-
- arch/x86/include/asm/kgdb.h  |   20 +++--
- arch/x86/kernel/kgdb.c       |  171 +++++++++++++++++------------------
- drivers/serial/sunhv.c       |   51 +++++++++++
- include/linux/kgdb.h         |   15 +++-
- kernel/debug/gdbstub.c       |  189 ++++++++++++++++++++++++++++-----------
- kernel/debug/kdb/kdb_main.c  |  132 +++++++++++++++++++++++++---
- kernel/trace/Makefile        |    3 +
- kernel/trace/trace.c         |   43 +++++-----
- kernel/trace/trace.h         |   19 ++++
- kernel/trace/trace_kdb.c     |  136 ++++++++++++++++++++++++++++
- mm/highmem.c                 |    7 ++
- 16 files changed, 840 insertions(+), 300 deletions(-)
- create mode 100644 kernel/trace/trace_kdb.c
