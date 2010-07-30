@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855Ab0G3SHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:07:48 -0400
-Received: from kroah.org ([198.145.64.141]:59231 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932800Ab0G3R5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932805Ab0G3R5p (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 30 Jul 2010 13:57:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:50 2010
-Message-Id: <20100730175150.724003850@clark.site>
+Received: from kroah.org ([198.145.64.141]:58776 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760011Ab0G3R4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:32 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:44 2010
+Message-Id: <20100730175144.580602183@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:22 -0700
+Date: Fri, 30 Jul 2010 10:52:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trieu Andrew Nguyen <trieux.t.nguyen@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Reinette Chatre <reinette.chatre@intel.com>
-Subject: [185/205] iwlwifi: Recover TX flow stall due to stuck queue
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [117/205] ARM: 6211/1: atomic ops: fix register constraints for atomic64_add_unless
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,485 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit b74e31a9bc1013e69b85b139072485dc153453dd upstream.
+commit 068de8d1be48a04b92fd97f76bb7e113b7be82a8 upstream.
 
-Monitors the internal TX queues periodically.  When a queue is stuck
-for some unknown conditions causing the throughput to drop and the
-transfer is stop, the driver will force firmware reload and bring the
-system back to normal operational state.
+The atomic64_add_unless function compares an atomic variable with
+a given value and, if they are not equal, adds another given value
+to the atomic variable. The function returns zero if the addition
+did not occur and non-zero otherwise.
 
-The iwlwifi devices behave differently in this regard so this feature is
-made part of the ops infrastructure so we can have more control on how to
-monitor and recover from tx queue stall case per device.
+On ARM, the return value is initialised to 1 in C code. Inline assembly
+code then performs the atomic64_add_unless operation, setting the
+return value to 0 iff the addition does not occur. This means that
+when the addition *does* occur, the value of ret must be preserved
+across the inline assembly and therefore requires a "+r" constraint
+rather than the current one of "=&r".
 
-Signed-off-by: Trieu 'Andrew' Nguyen <trieux.t.nguyen@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Thanks to Nicolas Pitre for helping to spot this.
+
+Reviewed-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-1000.c     |    3 
- drivers/net/wireless/iwlwifi/iwl-3945.c     |    2 
- drivers/net/wireless/iwlwifi/iwl-4965.c     |    1 
- drivers/net/wireless/iwlwifi/iwl-5000.c     |    9 ++
- drivers/net/wireless/iwlwifi/iwl-6000.c     |    8 ++
- drivers/net/wireless/iwlwifi/iwl-agn.c      |   16 ++++
- drivers/net/wireless/iwlwifi/iwl-core.c     |   93 ++++++++++++++++++++++++++++
- drivers/net/wireless/iwlwifi/iwl-core.h     |    7 ++
- drivers/net/wireless/iwlwifi/iwl-dev.h      |   10 +++
- drivers/net/wireless/iwlwifi/iwl-tx.c       |    2 
- drivers/net/wireless/iwlwifi/iwl3945-base.c |   16 ++++
- 11 files changed, 167 insertions(+)
+ arch/arm/include/asm/atomic.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-1000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-1000.c
-@@ -211,6 +211,7 @@ static struct iwl_lib_ops iwl1000_lib =
- 		.set_ct_kill = iwl1000_set_ct_threshold,
- 	 },
- 	.add_bcast_station = iwl_add_bcast_station,
-+	.recover_from_tx_stall = iwl_bg_monitor_recover,
- };
+--- a/arch/arm/include/asm/atomic.h
++++ b/arch/arm/include/asm/atomic.h
+@@ -440,7 +440,7 @@ static inline int atomic64_add_unless(at
+ "	teq	%2, #0\n"
+ "	bne	1b\n"
+ "2:"
+-	: "=&r" (val), "=&r" (ret), "=&r" (tmp)
++	: "=&r" (val), "+r" (ret), "=&r" (tmp)
+ 	: "r" (&v->counter), "r" (u), "r" (a)
+ 	: "cc");
  
- static const struct iwl_ops iwl1000_ops = {
-@@ -248,6 +249,7 @@ struct iwl_cfg iwl1000_bgn_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_EXT_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl1000_bg_cfg = {
-@@ -276,6 +278,7 @@ struct iwl_cfg iwl1000_bg_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_EXT_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- MODULE_FIRMWARE(IWL1000_MODULE_FIRMWARE(IWL1000_UCODE_API_MAX));
---- a/drivers/net/wireless/iwlwifi/iwl-3945.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
-@@ -2827,6 +2827,7 @@ static struct iwl_cfg iwl3945_bg_cfg = {
- 	.led_compensation = 64,
- 	.broken_powersave = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- static struct iwl_cfg iwl3945_abg_cfg = {
-@@ -2845,6 +2846,7 @@ static struct iwl_cfg iwl3945_abg_cfg =
- 	.led_compensation = 64,
- 	.broken_powersave = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- DEFINE_PCI_DEVICE_TABLE(iwl3945_hw_card_ids) = {
---- a/drivers/net/wireless/iwlwifi/iwl-4965.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
-@@ -2251,6 +2251,7 @@ struct iwl_cfg iwl4965_agn_cfg = {
- 	.led_compensation = 61,
- 	.chain_noise_num_beacons = IWL4965_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- /* Module firmware */
---- a/drivers/net/wireless/iwlwifi/iwl-5000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
-@@ -1500,6 +1500,7 @@ struct iwl_lib_ops iwl5000_lib = {
- 		.set_ct_kill = iwl5000_set_ct_threshold,
- 	 },
- 	.add_bcast_station = iwl_add_bcast_station,
-+	.recover_from_tx_stall = iwl_bg_monitor_recover,
- };
- 
- static struct iwl_lib_ops iwl5150_lib = {
-@@ -1554,6 +1555,7 @@ static struct iwl_lib_ops iwl5150_lib =
- 		.set_ct_kill = iwl5150_set_ct_threshold,
- 	 },
- 	.add_bcast_station = iwl_add_bcast_station,
-+	.recover_from_tx_stall = iwl_bg_monitor_recover,
- };
- 
- static const struct iwl_ops iwl5000_ops = {
-@@ -1603,6 +1605,7 @@ struct iwl_cfg iwl5300_agn_cfg = {
- 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl5100_bgn_cfg = {
-@@ -1629,6 +1632,7 @@ struct iwl_cfg iwl5100_bgn_cfg = {
- 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl5100_abg_cfg = {
-@@ -1653,6 +1657,7 @@ struct iwl_cfg iwl5100_abg_cfg = {
- 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl5100_agn_cfg = {
-@@ -1679,6 +1684,7 @@ struct iwl_cfg iwl5100_agn_cfg = {
- 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl5350_agn_cfg = {
-@@ -1705,6 +1711,7 @@ struct iwl_cfg iwl5350_agn_cfg = {
- 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl5150_agn_cfg = {
-@@ -1731,6 +1738,7 @@ struct iwl_cfg iwl5150_agn_cfg = {
- 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl5150_abg_cfg = {
-@@ -1755,6 +1763,7 @@ struct iwl_cfg iwl5150_abg_cfg = {
- 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_MAX));
---- a/drivers/net/wireless/iwlwifi/iwl-6000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
-@@ -277,6 +277,7 @@ static struct iwl_lib_ops iwl6000_lib =
- 		.set_ct_kill = iwl6000_set_ct_threshold,
- 	 },
- 	.add_bcast_station = iwl_add_bcast_station,
-+	.recover_from_tx_stall = iwl_bg_monitor_recover,
- };
- 
- static const struct iwl_ops iwl6000_ops = {
-@@ -342,6 +343,7 @@ static struct iwl_lib_ops iwl6050_lib =
- 		.set_calib_version = iwl6050_set_calib_version,
- 	 },
- 	.add_bcast_station = iwl_add_bcast_station,
-+	.recover_from_tx_stall = iwl_bg_monitor_recover,
- };
- 
- static const struct iwl_ops iwl6050_ops = {
-@@ -385,6 +387,7 @@ struct iwl_cfg iwl6000i_2agn_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl6000i_2abg_cfg = {
-@@ -416,6 +419,7 @@ struct iwl_cfg iwl6000i_2abg_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl6000i_2bg_cfg = {
-@@ -447,6 +451,7 @@ struct iwl_cfg iwl6000i_2bg_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl6050_2agn_cfg = {
-@@ -479,6 +484,7 @@ struct iwl_cfg iwl6050_2agn_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
- 	.chain_noise_scale = 1500,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl6050_2abg_cfg = {
-@@ -510,6 +516,7 @@ struct iwl_cfg iwl6050_2abg_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
- 	.chain_noise_scale = 1500,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- struct iwl_cfg iwl6000_3agn_cfg = {
-@@ -542,6 +549,7 @@ struct iwl_cfg iwl6000_3agn_cfg = {
- 	.support_ct_kill_exit = true,
- 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
- 	.chain_noise_scale = 1000,
-+	.monitor_recover_period = IWL_MONITORING_PERIOD,
- };
- 
- MODULE_FIRMWARE(IWL6000_MODULE_FIRMWARE(IWL6000_UCODE_API_MAX));
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@ -2106,6 +2106,13 @@ static void iwl_alive_start(struct iwl_p
- 	/* After the ALIVE response, we can send host commands to the uCode */
- 	set_bit(STATUS_ALIVE, &priv->status);
- 
-+	if (priv->cfg->ops->lib->recover_from_tx_stall) {
-+		/* Enable timer to monitor the driver queues */
-+		mod_timer(&priv->monitor_recover,
-+			jiffies +
-+			msecs_to_jiffies(priv->cfg->monitor_recover_period));
-+	}
-+
- 	if (iwl_is_rfkill(priv))
- 		return;
- 
-@@ -3316,6 +3323,13 @@ static void iwl_setup_deferred_work(stru
- 	priv->ucode_trace.data = (unsigned long)priv;
- 	priv->ucode_trace.function = iwl_bg_ucode_trace;
- 
-+	if (priv->cfg->ops->lib->recover_from_tx_stall) {
-+		init_timer(&priv->monitor_recover);
-+		priv->monitor_recover.data = (unsigned long)priv;
-+		priv->monitor_recover.function =
-+			priv->cfg->ops->lib->recover_from_tx_stall;
-+	}
-+
- 	if (!priv->cfg->use_isr_legacy)
- 		tasklet_init(&priv->irq_tasklet, (void (*)(unsigned long))
- 			iwl_irq_tasklet, (unsigned long)priv);
-@@ -3336,6 +3350,8 @@ static void iwl_cancel_deferred_work(str
- 	cancel_work_sync(&priv->beacon_update);
- 	del_timer_sync(&priv->statistics_periodic);
- 	del_timer_sync(&priv->ucode_trace);
-+	if (priv->cfg->ops->lib->recover_from_tx_stall)
-+		del_timer_sync(&priv->monitor_recover);
- }
- 
- static void iwl_init_hw_rates(struct iwl_priv *priv,
---- a/drivers/net/wireless/iwlwifi/iwl-core.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.c
-@@ -3403,6 +3403,99 @@ int iwl_force_reset(struct iwl_priv *pri
- 	}
- 	return 0;
- }
-+EXPORT_SYMBOL(iwl_force_reset);
-+
-+/**
-+ * iwl_bg_monitor_recover - Timer callback to check for stuck queue and recover
-+ *
-+ * During normal condition (no queue is stuck), the timer is continually set to
-+ * execute every monitor_recover_period milliseconds after the last timer
-+ * expired.  When the queue read_ptr is at the same place, the timer is
-+ * shorten to 100mSecs.  This is
-+ *      1) to reduce the chance that the read_ptr may wrap around (not stuck)
-+ *      2) to detect the stuck queues quicker before the station and AP can
-+ *      disassociate each other.
-+ *
-+ * This function monitors all the tx queues and recover from it if any
-+ * of the queues are stuck.
-+ * 1. It first check the cmd queue for stuck conditions.  If it is stuck,
-+ *      it will recover by resetting the firmware and return.
-+ * 2. Then, it checks for station association.  If it associates it will check
-+ *      other queues.  If any queue is stuck, it will recover by resetting
-+ *      the firmware.
-+ * Note: It the number of times the queue read_ptr to be at the same place to
-+ *      be MAX_REPEAT+1 in order to consider to be stuck.
-+ */
-+/*
-+ * The maximum number of times the read pointer of the tx queue at the
-+ * same place without considering to be stuck.
-+ */
-+#define MAX_REPEAT      (2)
-+static int iwl_check_stuck_queue(struct iwl_priv *priv, int cnt)
-+{
-+	struct iwl_tx_queue *txq;
-+	struct iwl_queue *q;
-+
-+	txq = &priv->txq[cnt];
-+	q = &txq->q;
-+	/* queue is empty, skip */
-+	if (q->read_ptr != q->write_ptr) {
-+		if (q->read_ptr == q->last_read_ptr) {
-+			/* a queue has not been read from last time */
-+			if (q->repeat_same_read_ptr > MAX_REPEAT) {
-+				IWL_ERR(priv,
-+					"queue %d stuck %d time. Fw reload.\n",
-+					q->id, q->repeat_same_read_ptr);
-+				q->repeat_same_read_ptr = 0;
-+				iwl_force_reset(priv, IWL_FW_RESET);
-+			} else {
-+				q->repeat_same_read_ptr++;
-+				IWL_DEBUG_RADIO(priv,
-+						"queue %d, not read %d time\n",
-+						q->id,
-+						q->repeat_same_read_ptr);
-+				mod_timer(&priv->monitor_recover, jiffies +
-+					msecs_to_jiffies(IWL_ONE_HUNDRED_MSECS));
-+			}
-+			return 1;
-+		} else {
-+			q->last_read_ptr = q->read_ptr;
-+			q->repeat_same_read_ptr = 0;
-+		}
-+	}
-+	return 0;
-+}
-+
-+void iwl_bg_monitor_recover(unsigned long data)
-+{
-+	struct iwl_priv *priv = (struct iwl_priv *)data;
-+	int cnt;
-+
-+	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
-+		return;
-+
-+	/* monitor and check for stuck cmd queue */
-+	if (iwl_check_stuck_queue(priv, IWL_CMD_QUEUE_NUM))
-+		return;
-+
-+	/* monitor and check for other stuck queues */
-+	if (iwl_is_associated(priv)) {
-+		for (cnt = 0; cnt < priv->hw_params.max_txq_num; cnt++) {
-+			/* skip as we already checked the command queue */
-+			if (cnt == IWL_CMD_QUEUE_NUM)
-+				continue;
-+			if (iwl_check_stuck_queue(priv, cnt))
-+				return;
-+		}
-+	}
-+	/*
-+	 * Reschedule the timer to occur in
-+	 * priv->cfg->monitor_recover_period
-+	 */
-+	mod_timer(&priv->monitor_recover,
-+		jiffies + msecs_to_jiffies(priv->cfg->monitor_recover_period));
-+}
-+EXPORT_SYMBOL(iwl_bg_monitor_recover);
- 
- #ifdef CONFIG_PM
- 
---- a/drivers/net/wireless/iwlwifi/iwl-core.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.h
-@@ -191,6 +191,8 @@ struct iwl_lib_ops {
- 	struct iwl_temp_ops temp_ops;
- 	/* station management */
- 	void (*add_bcast_station)(struct iwl_priv *priv);
-+	/* recover from tx queue stall */
-+	void (*recover_from_tx_stall)(unsigned long data);
- };
- 
- struct iwl_led_ops {
-@@ -295,6 +297,8 @@ struct iwl_cfg {
- 	const bool support_wimax_coexist;
- 	u8 plcp_delta_threshold;
- 	s32 chain_noise_scale;
-+	/* timer period for monitor the driver queues */
-+	u32 monitor_recover_period;
- };
- 
- /***************************
-@@ -577,6 +581,9 @@ static inline u16 iwl_pcie_link_ctl(stru
- 	pci_read_config_word(priv->pci_dev, pos + PCI_EXP_LNKCTL, &pci_lnk_ctl);
- 	return pci_lnk_ctl;
- }
-+
-+void iwl_bg_monitor_recover(unsigned long data);
-+
- #ifdef CONFIG_PM
- int iwl_pci_suspend(struct pci_dev *pdev, pm_message_t state);
- int iwl_pci_resume(struct pci_dev *pdev);
---- a/drivers/net/wireless/iwlwifi/iwl-dev.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
-@@ -183,6 +183,10 @@ struct iwl_queue {
- 	int n_bd;              /* number of BDs in this queue */
- 	int write_ptr;       /* 1-st empty entry (index) host_w*/
- 	int read_ptr;         /* last used entry (index) host_r*/
-+	/* use for monitoring and recovering the stuck queue */
-+	int last_read_ptr;      /* storing the last read_ptr */
-+	/* number of time read_ptr and last_read_ptr are the same */
-+	u8 repeat_same_read_ptr;
- 	dma_addr_t dma_addr;   /* physical addr for BD's */
- 	int n_window;	       /* safe queue window */
- 	u32 id;
-@@ -1039,6 +1043,11 @@ struct iwl_event_log {
- #define IWL_DELAY_NEXT_FORCE_RF_RESET  (HZ*3)
- #define IWL_DELAY_NEXT_FORCE_FW_RELOAD (HZ*5)
- 
-+/* timer constants use to monitor and recover stuck tx queues in mSecs */
-+#define IWL_MONITORING_PERIOD  (1000)
-+#define IWL_ONE_HUNDRED_MSECS   (100)
-+#define IWL_SIXTY_SECS          (60000)
-+
- enum iwl_reset {
- 	IWL_RF_RESET = 0,
- 	IWL_FW_RESET,
-@@ -1339,6 +1348,7 @@ struct iwl_priv {
- 	struct work_struct run_time_calib_work;
- 	struct timer_list statistics_periodic;
- 	struct timer_list ucode_trace;
-+	struct timer_list monitor_recover;
- 	bool hw_ready;
- 	/*For 3945*/
- #define IWL_DEFAULT_TX_POWER 0x0F
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -310,6 +310,8 @@ static int iwl_queue_init(struct iwl_pri
- 		q->high_mark = 2;
- 
- 	q->write_ptr = q->read_ptr = 0;
-+	q->last_read_ptr = 0;
-+	q->repeat_same_read_ptr = 0;
- 
- 	return 0;
- }
---- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-@@ -2513,6 +2513,13 @@ static void iwl3945_alive_start(struct i
- 	/* After the ALIVE response, we can send commands to 3945 uCode */
- 	set_bit(STATUS_ALIVE, &priv->status);
- 
-+	if (priv->cfg->ops->lib->recover_from_tx_stall) {
-+		/* Enable timer to monitor the driver queues */
-+		mod_timer(&priv->monitor_recover,
-+			jiffies +
-+			msecs_to_jiffies(priv->cfg->monitor_recover_period));
-+	}
-+
- 	if (iwl_is_rfkill(priv))
- 		return;
- 
-@@ -3783,6 +3790,13 @@ static void iwl3945_setup_deferred_work(
- 
- 	iwl3945_hw_setup_deferred_work(priv);
- 
-+	if (priv->cfg->ops->lib->recover_from_tx_stall) {
-+		init_timer(&priv->monitor_recover);
-+		priv->monitor_recover.data = (unsigned long)priv;
-+		priv->monitor_recover.function =
-+			priv->cfg->ops->lib->recover_from_tx_stall;
-+	}
-+
- 	tasklet_init(&priv->irq_tasklet, (void (*)(unsigned long))
- 		     iwl3945_irq_tasklet, (unsigned long)priv);
- }
-@@ -3795,6 +3809,8 @@ static void iwl3945_cancel_deferred_work
- 	cancel_delayed_work(&priv->scan_check);
- 	cancel_delayed_work(&priv->alive_start);
- 	cancel_work_sync(&priv->beacon_update);
-+	if (priv->cfg->ops->lib->recover_from_tx_stall)
-+		del_timer_sync(&priv->monitor_recover);
- }
- 
- static struct attribute *iwl3945_sysfs_entries[] = {
 
 
