@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759095Ab0G3RZS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:25:18 -0400
-Received: from kroah.org ([198.145.64.141]:52210 "EHLO coco.kroah.org"
+	id S1759100Ab0G3RXw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:23:52 -0400
+Received: from kroah.org ([198.145.64.141]:52298 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758877Ab0G3RUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:12 2010
-Message-Id: <20100730171512.600292870@clark.site>
+	id S1758908Ab0G3RUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:23 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:13 2010
+Message-Id: <20100730171513.483499600@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:11 -0700
+Date: Fri, 30 Jul 2010 10:16:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Baruch Siach <baruch@tkos.co.il>,
+        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        Divy Le Ray <divy@chelsio.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [143/165] dm9000: fix "BUG: spinlock recursion"
+Subject: [153/165] cxgb3: fix linkup issue
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,121 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Baruch Siach <baruch@tkos.co.il>
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-commit 380fefb2ddabd4cd5f14dbe090481f0544e65078 upstream.
+commit 9441cad99b4b09d6b627351c2d282833868c116c upstream.
 
-dm9000_set_rx_csum and dm9000_hash_table are called from atomic context (in
-dm9000_init_dm9000), and from non-atomic context (via ethtool_ops and
-net_device_ops respectively). This causes a spinlock recursion BUG. Fix this by
-renaming these functions to *_unlocked for the atomic context, and make the
-original functions locking wrappers for use in the non-atomic context.
+I encountered an issue that not to link up on cxgb3 fabric.
+I bisected and found that this regression was introduced by
+0f07c4ee8c800923ae7918c231532a9256233eed.
 
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Correct to pass phy_addr to cphy_init() at t3_xaui_direct_phy_prep().
+
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Acked-by: Divy Le Ray <divy@chelsio.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/dm9000.c |   38 +++++++++++++++++++++++++++-----------
- 1 file changed, 27 insertions(+), 11 deletions(-)
+ drivers/net/cxgb3/ael1002.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/dm9000.c
-+++ b/drivers/net/dm9000.c
-@@ -471,17 +471,13 @@ static uint32_t dm9000_get_rx_csum(struc
- 	return dm->rx_csum;
- }
- 
--static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
-+static int dm9000_set_rx_csum_unlocked(struct net_device *dev, uint32_t data)
+--- a/drivers/net/cxgb3/ael1002.c
++++ b/drivers/net/cxgb3/ael1002.c
+@@ -934,7 +934,7 @@ static struct cphy_ops xaui_direct_ops =
+ int t3_xaui_direct_phy_prep(struct cphy *phy, struct adapter *adapter,
+ 			    int phy_addr, const struct mdio_ops *mdio_ops)
  {
- 	board_info_t *dm = to_dm9000_board(dev);
--	unsigned long flags;
- 
- 	if (dm->can_csum) {
- 		dm->rx_csum = data;
--
--		spin_lock_irqsave(&dm->lock, flags);
- 		iow(dm, DM9000_RCSR, dm->rx_csum ? RCSR_CSUM : 0);
--		spin_unlock_irqrestore(&dm->lock, flags);
- 
- 		return 0;
- 	}
-@@ -489,6 +485,19 @@ static int dm9000_set_rx_csum(struct net
- 	return -EOPNOTSUPP;
- }
- 
-+static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
-+{
-+	board_info_t *dm = to_dm9000_board(dev);
-+	unsigned long flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&dm->lock, flags);
-+	ret = dm9000_set_rx_csum_unlocked(dev, data);
-+	spin_unlock_irqrestore(&dm->lock, flags);
-+
-+	return ret;
-+}
-+
- static int dm9000_set_tx_csum(struct net_device *dev, uint32_t data)
- {
- 	board_info_t *dm = to_dm9000_board(dev);
-@@ -667,7 +676,7 @@ static unsigned char dm9000_type_to_char
-  *  Set DM9000 multicast address
-  */
- static void
--dm9000_hash_table(struct net_device *dev)
-+dm9000_hash_table_unlocked(struct net_device *dev)
- {
- 	board_info_t *db = netdev_priv(dev);
- 	struct dev_mc_list *mcptr = dev->mc_list;
-@@ -676,12 +685,9 @@ dm9000_hash_table(struct net_device *dev
- 	u32 hash_val;
- 	u16 hash_table[4];
- 	u8 rcr = RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN;
--	unsigned long flags;
- 
- 	dm9000_dbg(db, 1, "entering %s\n", __func__);
- 
--	spin_lock_irqsave(&db->lock, flags);
--
- 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
- 		iow(db, oft, dev->dev_addr[i]);
- 
-@@ -711,6 +717,16 @@ dm9000_hash_table(struct net_device *dev
- 	}
- 
- 	iow(db, DM9000_RCR, rcr);
-+}
-+
-+static void
-+dm9000_hash_table(struct net_device *dev)
-+{
-+	board_info_t *db = netdev_priv(dev);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+	dm9000_hash_table_unlocked(dev);
- 	spin_unlock_irqrestore(&db->lock, flags);
- }
- 
-@@ -729,7 +745,7 @@ dm9000_init_dm9000(struct net_device *de
- 	db->io_mode = ior(db, DM9000_ISR) >> 6;	/* ISR bit7:6 keeps I/O mode */
- 
- 	/* Checksum mode */
--	dm9000_set_rx_csum(dev, db->rx_csum);
-+	dm9000_set_rx_csum_unlocked(dev, db->rx_csum);
- 
- 	/* GPIO0 on pre-activate PHY */
- 	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */
-@@ -749,7 +765,7 @@ dm9000_init_dm9000(struct net_device *de
- 	iow(db, DM9000_ISR, ISR_CLR_STATUS); /* Clear interrupt status */
- 
- 	/* Set address filter table */
--	dm9000_hash_table(dev);
-+	dm9000_hash_table_unlocked(dev);
- 
- 	imr = IMR_PAR | IMR_PTM | IMR_PRM;
- 	if (db->type != TYPE_DM9000E)
+-	cphy_init(phy, adapter, MDIO_PRTAD_NONE, &xaui_direct_ops, mdio_ops,
++	cphy_init(phy, adapter, phy_addr, &xaui_direct_ops, mdio_ops,
+ 		  SUPPORTED_10000baseT_Full | SUPPORTED_AUI | SUPPORTED_TP,
+ 		  "10GBASE-CX4");
+ 	return 0;
 
 
