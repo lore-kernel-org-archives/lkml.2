@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759131Ab0G3RZl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:25:41 -0400
-Received: from kroah.org ([198.145.64.141]:52175 "EHLO coco.kroah.org"
+	id S1759164Ab0G3R0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:26:16 -0400
+Received: from kroah.org ([198.145.64.141]:52166 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757634Ab0G3RUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:08 -0400
+	id S1758871Ab0G3RUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:05 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:12 2010
-Message-Id: <20100730171512.434122827@clark.site>
+Message-Id: <20100730171512.150229560@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:09 -0700
+Date: Fri, 30 Jul 2010 10:16:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [141/165] ACPI: Unconditionally set SCI_EN on resume
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: [138/165] GFS2: Fix up system xattrs
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,252 +26,282 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit b6dacf63e9fb2e7a1369843d6cef332f76fca6a3 upstream.
+commit 2646a1f61a3b5525914757f10fa12b5b94713648 upstream.
 
-The ACPI spec tells us that the firmware will reenable SCI_EN on resume.
-Reality disagrees in some cases. The ACPI spec tells us that the only way
-to set SCI_EN is via an SMM call.
-https://bugzilla.kernel.org/show_bug.cgi?id=13745 shows us that doing so
-may break machines. Tracing the ACPI calls made by Windows shows that it
-unconditionally sets SCI_EN on resume with a direct register write, and
-therefore the overwhelming probability is that everything is fine with
-this behaviour.
+This code has been shamelessly stolen from XFS at the suggestion
+of Christoph Hellwig. I've not added support for cached ACLs so
+far... watch for that in a later patch, although this is designed
+in such a way that they should be easy to add.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Tested-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/acpi/sleep.c |    2 
- drivers/acpi/sleep.c         |  157 -------------------------------------------
- include/linux/acpi.h         |    1 
- 3 files changed, 2 insertions(+), 158 deletions(-)
+ fs/gfs2/acl.c   |  170 +++++++++++++++++++++++++++++++++++++-------------------
+ fs/gfs2/acl.h   |   24 +------
+ fs/gfs2/xattr.c |   18 -----
+ 3 files changed, 120 insertions(+), 92 deletions(-)
 
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -162,8 +162,6 @@ static int __init acpi_sleep_setup(char
- #endif
- 		if (strncmp(str, "old_ordering", 12) == 0)
- 			acpi_old_suspend_ordering();
--		if (strncmp(str, "sci_force_enable", 16) == 0)
--			acpi_set_sci_en_on_resume();
- 		str = strchr(str, ',');
- 		if (str != NULL)
- 			str += strspn(str, ", \t");
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -80,22 +80,6 @@ static int acpi_sleep_prepare(u32 acpi_s
+--- a/fs/gfs2/acl.c
++++ b/fs/gfs2/acl.c
+@@ -12,6 +12,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+ #include <linux/buffer_head.h>
++#include <linux/xattr.h>
+ #include <linux/posix_acl.h>
+ #include <linux/posix_acl_xattr.h>
+ #include <linux/gfs2_ondisk.h>
+@@ -26,61 +27,6 @@
+ #include "trans.h"
+ #include "util.h"
  
- #ifdef CONFIG_ACPI_SLEEP
- static u32 acpi_target_sleep_state = ACPI_STATE_S0;
--/*
-- * According to the ACPI specification the BIOS should make sure that ACPI is
-- * enabled and SCI_EN bit is set on wake-up from S1 - S3 sleep states.  Still,
-- * some BIOSes don't do that and therefore we use acpi_enable() to enable ACPI
-- * on such systems during resume.  Unfortunately that doesn't help in
-- * particularly pathological cases in which SCI_EN has to be set directly on
-- * resume, although the specification states very clearly that this flag is
-- * owned by the hardware.  The set_sci_en_on_resume variable will be set in such
-- * cases.
-- */
--static bool set_sci_en_on_resume;
+-#define ACL_ACCESS 1
+-#define ACL_DEFAULT 0
 -
--void __init acpi_set_sci_en_on_resume(void)
+-int gfs2_acl_validate_set(struct gfs2_inode *ip, int access,
+-			  struct gfs2_ea_request *er, int *remove, mode_t *mode)
 -{
--	set_sci_en_on_resume = true;
+-	struct posix_acl *acl;
+-	int error;
+-
+-	error = gfs2_acl_validate_remove(ip, access);
+-	if (error)
+-		return error;
+-
+-	if (!er->er_data)
+-		return -EINVAL;
+-
+-	acl = posix_acl_from_xattr(er->er_data, er->er_data_len);
+-	if (IS_ERR(acl))
+-		return PTR_ERR(acl);
+-	if (!acl) {
+-		*remove = 1;
+-		return 0;
+-	}
+-
+-	error = posix_acl_valid(acl);
+-	if (error)
+-		goto out;
+-
+-	if (access) {
+-		error = posix_acl_equiv_mode(acl, mode);
+-		if (!error)
+-			*remove = 1;
+-		else if (error > 0)
+-			error = 0;
+-	}
+-
+-out:
+-	posix_acl_release(acl);
+-	return error;
 -}
- 
- /*
-  * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
-@@ -253,11 +237,8 @@ static int acpi_suspend_enter(suspend_st
- 		break;
- 	}
- 
--	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
--	if (set_sci_en_on_resume)
--		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
--	else
--		acpi_enable();
-+	/* This violates the spec but is required for bug compatibility. */
-+	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
- 
- 	/* Reprogram control registers and execute _BFS */
- 	acpi_leave_sleep_state_prep(acpi_state);
-@@ -346,12 +327,6 @@ static int __init init_old_suspend_order
- 	return 0;
- }
- 
--static int __init init_set_sci_en_on_resume(const struct dmi_system_id *d)
+-
+-int gfs2_acl_validate_remove(struct gfs2_inode *ip, int access)
 -{
--	set_sci_en_on_resume = true;
+-	if (!GFS2_SB(&ip->i_inode)->sd_args.ar_posix_acl)
+-		return -EOPNOTSUPP;
+-	if (!is_owner_or_cap(&ip->i_inode))
+-		return -EPERM;
+-	if (S_ISLNK(ip->i_inode.i_mode))
+-		return -EOPNOTSUPP;
+-	if (!access && !S_ISDIR(ip->i_inode.i_mode))
+-		return -EACCES;
+-
 -	return 0;
 -}
 -
- static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
- 	{
- 	.callback = init_old_suspend_ordering,
-@@ -370,22 +345,6 @@ static struct dmi_system_id __initdata a
- 		},
- 	},
- 	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Apple MacBook 1,1",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Apple MacMini 1,1",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Macmini1,1"),
--		},
--	},
--	{
- 	.callback = init_old_suspend_ordering,
- 	.ident = "Asus Pundit P1-AH2 (M2N8L motherboard)",
- 	.matches = {
-@@ -394,94 +353,6 @@ static struct dmi_system_id __initdata a
- 		},
- 	},
- 	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Toshiba Satellite L300",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard HP G7000 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP G7000 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard HP Pavilion dv3 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv3 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Pavilion dv4",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Pavilion dv7",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv7"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Compaq Presario C700 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario C700 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Compaq Presario CQ40 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario CQ40 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad T410",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad T510",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad W510",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad X201[s]",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
--		},
--	},
--	{
- 	.callback = init_old_suspend_ordering,
- 	.ident = "Panasonic CF51-2L",
- 	.matches = {
-@@ -490,30 +361,6 @@ static struct dmi_system_id __initdata a
- 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
- 		},
- 	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1558",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1558"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1557",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1555",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1555"),
--		},
--	},
- 	{},
- };
- #endif /* CONFIG_SUSPEND */
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -251,7 +251,6 @@ int acpi_check_mem_region(resource_size_
- void __init acpi_no_s4_hw_signature(void);
- void __init acpi_old_suspend_ordering(void);
- void __init acpi_s4_no_nvs(void);
--void __init acpi_set_sci_en_on_resume(void);
- #endif /* CONFIG_PM_SLEEP */
+ static int acl_get(struct gfs2_inode *ip, const char *name,
+ 		   struct posix_acl **acl, struct gfs2_ea_location *el,
+ 		   char **datap, unsigned int *lenp)
+@@ -277,3 +223,117 @@ out_brelse:
+ 	return error;
+ }
  
- struct acpi_osc_context {
++static int gfs2_acl_type(const char *name)
++{
++	if (strcmp(name, GFS2_POSIX_ACL_ACCESS) == 0)
++		return ACL_TYPE_ACCESS;
++	if (strcmp(name, GFS2_POSIX_ACL_DEFAULT) == 0)
++		return ACL_TYPE_DEFAULT;
++	return -EINVAL;
++}
++
++static int gfs2_xattr_system_get(struct inode *inode, const char *name,
++				 void *buffer, size_t size)
++{
++	int type;
++
++	type = gfs2_acl_type(name);
++	if (type < 0)
++		return type;
++
++	return gfs2_xattr_get(inode, GFS2_EATYPE_SYS, name, buffer, size);
++}
++
++static int gfs2_set_mode(struct inode *inode, mode_t mode)
++{
++	int error = 0;
++
++	if (mode != inode->i_mode) {
++		struct iattr iattr;
++
++		iattr.ia_valid = ATTR_MODE;
++		iattr.ia_mode = mode;
++
++		error = gfs2_setattr_simple(GFS2_I(inode), &iattr);
++	}
++
++	return error;
++}
++
++static int gfs2_xattr_system_set(struct inode *inode, const char *name,
++				 const void *value, size_t size, int flags)
++{
++	struct gfs2_sbd *sdp = GFS2_SB(inode);
++	struct posix_acl *acl = NULL;
++	int error = 0, type;
++
++	if (!sdp->sd_args.ar_posix_acl)
++		return -EOPNOTSUPP;
++
++	type = gfs2_acl_type(name);
++	if (type < 0)
++		return type;
++	if (flags & XATTR_CREATE)
++		return -EINVAL;
++	if (type == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
++		return value ? -EACCES : 0;
++	if ((current_fsuid() != inode->i_uid) && !capable(CAP_FOWNER))
++		return -EPERM;
++	if (S_ISLNK(inode->i_mode))
++		return -EOPNOTSUPP;
++
++	if (!value)
++		goto set_acl;
++
++	acl = posix_acl_from_xattr(value, size);
++	if (!acl) {
++		/*
++		 * acl_set_file(3) may request that we set default ACLs with
++		 * zero length -- defend (gracefully) against that here.
++		 */
++		goto out;
++	}
++	if (IS_ERR(acl)) {
++		error = PTR_ERR(acl);
++		goto out;
++	}
++
++	error = posix_acl_valid(acl);
++	if (error)
++		goto out_release;
++
++	error = -EINVAL;
++	if (acl->a_count > GFS2_ACL_MAX_ENTRIES)
++		goto out_release;
++
++	if (type == ACL_TYPE_ACCESS) {
++		mode_t mode = inode->i_mode;
++		error = posix_acl_equiv_mode(acl, &mode);
++
++		if (error <= 0) {
++			posix_acl_release(acl);
++			acl = NULL;
++
++			if (error < 0)
++				return error;
++		}
++
++		error = gfs2_set_mode(inode, mode);
++		if (error)
++			goto out_release;
++	}
++
++set_acl:
++	error = gfs2_xattr_set(inode, GFS2_EATYPE_SYS, name, value, size, 0);
++out_release:
++	posix_acl_release(acl);
++out:
++	return error;
++}
++
++struct xattr_handler gfs2_xattr_system_handler = {
++	.prefix = XATTR_SYSTEM_PREFIX,
++	.get    = gfs2_xattr_system_get,
++	.set    = gfs2_xattr_system_set,
++};
++
+--- a/fs/gfs2/acl.h
++++ b/fs/gfs2/acl.h
+@@ -13,26 +13,12 @@
+ #include "incore.h"
+ 
+ #define GFS2_POSIX_ACL_ACCESS		"posix_acl_access"
+-#define GFS2_POSIX_ACL_ACCESS_LEN	16
+ #define GFS2_POSIX_ACL_DEFAULT		"posix_acl_default"
+-#define GFS2_POSIX_ACL_DEFAULT_LEN	17
++#define GFS2_ACL_MAX_ENTRIES		25
+ 
+-#define GFS2_ACL_IS_ACCESS(name, len) \
+-         ((len) == GFS2_POSIX_ACL_ACCESS_LEN && \
+-         !memcmp(GFS2_POSIX_ACL_ACCESS, (name), (len)))
+-
+-#define GFS2_ACL_IS_DEFAULT(name, len) \
+-         ((len) == GFS2_POSIX_ACL_DEFAULT_LEN && \
+-         !memcmp(GFS2_POSIX_ACL_DEFAULT, (name), (len)))
+-
+-struct gfs2_ea_request;
+-
+-int gfs2_acl_validate_set(struct gfs2_inode *ip, int access,
+-			  struct gfs2_ea_request *er,
+-			  int *remove, mode_t *mode);
+-int gfs2_acl_validate_remove(struct gfs2_inode *ip, int access);
+-int gfs2_check_acl(struct inode *inode, int mask);
+-int gfs2_acl_create(struct gfs2_inode *dip, struct gfs2_inode *ip);
+-int gfs2_acl_chmod(struct gfs2_inode *ip, struct iattr *attr);
++extern int gfs2_check_acl(struct inode *inode, int mask);
++extern int gfs2_acl_create(struct gfs2_inode *dip, struct gfs2_inode *ip);
++extern int gfs2_acl_chmod(struct gfs2_inode *ip, struct iattr *attr);
++extern struct xattr_handler gfs2_xattr_system_handler;
+ 
+ #endif /* __ACL_DOT_H__ */
+--- a/fs/gfs2/xattr.c
++++ b/fs/gfs2/xattr.c
+@@ -1507,18 +1507,6 @@ static int gfs2_xattr_user_set(struct in
+ 	return gfs2_xattr_set(inode, GFS2_EATYPE_USR, name, value, size, flags);
+ }
+ 
+-static int gfs2_xattr_system_get(struct inode *inode, const char *name,
+-				 void *buffer, size_t size)
+-{
+-	return gfs2_xattr_get(inode, GFS2_EATYPE_SYS, name, buffer, size);
+-}
+-
+-static int gfs2_xattr_system_set(struct inode *inode, const char *name,
+-				 const void *value, size_t size, int flags)
+-{
+-	return gfs2_xattr_set(inode, GFS2_EATYPE_SYS, name, value, size, flags);
+-}
+-
+ static int gfs2_xattr_security_get(struct inode *inode, const char *name,
+ 				   void *buffer, size_t size)
+ {
+@@ -1543,12 +1531,6 @@ static struct xattr_handler gfs2_xattr_s
+ 	.set    = gfs2_xattr_security_set,
+ };
+ 
+-static struct xattr_handler gfs2_xattr_system_handler = {
+-	.prefix = XATTR_SYSTEM_PREFIX,
+-	.get    = gfs2_xattr_system_get,
+-	.set    = gfs2_xattr_system_set,
+-};
+-
+ struct xattr_handler *gfs2_xattr_handlers[] = {
+ 	&gfs2_xattr_user_handler,
+ 	&gfs2_xattr_security_handler,
 
 
