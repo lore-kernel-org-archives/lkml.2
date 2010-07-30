@@ -1,273 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760721Ab0G3TTW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:19:22 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34117 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab0G3TTO (ORCPT
+	id S1760727Ab0G3TTm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:19:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55242 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760671Ab0G3TTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 15:19:14 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: kgdb-bugreport@lists.sourceforge.net, mingo@elte.hu,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH 04/15] x86,kgdb: Individual register get/set for x86
-Date: Fri, 30 Jul 2010 14:17:25 -0500
-Message-Id: <1280517456-1167-5-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
-References: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 30 Jul 2010 19:17:42.0892 (UTC) FILETIME=[E249AAC0:01CB301B]
+	Fri, 30 Jul 2010 15:19:31 -0400
+Date: Fri, 30 Jul 2010 16:19:03 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 11/14]  perf: perf interface for uprobes
+Message-ID: <20100730191903.GD12166@ghostprotocols.net>
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
+ <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the ability to individually get and set registers for kdb
-and kgdb for x86.
+Em Tue, Jul 27, 2010 at 04:41:05PM +0530, Srikar Dronamraju escreveu:
+> 
+> Enhances perf probe to accept pid and user vaddr.
+> Provides very basic support for uprobes.
+> @@ -188,6 +190,8 @@ static const struct option options[] = {
+>  	OPT__DRY_RUN(&probe_event_dry_run),
+>  	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
+>  		 "Set how many probe points can be found for a probe."),
+> +	OPT_INTEGER('p', "pid", &params.upid,
+> +			"specify a pid for a uprobes based probe"),
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: H. Peter Anvin <hpa@zytor.com>
-CC: x86@kernel.org
----
- arch/x86/include/asm/kgdb.h |   20 +++---
- arch/x86/kernel/kgdb.c      |  168 +++++++++++++++++++++----------------------
- 2 files changed, 94 insertions(+), 94 deletions(-)
+"ubrobes based probe" could be made clear as:
 
-diff --git a/arch/x86/include/asm/kgdb.h b/arch/x86/include/asm/kgdb.h
-index 006da36..396f5b5 100644
---- a/arch/x86/include/asm/kgdb.h
-+++ b/arch/x86/include/asm/kgdb.h
-@@ -39,9 +39,11 @@ enum regnames {
- 	GDB_FS,			/* 14 */
- 	GDB_GS,			/* 15 */
- };
-+#define GDB_ORIG_AX		41
-+#define DBG_MAX_REG_NUM		16
- #define NUMREGBYTES		((GDB_GS+1)*4)
- #else /* ! CONFIG_X86_32 */
--enum regnames64 {
-+enum regnames {
- 	GDB_AX,			/* 0 */
- 	GDB_BX,			/* 1 */
- 	GDB_CX,			/* 2 */
-@@ -59,15 +61,15 @@ enum regnames64 {
- 	GDB_R14,		/* 14 */
- 	GDB_R15,		/* 15 */
- 	GDB_PC,			/* 16 */
-+	GDB_PS,			/* 17 */
-+	GDB_CS,			/* 18 */
-+	GDB_SS,			/* 19 */
- };
--
--enum regnames32 {
--	GDB_PS = 34,
--	GDB_CS,
--	GDB_SS,
--};
--#define NUMREGBYTES		((GDB_SS+1)*4)
--#endif /* CONFIG_X86_32 */
-+#define GDB_ORIG_AX		57
-+#define DBG_MAX_REG_NUM		20
-+/* 17 64 bit regs and 3 32 bit regs */
-+#define NUMREGBYTES		((17 * 8) + (3 * 4))
-+#endif /* ! CONFIG_X86_32 */
- 
- static inline void arch_kgdb_breakpoint(void)
- {
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 01ab17a..bae8982 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -49,55 +49,94 @@
- #include <asm/system.h>
- #include <asm/apic.h>
- 
--/**
-- *	pt_regs_to_gdb_regs - Convert ptrace regs to GDB regs
-- *	@gdb_regs: A pointer to hold the registers in the order GDB wants.
-- *	@regs: The &struct pt_regs of the current process.
-- *
-- *	Convert the pt_regs in @regs into the format for registers that
-- *	GDB expects, stored in @gdb_regs.
-- */
--void pt_regs_to_gdb_regs(unsigned long *gdb_regs, struct pt_regs *regs)
-+struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
- {
--#ifndef CONFIG_X86_32
--	u32 *gdb_regs32 = (u32 *)gdb_regs;
-+#ifdef CONFIG_X86_32
-+	{ "ax", 4, offsetof(struct pt_regs, ax) },
-+	{ "cx", 4, offsetof(struct pt_regs, cx) },
-+	{ "dx", 4, offsetof(struct pt_regs, dx) },
-+	{ "bx", 4, offsetof(struct pt_regs, bx) },
-+	{ "sp", 4, offsetof(struct pt_regs, sp) },
-+	{ "bp", 4, offsetof(struct pt_regs, bp) },
-+	{ "si", 4, offsetof(struct pt_regs, si) },
-+	{ "di", 4, offsetof(struct pt_regs, di) },
-+	{ "ip", 4, offsetof(struct pt_regs, ip) },
-+	{ "flags", 4, offsetof(struct pt_regs, flags) },
-+	{ "cs", 4, offsetof(struct pt_regs, cs) },
-+	{ "ss", 4, offsetof(struct pt_regs, ss) },
-+	{ "ds", 4, offsetof(struct pt_regs, ds) },
-+	{ "es", 4, offsetof(struct pt_regs, es) },
-+	{ "fs", 4, -1 },
-+	{ "gs", 4, -1 },
-+#else
-+	{ "ax", 8, offsetof(struct pt_regs, ax) },
-+	{ "bx", 8, offsetof(struct pt_regs, bx) },
-+	{ "cx", 8, offsetof(struct pt_regs, cx) },
-+	{ "dx", 8, offsetof(struct pt_regs, dx) },
-+	{ "si", 8, offsetof(struct pt_regs, dx) },
-+	{ "di", 8, offsetof(struct pt_regs, di) },
-+	{ "bp", 8, offsetof(struct pt_regs, bp) },
-+	{ "sp", 8, offsetof(struct pt_regs, sp) },
-+	{ "r8", 8, offsetof(struct pt_regs, r8) },
-+	{ "r9", 8, offsetof(struct pt_regs, r9) },
-+	{ "r10", 8, offsetof(struct pt_regs, r10) },
-+	{ "r11", 8, offsetof(struct pt_regs, r11) },
-+	{ "r12", 8, offsetof(struct pt_regs, r12) },
-+	{ "r13", 8, offsetof(struct pt_regs, r13) },
-+	{ "r14", 8, offsetof(struct pt_regs, r14) },
-+	{ "r15", 8, offsetof(struct pt_regs, r15) },
-+	{ "ip", 8, offsetof(struct pt_regs, ip) },
-+	{ "flags", 4, offsetof(struct pt_regs, flags) },
-+	{ "cs", 4, offsetof(struct pt_regs, cs) },
-+	{ "ss", 4, offsetof(struct pt_regs, ss) },
- #endif
--	gdb_regs[GDB_AX]	= regs->ax;
--	gdb_regs[GDB_BX]	= regs->bx;
--	gdb_regs[GDB_CX]	= regs->cx;
--	gdb_regs[GDB_DX]	= regs->dx;
--	gdb_regs[GDB_SI]	= regs->si;
--	gdb_regs[GDB_DI]	= regs->di;
--	gdb_regs[GDB_BP]	= regs->bp;
--	gdb_regs[GDB_PC]	= regs->ip;
-+};
-+
-+int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
-+{
-+	if (
- #ifdef CONFIG_X86_32
--	gdb_regs[GDB_PS]	= regs->flags;
--	gdb_regs[GDB_DS]	= regs->ds;
--	gdb_regs[GDB_ES]	= regs->es;
--	gdb_regs[GDB_CS]	= regs->cs;
--	gdb_regs[GDB_FS]	= 0xFFFF;
--	gdb_regs[GDB_GS]	= 0xFFFF;
--	if (user_mode_vm(regs)) {
--		gdb_regs[GDB_SS] = regs->ss;
--		gdb_regs[GDB_SP] = regs->sp;
--	} else {
--		gdb_regs[GDB_SS] = __KERNEL_DS;
--		gdb_regs[GDB_SP] = kernel_stack_pointer(regs);
-+	    regno == GDB_SS || regno == GDB_FS || regno == GDB_GS ||
-+#endif
-+	    regno == GDB_SP || regno == GDB_ORIG_AX)
-+		return 0;
-+
-+	if (dbg_reg_def[regno].offset != -1)
-+		memcpy((void *)regs + dbg_reg_def[regno].offset, mem,
-+		       dbg_reg_def[regno].size);
-+	return 0;
-+}
-+
-+char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
-+{
-+	if (regno == GDB_ORIG_AX) {
-+		memcpy(mem, &regs->orig_ax, sizeof(regs->orig_ax));
-+		return "orig_ax";
- 	}
--#else
--	gdb_regs[GDB_R8]	= regs->r8;
--	gdb_regs[GDB_R9]	= regs->r9;
--	gdb_regs[GDB_R10]	= regs->r10;
--	gdb_regs[GDB_R11]	= regs->r11;
--	gdb_regs[GDB_R12]	= regs->r12;
--	gdb_regs[GDB_R13]	= regs->r13;
--	gdb_regs[GDB_R14]	= regs->r14;
--	gdb_regs[GDB_R15]	= regs->r15;
--	gdb_regs32[GDB_PS]	= regs->flags;
--	gdb_regs32[GDB_CS]	= regs->cs;
--	gdb_regs32[GDB_SS]	= regs->ss;
--	gdb_regs[GDB_SP]	= kernel_stack_pointer(regs);
-+	if (regno >= DBG_MAX_REG_NUM || regno < 0)
-+		return NULL;
-+
-+	if (dbg_reg_def[regno].offset != -1)
-+		memcpy(mem, (void *)regs + dbg_reg_def[regno].offset,
-+		       dbg_reg_def[regno].size);
-+
-+	switch (regno) {
-+#ifdef CONFIG_X86_32
-+	case GDB_SS:
-+		if (!user_mode_vm(regs))
-+			*(unsigned long *)mem = __KERNEL_DS;
-+		break;
-+	case GDB_SP:
-+		if (!user_mode_vm(regs))
-+			*(unsigned long *)mem = kernel_stack_pointer(regs);
-+		break;
-+	case GDB_GS:
-+	case GDB_FS:
-+		*(unsigned long *)mem = 0xFFFF;
-+		break;
- #endif
-+	}
-+	return dbg_reg_def[regno].name;
- }
- 
- /**
-@@ -150,47 +189,6 @@ void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *p)
- 	gdb_regs[GDB_SP]	= p->thread.sp;
- }
- 
--/**
-- *	gdb_regs_to_pt_regs - Convert GDB regs to ptrace regs.
-- *	@gdb_regs: A pointer to hold the registers we've received from GDB.
-- *	@regs: A pointer to a &struct pt_regs to hold these values in.
-- *
-- *	Convert the GDB regs in @gdb_regs into the pt_regs, and store them
-- *	in @regs.
-- */
--void gdb_regs_to_pt_regs(unsigned long *gdb_regs, struct pt_regs *regs)
--{
--#ifndef CONFIG_X86_32
--	u32 *gdb_regs32 = (u32 *)gdb_regs;
--#endif
--	regs->ax		= gdb_regs[GDB_AX];
--	regs->bx		= gdb_regs[GDB_BX];
--	regs->cx		= gdb_regs[GDB_CX];
--	regs->dx		= gdb_regs[GDB_DX];
--	regs->si		= gdb_regs[GDB_SI];
--	regs->di		= gdb_regs[GDB_DI];
--	regs->bp		= gdb_regs[GDB_BP];
--	regs->ip		= gdb_regs[GDB_PC];
--#ifdef CONFIG_X86_32
--	regs->flags		= gdb_regs[GDB_PS];
--	regs->ds		= gdb_regs[GDB_DS];
--	regs->es		= gdb_regs[GDB_ES];
--	regs->cs		= gdb_regs[GDB_CS];
--#else
--	regs->r8		= gdb_regs[GDB_R8];
--	regs->r9		= gdb_regs[GDB_R9];
--	regs->r10		= gdb_regs[GDB_R10];
--	regs->r11		= gdb_regs[GDB_R11];
--	regs->r12		= gdb_regs[GDB_R12];
--	regs->r13		= gdb_regs[GDB_R13];
--	regs->r14		= gdb_regs[GDB_R14];
--	regs->r15		= gdb_regs[GDB_R15];
--	regs->flags		= gdb_regs32[GDB_PS];
--	regs->cs		= gdb_regs32[GDB_CS];
--	regs->ss		= gdb_regs32[GDB_SS];
--#endif
--}
--
- static struct hw_breakpoint {
- 	unsigned		enabled;
- 	unsigned long		addr;
--- 
-1.6.4.rc1
+"Specify pid of process where the probe will be added"
 
+?
+
+The following three hunks could be moved to a separate patch that I'd
+apply on my perf/core branch, so to reduce this patchset size, like I
+did with the s/kprobe/probe/g one that is already there:
+
+http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=commitdiff;h=0e60836bbd392300198c5c2d918c18845428a1fe
+
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index 1e8e92e..b513e40 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -1082,26 +1082,6 @@ static void event__process_sample(const event_t *self,
+>  	}
+>  }
+>  
+> -static int event__process(event_t *event, struct perf_session *session)
+> -{
+> -	switch (event->header.type) {
+> -	case PERF_RECORD_COMM:
+> -		event__process_comm(event, session);
+> -		break;
+> -	case PERF_RECORD_MMAP:
+> -		event__process_mmap(event, session);
+> -		break;
+> -	case PERF_RECORD_FORK:
+> -	case PERF_RECORD_EXIT:
+> -		event__process_task(event, session);
+> -		break;
+> -	default:
+> -		break;
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+>  struct mmap_data {
+>  	int			counter;
+>  	void			*base;
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index d7f21d7..d93e0bb 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -552,6 +552,26 @@ int event__process_task(event_t *self, struct perf_session *session)
+>  	return 0;
+>  }
+>  
+> +int event__process(event_t *event, struct perf_session *session)
+> +{
+> +	switch (event->header.type) {
+> +	case PERF_RECORD_COMM:
+> +		event__process_comm(event, session);
+> +		break;
+> +	case PERF_RECORD_MMAP:
+> +		event__process_mmap(event, session);
+> +		break;
+> +	case PERF_RECORD_FORK:
+> +	case PERF_RECORD_EXIT:
+> +		event__process_task(event, session);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  void thread__find_addr_map(struct thread *self,
+>  			   struct perf_session *session, u8 cpumode,
+>  			   enum map_type type, pid_t pid, u64 addr,
+> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> index 887ee63..8e790da 100644
+> --- a/tools/perf/util/event.h
+> +++ b/tools/perf/util/event.h
+> @@ -154,6 +154,7 @@ int event__process_comm(event_t *self, struct perf_session *session);
+>  int event__process_lost(event_t *self, struct perf_session *session);
+>  int event__process_mmap(event_t *self, struct perf_session *session);
+>  int event__process_task(event_t *self, struct perf_session *session);
+> +int event__process(event_t *event, struct perf_session *session);
+>  
+>  struct addr_location;
+>  int event__preprocess_sample(const event_t *self, struct perf_session *session,
+
+[...]
+
+>  			group = pev->group;
+> -		else
+> +		else if (!pev->upid)
+>  			group = PERFPROBE_GROUP;
+> +		else {
+> +			/*
+> +			 * For uprobes based probes create a group
+> +			 * probe_<pid>.
+> +			 */
+> +			snprintf(buf, 64, "%s_%d", PERFPROBE_GROUP, pev->upid);
+> +			group = buf;
+> +		}
+> +
+> +		tev->group = strdup(group);
+
+Here you don't check as you do on the next strdups 
+
+> +		if (pev->event)
+> +			event = pev->event;
+> +		else if (pev->point.function)
+> +			event = pev->point.function;
+> +		else
+> +			event = tev->point.symbol;
+>  
+>  		/* Get an unused new event name */
+>  		ret = get_new_event_name(buf, 64, event,
+> @@ -1471,9 +1681,8 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+>  		if (ret < 0)
+>  			break;
+>  		event = buf;
+> -
+>  		tev->event = strdup(event);
+> -		tev->group = strdup(group);
+> +
+
+here
+
+>  		if (tev->event == NULL || tev->group == NULL) {
+>  			ret = -ENOMEM;
+>  			break;
+> @@ -1571,6 +1780,11 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+>  		}
+>  	}
+>  
+> +	if (pev->upid) {
+> +		tev->upid = pev->upid;
+> +		return 1;
+> +	}
+> +
+>  	/* Currently just checking function name from symbol map */
+>  	sym = map__find_symbol_by_name(machine.vmlinux_maps[MAP__FUNCTION],
+>  				       tev->point.symbol, NULL);
+> @@ -1598,15 +1812,19 @@ struct __event_package {
+>  int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+>  			  bool force_add, int max_tevs)
+>  {
+> -	int i, j, ret;
+> +	int i, j, ret = 0;
+>  	struct __event_package *pkgs;
+>  
+>  	pkgs = zalloc(sizeof(struct __event_package) * npevs);
+>  	if (pkgs == NULL)
+>  		return -ENOMEM;
+>  
+> -	/* Init vmlinux path */
+> -	ret = init_vmlinux();
+> +	if (!pevs->upid)
+> +		/* Init vmlinux path */
+> +		ret = init_vmlinux();
+> +	else
+> +		ret = init_perf_uprobes();
+> +
+>  	if (ret < 0)
+
+pkgs leaks here.
+
+>  		return ret;
+>  
+> @@ -1666,23 +1884,15 @@ error:
+>  	return ret;
+>  }
