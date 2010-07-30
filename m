@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab0G3S65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:58:57 -0400
-Received: from kroah.org ([198.145.64.141]:51827 "EHLO coco.kroah.org"
+	id S1760306Ab0G3S6w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:58:52 -0400
+Received: from kroah.org ([198.145.64.141]:51834 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758499Ab0G3RTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:16 -0400
+	id S1758545Ab0G3RTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:17 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:08 2010
-Message-Id: <20100730171508.038195456@clark.site>
+Message-Id: <20100730171508.121314021@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:21 -0700
+Date: Fri, 30 Jul 2010 10:15:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, "Theodore Tso" <tytso@mit.edu>
-Subject: [093/165] ext4: Use bitops to read/modify EXT4_I(inode)->i_state
+        Curt Wohlgemuth <curtw@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [094/165] ext4: Fix BUG_ON at fs/buffer.c:652 in no journal mode
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,409 +25,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 19f5fb7ad679bb361222c7916086435020c37cce upstream (as of v2.6.33-git11)
+commit 73b50c1c92666d326b5fa2c945d46509f2f6d91f upstream (as of v2.6.33-git11)
 
-At several places we modify EXT4_I(inode)->i_state without holding
-i_mutex (ext4_release_file, ext4_bmap, ext4_journalled_writepage,
-ext4_do_update_inode, ...). These modifications are racy and we can
-lose updates to i_state. So convert handling of i_state to use bitops
-which are atomic.
+Calls to ext4_handle_dirty_metadata should only pass in an inode
+pointer for inode-specific metadata, and not for shared metadata
+blocks such as inode table blocks, block group descriptors, the
+superblock, etc.
 
-Cc: Jan Kara <jack@suse.cz>
+The BUG_ON can get tripped when updating a special device (such as a
+block device) that is opened (so that i_mapping is set in
+fs/block_dev.c) and the file system is mounted in no journal mode.
+
+Addresses-Google-Bug: #2404870
+
+Signed-off-by: Curt Wohlgemuth <curtw@google.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/ext4.h    |   41 +++++++++++++++++++++++++++++------------
- fs/ext4/extents.c |    8 ++++----
- fs/ext4/file.c    |    4 ++--
- fs/ext4/ialloc.c  |    3 ++-
- fs/ext4/inode.c   |   38 ++++++++++++++++++++------------------
- fs/ext4/migrate.c |    6 +++---
- fs/ext4/xattr.c   |   22 +++++++++++-----------
- 7 files changed, 71 insertions(+), 51 deletions(-)
+ fs/ext4/ext4_jbd2.c |    2 +-
+ fs/ext4/ialloc.c    |    2 +-
+ fs/ext4/inode.c     |    6 +++---
+ fs/ext4/namei.c     |    4 ++--
+ 4 files changed, 7 insertions(+), 7 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -313,17 +313,6 @@ static inline __u32 ext4_mask_flags(umod
- 		return flags & EXT4_OTHER_FLMASK;
- }
- 
--/*
-- * Inode dynamic state flags
-- */
--#define EXT4_STATE_JDATA		0x00000001 /* journaled data exists */
--#define EXT4_STATE_NEW			0x00000002 /* inode is newly created */
--#define EXT4_STATE_XATTR		0x00000004 /* has in-inode xattrs */
--#define EXT4_STATE_NO_EXPAND		0x00000008 /* No space for expansion */
--#define EXT4_STATE_DA_ALLOC_CLOSE	0x00000010 /* Alloc DA blks on close */
--#define EXT4_STATE_EXT_MIGRATE		0x00000020 /* Inode is migrating */
--#define EXT4_STATE_DIO_UNWRITTEN	0x00000040 /* need convert on dio done*/
--
- /* Used to pass group descriptor data when online resize is done */
- struct ext4_new_group_input {
- 	__u32 group;		/* Group number for this data */
-@@ -624,7 +613,7 @@ struct ext4_inode_info {
- 	 * near to their parent directory's inode.
- 	 */
- 	ext4_group_t	i_block_group;
--	__u32	i_state;		/* Dynamic state flags for ext4 */
-+	unsigned long	i_state_flags;		/* Dynamic state flags */
- 
- 	ext4_lblk_t		i_dir_start_lookup;
- #ifdef CONFIG_EXT4_FS_XATTR
-@@ -1044,6 +1033,34 @@ static inline int ext4_valid_inum(struct
- 		(ino >= EXT4_FIRST_INO(sb) &&
- 		 ino <= le32_to_cpu(EXT4_SB(sb)->s_es->s_inodes_count));
- }
-+
-+/*
-+ * Inode dynamic state flags
-+ */
-+enum {
-+	EXT4_STATE_JDATA,		/* journaled data exists */
-+	EXT4_STATE_NEW,			/* inode is newly created */
-+	EXT4_STATE_XATTR,		/* has in-inode xattrs */
-+	EXT4_STATE_NO_EXPAND,		/* No space for expansion */
-+	EXT4_STATE_DA_ALLOC_CLOSE,	/* Alloc DA blks on close */
-+	EXT4_STATE_EXT_MIGRATE,		/* Inode is migrating */
-+	EXT4_STATE_DIO_UNWRITTEN,	/* need convert on dio done*/
-+};
-+
-+static inline int ext4_test_inode_state(struct inode *inode, int bit)
-+{
-+	return test_bit(bit, &EXT4_I(inode)->i_state_flags);
-+}
-+
-+static inline void ext4_set_inode_state(struct inode *inode, int bit)
-+{
-+	set_bit(bit, &EXT4_I(inode)->i_state_flags);
-+}
-+
-+static inline void ext4_clear_inode_state(struct inode *inode, int bit)
-+{
-+	clear_bit(bit, &EXT4_I(inode)->i_state_flags);
-+}
- #else
- /* Assume that user mode programs are passing in an ext4fs superblock, not
-  * a kernel struct super_block.  This will allow us to call the feature-test
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -3082,7 +3082,7 @@ ext4_ext_handle_uninitialized_extents(ha
- 		if (io)
- 			io->flag = DIO_AIO_UNWRITTEN;
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -89,7 +89,7 @@ int __ext4_handle_dirty_metadata(const c
+ 			ext4_journal_abort_handle(where, __func__, bh,
+ 						  handle, err);
+ 	} else {
+-		if (inode && bh)
++		if (inode)
+ 			mark_buffer_dirty_inode(bh, inode);
  		else
--			EXT4_I(inode)->i_state |= EXT4_STATE_DIO_UNWRITTEN;
-+			ext4_set_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN);
- 		goto out;
- 	}
- 	/* async DIO end_io complete, convert the filled extent to written */
-@@ -3368,8 +3368,8 @@ int ext4_ext_get_blocks(handle_t *handle
- 			if (io)
- 				io->flag = DIO_AIO_UNWRITTEN;
- 			else
--				EXT4_I(inode)->i_state |=
--					EXT4_STATE_DIO_UNWRITTEN;;
-+				ext4_set_inode_state(inode,
-+						     EXT4_STATE_DIO_UNWRITTEN);
- 		}
- 	}
- 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
-@@ -3745,7 +3745,7 @@ static int ext4_xattr_fiemap(struct inod
- 	int error = 0;
- 
- 	/* in-inode? */
--	if (EXT4_I(inode)->i_state & EXT4_STATE_XATTR) {
-+	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
- 		struct ext4_iloc iloc;
- 		int offset;	/* offset of xattr in inode */
- 
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -35,9 +35,9 @@
-  */
- static int ext4_release_file(struct inode *inode, struct file *filp)
- {
--	if (EXT4_I(inode)->i_state & EXT4_STATE_DA_ALLOC_CLOSE) {
-+	if (ext4_test_inode_state(inode, EXT4_STATE_DA_ALLOC_CLOSE)) {
- 		ext4_alloc_da_blocks(inode);
--		EXT4_I(inode)->i_state &= ~EXT4_STATE_DA_ALLOC_CLOSE;
-+		ext4_clear_inode_state(inode, EXT4_STATE_DA_ALLOC_CLOSE);
- 	}
- 	/* if we are the last writer on the inode, drop the block reservation */
- 	if ((filp->f_mode & FMODE_WRITE) &&
+ 			mark_buffer_dirty(bh);
 --- a/fs/ext4/ialloc.c
 +++ b/fs/ext4/ialloc.c
-@@ -1029,7 +1029,8 @@ got:
- 	inode->i_generation = sbi->s_next_generation++;
- 	spin_unlock(&sbi->s_next_gen_lock);
- 
--	ei->i_state = EXT4_STATE_NEW;
-+	ei->i_state_flags = 0;
-+	ext4_set_inode_state(inode, EXT4_STATE_NEW);
- 
- 	ei->i_extra_isize = EXT4_SB(sb)->s_want_extra_isize;
- 
+@@ -904,7 +904,7 @@ repeat_in_this_group:
+ 				BUFFER_TRACE(inode_bitmap_bh,
+ 					"call ext4_handle_dirty_metadata");
+ 				err = ext4_handle_dirty_metadata(handle,
+-								 inode,
++								 NULL,
+ 							inode_bitmap_bh);
+ 				if (err)
+ 					goto fail;
 --- a/fs/ext4/inode.c
 +++ b/fs/ext4/inode.c
-@@ -1348,7 +1348,7 @@ int ext4_get_blocks(handle_t *handle, st
- 			 * i_data's format changing.  Force the migrate
- 			 * to fail by clearing migrate flags
- 			 */
--			EXT4_I(inode)->i_state &= ~EXT4_STATE_EXT_MIGRATE;
-+			ext4_clear_inode_state(inode, EXT4_STATE_EXT_MIGRATE);
+@@ -5158,7 +5158,7 @@ static int ext4_do_update_inode(handle_t
+ 					EXT4_FEATURE_RO_COMPAT_LARGE_FILE);
+ 			sb->s_dirt = 1;
+ 			ext4_handle_sync(handle);
+-			err = ext4_handle_dirty_metadata(handle, inode,
++			err = ext4_handle_dirty_metadata(handle, NULL,
+ 					EXT4_SB(sb)->s_sbh);
  		}
- 
- 		/*
-@@ -1835,7 +1835,7 @@ static int ext4_journalled_write_end(str
- 	new_i_size = pos + copied;
- 	if (new_i_size > inode->i_size)
- 		i_size_write(inode, pos+copied);
--	EXT4_I(inode)->i_state |= EXT4_STATE_JDATA;
-+	ext4_set_inode_state(inode, EXT4_STATE_JDATA);
- 	if (new_i_size > EXT4_I(inode)->i_disksize) {
- 		ext4_update_i_disksize(inode, new_i_size);
- 		ret2 = ext4_mark_inode_dirty(handle, inode);
-@@ -2673,7 +2673,7 @@ static int __ext4_journalled_writepage(s
- 		ret = err;
- 
- 	walk_page_buffers(handle, page_bufs, 0, len, NULL, bput_one);
--	EXT4_I(inode)->i_state |= EXT4_STATE_JDATA;
-+	ext4_set_inode_state(inode, EXT4_STATE_JDATA);
- out:
- 	return ret;
- }
-@@ -3344,7 +3344,8 @@ static sector_t ext4_bmap(struct address
- 		filemap_write_and_wait(mapping);
+ 	}
+@@ -5187,7 +5187,7 @@ static int ext4_do_update_inode(handle_t
  	}
  
--	if (EXT4_JOURNAL(inode) && EXT4_I(inode)->i_state & EXT4_STATE_JDATA) {
-+	if (EXT4_JOURNAL(inode) &&
-+	    ext4_test_inode_state(inode, EXT4_STATE_JDATA)) {
- 		/*
- 		 * This is a REALLY heavyweight approach, but the use of
- 		 * bmap on dirty files is expected to be extremely rare:
-@@ -3363,7 +3364,7 @@ static sector_t ext4_bmap(struct address
- 		 * everything they get.
- 		 */
- 
--		EXT4_I(inode)->i_state &= ~EXT4_STATE_JDATA;
-+		ext4_clear_inode_state(inode, EXT4_STATE_JDATA);
- 		journal = EXT4_JOURNAL(inode);
- 		jbd2_journal_lock_updates(journal);
- 		err = jbd2_journal_flush(journal);
-@@ -3831,8 +3832,8 @@ static ssize_t ext4_ext_direct_IO(int rw
- 		if (ret != -EIOCBQUEUED && ret <= 0 && iocb->private) {
- 			ext4_free_io_end(iocb->private);
- 			iocb->private = NULL;
--		} else if (ret > 0 && (EXT4_I(inode)->i_state &
--				       EXT4_STATE_DIO_UNWRITTEN)) {
-+		} else if (ret > 0 && ext4_test_inode_state(inode,
-+						EXT4_STATE_DIO_UNWRITTEN)) {
- 			int err;
- 			/*
- 			 * for non AIO case, since the IO is already
-@@ -3842,7 +3843,7 @@ static ssize_t ext4_ext_direct_IO(int rw
- 							     offset, ret);
- 			if (err < 0)
- 				ret = err;
--			EXT4_I(inode)->i_state &= ~EXT4_STATE_DIO_UNWRITTEN;
-+			ext4_clear_inode_state(inode, EXT4_STATE_DIO_UNWRITTEN);
- 		}
- 		return ret;
- 	}
-@@ -4490,7 +4491,7 @@ void ext4_truncate(struct inode *inode)
- 		return;
- 
- 	if (inode->i_size == 0 && !test_opt(inode->i_sb, NO_AUTO_DA_ALLOC))
--		ei->i_state |= EXT4_STATE_DA_ALLOC_CLOSE;
-+		ext4_set_inode_state(inode, EXT4_STATE_DA_ALLOC_CLOSE);
- 
- 	if (EXT4_I(inode)->i_flags & EXT4_EXTENTS_FL) {
- 		ext4_ext_truncate(inode);
-@@ -4776,7 +4777,7 @@ int ext4_get_inode_loc(struct inode *ino
- {
- 	/* We have all inode data except xattrs in memory here. */
- 	return __ext4_get_inode_loc(inode, iloc,
--		!(EXT4_I(inode)->i_state & EXT4_STATE_XATTR));
-+		!ext4_test_inode_state(inode, EXT4_STATE_XATTR));
- }
- 
- void ext4_set_inode_flags(struct inode *inode)
-@@ -4870,7 +4871,7 @@ struct inode *ext4_iget(struct super_blo
- 	}
- 	inode->i_nlink = le16_to_cpu(raw_inode->i_links_count);
- 
--	ei->i_state = 0;
-+	ei->i_state_flags = 0;
- 	ei->i_dir_start_lookup = 0;
- 	ei->i_dtime = le32_to_cpu(raw_inode->i_dtime);
- 	/* We now have enough fields to check if the inode was active or not.
-@@ -4953,7 +4954,7 @@ struct inode *ext4_iget(struct super_blo
- 					EXT4_GOOD_OLD_INODE_SIZE +
- 					ei->i_extra_isize;
- 			if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
--				ei->i_state |= EXT4_STATE_XATTR;
-+				ext4_set_inode_state(inode, EXT4_STATE_XATTR);
- 		}
- 	} else
- 		ei->i_extra_isize = 0;
-@@ -5093,7 +5094,7 @@ static int ext4_do_update_inode(handle_t
- 
- 	/* For fields not not tracking in the in-memory inode,
- 	 * initialise them to zero for new inodes. */
--	if (ei->i_state & EXT4_STATE_NEW)
-+	if (ext4_test_inode_state(inode, EXT4_STATE_NEW))
- 		memset(raw_inode, 0, EXT4_SB(inode->i_sb)->s_inode_size);
- 
- 	ext4_get_inode_flags(ei);
-@@ -5189,7 +5190,7 @@ static int ext4_do_update_inode(handle_t
- 	rc = ext4_handle_dirty_metadata(handle, inode, bh);
+ 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
+-	rc = ext4_handle_dirty_metadata(handle, inode, bh);
++	rc = ext4_handle_dirty_metadata(handle, NULL, bh);
  	if (!err)
  		err = rc;
--	ei->i_state &= ~EXT4_STATE_NEW;
-+	ext4_clear_inode_state(inode, EXT4_STATE_NEW);
- 
- 	ext4_update_inode_fsync_trans(handle, inode, 0);
- out_brelse:
-@@ -5613,8 +5614,8 @@ static int ext4_expand_extra_isize(struc
- 	entry = IFIRST(header);
- 
- 	/* No extended attributes present */
--	if (!(EXT4_I(inode)->i_state & EXT4_STATE_XATTR) ||
--		header->h_magic != cpu_to_le32(EXT4_XATTR_MAGIC)) {
-+	if (!ext4_test_inode_state(inode, EXT4_STATE_XATTR) ||
-+	    header->h_magic != cpu_to_le32(EXT4_XATTR_MAGIC)) {
- 		memset((void *)raw_inode + EXT4_GOOD_OLD_INODE_SIZE, 0,
- 			new_extra_isize);
- 		EXT4_I(inode)->i_extra_isize = new_extra_isize;
-@@ -5658,7 +5659,7 @@ int ext4_mark_inode_dirty(handle_t *hand
- 	err = ext4_reserve_inode_write(handle, inode, &iloc);
- 	if (ext4_handle_valid(handle) &&
- 	    EXT4_I(inode)->i_extra_isize < sbi->s_want_extra_isize &&
--	    !(EXT4_I(inode)->i_state & EXT4_STATE_NO_EXPAND)) {
-+	    !ext4_test_inode_state(inode, EXT4_STATE_NO_EXPAND)) {
- 		/*
- 		 * We need extra buffer credits since we may write into EA block
- 		 * with this same handle. If journal_extend fails, then it will
-@@ -5672,7 +5673,8 @@ int ext4_mark_inode_dirty(handle_t *hand
- 						      sbi->s_want_extra_isize,
- 						      iloc, handle);
- 			if (ret) {
--				EXT4_I(inode)->i_state |= EXT4_STATE_NO_EXPAND;
-+				ext4_set_inode_state(inode,
-+						     EXT4_STATE_NO_EXPAND);
- 				if (mnt_count !=
- 					le16_to_cpu(sbi->s_es->s_mnt_count)) {
- 					ext4_warning(inode->i_sb, __func__,
---- a/fs/ext4/migrate.c
-+++ b/fs/ext4/migrate.c
-@@ -357,12 +357,12 @@ static int ext4_ext_swap_inode_data(hand
- 	 * happened after we started the migrate. We need to
- 	 * fail the migrate
- 	 */
--	if (!(EXT4_I(inode)->i_state & EXT4_STATE_EXT_MIGRATE)) {
-+	if (!ext4_test_inode_state(inode, EXT4_STATE_EXT_MIGRATE)) {
- 		retval = -EAGAIN;
- 		up_write(&EXT4_I(inode)->i_data_sem);
- 		goto err_out;
- 	} else
--		EXT4_I(inode)->i_state &= ~EXT4_STATE_EXT_MIGRATE;
-+		ext4_clear_inode_state(inode, EXT4_STATE_EXT_MIGRATE);
- 	/*
- 	 * We have the extent map build with the tmp inode.
- 	 * Now copy the i_data across
-@@ -524,7 +524,7 @@ int ext4_ext_migrate(struct inode *inode
- 	 * allocation.
- 	 */
- 	down_read((&EXT4_I(inode)->i_data_sem));
--	EXT4_I(inode)->i_state |= EXT4_STATE_EXT_MIGRATE;
-+	ext4_set_inode_state(inode, EXT4_STATE_EXT_MIGRATE);
- 	up_read((&EXT4_I(inode)->i_data_sem));
- 
- 	handle = ext4_journal_start(inode, 1);
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -267,7 +267,7 @@ ext4_xattr_ibody_get(struct inode *inode
- 	void *end;
- 	int error;
- 
--	if (!(EXT4_I(inode)->i_state & EXT4_STATE_XATTR))
-+	if (!ext4_test_inode_state(inode, EXT4_STATE_XATTR))
- 		return -ENODATA;
- 	error = ext4_get_inode_loc(inode, &iloc);
- 	if (error)
-@@ -393,7 +393,7 @@ ext4_xattr_ibody_list(struct inode *inod
- 	void *end;
- 	int error;
- 
--	if (!(EXT4_I(inode)->i_state & EXT4_STATE_XATTR))
-+	if (!ext4_test_inode_state(inode, EXT4_STATE_XATTR))
- 		return 0;
- 	error = ext4_get_inode_loc(inode, &iloc);
- 	if (error)
-@@ -903,7 +903,7 @@ ext4_xattr_ibody_find(struct inode *inod
- 	is->s.base = is->s.first = IFIRST(header);
- 	is->s.here = is->s.first;
- 	is->s.end = (void *)raw_inode + EXT4_SB(inode->i_sb)->s_inode_size;
--	if (EXT4_I(inode)->i_state & EXT4_STATE_XATTR) {
-+	if (ext4_test_inode_state(inode, EXT4_STATE_XATTR)) {
- 		error = ext4_xattr_check_names(IFIRST(header), is->s.end);
- 		if (error)
- 			return error;
-@@ -935,10 +935,10 @@ ext4_xattr_ibody_set(handle_t *handle, s
- 	header = IHDR(inode, ext4_raw_inode(&is->iloc));
- 	if (!IS_LAST_ENTRY(s->first)) {
- 		header->h_magic = cpu_to_le32(EXT4_XATTR_MAGIC);
--		EXT4_I(inode)->i_state |= EXT4_STATE_XATTR;
-+		ext4_set_inode_state(inode, EXT4_STATE_XATTR);
+ 	ext4_clear_inode_state(inode, EXT4_STATE_NEW);
+@@ -5741,7 +5741,7 @@ static int ext4_pin_inode(handle_t *hand
+ 			err = jbd2_journal_get_write_access(handle, iloc.bh);
+ 			if (!err)
+ 				err = ext4_handle_dirty_metadata(handle,
+-								 inode,
++								 NULL,
+ 								 iloc.bh);
+ 			brelse(iloc.bh);
+ 		}
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2024,7 +2024,7 @@ int ext4_orphan_add(handle_t *handle, st
+ 	/* Insert this inode at the head of the on-disk orphan list... */
+ 	NEXT_ORPHAN(inode) = le32_to_cpu(EXT4_SB(sb)->s_es->s_last_orphan);
+ 	EXT4_SB(sb)->s_es->s_last_orphan = cpu_to_le32(inode->i_ino);
+-	err = ext4_handle_dirty_metadata(handle, inode, EXT4_SB(sb)->s_sbh);
++	err = ext4_handle_dirty_metadata(handle, NULL, EXT4_SB(sb)->s_sbh);
+ 	rc = ext4_mark_iloc_dirty(handle, inode, &iloc);
+ 	if (!err)
+ 		err = rc;
+@@ -2096,7 +2096,7 @@ int ext4_orphan_del(handle_t *handle, st
+ 		if (err)
+ 			goto out_brelse;
+ 		sbi->s_es->s_last_orphan = cpu_to_le32(ino_next);
+-		err = ext4_handle_dirty_metadata(handle, inode, sbi->s_sbh);
++		err = ext4_handle_dirty_metadata(handle, NULL, sbi->s_sbh);
  	} else {
- 		header->h_magic = cpu_to_le32(0);
--		EXT4_I(inode)->i_state &= ~EXT4_STATE_XATTR;
-+		ext4_clear_inode_state(inode, EXT4_STATE_XATTR);
- 	}
- 	return 0;
- }
-@@ -981,8 +981,8 @@ ext4_xattr_set_handle(handle_t *handle,
- 	if (strlen(name) > 255)
- 		return -ERANGE;
- 	down_write(&EXT4_I(inode)->xattr_sem);
--	no_expand = EXT4_I(inode)->i_state & EXT4_STATE_NO_EXPAND;
--	EXT4_I(inode)->i_state |= EXT4_STATE_NO_EXPAND;
-+	no_expand = ext4_test_inode_state(inode, EXT4_STATE_NO_EXPAND);
-+	ext4_set_inode_state(inode, EXT4_STATE_NO_EXPAND);
- 
- 	error = ext4_get_inode_loc(inode, &is.iloc);
- 	if (error)
-@@ -992,10 +992,10 @@ ext4_xattr_set_handle(handle_t *handle,
- 	if (error)
- 		goto cleanup;
- 
--	if (EXT4_I(inode)->i_state & EXT4_STATE_NEW) {
-+	if (ext4_test_inode_state(inode, EXT4_STATE_NEW)) {
- 		struct ext4_inode *raw_inode = ext4_raw_inode(&is.iloc);
- 		memset(raw_inode, 0, EXT4_SB(inode->i_sb)->s_inode_size);
--		EXT4_I(inode)->i_state &= ~EXT4_STATE_NEW;
-+		ext4_clear_inode_state(inode, EXT4_STATE_NEW);
- 	}
- 
- 	error = ext4_xattr_ibody_find(inode, &i, &is);
-@@ -1047,7 +1047,7 @@ ext4_xattr_set_handle(handle_t *handle,
- 		ext4_xattr_update_super_block(handle, inode->i_sb);
- 		inode->i_ctime = ext4_current_time(inode);
- 		if (!value)
--			EXT4_I(inode)->i_state &= ~EXT4_STATE_NO_EXPAND;
-+			ext4_clear_inode_state(inode, EXT4_STATE_NO_EXPAND);
- 		error = ext4_mark_iloc_dirty(handle, inode, &is.iloc);
- 		/*
- 		 * The bh is consumed by ext4_mark_iloc_dirty, even with
-@@ -1062,7 +1062,7 @@ cleanup:
- 	brelse(is.iloc.bh);
- 	brelse(bs.bh);
- 	if (no_expand == 0)
--		EXT4_I(inode)->i_state &= ~EXT4_STATE_NO_EXPAND;
-+		ext4_clear_inode_state(inode, EXT4_STATE_NO_EXPAND);
- 	up_write(&EXT4_I(inode)->xattr_sem);
- 	return error;
- }
+ 		struct ext4_iloc iloc2;
+ 		struct inode *i_prev =
 
 
