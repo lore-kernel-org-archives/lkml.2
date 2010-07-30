@@ -1,169 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab0G3PqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 11:46:13 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:34745 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0G3PqI (ORCPT
+	id S1753389Ab0G3PqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 11:46:22 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51431 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877Ab0G3PqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 11:46:08 -0400
+	Fri, 30 Jul 2010 11:46:18 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH v3 00/15] EVM 
-Date: Fri, 30 Jul 2010 11:45:31 -0400
-Message-Id: <1280504746-20256-1-git-send-email-zohar@linux.vnet.ibm.com>
+        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH v3 02/15] xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
+Date: Fri, 30 Jul 2010 11:45:33 -0400
+Message-Id: <1280504746-20256-3-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1280504746-20256-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1280504746-20256-1-git-send-email-zohar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on conversations on the SELinux mailing list with Stephan Smalley and
-Serge Hallyn as to EVM/IMA appraisal capabilities for setting xattrs, it was
-agreed, at least for the time being, they should require CAP_SYS_ADMIN, not
-CAP_MAC_ADMIN. Much appreciation to Stephan Smalley for resolving an EVM bug.
-Instead of calling __vfs_setxattr_noperm(), which doesn't do permission
-checking, EVM called setxattr() directly. Lastly, this patchset extends the
-policy language to allow rules to be defined in terms of file owner.
+vfs_getxattr_alloc() and vfs_xattr_cmp() are two new kernel xattr
+helper functions.  vfs_getxattr_alloc() first allocates memory for
+the requested xattr and then retrieves it. vfs_xattr_cmp() compares
+a given value with the contents of an extended attribute.
 
-Changelog summary v3:
-- Extends the policy language with 'owner'
-- Use CAP_SYS_ADMIN in lieu of CAP_MAC_ADMIN
-- Use __vfs_setxattr_noperm(), without permission checks, from EVM
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+---
+ fs/xattr.c            |   58 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/xattr.h |    5 +++-
+ 2 files changed, 62 insertions(+), 1 deletions(-)
 
-Changelog summary v2:
-- adds Documentation/ABI/testing/evm
-- removed leading blanks (checkpatch.pl)
-- removed file trailing blank lines (git quiltimport)
-- added include files, where functions are first defined, to resolve
-  'symbol not declared, should be static' (new sparse warnings)
-- fixed stub function definitions to be 'static inline' to resolve
-  'defined but not used' gcc warnings.
-(More specific changelog details are in the individual patch descriptions.)
-
-fs summary:
-- Moves ima_iint.c up a layer to security/integrity and renames
-  ima_inode_alloc/free hooks to integrity_inode_alloc/free
-- Defines 2 new generic functions: vfs_getxattr_alloc, vfs_xattr_cmp
-- Adds 3 EVM calls in the security hooks: evm_inode_setxattr(),
-	evm_inode_post_setxattr(), evm_inode_removexattr
-- Defines 3 new calls: evm_inode_post_init(), evm_inode_post_setattr(),
-	evm_inode_post_removexattr()
-- Exports: evm_verifyxattr()
-- Defines 3 new IMA calls for IMA appraisal: ima_inode_setxattr(),
-  ima_inode_removexattr(), and ima_inode_post_setattr()
-
-To address concerns of exposing the EVM key to userspace in plaintext
-(Eric Paris, Stephan Smalley), future work will define new key-types 
-for use with TPM sealed keys and encrypted symmetric keys, so that on
-systems with a TPM, the EVM key will never be visible outside the kernel
-in plaintext form.
-
-Extended Verification Module(EVM) detects offline tampering of the
-security extended attributes (e.g. security.selinux, security.SMACK64,
-security.ima), which is the basis for LSM permission decisions and,
-with this set of patches, integrity appraisal decisions. To detect
-offline tampering of the extended attributes, EVM maintains an
-HMAC-sha1 across a set of security extended attributes, storing the
-HMAC as the extended attribute 'security.evm'. To verify the integrity
-of an extended attribute, EVM exports evm_verifyxattr(), which
-re-calculates the HMAC and compares it with the version stored in
-'security.evm'.
-
-IMA currently maintains an integrity measurement list, containing
-the hashes of all executables, mmapped execute files, and files open
-for read by root (assuming the default measurement policy). The
-measurement list, with other information, can be used to assert the
-integrity of the running system to a third party. The "ima: integrity
-appraisal extension" patch extends IMA with local measurement
-appraisal. The extension stores and maintains the file integrity
-measurement as an extended attribute 'security.ima', which EVM can be
-configured to protect.
-
-DAC/MAC protect the integrity of a running system.  An offline attack
-can bypass these protection mechanisms by mounting the disk under a
-different operating system and modifying the file data/metadata.  If
-the disk is subsequently remounted under the EVM + DAC/MAC + IMA
-protected OS, then the hash of the file data won't match the hash stored
-in the IMA xattr, or the TPM-calculated HMAC of the file's metadata won't
-be valid.  Therefore, IMA + MAC + EVM can protect system integrity online
-and detect offline tampering.
-
-This patch set applies to the security-testing/next tree.  For more 
-information on IMA/EVM, refer to http://linux-ima.sourceforge.net/#EVM.
-
-Much appreciation to Dave Hansen, Serge Hallyn, and Matt Helsley for
-reviewing the patches.
-
-Mimi Zohar (15):
-  integrity: move ima inode integrity data management
-  xattr: define vfs_getxattr_alloc and vfs_xattr_cmp
-  evm: re-release
-  ima: move ima_file_free before releasing the file
-  security: imbed evm calls in security hooks
-  evm: inode post removexattr
-  evm: imbed evm_inode_post_setattr
-  evm: inode_post_init
-  fs: add evm_inode_post_init calls
-  ima: integrity appraisal extension
-  ima: appraise default rules
-  ima: inode post_setattr
-  ima: add ima_inode_setxattr and ima_inode_removexattr
-  ima: appraise measurement required
-  ima: extend policy language to support owner
-
- Documentation/ABI/testing/evm         |   22 +++
- Documentation/ABI/testing/ima_policy  |   22 ++-
- Documentation/kernel-parameters.txt   |    4 +
- fs/attr.c                             |    7 +-
- fs/ext2/xattr_security.c              |   31 +++-
- fs/ext3/xattr_security.c              |   30 +++-
- fs/ext4/xattr_security.c              |   30 +++-
- fs/file_table.c                       |    2 +-
- fs/xattr.c                            |   63 ++++++-
- include/linux/evm.h                   |   82 ++++++++
- include/linux/ima.h                   |   30 ++-
- include/linux/integrity.h             |   35 ++++
- include/linux/xattr.h                 |   17 ++-
- security/Kconfig                      |    2 +-
- security/Makefile                     |    4 +-
- security/integrity/Kconfig            |    7 +
- security/integrity/Makefile           |   12 ++
- security/integrity/evm/Kconfig        |   13 ++
- security/integrity/evm/Makefile       |    6 +
- security/integrity/evm/evm.h          |   38 ++++
- security/integrity/evm/evm_crypto.c   |  198 +++++++++++++++++++
- security/integrity/evm/evm_main.c     |  336 +++++++++++++++++++++++++++++++++
- security/integrity/evm/evm_secfs.c    |  108 +++++++++++
- security/integrity/iint.c             |  153 +++++++++++++++
- security/integrity/ima/Kconfig        |   16 ++
- security/integrity/ima/Makefile       |    4 +-
- security/integrity/ima/ima.h          |   77 +++++---
- security/integrity/ima/ima_api.c      |   61 +++++--
- security/integrity/ima/ima_appraise.c |  151 +++++++++++++++
- security/integrity/ima/ima_iint.c     |  146 --------------
- security/integrity/ima/ima_main.c     |  153 +++++++++++++---
- security/integrity/ima/ima_policy.c   |   84 ++++++++-
- security/integrity/integrity.h        |   50 +++++
- security/security.c                   |   27 +++-
- 34 files changed, 1758 insertions(+), 263 deletions(-)
- create mode 100644 Documentation/ABI/testing/evm
- create mode 100644 include/linux/evm.h
- create mode 100644 include/linux/integrity.h
- create mode 100644 security/integrity/Kconfig
- create mode 100644 security/integrity/Makefile
- create mode 100644 security/integrity/evm/Kconfig
- create mode 100644 security/integrity/evm/Makefile
- create mode 100644 security/integrity/evm/evm.h
- create mode 100644 security/integrity/evm/evm_crypto.c
- create mode 100644 security/integrity/evm/evm_main.c
- create mode 100644 security/integrity/evm/evm_secfs.c
- create mode 100644 security/integrity/iint.c
- create mode 100644 security/integrity/ima/ima_appraise.c
- delete mode 100644 security/integrity/ima/ima_iint.c
- create mode 100644 security/integrity/integrity.h
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 01bb813..e1f6b8b 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -159,6 +159,64 @@ out_noalloc:
+ }
+ EXPORT_SYMBOL_GPL(xattr_getsecurity);
+ 
++/*
++ * vfs_getxattr_alloc - allocate memory, if necessary, before calling getxattr
++ *
++ * Allocate memory, if not already allocated, or re-allocate correct size,
++ * before retrieving the extended attribute.
++ *
++ * Returns the result of alloc, if failed, or the getxattr operation.
++ */
++ssize_t
++vfs_getxattr_alloc(struct dentry *dentry, const char *name, char **xattr_value,
++		   size_t xattr_size, gfp_t flags)
++{
++	struct inode *inode = dentry->d_inode;
++	char *value = *xattr_value;
++	int error;
++
++	error = xattr_permission(inode, name, MAY_READ);
++	if (error)
++		return error;
++
++	if (!inode->i_op->getxattr)
++		return -EOPNOTSUPP;
++
++	error = inode->i_op->getxattr(dentry, name, NULL, 0);
++	if (error < 0)
++		return error;
++
++	if (!value || (error > xattr_size)) {
++		value = krealloc(*xattr_value, error + 1, flags);
++		if (!value)
++			return -ENOMEM;
++		memset(value, 0, error + 1);
++	}
++
++	error = inode->i_op->getxattr(dentry, name, value, error);
++	*xattr_value = value;
++	return error;
++}
++
++/* Compare an extended attribute value with the given value */
++int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
++		  const char *value, size_t size, gfp_t flags)
++{
++	char *xattr_value = NULL;
++	int rc;
++
++	rc = vfs_getxattr_alloc(dentry, xattr_name, &xattr_value, 0, flags);
++	if (rc < 0)
++		return rc;
++
++	if ((rc != size) || (memcmp(xattr_value, value, rc) != 0))
++		rc = -EINVAL;
++	else
++		rc = 0;
++	kfree(xattr_value);
++	return rc;
++}
++
+ ssize_t
+ vfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size)
+ {
+diff --git a/include/linux/xattr.h b/include/linux/xattr.h
+index f1e5bde..9a0b09c 100644
+--- a/include/linux/xattr.h
++++ b/include/linux/xattr.h
+@@ -72,7 +72,10 @@ ssize_t generic_getxattr(struct dentry *dentry, const char *name, void *buffer,
+ ssize_t generic_listxattr(struct dentry *dentry, char *buffer, size_t buffer_size);
+ int generic_setxattr(struct dentry *dentry, const char *name, const void *value, size_t size, int flags);
+ int generic_removexattr(struct dentry *dentry, const char *name);
+-
++ssize_t vfs_getxattr_alloc(struct dentry *dentry, const char *name,
++			   char **xattr_value, size_t size, gfp_t flags);
++int vfs_xattr_cmp(struct dentry *dentry, const char *xattr_name,
++		  const char *value, size_t size, gfp_t flags);
+ #endif  /*  __KERNEL__  */
+ 
+ #endif	/* _LINUX_XATTR_H */
+-- 
+1.7.1.1
 
