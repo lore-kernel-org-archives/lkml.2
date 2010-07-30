@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022Ab0G3R72 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:59:28 -0400
-Received: from kroah.org ([198.145.64.141]:59116 "EHLO coco.kroah.org"
+	id S933012Ab0G3SAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:00:11 -0400
+Received: from kroah.org ([198.145.64.141]:59235 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932727Ab0G3R5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:25 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
-Message-Id: <20100730175149.021602856@clark.site>
+	id S932796Ab0G3R5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:50 2010
+Message-Id: <20100730175150.806434200@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:03 -0700
+Date: Fri, 30 Jul 2010 10:53:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Subject: [166/205] ACPI / PM: Do not enable GPEs for system wakeup in advance
+        Reinette Chatre <reinette.chatre@intel.com>
+Subject: [186/205] iwl3945: enable stuck queue detection on 3945
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,108 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: Reinette Chatre <reinette.chatre@intel.com>
 
-commit cb1cb1780f2025a7d612de09131bf6530f80fb1a upstream.
+commit a6866ac93e6cb68091326e80b4fa4619a5957644 upstream.
 
-After commit 9630bdd9b15d2f489c646d8bc04b60e53eb5ec78
-(ACPI: Use GPE reference counting to support shared GPEs) the wakeup
-enable mask bits of GPEs are set as soon as the GPEs are enabled to
-wake up the system.  Unfortunately, this leads to a regression
-reported by Michal Hocko, where a system is woken up from ACPI S5 by
-a device that is not supposed to do that, because the wakeup enable
-mask bit of this device's GPE is always set when
-acpi_enter_sleep_state() calls acpi_hw_enable_all_wakeup_gpes(),
-although it should only be set if the device is supposed to wake up
-the system from the target state.
+We learn from
+http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=1834 and
+https://bugzilla.redhat.com/show_bug.cgi?id=589777
+that 3945 can also suffer from a stuck command queue. Enable stuck queue
+detection for iwl3945 to enable recovery in this case.
 
-To work around this issue, rework the ACPI power management code so
-that GPEs are not enabled to wake up the system upfront, but only
-during a system state transition when the target state of the system
-is known.  [Of course, this means that the reference counting of
-"wakeup" GPEs doesn't really make sense and it is sufficient to
-set/unset the wakeup mask bits for them during system sleep
-transitions.  This will allow us to simplify the GPE handling code
-quite a bit, but that change is too intrusive for 2.6.35.]
-
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15951
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Reported-and-tested-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/button.c |    4 ++--
- drivers/acpi/wakeup.c |   20 +++++++-------------
- 2 files changed, 9 insertions(+), 15 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-3945.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/button.c
-+++ b/drivers/acpi/button.c
-@@ -425,7 +425,7 @@ static int acpi_button_add(struct acpi_d
- 		/* Button's GPE is run-wake GPE */
- 		acpi_enable_gpe(device->wakeup.gpe_device,
- 				device->wakeup.gpe_number,
--				ACPI_GPE_TYPE_WAKE_RUN);
-+				ACPI_GPE_TYPE_RUNTIME);
- 		device->wakeup.run_wake_count++;
- 		device->wakeup.state.enabled = 1;
- 	}
-@@ -449,7 +449,7 @@ static int acpi_button_remove(struct acp
- 	if (device->wakeup.flags.valid) {
- 		acpi_disable_gpe(device->wakeup.gpe_device,
- 				device->wakeup.gpe_number,
--				ACPI_GPE_TYPE_WAKE_RUN);
-+				ACPI_GPE_TYPE_RUNTIME);
- 		device->wakeup.run_wake_count--;
- 		device->wakeup.state.enabled = 0;
- 	}
---- a/drivers/acpi/wakeup.c
-+++ b/drivers/acpi/wakeup.c
-@@ -64,16 +64,13 @@ void acpi_enable_wakeup_device(u8 sleep_
- 		struct acpi_device *dev =
- 			container_of(node, struct acpi_device, wakeup_list);
+--- a/drivers/net/wireless/iwlwifi/iwl-3945.c
++++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
+@@ -2792,6 +2792,7 @@ static struct iwl_lib_ops iwl3945_lib =
+ 	.isr = iwl_isr_legacy,
+ 	.config_ap = iwl3945_config_ap,
+ 	.add_bcast_station = iwl3945_add_bcast_station,
++	.recover_from_tx_stall = iwl_bg_monitor_recover,
+ };
  
--		if (!dev->wakeup.flags.valid)
--			continue;
--
--		if ((!dev->wakeup.state.enabled && !dev->wakeup.prepare_count)
-+		if (!dev->wakeup.flags.valid || !dev->wakeup.state.enabled
- 		    || sleep_state > (u32) dev->wakeup.sleep_state)
- 			continue;
- 
- 		/* The wake-up power should have been enabled already. */
--		acpi_set_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
--				ACPI_GPE_ENABLE);
-+		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
-+				ACPI_GPE_TYPE_WAKE);
- 	}
- }
- 
-@@ -96,6 +93,8 @@ void acpi_disable_wakeup_device(u8 sleep
- 		    || (sleep_state > (u32) dev->wakeup.sleep_state))
- 			continue;
- 
-+		acpi_disable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
-+				ACPI_GPE_TYPE_WAKE);
- 		acpi_disable_wakeup_device_power(dev);
- 	}
- }
-@@ -109,13 +108,8 @@ int __init acpi_wakeup_device_init(void)
- 		struct acpi_device *dev = container_of(node,
- 						       struct acpi_device,
- 						       wakeup_list);
--		/* In case user doesn't load button driver */
--		if (!dev->wakeup.flags.always_enabled ||
--		    dev->wakeup.state.enabled)
--			continue;
-- 		acpi_enable_gpe(dev->wakeup.gpe_device, dev->wakeup.gpe_number,
-- 				ACPI_GPE_TYPE_WAKE);
--		dev->wakeup.state.enabled = 1;
-+		if (dev->wakeup.flags.always_enabled)
-+			dev->wakeup.state.enabled = 1;
- 	}
- 	mutex_unlock(&acpi_device_lock);
- 	return 0;
+ static struct iwl_hcmd_utils_ops iwl3945_hcmd_utils = {
 
 
