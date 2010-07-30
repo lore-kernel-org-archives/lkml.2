@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366Ab0G3Xov (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 19:44:51 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54256 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab0G3Xou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 19:44:50 -0400
-Subject: Re: [PATCH 10/15] powerpc: Replace hardcoded offset by
- BREAK_INSTR_SIZE
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        mingo@elte.hu, Michal Simek <monstr@monstr.eu>,
-        linuxppc-dev@ozlabs.org
-In-Reply-To: <1280517456-1167-11-git-send-email-jason.wessel@windriver.com>
-References: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
-	 <1280517456-1167-11-git-send-email-jason.wessel@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 31 Jul 2010 09:44:23 +1000
-Message-ID: <1280533463.1902.28.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752584Ab0G3Xxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 19:53:40 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51366 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab0G3Xxj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 19:53:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=FlhAcnM+h4Qgtg/JH6jH6W2LA5/KmW785073vgs2lyOIJlKdje4ohWokJBCi+Ag+iO
+         HoxrtGUlG0mEkWXRyDmhzqSV7WEoZXDHYt9eXTj6vPXowWe44FrFgejLapy5tBzS7OCj
+         H1JWVRzFLZrgtQuyC1aNI3tu9AlY8B0qjBr3Q=
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Fri, 30 Jul 2010 16:53:18 -0700
+Message-ID: <AANLkTi=AuFBwT5AjRdjrkbe3=5d36TNr4Cp=r0VnEogH@mail.gmail.com>
+Subject: Using unsigned int for loop counters - better performance for 
+	Architectures - urban hacker legend?
+To: linux-kernel@vger.kernel.org
+Cc: "doug.dahlby" <Doug.Dahlby@atheros.com>, Jiri Slaby <jirislaby@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-30 at 14:17 -0500, Jason Wessel wrote:
-> From: Michal Simek <monstr@monstr.eu>
-> 
-> kgdb_handle_breakpoint checks the first arch_kgdb_breakpoint
-> which is not known by gdb that's why is necessary jump over
-> it. The jump lenght is equal to BREAK_INSTR_SIZE that's
-> why is cleaner to use defined macro instead of hardcoded
-> non-described offset.
+For good while now I have been using unsigned int for every looper
+iterator I implement on the kernel. I remember I picked this practice
+up from Jiri but I just tried to look for actual documentation of this
+online and could not find much. A simple test would be to run a series
+of loop tests on different architectures with a regular int and then
+with an unsigned int to see if performance improves but I obviously
+don't have access to many machines with varying architectures.
 
-Yeah well, all powerpc instructions are 4 bytes :-) But the
-patch is fine.
+So if you also follow this practice have you actually found evidence
+for this practice, have you actually measured performance metrics? Or
+is this just a urban hacker legend?
 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Please CC me as i am not subscribed to lkml.
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: linuxppc-dev@ozlabs.org
-> ---
->  arch/powerpc/kernel/kgdb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-> index 82a7b22..7f61a3a 100644
-> --- a/arch/powerpc/kernel/kgdb.c
-> +++ b/arch/powerpc/kernel/kgdb.c
-> @@ -129,7 +129,7 @@ static int kgdb_handle_breakpoint(struct pt_regs *regs)
->  		return 0;
->  
->  	if (*(u32 *) (regs->nip) == *(u32 *) (&arch_kgdb_ops.gdb_bpt_instr))
-> -		regs->nip += 4;
-> +		regs->nip += BREAK_INSTR_SIZE;
->  
->  	return 1;
->  }
-
-
+  Luis
