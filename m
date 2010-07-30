@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683Ab0G3OWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 10:22:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598Ab0G3OWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 10:22:37 -0400
-Date: Fri, 30 Jul 2010 16:19:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>, Peter Zijlstra <peterz@infradead.org>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100730141901.GA9076@redhat.com>
-References: <20100701144624.GA11171@redhat.com> <4C2CABF2.2020801@kernel.org> <1277996135.1917.198.camel@laptop> <4C2E2987.9040702@us.ibm.com> <1278094270.1917.288.camel@laptop> <20100702210637.GA12433@redhat.com> <20100726171230.GA27644@redhat.com> <1280166688.3375.5.camel@localhost> <20100726180834.GA26988@redhat.com> <20100727154155.GA13419@redhat.com>
+	id S1758677Ab0G3OY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 10:24:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56586 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756568Ab0G3OY1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 10:24:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=r4R5fEE2Ii+RwJHH7lg1K5XvmfaA2Ofq4PrncMTvo2jurAjZeruTP0hy12dV8JQox2
+         /+EuZiwpEfZr/QEO5vdWE151uwh+C4sQyY5pQqW/47BQSawcgno6qr6hhYreNWnIp6mR
+         dw9nHuA3D0YUeJAk6o363NNsctuPqlKl0hBp8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100727154155.GA13419@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTi=mcrGTMBonxby1gR1OijPB4z072i6cNsLxNU09@mail.gmail.com>
+References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com> 
+	<1280440089-3203-2-git-send-email-john.johansen@canonical.com> 
+	<AANLkTikk3tNM-fsXuS_SeAWgaYYCFrFAToRXOBkPxwy9@mail.gmail.com> 
+	<4C52A307.7080002@canonical.com> <AANLkTi=mcrGTMBonxby1gR1OijPB4z072i6cNsLxNU09@mail.gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Fri, 30 Jul 2010 22:24:06 +0800
+Message-ID: <AANLkTinZgu-4V8pwSZJMBw_FTHgRCMELy96ADkrBMoKt@mail.gmail.com>
+Subject: Re: [PATCH 01/13] AppArmor: misc. base functions and defines
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, laijs@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay, I can't be responsive these days...
-
-On 07/27, Michael S. Tsirkin wrote:
+On Fri, Jul 30, 2010 at 6:53 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+> On Fri, Jul 30, 2010 at 1:01 PM, John Johansen
+>>
+>> vfree can sleep, and skipping the schedule_work parts won't work for
+>> apparmor as many of these allocations are being freed via rcu callbacks
+>> as most of our object life cycles are dependent on cred refcounting.
 >
-> On Mon, Jul 26, 2010 at 08:08:34PM +0200, Oleg Nesterov wrote:
-> > On 07/26, Sridhar Samudrala wrote:
-> > >
-> > > I have been testing out a similar patch that uses kernel_thread() without CLONE_FILES
-> > > flag rather than create_kthread() and then closing the files.
-> >
-> > !CLONE_FILES can't help. copy_files() does dup_fd() in this case.
-> > The child still inherits the files.
-> >
-> > > Either version should be fine.
-> >
-> > I think neither version is fine ;)
-> >
-> > exit_files() is not enough too. How about the signals, reparenting?
-> >
-> >
-> > I already forgot all details, probably I missed somethig. But it
-> > seems to me that it is better to just export get/set affinity and
-> > forget about all complications.
-> >
-> > Oleg.
+> Can someone point me to where vfree() actually sleeps? I'm unable to
+> find the exact spot.
 >
-> Oleg, so can I attach your Ack to the patch in question, and merge
-> it all through net-next?
 
-Well, I do not think you need my ack ;)
+http://lxr.linux.no/linux+v2.6.34.1/mm/vmalloc.c#L1405 . vfree ->
+__vunmap, vunmap -> __vunmap, and there is a might_sleep() function in
+vunmap.
 
+BTW: I'll respin the kvmalloc patch later.
 
-But I must admit, I personally dislike this idea. A kernel thread which
-is the child of the user-space process, and in fact it is not the "real"
-kernel thread. I think this is against the common case. If you do not
-care the signals/reparenting, why can't you fork the user-space process
-which does all the work via ioctl's ? OK, I do not understand the problem
-domain, probably this can't work.
+Thanks.
 
-Anyway, the patch looks buggy to me. Starting from
-
-	create_kthread(&create);
-	wait_for_completion(&create.done);
-
-At least you should check create_kthread() suceeds, otherwise
-wait_for_completion() will hang forever. OTOH, if it suceeds then
-wait_for_completion() is not needed. But this is minor.
-
-create_kthread()->kernel_thread() uses CLONE_VM, this means that the
-child will share ->mm. And this means that if the parent recieves
-the coredumping signal it will hang forever in kernel space waiting
-until this child exits.
-
-This is just the immediate surprise I can see with this approach,
-I am afraid there is something else.
-
-And once again. We are doing this hacks only because we lack a
-couples of exports (iiuk). This is, well, a bit strange ;)
-
-Oleg.
-
+-- 
+Regards,
+Changli Gao(xiaosuo@gmail.com)
