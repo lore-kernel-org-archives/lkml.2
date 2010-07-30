@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759360Ab0G3Sww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:52:52 -0400
-Received: from kroah.org ([198.145.64.141]:35613 "EHLO coco.kroah.org"
+	id S1759374Ab0G3SxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:53:13 -0400
+Received: from kroah.org ([198.145.64.141]:35600 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759357Ab0G3ReU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:20 -0400
+	id S1759226Ab0G3ReS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:18 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
-Message-Id: <20100730173105.645375412@clark.site>
+Message-Id: <20100730173105.464991954@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:57 -0700
+Date: Fri, 30 Jul 2010 10:29:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [032/140] NFSv4: Fix an embarassing typo in encode_attrs()
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [030/140] cmd640: fix kernel oops in test_irq() method
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit d3f6baaa34c54040b3ef30950e59b54ac0624b21 upstream.
+commit a9ddabc52ce3757a4331d6c1e8bf4065333cc51b upstream.
 
-Apparently, we have never been able to set the atime correctly from the
-NFSv4 client.
+When implementing the test_iqr() method, I forgot that this driver is not an
+ordinary PCI driver and also needs to support VLB variant of the chip. Moreover,
+'hwif->dev' should be NULL, potentially causing oops in pci_read_config_byte().
 
-Reported-by: 小倉一夫 <ka-ogura@bd6.so-net.ne.jp>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/nfs4xdr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ide/cmd640.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -863,8 +863,8 @@ static void encode_attrs(struct xdr_stre
- 		bmval1 |= FATTR4_WORD1_TIME_ACCESS_SET;
- 		*p++ = cpu_to_be32(NFS4_SET_TO_CLIENT_TIME);
- 		*p++ = cpu_to_be32(0);
--		*p++ = cpu_to_be32(iap->ia_mtime.tv_sec);
--		*p++ = cpu_to_be32(iap->ia_mtime.tv_nsec);
-+		*p++ = cpu_to_be32(iap->ia_atime.tv_sec);
-+		*p++ = cpu_to_be32(iap->ia_atime.tv_nsec);
- 	}
- 	else if (iap->ia_valid & ATTR_ATIME) {
- 		bmval1 |= FATTR4_WORD1_TIME_ACCESS_SET;
+--- a/drivers/ide/cmd640.c
++++ b/drivers/ide/cmd640.c
+@@ -632,12 +632,10 @@ static void cmd640_init_dev(ide_drive_t
+ 
+ static int cmd640_test_irq(ide_hwif_t *hwif)
+ {
+-	struct pci_dev *dev	= to_pci_dev(hwif->dev);
+ 	int irq_reg		= hwif->channel ? ARTTIM23 : CFR;
+-	u8  irq_stat, irq_mask	= hwif->channel ? ARTTIM23_IDE23INTR :
++	u8  irq_mask		= hwif->channel ? ARTTIM23_IDE23INTR :
+ 						  CFR_IDE01INTR;
+-
+-	pci_read_config_byte(dev, irq_reg, &irq_stat);
++	u8  irq_stat		= get_cmd640_reg(irq_reg);
+ 
+ 	return (irq_stat & irq_mask) ? 1 : 0;
+ }
 
 
