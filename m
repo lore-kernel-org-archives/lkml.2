@@ -1,119 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760383Ab0G3TEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:04:30 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23272 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760276Ab0G3TEW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 15:04:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=GGh9ZVtpH/Y7B3Q5wQ8EnTgE2MPbDDLBA1CVsidjMaDL1ixUL2DosCmIAeKcX6e7v
-	4nfuuR1yFIlZawbs+Vllg==
-MIME-Version: 1.0
-In-Reply-To: <1280496739.10435.10.camel@marge.simson.net>
-References: <1280467146-32218-1-git-send-email-ncrao@google.com> 
-	<1280496739.10435.10.camel@marge.simson.net>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 30 Jul 2010 12:03:49 -0700
-Message-ID: <AANLkTimnb8jPkET312n0rdUV6c4QpAJau1opCrkzdAhC@mail.gmail.com>
-Subject: Re: [PATCH 0/6] [RFC] Large weight differential leads to inefficient 
-	load balancing
-To: Mike Galbraith <efault@gmx.de>
-Cc: Nikhil Rao <ncrao@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Venkatesh Pallipadi <venki@google.com>, Ken Chen <kenchen@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1758100Ab0G3TEz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:04:55 -0400
+Received: from kroah.org ([198.145.64.141]:51661 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757962Ab0G3RSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:50 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:05 2010
+Message-Id: <20100730171505.906265417@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:14:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [069/165] USB: obey the sysfs power/wakeup setting
+In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 6:32 AM, Mike Galbraith <efault@gmx.de> wrote:
-> On Thu, 2010-07-29 at 22:19 -0700, Nikhil Rao wrote:
->> Hi all,
->>
->> We have observed that a large weight differential between tasks on a runqueue
->> leads to sub-optimal machine utilization and poor load balancing. For example,
->> if you have lots of SCHED_IDLE tasks (sufficient number to keep the machine 100%
->> busy) and a few SCHED_NORMAL soaker tasks, we see that the machine has
->> significant idle time.
->>
->> The data below highlights this problem. The test machine is a 4 socket quad-core
->> box (16 cpus). These experiemnts were done with v2.6.25-rc6. We spawn 16
->> SCHED_IDLE soaker threads (one per-cpu) to completely fill up the machine. CPU
->> utilization numbers gathered from mpstat for 10s are:
->>
->> 03:30:24 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
->> 03:30:25 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16234.65
->> 03:30:26 PM  all   99.88    0.06    0.06    0.00    0.00    0.00    0.00    0.00  16374.00
->> 03:30:27 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16392.00
->> 03:30:28 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16612.12
->> 03:30:29 PM  all   99.88    0.00    0.12    0.00    0.00    0.00    0.00    0.00  16375.00
->> 03:30:30 PM  all   99.94    0.06    0.00    0.00    0.00    0.00    0.00    0.00  16440.00
->> 03:30:31 PM  all   99.81    0.00    0.19    0.00    0.00    0.00    0.00    0.00  16237.62
->> 03:30:32 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16360.00
->> 03:30:33 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16405.00
->> 03:30:34 PM  all   99.38    0.06    0.50    0.00    0.00    0.00    0.00    0.06  18881.82
->> Average:     all   99.86    0.02    0.12    0.00    0.00    0.00    0.00    0.01  16628.20
->>
->> We then spawn one SCHED_NORMAL while-1 task (the absolute number does not matter
->> so long as we introduce some large weight differential).
->>
->> 03:40:57 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
->> 03:40:58 PM  all   83.06    0.00    0.06    0.00    0.00    0.00    0.00   16.88  14555.00
->> 03:40:59 PM  all   78.25    0.00    0.06    0.00    0.00    0.00    0.00   21.69  14527.00
->> 03:41:00 PM  all   82.71    0.06    0.06    0.00    0.00    0.00    0.00   17.17  14879.00
->> 03:41:01 PM  all   87.34    0.00    0.06    0.00    0.00    0.00    0.00   12.59  15466.00
->> 03:41:02 PM  all   80.80    0.06    0.19    0.00    0.00    0.00    0.00   18.95  14584.00
->> 03:41:03 PM  all   82.90    0.00    0.06    0.00    0.00    0.00    0.00   17.04  14570.00
->> 03:41:04 PM  all   79.45    0.00    0.06    0.00    0.00    0.00    0.00   20.49  14536.00
->> 03:41:05 PM  all   86.48    0.00    0.07    0.00    0.00    0.00    0.00   13.46  14577.00
->> 03:41:06 PM  all   76.73    0.06    0.06    0.00    0.00    0.06    0.00   23.10  14594.00
->> 03:41:07 PM  all   86.48    0.00    0.07    0.00    0.00    0.00    0.00   13.45  14703.03
->> Average:     all   82.31    0.02    0.08    0.00    0.00    0.01    0.00   17.59  14699.10
->
-> What happens with s/SCHED_IDLE/nice 19?
->
->        -Mike
->
->
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-So this is also a concern of mine that I wanted to raise.
+------------------
 
-The problem observed above is a function of balancing entities which
-can't meaningfully contribute to improving the observed imbalance.
+From: Alan Stern <stern@rowland.harvard.edu>
 
-While this does occur with {nice 19, SCHED_IDLE} threads, it is a more
-general problem and actually much more prevalent in the group
-scheduling case where the group entity weight is more arbitrary.  This
-is compounded by the fact that we iterate over the task_groups in load
-balance and don't have a good way of differentiating in-group high/low
-weight entities.
+commit 48826626263d4a61d06fd8c5805da31f925aefa0 upstream.
 
-Something I have been investigating is how can we fix this problem
-more generally: e.g. how can we effectively load-balance a low-weight
-entity in the presence of high-weight competition.  This could just as
-easily be a {1000, 2} share split as it could be a {64000, 2000} share
-split -- the latter won't benefit from IDLE_SCHEDULING optimizations
-but is a realistic test case if someone is trying to provide minimal
-latencies for the high-weight task.
+This patch (as1403) is a partial reversion of an earlier change
+(commit 5f677f1d45b2bf08085bbba7394392dfa586fa8e "USB: fix remote
+wakeup settings during system sleep").  After hearing from a user, I
+realized that remote wakeup should be enabled during system sleep
+whenever userspace allows it, and not only if a driver requests it
+too.
 
-What I've been considering in avenue is instead of load-balancing the
-low weight entities when their h_load relative to the imbalance is
-'not meaningful' -- by some fitness function, tag them for a separate
-load-balancing pass.  This secondary pass would only need to be
-periodic in nature, and consider the 'tagged' task_groups from the
-generic load_balancing operations.  At this point in time it can be
-evaluated whether the load is still 'not meaningful', and distribution
-towards the most idle cpu (by utilization) can be evaluated.
+Indeed, there could be a device with no driver, that does nothing but
+generate a wakeup request when the user presses a button.  Such a
+device should be allowed to do its job.
 
-The one converse here is that while something like the above is more
-general for the low weight-group entity case, it does not extend
-particularly cleanly to the non group-scheduling case.  I haven't yet
-got a particularly good answer for this since without a group entity
-representing the low-weight threads tracking them for a second pass
-becomes more cumbersome.
+The problem fixed by the earlier patch -- device generating a wakeup
+request for no reason, causing system suspend to abort -- was also
+addressed by a later patch ("USB: don't enable remote wakeup by
+default", accepted but not yet merged into mainline).  The device
+won't be able to generate the bogus wakeup requests because it will be
+disabled for remote wakeup by default.  Hence this reversion will not
+re-introduce any old problems.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+
+---
+ drivers/usb/core/driver.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
+
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1743,9 +1743,6 @@ int usb_external_resume_device(struct us
+ 
+ static void choose_wakeup(struct usb_device *udev, pm_message_t msg)
+ {
+-	int			w, i;
+-	struct usb_interface	*intf;
+-
+ 	/* Remote wakeup is needed only when we actually go to sleep.
+ 	 * For things like FREEZE and QUIESCE, if the device is already
+ 	 * autosuspended then its current wakeup setting is okay.
+@@ -1755,18 +1752,10 @@ static void choose_wakeup(struct usb_dev
+ 		return;
+ 	}
+ 
+-	/* If remote wakeup is permitted, see whether any interface drivers
++	/* Allow remote wakeup if it is enabled, even if no interface drivers
+ 	 * actually want it.
+ 	 */
+-	w = 0;
+-	if (device_may_wakeup(&udev->dev) && udev->actconfig) {
+-		for (i = 0; i < udev->actconfig->desc.bNumInterfaces; i++) {
+-			intf = udev->actconfig->interface[i];
+-			w |= intf->needs_remote_wakeup;
+-		}
+-	}
+-
+-	udev->do_remote_wakeup = w;
++	udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
+ }
+ 
+ int usb_suspend(struct device *dev, pm_message_t msg)
+
+
