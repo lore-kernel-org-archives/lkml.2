@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760465Ab0G3TIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:08:53 -0400
-Received: from kroah.org ([198.145.64.141]:51536 "EHLO coco.kroah.org"
+	id S1757273Ab0G3RS3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:18:29 -0400
+Received: from kroah.org ([198.145.64.141]:51426 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757385Ab0G3RSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:04 2010
-Message-Id: <20100730171504.316558222@clark.site>
+	id S1756046Ab0G3RSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:03 2010
+Message-Id: <20100730171503.202132821@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:39 -0700
+Date: Fri, 30 Jul 2010 10:14:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dongdong Deng <dongdong.deng@windriver.com>
-Subject: [051/165] serial: cpm_uart: implement the cpm_uart_early_write() function for console poll
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        David Safford <safford@watson.ibm.com>
+Subject: [039/165] tpm_tis: fix subsequent suspend failures
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,196 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dongdong Deng <dongdong.deng@windriver.com>
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 
-commit 8cd774ad30c22b9d89823f1f05d845f4cdaba9e8 upstream.
+commit 59f6fbe4291fcc078ba26ce4edf8373a7620a13a upstream.
 
-The cpm_uart_early_write() function which was used for console poll
-isn't implemented in the cpm uart driver.
+Fix subsequent suspends by issuing tpm_continue_selftest during resume.
+Otherwise, the tpm chip seems to be not fully initialized and will reject
+the save state command during suspend, thus preventing the whole system
+to suspend.
 
-Implementing this function both fixes the build when CONFIG_CONSOLE_POLL
-is set and allows kgdboc to work via the cpm uart.
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16256
 
-Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Debora Velarde <debora@linux.vnet.ibm.com>
+Cc: David Safford <safford@watson.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/serial/cpm_uart/cpm_uart_core.c |  143 +++++++++++++++++---------------
- 1 file changed, 79 insertions(+), 64 deletions(-)
+ drivers/char/tpm/tpm_tis.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/serial/cpm_uart/cpm_uart_core.c
-+++ b/drivers/serial/cpm_uart/cpm_uart_core.c
-@@ -930,6 +930,83 @@ static void cpm_uart_config_port(struct
- 	}
- }
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -622,7 +622,14 @@ static int tpm_tis_pnp_suspend(struct pn
  
-+#if defined(CONFIG_CONSOLE_POLL) || defined(CONFIG_SERIAL_CPM_CONSOLE)
-+/*
-+ * Write a string to the serial port
-+ * Note that this is called with interrupts already disabled
-+ */
-+static void cpm_uart_early_write(struct uart_cpm_port *pinfo,
-+		const char *string, u_int count)
-+{
-+	unsigned int i;
-+	cbd_t __iomem *bdp, *bdbase;
-+	unsigned char *cpm_outp_addr;
-+
-+	/* Get the address of the host memory buffer.
-+	 */
-+	bdp = pinfo->tx_cur;
-+	bdbase = pinfo->tx_bd_base;
-+
-+	/*
-+	 * Now, do each character.  This is not as bad as it looks
-+	 * since this is a holding FIFO and not a transmitting FIFO.
-+	 * We could add the complexity of filling the entire transmit
-+	 * buffer, but we would just wait longer between accesses......
-+	 */
-+	for (i = 0; i < count; i++, string++) {
-+		/* Wait for transmitter fifo to empty.
-+		 * Ready indicates output is ready, and xmt is doing
-+		 * that, not that it is ready for us to send.
-+		 */
-+		while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
-+			;
-+
-+		/* Send the character out.
-+		 * If the buffer address is in the CPM DPRAM, don't
-+		 * convert it.
-+		 */
-+		cpm_outp_addr = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr),
-+					pinfo);
-+		*cpm_outp_addr = *string;
-+
-+		out_be16(&bdp->cbd_datlen, 1);
-+		setbits16(&bdp->cbd_sc, BD_SC_READY);
-+
-+		if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
-+			bdp = bdbase;
-+		else
-+			bdp++;
-+
-+		/* if a LF, also do CR... */
-+		if (*string == 10) {
-+			while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
-+				;
-+
-+			cpm_outp_addr = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr),
-+						pinfo);
-+			*cpm_outp_addr = 13;
-+
-+			out_be16(&bdp->cbd_datlen, 1);
-+			setbits16(&bdp->cbd_sc, BD_SC_READY);
-+
-+			if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
-+				bdp = bdbase;
-+			else
-+				bdp++;
-+		}
-+	}
-+
-+	/*
-+	 * Finally, Wait for transmitter & holding register to empty
-+	 *  and restore the IER
-+	 */
-+	while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
-+		;
-+
-+	pinfo->tx_cur = bdp;
-+}
-+#endif
-+
- #ifdef CONFIG_CONSOLE_POLL
- /* Serial polling routines for writing and reading from the uart while
-  * in an interrupt or debug context.
-@@ -999,7 +1076,7 @@ static void cpm_put_poll_char(struct uar
- 	static char ch[2];
- 
- 	ch[0] = (char)c;
--	cpm_uart_early_write(pinfo->port.line, ch, 1);
-+	cpm_uart_early_write(pinfo, ch, 1);
- }
- #endif /* CONFIG_CONSOLE_POLL */
- 
-@@ -1130,9 +1207,6 @@ static void cpm_uart_console_write(struc
- 				   u_int count)
+ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
  {
- 	struct uart_cpm_port *pinfo = &cpm_uart_ports[co->index];
--	unsigned int i;
--	cbd_t __iomem *bdp, *bdbase;
--	unsigned char *cp;
- 	unsigned long flags;
- 	int nolock = oops_in_progress;
+-	return tpm_pm_resume(&dev->dev);
++	struct tpm_chip *chip = pnp_get_drvdata(dev);
++	int ret;
++
++	ret = tpm_pm_resume(&dev->dev);
++	if (!ret)
++		tpm_continue_selftest(chip);
++
++	return ret;
+ }
  
-@@ -1142,66 +1216,7 @@ static void cpm_uart_console_write(struc
- 		spin_lock_irqsave(&pinfo->port.lock, flags);
- 	}
- 
--	/* Get the address of the host memory buffer.
--	 */
--	bdp = pinfo->tx_cur;
--	bdbase = pinfo->tx_bd_base;
--
--	/*
--	 * Now, do each character.  This is not as bad as it looks
--	 * since this is a holding FIFO and not a transmitting FIFO.
--	 * We could add the complexity of filling the entire transmit
--	 * buffer, but we would just wait longer between accesses......
--	 */
--	for (i = 0; i < count; i++, s++) {
--		/* Wait for transmitter fifo to empty.
--		 * Ready indicates output is ready, and xmt is doing
--		 * that, not that it is ready for us to send.
--		 */
--		while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
--			;
--
--		/* Send the character out.
--		 * If the buffer address is in the CPM DPRAM, don't
--		 * convert it.
--		 */
--		cp = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr), pinfo);
--		*cp = *s;
--
--		out_be16(&bdp->cbd_datlen, 1);
--		setbits16(&bdp->cbd_sc, BD_SC_READY);
--
--		if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
--			bdp = bdbase;
--		else
--			bdp++;
--
--		/* if a LF, also do CR... */
--		if (*s == 10) {
--			while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
--				;
--
--			cp = cpm2cpu_addr(in_be32(&bdp->cbd_bufaddr), pinfo);
--			*cp = 13;
--
--			out_be16(&bdp->cbd_datlen, 1);
--			setbits16(&bdp->cbd_sc, BD_SC_READY);
--
--			if (in_be16(&bdp->cbd_sc) & BD_SC_WRAP)
--				bdp = bdbase;
--			else
--				bdp++;
--		}
--	}
--
--	/*
--	 * Finally, Wait for transmitter & holding register to empty
--	 *  and restore the IER
--	 */
--	while ((in_be16(&bdp->cbd_sc) & BD_SC_READY) != 0)
--		;
--
--	pinfo->tx_cur = bdp;
-+	cpm_uart_early_write(pinfo, s, count);
- 
- 	if (unlikely(nolock)) {
- 		local_irq_restore(flags);
+ static struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
 
 
