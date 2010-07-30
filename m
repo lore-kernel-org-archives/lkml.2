@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760378Ab0G3TBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:01:44 -0400
-Received: from kroah.org ([198.145.64.141]:51732 "EHLO coco.kroah.org"
+	id S1760388Ab0G3TBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:01:49 -0400
+Received: from kroah.org ([198.145.64.141]:51727 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758203Ab0G3RTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:01 -0400
+	id S1751687Ab0G3RTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:06 2010
-Message-Id: <20100730171506.902841631@clark.site>
+Message-Id: <20100730171506.809197866@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:08 -0700
+Date: Fri, 30 Jul 2010 10:15:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [080/165] ethtool: Fix potential user buffer overflow for ETHTOOL_{G, S}RXFH
+        Corey Minyard <minyard@acm.org>
+Subject: [079/165] USB: FTDI: Add support for the RT System VX-7 radio programming cable
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,120 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit bf988435bd5b53529f4408a8efb1f433f6ddfda9 upstream.
+From: Corey Minyard <minyard@acm.org>
 
-struct ethtool_rxnfc was originally defined in 2.6.27 for the
-ETHTOOL_{G,S}RXFH command with only the cmd, flow_type and data
-fields.  It was then extended in 2.6.30 to support various additional
-commands.  These commands should have been defined to use a new
-structure, but it is too late to change that now.
+commit fcc6cb789c77ffee31710eec64efeb25f2124f7a upstream.
 
-Since user-space may still be using the old structure definition
-for the ETHTOOL_{G,S}RXFH commands, and since they do not need the
-additional fields, only copy the originally defined fields to and
-from user-space.
+RT Systems has put out bunch of ham radio cables based on the FT232RL
+chip.  Each cable type has a unique PID, this adds one for the Yaesu VX-7
+radios.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Corey Minyard <minyard@acm.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- include/linux/ethtool.h |    2 ++
- net/core/ethtool.c      |   38 +++++++++++++++++++++++++++++---------
- 2 files changed, 31 insertions(+), 9 deletions(-)
 
---- a/include/linux/ethtool.h
-+++ b/include/linux/ethtool.h
-@@ -357,6 +357,8 @@ struct ethtool_rxnfc {
- 	__u32				flow_type;
- 	/* The rx flow hash value or the rule DB size */
- 	__u64				data;
-+	/* The following fields are not valid and must not be used for
-+	 * the ETHTOOL_{G,X}RXFH commands. */
- 	struct ethtool_rx_flow_spec	fs;
- 	__u32				rule_cnt;
- 	__u32				rule_locs[0];
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -216,22 +216,34 @@ static int ethtool_get_drvinfo(struct ne
- 	return 0;
- }
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -697,6 +697,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -703,6 +703,12 @@
+ #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
  
--static int ethtool_set_rxnfc(struct net_device *dev, void __user *useraddr)
-+static int ethtool_set_rxnfc(struct net_device *dev,
-+			     u32 cmd, void __user *useraddr)
- {
--	struct ethtool_rxnfc cmd;
-+	struct ethtool_rxnfc info;
-+	size_t info_size = sizeof(info);
- 
- 	if (!dev->ethtool_ops->set_rxnfc)
- 		return -EOPNOTSUPP;
- 
--	if (copy_from_user(&cmd, useraddr, sizeof(cmd)))
-+	/* struct ethtool_rxnfc was originally defined for
-+	 * ETHTOOL_{G,S}RXFH with only the cmd, flow_type and data
-+	 * members.  User-space might still be using that
-+	 * definition. */
-+	if (cmd == ETHTOOL_SRXFH)
-+		info_size = (offsetof(struct ethtool_rxnfc, data) +
-+			     sizeof(info.data));
+ /*
++ * RT Systems programming cables for various ham radios
++ */
++#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
++#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
 +
-+	if (copy_from_user(&info, useraddr, info_size))
- 		return -EFAULT;
- 
--	return dev->ethtool_ops->set_rxnfc(dev, &cmd);
-+	return dev->ethtool_ops->set_rxnfc(dev, &info);
- }
- 
--static int ethtool_get_rxnfc(struct net_device *dev, void __user *useraddr)
-+static int ethtool_get_rxnfc(struct net_device *dev,
-+			     u32 cmd, void __user *useraddr)
- {
- 	struct ethtool_rxnfc info;
-+	size_t info_size = sizeof(info);
- 	const struct ethtool_ops *ops = dev->ethtool_ops;
- 	int ret;
- 	void *rule_buf = NULL;
-@@ -239,7 +251,15 @@ static int ethtool_get_rxnfc(struct net_
- 	if (!ops->get_rxnfc)
- 		return -EOPNOTSUPP;
- 
--	if (copy_from_user(&info, useraddr, sizeof(info)))
-+	/* struct ethtool_rxnfc was originally defined for
-+	 * ETHTOOL_{G,S}RXFH with only the cmd, flow_type and data
-+	 * members.  User-space might still be using that
-+	 * definition. */
-+	if (cmd == ETHTOOL_GRXFH)
-+		info_size = (offsetof(struct ethtool_rxnfc, data) +
-+			     sizeof(info.data));
-+
-+	if (copy_from_user(&info, useraddr, info_size))
- 		return -EFAULT;
- 
- 	if (info.cmd == ETHTOOL_GRXCLSRLALL) {
-@@ -257,7 +277,7 @@ static int ethtool_get_rxnfc(struct net_
- 		goto err_out;
- 
- 	ret = -EFAULT;
--	if (copy_to_user(useraddr, &info, sizeof(info)))
-+	if (copy_to_user(useraddr, &info, info_size))
- 		goto err_out;
- 
- 	if (rule_buf) {
-@@ -1112,12 +1132,12 @@ int dev_ethtool(struct net *net, struct
- 	case ETHTOOL_GRXCLSRLCNT:
- 	case ETHTOOL_GRXCLSRULE:
- 	case ETHTOOL_GRXCLSRLALL:
--		rc = ethtool_get_rxnfc(dev, useraddr);
-+		rc = ethtool_get_rxnfc(dev, ethcmd, useraddr);
- 		break;
- 	case ETHTOOL_SRXFH:
- 	case ETHTOOL_SRXCLSRLDEL:
- 	case ETHTOOL_SRXCLSRLINS:
--		rc = ethtool_set_rxnfc(dev, useraddr);
-+		rc = ethtool_set_rxnfc(dev, ethcmd, useraddr);
- 		break;
- 	case ETHTOOL_GGRO:
- 		rc = ethtool_get_gro(dev, useraddr);
++/*
+  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
+  * http://winglucofacts.com/cables/
+  */
 
 
