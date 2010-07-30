@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab0G3RR7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:17:59 -0400
-Received: from kroah.org ([198.145.64.141]:46165 "EHLO coco.kroah.org"
+	id S1760596Ab0G3TQb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:16:31 -0400
+Received: from kroah.org ([198.145.64.141]:46258 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753988Ab0G3RRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:17:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:00 2010
-Message-Id: <20100730171500.149048563@clark.site>
+	id S1756204Ab0G3RR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:17:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:01 2010
+Message-Id: <20100730171501.556536249@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:13:53 -0700
+Date: Fri, 30 Jul 2010 10:14:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
-Subject: [005/165] hwmon: (coretemp) Properly label the sensors
+        Peter Stuge <peter@stuge.se>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [021/165] ath9k: re-enable ps by default for new single chip families
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Luis R. Rodriguez <lrodriguez@atheros.com>
 
-commit 3f4f09b4be35d38d6e2bf22c989443e65e70fc4c upstream.
+commit 14acdde6e527950f66c084dbf19bad6fbfcaeedc upstream.
 
-Don't assume that CPU entry number and core ID always match. It
-worked in the simple cases (single CPU, no HT) but fails on
-multi-CPU systems.
+The newer single chip hardware family of chipsets have not been
+experiencing issues with power saving set by default with recent
+fixes merged (even into stable). The remaining issues are only
+reported with AR5416 and since enabling PS by default can increase
+power savings considerably best to take advantage of that feature
+as this has been tested properly.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Huaxu Wan <huaxu.wan@intel.com>
+For more details on this issue see the bug report:
+
+http://bugzilla.kernel.org/show_bug.cgi?id=14267
+
+We leave AR5416 with PS disabled by default, that seems to require
+some more work.
+
+Cc: Peter Stuge <peter@stuge.se>
+Cc: Justin P. Mattock  <justinmattock@gmail.com>
+Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/hwmon/coretemp.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -53,6 +53,7 @@ struct coretemp_data {
- 	struct mutex update_lock;
- 	const char *name;
- 	u32 id;
-+	u16 core_id;
- 	char valid;		/* zero until following fields are valid */
- 	unsigned long last_updated;	/* in jiffies */
- 	int temp;
-@@ -75,7 +76,7 @@ static ssize_t show_name(struct device *
- 	if (attr->index == SHOW_NAME)
- 		ret = sprintf(buf, "%s\n", data->name);
- 	else	/* show label */
--		ret = sprintf(buf, "Core %d\n", data->id);
-+		ret = sprintf(buf, "Core %d\n", data->core_id);
- 	return ret;
- }
+---
+ drivers/net/wireless/ath/ath9k/main.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1538,6 +1538,8 @@ bad_no_ah:
  
-@@ -255,6 +256,9 @@ static int __devinit coretemp_probe(stru
- 	}
+ void ath_set_hw_capab(struct ath_softc *sc, struct ieee80211_hw *hw)
+ {
++	struct ath_hw *ah = sc->sc_ah;
++
+ 	hw->flags = IEEE80211_HW_RX_INCLUDES_FCS |
+ 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
+ 		IEEE80211_HW_SIGNAL_DBM |
+@@ -1558,7 +1560,10 @@ void ath_set_hw_capab(struct ath_softc *
+ 		BIT(NL80211_IFTYPE_ADHOC) |
+ 		BIT(NL80211_IFTYPE_MESH_POINT);
  
- 	data->id = pdev->id;
-+#ifdef CONFIG_SMP
-+	data->core_id = c->cpu_core_id;
-+#endif
- 	data->name = "coretemp";
- 	mutex_init(&data->update_lock);
+-	hw->wiphy->ps_default = false;
++	if (AR_SREV_5416(ah))
++		hw->wiphy->ps_default = false;
++	else
++		hw->wiphy->ps_default = true;
  
+ 	hw->queues = 4;
+ 	hw->max_rates = 4;
 
 
