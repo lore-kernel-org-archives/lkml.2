@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab0G3TFh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:05:37 -0400
-Received: from kroah.org ([198.145.64.141]:51642 "EHLO coco.kroah.org"
+	id S1757826Ab0G3RSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:18:43 -0400
+Received: from kroah.org ([198.145.64.141]:51582 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757892Ab0G3RSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:47 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:05 2010
-Message-Id: <20100730171505.645500077@clark.site>
+	id S1757613Ab0G3RSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:37 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:04 2010
+Message-Id: <20100730171504.873941483@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:54 -0700
+Date: Fri, 30 Jul 2010 10:14:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [066/165] x86: Do not try to disable hpet if it hasnt been initialized before
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [057/165] ethtool: Fix potential kernel buffer overflow in ETHTOOL_GRXCLSRLALL
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit ff4878089e1eaeac79d57878ad4ea32910fb4037 upstream.
+commit db048b69037e7fa6a7d9e95a1271a50dc08ae233 upstream.
 
-hpet_disable is called unconditionally on machine reboot if hpet support
-is compiled in the kernel.
-hpet_disable only checks if the machine is hpet capable but doesn't make
-sure that hpet has been initialized.
+On a 32-bit machine, info.rule_cnt >= 0x40000000 leads to integer
+overflow and the buffer may be smaller than needed.  Since
+ETHTOOL_GRXCLSRLALL is unprivileged, this can presumably be used for at
+least denial of service.
 
-[ tglx: Made it a one liner and removed the redundant hpet_address check ]
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Venkatesh Pallipadi <venki@google.com>
-LKML-Reference: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/hpet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/ethtool.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -949,7 +949,7 @@ fs_initcall(hpet_late_init);
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -244,8 +244,9 @@ static int ethtool_get_rxnfc(struct net_
  
- void hpet_disable(void)
- {
--	if (is_hpet_capable()) {
-+	if (is_hpet_capable() && hpet_virt_address) {
- 		unsigned long cfg = hpet_readl(HPET_CFG);
- 
- 		if (hpet_legacy_int_enabled) {
+ 	if (info.cmd == ETHTOOL_GRXCLSRLALL) {
+ 		if (info.rule_cnt > 0) {
+-			rule_buf = kmalloc(info.rule_cnt * sizeof(u32),
+-					   GFP_USER);
++			if (info.rule_cnt <= KMALLOC_MAX_SIZE / sizeof(u32))
++				rule_buf = kmalloc(info.rule_cnt * sizeof(u32),
++						   GFP_USER);
+ 			if (!rule_buf)
+ 				return -ENOMEM;
+ 		}
 
 
