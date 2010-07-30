@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593Ab0G3RhT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:37:19 -0400
-Received: from kroah.org ([198.145.64.141]:36121 "EHLO coco.kroah.org"
+	id S932433Ab0G3RhX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:37:23 -0400
+Received: from kroah.org ([198.145.64.141]:36143 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932433Ab0G3Rfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:55 -0400
+	id S932442Ab0G3Rf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:57 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:13 2010
-Message-Id: <20100730173113.175900769@clark.site>
+Message-Id: <20100730173113.342711700@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:21 -0700
+Date: Fri, 30 Jul 2010 10:31:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [116/140] ACPI: Unconditionally set SCI_EN on resume
+        Baruch Siach <baruch@tkos.co.il>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [118/140] dm9000: fix "BUG: spinlock recursion"
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,252 +26,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit b6dacf63e9fb2e7a1369843d6cef332f76fca6a3 upstream.
+commit 380fefb2ddabd4cd5f14dbe090481f0544e65078 upstream.
 
-The ACPI spec tells us that the firmware will reenable SCI_EN on resume.
-Reality disagrees in some cases. The ACPI spec tells us that the only way
-to set SCI_EN is via an SMM call.
-https://bugzilla.kernel.org/show_bug.cgi?id=13745 shows us that doing so
-may break machines. Tracing the ACPI calls made by Windows shows that it
-unconditionally sets SCI_EN on resume with a direct register write, and
-therefore the overwhelming probability is that everything is fine with
-this behaviour.
+dm9000_set_rx_csum and dm9000_hash_table are called from atomic context (in
+dm9000_init_dm9000), and from non-atomic context (via ethtool_ops and
+net_device_ops respectively). This causes a spinlock recursion BUG. Fix this by
+renaming these functions to *_unlocked for the atomic context, and make the
+original functions locking wrappers for use in the non-atomic context.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Tested-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/acpi/sleep.c |    2 
- drivers/acpi/sleep.c         |  157 -------------------------------------------
- include/linux/acpi.h         |    1 
- 3 files changed, 2 insertions(+), 158 deletions(-)
+ drivers/net/dm9000.c |   38 +++++++++++++++++++++++++++-----------
+ 1 file changed, 27 insertions(+), 11 deletions(-)
 
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -162,8 +162,6 @@ static int __init acpi_sleep_setup(char
- #endif
- 		if (strncmp(str, "old_ordering", 12) == 0)
- 			acpi_old_suspend_ordering();
--		if (strncmp(str, "sci_force_enable", 16) == 0)
--			acpi_set_sci_en_on_resume();
- 		str = strchr(str, ',');
- 		if (str != NULL)
- 			str += strspn(str, ", \t");
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -80,22 +80,6 @@ static int acpi_sleep_prepare(u32 acpi_s
- 
- #ifdef CONFIG_ACPI_SLEEP
- static u32 acpi_target_sleep_state = ACPI_STATE_S0;
--/*
-- * According to the ACPI specification the BIOS should make sure that ACPI is
-- * enabled and SCI_EN bit is set on wake-up from S1 - S3 sleep states.  Still,
-- * some BIOSes don't do that and therefore we use acpi_enable() to enable ACPI
-- * on such systems during resume.  Unfortunately that doesn't help in
-- * particularly pathological cases in which SCI_EN has to be set directly on
-- * resume, although the specification states very clearly that this flag is
-- * owned by the hardware.  The set_sci_en_on_resume variable will be set in such
-- * cases.
-- */
--static bool set_sci_en_on_resume;
--
--void __init acpi_set_sci_en_on_resume(void)
--{
--	set_sci_en_on_resume = true;
--}
- 
- /*
-  * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
-@@ -253,11 +237,8 @@ static int acpi_suspend_enter(suspend_st
- 		break;
- 	}
- 
--	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
--	if (set_sci_en_on_resume)
--		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
--	else
--		acpi_enable();
-+	/* This violates the spec but is required for bug compatibility. */
-+	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
- 
- 	/* Reprogram control registers and execute _BFS */
- 	acpi_leave_sleep_state_prep(acpi_state);
-@@ -346,12 +327,6 @@ static int __init init_old_suspend_order
- 	return 0;
+--- a/drivers/net/dm9000.c
++++ b/drivers/net/dm9000.c
+@@ -475,17 +475,13 @@ static uint32_t dm9000_get_rx_csum(struc
+ 	return dm->rx_csum;
  }
  
--static int __init init_set_sci_en_on_resume(const struct dmi_system_id *d)
--{
--	set_sci_en_on_resume = true;
--	return 0;
--}
--
- static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
- 	{
- 	.callback = init_old_suspend_ordering,
-@@ -370,22 +345,6 @@ static struct dmi_system_id __initdata a
- 		},
- 	},
- 	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Apple MacBook 1,1",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Apple MacMini 1,1",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Macmini1,1"),
--		},
--	},
--	{
- 	.callback = init_old_suspend_ordering,
- 	.ident = "Asus Pundit P1-AH2 (M2N8L motherboard)",
- 	.matches = {
-@@ -394,94 +353,6 @@ static struct dmi_system_id __initdata a
- 		},
- 	},
- 	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Toshiba Satellite L300",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard HP G7000 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP G7000 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard HP Pavilion dv3 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv3 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Pavilion dv4",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Pavilion dv7",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv7"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Compaq Presario C700 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario C700 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Compaq Presario CQ40 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario CQ40 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad T410",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad T510",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad W510",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad X201[s]",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
--		},
--	},
--	{
- 	.callback = init_old_suspend_ordering,
- 	.ident = "Panasonic CF51-2L",
- 	.matches = {
-@@ -490,30 +361,6 @@ static struct dmi_system_id __initdata a
- 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
- 		},
- 	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1558",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1558"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1557",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1555",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1555"),
--		},
--	},
- 	{},
- };
- #endif /* CONFIG_SUSPEND */
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -251,7 +251,6 @@ int acpi_check_mem_region(resource_size_
- void __init acpi_no_s4_hw_signature(void);
- void __init acpi_old_suspend_ordering(void);
- void __init acpi_s4_no_nvs(void);
--void __init acpi_set_sci_en_on_resume(void);
- #endif /* CONFIG_PM_SLEEP */
+-static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
++static int dm9000_set_rx_csum_unlocked(struct net_device *dev, uint32_t data)
+ {
+ 	board_info_t *dm = to_dm9000_board(dev);
+-	unsigned long flags;
  
- struct acpi_osc_context {
+ 	if (dm->can_csum) {
+ 		dm->rx_csum = data;
+-
+-		spin_lock_irqsave(&dm->lock, flags);
+ 		iow(dm, DM9000_RCSR, dm->rx_csum ? RCSR_CSUM : 0);
+-		spin_unlock_irqrestore(&dm->lock, flags);
+ 
+ 		return 0;
+ 	}
+@@ -493,6 +489,19 @@ static int dm9000_set_rx_csum(struct net
+ 	return -EOPNOTSUPP;
+ }
+ 
++static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
++{
++	board_info_t *dm = to_dm9000_board(dev);
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&dm->lock, flags);
++	ret = dm9000_set_rx_csum_unlocked(dev, data);
++	spin_unlock_irqrestore(&dm->lock, flags);
++
++	return ret;
++}
++
+ static int dm9000_set_tx_csum(struct net_device *dev, uint32_t data)
+ {
+ 	board_info_t *dm = to_dm9000_board(dev);
+@@ -721,7 +730,7 @@ static unsigned char dm9000_type_to_char
+  *  Set DM9000 multicast address
+  */
+ static void
+-dm9000_hash_table(struct net_device *dev)
++dm9000_hash_table_unlocked(struct net_device *dev)
+ {
+ 	board_info_t *db = netdev_priv(dev);
+ 	struct dev_mc_list *mcptr = dev->mc_list;
+@@ -730,12 +739,9 @@ dm9000_hash_table(struct net_device *dev
+ 	u32 hash_val;
+ 	u16 hash_table[4];
+ 	u8 rcr = RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN;
+-	unsigned long flags;
+ 
+ 	dm9000_dbg(db, 1, "entering %s\n", __func__);
+ 
+-	spin_lock_irqsave(&db->lock, flags);
+-
+ 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
+ 		iow(db, oft, dev->dev_addr[i]);
+ 
+@@ -765,6 +771,16 @@ dm9000_hash_table(struct net_device *dev
+ 	}
+ 
+ 	iow(db, DM9000_RCR, rcr);
++}
++
++static void
++dm9000_hash_table(struct net_device *dev)
++{
++	board_info_t *db = netdev_priv(dev);
++	unsigned long flags;
++
++	spin_lock_irqsave(&db->lock, flags);
++	dm9000_hash_table_unlocked(dev);
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ }
+ 
+@@ -784,7 +800,7 @@ dm9000_init_dm9000(struct net_device *de
+ 	db->io_mode = ior(db, DM9000_ISR) >> 6;	/* ISR bit7:6 keeps I/O mode */
+ 
+ 	/* Checksum mode */
+-	dm9000_set_rx_csum(dev, db->rx_csum);
++	dm9000_set_rx_csum_unlocked(dev, db->rx_csum);
+ 
+ 	/* GPIO0 on pre-activate PHY */
+ 	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */
+@@ -811,7 +827,7 @@ dm9000_init_dm9000(struct net_device *de
+ 	iow(db, DM9000_ISR, ISR_CLR_STATUS); /* Clear interrupt status */
+ 
+ 	/* Set address filter table */
+-	dm9000_hash_table(dev);
++	dm9000_hash_table_unlocked(dev);
+ 
+ 	imr = IMR_PAR | IMR_PTM | IMR_PRM;
+ 	if (db->type != TYPE_DM9000E)
 
 
