@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab0G3RlT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:41:19 -0400
-Received: from kroah.org ([198.145.64.141]:36244 "EHLO coco.kroah.org"
+	id S1759527Ab0G3Rlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:41:35 -0400
+Received: from kroah.org ([198.145.64.141]:36240 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759473Ab0G3RgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:36:16 -0400
+	id S1759468Ab0G3RgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:36:15 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:14 2010
-Message-Id: <20100730173114.915070768@clark.site>
+Message-Id: <20100730173114.827937328@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:41 -0700
+Date: Fri, 30 Jul 2010 10:31:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tony Luck <tony.luck@intel.com>
-Subject: [136/140] [IA64] Fix spinaphore down_spin()
+        =?ISO-8859-15?q?Krzysztof=20Ha=C5=82asa?= <khc@pm.waw.pl>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [135/140] kbuild: Fix modpost segfault
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Krzysztof Halasa <khc@pm.waw.pl>
 
-commit b70f4e85bfc4d7000036355b714a92d5c574f1be upstream.
+commit 1c938663d58b5b2965976a6f54cc51b5d6f691aa upstream.
 
-Typo in down_spin() meant it only read the low 32 bits of the
-"serve" value, instead of the full 64 bits. This results in the
-system hanging when the values in ticket/serve get larger than
-32-bits. A big enough system running the right test can hit this
-in a just a few hours.
+Alan <alan@clueserver.org> writes:
 
-Broken since 883a3acf5b0d4782ac35981227a0d094e8b44850
-    [IA64] Re-implement spinaphores using ticket lock concepts
+> program: /home/alan/GitTrees/linux-2.6-mid-ref/scripts/mod/modpost -o
+> Module.symvers -S vmlinux.o
+>
+> Program received signal SIGSEGV, Segmentation fault.
 
-Reported via IRC by Bjorn Helgaas
+It just hit me.
+It's the offset calculation in reloc_location() which overflows:
+        return (void *)elf->hdr + sechdrs[section].sh_offset +
+               (r->r_offset - sechdrs[section].sh_addr);
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+E.g. for the first rodata r entry:
+r->r_offset < sechdrs[section].sh_addr
+and the expression in the parenthesis produces 0xFFFFFFE0 or something
+equally wise.
+
+Reported-by: Alan <alan@clueserver.org>
+Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
+Tested-by: Alan <alan@clueserver.org>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/mm/tlb.c |    2 +-
+ scripts/mod/modpost.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/ia64/mm/tlb.c
-+++ b/arch/ia64/mm/tlb.c
-@@ -120,7 +120,7 @@ static inline void down_spin(struct spin
- 	ia64_invala();
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -1318,7 +1318,7 @@ static unsigned int *reloc_location(stru
+ 	int section = sechdr->sh_info;
  
- 	for (;;) {
--		asm volatile ("ld4.c.nc %0=[%1]" : "=r"(serve) : "r"(&ss->serve) : "memory");
-+		asm volatile ("ld8.c.nc %0=[%1]" : "=r"(serve) : "r"(&ss->serve) : "memory");
- 		if (time_before(t, serve))
- 			return;
- 		cpu_relax();
+ 	return (void *)elf->hdr + sechdrs[section].sh_offset +
+-		(r->r_offset - sechdrs[section].sh_addr);
++		r->r_offset - sechdrs[section].sh_addr;
+ }
+ 
+ static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
 
 
