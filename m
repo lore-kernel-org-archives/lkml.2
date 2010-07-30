@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab0G3Sq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:46:56 -0400
-Received: from exprod7ob116.obsmtp.com ([64.18.2.218]:60030 "EHLO
-	exprod7ob116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759736Ab0G3Sqj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 14:46:39 -0400
-Message-ID: <4C52ED8C.9070709@genband.com>
-Date: Fri, 30 Jul 2010 09:19:40 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: netdev@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        davem@davemloft.net
-Subject: where are the memory barriers in net driver rx DMA operations?
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 30 Jul 2010 15:19:41.0984 (UTC) FILETIME=[A2340A00:01CB2FFA]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17538.007
-X-TM-AS-Result: No-1.374100-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	id S933414Ab0G3Srs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:47:48 -0400
+Received: from kroah.org ([198.145.64.141]:35780 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758791Ab0G3Res (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:08 2010
+Message-Id: <20100730173107.946042238@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:30:23 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [058/140] drm/radeon/kms: fix possible mis-detection of sideport on rs690/rs740
+In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-Documentation/DMA-API-HOWTO.txt says that memory barriers are still
-required when accessing consistent mappings.  The example they give is
-for reordering stores to consistent memory but I assume this also
-applies to reordering loads.
+------------------
 
-However, I see many net drivers accessing the descriptor ring (in
-consistent memory), checking the status bit for the buffer, then calling
-dma_unmap_single() and accessing the data without any explicit memory
-barrier.  Does the unmapping call act as a barrier in this case?
+From: Alex Deucher <alexdeucher@gmail.com>
 
-Thanks,
+commit 5099fa7f23d3711538cbe9fe072b4ce1ba814035 upstream.
 
-Chris
+Check ulBootUpMemoryClock on AMD IGPs.
 
--- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+Fix regression noticed by Torsten Kaiser <just.for.lkml@googlemail.com>
+
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/gpu/drm/radeon/radeon_atombios.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -986,8 +986,15 @@ bool radeon_atombios_sideport_present(st
+ 	if (igp_info) {
+ 		switch (crev) {
+ 		case 1:
+-			if (igp_info->info.ucMemoryType & 0xf0)
+-				return true;
++			/* AMD IGPS */
++			if ((rdev->family == CHIP_RS690) ||
++			    (rdev->family == CHIP_RS740)) {
++				if (igp_info->info.ulBootUpMemoryClock)
++					return true;
++			} else {
++				if (igp_info->info.ucMemoryType & 0xf0)
++					return true;
++			}
+ 			break;
+ 		case 2:
+ 			if (igp_info->info_2.ucMemoryType & 0x0f)
+
+
