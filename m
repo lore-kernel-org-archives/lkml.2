@@ -1,114 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab0G3JUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 05:20:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50981 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab0G3JU3 convert rfc822-to-8bit (ORCPT
+	id S932129Ab0G3JWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 05:22:24 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35471 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755286Ab0G3JWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 05:20:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=RnbRY7BtoNwiLgym2T5PSNPxHRGd3Oop39DE+z4RWo3Xrzta44xy1RwMl4hJtFwgh4
-         fF7pQ8tu9x9CdLV6MjMzGLlRqkZ8sjPiWT/jPV7Nw+Ci9ysfnq7pIIYtQyfDQ2HXIQVv
-         au6W40wLnxUDjwXFt/zNEuWFdfbEyZX1GuJhM=
+	Fri, 30 Jul 2010 05:22:23 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH 0/5]  [RFC] transfer ASYNC vmscan writeback IO to the flusher threads
+Cc: kosaki.motohiro@jp.fujitsu.com, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+In-Reply-To: <20100730075819.GE8811@localhost>
+References: <20100729232330.GO655@dastard> <20100730075819.GE8811@localhost>
+Message-Id: <20100730181014.4AEA.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1280440089-3203-2-git-send-email-john.johansen@canonical.com>
-References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
-	<1280440089-3203-2-git-send-email-john.johansen@canonical.com>
-Date: Fri, 30 Jul 2010 12:20:27 +0300
-X-Google-Sender-Auth: hD3yDOd7y-uwqOgltOhoiCgerUY
-Message-ID: <AANLkTikk3tNM-fsXuS_SeAWgaYYCFrFAToRXOBkPxwy9@mail.gmail.com>
-Subject: Re: [PATCH 01/13] AppArmor: misc. base functions and defines
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, xiaosuo@gmail.com,
-        laijs@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 30 Jul 2010 18:22:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 12:47 AM, John Johansen
-<john.johansen@canonical.com> wrote:
-> +/**
-> + * kvmalloc - do allocation preferring kmalloc but falling back to vmalloc
-> + * @size: size of allocation
-> + *
-> + * Return: allocated buffer or NULL if failed
-> + *
-> + * It is possible that policy being loaded from the user is larger than
-> + * what can be allocated by kmalloc, in those cases fall back to vmalloc.
-> + */
-> +void *kvmalloc(size_t size)
-> +{
-> +       void *buffer = NULL;
-> +
-> +       if (size == 0)
-> +               return NULL;
-> +
-> +       /* do not attempt kmalloc if we need more than 16 pages at once */
-> +       if (size <= (16*PAGE_SIZE))
-> +               buffer = kmalloc(size, GFP_NOIO | __GFP_NOWARN);
+> On Fri, Jul 30, 2010 at 07:23:30AM +0800, Dave Chinner wrote:
+> > On Thu, Jul 29, 2010 at 07:51:42PM +0800, Wu Fengguang wrote:
+> > > Andrew,
+> > > 
+> > > It's possible to transfer ASYNC vmscan writeback IOs to the flusher threads.
+> > > This simple patchset shows the basic idea. Since it's a big behavior change,
+> > > there are inevitably lots of details to sort out. I don't know where it will
+> > > go after tests and discussions, so the patches are intentionally kept simple.
+> > > 
+> > > sync livelock avoidance (need more to be complete, but this is minimal required for the last two patches)
+> > > 	[PATCH 1/5] writeback: introduce wbc.for_sync to cover the two sync stages
+> > > 	[PATCH 2/5] writeback: stop periodic/background work on seeing sync works
+> > > 	[PATCH 3/5] writeback: prevent sync livelock with the sync_after timestamp
+> > > 
+> > > let the flusher threads do ASYNC writeback for pageout()
+> > > 	[PATCH 4/5] writeback: introduce bdi_start_inode_writeback()
+> > > 	[PATCH 5/5] vmscan: transfer async file writeback to the flusher
+> > 
+> > I really do not like this - all it does is transfer random page writeback
+> > from vmscan to the flusher threads rather than avoiding random page
+> > writeback altogether. Random page writeback is nasty - just say no.
+> 
+> There are cases we have to do pageout().
+> 
+> - a stressed memcg with lots of dirty pages
+> - a large NUMA system whose nodes have unbalanced vmscan rate and dirty pages
 
-16 pages is a lot of memory for 64 K pages. What's the purpose of
-GFP_NOIO here? vmalloc() will do GFP_KERNEL allocations anyway.
+- 32bit highmem system too
 
-> +       if (!buffer) {
-> +               /* see kvfree for why size must be at least work_struct size
-> +                * when allocated via vmalloc
-> +                */
-> +               if (size < sizeof(struct work_struct))
-> +                       size = sizeof(struct work_struct);
-> +               buffer = vmalloc(size);
-> +       }
-> +       return buffer;
-> +}
+can you please see following commit? this describe current design.
 
-Please don't hide this into apparmor internals. People have invented
-this function in the past so maybe it's time to put it in mm/util.c?
 
-> +
-> +/**
-> + * do_vfree - workqueue routine for freeing vmalloced memory
-> + * @work: data to be freed
-> + *
-> + * The work_struct is overlaid to the data being freed, as at the point
-> + * the work is scheduled the data is no longer valid, be its freeing
-> + * needs to be delayed until safe.
-> + */
-> +static void do_vfree(struct work_struct *work)
-> +{
-> +       vfree(work);
-> +}
-> +
-> +/**
-> + * kvfree - free an allocation do by kvmalloc
-> + * @buffer: buffer to free (MAYBE_NULL)
-> + *
-> + * Free a buffer allocated by kvmalloc
-> + */
-> +void kvfree(void *buffer)
-> +{
-> +       if (is_vmalloc_addr(buffer)) {
-> +               /* Data is no longer valid so just use the allocated space
-> +                * as the work_struct
-> +                */
-> +               struct work_struct *work = (struct work_struct *) buffer;
-> +               INIT_WORK(work, do_vfree);
-> +               schedule_work(work);
 
-I don't understand this part here. Is it needed for interrupt contexts
-or does vfree() sleep somewhere? If it's for the former, I think we
-can just add a comment saying that kvmalloc/kvfree is not safe from
-interrupt context and remove the schedule_work() parts here.
 
-> +       } else
-> +               kfree(buffer);
-> +}
+commit c4e2d7ddde9693a4c05da7afd485db02c27a7a09
+Author: akpm <akpm>
+Date:   Sun Dec 22 01:07:33 2002 +0000
+
+    [PATCH] Give kswapd writeback higher priority than pdflush
+
+    The `low latency page reclaim' design works by preventing page
+    allocators from blocking on request queues (and by preventing them from
+    blocking against writeback of individual pages, but that is immaterial
+    here).
+
+    This has a problem under some situations.  pdflush (or a write(2)
+    caller) could be saturating the queue with highmem pages.  This
+    prevents anyone from writing back ZONE_NORMAL pages.  We end up doing
+    enormous amounts of scenning.
+
+    A test case is to mmap(MAP_SHARED) almost all of a 4G machine's memory,
+    then kill the mmapping applications.  The machine instantly goes from
+    0% of memory dirty to 95% or more.  pdflush kicks in and starts writing
+    the least-recently-dirtied pages, which are all highmem.  The queue is
+    congested so nobody will write back ZONE_NORMAL pages.  kswapd chews
+    50% of the CPU scanning past dirty ZONE_NORMAL pages and page reclaim
+    efficiency (pages_reclaimed/pages_scanned) falls to 2%.
+
+    So this patch changes the policy for kswapd.  kswapd may use all of a
+    request queue, and is prepared to block on request queues.
+
+    What will now happen in the above scenario is:
+
+    1: The page alloctor scans some pages, fails to reclaim enough
+       memory and takes a nap in blk_congetion_wait().
+
+    2: kswapd() will scan the ZONE_NORMAL LRU and will start writing
+       back pages.  (These pages will be rotated to the tail of the
+       inactive list at IO-completion interrupt time).
+
+       This writeback will saturate the queue with ZONE_NORMAL pages.
+       Conveniently, pdflush will avoid the congested queues.  So we end up
+       writing the correct pages.
+
+    In this test, kswapd CPU utilisation falls from 50% to 2%, page reclaim
+    efficiency rises from 2% to 40% and things are generally a lot happier.
+
+
+    The downside is that kswapd may now do a lot less page reclaim,
+    increasing page allocation latency, causing more direct reclaim,
+    increasing lock contention in the VM, etc.  But I have not been able to
+    demonstrate that in testing.
+
+
+    The other problem is that there is only one kswapd, and there are lots
+    of disks.  That is a generic problem - without being able to co-opt
+    user processes we don't have enough threads to keep lots of disks saturated.
+
+    One fix for this would be to add an additional "really congested"
+    threshold in the request queues, so kswapd can still perform
+    nonblocking writeout.  This gives kswapd priority over pdflush while
+    allowing kswapd to feed many disk queues.  I doubt if this will be
+    called for.
+
+    BKrev: 3e051055aitHp3bZBPSqmq21KGs5aQ
+
+
+
