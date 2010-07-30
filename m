@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759760Ab0G3Ry3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:54:29 -0400
-Received: from kroah.org ([198.145.64.141]:57751 "EHLO coco.kroah.org"
+	id S933304Ab0G3SiI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:38:08 -0400
+Received: from kroah.org ([198.145.64.141]:57950 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759565Ab0G3RyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:05 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:33 2010
-Message-Id: <20100730175133.699182370@clark.site>
+	id S1759771Ab0G3Ryf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:36 2010
+Message-Id: <20100730175136.299426829@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:18 -0700
+Date: Fri, 30 Jul 2010 10:50:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [001/205] virtio-pci: disable msi at startup
+        Mike McCormack <mikem@ring3k.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [030/205] sky2: Restore multicast after restart
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael S. Tsirkin <mst@redhat.com>
+From: Mike McCormack <mikem@ring3k.org>
 
-commit b03214d559471359e2a85ae256686381d0672f29 upstream.
+commit 37652522faa0877dc6d0dbb6b999bdccc07f0e89 upstream.
 
-virtio-pci resets the device at startup by writing to the status
-register, but this does not clear the pci config space,
-specifically msi enable status which affects register
-layout.
+Multicast settings will be lost on reset, so restore them.
 
-This breaks things like kdump when they try to use e.g. virtio-blk.
-
-Fix by forcing msi off at startup. Since pci.c already has
-a routine to do this, we export and use it instead of duplicating code.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-pci@vger.kernel.org
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Mike McCormack <mikem@ring3k.org>
+Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci.c           |    1 +
- drivers/virtio/virtio_pci.c |    3 +++
- 2 files changed, 4 insertions(+)
+ drivers/net/sky2.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2294,6 +2294,7 @@ void pci_msi_off(struct pci_dev *dev)
- 		pci_write_config_word(dev, pos + PCI_MSIX_FLAGS, control);
+--- a/drivers/net/sky2.c
++++ b/drivers/net/sky2.c
+@@ -3293,6 +3293,7 @@ static void sky2_restart(struct work_str
+ 			continue;
+ 
+ 		sky2_hw_up(sky2);
++		sky2_set_multicast(dev);
+ 		netif_wake_queue(dev);
  	}
- }
-+EXPORT_SYMBOL_GPL(pci_msi_off);
  
- #ifndef HAVE_ARCH_PCI_SET_DMA_MAX_SEGMENT_SIZE
- int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size)
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -636,6 +636,9 @@ static int __devinit virtio_pci_probe(st
- 	INIT_LIST_HEAD(&vp_dev->virtqueues);
- 	spin_lock_init(&vp_dev->lock);
- 
-+	/* Disable MSI/MSIX to bring device to a known good state. */
-+	pci_msi_off(pci_dev);
-+
- 	/* enable the device */
- 	err = pci_enable_device(pci_dev);
- 	if (err)
 
 
