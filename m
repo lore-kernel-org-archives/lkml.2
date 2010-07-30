@@ -1,37 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224Ab0G3R3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:29:00 -0400
-Received: from krynn.se.axis.com ([193.13.178.10]:36081 "EHLO
-	krynn.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759190Ab0G3R25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:28:57 -0400
-Date: Fri, 30 Jul 2010 19:24:17 +0200
-From: Jesper Nilsson <Jesper.Nilsson@axis.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <mikael.starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH 01/36] arch/cris: Remove unnecessary casts of
-	private_data
-Message-ID: <20100730172417.GF9784@axis.com>
-References: <cover.1278967120.git.joe@perches.com> <a1f59726c5cbe63473fcd10e7a3ec5980adc9155.1278967120.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a1f59726c5cbe63473fcd10e7a3ec5980adc9155.1278967120.git.joe@perches.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759190Ab0G3R3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:29:20 -0400
+Received: from kroah.org ([198.145.64.141]:52062 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758821Ab0G3RTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:49 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:10 2010
+Message-Id: <20100730171510.873918481@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:15:52 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Curt Wohlgemuth <curtw@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [124/165] ext4: check for a good block group before loading buddy pages
+In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 10:49:53PM +0200, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Thanks, added to the cris tree.
+------------------
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+commit 8a57d9d61a6e361c7bb159dda797672c1df1a691 upstream (as of v2.6.34-git13)
+
+This adds a new field in ext4_group_info to cache the largest available
+block range in a block group; and don't load the buddy pages until *after*
+we've done a sanity check on the block group.
+
+With large allocation requests (e.g., fallocate(), 8MiB) and relatively full
+partitions, it's easy to have no block groups with a block extent large
+enough to satisfy the input request length.  This currently causes the loop
+during cr == 0 in ext4_mb_regular_allocator() to load the buddy bitmap pages
+for EVERY block group.  That can be a lot of pages.  The patch below allows
+us to call ext4_mb_good_group() BEFORE we load the buddy pages (although we
+have check again after we lock the block group).
+
+Addresses-Google-Bug: #2578108
+Addresses-Google-Bug: #2704453
+
+Signed-off-by: Curt Wohlgemuth <curtw@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ fs/ext4/ext4.h    |    1 
+ fs/ext4/mballoc.c |   70 +++++++++++++++++++++++++++++++++++++++++++-----------
+ 2 files changed, 58 insertions(+), 13 deletions(-)
+
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1657,6 +1657,7 @@ struct ext4_group_info {
+ 	ext4_grpblk_t	bb_first_free;	/* first free block */
+ 	ext4_grpblk_t	bb_free;	/* total free blocks */
+ 	ext4_grpblk_t	bb_fragments;	/* nr of freespace fragments */
++	ext4_grpblk_t	bb_largest_free_order;/* order of largest frag in BG */
+ 	struct          list_head bb_prealloc_list;
+ #ifdef DOUBLE_CHECK
+ 	void            *bb_bitmap;
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -658,6 +658,27 @@ static void ext4_mb_mark_free_simple(str
+ 	}
+ }
+ 
++/*
++ * Cache the order of the largest free extent we have available in this block
++ * group.
++ */
++static void
++mb_set_largest_free_order(struct super_block *sb, struct ext4_group_info *grp)
++{
++	int i;
++	int bits;
++
++	grp->bb_largest_free_order = -1; /* uninit */
++
++	bits = sb->s_blocksize_bits + 1;
++	for (i = bits; i >= 0; i--) {
++		if (grp->bb_counters[i] > 0) {
++			grp->bb_largest_free_order = i;
++			break;
++		}
++	}
++}
++
+ static noinline_for_stack
+ void ext4_mb_generate_buddy(struct super_block *sb,
+ 				void *buddy, void *bitmap, ext4_group_t group)
+@@ -700,6 +721,7 @@ void ext4_mb_generate_buddy(struct super
+ 		 */
+ 		grp->bb_free = free;
+ 	}
++	mb_set_largest_free_order(sb, grp);
+ 
+ 	clear_bit(EXT4_GROUP_INFO_NEED_INIT_BIT, &(grp->bb_state));
+ 
+@@ -725,6 +747,9 @@ void ext4_mb_generate_buddy(struct super
+  * contain blocks_per_page (PAGE_CACHE_SIZE / blocksize)  blocks.
+  * So it can have information regarding groups_per_page which
+  * is blocks_per_page/2
++ *
++ * Locking note:  This routine takes the block group lock of all groups
++ * for this page; do not hold this lock when calling this routine!
+  */
+ 
+ static int ext4_mb_init_cache(struct page *page, char *incore)
+@@ -910,6 +935,11 @@ out:
+ 	return err;
+ }
+ 
++/*
++ * Locking note:  This routine calls ext4_mb_init_cache(), which takes the
++ * block group lock of all groups for this page; do not hold the BG lock when
++ * calling this routine!
++ */
+ static noinline_for_stack
+ int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
+ {
+@@ -1004,6 +1034,11 @@ err:
+ 	return ret;
+ }
+ 
++/*
++ * Locking note:  This routine calls ext4_mb_init_cache(), which takes the
++ * block group lock of all groups for this page; do not hold the BG lock when
++ * calling this routine!
++ */
+ static noinline_for_stack int
+ ext4_mb_load_buddy(struct super_block *sb, ext4_group_t group,
+ 					struct ext4_buddy *e4b)
+@@ -1300,6 +1335,7 @@ static void mb_free_blocks(struct inode
+ 			buddy = buddy2;
+ 		} while (1);
+ 	}
++	mb_set_largest_free_order(sb, e4b->bd_info);
+ 	mb_check_buddy(e4b);
+ }
+ 
+@@ -1428,6 +1464,7 @@ static int mb_mark_used(struct ext4_budd
+ 		e4b->bd_info->bb_counters[ord]++;
+ 		e4b->bd_info->bb_counters[ord]++;
+ 	}
++	mb_set_largest_free_order(e4b->bd_sb, e4b->bd_info);
+ 
+ 	mb_set_bits(EXT4_MB_BITMAP(e4b), ex->fe_start, len0);
+ 	mb_check_buddy(e4b);
+@@ -1823,16 +1860,22 @@ void ext4_mb_scan_aligned(struct ext4_al
+ 	}
+ }
+ 
++/* This is now called BEFORE we load the buddy bitmap. */
+ static int ext4_mb_good_group(struct ext4_allocation_context *ac,
+ 				ext4_group_t group, int cr)
+ {
+ 	unsigned free, fragments;
+-	unsigned i, bits;
+ 	int flex_size = ext4_flex_bg_size(EXT4_SB(ac->ac_sb));
+ 	struct ext4_group_info *grp = ext4_get_group_info(ac->ac_sb, group);
+ 
+ 	BUG_ON(cr < 0 || cr >= 4);
+-	BUG_ON(EXT4_MB_GRP_NEED_INIT(grp));
++
++	/* We only do this if the grp has never been initialized */
++	if (unlikely(EXT4_MB_GRP_NEED_INIT(grp))) {
++		int ret = ext4_mb_init_group(ac->ac_sb, group);
++		if (ret)
++			return 0;
++	}
+ 
+ 	free = grp->bb_free;
+ 	fragments = grp->bb_fragments;
+@@ -1845,17 +1888,16 @@ static int ext4_mb_good_group(struct ext
+ 	case 0:
+ 		BUG_ON(ac->ac_2order == 0);
+ 
++		if (grp->bb_largest_free_order < ac->ac_2order)
++			return 0;
++
+ 		/* Avoid using the first bg of a flexgroup for data files */
+ 		if ((ac->ac_flags & EXT4_MB_HINT_DATA) &&
+ 		    (flex_size >= EXT4_FLEX_SIZE_DIR_ALLOC_SCHEME) &&
+ 		    ((group % flex_size) == 0))
+ 			return 0;
+ 
+-		bits = ac->ac_sb->s_blocksize_bits + 1;
+-		for (i = ac->ac_2order; i <= bits; i++)
+-			if (grp->bb_counters[i] > 0)
+-				return 1;
+-		break;
++		return 1;
+ 	case 1:
+ 		if ((free / fragments) >= ac->ac_g_ex.fe_len)
+ 			return 1;
+@@ -2026,14 +2068,11 @@ repeat:
+ 		group = ac->ac_g_ex.fe_group;
+ 
+ 		for (i = 0; i < ngroups; group++, i++) {
+-			struct ext4_group_info *grp;
+-
+ 			if (group == ngroups)
+ 				group = 0;
+ 
+-			/* quick check to skip empty groups */
+-			grp = ext4_get_group_info(sb, group);
+-			if (grp->bb_free == 0)
++			/* This now checks without needing the buddy page */
++			if (!ext4_mb_good_group(ac, group, cr))
+ 				continue;
+ 
+ 			err = ext4_mb_load_buddy(sb, group, &e4b);
+@@ -2041,8 +2080,12 @@ repeat:
+ 				goto out;
+ 
+ 			ext4_lock_group(sb, group);
++
++			/*
++			 * We need to check again after locking the
++			 * block group
++			 */
+ 			if (!ext4_mb_good_group(ac, group, cr)) {
+-				/* someone did allocation from this group */
+ 				ext4_unlock_group(sb, group);
+ 				ext4_mb_unload_buddy(&e4b);
+ 				continue;
+@@ -2255,6 +2298,7 @@ int ext4_mb_add_groupinfo(struct super_b
+ 	INIT_LIST_HEAD(&meta_group_info[i]->bb_prealloc_list);
+ 	init_rwsem(&meta_group_info[i]->alloc_sem);
+ 	meta_group_info[i]->bb_free_root.rb_node = NULL;
++	meta_group_info[i]->bb_largest_free_order = -1;  /* uninit */
+ 
+ #ifdef DOUBLE_CHECK
+ 	{
+
+
