@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760517Ab0G3TKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:10:52 -0400
-Received: from kroah.org ([198.145.64.141]:51483 "EHLO coco.kroah.org"
+	id S1760537Ab0G3TLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:11:13 -0400
+Received: from kroah.org ([198.145.64.141]:51461 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757107Ab0G3RSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:24 -0400
+	id S1753988Ab0G3RSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:23 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:03 2010
-Message-Id: <20100730171503.743348082@clark.site>
+Message-Id: <20100730171503.653088001@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:33 -0700
+Date: Fri, 30 Jul 2010 10:14:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [045/165] x86: Fix vsyscall on gcc 4.5 with -Os
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [044/165] perf: Resurrect flat callchains
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 124482935fb7fb9303c8a8ab930149c6a93d9910 upstream.
+commit 97aa1052739c6a06cb6b0467dbf410613d20bc97 upstream.
 
-This fixes the -Os breaks with gcc 4.5 bug.  rdtsc_barrier needs to be
-force inlined, otherwise user space will jump into kernel space and
-kill init.
+Initialize the callchain radix tree root correctly.
 
-This also addresses http://gcc.gnu.org/bugzilla/show_bug.cgi?id=44129
-I believe.
+When we walk through the parents, we must stop after the root, but
+since it wasn't well initialized, its parent pointer was random.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20100618210859.GA10913@basil.fritz.box>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Also the number of hits was random because uninitialized, hence it
+was part of the callchain while the root doesn't contain anything.
+
+This fixes segfaults and percentages followed by empty callchains
+while running:
+
+	perf report -g flat
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/system.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/callchain.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -449,7 +449,7 @@ void stop_this_cpu(void *dummy);
-  *
-  * (Could use an alternative three way for this if there was one.)
-  */
--static inline void rdtsc_barrier(void)
-+static __always_inline void rdtsc_barrier(void)
- {
- 	alternative(ASM_NOP3, "mfence", X86_FEATURE_MFENCE_RDTSC);
- 	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -48,6 +48,9 @@ static inline void callchain_init(struct
+ 	INIT_LIST_HEAD(&node->brothers);
+ 	INIT_LIST_HEAD(&node->children);
+ 	INIT_LIST_HEAD(&node->val);
++
++	node->parent = NULL;
++	node->hit = 0;
+ }
+ 
+ static inline u64 cumul_hits(struct callchain_node *node)
 
 
