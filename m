@@ -1,210 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab0G3PtS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 11:49:18 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:24364 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab0G3PtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 11:49:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6058"; a="49205561"
-X-IronPort-AV: E=Sophos;i="4.55,284,1278313200"; 
-   d="scan'208";a="648396"
-From: Ai Li <aili@codeaurora.org>
-To: akpm@linux-foundation.org, dwalker@codeaurora.org
-Cc: arjan@linux.intel.com, mingo@elte.hu, shemminger@vyatta.com,
-        czoccolo@gmail.com, len.brown@intel.com, aili@codeaurora.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org
-Subject: [PATCH v3] cpuidle: extend cpuidle and menu governor to handle dynamic states
-Date: Fri, 30 Jul 2010 09:49:11 -0600
-Message-Id: <1280504951-27812-1-git-send-email-aili@codeaurora.org>
-X-Mailer: git-send-email 1.5.6.3
+	id S1753178Ab0G3PqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 11:46:21 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:44634 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752022Ab0G3PqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 11:46:16 -0400
+Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+From: Shirley Ma <mashirle@us.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
+        davem@davemloft.net, herbert@gondor.hengli.com.au,
+        jdike@linux.intel.com
+In-Reply-To: <4C525CD2.5080604@redhat.com>
+References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
+	 <1280442682.9058.15.camel@localhost.localdomain>
+	 <4C525CD2.5080604@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Jul 2010 08:46:11 -0700
+Message-ID: <1280504771.9058.25.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some SoC chips, HW resources may be in use during any particular idle
-period.  As a consequence, the cpuidle states that the SoC is safe to
-enter can change from idle period to idle period.  In addition, the
-latency and threshold of each cpuidle state can vary, depending on the
-operating condition when the CPU becomes idle, e.g. the current cpu
-frequency, the current state of the HW blocks, etc.
+Hello Avi,
 
-cpuidle core and the menu governor, in the current form, are geared
-towards cpuidle states that are static, i.e. the availabiltiy of the
-states, their latencies, their thresholds are non-changing during run
-time.  cpuidle does not provide any hook that cpuidle drivers can use
-to adjust those values on the fly for the current idle period before the
-menu governor selects the target cpuidle state.
+On Fri, 2010-07-30 at 08:02 +0300, Avi Kivity wrote:
+> get_user_pages() is indeed slow.  But what about
+> get_user_pages_fast()?
+> 
+> Note that when the page is first touched, get_user_pages_fast() falls 
+> back to get_user_pages(), so the latency needs to be measured after 
+> quite a bit of warm-up. 
 
-This patch extends cpuidle core and the menu governor to handle states
-that are dynamic.  There are three additions in the patch and the patch
-maintains backwards-compatibility with existing cpuidle drivers.
+Yes, I used get_user_pages_fast, however if falled back to
+get_user_pages() when the apps doesn't allocate buffer on the same page.
+If I run a single ping, the RTT is extremely high, but when running
+multiple pings, the RTT time reduce significantly, but still it is not
+as fast as copy from my initial test. I am thinking that we might need
+to pre-pin memory pool.
 
-1) add prepare() to struct cpuidle_device.  A cpuidle driver can hook
-into the callback and cpuidle will call prepare() before calling the
-governor's select function.  The callback gives the cpuidle driver a
-chance to update the dynamic information of the cpuidle states for the
-current idle period, e.g. state availability, latencies, thresholds,
-power values, etc.
+Shirley
 
-2) add CPUIDLE_FLAG_IGNORE as one of the state flags.  In the prepare()
-function, a cpuidle driver can set/clear the flag to indicate to the
-menu governor whether a cpuidle state should be ignored, i.e. not
-available, during the current idle period.
-
-3) add power_specified bit to struct cpuidle_device.  The menu governor
-currently assumes that the cpuidle states are arranged in the order of
-increasing latency, threshold, and power savings.  This is true or can
-be made true for static states.  Once the state parameters are dynamic,
-the latencies, thresholds, and power savings for the cpuidle states can
-increase or decrease by different amounts from idle period to idle
-period.  So the assumption of increasing latency, threshold, and power
-savings from Cn to C(n+1) can no longer be guaranteed.
-
-It can be straight forward to calculate the power consumption of each
-available state and to specify it in power_usage for the idle period.
-Using the power_usage fields, the menu governor then selects the state
-that has the lowest power consumption and that still satisfies all other
-critieria.  The power_specified bit defaults to 0.  For existing cpuidle
-drivers, cpuidle detects that power_specified is 0 and fills in a dummy
-set of power_usage values.
-
-Signed-off-by: Ai Li <aili@codeaurora.org>
----
- drivers/cpuidle/cpuidle.c        |   31 +++++++++++++++++++++++++++++++
- drivers/cpuidle/governors/menu.c |   23 ++++++++++++++++-------
- include/linux/cpuidle.h          |    4 ++++
- 3 files changed, 51 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 1994885..c335d57 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -74,6 +74,17 @@ static void cpuidle_idle_call(void)
- 	 */
- 	hrtimer_peek_ahead_timers();
- #endif
-+
-+	/*
-+	 * Call the device's prepare function before calling the
-+	 * governor's select function.  ->prepare gives the device's
-+	 * cpuidle driver a chance to update any dynamic information
-+	 * of its cpuidle states for the current idle period, e.g.
-+	 * state availability, latencies, residencies, etc.
-+	 */
-+	if (dev->prepare)
-+		dev->prepare(dev);
-+
- 	/* ask the governor for the next state */
- 	next_state = cpuidle_curr_governor->select(dev);
- 	if (need_resched()) {
-@@ -282,6 +293,26 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
- 
- 	poll_idle_init(dev);
- 
-+	/*
-+	 * cpuidle driver should set the dev->power_specified bit
-+	 * before registering the device if the driver provides
-+	 * power_usage numbers.
-+	 *
-+	 * For those devices whose ->power_specified is not set,
-+	 * we fill in power_usage with decreasing values as the
-+	 * cpuidle code has an implicit assumption that state Cn
-+	 * uses less power than C(n-1).
-+	 *
-+	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
-+	 * an power value of -1.  So we use -2, -3, etc, for other
-+	 * c-states.
-+	 */
-+	if (!dev->power_specified) {
-+		int i;
-+		for (i = CPUIDLE_DRIVER_STATE_START; i < dev->state_count; i++)
-+			dev->states[i].power_usage = -1 - i;
-+	}
-+
- 	per_cpu(cpuidle_devices, dev->cpu) = dev;
- 	list_add(&dev->device_list, &cpuidle_detected_devices);
- 	if ((ret = cpuidle_add_sysfs(sys_dev))) {
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 1b12870..c2408bb 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -234,6 +234,7 @@ static int menu_select(struct cpuidle_device *dev)
- {
- 	struct menu_device *data = &__get_cpu_var(menu_devices);
- 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
-+	unsigned int power_usage = -1;
- 	int i;
- 	int multiplier;
- 
-@@ -278,19 +279,27 @@ static int menu_select(struct cpuidle_device *dev)
- 	if (data->expected_us > 5)
- 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
- 
--
--	/* find the deepest idle state that satisfies our constraints */
-+	/*
-+	 * Find the idle state with the lowest power while satisfying
-+	 * our constraints.
-+	 */
- 	for (i = CPUIDLE_DRIVER_STATE_START; i < dev->state_count; i++) {
- 		struct cpuidle_state *s = &dev->states[i];
- 
-+		if (s->flags & CPUIDLE_FLAG_IGNORE)
-+			continue;
- 		if (s->target_residency > data->predicted_us)
--			break;
-+			continue;
- 		if (s->exit_latency > latency_req)
--			break;
-+			continue;
- 		if (s->exit_latency * multiplier > data->predicted_us)
--			break;
--		data->exit_us = s->exit_latency;
--		data->last_state_idx = i;
-+			continue;
-+
-+		if (s->power_usage < power_usage) {
-+			power_usage = s->power_usage;
-+			data->last_state_idx = i;
-+			data->exit_us = s->exit_latency;
-+		}
- 	}
- 
- 	return data->last_state_idx;
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 55215cc..36ca972 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -52,6 +52,7 @@ struct cpuidle_state {
- #define CPUIDLE_FLAG_SHALLOW	(0x20) /* low latency, minimal savings */
- #define CPUIDLE_FLAG_BALANCED	(0x40) /* medium latency, moderate savings */
- #define CPUIDLE_FLAG_DEEP	(0x80) /* high latency, large savings */
-+#define CPUIDLE_FLAG_IGNORE	(0x100) /* ignore during this idle period */
- 
- #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
- 
-@@ -84,6 +85,7 @@ struct cpuidle_state_kobj {
- struct cpuidle_device {
- 	unsigned int		registered:1;
- 	unsigned int		enabled:1;
-+	unsigned int		power_specified:1;
- 	unsigned int		cpu;
- 
- 	int			last_residency;
-@@ -97,6 +99,8 @@ struct cpuidle_device {
- 	struct completion	kobj_unregister;
- 	void			*governor_data;
- 	struct cpuidle_state	*safe_state;
-+
-+	int (*prepare)		(struct cpuidle_device *dev);
- };
- 
- DECLARE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
--- 
-1.5.6.3
-
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
