@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab0G3Rv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:51:27 -0400
-Received: from kroah.org ([198.145.64.141]:35971 "EHLO coco.kroah.org"
+	id S932373Ab0G3RvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:51:06 -0400
+Received: from kroah.org ([198.145.64.141]:35979 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932340Ab0G3RfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:22 -0400
+	id S932347Ab0G3RfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:10 2010
-Message-Id: <20100730173110.677309951@clark.site>
+Message-Id: <20100730173110.844318455@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:53 -0700
+Date: Fri, 30 Jul 2010 10:30:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [088/140] x86: Fix x2apic preenabled system with kexec
+        Kamal Mostafa <kamal@canonical.com>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [090/140] Input: i8042 - add Gigabyte Spring Peak to dmi_noloop_table
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Kamal Mostafa <kamal@canonical.com>
 
-commit fd19dce7ac07973f700b0f13fb7f94b951414a4c upstream.
+commit 3e1bbc8d5018a05c0793c8a32b777a1396eb4414 upstream.
 
-Found one x2apic system kexec loop test failed
-when CONFIG_NMI_WATCHDOG=y (old) or CONFIG_LOCKUP_DETECTOR=y (current tip)
+Gigabyte "Spring Peak" notebook indicates wrong chassis-type, tripping up
+i8042 and breaking the touchpad.  Add this model to i8042_dmi_noloop_table[]
+to resolve.
 
-first kernel can kexec second kernel, but second kernel can not kexec third one.
+BugLink: https://bugs.launchpad.net/bugs/580664
 
-it can be duplicated on another system with BIOS preenabled x2apic.
-First kernel can not kexec second kernel.
-
-It turns out, when kernel boot with pre-enabled x2apic, it will not execute
-disable_local_APIC on shutdown path.
-
-when init_apic_mappings() is called in setup_arch, it will skip setting of
-apic_phys when x2apic_mode is set. ( x2apic_mode is much early check_x2apic())
-Then later, disable_local_APIC() will bail out early because !apic_phys.
-
-So check !x2apic_mode in x2apic_mode in disable_local_APIC with !apic_phys.
-
-another solution could be updating init_apic_mappings() to set apic_phys even
-for preenabled x2apic system. Actually even for x2apic system, that lapic
-address is mapped already in early stage.
-
-BTW: is there any x2apic preenabled system with apicid of boot cpu > 255?
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4C3EB22B.3000701@kernel.org>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/apic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -920,7 +920,7 @@ void disable_local_APIC(void)
- 	unsigned int value;
- 
- 	/* APIC hasn't been mapped yet */
--	if (!apic_phys)
-+	if (!x2apic_mode && !apic_phys)
- 		return;
- 
- 	clear_local_APIC();
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -166,6 +166,13 @@ static const struct dmi_system_id __init
+ 		},
+ 	},
+ 	{
++		/* Gigabyte Spring Peak - defines wrong chassis type */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Spring Peak"),
++		},
++	},
++	{
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv9700"),
 
 
