@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab0G3RDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:03:30 -0400
-Received: from kroah.org ([198.145.64.141]:35482 "EHLO coco.kroah.org"
+	id S1755650Ab0G3RDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:03:42 -0400
+Received: from kroah.org ([198.145.64.141]:35525 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab0G3RD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:03:29 -0400
+	id S1755002Ab0G3RDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:03:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:54 2010
-Message-Id: <20100730165953.954949437@clark.site>
+Message-Id: <20100730165954.539928245@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 09:57:17 -0700
+Date: Fri, 30 Jul 2010 09:57:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
-Subject: [01/17] hwmon: (coretemp) Properly label the sensors
+        Tim Gardner <tim.gardner@canonical.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [08/17] hostap: Protect against initialization interrupt
 In-Reply-To: <20100730170054.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +26,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Tim Gardner <tim.gardner@canonical.com>
 
-commit 3f4f09b4be35d38d6e2bf22c989443e65e70fc4c upstream.
+commit d6a574ff6bfb842bdb98065da053881ff527be46 upstream.
 
-Don't assume that CPU entry number and core ID always match. It
-worked in the simple cases (single CPU, no HT) but fails on
-multi-CPU systems.
+Use an irq spinlock to hold off the IRQ handler until
+enough early card init is complete such that the handler
+can run without faulting.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Huaxu Wan <huaxu.wan@intel.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/hwmon/coretemp.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -52,6 +52,7 @@ struct coretemp_data {
- 	struct mutex update_lock;
- 	const char *name;
- 	u32 id;
-+	u16 core_id;
- 	char valid;		/* zero until following fields are valid */
- 	unsigned long last_updated;	/* in jiffies */
- 	int temp;
-@@ -74,7 +75,7 @@ static ssize_t show_name(struct device *
- 	if (attr->index == SHOW_NAME)
- 		ret = sprintf(buf, "%s\n", data->name);
- 	else	/* show label */
--		ret = sprintf(buf, "Core %d\n", data->id);
-+		ret = sprintf(buf, "Core %d\n", data->core_id);
+---
+ drivers/net/wireless/hostap/hostap_cs.c   |   10 ++++++++++
+ drivers/net/wireless/hostap/hostap_hw.c   |   13 +++++++++++++
+ drivers/net/wireless/hostap/hostap_wlan.h |    2 +-
+ 3 files changed, 24 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/hostap/hostap_cs.c
++++ b/drivers/net/wireless/hostap/hostap_cs.c
+@@ -557,6 +557,7 @@ static int prism2_config(struct pcmcia_d
+ 	config_info_t conf;
+ 	cistpl_cftable_entry_t dflt = { 0 };
+ 	struct hostap_cs_priv *hw_priv;
++	unsigned long flags;
+ 
+ 	PDEBUG(DEBUG_FLOW, "prism2_config()\n");
+ 
+@@ -688,6 +689,12 @@ static int prism2_config(struct pcmcia_d
+ 	link->dev_node = &hw_priv->node;
+ 
+ 	/*
++	 * Make sure the IRQ handler cannot proceed until at least
++	 * dev->base_addr is initialized.
++	 */
++	spin_lock_irqsave(&local->irq_init_lock, flags);
++
++	/*
+ 	 * Allocate an interrupt line.  Note that this does not assign a
+ 	 * handler to the interrupt, unless the 'Handler' member of the
+ 	 * irq structure is initialized.
+@@ -712,6 +719,8 @@ static int prism2_config(struct pcmcia_d
+ 	dev->irq = link->irq.AssignedIRQ;
+ 	dev->base_addr = link->io.BasePort1;
+ 
++	spin_unlock_irqrestore(&local->irq_init_lock, flags);
++
+ 	/* Finally, report what we've done */
+ 	printk(KERN_INFO "%s: index 0x%02x: ",
+ 	       dev_info, link->conf.ConfigIndex);
+@@ -742,6 +751,7 @@ static int prism2_config(struct pcmcia_d
  	return ret;
- }
  
-@@ -216,6 +217,9 @@ static int __devinit coretemp_probe(stru
- 	}
+  cs_failed:
++	spin_unlock_irqrestore(&local->irq_init_lock, flags);
+ 	cs_error(link, last_fn, last_ret);
  
- 	data->id = pdev->id;
-+#ifdef CONFIG_SMP
-+	data->core_id = c->cpu_core_id;
-+#endif
- 	data->name = "coretemp";
- 	mutex_init(&data->update_lock);
+  failed:
+--- a/drivers/net/wireless/hostap/hostap_hw.c
++++ b/drivers/net/wireless/hostap/hostap_hw.c
+@@ -2631,6 +2631,18 @@ static irqreturn_t prism2_interrupt(int
+ 	iface = netdev_priv(dev);
+ 	local = iface->local;
  
++	/* Detect early interrupt before driver is fully configued */
++	spin_lock(&local->irq_init_lock);
++	if (!dev->base_addr) {
++		if (net_ratelimit()) {
++			printk(KERN_DEBUG "%s: Interrupt, but dev not configured\n",
++			       dev->name);
++		}
++		spin_unlock(&local->irq_init_lock);
++		return IRQ_HANDLED;
++	}
++	spin_unlock(&local->irq_init_lock);
++
+ 	prism2_io_debug_add(dev, PRISM2_IO_DEBUG_CMD_INTERRUPT, 0, 0);
+ 
+ 	if (local->func->card_present && !local->func->card_present(local)) {
+@@ -3187,6 +3199,7 @@ prism2_init_local_data(struct prism2_hel
+ 	spin_lock_init(&local->cmdlock);
+ 	spin_lock_init(&local->baplock);
+ 	spin_lock_init(&local->lock);
++	spin_lock_init(&local->irq_init_lock);
+ 	mutex_init(&local->rid_bap_mtx);
+ 
+ 	if (card_idx < 0 || card_idx >= MAX_PARM_DEVICES)
+--- a/drivers/net/wireless/hostap/hostap_wlan.h
++++ b/drivers/net/wireless/hostap/hostap_wlan.h
+@@ -653,7 +653,7 @@ struct local_info {
+ 	rwlock_t iface_lock; /* hostap_interfaces read lock; use write lock
+ 			      * when removing entries from the list.
+ 			      * TX and RX paths can use read lock. */
+-	spinlock_t cmdlock, baplock, lock;
++	spinlock_t cmdlock, baplock, lock, irq_init_lock;
+ 	struct mutex rid_bap_mtx;
+ 	u16 infofid; /* MAC buffer id for info frame */
+ 	/* txfid, intransmitfid, next_txtid, and next_alloc are protected by
 
 
