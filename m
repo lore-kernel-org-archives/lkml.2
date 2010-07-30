@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab0G3RT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:19:27 -0400
-Received: from kroah.org ([198.145.64.141]:51870 "EHLO coco.kroah.org"
+	id S1758836Ab0G3RTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:19:53 -0400
+Received: from kroah.org ([198.145.64.141]:51997 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758647Ab0G3RTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:08 2010
-Message-Id: <20100730171508.575432999@clark.site>
+	id S1758781Ab0G3RTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:10 2010
+Message-Id: <20100730171510.105264205@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:27 -0700
+Date: Fri, 30 Jul 2010 10:15:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [099/165] ext4: Handle non empty on-disk orphan link
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [116/165] ext4: dont return to userspace after freezing the fs with a mutex held
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 6e3617e579e070d3655a93ee9ed7149113e795e0 upstream (as of v2.6.33-git11)
+commit 6b0310fbf087ad6e9e3b8392adca97cd77184084 upstream (as of v2.6.34-git13)
 
-In case of truncate errors we explicitly remove inode from in-core
-orphan list via orphan_del(NULL, inode) without modifying the on-disk list.
+ext4_freeze() used jbd2_journal_lock_updates() which takes
+the j_barrier mutex, and then returns to userspace.  The
+kernel does not like this:
 
-But later on, the same inode may be inserted in the orphan list again
-which will result the on-disk linked list getting corrupted.  If inode
-i_dtime contains valid value, then skip on-disk list modification.
+================================================
+[ BUG: lock held when returning to user space! ]
+------------------------------------------------
+lvcreate/1075 is leaving the kernel with locks still held!
+1 lock held by lvcreate/1075:
+ #0:  (&journal->j_barrier){+.+...}, at: [<ffffffff811c6214>]
+jbd2_journal_lock_updates+0xe1/0xf0
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Use vfs_check_frozen() added to ext4_journal_start_sb() and
+ext4_force_commit() instead.
+
+Addresses-Red-Hat-Bugzilla: #568503
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/namei.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ fs/ext4/super.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2020,6 +2020,13 @@ int ext4_orphan_add(handle_t *handle, st
- 	err = ext4_reserve_inode_write(handle, inode, &iloc);
- 	if (err)
- 		goto out_unlock;
-+	/*
-+	 * Due to previous errors inode may be already a part of on-disk
-+	 * orphan list. If so skip on-disk list modification.
-+	 */
-+	if (NEXT_ORPHAN(inode) && NEXT_ORPHAN(inode) <=
-+		(le32_to_cpu(EXT4_SB(sb)->s_es->s_inodes_count)))
-+			goto mem_insert;
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -227,6 +227,7 @@ handle_t *ext4_journal_start_sb(struct s
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return ERR_PTR(-EROFS);
  
- 	/* Insert this inode at the head of the on-disk orphan list... */
- 	NEXT_ORPHAN(inode) = le32_to_cpu(EXT4_SB(sb)->s_es->s_last_orphan);
-@@ -2037,6 +2044,7 @@ int ext4_orphan_add(handle_t *handle, st
- 	 *
- 	 * This is safe: on error we're going to ignore the orphan list
- 	 * anyway on the next recovery. */
-+mem_insert:
- 	if (!err)
- 		list_add(&EXT4_I(inode)->i_orphan, &EXT4_SB(sb)->s_orphan);
++	vfs_check_frozen(sb, SB_FREEZE_WRITE);
+ 	/* Special case here: if the journal has aborted behind our
+ 	 * backs (eg. EIO in the commit thread), then we still need to
+ 	 * take the FS itself readonly cleanly. */
+@@ -3391,8 +3392,10 @@ int ext4_force_commit(struct super_block
+ 		return 0;
+ 
+ 	journal = EXT4_SB(sb)->s_journal;
+-	if (journal)
++	if (journal) {
++		vfs_check_frozen(sb, SB_FREEZE_WRITE);
+ 		ret = ext4_journal_force_commit(journal);
++	}
+ 
+ 	return ret;
+ }
+@@ -3441,18 +3444,16 @@ static int ext4_freeze(struct super_bloc
+ 	 * the journal.
+ 	 */
+ 	error = jbd2_journal_flush(journal);
+-	if (error < 0) {
+-	out:
+-		jbd2_journal_unlock_updates(journal);
+-		return error;
+-	}
++	if (error < 0)
++		goto out;
+ 
+ 	/* Journal blocked and flushed, clear needs_recovery flag. */
+ 	EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+ 	error = ext4_commit_super(sb, 1);
+-	if (error)
+-		goto out;
+-	return 0;
++out:
++	/* we rely on s_frozen to stop further updates */
++	jbd2_journal_unlock_updates(EXT4_SB(sb)->s_journal);
++	return error;
+ }
+ 
+ /*
+@@ -3469,7 +3470,6 @@ static int ext4_unfreeze(struct super_bl
+ 	EXT4_SET_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
+ 	ext4_commit_super(sb, 1);
+ 	unlock_super(sb);
+-	jbd2_journal_unlock_updates(EXT4_SB(sb)->s_journal);
+ 	return 0;
+ }
  
 
 
