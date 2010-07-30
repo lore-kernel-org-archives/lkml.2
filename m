@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab0G3R7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:59:48 -0400
-Received: from kroah.org ([198.145.64.141]:59140 "EHLO coco.kroah.org"
+	id S933001Ab0G3SAE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:00:04 -0400
+Received: from kroah.org ([198.145.64.141]:59163 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932739Ab0G3R53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:29 -0400
+	id S932749Ab0G3R5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:32 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
-Message-Id: <20100730175149.385225008@clark.site>
+Message-Id: <20100730175149.641455976@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:07 -0700
+Date: Fri, 30 Jul 2010 10:53:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [170/205] mfd: Remove unneeded and dangerous clearing of clientdata
+        Ang Way Chuang <wcang@nav6.org>, Jarod Wilson <jarod@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [173/205] V4L/DVB: dvb-core: Fix ULE decapsulation bug
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Ang Way Chuang <wcang79@gmail.com>
 
-commit 28ade0f217a3a3ff992b01e06e6e425c250a8406 upstream.
+commit 5c331fc8c19e181bffab46e9d18e1637cdc47170 upstream.
 
-Unlike real i2c-devices which get detached from the driver, dummy-devices
-get truly unregistered. So, there has never been a need to clear the
-clientdata because the device will go away anyhow. For the occasions fixed
-here, clearing clientdata was even dangerous as the structure was freed
-already.
+Fix ULE decapsulation bug when less than 4 bytes of ULE SNDU is packed
+into the remaining bytes of a MPEG2-TS frame
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+ULE (Unidirectional Lightweight Encapsulation RFC 4326) decapsulation
+code has a bug that incorrectly treats ULE SNDU packed into the
+remaining 2 or 3 bytes of a MPEG2-TS frame as having invalid pointer
+field on the subsequent MPEG2-TS frame.
+
+Signed-off-by: Ang Way Chuang <wcang@nav6.org>
+Acked-by: Jarod Wilson <jarod@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mfd/88pm860x-i2c.c |    1 -
- drivers/mfd/max8925-i2c.c  |    2 --
- 2 files changed, 3 deletions(-)
+ drivers/media/dvb/dvb-core/dvb_net.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/drivers/mfd/88pm860x-i2c.c
-+++ b/drivers/mfd/88pm860x-i2c.c
-@@ -200,7 +200,6 @@ static int __devexit pm860x_remove(struc
+--- a/drivers/media/dvb/dvb-core/dvb_net.c
++++ b/drivers/media/dvb/dvb-core/dvb_net.c
+@@ -350,6 +350,7 @@ static void dvb_net_ule( struct net_devi
+ 	const u8 *ts, *ts_end, *from_where = NULL;
+ 	u8 ts_remain = 0, how_much = 0, new_ts = 1;
+ 	struct ethhdr *ethh = NULL;
++	bool error = false;
  
- 	pm860x_device_exit(chip);
- 	i2c_unregister_device(chip->companion);
--	i2c_set_clientdata(chip->companion, NULL);
- 	i2c_set_clientdata(chip->client, NULL);
- 	kfree(chip);
- 	return 0;
---- a/drivers/mfd/max8925-i2c.c
-+++ b/drivers/mfd/max8925-i2c.c
-@@ -173,8 +173,6 @@ static int __devexit max8925_remove(stru
- 	max8925_device_exit(chip);
- 	i2c_unregister_device(chip->adc);
- 	i2c_unregister_device(chip->rtc);
--	i2c_set_clientdata(chip->adc, NULL);
--	i2c_set_clientdata(chip->rtc, NULL);
- 	i2c_set_clientdata(chip->i2c, NULL);
- 	kfree(chip);
- 	return 0;
+ #ifdef ULE_DEBUG
+ 	/* The code inside ULE_DEBUG keeps a history of the last 100 TS cells processed. */
+@@ -459,10 +460,16 @@ static void dvb_net_ule( struct net_devi
+ 
+ 						/* Drop partly decoded SNDU, reset state, resync on PUSI. */
+ 						if (priv->ule_skb) {
+-							dev_kfree_skb( priv->ule_skb );
++							error = true;
++							dev_kfree_skb(priv->ule_skb);
++						}
++
++						if (error || priv->ule_sndu_remain) {
+ 							dev->stats.rx_errors++;
+ 							dev->stats.rx_frame_errors++;
++							error = false;
+ 						}
++
+ 						reset_ule(priv);
+ 						priv->need_pusi = 1;
+ 						continue;
+@@ -534,6 +541,7 @@ static void dvb_net_ule( struct net_devi
+ 				from_where += 2;
+ 			}
+ 
++			priv->ule_sndu_remain = priv->ule_sndu_len + 2;
+ 			/*
+ 			 * State of current TS:
+ 			 *   ts_remain (remaining bytes in the current TS cell)
+@@ -543,6 +551,7 @@ static void dvb_net_ule( struct net_devi
+ 			 */
+ 			switch (ts_remain) {
+ 				case 1:
++					priv->ule_sndu_remain--;
+ 					priv->ule_sndu_type = from_where[0] << 8;
+ 					priv->ule_sndu_type_1 = 1; /* first byte of ule_type is set. */
+ 					ts_remain -= 1; from_where += 1;
+@@ -556,6 +565,7 @@ static void dvb_net_ule( struct net_devi
+ 				default: /* complete ULE header is present in current TS. */
+ 					/* Extract ULE type field. */
+ 					if (priv->ule_sndu_type_1) {
++						priv->ule_sndu_type_1 = 0;
+ 						priv->ule_sndu_type |= from_where[0];
+ 						from_where += 1; /* points to payload start. */
+ 						ts_remain -= 1;
 
 
