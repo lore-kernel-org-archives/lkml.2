@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760158Ab0G3SOJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:14:09 -0400
-Received: from kroah.org ([198.145.64.141]:59051 "EHLO coco.kroah.org"
+	id S1760075Ab0G3R47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:56:59 -0400
+Received: from kroah.org ([198.145.64.141]:58628 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932672Ab0G3R5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:12 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:48 2010
-Message-Id: <20100730175148.046181012@clark.site>
+	id S932357Ab0G3R4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
+Message-Id: <20100730175142.608509724@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:52 -0700
+Date: Fri, 30 Jul 2010 10:51:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Hocko <mhocko@suse.cz>, Darren Hart <dvhltc@us.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Nick Piggin <npiggin@suse.de>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [155/205] futex: futex_find_get_task remove credentails check
+        Tejun Heo <tj@kernel.org>, Peer Chen <pchen@nvidia.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [098/205] ata_generic: implement ATA_GEN_* flags and force enable DMA on MBP 7,1
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,82 +26,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Tejun Heo <tj@kernel.org>
 
-commit 7a0ea09ad5352efce8fe79ed853150449903b9f5 upstream.
+commit 1529c69adce1e95f7ae72f0441590c226bbac7fc upstream.
 
-futex_find_get_task is currently used (through lookup_pi_state) from two
-contexts, futex_requeue and futex_lock_pi_atomic.  None of the paths
-looks it needs the credentials check, though.  Different (e)uids
-shouldn't matter at all because the only thing that is important for
-shared futex is the accessibility of the shared memory.
+IDE mode of MCP89 on MBP 7,1 doesn't set DMA enable bits in the BMDMA
+status register.  Make the following changes to work around the problem.
 
-The credentail check results in glibc assert failure or process hang (if
-glibc is compiled without assert support) for shared robust pthread
-mutex with priority inheritance if a process tries to lock already held
-lock owned by a process with a different euid:
+* Instead of using hard coded 1 in id->driver_data as class code
+  match, use ATA_GEN_CLASS_MATCH and carry the matched id in
+  host->private_data.
 
-pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
+* Instead of matching PCI_VENDOR_ID_CENATEK, use ATA_GEN_FORCE_DMA
+  flag in id instead.
 
-The problem is that futex_lock_pi_atomic which is called when we try to
-lock already held lock checks the current holder (tid is stored in the
-futex value) to get the PI state.  It uses lookup_pi_state which in turn
-gets task struct from futex_find_get_task.  ESRCH is returned either
-when the task is not found or if credentials check fails.
+* Add ATA_GEN_FORCE_DMA to the id entry of MBP 7,1.
 
-futex_lock_pi_atomic simply returns if it gets ESRCH.  glibc code,
-however, doesn't expect that robust lock returns with ESRCH because it
-should get either success or owner died.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Darren Hart <dvhltc@us.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Peer Chen <pchen@nvidia.com>
+Reported-by: Anders Østhus <grapz666@gmail.com>
+Reported-by: Andreas Graf <andreas_graf@csgraf.de>
+Reported-by: Benoit Gschwind <gschwind@gnu-log.net>
+Reported-by: Damien Cassou <damien.cassou@gmail.com>
+Reported-by: tixetsal@juno.com
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/futex.c |   17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+ drivers/ata/ata_generic.c |   26 +++++++++++++++++++-------
+ 1 file changed, 19 insertions(+), 7 deletions(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -429,20 +429,11 @@ static void free_pi_state(struct futex_p
- static struct task_struct * futex_find_get_task(pid_t pid)
+--- a/drivers/ata/ata_generic.c
++++ b/drivers/ata/ata_generic.c
+@@ -32,6 +32,11 @@
+  *	A generic parallel ATA driver using libata
+  */
+ 
++enum {
++	ATA_GEN_CLASS_MATCH		= (1 << 0),
++	ATA_GEN_FORCE_DMA		= (1 << 1),
++};
++
+ /**
+  *	generic_set_mode	-	mode setting
+  *	@link: link to set up
+@@ -46,13 +51,17 @@
+ static int generic_set_mode(struct ata_link *link, struct ata_device **unused)
  {
- 	struct task_struct *p;
--	const struct cred *cred = current_cred(), *pcred;
+ 	struct ata_port *ap = link->ap;
++	const struct pci_device_id *id = ap->host->private_data;
+ 	int dma_enabled = 0;
+ 	struct ata_device *dev;
+ 	struct pci_dev *pdev = to_pci_dev(ap->host->dev);
  
- 	rcu_read_lock();
- 	p = find_task_by_vpid(pid);
--	if (!p) {
--		p = ERR_PTR(-ESRCH);
--	} else {
--		pcred = __task_cred(p);
--		if (cred->euid != pcred->euid &&
--		    cred->euid != pcred->uid)
--			p = ERR_PTR(-ESRCH);
--		else
--			get_task_struct(p);
--	}
-+	if (p)
-+		get_task_struct(p);
+-	/* Bits 5 and 6 indicate if DMA is active on master/slave */
+-	if (ap->ioaddr.bmdma_addr)
++	if (id->driver_data & ATA_GEN_FORCE_DMA) {
++		dma_enabled = 0xff;
++	} else if (ap->ioaddr.bmdma_addr) {
++		/* Bits 5 and 6 indicate if DMA is active on master/slave */
+ 		dma_enabled = ioread8(ap->ioaddr.bmdma_addr + ATA_DMA_STATUS);
++	}
  
- 	rcu_read_unlock();
+ 	if (pdev->vendor == PCI_VENDOR_ID_CENATEK)
+ 		dma_enabled = 0xFF;
+@@ -126,7 +135,7 @@ static int ata_generic_init_one(struct p
+ 	const struct ata_port_info *ppi[] = { &info, NULL };
  
-@@ -564,8 +555,8 @@ lookup_pi_state(u32 uval, struct futex_h
- 	if (!pid)
- 		return -ESRCH;
- 	p = futex_find_get_task(pid);
--	if (IS_ERR(p))
--		return PTR_ERR(p);
-+	if (!p)
-+		return -ESRCH;
+ 	/* Don't use the generic entry unless instructed to do so */
+-	if (id->driver_data == 1 && all_generic_ide == 0)
++	if ((id->driver_data & ATA_GEN_CLASS_MATCH) && all_generic_ide == 0)
+ 		return -ENODEV;
  
+ 	/* Devices that need care */
+@@ -155,7 +164,7 @@ static int ata_generic_init_one(struct p
+ 			return rc;
+ 		pcim_pin_device(dev);
+ 	}
+-	return ata_pci_sff_init_one(dev, ppi, &generic_sht, NULL, 0);
++	return ata_pci_sff_init_one(dev, ppi, &generic_sht, (void *)id, 0);
+ }
+ 
+ static struct pci_device_id ata_generic[] = {
+@@ -167,13 +176,15 @@ static struct pci_device_id ata_generic[
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_HINT,   PCI_DEVICE_ID_HINT_VXPROII_IDE), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_VIA,    PCI_DEVICE_ID_VIA_82C561), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_OPTI,   PCI_DEVICE_ID_OPTI_82C558), },
+-	{ PCI_DEVICE(PCI_VENDOR_ID_CENATEK,PCI_DEVICE_ID_CENATEK_IDE), },
++	{ PCI_DEVICE(PCI_VENDOR_ID_CENATEK,PCI_DEVICE_ID_CENATEK_IDE),
++	  .driver_data = ATA_GEN_FORCE_DMA },
  	/*
- 	 * We need to look at the task state flags to figure out,
+ 	 * For some reason, MCP89 on MacBook 7,1 doesn't work with
+ 	 * ahci, use ata_generic instead.
+ 	 */
+ 	{ PCI_VENDOR_ID_NVIDIA, PCI_DEVICE_ID_NVIDIA_NFORCE_MCP89_SATA,
+-	  PCI_VENDOR_ID_APPLE, 0xcb89, },
++	  PCI_VENDOR_ID_APPLE, 0xcb89,
++	  .driver_data = ATA_GEN_FORCE_DMA },
+ #if !defined(CONFIG_PATA_TOSHIBA) && !defined(CONFIG_PATA_TOSHIBA_MODULE)
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA,PCI_DEVICE_ID_TOSHIBA_PICCOLO_1), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA,PCI_DEVICE_ID_TOSHIBA_PICCOLO_2),  },
+@@ -181,7 +192,8 @@ static struct pci_device_id ata_generic[
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA,PCI_DEVICE_ID_TOSHIBA_PICCOLO_5),  },
+ #endif	
+ 	/* Must come last. If you add entries adjust this table appropriately */
+-	{ PCI_ANY_ID,		PCI_ANY_ID,			   PCI_ANY_ID, PCI_ANY_ID, PCI_CLASS_STORAGE_IDE << 8, 0xFFFFFF00UL, 1},
++	{ PCI_DEVICE_CLASS(PCI_CLASS_STORAGE_IDE << 8, 0xFFFFFF00UL),
++	  .driver_data = ATA_GEN_CLASS_MATCH },
+ 	{ 0, },
+ };
+ 
 
 
