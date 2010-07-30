@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab0G3VTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 17:19:36 -0400
-Received: from 1wt.eu ([62.212.114.60]:39743 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab0G3VTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 17:19:34 -0400
-Date: Fri, 30 Jul 2010 23:15:44 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Julia Lawall <julia@diku.dk>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/9] staging: panel: check put_user() return value
-Message-ID: <20100730211544.GH19782@1wt.eu>
-References: <1280488123-20859-1-git-send-email-segooon@gmail.com>
+	id S1755146Ab0G3VXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 17:23:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53936 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149Ab0G3VXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 17:23:14 -0400
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+From: utz lehmann <lkml123@s2y4n2c.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
+        David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+In-Reply-To: <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	 <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	 <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	 <AANLkTikBCXK6uEw  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Jul 2010 23:22:58 +0200
+Message-ID: <1280524978.2452.9.camel@segv.aura.of.mankind>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280488123-20859-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.4.2.3i
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:xkhYyWNpAly6hJpDhG0gRE+Y6Lb9LfF5/zRm77EyCM7
+ 5hqFACpXm3hkMlYI2pU4WyLfbckfy+Z8JIheq/sN3gRH6mB4SF
+ 9KyEv1QTqFrVoaN7+HNsYx7pko4mh9H7dzbgZWYoF/ZOyusp5e
+ f89IuR4dVGNHA6jN1ITcI6mG1BZE+0Jdz7kK33E/fCltCe3Mvc
+ cU1cwAwQOo6WO7yU5ajpA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 03:08:42PM +0400, Kulikov Vasiliy wrote:
-> diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> index f58da32..57f4946 100644
-> --- a/drivers/staging/panel/panel.c
-> +++ b/drivers/staging/panel/panel.c
-> @@ -1589,25 +1589,30 @@ void lcd_init(void)
->  static ssize_t keypad_read(struct file *file,
->  			   char *buf, size_t count, loff_t *ppos)
->  {
-> -
-> +	int buflen = keypad_buflen;
->  	unsigned i = *ppos;
->  	char *tmp = buf;
-> +	int start = keypad_start;
->  
-> -	if (keypad_buflen == 0) {
-> +	if (buflen == 0) {
->  		if (file->f_flags & O_NONBLOCK)
->  			return -EAGAIN;
->  
->  		interruptible_sleep_on(&keypad_read_wait);
->  		if (signal_pending(current))
->  			return -EINTR;
-> +		buflen = keypad_buflen;
->  	}
+On Thu, 2010-07-22 at 09:40 -0700, Linus Torvalds wrote:
+> But the fact is, th Unix ctime semantics are insane and largely
+> useless. There's a damn good reason almost nobody uses ctime under
+> unix.
+> 
+> So what I'm suggesting is that we have a flag - either per-process or
+> per-mount - that just says "use windows semantics for ctime".
 
-Not sure what the intent was here, I think you're re-adjusting
-the buffer's length in case something else was read. But then
-I don't understand why buflen it not simply assigned after the
-if() block.
+When abusing an existing time stamp use atime not ctime please.
+ctime has it's uses. atime was just a mistake and is nearly useless.
 
-The rest below looks fine otherwise.
-
->  
-> -	for (; count-- > 0 && (keypad_buflen > 0);
-> -	     ++i, ++tmp, --keypad_buflen) {
-> -		put_user(keypad_buffer[keypad_start], tmp);
-> -		keypad_start = (keypad_start + 1) % KEYPAD_BUFFER;
-> +	for (; count-- > 0 && (buflen > 0);
-> +	     ++i, ++tmp, --buflen) {
-> +		if (put_user(keypad_buffer[start], tmp))
-> +			return -EFAULT;
-> +		start = (start + 1) % KEYPAD_BUFFER;
->  	}
->  	*ppos = i;
-> +	keypad_buflen = buflen;
-> +	keypad_start = start;
->  
->  	return tmp - buf;
->  }
+And with noatime we already have creation time semantics for atime.
 
 
-Regards,
-Willy
+utz
+
 
