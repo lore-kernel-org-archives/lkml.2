@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763Ab0G3RDf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:03:35 -0400
-Received: from kroah.org ([198.145.64.141]:35505 "EHLO coco.kroah.org"
+	id S1756115Ab0G3RFk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:05:40 -0400
+Received: from kroah.org ([198.145.64.141]:35531 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477Ab0G3RDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:03:32 -0400
+	id S1755163Ab0G3RDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:03:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:54 2010
-Message-Id: <20100730165954.210931660@clark.site>
+Message-Id: <20100730165954.625305974@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 09:57:20 -0700
+Date: Fri, 30 Jul 2010 09:57:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [04/17] cifs: Fix a kernel BUG with remote OS/2 server (try #3)
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [09/17] netfilter: ip6t_REJECT: fix a dst leak in ipv6 REJECT
 In-Reply-To: <20100730170054.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Jayaraman <sjayaraman@suse.de>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 6513a81e9325d712f1bfb9a1d7b750134e49ff18 upstream.
+commit 499031ac8a3df6738f6186ded9da853e8ea18253 upstream.
 
-While chasing a bug report involving a OS/2 server, I noticed the server sets
-pSMBr->CountHigh to a incorrect value even in case of normal writes. This
-results in 'nbytes' being computed wrongly and triggers a kernel BUG at
-mm/filemap.c.
+We should release dst if dst->error is set.
 
-void iov_iter_advance(struct iov_iter *i, size_t bytes)
-{
-        BUG_ON(i->count < bytes);    <--- BUG here
+Bug introduced in 2.6.14 by commit e104411b82f5c
+([XFRM]: Always release dst_entry on error in xfrm_lookup)
 
-Why the server is setting 'CountHigh' is not clear but only does so after
-writing 64k bytes. Though this looks like the server bug, the client side
-crash may not be acceptable.
-
-The workaround is to mask off high 16 bits if the number of bytes written as
-returned by the server is greater than the bytes requested by the client as
-suggested by Jeff Layton.
-
-Reviewed-by: Jeff Layton <jlayton@samba.org>
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifssmb.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ net/ipv6/netfilter/ip6t_REJECT.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -1594,6 +1594,14 @@ CIFSSMBWrite(const int xid, struct cifsT
- 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
- 		*nbytes = (*nbytes) << 16;
- 		*nbytes += le16_to_cpu(pSMBr->Count);
-+
-+		/*
-+		 * Mask off high 16 bits when bytes written as returned by the
-+		 * server is greater than bytes requested by the client. Some
-+		 * OS/2 servers are known to set incorrect CountHigh values.
-+		 */
-+		if (*nbytes > count)
-+			*nbytes &= 0xFFFF;
- 	}
+--- a/net/ipv6/netfilter/ip6t_REJECT.c
++++ b/net/ipv6/netfilter/ip6t_REJECT.c
+@@ -95,9 +95,11 @@ static void send_reset(struct sk_buff *o
+ 	fl.fl_ip_dport = otcph.source;
+ 	security_skb_classify_flow(oldskb, &fl);
+ 	dst = ip6_route_output(&init_net, NULL, &fl);
+-	if (dst == NULL)
++	if (dst == NULL || dst->error) {
++		dst_release(dst);
+ 		return;
+-	if (dst->error || xfrm_lookup(&dst, &fl, NULL, 0))
++	}
++	if (xfrm_lookup(&dst, &fl, NULL, 0))
+ 		return;
  
- 	cifs_buf_release(pSMB);
-@@ -1679,6 +1687,14 @@ CIFSSMBWrite2(const int xid, struct cifs
- 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
- 		*nbytes = (*nbytes) << 16;
- 		*nbytes += le16_to_cpu(pSMBr->Count);
-+
-+		/*
-+		 * Mask off high 16 bits when bytes written as returned by the
-+		 * server is greater than bytes requested by the client. OS/2
-+		 * servers are known to set incorrect CountHigh values.
-+		 */
-+		if (*nbytes > count)
-+			*nbytes &= 0xFFFF;
- 	}
- 
- /*	cifs_small_buf_release(pSMB); */ /* Freed earlier now in SendReceive2 */
+ 	hh_len = (dst->dev->hard_header_len + 15)&~15;
 
 
