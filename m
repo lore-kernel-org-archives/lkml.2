@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933024Ab0G3SGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:06:18 -0400
-Received: from kroah.org ([198.145.64.141]:59257 "EHLO coco.kroah.org"
+	id S933065Ab0G3SGY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:06:24 -0400
+Received: from kroah.org ([198.145.64.141]:59253 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932825Ab0G3R5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:52 -0400
+	id S932822Ab0G3R5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:51 2010
-Message-Id: <20100730175151.224995607@clark.site>
+Message-Id: <20100730175151.140960777@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:28 -0700
+Date: Fri, 30 Jul 2010 10:53:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Subject: [191/205] ACPI / ACPICA: Fix GPE initialization
+Subject: [190/205] ACPI / ACPICA: Avoid writing full enable masks to GPE registers
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit ce43ace02320a3fb9614ddb27edc3a8700d68b26 upstream.
+commit c9a8bbb7704cbf515c0fc68970abbe4e91d68521 upstream.
 
-While developing the GPE reference counting code we overlooked the
-fact that acpi_ev_update_gpes() could have enabled GPEs before
-acpi_ev_initialize_gpe_block() was called.  As a result, some GPEs
-are enabled twice during the initialization.
+ACPICA uses acpi_hw_write_gpe_enable_reg() to re-enable a GPE after
+an event signaled by it has been handled.  However, this function
+writes the entire GPE enable mask to the GPE's enable register which
+may not be correct.  Namely, if one of the other GPEs in the same
+register was previously enabled by acpi_enable_gpe() and subsequently
+disabled using acpi_set_gpe(), acpi_hw_write_gpe_enable_reg() will
+re-enable it along with the target GPE.
 
-To fix this issue avoid calling acpi_enable_gpe() from
-acpi_ev_initialize_gpe_block() for the GPEs that have nonzero
-runtime reference counters.
+To fix this issue rework acpi_hw_write_gpe_enable_reg() so that it
+calls acpi_hw_low_set_gpe() with a special action value,
+ACPI_GPE_COND_ENABLE, that will make it only enable the GPE if the
+corresponding bit in its register's enable_for_run mask is set.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/acpica/evgpeblk.c |   14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ drivers/acpi/acpica/hwgpe.c |   18 +++++-------------
+ include/acpi/actypes.h      |    1 +
+ 2 files changed, 6 insertions(+), 13 deletions(-)
 
---- a/drivers/acpi/acpica/evgpeblk.c
-+++ b/drivers/acpi/acpica/evgpeblk.c
-@@ -1023,6 +1023,19 @@ acpi_ev_initialize_gpe_block(struct acpi
- 			/* Get the info block for this particular GPE */
- 			gpe_index = (acpi_size)i * ACPI_GPE_REGISTER_WIDTH + j;
- 			gpe_event_info = &gpe_block->event_info[gpe_index];
-+			gpe_number = gpe_index + gpe_block->block_base_number;
+--- a/drivers/acpi/acpica/hwgpe.c
++++ b/drivers/acpi/acpica/hwgpe.c
+@@ -118,6 +118,10 @@ acpi_hw_low_set_gpe(struct acpi_gpe_even
+ 	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
+ 						gpe_register_info);
+ 	switch (action) {
++	case ACPI_GPE_COND_ENABLE:
++		if (!(register_bit & gpe_register_info->enable_for_run))
++			return (AE_BAD_PARAMETER);
 +
-+			/*
-+			 * If the GPE has already been enabled for runtime
-+			 * signaling, make sure it remains enabled, but do not
-+			 * increment its reference counter.
-+			 */
-+			if (gpe_event_info->runtime_count) {
-+				acpi_set_gpe(gpe_device, gpe_number,
-+						ACPI_GPE_ENABLE);
-+				gpe_enabled_count++;
-+				continue;
-+			}
+ 	case ACPI_GPE_ENABLE:
+ 		ACPI_SET_BIT(enable_mask, register_bit);
+ 		break;
+@@ -154,23 +158,11 @@ acpi_hw_low_set_gpe(struct acpi_gpe_even
+ acpi_status
+ acpi_hw_write_gpe_enable_reg(struct acpi_gpe_event_info * gpe_event_info)
+ {
+-	struct acpi_gpe_register_info *gpe_register_info;
+ 	acpi_status status;
  
- 			if (gpe_event_info->flags & ACPI_GPE_CAN_WAKE) {
- 				wake_gpe_count++;
-@@ -1033,7 +1046,6 @@ acpi_ev_initialize_gpe_block(struct acpi
- 			if (!(gpe_event_info->flags & ACPI_GPE_DISPATCH_METHOD))
- 				continue;
+ 	ACPI_FUNCTION_ENTRY();
  
--			gpe_number = gpe_index + gpe_block->block_base_number;
- 			status = acpi_enable_gpe(gpe_device, gpe_number,
- 						ACPI_GPE_TYPE_RUNTIME);
- 			if (ACPI_FAILURE(status))
+-	/* Get the info block for the entire GPE register */
+-
+-	gpe_register_info = gpe_event_info->register_info;
+-	if (!gpe_register_info) {
+-		return (AE_NOT_EXIST);
+-	}
+-
+-	/* Write the entire GPE (runtime) enable register */
+-
+-	status = acpi_hw_write(gpe_register_info->enable_for_run,
+-			       &gpe_register_info->enable_address);
+-
++	status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_COND_ENABLE);
+ 	return (status);
+ }
+ 
+--- a/include/acpi/actypes.h
++++ b/include/acpi/actypes.h
+@@ -665,6 +665,7 @@ typedef u32 acpi_event_status;
+ 
+ #define ACPI_GPE_ENABLE                 0
+ #define ACPI_GPE_DISABLE                1
++#define ACPI_GPE_COND_ENABLE            2
+ 
+ /*
+  * GPE info flags - Per GPE
 
 
