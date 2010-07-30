@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759359Ab0G3ReV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:34:21 -0400
-Received: from kroah.org ([198.145.64.141]:35424 "EHLO coco.kroah.org"
+	id S1759360Ab0G3Sww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:52:52 -0400
+Received: from kroah.org ([198.145.64.141]:35613 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759298Ab0G3Rdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:33:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
-Message-Id: <20100730173103.252264794@clark.site>
+	id S1759357Ab0G3ReU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
+Message-Id: <20100730173105.645375412@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:30 -0700
+Date: Fri, 30 Jul 2010 10:29:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [005/140] net: Fix FDDI and TR config checks in ipv4 arp and LLC.
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [032/140] NFSv4: Fix an embarassing typo in encode_attrs()
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-From: David S. Miller <davem@davemloft.net>
+commit d3f6baaa34c54040b3ef30950e59b54ac0624b21 upstream.
 
-[ Upstream commit f0ecde1466f21edf577b809735f4f35f354777a0 ]
+Apparently, we have never been able to set the atime correctly from the
+NFSv4 client.
 
-Need to check both CONFIG_FOO and CONFIG_FOO_MODULE
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: 小倉一夫 <ka-ogura@bd6.so-net.ne.jp>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/arp.c    |    6 +++---
- net/llc/llc_sap.c |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/arp.c
-+++ b/net/ipv4/arp.c
-@@ -619,13 +619,13 @@ struct sk_buff *arp_create(int type, int
- #endif
- #endif
- 
--#ifdef CONFIG_FDDI
-+#if defined(CONFIG_FDDI) || defined(CONFIG_FDDI_MODULE)
- 	case ARPHRD_FDDI:
- 		arp->ar_hrd = htons(ARPHRD_ETHER);
- 		arp->ar_pro = htons(ETH_P_IP);
- 		break;
- #endif
--#ifdef CONFIG_TR
-+#if defined(CONFIG_TR) || defined(CONFIG_TR_MODULE)
- 	case ARPHRD_IEEE802_TR:
- 		arp->ar_hrd = htons(ARPHRD_IEEE802);
- 		arp->ar_pro = htons(ETH_P_IP);
-@@ -1005,7 +1005,7 @@ static int arp_req_set(struct net *net,
- 			return -EINVAL;
+---
+ fs/nfs/nfs4xdr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -863,8 +863,8 @@ static void encode_attrs(struct xdr_stre
+ 		bmval1 |= FATTR4_WORD1_TIME_ACCESS_SET;
+ 		*p++ = cpu_to_be32(NFS4_SET_TO_CLIENT_TIME);
+ 		*p++ = cpu_to_be32(0);
+-		*p++ = cpu_to_be32(iap->ia_mtime.tv_sec);
+-		*p++ = cpu_to_be32(iap->ia_mtime.tv_nsec);
++		*p++ = cpu_to_be32(iap->ia_atime.tv_sec);
++		*p++ = cpu_to_be32(iap->ia_atime.tv_nsec);
  	}
- 	switch (dev->type) {
--#ifdef CONFIG_FDDI
-+#if defined(CONFIG_FDDI) || defined(CONFIG_FDDI_MODULE)
- 	case ARPHRD_FDDI:
- 		/*
- 		 * According to RFC 1390, FDDI devices should accept ARP
---- a/net/llc/llc_sap.c
-+++ b/net/llc/llc_sap.c
-@@ -30,7 +30,7 @@ static int llc_mac_header_len(unsigned s
- 	case ARPHRD_ETHER:
- 	case ARPHRD_LOOPBACK:
- 		return sizeof(struct ethhdr);
--#ifdef CONFIG_TR
-+#if defined(CONFIG_TR) || defined(CONFIG_TR_MODULE)
- 	case ARPHRD_IEEE802_TR:
- 		return sizeof(struct trh_hdr);
- #endif
+ 	else if (iap->ia_valid & ATTR_ATIME) {
+ 		bmval1 |= FATTR4_WORD1_TIME_ACCESS_SET;
 
 
