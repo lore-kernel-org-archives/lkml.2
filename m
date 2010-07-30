@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758836Ab0G3RTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:19:53 -0400
-Received: from kroah.org ([198.145.64.141]:51997 "EHLO coco.kroah.org"
+	id S1758883Ab0G3RUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:20:13 -0400
+Received: from kroah.org ([198.145.64.141]:52111 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758781Ab0G3RTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:10 2010
-Message-Id: <20100730171510.105264205@clark.site>
+	id S1758853Ab0G3RT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:11 2010
+Message-Id: <20100730171511.530628924@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:44 -0700
+Date: Fri, 30 Jul 2010 10:15:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [116/165] ext4: dont return to userspace after freezing the fs with a mutex held
+        Ben Hutchings <ben@decadent.org.uk>, "Theodore Tso" <tytso@mit.edu>
+Subject: [131/165] ext4: Fix compat EXT4_IOC_ADD_GROUP
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,86 +25,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 6b0310fbf087ad6e9e3b8392adca97cd77184084 upstream (as of v2.6.34-git13)
+commit 4d92dc0f00a775dc2e1267b0e00befb783902fe7 upstream (as of v2.6.34-git13)
 
-ext4_freeze() used jbd2_journal_lock_updates() which takes
-the j_barrier mutex, and then returns to userspace.  The
-kernel does not like this:
+struct ext4_new_group_input needs to be converted because u64 has
+only 32-bit alignment on some 32-bit architectures, notably i386.
 
-================================================
-[ BUG: lock held when returning to user space! ]
-------------------------------------------------
-lvcreate/1075 is leaving the kernel with locks still held!
-1 lock held by lvcreate/1075:
- #0:  (&journal->j_barrier){+.+...}, at: [<ffffffff811c6214>]
-jbd2_journal_lock_updates+0xe1/0xf0
-
-Use vfs_check_frozen() added to ext4_journal_start_sb() and
-ext4_force_commit() instead.
-
-Addresses-Red-Hat-Bugzilla: #568503
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/super.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ fs/ext4/ext4.h  |   16 ++++++++++++++++
+ fs/ext4/ioctl.c |   25 +++++++++++++++++++++++--
+ 2 files changed, 39 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -227,6 +227,7 @@ handle_t *ext4_journal_start_sb(struct s
- 	if (sb->s_flags & MS_RDONLY)
- 		return ERR_PTR(-EROFS);
- 
-+	vfs_check_frozen(sb, SB_FREEZE_WRITE);
- 	/* Special case here: if the journal has aborted behind our
- 	 * backs (eg. EIO in the commit thread), then we still need to
- 	 * take the FS itself readonly cleanly. */
-@@ -3391,8 +3392,10 @@ int ext4_force_commit(struct super_block
- 		return 0;
- 
- 	journal = EXT4_SB(sb)->s_journal;
--	if (journal)
-+	if (journal) {
-+		vfs_check_frozen(sb, SB_FREEZE_WRITE);
- 		ret = ext4_journal_force_commit(journal);
-+	}
- 
- 	return ret;
- }
-@@ -3441,18 +3444,16 @@ static int ext4_freeze(struct super_bloc
- 	 * the journal.
- 	 */
- 	error = jbd2_journal_flush(journal);
--	if (error < 0) {
--	out:
--		jbd2_journal_unlock_updates(journal);
--		return error;
--	}
-+	if (error < 0)
-+		goto out;
- 
- 	/* Journal blocked and flushed, clear needs_recovery flag. */
- 	EXT4_CLEAR_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
- 	error = ext4_commit_super(sb, 1);
--	if (error)
--		goto out;
--	return 0;
-+out:
-+	/* we rely on s_frozen to stop further updates */
-+	jbd2_journal_unlock_updates(EXT4_SB(sb)->s_journal);
-+	return error;
- }
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -29,6 +29,9 @@
+ #include <linux/wait.h>
+ #include <linux/blockgroup_lock.h>
+ #include <linux/percpu_counter.h>
++#ifdef __KERNEL__
++#include <linux/compat.h>
++#endif
  
  /*
-@@ -3469,7 +3470,6 @@ static int ext4_unfreeze(struct super_bl
- 	EXT4_SET_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER);
- 	ext4_commit_super(sb, 1);
- 	unlock_super(sb);
--	jbd2_journal_unlock_updates(EXT4_SB(sb)->s_journal);
- 	return 0;
- }
+  * The fourth extended filesystem constants/structures
+@@ -403,6 +406,18 @@ struct ext4_new_group_input {
+ 	__u16 unused;
+ };
  
++#if defined(__KERNEL__) && defined(CONFIG_COMPAT)
++struct compat_ext4_new_group_input {
++	u32 group;
++	compat_u64 block_bitmap;
++	compat_u64 inode_bitmap;
++	compat_u64 inode_table;
++	u32 blocks_count;
++	u16 reserved_blocks;
++	u16 unused;
++};
++#endif
++
+ /* The struct ext4_new_group_input in kernel space, with free_blocks_count */
+ struct ext4_new_group_data {
+ 	__u32 group;
+@@ -473,6 +488,7 @@ struct ext4_new_group_data {
+ #define EXT4_IOC32_GETRSVSZ		_IOR('f', 5, int)
+ #define EXT4_IOC32_SETRSVSZ		_IOW('f', 6, int)
+ #define EXT4_IOC32_GROUP_EXTEND		_IOW('f', 7, unsigned int)
++#define EXT4_IOC32_GROUP_ADD		_IOW('f', 8, struct compat_ext4_new_group_input)
+ #ifdef CONFIG_JBD2_DEBUG
+ #define EXT4_IOC32_WAIT_FOR_READONLY	_IOR('f', 99, int)
+ #endif
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -373,8 +373,29 @@ long ext4_compat_ioctl(struct file *file
+ 	case EXT4_IOC32_SETRSVSZ:
+ 		cmd = EXT4_IOC_SETRSVSZ;
+ 		break;
+-	case EXT4_IOC_GROUP_ADD:
+-		break;
++	case EXT4_IOC32_GROUP_ADD: {
++		struct compat_ext4_new_group_input __user *uinput;
++		struct ext4_new_group_input input;
++		mm_segment_t old_fs;
++		int err;
++
++		uinput = compat_ptr(arg);
++		err = get_user(input.group, &uinput->group);
++		err |= get_user(input.block_bitmap, &uinput->block_bitmap);
++		err |= get_user(input.inode_bitmap, &uinput->inode_bitmap);
++		err |= get_user(input.inode_table, &uinput->inode_table);
++		err |= get_user(input.blocks_count, &uinput->blocks_count);
++		err |= get_user(input.reserved_blocks,
++				&uinput->reserved_blocks);
++		if (err)
++			return -EFAULT;
++		old_fs = get_fs();
++		set_fs(KERNEL_DS);
++		err = ext4_ioctl(file, EXT4_IOC_GROUP_ADD,
++				 (unsigned long) &input);
++		set_fs(old_fs);
++		return err;
++	}
+ 	case EXT4_IOC_MOVE_EXT:
+ 		break;
+ 	default:
 
 
