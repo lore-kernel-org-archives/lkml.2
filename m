@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab0G3R5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:57:50 -0400
-Received: from kroah.org ([198.145.64.141]:58819 "EHLO coco.kroah.org"
+	id S933088Ab0G3SIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:08:09 -0400
+Received: from kroah.org ([198.145.64.141]:59221 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760028Ab0G3R4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:45 2010
-Message-Id: <20100730175145.127242843@clark.site>
+	id S932795Ab0G3R5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:44 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:50 2010
+Message-Id: <20100730175150.541705685@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:20 -0700
+Date: Fri, 30 Jul 2010 10:53:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Adam Lackorzynski <adam@os.inf.tu-dresden.de>,
-        Jacob Pan <jacob.jun.pan@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [123/205] x86, i8259: Only register sysdev if we have a real 8259 PIC
+        Tao Ma <tao.ma@oracle.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [183/205] block: Dont count_vm_events for discard bio in submit_bio.
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,67 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
+From: Tao Ma <tao.ma@oracle.com>
 
-commit 087b255a2b43f417af83cb44e0bb02507f36b7fe upstream.
+commit 1b99973f1c82707e46e8cb9416865a1e955e8f8c upstream.
 
-My platform makes use of the null_legacy_pic choice and oopses when doing
-a shutdown as the shutdown code goes through all the registered sysdevs
-and calls their shutdown method which in my case poke on a non-existing
-i8259.  Imho the i8259 specific sysdev should only be registered if the
-i8259 is actually there.
+In submit_bio, we count vm events by check READ/WRITE.
+But actually DISCARD_NOBARRIER also has the WRITE flag set.
+It looks as if in blkdev_issue_discard, we also add a
+page as the payload and the bio_has_data check isn't enough.
+So add another check for discard bio.
 
-Do not register the sysdev function when the null_legacy_pic is used so
-that the i8259 resume, suspend and shutdown functions are not called.
-
-Signed-off-by: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-LKML-Reference: <201007202218.o6KMIJ3m020955@imap1.linux-foundation.org>
-Cc: Jacob Pan <jacob.jun.pan@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/i8259.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
+ block/blk-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/i8259.c
-+++ b/arch/x86/kernel/i8259.c
-@@ -276,16 +276,6 @@ static struct sys_device device_i8259A =
- 	.cls	= &i8259_sysdev_class,
- };
- 
--static int __init i8259A_init_sysfs(void)
--{
--	int error = sysdev_class_register(&i8259_sysdev_class);
--	if (!error)
--		error = sysdev_register(&device_i8259A);
--	return error;
--}
--
--device_initcall(i8259A_init_sysfs);
--
- static void mask_8259A(void)
- {
- 	unsigned long flags;
-@@ -407,3 +397,18 @@ struct legacy_pic default_legacy_pic = {
- };
- 
- struct legacy_pic *legacy_pic = &default_legacy_pic;
-+
-+static int __init i8259A_init_sysfs(void)
-+{
-+	int error;
-+
-+	if (legacy_pic != &default_legacy_pic)
-+		return 0;
-+
-+	error = sysdev_class_register(&i8259_sysdev_class);
-+	if (!error)
-+		error = sysdev_register(&device_i8259A);
-+	return error;
-+}
-+
-+device_initcall(i8259A_init_sysfs);
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1556,7 +1556,7 @@ void submit_bio(int rw, struct bio *bio)
+ 	 * If it's a regular read/write or a barrier with data attached,
+ 	 * go through the normal accounting stuff before submission.
+ 	 */
+-	if (bio_has_data(bio)) {
++	if (bio_has_data(bio) && !(rw & (1 << BIO_RW_DISCARD))) {
+ 		if (rw & WRITE) {
+ 			count_vm_events(PGPGOUT, count);
+ 		} else {
 
 
