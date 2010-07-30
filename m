@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760495Ab0G3TGg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:06:36 -0400
-Received: from kroah.org ([198.145.64.141]:51608 "EHLO coco.kroah.org"
+	id S1760511Ab0G3THE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:07:04 -0400
+Received: from kroah.org ([198.145.64.141]:51595 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757729Ab0G3RSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:41 -0400
+	id S1757662Ab0G3RSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:39 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:05 2010
-Message-Id: <20100730171505.220515651@clark.site>
+Message-Id: <20100730171505.051149903@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:49 -0700
+Date: Fri, 30 Jul 2010 10:14:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Or Gerlitz <ogerlitz@voltaire.com>, Roland Dreier <rolandd@cisco.com>
-Subject: [061/165] IPoIB: Fix world-writable child interface control sysfs attributes
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [059/165] ASoC: Remove duplicate AUX definition from WM8776
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +26,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@voltaire.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 7a52b34b07122ff5f45258d47f260f8a525518f0 upstream.
+commit 3c0709396df0869786f83e4b2d2d687c70ee886d upstream.
 
-Sumeet Lahorani <sumeet.lahorani@oracle.com> reported that the IPoIB
-child entries are world-writable; however we don't want ordinary users
-to be able to create and destroy child interfaces, so fix them to be
-writable only by root.
-
-Signed-off-by: Or Gerlitz <ogerlitz@voltaire.com>
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/ulp/ipoib/ipoib_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8776.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -1163,7 +1163,7 @@ static ssize_t create_child(struct devic
+--- a/sound/soc/codecs/wm8776.c
++++ b/sound/soc/codecs/wm8776.c
+@@ -93,7 +93,6 @@ SOC_DAPM_SINGLE("Bypass Switch", WM8776_
  
- 	return ret ? ret : count;
- }
--static DEVICE_ATTR(create_child, S_IWUGO, NULL, create_child);
-+static DEVICE_ATTR(create_child, S_IWUSR, NULL, create_child);
+ static const struct snd_soc_dapm_widget wm8776_dapm_widgets[] = {
+ SND_SOC_DAPM_INPUT("AUX"),
+-SND_SOC_DAPM_INPUT("AUX"),
  
- static ssize_t delete_child(struct device *dev,
- 			    struct device_attribute *attr,
-@@ -1183,7 +1183,7 @@ static ssize_t delete_child(struct devic
- 	return ret ? ret : count;
- 
- }
--static DEVICE_ATTR(delete_child, S_IWUGO, NULL, delete_child);
-+static DEVICE_ATTR(delete_child, S_IWUSR, NULL, delete_child);
- 
- int ipoib_add_pkey_attr(struct net_device *dev)
- {
+ SND_SOC_DAPM_INPUT("AIN1"),
+ SND_SOC_DAPM_INPUT("AIN2"),
 
 
