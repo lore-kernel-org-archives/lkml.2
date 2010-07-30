@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab0G3Hfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 03:35:54 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44612 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab0G3Hfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 03:35:53 -0400
-Date: Fri, 30 Jul 2010 16:35:46 +0900
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH -mm] add DMA_xxBIT_MASK to feature-removal-schedule.txt
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100730163339C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 30 Jul 2010 16:35:47 +0900 (JST)
+	id S1753836Ab0G3HhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 03:37:07 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51319 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab0G3HhF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 03:37:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=VO4RL4ZWG38vyJW5FEdqjo/gIU0aNHfJYQ4q3XRZ6BfKfy+gO0FnVu9U0QOtOKo2+m
+         +knfP5g0ZNRbk3LU04FpNDF4ckBPTdrzDym/gWeIkQh0hQLW6T74mz7obWcCDMrzLDy1
+         TBgxoXfA8k6a1Ys34xsHeL9wqdoWJ8oWoZHsc=
+From: Changli Gao <xiaosuo@gmail.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Jamal Hadi Salim <hadi@cyberus.ca>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH] act_nat: the checksum of ICMP doesn't have pseudo header
+Date: Fri, 30 Jul 2010 08:04:18 +0800
+Message-Id: <1280448258-1893-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA_xxBIT_MASK macros were marked as deprecated in June 2009. One more
-year is long enough, I think.
+after updating the value of the ICMP payload, inet_proto_csum_replace4() should
+be called with zero pseudohdr.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- Documentation/feature-removal-schedule.txt |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index 23a8f8d..a94c2ad 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -541,3 +541,11 @@ Why:	PCI DMA unmap state API (include/linux/pci-dma.h) was replaced
- Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ net/sched/act_nat.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --git a/net/sched/act_nat.c b/net/sched/act_nat.c
+index 24e614c..59f05ee 100644
+--- a/net/sched/act_nat.c
++++ b/net/sched/act_nat.c
+@@ -246,7 +246,7 @@ static int tcf_nat(struct sk_buff *skb, struct tc_action *a,
+ 			iph->saddr = new_addr;
  
- ----------------------------
-+
-+What: 	DMA_xxBIT_MASK macros
-+When:	Jun 2011
-+Why:	DMA_xxBIT_MASK macros were replaced with DMA_BIT_MASK() macros.
-+Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-+
-+----------------------------
-+
--- 
-1.6.5
-
+ 		inet_proto_csum_replace4(&icmph->checksum, skb, addr, new_addr,
+-					 1);
++					 0);
+ 		break;
+ 	}
+ 	default:
