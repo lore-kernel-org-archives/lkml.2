@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab0G3JMe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 05:12:34 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:35439 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755987Ab0G3JMc (ORCPT
+	id S1756062Ab0G3JUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 05:20:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50981 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab0G3JU3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 05:12:32 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAAI0Ukx5LclT/2dsb2JhbACgF3K+VYU5BA
-Date: Fri, 30 Jul 2010 19:12:26 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Frank Mayhar <fmayhar@google.com>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: Re: VFS scalability git tree
-Message-ID: <20100730091226.GA10437@amd>
-References: <20100722190100.GA22269@amd>
+	Fri, 30 Jul 2010 05:20:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=RnbRY7BtoNwiLgym2T5PSNPxHRGd3Oop39DE+z4RWo3Xrzta44xy1RwMl4hJtFwgh4
+         fF7pQ8tu9x9CdLV6MjMzGLlRqkZ8sjPiWT/jPV7Nw+Ci9ysfnq7pIIYtQyfDQ2HXIQVv
+         au6W40wLnxUDjwXFt/zNEuWFdfbEyZX1GuJhM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722190100.GA22269@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1280440089-3203-2-git-send-email-john.johansen@canonical.com>
+References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
+	<1280440089-3203-2-git-send-email-john.johansen@canonical.com>
+Date: Fri, 30 Jul 2010 12:20:27 +0300
+X-Google-Sender-Auth: hD3yDOd7y-uwqOgltOhoiCgerUY
+Message-ID: <AANLkTikk3tNM-fsXuS_SeAWgaYYCFrFAToRXOBkPxwy9@mail.gmail.com>
+Subject: Re: [PATCH 01/13] AppArmor: misc. base functions and defines
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: John Johansen <john.johansen@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, xiaosuo@gmail.com,
+        laijs@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
-> I'm pleased to announce I have a git tree up of my vfs scalability work.
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
-> http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
-> 
-> Branch vfs-scale-working
-> 
-> The really interesting new item is the store-free path walk, (43fe2b)
-> which I've re-introduced. It has had a complete redesign, it has much
-> better performance and scalability in more cases, and is actually sane
-> code now.
+On Fri, Jul 30, 2010 at 12:47 AM, John Johansen
+<john.johansen@canonical.com> wrote:
+> +/**
+> + * kvmalloc - do allocation preferring kmalloc but falling back to vmalloc
+> + * @size: size of allocation
+> + *
+> + * Return: allocated buffer or NULL if failed
+> + *
+> + * It is possible that policy being loaded from the user is larger than
+> + * what can be allocated by kmalloc, in those cases fall back to vmalloc.
+> + */
+> +void *kvmalloc(size_t size)
+> +{
+> +       void *buffer = NULL;
+> +
+> +       if (size == 0)
+> +               return NULL;
+> +
+> +       /* do not attempt kmalloc if we need more than 16 pages at once */
+> +       if (size <= (16*PAGE_SIZE))
+> +               buffer = kmalloc(size, GFP_NOIO | __GFP_NOWARN);
 
-Things are progressing well here with fixes and improvements to the
-branch.
+16 pages is a lot of memory for 64 K pages. What's the purpose of
+GFP_NOIO here? vmalloc() will do GFP_KERNEL allocations anyway.
 
-One thing that has been brought to my attention is that store-free path
-walking (rcu-walk) drops into the normal refcounted walking on any
-filesystem that has posix ACLs enabled.
+> +       if (!buffer) {
+> +               /* see kvfree for why size must be at least work_struct size
+> +                * when allocated via vmalloc
+> +                */
+> +               if (size < sizeof(struct work_struct))
+> +                       size = sizeof(struct work_struct);
+> +               buffer = vmalloc(size);
+> +       }
+> +       return buffer;
+> +}
 
-Having misread that IS_POSIXACL is based on a superblock flag, I had
-thought we only drop out of rcu-walk in case of encountering an inode
-that actually has acls.
+Please don't hide this into apparmor internals. People have invented
+this function in the past so maybe it's time to put it in mm/util.c?
 
-This is quite an important point for any performance testing work.
-ACLs can actually be rcu checked quite easily in most cases, but it
-takes a bit of work on APIs.
+> +
+> +/**
+> + * do_vfree - workqueue routine for freeing vmalloced memory
+> + * @work: data to be freed
+> + *
+> + * The work_struct is overlaid to the data being freed, as at the point
+> + * the work is scheduled the data is no longer valid, be its freeing
+> + * needs to be delayed until safe.
+> + */
+> +static void do_vfree(struct work_struct *work)
+> +{
+> +       vfree(work);
+> +}
+> +
+> +/**
+> + * kvfree - free an allocation do by kvmalloc
+> + * @buffer: buffer to free (MAYBE_NULL)
+> + *
+> + * Free a buffer allocated by kvmalloc
+> + */
+> +void kvfree(void *buffer)
+> +{
+> +       if (is_vmalloc_addr(buffer)) {
+> +               /* Data is no longer valid so just use the allocated space
+> +                * as the work_struct
+> +                */
+> +               struct work_struct *work = (struct work_struct *) buffer;
+> +               INIT_WORK(work, do_vfree);
+> +               schedule_work(work);
 
-Filesystems defining their own ->permission and ->d_revalidate will
-also not use rcu-walk. These could likewise be made to support rcu-walk
-more widely, but it will require knowledge of rcu-walk to be pushed
-into filesystems.
+I don't understand this part here. Is it needed for interrupt contexts
+or does vfree() sleep somewhere? If it's for the former, I think we
+can just add a comment saying that kvmalloc/kvfree is not safe from
+interrupt context and remove the schedule_work() parts here.
 
-It's not a big deal, basically: no blocking, no stores, no referencing
-non-rcu-protected data, and confirm with seqlock. That is usually the
-case in fastpaths. If it cannot be satisfied, then just return -ECHILD
-and you'll get called in the usual ref-walk mode next time.
-
-But for now, keep this in mind if you plan to do any serious performance
-testing work, *do not mount filesystems with ACL support*.
-
-Thanks,
-Nick
-
+> +       } else
+> +               kfree(buffer);
+> +}
