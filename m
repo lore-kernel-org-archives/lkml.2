@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab0G3L4B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 07:56:01 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51458 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab0G3Lz7 convert rfc822-to-8bit (ORCPT
+	id S1758453Ab0G3MAS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 08:00:18 -0400
+Received: from mail.windriver.com ([147.11.1.11]:64110 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756568Ab0G3MAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 07:55:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jyFX6Ccx8oqKHB+M7ANfJfhhNrDEd9lQxHQ2lUe+GFs16KU30vo4VrCBcCZa4sg5tj
-         JrBqKz8AHw3XlpV5KUJIdwRkzoJKoXaoPceh3L2CN9v32qpvcMzVHIizj45IIzWQlx27
-         HF+LXBqz8dcFRMSwf/C7q6ay/OeH5S4GUPtVE=
+	Fri, 30 Jul 2010 08:00:16 -0400
+Message-ID: <4C52BEA2.8030302@windriver.com>
+Date: Fri, 30 Jul 2010 06:59:30 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinNr28LM6NfsmbbmmV28mCzUugTTSI_Bq6N9-8C@mail.gmail.com>
-References: <AANLkTinNr28LM6NfsmbbmmV28mCzUugTTSI_Bq6N9-8C@mail.gmail.com>
-Date: Fri, 30 Jul 2010 17:25:57 +0530
-Message-ID: <AANLkTik4LVaoXi7CM1AHhe0ZCeY7hfEBN7fsvuhn_J3A@mail.gmail.com>
-Subject: Re: clock drift in set_task_cpu()
-From: Jack Daniel <wanders.thirst@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [8/23] KGDB: Remove set but unused newPC
+References: <20100610110.764742110@firstfloor.org> <20100610111044.0E350B1A2B@basil.firstfloor.org>
+In-Reply-To: <20100610111044.0E350B1A2B@basil.firstfloor.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Jul 2010 11:59:31.0859 (UTC) FILETIME=[AB9C6630:01CB2FDE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
 
-As a follow up on this...
 
-On Wed, Jul 21, 2010 at 5:10 PM, Jack Daniel <wanders.thirst@gmail.com> wrote:
-> Hi Peter/Ingo,
+On 06/10/2010 06:10 AM, Andi Kleen wrote:
+> I'm not fully sure this is the correct fix, maybe this
+> was a bug and newPC should really have a side effect.
+> Jason?
 >
-> I have a query with the kernel code that was changed not too long time
-> back in v2.6.33-rc1 commit id 5afcdab706d6002cb02b567ba46e650215e694e8
-> [tip:sched/urgent] sched: Remove rq->clock coupling from
-> set_task_cpu()
+>   
+Andi,
+
+This looks fine to me.  The newPC got there from the merge of the 32/64
+kgdb specific implementation.   Definitely don't need it anymore.
+
+I'll queue it for 2.6.36.
+
+Thanks,
+Jason.
+
+> Found by gcc 4.6's new warnings
 >
-> void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
-> {
-> int old_cpu = task_cpu(p);
-> struct rq *old_rq = cpu_rq(old_cpu), *new_rq = cpu_rq(new_cpu);
-> struct cfs_rq *old_cfsrq = task_cfs_rq(p),
->      *new_cfsrq = cpu_cfs_rq(old_cfsrq, new_cpu);
-> u64 clock_offset;
+> Cc: jason.wessel@windriver.com
 >
-> clock_offset = old_rq->clock - new_rq->clock;
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+>
 > ---
+>  arch/x86/kernel/kgdb.c |    3 ---
+>  1 file changed, 3 deletions(-)
 >
-> On a Xeon 55xx with 8 CPU's, I found out the new_rq->clock value is
-> sometimes larger than old_rq->clock and so clock_offset tends to warp
-> around leading to incorrect values. You have very correctly noted in
-> the commit header that all functions that access set_task_cpu() must
-> do so after a call to sched_clock_remote(), in this case the function
-> is sched_fork(). I validated by adding update_rq_clock(old_rq); into
-> set_task_cpu() and that seems to fix the issue. But I noticed that
-> since CONFIG_HAVE_UNSTABLE_SCHED_CLOCK is already set, if
-> (sched_clock_stable)  in sched_clock_cpu() will yield to true and the
-> flow never gets to sched_clock_remote() or sched_clock_local().
->
-> What do you think is the best way to approach the problem *assuming
-> the older kernel*, since I believe the problem still exists? That is
-> to reinstate your axiom ".... which should ensure the observed time
-> between these two cpus is monotonic"
->
-> 1) CONFIG_HAVE_UNSTABLE_SCHED_CLOCK cannot be disabled since it is set
-> by default for x86
-> 2) Does one create a new function with just this line of code?
-> fix_clock_drift()
-> {
-> if (cpu != smp_processor_id())
->                clock = sched_clock_remote(scd);
->        else
->                clock = sched_clock_local(scd);
->
->        return clock;
-> }
->
+> Index: linux-2.6.35-rc2-gcc/arch/x86/kernel/kgdb.c
+> ===================================================================
+> --- linux-2.6.35-rc2-gcc.orig/arch/x86/kernel/kgdb.c
+> +++ linux-2.6.35-rc2-gcc/arch/x86/kernel/kgdb.c
+> @@ -458,7 +458,6 @@ int kgdb_arch_handle_exception(int e_vec
+>  {
+>  	unsigned long addr;
+>  	char *ptr;
+> -	int newPC;
+>  
+>  	switch (remcomInBuffer[0]) {
+>  	case 'c':
+> @@ -469,8 +468,6 @@ int kgdb_arch_handle_exception(int e_vec
+>  			linux_regs->ip = addr;
+>  	case 'D':
+>  	case 'k':
+> -		newPC = linux_regs->ip;
+> -
+>  		/* clear the trace bit */
+>  		linux_regs->flags &= ~X86_EFLAGS_TF;
+>  		atomic_set(&kgdb_cpu_doing_single_step, -1);
+>   
 
-I bet you would have had come across this problem and hence chose to
-surgically remove the impeding code with commit 5afcdab. I now think
-it was a good choice but the right thing would have been to correct
-the problem itself. I think this code should have solved the problem.
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 1d39b00..5fd63f2 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2068,6 +2068,13 @@ void set_task_cpu(struct task_struct *p,
-unsigned int new_cpu)
-        struct cfs_rq *old_cfsrq = task_cfs_rq(p),
-                      *new_cfsrq = cpu_cfs_rq(old_cfsrq, new_cpu);
-        u64 clock_offset;
-+       unsigned long flags;
-+
-+       rmb();
-+       local_irq_save(flags);
-+       update_rq_clock(old_rq);
-+       update_rq_clock(new_rq);
-+       local_irq_restore(flags);
-
-
-Thanks and regards,
-Jack
