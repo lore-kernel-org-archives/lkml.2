@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743Ab0G3RDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:03:45 -0400
-Received: from kroah.org ([198.145.64.141]:35543 "EHLO coco.kroah.org"
+	id S1755905Ab0G3RD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:03:56 -0400
+Received: from kroah.org ([198.145.64.141]:35597 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755398Ab0G3RDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:03:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:54 2010
-Message-Id: <20100730165954.802259904@clark.site>
+	id S1755762Ab0G3RDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:03:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:55 2010
+Message-Id: <20100730165955.294243235@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 09:57:27 -0700
+Date: Fri, 30 Jul 2010 09:57:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>
-Subject: [11/17] amd64-agp: Probe unknown AGP devices the right way
+        Andre Osterhues <aosterhues@escrypt.com>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [17/17] ecryptfs: Bugfix for error related to ecryptfs_hash_buckets
 In-Reply-To: <20100730170054.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,90 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Andre Osterhues <aosterhues@escrypt.com>
 
-commit 6fd024893911dcb51b4a0aa71971db5ba38f7071 upstream.
+commit a6f80fb7b5986fda663d94079d3bba0937a6b6ff upstream.
 
-The current initialisation code probes 'unsupported' AGP devices
-simply by calling its own probe function.  It does not lock these
-devices or even check whether another driver is already bound to
-them.
+The function ecryptfs_uid_hash wrongly assumes that the
+second parameter to hash_long() is the number of hash
+buckets instead of the number of hash bits.
+This patch fixes that and renames the variable
+ecryptfs_hash_buckets to ecryptfs_hash_bits to make it
+clearer.
 
-We must use the device core to manage this.  So if the specific
-device id table didn't match anything and agp_try_unsupported=1,
-switch the device id table and call driver_attach() again.
+Fixes: CVE-2010-2492
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Andre Osterhues <aosterhues@escrypt.com>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/agp/amd64-agp.c |   27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+ fs/ecryptfs/messaging.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/char/agp/amd64-agp.c
-+++ b/drivers/char/agp/amd64-agp.c
-@@ -491,6 +491,10 @@ static int __devinit agp_amd64_probe(str
- 	u8 cap_ptr;
- 	int err;
+--- a/fs/ecryptfs/messaging.c
++++ b/fs/ecryptfs/messaging.c
+@@ -30,9 +30,9 @@ static struct mutex ecryptfs_msg_ctx_lis
  
-+	/* The Highlander principle */
-+	if (agp_bridges_found)
-+		return -ENODEV;
-+
- 	cap_ptr = pci_find_capability(pdev, PCI_CAP_ID_AGP);
- 	if (!cap_ptr)
- 		return -ENODEV;
-@@ -554,6 +558,8 @@ static void __devexit agp_amd64_remove(s
- 			   amd64_aperture_sizes[bridge->aperture_size_idx].size);
- 	agp_remove_bridge(bridge);
- 	agp_put_bridge(bridge);
-+
-+	agp_bridges_found--;
- }
+ static struct hlist_head *ecryptfs_daemon_hash;
+ struct mutex ecryptfs_daemon_hash_mux;
+-static int ecryptfs_hash_buckets;
++static int ecryptfs_hash_bits;
+ #define ecryptfs_uid_hash(uid) \
+-        hash_long((unsigned long)uid, ecryptfs_hash_buckets)
++        hash_long((unsigned long)uid, ecryptfs_hash_bits)
  
- #ifdef CONFIG_PM
-@@ -701,6 +707,11 @@ static struct pci_device_id agp_amd64_pc
- 
- MODULE_DEVICE_TABLE(pci, agp_amd64_pci_table);
- 
-+static DEFINE_PCI_DEVICE_TABLE(agp_amd64_pci_promisc_table) = {
-+	{ PCI_DEVICE_CLASS(0, 0) },
-+	{ }
-+};
-+
- static struct pci_driver agp_amd64_pci_driver = {
- 	.name		= "agpgart-amd64",
- 	.id_table	= agp_amd64_pci_table,
-@@ -725,7 +736,6 @@ int __init agp_amd64_init(void)
- 		return err;
- 
- 	if (agp_bridges_found == 0) {
--		struct pci_dev *dev;
- 		if (!agp_try_unsupported && !agp_try_unsupported_boot) {
- 			printk(KERN_INFO PFX "No supported AGP bridge found.\n");
- #ifdef MODULE
-@@ -741,17 +751,10 @@ int __init agp_amd64_init(void)
- 			return -ENODEV;
- 
- 		/* Look for any AGP bridge */
--		dev = NULL;
--		err = -ENODEV;
--		for_each_pci_dev(dev) {
--			if (!pci_find_capability(dev, PCI_CAP_ID_AGP))
--				continue;
--			/* Only one bridge supported right now */
--			if (agp_amd64_probe(dev, NULL) == 0) {
--				err = 0;
--				break;
--			}
--		}
-+		agp_amd64_pci_driver.id_table = agp_amd64_pci_promisc_table;
-+		err = driver_attach(&agp_amd64_pci_driver.driver);
-+		if (err == 0 && agp_bridges_found == 0)
-+			err = -ENODEV;
+ static u32 ecryptfs_msg_counter;
+ static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
+@@ -599,18 +599,19 @@ int ecryptfs_init_messaging(unsigned int
  	}
- 	return err;
- }
+ 	mutex_init(&ecryptfs_daemon_hash_mux);
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+-	ecryptfs_hash_buckets = 1;
+-	while (ecryptfs_number_of_users >> ecryptfs_hash_buckets)
+-		ecryptfs_hash_buckets++;
++	ecryptfs_hash_bits = 1;
++	while (ecryptfs_number_of_users >> ecryptfs_hash_bits)
++		ecryptfs_hash_bits++;
+ 	ecryptfs_daemon_hash = kmalloc((sizeof(struct hlist_head)
+-					* ecryptfs_hash_buckets), GFP_KERNEL);
++					* (1 << ecryptfs_hash_bits)),
++				       GFP_KERNEL);
+ 	if (!ecryptfs_daemon_hash) {
+ 		rc = -ENOMEM;
+ 		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
+ 		mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 		goto out;
+ 	}
+-	for (i = 0; i < ecryptfs_hash_buckets; i++)
++	for (i = 0; i < (1 << ecryptfs_hash_bits); i++)
+ 		INIT_HLIST_HEAD(&ecryptfs_daemon_hash[i]);
+ 	mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 	ecryptfs_msg_ctx_arr = kmalloc((sizeof(struct ecryptfs_msg_ctx)
+@@ -680,7 +681,7 @@ void ecryptfs_release_messaging(unsigned
+ 		int i;
+ 
+ 		mutex_lock(&ecryptfs_daemon_hash_mux);
+-		for (i = 0; i < ecryptfs_hash_buckets; i++) {
++		for (i = 0; i < (1 << ecryptfs_hash_bits); i++) {
+ 			int rc;
+ 
+ 			hlist_for_each_entry(daemon, elem,
 
 
