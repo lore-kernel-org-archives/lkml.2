@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933247Ab0G3Saw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:30:52 -0400
-Received: from kroah.org ([198.145.64.141]:58175 "EHLO coco.kroah.org"
+	id S933265Ab0G3SbV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:31:21 -0400
+Received: from kroah.org ([198.145.64.141]:58163 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759894Ab0G3RzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:09 -0400
+	id S1759814Ab0G3RzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:39 2010
-Message-Id: <20100730175139.219519573@clark.site>
+Message-Id: <20100730175139.054224874@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:19 -0700
+Date: Fri, 30 Jul 2010 10:51:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [062/205] drm/radeon/kms: fix DP after DPMS cycle
+        sroland@vmware.com, Alex Deucher <alexdeucher@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [060/205] drm/radeon/r200: handle more hw tex coord types
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Roland Scheidegger <sroland@vmware.com>
 
-commit a5f798ce2b9de4b14c46cb68d58c488dc1b8e215 upstream.
+commit 688acaa2897462e4c5e2482496e2868db0760809 upstream.
 
-The transmitter needs to be enabled before the link is trained.
+Code did not handle projected 2d and depth coordinates, meaning potentially
+set 3d or cube special handling might stick.
+(Not sure what depth coord actually does, but I guess handling it
+like a normal coordinate is the right thing to do.)
+Might be related to https://bugs.freedesktop.org/show_bug.cgi?id=26428
 
-Reported-By: Lars Doelle <lars.doelle@on-line.de>
+Signed-off-by: sroland@vmware.com
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_encoders.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/r200.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_encoders.c
-@@ -1075,6 +1075,8 @@ radeon_atom_encoder_dpms(struct drm_enco
- 	if (is_dig) {
- 		switch (mode) {
- 		case DRM_MODE_DPMS_ON:
-+			if (!ASIC_IS_DCE4(rdev))
-+				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
- 			if (atombios_get_encoder_mode(encoder) == ATOM_ENCODER_MODE_DP) {
- 				struct drm_connector *connector = radeon_get_connector_for_encoder(encoder);
- 
-@@ -1082,8 +1084,6 @@ radeon_atom_encoder_dpms(struct drm_enco
- 				if (ASIC_IS_DCE4(rdev))
- 					atombios_dig_encoder_setup(encoder, ATOM_ENCODER_CMD_DP_VIDEO_ON);
- 			}
--			if (!ASIC_IS_DCE4(rdev))
--				atombios_dig_transmitter_setup(encoder, ATOM_TRANSMITTER_ACTION_ENABLE_OUTPUT, 0, 0);
- 			break;
- 		case DRM_MODE_DPMS_STANDBY:
- 		case DRM_MODE_DPMS_SUSPEND:
+--- a/drivers/gpu/drm/radeon/r200.c
++++ b/drivers/gpu/drm/radeon/r200.c
+@@ -415,6 +415,8 @@ int r200_packet0_check(struct radeon_cs_
+ 		/* 2D, 3D, CUBE */
+ 		switch (tmp) {
+ 		case 0:
++		case 3:
++		case 4:
+ 		case 5:
+ 		case 6:
+ 		case 7:
 
 
