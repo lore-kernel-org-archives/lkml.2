@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759192Ab0G3S4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:56:12 -0400
-Received: from kroah.org ([198.145.64.141]:35483 "EHLO coco.kroah.org"
+	id S933512Ab0G3S41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:56:27 -0400
+Received: from kroah.org ([198.145.64.141]:35464 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758654Ab0G3ReA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:00 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
-Message-Id: <20100730173103.943596359@clark.site>
+	id S1758798Ab0G3Rd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:33:56 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
+Message-Id: <20100730173103.686440327@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:38 -0700
+Date: Fri, 30 Jul 2010 10:29:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: [013/140] hwmon: (k8temp) Bypass core swapping on single-core processors
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [010/140] tcp: use correct net ns in cookie_v4_check()
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
 
-commit cd4de21f7e65a8cd04860f5661b3c18648ee52a1 upstream.
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-Commit a2e066bba2aad6583e3ff648bf28339d6c9f0898 introduced core
-swapping for CPU models 64 and later. I recently had a report about
-a Sempron 3200+, model 95, for which this patch broke temperature
-reading. It happens that this is a single-core processor, so the
-effect of the swapping was to read a temperature value for a core
-that didn't exist, leading to an incorrect value (-49 degrees C.)
+[ Upstream commit c44649216522cd607a4027d2ebf4a8147d3fa94c ]
 
-Disabling core swapping on singe-core processors should fix this.
+Its better to make a route lookup in appropriate namespace.
 
-Additional comment from Andreas:
-
-The BKDG says
-
-  Thermal Sensor Core Select (ThermSenseCoreSel)-Bit 2. This bit
-  selects the CPU whose temperature is reported in the CurTemp
-  field. This bit only applies to dual core processors. For
-  single core processors CPU0 Thermal Sensor is always selected.
-
-k8temp_probe() correctly detected that SEL_CORE can't be used on single
-core CPU. Thus k8temp did never update the temperature values stored
-in temp[1][x] and -49 degrees was reported. For single core CPUs we
-must use the values read into temp[0][x].
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Tested-by: Rick Moritz <rhavin@gmx.net>
-Acked-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/hwmon/k8temp.c |    2 +-
+ net/ipv4/syncookies.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/k8temp.c
-+++ b/drivers/hwmon/k8temp.c
-@@ -120,7 +120,7 @@ static ssize_t show_temp(struct device *
- 	int temp;
- 	struct k8temp_data *data = k8temp_update_device(dev);
- 
--	if (data->swap_core_select)
-+	if (data->swap_core_select && (data->sensorsp & SEL_CORE))
- 		core = core ? 0 : 1;
- 
- 	temp = TEMP_FROM_REG(data->temp[core][place]) + data->temp_offset;
+--- a/net/ipv4/syncookies.c
++++ b/net/ipv4/syncookies.c
+@@ -347,7 +347,7 @@ struct sock *cookie_v4_check(struct sock
+ 					       { .sport = th->dest,
+ 						 .dport = th->source } } };
+ 		security_req_classify_flow(req, &fl);
+-		if (ip_route_output_key(&init_net, &rt, &fl)) {
++		if (ip_route_output_key(sock_net(sk), &rt, &fl)) {
+ 			reqsk_free(req);
+ 			goto out;
+ 		}
 
 
