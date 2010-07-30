@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab0G3R6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:58:54 -0400
-Received: from kroah.org ([198.145.64.141]:59014 "EHLO coco.kroah.org"
+	id S1759617Ab0G3R7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:59:37 -0400
+Received: from kroah.org ([198.145.64.141]:59137 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932621Ab0G3R5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:47 2010
-Message-Id: <20100730175147.590406432@clark.site>
+	id S932734Ab0G3R52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:28 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
+Message-Id: <20100730175149.292401269@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:47 -0700
+Date: Fri, 30 Jul 2010 10:53:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: [150/205] KVM: SVM: Implement workaround for Erratum 383
+        Baruch Siach <baruch@tkos.co.il>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [169/205] dm9000: fix "BUG: spinlock recursion"
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,155 +26,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This patch implements a workaround for AMD erratum 383 into
-KVM. Without this erratum fix it is possible for a guest to
-kill the host machine. This patch implements the suggested
-workaround for hypervisors which will be published by the
-next revision guide update.
+From: Baruch Siach <baruch@tkos.co.il>
 
-[jan: fix overflow warning on i386]
-[xiao: fix unused variable warning]
+commit 380fefb2ddabd4cd5f14dbe090481f0544e65078 upstream.
 
-Cc: stable@kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-(cherry picked from commit 67ec66077799f2fef84b21a643912b179c422281)
+dm9000_set_rx_csum and dm9000_hash_table are called from atomic context (in
+dm9000_init_dm9000), and from non-atomic context (via ethtool_ops and
+net_device_ops respectively). This causes a spinlock recursion BUG. Fix this by
+renaming these functions to *_unlocked for the atomic context, and make the
+original functions locking wrappers for use in the non-atomic context.
+
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/x86/include/asm/msr-index.h |    1 
- arch/x86/kvm/svm.c               |   81 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
+ drivers/net/dm9000.c |   38 +++++++++++++++++++++++++++-----------
+ 1 file changed, 27 insertions(+), 11 deletions(-)
 
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -107,6 +107,7 @@
- #define MSR_AMD64_PATCH_LOADER		0xc0010020
- #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
- #define MSR_AMD64_OSVW_STATUS		0xc0010141
-+#define MSR_AMD64_DC_CFG		0xc0011022
- #define MSR_AMD64_IBSFETCHCTL		0xc0011030
- #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
- #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -28,6 +28,7 @@
- #include <linux/ftrace_event.h>
- #include <linux/slab.h>
- 
-+#include <asm/tlbflush.h>
- #include <asm/desc.h>
- 
- #include <asm/virtext.h>
-@@ -55,6 +56,8 @@ MODULE_LICENSE("GPL");
- 
- #define DEBUGCTL_RESERVED_BITS (~(0x3fULL))
- 
-+static bool erratum_383_found __read_mostly;
-+
- static const u32 host_save_user_msrs[] = {
- #ifdef CONFIG_X86_64
- 	MSR_STAR, MSR_LSTAR, MSR_CSTAR, MSR_SYSCALL_MASK, MSR_KERNEL_GS_BASE,
-@@ -298,6 +301,31 @@ static void skip_emulated_instruction(st
- 	svm_set_interrupt_shadow(vcpu, 0);
+--- a/drivers/net/dm9000.c
++++ b/drivers/net/dm9000.c
+@@ -476,17 +476,13 @@ static uint32_t dm9000_get_rx_csum(struc
+ 	return dm->rx_csum;
  }
  
-+static void svm_init_erratum_383(void)
+-static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
++static int dm9000_set_rx_csum_unlocked(struct net_device *dev, uint32_t data)
+ {
+ 	board_info_t *dm = to_dm9000_board(dev);
+-	unsigned long flags;
+ 
+ 	if (dm->can_csum) {
+ 		dm->rx_csum = data;
+-
+-		spin_lock_irqsave(&dm->lock, flags);
+ 		iow(dm, DM9000_RCSR, dm->rx_csum ? RCSR_CSUM : 0);
+-		spin_unlock_irqrestore(&dm->lock, flags);
+ 
+ 		return 0;
+ 	}
+@@ -494,6 +490,19 @@ static int dm9000_set_rx_csum(struct net
+ 	return -EOPNOTSUPP;
+ }
+ 
++static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
 +{
-+	u32 low, high;
-+	int err;
-+	u64 val;
++	board_info_t *dm = to_dm9000_board(dev);
++	unsigned long flags;
++	int ret;
 +
-+	/* Only Fam10h is affected */
-+	if (boot_cpu_data.x86 != 0x10)
-+		return;
++	spin_lock_irqsave(&dm->lock, flags);
++	ret = dm9000_set_rx_csum_unlocked(dev, data);
++	spin_unlock_irqrestore(&dm->lock, flags);
 +
-+	/* Use _safe variants to not break nested virtualization */
-+	val = native_read_msr_safe(MSR_AMD64_DC_CFG, &err);
-+	if (err)
-+		return;
-+
-+	val |= (1ULL << 47);
-+
-+	low  = lower_32_bits(val);
-+	high = upper_32_bits(val);
-+
-+	native_write_msr_safe(MSR_AMD64_DC_CFG, low, high);
-+
-+	erratum_383_found = true;
++	return ret;
 +}
 +
- static int has_svm(void)
+ static int dm9000_set_tx_csum(struct net_device *dev, uint32_t data)
  {
- 	const char *msg;
-@@ -353,6 +381,8 @@ static int svm_hardware_enable(void *gar
+ 	board_info_t *dm = to_dm9000_board(dev);
+@@ -722,7 +731,7 @@ static unsigned char dm9000_type_to_char
+  *  Set DM9000 multicast address
+  */
+ static void
+-dm9000_hash_table(struct net_device *dev)
++dm9000_hash_table_unlocked(struct net_device *dev)
+ {
+ 	board_info_t *db = netdev_priv(dev);
+ 	struct dev_mc_list *mcptr;
+@@ -730,12 +739,9 @@ dm9000_hash_table(struct net_device *dev
+ 	u32 hash_val;
+ 	u16 hash_table[4];
+ 	u8 rcr = RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN;
+-	unsigned long flags;
  
- 	wrmsrl(MSR_VM_HSAVE_PA, page_to_pfn(sd->save_area) << PAGE_SHIFT);
+ 	dm9000_dbg(db, 1, "entering %s\n", __func__);
  
-+	svm_init_erratum_383();
-+
- 	return 0;
- }
+-	spin_lock_irqsave(&db->lock, flags);
+-
+ 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
+ 		iow(db, oft, dev->dev_addr[i]);
  
-@@ -1280,8 +1310,59 @@ static int nm_interception(struct vcpu_s
- 	return 1;
- }
+@@ -765,6 +771,16 @@ dm9000_hash_table(struct net_device *dev
+ 	}
  
-+static bool is_erratum_383(void)
-+{
-+	int err, i;
-+	u64 value;
-+
-+	if (!erratum_383_found)
-+		return false;
-+
-+	value = native_read_msr_safe(MSR_IA32_MC0_STATUS, &err);
-+	if (err)
-+		return false;
-+
-+	/* Bit 62 may or may not be set for this mce */
-+	value &= ~(1ULL << 62);
-+
-+	if (value != 0xb600000000010015ULL)
-+		return false;
-+
-+	/* Clear MCi_STATUS registers */
-+	for (i = 0; i < 6; ++i)
-+		native_write_msr_safe(MSR_IA32_MCx_STATUS(i), 0, 0);
-+
-+	value = native_read_msr_safe(MSR_IA32_MCG_STATUS, &err);
-+	if (!err) {
-+		u32 low, high;
-+
-+		value &= ~(1ULL << 2);
-+		low    = lower_32_bits(value);
-+		high   = upper_32_bits(value);
-+
-+		native_write_msr_safe(MSR_IA32_MCG_STATUS, low, high);
-+	}
-+
-+	/* Flush tlb to evict multi-match entries */
-+	__flush_tlb_all();
-+
-+	return true;
+ 	iow(db, DM9000_RCR, rcr);
 +}
 +
- static void svm_handle_mce(struct vcpu_svm *svm)
- {
-+	if (is_erratum_383()) {
-+		/*
-+		 * Erratum 383 triggered. Guest state is corrupt so kill the
-+		 * guest.
-+		 */
-+		pr_err("KVM: Guest triggered AMD Erratum 383\n");
++static void
++dm9000_hash_table(struct net_device *dev)
++{
++	board_info_t *db = netdev_priv(dev);
++	unsigned long flags;
 +
-+		set_bit(KVM_REQ_TRIPLE_FAULT, &svm->vcpu.requests);
-+
-+		return;
-+	}
-+
- 	/*
- 	 * On an #MC intercept the MCE handler is not called automatically in
- 	 * the host. So do it by hand here.
++	spin_lock_irqsave(&db->lock, flags);
++	dm9000_hash_table_unlocked(dev);
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ }
+ 
+@@ -784,7 +800,7 @@ dm9000_init_dm9000(struct net_device *de
+ 	db->io_mode = ior(db, DM9000_ISR) >> 6;	/* ISR bit7:6 keeps I/O mode */
+ 
+ 	/* Checksum mode */
+-	dm9000_set_rx_csum(dev, db->rx_csum);
++	dm9000_set_rx_csum_unlocked(dev, db->rx_csum);
+ 
+ 	/* GPIO0 on pre-activate PHY */
+ 	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */
+@@ -811,7 +827,7 @@ dm9000_init_dm9000(struct net_device *de
+ 	iow(db, DM9000_ISR, ISR_CLR_STATUS); /* Clear interrupt status */
+ 
+ 	/* Set address filter table */
+-	dm9000_hash_table(dev);
++	dm9000_hash_table_unlocked(dev);
+ 
+ 	imr = IMR_PAR | IMR_PTM | IMR_PRM;
+ 	if (db->type != TYPE_DM9000E)
 
 
