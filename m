@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760600Ab0G3TOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:14:33 -0400
-Received: from kroah.org ([198.145.64.141]:46318 "EHLO coco.kroah.org"
+	id S1754711Ab0G3TOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:14:52 -0400
+Received: from kroah.org ([198.145.64.141]:46314 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754711Ab0G3RSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:07 -0400
+	id S1756703Ab0G3RSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:06 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:02 2010
-Message-Id: <20100730171502.284364105@clark.site>
+Message-Id: <20100730171502.197540626@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:17 -0700
+Date: Fri, 30 Jul 2010 10:14:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: [029/165] Btrfs: fix checks in BTRFS_IOC_CLONE_RANGE
+        Javier Cardona <javier@cozybit.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [028/165] mac80211: Handle mesh action frames in ieee80211_rx_h_action
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+From: Javier Cardona <javier@cozybit.com>
 
-commit 2ebc3464781ad24474abcbd2274e6254689853b5 upstream.
+commit 1cb561f83793191cf86a2db3948d28f5f42df9ff upstream.
 
-1.  The BTRFS_IOC_CLONE and BTRFS_IOC_CLONE_RANGE ioctls should check
-whether the donor file is append-only before writing to it.
+This fixes the problem introduced in commit
+8404080568613d93ad7cf0a16dfb68 which broke mesh peer link establishment.
 
-2.  The BTRFS_IOC_CLONE_RANGE ioctl appears to have an integer
-overflow that allows a user to specify an out-of-bounds range to copy
-from the source file (if off + len wraps around).  I haven't been able
-to successfully exploit this, but I'd imagine that a clever attacker
-could use this to read things he shouldn't.  Even if it's not
-exploitable, it couldn't hurt to be safe.
+changes:
+v2 	Added missing break (Johannes)
+v3 	Broke original patch into two (Johannes)
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Javier Cardona <javier@cozybit.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- fs/btrfs/ioctl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -947,7 +947,7 @@ static noinline long btrfs_ioctl_clone(s
- 	 */
- 
- 	/* the destination must be opened for writing */
--	if (!(file->f_mode & FMODE_WRITE))
-+	if (!(file->f_mode & FMODE_WRITE) || (file->f_flags & O_APPEND))
- 		return -EINVAL;
- 
- 	ret = mnt_want_write(file->f_path.mnt);
-@@ -1000,7 +1000,7 @@ static noinline long btrfs_ioctl_clone(s
- 
- 	/* determine range to clone */
- 	ret = -EINVAL;
--	if (off >= src->i_size || off + len > src->i_size)
-+	if (off + len > src->i_size || off + len < off)
- 		goto out_unlock;
- 	if (len == 0)
- 		olen = len = src->i_size - off;
+---
+ include/linux/ieee80211.h |    2 ++
+ net/mac80211/rx.c         |    5 +++++
+ 2 files changed, 7 insertions(+)
+
+--- a/include/linux/ieee80211.h
++++ b/include/linux/ieee80211.h
+@@ -1098,6 +1098,8 @@ enum ieee80211_category {
+ 	WLAN_CATEGORY_SA_QUERY = 8,
+ 	WLAN_CATEGORY_PROTECTED_DUAL_OF_ACTION = 9,
+ 	WLAN_CATEGORY_WMM = 17,
++	WLAN_CATEGORY_MESH_PLINK = 30,		/* Pending ANA approval */
++	WLAN_CATEGORY_MESH_PATH_SEL = 32,	/* Pending ANA approval */
+ 	WLAN_CATEGORY_VENDOR_SPECIFIC_PROTECTED = 126,
+ 	WLAN_CATEGORY_VENDOR_SPECIFIC = 127,
+ };
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1818,6 +1818,11 @@ ieee80211_rx_h_action(struct ieee80211_r
+ 			return RX_CONTINUE;
+ 		}
+ 		break;
++	case WLAN_CATEGORY_MESH_PLINK:
++	case WLAN_CATEGORY_MESH_PATH_SEL:
++		if (ieee80211_vif_is_mesh(&sdata->vif))
++			return ieee80211_mesh_rx_mgmt(sdata, rx->skb);
++		break;
+ 	default:
+ 		/* do not process rejected action frames */
+ 		if (mgmt->u.action.category & 0x80)
 
 
