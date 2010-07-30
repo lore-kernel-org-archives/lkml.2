@@ -1,78 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab0G3IBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 04:01:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62614 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab0G3IBs (ORCPT
+	id S1755316Ab0G3IW3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 04:22:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33552 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab0G3IW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 04:01:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: stepanm@codeaurora.org
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Date: Fri, 30 Jul 2010 10:01:02 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.90; x86_64; ; )
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20100729123512Y.fujita.tomonori@lab.ntt.co.jp> <20100729090607.GN26098@amd.com> <d493494df33aaf65e526181b1dbafce3.squirrel@www.codeaurora.org>
-In-Reply-To: <d493494df33aaf65e526181b1dbafce3.squirrel@www.codeaurora.org>
+	Fri, 30 Jul 2010 04:22:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=w8rmRs/3MsEVgqOxCXKbCYQ5l8kCveneraqvThe0O9bczVPTOn3lp4LTEYQX7WYVqG
+         i7SggmIKkygUxSCxGs8F3ebtuSiFxIJuu2S9VH5jdILAdlACtzf6yXaywVyzUwaRNrVF
+         f7IuEvdr0D6+/gprDIa7EI70iAFgEyRmafAOM=
+Date: Fri, 30 Jul 2010 10:22:19 +0200
+From: Roel Van Nyen <roel.vannyen@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6656: Remove PUINT from ttype.h
+Message-ID: <4c528bbe.887b0e0a.3c98.5bcb@mx.google.com>
+References: <1278973682-25540-1-git-send-email-roel.vannyen@gmail.com>
+ <20100722184435.GB32116@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201007301001.02509.arnd@arndb.de>
-X-Provags-ID: V02:K0:yqKg7edGhUadRutzMwDl4r0S8lTlPHmYkt4c7TpL4Uk
- jHrhQ7YpOgF+J24YG2a8leU9xv7ZU8g9qtac/JAzxCYqb4kGIe
- YYVHVpkONVQ3J24GEh2x9sGqig3mVwT7Zyn5Am+2wQVJGtxTqU
- sXMr6hj9iTwc8cMqJPsM2WUiUsLZwb+G5wpP7IQHjzzIwuo6cT
- ZJAzw2vwGOIgf1scmpoyQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722184435.GB32116@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 30 July 2010 07:19:06 stepanm@codeaurora.org wrote:
-> Unlike a more traditional system with one IOMMU between the bus and
-> memory, MSM has multiple IOMMUs, with each one hard-wired to a dedicated
-> device. Furthermore, each IOMMU can have more than one translation
-> context. One of the use cases is being able to create mappings within
-> multiple instances of one context, and arbitrarily context-switch the
-> IOMMU on the fly.
+On Thu, Jul 22, 2010 at 11:44:35AM -0700, Greg KH wrote:
+> On Tue, Jul 13, 2010 at 12:28:02AM +0200, Roel Van Nyen wrote:
+> > Remove PUINT from ttype.h and change it to unsigned int *
+> > 
+> > Signed-of-by Roel Van Nyen <roel.vannyen@gmail.com>
+> > ---
 > 
-> It sounds like the domain abstraction and attach_device/detach_device can
-> encapsulate this rather nicely and I am in the process of updating my
-> driver to fit this framework.
+> Please run your patches through the scripts/checkpatch.pl script before
+> sending them to me.  I can't add new warnings to the drivers, sorry.
 > 
-> My problem, however, is with iommu_domain_alloc(). This will set up a
-> domain and call the ops function to initialize it, but I want to be able
-> to pass it an “IOMMU id" that will tell the underlying driver which IOMMU
-> (and which "stream id") is to be associated with that domain instance.
-
-This probably best fits into the device itself, so you can assign the
-iommu data when probing the bus, e.g. (I don't know what bus you use)
-
-struct msm_device {
-	struct msm_iommu *iommu;
-	struct device dev;
-};
-
-This will work both for device drivers using the DMA API and for KVM
-with the IOMMU API.
-
-> This can be a void* parameter that gets passed through to domain_init. I
-> feel like this change will make it easy to deal with multiple
-> IOMMUs/translation contexts, and implementations that have only a singular
-> IOMMU/translation context are free to ignore that parameter.
+> thanks,
 > 
-> The alternative for me is to have a separate msm_iommu_domain_alloc(void
-> *context_id) function, to which I can specify which IOMMU I want to use,
-> but I would like to fully use your API if possible.
+> greg k-hi
+Hi Greg,
 
-No, that would require adding msm specific code to KVM and potential
-other users.
+I have re-done the patch, this time without any checkpatch.pl warnings.
 
-	Arnd
+Remove PUINT from ttype.h
+
+Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
+---
+ drivers/staging/vt6656/bssdb.c |    4 ++--
+ drivers/staging/vt6656/bssdb.h |    4 ++--
+ drivers/staging/vt6656/dpc.c   |    8 ++++----
+ drivers/staging/vt6656/ttype.h |    1 -
+ 4 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
+index 830dd23..4c604db 100644
+--- a/drivers/staging/vt6656/bssdb.c
++++ b/drivers/staging/vt6656/bssdb.c
+@@ -736,7 +736,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
+ 
+ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
+ 		       PBYTE abyDstAddr,
+-		       PUINT puNodeIndex)
++		       unsigned int *puNodeIndex)
+ {
+     PSDevice        pDevice = (PSDevice)hDeviceContext;
+     PSMgmtObject    pMgmt = &(pDevice->sMgmtObj);
+@@ -768,7 +768,7 @@ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
+  *    None
+  *
+ -*/
+-void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex)
++void BSSvCreateOneNode(void *hDeviceContext, unsigned int *puNodeIndex)
+ {
+ 
+     PSDevice     pDevice = (PSDevice)hDeviceContext;
+diff --git a/drivers/staging/vt6656/bssdb.h b/drivers/staging/vt6656/bssdb.h
+index c3aaefe..f1bd38b 100644
+--- a/drivers/staging/vt6656/bssdb.h
++++ b/drivers/staging/vt6656/bssdb.h
+@@ -278,9 +278,9 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
+ 
+ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
+ 		       PBYTE abyDstAddr,
+-		       PUINT puNodeIndex);
++		       unsigned int *puNodeIndex);
+ 
+-void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex);
++void BSSvCreateOneNode(void *hDeviceContext, unsigned int *puNodeIndex);
+ 
+ void BSSvUpdateAPNode(void *hDeviceContext,
+ 		      PWORD pwCapInfo,
+diff --git a/drivers/staging/vt6656/dpc.c b/drivers/staging/vt6656/dpc.c
+index 81ce46f..4f7e778 100644
+--- a/drivers/staging/vt6656/dpc.c
++++ b/drivers/staging/vt6656/dpc.c
+@@ -80,7 +80,7 @@ static
+ void
+ s_vGetDASA(
+       PBYTE pbyRxBufferAddr,
+-     PUINT pcbHeaderSize,
++     unsigned int *pcbHeaderSize,
+      PSEthernetHeader psEthHeader
+     );
+ 
+@@ -92,7 +92,7 @@ s_vProcessRxMACHeader (
+       unsigned int cbPacketSize,
+       BOOL bIsWEP,
+       BOOL bExtIV,
+-     PUINT pcbHeadSize
++     unsigned int *pcbHeadSize
+     );
+ 
+ static BOOL s_bAPModeRxCtl(
+@@ -167,7 +167,7 @@ s_vProcessRxMACHeader (
+       unsigned int cbPacketSize,
+       BOOL bIsWEP,
+       BOOL bExtIV,
+-     PUINT pcbHeadSize
++     unsigned int *pcbHeadSize
+     )
+ {
+     PBYTE           pbyRxBuffer;
+@@ -261,7 +261,7 @@ static
+ void
+ s_vGetDASA (
+       PBYTE pbyRxBufferAddr,
+-     PUINT pcbHeaderSize,
++     unsigned int *pcbHeaderSize,
+      PSEthernetHeader psEthHeader
+     )
+ {
+diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
+index 3425773..fd78135 100644
+--- a/drivers/staging/vt6656/ttype.h
++++ b/drivers/staging/vt6656/ttype.h
+@@ -87,7 +87,6 @@ typedef unsigned long   ULONG_PTR;      // 32-bit
+ typedef unsigned long   DWORD_PTR;      // 32-bit
+ 
+ // boolean pointer
+-typedef unsigned int *   PUINT;
+ 
+ typedef BYTE *           PBYTE;
+ 
+-- 
+1.7.0.4
+
+
