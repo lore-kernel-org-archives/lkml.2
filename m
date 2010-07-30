@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759058Ab0G3RVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:21:10 -0400
-Received: from kroah.org ([198.145.64.141]:52368 "EHLO coco.kroah.org"
+	id S1759015Ab0G3RU7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:20:59 -0400
+Received: from kroah.org ([198.145.64.141]:52330 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758887Ab0G3RUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:39 -0400
+	id S1758828Ab0G3RUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:30 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:14 2010
-Message-Id: <20100730171514.450448962@clark.site>
+Message-Id: <20100730171513.925423623@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:32 -0700
+Date: Fri, 30 Jul 2010 10:16:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: [164/165] Input: RX51 keymap - fix recent compile breakage
+        Shanyu Zhao <shanyu.zhao@intel.com>,
+        Pradeep Kulkarni <pradeepx.kulkarni@intel.com>,
+        Reinette Chatre <reinette.chatre@intel.com>
+Subject: [158/165] iwlagn: verify flow id in compressed BA packet
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Shanyu Zhao <shanyu.zhao@intel.com>
 
-commit 2e65a2075cc740b485ab203430bdf3459d5551b6 upstream.
+commit b561e8274f75831ee87e4ea378cbb1f9f050a51a upstream.
 
-Commit 3fea60261e73 ("Input: twl40300-keypad - fix handling of "all
-ground" rows") broke compilation as I managed to use non-existent
-keycodes.
+The flow id (scd_flow) in a compressed BA packet should match the txq_id
+of the queue from which the aggregated packets were sent. However, in
+some hardware like the 1000 series, sometimes the flow id is 0 for the
+txq_id (10 to 19). This can cause the annoying message:
+[ 2213.306191] iwlagn 0000:01:00.0: Received BA when not expected
+[ 2213.310178] iwlagn 0000:01:00.0: Read index for DMA queue txq id (0),
+index 5, is out of range [0-256] 7 7.
 
-Reported-by: Arjan van de Ven <arjan@infradead.org>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+And even worse, if agg->wait_for_ba is true when the bad BA is arriving,
+this can cause system hang due to NULL pointer dereference because the
+code is operating in a wrong tx queue!
+
+Signed-off-by: Shanyu Zhao <shanyu.zhao@intel.com>
+Signed-off-by: Pradeep Kulkarni <pradeepx.kulkarni@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-omap2/board-rx51-peripherals.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-tx.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -82,10 +82,10 @@ static int board_keymap[] = {
- 	KEY(4, 4, KEY_LEFTCTRL),
- 	KEY(4, 5, KEY_RIGHTALT),
- 	KEY(4, 6, KEY_LEFTSHIFT),
--	KEY(4, 8, KEY_10),
-+	KEY(4, 8, KEY_F10),
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -1479,6 +1479,11 @@ void iwl_rx_reply_compressed_ba(struct i
+ 	sta_id = ba_resp->sta_id;
+ 	tid = ba_resp->tid;
+ 	agg = &priv->stations[sta_id].tid[tid].agg;
++	if (unlikely(agg->txq_id != scd_flow)) {
++		IWL_ERR(priv, "BA scd_flow %d does not match txq_id %d\n",
++			scd_flow, agg->txq_id);
++		return;
++	}
  
- 	KEY(5, 0, KEY_Y),
--	KEY(5, 8, KEY_11),
-+	KEY(5, 8, KEY_F11),
- 
- 	KEY(6, 0, KEY_U),
- 
+ 	/* Find index just before block-ack window */
+ 	index = iwl_queue_dec_wrap(ba_resp_scd_ssn & 0xff, txq->q.n_bd);
 
 
