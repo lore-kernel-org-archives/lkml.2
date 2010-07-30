@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab0G3RSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:18:13 -0400
-Received: from kroah.org ([198.145.64.141]:46185 "EHLO coco.kroah.org"
+	id S1760579Ab0G3TMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:12:52 -0400
+Received: from kroah.org ([198.145.64.141]:46357 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754782Ab0G3RRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:17:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:00 2010
-Message-Id: <20100730171500.496954194@clark.site>
+	id S1754782Ab0G3RSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:15 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:02 2010
+Message-Id: <20100730171502.918111975@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:13:57 -0700
+Date: Fri, 30 Jul 2010 10:14:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [009/165] cifs: dont attempt busy-file rename unless its in same directory
+        sroland@vmware.com, Alex Deucher <alexdeucher@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [036/165] drm/radeon/r200: handle more hw tex coord types
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Roland Scheidegger <sroland@vmware.com>
 
-commit ed0e3ace576d297a5c7015401db1060bbf677b94 upstream.
+commit 688acaa2897462e4c5e2482496e2868db0760809 upstream.
 
-Busy-file renames don't actually work across directories, so we need
-to limit this code to renames within the same dir.
+Code did not handle projected 2d and depth coordinates, meaning potentially
+set 3d or cube special handling might stick.
+(Not sure what depth coord actually does, but I guess handling it
+like a normal coordinate is the right thing to do.)
+Might be related to https://bugs.freedesktop.org/show_bug.cgi?id=26428
 
-This fixes the bug detailed here:
-
-    https://bugzilla.redhat.com/show_bug.cgi?id=591938
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: sroland@vmware.com
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/inode.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/radeon/r200.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1284,6 +1284,10 @@ cifs_do_rename(int xid, struct dentry *f
- 	if (rc == 0 || rc != -ETXTBSY)
- 		return rc;
- 
-+	/* open-file renames don't work across directories */
-+	if (to_dentry->d_parent != from_dentry->d_parent)
-+		return rc;
-+
- 	/* open the file to be renamed -- we need DELETE perms */
- 	rc = CIFSSMBOpen(xid, pTcon, fromPath, FILE_OPEN, DELETE,
- 			 CREATE_NOT_DIR, &srcfid, &oplock, NULL,
+--- a/drivers/gpu/drm/radeon/r200.c
++++ b/drivers/gpu/drm/radeon/r200.c
+@@ -368,6 +368,8 @@ int r200_packet0_check(struct radeon_cs_
+ 		/* 2D, 3D, CUBE */
+ 		switch (tmp) {
+ 		case 0:
++		case 3:
++		case 4:
+ 		case 5:
+ 		case 6:
+ 		case 7:
 
 
