@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933303Ab0G3Shn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:37:43 -0400
-Received: from kroah.org ([198.145.64.141]:57958 "EHLO coco.kroah.org"
+	id S1759760Ab0G3Ry3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:54:29 -0400
+Received: from kroah.org ([198.145.64.141]:57751 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759774Ab0G3Ryh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:37 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:36 2010
-Message-Id: <20100730175136.385776171@clark.site>
+	id S1759565Ab0G3RyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:33 2010
+Message-Id: <20100730175133.699182370@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:48 -0700
+Date: Fri, 30 Jul 2010 10:50:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Brandon Philips <bphilips@suse.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [031/205] sky2: enable rx/tx in sky2_phy_reinit()
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [001/205] virtio-pci: disable msi at startup
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brandon Philips <brandon@ifup.org>
+From: Michael S. Tsirkin <mst@redhat.com>
 
-commit 38000a94a902e94ca8b5498f7871c6316de8957a upstream.
+commit b03214d559471359e2a85ae256686381d0672f29 upstream.
 
-sky2_phy_reinit is called by the ethtool helpers sky2_set_settings,
-sky2_nway_reset and sky2_set_pauseparam when netif_running.
+virtio-pci resets the device at startup by writing to the status
+register, but this does not clear the pci config space,
+specifically msi enable status which affects register
+layout.
 
-However, at the end of sky2_phy_init GM_GP_CTRL has GM_GPCR_RX_ENA and
-GM_GPCR_TX_ENA cleared. So, doing these commands causes the device to
-stop working:
+This breaks things like kdump when they try to use e.g. virtio-blk.
 
-$ ethtool -r eth0
-$ ethtool -A eth0 autoneg off
+Fix by forcing msi off at startup. Since pci.c already has
+a routine to do this, we export and use it instead of duplicating code.
 
-Fix this issue by enabling Rx/Tx after running sky2_phy_init in
-sky2_phy_reinit.
-
-Signed-off-by: Brandon Philips <bphilips@suse.de>
-Tested-by: Brandon Philips <bphilips@suse.de>
-Cc: stable@kernel.org
-Tested-by: Mike McCormack <mikem@ring3k.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-pci@vger.kernel.org
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/sky2.c |   19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ drivers/pci/pci.c           |    1 +
+ drivers/virtio/virtio_pci.c |    3 +++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/net/sky2.c
-+++ b/drivers/net/sky2.c
-@@ -720,11 +720,24 @@ static void sky2_phy_power_down(struct s
- 	sky2_write8(hw, B2_TST_CTRL1, TST_CFG_WRITE_OFF);
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2294,6 +2294,7 @@ void pci_msi_off(struct pci_dev *dev)
+ 		pci_write_config_word(dev, pos + PCI_MSIX_FLAGS, control);
+ 	}
  }
++EXPORT_SYMBOL_GPL(pci_msi_off);
  
-+/* Enable Rx/Tx */
-+static void sky2_enable_rx_tx(struct sky2_port *sky2)
-+{
-+	struct sky2_hw *hw = sky2->hw;
-+	unsigned port = sky2->port;
-+	u16 reg;
+ #ifndef HAVE_ARCH_PCI_SET_DMA_MAX_SEGMENT_SIZE
+ int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size)
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -636,6 +636,9 @@ static int __devinit virtio_pci_probe(st
+ 	INIT_LIST_HEAD(&vp_dev->virtqueues);
+ 	spin_lock_init(&vp_dev->lock);
+ 
++	/* Disable MSI/MSIX to bring device to a known good state. */
++	pci_msi_off(pci_dev);
 +
-+	reg = gma_read16(hw, port, GM_GP_CTRL);
-+	reg |= GM_GPCR_RX_ENA | GM_GPCR_TX_ENA;
-+	gma_write16(hw, port, GM_GP_CTRL, reg);
-+}
-+
- /* Force a renegotiation */
- static void sky2_phy_reinit(struct sky2_port *sky2)
- {
- 	spin_lock_bh(&sky2->phy_lock);
- 	sky2_phy_init(sky2->hw, sky2->port);
-+	sky2_enable_rx_tx(sky2);
- 	spin_unlock_bh(&sky2->phy_lock);
- }
- 
-@@ -2002,7 +2015,6 @@ static void sky2_link_up(struct sky2_por
- {
- 	struct sky2_hw *hw = sky2->hw;
- 	unsigned port = sky2->port;
--	u16 reg;
- 	static const char *fc_name[] = {
- 		[FC_NONE]	= "none",
- 		[FC_TX]		= "tx",
-@@ -2010,10 +2022,7 @@ static void sky2_link_up(struct sky2_por
- 		[FC_BOTH]	= "both",
- 	};
- 
--	/* enable Rx/Tx */
--	reg = gma_read16(hw, port, GM_GP_CTRL);
--	reg |= GM_GPCR_RX_ENA | GM_GPCR_TX_ENA;
--	gma_write16(hw, port, GM_GP_CTRL, reg);
-+	sky2_enable_rx_tx(sky2);
- 
- 	gm_phy_write(hw, port, PHY_MARV_INT_MASK, PHY_M_DEF_MSK);
- 
+ 	/* enable the device */
+ 	err = pci_enable_device(pci_dev);
+ 	if (err)
 
 
