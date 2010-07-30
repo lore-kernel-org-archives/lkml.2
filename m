@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933502Ab0G3Szl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:55:41 -0400
-Received: from kroah.org ([198.145.64.141]:35527 "EHLO coco.kroah.org"
+	id S1760268Ab0G3Szw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:55:52 -0400
+Received: from kroah.org ([198.145.64.141]:35502 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759169Ab0G3ReG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:06 -0400
+	id S1759315Ab0G3ReC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:02 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
-Message-Id: <20100730173104.478406878@clark.site>
+Message-Id: <20100730173104.142298489@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:44 -0700
+Date: Fri, 30 Jul 2010 10:29:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>
-Subject: [019/140] cifs: remove bogus first_time check in NTLMv2 session setup code
+        Jean Delvare <khali@linux-fr.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: [015/140] hwmon: (k10temp) Do not blacklist known working CPU models
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 8a224d489454b7457105848610cfebebdec5638d upstream.
+commit eefc2d9e3d4f8820f2c128a0e44a23de28b1ed64 upstream.
 
-This bug appears to be the result of a cut-and-paste mistake from the
-NTLMv1 code. The function to generate the MAC key was commented out, but
-not the conditional above it. The conditional then ended up causing the
-session setup key not to be copied to the buffer unless this was the
-first session on the socket, and that made all but the first NTLMv2
-session setup fail.
+When detecting AM2+ or AM3 socket with DDR2, only blacklist cores
+which are known to exist in AM2+ format.
 
-Fix this by removing the conditional and all of the commented clutter
-that made it difficult to see.
-
-Reported-by: Gunther Deschner <gdeschne@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/sess.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ drivers/hwmon/k10temp.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/sess.c
-+++ b/fs/cifs/sess.c
-@@ -722,15 +722,7 @@ ssetup_ntlmssp_authenticate:
+--- a/drivers/hwmon/k10temp.c
++++ b/drivers/hwmon/k10temp.c
+@@ -112,11 +112,21 @@ static bool __devinit has_erratum_319(st
+ 	if (pkg_type != CPUID_PKGTYPE_AM2R2_AM3)
+ 		return false;
  
- 		/* calculate session key */
- 		setup_ntlmv2_rsp(ses, v2_sess_key, nls_cp);
--		if (first_time) /* should this be moved into common code
--				   with similar ntlmv2 path? */
--		/*   cifs_calculate_ntlmv2_mac_key(ses->server->mac_signing_key,
--				response BB FIXME, v2_sess_key); */
--
--		/* copy session key */
--
--	/*	memcpy(bcc_ptr, (char *)ntlm_session_key,LM2_SESS_KEY_SIZE);
--		bcc_ptr += LM2_SESS_KEY_SIZE; */
-+		/* FIXME: calculate MAC key */
- 		memcpy(bcc_ptr, (char *)v2_sess_key,
- 		       sizeof(struct ntlmv2_resp));
- 		bcc_ptr += sizeof(struct ntlmv2_resp);
+-	/* Differentiate between AM2+ (bad) and AM3 (good) */
++	/* DDR3 memory implies socket AM3, which is good */
+ 	pci_bus_read_config_dword(pdev->bus,
+ 				  PCI_DEVFN(PCI_SLOT(pdev->devfn), 2),
+ 				  REG_DCT0_CONFIG_HIGH, &reg_dram_cfg);
+-	return !(reg_dram_cfg & DDR3_MODE);
++	if (reg_dram_cfg & DDR3_MODE)
++		return false;
++
++	/*
++	 * Unfortunately it is possible to run a socket AM3 CPU with DDR2
++	 * memory. We blacklist all the cores which do exist in socket AM2+
++	 * format. It still isn't perfect, as RB-C2 cores exist in both AM2+
++	 * and AM3 formats, but that's the best we can do.
++	 */
++	return boot_cpu_data.x86_model < 4 ||
++	       (boot_cpu_data.x86_model == 4 && boot_cpu_data.x86_mask <= 2);
+ }
+ 
+ static int __devinit k10temp_probe(struct pci_dev *pdev,
 
 
