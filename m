@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383Ab0G3Rfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:35:34 -0400
-Received: from kroah.org ([198.145.64.141]:35660 "EHLO coco.kroah.org"
+	id S932425Ab0G3RtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:49:24 -0400
+Received: from kroah.org ([198.145.64.141]:36017 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759381Ab0G3Re2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:28 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:06 2010
-Message-Id: <20100730173106.258670701@clark.site>
+	id S932380Ab0G3Rfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:11 2010
+Message-Id: <20100730173111.359649789@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:04 -0700
+Date: Fri, 30 Jul 2010 10:31:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@redhat.com>
-Subject: [039/140] fb: fix colliding defines for fb flags.
+        Jon Povey <jon.povey@racelogic.co.uk>, Maulik Mankad <x0082077@ti.com>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: [096/140] USB: g_serial: dont set low_latency flag
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Jon Povey <jon.povey@racelogic.co.uk>
 
-commit b26c949755c06ec79e55a75817210083bd78fc9a upstream.
+commit 44a0c0190b500ee6bcfc0976fe540f65dee2cd67 upstream.
 
-When I added the flags I must have been using a 25 line terminal and missed the following flags.
+No longer set low_latency flag as it causes this warning backtrace:
 
-The collided with flag has one user in staging despite being in-tree for 5 years.
+  WARNING: at kernel/mutex.c:207 __mutex_lock_slowpath+0x6c/0x288()
 
-I'm happy to push this via my drm tree unless someone really wants to do it.
+Fix associated locking and wakeups.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
+Cc: Maulik Mankad <x0082077@ti.com>
+Acked-by: David Brownell <dbrownell@users.sourceforge.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/fb.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/u_serial.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
 
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -785,8 +785,6 @@ struct fb_tile_ops {
- #define FBINFO_MISC_USEREVENT          0x10000 /* event request
- 						  from userspace */
- #define FBINFO_MISC_TILEBLITTING       0x20000 /* use tile blitting */
--#define FBINFO_MISC_FIRMWARE           0x40000 /* a replaceable firmware
--						  inited framebuffer */
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -535,17 +535,11 @@ recycle:
+ 		list_move(&req->list, &port->read_pool);
+ 	}
  
- /* A driver may set this flag to indicate that it does want a set_par to be
-  * called every time when fbcon_switch is executed. The advantage is that with
-@@ -800,6 +798,8 @@ struct fb_tile_ops {
-  */
- #define FBINFO_MISC_ALWAYS_SETPAR   0x40000
+-	/* Push from tty to ldisc; this is immediate with low_latency, and
+-	 * may trigger callbacks to this driver ... so drop the spinlock.
++	/* Push from tty to ldisc; without low_latency set this is handled by
++	 * a workqueue, so we won't get callbacks and can hold port_lock
+ 	 */
+ 	if (tty && do_push) {
+-		spin_unlock_irq(&port->port_lock);
+ 		tty_flip_buffer_push(tty);
+-		wake_up_interruptible(&tty->read_wait);
+-		spin_lock_irq(&port->port_lock);
+-
+-		/* tty may have been closed */
+-		tty = port->port_tty;
+ 	}
  
-+/* where the fb is a firmware driver, and can be replaced with a proper one */
-+#define FBINFO_MISC_FIRMWARE        0x80000
- /*
-  * Host and GPU endianness differ.
-  */
+ 
+@@ -783,11 +777,6 @@ static int gs_open(struct tty_struct *tt
+ 	port->open_count = 1;
+ 	port->openclose = false;
+ 
+-	/* low_latency means ldiscs work in tasklet context, without
+-	 * needing a workqueue schedule ... easier to keep up.
+-	 */
+-	tty->low_latency = 1;
+-
+ 	/* if connected, start the I/O stream */
+ 	if (port->port_usb) {
+ 		struct gserial	*gser = port->port_usb;
 
 
