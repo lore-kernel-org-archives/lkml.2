@@ -1,36 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab0G3Ndh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 09:33:37 -0400
-Received: from aa011msr.fastwebnet.it ([85.18.95.71]:48645 "EHLO
-	aa011msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab0G3Ndf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 09:33:35 -0400
-Message-ID: <334899.1827301280491978226.JavaMail.root@pr003msr>
-Date: Fri, 30 Jul 2010 14:12:58 +0200 (CEST)
-From: "BARR. ADAMS TAYLOR" <emiliomario.alfonsi@fastwebnet.it>
-Reply-To: adamstaylor01@w.cn
-Subject: RE
-MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 195.245.109.83
-To: unlisted-recipients:; (no To-header on input)
+	id S1758671Ab0G3NhJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 09:37:09 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55671 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758597Ab0G3NhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 09:37:01 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 2/6] vmscan: tracing: Update trace event to track if page reclaim IO is for anon or file pages
+Date: Fri, 30 Jul 2010 14:36:56 +0100
+Message-Id: <1280497020-22816-3-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1280497020-22816-1-git-send-email-mel@csn.ul.ie>
+References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attn:Beneficiary
-**********************************************************************
-I Once again try to notify you as my previous email to you returned undelivered.
- This is why 
-I 'm reaching you again to inform you that my late client Gen. Farden Benson mad
-e you a 
-beneficiary to his will. 
-Reply back via:
-********************************************************************
-Sincerely,Barr. 
-Adams Taylor,
-                                       (Senior Principal Partner)
+It is useful to distinguish between IO for anon and file pages. This
+patch updates
+vmscan-tracing-add-trace-event-when-a-page-is-written.patch to include
+that information. The patches can be merged together.
+
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ include/trace/events/vmscan.h |   30 ++++++++++++++++++++++++------
+ mm/vmscan.c                   |    2 +-
+ 2 files changed, 25 insertions(+), 7 deletions(-)
+
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index f2da66a..69789dc 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -8,6 +8,24 @@
+ #include <linux/tracepoint.h>
+ #include "gfpflags.h"
+ 
++#define RECLAIM_WB_ANON		0x0001u
++#define RECLAIM_WB_FILE		0x0002u
++#define RECLAIM_WB_SYNC		0x0004u
++#define RECLAIM_WB_ASYNC	0x0008u
++
++#define show_reclaim_flags(flags)				\
++	(flags) ? __print_flags(flags, "|",			\
++		{RECLAIM_WB_ANON,	"RECLAIM_WB_ANON"},	\
++		{RECLAIM_WB_FILE,	"RECLAIM_WB_FILE"},	\
++		{RECLAIM_WB_SYNC,	"RECLAIM_WB_SYNC"},	\
++		{RECLAIM_WB_ASYNC,	"RECLAIM_WB_ASYNC"}	\
++		) : "RECLAIM_WB_NONE"
++
++#define trace_reclaim_flags(page, sync) ( \
++	(page_is_file_cache(page) ? RECLAIM_WB_FILE : RECLAIM_WB_ANON) | \
++	(sync == PAGEOUT_IO_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC)   \
++	)
++
+ TRACE_EVENT(mm_vmscan_kswapd_sleep,
+ 
+ 	TP_PROTO(int nid),
+@@ -158,24 +176,24 @@ TRACE_EVENT(mm_vmscan_lru_isolate,
+ TRACE_EVENT(mm_vmscan_writepage,
+ 
+ 	TP_PROTO(struct page *page,
+-		int sync_io),
++		int reclaim_flags),
+ 
+-	TP_ARGS(page, sync_io),
++	TP_ARGS(page, reclaim_flags),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(struct page *, page)
+-		__field(int, sync_io)
++		__field(int, reclaim_flags)
+ 	),
+ 
+ 	TP_fast_assign(
+ 		__entry->page = page;
+-		__entry->sync_io = sync_io;
++		__entry->reclaim_flags = reclaim_flags;
+ 	),
+ 
+-	TP_printk("page=%p pfn=%lu sync_io=%d",
++	TP_printk("page=%p pfn=%lu flags=%s",
+ 		__entry->page,
+ 		page_to_pfn(__entry->page),
+-		__entry->sync_io)
++		show_reclaim_flags(__entry->reclaim_flags))
+ );
+ 
+ #endif /* _TRACE_VMSCAN_H */
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 63447ff..d83812a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -402,7 +402,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+ 			ClearPageReclaim(page);
+ 		}
+ 		trace_mm_vmscan_writepage(page,
+-			sync_writeback == PAGEOUT_IO_SYNC);
++			trace_reclaim_flags(page, sync_writeback));
+ 		inc_zone_page_state(page, NR_VMSCAN_WRITE);
+ 		return PAGE_SUCCESS;
+ 	}
+-- 
+1.7.1
 
