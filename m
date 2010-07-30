@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933333Ab0G3Slj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:41:39 -0400
-Received: from kroah.org ([198.145.64.141]:57836 "EHLO coco.kroah.org"
+	id S933340Ab0G3SmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:42:14 -0400
+Received: from kroah.org ([198.145.64.141]:57816 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759721Ab0G3RyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:17 -0400
+	id S1759432Ab0G3RyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:14 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:34 2010
-Message-Id: <20100730175134.672544666@clark.site>
+Message-Id: <20100730175134.396429628@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:29 -0700
+Date: Fri, 30 Jul 2010 10:50:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?ISO-8859-15?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [012/205] tcp: use correct net ns in cookie_v4_check()
+Subject: [009/205] r8169: fix random mdio_write failures
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Timo Teräs <timo.teras@iki.fi>
 
-[ Upstream commit c44649216522cd607a4027d2ebf4a8147d3fa94c ]
+[ Upstream commit 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e ]
 
-Its better to make a route lookup in appropriate namespace.
+Some configurations need delay between the "write completed" indication
+and new write to work reliably.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Realtek driver seems to use longer delay when polling the "write complete"
+bit, so it waits long enough between writes with high probability (but
+could probably break too). This patch adds a new udelay to make sure we
+wait unconditionally some time after the write complete indication.
+
+This caused a regression with XID 18000000 boards when the board specific
+phy configuration writing many mdio registers was added in commit
+2e955856ff (r8169: phy init for the 8169scd). Some of the configration
+mdio writes would almost always fail, and depending on failure might leave
+the PHY in non-working state.
+
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+Acked-off-by: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/syncookies.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/r8169.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ipv4/syncookies.c
-+++ b/net/ipv4/syncookies.c
-@@ -347,7 +347,7 @@ struct sock *cookie_v4_check(struct sock
- 					       { .sport = th->dest,
- 						 .dport = th->source } } };
- 		security_req_classify_flow(req, &fl);
--		if (ip_route_output_key(&init_net, &rt, &fl)) {
-+		if (ip_route_output_key(sock_net(sk), &rt, &fl)) {
- 			reqsk_free(req);
- 			goto out;
- 		}
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -557,6 +557,11 @@ static void mdio_write(void __iomem *ioa
+ 			break;
+ 		udelay(25);
+ 	}
++	/*
++	 * Some configurations require a small delay even after the write
++	 * completed indication or the next write might fail.
++	 */
++	udelay(25);
+ }
+ 
+ static int mdio_read(void __iomem *ioaddr, int reg_addr)
 
 
