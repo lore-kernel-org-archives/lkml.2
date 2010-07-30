@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab0G3Rga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:36:30 -0400
-Received: from kroah.org ([198.145.64.141]:35816 "EHLO coco.kroah.org"
+	id S1759494Ab0G3RgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:36:19 -0400
+Received: from kroah.org ([198.145.64.141]:35775 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932283Ab0G3Rey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:08 2010
-Message-Id: <20100730173108.495525334@clark.site>
+	id S1759409Ab0G3Rer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:47 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:07 2010
+Message-Id: <20100730173107.863603476@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:29 -0700
+Date: Fri, 30 Jul 2010 10:30:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [064/140] netfilter: ip6t_REJECT: fix a dst leak in ipv6 REJECT
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [057/140] drm/radeon/kms: add quirk for ASUS HD 3600 board
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 499031ac8a3df6738f6186ded9da853e8ea18253 upstream.
+commit e153b70b89770968a704eda0b55707c6066b2d44 upstream.
 
-We should release dst if dst->error is set.
+Connector is actually DVI rather than HDMI.
 
-Bug introduced in 2.6.14 by commit e104411b82f5c
-([XFRM]: Always release dst_entry on error in xfrm_lookup)
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Reported-by: trapDoor <trapdoor6@gmail.com>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv6/netfilter/ip6t_REJECT.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/net/ipv6/netfilter/ip6t_REJECT.c
-+++ b/net/ipv6/netfilter/ip6t_REJECT.c
-@@ -95,9 +95,11 @@ static void send_reset(struct net *net,
- 	fl.fl_ip_dport = otcph.source;
- 	security_skb_classify_flow(oldskb, &fl);
- 	dst = ip6_route_output(net, NULL, &fl);
--	if (dst == NULL)
-+	if (dst == NULL || dst->error) {
-+		dst_release(dst);
- 		return;
--	if (dst->error || xfrm_lookup(net, &dst, &fl, NULL, 0))
-+	}
-+	if (xfrm_lookup(net, &dst, &fl, NULL, 0))
- 		return;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -268,6 +268,15 @@ static bool radeon_atom_apply_quirks(str
+ 		}
+ 	}
  
- 	hh_len = (dst->dev->hard_header_len + 15)&~15;
++	/* ASUS HD 3600 board lists the DVI port as HDMI */
++	if ((dev->pdev->device == 0x9598) &&
++	    (dev->pdev->subsystem_vendor == 0x1043) &&
++	    (dev->pdev->subsystem_device == 0x01e4)) {
++		if (*connector_type == DRM_MODE_CONNECTOR_HDMIA) {
++			*connector_type = DRM_MODE_CONNECTOR_DVII;
++		}
++	}
++
+ 	/* ASUS HD 3450 board lists the DVI port as HDMI */
+ 	if ((dev->pdev->device == 0x95C5) &&
+ 	    (dev->pdev->subsystem_vendor == 0x1043) &&
 
 
