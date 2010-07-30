@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131Ab0G3SLY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:11:24 -0400
-Received: from kroah.org ([198.145.64.141]:59123 "EHLO coco.kroah.org"
+	id S1759588Ab0G3SLt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:11:49 -0400
+Received: from kroah.org ([198.145.64.141]:59112 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932729Ab0G3R50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:26 -0400
+	id S932725Ab0G3R5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
-Message-Id: <20100730175149.105141186@clark.site>
+Message-Id: <20100730175148.933166698@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:04 -0700
+Date: Fri, 30 Jul 2010 10:53:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [167/205] ACPI: Unconditionally set SCI_EN on resume
+        Len Brown <len.brown@intel.com>
+Subject: [165/205] ACPI: skip checking BM_STS if the BIOS doesnt ask for it
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,252 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Garrett <mjg@redhat.com>
+From: Len Brown <len.brown@intel.com>
 
-commit b6dacf63e9fb2e7a1369843d6cef332f76fca6a3 upstream.
+commit 718be4aaf3613cf7c2d097f925abc3d3553c0605 upstream.
 
-The ACPI spec tells us that the firmware will reenable SCI_EN on resume.
-Reality disagrees in some cases. The ACPI spec tells us that the only way
-to set SCI_EN is via an SMM call.
-https://bugzilla.kernel.org/show_bug.cgi?id=13745 shows us that doing so
-may break machines. Tracing the ACPI calls made by Windows shows that it
-unconditionally sets SCI_EN on resume with a direct register write, and
-therefore the overwhelming probability is that everything is fine with
-this behaviour.
+It turns out that there is a bit in the _CST for Intel FFH C3
+that tells the OS if we should be checking BM_STS or not.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Tested-by: Rafael J. Wysocki <rjw@sisk.pl>
+Linux has been unconditionally checking BM_STS.
+If the chip-set is configured to enable BM_STS,
+it can retard or completely prevent entry into
+deep C-states -- as illustrated by turbostat:
+
+http://userweb.kernel.org/~lenb/acpi/utils/pmtools/turbostat/
+
+ref: Intel Processor Vendor-Specific ACPI Interface Specification
+table 4 "_CST FFH GAS Field Encoding"
+Bit 1: Set to 1 if OSPM should use Bus Master avoidance for this C-state
+
+https://bugzilla.kernel.org/show_bug.cgi?id=15886
+
 Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/acpi/sleep.c |    2 
- drivers/acpi/sleep.c         |  157 -------------------------------------------
- include/linux/acpi.h         |    1 
- 3 files changed, 2 insertions(+), 158 deletions(-)
+ arch/x86/kernel/acpi/cstate.c |    9 +++++++++
+ drivers/acpi/processor_idle.c |    2 +-
+ include/acpi/processor.h      |    3 ++-
+ 3 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -162,8 +162,6 @@ static int __init acpi_sleep_setup(char
- #endif
- 		if (strncmp(str, "old_ordering", 12) == 0)
- 			acpi_old_suspend_ordering();
--		if (strncmp(str, "sci_force_enable", 16) == 0)
--			acpi_set_sci_en_on_resume();
- 		str = strchr(str, ',');
- 		if (str != NULL)
- 			str += strspn(str, ", \t");
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -80,22 +80,6 @@ static int acpi_sleep_prepare(u32 acpi_s
- 
- #ifdef CONFIG_ACPI_SLEEP
- static u32 acpi_target_sleep_state = ACPI_STATE_S0;
--/*
-- * According to the ACPI specification the BIOS should make sure that ACPI is
-- * enabled and SCI_EN bit is set on wake-up from S1 - S3 sleep states.  Still,
-- * some BIOSes don't do that and therefore we use acpi_enable() to enable ACPI
-- * on such systems during resume.  Unfortunately that doesn't help in
-- * particularly pathological cases in which SCI_EN has to be set directly on
-- * resume, although the specification states very clearly that this flag is
-- * owned by the hardware.  The set_sci_en_on_resume variable will be set in such
-- * cases.
-- */
--static bool set_sci_en_on_resume;
--
--void __init acpi_set_sci_en_on_resume(void)
--{
--	set_sci_en_on_resume = true;
--}
- 
- /*
-  * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
-@@ -253,11 +237,8 @@ static int acpi_suspend_enter(suspend_st
- 		break;
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -145,6 +145,15 @@ int acpi_processor_ffh_cstate_probe(unsi
+ 		percpu_entry->states[cx->index].eax = cx->address;
+ 		percpu_entry->states[cx->index].ecx = MWAIT_ECX_INTERRUPT_BREAK;
  	}
- 
--	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
--	if (set_sci_en_on_resume)
--		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
--	else
--		acpi_enable();
-+	/* This violates the spec but is required for bug compatibility. */
-+	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
- 
- 	/* Reprogram control registers and execute _BFS */
- 	acpi_leave_sleep_state_prep(acpi_state);
-@@ -346,12 +327,6 @@ static int __init init_old_suspend_order
- 	return 0;
++
++	/*
++	 * For _CST FFH on Intel, if GAS.access_size bit 1 is cleared,
++	 * then we should skip checking BM_STS for this C-state.
++	 * ref: "Intel Processor Vendor-Specific ACPI Interface Specification"
++	 */
++	if ((c->x86_vendor == X86_VENDOR_INTEL) && !(reg->access_size & 0x2))
++		cx->bm_sts_skip = 1;
++
+ 	return retval;
  }
+ EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -955,7 +955,7 @@ static int acpi_idle_enter_bm(struct cpu
+ 	if (acpi_idle_suspend)
+ 		return(acpi_idle_enter_c1(dev, state));
  
--static int __init init_set_sci_en_on_resume(const struct dmi_system_id *d)
--{
--	set_sci_en_on_resume = true;
--	return 0;
--}
--
- static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
- 	{
- 	.callback = init_old_suspend_ordering,
-@@ -370,22 +345,6 @@ static struct dmi_system_id __initdata a
- 		},
- 	},
- 	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Apple MacBook 1,1",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Apple MacMini 1,1",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Macmini1,1"),
--		},
--	},
--	{
- 	.callback = init_old_suspend_ordering,
- 	.ident = "Asus Pundit P1-AH2 (M2N8L motherboard)",
- 	.matches = {
-@@ -394,94 +353,6 @@ static struct dmi_system_id __initdata a
- 		},
- 	},
- 	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Toshiba Satellite L300",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard HP G7000 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP G7000 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard HP Pavilion dv3 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv3 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Pavilion dv4",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Pavilion dv7",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv7"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Compaq Presario C700 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario C700 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Hewlett-Packard Compaq Presario CQ40 Notebook PC",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario CQ40 Notebook PC"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad T410",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad T510",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad W510",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Lenovo ThinkPad X201[s]",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
--		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
--		},
--	},
--	{
- 	.callback = init_old_suspend_ordering,
- 	.ident = "Panasonic CF51-2L",
- 	.matches = {
-@@ -490,30 +361,6 @@ static struct dmi_system_id __initdata a
- 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
- 		},
- 	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1558",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1558"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1557",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557"),
--		},
--	},
--	{
--	.callback = init_set_sci_en_on_resume,
--	.ident = "Dell Studio 1555",
--	.matches = {
--		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1555"),
--		},
--	},
- 	{},
- };
- #endif /* CONFIG_SUSPEND */
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -251,7 +251,6 @@ int acpi_check_mem_region(resource_size_
- void __init acpi_no_s4_hw_signature(void);
- void __init acpi_old_suspend_ordering(void);
- void __init acpi_s4_no_nvs(void);
--void __init acpi_set_sci_en_on_resume(void);
- #endif /* CONFIG_PM_SLEEP */
+-	if (acpi_idle_bm_check()) {
++	if (!cx->bm_sts_skip && acpi_idle_bm_check()) {
+ 		if (dev->safe_state) {
+ 			dev->last_state = dev->safe_state;
+ 			return dev->safe_state->enter(dev, dev->safe_state);
+--- a/include/acpi/processor.h
++++ b/include/acpi/processor.h
+@@ -48,7 +48,7 @@ struct acpi_power_register {
+ 	u8 space_id;
+ 	u8 bit_width;
+ 	u8 bit_offset;
+-	u8 reserved;
++	u8 access_size;
+ 	u64 address;
+ } __attribute__ ((packed));
  
- struct acpi_osc_context {
+@@ -74,6 +74,7 @@ struct acpi_processor_cx {
+ 	u32 power;
+ 	u32 usage;
+ 	u64 time;
++	u8 bm_sts_skip;
+ 	struct acpi_processor_cx_policy promotion;
+ 	struct acpi_processor_cx_policy demotion;
+ 	char desc[ACPI_CX_DESC_LEN];
 
 
