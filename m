@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756Ab0G3R5d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:57:33 -0400
-Received: from kroah.org ([198.145.64.141]:58692 "EHLO coco.kroah.org"
+	id S933075Ab0G3SKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:10:23 -0400
+Received: from kroah.org ([198.145.64.141]:59174 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932580Ab0G3R4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:43 2010
-Message-Id: <20100730175143.538252486@clark.site>
+	id S932580Ab0G3R5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
+Message-Id: <20100730175149.824572043@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:04 -0700
+Date: Fri, 30 Jul 2010 10:53:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Vorontsov <avorontsov@mvista.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [107/205] edac: mpc85xx: fix MPC85xx dependency
+        Ben Hutchings <ben@decadent.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [175/205] V4L/DVB: budget: Select correct frontends
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Vorontsov <avorontsov@mvista.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 1cd8521e7d77def75fdb1cb35ecd135385e4be4f upstream.
+commit d46b36e7f927772bb72524dc9f1e384e3cb4a975 upstream.
 
-Since commit 5753c082f66eca5be81f6bda85c1718c5eea6ada ("powerpc/85xx:
-Kconfig cleanup"), there is no MPC85xx Kconfig symbol anymore, so the
-driver became non-selectable.
+Update the Kconfig selections to match the code.
 
-This patch fixes the issue by switching to PPC_85xx symbol.
-
-Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Cc: Peter Tyser <ptyser@xes-inc.com>
-Cc: Dave Jiang <djiang@mvista.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb/ttpci/Kconfig |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/edac/Kconfig
-+++ b/drivers/edac/Kconfig
-@@ -196,7 +196,7 @@ config EDAC_I5100
- 
- config EDAC_MPC85XX
- 	tristate "Freescale MPC83xx / MPC85xx"
--	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
-+	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || PPC_85xx)
+--- a/drivers/media/dvb/ttpci/Kconfig
++++ b/drivers/media/dvb/ttpci/Kconfig
+@@ -68,13 +68,14 @@ config DVB_BUDGET
+ 	select DVB_VES1820 if !DVB_FE_CUSTOMISE
+ 	select DVB_L64781 if !DVB_FE_CUSTOMISE
+ 	select DVB_TDA8083 if !DVB_FE_CUSTOMISE
+-	select DVB_TDA10021 if !DVB_FE_CUSTOMISE
+-	select DVB_TDA10023 if !DVB_FE_CUSTOMISE
+ 	select DVB_S5H1420 if !DVB_FE_CUSTOMISE
+ 	select DVB_TDA10086 if !DVB_FE_CUSTOMISE
+ 	select DVB_TDA826X if !DVB_FE_CUSTOMISE
+ 	select DVB_LNBP21 if !DVB_FE_CUSTOMISE
+ 	select DVB_TDA1004X if !DVB_FE_CUSTOMISE
++	select DVB_ISL6423 if !DVB_FE_CUSTOMISE
++	select DVB_STV090x if !DVB_FE_CUSTOMISE
++	select DVB_STV6110x if !DVB_FE_CUSTOMISE
  	help
- 	  Support for error detection and correction on the Freescale
- 	  MPC8349, MPC8560, MPC8540, MPC8548
+ 	  Support for simple SAA7146 based DVB cards (so called Budget-
+ 	  or Nova-PCI cards) without onboard MPEG2 decoder, and without
 
 
