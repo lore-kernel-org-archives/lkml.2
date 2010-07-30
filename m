@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760074Ab0G3SMF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:12:05 -0400
-Received: from kroah.org ([198.145.64.141]:59110 "EHLO coco.kroah.org"
+	id S933131Ab0G3SLY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:11:24 -0400
+Received: from kroah.org ([198.145.64.141]:59123 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932320Ab0G3R5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:48 2010
-Message-Id: <20100730175148.844568487@clark.site>
+	id S932729Ab0G3R50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
+Message-Id: <20100730175149.105141186@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:01 -0700
+Date: Fri, 30 Jul 2010 10:53:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [164/205] isdn/gigaset: correct CAPI connection state storage
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [167/205] ACPI: Unconditionally set SCI_EN on resume
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,596 +26,252 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Matthew Garrett <mjg@redhat.com>
 
-commit 1b4843c5e8cbab86830da8a53b8288882060c059 upstream.
+commit b6dacf63e9fb2e7a1369843d6cef332f76fca6a3 upstream.
 
-CAPI applications can handle several connections in parallel,
-so one connection state per application isn't sufficient.
-Store the connection state in the channel structure instead.
+The ACPI spec tells us that the firmware will reenable SCI_EN on resume.
+Reality disagrees in some cases. The ACPI spec tells us that the only way
+to set SCI_EN is via an SMM call.
+https://bugzilla.kernel.org/show_bug.cgi?id=13745 shows us that doing so
+may break machines. Tracing the ACPI calls made by Windows shows that it
+unconditionally sets SCI_EN on resume with a direct register write, and
+therefore the overwhelming probability is that everything is fine with
+this behaviour.
 
-Impact: bugfix
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Tested-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Cc: Kamal Mostafa <kamal@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/gigaset/capi.c    |  225 +++++++++++++++++++++++++++++++----------
- drivers/isdn/gigaset/common.c  |    4 
- drivers/isdn/gigaset/gigaset.h |    4 
- 3 files changed, 180 insertions(+), 53 deletions(-)
+ arch/x86/kernel/acpi/sleep.c |    2 
+ drivers/acpi/sleep.c         |  157 -------------------------------------------
+ include/linux/acpi.h         |    1 
+ 3 files changed, 2 insertions(+), 158 deletions(-)
 
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -70,7 +70,7 @@
- #define MAX_NUMBER_DIGITS 20
- #define MAX_FMT_IE_LEN 20
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -162,8 +162,6 @@ static int __init acpi_sleep_setup(char
+ #endif
+ 		if (strncmp(str, "old_ordering", 12) == 0)
+ 			acpi_old_suspend_ordering();
+-		if (strncmp(str, "sci_force_enable", 16) == 0)
+-			acpi_set_sci_en_on_resume();
+ 		str = strchr(str, ',');
+ 		if (str != NULL)
+ 			str += strspn(str, ", \t");
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -80,22 +80,6 @@ static int acpi_sleep_prepare(u32 acpi_s
  
--/* values for gigaset_capi_appl.connected */
-+/* values for bcs->apconnstate */
- #define APCONN_NONE	0	/* inactive/listening */
- #define APCONN_SETUP	1	/* connecting */
- #define APCONN_ACTIVE	2	/* B channel up */
-@@ -84,7 +84,6 @@ struct gigaset_capi_appl {
- 	u16 nextMessageNumber;
- 	u32 listenInfoMask;
- 	u32 listenCIPmask;
--	int connected;
- };
- 
- /* CAPI specific controller data structure */
-@@ -395,7 +394,7 @@ void gigaset_skb_sent(struct bc_state *b
- 	}
- 
- 	/* don't send further B3 messages if disconnected */
--	if (ap->connected < APCONN_ACTIVE) {
-+	if (bcs->apconnstate < APCONN_ACTIVE) {
- 		gig_dbg(DEBUG_LLDATA, "disconnected, discarding ack");
- 		return;
- 	}
-@@ -439,7 +438,7 @@ void gigaset_skb_rcvd(struct bc_state *b
- 	}
- 
- 	/* don't send further B3 messages if disconnected */
--	if (ap->connected < APCONN_ACTIVE) {
-+	if (bcs->apconnstate < APCONN_ACTIVE) {
- 		gig_dbg(DEBUG_LLDATA, "disconnected, discarding data");
- 		dev_kfree_skb_any(skb);
- 		return;
-@@ -511,6 +510,7 @@ int gigaset_isdn_icall(struct at_state_t
- 	u32 actCIPmask;
- 	struct sk_buff *skb;
- 	unsigned int msgsize;
-+	unsigned long flags;
- 	int i;
- 
- 	/*
-@@ -635,7 +635,14 @@ int gigaset_isdn_icall(struct at_state_t
- 		format_ie(iif->hcmsg.CalledPartyNumber));
- 
- 	/* scan application list for matching listeners */
--	bcs->ap = NULL;
-+	spin_lock_irqsave(&bcs->aplock, flags);
-+	if (bcs->ap != NULL || bcs->apconnstate != APCONN_NONE) {
-+		dev_warn(cs->dev, "%s: channel not properly cleared (%p/%d)\n",
-+			 __func__, bcs->ap, bcs->apconnstate);
-+		bcs->ap = NULL;
-+		bcs->apconnstate = APCONN_NONE;
-+	}
-+	spin_unlock_irqrestore(&bcs->aplock, flags);
- 	actCIPmask = 1 | (1 << iif->hcmsg.CIPValue);
- 	list_for_each_entry(ap, &iif->appls, ctrlist)
- 		if (actCIPmask & ap->listenCIPmask) {
-@@ -653,10 +660,12 @@ int gigaset_isdn_icall(struct at_state_t
- 			dump_cmsg(DEBUG_CMD, __func__, &iif->hcmsg);
- 
- 			/* add to listeners on this B channel, update state */
-+			spin_lock_irqsave(&bcs->aplock, flags);
- 			ap->bcnext = bcs->ap;
- 			bcs->ap = ap;
- 			bcs->chstate |= CHS_NOTIFY_LL;
--			ap->connected = APCONN_SETUP;
-+			bcs->apconnstate = APCONN_SETUP;
-+			spin_unlock_irqrestore(&bcs->aplock, flags);
- 
- 			/* emit message */
- 			capi_ctr_handle_message(&iif->ctr, ap->id, skb);
-@@ -681,7 +690,7 @@ static void send_disconnect_ind(struct b
- 	struct gigaset_capi_ctr *iif = cs->iif;
- 	struct sk_buff *skb;
- 
--	if (ap->connected == APCONN_NONE)
-+	if (bcs->apconnstate == APCONN_NONE)
- 		return;
- 
- 	capi_cmsg_header(&iif->hcmsg, ap->id, CAPI_DISCONNECT, CAPI_IND,
-@@ -695,7 +704,6 @@ static void send_disconnect_ind(struct b
- 	}
- 	capi_cmsg2message(&iif->hcmsg, __skb_put(skb, CAPI_DISCONNECT_IND_LEN));
- 	dump_cmsg(DEBUG_CMD, __func__, &iif->hcmsg);
--	ap->connected = APCONN_NONE;
- 	capi_ctr_handle_message(&iif->ctr, ap->id, skb);
- }
- 
-@@ -712,9 +720,9 @@ static void send_disconnect_b3_ind(struc
- 	struct sk_buff *skb;
- 
- 	/* nothing to do if no logical connection active */
--	if (ap->connected < APCONN_ACTIVE)
-+	if (bcs->apconnstate < APCONN_ACTIVE)
- 		return;
--	ap->connected = APCONN_SETUP;
-+	bcs->apconnstate = APCONN_SETUP;
- 
- 	capi_cmsg_header(&iif->hcmsg, ap->id, CAPI_DISCONNECT_B3, CAPI_IND,
- 			 ap->nextMessageNumber++,
-@@ -741,14 +749,25 @@ void gigaset_isdn_connD(struct bc_state
- {
- 	struct cardstate *cs = bcs->cs;
- 	struct gigaset_capi_ctr *iif = cs->iif;
--	struct gigaset_capi_appl *ap = bcs->ap;
-+	struct gigaset_capi_appl *ap;
- 	struct sk_buff *skb;
- 	unsigned int msgsize;
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&bcs->aplock, flags);
-+	ap = bcs->ap;
- 	if (!ap) {
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
- 		dev_err(cs->dev, "%s: no application\n", __func__);
- 		return;
- 	}
-+	if (bcs->apconnstate == APCONN_NONE) {
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
-+		dev_warn(cs->dev, "%s: application %u not connected\n",
-+			 __func__, ap->id);
-+		return;
-+	}
-+	spin_unlock_irqrestore(&bcs->aplock, flags);
- 	while (ap->bcnext) {
- 		/* this should never happen */
- 		dev_warn(cs->dev, "%s: dropping extra application %u\n",
-@@ -757,11 +776,6 @@ void gigaset_isdn_connD(struct bc_state
- 				    CapiCallGivenToOtherApplication);
- 		ap->bcnext = ap->bcnext->bcnext;
- 	}
--	if (ap->connected == APCONN_NONE) {
--		dev_warn(cs->dev, "%s: application %u not connected\n",
--			 __func__, ap->id);
--		return;
--	}
- 
- 	/* prepare CONNECT_ACTIVE_IND message
- 	 * Note: LLC not supported by device
-@@ -799,17 +813,24 @@ void gigaset_isdn_connD(struct bc_state
- void gigaset_isdn_hupD(struct bc_state *bcs)
- {
- 	struct gigaset_capi_appl *ap;
-+	unsigned long flags;
- 
- 	/*
- 	 * ToDo: pass on reason code reported by device
- 	 * (requires ev-layer state machine extension to collect
- 	 * ZCAU device reply)
- 	 */
--	for (ap = bcs->ap; ap != NULL; ap = ap->bcnext) {
-+	spin_lock_irqsave(&bcs->aplock, flags);
-+	while (bcs->ap != NULL) {
-+		ap = bcs->ap;
-+		bcs->ap = ap->bcnext;
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
- 		send_disconnect_b3_ind(bcs, ap);
- 		send_disconnect_ind(bcs, ap, 0);
-+		spin_lock_irqsave(&bcs->aplock, flags);
- 	}
--	bcs->ap = NULL;
-+	bcs->apconnstate = APCONN_NONE;
-+	spin_unlock_irqrestore(&bcs->aplock, flags);
- }
- 
- /**
-@@ -823,24 +844,21 @@ void gigaset_isdn_connB(struct bc_state
- {
- 	struct cardstate *cs = bcs->cs;
- 	struct gigaset_capi_ctr *iif = cs->iif;
--	struct gigaset_capi_appl *ap = bcs->ap;
-+	struct gigaset_capi_appl *ap;
- 	struct sk_buff *skb;
-+	unsigned long flags;
- 	unsigned int msgsize;
- 	u8 command;
- 
-+	spin_lock_irqsave(&bcs->aplock, flags);
-+	ap = bcs->ap;
- 	if (!ap) {
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
- 		dev_err(cs->dev, "%s: no application\n", __func__);
- 		return;
- 	}
--	while (ap->bcnext) {
--		/* this should never happen */
--		dev_warn(cs->dev, "%s: dropping extra application %u\n",
--			 __func__, ap->bcnext->id);
--		send_disconnect_ind(bcs, ap->bcnext,
--				    CapiCallGivenToOtherApplication);
--		ap->bcnext = ap->bcnext->bcnext;
--	}
--	if (!ap->connected) {
-+	if (!bcs->apconnstate) {
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
- 		dev_warn(cs->dev, "%s: application %u not connected\n",
- 			 __func__, ap->id);
- 		return;
-@@ -852,13 +870,26 @@ void gigaset_isdn_connB(struct bc_state
- 	 * CONNECT_B3_ACTIVE_IND in reply to CONNECT_B3_RESP
- 	 * Parameters in both cases always: NCCI = 1, NCPI empty
- 	 */
--	if (ap->connected >= APCONN_ACTIVE) {
-+	if (bcs->apconnstate >= APCONN_ACTIVE) {
- 		command = CAPI_CONNECT_B3_ACTIVE;
- 		msgsize = CAPI_CONNECT_B3_ACTIVE_IND_BASELEN;
- 	} else {
- 		command = CAPI_CONNECT_B3;
- 		msgsize = CAPI_CONNECT_B3_IND_BASELEN;
- 	}
-+	bcs->apconnstate = APCONN_ACTIVE;
-+
-+	spin_unlock_irqrestore(&bcs->aplock, flags);
-+
-+	while (ap->bcnext) {
-+		/* this should never happen */
-+		dev_warn(cs->dev, "%s: dropping extra application %u\n",
-+			 __func__, ap->bcnext->id);
-+		send_disconnect_ind(bcs, ap->bcnext,
-+				    CapiCallGivenToOtherApplication);
-+		ap->bcnext = ap->bcnext->bcnext;
-+	}
-+
- 	capi_cmsg_header(&iif->hcmsg, ap->id, command, CAPI_IND,
- 			 ap->nextMessageNumber++,
- 			 iif->ctr.cnr | ((bcs->channel + 1) << 8) | (1 << 16));
-@@ -869,7 +900,6 @@ void gigaset_isdn_connB(struct bc_state
- 	}
- 	capi_cmsg2message(&iif->hcmsg, __skb_put(skb, msgsize));
- 	dump_cmsg(DEBUG_CMD, __func__, &iif->hcmsg);
--	ap->connected = APCONN_ACTIVE;
- 	capi_ctr_handle_message(&iif->ctr, ap->id, skb);
- }
- 
-@@ -975,6 +1005,61 @@ static void gigaset_register_appl(struct
- 	ap->rp = *rp;
- 
- 	list_add(&ap->ctrlist, &iif->appls);
-+	dev_info(cs->dev, "application %u registered\n", ap->id);
-+}
-+
-+/*
-+ * remove CAPI application from channel
-+ * helper function to keep indentation levels down and stay in 80 columns
-+ */
-+
-+static inline void remove_appl_from_channel(struct bc_state *bcs,
-+					    struct gigaset_capi_appl *ap)
-+{
-+	struct cardstate *cs = bcs->cs;
-+	struct gigaset_capi_appl *bcap;
-+	unsigned long flags;
-+	int prevconnstate;
-+
-+	spin_lock_irqsave(&bcs->aplock, flags);
-+	bcap = bcs->ap;
-+	if (bcap == NULL) {
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
-+		return;
-+	}
-+
-+	/* check first application on channel */
-+	if (bcap == ap) {
-+		bcs->ap = ap->bcnext;
-+		if (bcs->ap != NULL) {
-+			spin_unlock_irqrestore(&bcs->aplock, flags);
-+			return;
-+		}
-+
-+		/* none left, clear channel state */
-+		prevconnstate = bcs->apconnstate;
-+		bcs->apconnstate = APCONN_NONE;
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
-+
-+		if (prevconnstate == APCONN_ACTIVE) {
-+			dev_notice(cs->dev, "%s: hanging up channel %u\n",
-+				   __func__, bcs->channel);
-+			gigaset_add_event(cs, &bcs->at_state,
-+					  EV_HUP, NULL, 0, NULL);
-+			gigaset_schedule_event(cs);
-+		}
-+		return;
-+	}
-+
-+	/* check remaining list */
-+	do {
-+		if (bcap->bcnext == ap) {
-+			bcap->bcnext = bcap->bcnext->bcnext;
-+			return;
-+		}
-+		bcap = bcap->bcnext;
-+	} while (bcap != NULL);
-+	spin_unlock_irqrestore(&bcs->aplock, flags);
- }
- 
- /*
-@@ -986,19 +1071,19 @@ static void gigaset_release_appl(struct
- 		= container_of(ctr, struct gigaset_capi_ctr, ctr);
- 	struct cardstate *cs = iif->ctr.driverdata;
- 	struct gigaset_capi_appl *ap, *tmp;
-+	unsigned ch;
- 
- 	list_for_each_entry_safe(ap, tmp, &iif->appls, ctrlist)
- 		if (ap->id == appl) {
--			if (ap->connected != APCONN_NONE) {
--				dev_err(cs->dev,
--					"%s: application %u still connected\n",
--					__func__, ap->id);
--				/* ToDo: clear active connection */
--			}
-+			/* remove from any channels */
-+			for (ch = 0; ch < cs->channels; ch++)
-+				remove_appl_from_channel(&cs->bcs[ch], ap);
-+
-+			/* remove from registration list */
- 			list_del(&ap->ctrlist);
- 			kfree(ap);
-+			dev_info(cs->dev, "application %u released\n", appl);
- 		}
+ #ifdef CONFIG_ACPI_SLEEP
+ static u32 acpi_target_sleep_state = ACPI_STATE_S0;
+-/*
+- * According to the ACPI specification the BIOS should make sure that ACPI is
+- * enabled and SCI_EN bit is set on wake-up from S1 - S3 sleep states.  Still,
+- * some BIOSes don't do that and therefore we use acpi_enable() to enable ACPI
+- * on such systems during resume.  Unfortunately that doesn't help in
+- * particularly pathological cases in which SCI_EN has to be set directly on
+- * resume, although the specification states very clearly that this flag is
+- * owned by the hardware.  The set_sci_en_on_resume variable will be set in such
+- * cases.
+- */
+-static bool set_sci_en_on_resume;
 -
- }
+-void __init acpi_set_sci_en_on_resume(void)
+-{
+-	set_sci_en_on_resume = true;
+-}
  
  /*
-@@ -1177,6 +1262,7 @@ static void do_connect_req(struct gigase
- 	char **commands;
- 	char *s;
- 	u8 *pp;
-+	unsigned long flags;
- 	int i, l, lbc, lhlc;
- 	u16 info;
- 
-@@ -1192,8 +1278,15 @@ static void do_connect_req(struct gigase
- 		send_conf(iif, ap, skb, CapiNoPlciAvailable);
- 		return;
- 	}
-+	spin_lock_irqsave(&bcs->aplock, flags);
-+	if (bcs->ap != NULL || bcs->apconnstate != APCONN_NONE)
-+		dev_warn(cs->dev, "%s: channel not properly cleared (%p/%d)\n",
-+			 __func__, bcs->ap, bcs->apconnstate);
- 	ap->bcnext = NULL;
- 	bcs->ap = ap;
-+	bcs->apconnstate = APCONN_SETUP;
-+	spin_unlock_irqrestore(&bcs->aplock, flags);
-+
- 	bcs->rx_bufsize = ap->rp.datablklen;
- 	dev_kfree_skb(bcs->rx_skb);
- 	gigaset_new_rx_skb(bcs);
-@@ -1430,7 +1523,6 @@ static void do_connect_req(struct gigase
- 		goto error;
- 	}
- 	gigaset_schedule_event(cs);
--	ap->connected = APCONN_SETUP;
- 	send_conf(iif, ap, skb, CapiSuccess);
- 	return;
- 
-@@ -1458,6 +1550,7 @@ static void do_connect_resp(struct gigas
- 	_cmsg *cmsg = &iif->acmsg;
- 	struct bc_state *bcs;
- 	struct gigaset_capi_appl *oap;
-+	unsigned long flags;
- 	int channel;
- 
- 	/* decode message */
-@@ -1477,12 +1570,21 @@ static void do_connect_resp(struct gigas
- 	switch (cmsg->Reject) {
- 	case 0:		/* Accept */
- 		/* drop all competing applications, keep only this one */
--		for (oap = bcs->ap; oap != NULL; oap = oap->bcnext)
--			if (oap != ap)
-+		spin_lock_irqsave(&bcs->aplock, flags);
-+		while (bcs->ap != NULL) {
-+			oap = bcs->ap;
-+			bcs->ap = oap->bcnext;
-+			if (oap != ap) {
-+				spin_unlock_irqrestore(&bcs->aplock, flags);
- 				send_disconnect_ind(bcs, oap,
- 					CapiCallGivenToOtherApplication);
-+				spin_lock_irqsave(&bcs->aplock, flags);
-+			}
-+		}
- 		ap->bcnext = NULL;
- 		bcs->ap = ap;
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
-+
- 		bcs->rx_bufsize = ap->rp.datablklen;
- 		dev_kfree_skb(bcs->rx_skb);
- 		gigaset_new_rx_skb(bcs);
-@@ -1553,31 +1655,45 @@ static void do_connect_resp(struct gigas
- 		send_disconnect_ind(bcs, ap, 0);
- 
- 		/* remove it from the list of listening apps */
-+		spin_lock_irqsave(&bcs->aplock, flags);
- 		if (bcs->ap == ap) {
- 			bcs->ap = ap->bcnext;
--			if (bcs->ap == NULL)
-+			if (bcs->ap == NULL) {
- 				/* last one: stop ev-layer hupD notifications */
-+				bcs->apconnstate = APCONN_NONE;
- 				bcs->chstate &= ~CHS_NOTIFY_LL;
-+			}
-+			spin_unlock_irqrestore(&bcs->aplock, flags);
- 			return;
- 		}
- 		for (oap = bcs->ap; oap != NULL; oap = oap->bcnext) {
- 			if (oap->bcnext == ap) {
- 				oap->bcnext = oap->bcnext->bcnext;
-+				spin_unlock_irqrestore(&bcs->aplock, flags);
- 				return;
- 			}
- 		}
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
- 		dev_err(cs->dev, "%s: application %u not found\n",
- 			__func__, ap->id);
- 		return;
- 
- 	default:		/* Reject */
- 		/* drop all competing applications, keep only this one */
--		for (oap = bcs->ap; oap != NULL; oap = oap->bcnext)
--			if (oap != ap)
-+		spin_lock_irqsave(&bcs->aplock, flags);
-+		while (bcs->ap != NULL) {
-+			oap = bcs->ap;
-+			bcs->ap = oap->bcnext;
-+			if (oap != ap) {
-+				spin_unlock_irqrestore(&bcs->aplock, flags);
- 				send_disconnect_ind(bcs, oap,
- 					CapiCallGivenToOtherApplication);
-+				spin_lock_irqsave(&bcs->aplock, flags);
-+			}
-+		}
- 		ap->bcnext = NULL;
- 		bcs->ap = ap;
-+		spin_unlock_irqrestore(&bcs->aplock, flags);
- 
- 		/* reject call - will trigger DISCONNECT_IND for this app */
- 		dev_info(cs->dev, "%s: Reject=%x\n",
-@@ -1600,6 +1716,7 @@ static void do_connect_b3_req(struct gig
- {
- 	struct cardstate *cs = iif->ctr.driverdata;
- 	_cmsg *cmsg = &iif->acmsg;
-+	struct bc_state *bcs;
- 	int channel;
- 
- 	/* decode message */
-@@ -1614,9 +1731,10 @@ static void do_connect_b3_req(struct gig
- 		send_conf(iif, ap, skb, CapiIllContrPlciNcci);
- 		return;
- 	}
-+	bcs = &cs->bcs[channel-1];
- 
- 	/* mark logical connection active */
--	ap->connected = APCONN_ACTIVE;
-+	bcs->apconnstate = APCONN_ACTIVE;
- 
- 	/* build NCCI: always 1 (one B3 connection only) */
- 	cmsg->adr.adrNCCI |= 1 << 16;
-@@ -1662,7 +1780,7 @@ static void do_connect_b3_resp(struct gi
- 
- 	if (cmsg->Reject) {
- 		/* Reject: clear B3 connect received flag */
--		ap->connected = APCONN_SETUP;
-+		bcs->apconnstate = APCONN_SETUP;
- 
- 		/* trigger hangup, causing eventual DISCONNECT_IND */
- 		if (!gigaset_add_event(cs, &bcs->at_state,
-@@ -1734,11 +1852,11 @@ static void do_disconnect_req(struct gig
+  * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
+@@ -253,11 +237,8 @@ static int acpi_suspend_enter(suspend_st
+ 		break;
  	}
  
- 	/* skip if DISCONNECT_IND already sent */
--	if (!ap->connected)
-+	if (!bcs->apconnstate)
- 		return;
+-	/* If ACPI is not enabled by the BIOS, we need to enable it here. */
+-	if (set_sci_en_on_resume)
+-		acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+-	else
+-		acpi_enable();
++	/* This violates the spec but is required for bug compatibility. */
++	acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
  
- 	/* check for active logical connection */
--	if (ap->connected >= APCONN_ACTIVE) {
-+	if (bcs->apconnstate >= APCONN_ACTIVE) {
- 		/*
- 		 * emit DISCONNECT_B3_IND with cause 0x3301
- 		 * use separate cmsg structure, as the content of iif->acmsg
-@@ -1787,6 +1905,7 @@ static void do_disconnect_b3_req(struct
- {
- 	struct cardstate *cs = iif->ctr.driverdata;
- 	_cmsg *cmsg = &iif->acmsg;
-+	struct bc_state *bcs;
- 	int channel;
+ 	/* Reprogram control registers and execute _BFS */
+ 	acpi_leave_sleep_state_prep(acpi_state);
+@@ -346,12 +327,6 @@ static int __init init_old_suspend_order
+ 	return 0;
+ }
  
- 	/* decode message */
-@@ -1802,17 +1921,17 @@ static void do_disconnect_b3_req(struct
- 		send_conf(iif, ap, skb, CapiIllContrPlciNcci);
- 		return;
- 	}
-+	bcs = &cs->bcs[channel-1];
- 
- 	/* reject if logical connection not active */
--	if (ap->connected < APCONN_ACTIVE) {
-+	if (bcs->apconnstate < APCONN_ACTIVE) {
- 		send_conf(iif, ap, skb,
- 			  CapiMessageNotSupportedInCurrentState);
- 		return;
- 	}
- 
- 	/* trigger hangup, causing eventual DISCONNECT_B3_IND */
--	if (!gigaset_add_event(cs, &cs->bcs[channel-1].at_state,
--			       EV_HUP, NULL, 0, NULL)) {
-+	if (!gigaset_add_event(cs, &bcs->at_state, EV_HUP, NULL, 0, NULL)) {
- 		send_conf(iif, ap, skb, CAPI_MSGOSRESOURCEERR);
- 		return;
- 	}
-@@ -1833,6 +1952,7 @@ static void do_data_b3_req(struct gigase
- 			   struct sk_buff *skb)
- {
- 	struct cardstate *cs = iif->ctr.driverdata;
-+	struct bc_state *bcs;
- 	int channel = CAPIMSG_PLCI_PART(skb->data);
- 	u16 ncci = CAPIMSG_NCCI_PART(skb->data);
- 	u16 msglen = CAPIMSG_LEN(skb->data);
-@@ -1855,6 +1975,7 @@ static void do_data_b3_req(struct gigase
- 		send_conf(iif, ap, skb, CapiIllContrPlciNcci);
- 		return;
- 	}
-+	bcs = &cs->bcs[channel-1];
- 	if (msglen != CAPI_DATA_B3_REQ_LEN && msglen != CAPI_DATA_B3_REQ_LEN64)
- 		dev_notice(cs->dev, "%s: unexpected length %d\n",
- 			   "DATA_B3_REQ", msglen);
-@@ -1874,7 +1995,7 @@ static void do_data_b3_req(struct gigase
- 	}
- 
- 	/* reject if logical connection not active */
--	if (ap->connected < APCONN_ACTIVE) {
-+	if (bcs->apconnstate < APCONN_ACTIVE) {
- 		send_conf(iif, ap, skb, CapiMessageNotSupportedInCurrentState);
- 		return;
- 	}
-@@ -1885,7 +2006,7 @@ static void do_data_b3_req(struct gigase
- 	skb_pull(skb, msglen);
- 
- 	/* pass to device-specific module */
--	if (cs->ops->send_skb(&cs->bcs[channel-1], skb) < 0) {
-+	if (cs->ops->send_skb(bcs, skb) < 0) {
- 		send_conf(iif, ap, skb, CAPI_MSGOSRESOURCEERR);
- 		return;
- 	}
---- a/drivers/isdn/gigaset/common.c
-+++ b/drivers/isdn/gigaset/common.c
-@@ -649,6 +649,10 @@ static struct bc_state *gigaset_initbcs(
- 	for (i = 0; i < AT_NUM; ++i)
- 		bcs->commands[i] = NULL;
- 
-+	spin_lock_init(&bcs->aplock);
-+	bcs->ap = NULL;
-+	bcs->apconnstate = 0;
-+
- 	gig_dbg(DEBUG_INIT, "  setting up bcs[%d]->hw", channel);
- 	if (cs->ops->initbcshw(bcs))
- 		return bcs;
---- a/drivers/isdn/gigaset/gigaset.h
-+++ b/drivers/isdn/gigaset/gigaset.h
-@@ -403,7 +403,9 @@ struct bc_state {
- 		struct bas_bc_state *bas;	/* usb hardware driver (base) */
- 	} hw;
- 
--	void *ap;			/* LL application structure */
-+	void *ap;			/* associated LL application */
-+	int apconnstate;		/* LL application connection state */
-+	spinlock_t aplock;
+-static int __init init_set_sci_en_on_resume(const struct dmi_system_id *d)
+-{
+-	set_sci_en_on_resume = true;
+-	return 0;
+-}
+-
+ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+ 	{
+ 	.callback = init_old_suspend_ordering,
+@@ -370,22 +345,6 @@ static struct dmi_system_id __initdata a
+ 		},
+ 	},
+ 	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Apple MacBook 1,1",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Apple MacMini 1,1",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Macmini1,1"),
+-		},
+-	},
+-	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Asus Pundit P1-AH2 (M2N8L motherboard)",
+ 	.matches = {
+@@ -394,94 +353,6 @@ static struct dmi_system_id __initdata a
+ 		},
+ 	},
+ 	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Toshiba Satellite L300",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard HP G7000 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP G7000 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard HP Pavilion dv3 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv3 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Pavilion dv4",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Pavilion dv7",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv7"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Compaq Presario C700 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario C700 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Hewlett-Packard Compaq Presario CQ40 Notebook PC",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Compaq Presario CQ40 Notebook PC"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T410",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad W510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201[s]",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+-		},
+-	},
+-	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Panasonic CF51-2L",
+ 	.matches = {
+@@ -490,30 +361,6 @@ static struct dmi_system_id __initdata a
+ 		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
+ 		},
+ 	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Dell Studio 1558",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1558"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Dell Studio 1557",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Dell Studio 1555",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1555"),
+-		},
+-	},
+ 	{},
  };
+ #endif /* CONFIG_SUSPEND */
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -251,7 +251,6 @@ int acpi_check_mem_region(resource_size_
+ void __init acpi_no_s4_hw_signature(void);
+ void __init acpi_old_suspend_ordering(void);
+ void __init acpi_s4_no_nvs(void);
+-void __init acpi_set_sci_en_on_resume(void);
+ #endif /* CONFIG_PM_SLEEP */
  
- struct cardstate {
+ struct acpi_osc_context {
 
 
