@@ -1,65 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab0G3J7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 05:59:09 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:64232
+	id S932133Ab0G3J7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 05:59:15 -0400
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:64237
 	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753090Ab0G3J7G (ORCPT
+	by vger.kernel.org with ESMTP id S1756175Ab0G3J7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 05:59:06 -0400
+	Fri, 30 Jul 2010 05:59:08 -0400
 X-IronPort-AV: E=Sophos;i="4.55,286,1278280800"; 
-   d="scan'208";a="67126251"
+   d="scan'208";a="67126256"
 From: Tomasz Buchert <tomasz.buchert@inria.fr>
 To: linux-kernel@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>,
         Stanislaw Gruszka <sgruszka@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>
-Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
-Subject: [PATCH 0/4] Wall time clocks + change in access rules
-Date: Fri, 30 Jul 2010 11:57:43 +0200
-Message-Id: <1280483867-6387-1-git-send-email-tomasz.buchert@inria.fr>
+Cc: Tomasz Buchert <tomasz.buchert@inria.fr>,
+        Lucas Nussbaum <lucas.nussbaum@loria.fr>
+Subject: [PATCH 3/4] posix-cpu-timers: Wider access to the thread clocks
+Date: Fri, 30 Jul 2010 11:57:46 +0200
+Message-Id: <1280483867-6387-4-git-send-email-tomasz.buchert@inria.fr>
 X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1280483867-6387-3-git-send-email-tomasz.buchert@inria.fr>
+References: <1280483867-6387-1-git-send-email-tomasz.buchert@inria.fr>
+ <1280483867-6387-2-git-send-email-tomasz.buchert@inria.fr>
+ <1280483867-6387-3-git-send-email-tomasz.buchert@inria.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My another attempt to get my patches reviewed. For
-the convenience of a prospective reviewer I've written
-a set of tests for this kernel change. One may get them using:
+Per-thread clocks are so far accessible only within
+the same thread group. This patch makes it possible to get
+this information for any thread of the same user and for
+a user with CAP_SYS_ADMIN capability.
 
-git clone http://pentium.hopto.org/~thinred/repos/clock-test.git
+same_thread_group is not used anymore because if the thread is in
+the same thread group as 'current' then they will have the same
+owner anyway.
 
-During our work we encountered a problem of obtaining
-a reliable and fine-grained measurements of CPU time/wall time
-of a process/thread. The existing methods (taskstats, procfs,
-POSIX CPU clocks) have either unfriendly interface (taskstats)
-or give unsatisfactory precision (procfs). However, even
-the most precise and clean interface, POSIX CPU clocks,
-is limited only to threads in the same thread group.
+Signed-off-by: Tomasz Buchert <tomasz.buchert@inria.fr>
+Signed-off-by: Lucas Nussbaum <lucas.nussbaum@loria.fr>
+---
+ kernel/posix-cpu-timers.c |   34 +++++++++++++++++++++++++++-------
+ 1 files changed, 27 insertions(+), 7 deletions(-)
 
-The following patches introduce three changes:
-  * new per process/thread wall time clocks --
-    CLOCK_PROCESS_WALLTIME_ID and CLOCK_THREAD_WALLTIME_ID;
-    one can also access wall time of a process/thread
-    using clocks constructed from macros in posix-timers.h
-  * less restricted access to CPU and wall clocks --
-    user can access them for all their threads
-  * minor refactoring/renaming to reflect the changes.
-
-Tomasz Buchert (4):
-  posix-timers: Refactoring of CPUCLOCK* macros
-  posix-cpu-timers: Introduction of wall clocks
-  posix-cpu-timers: Wider access to the thread clocks
-  posix-cpu-timers: posix-cpu-timers.c renamed to posix-task-timers.c
-
- include/linux/posix-timers.h |   52 +-
- include/linux/sched.h        |    2 +-
- include/linux/time.h         |    2 +
- kernel/Makefile              |    2 +-
- kernel/itimer.c              |   14 +-
- kernel/posix-cpu-timers.c    | 1642 -------------------------------------
- kernel/posix-task-timers.c   | 1852 ++++++++++++++++++++++++++++++++++++++++++
- kernel/posix-timers.c        |   25 +-
- 8 files changed, 1924 insertions(+), 1667 deletions(-)
- delete mode 100644 kernel/posix-cpu-timers.c
- create mode 100644 kernel/posix-task-timers.c
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 78ad536..04f49ce 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -25,6 +25,26 @@ void update_rlimit_cpu(unsigned long rlim_new)
+ 	spin_unlock_irq(&current->sighand->siglock);
+ }
+ 
++/* RCU lock needed */
++static int thread_clock_allowed(struct task_struct *p)
++{
++	const struct cred *cred, *pcred;
++
++	if (unlikely(capable(CAP_SYS_ADMIN)))
++		return 1;
++	cred = current_cred();
++	pcred = __task_cred(p);
++
++	return (cred->euid == pcred->euid ||
++		cred->euid == pcred->uid);
++}
++
++/* RCU read lock needed */
++static inline int process_clock_allowed(struct task_struct *p)
++{
++	return thread_group_leader(p);
++}
++
+ static int check_task_clock(const clockid_t which_clock)
+ {
+ 	int error = 0;
+@@ -37,7 +57,7 @@ static int check_task_clock(const clockid_t which_clock)
+ 	rcu_read_lock();
+ 	p = find_task_by_vpid(pid);
+ 	if (!p || !(POSIX_CLOCK_PERTHREAD(which_clock) ?
+-		   same_thread_group(p, current) : thread_group_leader(p))) {
++		   thread_clock_allowed(p) : process_clock_allowed(p))) {
+ 		error = -EINVAL;
+ 	}
+ 	rcu_read_unlock();
+@@ -68,9 +88,9 @@ static int get_start_time(clockid_t which_clock, struct timespec *start)
+ 		find_task_by_vpid(POSIX_CLOCK_PID(which_clock));
+ 	if (p && (
+ 		(POSIX_CLOCK_PERTHREAD(which_clock) &&
+-			same_thread_group(p, current)) ||
++			thread_clock_allowed(p)) ||
+ 		(!POSIX_CLOCK_PERTHREAD(which_clock) &&
+-			thread_group_leader(p) && p->sighand))) {
++			process_clock_allowed(p) && p->sighand))) {
+ 		*start = p->start_time;
+ 		return 0;
+ 	}
+@@ -529,13 +549,13 @@ int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
+ 		p = find_task_by_vpid(pid);
+ 		if (p) {
+ 			if (POSIX_CLOCK_PERTHREAD(which_clock)) {
+-				if (same_thread_group(p, current)) {
++				if (thread_clock_allowed(p)) {
+ 					error = cpu_clock_sample(which_clock,
+ 								 p, &rtn);
+ 				}
+ 			} else {
+ 				read_lock(&tasklist_lock);
+-				if (thread_group_leader(p) && p->sighand) {
++				if (process_clock_allowed(p) && p->sighand) {
+ 					error =
+ 					    cpu_clock_sample_group(which_clock,
+ 							           p, &rtn);
+@@ -575,7 +595,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+ 			p = current;
+ 		} else {
+ 			p = find_task_by_vpid(pid);
+-			if (p && !same_thread_group(p, current))
++			if (p && !thread_clock_allowed(p))
+ 				p = NULL;
+ 		}
+ 	} else {
+@@ -583,7 +603,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+ 			p = current->group_leader;
+ 		} else {
+ 			p = find_task_by_vpid(pid);
+-			if (p && !thread_group_leader(p))
++			if (p && !process_clock_allowed(p))
+ 				p = NULL;
+ 		}
+ 	}
+-- 
+1.6.3.3
 
