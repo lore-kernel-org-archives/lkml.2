@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab0G3Lks (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 07:40:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51425 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab0G3Lkq (ORCPT
+	id S932182Ab0G3LnL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 07:43:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:65382 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157Ab0G3LnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 07:40:46 -0400
+	Fri, 30 Jul 2010 07:43:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GSMc/VJ+/SDJvxH/kLsPMu9Bg/gqfK2kPQiX95ZimVmb7aWJVJiyFz0aJ9pzaBRPsk
-         QmMArlpR5LeH7TD68U3gpCEGhEws3JMk0qXzBlRYqkW70Nfe12JBRIOLV+r5cJlQWz/D
-         zB3XBuozN3YJRmwL2QrlMJ/QFOwmn/IIVP8pU=
+        b=oZNSF/Axb01fqsbozOpEu7sWGdm6wRlBr1SrqJd+znfX3zUmbOZbkBa7EhDSbn9+Xl
+         xfrnmvg804EeU/a9D4rbC1v5PgZ1oSL+xW53d7EQxrU139RYrHQ3DBu4o7dEmEX3VaqE
+         AF8rOGNwjEsLNsI2f5cjjQnlPSwlY9TyZOAus=
 Subject: Re: [PATCH v2]Resend:videobuf_dma_sg: a new implementation for mmap
 From: "Figo.zhang" <figo1802@gmail.com>
 To: npiggin@suse.de, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        akpm <akpm@linux-foundation.org>
+        akpm <akpm@linux-foundation.org>, Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-media <linux-media@vger.kernel.org>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
@@ -25,8 +25,8 @@ In-Reply-To: <201007301131.17638.laurent.pinchart@ideasonboard.com>
 References: <1280448482.2648.2.camel@localhost.localdomain>
 	 <201007301131.17638.laurent.pinchart@ideasonboard.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 19:38:31 +0800
-Message-ID: <1280489911.2648.11.camel@localhost.localdomain>
+Date: Fri, 30 Jul 2010 19:39:40 +0800
+Message-ID: <1280489980.2648.12.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
@@ -144,5 +144,6 @@ hi Mauro, do you think this is a issue for videobuf-dma-sg?
 > > 
 > >  	return 0;
 > 
+
 
 
