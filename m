@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab0G3Rev (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:34:51 -0400
-Received: from kroah.org ([198.145.64.141]:35508 "EHLO coco.kroah.org"
+	id S1759687Ab0G3SqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:46:23 -0400
+Received: from kroah.org ([198.145.64.141]:35798 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759214Ab0G3ReD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:03 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
-Message-Id: <20100730173104.234436806@clark.site>
+	id S1759275Ab0G3Rev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:51 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:08 2010
+Message-Id: <20100730173108.233919115@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:41 -0700
+Date: Fri, 30 Jul 2010 10:30:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
-Subject: [016/140] hwmon: (coretemp) Properly label the sensors
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        David Safford <safford@watson.ibm.com>
+Subject: [061/140] tpm_tis: fix subsequent suspend failures
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 
-commit 3f4f09b4be35d38d6e2bf22c989443e65e70fc4c upstream.
+commit 59f6fbe4291fcc078ba26ce4edf8373a7620a13a upstream.
 
-Don't assume that CPU entry number and core ID always match. It
-worked in the simple cases (single CPU, no HT) but fails on
-multi-CPU systems.
+Fix subsequent suspends by issuing tpm_continue_selftest during resume.
+Otherwise, the tpm chip seems to be not fully initialized and will reject
+the save state command during suspend, thus preventing the whole system
+to suspend.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Huaxu Wan <huaxu.wan@intel.com>
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16256
+
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: James Morris <jmorris@namei.org>
+Cc: Debora Velarde <debora@linux.vnet.ibm.com>
+Cc: David Safford <safford@watson.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/coretemp.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/char/tpm/tpm_tis.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -53,6 +53,7 @@ struct coretemp_data {
- 	struct mutex update_lock;
- 	const char *name;
- 	u32 id;
-+	u16 core_id;
- 	char valid;		/* zero until following fields are valid */
- 	unsigned long last_updated;	/* in jiffies */
- 	int temp;
-@@ -75,7 +76,7 @@ static ssize_t show_name(struct device *
- 	if (attr->index == SHOW_NAME)
- 		ret = sprintf(buf, "%s\n", data->name);
- 	else	/* show label */
--		ret = sprintf(buf, "Core %d\n", data->id);
-+		ret = sprintf(buf, "Core %d\n", data->core_id);
- 	return ret;
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -622,7 +622,14 @@ static int tpm_tis_pnp_suspend(struct pn
+ 
+ static int tpm_tis_pnp_resume(struct pnp_dev *dev)
+ {
+-	return tpm_pm_resume(&dev->dev);
++	struct tpm_chip *chip = pnp_get_drvdata(dev);
++	int ret;
++
++	ret = tpm_pm_resume(&dev->dev);
++	if (!ret)
++		tpm_continue_selftest(chip);
++
++	return ret;
  }
  
-@@ -255,6 +256,9 @@ static int __devinit coretemp_probe(stru
- 	}
- 
- 	data->id = pdev->id;
-+#ifdef CONFIG_SMP
-+	data->core_id = c->cpu_core_id;
-+#endif
- 	data->name = "coretemp";
- 	mutex_init(&data->update_lock);
- 
+ static struct pnp_device_id tpm_pnp_tbl[] __devinitdata = {
 
 
