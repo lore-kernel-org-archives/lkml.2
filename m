@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845Ab0G3SGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:06:53 -0400
-Received: from kroah.org ([198.145.64.141]:59250 "EHLO coco.kroah.org"
+	id S933066Ab0G3SHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:07:11 -0400
+Received: from kroah.org ([198.145.64.141]:59245 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932816Ab0G3R5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:49 -0400
+	id S932813Ab0G3R5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:48 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:51 2010
-Message-Id: <20100730175151.053840640@clark.site>
+Message-Id: <20100730175150.974010056@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:26 -0700
+Date: Fri, 30 Jul 2010 10:53:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Subject: [189/205] ACPI / ACPICA: Fix low-level GPE manipulation code
+Subject: [188/205] ACPI / ACPICA: Use helper function for computing GPE masks
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,356 +27,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit fd247447c1d94a79d5cfc647430784306b3a8323 upstream.
+commit e4e9a735991c80fb0fc1bd4a13a93681c3c17ce0 upstream.
 
-ACPICA uses acpi_ev_enable_gpe() for enabling GPEs at the low level,
-which is incorrect, because this function only enables the GPE if the
-corresponding bit in its enable register's enable_for_run mask is set.
-This causes acpi_set_gpe() to work incorrectly if used for enabling
-GPEs that were not previously enabled with acpi_enable_gpe().  As a
-result, among other things, wakeup-only GPEs are never enabled by
-acpi_enable_wakeup_device(), so the devices that use them are unable
-to wake up the system.
-
-To fix this issue remove acpi_ev_enable_gpe() and its counterpart
-acpi_ev_disable_gpe() and replace acpi_hw_low_disable_gpe() with
-acpi_hw_low_set_gpe() that will be used instead to manipulate GPE
-enable bits at the low level.  Make the users of acpi_ev_enable_gpe()
-and acpi_ev_disable_gpe() call acpi_hw_low_set_gpe() instead and
-make sure that GPE enable masks are only updated by acpi_enable_gpe()
-and acpi_disable_gpe() when GPE reference counters change from 0
-to 1 and from 1 to 0, respectively.
+In quite a few places ACPICA needs to compute a GPE enable mask with
+only one bit, corresponding to a given GPE, set.  Currently, that
+computation is always open coded which leads to unnecessary code
+duplication.  Fix this by introducing a helper function for computing
+one-bit GPE enable masks and using it where appropriate.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/acpi/acpica/acevents.h |    4 --
- drivers/acpi/acpica/achware.h  |    3 +
- drivers/acpi/acpica/evgpe.c    |   78 +----------------------------------------
- drivers/acpi/acpica/evxfevnt.c |   66 ++++++++++++++++++++++++++++++----
- drivers/acpi/acpica/hwgpe.c    |   26 +++++++++++--
- include/acpi/acexcep.h         |    2 -
- 6 files changed, 84 insertions(+), 95 deletions(-)
+ drivers/acpi/acpica/achware.h |    3 ++
+ drivers/acpi/acpica/evgpe.c   |    7 ++---
+ drivers/acpi/acpica/hwgpe.c   |   52 ++++++++++++++++++++++++++++++++----------
+ 3 files changed, 46 insertions(+), 16 deletions(-)
 
---- a/drivers/acpi/acpica/acevents.h
-+++ b/drivers/acpi/acpica/acevents.h
-@@ -78,10 +78,6 @@ acpi_ev_queue_notify_request(struct acpi
- acpi_status
- acpi_ev_update_gpe_enable_masks(struct acpi_gpe_event_info *gpe_event_info);
- 
--acpi_status acpi_ev_enable_gpe(struct acpi_gpe_event_info *gpe_event_info);
--
--acpi_status acpi_ev_disable_gpe(struct acpi_gpe_event_info *gpe_event_info);
--
- struct acpi_gpe_event_info *acpi_ev_get_gpe_event_info(acpi_handle gpe_device,
- 						       u32 gpe_number);
- 
 --- a/drivers/acpi/acpica/achware.h
 +++ b/drivers/acpi/acpica/achware.h
-@@ -93,7 +93,8 @@ acpi_status acpi_hw_write_port(acpi_io_a
- u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
- 			     struct acpi_gpe_register_info *gpe_register_info);
- 
--acpi_status acpi_hw_low_disable_gpe(struct acpi_gpe_event_info *gpe_event_info);
-+acpi_status
-+acpi_hw_low_set_gpe(struct acpi_gpe_event_info *gpe_event_info, u8 action);
+@@ -90,6 +90,9 @@ acpi_status acpi_hw_write_port(acpi_io_a
+ /*
+  * hwgpe - GPE support
+  */
++u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
++			     struct acpi_gpe_register_info *gpe_register_info);
++
+ acpi_status acpi_hw_low_disable_gpe(struct acpi_gpe_event_info *gpe_event_info);
  
  acpi_status
- acpi_hw_write_gpe_enable_reg(struct acpi_gpe_event_info *gpe_event_info);
 --- a/drivers/acpi/acpica/evgpe.c
 +++ b/drivers/acpi/acpica/evgpe.c
-@@ -94,76 +94,6 @@ acpi_ev_update_gpe_enable_masks(struct a
+@@ -68,7 +68,7 @@ acpi_status
+ acpi_ev_update_gpe_enable_masks(struct acpi_gpe_event_info *gpe_event_info)
+ {
+ 	struct acpi_gpe_register_info *gpe_register_info;
+-	u8 register_bit;
++	u32 register_bit;
  
- /*******************************************************************************
-  *
-- * FUNCTION:    acpi_ev_enable_gpe
-- *
-- * PARAMETERS:  gpe_event_info          - GPE to enable
-- *
-- * RETURN:      Status
-- *
-- * DESCRIPTION: Enable a GPE based on the GPE type
-- *
-- ******************************************************************************/
--
--acpi_status acpi_ev_enable_gpe(struct acpi_gpe_event_info *gpe_event_info)
--{
--	acpi_status status;
--
--	ACPI_FUNCTION_TRACE(ev_enable_gpe);
--
--	/* Make sure HW enable masks are updated */
--
--	status = acpi_ev_update_gpe_enable_masks(gpe_event_info);
--	if (ACPI_FAILURE(status))
--		return_ACPI_STATUS(status);
--
--	/* Clear the GPE (of stale events), then enable it */
--	status = acpi_hw_clear_gpe(gpe_event_info);
--	if (ACPI_FAILURE(status))
--		return_ACPI_STATUS(status);
--
--	/* Enable the requested GPE */
--	status = acpi_hw_write_gpe_enable_reg(gpe_event_info);
--	return_ACPI_STATUS(status);
--}
--
--/*******************************************************************************
-- *
-- * FUNCTION:    acpi_ev_disable_gpe
-- *
-- * PARAMETERS:  gpe_event_info          - GPE to disable
-- *
-- * RETURN:      Status
-- *
-- * DESCRIPTION: Disable a GPE based on the GPE type
-- *
-- ******************************************************************************/
--
--acpi_status acpi_ev_disable_gpe(struct acpi_gpe_event_info *gpe_event_info)
--{
--	acpi_status status;
--
--	ACPI_FUNCTION_TRACE(ev_disable_gpe);
--
--	/* Make sure HW enable masks are updated */
--
--	status = acpi_ev_update_gpe_enable_masks(gpe_event_info);
--	if (ACPI_FAILURE(status))
--		return_ACPI_STATUS(status);
--
--	/*
--	 * Even if we don't know the GPE type, make sure that we always
--	 * disable it. low_disable_gpe will just clear the enable bit for this
--	 * GPE and write it. It will not write out the current GPE enable mask,
--	 * since this may inadvertently enable GPEs too early, if a rogue GPE has
--	 * come in during ACPICA initialization - possibly as a result of AML or
--	 * other code that has enabled the GPE.
--	 */
--	status = acpi_hw_low_disable_gpe(gpe_event_info);
--	return_ACPI_STATUS(status);
--}
--
--/*******************************************************************************
-- *
-  * FUNCTION:    acpi_ev_get_gpe_event_info
-  *
-  * PARAMETERS:  gpe_device          - Device node. NULL for GPE0/GPE1
-@@ -388,10 +318,6 @@ static void ACPI_SYSTEM_XFACE acpi_ev_as
- 		return_VOID;
+ 	ACPI_FUNCTION_TRACE(ev_update_gpe_enable_masks);
+ 
+@@ -77,9 +77,8 @@ acpi_ev_update_gpe_enable_masks(struct a
+ 		return_ACPI_STATUS(AE_NOT_EXIST);
  	}
  
--	/* Set the GPE flags for return to enabled state */
--
--	(void)acpi_ev_update_gpe_enable_masks(gpe_event_info);
--
- 	/*
- 	 * Take a snapshot of the GPE info for this level - we copy the info to
- 	 * prevent a race condition with remove_handler/remove_block.
-@@ -544,7 +470,7 @@ acpi_ev_gpe_dispatch(struct acpi_gpe_eve
- 		 * Disable the GPE, so it doesn't keep firing before the method has a
- 		 * chance to run (it runs asynchronously with interrupts enabled).
- 		 */
--		status = acpi_ev_disable_gpe(gpe_event_info);
-+		status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_DISABLE);
- 		if (ACPI_FAILURE(status)) {
- 			ACPI_EXCEPTION((AE_INFO, status,
- 					"Unable to disable GPE[%2X]",
-@@ -578,7 +504,7 @@ acpi_ev_gpe_dispatch(struct acpi_gpe_eve
- 		 * Disable the GPE. The GPE will remain disabled until the ACPICA
- 		 * Core Subsystem is restarted, or a handler is installed.
- 		 */
--		status = acpi_ev_disable_gpe(gpe_event_info);
-+		status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_DISABLE);
- 		if (ACPI_FAILURE(status)) {
- 			ACPI_EXCEPTION((AE_INFO, status,
- 					"Unable to disable GPE[%2X]",
---- a/drivers/acpi/acpica/evxfevnt.c
-+++ b/drivers/acpi/acpica/evxfevnt.c
-@@ -201,6 +201,44 @@ ACPI_EXPORT_SYMBOL(acpi_enable_event)
+-	register_bit = (u8)
+-	    (1 <<
+-	     (gpe_event_info->gpe_number - gpe_register_info->base_gpe_number));
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
  
- /*******************************************************************************
-  *
-+ * FUNCTION:    acpi_clear_and_enable_gpe
-+ *
-+ * PARAMETERS:  gpe_event_info  - GPE to enable
-+ *
-+ * RETURN:      Status
-+ *
-+ * DESCRIPTION: Clear the given GPE from stale events and enable it.
-+ *
-+ ******************************************************************************/
-+static acpi_status
-+acpi_clear_and_enable_gpe(struct acpi_gpe_event_info *gpe_event_info)
-+{
-+	acpi_status status;
-+
-+	/*
-+	 * We will only allow a GPE to be enabled if it has either an
-+	 * associated method (_Lxx/_Exx) or a handler. Otherwise, the
-+	 * GPE will be immediately disabled by acpi_ev_gpe_dispatch the
-+	 * first time it fires.
-+	 */
-+	if (!(gpe_event_info->flags & ACPI_GPE_DISPATCH_MASK)) {
-+		return_ACPI_STATUS(AE_NO_HANDLER);
-+	}
-+
-+	/* Clear the GPE (of stale events) */
-+	status = acpi_hw_clear_gpe(gpe_event_info);
-+	if (ACPI_FAILURE(status)) {
-+		return_ACPI_STATUS(status);
-+	}
-+
-+	/* Enable the requested GPE */
-+	status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_ENABLE);
-+
-+	return_ACPI_STATUS(status);
-+}
-+
-+/*******************************************************************************
-+ *
-  * FUNCTION:    acpi_set_gpe
-  *
-  * PARAMETERS:  gpe_device      - Parent GPE Device
-@@ -235,11 +273,11 @@ acpi_status acpi_set_gpe(acpi_handle gpe
- 
- 	switch (action) {
- 	case ACPI_GPE_ENABLE:
--		status = acpi_ev_enable_gpe(gpe_event_info);
-+		status = acpi_clear_and_enable_gpe(gpe_event_info);
- 		break;
- 
- 	case ACPI_GPE_DISABLE:
--		status = acpi_ev_disable_gpe(gpe_event_info);
-+		status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_DISABLE);
- 		break;
- 
- 	default:
-@@ -291,9 +329,13 @@ acpi_status acpi_enable_gpe(acpi_handle
- 
- 	if (type & ACPI_GPE_TYPE_RUNTIME) {
- 		if (++gpe_event_info->runtime_count == 1) {
--			status = acpi_ev_enable_gpe(gpe_event_info);
--			if (ACPI_FAILURE(status))
-+			status = acpi_ev_update_gpe_enable_masks(gpe_event_info);
-+			if (ACPI_SUCCESS(status)) {
-+				status = acpi_clear_and_enable_gpe(gpe_event_info);
-+			}
-+			if (ACPI_FAILURE(status)) {
- 				gpe_event_info->runtime_count--;
-+			}
- 		}
- 	}
- 
-@@ -308,7 +350,7 @@ acpi_status acpi_enable_gpe(acpi_handle
- 		 * system into a sleep state.
- 		 */
- 		if (++gpe_event_info->wakeup_count == 1)
--			acpi_ev_update_gpe_enable_masks(gpe_event_info);
-+			status = acpi_ev_update_gpe_enable_masks(gpe_event_info);
- 	}
- 
- unlock_and_exit:
-@@ -351,8 +393,16 @@ acpi_status acpi_disable_gpe(acpi_handle
- 	}
- 
- 	if ((type & ACPI_GPE_TYPE_RUNTIME) && gpe_event_info->runtime_count) {
--		if (--gpe_event_info->runtime_count == 0)
--			status = acpi_ev_disable_gpe(gpe_event_info);
-+		if (--gpe_event_info->runtime_count == 0) {
-+			status = acpi_ev_update_gpe_enable_masks(gpe_event_info);
-+			if (ACPI_SUCCESS(status)) {
-+				status = acpi_hw_low_set_gpe(gpe_event_info,
-+							     ACPI_GPE_DISABLE);
-+			}
-+			if (ACPI_FAILURE(status)) {
-+				gpe_event_info->runtime_count++;
-+			}
-+		}
- 	}
- 
- 	if ((type & ACPI_GPE_TYPE_WAKE) && gpe_event_info->wakeup_count) {
-@@ -361,7 +411,7 @@ acpi_status acpi_disable_gpe(acpi_handle
- 		 * states, so we don't need to disable them here.
- 		 */
- 		if (--gpe_event_info->wakeup_count == 0)
--			acpi_ev_update_gpe_enable_masks(gpe_event_info);
-+			status = acpi_ev_update_gpe_enable_masks(gpe_event_info);
- 	}
- 
- unlock_and_exit:
+ 	ACPI_CLEAR_BIT(gpe_register_info->enable_for_wake, register_bit);
+ 	ACPI_CLEAR_BIT(gpe_register_info->enable_for_run, register_bit);
 --- a/drivers/acpi/acpica/hwgpe.c
 +++ b/drivers/acpi/acpica/hwgpe.c
-@@ -78,23 +78,27 @@ u32 acpi_hw_gpe_register_bit(struct acpi
+@@ -57,6 +57,27 @@ acpi_hw_enable_wakeup_gpe_block(struct a
  
  /******************************************************************************
   *
-- * FUNCTION:	acpi_hw_low_disable_gpe
-+ * FUNCTION:	acpi_hw_low_set_gpe
++ * FUNCTION:	acpi_hw_gpe_register_bit
++ *
++ * PARAMETERS:	gpe_event_info	    - Info block for the GPE
++ *		gpe_register_info   - Info block for the GPE register
++ *
++ * RETURN:	Status
++ *
++ * DESCRIPTION:	Compute GPE enable mask with one bit corresponding to the given
++ *		GPE set.
++ *
++ ******************************************************************************/
++
++u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
++			     struct acpi_gpe_register_info *gpe_register_info)
++{
++	return (u32)1 << (gpe_event_info->gpe_number -
++				gpe_register_info->base_gpe_number);
++}
++
++/******************************************************************************
++ *
+  * FUNCTION:	acpi_hw_low_disable_gpe
   *
   * PARAMETERS:	gpe_event_info	    - Info block for the GPE to be disabled
-+ *		action		    - Enable or disable
-  *
-  * RETURN:	Status
-  *
-- * DESCRIPTION: Disable a single GPE in the enable register.
-+ * DESCRIPTION: Enable or disable a single GPE in its enable register.
-  *
-  ******************************************************************************/
- 
--acpi_status acpi_hw_low_disable_gpe(struct acpi_gpe_event_info *gpe_event_info)
-+acpi_status
-+acpi_hw_low_set_gpe(struct acpi_gpe_event_info *gpe_event_info, u8 action)
- {
+@@ -72,6 +93,7 @@ acpi_status acpi_hw_low_disable_gpe(stru
  	struct acpi_gpe_register_info *gpe_register_info;
  	acpi_status status;
  	u32 enable_mask;
- 	u32 register_bit;
++	u32 register_bit;
  
-+	ACPI_FUNCTION_ENTRY();
-+
  	/* Get the info block for the entire GPE register */
  
- 	gpe_register_info = gpe_event_info->register_info;
-@@ -109,11 +113,23 @@ acpi_status acpi_hw_low_disable_gpe(stru
- 		return (status);
- 	}
+@@ -89,9 +111,9 @@ acpi_status acpi_hw_low_disable_gpe(stru
  
--	/* Clear just the bit that corresponds to this GPE */
-+	/* Set or clear just the bit that corresponds to this GPE */
+ 	/* Clear just the bit that corresponds to this GPE */
  
- 	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
- 						gpe_register_info);
--	ACPI_CLEAR_BIT(enable_mask, register_bit);
-+	switch (action) {
-+	case ACPI_GPE_ENABLE:
-+		ACPI_SET_BIT(enable_mask, register_bit);
-+		break;
-+
-+	case ACPI_GPE_DISABLE:
-+		ACPI_CLEAR_BIT(enable_mask, register_bit);
-+		break;
-+
-+	default:
-+		ACPI_ERROR((AE_INFO, "Invalid action\n"));
-+		return (AE_BAD_PARAMETER);
-+	}
+-	ACPI_CLEAR_BIT(enable_mask, ((u32)1 <<
+-				     (gpe_event_info->gpe_number -
+-				      gpe_register_info->base_gpe_number)));
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
++	ACPI_CLEAR_BIT(enable_mask, register_bit);
  
  	/* Write the updated enable mask */
  
---- a/include/acpi/acexcep.h
-+++ b/include/acpi/acexcep.h
-@@ -87,7 +87,7 @@
- #define AE_NO_GLOBAL_LOCK               (acpi_status) (0x0017 | AE_CODE_ENVIRONMENTAL)
- #define AE_ABORT_METHOD                 (acpi_status) (0x0018 | AE_CODE_ENVIRONMENTAL)
- #define AE_SAME_HANDLER                 (acpi_status) (0x0019 | AE_CODE_ENVIRONMENTAL)
--#define AE_WAKE_ONLY_GPE                (acpi_status) (0x001A | AE_CODE_ENVIRONMENTAL)
-+#define AE_NO_HANDLER                   (acpi_status) (0x001A | AE_CODE_ENVIRONMENTAL)
- #define AE_OWNER_ID_LIMIT               (acpi_status) (0x001B | AE_CODE_ENVIRONMENTAL)
+@@ -150,21 +172,28 @@ acpi_hw_write_gpe_enable_reg(struct acpi
  
- #define AE_CODE_ENV_MAX                 0x001B
+ acpi_status acpi_hw_clear_gpe(struct acpi_gpe_event_info * gpe_event_info)
+ {
++	struct acpi_gpe_register_info *gpe_register_info;
+ 	acpi_status status;
+-	u8 register_bit;
++	u32 register_bit;
+ 
+ 	ACPI_FUNCTION_ENTRY();
+ 
+-	register_bit = (u8)(1 <<
+-			    (gpe_event_info->gpe_number -
+-			     gpe_event_info->register_info->base_gpe_number));
++	/* Get the info block for the entire GPE register */
++
++	gpe_register_info = gpe_event_info->register_info;
++	if (!gpe_register_info) {
++		return (AE_NOT_EXIST);
++	}
++
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
+ 
+ 	/*
+ 	 * Write a one to the appropriate bit in the status register to
+ 	 * clear this GPE.
+ 	 */
+ 	status = acpi_hw_write(register_bit,
+-			       &gpe_event_info->register_info->status_address);
++			       &gpe_register_info->status_address);
+ 
+ 	return (status);
+ }
+@@ -187,7 +216,7 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
+ 		       acpi_event_status * event_status)
+ {
+ 	u32 in_byte;
+-	u8 register_bit;
++	u32 register_bit;
+ 	struct acpi_gpe_register_info *gpe_register_info;
+ 	acpi_status status;
+ 	acpi_event_status local_event_status = 0;
+@@ -204,9 +233,8 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
+ 
+ 	/* Get the register bitmask for this GPE */
+ 
+-	register_bit = (u8)(1 <<
+-			    (gpe_event_info->gpe_number -
+-			     gpe_event_info->register_info->base_gpe_number));
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
+ 
+ 	/* GPE currently enabled? (enabled for runtime?) */
+ 
 
 
