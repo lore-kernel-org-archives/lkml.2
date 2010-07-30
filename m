@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759267Ab0G3RcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:32:18 -0400
-Received: from kroah.org ([198.145.64.141]:51942 "EHLO coco.kroah.org"
+	id S1759278Ab0G3Rcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:32:54 -0400
+Received: from kroah.org ([198.145.64.141]:51925 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758647Ab0G3RTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:32 -0400
+	id S1757949Ab0G3RTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:30 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:09 2010
-Message-Id: <20100730171509.417014159@clark.site>
+Message-Id: <20100730171509.206431183@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:36 -0700
+Date: Fri, 30 Jul 2010 10:15:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [108/165] ext4: Issue the discard operation *before* releasing the blocks to be reused
+        Curt Wohlgemuth <curtw@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [106/165] ext4: Fix possible lost inode write in no journal mode
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit b90f687018e6d6c77d981b09203780f7001407e5 upstream (as of v2.6.34-rc6)
+commit 8b472d739b2ddd8ab7fb278874f696cd95b25a5e upstream (as of v2.6.34-rc6)
 
-Otherwise, we can end up having data corruption because the blocks
-could get reused and then discarded!
+In the no-journal case, ext4_write_inode() will fetch the bh and call
+sync_dirty_buffer() on it.  However, if the bh has already been
+written and the bh reclaimed for some other purpose, AND if the inode
+is the only one in the inode table block in use, then
+ext4_get_inode_loc() will not read the inode table block from disk,
+but as an optimization, fill the block with zero's assuming that its
+caller will copy in the on-disk version of the inode.  This is not
+done by ext4_write_inode(), so the contents of the inode can simply
+get lost.  The fix is to use __ext4_get_inode_loc() with in_mem set to
+0, instead of ext4_get_inode_loc().  Long term the API needs to be
+fixed so it's obvious why latter is not safe.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15579
+Addresses-Google-Bug: #2526446
 
+Signed-off-by: Curt Wohlgemuth <curtw@google.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/mballoc.c |   24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+ fs/ext4/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2537,6 +2537,17 @@ static void release_blocks_on_commit(jou
- 		mb_debug(1, "gonna free %u blocks in group %u (0x%p):",
- 			 entry->count, entry->group, entry);
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -5260,7 +5260,7 @@ int ext4_write_inode(struct inode *inode
+ 	} else {
+ 		struct ext4_iloc iloc;
  
-+		if (test_opt(sb, DISCARD)) {
-+			ext4_fsblk_t discard_block;
-+
-+			discard_block = entry->start_blk +
-+				ext4_group_first_block_no(sb, entry->group);
-+			trace_ext4_discard_blocks(sb,
-+					(unsigned long long)discard_block,
-+					entry->count);
-+			sb_issue_discard(sb, discard_block, entry->count);
-+		}
-+
- 		err = ext4_mb_load_buddy(sb, entry->group, &e4b);
- 		/* we expect to find existing buddy because it's pinned */
- 		BUG_ON(err != 0);
-@@ -2558,19 +2569,6 @@ static void release_blocks_on_commit(jou
- 			page_cache_release(e4b.bd_bitmap_page);
- 		}
- 		ext4_unlock_group(sb, entry->group);
--		if (test_opt(sb, DISCARD)) {
--			ext4_fsblk_t discard_block;
--			struct ext4_super_block *es = EXT4_SB(sb)->s_es;
--
--			discard_block = (ext4_fsblk_t)entry->group *
--						EXT4_BLOCKS_PER_GROUP(sb)
--					+ entry->start_blk
--					+ le32_to_cpu(es->s_first_data_block);
--			trace_ext4_discard_blocks(sb,
--					(unsigned long long)discard_block,
--					entry->count);
--			sb_issue_discard(sb, discard_block, entry->count);
--		}
- 		kmem_cache_free(ext4_free_ext_cachep, entry);
- 		ext4_mb_release_desc(&e4b);
- 	}
+-		err = ext4_get_inode_loc(inode, &iloc);
++		err = __ext4_get_inode_loc(inode, &iloc, 0);
+ 		if (err)
+ 			return err;
+ 		if (wait)
 
 
