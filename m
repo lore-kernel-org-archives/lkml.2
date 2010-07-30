@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab0G3Rso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:48:44 -0400
-Received: from kroah.org ([198.145.64.141]:36030 "EHLO coco.kroah.org"
+	id S932680Ab0G3Rss (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:48:48 -0400
+Received: from kroah.org ([198.145.64.141]:36024 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932386Ab0G3Rff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:35 -0400
+	id S932384Ab0G3Rfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:11 2010
-Message-Id: <20100730173111.572059486@clark.site>
+Message-Id: <20100730173111.461950963@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:03 -0700
+Date: Fri, 30 Jul 2010 10:31:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Daniel Mack <daniel@caiaq.de>
-Subject: [098/140] USB: ehci-mxc: bail out on transceiver problems
+        Jon Povey <jon.povey@racelogic.co.uk>,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: [097/140] USB: g_serial: fix tty cleanup on unload
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Jon Povey <jon.povey@racelogic.co.uk>
 
-commit 4c9715de52b9b6256bf1e9510917111a47b0c176 upstream.
+commit b23097b793081358a6d943263c91bae4c955c4e3 upstream.
 
-The old code registered the hcd even if there were no transceivers
-detected, leading to oopses like this if we try to probe a non-existant
-ULPI:
+Call put_tty_driver() in cleanup function, to fix Oops when trying to open
+gadget serial char device after module unload.
 
-[    2.730000] mxc-ehci mxc-ehci.0: unable to init transceiver
-[    2.740000] timeout polling for ULPI device
-[    2.740000] timeout polling for ULPI device
-[    2.750000] mxc-ehci mxc-ehci.0: unable to enable vbus on transceiver
-[    2.750000] mxc-ehci mxc-ehci.0: Freescale On-Chip EHCI Host Controller
-[    2.760000] mxc-ehci mxc-ehci.0: new USB bus registered, assigned bus number 2
-[    2.770000] Unhandled fault: external abort on non-linefetch (0x808) at 0xc4876184
-[    2.770000] Internal error: : 808 [#1] PREEMPT
-[    2.770000] last sysfs file:
-[    2.770000] Modules linked in:
-[    2.770000] CPU: 0    Not tainted  (2.6.33.5 #5)
-[    2.770000] PC is at ehci_hub_control+0x4d4/0x8f8
-[    2.770000] LR is at ehci_mxc_setup+0xbc/0xdc
-[    2.770000] pc : [<c0196dfc>]    lr : [<c019bc8c>]    psr: 00000093
-[    2.770000] sp : c3815e40  ip : 00000001  fp : 60000013
-[    2.770000] r10: c4876184  r9 : 00000000  r8 : c3814000
-[    2.770000] r7 : c391d2cc  r6 : 00000001  r5 : 00000001  r4 : 00000000
-[    2.770000] r3 : 80000000  r2 : 00000007  r1 : 80000000  r0 : c4876184
-[    2.770000] Flags: nzcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM Segment kernel
-[    2.770000] Control: 0005317f  Table: a0004000  DAC: 00000017
-[    2.770000] Process swapper (pid: 1, stack limit = 0xc3814270)
-...
-
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Acked-by: Daniel Mack <daniel@caiaq.de>
+Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
+Acked-by: David Brownell <dbrownell@users.sourceforge.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-mxc.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/usb/gadget/u_serial.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/ehci-mxc.c
-+++ b/drivers/usb/host/ehci-mxc.c
-@@ -207,10 +207,17 @@ static int ehci_mxc_drv_probe(struct pla
- 	/* Initialize the transceiver */
- 	if (pdata->otg) {
- 		pdata->otg->io_priv = hcd->regs + ULPI_VIEWPORT_OFFSET;
--		if (otg_init(pdata->otg) != 0)
--			dev_err(dev, "unable to init transceiver\n");
--		else if (otg_set_vbus(pdata->otg, 1) != 0)
-+		ret = otg_init(pdata->otg);
-+		if (ret) {
-+			dev_err(dev, "unable to init transceiver, probably missing\n");
-+			ret = -ENODEV;
-+			goto err_add;
-+		}
-+		ret = otg_set_vbus(pdata->otg, 1);
-+		if (ret) {
- 			dev_err(dev, "unable to enable vbus on transceiver\n");
-+			goto err_add;
-+		}
- 	}
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -1183,6 +1183,7 @@ void gserial_cleanup(void)
+ 	n_ports = 0;
  
- 	priv->hcd = hcd;
+ 	tty_unregister_driver(gs_tty_driver);
++	put_tty_driver(gs_tty_driver);
+ 	gs_tty_driver = NULL;
+ 
+ 	pr_debug("%s: cleaned up ttyGS* support\n", __func__);
 
 
