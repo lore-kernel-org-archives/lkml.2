@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760094Ab0G3SOB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:14:01 -0400
-Received: from kroah.org ([198.145.64.141]:59063 "EHLO coco.kroah.org"
+	id S1760163Ab0G3SOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:14:33 -0400
+Received: from kroah.org ([198.145.64.141]:59036 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932686Ab0G3R5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:48 2010
-Message-Id: <20100730175148.129194462@clark.site>
+	id S932364Ab0G3R5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:47 2010
+Message-Id: <20100730175147.872040435@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:53 -0700
+Date: Fri, 30 Jul 2010 10:52:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ondrej Zary <linux@rainbow-software.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [156/205] PM / x86: Save/restore MISC_ENABLE register
+        Changli Gao <xiaosuo@gmail.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [153/205] splice: direct_splice_actor() should not use pos in sd
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Changli Gao <xiaosuo@gmail.com>
 
-commit 85a0e7539781dad4bfcffd98e72fa9f130f4e40d upstream.
+commit 2cb4b05e7647891b46b91c07c9a60304803d1688 upstream.
 
-Save/restore MISC_ENABLE register on suspend/resume.
-This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM,
-which wakes up with MWAIT disabled.
+direct_splice_actor() shouldn't use sd->pos, as sd->pos is for file reading,
+file->f_pos should be used instead.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15385
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Tested-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/suspend_32.h |    2 ++
- arch/x86/include/asm/suspend_64.h |    2 ++
- arch/x86/power/cpu.c              |    4 ++++
- 3 files changed, 8 insertions(+)
+ fs/splice.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/suspend_32.h
-+++ b/arch/x86/include/asm/suspend_32.h
-@@ -15,6 +15,8 @@ static inline int arch_prepare_suspend(v
- struct saved_context {
- 	u16 es, fs, gs, ss;
- 	unsigned long cr0, cr2, cr3, cr4;
-+	u64 misc_enable;
-+	bool misc_enable_saved;
- 	struct desc_ptr gdt;
- 	struct desc_ptr idt;
- 	u16 ldt;
---- a/arch/x86/include/asm/suspend_64.h
-+++ b/arch/x86/include/asm/suspend_64.h
-@@ -27,6 +27,8 @@ struct saved_context {
- 	u16 ds, es, fs, gs, ss;
- 	unsigned long gs_base, gs_kernel_base, fs_base;
- 	unsigned long cr0, cr2, cr3, cr4, cr8;
-+	u64 misc_enable;
-+	bool misc_enable_saved;
- 	unsigned long efer;
- 	u16 gdt_pad;
- 	u16 gdt_limit;
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -105,6 +105,8 @@ static void __save_processor_state(struc
- 	ctxt->cr4 = read_cr4();
- 	ctxt->cr8 = read_cr8();
- #endif
-+	ctxt->misc_enable_saved = !rdmsrl_safe(MSR_IA32_MISC_ENABLE,
-+					       &ctxt->misc_enable);
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -1232,7 +1232,8 @@ static int direct_splice_actor(struct pi
+ {
+ 	struct file *file = sd->u.file;
+ 
+-	return do_splice_from(pipe, file, &sd->pos, sd->total_len, sd->flags);
++	return do_splice_from(pipe, file, &file->f_pos, sd->total_len,
++			      sd->flags);
  }
  
- /* Needed by apm.c */
-@@ -152,6 +154,8 @@ static void fix_processor_context(void)
-  */
- static void __restore_processor_state(struct saved_context *ctxt)
- {
-+	if (ctxt->misc_enable_saved)
-+		wrmsrl(MSR_IA32_MISC_ENABLE, ctxt->misc_enable);
- 	/*
- 	 * control registers
- 	 */
+ /**
 
 
