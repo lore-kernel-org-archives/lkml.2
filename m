@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab0G3SwG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:52:06 -0400
-Received: from kroah.org ([198.145.64.141]:35630 "EHLO coco.kroah.org"
+	id S1759304Ab0G3SwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:52:23 -0400
+Received: from kroah.org ([198.145.64.141]:35625 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759367Ab0G3ReX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:23 -0400
+	id S1759363Ab0G3ReW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:22 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
-Message-Id: <20100730173105.915430315@clark.site>
+Message-Id: <20100730173105.833469906@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:00 -0700
+Date: Fri, 30 Jul 2010 10:29:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [035/140] ath5k: drop warning on jumbo frames
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [034/140] SUNRPC: Fix a re-entrancy bug in xs_tcp_read_calldir()
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luis R. Rodriguez <lrodriguez@atheros.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 9637e516d16a58b13f6098cfe899e22963132be3 upstream.
+commit b76ce56192bcf618013fb9aecd83488cffd645cc upstream.
 
-Jumbo frames are not supported, and if they are seen it is likely
-a bogus frame so just silently discard them instead of warning on
-them all time. Also, instead of dropping them immediately though
-move the check *after* we check for all sort of frame errors. This
-should enable us to discard these frames if the hardware picks
-other bogus items first. Lets see if we still get those jumbo
-counters increasing still with this.
+If the attempt to read the calldir fails, then instead of storing the read
+bytes, we currently discard them. This leads to a garbage final result when
+upon re-entry to the same routine, we read the remaining bytes.
 
-Jumbo frames would happen if we tell hardware we can support
-a small 802.11 chunks of DMA'd frame, hardware would split RX'd
-frames into parts and we'd have to reconstruct them in software.
-This is done with USB due to the bulk size but with ath5k we
-already provide a good limit to hardware and this should not be
-happening.
+Fixes the regression in bugzilla number 16213. Please see
+    https://bugzilla.kernel.org/show_bug.cgi?id=16213
 
-This is reported quite often and if it fills the logs then this
-needs to be addressed and to avoid spurious reports.
-
-Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/base.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ net/sunrpc/xprtsock.c |   38 ++++++++++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 16 deletions(-)
 
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1851,11 +1851,6 @@ ath5k_tasklet_rx(unsigned long data)
- 			return;
- 		}
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -224,7 +224,8 @@ struct sock_xprt {
+ 	 * State of TCP reply receive
+ 	 */
+ 	__be32			tcp_fraghdr,
+-				tcp_xid;
++				tcp_xid,
++				tcp_calldir;
  
--		if (unlikely(rs.rs_more)) {
--			ATH5K_WARN(sc, "unsupported jumbo\n");
--			goto next;
--		}
+ 	u32			tcp_offset,
+ 				tcp_reclen;
+@@ -947,7 +948,7 @@ static inline void xs_tcp_read_calldir(s
+ {
+ 	size_t len, used;
+ 	u32 offset;
+-	__be32	calldir;
++	char *p;
+ 
+ 	/*
+ 	 * We want transport->tcp_offset to be 8 at the end of this routine
+@@ -956,26 +957,33 @@ static inline void xs_tcp_read_calldir(s
+ 	 * transport->tcp_offset is 4 (after having already read the xid).
+ 	 */
+ 	offset = transport->tcp_offset - sizeof(transport->tcp_xid);
+-	len = sizeof(calldir) - offset;
++	len = sizeof(transport->tcp_calldir) - offset;
+ 	dprintk("RPC:       reading CALL/REPLY flag (%Zu bytes)\n", len);
+-	used = xdr_skb_read_bits(desc, &calldir, len);
++	p = ((char *) &transport->tcp_calldir) + offset;
++	used = xdr_skb_read_bits(desc, p, len);
+ 	transport->tcp_offset += used;
+ 	if (used != len)
+ 		return;
+ 	transport->tcp_flags &= ~TCP_RCV_READ_CALLDIR;
+-	transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
+-	transport->tcp_flags |= TCP_RCV_COPY_DATA;
+ 	/*
+ 	 * We don't yet have the XDR buffer, so we will write the calldir
+ 	 * out after we get the buffer from the 'struct rpc_rqst'
+ 	 */
+-	if (ntohl(calldir) == RPC_REPLY)
++	switch (ntohl(transport->tcp_calldir)) {
++	case RPC_REPLY:
++		transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
++		transport->tcp_flags |= TCP_RCV_COPY_DATA;
+ 		transport->tcp_flags |= TCP_RPC_REPLY;
+-	else
++		break;
++	case RPC_CALL:
++		transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
++		transport->tcp_flags |= TCP_RCV_COPY_DATA;
+ 		transport->tcp_flags &= ~TCP_RPC_REPLY;
+-	dprintk("RPC:       reading %s CALL/REPLY flag %08x\n",
+-			(transport->tcp_flags & TCP_RPC_REPLY) ?
+-				"reply for" : "request with", calldir);
++		break;
++	default:
++		dprintk("RPC:       invalid request message type\n");
++		xprt_force_disconnect(&transport->xprt);
++	}
+ 	xs_tcp_check_fraghdr(transport);
+ }
+ 
+@@ -995,12 +1003,10 @@ static inline void xs_tcp_read_common(st
+ 		/*
+ 		 * Save the RPC direction in the XDR buffer
+ 		 */
+-		__be32	calldir = transport->tcp_flags & TCP_RPC_REPLY ?
+-					htonl(RPC_REPLY) : 0;
 -
- 		if (unlikely(rs.rs_status)) {
- 			if (rs.rs_status & AR5K_RXERR_PHY)
- 				goto next;
-@@ -1885,6 +1880,8 @@ ath5k_tasklet_rx(unsigned long data)
- 					sc->opmode != NL80211_IFTYPE_MONITOR)
- 				goto next;
- 		}
-+		if (unlikely(rs.rs_more))
-+			goto next;
- accept:
- 		next_skb = ath5k_rx_skb_alloc(sc, &next_skb_addr);
+ 		memcpy(rcvbuf->head[0].iov_base + transport->tcp_copied,
+-			&calldir, sizeof(calldir));
+-		transport->tcp_copied += sizeof(calldir);
++			&transport->tcp_calldir,
++			sizeof(transport->tcp_calldir));
++		transport->tcp_copied += sizeof(transport->tcp_calldir);
+ 		transport->tcp_flags &= ~TCP_RCV_COPY_CALLDIR;
+ 	}
  
 
 
