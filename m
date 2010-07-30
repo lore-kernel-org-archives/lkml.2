@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508Ab0G3Rgr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:36:47 -0400
-Received: from kroah.org ([198.145.64.141]:35859 "EHLO coco.kroah.org"
+	id S932330Ab0G3Rg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:36:26 -0400
+Received: from kroah.org ([198.145.64.141]:35809 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932307Ab0G3RfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:01 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:09 2010
-Message-Id: <20100730173109.125131716@clark.site>
+	id S1759214Ab0G3Rew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:08 2010
+Message-Id: <20100730173108.317079201@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:36 -0700
+Date: Fri, 30 Jul 2010 10:30:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [071/140] x86: Fix vsyscall on gcc 4.5 with -Os
+        Sven Wegener <sven.wegener@stealer.net>,
+        Simon Horman <horms@verge.net.au>, Patrick McHardy <kaber@trash.net>
+Subject: [062/140] ipvs: Add missing locking during connection table hashing and unhashing
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Sven Wegener <sven.wegener@stealer.net>
 
-commit 124482935fb7fb9303c8a8ab930149c6a93d9910 upstream.
+commit aea9d711f3d68c656ad31ab578ecfb0bb5cd7f97 upstream.
 
-This fixes the -Os breaks with gcc 4.5 bug.  rdtsc_barrier needs to be
-force inlined, otherwise user space will jump into kernel space and
-kill init.
+The code that hashes and unhashes connections from the connection table
+is missing locking of the connection being modified, which opens up a
+race condition and results in memory corruption when this race condition
+is hit.
 
-This also addresses http://gcc.gnu.org/bugzilla/show_bug.cgi?id=44129
-I believe.
+Here is what happens in pretty verbose form:
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20100618210859.GA10913@basil.fritz.box>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+CPU 0					CPU 1
+------------				------------
+An active connection is terminated and
+we schedule ip_vs_conn_expire() on this
+CPU to expire this connection.
+
+					IRQ assignment is changed to this CPU,
+					but the expire timer stays scheduled on
+					the other CPU.
+
+					New connection from same ip:port comes
+					in right before the timer expires, we
+					find the inactive connection in our
+					connection table and get a reference to
+					it. We proper lock the connection in
+					tcp_state_transition() and read the
+					connection flags in set_tcp_state().
+
+ip_vs_conn_expire() gets called, we
+unhash the connection from our
+connection table and remove the hashed
+flag in ip_vs_conn_unhash(), without
+proper locking!
+
+					While still holding proper locks we
+					write the connection flags in
+					set_tcp_state() and this sets the hashed
+					flag again.
+
+ip_vs_conn_expire() fails to expire the
+connection, because the other CPU has
+incremented the reference count. We try
+to re-insert the connection into our
+connection table, but this fails in
+ip_vs_conn_hash(), because the hashed
+flag has been set by the other CPU. We
+re-schedule execution of
+ip_vs_conn_expire(). Now this connection
+has the hashed flag set, but isn't
+actually hashed in our connection table
+and has a dangling list_head.
+
+					We drop the reference we held on the
+					connection and schedule the expire timer
+					for timeouting the connection on this
+					CPU. Further packets won't be able to
+					find this connection in our connection
+					table.
+
+					ip_vs_conn_expire() gets called again,
+					we think it's already hashed, but the
+					list_head is dangling and while removing
+					the connection from our connection table
+					we write to the memory location where
+					this list_head points to.
+
+The result will probably be a kernel oops at some other point in time.
+
+This race condition is pretty subtle, but it can be triggered remotely.
+It needs the IRQ assignment change or another circumstance where packets
+coming from the same ip:port for the same service are being processed on
+different CPUs. And it involves hitting the exact time at which
+ip_vs_conn_expire() gets called. It can be avoided by making sure that
+all packets from one connection are always processed on the same CPU and
+can be made harder to exploit by changing the connection timeouts to
+some custom values.
+
+Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
+Acked-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/system.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/netfilter/ipvs/ip_vs_conn.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -451,7 +451,7 @@ void stop_this_cpu(void *dummy);
-  *
-  * (Could use an alternative three way for this if there was one.)
-  */
--static inline void rdtsc_barrier(void)
-+static __always_inline void rdtsc_barrier(void)
- {
- 	alternative(ASM_NOP3, "mfence", X86_FEATURE_MFENCE_RDTSC);
- 	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
+--- a/net/netfilter/ipvs/ip_vs_conn.c
++++ b/net/netfilter/ipvs/ip_vs_conn.c
+@@ -146,6 +146,7 @@ static inline int ip_vs_conn_hash(struct
+ 	hash = ip_vs_conn_hashkey(cp->af, cp->protocol, &cp->caddr, cp->cport);
+ 
+ 	ct_write_lock(hash);
++	spin_lock(&cp->lock);
+ 
+ 	if (!(cp->flags & IP_VS_CONN_F_HASHED)) {
+ 		list_add(&cp->c_list, &ip_vs_conn_tab[hash]);
+@@ -158,6 +159,7 @@ static inline int ip_vs_conn_hash(struct
+ 		ret = 0;
+ 	}
+ 
++	spin_unlock(&cp->lock);
+ 	ct_write_unlock(hash);
+ 
+ 	return ret;
+@@ -177,6 +179,7 @@ static inline int ip_vs_conn_unhash(stru
+ 	hash = ip_vs_conn_hashkey(cp->af, cp->protocol, &cp->caddr, cp->cport);
+ 
+ 	ct_write_lock(hash);
++	spin_lock(&cp->lock);
+ 
+ 	if (cp->flags & IP_VS_CONN_F_HASHED) {
+ 		list_del(&cp->c_list);
+@@ -186,6 +189,7 @@ static inline int ip_vs_conn_unhash(stru
+ 	} else
+ 		ret = 0;
+ 
++	spin_unlock(&cp->lock);
+ 	ct_write_unlock(hash);
+ 
+ 	return ret;
 
 
