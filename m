@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab0G3VXR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 17:23:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53936 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab0G3VXO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 17:23:14 -0400
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-From: utz lehmann <lkml123@s2y4n2c.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
-        David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-In-Reply-To: <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	 <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	 <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	 <AANLkTikBCXK6uEw  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 23:22:58 +0200
-Message-ID: <1280524978.2452.9.camel@segv.aura.of.mankind>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:xkhYyWNpAly6hJpDhG0gRE+Y6Lb9LfF5/zRm77EyCM7
- 5hqFACpXm3hkMlYI2pU4WyLfbckfy+Z8JIheq/sN3gRH6mB4SF
- 9KyEv1QTqFrVoaN7+HNsYx7pko4mh9H7dzbgZWYoF/ZOyusp5e
- f89IuR4dVGNHA6jN1ITcI6mG1BZE+0Jdz7kK33E/fCltCe3Mvc
- cU1cwAwQOo6WO7yU5ajpA==
+	id S1754789Ab0G3V1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 17:27:00 -0400
+Received: from kroah.org ([198.145.64.141]:43640 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992Ab0G3V06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 17:26:58 -0400
+Date: Fri, 30 Jul 2010 14:21:31 -0700
+From: Greg KH <greg@kroah.com>
+To: David Brownell <david-b@pacbell.net>
+Cc: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCHv5 2/3] USB: gadget: Use new composite features in some
+ gadgets
+Message-ID: <20100730212131.GA8787@kroah.com>
+References: <20100730165450.GA4943@kroah.com>
+ <355626.7330.qm@web180313.mail.gq1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <355626.7330.qm@web180313.mail.gq1.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 09:40 -0700, Linus Torvalds wrote:
-> But the fact is, th Unix ctime semantics are insane and largely
-> useless. There's a damn good reason almost nobody uses ctime under
-> unix.
+On Fri, Jul 30, 2010 at 11:57:35AM -0700, David Brownell wrote:
 > 
-> So what I'm suggesting is that we have a flag - either per-process or
-> per-mount - that just says "use windows semantics for ctime".
+> > 
+> >  We shouldn't be using _any_ netchip
+> > ids anymore now that we
+> > have our own vendor id assigned to us.
+> 
+> That's too extreme; the original handful of
+> NetChip IDs were (and are!!) correctly assigned,
+> and there's no reason to change them.  In fact,
+> there's a lot of reason to continue using them
+> while config files and drivers expect to see
+> those specific IDs (as is reasonable).  That's
+> to avoid breaking working configs...
 
-When abusing an existing time stamp use atime not ctime please.
-ctime has it's uses. atime was just a mistake and is nearly useless.
+True, I was thinking that for the class-type devices, we could use the
+linux foundation vid, as changing them shouldn't matter right?
 
-And with noatime we already have creation time semantics for atime.
+Or does Windows really care about the vid/pid for a class device
+somehow?
 
+thanks,
 
-utz
-
-
+greg k-h
