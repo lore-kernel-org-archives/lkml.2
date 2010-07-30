@@ -1,107 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab0G3Wl2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 18:41:28 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:48825 "EHLO mail-out1.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197Ab0G3Wl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 18:41:26 -0400
-Subject: Re: [PATCH 6/6] vmscan: Kick flusher threads to clean pages when
- reclaim is encountering dirty pages
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <20100730150601.199c5618.akpm@linux-foundation.org>
-References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie>
-	 <1280497020-22816-7-git-send-email-mel@csn.ul.ie>
-	 <20100730150601.199c5618.akpm@linux-foundation.org>
+	id S1751974Ab0G3WwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 18:52:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62124 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987Ab0G3Wv6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 18:51:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=Wa0pqWNFwJ0IHS08XbIpva49edu0hGCYkshV0z2+R0tl6Ld11vuYMCSh3MID/Xoy30
+         Zetb0hiin8YcKM2vu48wwCWLt2JfPuVd26oC9BeJz637LeqwDHlTvclp5oUCxclEiGhm
+         6VKJ7ormIUNF99ERWyJecvq9J/Za6nhrT+Wf0=
+Subject: [PATCH] staging/quatech_usb2: remove unused qt2_box_flush function
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Richard Ash <richard@audacityteam.org>,
+        =?ISO-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
+        Soeren Moeller <soerenmoeller2001@gmail.com>,
+        =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 18:40:53 -0400
-Message-ID: <1280529653.12852.67.camel@heimdal.trondhjem.org>
+Date: Fri, 30 Jul 2010 18:51:51 -0400
+Message-ID: <1280530311.2256.4.camel@lenovo>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 15 msgs/h 1 sum rcpts/h 23 sum msgs/h 2 total rcpts 723 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: E6B0609EC3226EFD432FB1C498078FB946C397EE
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 291 max/h 6 blacklist 0 greylist 0 ratelimit 0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-30 at 15:06 -0700, Andrew Morton wrote:
-> On Fri, 30 Jul 2010 14:37:00 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > There are a number of cases where pages get cleaned but two of concern
-> > to this patch are;
-> >   o When dirtying pages, processes may be throttled to clean pages if
-> >     dirty_ratio is not met.
-> 
-> Ambiguous.  I assume you meant "if dirty_ratio is exceeded".
-> 
-> >   o Pages belonging to inodes dirtied longer than
-> >     dirty_writeback_centisecs get cleaned.
-> > 
-> > The problem for reclaim is that dirty pages can reach the end of the LRU if
-> > pages are being dirtied slowly so that neither the throttling or a flusher
-> > thread waking periodically cleans them.
-> > 
-> > Background flush is already cleaning old or expired inodes first but the
-> > expire time is too far in the future at the time of page reclaim. To mitigate
-> > future problems, this patch wakes flusher threads to clean 4M of data -
-> > an amount that should be manageable without causing congestion in many cases.
-> > 
-> > Ideally, the background flushers would only be cleaning pages belonging
-> > to the zone being scanned but it's not clear if this would be of benefit
-> > (less IO) or not (potentially less efficient IO if an inode is scattered
-> > across multiple zones).
-> > 
-> 
-> Sigh.  We have sooo many problems with writeback and latency.  Read
-> https://bugzilla.kernel.org/show_bug.cgi?id=12309 and weep.  Everyone's
-> running away from the issue and here we are adding code to solve some
-> alleged stack-overflow problem which seems to be largely a non-problem,
-> by making changes which may worsen our real problems.
-> 
-> direct-reclaim wants to write a dirty page because that page is in the
-> zone which the caller wants to allcoate from!  Telling the flusher
-> threads to perform generic writeback will sometimes cause them to just
-> gum the disk up with pages from different zones, making it even
-> harder/slower to allocate a page from the zones we're interested in,
-> no?
-> 
-> If/when that happens, the problem will be rare, subtle, will take a
-> long time to get reported and will take years to understand and fix and
-> will probably be reported in the monster bug report which everyone's
-> hiding from anyway.
+Hello, 
 
-There is that, and then there are issues with the VM simply lying to the
-filesystems.
+In today linux-next I got a compilation warning:
 
-See https://bugzilla.kernel.org/show_bug.cgi?id=16056
+drivers/staging/quatech_usb2/quatech_usb2.c:1852: warning: ‘qt2_box_flush’ defined but not used
 
-Which basically boils down to the following: kswapd tells the filesystem
-that it is quite safe to do GFP_KERNEL allocations in pageouts and as
-part of try_to_release_page().
+Since -next is an integration three, maybe this function is going to be used. 
+But anyway I send a patch that fix the warning removing the qt2_box_flush function just in case.
 
-In the case of pageouts, it does set the 'WB_SYNC_NONE', 'nonblocking'
-and 'for_reclaim' flags in the writeback_control struct, and so the
-filesystem has at least some hint that it should do non-blocking i/o.
+Thanks a lot.
 
-However if you trust the GFP_KERNEL flag in try_to_release_page() then
-the kernel can and will deadlock, and so I had to add in a hack
-specifically to tell the NFS client not to trust that flag if it comes
-from kswapd.
+Javier
 
- Trond
+Signed-off-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+---
+ drivers/staging/quatech_usb2/quatech_usb2.c |   24 +-----------------------
+ 1 files changed, 1 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/staging/quatech_usb2/quatech_usb2.c b/drivers/staging/quatech_usb2/quatech_usb2.c
+index ecd7313..9838ea2 100644
+--- a/drivers/staging/quatech_usb2/quatech_usb2.c
++++ b/drivers/staging/quatech_usb2/quatech_usb2.c
+@@ -258,8 +258,6 @@ static int qt2_box_get_register(struct usb_serial *serial,
+ static int qt2_box_set_register(struct usb_serial *serial,
+ 		unsigned short Uart_Number, unsigned short Register_Num,
+ 		unsigned short Value);
+-static int qt2_box_flush(struct usb_serial *serial,  unsigned char uart_number,
+-		unsigned short rcv_or_xmit);
+ static int qt2_boxsetuart(struct usb_serial *serial, unsigned short Uart_Number,
+ 		unsigned short default_divisor, unsigned char default_LCR);
+ static int qt2_boxsethw_flowctl(struct usb_serial *serial,
+@@ -645,9 +643,6 @@ static void qt2_close(struct usb_serial_port *port)
+ 	/* get the device private data */
+ 	port_extra = qt2_get_port_private(port); /* port private data */
+ 
+-	/* we don't need to force flush though the hardware, so we skip using
+-	 * qt2_box_flush() here */
+-
+ 	/* we can now (and only now) stop reading data */
+ 	port_extra->close_pending = true;
+ 	dbg("%s(): port_extra->close_pending = true", __func__);
+@@ -1841,24 +1836,6 @@ static int qt2_box_set_register(struct usb_serial *serial,
+ 	return result;
+ }
+ 
+-
+-/** @brief Request the Tx or Rx buffers on the USB side be flushed
+- *
+- * Tx flush: When all the currently buffered data has been sent, send an escape
+- * sequence back up the data stream to us
+- * Rx flush: add a flag in the data stream now so we know when it's made it's
+- * way up to us.
+- */
+-static int qt2_box_flush(struct usb_serial *serial,  unsigned char uart_number,
+-		    unsigned short rcv_or_xmit)
+-{
+-	int result;
+-	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+-		QT2_FLUSH_DEVICE, 0x40, rcv_or_xmit, uart_number, NULL, 0,
+-		300);
+-	return result;
+-}
+-
+ /** qt2_boxsetuart - Issue a SET_UART vendor-spcific request on the default
+  * control pipe. If successful sets baud rate divisor and LCR value.
+  */
+@@ -1873,6 +1850,7 @@ static int qt2_boxsetuart(struct usb_serial *serial, unsigned short Uart_Number,
+ 			QT2_GET_SET_UART, 0x40, default_divisor, UartNumandLCR,
+ 			NULL, 0, 300);
+ }
++
+ /** qt2_boxsethw_flowctl - Turn hardware (RTS/CTS) flow control on and off for
+  * a hardware UART.
+  */
+-- 
+1.7.0.4
+
+
 
