@@ -1,87 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab0G3PtB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 11:49:01 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:33450 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753931Ab0G3Pqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 11:46:39 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v3 06/15] evm: inode post removexattr
-Date: Fri, 30 Jul 2010 11:45:37 -0400
-Message-Id: <1280504746-20256-7-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1280504746-20256-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1280504746-20256-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S1755347Ab0G3PtS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 11:49:18 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:24364 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab0G3PtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 11:49:14 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6058"; a="49205561"
+X-IronPort-AV: E=Sophos;i="4.55,284,1278313200"; 
+   d="scan'208";a="648396"
+From: Ai Li <aili@codeaurora.org>
+To: akpm@linux-foundation.org, dwalker@codeaurora.org
+Cc: arjan@linux.intel.com, mingo@elte.hu, shemminger@vyatta.com,
+        czoccolo@gmail.com, len.brown@intel.com, aili@codeaurora.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: [PATCH v3] cpuidle: extend cpuidle and menu governor to handle dynamic states
+Date: Fri, 30 Jul 2010 09:49:11 -0600
+Message-Id: <1280504951-27812-1-git-send-email-aili@codeaurora.org>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an EVM protected extended attribute is removed, update 'security.evm'.
+On some SoC chips, HW resources may be in use during any particular idle
+period.  As a consequence, the cpuidle states that the SoC is safe to
+enter can change from idle period to idle period.  In addition, the
+latency and threshold of each cpuidle state can vary, depending on the
+operating condition when the CPU becomes idle, e.g. the current cpu
+frequency, the current state of the HW blocks, etc.
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+cpuidle core and the menu governor, in the current form, are geared
+towards cpuidle states that are static, i.e. the availabiltiy of the
+states, their latencies, their thresholds are non-changing during run
+time.  cpuidle does not provide any hook that cpuidle drivers can use
+to adjust those values on the fly for the current idle period before the
+menu governor selects the target cpuidle state.
+
+This patch extends cpuidle core and the menu governor to handle states
+that are dynamic.  There are three additions in the patch and the patch
+maintains backwards-compatibility with existing cpuidle drivers.
+
+1) add prepare() to struct cpuidle_device.  A cpuidle driver can hook
+into the callback and cpuidle will call prepare() before calling the
+governor's select function.  The callback gives the cpuidle driver a
+chance to update the dynamic information of the cpuidle states for the
+current idle period, e.g. state availability, latencies, thresholds,
+power values, etc.
+
+2) add CPUIDLE_FLAG_IGNORE as one of the state flags.  In the prepare()
+function, a cpuidle driver can set/clear the flag to indicate to the
+menu governor whether a cpuidle state should be ignored, i.e. not
+available, during the current idle period.
+
+3) add power_specified bit to struct cpuidle_device.  The menu governor
+currently assumes that the cpuidle states are arranged in the order of
+increasing latency, threshold, and power savings.  This is true or can
+be made true for static states.  Once the state parameters are dynamic,
+the latencies, thresholds, and power savings for the cpuidle states can
+increase or decrease by different amounts from idle period to idle
+period.  So the assumption of increasing latency, threshold, and power
+savings from Cn to C(n+1) can no longer be guaranteed.
+
+It can be straight forward to calculate the power consumption of each
+available state and to specify it in power_usage for the idle period.
+Using the power_usage fields, the menu governor then selects the state
+that has the lowest power consumption and that still satisfies all other
+critieria.  The power_specified bit defaults to 0.  For existing cpuidle
+drivers, cpuidle detects that power_specified is 0 and fills in a dummy
+set of power_usage values.
+
+Signed-off-by: Ai Li <aili@codeaurora.org>
 ---
- fs/xattr.c          |    5 ++++-
- include/linux/evm.h |    9 +++++++++
- 2 files changed, 13 insertions(+), 1 deletions(-)
+ drivers/cpuidle/cpuidle.c        |   31 +++++++++++++++++++++++++++++++
+ drivers/cpuidle/governors/menu.c |   23 ++++++++++++++++-------
+ include/linux/cpuidle.h          |    4 ++++
+ 3 files changed, 51 insertions(+), 7 deletions(-)
 
-diff --git a/fs/xattr.c b/fs/xattr.c
-index e1f6b8b..ad7cdc6 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -14,6 +14,7 @@
- #include <linux/mount.h>
- #include <linux/namei.h>
- #include <linux/security.h>
-+#include <linux/evm.h>
- #include <linux/syscalls.h>
- #include <linux/module.h>
- #include <linux/fsnotify.h>
-@@ -294,8 +295,10 @@ vfs_removexattr(struct dentry *dentry, const char *name)
- 	error = inode->i_op->removexattr(dentry, name);
- 	mutex_unlock(&inode->i_mutex);
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 1994885..c335d57 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -74,6 +74,17 @@ static void cpuidle_idle_call(void)
+ 	 */
+ 	hrtimer_peek_ahead_timers();
+ #endif
++
++	/*
++	 * Call the device's prepare function before calling the
++	 * governor's select function.  ->prepare gives the device's
++	 * cpuidle driver a chance to update any dynamic information
++	 * of its cpuidle states for the current idle period, e.g.
++	 * state availability, latencies, residencies, etc.
++	 */
++	if (dev->prepare)
++		dev->prepare(dev);
++
+ 	/* ask the governor for the next state */
+ 	next_state = cpuidle_curr_governor->select(dev);
+ 	if (need_resched()) {
+@@ -282,6 +293,26 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
  
--	if (!error)
-+	if (!error) {
- 		fsnotify_xattr(dentry);
-+		evm_inode_post_removexattr(dentry, name);
+ 	poll_idle_init(dev);
+ 
++	/*
++	 * cpuidle driver should set the dev->power_specified bit
++	 * before registering the device if the driver provides
++	 * power_usage numbers.
++	 *
++	 * For those devices whose ->power_specified is not set,
++	 * we fill in power_usage with decreasing values as the
++	 * cpuidle code has an implicit assumption that state Cn
++	 * uses less power than C(n-1).
++	 *
++	 * With CONFIG_ARCH_HAS_CPU_RELAX, C0 is already assigned
++	 * an power value of -1.  So we use -2, -3, etc, for other
++	 * c-states.
++	 */
++	if (!dev->power_specified) {
++		int i;
++		for (i = CPUIDLE_DRIVER_STATE_START; i < dev->state_count; i++)
++			dev->states[i].power_usage = -1 - i;
 +	}
- 	return error;
- }
- EXPORT_SYMBOL_GPL(vfs_removexattr);
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index 8b4e9e3..a730782 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -22,6 +22,8 @@ extern void evm_inode_post_setxattr(struct dentry *dentry,
- 				    const void *xattr_value,
- 				    size_t xattr_value_len);
- extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
-+extern void evm_inode_post_removexattr(struct dentry *dentry,
-+				       const char *xattr_name);
- #else
- #ifdef CONFIG_INTEGRITY
- static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
-@@ -52,5 +54,12 @@ static inline int evm_inode_removexattr(struct dentry *dentry,
++
+ 	per_cpu(cpuidle_devices, dev->cpu) = dev;
+ 	list_add(&dev->device_list, &cpuidle_detected_devices);
+ 	if ((ret = cpuidle_add_sysfs(sys_dev))) {
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 1b12870..c2408bb 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -234,6 +234,7 @@ static int menu_select(struct cpuidle_device *dev)
  {
- 	return 0;
- }
+ 	struct menu_device *data = &__get_cpu_var(menu_devices);
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
++	unsigned int power_usage = -1;
+ 	int i;
+ 	int multiplier;
+ 
+@@ -278,19 +279,27 @@ static int menu_select(struct cpuidle_device *dev)
+ 	if (data->expected_us > 5)
+ 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
+ 
+-
+-	/* find the deepest idle state that satisfies our constraints */
++	/*
++	 * Find the idle state with the lowest power while satisfying
++	 * our constraints.
++	 */
+ 	for (i = CPUIDLE_DRIVER_STATE_START; i < dev->state_count; i++) {
+ 		struct cpuidle_state *s = &dev->states[i];
+ 
++		if (s->flags & CPUIDLE_FLAG_IGNORE)
++			continue;
+ 		if (s->target_residency > data->predicted_us)
+-			break;
++			continue;
+ 		if (s->exit_latency > latency_req)
+-			break;
++			continue;
+ 		if (s->exit_latency * multiplier > data->predicted_us)
+-			break;
+-		data->exit_us = s->exit_latency;
+-		data->last_state_idx = i;
++			continue;
 +
-+static inline void evm_inode_post_removexattr(struct dentry *dentry,
-+					      const char *xattr_name)
-+{
-+	return;
-+}
++		if (s->power_usage < power_usage) {
++			power_usage = s->power_usage;
++			data->last_state_idx = i;
++			data->exit_us = s->exit_latency;
++		}
+ 	}
+ 
+ 	return data->last_state_idx;
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 55215cc..36ca972 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -52,6 +52,7 @@ struct cpuidle_state {
+ #define CPUIDLE_FLAG_SHALLOW	(0x20) /* low latency, minimal savings */
+ #define CPUIDLE_FLAG_BALANCED	(0x40) /* medium latency, moderate savings */
+ #define CPUIDLE_FLAG_DEEP	(0x80) /* high latency, large savings */
++#define CPUIDLE_FLAG_IGNORE	(0x100) /* ignore during this idle period */
+ 
+ #define CPUIDLE_DRIVER_FLAGS_MASK (0xFFFF0000)
+ 
+@@ -84,6 +85,7 @@ struct cpuidle_state_kobj {
+ struct cpuidle_device {
+ 	unsigned int		registered:1;
+ 	unsigned int		enabled:1;
++	unsigned int		power_specified:1;
+ 	unsigned int		cpu;
+ 
+ 	int			last_residency;
+@@ -97,6 +99,8 @@ struct cpuidle_device {
+ 	struct completion	kobj_unregister;
+ 	void			*governor_data;
+ 	struct cpuidle_state	*safe_state;
 +
- #endif /* CONFIG_EVM_H */
- #endif /* LINUX_EVM_H */
++	int (*prepare)		(struct cpuidle_device *dev);
+ };
+ 
+ DECLARE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
 -- 
-1.7.1.1
+1.5.6.3
 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
