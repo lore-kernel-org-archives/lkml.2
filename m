@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759628Ab0G3SuM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:50:12 -0400
-Received: from kroah.org ([198.145.64.141]:35708 "EHLO coco.kroah.org"
+	id S1759385Ab0G3Re2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:34:28 -0400
+Received: from kroah.org ([198.145.64.141]:35435 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757390Ab0G3Reg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:07 2010
-Message-Id: <20100730173106.976326382@clark.site>
+	id S1758753Ab0G3Rdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:33:53 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
+Message-Id: <20100730173103.435768617@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:12 -0700
+Date: Fri, 30 Jul 2010 10:29:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Subject: [047/140] drm/i915: add reclaimable to i915 self-reclaimable page allocations
+        =?ISO-8859-15?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [007/140] r8169: fix random mdio_write failures
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,51 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit cd9f040df6ce46573760a507cb88192d05d27d86 upstream.
+From: Timo Teräs <timo.teras@iki.fi>
 
-The hibernate issues that got fixed in commit 985b823b9192 ("drm/i915:
-fix hibernation since i915 self-reclaim fixes") turn out to have been
-incomplete.  Vefa Bicakci tested lots of hibernate cycles, and without
-the __GFP_RECLAIMABLE flag the system eventually fails to resume.
+[ Upstream commit 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e ]
 
-With the flag added, Vefa can apparently hibernate forever (or until he
-gets bored running his automated scripts, whichever comes first).
+Some configurations need delay between the "write completed" indication
+and new write to work reliably.
 
-The reclaimable flag was there originally, and was one of the flags that
-were dropped (unintentionally) by commit 4bdadb978569 ("drm/i915:
-Selectively enable self-reclaim") that introduced all these problems,
-but I didn't want to just blindly add back all the flags in commit
-985b823b9192, and it looked like __GFP_RECLAIM wasn't necessary.  It
-clearly was.
+Realtek driver seems to use longer delay when polling the "write complete"
+bit, so it waits long enough between writes with high probability (but
+could probably break too). This patch adds a new udelay to make sure we
+wait unconditionally some time after the write complete indication.
 
-I still suspect that there is some subtle reason we're missing that
-causes the problems, but __GFP_RECLAIMABLE is certainly not wrong to use
-in this context, and is what the code historically used.  And we have no
-idea what the causes the corruption without it.
+This caused a regression with XID 18000000 boards when the board specific
+phy configuration writing many mdio registers was added in commit
+2e955856ff (r8169: phy init for the 8169scd). Some of the configration
+mdio writes would almost always fail, and depending on failure might leave
+the PHY in non-working state.
 
-Reported-and-tested-by: M. Vefa Bicakci <bicave@superonline.com>
-Cc: Dave Airlie <airlied@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Timo Teräs <timo.teras@iki.fi>
+Acked-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/gpu/drm/i915/i915_gem.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/r8169.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2290,6 +2290,7 @@ i915_gem_object_get_pages(struct drm_gem
- 		page = read_cache_page_gfp(mapping, i,
- 					   GFP_HIGHUSER |
- 					   __GFP_COLD |
-+					   __GFP_RECLAIMABLE |
- 					   gfpmask);
- 		if (IS_ERR(page))
- 			goto err_pages;
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -557,6 +557,11 @@ static void mdio_write(void __iomem *ioa
+ 			break;
+ 		udelay(25);
+ 	}
++	/*
++	 * Some configurations require a small delay even after the write
++	 * completed indication or the next write might fail.
++	 */
++	udelay(25);
+ }
+ 
+ static int mdio_read(void __iomem *ioaddr, int reg_addr)
 
 
