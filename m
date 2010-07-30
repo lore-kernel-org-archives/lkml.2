@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759741Ab0G3RyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:54:24 -0400
-Received: from kroah.org ([198.145.64.141]:57770 "EHLO coco.kroah.org"
+	id S1759775Ab0G3Ryh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:54:37 -0400
+Received: from kroah.org ([198.145.64.141]:57778 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759692Ab0G3RyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:33 2010
-Message-Id: <20100730175133.867454088@clark.site>
+	id S1759646Ab0G3RyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:34 2010
+Message-Id: <20100730175133.953664123@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:20 -0700
+Date: Fri, 30 Jul 2010 10:50:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+        Stephen Hemminger <shemminger@vyatta.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [003/205] virtio_net: do not reschedule rx refill forever
+Subject: [004/205] bridge: fdb cleanup runs too often
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,47 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael S. Tsirkin <mst@redhat.com>
+From: stephen hemminger <shemminger@vyatta.com>
 
-commit 1788f49548860fa1c861ee3454d47b466c877e43 upstream.
+[ Upstream commit 25442e06d20aaba7d7b16438078a562b3e4cf19b ]
 
-We currently fill all of RX ring, then add_buf
-returns ENOSPC, which gets mis-detected as an out of
-memory condition and causes us to reschedule the work,
-and so on forever. Fix this by oom = err == -ENOMEM;
+It is common in end-node, non STP bridges to set forwarding
+delay to zero; which causes the forwarding database cleanup
+to run every clock tick. Change to run only as soon as needed
+or at next ageing timer interval which ever is sooner.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Use round_jiffies_up macro rather than attempting round up
+by changing value.
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/net/virtio_net.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/bridge/br_fdb.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -417,7 +417,7 @@ static int add_recvbuf_mergeable(struct
- static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+--- a/net/bridge/br_fdb.c
++++ b/net/bridge/br_fdb.c
+@@ -128,7 +128,7 @@ void br_fdb_cleanup(unsigned long _data)
  {
- 	int err;
--	bool oom = false;
-+	bool oom;
+ 	struct net_bridge *br = (struct net_bridge *)_data;
+ 	unsigned long delay = hold_time(br);
+-	unsigned long next_timer = jiffies + br->forward_delay;
++	unsigned long next_timer = jiffies + br->ageing_time;
+ 	int i;
  
- 	do {
- 		if (vi->mergeable_rx_bufs)
-@@ -427,10 +427,9 @@ static bool try_fill_recv(struct virtnet
- 		else
- 			err = add_recvbuf_small(vi, gfp);
+ 	spin_lock_bh(&br->hash_lock);
+@@ -149,9 +149,7 @@ void br_fdb_cleanup(unsigned long _data)
+ 	}
+ 	spin_unlock_bh(&br->hash_lock);
  
--		if (err < 0) {
--			oom = true;
-+		oom = err == -ENOMEM;
-+		if (err < 0)
- 			break;
--		}
- 		++vi->num;
- 	} while (err > 0);
- 	if (unlikely(vi->num > vi->max))
+-	/* Add HZ/4 to ensure we round the jiffies upwards to be after the next
+-	 * timer, otherwise we might round down and will have no-op run. */
+-	mod_timer(&br->gc_timer, round_jiffies(next_timer + HZ/4));
++	mod_timer(&br->gc_timer, round_jiffies_up(next_timer));
+ }
+ 
+ /* Completely flush all dynamic entries in forwarding database.*/
 
 
