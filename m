@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677Ab0G3OY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 10:24:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56586 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756568Ab0G3OY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 10:24:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=r4R5fEE2Ii+RwJHH7lg1K5XvmfaA2Ofq4PrncMTvo2jurAjZeruTP0hy12dV8JQox2
-         /+EuZiwpEfZr/QEO5vdWE151uwh+C4sQyY5pQqW/47BQSawcgno6qr6hhYreNWnIp6mR
-         dw9nHuA3D0YUeJAk6o363NNsctuPqlKl0hBp8=
+	id S932147Ab0G3O0A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 10:26:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37714 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751324Ab0G3OZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 10:25:59 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CIFS: Remove __exit mark from cifs_exit_dns_resolver()
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Jeff Layton <jlayton@redhat.com>
+Date: Fri, 30 Jul 2010 15:25:19 +0100
+Message-ID: <20100730142519.18287.22053.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=mcrGTMBonxby1gR1OijPB4z072i6cNsLxNU09@mail.gmail.com>
-References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com> 
-	<1280440089-3203-2-git-send-email-john.johansen@canonical.com> 
-	<AANLkTikk3tNM-fsXuS_SeAWgaYYCFrFAToRXOBkPxwy9@mail.gmail.com> 
-	<4C52A307.7080002@canonical.com> <AANLkTi=mcrGTMBonxby1gR1OijPB4z072i6cNsLxNU09@mail.gmail.com>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Fri, 30 Jul 2010 22:24:06 +0800
-Message-ID: <AANLkTinZgu-4V8pwSZJMBw_FTHgRCMELy96ADkrBMoKt@mail.gmail.com>
-Subject: Re: [PATCH 01/13] AppArmor: misc. base functions and defines
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, laijs@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 6:53 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> On Fri, Jul 30, 2010 at 1:01 PM, John Johansen
->>
->> vfree can sleep, and skipping the schedule_work parts won't work for
->> apparmor as many of these allocations are being freed via rcu callbacks
->> as most of our object life cycles are dependent on cred refcounting.
->
-> Can someone point me to where vfree() actually sleeps? I'm unable to
-> find the exact spot.
->
+Remove the __exit mark from cifs_exit_dns_resolver() as it's called by the
+module init routine in case of error, and so may have been discarded during
+linkage.
 
-http://lxr.linux.no/linux+v2.6.34.1/mm/vmalloc.c#L1405 . vfree ->
-__vunmap, vunmap -> __vunmap, and there is a might_sleep() function in
-vunmap.
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+---
 
-BTW: I'll respin the kvmalloc patch later.
+ fs/cifs/dns_resolve.c |    2 +-
+ fs/cifs/dns_resolve.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks.
+diff --git a/fs/cifs/dns_resolve.c b/fs/cifs/dns_resolve.c
+index 49315cb..853a968 100644
+--- a/fs/cifs/dns_resolve.c
++++ b/fs/cifs/dns_resolve.c
+@@ -227,7 +227,7 @@ failed_put_cred:
+ 	return ret;
+ }
+ 
+-void __exit cifs_exit_dns_resolver(void)
++void cifs_exit_dns_resolver(void)
+ {
+ 	key_revoke(dns_resolver_cache->thread_keyring);
+ 	unregister_key_type(&key_type_dns_resolver);
+diff --git a/fs/cifs/dns_resolve.h b/fs/cifs/dns_resolve.h
+index 26b9eaa..5d7f291 100644
+--- a/fs/cifs/dns_resolve.h
++++ b/fs/cifs/dns_resolve.h
+@@ -25,7 +25,7 @@
+ 
+ #ifdef __KERNEL__
+ extern int __init cifs_init_dns_resolver(void);
+-extern void __exit cifs_exit_dns_resolver(void);
++extern void cifs_exit_dns_resolver(void);
+ extern int dns_resolve_server_name_to_ip(const char *unc, char **ip_addr);
+ #endif /* KERNEL */
+ 
 
--- 
-Regards,
-Changli Gao(xiaosuo@gmail.com)
