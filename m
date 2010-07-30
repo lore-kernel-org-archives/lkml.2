@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759045Ab0G3RVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:21:07 -0400
-Received: from kroah.org ([198.145.64.141]:52355 "EHLO coco.kroah.org"
+	id S1759071Ab0G3RVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:21:12 -0400
+Received: from kroah.org ([198.145.64.141]:52373 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758934Ab0G3RUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:36 -0400
+	id S1758944Ab0G3RUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:41 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:14 2010
-Message-Id: <20100730171514.267286115@clark.site>
+Message-Id: <20100730171514.535502699@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:30 -0700
+Date: Fri, 30 Jul 2010 10:16:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andre Osterhues <aosterhues@escrypt.com>,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [162/165] ecryptfs: Bugfix for error related to ecryptfs_hash_buckets
+        Daniel Ritz <daniel.ritz@gmx.ch>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>
+Subject: [165/165] V4L/DVB (13830): uvcvideo: add another YUYV format GUID for iSight cameras
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,75 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Osterhues <aosterhues@escrypt.com>
+From: Daniel Ritz <daniel.ritz@gmx.ch>
 
-commit a6f80fb7b5986fda663d94079d3bba0937a6b6ff upstream.
+commit 68f194e027ecfbbc8d5515bc40787e542eed59e9 upstream.
 
-The function ecryptfs_uid_hash wrongly assumes that the
-second parameter to hash_long() is the number of hash
-buckets instead of the number of hash bits.
-This patch fixes that and renames the variable
-ecryptfs_hash_buckets to ecryptfs_hash_bits to make it
-clearer.
+For some unknown reason, on a MacBookPro5,3 the iSight sometimes report
+a different video format GUID. This patch add the other (wrong) GUID to
+the format table, making the iSight work always w/o other problems.
 
-Fixes: CVE-2010-2492
+What it should report: 32595559-0000-0010-8000-00aa00389b71
+What it often reports: 32595559-0000-0010-8000-000000389b71
 
-Signed-off-by: Andre Osterhues <aosterhues@escrypt.com>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel Ritz <daniel.ritz@gmx.ch>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Leann Ogasawara <leann.ogasawara@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/messaging.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/media/video/uvc/uvc_driver.c |    5 +++++
+ drivers/media/video/uvc/uvcvideo.h   |    3 +++
+ 2 files changed, 8 insertions(+)
 
---- a/fs/ecryptfs/messaging.c
-+++ b/fs/ecryptfs/messaging.c
-@@ -30,9 +30,9 @@ static struct mutex ecryptfs_msg_ctx_lis
- 
- static struct hlist_head *ecryptfs_daemon_hash;
- struct mutex ecryptfs_daemon_hash_mux;
--static int ecryptfs_hash_buckets;
-+static int ecryptfs_hash_bits;
- #define ecryptfs_uid_hash(uid) \
--        hash_long((unsigned long)uid, ecryptfs_hash_buckets)
-+        hash_long((unsigned long)uid, ecryptfs_hash_bits)
- 
- static u32 ecryptfs_msg_counter;
- static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
-@@ -485,18 +485,19 @@ int ecryptfs_init_messaging(void)
- 	}
- 	mutex_init(&ecryptfs_daemon_hash_mux);
- 	mutex_lock(&ecryptfs_daemon_hash_mux);
--	ecryptfs_hash_buckets = 1;
--	while (ecryptfs_number_of_users >> ecryptfs_hash_buckets)
--		ecryptfs_hash_buckets++;
-+	ecryptfs_hash_bits = 1;
-+	while (ecryptfs_number_of_users >> ecryptfs_hash_bits)
-+		ecryptfs_hash_bits++;
- 	ecryptfs_daemon_hash = kmalloc((sizeof(struct hlist_head)
--					* ecryptfs_hash_buckets), GFP_KERNEL);
-+					* (1 << ecryptfs_hash_bits)),
-+				       GFP_KERNEL);
- 	if (!ecryptfs_daemon_hash) {
- 		rc = -ENOMEM;
- 		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
- 		mutex_unlock(&ecryptfs_daemon_hash_mux);
- 		goto out;
- 	}
--	for (i = 0; i < ecryptfs_hash_buckets; i++)
-+	for (i = 0; i < (1 << ecryptfs_hash_bits); i++)
- 		INIT_HLIST_HEAD(&ecryptfs_daemon_hash[i]);
- 	mutex_unlock(&ecryptfs_daemon_hash_mux);
- 	ecryptfs_msg_ctx_arr = kmalloc((sizeof(struct ecryptfs_msg_ctx)
-@@ -553,7 +554,7 @@ void ecryptfs_release_messaging(void)
- 		int i;
- 
- 		mutex_lock(&ecryptfs_daemon_hash_mux);
--		for (i = 0; i < ecryptfs_hash_buckets; i++) {
-+		for (i = 0; i < (1 << ecryptfs_hash_bits); i++) {
- 			int rc;
- 
- 			hlist_for_each_entry(daemon, elem,
+--- a/drivers/media/video/uvc/uvc_driver.c
++++ b/drivers/media/video/uvc/uvc_driver.c
+@@ -58,6 +58,11 @@ static struct uvc_format_desc uvc_fmts[]
+ 		.fcc		= V4L2_PIX_FMT_YUYV,
+ 	},
+ 	{
++		.name		= "YUV 4:2:2 (YUYV)",
++		.guid		= UVC_GUID_FORMAT_YUY2_ISIGHT,
++		.fcc		= V4L2_PIX_FMT_YUYV,
++	},
++	{
+ 		.name		= "YUV 4:2:0 (NV12)",
+ 		.guid		= UVC_GUID_FORMAT_NV12,
+ 		.fcc		= V4L2_PIX_FMT_NV12,
+--- a/drivers/media/video/uvc/uvcvideo.h
++++ b/drivers/media/video/uvc/uvcvideo.h
+@@ -112,6 +112,9 @@ struct uvc_xu_control {
+ #define UVC_GUID_FORMAT_YUY2 \
+ 	{ 'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_YUY2_ISIGHT \
++	{ 'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0x00, 0x00, 0x38, 0x9b, 0x71}
+ #define UVC_GUID_FORMAT_NV12 \
+ 	{ 'N',  'V',  '1',  '2', 0x00, 0x00, 0x10, 0x00, \
+ 	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
 
 
