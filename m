@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab0G3SK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:10:58 -0400
-Received: from kroah.org ([198.145.64.141]:59152 "EHLO coco.kroah.org"
+	id S932736Ab0G3R52 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:57:28 -0400
+Received: from kroah.org ([198.145.64.141]:58657 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932745Ab0G3R5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
-Message-Id: <20100730175149.555047374@clark.site>
+	id S932380Ab0G3R4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:43 2010
+Message-Id: <20100730175143.016050252@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:09 -0700
+Date: Fri, 30 Jul 2010 10:51:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrej Gelenberg <andrej.gelenberg@udo.edu>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Dave Jones <davej@redhat.com>
-Subject: [172/205] [CPUFREQ] revert "[CPUFREQ] remove rwsem lock from CPUFREQ_GOV_STOP call (second call site)"
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [102/205] powerpc/cpm1: Fix build with various CONFIG_*_UCODE_PATCH combinations
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,49 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+From: Anton Vorontsov <avorontsov@mvista.com>
 
-commit accd846698439ba18250e8fd5681af280446b853 upstream.
+commit 2069a6ae19a34d96cc9cb284eb645b165138e03f upstream.
 
-395913d0b1db37092ea3d9d69b832183b1dd84c5 ("[CPUFREQ] remove rwsem lock
-from CPUFREQ_GOV_STOP call (second call site)") is not needed, because
-there is no rwsem lock in cpufreq_ondemand and cpufreq_conservative
-anymore.  Lock should not be released until the work done.
+Warnings are treated as errors for arch/powerpc code, so build fails
+with CONFIG_I2C_SPI_UCODE_PATCH=y:
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=1594
+    CC      arch/powerpc/sysdev/micropatch.o
+  cc1: warnings being treated as errors
+  arch/powerpc/sysdev/micropatch.c: In function 'cpm_load_patch':
+  arch/powerpc/sysdev/micropatch.c:630: warning: unused variable 'smp'
+  make[1]: *** [arch/powerpc/sysdev/micropatch.o] Error 1
 
-Signed-off-by: Andrej Gelenberg <andrej.gelenberg@udo.edu>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Signed-off-by: Dave Jones <davej@redhat.com>
+And with CONFIG_USB_SOF_UCODE_PATCH=y:
+
+  CC      arch/powerpc/sysdev/micropatch.o
+  cc1: warnings being treated as errors
+  arch/powerpc/sysdev/micropatch.c: In function 'cpm_load_patch':
+  arch/powerpc/sysdev/micropatch.c:629: warning: unused variable 'spp'
+  arch/powerpc/sysdev/micropatch.c:628: warning: unused variable 'iip'
+  make[1]: *** [arch/powerpc/sysdev/micropatch.o] Error 1
+
+This patch fixes these issues by introducing proper #ifdefs.
+
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/cpufreq/cpufreq.c |   11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ arch/powerpc/sysdev/micropatch.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1774,17 +1774,8 @@ static int __cpufreq_set_policy(struct c
- 			dprintk("governor switch\n");
+--- a/arch/powerpc/sysdev/micropatch.c
++++ b/arch/powerpc/sysdev/micropatch.c
+@@ -626,9 +626,14 @@ cpm_load_patch(cpm8xx_t	*cp)
+ {
+ 	volatile uint		*dp;		/* Dual-ported RAM. */
+ 	volatile cpm8xx_t	*commproc;
++#if defined(CONFIG_I2C_SPI_UCODE_PATCH) || \
++    defined(CONFIG_I2C_SPI_SMC1_UCODE_PATCH)
+ 	volatile iic_t		*iip;
+ 	volatile struct spi_pram *spp;
++#ifdef CONFIG_I2C_SPI_SMC1_UCODE_PATCH
+ 	volatile smc_uart_t	*smp;
++#endif
++#endif
+ 	int	i;
  
- 			/* end old governor */
--			if (data->governor) {
--				/*
--				 * Need to release the rwsem around governor
--				 * stop due to lock dependency between
--				 * cancel_delayed_work_sync and the read lock
--				 * taken in the delayed work handler.
--				 */
--				unlock_policy_rwsem_write(data->cpu);
-+			if (data->governor)
- 				__cpufreq_governor(data, CPUFREQ_GOV_STOP);
--				lock_policy_rwsem_write(data->cpu);
--			}
- 
- 			/* start new governor */
- 			data->governor = policy->governor;
+ 	commproc = cp;
 
 
