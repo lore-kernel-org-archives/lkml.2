@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933308Ab0G3SjE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:39:04 -0400
-Received: from kroah.org ([198.145.64.141]:57909 "EHLO coco.kroah.org"
+	id S933335Ab0G3Sjg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:39:36 -0400
+Received: from kroah.org ([198.145.64.141]:57899 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759758Ab0G3Ry2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:28 -0400
+	id S1759747Ab0G3Ry0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:26 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:35 2010
-Message-Id: <20100730175135.671898639@clark.site>
+Message-Id: <20100730175135.496384408@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:40 -0700
+Date: Fri, 30 Jul 2010 10:50:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>
-Subject: [023/205] cifs: remove bogus first_time check in NTLMv2 session setup code
+        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
+Subject: [021/205] hwmon: (coretemp) Skip duplicate CPU entries
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 8a224d489454b7457105848610cfebebdec5638d upstream.
+commit d883b9f0977269d519469da72faec6a7f72cb489 upstream.
 
-This bug appears to be the result of a cut-and-paste mistake from the
-NTLMv1 code. The function to generate the MAC key was commented out, but
-not the conditional above it. The conditional then ended up causing the
-session setup key not to be copied to the buffer unless this was the
-first session on the socket, and that made all but the first NTLMv2
-session setup fail.
+On hyper-threaded CPUs, each core appears twice in the CPU list. Skip
+the second entry to avoid duplicate sensors.
 
-Fix this by removing the conditional and all of the commented clutter
-that made it difficult to see.
-
-Reported-by: Gunther Deschner <gdeschne@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Huaxu Wan <huaxu.wan@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/sess.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ drivers/hwmon/coretemp.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/sess.c
-+++ b/fs/cifs/sess.c
-@@ -723,15 +723,7 @@ ssetup_ntlmssp_authenticate:
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -356,6 +356,10 @@ struct pdev_entry {
+ 	struct list_head list;
+ 	struct platform_device *pdev;
+ 	unsigned int cpu;
++#ifdef CONFIG_SMP
++	u16 phys_proc_id;
++	u16 cpu_core_id;
++#endif
+ };
  
- 		/* calculate session key */
- 		setup_ntlmv2_rsp(ses, v2_sess_key, nls_cp);
--		if (first_time) /* should this be moved into common code
--				   with similar ntlmv2 path? */
--		/*   cifs_calculate_ntlmv2_mac_key(ses->server->mac_signing_key,
--				response BB FIXME, v2_sess_key); */
--
--		/* copy session key */
--
--	/*	memcpy(bcc_ptr, (char *)ntlm_session_key,LM2_SESS_KEY_SIZE);
--		bcc_ptr += LM2_SESS_KEY_SIZE; */
-+		/* FIXME: calculate MAC key */
- 		memcpy(bcc_ptr, (char *)v2_sess_key,
- 		       sizeof(struct ntlmv2_resp));
- 		bcc_ptr += sizeof(struct ntlmv2_resp);
+ static LIST_HEAD(pdev_list);
+@@ -366,6 +370,22 @@ static int __cpuinit coretemp_device_add
+ 	int err;
+ 	struct platform_device *pdev;
+ 	struct pdev_entry *pdev_entry;
++#ifdef CONFIG_SMP
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++#endif
++
++	mutex_lock(&pdev_list_mutex);
++
++#ifdef CONFIG_SMP
++	/* Skip second HT entry of each core */
++	list_for_each_entry(pdev_entry, &pdev_list, list) {
++		if (c->phys_proc_id == pdev_entry->phys_proc_id &&
++		    c->cpu_core_id == pdev_entry->cpu_core_id) {
++			err = 0;	/* Not an error */
++			goto exit;
++		}
++	}
++#endif
+ 
+ 	pdev = platform_device_alloc(DRVNAME, cpu);
+ 	if (!pdev) {
+@@ -389,7 +409,10 @@ static int __cpuinit coretemp_device_add
+ 
+ 	pdev_entry->pdev = pdev;
+ 	pdev_entry->cpu = cpu;
+-	mutex_lock(&pdev_list_mutex);
++#ifdef CONFIG_SMP
++	pdev_entry->phys_proc_id = c->phys_proc_id;
++	pdev_entry->cpu_core_id = c->cpu_core_id;
++#endif
+ 	list_add_tail(&pdev_entry->list, &pdev_list);
+ 	mutex_unlock(&pdev_list_mutex);
+ 
+@@ -400,6 +423,7 @@ exit_device_free:
+ exit_device_put:
+ 	platform_device_put(pdev);
+ exit:
++	mutex_unlock(&pdev_list_mutex);
+ 	return err;
+ }
+ 
 
 
