@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265Ab0G3SbV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:31:21 -0400
-Received: from kroah.org ([198.145.64.141]:58163 "EHLO coco.kroah.org"
+	id S933278Ab0G3Sb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:31:26 -0400
+Received: from kroah.org ([198.145.64.141]:58143 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759814Ab0G3RzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:39 2010
-Message-Id: <20100730175139.054224874@clark.site>
+	id S1759562Ab0G3RzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:38 2010
+Message-Id: <20100730175138.764331325@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:17 -0700
+Date: Fri, 30 Jul 2010 10:51:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        sroland@vmware.com, Alex Deucher <alexdeucher@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [060/205] drm/radeon/r200: handle more hw tex coord types
+        Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>
+Subject: [057/205] drm/i915: Define MI_ARB_STATE bits
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Scheidegger <sroland@vmware.com>
+From: Keith Packard <keithp@keithp.com>
 
-commit 688acaa2897462e4c5e2482496e2868db0760809 upstream.
+commit 45503ded966c98e604c9667c0b458d40666b9ef3 upstream.
 
-Code did not handle projected 2d and depth coordinates, meaning potentially
-set 3d or cube special handling might stick.
-(Not sure what depth coord actually does, but I guess handling it
-like a normal coordinate is the right thing to do.)
-Might be related to https://bugs.freedesktop.org/show_bug.cgi?id=26428
+The i915 memory arbiter has a register full of configuration
+bits which are currently not defined in the driver header file.
 
-Signed-off-by: sroland@vmware.com
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r200.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/i915_reg.h |   64 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
 
---- a/drivers/gpu/drm/radeon/r200.c
-+++ b/drivers/gpu/drm/radeon/r200.c
-@@ -415,6 +415,8 @@ int r200_packet0_check(struct radeon_cs_
- 		/* 2D, 3D, CUBE */
- 		switch (tmp) {
- 		case 0:
-+		case 3:
-+		case 4:
- 		case 5:
- 		case 6:
- 		case 7:
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -357,6 +357,70 @@
+ #define LM_BURST_LENGTH     0x00000700
+ #define LM_FIFO_WATERMARK   0x0000001F
+ #define MI_ARB_STATE	0x020e4 /* 915+ only */
++#define   MI_ARB_MASK_SHIFT	  16	/* shift for enable bits */
++
++/* Make render/texture TLB fetches lower priorty than associated data
++ *   fetches. This is not turned on by default
++ */
++#define   MI_ARB_RENDER_TLB_LOW_PRIORITY	(1 << 15)
++
++/* Isoch request wait on GTT enable (Display A/B/C streams).
++ * Make isoch requests stall on the TLB update. May cause
++ * display underruns (test mode only)
++ */
++#define   MI_ARB_ISOCH_WAIT_GTT			(1 << 14)
++
++/* Block grant count for isoch requests when block count is
++ * set to a finite value.
++ */
++#define   MI_ARB_BLOCK_GRANT_MASK		(3 << 12)
++#define   MI_ARB_BLOCK_GRANT_8			(0 << 12)	/* for 3 display planes */
++#define   MI_ARB_BLOCK_GRANT_4			(1 << 12)	/* for 2 display planes */
++#define   MI_ARB_BLOCK_GRANT_2			(2 << 12)	/* for 1 display plane */
++#define   MI_ARB_BLOCK_GRANT_0			(3 << 12)	/* don't use */
++
++/* Enable render writes to complete in C2/C3/C4 power states.
++ * If this isn't enabled, render writes are prevented in low
++ * power states. That seems bad to me.
++ */
++#define   MI_ARB_C3_LP_WRITE_ENABLE		(1 << 11)
++
++/* This acknowledges an async flip immediately instead
++ * of waiting for 2TLB fetches.
++ */
++#define   MI_ARB_ASYNC_FLIP_ACK_IMMEDIATE	(1 << 10)
++
++/* Enables non-sequential data reads through arbiter
++ */
++#define   MI_ARB_DUAL_DATA_PHASE_DISABLE       	(1 << 9)
++
++/* Disable FSB snooping of cacheable write cycles from binner/render
++ * command stream
++ */
++#define   MI_ARB_CACHE_SNOOP_DISABLE		(1 << 8)
++
++/* Arbiter time slice for non-isoch streams */
++#define   MI_ARB_TIME_SLICE_MASK		(7 << 5)
++#define   MI_ARB_TIME_SLICE_1			(0 << 5)
++#define   MI_ARB_TIME_SLICE_2			(1 << 5)
++#define   MI_ARB_TIME_SLICE_4			(2 << 5)
++#define   MI_ARB_TIME_SLICE_6			(3 << 5)
++#define   MI_ARB_TIME_SLICE_8			(4 << 5)
++#define   MI_ARB_TIME_SLICE_10			(5 << 5)
++#define   MI_ARB_TIME_SLICE_14			(6 << 5)
++#define   MI_ARB_TIME_SLICE_16			(7 << 5)
++
++/* Low priority grace period page size */
++#define   MI_ARB_LOW_PRIORITY_GRACE_4KB		(0 << 4)	/* default */
++#define   MI_ARB_LOW_PRIORITY_GRACE_8KB		(1 << 4)
++
++/* Disable display A/B trickle feed */
++#define   MI_ARB_DISPLAY_TRICKLE_FEED_DISABLE	(1 << 2)
++
++/* Set display plane priority */
++#define   MI_ARB_DISPLAY_PRIORITY_A_B		(0 << 0)	/* display A > display B */
++#define   MI_ARB_DISPLAY_PRIORITY_B_A		(1 << 0)	/* display B > display A */
++
+ #define CACHE_MODE_0	0x02120 /* 915+ only */
+ #define   CM0_MASK_SHIFT          16
+ #define   CM0_IZ_OPT_DISABLE      (1<<6)
 
 
