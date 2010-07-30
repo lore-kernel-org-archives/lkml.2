@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab0G3Kxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 06:53:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46219 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab0G3Kxi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 06:53:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=wYn26g/mVQm+gkuFbfThJ6Oydp7QMtAKxpkW6cWiGf1K7zqdIep0cxSmHNJaSrvvua
-         yW/W1dhuxjchTTmIktHngiw9mN0Oj8nOz+T25rgdYJGajgDNh+ji+jbuLfmJrAuAZ5fj
-         xL3BgncZKvF6h8kA9b54rJ9aS1YNlZDzRt1nk=
-MIME-Version: 1.0
-In-Reply-To: <4C52A307.7080002@canonical.com>
-References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
-	<1280440089-3203-2-git-send-email-john.johansen@canonical.com>
-	<AANLkTikk3tNM-fsXuS_SeAWgaYYCFrFAToRXOBkPxwy9@mail.gmail.com>
-	<4C52A307.7080002@canonical.com>
-Date: Fri, 30 Jul 2010 13:53:36 +0300
-X-Google-Sender-Auth: 7KLmTcNtR8iyoFLdOOVQwyXDRaY
-Message-ID: <AANLkTi=mcrGTMBonxby1gR1OijPB4z072i6cNsLxNU09@mail.gmail.com>
-Subject: Re: [PATCH 01/13] AppArmor: misc. base functions and defines
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, xiaosuo@gmail.com,
-        laijs@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756755Ab0G3K41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 06:56:27 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42163 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754553Ab0G3K4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 06:56:25 -0400
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Paul Mackerras <paulus@samba.org>,
+        Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linuxppc-dev@ozlabs.org
+In-Reply-To: <4C52913C.9020204@kernel.org>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+	 <4C52913C.9020204@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Jul 2010 20:28:10 +1000
+Message-ID: <1280485690.1902.8.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 1:01 PM, John Johansen
-<john.johansen@canonical.com> wrote:
->>> +/**
->>> + * kvfree - free an allocation do by kvmalloc
->>> + * @buffer: buffer to free (MAYBE_NULL)
->>> + *
->>> + * Free a buffer allocated by kvmalloc
->>> + */
->>> +void kvfree(void *buffer)
->>> +{
->>> +       if (is_vmalloc_addr(buffer)) {
->>> +               /* Data is no longer valid so just use the allocated space
->>> +                * as the work_struct
->>> +                */
->>> +               struct work_struct *work = (struct work_struct *) buffer;
->>> +               INIT_WORK(work, do_vfree);
->>> +               schedule_work(work);
->>
->> I don't understand this part here. Is it needed for interrupt contexts
->> or does vfree() sleep somewhere? If it's for the former, I think we
->> can just add a comment saying that kvmalloc/kvfree is not safe from
->> interrupt context and remove the schedule_work() parts here.
->
-> vfree can sleep, and skipping the schedule_work parts won't work for
-> apparmor as many of these allocations are being freed via rcu callbacks
-> as most of our object life cycles are dependent on cred refcounting.
+On Fri, 2010-07-30 at 10:45 +0200, Tejun Heo wrote:
+> On 07/29/2010 07:09 AM, Guenter Roeck wrote:
+> > The following comment is found in include/linux/sysfs.h:
+> > 
+> >    /* FIXME
+> >     * The *owner field is no longer used.
+> >     * x86 tree has been cleaned up. The owner
+> >     * attribute is still left for other arches.
+> >     */
+> > 
+> > As it turns out, the *owner field is (again?) initialized in several modules,
+> > suggesting that such initialization may be creeping back into the code.
+> > 
+> > This patch set removes the above comment, the *owner field, and each instance
+> > in the code where it was found to be initialized.
+> > 
+> > Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
+> > and sparc defconfig builds.
+> 
+> Yeah, the change is way overdue.  Maybe we should have just removed
+> them back then.
 
-Can someone point me to where vfree() actually sleeps? I'm unable to
-find the exact spot.
+I'm happy with the powerpc related patches as long as we all agree that
+needs to go. Do you need me to put some of this in powerpc.git or are
+you carrying them all to Linus ?
+
+Cheers,
+Ben.
+
+>  Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> Thanks.
+> 
+
+
