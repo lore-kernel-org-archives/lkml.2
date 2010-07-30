@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164Ab0G3R0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:26:16 -0400
-Received: from kroah.org ([198.145.64.141]:52166 "EHLO coco.kroah.org"
+	id S1758888Ab0G3R0T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:26:19 -0400
+Received: from kroah.org ([198.145.64.141]:52155 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758871Ab0G3RUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:05 -0400
+	id S1758867Ab0G3RUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:12 2010
-Message-Id: <20100730171512.150229560@clark.site>
+Message-Id: <20100730171512.061011933@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:06 -0700
+Date: Fri, 30 Jul 2010 10:16:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [138/165] GFS2: Fix up system xattrs
+        Michal Hocko <mhocko@suse.cz>, Darren Hart <dvhltc@us.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Nick Piggin <npiggin@suse.de>, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [137/165] futex: futex_find_get_task remove credentails check
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,282 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Whitehouse <swhiteho@redhat.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 2646a1f61a3b5525914757f10fa12b5b94713648 upstream.
+commit 7a0ea09ad5352efce8fe79ed853150449903b9f5 upstream.
 
-This code has been shamelessly stolen from XFS at the suggestion
-of Christoph Hellwig. I've not added support for cached ACLs so
-far... watch for that in a later patch, although this is designed
-in such a way that they should be easy to add.
+futex_find_get_task is currently used (through lookup_pi_state) from two
+contexts, futex_requeue and futex_lock_pi_atomic.  None of the paths
+looks it needs the credentials check, though.  Different (e)uids
+shouldn't matter at all because the only thing that is important for
+shared futex is the accessibility of the shared memory.
 
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
+The credentail check results in glibc assert failure or process hang (if
+glibc is compiled without assert support) for shared robust pthread
+mutex with priority inheritance if a process tries to lock already held
+lock owned by a process with a different euid:
+
+pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
+
+The problem is that futex_lock_pi_atomic which is called when we try to
+lock already held lock checks the current holder (tid is stored in the
+futex value) to get the PI state.  It uses lookup_pi_state which in turn
+gets task struct from futex_find_get_task.  ESRCH is returned either
+when the task is not found or if credentials check fails.
+
+futex_lock_pi_atomic simply returns if it gets ESRCH.  glibc code,
+however, doesn't expect that robust lock returns with ESRCH because it
+should get either success or owner died.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Darren Hart <dvhltc@us.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Nick Piggin <npiggin@suse.de>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/gfs2/acl.c   |  170 +++++++++++++++++++++++++++++++++++++-------------------
- fs/gfs2/acl.h   |   24 +------
- fs/gfs2/xattr.c |   18 -----
- 3 files changed, 120 insertions(+), 92 deletions(-)
+ kernel/futex.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
---- a/fs/gfs2/acl.c
-+++ b/fs/gfs2/acl.c
-@@ -12,6 +12,7 @@
- #include <linux/spinlock.h>
- #include <linux/completion.h>
- #include <linux/buffer_head.h>
-+#include <linux/xattr.h>
- #include <linux/posix_acl.h>
- #include <linux/posix_acl_xattr.h>
- #include <linux/gfs2_ondisk.h>
-@@ -26,61 +27,6 @@
- #include "trans.h"
- #include "util.h"
- 
--#define ACL_ACCESS 1
--#define ACL_DEFAULT 0
--
--int gfs2_acl_validate_set(struct gfs2_inode *ip, int access,
--			  struct gfs2_ea_request *er, int *remove, mode_t *mode)
--{
--	struct posix_acl *acl;
--	int error;
--
--	error = gfs2_acl_validate_remove(ip, access);
--	if (error)
--		return error;
--
--	if (!er->er_data)
--		return -EINVAL;
--
--	acl = posix_acl_from_xattr(er->er_data, er->er_data_len);
--	if (IS_ERR(acl))
--		return PTR_ERR(acl);
--	if (!acl) {
--		*remove = 1;
--		return 0;
--	}
--
--	error = posix_acl_valid(acl);
--	if (error)
--		goto out;
--
--	if (access) {
--		error = posix_acl_equiv_mode(acl, mode);
--		if (!error)
--			*remove = 1;
--		else if (error > 0)
--			error = 0;
--	}
--
--out:
--	posix_acl_release(acl);
--	return error;
--}
--
--int gfs2_acl_validate_remove(struct gfs2_inode *ip, int access)
--{
--	if (!GFS2_SB(&ip->i_inode)->sd_args.ar_posix_acl)
--		return -EOPNOTSUPP;
--	if (!is_owner_or_cap(&ip->i_inode))
--		return -EPERM;
--	if (S_ISLNK(ip->i_inode.i_mode))
--		return -EOPNOTSUPP;
--	if (!access && !S_ISDIR(ip->i_inode.i_mode))
--		return -EACCES;
--
--	return 0;
--}
--
- static int acl_get(struct gfs2_inode *ip, const char *name,
- 		   struct posix_acl **acl, struct gfs2_ea_location *el,
- 		   char **datap, unsigned int *lenp)
-@@ -277,3 +223,117 @@ out_brelse:
- 	return error;
- }
- 
-+static int gfs2_acl_type(const char *name)
-+{
-+	if (strcmp(name, GFS2_POSIX_ACL_ACCESS) == 0)
-+		return ACL_TYPE_ACCESS;
-+	if (strcmp(name, GFS2_POSIX_ACL_DEFAULT) == 0)
-+		return ACL_TYPE_DEFAULT;
-+	return -EINVAL;
-+}
-+
-+static int gfs2_xattr_system_get(struct inode *inode, const char *name,
-+				 void *buffer, size_t size)
-+{
-+	int type;
-+
-+	type = gfs2_acl_type(name);
-+	if (type < 0)
-+		return type;
-+
-+	return gfs2_xattr_get(inode, GFS2_EATYPE_SYS, name, buffer, size);
-+}
-+
-+static int gfs2_set_mode(struct inode *inode, mode_t mode)
-+{
-+	int error = 0;
-+
-+	if (mode != inode->i_mode) {
-+		struct iattr iattr;
-+
-+		iattr.ia_valid = ATTR_MODE;
-+		iattr.ia_mode = mode;
-+
-+		error = gfs2_setattr_simple(GFS2_I(inode), &iattr);
-+	}
-+
-+	return error;
-+}
-+
-+static int gfs2_xattr_system_set(struct inode *inode, const char *name,
-+				 const void *value, size_t size, int flags)
-+{
-+	struct gfs2_sbd *sdp = GFS2_SB(inode);
-+	struct posix_acl *acl = NULL;
-+	int error = 0, type;
-+
-+	if (!sdp->sd_args.ar_posix_acl)
-+		return -EOPNOTSUPP;
-+
-+	type = gfs2_acl_type(name);
-+	if (type < 0)
-+		return type;
-+	if (flags & XATTR_CREATE)
-+		return -EINVAL;
-+	if (type == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
-+		return value ? -EACCES : 0;
-+	if ((current_fsuid() != inode->i_uid) && !capable(CAP_FOWNER))
-+		return -EPERM;
-+	if (S_ISLNK(inode->i_mode))
-+		return -EOPNOTSUPP;
-+
-+	if (!value)
-+		goto set_acl;
-+
-+	acl = posix_acl_from_xattr(value, size);
-+	if (!acl) {
-+		/*
-+		 * acl_set_file(3) may request that we set default ACLs with
-+		 * zero length -- defend (gracefully) against that here.
-+		 */
-+		goto out;
-+	}
-+	if (IS_ERR(acl)) {
-+		error = PTR_ERR(acl);
-+		goto out;
-+	}
-+
-+	error = posix_acl_valid(acl);
-+	if (error)
-+		goto out_release;
-+
-+	error = -EINVAL;
-+	if (acl->a_count > GFS2_ACL_MAX_ENTRIES)
-+		goto out_release;
-+
-+	if (type == ACL_TYPE_ACCESS) {
-+		mode_t mode = inode->i_mode;
-+		error = posix_acl_equiv_mode(acl, &mode);
-+
-+		if (error <= 0) {
-+			posix_acl_release(acl);
-+			acl = NULL;
-+
-+			if (error < 0)
-+				return error;
-+		}
-+
-+		error = gfs2_set_mode(inode, mode);
-+		if (error)
-+			goto out_release;
-+	}
-+
-+set_acl:
-+	error = gfs2_xattr_set(inode, GFS2_EATYPE_SYS, name, value, size, 0);
-+out_release:
-+	posix_acl_release(acl);
-+out:
-+	return error;
-+}
-+
-+struct xattr_handler gfs2_xattr_system_handler = {
-+	.prefix = XATTR_SYSTEM_PREFIX,
-+	.get    = gfs2_xattr_system_get,
-+	.set    = gfs2_xattr_system_set,
-+};
-+
---- a/fs/gfs2/acl.h
-+++ b/fs/gfs2/acl.h
-@@ -13,26 +13,12 @@
- #include "incore.h"
- 
- #define GFS2_POSIX_ACL_ACCESS		"posix_acl_access"
--#define GFS2_POSIX_ACL_ACCESS_LEN	16
- #define GFS2_POSIX_ACL_DEFAULT		"posix_acl_default"
--#define GFS2_POSIX_ACL_DEFAULT_LEN	17
-+#define GFS2_ACL_MAX_ENTRIES		25
- 
--#define GFS2_ACL_IS_ACCESS(name, len) \
--         ((len) == GFS2_POSIX_ACL_ACCESS_LEN && \
--         !memcmp(GFS2_POSIX_ACL_ACCESS, (name), (len)))
--
--#define GFS2_ACL_IS_DEFAULT(name, len) \
--         ((len) == GFS2_POSIX_ACL_DEFAULT_LEN && \
--         !memcmp(GFS2_POSIX_ACL_DEFAULT, (name), (len)))
--
--struct gfs2_ea_request;
--
--int gfs2_acl_validate_set(struct gfs2_inode *ip, int access,
--			  struct gfs2_ea_request *er,
--			  int *remove, mode_t *mode);
--int gfs2_acl_validate_remove(struct gfs2_inode *ip, int access);
--int gfs2_check_acl(struct inode *inode, int mask);
--int gfs2_acl_create(struct gfs2_inode *dip, struct gfs2_inode *ip);
--int gfs2_acl_chmod(struct gfs2_inode *ip, struct iattr *attr);
-+extern int gfs2_check_acl(struct inode *inode, int mask);
-+extern int gfs2_acl_create(struct gfs2_inode *dip, struct gfs2_inode *ip);
-+extern int gfs2_acl_chmod(struct gfs2_inode *ip, struct iattr *attr);
-+extern struct xattr_handler gfs2_xattr_system_handler;
- 
- #endif /* __ACL_DOT_H__ */
---- a/fs/gfs2/xattr.c
-+++ b/fs/gfs2/xattr.c
-@@ -1507,18 +1507,6 @@ static int gfs2_xattr_user_set(struct in
- 	return gfs2_xattr_set(inode, GFS2_EATYPE_USR, name, value, size, flags);
- }
- 
--static int gfs2_xattr_system_get(struct inode *inode, const char *name,
--				 void *buffer, size_t size)
--{
--	return gfs2_xattr_get(inode, GFS2_EATYPE_SYS, name, buffer, size);
--}
--
--static int gfs2_xattr_system_set(struct inode *inode, const char *name,
--				 const void *value, size_t size, int flags)
--{
--	return gfs2_xattr_set(inode, GFS2_EATYPE_SYS, name, value, size, flags);
--}
--
- static int gfs2_xattr_security_get(struct inode *inode, const char *name,
- 				   void *buffer, size_t size)
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -429,20 +429,11 @@ static void free_pi_state(struct futex_p
+ static struct task_struct * futex_find_get_task(pid_t pid)
  {
-@@ -1543,12 +1531,6 @@ static struct xattr_handler gfs2_xattr_s
- 	.set    = gfs2_xattr_security_set,
- };
+ 	struct task_struct *p;
+-	const struct cred *cred = current_cred(), *pcred;
  
--static struct xattr_handler gfs2_xattr_system_handler = {
--	.prefix = XATTR_SYSTEM_PREFIX,
--	.get    = gfs2_xattr_system_get,
--	.set    = gfs2_xattr_system_set,
--};
--
- struct xattr_handler *gfs2_xattr_handlers[] = {
- 	&gfs2_xattr_user_handler,
- 	&gfs2_xattr_security_handler,
+ 	rcu_read_lock();
+ 	p = find_task_by_vpid(pid);
+-	if (!p) {
+-		p = ERR_PTR(-ESRCH);
+-	} else {
+-		pcred = __task_cred(p);
+-		if (cred->euid != pcred->euid &&
+-		    cred->euid != pcred->uid)
+-			p = ERR_PTR(-ESRCH);
+-		else
+-			get_task_struct(p);
+-	}
++	if (p)
++		get_task_struct(p);
+ 
+ 	rcu_read_unlock();
+ 
+@@ -564,8 +555,8 @@ lookup_pi_state(u32 uval, struct futex_h
+ 	if (!pid)
+ 		return -ESRCH;
+ 	p = futex_find_get_task(pid);
+-	if (IS_ERR(p))
+-		return PTR_ERR(p);
++	if (!p)
++		return -ESRCH;
+ 
+ 	/*
+ 	 * We need to look at the task state flags to figure out,
 
 
