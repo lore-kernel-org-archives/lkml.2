@@ -1,100 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760686Ab0G3TXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:23:18 -0400
-Received: from kroah.org ([198.145.64.141]:46169 "EHLO coco.kroah.org"
+	id S1759827Ab0G3Tn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:43:59 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:41815 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754014Ab0G3RRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:17:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:00 2010
-Message-Id: <20100730171500.238584851@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:13:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
-Subject: [006/165] hwmon: (coretemp) Skip duplicate CPU entries
-In-Reply-To: <20100730171550.GA1299@kroah.com
+	id S1754990Ab0G3Tn5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 15:43:57 -0400
+X-IronPort-AV: E=Sophos;i="4.55,288,1278313200"; 
+   d="scan'208";a="415825190"
+Subject: [GIT PULL] Please pull NFS client bugfixes for 2.6.35-rc6
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Fri, 30 Jul 2010 15:43:55 -0400
+Message-ID: <1280519035.12852.32.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+X-OriginalArrivalTime: 30 Jul 2010 19:43:56.0800 (UTC) FILETIME=[8C68F800:01CB301F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+Hi Linus,
 
-------------------
+Please pull from the "bugfixes" branch of the repository at
 
-From: Jean Delvare <khali@linux-fr.org>
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
 
-commit d883b9f0977269d519469da72faec6a7f72cb489 upstream.
+This will update the following files through the appended changesets.
 
-On hyper-threaded CPUs, each core appears twice in the CPU list. Skip
-the second entry to avoid duplicate sensors.
+  Cheers,
+    Trond
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Huaxu Wan <huaxu.wan@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+----
+ fs/nfs/file.c          |   13 +++++++++++--
+ fs/nfs/nfsroot.c       |    2 +-
+ fs/nfs/write.c         |   27 +++++++++++++++++++--------
+ include/linux/nfs_fs.h |    1 +
+ 4 files changed, 32 insertions(+), 11 deletions(-)
 
----
- drivers/hwmon/coretemp.c |   26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+commit cfb506e1d330387dfaf334dd493b3773d388863d
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Jul 30 15:31:57 2010 -0400
 
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -356,6 +356,10 @@ struct pdev_entry {
- 	struct list_head list;
- 	struct platform_device *pdev;
- 	unsigned int cpu;
-+#ifdef CONFIG_SMP
-+	u16 phys_proc_id;
-+	u16 cpu_core_id;
-+#endif
- };
+    NFS: Ensure that writepage respects the nonblock flag
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b608b283a962caaa280756bc8563016a71712acf
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Jul 30 15:31:54 2010 -0400
+
+    NFS: kswapd must not block in nfs_release_page
+    
+    See https://bugzilla.kernel.org/show_bug.cgi?id=16056
+    
+    If other processes are blocked waiting for kswapd to free up some memory so
+    that they can make progress, then we cannot allow kswapd to block on those
+    processes.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit 674b2222920012244ca59978b356b25412a8dcc7
+Author: Dan Carpenter <error27@gmail.com>
+Date:   Tue Jul 13 13:34:59 2010 +0200
+
+    nfs: include space for the NUL in root path
+    
+    In root_nfs_name() it does the following:
+    
+            if (strlen(buf) + strlen(cp) > NFS_MAXPATHLEN) {
+                    printk(KERN_ERR "Root-NFS: Pathname for remote directory too long.\n");
+                    return -1;
+            }
+            sprintf(nfs_export_path, buf, cp);
+    
+    In the original code if (strlen(buf) + strlen(cp) == NFS_MAXPATHLEN)
+    then the sprintf() would lead to an overflow.  Generally the rest of the
+    code assumes that the path can have NFS_MAXPATHLEN (1024) characters and
+    a NUL terminator so the fix is to add space to the nfs_export_path[]
+    buffer.
+    
+    Signed-off-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 36a5e74..f036153 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -27,6 +27,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/aio.h>
+ #include <linux/gfp.h>
++#include <linux/swap.h>
  
- static LIST_HEAD(pdev_list);
-@@ -366,6 +370,22 @@ static int __cpuinit coretemp_device_add
- 	int err;
- 	struct platform_device *pdev;
- 	struct pdev_entry *pdev_entry;
-+#ifdef CONFIG_SMP
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+#endif
+ #include <asm/uaccess.h>
+ #include <asm/system.h>
+@@ -493,11 +494,19 @@ static void nfs_invalidate_page(struct page *page, unsigned long offset)
+  */
+ static int nfs_release_page(struct page *page, gfp_t gfp)
+ {
++	struct address_space *mapping = page->mapping;
 +
-+	mutex_lock(&pdev_list_mutex);
+ 	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
+ 
+ 	/* Only do I/O if gfp is a superset of GFP_KERNEL */
+-	if ((gfp & GFP_KERNEL) == GFP_KERNEL)
+-		nfs_wb_page(page->mapping->host, page);
++	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
++		int how = FLUSH_SYNC;
 +
-+#ifdef CONFIG_SMP
-+	/* Skip second HT entry of each core */
-+	list_for_each_entry(pdev_entry, &pdev_list, list) {
-+		if (c->phys_proc_id == pdev_entry->phys_proc_id &&
-+		    c->cpu_core_id == pdev_entry->cpu_core_id) {
-+			err = 0;	/* Not an error */
-+			goto exit;
-+		}
++		/* Don't let kswapd deadlock waiting for OOM RPC calls */
++		if (current_is_kswapd())
++			how = 0;
++		nfs_commit_inode(mapping->host, how);
 +	}
-+#endif
+ 	/* If PagePrivate() is set, then the page is not freeable */
+ 	if (PagePrivate(page))
+ 		return 0;
+diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
+index 6bd19d8..df101d9 100644
+--- a/fs/nfs/nfsroot.c
++++ b/fs/nfs/nfsroot.c
+@@ -105,7 +105,7 @@ static char nfs_root_name[256] __initdata = "";
+ static __be32 servaddr __initdata = 0;
  
- 	pdev = platform_device_alloc(DRVNAME, cpu);
- 	if (!pdev) {
-@@ -389,7 +409,10 @@ static int __cpuinit coretemp_device_add
+ /* Name of directory to mount */
+-static char nfs_export_path[NFS_MAXPATHLEN] __initdata = { 0, };
++static char nfs_export_path[NFS_MAXPATHLEN + 1] __initdata = { 0, };
  
- 	pdev_entry->pdev = pdev;
- 	pdev_entry->cpu = cpu;
--	mutex_lock(&pdev_list_mutex);
-+#ifdef CONFIG_SMP
-+	pdev_entry->phys_proc_id = c->phys_proc_id;
-+	pdev_entry->cpu_core_id = c->cpu_core_id;
-+#endif
- 	list_add_tail(&pdev_entry->list, &pdev_list);
- 	mutex_unlock(&pdev_list_mutex);
- 
-@@ -400,6 +423,7 @@ exit_device_free:
- exit_device_put:
- 	platform_device_put(pdev);
- exit:
-+	mutex_unlock(&pdev_list_mutex);
- 	return err;
+ /* NFS-related data */
+ static struct nfs_mount_data nfs_data __initdata = { 0, };/* NFS mount info */
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 91679e2..bb72ad3 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -222,7 +222,7 @@ static void nfs_end_page_writeback(struct page *page)
+ 		clear_bdi_congested(&nfss->backing_dev_info, BLK_RW_ASYNC);
  }
  
-
+-static struct nfs_page *nfs_find_and_lock_request(struct page *page)
++static struct nfs_page *nfs_find_and_lock_request(struct page *page, bool nonblock)
+ {
+ 	struct inode *inode = page->mapping->host;
+ 	struct nfs_page *req;
+@@ -241,7 +241,10 @@ static struct nfs_page *nfs_find_and_lock_request(struct page *page)
+ 		 *	 request as dirty (in which case we don't care).
+ 		 */
+ 		spin_unlock(&inode->i_lock);
+-		ret = nfs_wait_on_request(req);
++		if (!nonblock)
++			ret = nfs_wait_on_request(req);
++		else
++			ret = -EAGAIN;
+ 		nfs_release_request(req);
+ 		if (ret != 0)
+ 			return ERR_PTR(ret);
+@@ -256,12 +259,12 @@ static struct nfs_page *nfs_find_and_lock_request(struct page *page)
+  * May return an error if the user signalled nfs_wait_on_request().
+  */
+ static int nfs_page_async_flush(struct nfs_pageio_descriptor *pgio,
+-				struct page *page)
++				struct page *page, bool nonblock)
+ {
+ 	struct nfs_page *req;
+ 	int ret = 0;
+ 
+-	req = nfs_find_and_lock_request(page);
++	req = nfs_find_and_lock_request(page, nonblock);
+ 	if (!req)
+ 		goto out;
+ 	ret = PTR_ERR(req);
+@@ -283,12 +286,20 @@ out:
+ static int nfs_do_writepage(struct page *page, struct writeback_control *wbc, struct nfs_pageio_descriptor *pgio)
+ {
+ 	struct inode *inode = page->mapping->host;
++	int ret;
+ 
+ 	nfs_inc_stats(inode, NFSIOS_VFSWRITEPAGE);
+ 	nfs_add_stats(inode, NFSIOS_WRITEPAGES, 1);
+ 
+ 	nfs_pageio_cond_complete(pgio, page->index);
+-	return nfs_page_async_flush(pgio, page);
++	ret = nfs_page_async_flush(pgio, page,
++			wbc->sync_mode == WB_SYNC_NONE ||
++			wbc->nonblocking != 0);
++	if (ret == -EAGAIN) {
++		redirty_page_for_writepage(wbc, page);
++		ret = 0;
++	}
++	return ret;
+ }
+ 
+ /*
+@@ -1379,7 +1390,7 @@ static const struct rpc_call_ops nfs_commit_ops = {
+ 	.rpc_release = nfs_commit_release,
+ };
+ 
+-static int nfs_commit_inode(struct inode *inode, int how)
++int nfs_commit_inode(struct inode *inode, int how)
+ {
+ 	LIST_HEAD(head);
+ 	int may_wait = how & FLUSH_SYNC;
+@@ -1443,7 +1454,7 @@ out_mark_dirty:
+ 	return ret;
+ }
+ #else
+-static int nfs_commit_inode(struct inode *inode, int how)
++int nfs_commit_inode(struct inode *inode, int how)
+ {
+ 	return 0;
+ }
+@@ -1546,7 +1557,7 @@ int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
+ 
+ 	nfs_fscache_release_page(page, GFP_KERNEL);
+ 
+-	req = nfs_find_and_lock_request(page);
++	req = nfs_find_and_lock_request(page, false);
+ 	ret = PTR_ERR(req);
+ 	if (IS_ERR(req))
+ 		goto out;
+diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+index 77c2ae5..f6e2455 100644
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -493,6 +493,7 @@ extern int nfs_wb_all(struct inode *inode);
+ extern int nfs_wb_page(struct inode *inode, struct page* page);
+ extern int nfs_wb_page_cancel(struct inode *inode, struct page* page);
+ #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
++extern int  nfs_commit_inode(struct inode *, int);
+ extern struct nfs_write_data *nfs_commitdata_alloc(void);
+ extern void nfs_commit_free(struct nfs_write_data *wdata);
+ #endif
 
