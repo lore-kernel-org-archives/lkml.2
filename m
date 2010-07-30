@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab0G3EgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 00:36:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64461 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab0G3Ef7 (ORCPT
+	id S1752024Ab0G3EhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 00:37:13 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49474 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab0G3EhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 00:35:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=wXVTt9NZjaQ3jVdf7aHAcF4lrB0gBaSBLTI2EvuzFP4XQVKnUBi8UHfPF4CYTRHjbk
-         hFwVKTqjSm7ZyJ8CB7WzawwJoMgJk4ZNeiutO+Hzw5u+VpY+O38anWqSmhvz4uMD2Fqw
-         WCQood4oIQHzyUDBNFgyp7iXgV90ljXFiYh7k=
+	Fri, 30 Jul 2010 00:37:11 -0400
 MIME-Version: 1.0
-Date: Thu, 29 Jul 2010 22:35:57 -0600
-Message-ID: <AANLkTimnXJpz-zbJnw6GxN+TrN8g13iTjNF9Weogg-dr@mail.gmail.com>
-Subject: [ANNOUNCE] Merkey's Linux Kernel Debugger (MDB) 07-28-2010 UPDATES 
-	kernels 2.6.28 through 2.6.34.1
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4C51E36F.6060906@redhat.com>
+References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> 
+	<AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> 
+	<4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> 
+	<20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com> 
+	<20100729195616.GF1981@nb.net.home> <4C51E36F.6060906@redhat.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 30 Jul 2010 06:36:55 +0200
+Message-ID: <AANLkTimq0UVtR-ooutKTfOOE=cS-vxR4gR-aVc1feOzJ@mail.gmail.com>
+Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
+To: Milan Broz <mbroz@redhat.com>
+Cc: Karel Zak <kzak@redhat.com>, util-linux-ng@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For kernels:
+On Thu, Jul 29, 2010 at 22:24, Milan Broz <mbroz@redhat.com> wrote:
+> On 07/29/2010 09:56 PM, Karel Zak wrote:
+>>> Sure it does. Sysfs attributes need to be created _before_ uevents are
+>>> sent out. The current behavior is that all blockdev attributes are
+>>> safely created before the event is sent. These loop attributes are
+>>> created _after_ the event is sent.
+>>>
+>>> The question is if we can rely on the fact, that 'add' events never
+>>> want to look at any of these attributes, and all can be deferred to
+>
+> The problem is that add_disk() initializes kobject and announces device.
+> How can I add some new attributes (subdir) with the current code
+> before it happens?
 
-linux 2.6.28.10
-linux 2.6.29.6
-linux 2.6.30.10
-linux 2.6.31.14
-linux 2.6.32.16
-linux 2.6.33.6
-linux 2.6.34.1
+Use attribute groups, and assign them to the class, or in this case to
+the device before it is registered. All this stuff is created by the
+core before the event is sent out. It also takes care of the subdir,
+instead rolling your own kobject stuff, does proper error handling,
+and cleans-up things in the proper order, without any further custom
+code.
 
-CURRENT
-http://merkeydebugger.googlecode.com/files/mdb-2.6.28.10-x86_64-07-28-2010.patch
-http://merkeydebugger.googlecode.com/files/mdb-2.6.29.6-x86_64-07-28-2010.patch
-http://merkeydebugger.googlecode.com/files/mdb-2.6.30.10-x86_64-07-28-2010.patch
-http://merkeydebugger.googlecode.com/files/mdb-2.6.31.14-x86_64-07-28-2010.patch
-http://merkeydebugger.googlecode.com/files/mdb-2.6.32.16-x86_64-07-28-2010.patch
-http://merkeydebugger.googlecode.com/files/mdb-2.6.33.6-x86_64-07-28-2010.patch
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34.1-x86_64-07-28-2010.patch
+Alternatively, these attributes could be created and removed/created
+with the ioctl, and before the 'change' event, only if there is an
+active backing file, but I would expect the attribute group at the
+device to work just fine.
 
-FIXES:
-- fix UP build with CONFIG_SMP conditionals all kernels
-- fix warn_slowpath_null messages from WARN_CONSOLE_LOCKED all kernels
-- regression test all kernels 2.6.28 through 2.6.34.1
+> And why it is problem at all? After configuration there is always change
+> event and at this time attributes are there.
 
-TODO:
-- Integrate GDB opcodes library for all Linux architectures
+As said, if we can rely on this fact, and there will never be any
+attribute now, or added in the future, to this block of attributes,
+this might be just fine, that's why I ask ...
+
+We spent a lot of time to get the sysfs timing right, fix all the
+subsystems, and make udev work with all sorts of attributes which have
+been created like this. To add out-of-band attribute creation timing
+today, there needs to be a very good reason to do so.
+
+If you need any help with a try to a switch to the attribute group,
+please let me know.
+
+Kay
