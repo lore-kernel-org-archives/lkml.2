@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab0G3RUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:20:06 -0400
-Received: from kroah.org ([198.145.64.141]:52119 "EHLO coco.kroah.org"
+	id S1759119Ab0G3RZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:25:39 -0400
+Received: from kroah.org ([198.145.64.141]:52166 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756930Ab0G3RT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:58 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:11 2010
-Message-Id: <20100730171511.621396813@clark.site>
+	id S1758797Ab0G3RUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:12 2010
+Message-Id: <20100730171512.517341960@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:00 -0700
+Date: Fri, 30 Jul 2010 10:16:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frank Mayhar <fmayhar@google.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [132/165] ext4: Make fsync sync new parent directories in no-journal mode
+        Daniel Mack <daniel@caiaq.de>, Alagu Sankar <alagusankar@embwise.com>,
+        Volker Ernst <volker.ernst@txtr.com>, Dan Williams <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Holger Schurig <hs4233@mail.mn-solutions.de>,
+        Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [142/165] libertas/sdio: 8686: set ECSI bit for 1-bit transfers
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,92 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 14ece1028b3ed53ffec1b1213ffc6acaf79ad77c upstream (as of v2.6.34-git13)
+From: Daniel Mack <daniel@caiaq.de>
 
-Add a new ext4 state to tell us when a file has been newly created; use
-that state in ext4_sync_file in no-journal mode to tell us when we need
-to sync the parent directory as well as the inode and data itself.  This
-fixes a problem in which a panic or power failure may lose the entire
-file even when using fsync, since the parent directory entry is lost.
+commit 8a64c0f6b7ec7f758c4ef445e49f479e27fa2236 upstream.
 
-Addresses-Google-Bug: #2480057
+When operating in 1-bit mode, SDAT1 is used as dedicated interrupt line.
+However, the 8686 will only drive this line when the ECSI bit is set in
+the CCCR_IF register.
 
-Signed-off-by: Frank Mayhar <fmayhar@google.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Thanks to Alagu Sankar for pointing me in the right direction.
+
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Alagu Sankar <alagusankar@embwise.com>
+Cc: Volker Ernst <volker.ernst@txtr.com>
+Cc: Dan Williams <dcbw@redhat.com>
+Cc: John W. Linville <linville@tuxdriver.com>
+Cc: Holger Schurig <hs4233@mail.mn-solutions.de>
+Cc: Bing Zhao <bzhao@marvell.com>
+Cc: libertas-dev@lists.infradead.org
+Cc: linux-wireless@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
+Acked-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- fs/ext4/ext4.h  |    1 +
- fs/ext4/fsync.c |   31 +++++++++++++++++++++++++++++--
- fs/ext4/namei.c |    2 ++
- 3 files changed, 32 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1142,6 +1142,7 @@ enum {
- 	EXT4_STATE_DA_ALLOC_CLOSE,	/* Alloc DA blks on close */
- 	EXT4_STATE_EXT_MIGRATE,		/* Inode is migrating */
- 	EXT4_STATE_DIO_UNWRITTEN,	/* need convert on dio done*/
-+	EXT4_STATE_NEWENTRY,		/* File just added to dir */
- };
+---
+ drivers/net/wireless/libertas/if_sdio.c |   22 ++++++++++++++++++++++
+ include/linux/mmc/sdio.h                |    2 ++
+ 2 files changed, 24 insertions(+)
+
+--- a/drivers/net/wireless/libertas/if_sdio.c
++++ b/drivers/net/wireless/libertas/if_sdio.c
+@@ -34,6 +34,8 @@
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/sdio_func.h>
+ #include <linux/mmc/sdio_ids.h>
++#include <linux/mmc/sdio.h>
++#include <linux/mmc/host.h>
  
- #define EXT4_INODE_BIT_FNS(name, field)					\
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -35,6 +35,29 @@
- #include <trace/events/ext4.h>
+ #include "host.h"
+ #include "decl.h"
+@@ -883,6 +885,7 @@ static int if_sdio_probe(struct sdio_fun
+ 	int ret, i;
+ 	unsigned int model;
+ 	struct if_sdio_packet *packet;
++	struct mmc_host *host = func->card->host;
  
- /*
-+ * If we're not journaling and this is a just-created file, we have to
-+ * sync our parent directory (if it was freshly created) since
-+ * otherwise it will only be written by writeback, leaving a huge
-+ * window during which a crash may lose the file.  This may apply for
-+ * the parent directory's parent as well, and so on recursively, if
-+ * they are also freshly created.
-+ */
-+static void ext4_sync_parent(struct inode *inode)
-+{
-+	struct dentry *dentry = NULL;
+ 	lbs_deb_enter(LBS_DEB_SDIO);
+ 
+@@ -963,6 +966,25 @@ static int if_sdio_probe(struct sdio_fun
+ 	if (ret)
+ 		goto disable;
+ 
++	/* For 1-bit transfers to the 8686 model, we need to enable the
++	 * interrupt flag in the CCCR register. Set the MMC_QUIRK_LENIENT_FN0
++	 * bit to allow access to non-vendor registers. */
++	if ((card->model == IF_SDIO_MODEL_8686) &&
++	    (host->caps & MMC_CAP_SDIO_IRQ) &&
++	    (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
++		u8 reg;
 +
-+	while (inode && ext4_test_inode_state(inode, EXT4_STATE_NEWENTRY)) {
-+		ext4_clear_inode_state(inode, EXT4_STATE_NEWENTRY);
-+		dentry = list_entry(inode->i_dentry.next,
-+				    struct dentry, d_alias);
-+		if (!dentry || !dentry->d_parent || !dentry->d_parent->d_inode)
-+			break;
-+		inode = dentry->d_parent->d_inode;
-+		sync_mapping_buffers(inode->i_mapping);
-+	}
-+}
++		func->card->quirks |= MMC_QUIRK_LENIENT_FN0;
++		reg = sdio_f0_readb(func, SDIO_CCCR_IF, &ret);
++		if (ret)
++			goto release_int;
 +
-+/*
-  * akpm: A new design for ext4_sync_file().
-  *
-  * This is only called from sys_fsync(), sys_fdatasync() and sys_msync().
-@@ -67,8 +90,12 @@ int ext4_sync_file(struct file *file, st
- 	if (ret < 0)
- 		return ret;
- 
--	if (!journal)
--		return simple_fsync(file, dentry, datasync);
-+	if (!journal) {
-+		ret = simple_fsync(file, dentry, datasync);
-+		if (!ret && !list_empty(&inode->i_dentry))
-+			ext4_sync_parent(inode);
-+		return ret;
++		reg |= SDIO_BUS_ECSI;
++		sdio_f0_writeb(func, reg, SDIO_CCCR_IF, &ret);
++		if (ret)
++			goto release_int;
 +	}
++
+ 	card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
+ 	if (ret)
+ 		goto release_int;
+--- a/include/linux/mmc/sdio.h
++++ b/include/linux/mmc/sdio.h
+@@ -94,6 +94,8 @@
  
- 	/*
- 	 * data=writeback,ordered:
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1525,6 +1525,8 @@ static int ext4_add_entry(handle_t *hand
- 	de->rec_len = ext4_rec_len_to_disk(blocksize, blocksize);
- 	retval = add_dirent_to_buf(handle, dentry, inode, de, bh);
- 	brelse(bh);
-+	if (retval == 0)
-+		ext4_set_inode_state(inode, EXT4_STATE_NEWENTRY);
- 	return retval;
- }
+ #define  SDIO_BUS_WIDTH_1BIT	0x00
+ #define  SDIO_BUS_WIDTH_4BIT	0x02
++#define  SDIO_BUS_ECSI		0x20	/* Enable continuous SPI interrupt */
++#define  SDIO_BUS_SCSI		0x40	/* Support continuous SPI interrupt */
+ 
+ #define  SDIO_BUS_CD_DISABLE     0x80	/* disable pull-up on DAT3 (pin 1) */
  
 
 
