@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab0G3SZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:25:43 -0400
-Received: from kroah.org ([198.145.64.141]:58507 "EHLO coco.kroah.org"
+	id S932966Ab0G3S0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:26:01 -0400
+Received: from kroah.org ([198.145.64.141]:58491 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759963Ab0G3Rzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:39 -0400
+	id S1759956Ab0G3Rzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:41 2010
-Message-Id: <20100730175141.142808738@clark.site>
+Message-Id: <20100730175140.967667541@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:40 -0700
+Date: Fri, 30 Jul 2010 10:51:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Prasad <prasad@linux.vnet.ibm.com>
-Subject: [083/205] x86: Send a SIGTRAP for user icebp traps
+        Jamie Iles <jamie.iles@picochip.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [081/205] ARM: 6205/1: perf: ensure counter delta is treated as unsigned
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,82 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit a1e80fafc9f0742a1776a0490258cb64912411b0 upstream.
+commit 446a5a8b1eb91a6990e5c8fe29f14e7a95b69132 upstream.
 
-Before we had a generic breakpoint layer, x86 used to send a
-sigtrap for any debug event that happened in userspace,
-except if it was caused by lazy dr7 switches.
+Hardware performance counters on ARM are 32-bits wide but atomic64_t
+variables are used to represent counter data in the hw_perf_event structure.
 
-Currently we only send such signal for single step or breakpoint
-events.
+The armpmu_event_update function right-shifts a signed 64-bit delta variable
+and adds the result to the event count. This can lead to shifting in sign-bits
+if the MSB of the 32-bit counter value is set. This results in perf output
+such as:
 
-However, there are three other kind of debug exceptions:
+ Performance counter stats for 'sleep 20':
 
-- debug register access detected: trigger an exception if the
-  next instruction touches the debug registers. We don't use
-  it.
-- task switch, but we don't use tss.
-- icebp/int01 trap. This instruction (0xf1) is undocumented and
-  generates an int 1 exception. Unlike single step through TF
-  flag, it doesn't set the single step origin of the exception
-  in dr6.
+ 18446744073460670464  cycles             <-- 0xFFFFFFFFF12A6000
+        7783773  instructions             #      0.000 IPC
+            465  context-switches
+            161  page-faults
+        1172393  branches
 
-icebp then used to be reported in userspace using trap signals
-but this have been incidentally broken with the new breakpoint
-code. Reenable this. Since this is the only debug event that
-doesn't set anything in dr6, this is all we have to check.
+   20.154242147  seconds time elapsed
 
-This fixes a regression in Wine where World Of Warcraft got broken
-as it uses this for software protection checks purposes. And
-probably other apps do.
+This patch ensures that the delta value is treated as unsigned so that the
+right shift sets the upper bits to zero.
 
-Reported-and-tested-by: Alexandre Julliard <julliard@winehq.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Prasad <prasad@linux.vnet.ibm.com>
+Acked-by: Jamie Iles <jamie.iles@picochip.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/traps.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/arm/kernel/perf_event.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -529,6 +529,7 @@ asmlinkage __kprobes struct pt_regs *syn
- dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -165,7 +165,7 @@ armpmu_event_update(struct perf_event *e
  {
- 	struct task_struct *tsk = current;
-+	int user_icebp = 0;
- 	unsigned long dr6;
- 	int si_code;
+ 	int shift = 64 - 32;
+ 	s64 prev_raw_count, new_raw_count;
+-	s64 delta;
++	u64 delta;
  
-@@ -537,6 +538,14 @@ dotraplinkage void __kprobes do_debug(st
- 	/* Filter out all the reserved bits which are preset to 1 */
- 	dr6 &= ~DR6_RESERVED;
- 
-+	/*
-+	 * If dr6 has no reason to give us about the origin of this trap,
-+	 * then it's very likely the result of an icebp/int01 trap.
-+	 * User wants a sigtrap for that.
-+	 */
-+	if (!dr6 && user_mode(regs))
-+		user_icebp = 1;
-+
- 	/* Catch kmemcheck conditions first of all! */
- 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
- 		return;
-@@ -578,7 +587,7 @@ dotraplinkage void __kprobes do_debug(st
- 		regs->flags &= ~X86_EFLAGS_TF;
- 	}
- 	si_code = get_si_code(tsk->thread.debugreg6);
--	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS))
-+	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
- 		send_sigtrap(tsk, regs, error_code, si_code);
- 	preempt_conditional_cli(regs);
- 
+ again:
+ 	prev_raw_count = atomic64_read(&hwc->prev_count);
 
 
