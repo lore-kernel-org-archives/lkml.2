@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab0G3Psh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 11:48:37 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54769 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439Ab0G3PrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 11:47:13 -0400
+	id S1753896Ab0G3Pqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 11:46:37 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:44698 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753739Ab0G3Pqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 11:46:34 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -14,9 +13,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v3 13/15] ima: add ima_inode_setxattr and ima_inode_removexattr
-Date: Fri, 30 Jul 2010 11:45:44 -0400
-Message-Id: <1280504746-20256-14-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v3 05/15] security: imbed evm calls in security hooks
+Date: Fri, 30 Jul 2010 11:45:36 -0400
+Message-Id: <1280504746-20256-6-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1280504746-20256-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1280504746-20256-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -24,116 +23,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on xattr_permission comments, the restriction to modify
-'security' xattr is left up to the underlying fs or lsm. Ensure
-that not just anyone can modify or remove 'security.ima'.
+Imbed the evm calls evm_inode_setxattr(), evm_inode_post_setxattr(),
+evm_inode_removexattr() in the security hooks.  evm_inode_setxattr()
+protects security.evm xattr.  evm_inode_post_setxattr() and
+evm_inode_removexattr() updates the hmac associated with an inode.
+
+(Assumes an LSM module protects the setting/removing of xattr.)
 
 Changelog:
-  - Replace CAP_MAC_ADMIN with CAP_SYS_ADMIN
-  - static inline ima_inode_setxattr()/ima_inode_removexattr() stubs
-  - ima_protect_xattr should be static
+  - Don't define evm_verifyxattr(), unless CONFIG_INTEGRITY is enabled.
+  - xattr_name is a 'const', value is 'void *'
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 ---
- include/linux/ima.h               |   16 ++++++++++++++++
- security/integrity/ima/ima_main.c |   26 ++++++++++++++++++++++++++
- security/security.c               |    6 ++++++
- 3 files changed, 48 insertions(+), 0 deletions(-)
+ include/linux/evm.h               |   56 +++++++++++++++++++++++++++++++++++++
+ security/integrity/evm/evm_main.c |    1 +
+ security/security.c               |   16 +++++++++-
+ 3 files changed, 71 insertions(+), 2 deletions(-)
+ create mode 100644 include/linux/evm.h
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index ce82e29..2f87cf8 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -20,6 +20,9 @@ extern void ima_file_free(struct file *file);
- extern int ima_file_mmap(struct file *file, unsigned long prot);
- extern void ima_counts_get(struct file *file);
- extern void ima_inode_post_setattr(struct dentry *dentry);
-+extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-+		       const void *xattr_value, size_t xattr_value_len);
-+extern int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name);
- 
- #else
- static inline int ima_bprm_check(struct linux_binprm *bprm)
-@@ -52,5 +55,18 @@ static inline void ima_inode_post_setattr(struct dentry *dentry)
- 	return;
- }
- 
-+static inline int ima_inode_setxattr(struct dentry *dentry,
-+				     const char *xattr_name,
-+				     const void *xattr_value,
-+				     size_t xattr_value_len)
-+{
-+	return 0;
-+}
-+
-+static inline int ima_inode_removexattr(struct dentry *dentry,
-+				        const char *xattr_name)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_IMA_H */
- #endif /* _LINUX_IMA_H */
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index d6132b9..6531765 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -372,6 +372,32 @@ void ima_inode_post_setattr(struct dentry *dentry)
- 	return;
- }
- 
+diff --git a/include/linux/evm.h b/include/linux/evm.h
+new file mode 100644
+index 0000000..8b4e9e3
+--- /dev/null
++++ b/include/linux/evm.h
+@@ -0,0 +1,56 @@
 +/*
-+ * ima_protect_xattr - protect 'security.ima'
++ * evm.h
 + *
-+ * Ensure that not just anyone can modify or remove 'security.ima'.
++ * Copyright (c) 2009 IBM Corporation
++ * Author: Mimi Zohar <zohar@us.ibm.com>
 + */
-+static int ima_protect_xattr(struct dentry *dentry, const char *xattr_name,
-+			     const void *xattr_value, size_t xattr_value_len)
++
++#ifndef _LINUX_EVM_H
++#define _LINUX_EVM_H
++
++#include <linux/integrity.h>
++
++#ifdef CONFIG_EVM
++extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
++					     const char *xattr_name,
++					     void *xattr_value,
++					     size_t xattr_value_len);
++extern int evm_inode_setxattr(struct dentry *dentry, const char *name,
++			      const void *value, size_t size);
++extern void evm_inode_post_setxattr(struct dentry *dentry,
++				    const char *xattr_name,
++				    const void *xattr_value,
++				    size_t xattr_value_len);
++extern int evm_inode_removexattr(struct dentry *dentry, const char *xattr_name);
++#else
++#ifdef CONFIG_INTEGRITY
++static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
++						    const char *xattr_name,
++						    void *xattr_value,
++						    size_t xattr_value_len)
 +{
-+	if ((strcmp(xattr_name, XATTR_NAME_IMA) == 0)
-+	    && !capable(CAP_SYS_ADMIN))
-+		return -EPERM;
++	return INTEGRITY_UNKNOWN;
++}
++#endif
++
++static inline int evm_inode_setxattr(struct dentry *dentry, const char *name,
++				     const void *value, size_t size)
++{
 +	return 0;
 +}
 +
-+int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-+		       const void *xattr_value, size_t xattr_value_len)
++static inline void evm_inode_post_setxattr(struct dentry *dentry,
++					   const char *xattr_name,
++					   const void *xattr_value,
++					   size_t xattr_value_len)
 +{
-+	return ima_protect_xattr(dentry, xattr_name, xattr_value,
-+				 xattr_value_len);
++	return;
 +}
 +
-+int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name)
++static inline int evm_inode_removexattr(struct dentry *dentry,
++					const char *xattr_name)
 +{
-+	return ima_protect_xattr(dentry, xattr_name, NULL, 0);
++	return 0;
 +}
-+
- static int __init init_ima(void)
- {
- 	int error;
++#endif /* CONFIG_EVM_H */
++#endif /* LINUX_EVM_H */
+diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+index 6ee52f1..ae9dbea 100644
+--- a/security/integrity/evm/evm_main.c
++++ b/security/integrity/evm/evm_main.c
+@@ -18,6 +18,7 @@
+ #include <linux/crypto.h>
+ #include <linux/xattr.h>
+ #include <linux/integrity.h>
++#include <linux/evm.h>
+ #include "evm.h"
+ 
+ int evm_initialized;
 diff --git a/security/security.c b/security/security.c
-index c373c5f..53c6285 100644
+index 36a0de3..c373c5f 100644
 --- a/security/security.c
 +++ b/security/security.c
-@@ -556,6 +556,9 @@ int security_inode_setxattr(struct dentry *dentry, const char *name,
- 	ret = security_ops->inode_setxattr(dentry, name, value, size, flags);
- 	if (ret)
- 		return ret;
-+	ret = ima_inode_setxattr(dentry, name, value, size);
+@@ -18,6 +18,7 @@
+ #include <linux/security.h>
+ #include <linux/integrity.h>
+ #include <linux/ima.h>
++#include <linux/evm.h>
+ 
+ /* Boot-time LSM user choice */
+ static __initdata char chosen_lsm[SECURITY_NAME_MAX + 1] =
+@@ -548,9 +549,14 @@ int security_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
+ int security_inode_setxattr(struct dentry *dentry, const char *name,
+ 			    const void *value, size_t size, int flags)
+ {
++	int ret;
++
+ 	if (unlikely(IS_PRIVATE(dentry->d_inode)))
+ 		return 0;
+-	return security_ops->inode_setxattr(dentry, name, value, size, flags);
++	ret = security_ops->inode_setxattr(dentry, name, value, size, flags);
 +	if (ret)
 +		return ret;
- 	return evm_inode_setxattr(dentry, name, value, size);
++	return evm_inode_setxattr(dentry, name, value, size);
  }
  
-@@ -591,6 +594,9 @@ int security_inode_removexattr(struct dentry *dentry, const char *name)
- 	ret = security_ops->inode_removexattr(dentry, name);
- 	if (ret)
- 		return ret;
-+	ret = ima_inode_removexattr(dentry, name);
+ void security_inode_post_setxattr(struct dentry *dentry, const char *name,
+@@ -559,6 +565,7 @@ void security_inode_post_setxattr(struct dentry *dentry, const char *name,
+ 	if (unlikely(IS_PRIVATE(dentry->d_inode)))
+ 		return;
+ 	security_ops->inode_post_setxattr(dentry, name, value, size, flags);
++	evm_inode_post_setxattr(dentry, name, value, size);
+ }
+ 
+ int security_inode_getxattr(struct dentry *dentry, const char *name)
+@@ -577,9 +584,14 @@ int security_inode_listxattr(struct dentry *dentry)
+ 
+ int security_inode_removexattr(struct dentry *dentry, const char *name)
+ {
++	int ret;
++
+ 	if (unlikely(IS_PRIVATE(dentry->d_inode)))
+ 		return 0;
+-	return security_ops->inode_removexattr(dentry, name);
++	ret = security_ops->inode_removexattr(dentry, name);
 +	if (ret)
 +		return ret;
- 	return evm_inode_removexattr(dentry, name);
++	return evm_inode_removexattr(dentry, name);
  }
  
+ int security_inode_need_killpriv(struct dentry *dentry)
 -- 
 1.7.1.1
 
