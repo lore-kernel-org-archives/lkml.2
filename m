@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933297Ab0G3Sqm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:46:42 -0400
-Received: from kroah.org ([198.145.64.141]:35791 "EHLO coco.kroah.org"
+	id S933466Ab0G3SrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:47:08 -0400
+Received: from kroah.org ([198.145.64.141]:35785 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759419Ab0G3Reu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:50 -0400
+	id S1759416Ab0G3Ret (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:49 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:08 2010
-Message-Id: <20100730173108.136169243@clark.site>
+Message-Id: <20100730173108.030172538@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:25 -0700
+Date: Fri, 30 Jul 2010 10:30:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [060/140] drm/radeon/kms: fix legacy tv-out pal mode
+Subject: [059/140] drm/radeon/kms: fix legacy LVDS dpms sequence
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,30 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit ff3f011cd859072b5d6e64c0b968cff9bfdc0b37 upstream.
+commit 15cb02c0a0338ee724bf23e31c7c410ecbffeeba upstream.
 
-fixes fdo bug 26915
+Add delay after turning off the LVDS encoder.
 
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=16389
+
+Tested-by: Jan Kreuzer <kontrollator@gmx.de>
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_legacy_tv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/radeon/radeon_legacy_tv.c
-+++ b/drivers/gpu/drm/radeon/radeon_legacy_tv.c
-@@ -642,8 +642,8 @@ void radeon_legacy_tv_mode_set(struct dr
+--- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+@@ -108,6 +108,7 @@ static void radeon_legacy_lvds_dpms(stru
+ 		udelay(panel_pwr_delay * 1000);
+ 		WREG32(RADEON_LVDS_GEN_CNTL, lvds_gen_cntl);
+ 		WREG32_PLL(RADEON_PIXCLKS_CNTL, pixclks_cntl);
++		udelay(panel_pwr_delay * 1000);
+ 		break;
  	}
- 	flicker_removal = (tmp + 500) / 1000;
  
--	if (flicker_removal < 2)
--		flicker_removal = 2;
-+	if (flicker_removal < 3)
-+		flicker_removal = 3;
- 	for (i = 0; i < ARRAY_SIZE(SLOPE_limit); ++i) {
- 		if (flicker_removal == SLOPE_limit[i])
- 			break;
 
 
