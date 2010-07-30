@@ -1,81 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933498Ab0G3Sxh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:53:37 -0400
-Received: from kroah.org ([198.145.64.141]:35595 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759343Ab0G3ReR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:17 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
-Message-Id: <20100730173105.376417042@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [029/140] math-emu: correct test for downshifting fraction in _FP_FROM_INT()
-In-Reply-To: <20100730173205.GA22581@kroah.com>
+	id S1759853Ab0G3Sxl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:53:41 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:58877 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759887Ab0G3Sxa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 14:53:30 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Maharana, Parag" <Parag.Maharana@lsi.com>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Fri, 30 Jul 2010 12:53:10 -0600
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Index: AcsQugUgIYpmrjuMSDS98Q9uUzoT2QAnKKmwBa1whLACAt2o4A==
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBCC8483@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	 <1277046060.5242.18.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
+	 <1277063250.5242.25.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
+ <1277066924.5242.41.camel@mulgrave.site>  
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o6UIrwUr019976
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+James,
 
-------------------
+Do you know when those patches (12 patches) will be pushed to upstream?
 
-From: Mikael Pettersson <mikpe@it.uu.se>
+Thanks,
 
-commit f8324e20f8289dffc646d64366332e05eaacab25 upstream.
+Bo Yang
 
-The kernel's math-emu code contains a macro _FP_FROM_INT() which is
-used to convert an integer to a raw normalized floating-point value.
-It does this basically in three steps:
+-----Original Message-----
+From: Yang, Bo 
+Sent: Tuesday, July 20, 2010 9:08 AM
+To: Yang, Bo; 'James Bottomley'
+Cc: 'Yinghai Lu'; 'linux-scsi@vger.kernel.org'; 'akpm@osdl.org'; 'linux-kernel@vger.kernel.org'
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
 
-1. Compute the exponent from the number of leading zero bits.
-2. Downshift large fractions to put the MSB in the right position
-   for normalized fractions.
-3. Upshift small fractions to put the MSB in the right position.
+James,
 
-There is an boundary error in step 2, causing a fraction with its
-MSB exactly one bit above the normalized MSB position to not be
-downshifted.  This results in a non-normalized raw float, which when
-packed becomes a massively inaccurate representation for that input.
+Do you get chances to view this changes and apply the patches to the main tree?
 
-The impact of this depends on a number of arch-specific factors,
-but it is known to have broken emulation of FXTOD instructions
-on UltraSPARC III, which was originally reported as GCC bug 44631
-<http://gcc.gnu.org/bugzilla/show_bug.cgi?id=44631>.
+Thanks,
 
-Any arch which uses math-emu to emulate conversions from integers to
-same-size floats may be affected.
+Bo Yang
 
-The fix is simple: the exponent comparison used to determine if the
-fraction should be downshifted must be "<=" not "<".
+-----Original Message-----
+From: Yang, Bo 
+Sent: Monday, June 21, 2010 11:36 AM
+To: 'James Bottomley'
+Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
 
-I'm sending a kernel module to test this as a reply to this message.
-There are also SPARC user-space test cases in the GCC bug entry.
+James,
 
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Attached is the changelog for OCR. 
+
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
 ---
- include/math-emu/op-common.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Documentation/scsi/ChangeLog.megaraid_sas |   33 ++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
---- a/include/math-emu/op-common.h
-+++ b/include/math-emu/op-common.h
-@@ -799,7 +799,7 @@ do {									\
- 		X##_e -= (_FP_W_TYPE_SIZE - rsize);			\
- 	X##_e = rsize - X##_e - 1;					\
- 									\
--	if (_FP_FRACBITS_##fs < rsize && _FP_WFRACBITS_##fs < X##_e)	\
-+	if (_FP_FRACBITS_##fs < rsize && _FP_WFRACBITS_##fs <= X##_e)	\
- 	  __FP_FRAC_SRS_1(ur_, (X##_e - _FP_WFRACBITS_##fs + 1), rsize);\
- 	_FP_FRAC_DISASSEMBLE_##wc(X, ur_, rsize);			\
- 	if ((_FP_WFRACBITS_##fs - X##_e - 1) > 0)			\
+diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas new/Documentation/scsi/ChangeLog.megaraid_sas
+--- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-06-20 03:41:31.000000000 -0400
++++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-06-20 03:55:42.000000000 -0400
+@@ -1,3 +1,36 @@
++1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
++			(emaild-id:megaraidlinux@lsi.com)
++			Bo Yang
++
++2 Current Version : 00.00.04.17.1-rc1
++3 Older Version   : 00.00.04.17.1-rc1
++
++1.	Add the Online Controller Reset (OCR) to the Driver.
++	OCR is the new feature for megaraid_sas driver which
++	will allow the fw to do the chip reset which will not
++	affact the OS behavious.
++
++	To add the OCR support, driver need to do: 
++		a). reset the controller chips -- Xscale and Gen2 which
++		will change the function calls and add the reset function
++		related to this two chips.
++		
++		b). during the reset, driver will store the pending cmds
++		which not returned by FW to driver's pending queue.  Driver
++		will re-issue those pending cmds again to FW after the OCR
++		finished.
++		
++		c). In driver's timeout routine, driver will report to
++		OS as reset. Also driver's queue routine will block the
++		cmds until the OCR finished.
++		
++		d). in Driver's ISR routine, if driver get the FW state as
++		state change, FW in Failure status and FW support online controller
++		reset (OCR), driver will start to do the controller reset.
++		
++		e). In driver's IOCTL routine, the application cmds will wait for the
++		OCR to finish, then issue the cmds to FW.
++		 
+ 1 Release Date    : Thur.  Oct 29, 2009 09:12:45 PST 2009 -
+ 			(emaild-id:megaraidlinux@lsi.com)
+ 			Bo Yang
 
 
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Sunday, June 20, 2010 4:49 PM
+To: Yang, Bo
+Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
+
+On Sun, 2010-06-20 at 14:19 -0600, Yang, Bo wrote:
+> Yes.  
+
+OK, can you give me the single changelog for this one commit, then,
+please?
+
+Thanks,
+
+James
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
