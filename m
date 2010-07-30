@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0G3FRv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 01:17:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62940 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752697Ab0G3FRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 01:17:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,284,1278313200"; 
-   d="scan'208";a="643171363"
-Date: Fri, 30 Jul 2010 13:17:46 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/5] writeback: prevent sync livelock with the
- sync_after timestamp
-Message-ID: <20100730051746.GB8811@localhost>
-References: <20100729115142.102255590@intel.com>
- <20100729121423.471866750@intel.com>
- <20100729150241.GC12690@quack.suse.cz>
+	id S1753787Ab0G3FSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 01:18:43 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:42383 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697Ab0G3FSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 01:18:42 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6058"; a="49163858"
+Message-ID: <d493494df33aaf65e526181b1dbafce3.squirrel@www.codeaurora.org>
+In-Reply-To: <20100729090607.GN26098@amd.com>
+References: <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
+    <201007291026.55928.arnd@arndb.de> <20100729084018.GM26098@amd.com>
+    <20100729174621W.fujita.tomonori@lab.ntt.co.jp>
+    <20100729090607.GN26098@amd.com>
+Date: Thu, 29 Jul 2010 22:19:06 -0700 (PDT)
+Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
+From: stepanm@codeaurora.org
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729150241.GC12690@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 11:02:41PM +0800, Jan Kara wrote:
->   Hi Fengguang,
-> 
-> On Thu 29-07-10 19:51:45, Wu Fengguang wrote:
-> > The start time in writeback_inodes_wb() is not very useful because it
-> > slips at each invocation time. Preferrably one _constant_ time shall be
-> > used at the beginning to cover the whole sync() work.
-> > 
-> > The newly dirtied inodes are now guarded at the queue_io() time instead
-> > of the b_io walk time. This is more natural: non-empty b_io/b_more_io
-> > means "more work pending".
-> > 
-> > The timestamp is now grabbed the sync work submission time, and may be
-> > further optimized to the initial sync() call time.
->   The patch seems to have some issues...
-> 
-> > +	if (wbc->for_sync) {
->   For example this is never set. You only set wb->for_sync.
+Joerg,
 
-Ah right.
+Thanks for the information. I have been trying to adapt the MSM IOMMU
+driver to use your IOMMU interface, and it looks like it might work, with
+one minor modification.
 
-> > +		expire_interval = 1;
-> > +		older_than_this = wbc->sync_after;
->   And sync_after is never set either???
+Unlike a more traditional system with one IOMMU between the bus and
+memory, MSM has multiple IOMMUs, with each one hard-wired to a dedicated
+device. Furthermore, each IOMMU can have more than one translation
+context. One of the use cases is being able to create mappings within
+multiple instances of one context, and arbitrarily context-switch the
+IOMMU on the fly.
 
-Sorry I must lose some chunk when rebasing the patch ..
+It sounds like the domain abstraction and attach_device/detach_device can
+encapsulate this rather nicely and I am in the process of updating my
+driver to fit this framework.
 
-> > -	if (!(wbc->for_kupdate || wbc->for_background) || list_empty(&wb->b_io))
-> > +	if (list_empty(&wb->b_io))
-> >  		queue_io(wb, wbc);
->   And what is the purpose of this? It looks as an unrelated change to me.
+My problem, however, is with iommu_domain_alloc(). This will set up a
+domain and call the ops function to initialize it, but I want to be able
+to pass it an “IOMMU id" that will tell the underlying driver which IOMMU
+(and which "stream id") is to be associated with that domain instance.
+This can be a void* parameter that gets passed through to domain_init. I
+feel like this change will make it easy to deal with multiple
+IOMMUs/translation contexts, and implementations that have only a singular
+IOMMU/translation context are free to ignore that parameter.
 
-Yes it's not tightly related. It may be simpler to do
+The alternative for me is to have a separate msm_iommu_domain_alloc(void
+*context_id) function, to which I can specify which IOMMU I want to use,
+but I would like to fully use your API if possible.
 
- -	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- +	if (list_empty(&wb->b_io))
+What are your thoughts? I can prepare a patch if you like - the
+domain_alloc change looks like it will be very innocuous.
 
-in the previous patch "writeback: sync expired inodes first in
-background writeback".
+Thanks
+Steve
 
-Thanks,
-Fengguang
+
+> On Thu, Jul 29, 2010 at 04:46:59AM -0400, FUJITA Tomonori wrote:
+>> On Thu, 29 Jul 2010 10:40:19 +0200
+>> "Roedel, Joerg" <Joerg.Roedel@amd.com> wrote:
+>>
+>> > The IOMMU-API is not about SR-IOV.
+>>
+>> That's true. However, the point is that include/iommu.h is far from
+>> the IOMMU-API.
+>>
+>> You could still insist that include/iommu.h is designed for the
+>> generic IOMMU-API. But the fact is that it's designed for very
+>> specific purposes. No intention to make it for generic purposes.
+>
+> I have no clue about the ARM iommus on the omap-platform. From a quick
+> look into the header file I see some similarities to the IOMMU-API. I am
+> also very open for discussions about how the IOMMU-API could be extended
+> to fit the needs of other platforms. Only because nobody has tried to
+> discuss about such an effort is no reason to push the IOMMU-API back.
+>
+>>
+>> Since you added it two years ago, nobody has tried to extend
+>> it. Instead, we have something like
+>> arch/arm/plat-omap/include/plat/iommu.h.
+>
+> And I think we should try to merge this platform-specific functionality
+> into the IOMMU-API.
+>
+> 	Joerg
+>
+> --
+> Joerg Roedel - AMD Operating System Research Center
+>
+> Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+> General Managers: Alberto Bozzo, Andrew Bowd
+> Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr.
+> 43632
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+
