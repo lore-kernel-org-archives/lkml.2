@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893Ab0G3SeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:34:06 -0400
-Received: from kroah.org ([198.145.64.141]:58065 "EHLO coco.kroah.org"
+	id S1759829Ab0G3Ryu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:54:50 -0400
+Received: from kroah.org ([198.145.64.141]:57844 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759840Ab0G3Ryx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
-Message-Id: <20100730175137.844385800@clark.site>
+	id S1759727Ab0G3RyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:34 2010
+Message-Id: <20100730175134.767584357@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:04 -0700
+Date: Fri, 30 Jul 2010 10:50:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: [047/205] Btrfs: fix checks in BTRFS_IOC_CLONE_RANGE
+        Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [013/205] usbnet: Set parent device early for netdev_printk()
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,47 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 
-commit 2ebc3464781ad24474abcbd2274e6254689853b5 upstream.
+From: Ben Hutchings <ben@decadent.org.uk>
 
-1.  The BTRFS_IOC_CLONE and BTRFS_IOC_CLONE_RANGE ioctls should check
-whether the donor file is append-only before writing to it.
+[ Upsteam commit 0dacca73a3ddefa6cb8a7e0282f938e01faa1a64 ]
 
-2.  The BTRFS_IOC_CLONE_RANGE ioctl appears to have an integer
-overflow that allows a user to specify an out-of-bounds range to copy
-from the source file (if off + len wraps around).  I haven't been able
-to successfully exploit this, but I'd imagine that a clever attacker
-could use this to read things he shouldn't.  Even if it's not
-exploitable, it couldn't hurt to be safe.
+netdev_printk() follows the net_device's parent device pointer, so
+we must set that earlier than we previously did.
 
-Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Reported-by: Luís Picciochi Oliveira <pitxyoki@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/btrfs/ioctl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/usb/usbnet.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1469,7 +1469,7 @@ static noinline long btrfs_ioctl_clone(s
- 	 */
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -1290,6 +1290,9 @@ usbnet_probe (struct usb_interface *udev
+ 		goto out;
+ 	}
  
- 	/* the destination must be opened for writing */
--	if (!(file->f_mode & FMODE_WRITE))
-+	if (!(file->f_mode & FMODE_WRITE) || (file->f_flags & O_APPEND))
- 		return -EINVAL;
++	/* netdev_printk() needs this so do it as early as possible */
++	SET_NETDEV_DEV(net, &udev->dev);
++
+ 	dev = netdev_priv(net);
+ 	dev->udev = xdev;
+ 	dev->intf = udev;
+@@ -1374,8 +1377,6 @@ usbnet_probe (struct usb_interface *udev
+ 		dev->rx_urb_size = dev->hard_mtu;
+ 	dev->maxpacket = usb_maxpacket (dev->udev, dev->out, 1);
  
- 	ret = mnt_want_write(file->f_path.mnt);
-@@ -1522,7 +1522,7 @@ static noinline long btrfs_ioctl_clone(s
- 
- 	/* determine range to clone */
- 	ret = -EINVAL;
--	if (off >= src->i_size || off + len > src->i_size)
-+	if (off + len > src->i_size || off + len < off)
- 		goto out_unlock;
- 	if (len == 0)
- 		olen = len = src->i_size - off;
+-	SET_NETDEV_DEV(net, &udev->dev);
+-
+ 	if ((dev->driver_info->flags & FLAG_WLAN) != 0)
+ 		SET_NETDEV_DEVTYPE(net, &wlan_type);
+ 	if ((dev->driver_info->flags & FLAG_WWAN) != 0)
 
 
