@@ -1,108 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab0G3FTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 01:19:53 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39554 "EHLO
+	id S1754326Ab0G3FTz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 01:19:55 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:23017 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab0G3FTn (ORCPT
+	with ESMTP id S1754009Ab0G3FTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 01:19:43 -0400
+	Fri, 30 Jul 2010 01:19:50 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=e8W+XwfEX4813yYd7dRhNRiqeTUVa/MGXIQwk8jMBf2173Va64QQ2wCuHOThYjmUS
-	/QjsUlTsGLWyAqsy0Gc6w==
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=ORxEF0ue+YzzL325iPE3r9O30OT9Kr2IiKJSh+B9XA8xiQR0yxzOjP30JUwv0L34e
+	3+sBJ7u+nfjcwmRXDyAgQ==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
 Cc: Venkatesh Pallipadi <venki@google.com>, Ken Chen <kenchen@google.com>,
         Paul Turner <pjt@google.com>, Nikhil Rao <ncrao@google.com>
-Subject: [PATCH 0/6] [RFC] Large weight differential leads to inefficient load balancing
-Date: Thu, 29 Jul 2010 22:19:00 -0700
-Message-Id: <1280467146-32218-1-git-send-email-ncrao@google.com>
+Subject: [PATCH 5/6] sched: add SCHED_IDLE load balancer
+Date: Thu, 29 Jul 2010 22:19:05 -0700
+Message-Id: <1280467146-32218-6-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1280467146-32218-1-git-send-email-ncrao@google.com>
+References: <1280467146-32218-1-git-send-email-ncrao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This patch adds a load balancer for SCHED_IDLE tasks (sched_idle_load_balance).
+The metric used to balance SCHED_IDLE tasks is calculated as:
 
-We have observed that a large weight differential between tasks on a runqueue
-leads to sub-optimal machine utilization and poor load balancing. For example,
-if you have lots of SCHED_IDLE tasks (sufficient number to keep the machine 100%
-busy) and a few SCHED_NORMAL soaker tasks, we see that the machine has
-significant idle time.
-
-The data below highlights this problem. The test machine is a 4 socket quad-core
-box (16 cpus). These experiemnts were done with v2.6.25-rc6. We spawn 16
-SCHED_IDLE soaker threads (one per-cpu) to completely fill up the machine. CPU
-utilization numbers gathered from mpstat for 10s are:
-
-03:30:24 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
-03:30:25 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16234.65
-03:30:26 PM  all   99.88    0.06    0.06    0.00    0.00    0.00    0.00    0.00  16374.00
-03:30:27 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16392.00
-03:30:28 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16612.12
-03:30:29 PM  all   99.88    0.00    0.12    0.00    0.00    0.00    0.00    0.00  16375.00
-03:30:30 PM  all   99.94    0.06    0.00    0.00    0.00    0.00    0.00    0.00  16440.00
-03:30:31 PM  all   99.81    0.00    0.19    0.00    0.00    0.00    0.00    0.00  16237.62
-03:30:32 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16360.00
-03:30:33 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16405.00
-03:30:34 PM  all   99.38    0.06    0.50    0.00    0.00    0.00    0.00    0.06  18881.82
-Average:     all   99.86    0.02    0.12    0.00    0.00    0.00    0.00    0.01  16628.20
-
-We then spawn one SCHED_NORMAL while-1 task (the absolute number does not matter
-so long as we introduce some large weight differential).
-
-03:40:57 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
-03:40:58 PM  all   83.06    0.00    0.06    0.00    0.00    0.00    0.00   16.88  14555.00
-03:40:59 PM  all   78.25    0.00    0.06    0.00    0.00    0.00    0.00   21.69  14527.00
-03:41:00 PM  all   82.71    0.06    0.06    0.00    0.00    0.00    0.00   17.17  14879.00
-03:41:01 PM  all   87.34    0.00    0.06    0.00    0.00    0.00    0.00   12.59  15466.00
-03:41:02 PM  all   80.80    0.06    0.19    0.00    0.00    0.00    0.00   18.95  14584.00
-03:41:03 PM  all   82.90    0.00    0.06    0.00    0.00    0.00    0.00   17.04  14570.00
-03:41:04 PM  all   79.45    0.00    0.06    0.00    0.00    0.00    0.00   20.49  14536.00
-03:41:05 PM  all   86.48    0.00    0.07    0.00    0.00    0.00    0.00   13.46  14577.00
-03:41:06 PM  all   76.73    0.06    0.06    0.00    0.00    0.06    0.00   23.10  14594.00
-03:41:07 PM  all   86.48    0.00    0.07    0.00    0.00    0.00    0.00   13.45  14703.03
-Average:     all   82.31    0.02    0.08    0.00    0.00    0.01    0.00   17.59  14699.10
-
-The machine utilization is sub-optimal and this doesn't look right.  On
-investigating this further, we noticed a couple of things. When we consider
-load balancing operations at any sched domain where the weight of the group is
-greater than one, the group containing the SCHED_NORMAL task is always selected
-as the busiest group. While this is expected (SCHED_NORMAL at nice 0 is a factor
-of 512 times the weight of SCHED_IDLE), this weight differential leads to
-sub-optimal machine utilization.
-
-CPUs outside this group can only pull SCHED_IDLE tasks (because pulling a
-SCHED_NORMAL would be far in excess of the imbalance). The load balancer pulls
-queued SCHED_IDLE tasks away from this group, and soon it starts failing
-balances because it unable to move running tasks. Eventually active migration
-kicks in and boots the remaining SCHED_IDLE tasks, leaving idle cpus in the
-busiest sched group.
-
-These idle cpus remain idle for long periods of time even though other cpus have
-large runqueue depths (albeit filled with SCHED_IDLE tasks). The idle balance on
-these cores always select the sched group with the SCHED_NORMAL task to pull tasks
-from, and always fails because this group has only one runnable task.
-
-We see the same problem with group scheduling as well, i.e. if we have two
-groups with a large weight differential, the machine utilization is sub-optimal.
-While this RFC focuses on SCHED_IDLE and SCHED_NORMAL, we can extend these
-arguments to SCHED_IDLE-like group entities as well (i.e. groups with cpu.shares
-set to 2).
-
-In the remainder of this RFC, we present a solution to address the problem below
-and have attached a prototype patchset for feedback and comments. Please let me
-know if you have alternate ideas; I would be happy to explore other solutions.
-
-This patchset changes the way the kernel balances SCHED_IDLE tasks. Since
-SCHED_IDLE tasks contribute very little weight to the runqueues, we do not
-balance them with SCHED_NORMAL/SCHED_BATCH tasks. Instead, we do second pass
-to balance SCHED_IDLE tasks using a different metric. We iterate through each
-cpu in the sched domain span and calculate the idle load as follows:
-
-     load = (idle_nr_runnig * WEIGHT_IDLEPRIO / idle power)
+  load = (idle_nr_runnig * WEIGHT_IDLEPRIO / idle power)
 
 The metric used is a ratio of the load contributed by SCHED_IDLE tasks to the
 available power for running SCHED_IDLE tasks. We determine available power
@@ -110,53 +37,194 @@ similar to the RT power scaling calculations, i.e. we scale a CPU's available
 idle power based on the average SCHED_NORMAL/SCHED_BATCH activity over a given
 period.
 
-Here are some results for a 2.6.35-rc6 kernel + patchset. This is with 16
-SCHED_IDLE soaker threads and one SCHED_NORMAL task.
+The SCHED_IDLE load balancer is called at the end of rebalance domain. It runs
+only when the SCHED_NORMAL/SCHED_BATCH balancer runs (i.e. it follows the same
+rate limit).
 
-06:55:16 PM  CPU   %user   %nice    %sys %iowait    %irq   %soft  %steal   %idle    intr/s
-06:55:17 PM  all   99.88    0.00    0.12    0.00    0.00    0.00    0.00    0.00  16228.71
-06:55:18 PM  all   99.81    0.00    0.19    0.00    0.00    0.00    0.00    0.00  16516.16
-06:55:19 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16197.03
-06:55:20 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16376.00
-06:55:21 PM  all   99.88    0.06    0.06    0.00    0.00    0.00    0.00    0.00  16406.00
-06:55:22 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16349.00
-06:55:23 PM  all  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  16343.00
-06:55:24 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16354.00
-06:55:25 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16521.21
-06:55:26 PM  all   99.94    0.00    0.06    0.00    0.00    0.00    0.00    0.00  16189.11
-Average:     all   99.92    0.01    0.08    0.00    0.00    0.00    0.00    0.00  16347.25
-
-Please find attached patches against v2.6.35-rc6. Note that this patchset is a
-prototype and there are known limitations:
-- not well integrated with the existing LB paths
-- does not support group scheduling
-- needs to be extended to support preempt kernels
-- needs to be power-savings aware
-- needs schedstat support
-- written/tested for x86/64, SMP
-
-If folks think this is a good direction and this idea has some merit, then I
-will be more than happy to continue working with the community to improve this
-patchset. If there is another way to fix this problem, then please do tell; I
-would be more than happy to help out.
-
--Thanks
-Nikhil
-
+Signed-off-by: Nikhil Rao <ncrao@google.com>
 ---
+ kernel/sched_fair.c |  140 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 140 insertions(+), 0 deletions(-)
 
-Nikhil Rao (6):
-  sched: account SCHED_IDLE tasks on rq->idle_nr_running
-  sched: add SD_IDLE_LOAD_BALANCE to sched domain flags
-  sched: add moving average of time spent servicing SCHED_NORMAL tasks
-  sched: add sched_idle_balance argument to lb functions
-  sched: add SCHED_IDLE load balancer
-  sched: enable SD_IDLE_LOAD_BALANCE on MC, CPU and NUMA (x86) domains
-
- arch/x86/include/asm/topology.h |    1 +
- include/linux/sched.h           |    1 +
- include/linux/topology.h        |    4 +
- kernel/sched.c                  |   27 +++++++
- kernel/sched_fair.c             |  161 +++++++++++++++++++++++++++++++++++++--
- 5 files changed, 186 insertions(+), 8 deletions(-)
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index cb270e8..134ddbf 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1874,6 +1874,20 @@ balance_tasks(struct rq *this_rq, int this_cpu, struct rq *busiest,
+ 	pinned = 1;
+ 
+ 	list_for_each_entry_safe(p, n, &busiest_cfs_rq->tasks, se.group_node) {
++		/*
++		 * We skip this task if the following conditions are satisfied:
++		 * 1. This sched domain has SD_IDLE_LOAD_BALANCE set
++		 * 2. If sched_idle_balance is not set (i.e. we are doing a
++		 * SCHED_NORMAL/SCHED_BATCH balance) and this is a SCHED_IDLE
++		 * task
++		 * 3. If sched_idle_balance is set (i.e. we are doing a
++		 * SCHED_IDLE balance) and this is not a SCHED_IDLE task
++		 */
++		if (sd->flags & SD_IDLE_LOAD_BALANCE &&
++		    ((sched_idle_balance && p->policy != SCHED_IDLE) ||
++		    (!sched_idle_balance && p->policy == SCHED_IDLE)))
++			continue;
++
+ 		if (loops++ > sysctl_sched_nr_migrate)
+ 			break;
+ 
+@@ -3097,6 +3111,119 @@ out_unlock:
+ 	return 0;
+ }
+ 
++/*
++ * SCHED_IDLE balancing functions
++ */
++unsigned long scale_norm_power(int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++	u64 total, available;
++
++	sched_avg_update(rq);
++
++	total = sched_avg_period() + (rq->clock - rq->age_stamp);
++	available = total - (rq->rt_avg + rq->norm_avg);
++
++	if (unlikely((s64)total < SCHED_LOAD_SCALE))
++		total = SCHED_LOAD_SCALE;
++
++	total >>= SCHED_LOAD_SHIFT;
++
++	return div_u64(available, total);
++}
++
++unsigned long sched_idle_cpu_load(struct rq *rq)
++{
++	unsigned long sched_idle_load, power = SCHED_LOAD_SCALE;
++
++	power *= scale_norm_power(cpu_of(rq));
++	power >>= SCHED_LOAD_SHIFT;
++
++	if (!power)
++		power = 1;
++
++	sched_idle_load = rq->idle_nr_running * WEIGHT_IDLEPRIO;
++
++	return div_u64(sched_idle_load * SCHED_LOAD_SCALE, power);
++}
++
++static struct rq *busiest_idle_balance_queue(struct sched_domain *sd,
++		int this_cpu, unsigned long *sched_idle_imbalance)
++{
++	struct rq *busiest = NULL;
++	unsigned long this_load = 0, max_load = 0;
++	unsigned long this_nr_running = 0, max_nr_running = 0;
++	int local_cpu, i;
++
++	for_each_cpu(i, sched_domain_span(sd)) {
++		struct rq *rq = cpu_rq(i);
++		unsigned long load, idle_nr_running;
++
++		local_cpu = (i == this_cpu);
++
++		load = sched_idle_cpu_load(rq);
++		idle_nr_running = rq->idle_nr_running;
++
++		if (local_cpu) {
++			this_load = load;
++			this_nr_running = idle_nr_running;
++		} else if (load > max_load) {
++			busiest = rq;
++			max_load = load;
++			max_nr_running = idle_nr_running;
++		}
++	}
++
++	if (!busiest || max_nr_running < 1)
++		goto out_balanced;
++
++	if (this_load > max_load)
++		goto out_balanced;
++
++	*sched_idle_imbalance = (max_load - this_load) / 2;
++
++	if (100 * max_load <= sd->imbalance_pct * this_load)
++		goto out_balanced;
++
++	return busiest;
++
++out_balanced:
++	*sched_idle_imbalance = 0;
++	return NULL;
++}
++
++static int sched_idle_load_balance(int this_cpu, struct rq *this_rq,
++		struct sched_domain *sd, enum cpu_idle_type idle)
++{
++	struct rq *busiest = NULL;
++	unsigned long sched_idle_imbalance;
++	int ld_moved;
++
++	busiest = busiest_idle_balance_queue(sd, this_cpu,
++			&sched_idle_imbalance);
++	if (!busiest)
++		return 0;
++
++	WARN_ON(busiest == this_rq);
++
++	if (busiest->idle_nr_running > 1) {
++		unsigned long flags;
++		int ld_moved, tmp = 0;
++
++		local_irq_save(flags);
++		double_rq_lock(this_rq, busiest);
++		ld_moved = move_tasks(this_rq, this_cpu, busiest,
++				sched_idle_imbalance, sd, idle, &tmp, 1);
++		double_rq_unlock(this_rq, busiest);
++		local_irq_restore(flags);
++
++		if (ld_moved && this_cpu != smp_processor_id())
++			resched_cpu(this_cpu);
++	}
++
++	return ld_moved;
++}
++
+ #ifdef CONFIG_NO_HZ
+ static struct {
+ 	atomic_t load_balancer;
+@@ -3330,6 +3457,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 	unsigned long next_balance = jiffies + 60*HZ;
+ 	int update_next_balance = 0;
+ 	int need_serialize;
++	int do_sched_idle_balance = 0;
+ 
+ 	for_each_domain(cpu, sd) {
+ 		if (!(sd->flags & SD_LOAD_BALANCE))
+@@ -3363,6 +3491,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 				idle = CPU_NOT_IDLE;
+ 			}
+ 			sd->last_balance = jiffies;
++			do_sched_idle_balance = 1;
+ 		}
+ 		if (need_serialize)
+ 			spin_unlock(&balancing);
+@@ -3388,6 +3517,17 @@ out:
+ 	 */
+ 	if (likely(update_next_balance))
+ 		rq->next_balance = next_balance;
++
++	if (do_sched_idle_balance)
++		for_each_domain(cpu, sd) {
++			/*
++			 * Skip SCHED_IDLE balance on domains where
++			 * SD_LOAD_BALANCE is not set
++			 */
++			if (!(sd->flags & SD_IDLE_LOAD_BALANCE))
++				continue;
++			sched_idle_load_balance(cpu, rq, sd, idle);
++		}
+ }
+ 
+ /*
+-- 
+1.7.1
 
