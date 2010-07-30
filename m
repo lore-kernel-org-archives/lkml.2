@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760071Ab0G3SNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:13:23 -0400
-Received: from kroah.org ([198.145.64.141]:59076 "EHLO coco.kroah.org"
+	id S932642Ab0G3R5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:57:09 -0400
+Received: from kroah.org ([198.145.64.141]:58636 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932700Ab0G3R5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:16 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:48 2010
-Message-Id: <20100730175148.311826817@clark.site>
+	id S932364Ab0G3R4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
+Message-Id: <20100730175142.726015349@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:55 -0700
+Date: Fri, 30 Jul 2010 10:51:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>, Karsten Keil <isdn@linux-pingi.de>,
+        Ben Hutchings <bhutchings@solarflare.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [158/205] isdn/capi: make reset_ctr op truly optional
+Subject: [099/205] ethtool: Fix potential kernel buffer overflow in ETHTOOL_GRXCLSRLALL
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 85a83560afa69862639fb2d6f670b4440a003335 upstream.
+commit db048b69037e7fa6a7d9e95a1271a50dc08ae233 upstream.
 
-The CAPI controller operation reset_ctr is marked as optional, and
-not all drivers do implement it. Add a check to the kernel CAPI
-whether it exists before trying to call it.
+On a 32-bit machine, info.rule_cnt >= 0x40000000 leads to integer
+overflow and the buffer may be smaller than needed.  Since
+ETHTOOL_GRXCLSRLALL is unprivileged, this can presumably be used for at
+least denial of service.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Acked-by: Karsten Keil <isdn@linux-pingi.de>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/capi/kcapi.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/core/ethtool.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/isdn/capi/kcapi.c
-+++ b/drivers/isdn/capi/kcapi.c
-@@ -1147,6 +1147,12 @@ load_unlock_out:
- 		if (ctr->state == CAPI_CTR_DETECTED)
- 			goto reset_unlock_out;
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -328,8 +328,9 @@ static noinline_for_stack int ethtool_ge
  
-+		if (ctr->reset_ctr == NULL) {
-+			printk(KERN_DEBUG "kcapi: reset: no reset function\n");
-+			retval = -ESRCH;
-+			goto reset_unlock_out;
-+		}
-+
- 		ctr->reset_ctr(ctr);
- 
- 		retval = wait_on_ctr_state(ctr, CAPI_CTR_DETECTED);
+ 	if (info.cmd == ETHTOOL_GRXCLSRLALL) {
+ 		if (info.rule_cnt > 0) {
+-			rule_buf = kmalloc(info.rule_cnt * sizeof(u32),
+-					   GFP_USER);
++			if (info.rule_cnt <= KMALLOC_MAX_SIZE / sizeof(u32))
++				rule_buf = kmalloc(info.rule_cnt * sizeof(u32),
++						   GFP_USER);
+ 			if (!rule_buf)
+ 				return -ENOMEM;
+ 		}
 
 
