@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759407Ab0G3Req (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:34:46 -0400
-Received: from kroah.org ([198.145.64.141]:35492 "EHLO coco.kroah.org"
+	id S932315Ab0G3RfF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:35:05 -0400
+Received: from kroah.org ([198.145.64.141]:35522 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759264Ab0G3ReB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:01 -0400
+	id S1758218Ab0G3ReF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:05 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
-Message-Id: <20100730173104.040368201@clark.site>
+Message-Id: <20100730173104.397224632@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:39 -0700
+Date: Fri, 30 Jul 2010 10:29:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rudolf Marek <r.marek@assembler.cz>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [014/140] hwmon: (k8temp) Fix temperature reporting for ASB1 processor revisions
+        Jean Delvare <khali@linux-fr.org>,
+        Jean-Marc Spaggiari <jean-marc@spaggiari.org>
+Subject: [018/140] hwmon: (it87) Fix in7 on IT8720F
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,64 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit d535bad90dad4eb42ec6528043fcfb53627d4f89 upstream.
+commit 436cad2a41a40c6c32bd9152b63d17eeb1f7c99b upstream.
 
-Reported temperature for ASB1 CPUs is too high.
-Add ASB1 CPU revisions (these are also non-desktop variants) to the
-list of CPUs for which the temperature fixup is not required.
+The IT8720F has no VIN7 pin, so VCCH should always be routed
+internally to VIN7 with an internal divider. Curiously, there still
+is a configuration bit to control this, which means it can be set
+incorrectly. And even more curiously, many boards out there are
+improperly configured, even though the IT8720F datasheet claims that
+the internal routing of VCCH to VIN7 is the default setting. So we
+force the internal routing in this case.
 
-Example: (from LENOVO ThinkPad Edge 13, 01972NG, system was idle)
+It turns out that all boards with the wrong setting are from Gigabyte,
+so I suspect a BIOS bug. But it's easy enough to workaround in the
+driver, so let's do it.
 
-  Current kernel reports
-
-  $ sensors
-  k8temp-pci-00c3
-  Adapter: PCI adapter
-  Core0 Temp:  +74.0 C
-  Core0 Temp:  +70.0 C
-  Core1 Temp:  +69.0 C
-  Core1 Temp:  +70.0 C
-
-  With this patch I have
-
-  $ sensors
-  k8temp-pci-00c3
-  Adapter: PCI adapter
-  Core0 Temp:  +54.0 C
-  Core0 Temp:  +51.0 C
-  Core1 Temp:  +48.0 C
-  Core1 Temp:  +49.0 C
-
-Cc: Rudolf Marek <r.marek@assembler.cz>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Jean-Marc Spaggiari <jean-marc@spaggiari.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/k8temp.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/hwmon/it87.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/hwmon/k8temp.c
-+++ b/drivers/hwmon/k8temp.c
-@@ -180,11 +180,13 @@ static int __devinit k8temp_probe(struct
- 		}
+--- a/drivers/hwmon/it87.c
++++ b/drivers/hwmon/it87.c
+@@ -80,6 +80,13 @@ superio_inb(int reg)
+ 	return inb(VAL);
+ }
  
- 		if ((model >= 0x69) &&
--		    !(model == 0xc1 || model == 0x6c || model == 0x7c)) {
-+		    !(model == 0xc1 || model == 0x6c || model == 0x7c ||
-+		      model == 0x6b || model == 0x6f || model == 0x7f)) {
- 			/*
--			 * RevG desktop CPUs (i.e. no socket S1G1 parts)
--			 * need additional offset, otherwise reported
--			 * temperature is below ambient temperature
-+			 * RevG desktop CPUs (i.e. no socket S1G1 or
-+			 * ASB1 parts) need additional offset,
-+			 * otherwise reported temperature is below
-+			 * ambient temperature
- 			 */
- 			data->temp_offset = 21000;
- 		}
++static inline void
++superio_outb(int reg, int val)
++{
++	outb(reg, REG);
++	outb(val, VAL);
++}
++
+ static int superio_inw(int reg)
+ {
+ 	int val;
+@@ -1064,6 +1071,21 @@ static int __init it87_find(unsigned sho
+ 			sio_data->vid_value = superio_inb(IT87_SIO_VID_REG);
+ 
+ 		reg = superio_inb(IT87_SIO_PINX2_REG);
++		/*
++		 * The IT8720F has no VIN7 pin, so VCCH should always be
++		 * routed internally to VIN7 with an internal divider.
++		 * Curiously, there still is a configuration bit to control
++		 * this, which means it can be set incorrectly. And even
++		 * more curiously, many boards out there are improperly
++		 * configured, even though the IT8720F datasheet claims
++		 * that the internal routing of VCCH to VIN7 is the default
++		 * setting. So we force the internal routing in this case.
++		 */
++		if (sio_data->type == it8720 && !(reg & (1 << 1))) {
++			reg |= (1 << 1);
++			superio_outb(IT87_SIO_PINX2_REG, reg);
++			pr_notice("it87: Routing internal VCCH to in7\n");
++		}
+ 		if (reg & (1 << 0))
+ 			pr_info("it87: in3 is VCC (+5V)\n");
+ 		if (reg & (1 << 1))
 
 
