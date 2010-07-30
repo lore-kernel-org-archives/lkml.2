@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab0G3SGY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:06:24 -0400
-Received: from kroah.org ([198.145.64.141]:59253 "EHLO coco.kroah.org"
+	id S933034Ab0G3SF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:05:26 -0400
+Received: from kroah.org ([198.145.64.141]:59272 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932822Ab0G3R5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:50 -0400
+	id S932838Ab0G3R5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:55 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:51 2010
-Message-Id: <20100730175151.140960777@clark.site>
+Message-Id: <20100730175151.489527535@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:27 -0700
+Date: Fri, 30 Jul 2010 10:53:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Subject: [190/205] ACPI / ACPICA: Avoid writing full enable masks to GPE registers
+        Andre Osterhues <aosterhues@escrypt.com>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [194/205] ecryptfs: Bugfix for error related to ecryptfs_hash_buckets
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,79 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: Andre Osterhues <aosterhues@escrypt.com>
 
-commit c9a8bbb7704cbf515c0fc68970abbe4e91d68521 upstream.
+commit a6f80fb7b5986fda663d94079d3bba0937a6b6ff upstream.
 
-ACPICA uses acpi_hw_write_gpe_enable_reg() to re-enable a GPE after
-an event signaled by it has been handled.  However, this function
-writes the entire GPE enable mask to the GPE's enable register which
-may not be correct.  Namely, if one of the other GPEs in the same
-register was previously enabled by acpi_enable_gpe() and subsequently
-disabled using acpi_set_gpe(), acpi_hw_write_gpe_enable_reg() will
-re-enable it along with the target GPE.
+The function ecryptfs_uid_hash wrongly assumes that the
+second parameter to hash_long() is the number of hash
+buckets instead of the number of hash bits.
+This patch fixes that and renames the variable
+ecryptfs_hash_buckets to ecryptfs_hash_bits to make it
+clearer.
 
-To fix this issue rework acpi_hw_write_gpe_enable_reg() so that it
-calls acpi_hw_low_set_gpe() with a special action value,
-ACPI_GPE_COND_ENABLE, that will make it only enable the GPE if the
-corresponding bit in its register's enable_for_run mask is set.
+Fixes: CVE-2010-2492
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Andre Osterhues <aosterhues@escrypt.com>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/acpica/hwgpe.c |   18 +++++-------------
- include/acpi/actypes.h      |    1 +
- 2 files changed, 6 insertions(+), 13 deletions(-)
+ fs/ecryptfs/messaging.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/acpi/acpica/hwgpe.c
-+++ b/drivers/acpi/acpica/hwgpe.c
-@@ -118,6 +118,10 @@ acpi_hw_low_set_gpe(struct acpi_gpe_even
- 	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
- 						gpe_register_info);
- 	switch (action) {
-+	case ACPI_GPE_COND_ENABLE:
-+		if (!(register_bit & gpe_register_info->enable_for_run))
-+			return (AE_BAD_PARAMETER);
-+
- 	case ACPI_GPE_ENABLE:
- 		ACPI_SET_BIT(enable_mask, register_bit);
- 		break;
-@@ -154,23 +158,11 @@ acpi_hw_low_set_gpe(struct acpi_gpe_even
- acpi_status
- acpi_hw_write_gpe_enable_reg(struct acpi_gpe_event_info * gpe_event_info)
- {
--	struct acpi_gpe_register_info *gpe_register_info;
- 	acpi_status status;
+--- a/fs/ecryptfs/messaging.c
++++ b/fs/ecryptfs/messaging.c
+@@ -31,9 +31,9 @@ static struct mutex ecryptfs_msg_ctx_lis
  
- 	ACPI_FUNCTION_ENTRY();
+ static struct hlist_head *ecryptfs_daemon_hash;
+ struct mutex ecryptfs_daemon_hash_mux;
+-static int ecryptfs_hash_buckets;
++static int ecryptfs_hash_bits;
+ #define ecryptfs_uid_hash(uid) \
+-        hash_long((unsigned long)uid, ecryptfs_hash_buckets)
++        hash_long((unsigned long)uid, ecryptfs_hash_bits)
  
--	/* Get the info block for the entire GPE register */
--
--	gpe_register_info = gpe_event_info->register_info;
--	if (!gpe_register_info) {
--		return (AE_NOT_EXIST);
--	}
--
--	/* Write the entire GPE (runtime) enable register */
--
--	status = acpi_hw_write(gpe_register_info->enable_for_run,
--			       &gpe_register_info->enable_address);
--
-+	status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_COND_ENABLE);
- 	return (status);
- }
+ static u32 ecryptfs_msg_counter;
+ static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
+@@ -486,18 +486,19 @@ int ecryptfs_init_messaging(void)
+ 	}
+ 	mutex_init(&ecryptfs_daemon_hash_mux);
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+-	ecryptfs_hash_buckets = 1;
+-	while (ecryptfs_number_of_users >> ecryptfs_hash_buckets)
+-		ecryptfs_hash_buckets++;
++	ecryptfs_hash_bits = 1;
++	while (ecryptfs_number_of_users >> ecryptfs_hash_bits)
++		ecryptfs_hash_bits++;
+ 	ecryptfs_daemon_hash = kmalloc((sizeof(struct hlist_head)
+-					* ecryptfs_hash_buckets), GFP_KERNEL);
++					* (1 << ecryptfs_hash_bits)),
++				       GFP_KERNEL);
+ 	if (!ecryptfs_daemon_hash) {
+ 		rc = -ENOMEM;
+ 		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
+ 		mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 		goto out;
+ 	}
+-	for (i = 0; i < ecryptfs_hash_buckets; i++)
++	for (i = 0; i < (1 << ecryptfs_hash_bits); i++)
+ 		INIT_HLIST_HEAD(&ecryptfs_daemon_hash[i]);
+ 	mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 	ecryptfs_msg_ctx_arr = kmalloc((sizeof(struct ecryptfs_msg_ctx)
+@@ -554,7 +555,7 @@ void ecryptfs_release_messaging(void)
+ 		int i;
  
---- a/include/acpi/actypes.h
-+++ b/include/acpi/actypes.h
-@@ -665,6 +665,7 @@ typedef u32 acpi_event_status;
+ 		mutex_lock(&ecryptfs_daemon_hash_mux);
+-		for (i = 0; i < ecryptfs_hash_buckets; i++) {
++		for (i = 0; i < (1 << ecryptfs_hash_bits); i++) {
+ 			int rc;
  
- #define ACPI_GPE_ENABLE                 0
- #define ACPI_GPE_DISABLE                1
-+#define ACPI_GPE_COND_ENABLE            2
- 
- /*
-  * GPE info flags - Per GPE
+ 			hlist_for_each_entry(daemon, elem,
 
 
