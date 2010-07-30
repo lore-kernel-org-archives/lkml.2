@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab0G3RTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:19:47 -0400
-Received: from kroah.org ([198.145.64.141]:51986 "EHLO coco.kroah.org"
+	id S932242Ab0G3R3x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:29:53 -0400
+Received: from kroah.org ([198.145.64.141]:52045 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758777Ab0G3RTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:39 -0400
+	id S1758810Ab0G3RTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:47 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:10 2010
-Message-Id: <20100730171509.935747800@clark.site>
+Message-Id: <20100730171510.686254364@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:42 -0700
+Date: Fri, 30 Jul 2010 10:15:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [114/165] ext4: fix quota accounting in case of fallocate
+        Curt Wohlgemuth <curtw@google.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [122/165] ext4: Remove extraneous newlines in ext4_msg() calls
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,28 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 35121c9860316d7799cea0fbc359a9186e7c2747 upstream (as of v2.6.34-git13)
+commit fbe845ddf368f77f86aa7500f8fd2690f54c66a8 upstream (as of v2.6.34-git13)
 
-allocated_meta_data is already included in 'used' variable.
+Addresses-Google-Bug: #2562325
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: Curt Wohlgemuth <curtw@google.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ext4/inode.c |    6 +++---
+ fs/ext4/super.c |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
 --- a/fs/ext4/inode.c
 +++ b/fs/ext4/inode.c
-@@ -1149,7 +1149,8 @@ void ext4_da_update_reserve_space(struct
- 		 */
- 		if (allocated_meta_blocks)
- 			vfs_dq_claim_block(inode, allocated_meta_blocks);
--		vfs_dq_release_reservation_block(inode, mdb_free + used);
-+		vfs_dq_release_reservation_block(inode, mdb_free + used -
-+						allocated_meta_blocks);
+@@ -2294,7 +2294,7 @@ static int mpage_da_map_blocks(struct mp
+ 		ext4_msg(mpd->inode->i_sb, KERN_CRIT,
+ 			 "delayed block allocation failed for inode %lu at "
+ 			 "logical offset %llu with max blocks %zd with "
+-			 "error %d\n", mpd->inode->i_ino,
++			 "error %d", mpd->inode->i_ino,
+ 			 (unsigned long long) next,
+ 			 mpd->b_size >> mpd->inode->i_blkbits, err);
+ 		printk(KERN_CRIT "This should not happen!!  "
+@@ -2956,7 +2956,7 @@ retry:
+ 		if (IS_ERR(handle)) {
+ 			ret = PTR_ERR(handle);
+ 			ext4_msg(inode->i_sb, KERN_CRIT, "%s: jbd2_start: "
+-			       "%ld pages, ino %lu; err %d\n", __func__,
++			       "%ld pages, ino %lu; err %d", __func__,
+ 				wbc->nr_to_write, inode->i_ino, ret);
+ 			goto out_writepages;
+ 		}
+@@ -3031,7 +3031,7 @@ retry:
+ 	if (pages_skipped != wbc->pages_skipped)
+ 		ext4_msg(inode->i_sb, KERN_CRIT,
+ 			 "This should not happen leaving %s "
+-			 "with nr_to_write = %ld ret = %d\n",
++			 "with nr_to_write = %ld ret = %d",
+ 			 __func__, wbc->nr_to_write, ret);
+ 
+ 	/* Update index */
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2902,7 +2902,7 @@ no_journal:
+ 	err = ext4_setup_system_zone(sb);
+ 	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "failed to initialize system "
+-			 "zone (%d)\n", err);
++			 "zone (%d)", err);
+ 		goto failed_mount4;
  	}
  
- 	/*
 
 
