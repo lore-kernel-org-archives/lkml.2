@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759618Ab0G3Rzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:55:39 -0400
-Received: from kroah.org ([198.145.64.141]:58149 "EHLO coco.kroah.org"
+	id S1759657Ab0G3Rzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:55:49 -0400
+Received: from kroah.org ([198.145.64.141]:58155 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759663Ab0G3RzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759742Ab0G3RzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Jul 2010 13:55:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:38 2010
-Message-Id: <20100730175138.868641836@clark.site>
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:39 2010
+Message-Id: <20100730175138.957316672@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:15 -0700
+Date: Fri, 30 Jul 2010 10:51:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@redhat.com>
-Subject: [058/205] drm/i915: enable low power render writes on GEN3 hardware.
+        Adam Jackson <ajax@redhat.com>, Eric Anholt <eric@anholt.net>
+Subject: [059/205] drm/i915: Make G4X-style PLL search more permissive
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Adam Jackson <ajax@redhat.com>
 
-commit 944001201ca0196bcdb088129e5866a9f379d08c upstream.
+commit 6ba770dc5c334aff1c055c8728d34656e0f091e2 upstream.
 
-A lot of 945GMs have had stability issues for a long time, this manifested as X hangs, blitter engine hangs, and lots of crashes.
+Fixes an Ironlake laptop with a 68.940MHz 1280x800 panel and 120MHz SSC
+reference clock.
 
-one such report is at:
-https://bugs.freedesktop.org/show_bug.cgi?id=20560
+More generally, the 0.488% tolerance used before is just too tight to
+reliably find a PLL setting.  I extracted the search algorithm and
+modified it to find the dot clocks with maximum error over the valid
+range for the given output type:
 
-along with numerous distro bugzillas.
+http://people.freedesktop.org/~ajax/intel_g4x_find_best_pll.c
 
-This only took a week of digging and hair ripping to figure out.
+This gave:
 
-Tracked down and tested on a 945GM Lenovo T60,
-previously running
-x11perf -copypixwin500
-or
-x11perf -copywinpix500
-repeatedly would cause the GPU to wedge within 4 or 5 tries, with random busy bits set.
+Worst dotclock for Ironlake DAC refclk is 350000kHz (error 0.00571)
+Worst dotclock for Ironlake SL-LVDS refclk is 102321kHz (error 0.00524)
+Worst dotclock for Ironlake DL-LVDS refclk is 219642kHz (error 0.00488)
+Worst dotclock for Ironlake SL-LVDS SSC refclk is 84374kHz (error 0.00529)
+Worst dotclock for Ironlake DL-LVDS SSC refclk is 183035kHz (error 0.00488)
+Worst dotclock for G4X SDVO refclk is 267600kHz (error 0.00448)
+Worst dotclock for G4X HDMI refclk is 334400kHz (error 0.00478)
+Worst dotclock for G4X SL-LVDS refclk is 95571kHz (error 0.00449)
+Worst dotclock for G4X DL-LVDS refclk is 224000kHz (error 0.00510)
 
-After this patch no hangs were observed.
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -4985,6 +4985,16 @@ i915_gem_load(struct drm_device *dev)
- 	list_add(&dev_priv->mm.shrink_list, &shrink_list);
- 	spin_unlock(&shrink_list_lock);
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -880,8 +880,8 @@ intel_g4x_find_best_PLL(const intel_limi
+ 	intel_clock_t clock;
+ 	int max_n;
+ 	bool found;
+-	/* approximately equals target * 0.00488 */
+-	int err_most = (target >> 8) + (target >> 10);
++	/* approximately equals target * 0.00585 */
++	int err_most = (target >> 8) + (target >> 9);
+ 	found = false;
  
-+	/* On GEN3 we really need to make sure the ARB C3 LP bit is set */
-+	if (IS_GEN3(dev)) {
-+		u32 tmp = I915_READ(MI_ARB_STATE);
-+		if (!(tmp & MI_ARB_C3_LP_WRITE_ENABLE)) {
-+			/* arb state is a masked write, so set bit + bit in mask */
-+			tmp = MI_ARB_C3_LP_WRITE_ENABLE | (MI_ARB_C3_LP_WRITE_ENABLE << MI_ARB_MASK_SHIFT);
-+			I915_WRITE(MI_ARB_STATE, tmp);
-+		}
-+	}
-+
- 	/* Old X drivers will take 0-2 for front, back, depth buffers */
- 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
- 		dev_priv->fence_reg_start = 3;
+ 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS)) {
 
 
