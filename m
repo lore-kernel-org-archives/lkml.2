@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756533Ab0G3UnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 16:43:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754479Ab0G3Um7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 16:42:59 -0400
-Subject: Re: [PATCH V3] VFIO driver: Non-privileged user level PCI drivers
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, randy.dunlap@oracle.com, arnd@arndb.de,
-        chrisw@sous-sol.org, joro@8bytes.org, hjk@linutronix.de,
-        avi@redhat.com, gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
-In-Reply-To: <20100729142705.GA25879@redhat.com>
-References: <4c40d618./j7HFMCg9NusCIiB%pugs@cisco.com>
-	 <201007271513.15093.pugs@cisco.com> <20100727235322.GB19930@redhat.com>
-	 <201007281414.22335.pugs@cisco.com> <1280354222.3919.12.camel@x201>
-	 <20100728215739.GA9671@redhat.com> <1280355199.3919.22.camel@x201>
-	 <20100729142705.GA25879@redhat.com>
+	id S1757505Ab0G3UqK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 16:46:10 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:9766 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab0G3UqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 16:46:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6059"; a="49374730"
+Subject: Re: [PATCH 2/3] arm: mm: do not set missing flags on ScorpionMP
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jeff Ohlstein <johlstei@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Steve Muckle <smuckle@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tony Lindgren <tony@atomide.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+In-Reply-To: <20100730202029.GB15062@n2100.arm.linux.org.uk>
+References: <1279911483-7039-1-git-send-email-johlstei@codeaurora.org>
+	 <1279911483-7039-3-git-send-email-johlstei@codeaurora.org>
+	 <20100724082334.GB15571@n2100.arm.linux.org.uk>
+	 <1280354280.21185.10.camel@c-dwalke-linux.qualcomm.com>
+	 <20100728223603.GB6729@n2100.arm.linux.org.uk>
+	 <1280357495.21185.26.camel@c-dwalke-linux.qualcomm.com>
+	 <20100729071818.GC6729@n2100.arm.linux.org.uk>
+	 <1280443366.27035.14.camel@c-dwalke-linux.qualcomm.com>
+	 <20100730071910.GC29746@n2100.arm.linux.org.uk>
+	 <1280509777.4142.3.camel@m0nster>
+	 <20100730202029.GB15062@n2100.arm.linux.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 14:42:31 -0600
-Message-ID: <1280522551.3585.388.camel@x201>
+Date: Fri, 30 Jul 2010 13:46:03 -0700
+Message-ID: <1280522763.4142.18.camel@m0nster>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-29 at 17:27 +0300, Michael S. Tsirkin wrote: 
-> On Wed, Jul 28, 2010 at 04:13:19PM -0600, Alex Williamson wrote:
-> > On Thu, 2010-07-29 at 00:57 +0300, Michael S. Tsirkin wrote:
-> > > On Wed, Jul 28, 2010 at 03:57:02PM -0600, Alex Williamson wrote:
-> > > > 
-> > > > Something like GET_MSIX_VECTORS seems like a user library routine to me.
-> > > > The PCI config space is well specified and if we try to do more than
-> > > > shortcut trivial operations (like getting the BAR length), we risk
-> > > > losing functionality.  And for my purposes, translating to and from a
-> > > > made up API to PCI for the guest seems like a pain.
-> > > 
-> > > Won't a userspace library do just as well for you?
+On Fri, 2010-07-30 at 21:20 +0100, Russell King - ARM Linux wrote:
+> On Fri, Jul 30, 2010 at 10:09:37AM -0700, Daniel Walker wrote:
+> > On Fri, 2010-07-30 at 08:19 +0100, Russell King - ARM Linux wrote:
+> > > Yes, but if its just for this patch, is there much point to a pull
+> > > request?
 > > 
-> > You mean aside from qemu's reluctance to add dependencies for more
-> > libraries?
+> > I've got some other stuff too .. Jeff Ohlstein sent several patches (one
+> > of which started this discussion), which are needed for an SMP board
+> > we've been working on.
 > 
-> Main reason is portability. So as long as it's kvm-only stuff, they
-> likely won't care.
+> Has it been seen on the mailing list?
 
-I'd like the qemu vfio driver to be available for both qemu and kvm.  It
-may have limitation in qemu mode from non-atomic memory writes via tcg,
-but I really don't want to have it only live in qemu-kvm like the
-current device assignment code.
+Yes, this series
 
-> > My only concern is that I want enough virtualized/raw config
-> > space that I'm not always translating PCI config accesses from the guest
-> > into some userspace API.  If it makes sense to do this for things like
-> > MSI, since I need someone to figure out what resources can actually be
-> > allocated on the host, then maybe the library makes sense for that.
-> > Then again, if every user needs to do this, let the vfio kernel driver
-> > check what it can get and virtualize the available MSIs in exposed
-> > config space, and my driver would be even happier.
-> > 
-> > Alex
-> 
-> It would?  guest driver might or might not work if you reduce the number
-> of vectors for device.  So I think you need an API to find out whether
-> all vectors can be allocated.
->
-> And these are examples of why virtualizing is wrong:
-> 1. hides real hardware
-> 2. no way to report errors
+http://www.acetylcholine.com/node/92578
 
-So I think you're proposing something like:
+except the 3/3 patch .. There was also a GIC fix patch,
 
-	ioctl(GET_MSIX_VECTORS)
-	ioctl(VFIO_EVENTFDS_MSIX)
+http://www.gossamer-threads.com/lists/linux/kernel/1254644
 
-which I don't see any value over:
-
-	Get #MSIX supported via expose PCI config space
-	ioctl(VFIO_EVENTFDS_MSIX)
-
-The GET_MSIX_VECTORS can't do any better job of predicting how many
-interrupts can be allocated than looking at what the hardware supports.
-Someone else could have exhausted the interrupt vectors by the time you
-make the second call.  You'll note here that enabling the MSIX
-interrupts actually requires an ioctl to associate eventfds with each
-interrupt, so yes, we do have a way to report errors if the system can't
-support the number of interrupts requested.  Thanks,
-
-Alex
+Daniel
 
