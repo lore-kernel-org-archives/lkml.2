@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760139Ab0G3SPn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:15:43 -0400
-Received: from kroah.org ([198.145.64.141]:58950 "EHLO coco.kroah.org"
+	id S1760138Ab0G3SP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:15:59 -0400
+Received: from kroah.org ([198.145.64.141]:58873 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760072Ab0G3R45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:57 -0400
+	id S1760064Ab0G3R4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:54 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:46 2010
-Message-Id: <20100730175146.791780398@clark.site>
+Message-Id: <20100730175146.502271351@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:38 -0700
+Date: Fri, 30 Jul 2010 10:52:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Corey Minyard <minyard@acm.org>
-Subject: [141/205] USB: FTDI: Add support for the RT System VX-7 radio programming cable
+        Oliver Neukum <oneukum@suse.de>
+Subject: [138/205] USB: sisusbvga: Fix for USB 3.0
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <minyard@acm.org>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit fcc6cb789c77ffee31710eec64efeb25f2124f7a upstream.
+commit 20a12f007feee1cfa761b431047271d1141d8031 upstream.
 
-RT Systems has put out bunch of ham radio cables based on the FT232RL
-chip.  Each cable type has a unique PID, this adds one for the Yaesu VX-7
-radios.
+Super speed is also fast enough to let sisusbvga operate.
+Therefor expand the checks.
 
-Signed-off-by: Corey Minyard <minyard@acm.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/misc/sisusbvga/sisusb.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -697,6 +697,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -703,6 +703,12 @@
- #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
+--- a/drivers/usb/misc/sisusbvga/sisusb.c
++++ b/drivers/usb/misc/sisusbvga/sisusb.c
+@@ -2442,7 +2442,8 @@ sisusb_open(struct inode *inode, struct
+ 	}
  
- /*
-+ * RT Systems programming cables for various ham radios
-+ */
-+#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
-+#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
-+
-+/*
-  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-  * http://winglucofacts.com/cables/
-  */
+ 	if (!sisusb->devinit) {
+-		if (sisusb->sisusb_dev->speed == USB_SPEED_HIGH) {
++		if (sisusb->sisusb_dev->speed == USB_SPEED_HIGH ||
++		    sisusb->sisusb_dev->speed == USB_SPEED_SUPER) {
+ 			if (sisusb_init_gfxdevice(sisusb, 0)) {
+ 				mutex_unlock(&sisusb->lock);
+ 				dev_err(&sisusb->sisusb_dev->dev, "Failed to initialize device\n");
+@@ -3177,7 +3178,7 @@ static int sisusb_probe(struct usb_inter
+ 
+ 	sisusb->present = 1;
+ 
+-	if (dev->speed == USB_SPEED_HIGH) {
++	if (dev->speed == USB_SPEED_HIGH || dev->speed == USB_SPEED_SUPER) {
+ 		int initscreen = 1;
+ #ifdef INCL_SISUSB_CON
+ 		if (sisusb_first_vc > 0 &&
 
 
