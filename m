@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759616Ab0G3Rwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:52:34 -0400
-Received: from kroah.org ([198.145.64.141]:35932 "EHLO coco.kroah.org"
+	id S1759437Ab0G3RfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:35:13 -0400
+Received: from kroah.org ([198.145.64.141]:35534 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759341Ab0G3RfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:10 2010
-Message-Id: <20100730173110.218448887@clark.site>
+	id S1759318Ab0G3ReH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
+Message-Id: <20100730173104.583785660@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:48 -0700
+Date: Fri, 30 Jul 2010 10:29:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Vorontsov <avorontsov@mvista.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [083/140] powerpc/cpm: Reintroduce global spi_pram struct (fixes build issue)
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [020/140] cifs: dont attempt busy-file rename unless its in same directory
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,130 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Vorontsov <avorontsov@mvista.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 56825c88ff438f4dbb51a44591cc29e707fe783a upstream.
+commit ed0e3ace576d297a5c7015401db1060bbf677b94 upstream.
 
-spi_t was removed in commit 644b2a680ccc51a9ec4d6beb12e9d47d2dee98e2
-("powerpc/cpm: Remove SPI defines and spi structs"), the commit assumed
-that spi_t isn't used anywhere outside of the spi_mpc8xxx driver. But
-it appears that the struct is needed for micropatch code. So, let's
-reintroduce the struct.
+Busy-file renames don't actually work across directories, so we need
+to limit this code to renames within the same dir.
 
-Fixes the following build issue:
+This fixes the bug detailed here:
 
-    CC      arch/powerpc/sysdev/micropatch.o
-  micropatch.c: In function 'cpm_load_patch':
-  micropatch.c:629: error: expected '=', ',', ';', 'asm' or '__attribute__' before '*' token
-  micropatch.c:629: error: 'spp' undeclared (first use in this function)
-  micropatch.c:629: error: (Each undeclared identifier is reported only once
-  micropatch.c:629: error: for each function it appears in.)
+    https://bugzilla.redhat.com/show_bug.cgi?id=591938
 
-Reported-by: LEROY Christophe <christophe.leroy@c-s.fr>
-Reported-by: Tony Breeds <tony@bakeyournoodle.com>
-Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/include/asm/cpm.h   |   24 ++++++++++++++++++++++++
- arch/powerpc/sysdev/micropatch.c |    7 ++++---
- drivers/spi/spi_mpc8xxx.c        |   22 ----------------------
- 3 files changed, 28 insertions(+), 25 deletions(-)
+ fs/cifs/inode.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/powerpc/include/asm/cpm.h
-+++ b/arch/powerpc/include/asm/cpm.h
-@@ -7,6 +7,30 @@
- #include <linux/of.h>
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -1284,6 +1284,10 @@ cifs_do_rename(int xid, struct dentry *f
+ 	if (rc == 0 || rc != -ETXTBSY)
+ 		return rc;
  
- /*
-+ * SPI Parameter RAM common to QE and CPM.
-+ */
-+struct spi_pram {
-+	__be16	rbase;	/* Rx Buffer descriptor base address */
-+	__be16	tbase;	/* Tx Buffer descriptor base address */
-+	u8	rfcr;	/* Rx function code */
-+	u8	tfcr;	/* Tx function code */
-+	__be16	mrblr;	/* Max receive buffer length */
-+	__be32	rstate;	/* Internal */
-+	__be32	rdp;	/* Internal */
-+	__be16	rbptr;	/* Internal */
-+	__be16	rbc;	/* Internal */
-+	__be32	rxtmp;	/* Internal */
-+	__be32	tstate;	/* Internal */
-+	__be32	tdp;	/* Internal */
-+	__be16	tbptr;	/* Internal */
-+	__be16	tbc;	/* Internal */
-+	__be32	txtmp;	/* Internal */
-+	__be32	res;	/* Tx temp. */
-+	__be16  rpbase;	/* Relocation pointer (CPM1 only) */
-+	__be16	res1;	/* Reserved */
-+};
++	/* open-file renames don't work across directories */
++	if (to_dentry->d_parent != from_dentry->d_parent)
++		return rc;
 +
-+/*
-  * USB Controller pram common to QE and CPM.
-  */
- struct usb_ctlr {
---- a/arch/powerpc/sysdev/micropatch.c
-+++ b/arch/powerpc/sysdev/micropatch.c
-@@ -16,6 +16,7 @@
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/8xx_immap.h>
-+#include <asm/cpm.h>
- #include <asm/cpm1.h>
- 
- /*
-@@ -626,7 +627,7 @@ cpm_load_patch(cpm8xx_t	*cp)
- 	volatile uint		*dp;		/* Dual-ported RAM. */
- 	volatile cpm8xx_t	*commproc;
- 	volatile iic_t		*iip;
--	volatile spi_t		*spp;
-+	volatile struct spi_pram *spp;
- 	volatile smc_uart_t	*smp;
- 	int	i;
- 
-@@ -668,8 +669,8 @@ cpm_load_patch(cpm8xx_t	*cp)
- 	/* Put SPI above the IIC, also 32-byte aligned.
- 	*/
- 	i = (RPBASE + sizeof(iic_t) + 31) & ~31;
--	spp = (spi_t *)&commproc->cp_dparam[PROFF_SPI];
--	spp->spi_rpbase = i;
-+	spp = (struct spi_pram *)&commproc->cp_dparam[PROFF_SPI];
-+	spp->rpbase = i;
- 
- # if defined(CONFIG_I2C_SPI_UCODE_PATCH)
- 	commproc->cp_cpmcr1 = 0x802a;
---- a/drivers/spi/spi_mpc8xxx.c
-+++ b/drivers/spi/spi_mpc8xxx.c
-@@ -65,28 +65,6 @@ struct mpc8xxx_spi_reg {
- 	__be32 receive;
- };
- 
--/* SPI Parameter RAM */
--struct spi_pram {
--	__be16	rbase;	/* Rx Buffer descriptor base address */
--	__be16	tbase;	/* Tx Buffer descriptor base address */
--	u8	rfcr;	/* Rx function code */
--	u8	tfcr;	/* Tx function code */
--	__be16	mrblr;	/* Max receive buffer length */
--	__be32	rstate;	/* Internal */
--	__be32	rdp;	/* Internal */
--	__be16	rbptr;	/* Internal */
--	__be16	rbc;	/* Internal */
--	__be32	rxtmp;	/* Internal */
--	__be32	tstate;	/* Internal */
--	__be32	tdp;	/* Internal */
--	__be16	tbptr;	/* Internal */
--	__be16	tbc;	/* Internal */
--	__be32	txtmp;	/* Internal */
--	__be32	res;	/* Tx temp. */
--	__be16  rpbase;	/* Relocation pointer (CPM1 only) */
--	__be16	res1;	/* Reserved */
--};
--
- /* SPI Controller mode register definitions */
- #define	SPMODE_LOOP		(1 << 30)
- #define	SPMODE_CI_INACTIVEHIGH	(1 << 29)
+ 	/* open the file to be renamed -- we need DELETE perms */
+ 	rc = CIFSSMBOpen(xid, pTcon, fromPath, FILE_OPEN, DELETE,
+ 			 CREATE_NOT_DIR, &srcfid, &oplock, NULL,
 
 
