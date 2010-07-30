@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759878Ab0G3RzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:55:00 -0400
-Received: from kroah.org ([198.145.64.141]:57916 "EHLO coco.kroah.org"
+	id S1760147Ab0G3Sco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:32:44 -0400
+Received: from kroah.org ([198.145.64.141]:58107 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759488Ab0G3Ry3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:29 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:35 2010
-Message-Id: <20100730175135.756548358@clark.site>
+	id S1759876Ab0G3Ry7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:38 2010
+Message-Id: <20100730175138.377872179@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:41 -0700
+Date: Fri, 30 Jul 2010 10:51:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [024/205] cifs: dont attempt busy-file rename unless its in same directory
+        Dave Airlie <airlied@redhat.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Subject: [053/205] drm/i915: fix hibernation since i915 self-reclaim fixes
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit ed0e3ace576d297a5c7015401db1060bbf677b94 upstream.
+commit 985b823b919273fe1327d56d2196b4f92e5d0fae upstream.
 
-Busy-file renames don't actually work across directories, so we need
-to limit this code to renames within the same dir.
+Since commit 4bdadb9785696439c6e2b3efe34aa76df1149c83 ("drm/i915:
+Selectively enable self-reclaim"), we've been passing GFP_MOVABLE to the
+i915 page allocator where we weren't before due to some over-eager
+removal of the page mapping gfp_flags games the code used to play.
 
-This fixes the bug detailed here:
+This caused hibernate on Intel hardware to result in a lot of memory
+corruptions on resume.  See for example
 
-    https://bugzilla.redhat.com/show_bug.cgi?id=591938
+  http://bugzilla.kernel.org/show_bug.cgi?id=13811
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Reported-by: Evengi Golov (in bugzilla)
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Tested-by: M. Vefa Bicakci <bicave@superonline.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/inode.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1389,6 +1389,10 @@ cifs_do_rename(int xid, struct dentry *f
- 	if (rc == 0 || rc != -ETXTBSY)
- 		return rc;
- 
-+	/* open-file renames don't work across directories */
-+	if (to_dentry->d_parent != from_dentry->d_parent)
-+		return rc;
-+
- 	/* open the file to be renamed -- we need DELETE perms */
- 	rc = CIFSSMBOpen(xid, pTcon, fromPath, FILE_OPEN, DELETE,
- 			 CREATE_NOT_DIR, &srcfid, &oplock, NULL,
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -2312,7 +2312,7 @@ i915_gem_object_get_pages(struct drm_gem
+ 	mapping = inode->i_mapping;
+ 	for (i = 0; i < page_count; i++) {
+ 		page = read_cache_page_gfp(mapping, i,
+-					   mapping_gfp_mask (mapping) |
++					   GFP_HIGHUSER |
+ 					   __GFP_COLD |
+ 					   gfpmask);
+ 		if (IS_ERR(page))
 
 
