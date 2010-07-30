@@ -1,67 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760415Ab0G3TJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:09:59 -0400
-Received: from kroah.org ([198.145.64.141]:51499 "EHLO coco.kroah.org"
+	id S933544Ab0G3TKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:10:13 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:39088 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757190Ab0G3RS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:26 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:03 2010
-Message-Id: <20100730171503.923738937@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:35 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [047/165] x86, Calgary: Limit the max PHB number to 256
-In-Reply-To: <20100730171550.GA1299@kroah.com
+	id S1757860Ab0G3TJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 15:09:57 -0400
+To: mingo@elte.hu
+Subject: [PATCH] x86, UV: initialize BAU hub map
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <E1Oeuyt-0004XS-0y@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Fri, 30 Jul 2010 14:10:55 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-------------------
+Fix uninitialized uvhub_mask.
+- An unitialized bit map variable was causing initialization of
+  non-existant hubs (this one causes boot panics).
+- And the bit map was too small for large machines.  This patch makes it dynamic
+  in size.
+- Fix the case where socket 0 has no enabled cpu's. Don't assume every
+  hub has a socket 0.
+- uv_init_per_cpu() should be __init.
 
-From: Darrick J. Wong <djwong@us.ibm.com>
+Diffed against 2.6.35-rc5
 
-commit d596043d71ff0d7b3d0bead19b1d68c55f003093 upstream.
-
-The x3950 family can have as many as 256 PCI buses in a single system, so
-change the limits to the maximum.  Since there can only be 256 PCI buses in one
-domain, we no longer need the BUG_ON check.
-
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-LKML-Reference: <20100701004519.GQ15515@tux1.beaverton.ibm.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
 ---
- arch/x86/kernel/pci-calgary_64.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/x86/kernel/tlb_uv.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -109,7 +109,7 @@ int use_calgary __read_mostly = 0;
-  * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
-  * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
+Index: 100722.linux-tip/arch/x86/kernel/tlb_uv.c
+===================================================================
+--- 100722.linux-tip.orig/arch/x86/kernel/tlb_uv.c
++++ 100722.linux-tip/arch/x86/kernel/tlb_uv.c
+@@ -1484,15 +1484,16 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
   */
--#define MAX_PHB_BUS_NUM		384
-+#define MAX_PHB_BUS_NUM		256
- 
- #define PHBS_PER_CALGARY	  4
- 
-@@ -1058,8 +1058,6 @@ static int __init calgary_init_one(struc
- 	struct iommu_table *tbl;
- 	int ret;
- 
--	BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
--
- 	bbar = busno_to_bbar(dev->bus->number);
- 	ret = calgary_setup_tar(dev, bbar);
- 	if (ret)
-
-
+-static void uv_init_per_cpu(int nuvhubs)
++static void __init uv_init_per_cpu(int nuvhubs)
+ {
+ 	int i;
+ 	int cpu;
+ 	int pnode;
+ 	int uvhub;
++	int have_hmaster;
+ 	short socket = 0;
+ 	unsigned short socket_mask;
+-	unsigned int uvhub_mask;
++	unsigned char *uvhub_mask;
+ 	struct bau_control *bcp;
+ 	struct uvhub_desc *bdp;
+ 	struct socket_desc *sdp;
+@@ -1516,28 +1517,29 @@ static void uv_init_per_cpu(int nuvhubs)
+ 	uvhub_descs = (struct uvhub_desc *)
+ 		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
+ 	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
++	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
+ 		pnode = uv_cpu_hub_info(cpu)->pnode;
+ 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
+-		uvhub_mask |= (1 << uvhub);
++		*(uvhub_mask + (uvhub/8)) |= (1 << (uvhub%8));
+ 		bdp = &uvhub_descs[uvhub];
+ 		bdp->num_cpus++;
+ 		bdp->uvhub = uvhub;
+ 		bdp->pnode = pnode;
+ 		/* kludge: 'assuming' one node per socket, and assuming that
+ 		   disabling a socket just leaves a gap in node numbers */
+-		socket = (cpu_to_node(cpu) & 1);;
++		socket = (cpu_to_node(cpu) & 1);
+ 		bdp->socket_mask |= (1 << socket);
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+ 		sdp->num_cpus++;
+ 	}
+-	uvhub = 0;
+-	while (uvhub_mask) {
+-		if (!(uvhub_mask & 1))
+-			goto nexthub;
++	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
++		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
++			continue;
++		have_hmaster = 0;
+ 		bdp = &uvhub_descs[uvhub];
+ 		socket_mask = bdp->socket_mask;
+ 		socket = 0;
+@@ -1551,8 +1553,10 @@ static void uv_init_per_cpu(int nuvhubs)
+ 				bcp->cpu = cpu;
+ 				if (i == 0) {
+ 					smaster = bcp;
+-					if (socket == 0)
++					if (!have_hmaster) {
++						have_hmaster++;
+ 						hmaster = bcp;
++					}
+ 				}
+ 				bcp->cpus_in_uvhub = bdp->num_cpus;
+ 				bcp->cpus_in_socket = sdp->num_cpus;
+@@ -1566,11 +1570,9 @@ nextsocket:
+ 			socket++;
+ 			socket_mask = (socket_mask >> 1);
+ 		}
+-nexthub:
+-		uvhub++;
+-		uvhub_mask = (uvhub_mask >> 1);
+ 	}
+ 	kfree(uvhub_descs);
++	kfree(uvhub_mask);
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		bcp->baudisabled = 0;
