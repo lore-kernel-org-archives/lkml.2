@@ -1,229 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab0G3ARx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 20:17:53 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40631 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758120Ab0G3ARv (ORCPT
+	id S1758102Ab0G3ASl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 20:18:41 -0400
+Received: from smtp12.ono.com ([62.42.230.20]:49454 "EHLO resmaa12.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755322Ab0G3ASk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 20:17:51 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 30 Jul 2010 09:12:59 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "balbir\@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura\@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5]  use ID in page cgroup
-Message-Id: <20100730091259.052a2902.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <xr9339v2m970.fsf@ninji.mtv.corp.google.com>
-References: <20100729184250.acdff587.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100729184606.df7e639f.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr9339v2m970.fsf@ninji.mtv.corp.google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 29 Jul 2010 20:18:40 -0400
+Date: Fri, 30 Jul 2010 02:18:37 +0200
+From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org
+Subject: Re: Questions and problems with NFS4
+Message-ID: <20100730021837.65549fa7@werewolf.home>
+In-Reply-To: <4C507208.6030309@oracle.com>
+References: <20100728004611.00c46b13@werewolf.home>
+	<4C507208.6030309@oracle.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-mandriva-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 11:31:15 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Wed, 28 Jul 2010 14:08:08 -0400, Chuck Lever <chuck.lever@oracle.com> wrote:
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> On 07/27/10 06:46 PM, J.A. Magallón wrote:
+> > - AFAIK, with NFS4 the only needed daemons are nfsd and idmapd. And the
+> >    only accesible port from the outside is 2049, for nfsd.
+> >    I have tried to strip down my nfs server (-N 2 -N 3 -U),
+> >    but rpcinfo still gives me:
+> >
+> > annwn:~# rpcinfo -p localhost
+> >     program vers proto   port  service
+> >      100000    4   tcp    111  portmapper
+> >      100000    3   tcp    111  portmapper
+> >      100000    2   tcp    111  portmapper
+> >      100000    4   udp    111  portmapper
+> >      100000    3   udp    111  portmapper
+> >      100000    2   udp    111  portmapper
+> >      100024    1   udp  48461  status
+> >      100024    1   tcp  37515  status
+> >      100021    1   udp  38583  nlockmgr
+> >      100021    3   udp  38583  nlockmgr
+> >      100021    4   udp  38583  nlockmgr
+> >      100021    1   tcp  37873  nlockmgr
+> >      100021    3   tcp  37873  nlockmgr
+> >      100021    4   tcp  37873  nlockmgr
+> >      100003    4   tcp   2049  nfs
+> >      100005    1   udp  45341  mountd
+> >      100005    1   tcp  58639  mountd
+> >
+> >    disabling portampper and mountd is just a matter of initscripts
+> >    requirements, but how can I disable nlockmgr ? It isn't needed for
+> >    NFS4, isn't it ? Nor portmapper nor mountd...
 > 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > Now, addresses of memory cgroup can be calculated by their ID without complex.
-> > This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
-> > On 64bit architecture, this offers us more 6bytes room per page_cgroup.
-> > Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
-> > some light-weight concurrent access.
-> >
-> > We may able to move this id onto flags field but ...go step by step.
-> >
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/page_cgroup.h |    3 ++-
-> >  mm/memcontrol.c             |   40 +++++++++++++++++++++++++---------------
-> >  mm/page_cgroup.c            |    2 +-
-> >  3 files changed, 28 insertions(+), 17 deletions(-)
-> >
-> > Index: mmotm-0727/include/linux/page_cgroup.h
-> > ===================================================================
-> > --- mmotm-0727.orig/include/linux/page_cgroup.h
-> > +++ mmotm-0727/include/linux/page_cgroup.h
-> > @@ -12,7 +12,8 @@
-> >   */
-> >  struct page_cgroup {
-> >  	unsigned long flags;
-> > -	struct mem_cgroup *mem_cgroup;
-> > +	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
-> > +	unsigned short blk_cgroup;	/* Not Used..but will be. */
-> >  	struct page *page;
-> >  	struct list_head lru;		/* per cgroup LRU list */
-> >  };
-> > Index: mmotm-0727/mm/page_cgroup.c
-> > ===================================================================
-> > --- mmotm-0727.orig/mm/page_cgroup.c
-> > +++ mmotm-0727/mm/page_cgroup.c
-> > @@ -15,7 +15,7 @@ static void __meminit
-> >  __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
-> >  {
-> >  	pc->flags = 0;
-> > -	pc->mem_cgroup = NULL;
-> > +	pc->mem_cgroup = 0;
-> >  	pc->page = pfn_to_page(pfn);
-> >  	INIT_LIST_HEAD(&pc->lru);
-> >  }
-> > Index: mmotm-0727/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0727.orig/mm/memcontrol.c
-> > +++ mmotm-0727/mm/memcontrol.c
-> > @@ -376,7 +376,7 @@ struct cgroup_subsys_state *mem_cgroup_c
-> >  static struct mem_cgroup_per_zone *
-> >  page_cgroup_zoneinfo(struct page_cgroup *pc)
-> >  {
-> > -	struct mem_cgroup *mem = pc->mem_cgroup;
-> > +	struct mem_cgroup *mem = id_to_memcg(pc->mem_cgroup);
-> >  	int nid = page_cgroup_nid(pc);
-> >  	int zid = page_cgroup_zid(pc);
-> >  
-> > @@ -581,7 +581,11 @@ static void mem_cgroup_charge_statistics
-> >  					 bool charge)
-> >  {
-> >  	int val = (charge) ? 1 : -1;
-> > -
-> > +	if (pc->mem_cgroup == 0) {
-> > +		show_stack(NULL, NULL);
-> > +		printk("charge to 0\n");
-> > +		while(1);
-> > +	}
-> Why hang the task here.  If this is bad then maybe BUG_ON()?
-
-Ouch, debug code is remaining.
-
-> >  	preempt_disable();
-> >  
-> >  	if (PageCgroupCache(pc))
-> > @@ -718,6 +722,11 @@ static inline bool mem_cgroup_is_root(st
-> >  	return (mem == root_mem_cgroup);
-> >  }
-> >  
-> > +static inline bool mem_cgroup_is_rootid(unsigned short id)
-> > +{
-> > +	return (id == 1);
-> > +}
-> > +
-> >  /*
-> >   * Following LRU functions are allowed to be used without PCG_LOCK.
-> >   * Operations are called by routine of global LRU independently from memcg.
-> > @@ -750,7 +759,7 @@ void mem_cgroup_del_lru_list(struct page
-> >  	 */
-> >  	mz = page_cgroup_zoneinfo(pc);
-> >  	MEM_CGROUP_ZSTAT(mz, lru) -= 1;
-> > -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> > +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
-> >  		return;
-> >  	VM_BUG_ON(list_empty(&pc->lru));
-> >  	list_del_init(&pc->lru);
-> > @@ -777,7 +786,7 @@ void mem_cgroup_rotate_lru_list(struct p
-> >  	 */
-> >  	smp_rmb();
-> >  	/* unused or root page is not rotated. */
-> > -	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
-> > +	if (!PageCgroupUsed(pc) || mem_cgroup_is_rootid(pc->mem_cgroup))
-> >  		return;
-> >  	mz = page_cgroup_zoneinfo(pc);
-> >  	list_move(&pc->lru, &mz->lists[lru]);
-> > @@ -803,7 +812,7 @@ void mem_cgroup_add_lru_list(struct page
-> >  	mz = page_cgroup_zoneinfo(pc);
-> >  	MEM_CGROUP_ZSTAT(mz, lru) += 1;
-> >  	SetPageCgroupAcctLRU(pc);
-> > -	if (mem_cgroup_is_root(pc->mem_cgroup))
-> > +	if (mem_cgroup_is_rootid(pc->mem_cgroup))
-> >  		return;
-> >  	list_add(&pc->lru, &mz->lists[lru]);
-> >  }
-> > @@ -1471,7 +1480,7 @@ void mem_cgroup_update_file_mapped(struc
-> >  		return;
-> >  
-> >  	lock_page_cgroup(pc);
-> > -	mem = pc->mem_cgroup;
-> > +	mem = id_to_memcg(pc->mem_cgroup);
-> >  	if (!mem || !PageCgroupUsed(pc))
-> >  		goto done;
-> >  
-> > @@ -1859,7 +1868,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
-> >  	pc = lookup_page_cgroup(page);
-> >  	lock_page_cgroup(pc);
-> >  	if (PageCgroupUsed(pc)) {
-> > -		mem = pc->mem_cgroup;
-> > +		mem = id_to_memcg(pc->mem_cgroup);
-> >  		if (mem && !css_tryget(&mem->css))
-> >  			mem = NULL;
-> >  	} else if (PageSwapCache(page)) {
-> > @@ -1895,7 +1904,7 @@ static void __mem_cgroup_commit_charge(s
-> >  		return;
-> >  	}
-> >  
-> > -	pc->mem_cgroup = mem;
-> > +	pc->mem_cgroup = css_id(&mem->css);
-> >  	/*
-> >  	 * We access a page_cgroup asynchronously without lock_page_cgroup().
-> >  	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
-> > @@ -1953,7 +1962,7 @@ static void __mem_cgroup_move_account(st
-> >  	VM_BUG_ON(PageLRU(pc->page));
-> >  	VM_BUG_ON(!PageCgroupLocked(pc));
-> >  	VM_BUG_ON(!PageCgroupUsed(pc));
-> > -	VM_BUG_ON(pc->mem_cgroup != from);
-> > +	VM_BUG_ON(id_to_memcg(pc->mem_cgroup) != from);
-> >  
-> >  	if (PageCgroupFileMapped(pc)) {
-> >  		/* Update mapped_file data for mem_cgroup */
-> > @@ -1968,7 +1977,7 @@ static void __mem_cgroup_move_account(st
-> >  		mem_cgroup_cancel_charge(from);
-> >  
-> >  	/* caller should have done css_get */
-> > -	pc->mem_cgroup = to;
-> > +	pc->mem_cgroup = css_id(&to->css);
-> >  	mem_cgroup_charge_statistics(to, pc, true);
-> >  	/*
-> >  	 * We charges against "to" which may not have any tasks. Then, "to"
-> > @@ -1988,7 +1997,7 @@ static int mem_cgroup_move_account(struc
-> >  {
-> >  	int ret = -EINVAL;
-> >  	lock_page_cgroup(pc);
-> > -	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
-> > +	if (PageCgroupUsed(pc) && id_to_memcg(pc->mem_cgroup) == from) {
-> >  		__mem_cgroup_move_account(pc, from, to, uncharge);
-> >  		ret = 0;
-> >  	}
-> > @@ -2327,9 +2336,9 @@ __mem_cgroup_uncharge_common(struct page
-> >  
-> >  	lock_page_cgroup(pc);
-> >  
-> > -	mem = pc->mem_cgroup;
-> > +	mem = id_to_memcg(pc->mem_cgroup);
-> >  
-> > -	if (!PageCgroupUsed(pc))
-> > +	if (!mem || !PageCgroupUsed(pc))
-> Why add the extra !mem check here?
+> Strictly speaking, portmapper is not required for NFSv4 service. 
+> However, the NFS infrastructure on Linux is still designed for NFSv2 and 
+> v3.  There remains some work needed to make portmapper optional for a 
+> v4-only server.  For now, continue to run it in order to handle kernel 
+> upcalls.
 > 
-> Can PageCgroupUsed() return true if mem==NULL?
+> rpc.mountd is, however, still required on Linux NFSv4 servers.  Although 
+> NFSv4 clients do not contact the server's mountd, the kernel's NFS 
+> server performs upcalls to rpc.mountd to manage export information.  You 
+> can firewall off the mountd service on the server without affecting 
+> NFSv4 clients.  Recent versions of rpc.mountd accept command line 
+> options that disable the mountd network service while still handling 
+> kernel upcalls.
 > 
-mem && PageCgroupUsed()  => what we want
-mem && !PageCgroupUsed() => can be true
-!mem && PageCgroupUsed() => never happens(bug?)
-!mem && !PageCgroupUsed() => a clean state.
+> And, as long as lockd is running, you will need to keep rpc.statd 
+> around.  Again, you can firewall this service so that it is not exposed 
+> on the network, but it must continue to be available to handle kernel 
+> upcalls.  This is something we hope to address eventually as part of the 
+> lockd work Bruce mentioned.
 
-AH, yes. debug code again.
+Err...
 
-Thanks,
--Kame
+First of all, plz correct me if this is in some kind of wiki, web page or
+the like, but I have not been able to find it. All this things should be
+on a document somewhere, perhaps even in the kernel itself...
+These are the things I have found out (thanks to your answers...).
+I'm a long time unix admin, not new to NFS, but all this things were not
+obvious to me, so perhaps they deserve to be in a document, something like
+"NFS 3 to 4 migration for dummy admins":
 
+- Everything just works if you mount shares as nfs4. Even, if you have a
+  bunch of linux boxen with recent kernel/nfs-utils, probably you are
+  already doing nfs4... modern mount tries nfs4 first.
+
+- Using nfsroot with fsid=0 is not mandatory, nor bind-mounting everything
+  under some /export (like many documents say), that only forces you to
+  use the old way of specifying paths in the server (absolute, not
+  relative to /export).
+
+- Even if you use nfsroot(fsid=0), and you mount it on the client
+  at /somepoint, you are not forced to mount everything else under
+  /somepoint (plz, correct me if I'm wrong).
+
+- You can strip your server for NFS4, but not too much... Old daemons
+  are still needed locally. For example, you can get rid of NFS2 and
+  UDP for nfsd (-N 2 -U, -any os still uses NFS2??-), and old
+  mount protocols (-N 1 -N 2 for mountd)...
+
+- ... but they can be firewalled, use is just local
+
+- portmap/rpcbind is not needed, but still used because nfsd is not
+  yet proper clean for only-nfs4-behavior.
+
+There are also some things I have not been able to discover, like
+using the interesting things of NFS4:
+
+- How do you activate delegations ? Is this an automatic thing, or
+  do I have to add any option somewhere ?
+
+- How do you use cache ? Many docs talk about fsc option, but man
+  does not mention it (nfs-utils 1.2.2).
+  I have tried to use cachefiles module, and cachefilesd, but
+  when I try to run it, I get:
+
+bran:~/c/cachefilesd-0.10# ./cachefilesd -dddns -f $PWD/cachefilesd.conf
+About to bind cache
+CacheFiles bind failed: errno 95 (Operation not supported)
+
+In dmesg:
+[cachef] ==> cachefiles_get_security_ID({system_u:system_r:cachefiles_kernel_t:s0})
+CacheFiles: Security denies permission to nominate security context: error -95
+
+I can not run cachefiles without SELinux or something like that ?
+
+Thanks, perhaps this notes help someone in the future. 
+
+TIA
+
+-- 
+J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
+                                         \         It's better when it's free
