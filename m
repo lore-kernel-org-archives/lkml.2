@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758768Ab0G3ReY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:34:24 -0400
-Received: from kroah.org ([198.145.64.141]:35428 "EHLO coco.kroah.org"
+	id S932231Ab0G3Reh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:34:37 -0400
+Received: from kroah.org ([198.145.64.141]:35470 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759301Ab0G3Rdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:33:52 -0400
+	id S1759313Ab0G3Rd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:33:58 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
-Message-Id: <20100730173103.350122686@clark.site>
+Message-Id: <20100730173103.773376830@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:31 -0700
+Date: Fri, 30 Jul 2010 10:29:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tadashi Abe <tabe@mvista.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [006/140] pegasus: fix USB device ID for ETX-US2
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [011/140] veth: Dont kfree_skb() after dev_forward_skb()
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Tadashi Abe <tabe@mvista.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 95718c1c25370b2c85061a4d8dfab2831b3ad280 ]
+[ Upstream commit 6ec82562ffc6f297d0de36d65776cff8e5704867 ]
 
-USB device ID definition for I-O Data ETX-US2 is wrong.
-Correct ID is 0x093a. Here's snippet from /proc/bus/usb/devices;
+In case of congestion, netif_rx() frees the skb, so we must assume
+dev_forward_skb() also consume skb.
 
-T:  Bus=01 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  2 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=ff Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=04bb ProdID=093a Rev= 1.01
-S:  Manufacturer=I-O DATA DEVICE,INC.
-S:  Product=I-O DATA ETX2-US2
-S:  SerialNumber=A26427
-C:* #Ifs= 1 Cfg#= 1 Atr=80 MxPwr=224mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=00 Driver=pegasus
-E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=83(I) Atr=03(Int.) MxPS=   8 Ivl=125us
+Bug introduced by commit 445409602c092
+(veth: move loopback logic to common location)
 
-This patch enables pegasus driver to work fine with ETX-US2.
+We must change dev_forward_skb() to always consume skb, and veth to not
+double free it.
 
-Signed-off-by: Tadashi Abe <tabe@mvista.com>
+Bug report : http://marc.info/?l=linux-netdev&m=127310770900442&w=3
+
+Reported-by: Martín Ferrari <martin.ferrari@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/usb/pegasus.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/veth.c |    1 -
+ net/core/dev.c     |   10 +++++-----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
---- a/drivers/net/usb/pegasus.h
-+++ b/drivers/net/usb/pegasus.h
-@@ -254,7 +254,7 @@ PEGASUS_DEV( "IO DATA USB ET/TX", VENDOR
- 		DEFAULT_GPIO_RESET )
- PEGASUS_DEV( "IO DATA USB ET/TX-S", VENDOR_IODATA, 0x0913,
- 		DEFAULT_GPIO_RESET | PEGASUS_II )
--PEGASUS_DEV( "IO DATA USB ETX-US2", VENDOR_IODATA, 0x092a,
-+PEGASUS_DEV( "IO DATA USB ETX-US2", VENDOR_IODATA, 0x093a,
- 		DEFAULT_GPIO_RESET | PEGASUS_II )
- PEGASUS_DEV( "Kingston KNU101TX Ethernet", VENDOR_KINGSTON, 0x000a,
- 		DEFAULT_GPIO_RESET)
+--- a/drivers/net/veth.c
++++ b/drivers/net/veth.c
+@@ -186,7 +186,6 @@ tx_drop:
+ 	return NETDEV_TX_OK;
+ 
+ rx_drop:
+-	kfree_skb(skb);
+ 	rcv_stats->rx_dropped++;
+ 	return NETDEV_TX_OK;
+ }
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1428,7 +1428,7 @@ static inline void net_timestamp(struct
+  *
+  * return values:
+  *	NET_RX_SUCCESS	(no congestion)
+- *	NET_RX_DROP     (packet was dropped)
++ *	NET_RX_DROP     (packet was dropped, but freed)
+  *
+  * dev_forward_skb can be used for injecting an skb from the
+  * start_xmit function of one device into the receive queue
+@@ -1442,11 +1442,11 @@ int dev_forward_skb(struct net_device *d
+ {
+ 	skb_orphan(skb);
+ 
+-	if (!(dev->flags & IFF_UP))
+-		return NET_RX_DROP;
+-
+-	if (skb->len > (dev->mtu + dev->hard_header_len))
++	if (!(dev->flags & IFF_UP) ||
++	    (skb->len > (dev->mtu + dev->hard_header_len))) {
++		kfree_skb(skb);
+ 		return NET_RX_DROP;
++	}
+ 
+ 	skb_dst_drop(skb);
+ 	skb->tstamp.tv64 = 0;
 
 
