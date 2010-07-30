@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759671Ab0G3SpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:45:09 -0400
-Received: from kroah.org ([198.145.64.141]:35843 "EHLO coco.kroah.org"
+	id S932292Ab0G3Re4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:34:56 -0400
+Received: from kroah.org ([198.145.64.141]:35515 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932301Ab0G3Re7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:59 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:09 2010
-Message-Id: <20100730173108.947270136@clark.site>
+	id S1758816Ab0G3ReE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
+Message-Id: <20100730173104.315234043@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:34 -0700
+Date: Fri, 30 Jul 2010 10:29:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [069/140] perf: Resurrect flat callchains
+        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
+Subject: [017/140] hwmon: (coretemp) Skip duplicate CPU entries
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 97aa1052739c6a06cb6b0467dbf410613d20bc97 upstream.
+commit d883b9f0977269d519469da72faec6a7f72cb489 upstream.
 
-Initialize the callchain radix tree root correctly.
+On hyper-threaded CPUs, each core appears twice in the CPU list. Skip
+the second entry to avoid duplicate sensors.
 
-When we walk through the parents, we must stop after the root, but
-since it wasn't well initialized, its parent pointer was random.
-
-Also the number of hits was random because uninitialized, hence it
-was part of the callchain while the root doesn't contain anything.
-
-This fixes segfaults and percentages followed by empty callchains
-while running:
-
-	perf report -g flat
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Huaxu Wan <huaxu.wan@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- tools/perf/util/callchain.h |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/hwmon/coretemp.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -48,6 +48,9 @@ static inline void callchain_init(struct
- 	INIT_LIST_HEAD(&node->brothers);
- 	INIT_LIST_HEAD(&node->children);
- 	INIT_LIST_HEAD(&node->val);
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -356,6 +356,10 @@ struct pdev_entry {
+ 	struct list_head list;
+ 	struct platform_device *pdev;
+ 	unsigned int cpu;
++#ifdef CONFIG_SMP
++	u16 phys_proc_id;
++	u16 cpu_core_id;
++#endif
+ };
+ 
+ static LIST_HEAD(pdev_list);
+@@ -366,6 +370,22 @@ static int __cpuinit coretemp_device_add
+ 	int err;
+ 	struct platform_device *pdev;
+ 	struct pdev_entry *pdev_entry;
++#ifdef CONFIG_SMP
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++#endif
 +
-+	node->parent = NULL;
-+	node->hit = 0;
++	mutex_lock(&pdev_list_mutex);
++
++#ifdef CONFIG_SMP
++	/* Skip second HT entry of each core */
++	list_for_each_entry(pdev_entry, &pdev_list, list) {
++		if (c->phys_proc_id == pdev_entry->phys_proc_id &&
++		    c->cpu_core_id == pdev_entry->cpu_core_id) {
++			err = 0;	/* Not an error */
++			goto exit;
++		}
++	}
++#endif
+ 
+ 	pdev = platform_device_alloc(DRVNAME, cpu);
+ 	if (!pdev) {
+@@ -389,7 +409,10 @@ static int __cpuinit coretemp_device_add
+ 
+ 	pdev_entry->pdev = pdev;
+ 	pdev_entry->cpu = cpu;
+-	mutex_lock(&pdev_list_mutex);
++#ifdef CONFIG_SMP
++	pdev_entry->phys_proc_id = c->phys_proc_id;
++	pdev_entry->cpu_core_id = c->cpu_core_id;
++#endif
+ 	list_add_tail(&pdev_entry->list, &pdev_list);
+ 	mutex_unlock(&pdev_list_mutex);
+ 
+@@ -400,6 +423,7 @@ exit_device_free:
+ exit_device_put:
+ 	platform_device_put(pdev);
+ exit:
++	mutex_unlock(&pdev_list_mutex);
+ 	return err;
  }
  
- static inline u64 cumul_hits(struct callchain_node *node)
 
 
