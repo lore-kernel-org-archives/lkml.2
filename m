@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab0G3MsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 08:48:10 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:41824 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758548Ab0G3MsG (ORCPT
+	id S1758566Ab0G3Mtb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 08:49:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44665 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756691Ab0G3Mt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 08:48:06 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ywuPkEcVM1laTJfgBxOeMihDpPjj0gn1U7pHLqQVCuZFTgi
- 8jvzQrPssrN1hdG6PiwwFQlxG6gSz.dxWfv2QLADbcDISksCerlG37pOkJBC
- XmnkEt6YS39KLdyx37dWM7Xs9OYkqV17Aw6NrJG.9zHgOdTreLc64NbPhMD.
- 1PAh6PO9DMjEUZhYcfPRItAw3_4rvMAMzXLhy9cWeSLxBO_vj5kudDDgwE29
- tFwBwS2ij5IIzP9hlN5DKPcBM_d0Uf0OmcnRLHWYlO456hO0P
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 30 Jul 2010 07:48:00 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-In-Reply-To: <1280450338.16922.11735.camel@nimitz>
-Message-ID: <alpine.DEB.2.00.1007300745180.9007@router.home>
-References: <20100728155617.GA5401@barrios-desktop>  <alpine.DEB.2.00.1007281158150.21717@router.home>  <20100728225756.GA6108@barrios-desktop>  <alpine.DEB.2.00.1007291038100.16510@router.home>  <20100729161856.GA16420@barrios-desktop> 
- <alpine.DEB.2.00.1007291132210.17734@router.home>  <20100729170313.GB16420@barrios-desktop>  <alpine.DEB.2.00.1007291222410.17734@router.home>  <20100729183320.GH18923@n2100.arm.linux.org.uk>  <1280436919.16922.11246.camel@nimitz> 
- <20100729221426.GA28699@n2100.arm.linux.org.uk> <1280450338.16922.11735.camel@nimitz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 30 Jul 2010 08:49:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=iEkITeRHcOgj2sCWxOiXGV7lSGWeylMLxyVbD9M7bOXCP+f40gAACoD9/JLV13boWH
+         mOVlldAXJhdVo+OHtMio30t7Ye0kNDlftbNQPrNJ00nToyhflM8qhMrzuWZJRigJ5lQx
+         lPHrxppPsTacBwEo+eq32ExGjoSnTZRyOh30U=
+Message-ID: <4C52CA55.4000204@gmail.com>
+Date: Fri, 30 Jul 2010 14:49:25 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: wharms@bfs.de
+CC: Kulikov Vasiliy <segooon@gmail.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 3/9] staging: otus: check kmalloc() return value
+References: <1280488080-20777-1-git-send-email-segooon@gmail.com> <4C52C614.4030803@bfs.de>
+In-Reply-To: <4C52C614.4030803@bfs.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010, Dave Hansen wrote:
+On 07/30/2010 02:31 PM, walter harms wrote:
+> 
+> 
+> Kulikov Vasiliy schrieb:
+>> kmalloc() may fail, if so return error from zfwUsbSubmitControl().
+>>
+>> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+>> ---
+>>  drivers/staging/otus/wrap_usb.c |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/staging/otus/wrap_usb.c b/drivers/staging/otus/wrap_usb.c
+>> index 93459ca..9f04047 100644
+>> --- a/drivers/staging/otus/wrap_usb.c
+>> +++ b/drivers/staging/otus/wrap_usb.c
+>> @@ -104,6 +104,11 @@ u32_t zfwUsbSubmitControl(zdev_t *dev, u8_t req, u16_t value, u16_t index,
+>>  
+>>  	if (size > 0) {
+>>  		buf = kmalloc(size, GFP_KERNEL);
+>> +		if (buf == NULL) {
+>> +			pr_err("zfwUsbSubmitControl() failed, "
+>> +				  "kmalloc() returned NULL\n");
+>> +			return 1;
+>> +		}
+>>  		memcpy(buf, (u8_t *)data, size);
+>>  	} else
+>>  		buf = NULL;
+> 
+> 
+> We had a memdup() somewhere had'nt we ?
 
-> SPARSEMEM_EXTREME would be a bit different.  It's a 2-level lookup.
-> You'd have 16 "section roots", each representing 256MB of address space.
-> Each time we put memory under one of those roots, we'd fill in a
-> 512-section second-level table, which is designed to always fit into one
-> page.  If you start at 256MB, you won't waste all those entries.
+Yes, but it is not what he is changing. (Patches welcome.)
 
-That is certain a solution to the !MMU case and it would work very much
-like a page table. If you have an MMU then the vmemmap sparsemem
-configuration can take advantage of of that to avoid the 2 level lookup.
+The patch is OK, except try to avoid function names in printks next
+time. Function names are constantly changing, but developers tend not to
+change printk strings. (%s + __func__)
+
+regards,
+-- 
+js
