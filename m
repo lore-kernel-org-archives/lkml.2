@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab0G3Iqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 04:46:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59290 "EHLO hera.kernel.org"
+	id S1755983Ab0G3Ixz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 04:53:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30793 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755791Ab0G3Iqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 04:46:42 -0400
-Message-ID: <4C52913C.9020204@kernel.org>
-Date: Fri, 30 Jul 2010 10:45:48 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1751906Ab0G3Ixw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 04:53:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,285,1278313200"; 
+   d="scan'208";a="823208570"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Fri, 30 Jul 2010 16:53:03 +0800
+Subject: RE: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Topic: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Index: AcsvbdP2So8Wpr8uSbuirl5Bo+pEOQAUJBjA
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D791BAB307158@shsmsx502.ccr.corp.intel.com>
+References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
+ <1280442682.9058.15.camel@localhost.localdomain>
+In-Reply-To: <1280442682.9058.15.camel@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dtor@mail.ru>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Nick Cheng <nick.cheng@areca.com.tw>,
-        James Smart <james.smart@emulex.com>,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-        Benjamin Thery <benjamin.thery@bull.net>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
-References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
-In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Jul 2010 08:45:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2010 07:09 AM, Guenter Roeck wrote:
-> The following comment is found in include/linux/sysfs.h:
-> 
->    /* FIXME
->     * The *owner field is no longer used.
->     * x86 tree has been cleaned up. The owner
->     * attribute is still left for other arches.
->     */
-> 
-> As it turns out, the *owner field is (again?) initialized in several modules,
-> suggesting that such initialization may be creeping back into the code.
-> 
-> This patch set removes the above comment, the *owner field, and each instance
-> in the code where it was found to be initialized.
-> 
-> Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
-> and sparc defconfig builds.
+>Hello Xiaohui,
+>
+>On Thu, 2010-07-29 at 19:14 +0800, xiaohui.xin@intel.com wrote:
+>> The idea is simple, just to pin the guest VM user space and then
+>> let host NIC driver has the chance to directly DMA to it.
+>> The patches are based on vhost-net backend driver. We add a device
+>> which provides proto_ops as sendmsg/recvmsg to vhost-net to
+>> send/recv directly to/from the NIC driver. KVM guest who use the
+>> vhost-net backend may bind any ethX interface in the host side to
+>> get copyless data transfer thru guest virtio-net frontend.
+>
+>Since vhost-net already supports macvtap/tun backends, do you think
+>whether it's better to implement zero copy in macvtap/tun than inducing
+>a new media passthrough device here?
+>
 
-Yeah, the change is way overdue.  Maybe we should have just removed
-them back then.
+I'm not sure if there will be more duplicated code in the kernel.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+>> Our goal is to improve the bandwidth and reduce the CPU usage.
+>> Exact performance data will be provided later.
+>
+>I did some vhost performance measurement over 10Gb ixgbe, and found that
+>in order to get consistent BW results, netperf/netserver, qemu, vhost
+>threads smp affinities are required.
+>
+>Looking forward to these results for small message size comparison. For
+>large message size 10Gb ixgbe BW already reached by doing vhost smp
+>affinity w/i offloading support, we will see how much CPU utilization it
+>can be reduced.
+>
+>Please provide latency results as well. I did some experimental on
+>macvtap zero copy sendmsg, what I have found that get_user_pages latency
+>pretty high.
+>
+Ok, I will try that.
 
-Thanks.
+>Thanks
+>Shirley
+>
+>
+>
 
--- 
-tejun
