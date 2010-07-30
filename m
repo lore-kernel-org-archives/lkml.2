@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759936Ab0G3S3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:29:32 -0400
-Received: from kroah.org ([198.145.64.141]:58203 "EHLO coco.kroah.org"
+	id S1759899Ab0G3RzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:55:11 -0400
+Received: from kroah.org ([198.145.64.141]:57931 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759907Ab0G3RzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:39 2010
-Message-Id: <20100730175139.673826522@clark.site>
+	id S1759705Ab0G3Ryc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:32 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:36 2010
+Message-Id: <20100730175136.048398061@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:24 -0700
+Date: Fri, 30 Jul 2010 10:50:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [067/205] drm/radeon/kms: fix possible mis-detection of sideport on rs690/rs740
+        Luke Yelavich <luke.yelavich@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [027/205] ALSA: hda - Add Macbook 5,2 quirk
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Luke Yelavich <luke.yelavich@canonical.com>
 
-commit 5099fa7f23d3711538cbe9fe072b4ce1ba814035 upstream.
+commit 3bfea98ff73d377ffce0d4c7f938b7ef958cdb35 upstream.
 
-Check ulBootUpMemoryClock on AMD IGPs.
+BugLink: https://bugs.launchpad.net/bugs/463178
 
-Fix regression noticed by Torsten Kaiser <just.for.lkml@googlemail.com>
+Set Macbook 5,2 (106b:4a00) hardware to use ALC885_MB5
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Luke Yelavich <luke.yelavich@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -1030,8 +1030,15 @@ bool radeon_atombios_sideport_present(st
- 				      data_offset);
- 		switch (crev) {
- 		case 1:
--			if (igp_info->info.ucMemoryType & 0xf0)
--				return true;
-+			/* AMD IGPS */
-+			if ((rdev->family == CHIP_RS690) ||
-+			    (rdev->family == CHIP_RS740)) {
-+				if (igp_info->info.ulBootUpMemoryClock)
-+					return true;
-+			} else {
-+				if (igp_info->info.ucMemoryType & 0xf0)
-+					return true;
-+			}
- 			break;
- 		case 2:
- 			if (igp_info->info_2.ucMemoryType & 0x0f)
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -9400,6 +9400,7 @@ static struct snd_pci_quirk alc882_ssid_
+ 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_IMAC24),
+ 	SND_PCI_QUIRK(0x106b, 0x4900, "iMac 9,1 Aluminum", ALC885_IMAC91),
+ 	SND_PCI_QUIRK(0x106b, 0x3f00, "Macbook 5,1", ALC885_MB5),
++	SND_PCI_QUIRK(0x106b, 0x4a00, "Macbook 5,2", ALC885_MB5),
+ 	/* FIXME: HP jack sense seems not working for MBP 5,1 or 5,2,
+ 	 * so apparently no perfect solution yet
+ 	 */
 
 
