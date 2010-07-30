@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab0G3SnT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:43:19 -0400
-Received: from kroah.org ([198.145.64.141]:35898 "EHLO coco.kroah.org"
+	id S933421Ab0G3Sn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:43:26 -0400
+Received: from kroah.org ([198.145.64.141]:35883 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758218Ab0G3RfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:08 -0400
+	id S932316Ab0G3RfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:09 2010
-Message-Id: <20100730173109.679284206@clark.site>
+Message-Id: <20100730173109.486121092@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:42 -0700
+Date: Fri, 30 Jul 2010 10:30:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [077/140] cfq: Dont allow queue merges for queues that have no process references
+        Alex Shi <alex.shi@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [075/140] sched: Fix over-scheduling bug
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,171 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Alex,Shi <alex.shi@intel.com>
 
-commit c10b61f0910466b4b99c266a7d76ac4390743fb5 upstream.
+commit 3c93717cfa51316e4dbb471e7c0f9d243359d5f8 upstream.
 
-Hi,
+Commit e70971591 ("sched: Optimize unused cgroup configuration") introduced
+an imbalanced scheduling bug.
 
-A user reported a kernel bug when running a particular program that did
-the following:
+If we do not use CGROUP, function update_h_load won't update h_load. When the
+system has a large number of tasks far more than logical CPU number, the
+incorrect cfs_rq[cpu]->h_load value will cause load_balance() to pull too
+many tasks to the local CPU from the busiest CPU. So the busiest CPU keeps
+going in a round robin. That will hurt performance.
 
-created 32 threads
-- each thread took a mutex, grabbed a global offset, added a buffer size
-  to that offset, released the lock
-- read from the given offset in the file
-- created a new thread to do the same
-- exited
+The issue was found originally by a scientific calculation workload that
+developed by Yanmin. With that commit, the workload performance drops
+about 40%.
 
-The result is that cfq's close cooperator logic would trigger, as the
-threads were issuing I/O within the mean seek distance of one another.
-This workload managed to routinely trigger a use after free bug when
-walking the list of merge candidates for a particular cfqq
-(cfqq->new_cfqq).  The logic used for merging queues looks like this:
+ CPU  before    after
 
-static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
-{
-	int process_refs, new_process_refs;
-	struct cfq_queue *__cfqq;
+ 00   : 2       : 7
+ 01   : 1       : 7
+ 02   : 11      : 6
+ 03   : 12      : 7
+ 04   : 6       : 6
+ 05   : 11      : 7
+ 06   : 10      : 6
+ 07   : 12      : 7
+ 08   : 11      : 6
+ 09   : 12      : 6
+ 10   : 1       : 6
+ 11   : 1       : 6
+ 12   : 6       : 6
+ 13   : 2       : 6
+ 14   : 2       : 6
+ 15   : 1       : 6
 
-	/* Avoid a circular list and skip interim queue merges */
-	while ((__cfqq = new_cfqq->new_cfqq)) {
-		if (__cfqq == cfqq)
-			return;
-		new_cfqq = __cfqq;
-	}
-
-	process_refs = cfqq_process_refs(cfqq);
-	/*
-	 * If the process for the cfqq has gone away, there is no
-	 * sense in merging the queues.
-	 */
-	if (process_refs == 0)
-		return;
-
-	/*
-	 * Merge in the direction of the lesser amount of work.
-	 */
-	new_process_refs = cfqq_process_refs(new_cfqq);
-	if (new_process_refs >= process_refs) {
-		cfqq->new_cfqq = new_cfqq;
-		atomic_add(process_refs, &new_cfqq->ref);
-	} else {
-		new_cfqq->new_cfqq = cfqq;
-		atomic_add(new_process_refs, &cfqq->ref);
-	}
-}
-
-When a merge candidate is found, we add the process references for the
-queue with less references to the queue with more.  The actual merging
-of queues happens when a new request is issued for a given cfqq.  In the
-case of the test program, it only does a single pread call to read in
-1MB, so the actual merge never happens.
-
-Normally, this is fine, as when the queue exits, we simply drop the
-references we took on the other cfqqs in the merge chain:
-
-	/*
-	 * If this queue was scheduled to merge with another queue, be
-	 * sure to drop the reference taken on that queue (and others in
-	 * the merge chain).  See cfq_setup_merge and cfq_merge_cfqqs.
-	 */
-	__cfqq = cfqq->new_cfqq;
-	while (__cfqq) {
-		if (__cfqq == cfqq) {
-			WARN(1, "cfqq->new_cfqq loop detected\n");
-			break;
-		}
-		next = __cfqq->new_cfqq;
-		cfq_put_queue(__cfqq);
-		__cfqq = next;
-	}
-
-However, there is a hole in this logic.  Consider the following (and
-keep in mind that each I/O keeps a reference to the cfqq):
-
-q1->new_cfqq = q2   // q2 now has 2 process references
-q3->new_cfqq = q2   // q2 now has 3 process references
-
-// the process associated with q2 exits
-// q2 now has 2 process references
-
-// queue 1 exits, drops its reference on q2
-// q2 now has 1 process reference
-
-// q3 exits, so has 0 process references, and hence drops its references
-// to q2, which leaves q2 also with 0 process references
-
-q4 comes along and wants to merge with q3
-
-q3->new_cfqq still points at q2!  We follow that link and end up at an
-already freed cfqq.
-
-So, the fix is to not follow a merge chain if the top-most queue does
-not have a process reference, otherwise any queue in the chain could be
-already freed.  I also changed the logic to disallow merging with a
-queue that does not have any process references.  Previously, we did
-this check for one of the merge candidates, but not the other.  That
-doesn't really make sense.
-
-Without the attached patch, my system would BUG within a couple of
-seconds of running the reproducer program.  With the patch applied, my
-system ran the program for over an hour without issues.
-
-This addresses the following bugzilla:
-    https://bugzilla.kernel.org/show_bug.cgi?id=16217
-
-Thanks a ton to Phil Carns for providing the bug report and an excellent
-reproducer.
-
-[ Note for stable: this applies to 2.6.32/33/34 ].
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Reported-by: Phil Carns <carns@mcs.anl.gov>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Reviewed-by: Yanmin zhang <yanmin.zhang@intel.com>
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1276754893.9452.5442.camel@debian>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/cfq-iosched.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ kernel/sched.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1934,6 +1934,15 @@ static void cfq_setup_merge(struct cfq_q
- 	int process_refs, new_process_refs;
- 	struct cfq_queue *__cfqq;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1719,9 +1719,6 @@ static void update_shares_locked(struct
  
-+	/*
-+	 * If there are no process references on the new_cfqq, then it is
-+	 * unsafe to follow the ->new_cfqq chain as other cfqq's in the
-+	 * chain may have dropped their last reference (not just their
-+	 * last process reference).
-+	 */
-+	if (!cfqq_process_refs(new_cfqq))
-+		return;
-+
- 	/* Avoid a circular list and skip interim queue merges */
- 	while ((__cfqq = new_cfqq->new_cfqq)) {
- 		if (__cfqq == cfqq)
-@@ -1942,17 +1951,17 @@ static void cfq_setup_merge(struct cfq_q
- 	}
+ static void update_h_load(long cpu)
+ {
+-	if (root_task_group_empty())
+-		return;
+-
+ 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
+ }
  
- 	process_refs = cfqq_process_refs(cfqq);
-+	new_process_refs = cfqq_process_refs(new_cfqq);
- 	/*
- 	 * If the process for the cfqq has gone away, there is no
- 	 * sense in merging the queues.
- 	 */
--	if (process_refs == 0)
-+	if (process_refs == 0 || new_process_refs == 0)
- 		return;
- 
- 	/*
- 	 * Merge in the direction of the lesser amount of work.
- 	 */
--	new_process_refs = cfqq_process_refs(new_cfqq);
- 	if (new_process_refs >= process_refs) {
- 		cfqq->new_cfqq = new_cfqq;
- 		atomic_add(process_refs, &new_cfqq->ref);
 
 
