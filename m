@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759561Ab0G3Ruc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:50:32 -0400
-Received: from kroah.org ([198.145.64.141]:35987 "EHLO coco.kroah.org"
+	id S932339Ab0G3RfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:35:21 -0400
+Received: from kroah.org ([198.145.64.141]:35576 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932360Ab0G3Rf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:11 2010
-Message-Id: <20100730173111.017167268@clark.site>
+	id S1759332Ab0G3ReO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
+Message-Id: <20100730173105.098992357@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:57 -0700
+Date: Fri, 30 Jul 2010 10:29:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [092/140] ARM: 6201/1: RealView: Do not use outer_sync() on ARM11MPCore boards with L220
+        =?ISO-8859-15?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [026/140] tcp: fix crash in tcp_xmit_retransmit_queue
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
 
-commit 2503a5ecd86c002506001eba432c524ea009fe7f upstream.
+commit 45e77d314585869dfe43c82679f7e08c9b35b898 upstream.
 
-RealView boards with certain revisions of the L220 cache controller (ARM11*
-processors only) may have issues (hardware deadlock) with the recent changes to
-the mb() barrier implementation (DSB followed by an L2 cache sync). The patch
-redefines the RealView ARM11MPCore mandatory barriers without the outer_sync()
-call.
+It can happen that there are no packets in queue while calling
+tcp_xmit_retransmit_queue(). tcp_write_queue_head() then returns
+NULL and that gets deref'ed to get sacked into a local var.
 
-Tested-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+There is no work to do if no packets are outstanding so we just
+exit early.
+
+This oops was introduced by 08ebd1721ab8fd (tcp: remove tp->lost_out
+guard to make joining diff nicer).
+
+Signed-off-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Reported-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+Tested-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-realview/Kconfig                 |    2 ++
- arch/arm/mach-realview/include/mach/barriers.h |    8 ++++++++
- 2 files changed, 10 insertions(+)
+ net/ipv4/tcp_output.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/mach-realview/Kconfig
-+++ b/arch/arm/mach-realview/Kconfig
-@@ -18,6 +18,7 @@ config REALVIEW_EB_ARM11MP
- 	bool "Support ARM11MPCore tile"
- 	depends on MACH_REALVIEW_EB
- 	select CPU_V6
-+	select ARCH_HAS_BARRIERS if SMP
- 	help
- 	  Enable support for the ARM11MPCore tile on the Realview platform.
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2203,6 +2203,9 @@ void tcp_xmit_retransmit_queue(struct so
+ 	int mib_idx;
+ 	int fwd_rexmitting = 0;
  
-@@ -35,6 +36,7 @@ config MACH_REALVIEW_PB11MP
- 	select CPU_V6
- 	select ARM_GIC
- 	select HAVE_PATA_PLATFORM
-+	select ARCH_HAS_BARRIERS if SMP
- 	help
- 	  Include support for the ARM(R) RealView MPCore Platform Baseboard.
- 	  PB11MPCore is a platform with an on-board ARM11MPCore and has
---- /dev/null
-+++ b/arch/arm/mach-realview/include/mach/barriers.h
-@@ -0,0 +1,8 @@
-+/*
-+ * Barriers redefined for RealView ARM11MPCore platforms with L220 cache
-+ * controller to work around hardware errata causing the outer_sync()
-+ * operation to deadlock the system.
-+ */
-+#define mb()		dsb()
-+#define rmb()		dmb()
-+#define wmb()		mb()
++	if (!tp->packets_out)
++		return;
++
+ 	if (!tp->lost_out)
+ 		tp->retransmit_high = tp->snd_una;
+ 
 
 
