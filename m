@@ -1,86 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab0G3JcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 05:32:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36608 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab0G3JcH convert rfc822-to-8bit (ORCPT
+	id S1756010Ab0G3JjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 05:39:04 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58373 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab0G3JjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 05:32:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HxgmveC3Pi6XUwGxLJNHCOmfZkB7LLDkKTXDjbqB/Sjv0alvpX7/TByqR++cuuwJ+k
-         RuVwSaLdJNhwlgDRHloMsu6ythTgB2Qn+BMX2V5WGlZgyJI6nUQGynWZNzxxpgSMs638
-         v9LhDWlGnnjj0XXOArXMkqkaIOQEDTEYRcqF8=
-MIME-Version: 1.0
-In-Reply-To: <1280436919.16922.11246.camel@nimitz>
-References: <AANLkTinXmkaX38pLjSBCRUS-c84GqpUE7xJQFDDHDLCC@mail.gmail.com>
-	<alpine.DEB.2.00.1007281005440.21717@router.home>
-	<20100728155617.GA5401@barrios-desktop>
-	<alpine.DEB.2.00.1007281158150.21717@router.home>
-	<20100728225756.GA6108@barrios-desktop>
-	<alpine.DEB.2.00.1007291038100.16510@router.home>
-	<20100729161856.GA16420@barrios-desktop>
-	<alpine.DEB.2.00.1007291132210.17734@router.home>
-	<20100729170313.GB16420@barrios-desktop>
-	<alpine.DEB.2.00.1007291222410.17734@router.home>
-	<20100729183320.GH18923@n2100.arm.linux.org.uk>
-	<1280436919.16922.11246.camel@nimitz>
-Date: Fri, 30 Jul 2010 18:32:04 +0900
-Message-ID: <AANLkTi=DpH=vmUK84KhvOMgP=KL+YxXD0UhiJE+VRJyg@mail.gmail.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 30 Jul 2010 05:39:01 -0400
+Subject: [PATCH] block: move del_gendisk() from fs/partitions/check.c to
+ block/genhd.c
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Jul 2010 11:39:01 +0200
+Message-ID: <1280482741.1851.3.camel@yio.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 5:55 AM, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> On Thu, 2010-07-29 at 19:33 +0100, Russell King - ARM Linux wrote:
->> And no, setting the sparse section size to 512kB doesn't work - memory is
->> offset by 256MB already, so you need a sparsemem section array of 1024
->> entries just to cover that - with the full 256MB populated, that's 512
->> unused entries followed by 512 used entries.  That too is going to waste
->> memory like nobodies business.
->
-> Sparsemem could use some work in the case where memory doesn't start at
-> 0x0.  But, it doesn't seem like it would be _too_ oppressive to add.
-> It's literally just adding an offset to all of the places where a
-> physical address is stuck into the system.  It'll make a few of the
-> calculations longer, of course, but it should be manageable.
->
-> Could you give some full examples of how the memory is laid out on these
-> systems?  I'm having a bit of a hard time visualizing it.
->
-> As Christoph mentioned, SPARSEMEM_EXTREME might be viable here, too.
->
-> If you free up parts of the mem_map[] array, how does the buddy
-> allocator still work?  I thought we required at 'struct page's to be
-> contiguous and present for at least 2^MAX_ORDER-1 pages in one go.
+From: Kay Sievers <kay.sievers@vrfy.org>
+Subject: block: move del_gendisk() from fs/partitions/check.c to block/genhd.c
 
-I think in that case, arch should define CONFIG_HOLES_IN_ZONE to prevent
-crash. But I am not sure hole architectures on ARM have been used it well.
-Kujkin's problem happens not buddy but walking whole pfn to echo
-min_free_kbytes.
+Disk code belongs into genhd, not into the partition scanner code.
 
->
-> -- Dave
->
->
+Signed-Off-By: Kay Sievers <kay.sievers@vrfy.org>
+---
+ block/genhd.c         |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/partitions/check.c |   51 -------------------------------------------------
+ 2 files changed, 52 insertions(+), 51 deletions(-)
+
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1344,3 +1344,55 @@ int invalidate_partition(struct gendisk
+ }
+ 
+ EXPORT_SYMBOL(invalidate_partition);
++
++void del_gendisk(struct gendisk *disk)
++{
++	struct disk_part_iter piter;
++	struct hd_struct *part;
++
++	/* invalidate stuff */
++	disk_part_iter_init(&piter, disk,
++			     DISK_PITER_INCL_EMPTY | DISK_PITER_REVERSE);
++	while ((part = disk_part_iter_next(&piter))) {
++		invalidate_partition(disk, part->partno);
++		delete_partition(disk, part->partno);
++	}
++	disk_part_iter_exit(&piter);
++
++	invalidate_partition(disk, 0);
++	blk_free_devt(disk_to_dev(disk)->devt);
++	set_capacity(disk, 0);
++	disk->flags &= ~GENHD_FL_UP;
++	unlink_gendisk(disk);
++	part_stat_set_all(&disk->part0, 0);
++	disk->part0.stamp = 0;
++
++	kobject_put(disk->part0.holder_dir);
++	kobject_put(disk->slave_dir);
++	disk->driverfs_dev = NULL;
++#ifndef CONFIG_SYSFS_DEPRECATED
++	sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
++#endif
++	device_del(disk_to_dev(disk));
++}
++
++unsigned char *read_dev_sector(struct block_device *bdev, sector_t n, Sector *p)
++{
++	struct address_space *mapping = bdev->bd_inode->i_mapping;
++	struct page *page;
++
++	page = read_mapping_page(mapping, (pgoff_t)(n >> (PAGE_CACHE_SHIFT-9)),
++				 NULL);
++	if (!IS_ERR(page)) {
++		if (PageError(page))
++			goto fail;
++		p->v = page;
++		return (unsigned char *)page_address(page) +  ((n & ((1 << (PAGE_CACHE_SHIFT - 9)) - 1)) << 9);
++fail:
++		page_cache_release(page);
++	}
++	p->v = NULL;
++	return NULL;
++}
++
++EXPORT_SYMBOL(read_dev_sector);
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -619,54 +619,3 @@ rescan:
+ 	return 0;
+ }
+ 
+-unsigned char *read_dev_sector(struct block_device *bdev, sector_t n, Sector *p)
+-{
+-	struct address_space *mapping = bdev->bd_inode->i_mapping;
+-	struct page *page;
+-
+-	page = read_mapping_page(mapping, (pgoff_t)(n >> (PAGE_CACHE_SHIFT-9)),
+-				 NULL);
+-	if (!IS_ERR(page)) {
+-		if (PageError(page))
+-			goto fail;
+-		p->v = page;
+-		return (unsigned char *)page_address(page) +  ((n & ((1 << (PAGE_CACHE_SHIFT - 9)) - 1)) << 9);
+-fail:
+-		page_cache_release(page);
+-	}
+-	p->v = NULL;
+-	return NULL;
+-}
+-
+-EXPORT_SYMBOL(read_dev_sector);
+-
+-void del_gendisk(struct gendisk *disk)
+-{
+-	struct disk_part_iter piter;
+-	struct hd_struct *part;
+-
+-	/* invalidate stuff */
+-	disk_part_iter_init(&piter, disk,
+-			     DISK_PITER_INCL_EMPTY | DISK_PITER_REVERSE);
+-	while ((part = disk_part_iter_next(&piter))) {
+-		invalidate_partition(disk, part->partno);
+-		delete_partition(disk, part->partno);
+-	}
+-	disk_part_iter_exit(&piter);
+-
+-	invalidate_partition(disk, 0);
+-	blk_free_devt(disk_to_dev(disk)->devt);
+-	set_capacity(disk, 0);
+-	disk->flags &= ~GENHD_FL_UP;
+-	unlink_gendisk(disk);
+-	part_stat_set_all(&disk->part0, 0);
+-	disk->part0.stamp = 0;
+-
+-	kobject_put(disk->part0.holder_dir);
+-	kobject_put(disk->slave_dir);
+-	disk->driverfs_dev = NULL;
+-#ifndef CONFIG_SYSFS_DEPRECATED
+-	sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
+-#endif
+-	device_del(disk_to_dev(disk));
+-}
 
 
-
--- 
-Kind regards,
-Minchan Kim
