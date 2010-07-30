@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab0G3XfL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 19:35:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58431 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750872Ab0G3XfH (ORCPT
+	id S1752022Ab0G3Xfy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 19:35:54 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:47249 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab0G3Xfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 19:35:07 -0400
-Date: Fri, 30 Jul 2010 16:34:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        Hanumath Prasad <hanumath.prasad@stericsson.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH] mmc: only set blockaddressed for > 2GiB cards
-Message-Id: <20100730163457.a54cb0f1.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTin-EGaq9q0ATgRfm=XKTgJ7EYT_Q-Ruzr_OQXsY@mail.gmail.com>
-References: <1277194762-21399-1-git-send-email-rabin.vincent@stericsson.com>
-	<AANLkTin-EGaq9q0ATgRfm=XKTgJ7EYT_Q-Ruzr_OQXsY@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Jul 2010 19:35:52 -0400
+Date: Fri, 30 Jul 2010 18:35:44 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ecryptfs (repost): release reference to lower mount if
+ interpose fails
+Message-ID: <20100730233544.GA31723@boomer>
+References: <20100729110136.GC8337@lsanfilippo.unix.rd.tt.avira.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100729110136.GC8337@lsanfilippo.unix.rd.tt.avira.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Jul 2010 19:28:44 +0200
-Linus Walleij <linus.walleij@stericsson.com> wrote:
-
-> 2010/6/22 Rabin Vincent <rabin.vincent@stericsson.com>:
+On Thu Jul 29, 2010 at 01:01:36PM +0200, Lino Sanfilippo <LinoSanfilippo@gmx.de> wrote:
 > 
-> > From: Hanumath Prasad <hanumath.prasad@stericsson.com>
-> >
-> > A non-zero value of SEC_COUNT does not indicate that the card is sector
-> > addressed. __According to the MMC specification, cards with a density
-> > greater than 2GiB are sector addressed.
+> In ecryptfs_lookup_and_interpose_lower() the lower mount is not decremented
+> if allocation of a dentry info struct failed. As a result the lower filesystem
+> cant be unmounted any more (since it is considered busy). This patch corrects
+> the reference counting.
 > 
-> What's happening with this beauty? Andrew would you mind
-> picking this one up please?
+> Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+> ---
 
-I merged that a month ago, for 2.6.36.
+Hi Lino,
 
-If we think that it should be in 2.6.35 (and earlier?) then please send
-along revised changelog text which explains the reason for that.
+Thanks for the fix. Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
 
+Tyler
+
+> This patch is against 2.6.35-rc5.
+> 
+> --- a/fs/ecryptfs/inode.c	2010-07-12 23:55:33.000000000 +0200
+> +++ b/fs/ecryptfs/inode.c	2010-07-19 19:21:16.000000000 +0200
+> @@ -264,7 +264,7 @@ int ecryptfs_lookup_and_interpose_lower(
+>  		printk(KERN_ERR "%s: Out of memory whilst attempting "
+>  		       "to allocate ecryptfs_dentry_info struct\n",
+>  			__func__);
+> -		goto out_dput;
+> +		goto out_put;
+>  	}
+>  	ecryptfs_set_dentry_lower(ecryptfs_dentry, lower_dentry);
+>  	ecryptfs_set_dentry_lower_mnt(ecryptfs_dentry, lower_mnt);
+> @@ -339,8 +339,9 @@ int ecryptfs_lookup_and_interpose_lower(
+>  out_free_kmem:
+>  	kmem_cache_free(ecryptfs_header_cache_2, page_virt);
+>  	goto out;
+> -out_dput:
+> +out_put:
+>  	dput(lower_dentry);
+> +	mntput(lower_mnt);
+>  	d_drop(ecryptfs_dentry);
+>  out:
+>  	return rc;
