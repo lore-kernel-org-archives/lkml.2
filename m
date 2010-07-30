@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab0G3R6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:58:07 -0400
-Received: from kroah.org ([198.145.64.141]:58836 "EHLO coco.kroah.org"
+	id S932947Ab0G3R6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:58:43 -0400
+Received: from kroah.org ([198.145.64.141]:59000 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760062Ab0G3R4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:46 2010
-Message-Id: <20100730175146.404153584@clark.site>
+	id S932388Ab0G3R5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:47 2010
+Message-Id: <20100730175147.407056643@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:34 -0700
+Date: Fri, 30 Jul 2010 10:52:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Mortier <mortier@btinternet.com>
-Subject: [137/205] USB: adds Artisman USB dongle to list of quirky devices
+        Avi Kivity <avi@redhat.com>
+Subject: [148/205] KVM: MMU: Remove user access when allowing kernel access to gpte.w=0 page
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mortier <mortier@btinternet.com>
+If cr0.wp=0, we have to allow the guest kernel access to a page with pte.w=0.
+We do that by setting spte.w=1, since the host cr0.wp must remain set so the
+host can write protect pages.  Once we allow write access, we must remove
+user access otherwise we mistakenly allow the user to write the page.
 
-commit 47f19c0eedb377ad1ee8114f464d001ec5f96a69 upstream.
-
-When an attempt is made to read the interface strings of the Artisman
-Watchdog USB dongle (idVendor:idProduct 04b4:0526) an error is written
-to the dmesg log (uhci_result_common: failed with status 440000) and the
-dongle resets itself, resulting in a disconnect/reconnect loop.
-
-Adding the dongle to the list of devices in quirks.c, with the same
-quirk Alan Stern's previous patch for the Saitek Cyborg Gold 3D
-joystick, stops the device from resetting and allows it to be used with
-no problems.
-
-Signed-off-by: Paul Mortier <mortier@btinternet.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Reviewed-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+(cherry picked from commit 69325a122580d3a7b26589e8efdd6663001c3297)
 ---
- drivers/usb/core/quirks.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kvm/mmu.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -41,6 +41,10 @@ static const struct usb_device_id usb_qu
- 	/* Philips PSC805 audio device */
- 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1837,6 +1837,9 @@ static int set_spte(struct kvm_vcpu *vcp
  
-+	/* Artisman Watchdog Dongle */
-+	{ USB_DEVICE(0x04b4, 0x0526), .driver_info =
-+			USB_QUIRK_CONFIG_INTF_STRINGS },
+ 		spte |= PT_WRITABLE_MASK;
+ 
++		if (!tdp_enabled && !(pte_access & ACC_WRITE_MASK))
++			spte &= ~PT_USER_MASK;
 +
- 	/* Roland SC-8820 */
- 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+ 		/*
+ 		 * Optimization: for pte sync, if spte was writable the hash
+ 		 * lookup is unnecessary (and expensive). Write protection
 
 
