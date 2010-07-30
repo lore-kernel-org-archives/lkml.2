@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab0G3SYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:24:33 -0400
-Received: from kroah.org ([198.145.64.141]:58573 "EHLO coco.kroah.org"
+	id S933164Ab0G3SYq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:24:46 -0400
+Received: from kroah.org ([198.145.64.141]:58563 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759981Ab0G3Rzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
-Message-Id: <20100730175141.915693421@clark.site>
+	id S1759977Ab0G3Rzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:41 2010
+Message-Id: <20100730175141.815256382@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:48 -0700
+Date: Fri, 30 Jul 2010 10:51:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [091/205] cfq: Dont allow queue merges for queues that have no process references
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>
+Subject: [090/205] genirq: Deal with desc->set_type() changing desc->chip
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,171 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit c10b61f0910466b4b99c266a7d76ac4390743fb5 upstream.
+commit 4673247562e39a17e09440fa1400819522ccd446 upstream.
 
-Hi,
+The set_type() function can change the chip implementation when the
+trigger mode changes. That might result in using an non-initialized
+irq chip when called from __setup_irq() or when called via
+set_irq_type() on an already enabled irq.
 
-A user reported a kernel bug when running a particular program that did
-the following:
+The set_irq_type() function should not be called on an enabled irq,
+but because we forgot to put a check into it, we have a bunch of users
+which grew the habit of doing that and it never blew up as the
+function is serialized via desc->lock against all users of desc->chip
+and they never hit the non-initialized irq chip issue.
 
-created 32 threads
-- each thread took a mutex, grabbed a global offset, added a buffer size
-  to that offset, released the lock
-- read from the given offset in the file
-- created a new thread to do the same
-- exited
+The easy fix for the __setup_irq() issue would be to move the
+irq_chip_set_defaults(desc->chip) call after the trigger setting to
+make sure that a chip change is covered.
 
-The result is that cfq's close cooperator logic would trigger, as the
-threads were issuing I/O within the mean seek distance of one another.
-This workload managed to routinely trigger a use after free bug when
-walking the list of merge candidates for a particular cfqq
-(cfqq->new_cfqq).  The logic used for merging queues looks like this:
+But as we have already users, which do the type setting after
+request_irq(), the safe fix for now is to call irq_chip_set_defaults()
+from __irq_set_trigger() when desc->set_type() changed the irq chip.
 
-static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
-{
-	int process_refs, new_process_refs;
-	struct cfq_queue *__cfqq;
+It needs a deeper analysis whether we should refuse to change the chip
+on an already enabled irq, but that'd be a large scale change to fix
+all the existing users. So that's neither stable nor 2.6.35 material.
 
-	/* Avoid a circular list and skip interim queue merges */
-	while ((__cfqq = new_cfqq->new_cfqq)) {
-		if (__cfqq == cfqq)
-			return;
-		new_cfqq = __cfqq;
-	}
-
-	process_refs = cfqq_process_refs(cfqq);
-	/*
-	 * If the process for the cfqq has gone away, there is no
-	 * sense in merging the queues.
-	 */
-	if (process_refs == 0)
-		return;
-
-	/*
-	 * Merge in the direction of the lesser amount of work.
-	 */
-	new_process_refs = cfqq_process_refs(new_cfqq);
-	if (new_process_refs >= process_refs) {
-		cfqq->new_cfqq = new_cfqq;
-		atomic_add(process_refs, &new_cfqq->ref);
-	} else {
-		new_cfqq->new_cfqq = cfqq;
-		atomic_add(new_process_refs, &cfqq->ref);
-	}
-}
-
-When a merge candidate is found, we add the process references for the
-queue with less references to the queue with more.  The actual merging
-of queues happens when a new request is issued for a given cfqq.  In the
-case of the test program, it only does a single pread call to read in
-1MB, so the actual merge never happens.
-
-Normally, this is fine, as when the queue exits, we simply drop the
-references we took on the other cfqqs in the merge chain:
-
-	/*
-	 * If this queue was scheduled to merge with another queue, be
-	 * sure to drop the reference taken on that queue (and others in
-	 * the merge chain).  See cfq_setup_merge and cfq_merge_cfqqs.
-	 */
-	__cfqq = cfqq->new_cfqq;
-	while (__cfqq) {
-		if (__cfqq == cfqq) {
-			WARN(1, "cfqq->new_cfqq loop detected\n");
-			break;
-		}
-		next = __cfqq->new_cfqq;
-		cfq_put_queue(__cfqq);
-		__cfqq = next;
-	}
-
-However, there is a hole in this logic.  Consider the following (and
-keep in mind that each I/O keeps a reference to the cfqq):
-
-q1->new_cfqq = q2   // q2 now has 2 process references
-q3->new_cfqq = q2   // q2 now has 3 process references
-
-// the process associated with q2 exits
-// q2 now has 2 process references
-
-// queue 1 exits, drops its reference on q2
-// q2 now has 1 process reference
-
-// q3 exits, so has 0 process references, and hence drops its references
-// to q2, which leaves q2 also with 0 process references
-
-q4 comes along and wants to merge with q3
-
-q3->new_cfqq still points at q2!  We follow that link and end up at an
-already freed cfqq.
-
-So, the fix is to not follow a merge chain if the top-most queue does
-not have a process reference, otherwise any queue in the chain could be
-already freed.  I also changed the logic to disallow merging with a
-queue that does not have any process references.  Previously, we did
-this check for one of the merge candidates, but not the other.  That
-doesn't really make sense.
-
-Without the attached patch, my system would BUG within a couple of
-seconds of running the reproducer program.  With the patch applied, my
-system ran the program for over an hour without issues.
-
-This addresses the following bugzilla:
-    https://bugzilla.kernel.org/show_bug.cgi?id=16217
-
-Thanks a ton to Phil Carns for providing the bug report and an excellent
-reproducer.
-
-[ Note for stable: this applies to 2.6.32/33/34 ].
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Reported-by: Phil Carns <carns@mcs.anl.gov>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Reported-by: Esben Haabendal <eha@doredevelopment.dk>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/cfq-iosched.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ kernel/irq/manage.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1930,6 +1930,15 @@ static void cfq_setup_merge(struct cfq_q
- 	int process_refs, new_process_refs;
- 	struct cfq_queue *__cfqq;
- 
-+	/*
-+	 * If there are no process references on the new_cfqq, then it is
-+	 * unsafe to follow the ->new_cfqq chain as other cfqq's in the
-+	 * chain may have dropped their last reference (not just their
-+	 * last process reference).
-+	 */
-+	if (!cfqq_process_refs(new_cfqq))
-+		return;
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -440,6 +440,9 @@ int __irq_set_trigger(struct irq_desc *d
+ 		/* note that IRQF_TRIGGER_MASK == IRQ_TYPE_SENSE_MASK */
+ 		desc->status &= ~(IRQ_LEVEL | IRQ_TYPE_SENSE_MASK);
+ 		desc->status |= flags;
 +
- 	/* Avoid a circular list and skip interim queue merges */
- 	while ((__cfqq = new_cfqq->new_cfqq)) {
- 		if (__cfqq == cfqq)
-@@ -1938,17 +1947,17 @@ static void cfq_setup_merge(struct cfq_q
++		if (chip != desc->chip)
++			irq_chip_set_defaults(desc->chip);
  	}
  
- 	process_refs = cfqq_process_refs(cfqq);
-+	new_process_refs = cfqq_process_refs(new_cfqq);
- 	/*
- 	 * If the process for the cfqq has gone away, there is no
- 	 * sense in merging the queues.
- 	 */
--	if (process_refs == 0)
-+	if (process_refs == 0 || new_process_refs == 0)
- 		return;
- 
- 	/*
- 	 * Merge in the direction of the lesser amount of work.
- 	 */
--	new_process_refs = cfqq_process_refs(new_cfqq);
- 	if (new_process_refs >= process_refs) {
- 		cfqq->new_cfqq = new_cfqq;
- 		atomic_add(process_refs, &new_cfqq->ref);
+ 	return ret;
 
 
