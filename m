@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760438Ab0G3TD2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:03:28 -0400
-Received: from kroah.org ([198.145.64.141]:51699 "EHLO coco.kroah.org"
+	id S932399Ab0G3TDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:03:33 -0400
+Received: from kroah.org ([198.145.64.141]:51685 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758086Ab0G3RSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:55 -0400
+	id S1758036Ab0G3RSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:53 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:06 2010
-Message-Id: <20100730171506.335856393@clark.site>
+Message-Id: <20100730171506.166333994@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:02 -0700
+Date: Fri, 30 Jul 2010 10:15:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Colin Leitner <colin.leitner@googlemail.com>
-Subject: [074/165] USB: ftdi_sio: support for Signalyzer tools based on FTDI chips
+        Omer Sezgin Ugurlu <omer.ugurlu@a-kent.com>
+Subject: [072/165] USB: option: add support for 1da5:4518
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Colin Leitner <colin.leitner@googlemail.com>
+From: =?UTF-8?q?=C3=96mer=20Sezgin=20Ugurlu?= <omer.ugurlu@a-kent.com>
 
-commit 77dbd74e16b566e9d5eeb4be18ae3ee7d5902bd3 upstream.
+commit 646d90e2b925578abef5c45853e0b166b6a450bf upstream.
 
-ftdi_sio: support for Signalyzer tools based on FTDI chips
-
-This patch adds support for the Xverve Signalyzers.
-
-Signed-off-by: Colin Leitner <colin.leitner@googlemail.com>
+Signed-off-by: Omer Sezgin Ugurlu <omer.ugurlu@a-kent.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    8 ++++++++
- drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
- 2 files changed, 17 insertions(+)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -743,6 +743,14 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, MJSG_SR_RADIO_PID) },
- 	{ USB_DEVICE(FTDI_VID, MJSG_HD_RADIO_PID) },
- 	{ USB_DEVICE(FTDI_VID, MJSG_XM_RADIO_PID) },
-+	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_ST_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SLITE_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SH2_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SH4_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1024,3 +1024,12 @@
- #define MJSG_SR_RADIO_PID	0x9379
- #define MJSG_XM_RADIO_PID	0x937A
- #define MJSG_HD_RADIO_PID	0x937C
-+
-+/*
-+ * Xverve Signalyzer tools (http://www.signalyzer.com/)
-+ */
-+#define XVERVE_SIGNALYZER_ST_PID	0xBCA0
-+#define XVERVE_SIGNALYZER_SLITE_PID	0xBCA1
-+#define XVERVE_SIGNALYZER_SH2_PID	0xBCA2
-+#define XVERVE_SIGNALYZER_SH4_PID	0xBCA4
-+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -316,6 +316,7 @@ static int  option_resume(struct usb_ser
+ #define QISDA_PRODUCT_H21_4512			0x4512
+ #define QISDA_PRODUCT_H21_4523			0x4523
+ #define QISDA_PRODUCT_H20_4515			0x4515
++#define QISDA_PRODUCT_H20_4518			0x4518
+ #define QISDA_PRODUCT_H20_4519			0x4519
+ 
+ /* TLAYTECH PRODUCTS */
+@@ -836,6 +837,7 @@ static struct usb_device_id option_ids[]
+ 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H21_4512) },
+ 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H21_4523) },
+ 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H20_4515) },
++	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H20_4518) },
+ 	{ USB_DEVICE(QISDA_VENDOR_ID, QISDA_PRODUCT_H20_4519) },
+ 	{ USB_DEVICE(TOSHIBA_VENDOR_ID, TOSHIBA_PRODUCT_G450) },
+ 	{ USB_DEVICE(TOSHIBA_VENDOR_ID, TOSHIBA_PRODUCT_HSDPA_MINICARD ) }, /* Toshiba 3G HSDPA == Novatel Expedite EU870D MiniCard */
 
 
