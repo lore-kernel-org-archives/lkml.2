@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760033Ab0G3SUu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:20:50 -0400
-Received: from kroah.org ([198.145.64.141]:58749 "EHLO coco.kroah.org"
+	id S1759964Ab0G3SU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:20:56 -0400
+Received: from kroah.org ([198.145.64.141]:58740 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759933Ab0G3R43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:29 -0400
+	id S1759783Ab0G3R42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:28 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:44 2010
-Message-Id: <20100730175144.293118895@clark.site>
+Message-Id: <20100730175144.197464699@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:11 -0700
+Date: Fri, 30 Jul 2010 10:52:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kamal Mostafa <kamal@canonical.com>, Dmitry Torokhov <dtor@mail.ru>
-Subject: [114/205] Input: i8042 - add Gigabyte Spring Peak to dmi_noloop_table
+        Or Gerlitz <ogerlitz@voltaire.com>, Roland Dreier <rolandd@cisco.com>
+Subject: [113/205] IPoIB: Fix world-writable child interface control sysfs attributes
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: Or Gerlitz <ogerlitz@voltaire.com>
 
-commit 3e1bbc8d5018a05c0793c8a32b777a1396eb4414 upstream.
+commit 7a52b34b07122ff5f45258d47f260f8a525518f0 upstream.
 
-Gigabyte "Spring Peak" notebook indicates wrong chassis-type, tripping up
-i8042 and breaking the touchpad.  Add this model to i8042_dmi_noloop_table[]
-to resolve.
+Sumeet Lahorani <sumeet.lahorani@oracle.com> reported that the IPoIB
+child entries are world-writable; however we don't want ordinary users
+to be able to create and destroy child interfaces, so fix them to be
+writable only by root.
 
-BugLink: https://bugs.launchpad.net/bugs/580664
-
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Or Gerlitz <ogerlitz@voltaire.com>
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/infiniband/ulp/ipoib/ipoib_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -166,6 +166,13 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Gigabyte Spring Peak - defines wrong chassis type */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Spring Peak"),
-+		},
-+	},
-+	{
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv9700"),
+--- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
+@@ -1163,7 +1163,7 @@ static ssize_t create_child(struct devic
+ 
+ 	return ret ? ret : count;
+ }
+-static DEVICE_ATTR(create_child, S_IWUGO, NULL, create_child);
++static DEVICE_ATTR(create_child, S_IWUSR, NULL, create_child);
+ 
+ static ssize_t delete_child(struct device *dev,
+ 			    struct device_attribute *attr,
+@@ -1183,7 +1183,7 @@ static ssize_t delete_child(struct devic
+ 	return ret ? ret : count;
+ 
+ }
+-static DEVICE_ATTR(delete_child, S_IWUGO, NULL, delete_child);
++static DEVICE_ATTR(delete_child, S_IWUSR, NULL, delete_child);
+ 
+ int ipoib_add_pkey_attr(struct net_device *dev)
+ {
 
 
