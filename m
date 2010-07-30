@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759385Ab0G3Re2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:34:28 -0400
-Received: from kroah.org ([198.145.64.141]:35435 "EHLO coco.kroah.org"
+	id S1759398Ab0G3Ree (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:34:34 -0400
+Received: from kroah.org ([198.145.64.141]:35446 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758753Ab0G3Rdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:33:53 -0400
+	id S1759303Ab0G3Rdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:33:54 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
-Message-Id: <20100730173103.435768617@clark.site>
+Message-Id: <20100730173103.521371467@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:32 -0700
+Date: Fri, 30 Jul 2010 10:29:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         =?ISO-8859-15?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
+        Francois Romieu <romieu@fr.zoreil.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [007/140] r8169: fix random mdio_write failures
+Subject: [008/140] r8169: fix mdio_read and update mdio_write according to hw specs
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,43 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Timo Teräs <timo.teras@iki.fi>
 
-[ Upstream commit 024a07bacf8287a6ddfa83e9d5b951c5e8b4070e ]
+[ Upstream commit 81a95f049962ec20a9aed888e676208b206f0f2e ]
 
-Some configurations need delay between the "write completed" indication
-and new write to work reliably.
-
-Realtek driver seems to use longer delay when polling the "write complete"
-bit, so it waits long enough between writes with high probability (but
-could probably break too). This patch adds a new udelay to make sure we
-wait unconditionally some time after the write complete indication.
-
-This caused a regression with XID 18000000 boards when the board specific
-phy configuration writing many mdio registers was added in commit
-2e955856ff (r8169: phy init for the 8169scd). Some of the configration
-mdio writes would almost always fail, and depending on failure might leave
-the PHY in non-working state.
+Realtek confirmed that a 20us delay is needed after mdio_read and
+mdio_write operations. Reduce the delay in mdio_write, and add it
+to mdio_read too. Also add a comment that the 20us is from hw specs.
 
 Signed-off-by: Timo Teräs <timo.teras@iki.fi>
-Acked-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/r8169.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/r8169.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
 --- a/drivers/net/r8169.c
 +++ b/drivers/net/r8169.c
-@@ -557,6 +557,11 @@ static void mdio_write(void __iomem *ioa
- 			break;
+@@ -558,10 +558,10 @@ static void mdio_write(void __iomem *ioa
  		udelay(25);
  	}
-+	/*
-+	 * Some configurations require a small delay even after the write
-+	 * completed indication or the next write might fail.
-+	 */
-+	udelay(25);
+ 	/*
+-	 * Some configurations require a small delay even after the write
+-	 * completed indication or the next write might fail.
++	 * According to hardware specs a 20us delay is required after write
++	 * complete indication, but before sending next command.
+ 	 */
+-	udelay(25);
++	udelay(20);
  }
  
  static int mdio_read(void __iomem *ioaddr, int reg_addr)
+@@ -581,6 +581,12 @@ static int mdio_read(void __iomem *ioadd
+ 		}
+ 		udelay(25);
+ 	}
++	/*
++	 * According to hardware specs a 20us delay is required after read
++	 * complete indication, but before sending next command.
++	 */
++	udelay(20);
++
+ 	return value;
+ }
+ 
 
 
