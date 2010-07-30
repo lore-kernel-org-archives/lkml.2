@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab0G3MbX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 08:31:23 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:36182 "EHLO mx01.sz.bfs.de"
+	id S1758514Ab0G3MiZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 08:38:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45324 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755659Ab0G3MbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 08:31:21 -0400
-Message-ID: <4C52C614.4030803@bfs.de>
-Date: Fri, 30 Jul 2010 14:31:16 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1755895Ab0G3MiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 08:38:24 -0400
+Message-ID: <4C52C7B9.7000209@ti.com>
+Date: Fri, 30 Jul 2010 07:38:17 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
 To: Kulikov Vasiliy <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alexander Beregalov <a.beregalov@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Mithlesh Thukral <mithlesh@linsyssoft.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/9] staging: otus: check kmalloc() return value
-References: <1280488080-20777-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1280488080-20777-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Sapiens, Rene" <rene.sapiens@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 7/9] staging: tidspbridge: fix memory leak
+References: <1280488163-20939-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1280488163-20939-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Kulikov Vasiliy schrieb:
-> kmalloc() may fail, if so return error from zfwUsbSubmitControl().
+Kulikov Vasiliy had written, on 07/30/2010 06:09 AM, the following:
+> dbll_create() leaks pzl_target if target_obj is NULL. Call kzalloc()
+> only if memory is used.
 > 
 > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 > ---
->  drivers/staging/otus/wrap_usb.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
+>  drivers/staging/tidspbridge/pmgr/dbll.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/staging/otus/wrap_usb.c b/drivers/staging/otus/wrap_usb.c
-> index 93459ca..9f04047 100644
-> --- a/drivers/staging/otus/wrap_usb.c
-> +++ b/drivers/staging/otus/wrap_usb.c
-> @@ -104,6 +104,11 @@ u32_t zfwUsbSubmitControl(zdev_t *dev, u8_t req, u16_t value, u16_t index,
+> diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
+> index 3636aa3..86840ce 100644
+> --- a/drivers/staging/tidspbridge/pmgr/dbll.c
+> +++ b/drivers/staging/tidspbridge/pmgr/dbll.c
+> @@ -247,9 +247,9 @@ int dbll_create(struct dbll_tar_obj **target_obj,
+>  	DBC_REQUIRE(pattrs != NULL);
+>  	DBC_REQUIRE(target_obj != NULL);
 >  
->  	if (size > 0) {
->  		buf = kmalloc(size, GFP_KERNEL);
-> +		if (buf == NULL) {
-> +			pr_err("zfwUsbSubmitControl() failed, "
-> +				  "kmalloc() returned NULL\n");
-> +			return 1;
-> +		}
->  		memcpy(buf, (u8_t *)data, size);
->  	} else
->  		buf = NULL;
+> -	/* Allocate DBL target object */
+> -	pzl_target = kzalloc(sizeof(struct dbll_tar_obj), GFP_KERNEL);
+>  	if (target_obj != NULL) {
+> +		/* Allocate DBL target object */
+> +		pzl_target = kzalloc(sizeof(struct dbll_tar_obj), GFP_KERNEL);
+>  		if (pzl_target == NULL) {
+>  			*target_obj = NULL;
+>  			status = -ENOMEM;
+I would suggest to add a else branch for if (target_obj != NULL) adding 
+a status =-ENOMEM if error.
 
+Overall, I guess we need to kick out the DBC_REQUIRE usage.. it is 
+misleading as it is active only when DEBUG macro is enabled!
 
-We had a memdup() somewhere had'nt we ?
-
-re,
- wh
+-- 
+Regards,
+Nishanth Menon
