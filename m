@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab0G3RlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:41:05 -0400
-Received: from kroah.org ([198.145.64.141]:36253 "EHLO coco.kroah.org"
+	id S1759472Ab0G3RgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:36:16 -0400
+Received: from kroah.org ([198.145.64.141]:35739 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759486Ab0G3RgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:36:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:15 2010
-Message-Id: <20100730173115.095911468@clark.site>
+	id S932275Ab0G3Rel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:07 2010
+Message-Id: <20100730173107.400831438@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:43 -0700
+Date: Fri, 30 Jul 2010 10:30:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Copeland <me@bobcopeland.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [138/140] ath5k: initialize ah->ah_current_channel
+        sroland@vmware.com, Alex Deucher <alexdeucher@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [052/140] drm/radeon/r200: handle more hw tex coord types
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,91 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Roland Scheidegger <sroland@vmware.com>
 
-commit b6855772f4a22c4fbdd4fcaceff5c8a527035123 upstream.
+commit 688acaa2897462e4c5e2482496e2868db0760809 upstream.
 
-ath5k assumes ah_current_channel is always a valid pointer in
-several places, but a newly created interface may not have a
-channel.  To avoid null pointer dereferences, set it up to point
-to the first available channel until later reconfigured.
+Code did not handle projected 2d and depth coordinates, meaning potentially
+set 3d or cube special handling might stick.
+(Not sure what depth coord actually does, but I guess handling it
+like a normal coordinate is the right thing to do.)
+Might be related to https://bugs.freedesktop.org/show_bug.cgi?id=26428
 
-This fixes the following oops:
-$ rmmod ath5k
-$ insmod ath5k
-$ iw phy0 set distance 11000
-
-BUG: unable to handle kernel NULL pointer dereference at 00000006
-IP: [<d0a1ff24>] ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k]
-*pde = 00000000
-Oops: 0000 [#1]
-last sysfs file: /sys/devices/pci0000:00/0000:00:0e.0/ieee80211/phy0/index
-Modules linked in: usbhid option usb_storage usbserial usblp evdev lm90
-scx200_acb i2c_algo_bit i2c_dev i2c_core via_rhine ohci_hcd ne2k_pci
-8390 leds_alix2 xt_IMQ imq nf_nat_tftp nf_conntrack_tftp nf_nat_irc nf_cc
-
-Pid: 1597, comm: iw Not tainted (2.6.32.14 #8)
-EIP: 0060:[<d0a1ff24>] EFLAGS: 00010296 CPU: 0
-EIP is at ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k]
-EAX: 000000c2 EBX: 00000000 ECX: ffffffff EDX: c12d2080
-ESI: 00000019 EDI: cf8c0000 EBP: d0a30edc ESP: cfa09bf4
-  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
-Process iw (pid: 1597, ti=cfa09000 task=cf88a000 task.ti=cfa09000)
-Stack:
-  d0a34f35 d0a353f8 d0a30edc 000000fe cf8c0000 00000000 1900063d cfa8c9e0
-<0> cfa8c9e8 cfa8c0c0 cfa8c000 d0a27f0c 199d84b4 cfa8c200 00000010 d09bfdc7
-<0> 00000000 00000000 ffffffff d08e0d28 cf9263c0 00000001 cfa09cc4 00000000
-Call Trace:
-  [<d0a27f0c>] ? ath5k_hw_attach+0xc8c/0x3c10 [ath5k]
-  [<d09bfdc7>] ? __ieee80211_request_smps+0x1347/0x1580 [mac80211]
-  [<d08e0d28>] ? nl80211_send_scan_start+0x7b8/0x4520 [cfg80211]
-  [<c10f5db9>] ? nla_parse+0x59/0xc0
-  [<c11ca8d9>] ? genl_rcv_msg+0x169/0x1a0
-  [<c11ca770>] ? genl_rcv_msg+0x0/0x1a0
-  [<c11c7e68>] ? netlink_rcv_skb+0x38/0x90
-  [<c11c9649>] ? genl_rcv+0x19/0x30
-  [<c11c7c03>] ? netlink_unicast+0x1b3/0x220
-  [<c11c893e>] ? netlink_sendmsg+0x26e/0x290
-  [<c11a409e>] ? sock_sendmsg+0xbe/0xf0
-  [<c1032780>] ? autoremove_wake_function+0x0/0x50
-  [<c104d846>] ? __alloc_pages_nodemask+0x106/0x530
-  [<c1074933>] ? do_lookup+0x53/0x1b0
-  [<c10766f9>] ? __link_path_walk+0x9b9/0x9e0
-  [<c11acab0>] ? verify_iovec+0x50/0x90
-  [<c11a42b1>] ? sys_sendmsg+0x1e1/0x270
-  [<c1048e50>] ? find_get_page+0x10/0x50
-  [<c104a96f>] ? filemap_fault+0x5f/0x370
-  [<c1059159>] ? __do_fault+0x319/0x370
-  [<c11a55b4>] ? sys_socketcall+0x244/0x290
-  [<c101962c>] ? do_page_fault+0x1ec/0x270
-  [<c1019440>] ? do_page_fault+0x0/0x270
-  [<c1002ae5>] ? syscall_call+0x7/0xb
-Code: 00 b8 fe 00 00 00 b9 f8 53 a3 d0 89 5c 24 14 89 7c 24 10 89 44 24
-0c 89 6c 24 08 89 4c 24 04 c7 04 24 35 4f a3 d0 e8 7c 30 60 f0 <0f> b7
-43 06 ba 06 00 00 00 a8 10 75 0e 83 e0 20 83 f8 01 19 d2
-EIP: [<d0a1ff24>] ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k] SS:ESP
-0068:cfa09bf4
-CR2: 0000000000000006
----[ end trace 54f73d6b10ceb87b ]---
-
-Reported-by: Steve Brown <sbrown@cortland.com>
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: sroland@vmware.com
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/attach.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/r200.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/ath/ath5k/attach.c
-+++ b/drivers/net/wireless/ath/ath5k/attach.c
-@@ -123,6 +123,7 @@ int ath5k_hw_attach(struct ath5k_softc *
- 	ah->ah_cw_min = AR5K_TUNE_CWMIN;
- 	ah->ah_limit_tx_retries = AR5K_INIT_TX_RETRY;
- 	ah->ah_software_retry = false;
-+	ah->ah_current_channel = &sc->channels[0];
- 
- 	/*
- 	 * Find the mac version
+--- a/drivers/gpu/drm/radeon/r200.c
++++ b/drivers/gpu/drm/radeon/r200.c
+@@ -368,6 +368,8 @@ int r200_packet0_check(struct radeon_cs_
+ 		/* 2D, 3D, CUBE */
+ 		switch (tmp) {
+ 		case 0:
++		case 3:
++		case 4:
+ 		case 5:
+ 		case 6:
+ 		case 7:
 
 
