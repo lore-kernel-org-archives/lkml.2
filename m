@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759609Ab0G3RwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:52:21 -0400
-Received: from kroah.org ([198.145.64.141]:35940 "EHLO coco.kroah.org"
+	id S932526Ab0G3Rvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:51:44 -0400
+Received: from kroah.org ([198.145.64.141]:35965 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932313Ab0G3RfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:15 -0400
+	id S932332Ab0G3RfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:20 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:10 2010
-Message-Id: <20100730173110.311526615@clark.site>
+Message-Id: <20100730173110.590259844@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:49 -0700
+Date: Fri, 30 Jul 2010 10:30:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Vorontsov <avorontsov@mvista.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [084/140] powerpc/cpm1: Fix build with various CONFIG_*_UCODE_PATCH combinations
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [087/140] ASoC: Remove duplicate AUX definition from WM8776
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Vorontsov <avorontsov@mvista.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 2069a6ae19a34d96cc9cb284eb645b165138e03f upstream.
+commit 3c0709396df0869786f83e4b2d2d687c70ee886d upstream.
 
-Warnings are treated as errors for arch/powerpc code, so build fails
-with CONFIG_I2C_SPI_UCODE_PATCH=y:
-
-    CC      arch/powerpc/sysdev/micropatch.o
-  cc1: warnings being treated as errors
-  arch/powerpc/sysdev/micropatch.c: In function 'cpm_load_patch':
-  arch/powerpc/sysdev/micropatch.c:630: warning: unused variable 'smp'
-  make[1]: *** [arch/powerpc/sysdev/micropatch.o] Error 1
-
-And with CONFIG_USB_SOF_UCODE_PATCH=y:
-
-  CC      arch/powerpc/sysdev/micropatch.o
-  cc1: warnings being treated as errors
-  arch/powerpc/sysdev/micropatch.c: In function 'cpm_load_patch':
-  arch/powerpc/sysdev/micropatch.c:629: warning: unused variable 'spp'
-  arch/powerpc/sysdev/micropatch.c:628: warning: unused variable 'iip'
-  make[1]: *** [arch/powerpc/sysdev/micropatch.o] Error 1
-
-This patch fixes these issues by introducing proper #ifdefs.
-
-Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/sysdev/micropatch.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ sound/soc/codecs/wm8776.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/powerpc/sysdev/micropatch.c
-+++ b/arch/powerpc/sysdev/micropatch.c
-@@ -626,9 +626,14 @@ cpm_load_patch(cpm8xx_t	*cp)
- {
- 	volatile uint		*dp;		/* Dual-ported RAM. */
- 	volatile cpm8xx_t	*commproc;
-+#if defined(CONFIG_I2C_SPI_UCODE_PATCH) || \
-+    defined(CONFIG_I2C_SPI_SMC1_UCODE_PATCH)
- 	volatile iic_t		*iip;
- 	volatile struct spi_pram *spp;
-+#ifdef CONFIG_I2C_SPI_SMC1_UCODE_PATCH
- 	volatile smc_uart_t	*smp;
-+#endif
-+#endif
- 	int	i;
+--- a/sound/soc/codecs/wm8776.c
++++ b/sound/soc/codecs/wm8776.c
+@@ -93,7 +93,6 @@ SOC_DAPM_SINGLE("Bypass Switch", WM8776_
  
- 	commproc = cp;
+ static const struct snd_soc_dapm_widget wm8776_dapm_widgets[] = {
+ SND_SOC_DAPM_INPUT("AUX"),
+-SND_SOC_DAPM_INPUT("AUX"),
+ 
+ SND_SOC_DAPM_INPUT("AIN1"),
+ SND_SOC_DAPM_INPUT("AIN2"),
 
 
