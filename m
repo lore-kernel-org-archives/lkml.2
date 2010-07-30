@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab0G3Roo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:44:44 -0400
-Received: from kroah.org ([198.145.64.141]:36145 "EHLO coco.kroah.org"
+	id S932437Ab0G3Rfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:35:55 -0400
+Received: from kroah.org ([198.145.64.141]:35689 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932447Ab0G3Rf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:58 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:13 2010
-Message-Id: <20100730173113.425490160@clark.site>
+	id S1758824Ab0G3Red (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:06 2010
+Message-Id: <20100730173106.725871538@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:24 -0700
+Date: Fri, 30 Jul 2010 10:30:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Ming Lei <tom.leiming@gmail.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [119/140] firmware_class: fix memory leak - free allocated pages
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [044/140] p54pci: add Symbol AP-300 minipci adapters pciid
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,112 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <David.Woodhouse@intel.com>
+From: Joerg Albert <jal2@gmx.de>
 
-commit dd336c554d8926c3348a2d5f2a5ef5597f6d1a06 upstream.
+commit 50900f1698f68127e54c67fdfe829e4a97b1be2b upstream.
 
-fix memory leak introduced by the patch 6e03a201bbe:
-firmware: speed up request_firmware()
-
-1. vfree won't release pages there were allocated explicitly and mapped
-using vmap. The memory has to be vunmap-ed and the pages needs
-to be freed explicitly
-
-2. page array is moved into the 'struct
-firmware' so that we can free it from release_firmware()
-and not only in fw_dev_release()
-
-The fix doesn't break the firmware load speed.
-
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: Ming Lei <tom.leiming@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Singed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/firmware_class.c |   26 ++++++++++++++++++++------
- include/linux/firmware.h      |    1 +
- 2 files changed, 21 insertions(+), 6 deletions(-)
+ drivers/net/wireless/p54/p54pci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -125,6 +125,17 @@ static ssize_t firmware_loading_show(str
- 	return sprintf(buf, "%d\n", loading);
- }
- 
-+static void firmware_free_data(const struct firmware *fw)
-+{
-+	int i;
-+	vunmap(fw->data);
-+	if (fw->pages) {
-+		for (i = 0; i < PFN_UP(fw->size); i++)
-+			__free_page(fw->pages[i]);
-+		kfree(fw->pages);
-+	}
-+}
-+
- /* Some architectures don't have PAGE_KERNEL_RO */
- #ifndef PAGE_KERNEL_RO
- #define PAGE_KERNEL_RO PAGE_KERNEL
-@@ -157,21 +168,21 @@ static ssize_t firmware_loading_store(st
- 			mutex_unlock(&fw_lock);
- 			break;
- 		}
--		vfree(fw_priv->fw->data);
--		fw_priv->fw->data = NULL;
-+		firmware_free_data(fw_priv->fw);
-+		memset(fw_priv->fw, 0, sizeof(struct firmware));
-+		/* If the pages are not owned by 'struct firmware' */
- 		for (i = 0; i < fw_priv->nr_pages; i++)
- 			__free_page(fw_priv->pages[i]);
- 		kfree(fw_priv->pages);
- 		fw_priv->pages = NULL;
- 		fw_priv->page_array_size = 0;
- 		fw_priv->nr_pages = 0;
--		fw_priv->fw->size = 0;
- 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
- 		mutex_unlock(&fw_lock);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
--			vfree(fw_priv->fw->data);
-+			vunmap(fw_priv->fw->data);
- 			fw_priv->fw->data = vmap(fw_priv->pages,
- 						 fw_priv->nr_pages,
- 						 0, PAGE_KERNEL_RO);
-@@ -179,7 +190,10 @@ static ssize_t firmware_loading_store(st
- 				dev_err(dev, "%s: vmap() failed\n", __func__);
- 				goto err;
- 			}
--			/* Pages will be freed by vfree() */
-+			/* Pages are now owned by 'struct firmware' */
-+			fw_priv->fw->pages = fw_priv->pages;
-+			fw_priv->pages = NULL;
-+
- 			fw_priv->page_array_size = 0;
- 			fw_priv->nr_pages = 0;
- 			complete(&fw_priv->completion);
-@@ -572,7 +586,7 @@ release_firmware(const struct firmware *
- 			if (fw->data == builtin->data)
- 				goto free_fw;
- 		}
--		vfree(fw->data);
-+		firmware_free_data(fw);
- 	free_fw:
- 		kfree(fw);
- 	}
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -12,6 +12,7 @@
- struct firmware {
- 	size_t size;
- 	const u8 *data;
-+	struct page **pages;
+--- a/drivers/net/wireless/p54/p54pci.c
++++ b/drivers/net/wireless/p54/p54pci.c
+@@ -40,6 +40,8 @@ static struct pci_device_id p54p_table[]
+ 	{ PCI_DEVICE(0x1260, 0x3877) },
+ 	/* Intersil PRISM Javelin/Xbow Wireless LAN adapter */
+ 	{ PCI_DEVICE(0x1260, 0x3886) },
++	/* Intersil PRISM Xbow Wireless LAN adapter (Symbol AP-300) */
++	{ PCI_DEVICE(0x1260, 0xffff) },
+ 	{ },
  };
  
- struct device;
 
 
