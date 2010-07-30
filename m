@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292Ab0G3Re4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:34:56 -0400
-Received: from kroah.org ([198.145.64.141]:35515 "EHLO coco.kroah.org"
+	id S1757634Ab0G3Rev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:34:51 -0400
+Received: from kroah.org ([198.145.64.141]:35508 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758816Ab0G3ReE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:04 -0400
+	id S1759214Ab0G3ReD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:03 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
-Message-Id: <20100730173104.315234043@clark.site>
+Message-Id: <20100730173104.234436806@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:42 -0700
+Date: Fri, 30 Jul 2010 10:29:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
-Subject: [017/140] hwmon: (coretemp) Skip duplicate CPU entries
+Subject: [016/140] hwmon: (coretemp) Properly label the sensors
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,74 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jean Delvare <khali@linux-fr.org>
 
-commit d883b9f0977269d519469da72faec6a7f72cb489 upstream.
+commit 3f4f09b4be35d38d6e2bf22c989443e65e70fc4c upstream.
 
-On hyper-threaded CPUs, each core appears twice in the CPU list. Skip
-the second entry to avoid duplicate sensors.
+Don't assume that CPU entry number and core ID always match. It
+worked in the simple cases (single CPU, no HT) but fails on
+multi-CPU systems.
 
 Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Acked-by: Huaxu Wan <huaxu.wan@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/coretemp.c |   26 +++++++++++++++++++++++++-
- 1 file changed, 25 insertions(+), 1 deletion(-)
+ drivers/hwmon/coretemp.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 --- a/drivers/hwmon/coretemp.c
 +++ b/drivers/hwmon/coretemp.c
-@@ -356,6 +356,10 @@ struct pdev_entry {
- 	struct list_head list;
- 	struct platform_device *pdev;
- 	unsigned int cpu;
-+#ifdef CONFIG_SMP
-+	u16 phys_proc_id;
-+	u16 cpu_core_id;
-+#endif
- };
- 
- static LIST_HEAD(pdev_list);
-@@ -366,6 +370,22 @@ static int __cpuinit coretemp_device_add
- 	int err;
- 	struct platform_device *pdev;
- 	struct pdev_entry *pdev_entry;
-+#ifdef CONFIG_SMP
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+#endif
-+
-+	mutex_lock(&pdev_list_mutex);
-+
-+#ifdef CONFIG_SMP
-+	/* Skip second HT entry of each core */
-+	list_for_each_entry(pdev_entry, &pdev_list, list) {
-+		if (c->phys_proc_id == pdev_entry->phys_proc_id &&
-+		    c->cpu_core_id == pdev_entry->cpu_core_id) {
-+			err = 0;	/* Not an error */
-+			goto exit;
-+		}
-+	}
-+#endif
- 
- 	pdev = platform_device_alloc(DRVNAME, cpu);
- 	if (!pdev) {
-@@ -389,7 +409,10 @@ static int __cpuinit coretemp_device_add
- 
- 	pdev_entry->pdev = pdev;
- 	pdev_entry->cpu = cpu;
--	mutex_lock(&pdev_list_mutex);
-+#ifdef CONFIG_SMP
-+	pdev_entry->phys_proc_id = c->phys_proc_id;
-+	pdev_entry->cpu_core_id = c->cpu_core_id;
-+#endif
- 	list_add_tail(&pdev_entry->list, &pdev_list);
- 	mutex_unlock(&pdev_list_mutex);
- 
-@@ -400,6 +423,7 @@ exit_device_free:
- exit_device_put:
- 	platform_device_put(pdev);
- exit:
-+	mutex_unlock(&pdev_list_mutex);
- 	return err;
+@@ -53,6 +53,7 @@ struct coretemp_data {
+ 	struct mutex update_lock;
+ 	const char *name;
+ 	u32 id;
++	u16 core_id;
+ 	char valid;		/* zero until following fields are valid */
+ 	unsigned long last_updated;	/* in jiffies */
+ 	int temp;
+@@ -75,7 +76,7 @@ static ssize_t show_name(struct device *
+ 	if (attr->index == SHOW_NAME)
+ 		ret = sprintf(buf, "%s\n", data->name);
+ 	else	/* show label */
+-		ret = sprintf(buf, "Core %d\n", data->id);
++		ret = sprintf(buf, "Core %d\n", data->core_id);
+ 	return ret;
  }
+ 
+@@ -255,6 +256,9 @@ static int __devinit coretemp_probe(stru
+ 	}
+ 
+ 	data->id = pdev->id;
++#ifdef CONFIG_SMP
++	data->core_id = c->cpu_core_id;
++#endif
+ 	data->name = "coretemp";
+ 	mutex_init(&data->update_lock);
  
 
 
