@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760175Ab0G3SOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:14:42 -0400
-Received: from kroah.org ([198.145.64.141]:59032 "EHLO coco.kroah.org"
+	id S932364Ab0G3SPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:15:20 -0400
+Received: from kroah.org ([198.145.64.141]:58963 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932649Ab0G3R5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:09 -0400
+	id S1760077Ab0G3R5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:47 2010
-Message-Id: <20100730175147.782246020@clark.site>
+Message-Id: <20100730175146.974329246@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:49 -0700
+Date: Fri, 30 Jul 2010 10:52:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [152/205] KVM: read apic->irr with ioapic lock held
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Eric Anholt <eric@anholt.net>
+Subject: [143/205] drm/i915: gen3 page flipping fixes
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Read ioapic->irr inside ioapic->lock protected section.
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-KVM-Stable-Tag
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-(cherry picked from commit 07dc7263b99e4ddad2b4c69765a428ccb7d48938)
+commit 1afe3e9d4335bf3bc5615e37243dc8fef65dac8f upstream.
+
+Gen3 chips have slightly different flip commands, and also contain a bit
+that indicates whether a "flip pending" interrupt means the flip has
+been queued or has been completed.
+
+So implement support for the gen3 flip command, and make sure we use the
+flip pending interrupt correctly depending on the value of ECOSKPD bit
+0.
+
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- virt/kvm/ioapic.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c      |    4 ++++
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/i915_irq.c      |   16 ++++++++++++----
+ drivers/gpu/drm/i915/i915_reg.h      |    4 ++++
+ drivers/gpu/drm/i915/intel_display.c |   29 ++++++++++++++++++++++++-----
+ drivers/gpu/drm/i915/intel_drv.h     |    1 +
+ 6 files changed, 46 insertions(+), 9 deletions(-)
 
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -192,12 +192,13 @@ static int ioapic_deliver(struct kvm_ioa
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1488,6 +1488,10 @@ static int i915_load_modeset_init(struct
+ 	if (ret)
+ 		goto destroy_ringbuffer;
  
- int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
++	/* IIR "flip pending" bit means done if this bit is set */
++	if (IS_GEN3(dev) && (I915_READ(ECOSKPD) & ECO_FLIP_DONE))
++		dev_priv->flip_pending_is_done = true;
++
+ 	intel_modeset_init(dev);
+ 
+ 	ret = drm_irq_install(dev);
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -611,6 +611,7 @@ typedef struct drm_i915_private {
+ 	struct drm_crtc *plane_to_crtc_mapping[2];
+ 	struct drm_crtc *pipe_to_crtc_mapping[2];
+ 	wait_queue_head_t pending_flip_queue;
++	bool flip_pending_is_done;
+ 
+ 	/* Reclocking support */
+ 	bool render_reclock_avail;
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -932,22 +932,30 @@ irqreturn_t i915_driver_irq_handler(DRM_
+ 			mod_timer(&dev_priv->hangcheck_timer, jiffies + DRM_I915_HANGCHECK_PERIOD);
+ 		}
+ 
+-		if (iir & I915_DISPLAY_PLANE_A_FLIP_PENDING_INTERRUPT)
++		if (iir & I915_DISPLAY_PLANE_A_FLIP_PENDING_INTERRUPT) {
+ 			intel_prepare_page_flip(dev, 0);
++			if (dev_priv->flip_pending_is_done)
++				intel_finish_page_flip_plane(dev, 0);
++		}
+ 
+-		if (iir & I915_DISPLAY_PLANE_B_FLIP_PENDING_INTERRUPT)
++		if (iir & I915_DISPLAY_PLANE_B_FLIP_PENDING_INTERRUPT) {
++			if (dev_priv->flip_pending_is_done)
++				intel_finish_page_flip_plane(dev, 1);
+ 			intel_prepare_page_flip(dev, 1);
++		}
+ 
+ 		if (pipea_stats & vblank_status) {
+ 			vblank++;
+ 			drm_handle_vblank(dev, 0);
+-			intel_finish_page_flip(dev, 0);
++			if (!dev_priv->flip_pending_is_done)
++				intel_finish_page_flip(dev, 0);
+ 		}
+ 
+ 		if (pipeb_stats & vblank_status) {
+ 			vblank++;
+ 			drm_handle_vblank(dev, 1);
+-			intel_finish_page_flip(dev, 1);
++			if (!dev_priv->flip_pending_is_done)
++				intel_finish_page_flip(dev, 1);
+ 		}
+ 
+ 		if ((pipeb_stats & I915_LEGACY_BLC_EVENT_STATUS) ||
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -178,6 +178,7 @@
+ #define   MI_OVERLAY_OFF	(0x2<<21)
+ #define MI_LOAD_SCAN_LINES_INCL MI_INSTR(0x12, 0)
+ #define MI_DISPLAY_FLIP		MI_INSTR(0x14, 2)
++#define MI_DISPLAY_FLIP_I915	MI_INSTR(0x14, 1)
+ #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
+ #define MI_STORE_DWORD_IMM	MI_INSTR(0x20, 1)
+ #define   MI_MEM_VIRTUAL	(1 << 22) /* 965+ only */
+@@ -431,6 +432,9 @@
+ #define   CM0_RC_OP_FLUSH_DISABLE (1<<0)
+ #define BB_ADDR		0x02140 /* 8 bytes */
+ #define GFX_FLSH_CNTL	0x02170 /* 915+ only */
++#define ECOSKPD		0x021d0
++#define   ECO_GATING_CX_ONLY	(1<<3)
++#define   ECO_FLIP_DONE		(1<<0)
+ 
+ 
+ /*
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4139,10 +4139,10 @@ static void intel_unpin_work_fn(struct w
+ 	kfree(work);
+ }
+ 
+-void intel_finish_page_flip(struct drm_device *dev, int pipe)
++static void do_intel_finish_page_flip(struct drm_device *dev,
++				      struct drm_crtc *crtc)
  {
--	u32 old_irr = ioapic->irr;
-+	u32 old_irr;
- 	u32 mask = 1 << irq;
- 	union kvm_ioapic_redirect_entry entry;
- 	int ret = 1;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	struct drm_crtc *crtc = dev_priv->pipe_to_crtc_mapping[pipe];
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct intel_unpin_work *work;
+ 	struct drm_i915_gem_object *obj_priv;
+@@ -4186,6 +4186,22 @@ void intel_finish_page_flip(struct drm_d
+ 	schedule_work(&work->work);
+ }
  
- 	spin_lock(&ioapic->lock);
-+	old_irr = ioapic->irr;
- 	if (irq >= 0 && irq < IOAPIC_NUM_PINS) {
- 		entry = ioapic->redirtbl[irq];
- 		level ^= entry.fields.polarity;
++void intel_finish_page_flip(struct drm_device *dev, int pipe)
++{
++	drm_i915_private_t *dev_priv = dev->dev_private;
++	struct drm_crtc *crtc = dev_priv->pipe_to_crtc_mapping[pipe];
++
++	do_intel_finish_page_flip(dev, crtc);
++}
++
++void intel_finish_page_flip_plane(struct drm_device *dev, int plane)
++{
++	drm_i915_private_t *dev_priv = dev->dev_private;
++	struct drm_crtc *crtc = dev_priv->plane_to_crtc_mapping[plane];
++
++	do_intel_finish_page_flip(dev, crtc);
++}
++
+ void intel_prepare_page_flip(struct drm_device *dev, int plane)
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+@@ -4267,14 +4283,17 @@ static int intel_crtc_page_flip(struct d
+ 	work->pending_flip_obj = obj;
+ 
+ 	BEGIN_LP_RING(4);
+-	OUT_RING(MI_DISPLAY_FLIP |
+-		 MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
+-	OUT_RING(fb->pitch);
+ 	if (IS_I965G(dev)) {
++		OUT_RING(MI_DISPLAY_FLIP |
++			 MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
++		OUT_RING(fb->pitch);
+ 		OUT_RING(obj_priv->gtt_offset | obj_priv->tiling_mode);
+ 		pipesrc = I915_READ(pipesrc_reg); 
+ 		OUT_RING(pipesrc & 0x0fff0fff);
+ 	} else {
++		OUT_RING(MI_DISPLAY_FLIP_I915 |
++			 MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
++		OUT_RING(fb->pitch);
+ 		OUT_RING(obj_priv->gtt_offset);
+ 		OUT_RING(MI_NOOP);
+ 	}
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -219,6 +219,7 @@ extern int intel_framebuffer_create(stru
+ 
+ extern void intel_prepare_page_flip(struct drm_device *dev, int plane);
+ extern void intel_finish_page_flip(struct drm_device *dev, int pipe);
++extern void intel_finish_page_flip_plane(struct drm_device *dev, int plane);
+ 
+ extern void intel_setup_overlay(struct drm_device *dev);
+ extern void intel_cleanup_overlay(struct drm_device *dev);
 
 
