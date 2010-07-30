@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab0G3RTu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:19:50 -0400
-Received: from kroah.org ([198.145.64.141]:51993 "EHLO coco.kroah.org"
+	id S1752565Ab0G3RT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:19:57 -0400
+Received: from kroah.org ([198.145.64.141]:52011 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758779Ab0G3RTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:40 -0400
+	id S1758797Ab0G3RTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:43 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:10 2010
-Message-Id: <20100730171510.018458238@clark.site>
+Message-Id: <20100730171510.294935770@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:43 -0700
+Date: Fri, 30 Jul 2010 10:15:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [115/165] ext4: check s_log_groups_per_flex in online resize code
+Subject: [118/165] ext4: dont scan/accumulate more pages than mballoc will allocate
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 42007efd569f1cf3bfb9a61da60ef6c2179508ca upstream (as of v2.6.34-git13)
+commit c445e3e0a5c2804524dec6e55f66d63f6bc5bc3e upstream (as of v2.6.34-git13)
 
-If groups_per_flex < 2, sbi->s_flex_groups[] doesn't get filled out,
-and every other access to this first tests s_log_groups_per_flex;
-same thing needs to happen in resize or we'll wander off into
-a null pointer when doing an online resize of the file system.
+There was a bug reported on RHEL5 that a 10G dd on a 12G box
+had a very, very slow sync after that.
 
-Thanks to Christoph Biedl, who came up with the trivial testcase:
+At issue was the loop in write_cache_pages scanning all the way
+to the end of the 10G file, even though the subsequent call
+to mpage_da_submit_io would only actually write a smallish amt; then
+we went back to the write_cache_pages loop ... wasting tons of time
+in calling __mpage_da_writepage for thousands of pages we would
+just revisit (many times) later.
 
-# truncate --size 128M fsfile
-# mkfs.ext3 -F fsfile
-# tune2fs -O extents,uninit_bg,dir_index,flex_bg,huge_file,dir_nlink,extra_isize fsfile
-# e2fsck -yDf -C0 fsfile
-# truncate --size 132M fsfile
-# losetup /dev/loop0 fsfile
-# mount /dev/loop0 mnt
-# resize2fs -p /dev/loop0
+Upstream it's not such a big issue for sys_sync because we get
+to the loop with a much smaller nr_to_write, which limits the loop.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=13549
+However, talking with Aneesh he realized that fsync upstream still
+gets here with a very large nr_to_write and we face the same problem.
 
-Reported-by: Alessandro Polverini <alex@nibbles.it>
-Test-case-by: Christoph Biedl  <bugzilla.kernel.bpeb@manchmal.in-ulm.de>
+This patch makes mpage_add_bh_to_extent stop the loop after we've
+accumulated 2048 pages, by setting mpd->io_done = 1; which ultimately
+causes the write_cache_pages loop to break.
+
+Repeating the test with a dirty_ratio of 80 (to leave something for
+fsync to do), I don't see huge IO performance gains, but the reduction
+in cpu usage is striking: 80% usage with stock, and 2% with the
+below patch.  Instrumenting the loop in write_cache_pages clearly
+shows that we are wasting time here.
+
+Eventually we need to change mpage_da_map_pages() also submit its I/O
+to the block layer, subsuming mpage_da_submit_io(), and then change it
+call ext4_get_blocks() multiple times.
+
 Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/resize.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ext4/inode.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -930,7 +930,8 @@ int ext4_group_add(struct super_block *s
- 	percpu_counter_add(&sbi->s_freeinodes_counter,
- 			   EXT4_INODES_PER_GROUP(sb));
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2361,6 +2361,15 @@ static void mpage_add_bh_to_extent(struc
+ 	sector_t next;
+ 	int nrblocks = mpd->b_size >> mpd->inode->i_blkbits;
  
--	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG)) {
-+	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG) &&
-+	    sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group;
- 		flex_group = ext4_flex_group(sbi, input->group);
- 		atomic_add(input->free_blocks_count,
++	/*
++	 * XXX Don't go larger than mballoc is willing to allocate
++	 * This is a stopgap solution.  We eventually need to fold
++	 * mpage_da_submit_io() into this function and then call
++	 * ext4_get_blocks() multiple times in a loop
++	 */
++	if (nrblocks >= 8*1024*1024/mpd->inode->i_sb->s_blocksize)
++		goto flush_it;
++
+ 	/* check if thereserved journal credits might overflow */
+ 	if (!(EXT4_I(mpd->inode)->i_flags & EXT4_EXTENTS_FL)) {
+ 		if (nrblocks >= EXT4_MAX_TRANS_DATA) {
 
 
