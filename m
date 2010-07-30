@@ -1,138 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab0G3ASl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Jul 2010 20:18:41 -0400
-Received: from smtp12.ono.com ([62.42.230.20]:49454 "EHLO resmaa12.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755322Ab0G3ASk convert rfc822-to-8bit (ORCPT
+	id S1758224Ab0G3ASr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Jul 2010 20:18:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53534 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab0G3ASp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Jul 2010 20:18:40 -0400
-Date: Fri, 30 Jul 2010 02:18:37 +0200
-From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org
-Subject: Re: Questions and problems with NFS4
-Message-ID: <20100730021837.65549fa7@werewolf.home>
-In-Reply-To: <4C507208.6030309@oracle.com>
-References: <20100728004611.00c46b13@werewolf.home>
-	<4C507208.6030309@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-mandriva-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Jul 2010 20:18:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=fikoy0qoyvfMoYElfYGNSqI4GYkAH5LkHZ3FPKMRUJR1jHaPvUf6Omn3yLRCq7fxLL
+         U4CKf0WkQTxpuRYNix5klTVseKHBtYRpaTqpoDi2ObnIOvCGaCu/zxSuLJQPdJOcIUHE
+         LenIVNgfpEJoWlpxuIHrgq/sMf46p8nJU70JQ=
+MIME-Version: 1.0
+In-Reply-To: <e90ce59d7dcbbdb24e1882a4e99b0c3db2bd116a.1280447281.git.joe@perches.com>
+References: <cover.1280447281.git.joe@perches.com> <e90ce59d7dcbbdb24e1882a4e99b0c3db2bd116a.1280447281.git.joe@perches.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 29 Jul 2010 20:18:24 -0400
+Message-ID: <AANLkTikYn+qpDxxLeJ4eu5SsEs=7n_wAu5RzM5pZhVwU@mail.gmail.com>
+Subject: Re: [PATCH net-next 3/3] drivers/net/bfin_mac.c: Misc function 
+	cleanups, neatening
+To: Joe Perches <joe@perches.com>
+Cc: Michael Hennerich <michael.hennerich@analog.com>,
+        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Jul 2010 14:08:08 -0400, Chuck Lever <chuck.lever@oracle.com> wrote:
+On Thu, Jul 29, 2010 at 19:58, Joe Perches wrote:
+> Use new bfin_alloc_skb to centralize skb allocations
+> Add and use get_mac_addr function
+> Neaten bfin_mac_init
+> Neaten bfin_mac_hard_start_xmit
 
-> On 07/27/10 06:46 PM, J.A. Magallón wrote:
-> > - AFAIK, with NFS4 the only needed daemons are nfsd and idmapd. And the
-> >    only accesible port from the outside is 2049, for nfsd.
-> >    I have tried to strip down my nfs server (-N 2 -N 3 -U),
-> >    but rpcinfo still gives me:
-> >
-> > annwn:~# rpcinfo -p localhost
-> >     program vers proto   port  service
-> >      100000    4   tcp    111  portmapper
-> >      100000    3   tcp    111  portmapper
-> >      100000    2   tcp    111  portmapper
-> >      100000    4   udp    111  portmapper
-> >      100000    3   udp    111  portmapper
-> >      100000    2   udp    111  portmapper
-> >      100024    1   udp  48461  status
-> >      100024    1   tcp  37515  status
-> >      100021    1   udp  38583  nlockmgr
-> >      100021    3   udp  38583  nlockmgr
-> >      100021    4   udp  38583  nlockmgr
-> >      100021    1   tcp  37873  nlockmgr
-> >      100021    3   tcp  37873  nlockmgr
-> >      100021    4   tcp  37873  nlockmgr
-> >      100003    4   tcp   2049  nfs
-> >      100005    1   udp  45341  mountd
-> >      100005    1   tcp  58639  mountd
-> >
-> >    disabling portampper and mountd is just a matter of initscripts
-> >    requirements, but how can I disable nlockmgr ? It isn't needed for
-> >    NFS4, isn't it ? Nor portmapper nor mountd...
-> 
-> Strictly speaking, portmapper is not required for NFSv4 service. 
-> However, the NFS infrastructure on Linux is still designed for NFSv2 and 
-> v3.  There remains some work needed to make portmapper optional for a 
-> v4-only server.  For now, continue to run it in order to handle kernel 
-> upcalls.
-> 
-> rpc.mountd is, however, still required on Linux NFSv4 servers.  Although 
-> NFSv4 clients do not contact the server's mountd, the kernel's NFS 
-> server performs upcalls to rpc.mountd to manage export information.  You 
-> can firewall off the mountd service on the server without affecting 
-> NFSv4 clients.  Recent versions of rpc.mountd accept command line 
-> options that disable the mountd network service while still handling 
-> kernel upcalls.
-> 
-> And, as long as lockd is running, you will need to keep rpc.statd 
-> around.  Again, you can firewall this service so that it is not exposed 
-> on the network, but it must continue to be available to handle kernel 
-> upcalls.  This is something we hope to address eventually as part of the 
-> lockd work Bruce mentioned.
+i'll ack the idea, but i think it better i pull these patches into the
+Blackfin repo to get some real hardware testing before i forward them
+back to David/netdev ...
 
-Err...
-
-First of all, plz correct me if this is in some kind of wiki, web page or
-the like, but I have not been able to find it. All this things should be
-on a document somewhere, perhaps even in the kernel itself...
-These are the things I have found out (thanks to your answers...).
-I'm a long time unix admin, not new to NFS, but all this things were not
-obvious to me, so perhaps they deserve to be in a document, something like
-"NFS 3 to 4 migration for dummy admins":
-
-- Everything just works if you mount shares as nfs4. Even, if you have a
-  bunch of linux boxen with recent kernel/nfs-utils, probably you are
-  already doing nfs4... modern mount tries nfs4 first.
-
-- Using nfsroot with fsid=0 is not mandatory, nor bind-mounting everything
-  under some /export (like many documents say), that only forces you to
-  use the old way of specifying paths in the server (absolute, not
-  relative to /export).
-
-- Even if you use nfsroot(fsid=0), and you mount it on the client
-  at /somepoint, you are not forced to mount everything else under
-  /somepoint (plz, correct me if I'm wrong).
-
-- You can strip your server for NFS4, but not too much... Old daemons
-  are still needed locally. For example, you can get rid of NFS2 and
-  UDP for nfsd (-N 2 -U, -any os still uses NFS2??-), and old
-  mount protocols (-N 1 -N 2 for mountd)...
-
-- ... but they can be firewalled, use is just local
-
-- portmap/rpcbind is not needed, but still used because nfsd is not
-  yet proper clean for only-nfs4-behavior.
-
-There are also some things I have not been able to discover, like
-using the interesting things of NFS4:
-
-- How do you activate delegations ? Is this an automatic thing, or
-  do I have to add any option somewhere ?
-
-- How do you use cache ? Many docs talk about fsc option, but man
-  does not mention it (nfs-utils 1.2.2).
-  I have tried to use cachefiles module, and cachefilesd, but
-  when I try to run it, I get:
-
-bran:~/c/cachefilesd-0.10# ./cachefilesd -dddns -f $PWD/cachefilesd.conf
-About to bind cache
-CacheFiles bind failed: errno 95 (Operation not supported)
-
-In dmesg:
-[cachef] ==> cachefiles_get_security_ID({system_u:system_r:cachefiles_kernel_t:s0})
-CacheFiles: Security denies permission to nominate security context: error -95
-
-I can not run cachefiles without SELinux or something like that ?
-
-Thanks, perhaps this notes help someone in the future. 
-
-TIA
-
--- 
-J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
-                                         \         It's better when it's free
+that OK with you ?
+-mike
