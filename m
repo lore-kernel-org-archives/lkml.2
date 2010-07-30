@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933091Ab0G3SAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:00:39 -0400
-Received: from kroah.org ([198.145.64.141]:59321 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932860Ab0G3R6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:58:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:52 2010
-Message-Id: <20100730175152.242134605@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [202/205] ALSA: hda - Fix pin-detection of Nvidia HDMI
-In-Reply-To: <20100730175238.GA3924@kroah.com>
+	id S933104Ab0G3SAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:00:46 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54335 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932906Ab0G3R6k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:58:40 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=bXqN5pgD2RvFe0vytZavxaQtJOQZXybJUWmHMNUw9mFhuDA762kS3aCrkHtLdOVXh
+	dsyLGdRmNpWfcaCT71WLQ==
+Date: Fri, 30 Jul 2010 10:58:26 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: dann frazier <dannf@dannf.org>, dann frazier <dannf@debian.org>,
+        Andreas Barth <aba@not.so.argh.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH] mm: fix ia64 crash when gcore reads gate area
+In-Reply-To: <alpine.DEB.1.00.1007301049230.21157@tigran.mtv.corp.google.com>
+Message-ID: <alpine.DEB.1.00.1007301053540.22681@tigran.mtv.corp.google.com>
+References: <20100720173512.GF26783@ldl.fc.hp.com> <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com> <20100721030629.GA9987@lackof.org> <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com> <20100727071914.GB22945@lackof.org>
+ <20100727180330.b6ecba7f.kamezawa.hiroyu@jp.fujitsu.com> <20100727144326.GC22945@lackof.org> <alpine.DEB.1.00.1007282031130.4207@tigran.mtv.corp.google.com> <20100729192216.GF20265@lackof.org> <alpine.DEB.1.00.1007291853450.4466@tigran.mtv.corp.google.com>
+ <20100730043423.GH20265@lackof.org> <alpine.DEB.1.00.1007301049230.21157@tigran.mtv.corp.google.com>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+Debian's ia64 autobuilders have been seeing kernel freeze or reboot
+when running the gdb testsuite (Debian bug 588574): dannf bisected to
+2.6.32 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1 "mm: ZERO_PAGE without
+PTE_SPECIAL"; and reproduced it with gdb's gcore on a simple target.
 
-------------------
+I'd missed updating the gate_vma handling in __get_user_pages(): that
+happens to use vm_normal_page() (nowadays failing on the zero page),
+yet reported success even when it failed to get a page - boom when
+access_process_vm() tried to copy that to its intermediate buffer.
 
-From: Takashi Iwai <tiwai@suse.de>
+Fix this, resisting cleanups: in particular, leave it for now reporting
+success when not asked to get any pages - very probably safe to change,
+but let's not risk it without testing exposure.
 
-commit 38faddb1afdd37218c196ac3db1cb5fbe7fc9c75 upstream.
+Why did ia64 crash with 16kB pages, but succeed with 64kB pages?
+Because setup_gate() pads each 64kB of its gate area with zero pages.
 
-The behavior of Nvidia HDMI codec regarding the pin-detection unsol events
-is based on the old HD-audio spec, i.e. PD bit indicates only the update
-and doesn't show the current state.  Since the current code assumes the
-new behavior, the pin-detection doesn't work relialby with these h/w.
-
-This patch adds a flag for indicating the old spec, and fixes the issue
-by checking the pin-detection explicitly for such hardware.
-
-Tested-by: Wei Ni <wni@nvidia.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Reported-by: Andreas Barth <aba@not.so.argh.org>
+Bisected-by: dann frazier <dannf@debian.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Tested-by: dann frazier <dannf@dannf.org>
+Cc: stable@kernel.org
 ---
- sound/pci/hda/patch_hdmi.c   |   13 +++++++++++++
- sound/pci/hda/patch_nvhdmi.c |    3 +++
- 2 files changed, 16 insertions(+)
+Please add into 2.6.32-stable, 2.6.33-stable, 2.6.34-stable.
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -52,6 +52,10 @@ struct hdmi_spec {
- 	 */
- 	struct hda_multi_out multiout;
- 	unsigned int codec_type;
-+
-+	/* misc flags */
-+	/* PD bit indicates only the update, not the current state */
-+	unsigned int old_pin_detect:1;
- };
- 
- 
-@@ -616,6 +620,9 @@ static void hdmi_setup_audio_infoframe(s
-  * Unsolicited events
-  */
- 
-+static void hdmi_present_sense(struct hda_codec *codec, hda_nid_t pin_nid,
-+			       struct hdmi_eld *eld);
-+
- static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
- {
- 	struct hdmi_spec *spec = codec->spec;
-@@ -632,6 +639,12 @@ static void hdmi_intrinsic_event(struct
- 	if (index < 0)
- 		return;
- 
-+	if (spec->old_pin_detect) {
-+		if (pind)
-+			hdmi_present_sense(codec, tag, &spec->sink_eld[index]);
-+		pind = spec->sink_eld[index].monitor_present;
-+	}
-+
- 	spec->sink_eld[index].monitor_present = pind;
- 	spec->sink_eld[index].eld_valid = eldv;
- 
---- a/sound/pci/hda/patch_nvhdmi.c
-+++ b/sound/pci/hda/patch_nvhdmi.c
-@@ -478,6 +478,7 @@ static int patch_nvhdmi_8ch_89(struct hd
- 
- 	codec->spec = spec;
- 	spec->codec_type = HDA_CODEC_NVIDIA_MCP89;
-+	spec->old_pin_detect = 1;
- 
- 	if (hdmi_parse_codec(codec) < 0) {
- 		codec->spec = NULL;
-@@ -508,6 +509,7 @@ static int patch_nvhdmi_8ch_7x(struct hd
- 	spec->multiout.max_channels = 8;
- 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
- 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
-+	spec->old_pin_detect = 1;
- 
- 	codec->patch_ops = nvhdmi_patch_ops_8ch_7x;
- 
-@@ -528,6 +530,7 @@ static int patch_nvhdmi_2ch(struct hda_c
- 	spec->multiout.max_channels = 2;
- 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
- 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
-+	spec->old_pin_detect = 1;
- 
- 	codec->patch_ops = nvhdmi_patch_ops_2ch;
- 
+ mm/memory.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-
+--- 2.6.35-rc6/mm/memory.c	2010-05-30 17:58:57.000000000 -0700
++++ linux/mm/memory.c	2010-07-29 17:57:29.000000000 -0700
+@@ -1394,10 +1394,20 @@ int __get_user_pages(struct task_struct
+ 				return i ? : -EFAULT;
+ 			}
+ 			if (pages) {
+-				struct page *page = vm_normal_page(gate_vma, start, *pte);
++				struct page *page;
++
++				page = vm_normal_page(gate_vma, start, *pte);
++				if (!page) {
++					if (!(gup_flags & FOLL_DUMP) &&
++					     is_zero_pfn(pte_pfn(*pte)))
++						page = pte_page(*pte);
++					else {
++						pte_unmap(pte);
++						return i ? : -EFAULT;
++					}
++				}
+ 				pages[i] = page;
+-				if (page)
+-					get_page(page);
++				get_page(page);
+ 			}
+ 			pte_unmap(pte);
+ 			if (vmas)
