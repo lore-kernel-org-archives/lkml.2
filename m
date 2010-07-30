@@ -1,119 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760729Ab0G3TVP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:21:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:33866 "EHLO
+	id S1760710Ab0G3TVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:21:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:33855 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055Ab0G3TSG (ORCPT
+	with ESMTP id S1760625Ab0G3TSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 15:18:06 -0400
+	Fri, 30 Jul 2010 15:18:04 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: linux-kernel@vger.kernel.org
 Cc: kgdb-bugreport@lists.sourceforge.net, mingo@elte.hu,
         Jason Wessel <jason.wessel@windriver.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 12/15] ftrace,kdb: Allow dumping a specific cpu's buffer with ftdump
-Date: Fri, 30 Jul 2010 14:17:33 -0500
-Message-Id: <1280517456-1167-13-git-send-email-jason.wessel@windriver.com>
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 14/15] sunhv,kgdboc: Add sunhv console poll hooks for kgdboc
+Date: Fri, 30 Jul 2010 14:17:35 -0500
+Message-Id: <1280517456-1167-15-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
 In-Reply-To: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
 References: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 30 Jul 2010 19:17:49.0517 (UTC) FILETIME=[E63C8FD0:01CB301B]
+X-OriginalArrivalTime: 30 Jul 2010 19:17:51.0299 (UTC) FILETIME=[E74C7930:01CB301B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In systems with more than one processor it is desirable to look at the
-per cpu trace buffers.
+Add the CONSOLE_POLL hooks for use with kgdboc on the sunhv uart
+driver.
 
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: sparclinux@vger.kernel.org
 ---
- kernel/trace/trace_kdb.c |   37 +++++++++++++++++++++++++++----------
- 1 files changed, 27 insertions(+), 10 deletions(-)
+ drivers/serial/sunhv.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index 44cbda2..7b8ecd7 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -17,7 +17,7 @@
- #include "trace.h"
- #include "trace_output.h"
- 
--static void ftrace_dump_buf(int skip_lines)
-+static void ftrace_dump_buf(int skip_lines, long cpu_file)
- {
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-@@ -44,13 +44,20 @@ static void ftrace_dump_buf(int skip_lines)
- 	iter.iter_flags |= TRACE_FILE_LAT_FMT;
- 	iter.pos = -1;
- 
--	for_each_tracing_cpu(cpu) {
--		iter.buffer_iter[cpu] =
-+	if (cpu_file == TRACE_PIPE_ALL_CPU) {
-+		for_each_tracing_cpu(cpu) {
-+			iter.buffer_iter[cpu] =
- 			ring_buffer_read_prepare(iter.tr->buffer, cpu);
--		ring_buffer_read_start(iter.buffer_iter[cpu]);
--		tracing_iter_reset(&iter, cpu);
-+			ring_buffer_read_start(iter.buffer_iter[cpu]);
-+			tracing_iter_reset(&iter, cpu);
-+		}
-+	} else {
-+		iter.cpu_file = cpu_file;
-+		iter.buffer_iter[cpu_file] =
-+			ring_buffer_read_prepare(iter.tr->buffer, cpu_file);
-+		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
-+		tracing_iter_reset(&iter, cpu_file);
+diff --git a/drivers/serial/sunhv.c b/drivers/serial/sunhv.c
+index 890f917..bab9515 100644
+--- a/drivers/serial/sunhv.c
++++ b/drivers/serial/sunhv.c
+@@ -309,6 +309,53 @@ static void sunhv_break_ctl(struct uart_port *port, int break_state)
  	}
--
- 	if (!trace_empty(&iter))
- 		trace_find_next_entry_inc(&iter);
- 	while (!trace_empty(&iter)) {
-@@ -91,9 +98,10 @@ out:
- static int kdb_ftdump(int argc, const char **argv)
- {
- 	int skip_lines = 0;
-+	long cpu_file;
- 	char *cp;
- 
--	if (argc > 1)
-+	if (argc > 2)
- 		return KDB_ARGCOUNT;
- 
- 	if (argc) {
-@@ -102,8 +110,17 @@ static int kdb_ftdump(int argc, const char **argv)
- 			skip_lines = 0;
- 	}
- 
-+	if (argc == 2) {
-+		cpu_file = simple_strtol(argv[2], &cp, 0);
-+		if (*cp || cpu_file >= NR_CPUS || cpu_file < 0 ||
-+		    !cpu_online(cpu_file))
-+			return KDB_BADINT;
-+	} else {
-+		cpu_file = TRACE_PIPE_ALL_CPU;
-+	}
-+
- 	kdb_trap_printk++;
--	ftrace_dump_buf(skip_lines);
-+	ftrace_dump_buf(skip_lines, cpu_file);
- 	kdb_trap_printk--;
- 
- 	return 0;
-@@ -111,8 +128,8 @@ static int kdb_ftdump(int argc, const char **argv)
- 
- static __init int kdb_ftrace_register(void)
- {
--	kdb_register_repeat("ftdump", kdb_ftdump, "", "Dump ftrace log",
--			    0, KDB_REPEAT_NONE);
-+	kdb_register_repeat("ftdump", kdb_ftdump, "[skip_#lines] [cpu]",
-+			    "Dump ftrace log", 0, KDB_REPEAT_NONE);
- 	return 0;
  }
  
++#ifdef CONFIG_CONSOLE_POLL
++/*
++ * Console polling routines for writing and reading from the uart while
++ * in an interrupt or debug context.
++ */
++
++static int poll_buf[PAGE_SIZE];
++static int poll_buf_cnt;
++static int poll_buf_idx;
++
++static int sunhv_get_poll_char(struct uart_port *port)
++{
++	unsigned long bytes_read;
++	long stat;
++	unsigned long ra;
++	int i;
++
++	if (poll_buf_idx < poll_buf_cnt)
++		return poll_buf[poll_buf_idx++];
++
++	ra = __pa(con_read_page);
++	stat = sun4v_con_read(ra, PAGE_SIZE, &bytes_read);
++	if (stat == HV_EOK) {
++		poll_buf_idx = 1;
++		poll_buf_cnt = bytes_read;
++		for (i = 0; i < bytes_read; i++)
++			poll_buf[i] = con_read_page[i];
++		return poll_buf[0];
++	}
++
++	return NO_POLL_CHAR;
++}
++
++
++static void sunhv_put_poll_char(struct uart_port *port,
++			 unsigned char c)
++{
++	while (1) {
++		long status = sun4v_con_putchar(c);
++		if (status == HV_EOK)
++			break;
++		udelay(1);
++	}
++}
++
++#endif /* CONFIG_CONSOLE_POLL */
++
+ /* port->lock is not held.  */
+ static int sunhv_startup(struct uart_port *port)
+ {
+@@ -388,6 +435,10 @@ static struct uart_ops sunhv_pops = {
+ 	.request_port	= sunhv_request_port,
+ 	.config_port	= sunhv_config_port,
+ 	.verify_port	= sunhv_verify_port,
++#ifdef CONFIG_CONSOLE_POLL
++	.poll_get_char = sunhv_get_poll_char,
++	.poll_put_char = sunhv_put_poll_char,
++#endif
+ };
+ 
+ static struct uart_driver sunhv_reg = {
 -- 
 1.6.4.rc1
 
