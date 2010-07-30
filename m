@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760755Ab0G3TWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:22:47 -0400
-Received: from kroah.org ([198.145.64.141]:46198 "EHLO coco.kroah.org"
+	id S1760686Ab0G3TXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:23:18 -0400
+Received: from kroah.org ([198.145.64.141]:46169 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754826Ab0G3RRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:17:48 -0400
+	id S1754014Ab0G3RRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:17:43 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:00 2010
-Message-Id: <20100730171500.662593802@clark.site>
+Message-Id: <20100730171500.238584851@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:13:59 -0700
+Date: Fri, 30 Jul 2010 10:13:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luke Yelavich <luke.yelavich@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [011/165] ALSA: hda - Add Macbook 5,2 quirk
+        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>
+Subject: [006/165] hwmon: (coretemp) Skip duplicate CPU entries
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luke Yelavich <luke.yelavich@canonical.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 3bfea98ff73d377ffce0d4c7f938b7ef958cdb35 upstream.
+commit d883b9f0977269d519469da72faec6a7f72cb489 upstream.
 
-BugLink: https://bugs.launchpad.net/bugs/463178
+On hyper-threaded CPUs, each core appears twice in the CPU list. Skip
+the second entry to avoid duplicate sensors.
 
-Set Macbook 5,2 (106b:4a00) hardware to use ALC885_MB5
-
-Signed-off-by: Luke Yelavich <luke.yelavich@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Huaxu Wan <huaxu.wan@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/coretemp.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -8942,6 +8942,7 @@ static struct snd_pci_quirk alc882_ssid_
- 	SND_PCI_QUIRK(0x106b, 0x3800, "MacbookPro 4,1", ALC885_MBP3),
- 	SND_PCI_QUIRK(0x106b, 0x3e00, "iMac 24 Aluminum", ALC885_IMAC24),
- 	SND_PCI_QUIRK(0x106b, 0x3f00, "Macbook 5,1", ALC885_MB5),
-+	SND_PCI_QUIRK(0x106b, 0x4a00, "Macbook 5,2", ALC885_MB5),
- 	/* FIXME: HP jack sense seems not working for MBP 5,1 or 5,2,
- 	 * so apparently no perfect solution yet
- 	 */
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -356,6 +356,10 @@ struct pdev_entry {
+ 	struct list_head list;
+ 	struct platform_device *pdev;
+ 	unsigned int cpu;
++#ifdef CONFIG_SMP
++	u16 phys_proc_id;
++	u16 cpu_core_id;
++#endif
+ };
+ 
+ static LIST_HEAD(pdev_list);
+@@ -366,6 +370,22 @@ static int __cpuinit coretemp_device_add
+ 	int err;
+ 	struct platform_device *pdev;
+ 	struct pdev_entry *pdev_entry;
++#ifdef CONFIG_SMP
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++#endif
++
++	mutex_lock(&pdev_list_mutex);
++
++#ifdef CONFIG_SMP
++	/* Skip second HT entry of each core */
++	list_for_each_entry(pdev_entry, &pdev_list, list) {
++		if (c->phys_proc_id == pdev_entry->phys_proc_id &&
++		    c->cpu_core_id == pdev_entry->cpu_core_id) {
++			err = 0;	/* Not an error */
++			goto exit;
++		}
++	}
++#endif
+ 
+ 	pdev = platform_device_alloc(DRVNAME, cpu);
+ 	if (!pdev) {
+@@ -389,7 +409,10 @@ static int __cpuinit coretemp_device_add
+ 
+ 	pdev_entry->pdev = pdev;
+ 	pdev_entry->cpu = cpu;
+-	mutex_lock(&pdev_list_mutex);
++#ifdef CONFIG_SMP
++	pdev_entry->phys_proc_id = c->phys_proc_id;
++	pdev_entry->cpu_core_id = c->cpu_core_id;
++#endif
+ 	list_add_tail(&pdev_entry->list, &pdev_list);
+ 	mutex_unlock(&pdev_list_mutex);
+ 
+@@ -400,6 +423,7 @@ exit_device_free:
+ exit_device_put:
+ 	platform_device_put(pdev);
+ exit:
++	mutex_unlock(&pdev_list_mutex);
+ 	return err;
+ }
+ 
 
 
