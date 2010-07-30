@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760561Ab0G3TLq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:11:46 -0400
-Received: from kroah.org ([198.145.64.141]:51450 "EHLO coco.kroah.org"
+	id S1760538Ab0G3TLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:11:44 -0400
+Received: from kroah.org ([198.145.64.141]:51461 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757039Ab0G3RSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757044Ab0G3RSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Jul 2010 13:18:21 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:03 2010
-Message-Id: <20100730171503.385434783@clark.site>
+Message-Id: <20100730171503.470755170@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:29 -0700
+Date: Fri, 30 Jul 2010 10:14:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [041/165] netfilter: ip6t_REJECT: fix a dst leak in ipv6 REJECT
+        Julia Lawall <julia@diku.dk>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [042/165] SCSI: aacraid: Eliminate use after free
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Julia Lawall <julia@diku.dk>
 
-commit 499031ac8a3df6738f6186ded9da853e8ea18253 upstream.
+commit 8a52da632ceb9d8b776494563df579e87b7b586b upstream.
 
-We should release dst if dst->error is set.
+The debugging code using the freed structure is moved before the kfree.
 
-Bug introduced in 2.6.14 by commit e104411b82f5c
-([XFRM]: Always release dst_entry on error in xfrm_lookup)
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+// <smpl>
+@free@
+expression E;
+position p;
+@@
+kfree@p(E)
+
+@@
+expression free.E, subE<=free.E, E1;
+position free.p;
+@@
+
+  kfree@p(E)
+  ...
+(
+  subE = E1
+|
+* E
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 
 ---
- net/ipv6/netfilter/ip6t_REJECT.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/scsi/aacraid/commctrl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/netfilter/ip6t_REJECT.c
-+++ b/net/ipv6/netfilter/ip6t_REJECT.c
-@@ -95,9 +95,11 @@ static void send_reset(struct net *net,
- 	fl.fl_ip_dport = otcph.source;
- 	security_skb_classify_flow(oldskb, &fl);
- 	dst = ip6_route_output(net, NULL, &fl);
--	if (dst == NULL)
-+	if (dst == NULL || dst->error) {
-+		dst_release(dst);
- 		return;
--	if (dst->error || xfrm_lookup(net, &dst, &fl, NULL, 0))
-+	}
-+	if (xfrm_lookup(net, &dst, &fl, NULL, 0))
- 		return;
- 
- 	hh_len = (dst->dev->hard_header_len + 15)&~15;
+--- a/drivers/scsi/aacraid/commctrl.c
++++ b/drivers/scsi/aacraid/commctrl.c
+@@ -655,9 +655,9 @@ static int aac_send_raw_srb(struct aac_d
+ 				/* Does this really need to be GFP_DMA? */
+ 				p = kmalloc(usg->sg[i].count,GFP_KERNEL|__GFP_DMA);
+ 				if(!p) {
+-					kfree (usg);
+-					dprintk((KERN_DEBUG"aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
++					dprintk((KERN_DEBUG "aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
+ 					  usg->sg[i].count,i,usg->count));
++					kfree(usg);
+ 					rcode = -ENOMEM;
+ 					goto cleanup;
+ 				}
 
 
