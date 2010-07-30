@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759829Ab0G3Ryu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:54:50 -0400
-Received: from kroah.org ([198.145.64.141]:57844 "EHLO coco.kroah.org"
+	id S1760246Ab0G3Se2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:34:28 -0400
+Received: from kroah.org ([198.145.64.141]:58048 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759727Ab0G3RyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:34 2010
-Message-Id: <20100730175134.767584357@clark.site>
+	id S1759828Ab0G3Ryu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:50 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
+Message-Id: <20100730175137.555871502@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:30 -0700
+Date: Fri, 30 Jul 2010 10:51:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [013/205] usbnet: Set parent device early for netdev_printk()
+        Dave Airlie <airlied@redhat.com>
+Subject: [044/205] fb: fix colliding defines for fb flags.
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dave Airlie <airlied@redhat.com>
 
-From: Ben Hutchings <ben@decadent.org.uk>
+commit b26c949755c06ec79e55a75817210083bd78fc9a upstream.
 
-[ Upsteam commit 0dacca73a3ddefa6cb8a7e0282f938e01faa1a64 ]
+When I added the flags I must have been using a 25 line terminal and missed the following flags.
 
-netdev_printk() follows the net_device's parent device pointer, so
-we must set that earlier than we previously did.
+The collided with flag has one user in staging despite being in-tree for 5 years.
 
-Reported-by: Luís Picciochi Oliveira <pitxyoki@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+I'm happy to push this via my drm tree unless someone really wants to do it.
+
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/usb/usbnet.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1290,6 +1290,9 @@ usbnet_probe (struct usb_interface *udev
- 		goto out;
- 	}
+---
+ include/linux/fb.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -787,8 +787,6 @@ struct fb_tile_ops {
+ #define FBINFO_MISC_USEREVENT          0x10000 /* event request
+ 						  from userspace */
+ #define FBINFO_MISC_TILEBLITTING       0x20000 /* use tile blitting */
+-#define FBINFO_MISC_FIRMWARE           0x40000 /* a replaceable firmware
+-						  inited framebuffer */
  
-+	/* netdev_printk() needs this so do it as early as possible */
-+	SET_NETDEV_DEV(net, &udev->dev);
-+
- 	dev = netdev_priv(net);
- 	dev->udev = xdev;
- 	dev->intf = udev;
-@@ -1374,8 +1377,6 @@ usbnet_probe (struct usb_interface *udev
- 		dev->rx_urb_size = dev->hard_mtu;
- 	dev->maxpacket = usb_maxpacket (dev->udev, dev->out, 1);
+ /* A driver may set this flag to indicate that it does want a set_par to be
+  * called every time when fbcon_switch is executed. The advantage is that with
+@@ -802,6 +800,8 @@ struct fb_tile_ops {
+  */
+ #define FBINFO_MISC_ALWAYS_SETPAR   0x40000
  
--	SET_NETDEV_DEV(net, &udev->dev);
--
- 	if ((dev->driver_info->flags & FLAG_WLAN) != 0)
- 		SET_NETDEV_DEVTYPE(net, &wlan_type);
- 	if ((dev->driver_info->flags & FLAG_WWAN) != 0)
++/* where the fb is a firmware driver, and can be replaced with a proper one */
++#define FBINFO_MISC_FIRMWARE        0x80000
+ /*
+  * Host and GPU endianness differ.
+  */
 
 
