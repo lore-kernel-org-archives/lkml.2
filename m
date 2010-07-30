@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760614Ab0G3TQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:16:48 -0400
-Received: from kroah.org ([198.145.64.141]:46240 "EHLO coco.kroah.org"
+	id S1760617Ab0G3TRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:17:07 -0400
+Received: from kroah.org ([198.145.64.141]:46234 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755922Ab0G3RR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:17:57 -0400
+	id S1755836Ab0G3RR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:17:56 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:01 2010
-Message-Id: <20100730171501.375940740@clark.site>
+Message-Id: <20100730171501.287397710@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:07 -0700
+Date: Fri, 30 Jul 2010 10:14:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [019/165] SUNRPC: Fix a re-entrancy bug in xs_tcp_read_calldir()
+Subject: [018/165] NFSv4: Ensure that /proc/self/mountinfo displays the minor version number
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,101 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit b76ce56192bcf618013fb9aecd83488cffd645cc upstream.
+commit 0be8189f2c87fcc747d6a4a657a0b6e2161b2318 upstream.
 
-If the attempt to read the calldir fails, then instead of storing the read
-bytes, we currently discard them. This leads to a garbage final result when
-upon re-entry to the same routine, we read the remaining bytes.
-
-Fixes the regression in bugzilla number 16213. Please see
-    https://bugzilla.kernel.org/show_bug.cgi?id=16213
+Currently, we do not display the minor version mount parameter in the
+/proc mount info.
 
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/xprtsock.c |   38 ++++++++++++++++++++++----------------
- 1 file changed, 22 insertions(+), 16 deletions(-)
+ fs/nfs/super.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -238,7 +238,8 @@ struct sock_xprt {
- 	 * State of TCP reply receive
- 	 */
- 	__be32			tcp_fraghdr,
--				tcp_xid;
-+				tcp_xid,
-+				tcp_calldir;
- 
- 	u32			tcp_offset,
- 				tcp_reclen;
-@@ -961,7 +962,7 @@ static inline void xs_tcp_read_calldir(s
- {
- 	size_t len, used;
- 	u32 offset;
--	__be32	calldir;
-+	char *p;
- 
- 	/*
- 	 * We want transport->tcp_offset to be 8 at the end of this routine
-@@ -970,26 +971,33 @@ static inline void xs_tcp_read_calldir(s
- 	 * transport->tcp_offset is 4 (after having already read the xid).
- 	 */
- 	offset = transport->tcp_offset - sizeof(transport->tcp_xid);
--	len = sizeof(calldir) - offset;
-+	len = sizeof(transport->tcp_calldir) - offset;
- 	dprintk("RPC:       reading CALL/REPLY flag (%Zu bytes)\n", len);
--	used = xdr_skb_read_bits(desc, &calldir, len);
-+	p = ((char *) &transport->tcp_calldir) + offset;
-+	used = xdr_skb_read_bits(desc, p, len);
- 	transport->tcp_offset += used;
- 	if (used != len)
- 		return;
- 	transport->tcp_flags &= ~TCP_RCV_READ_CALLDIR;
--	transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
--	transport->tcp_flags |= TCP_RCV_COPY_DATA;
- 	/*
- 	 * We don't yet have the XDR buffer, so we will write the calldir
- 	 * out after we get the buffer from the 'struct rpc_rqst'
- 	 */
--	if (ntohl(calldir) == RPC_REPLY)
-+	switch (ntohl(transport->tcp_calldir)) {
-+	case RPC_REPLY:
-+		transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
-+		transport->tcp_flags |= TCP_RCV_COPY_DATA;
- 		transport->tcp_flags |= TCP_RPC_REPLY;
--	else
-+		break;
-+	case RPC_CALL:
-+		transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
-+		transport->tcp_flags |= TCP_RCV_COPY_DATA;
- 		transport->tcp_flags &= ~TCP_RPC_REPLY;
--	dprintk("RPC:       reading %s CALL/REPLY flag %08x\n",
--			(transport->tcp_flags & TCP_RPC_REPLY) ?
--				"reply for" : "request with", calldir);
-+		break;
-+	default:
-+		dprintk("RPC:       invalid request message type\n");
-+		xprt_force_disconnect(&transport->xprt);
-+	}
- 	xs_tcp_check_fraghdr(transport);
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -534,6 +534,22 @@ static void nfs_show_mountd_options(stru
+ 	}
  }
  
-@@ -1009,12 +1017,10 @@ static inline void xs_tcp_read_common(st
- 		/*
- 		 * Save the RPC direction in the XDR buffer
- 		 */
--		__be32	calldir = transport->tcp_flags & TCP_RPC_REPLY ?
--					htonl(RPC_REPLY) : 0;
--
- 		memcpy(rcvbuf->head[0].iov_base + transport->tcp_copied,
--			&calldir, sizeof(calldir));
--		transport->tcp_copied += sizeof(calldir);
-+			&transport->tcp_calldir,
-+			sizeof(transport->tcp_calldir));
-+		transport->tcp_copied += sizeof(transport->tcp_calldir);
- 		transport->tcp_flags &= ~TCP_RCV_COPY_CALLDIR;
- 	}
++#ifdef CONFIG_NFS_V4
++static void nfs_show_nfsv4_options(struct seq_file *m, struct nfs_server *nfss,
++				    int showdefaults)
++{
++	struct nfs_client *clp = nfss->nfs_client;
++
++	seq_printf(m, ",clientaddr=%s", clp->cl_ipaddr);
++	seq_printf(m, ",minorversion=%u", clp->cl_minorversion);
++}
++#else
++static void nfs_show_nfsv4_options(struct seq_file *m, struct nfs_server *nfss,
++				    int showdefaults)
++{
++}
++#endif
++
+ /*
+  * Describe the mount options in force on this server representation
+  */
+@@ -595,11 +611,9 @@ static void nfs_show_mount_options(struc
  
+ 	if (version != 4)
+ 		nfs_show_mountd_options(m, nfss, showdefaults);
++	else
++		nfs_show_nfsv4_options(m, nfss, showdefaults);
+ 
+-#ifdef CONFIG_NFS_V4
+-	if (clp->rpc_ops->version == 4)
+-		seq_printf(m, ",clientaddr=%s", clp->cl_ipaddr);
+-#endif
+ 	if (nfss->options & NFS_OPTION_FSCACHE)
+ 		seq_printf(m, ",fsc");
+ }
 
 
