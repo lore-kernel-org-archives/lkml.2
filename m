@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759626Ab0G3Rwj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:52:39 -0400
-Received: from kroah.org ([198.145.64.141]:35927 "EHLO coco.kroah.org"
+	id S1759616Ab0G3Rwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:52:34 -0400
+Received: from kroah.org ([198.145.64.141]:35932 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759438Ab0G3RfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:13 -0400
+	id S1759341Ab0G3RfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:14 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:10 2010
-Message-Id: <20100730173110.131094494@clark.site>
+Message-Id: <20100730173110.218448887@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:47 -0700
+Date: Fri, 30 Jul 2010 10:30:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [082/140] powerpc: Fix logic error in fixup_irqs
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [083/140] powerpc/cpm: Reintroduce global spi_pram struct (fixes build issue)
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes@sipsolutions.net>
+From: Anton Vorontsov <avorontsov@mvista.com>
 
-commit 3cd8519248e9e17d982c6fab0f1a89bca6feb49a upstream.
+commit 56825c88ff438f4dbb51a44591cc29e707fe783a upstream.
 
-When SPARSE_IRQ is set, irq_to_desc() can
-return NULL. While the code here has a
-check for NULL, it's not really correct.
-Fix it by separating the check for it.
+spi_t was removed in commit 644b2a680ccc51a9ec4d6beb12e9d47d2dee98e2
+("powerpc/cpm: Remove SPI defines and spi structs"), the commit assumed
+that spi_t isn't used anywhere outside of the spi_mpc8xxx driver. But
+it appears that the struct is needed for micropatch code. So, let's
+reintroduce the struct.
 
-This fixes CPU hot unplug for me.
+Fixes the following build issue:
 
-Reported-by: Alastair Bridgewater <alastair.bridgewater@gmail.com>
-Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+    CC      arch/powerpc/sysdev/micropatch.o
+  micropatch.c: In function 'cpm_load_patch':
+  micropatch.c:629: error: expected '=', ',', ';', 'asm' or '__attribute__' before '*' token
+  micropatch.c:629: error: 'spp' undeclared (first use in this function)
+  micropatch.c:629: error: (Each undeclared identifier is reported only once
+  micropatch.c:629: error: for each function it appears in.)
+
+Reported-by: LEROY Christophe <christophe.leroy@c-s.fr>
+Reported-by: Tony Breeds <tony@bakeyournoodle.com>
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/irq.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/powerpc/include/asm/cpm.h   |   24 ++++++++++++++++++++++++
+ arch/powerpc/sysdev/micropatch.c |    7 ++++---
+ drivers/spi/spi_mpc8xxx.c        |   22 ----------------------
+ 3 files changed, 28 insertions(+), 25 deletions(-)
 
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -247,7 +247,10 @@ void fixup_irqs(cpumask_t map)
- 		cpumask_t mask;
+--- a/arch/powerpc/include/asm/cpm.h
++++ b/arch/powerpc/include/asm/cpm.h
+@@ -7,6 +7,30 @@
+ #include <linux/of.h>
  
- 		desc = irq_to_desc(irq);
--		if (desc && desc->status & IRQ_PER_CPU)
-+		if (!desc)
-+			continue;
+ /*
++ * SPI Parameter RAM common to QE and CPM.
++ */
++struct spi_pram {
++	__be16	rbase;	/* Rx Buffer descriptor base address */
++	__be16	tbase;	/* Tx Buffer descriptor base address */
++	u8	rfcr;	/* Rx function code */
++	u8	tfcr;	/* Tx function code */
++	__be16	mrblr;	/* Max receive buffer length */
++	__be32	rstate;	/* Internal */
++	__be32	rdp;	/* Internal */
++	__be16	rbptr;	/* Internal */
++	__be16	rbc;	/* Internal */
++	__be32	rxtmp;	/* Internal */
++	__be32	tstate;	/* Internal */
++	__be32	tdp;	/* Internal */
++	__be16	tbptr;	/* Internal */
++	__be16	tbc;	/* Internal */
++	__be32	txtmp;	/* Internal */
++	__be32	res;	/* Tx temp. */
++	__be16  rpbase;	/* Relocation pointer (CPM1 only) */
++	__be16	res1;	/* Reserved */
++};
 +
-+		if (desc->status & IRQ_PER_CPU)
- 			continue;
++/*
+  * USB Controller pram common to QE and CPM.
+  */
+ struct usb_ctlr {
+--- a/arch/powerpc/sysdev/micropatch.c
++++ b/arch/powerpc/sysdev/micropatch.c
+@@ -16,6 +16,7 @@
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ #include <asm/8xx_immap.h>
++#include <asm/cpm.h>
+ #include <asm/cpm1.h>
  
- 		cpumask_and(&mask, desc->affinity, &map);
+ /*
+@@ -626,7 +627,7 @@ cpm_load_patch(cpm8xx_t	*cp)
+ 	volatile uint		*dp;		/* Dual-ported RAM. */
+ 	volatile cpm8xx_t	*commproc;
+ 	volatile iic_t		*iip;
+-	volatile spi_t		*spp;
++	volatile struct spi_pram *spp;
+ 	volatile smc_uart_t	*smp;
+ 	int	i;
+ 
+@@ -668,8 +669,8 @@ cpm_load_patch(cpm8xx_t	*cp)
+ 	/* Put SPI above the IIC, also 32-byte aligned.
+ 	*/
+ 	i = (RPBASE + sizeof(iic_t) + 31) & ~31;
+-	spp = (spi_t *)&commproc->cp_dparam[PROFF_SPI];
+-	spp->spi_rpbase = i;
++	spp = (struct spi_pram *)&commproc->cp_dparam[PROFF_SPI];
++	spp->rpbase = i;
+ 
+ # if defined(CONFIG_I2C_SPI_UCODE_PATCH)
+ 	commproc->cp_cpmcr1 = 0x802a;
+--- a/drivers/spi/spi_mpc8xxx.c
++++ b/drivers/spi/spi_mpc8xxx.c
+@@ -65,28 +65,6 @@ struct mpc8xxx_spi_reg {
+ 	__be32 receive;
+ };
+ 
+-/* SPI Parameter RAM */
+-struct spi_pram {
+-	__be16	rbase;	/* Rx Buffer descriptor base address */
+-	__be16	tbase;	/* Tx Buffer descriptor base address */
+-	u8	rfcr;	/* Rx function code */
+-	u8	tfcr;	/* Tx function code */
+-	__be16	mrblr;	/* Max receive buffer length */
+-	__be32	rstate;	/* Internal */
+-	__be32	rdp;	/* Internal */
+-	__be16	rbptr;	/* Internal */
+-	__be16	rbc;	/* Internal */
+-	__be32	rxtmp;	/* Internal */
+-	__be32	tstate;	/* Internal */
+-	__be32	tdp;	/* Internal */
+-	__be16	tbptr;	/* Internal */
+-	__be16	tbc;	/* Internal */
+-	__be32	txtmp;	/* Internal */
+-	__be32	res;	/* Tx temp. */
+-	__be16  rpbase;	/* Relocation pointer (CPM1 only) */
+-	__be16	res1;	/* Reserved */
+-};
+-
+ /* SPI Controller mode register definitions */
+ #define	SPMODE_LOOP		(1 << 30)
+ #define	SPMODE_CI_INACTIVEHIGH	(1 << 29)
 
 
