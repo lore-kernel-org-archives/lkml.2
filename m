@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759843Ab0G3Ryx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:54:53 -0400
-Received: from kroah.org ([198.145.64.141]:57857 "EHLO coco.kroah.org"
+	id S1759893Ab0G3SeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:34:06 -0400
+Received: from kroah.org ([198.145.64.141]:58065 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759645Ab0G3RyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:20 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:35 2010
-Message-Id: <20100730175134.937981271@clark.site>
+	id S1759840Ab0G3Ryx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:53 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
+Message-Id: <20100730175137.844385800@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:32 -0700
+Date: Fri, 30 Jul 2010 10:51:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [015/205] ssb: Handle Netbook devices where the SPROM address is changed
+        Dan Rosenberg <dan.j.rosenberg@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: [047/205] Btrfs: fix checks in BTRFS_IOC_CLONE_RANGE
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,234 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Fritz <chf.fritz@googlemail.com>
+From: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 
-For some Netbook computers with Broadcom BCM4312 wireless interfaces,
-the SPROM has been moved to a new location. When the ssb driver tries to
-read the old location, the systems hangs when trying to read a
-non-existent location. Such freezes are particularly bad as they do not
-log the failure.
+commit 2ebc3464781ad24474abcbd2274e6254689853b5 upstream.
 
-This patch is modified from commit
-da1fdb02d9200ff28b6f3a380d21930335fe5429 with some pieces from other
-mainline changes so that it can be applied to stable 2.6.34.Y.
+1.  The BTRFS_IOC_CLONE and BTRFS_IOC_CLONE_RANGE ioctls should check
+whether the donor file is append-only before writing to it.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+2.  The BTRFS_IOC_CLONE_RANGE ioctl appears to have an integer
+overflow that allows a user to specify an out-of-bounds range to copy
+from the source file (if off + len wraps around).  I haven't been able
+to successfully exploit this, but I'd imagine that a clever attacker
+could use this to read things he shouldn't.  Even if it's not
+exploitable, it couldn't hurt to be safe.
+
+Signed-off-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ssb/driver_chipcommon.c           |    3 +
- drivers/ssb/driver_chipcommon_pmu.c       |   17 ++++-------
- drivers/ssb/pci.c                         |   46 ++++++++++++++++++++++++++----
- drivers/ssb/sprom.c                       |   15 +++++++++
- include/linux/ssb/ssb.h                   |    1 
- include/linux/ssb/ssb_driver_chipcommon.h |    2 +
- include/linux/ssb/ssb_regs.h              |    3 +
- 7 files changed, 70 insertions(+), 17 deletions(-)
+ fs/btrfs/ioctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/ssb/driver_chipcommon.c
-+++ b/drivers/ssb/driver_chipcommon.c
-@@ -233,6 +233,9 @@ void ssb_chipcommon_init(struct ssb_chip
- {
- 	if (!cc->dev)
- 		return; /* We don't have a ChipCommon */
-+	if (cc->dev->id.revision >= 11)
-+		cc->status = chipco_read32(cc, SSB_CHIPCO_CHIPSTAT);
-+	ssb_dprintk(KERN_INFO PFX "chipcommon status is 0x%x\n", cc->status);
- 	ssb_pmu_init(cc);
- 	chipco_powercontrol_init(cc);
- 	ssb_chipco_set_clockmode(cc, SSB_CLKMODE_FAST);
---- a/drivers/ssb/driver_chipcommon_pmu.c
-+++ b/drivers/ssb/driver_chipcommon_pmu.c
-@@ -502,9 +502,9 @@ static void ssb_pmu_resources_init(struc
- 		chipco_write32(cc, SSB_CHIPCO_PMU_MAXRES_MSK, max_msk);
- }
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1469,7 +1469,7 @@ static noinline long btrfs_ioctl_clone(s
+ 	 */
  
-+/* http://bcm-v4.sipsolutions.net/802.11/SSB/PmuInit */
- void ssb_pmu_init(struct ssb_chipcommon *cc)
- {
--	struct ssb_bus *bus = cc->dev->bus;
- 	u32 pmucap;
+ 	/* the destination must be opened for writing */
+-	if (!(file->f_mode & FMODE_WRITE))
++	if (!(file->f_mode & FMODE_WRITE) || (file->f_flags & O_APPEND))
+ 		return -EINVAL;
  
- 	if (!(cc->capabilities & SSB_CHIPCO_CAP_PMU))
-@@ -516,15 +516,12 @@ void ssb_pmu_init(struct ssb_chipcommon
- 	ssb_dprintk(KERN_DEBUG PFX "Found rev %u PMU (capabilities 0x%08X)\n",
- 		    cc->pmu.rev, pmucap);
+ 	ret = mnt_want_write(file->f_path.mnt);
+@@ -1522,7 +1522,7 @@ static noinline long btrfs_ioctl_clone(s
  
--	if (cc->pmu.rev >= 1) {
--		if ((bus->chip_id == 0x4325) && (bus->chip_rev < 2)) {
--			chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,
--				      ~SSB_CHIPCO_PMU_CTL_NOILPONW);
--		} else {
--			chipco_set32(cc, SSB_CHIPCO_PMU_CTL,
--				     SSB_CHIPCO_PMU_CTL_NOILPONW);
--		}
--	}
-+	if (cc->pmu.rev == 1)
-+		chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,
-+			      ~SSB_CHIPCO_PMU_CTL_NOILPONW);
-+	else
-+		chipco_set32(cc, SSB_CHIPCO_PMU_CTL,
-+			     SSB_CHIPCO_PMU_CTL_NOILPONW);
- 	ssb_pmu_pll_init(cc);
- 	ssb_pmu_resources_init(cc);
- }
---- a/drivers/ssb/pci.c
-+++ b/drivers/ssb/pci.c
-@@ -23,6 +23,7 @@
- 
- #include "ssb_private.h"
- 
-+bool ssb_is_sprom_available(struct ssb_bus *bus);
- 
- /* Define the following to 1 to enable a printk on each coreswitch. */
- #define SSB_VERBOSE_PCICORESWITCH_DEBUG		0
-@@ -168,7 +169,7 @@ err_pci:
- }
- 
- /* Get the word-offset for a SSB_SPROM_XXX define. */
--#define SPOFF(offset)	(((offset) - SSB_SPROM_BASE) / sizeof(u16))
-+#define SPOFF(offset)	((offset) / sizeof(u16))
- /* Helper to extract some _offset, which is one of the SSB_SPROM_XXX defines. */
- #define SPEX16(_outvar, _offset, _mask, _shift)	\
- 	out->_outvar = ((in[SPOFF(_offset)] & (_mask)) >> (_shift))
-@@ -253,8 +254,13 @@ static int sprom_do_read(struct ssb_bus
- {
- 	int i;
- 
-+	/* Check if SPROM can be read */
-+	if (ioread16(bus->mmio + bus->sprom_offset) == 0xFFFF) {
-+		ssb_printk(KERN_ERR PFX "Unable to read SPROM\n");
-+		return -ENODEV;
-+	}
- 	for (i = 0; i < bus->sprom_size; i++)
--		sprom[i] = ioread16(bus->mmio + SSB_SPROM_BASE + (i * 2));
-+		sprom[i] = ioread16(bus->mmio + bus->sprom_offset + (i * 2));
- 
- 	return 0;
- }
-@@ -285,7 +291,7 @@ static int sprom_do_write(struct ssb_bus
- 			ssb_printk("75%%");
- 		else if (i % 2)
- 			ssb_printk(".");
--		writew(sprom[i], bus->mmio + SSB_SPROM_BASE + (i * 2));
-+		writew(sprom[i], bus->mmio + bus->sprom_offset + (i * 2));
- 		mmiowb();
- 		msleep(20);
- 	}
-@@ -621,21 +627,49 @@ static int ssb_pci_sprom_get(struct ssb_
- 	int err = -ENOMEM;
- 	u16 *buf;
- 
-+	if (!ssb_is_sprom_available(bus)) {
-+		ssb_printk(KERN_ERR PFX "No SPROM available!\n");
-+		return -ENODEV;
-+	}
-+	if (bus->chipco.dev) {	/* can be unavailible! */
-+		/*
-+		 * get SPROM offset: SSB_SPROM_BASE1 except for
-+		 * chipcommon rev >= 31 or chip ID is 0x4312 and
-+		 * chipcommon status & 3 == 2
-+		 */
-+		if (bus->chipco.dev->id.revision >= 31)
-+			bus->sprom_offset = SSB_SPROM_BASE31;
-+		else if (bus->chip_id == 0x4312 &&
-+			 (bus->chipco.status & 0x03) == 2)
-+			bus->sprom_offset = SSB_SPROM_BASE31;
-+		else
-+			bus->sprom_offset = SSB_SPROM_BASE1;
-+	} else {
-+		bus->sprom_offset = SSB_SPROM_BASE1;
-+	}
-+	ssb_dprintk(KERN_INFO PFX "SPROM offset is 0x%x\n", bus->sprom_offset);
-+
- 	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
- 	if (!buf)
- 		goto out;
- 	bus->sprom_size = SSB_SPROMSIZE_WORDS_R123;
--	sprom_do_read(bus, buf);
-+	err = sprom_do_read(bus, buf);
-+	if (err)
-+		goto out_free;
- 	err = sprom_check_crc(buf, bus->sprom_size);
- 	if (err) {
- 		/* try for a 440 byte SPROM - revision 4 and higher */
- 		kfree(buf);
- 		buf = kcalloc(SSB_SPROMSIZE_WORDS_R4, sizeof(u16),
- 			      GFP_KERNEL);
--		if (!buf)
-+		if (!buf) {
-+			err = -ENOMEM;
- 			goto out;
-+		}
- 		bus->sprom_size = SSB_SPROMSIZE_WORDS_R4;
--		sprom_do_read(bus, buf);
-+		err = sprom_do_read(bus, buf);
-+		if (err)
-+			goto out_free;
- 		err = sprom_check_crc(buf, bus->sprom_size);
- 		if (err) {
- 			/* All CRC attempts failed.
---- a/drivers/ssb/sprom.c
-+++ b/drivers/ssb/sprom.c
-@@ -176,3 +176,18 @@ const struct ssb_sprom *ssb_get_fallback
- {
- 	return fallback_sprom;
- }
-+
-+/* http://bcm-v4.sipsolutions.net/802.11/IsSpromAvailable */
-+bool ssb_is_sprom_available(struct ssb_bus *bus)
-+{
-+	/* status register only exists on chipcomon rev >= 11 and we need check
-+	   for >= 31 only */
-+	/* this routine differs from specs as we do not access SPROM directly
-+	   on PCMCIA */
-+	if (bus->bustype == SSB_BUSTYPE_PCI &&
-+	    bus->chipco.dev &&	/* can be unavailible! */
-+	    bus->chipco.dev->id.revision >= 31)
-+		return bus->chipco.capabilities & SSB_CHIPCO_CAP_SPROM;
-+
-+	return true;
-+}
---- a/include/linux/ssb/ssb.h
-+++ b/include/linux/ssb/ssb.h
-@@ -306,6 +306,7 @@ struct ssb_bus {
- 	u16 chip_id;
- 	u16 chip_rev;
- 	u16 sprom_size;		/* number of words in sprom */
-+	u16 sprom_offset;
- 	u8 chip_package;
- 
- 	/* List of devices (cores) on the backplane. */
---- a/include/linux/ssb/ssb_driver_chipcommon.h
-+++ b/include/linux/ssb/ssb_driver_chipcommon.h
-@@ -46,6 +46,7 @@
- #define   SSB_PLLTYPE_7			0x00038000	/* 25Mhz, 4 dividers */
- #define  SSB_CHIPCO_CAP_PCTL		0x00040000	/* Power Control */
- #define  SSB_CHIPCO_CAP_OTPS		0x00380000	/* OTP size */
-+#define  SSB_CHIPCO_CAP_SPROM		0x40000000	/* SPROM present */
- #define  SSB_CHIPCO_CAP_OTPS_SHIFT	19
- #define  SSB_CHIPCO_CAP_OTPS_BASE	5
- #define  SSB_CHIPCO_CAP_JTAGM		0x00400000	/* JTAG master present */
-@@ -564,6 +565,7 @@ struct ssb_chipcommon_pmu {
- struct ssb_chipcommon {
- 	struct ssb_device *dev;
- 	u32 capabilities;
-+	u32 status;
- 	/* Fast Powerup Delay constant */
- 	u16 fast_pwrup_delay;
- 	struct ssb_chipcommon_pmu pmu;
---- a/include/linux/ssb/ssb_regs.h
-+++ b/include/linux/ssb/ssb_regs.h
-@@ -170,7 +170,8 @@
- #define SSB_SPROMSIZE_WORDS_R4		220
- #define SSB_SPROMSIZE_BYTES_R123	(SSB_SPROMSIZE_WORDS_R123 * sizeof(u16))
- #define SSB_SPROMSIZE_BYTES_R4		(SSB_SPROMSIZE_WORDS_R4 * sizeof(u16))
--#define SSB_SPROM_BASE			0x1000
-+#define SSB_SPROM_BASE1			0x1000
-+#define SSB_SPROM_BASE31		0x0800
- #define SSB_SPROM_REVISION		0x107E
- #define  SSB_SPROM_REVISION_REV		0x00FF	/* SPROM Revision number */
- #define  SSB_SPROM_REVISION_CRC		0xFF00	/* SPROM CRC8 value */
+ 	/* determine range to clone */
+ 	ret = -EINVAL;
+-	if (off >= src->i_size || off + len > src->i_size)
++	if (off + len > src->i_size || off + len < off)
+ 		goto out_unlock;
+ 	if (len == 0)
+ 		olen = len = src->i_size - off;
 
 
