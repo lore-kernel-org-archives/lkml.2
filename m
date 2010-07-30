@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933066Ab0G3SHL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:07:11 -0400
-Received: from kroah.org ([198.145.64.141]:59245 "EHLO coco.kroah.org"
+	id S932855Ab0G3SHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:07:48 -0400
+Received: from kroah.org ([198.145.64.141]:59231 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932813Ab0G3R5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:48 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:51 2010
-Message-Id: <20100730175150.974010056@clark.site>
+	id S932800Ab0G3R5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:50 2010
+Message-Id: <20100730175150.724003850@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:25 -0700
+Date: Fri, 30 Jul 2010 10:53:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>
-Subject: [188/205] ACPI / ACPICA: Use helper function for computing GPE masks
+        Trieu Andrew Nguyen <trieux.t.nguyen@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Reinette Chatre <reinette.chatre@intel.com>
+Subject: [185/205] iwlwifi: Recover TX flow stall due to stuck queue
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,166 +27,485 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-commit e4e9a735991c80fb0fc1bd4a13a93681c3c17ce0 upstream.
+commit b74e31a9bc1013e69b85b139072485dc153453dd upstream.
 
-In quite a few places ACPICA needs to compute a GPE enable mask with
-only one bit, corresponding to a given GPE, set.  Currently, that
-computation is always open coded which leads to unnecessary code
-duplication.  Fix this by introducing a helper function for computing
-one-bit GPE enable masks and using it where appropriate.
+Monitors the internal TX queues periodically.  When a queue is stuck
+for some unknown conditions causing the throughput to drop and the
+transfer is stop, the driver will force firmware reload and bring the
+system back to normal operational state.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Len Brown <len.brown@intel.com>
+The iwlwifi devices behave differently in this regard so this feature is
+made part of the ops infrastructure so we can have more control on how to
+monitor and recover from tx queue stall case per device.
+
+Signed-off-by: Trieu 'Andrew' Nguyen <trieux.t.nguyen@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/acpica/achware.h |    3 ++
- drivers/acpi/acpica/evgpe.c   |    7 ++---
- drivers/acpi/acpica/hwgpe.c   |   52 ++++++++++++++++++++++++++++++++----------
- 3 files changed, 46 insertions(+), 16 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-1000.c     |    3 
+ drivers/net/wireless/iwlwifi/iwl-3945.c     |    2 
+ drivers/net/wireless/iwlwifi/iwl-4965.c     |    1 
+ drivers/net/wireless/iwlwifi/iwl-5000.c     |    9 ++
+ drivers/net/wireless/iwlwifi/iwl-6000.c     |    8 ++
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   16 ++++
+ drivers/net/wireless/iwlwifi/iwl-core.c     |   93 ++++++++++++++++++++++++++++
+ drivers/net/wireless/iwlwifi/iwl-core.h     |    7 ++
+ drivers/net/wireless/iwlwifi/iwl-dev.h      |   10 +++
+ drivers/net/wireless/iwlwifi/iwl-tx.c       |    2 
+ drivers/net/wireless/iwlwifi/iwl3945-base.c |   16 ++++
+ 11 files changed, 167 insertions(+)
 
---- a/drivers/acpi/acpica/achware.h
-+++ b/drivers/acpi/acpica/achware.h
-@@ -90,6 +90,9 @@ acpi_status acpi_hw_write_port(acpi_io_a
- /*
-  * hwgpe - GPE support
-  */
-+u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
-+			     struct acpi_gpe_register_info *gpe_register_info);
-+
- acpi_status acpi_hw_low_disable_gpe(struct acpi_gpe_event_info *gpe_event_info);
+--- a/drivers/net/wireless/iwlwifi/iwl-1000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-1000.c
+@@ -211,6 +211,7 @@ static struct iwl_lib_ops iwl1000_lib =
+ 		.set_ct_kill = iwl1000_set_ct_threshold,
+ 	 },
+ 	.add_bcast_station = iwl_add_bcast_station,
++	.recover_from_tx_stall = iwl_bg_monitor_recover,
+ };
  
- acpi_status
---- a/drivers/acpi/acpica/evgpe.c
-+++ b/drivers/acpi/acpica/evgpe.c
-@@ -68,7 +68,7 @@ acpi_status
- acpi_ev_update_gpe_enable_masks(struct acpi_gpe_event_info *gpe_event_info)
- {
- 	struct acpi_gpe_register_info *gpe_register_info;
--	u8 register_bit;
-+	u32 register_bit;
+ static const struct iwl_ops iwl1000_ops = {
+@@ -248,6 +249,7 @@ struct iwl_cfg iwl1000_bgn_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_EXT_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
- 	ACPI_FUNCTION_TRACE(ev_update_gpe_enable_masks);
+ struct iwl_cfg iwl1000_bg_cfg = {
+@@ -276,6 +278,7 @@ struct iwl_cfg iwl1000_bg_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_EXT_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
-@@ -77,9 +77,8 @@ acpi_ev_update_gpe_enable_masks(struct a
- 		return_ACPI_STATUS(AE_NOT_EXIST);
- 	}
+ MODULE_FIRMWARE(IWL1000_MODULE_FIRMWARE(IWL1000_UCODE_API_MAX));
+--- a/drivers/net/wireless/iwlwifi/iwl-3945.c
++++ b/drivers/net/wireless/iwlwifi/iwl-3945.c
+@@ -2827,6 +2827,7 @@ static struct iwl_cfg iwl3945_bg_cfg = {
+ 	.led_compensation = 64,
+ 	.broken_powersave = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
--	register_bit = (u8)
--	    (1 <<
--	     (gpe_event_info->gpe_number - gpe_register_info->base_gpe_number));
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
+ static struct iwl_cfg iwl3945_abg_cfg = {
+@@ -2845,6 +2846,7 @@ static struct iwl_cfg iwl3945_abg_cfg =
+ 	.led_compensation = 64,
+ 	.broken_powersave = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
- 	ACPI_CLEAR_BIT(gpe_register_info->enable_for_wake, register_bit);
- 	ACPI_CLEAR_BIT(gpe_register_info->enable_for_run, register_bit);
---- a/drivers/acpi/acpica/hwgpe.c
-+++ b/drivers/acpi/acpica/hwgpe.c
-@@ -57,6 +57,27 @@ acpi_hw_enable_wakeup_gpe_block(struct a
+ DEFINE_PCI_DEVICE_TABLE(iwl3945_hw_card_ids) = {
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@ -2251,6 +2251,7 @@ struct iwl_cfg iwl4965_agn_cfg = {
+ 	.led_compensation = 61,
+ 	.chain_noise_num_beacons = IWL4965_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
- /******************************************************************************
-  *
-+ * FUNCTION:	acpi_hw_gpe_register_bit
-+ *
-+ * PARAMETERS:	gpe_event_info	    - Info block for the GPE
-+ *		gpe_register_info   - Info block for the GPE register
-+ *
-+ * RETURN:	Status
-+ *
-+ * DESCRIPTION:	Compute GPE enable mask with one bit corresponding to the given
-+ *		GPE set.
-+ *
-+ ******************************************************************************/
-+
-+u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
-+			     struct acpi_gpe_register_info *gpe_register_info)
-+{
-+	return (u32)1 << (gpe_event_info->gpe_number -
-+				gpe_register_info->base_gpe_number);
-+}
-+
-+/******************************************************************************
-+ *
-  * FUNCTION:	acpi_hw_low_disable_gpe
-  *
-  * PARAMETERS:	gpe_event_info	    - Info block for the GPE to be disabled
-@@ -72,6 +93,7 @@ acpi_status acpi_hw_low_disable_gpe(stru
- 	struct acpi_gpe_register_info *gpe_register_info;
- 	acpi_status status;
- 	u32 enable_mask;
-+	u32 register_bit;
+ /* Module firmware */
+--- a/drivers/net/wireless/iwlwifi/iwl-5000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
+@@ -1500,6 +1500,7 @@ struct iwl_lib_ops iwl5000_lib = {
+ 		.set_ct_kill = iwl5000_set_ct_threshold,
+ 	 },
+ 	.add_bcast_station = iwl_add_bcast_station,
++	.recover_from_tx_stall = iwl_bg_monitor_recover,
+ };
  
- 	/* Get the info block for the entire GPE register */
+ static struct iwl_lib_ops iwl5150_lib = {
+@@ -1554,6 +1555,7 @@ static struct iwl_lib_ops iwl5150_lib =
+ 		.set_ct_kill = iwl5150_set_ct_threshold,
+ 	 },
+ 	.add_bcast_station = iwl_add_bcast_station,
++	.recover_from_tx_stall = iwl_bg_monitor_recover,
+ };
  
-@@ -89,9 +111,9 @@ acpi_status acpi_hw_low_disable_gpe(stru
+ static const struct iwl_ops iwl5000_ops = {
+@@ -1603,6 +1605,7 @@ struct iwl_cfg iwl5300_agn_cfg = {
+ 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
- 	/* Clear just the bit that corresponds to this GPE */
+ struct iwl_cfg iwl5100_bgn_cfg = {
+@@ -1629,6 +1632,7 @@ struct iwl_cfg iwl5100_bgn_cfg = {
+ 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
--	ACPI_CLEAR_BIT(enable_mask, ((u32)1 <<
--				     (gpe_event_info->gpe_number -
--				      gpe_register_info->base_gpe_number)));
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
-+	ACPI_CLEAR_BIT(enable_mask, register_bit);
+ struct iwl_cfg iwl5100_abg_cfg = {
+@@ -1653,6 +1657,7 @@ struct iwl_cfg iwl5100_abg_cfg = {
+ 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
- 	/* Write the updated enable mask */
+ struct iwl_cfg iwl5100_agn_cfg = {
+@@ -1679,6 +1684,7 @@ struct iwl_cfg iwl5100_agn_cfg = {
+ 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
-@@ -150,21 +172,28 @@ acpi_hw_write_gpe_enable_reg(struct acpi
+ struct iwl_cfg iwl5350_agn_cfg = {
+@@ -1705,6 +1711,7 @@ struct iwl_cfg iwl5350_agn_cfg = {
+ 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
- acpi_status acpi_hw_clear_gpe(struct acpi_gpe_event_info * gpe_event_info)
- {
-+	struct acpi_gpe_register_info *gpe_register_info;
- 	acpi_status status;
--	u8 register_bit;
-+	u32 register_bit;
+ struct iwl_cfg iwl5150_agn_cfg = {
+@@ -1731,6 +1738,7 @@ struct iwl_cfg iwl5150_agn_cfg = {
+ 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
- 	ACPI_FUNCTION_ENTRY();
+ struct iwl_cfg iwl5150_abg_cfg = {
+@@ -1755,6 +1763,7 @@ struct iwl_cfg iwl5150_abg_cfg = {
+ 	.chain_noise_num_beacons = IWL_CAL_NUM_BEACONS,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
  
--	register_bit = (u8)(1 <<
--			    (gpe_event_info->gpe_number -
--			     gpe_event_info->register_info->base_gpe_number));
-+	/* Get the info block for the entire GPE register */
-+
-+	gpe_register_info = gpe_event_info->register_info;
-+	if (!gpe_register_info) {
-+		return (AE_NOT_EXIST);
+ MODULE_FIRMWARE(IWL5000_MODULE_FIRMWARE(IWL5000_UCODE_API_MAX));
+--- a/drivers/net/wireless/iwlwifi/iwl-6000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
+@@ -277,6 +277,7 @@ static struct iwl_lib_ops iwl6000_lib =
+ 		.set_ct_kill = iwl6000_set_ct_threshold,
+ 	 },
+ 	.add_bcast_station = iwl_add_bcast_station,
++	.recover_from_tx_stall = iwl_bg_monitor_recover,
+ };
+ 
+ static const struct iwl_ops iwl6000_ops = {
+@@ -342,6 +343,7 @@ static struct iwl_lib_ops iwl6050_lib =
+ 		.set_calib_version = iwl6050_set_calib_version,
+ 	 },
+ 	.add_bcast_station = iwl_add_bcast_station,
++	.recover_from_tx_stall = iwl_bg_monitor_recover,
+ };
+ 
+ static const struct iwl_ops iwl6050_ops = {
+@@ -385,6 +387,7 @@ struct iwl_cfg iwl6000i_2agn_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
+ 
+ struct iwl_cfg iwl6000i_2abg_cfg = {
+@@ -416,6 +419,7 @@ struct iwl_cfg iwl6000i_2abg_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
+ 
+ struct iwl_cfg iwl6000i_2bg_cfg = {
+@@ -447,6 +451,7 @@ struct iwl_cfg iwl6000i_2bg_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
+ 
+ struct iwl_cfg iwl6050_2agn_cfg = {
+@@ -479,6 +484,7 @@ struct iwl_cfg iwl6050_2agn_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1500,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
+ 
+ struct iwl_cfg iwl6050_2abg_cfg = {
+@@ -510,6 +516,7 @@ struct iwl_cfg iwl6050_2abg_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1500,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
+ 
+ struct iwl_cfg iwl6000_3agn_cfg = {
+@@ -542,6 +549,7 @@ struct iwl_cfg iwl6000_3agn_cfg = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
++	.monitor_recover_period = IWL_MONITORING_PERIOD,
+ };
+ 
+ MODULE_FIRMWARE(IWL6000_MODULE_FIRMWARE(IWL6000_UCODE_API_MAX));
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -2106,6 +2106,13 @@ static void iwl_alive_start(struct iwl_p
+ 	/* After the ALIVE response, we can send host commands to the uCode */
+ 	set_bit(STATUS_ALIVE, &priv->status);
+ 
++	if (priv->cfg->ops->lib->recover_from_tx_stall) {
++		/* Enable timer to monitor the driver queues */
++		mod_timer(&priv->monitor_recover,
++			jiffies +
++			msecs_to_jiffies(priv->cfg->monitor_recover_period));
 +	}
 +
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
+ 	if (iwl_is_rfkill(priv))
+ 		return;
  
- 	/*
- 	 * Write a one to the appropriate bit in the status register to
- 	 * clear this GPE.
- 	 */
- 	status = acpi_hw_write(register_bit,
--			       &gpe_event_info->register_info->status_address);
-+			       &gpe_register_info->status_address);
+@@ -3316,6 +3323,13 @@ static void iwl_setup_deferred_work(stru
+ 	priv->ucode_trace.data = (unsigned long)priv;
+ 	priv->ucode_trace.function = iwl_bg_ucode_trace;
  
- 	return (status);
++	if (priv->cfg->ops->lib->recover_from_tx_stall) {
++		init_timer(&priv->monitor_recover);
++		priv->monitor_recover.data = (unsigned long)priv;
++		priv->monitor_recover.function =
++			priv->cfg->ops->lib->recover_from_tx_stall;
++	}
++
+ 	if (!priv->cfg->use_isr_legacy)
+ 		tasklet_init(&priv->irq_tasklet, (void (*)(unsigned long))
+ 			iwl_irq_tasklet, (unsigned long)priv);
+@@ -3336,6 +3350,8 @@ static void iwl_cancel_deferred_work(str
+ 	cancel_work_sync(&priv->beacon_update);
+ 	del_timer_sync(&priv->statistics_periodic);
+ 	del_timer_sync(&priv->ucode_trace);
++	if (priv->cfg->ops->lib->recover_from_tx_stall)
++		del_timer_sync(&priv->monitor_recover);
  }
-@@ -187,7 +216,7 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
- 		       acpi_event_status * event_status)
- {
- 	u32 in_byte;
--	u8 register_bit;
-+	u32 register_bit;
- 	struct acpi_gpe_register_info *gpe_register_info;
- 	acpi_status status;
- 	acpi_event_status local_event_status = 0;
-@@ -204,9 +233,8 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
  
- 	/* Get the register bitmask for this GPE */
+ static void iwl_init_hw_rates(struct iwl_priv *priv,
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -3403,6 +3403,99 @@ int iwl_force_reset(struct iwl_priv *pri
+ 	}
+ 	return 0;
+ }
++EXPORT_SYMBOL(iwl_force_reset);
++
++/**
++ * iwl_bg_monitor_recover - Timer callback to check for stuck queue and recover
++ *
++ * During normal condition (no queue is stuck), the timer is continually set to
++ * execute every monitor_recover_period milliseconds after the last timer
++ * expired.  When the queue read_ptr is at the same place, the timer is
++ * shorten to 100mSecs.  This is
++ *      1) to reduce the chance that the read_ptr may wrap around (not stuck)
++ *      2) to detect the stuck queues quicker before the station and AP can
++ *      disassociate each other.
++ *
++ * This function monitors all the tx queues and recover from it if any
++ * of the queues are stuck.
++ * 1. It first check the cmd queue for stuck conditions.  If it is stuck,
++ *      it will recover by resetting the firmware and return.
++ * 2. Then, it checks for station association.  If it associates it will check
++ *      other queues.  If any queue is stuck, it will recover by resetting
++ *      the firmware.
++ * Note: It the number of times the queue read_ptr to be at the same place to
++ *      be MAX_REPEAT+1 in order to consider to be stuck.
++ */
++/*
++ * The maximum number of times the read pointer of the tx queue at the
++ * same place without considering to be stuck.
++ */
++#define MAX_REPEAT      (2)
++static int iwl_check_stuck_queue(struct iwl_priv *priv, int cnt)
++{
++	struct iwl_tx_queue *txq;
++	struct iwl_queue *q;
++
++	txq = &priv->txq[cnt];
++	q = &txq->q;
++	/* queue is empty, skip */
++	if (q->read_ptr != q->write_ptr) {
++		if (q->read_ptr == q->last_read_ptr) {
++			/* a queue has not been read from last time */
++			if (q->repeat_same_read_ptr > MAX_REPEAT) {
++				IWL_ERR(priv,
++					"queue %d stuck %d time. Fw reload.\n",
++					q->id, q->repeat_same_read_ptr);
++				q->repeat_same_read_ptr = 0;
++				iwl_force_reset(priv, IWL_FW_RESET);
++			} else {
++				q->repeat_same_read_ptr++;
++				IWL_DEBUG_RADIO(priv,
++						"queue %d, not read %d time\n",
++						q->id,
++						q->repeat_same_read_ptr);
++				mod_timer(&priv->monitor_recover, jiffies +
++					msecs_to_jiffies(IWL_ONE_HUNDRED_MSECS));
++			}
++			return 1;
++		} else {
++			q->last_read_ptr = q->read_ptr;
++			q->repeat_same_read_ptr = 0;
++		}
++	}
++	return 0;
++}
++
++void iwl_bg_monitor_recover(unsigned long data)
++{
++	struct iwl_priv *priv = (struct iwl_priv *)data;
++	int cnt;
++
++	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
++		return;
++
++	/* monitor and check for stuck cmd queue */
++	if (iwl_check_stuck_queue(priv, IWL_CMD_QUEUE_NUM))
++		return;
++
++	/* monitor and check for other stuck queues */
++	if (iwl_is_associated(priv)) {
++		for (cnt = 0; cnt < priv->hw_params.max_txq_num; cnt++) {
++			/* skip as we already checked the command queue */
++			if (cnt == IWL_CMD_QUEUE_NUM)
++				continue;
++			if (iwl_check_stuck_queue(priv, cnt))
++				return;
++		}
++	}
++	/*
++	 * Reschedule the timer to occur in
++	 * priv->cfg->monitor_recover_period
++	 */
++	mod_timer(&priv->monitor_recover,
++		jiffies + msecs_to_jiffies(priv->cfg->monitor_recover_period));
++}
++EXPORT_SYMBOL(iwl_bg_monitor_recover);
  
--	register_bit = (u8)(1 <<
--			    (gpe_event_info->gpe_number -
--			     gpe_event_info->register_info->base_gpe_number));
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
+ #ifdef CONFIG_PM
  
- 	/* GPE currently enabled? (enabled for runtime?) */
+--- a/drivers/net/wireless/iwlwifi/iwl-core.h
++++ b/drivers/net/wireless/iwlwifi/iwl-core.h
+@@ -191,6 +191,8 @@ struct iwl_lib_ops {
+ 	struct iwl_temp_ops temp_ops;
+ 	/* station management */
+ 	void (*add_bcast_station)(struct iwl_priv *priv);
++	/* recover from tx queue stall */
++	void (*recover_from_tx_stall)(unsigned long data);
+ };
  
+ struct iwl_led_ops {
+@@ -295,6 +297,8 @@ struct iwl_cfg {
+ 	const bool support_wimax_coexist;
+ 	u8 plcp_delta_threshold;
+ 	s32 chain_noise_scale;
++	/* timer period for monitor the driver queues */
++	u32 monitor_recover_period;
+ };
+ 
+ /***************************
+@@ -577,6 +581,9 @@ static inline u16 iwl_pcie_link_ctl(stru
+ 	pci_read_config_word(priv->pci_dev, pos + PCI_EXP_LNKCTL, &pci_lnk_ctl);
+ 	return pci_lnk_ctl;
+ }
++
++void iwl_bg_monitor_recover(unsigned long data);
++
+ #ifdef CONFIG_PM
+ int iwl_pci_suspend(struct pci_dev *pdev, pm_message_t state);
+ int iwl_pci_resume(struct pci_dev *pdev);
+--- a/drivers/net/wireless/iwlwifi/iwl-dev.h
++++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
+@@ -183,6 +183,10 @@ struct iwl_queue {
+ 	int n_bd;              /* number of BDs in this queue */
+ 	int write_ptr;       /* 1-st empty entry (index) host_w*/
+ 	int read_ptr;         /* last used entry (index) host_r*/
++	/* use for monitoring and recovering the stuck queue */
++	int last_read_ptr;      /* storing the last read_ptr */
++	/* number of time read_ptr and last_read_ptr are the same */
++	u8 repeat_same_read_ptr;
+ 	dma_addr_t dma_addr;   /* physical addr for BD's */
+ 	int n_window;	       /* safe queue window */
+ 	u32 id;
+@@ -1039,6 +1043,11 @@ struct iwl_event_log {
+ #define IWL_DELAY_NEXT_FORCE_RF_RESET  (HZ*3)
+ #define IWL_DELAY_NEXT_FORCE_FW_RELOAD (HZ*5)
+ 
++/* timer constants use to monitor and recover stuck tx queues in mSecs */
++#define IWL_MONITORING_PERIOD  (1000)
++#define IWL_ONE_HUNDRED_MSECS   (100)
++#define IWL_SIXTY_SECS          (60000)
++
+ enum iwl_reset {
+ 	IWL_RF_RESET = 0,
+ 	IWL_FW_RESET,
+@@ -1339,6 +1348,7 @@ struct iwl_priv {
+ 	struct work_struct run_time_calib_work;
+ 	struct timer_list statistics_periodic;
+ 	struct timer_list ucode_trace;
++	struct timer_list monitor_recover;
+ 	bool hw_ready;
+ 	/*For 3945*/
+ #define IWL_DEFAULT_TX_POWER 0x0F
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -310,6 +310,8 @@ static int iwl_queue_init(struct iwl_pri
+ 		q->high_mark = 2;
+ 
+ 	q->write_ptr = q->read_ptr = 0;
++	q->last_read_ptr = 0;
++	q->repeat_same_read_ptr = 0;
+ 
+ 	return 0;
+ }
+--- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
++++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+@@ -2513,6 +2513,13 @@ static void iwl3945_alive_start(struct i
+ 	/* After the ALIVE response, we can send commands to 3945 uCode */
+ 	set_bit(STATUS_ALIVE, &priv->status);
+ 
++	if (priv->cfg->ops->lib->recover_from_tx_stall) {
++		/* Enable timer to monitor the driver queues */
++		mod_timer(&priv->monitor_recover,
++			jiffies +
++			msecs_to_jiffies(priv->cfg->monitor_recover_period));
++	}
++
+ 	if (iwl_is_rfkill(priv))
+ 		return;
+ 
+@@ -3783,6 +3790,13 @@ static void iwl3945_setup_deferred_work(
+ 
+ 	iwl3945_hw_setup_deferred_work(priv);
+ 
++	if (priv->cfg->ops->lib->recover_from_tx_stall) {
++		init_timer(&priv->monitor_recover);
++		priv->monitor_recover.data = (unsigned long)priv;
++		priv->monitor_recover.function =
++			priv->cfg->ops->lib->recover_from_tx_stall;
++	}
++
+ 	tasklet_init(&priv->irq_tasklet, (void (*)(unsigned long))
+ 		     iwl3945_irq_tasklet, (unsigned long)priv);
+ }
+@@ -3795,6 +3809,8 @@ static void iwl3945_cancel_deferred_work
+ 	cancel_delayed_work(&priv->scan_check);
+ 	cancel_delayed_work(&priv->alive_start);
+ 	cancel_work_sync(&priv->beacon_update);
++	if (priv->cfg->ops->lib->recover_from_tx_stall)
++		del_timer_sync(&priv->monitor_recover);
+ }
+ 
+ static struct attribute *iwl3945_sysfs_entries[] = {
 
 
