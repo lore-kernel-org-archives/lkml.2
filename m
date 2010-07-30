@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760493Ab0G3THy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:07:54 -0400
-Received: from kroah.org ([198.145.64.141]:51573 "EHLO coco.kroah.org"
+	id S1756349Ab0G3TIO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:08:14 -0400
+Received: from kroah.org ([198.145.64.141]:51568 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757582Ab0G3RSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:36 -0400
+	id S1757548Ab0G3RSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:35 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:04 2010
-Message-Id: <20100730171504.792414129@clark.site>
+Message-Id: <20100730171504.703859446@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:44 -0700
+Date: Fri, 30 Jul 2010 10:14:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Paul Gortmaker <p_gortmaker@yahoo.com>
-Subject: [056/165] rtc: fix ds1388 time corruption
+        =?ISO-8859-15?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [055/165] tcp: fix crash in tcp_xmit_retransmit_queue
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,48 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+From: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
 
-commit 96fc3a45ea073136566f3c2676cad52f8b39a7df upstream.
+commit 45e77d314585869dfe43c82679f7e08c9b35b898 upstream.
 
-The ds1307 driver misreads the ds1388 registers when checking for 12 or 24
-hour mode.  Instead of checking the hour register it reads the minute
-register.  Therefore the driver thinks minutes >= 40 has the 12HR bit set
-and resets the minute register by zeroing the high bits.  This results in
-minutes are reset to 0-9, jumping back in time 40 or 50 minutes.  The time
-jump is also written back to the RTC.
+It can happen that there are no packets in queue while calling
+tcp_xmit_retransmit_queue(). tcp_write_queue_head() then returns
+NULL and that gets deref'ed to get sacked into a local var.
 
-Signed-off-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Cc: Wan ZongShun <mcuos.com@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+There is no work to do if no packets are outstanding so we just
+exit early.
+
+This oops was introduced by 08ebd1721ab8fd (tcp: remove tp->lost_out
+guard to make joining diff nicer).
+
+Signed-off-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+Reported-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+Tested-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-ds1307.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_output.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/rtc/rtc-ds1307.c
-+++ b/drivers/rtc/rtc-ds1307.c
-@@ -775,7 +775,7 @@ static int __devinit ds1307_probe(struct
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2037,6 +2037,9 @@ void tcp_xmit_retransmit_queue(struct so
+ 	int mib_idx;
+ 	int fwd_rexmitting = 0;
  
- read_rtc:
- 	/* read RTC registers */
--	tmp = ds1307->read_block_data(ds1307->client, 0, 8, buf);
-+	tmp = ds1307->read_block_data(ds1307->client, ds1307->offset, 8, buf);
- 	if (tmp != 8) {
- 		pr_debug("read error %d\n", tmp);
- 		err = -EIO;
-@@ -860,7 +860,7 @@ read_rtc:
- 		if (ds1307->regs[DS1307_REG_HOUR] & DS1307_BIT_PM)
- 			tmp += 12;
- 		i2c_smbus_write_byte_data(client,
--				DS1307_REG_HOUR,
-+				ds1307->offset + DS1307_REG_HOUR,
- 				bin2bcd(tmp));
- 	}
++	if (!tp->packets_out)
++		return;
++
+ 	if (!tp->lost_out)
+ 		tp->retransmit_high = tp->snd_una;
  
 
 
