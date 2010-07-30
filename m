@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab0G3REb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:04:31 -0400
-Received: from kroah.org ([198.145.64.141]:35573 "EHLO coco.kroah.org"
+	id S1755848Ab0G3RDq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:03:46 -0400
+Received: from kroah.org ([198.145.64.141]:35552 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755660Ab0G3RDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:03:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:55 2010
-Message-Id: <20100730165955.048101505@clark.site>
+	id S1755423Ab0G3RDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:03:40 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:54 2010
+Message-Id: <20100730165954.885078145@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 09:57:30 -0700
+Date: Fri, 30 Jul 2010 09:57:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Or Gerlitz <ogerlitz@voltaire.com>, Roland Dreier <rolandd@cisco.com>
-Subject: [14/17] IPoIB: Fix world-writable child interface control sysfs attributes
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        Muli Ben-Yehuda <muli@il.ibm.com>,
+        Corinna Schultz <cschultz@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [12/17] x86, Calgary: Increase max PHB number
 In-Reply-To: <20100730170054.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@voltaire.com>
+From: Darrick J. Wong <djwong@us.ibm.com>
 
-commit 7a52b34b07122ff5f45258d47f260f8a525518f0 upstream.
+commit 499a00e92dd9a75395081f595e681629eb1eebad upstream.
 
-Sumeet Lahorani <sumeet.lahorani@oracle.com> reported that the IPoIB
-child entries are world-writable; however we don't want ordinary users
-to be able to create and destroy child interfaces, so fix them to be
-writable only by root.
+Newer systems (x3950M2) can have 48 PHBs per chassis and 8
+chassis, so bump the limits up and provide an explanation
+of the requirements for each class.
 
-Signed-off-by: Or Gerlitz <ogerlitz@voltaire.com>
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Acked-by: Muli Ben-Yehuda <muli@il.ibm.com>
+Cc: Corinna Schultz <cschultz@linux.vnet.ibm.com>
+LKML-Reference: <20100624212647.GI15515@tux1.beaverton.ibm.com>
+[ v2: Fixed build bug, added back PHBS_PER_CALGARY == 4 ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/infiniband/ulp/ipoib/ipoib_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/pci-calgary_64.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -1158,7 +1158,7 @@ static ssize_t create_child(struct devic
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -102,11 +102,16 @@ int use_calgary __read_mostly = 0;
+ #define PMR_SOFTSTOPFAULT	0x40000000
+ #define PMR_HARDSTOP		0x20000000
  
- 	return ret ? ret : count;
- }
--static DEVICE_ATTR(create_child, S_IWUGO, NULL, create_child);
-+static DEVICE_ATTR(create_child, S_IWUSR, NULL, create_child);
+-#define MAX_NUM_OF_PHBS		8 /* how many PHBs in total? */
+-#define MAX_NUM_CHASSIS		8 /* max number of chassis */
+-/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
+-#define MAX_PHB_BUS_NUM		(MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
+-#define PHBS_PER_CALGARY	4
++/*
++ * The maximum PHB bus number.
++ * x3950M2 (rare): 8 chassis, 48 PHBs per chassis = 384
++ * x3950M2: 4 chassis, 48 PHBs per chassis        = 192
++ * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
++ * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
++ */
++#define MAX_PHB_BUS_NUM		384
++
++#define PHBS_PER_CALGARY	  4
  
- static ssize_t delete_child(struct device *dev,
- 			    struct device_attribute *attr,
-@@ -1178,7 +1178,7 @@ static ssize_t delete_child(struct devic
- 	return ret ? ret : count;
- 
- }
--static DEVICE_ATTR(delete_child, S_IWUGO, NULL, delete_child);
-+static DEVICE_ATTR(delete_child, S_IWUSR, NULL, delete_child);
- 
- int ipoib_add_pkey_attr(struct net_device *dev)
- {
+ /* register offsets in Calgary's internal register space */
+ static const unsigned long tar_offsets[] = {
 
 
