@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836Ab0G3R5y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:57:54 -0400
-Received: from kroah.org ([198.145.64.141]:58828 "EHLO coco.kroah.org"
+	id S932923Ab0G3SFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:05:53 -0400
+Received: from kroah.org ([198.145.64.141]:59269 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760031Ab0G3R4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:45 2010
-Message-Id: <20100730175145.224109105@clark.site>
+	id S932835Ab0G3R5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:54 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:51 2010
+Message-Id: <20100730175151.402364175@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:21 -0700
+Date: Fri, 30 Jul 2010 10:53:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [124/205] USB: dont enable remote wakeup by default
+        Tony Luck <tony.luck@intel.com>
+Subject: [193/205] [IA64] Fix spinaphore down_spin()
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 7aba8d014341341590ecb64050b7a026642a62eb upstream.
+commit b70f4e85bfc4d7000036355b714a92d5c574f1be upstream.
 
-This patch (as1364) avoids enabling remote wakeup by default on all
-non-root-hub USB devices.  Individual drivers or userspace will have
-to enable it wherever it is needed, such as for keyboards or network
-interfaces.  Note: This affects only system sleep, not autosuspend.
+Typo in down_spin() meant it only read the low 32 bits of the
+"serve" value, instead of the full 64 bits. This results in the
+system hanging when the values in ticket/serve get larger than
+32-bits. A big enough system running the right test can hit this
+in a just a few hours.
 
-External hubs will continue to relay wakeup requests received from
-downstream through their upstream port, even when remote wakeup is not
-enabled for the hub itself.  Disabling remote wakeup on a hub merely
-prevents it from generating wakeup requests in response to connect,
-disconnect, and overcurrent events.
+Broken since 883a3acf5b0d4782ac35981227a0d094e8b44850
+    [IA64] Re-implement spinaphores using ticket lock concepts
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported via IRC by Bjorn Helgaas
+
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c |    1 -
- 1 file changed, 1 deletion(-)
+ arch/ia64/mm/tlb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1784,7 +1784,6 @@ int usb_new_device(struct usb_device *ud
- 		 * sysfs power/wakeup controls wakeup enabled/disabled
- 		 */
- 		device_init_wakeup(&udev->dev, 0);
--		device_set_wakeup_enable(&udev->dev, 1);
- 	}
+--- a/arch/ia64/mm/tlb.c
++++ b/arch/ia64/mm/tlb.c
+@@ -121,7 +121,7 @@ static inline void down_spin(struct spin
+ 	ia64_invala();
  
- 	/* Tell the runtime-PM framework the device is active */
+ 	for (;;) {
+-		asm volatile ("ld4.c.nc %0=[%1]" : "=r"(serve) : "r"(&ss->serve) : "memory");
++		asm volatile ("ld8.c.nc %0=[%1]" : "=r"(serve) : "r"(&ss->serve) : "memory");
+ 		if (time_before(t, serve))
+ 			return;
+ 		cpu_relax();
 
 
