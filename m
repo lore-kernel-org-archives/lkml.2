@@ -1,156 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab0G3IW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 04:22:29 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33552 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab0G3IW0 (ORCPT
+	id S1755579Ab0G3Ih1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 04:37:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43287 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755376Ab0G3IhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 04:22:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=w8rmRs/3MsEVgqOxCXKbCYQ5l8kCveneraqvThe0O9bczVPTOn3lp4LTEYQX7WYVqG
-         i7SggmIKkygUxSCxGs8F3ebtuSiFxIJuu2S9VH5jdILAdlACtzf6yXaywVyzUwaRNrVF
-         f7IuEvdr0D6+/gprDIa7EI70iAFgEyRmafAOM=
-Date: Fri, 30 Jul 2010 10:22:19 +0200
-From: Roel Van Nyen <roel.vannyen@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vt6656: Remove PUINT from ttype.h
-Message-ID: <4c528bbe.887b0e0a.3c98.5bcb@mx.google.com>
-References: <1278973682-25540-1-git-send-email-roel.vannyen@gmail.com>
- <20100722184435.GB32116@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722184435.GB32116@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 30 Jul 2010 04:37:24 -0400
+Subject: [PATCH] block: move register_disk() from fs/partitions/check.c to
+ genhd.c and unexport it
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Jul 2010 10:37:31 +0200
+Message-ID: <1280479051.1446.4.camel@yio.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 11:44:35AM -0700, Greg KH wrote:
-> On Tue, Jul 13, 2010 at 12:28:02AM +0200, Roel Van Nyen wrote:
-> > Remove PUINT from ttype.h and change it to unsigned int *
-> > 
-> > Signed-of-by Roel Van Nyen <roel.vannyen@gmail.com>
-> > ---
-> 
-> Please run your patches through the scripts/checkpatch.pl script before
-> sending them to me.  I can't add new warnings to the drivers, sorry.
-> 
-> thanks,
-> 
-> greg k-hi
-Hi Greg,
+From: Kay Sievers <kay.sievers@vrfy.org>
+Subject: block: move register_disk() from fs/partitions/check.c to genhd.c and unexport it
 
-I have re-done the patch, this time without any checkpatch.pl warnings.
+Disk code belongs into genhd, not in the partition code.
+Follow-up patches will need to re-shuffle some code, which
+needs to be in one file, to fix bad sysfs attribute creation
+timing.
 
-Remove PUINT from ttype.h
-
-Signed-off-by: Roel Van Nyen <roel.vannyen@gmail.com>
+Signed-Off-By: Kay Sievers <kay.sievers@vrfy.org>
 ---
- drivers/staging/vt6656/bssdb.c |    4 ++--
- drivers/staging/vt6656/bssdb.h |    4 ++--
- drivers/staging/vt6656/dpc.c   |    8 ++++----
- drivers/staging/vt6656/ttype.h |    1 -
- 4 files changed, 8 insertions(+), 9 deletions(-)
+ block/genhd.c          |   58 ++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/partitions/check.c  |   59 -------------------------------------------------
+ include/linux/blkdev.h |    1 
+ 3 files changed, 58 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
-index 830dd23..4c604db 100644
---- a/drivers/staging/vt6656/bssdb.c
-+++ b/drivers/staging/vt6656/bssdb.c
-@@ -736,7 +736,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -504,6 +504,64 @@ static int exact_lock(dev_t devt, void *
+ 	return 0;
+ }
  
- BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
- 		       PBYTE abyDstAddr,
--		       PUINT puNodeIndex)
-+		       unsigned int *puNodeIndex)
++static void register_disk(struct gendisk *disk)
++{
++	struct device *ddev = disk_to_dev(disk);
++	struct block_device *bdev;
++	struct disk_part_iter piter;
++	struct hd_struct *part;
++	int err;
++
++	ddev->parent = disk->driverfs_dev;
++
++	dev_set_name(ddev, disk->disk_name);
++
++	/* delay uevents, until we scanned partition table */
++	dev_set_uevent_suppress(ddev, 1);
++
++	if (device_add(ddev))
++		return;
++#ifndef CONFIG_SYSFS_DEPRECATED
++	err = sysfs_create_link(block_depr, &ddev->kobj,
++				kobject_name(&ddev->kobj));
++	if (err) {
++		device_del(ddev);
++		return;
++	}
++#endif
++	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
++	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
++
++	/* No minors to use for partitions */
++	if (!disk_partitionable(disk))
++		goto exit;
++
++	/* No such device (e.g., media were just removed) */
++	if (!get_capacity(disk))
++		goto exit;
++
++	bdev = bdget_disk(disk, 0);
++	if (!bdev)
++		goto exit;
++
++	bdev->bd_invalidated = 1;
++	err = blkdev_get(bdev, FMODE_READ);
++	if (err < 0)
++		goto exit;
++	blkdev_put(bdev, FMODE_READ);
++
++exit:
++	/* announce disk after possible partitions are created */
++	dev_set_uevent_suppress(ddev, 0);
++	kobject_uevent(&ddev->kobj, KOBJ_ADD);
++
++	/* announce possible partitions */
++	disk_part_iter_init(&piter, disk, 0);
++	while ((part = disk_part_iter_next(&piter)))
++		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
++	disk_part_iter_exit(&piter);
++}
++
+ /**
+  * add_disk - add partitioning information to kernel list
+  * @disk: per-device partitioning information
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -482,65 +482,6 @@ out_put:
+ 	return ERR_PTR(err);
+ }
+ 
+-/* Not exported, helper to add_disk(). */
+-void register_disk(struct gendisk *disk)
+-{
+-	struct device *ddev = disk_to_dev(disk);
+-	struct block_device *bdev;
+-	struct disk_part_iter piter;
+-	struct hd_struct *part;
+-	int err;
+-
+-	ddev->parent = disk->driverfs_dev;
+-
+-	dev_set_name(ddev, disk->disk_name);
+-
+-	/* delay uevents, until we scanned partition table */
+-	dev_set_uevent_suppress(ddev, 1);
+-
+-	if (device_add(ddev))
+-		return;
+-#ifndef CONFIG_SYSFS_DEPRECATED
+-	err = sysfs_create_link(block_depr, &ddev->kobj,
+-				kobject_name(&ddev->kobj));
+-	if (err) {
+-		device_del(ddev);
+-		return;
+-	}
+-#endif
+-	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
+-	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
+-
+-	/* No minors to use for partitions */
+-	if (!disk_partitionable(disk))
+-		goto exit;
+-
+-	/* No such device (e.g., media were just removed) */
+-	if (!get_capacity(disk))
+-		goto exit;
+-
+-	bdev = bdget_disk(disk, 0);
+-	if (!bdev)
+-		goto exit;
+-
+-	bdev->bd_invalidated = 1;
+-	err = blkdev_get(bdev, FMODE_READ);
+-	if (err < 0)
+-		goto exit;
+-	blkdev_put(bdev, FMODE_READ);
+-
+-exit:
+-	/* announce disk after possible partitions are created */
+-	dev_set_uevent_suppress(ddev, 0);
+-	kobject_uevent(&ddev->kobj, KOBJ_ADD);
+-
+-	/* announce possible partitions */
+-	disk_part_iter_init(&piter, disk, 0);
+-	while ((part = disk_part_iter_next(&piter)))
+-		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
+-	disk_part_iter_exit(&piter);
+-}
+-
+ static bool disk_unlock_native_capacity(struct gendisk *disk)
  {
-     PSDevice        pDevice = (PSDevice)hDeviceContext;
-     PSMgmtObject    pMgmt = &(pDevice->sMgmtObj);
-@@ -768,7 +768,7 @@ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
-  *    None
-  *
- -*/
--void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex)
-+void BSSvCreateOneNode(void *hDeviceContext, unsigned int *puNodeIndex)
- {
+ 	const struct block_device_operations *bdops = disk->fops;
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -771,7 +771,6 @@ static inline void rq_flush_dcache_pages
  
-     PSDevice     pDevice = (PSDevice)hDeviceContext;
-diff --git a/drivers/staging/vt6656/bssdb.h b/drivers/staging/vt6656/bssdb.h
-index c3aaefe..f1bd38b 100644
---- a/drivers/staging/vt6656/bssdb.h
-+++ b/drivers/staging/vt6656/bssdb.h
-@@ -278,9 +278,9 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
- 
- BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
- 		       PBYTE abyDstAddr,
--		       PUINT puNodeIndex);
-+		       unsigned int *puNodeIndex);
- 
--void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex);
-+void BSSvCreateOneNode(void *hDeviceContext, unsigned int *puNodeIndex);
- 
- void BSSvUpdateAPNode(void *hDeviceContext,
- 		      PWORD pwCapInfo,
-diff --git a/drivers/staging/vt6656/dpc.c b/drivers/staging/vt6656/dpc.c
-index 81ce46f..4f7e778 100644
---- a/drivers/staging/vt6656/dpc.c
-+++ b/drivers/staging/vt6656/dpc.c
-@@ -80,7 +80,7 @@ static
- void
- s_vGetDASA(
-       PBYTE pbyRxBufferAddr,
--     PUINT pcbHeaderSize,
-+     unsigned int *pcbHeaderSize,
-      PSEthernetHeader psEthHeader
-     );
- 
-@@ -92,7 +92,7 @@ s_vProcessRxMACHeader (
-       unsigned int cbPacketSize,
-       BOOL bIsWEP,
-       BOOL bExtIV,
--     PUINT pcbHeadSize
-+     unsigned int *pcbHeadSize
-     );
- 
- static BOOL s_bAPModeRxCtl(
-@@ -167,7 +167,7 @@ s_vProcessRxMACHeader (
-       unsigned int cbPacketSize,
-       BOOL bIsWEP,
-       BOOL bExtIV,
--     PUINT pcbHeadSize
-+     unsigned int *pcbHeadSize
-     )
- {
-     PBYTE           pbyRxBuffer;
-@@ -261,7 +261,7 @@ static
- void
- s_vGetDASA (
-       PBYTE pbyRxBufferAddr,
--     PUINT pcbHeaderSize,
-+     unsigned int *pcbHeaderSize,
-      PSEthernetHeader psEthHeader
-     )
- {
-diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
-index 3425773..fd78135 100644
---- a/drivers/staging/vt6656/ttype.h
-+++ b/drivers/staging/vt6656/ttype.h
-@@ -87,7 +87,6 @@ typedef unsigned long   ULONG_PTR;      // 32-bit
- typedef unsigned long   DWORD_PTR;      // 32-bit
- 
- // boolean pointer
--typedef unsigned int *   PUINT;
- 
- typedef BYTE *           PBYTE;
- 
--- 
-1.7.0.4
+ extern int blk_register_queue(struct gendisk *disk);
+ extern void blk_unregister_queue(struct gendisk *disk);
+-extern void register_disk(struct gendisk *dev);
+ extern void generic_make_request(struct bio *bio);
+ extern void blk_rq_init(struct request_queue *q, struct request *rq);
+ extern void blk_put_request(struct request *);
 
 
