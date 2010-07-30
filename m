@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab0G3RUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:20:21 -0400
-Received: from kroah.org ([198.145.64.141]:52126 "EHLO coco.kroah.org"
+	id S1758985Ab0G3RUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:20:52 -0400
+Received: from kroah.org ([198.145.64.141]:52317 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758211Ab0G3RT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:59 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:11 2010
-Message-Id: <20100730171511.707283543@clark.site>
+	id S1757838Ab0G3RU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:13 2010
+Message-Id: <20100730171513.752488317@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:01 -0700
+Date: Fri, 30 Jul 2010 10:16:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Avi Kivity <avi@redhat.com>
-Subject: [133/165] KVM: MMU: Remove user access when allowing kernel access to gpte.w=0 page
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [156/165] V4L/DVB: uvcvideo: Add support for Packard Bell EasyNote MX52 integrated webcam
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-If cr0.wp=0, we have to allow the guest kernel access to a page with pte.w=0.
-We do that by setting spte.w=1, since the host cr0.wp must remain set so the
-host can write protect pages.  Once we allow write access, we must remove
-user access otherwise we mistakenly allow the user to write the page.
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-Reviewed-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-(cherry picked from commit 69325a122580d3a7b26589e8efdd6663001c3297)
+commit f129b03ba272c86c42ad476684caa0d6109cb383 upstream.
+
+The camera requires the STREAM_NO_FID quirk. Add a corresponding entry
+in the device IDs list.
+
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/x86/kvm/mmu.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/video/uvc/uvc_driver.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1843,6 +1843,9 @@ static int set_spte(struct kvm_vcpu *vcp
- 
- 		spte |= PT_WRITABLE_MASK;
- 
-+		if (!tdp_enabled && !(pte_access & ACC_WRITE_MASK))
-+			spte &= ~PT_USER_MASK;
-+
- 		/*
- 		 * Optimization: for pte sync, if spte was writable the hash
- 		 * lookup is unnecessary (and expensive). Write protection
+--- a/drivers/media/video/uvc/uvc_driver.c
++++ b/drivers/media/video/uvc/uvc_driver.c
+@@ -2048,6 +2048,15 @@ static struct usb_device_id uvc_ids[] =
+ 	  .bInterfaceSubClass	= 1,
+ 	  .bInterfaceProtocol	= 0,
+ 	  .driver_info		= UVC_QUIRK_STREAM_NO_FID },
++	/* Syntek (Packard Bell EasyNote MX52 */
++	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
++				| USB_DEVICE_ID_MATCH_INT_INFO,
++	  .idVendor		= 0x174f,
++	  .idProduct		= 0x8a12,
++	  .bInterfaceClass	= USB_CLASS_VIDEO,
++	  .bInterfaceSubClass	= 1,
++	  .bInterfaceProtocol	= 0,
++	  .driver_info		= UVC_QUIRK_STREAM_NO_FID },
+ 	/* Syntek (Asus F9SG) */
+ 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+ 				| USB_DEVICE_ID_MATCH_INT_INFO,
 
 
