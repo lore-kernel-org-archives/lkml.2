@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932927Ab0G3R63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:58:29 -0400
-Received: from kroah.org ([198.145.64.141]:58978 "EHLO coco.kroah.org"
+	id S932857Ab0G3R6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:58:48 -0400
+Received: from kroah.org ([198.145.64.141]:59008 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932319Ab0G3R5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:02 -0400
+	id S932606Ab0G3R5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:06 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:47 2010
-Message-Id: <20100730175147.142053725@clark.site>
+Message-Id: <20100730175147.490716306@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:42 -0700
+Date: Fri, 30 Jul 2010 10:52:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        =?ISO-8859-15?q?Kristian=20H=C3=B8gsberg?= <krh@bitplanet.net>,
-        Eric Anholt <eric@anholt.net>
-Subject: [145/205] drm/i915: Hold the spinlock whilst resetting unpin_work along error path
+        Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [149/205] KVM: SVM: Handle MCEs early in the vmexit process
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,72 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+This patch moves handling of the MC vmexits to an earlier
+point in the vmexit. The handle_exit function is too late
+because the vcpu might alreadry have changed its physical
+cpu.
 
-commit 468f0b44ce4b002ca7d9260f802a341854752c02 upstream.
-
-Delay taking the mutex until we need to and ensure that we hold the
-spinlock when resetting unpin_work on the error path. Also defer the
-debugging print messages until after we have released the spinlock.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Kristian Høgsberg <krh@bitplanet.net>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+(cherry picked from commit fe5913e4e1700cbfc337f4b1da9ddb26f6a55586)
 ---
- drivers/gpu/drm/i915/intel_display.c |   20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ arch/x86/kvm/svm.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4239,8 +4239,6 @@ static int intel_crtc_page_flip(struct d
- 	if (work == NULL)
- 		return -ENOMEM;
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1280,7 +1280,7 @@ static int nm_interception(struct vcpu_s
+ 	return 1;
+ }
  
--	mutex_lock(&dev->struct_mutex);
--
- 	work->event = event;
- 	work->dev = crtc->dev;
- 	intel_fb = to_intel_framebuffer(crtc->fb);
-@@ -4250,10 +4248,10 @@ static int intel_crtc_page_flip(struct d
- 	/* We borrow the event spin lock for protecting unpin_work */
- 	spin_lock_irqsave(&dev->event_lock, flags);
- 	if (intel_crtc->unpin_work) {
--		DRM_DEBUG_DRIVER("flip queue: crtc already busy\n");
- 		spin_unlock_irqrestore(&dev->event_lock, flags);
- 		kfree(work);
--		mutex_unlock(&dev->struct_mutex);
+-static int mc_interception(struct vcpu_svm *svm)
++static void svm_handle_mce(struct vcpu_svm *svm)
+ {
+ 	/*
+ 	 * On an #MC intercept the MCE handler is not called automatically in
+@@ -1290,6 +1290,11 @@ static int mc_interception(struct vcpu_s
+ 		"int $0x12\n");
+ 	/* not sure if we ever come back to this point */
+ 
++	return;
++}
 +
-+		DRM_DEBUG_DRIVER("flip queue: crtc already busy\n");
- 		return -EBUSY;
++static int mc_interception(struct vcpu_svm *svm)
++{
+ 	return 1;
+ }
+ 
+@@ -2842,6 +2847,14 @@ static void svm_vcpu_run(struct kvm_vcpu
+ 		vcpu->arch.regs_avail &= ~(1 << VCPU_EXREG_PDPTR);
+ 		vcpu->arch.regs_dirty &= ~(1 << VCPU_EXREG_PDPTR);
  	}
- 	intel_crtc->unpin_work = work;
-@@ -4262,13 +4260,19 @@ static int intel_crtc_page_flip(struct d
- 	intel_fb = to_intel_framebuffer(fb);
- 	obj = intel_fb->obj;
++
++	/*
++	 * We need to handle MC intercepts here before the vcpu has a chance to
++	 * change the physical cpu
++	 */
++	if (unlikely(svm->vmcb->control.exit_code ==
++		     SVM_EXIT_EXCP_BASE + MC_VECTOR))
++		svm_handle_mce(svm);
+ }
  
-+	mutex_lock(&dev->struct_mutex);
- 	ret = intel_pin_and_fence_fb_obj(dev, obj);
- 	if (ret != 0) {
--		DRM_DEBUG_DRIVER("flip queue: %p pin & fence failed\n",
--			  to_intel_bo(obj));
--		kfree(work);
--		intel_crtc->unpin_work = NULL;
- 		mutex_unlock(&dev->struct_mutex);
-+
-+		spin_lock_irqsave(&dev->event_lock, flags);
-+		intel_crtc->unpin_work = NULL;
-+		spin_unlock_irqrestore(&dev->event_lock, flags);
-+
-+		kfree(work);
-+
-+		DRM_DEBUG_DRIVER("flip queue: %p pin & fence failed\n",
-+				 to_intel_bo(obj));
- 		return ret;
- 	}
- 
+ #undef R
 
 
