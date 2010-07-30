@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab0G3RfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:35:17 -0400
-Received: from kroah.org ([198.145.64.141]:35541 "EHLO coco.kroah.org"
+	id S932644Ab0G3Rvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:51:47 -0400
+Received: from kroah.org ([198.145.64.141]:35953 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759319Ab0G3ReI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:04 2010
-Message-Id: <20100730173104.667583262@clark.site>
+	id S932327Ab0G3RfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:10 2010
+Message-Id: <20100730173110.488368969@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:46 -0700
+Date: Fri, 30 Jul 2010 10:30:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Howells <dhowells@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [021/140] CIFS: Fix a malicious redirect problem in the DNS lookup code
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [086/140] edac: mpc85xx: fix MPC85xx dependency
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,201 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Anton Vorontsov <avorontsov@mvista.com>
 
-commit 4c0c03ca54f72fdd5912516ad0a23ec5cf01bda7 upstream.
+commit 1cd8521e7d77def75fdb1cb35ecd135385e4be4f upstream.
 
-Fix the security problem in the CIFS filesystem DNS lookup code in which a
-malicious redirect could be installed by a random user by simply adding a
-result record into one of their keyrings with add_key() and then invoking a
-CIFS CFS lookup [CVE-2010-2524].
+Since commit 5753c082f66eca5be81f6bda85c1718c5eea6ada ("powerpc/85xx:
+Kconfig cleanup"), there is no MPC85xx Kconfig symbol anymore, so the
+driver became non-selectable.
 
-This is done by creating an internal keyring specifically for the caching of
-DNS lookups.  To enforce the use of this keyring, the module init routine
-creates a set of override credentials with the keyring installed as the thread
-keyring and instructs request_key() to only install lookup result keys in that
-keyring.
+This patch fixes the issue by switching to PPC_85xx symbol.
 
-The override is then applied around the call to request_key().
-
-This has some additional benefits when a kernel service uses this module to
-request a key:
-
- (1) The result keys are owned by root, not the user that caused the lookup.
-
- (2) The result keys don't pop up in the user's keyrings.
-
- (3) The result keys don't come out of the quota of the user that caused the
-     lookup.
-
-The keyring can be viewed as root by doing cat /proc/keys:
-
-2a0ca6c3 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: 1/4
-
-It can then be listed with 'keyctl list' by root.
-
-	# keyctl list 0x2a0ca6c3
-	1 key in keyring:
-	726766307: --alswrv     0     0 dns_resolver: foo.bar.com
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-and-Tested-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Cc: Peter Tyser <ptyser@xes-inc.com>
+Cc: Dave Jiang <djiang@mvista.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifsfs.c      |    6 ++--
- fs/cifs/dns_resolve.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/cifs/dns_resolve.h |    4 +-
- 3 files changed, 74 insertions(+), 5 deletions(-)
+ drivers/edac/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -1034,7 +1034,7 @@ init_cifs(void)
- 		goto out_unregister_filesystem;
- #endif
- #ifdef CONFIG_CIFS_DFS_UPCALL
--	rc = register_key_type(&key_type_dns_resolver);
-+	rc = cifs_init_dns_resolver();
- 	if (rc)
- 		goto out_unregister_key_type;
- #endif
-@@ -1046,7 +1046,7 @@ init_cifs(void)
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -196,7 +196,7 @@ config EDAC_I5100
  
-  out_unregister_resolver_key:
- #ifdef CONFIG_CIFS_DFS_UPCALL
--	unregister_key_type(&key_type_dns_resolver);
-+	cifs_exit_dns_resolver();
-  out_unregister_key_type:
- #endif
- #ifdef CONFIG_CIFS_UPCALL
-@@ -1072,7 +1072,7 @@ exit_cifs(void)
- 	cifs_proc_clean();
- #ifdef CONFIG_CIFS_DFS_UPCALL
- 	cifs_dfs_release_automount_timer();
--	unregister_key_type(&key_type_dns_resolver);
-+	cifs_exit_dns_resolver();
- #endif
- #ifdef CONFIG_CIFS_UPCALL
- 	unregister_key_type(&cifs_spnego_key_type);
---- a/fs/cifs/dns_resolve.c
-+++ b/fs/cifs/dns_resolve.c
-@@ -23,12 +23,16 @@
-  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
- 
-+#include <linux/keyctl.h>
-+#include <linux/key-type.h>
- #include <keys/user-type.h>
- #include "dns_resolve.h"
- #include "cifsglob.h"
- #include "cifsproto.h"
- #include "cifs_debug.h"
- 
-+static const struct cred *dns_resolver_cache;
-+
- /* Checks if supplied name is IP address
-  * returns:
-  * 		1 - name is IP
-@@ -93,6 +97,7 @@ struct key_type key_type_dns_resolver =
- int
- dns_resolve_server_name_to_ip(const char *unc, char **ip_addr)
- {
-+	const struct cred *saved_cred;
- 	int rc = -EAGAIN;
- 	struct key *rkey = ERR_PTR(-EAGAIN);
- 	char *name;
-@@ -132,8 +137,15 @@ dns_resolve_server_name_to_ip(const char
- 		goto skip_upcall;
- 	}
- 
-+	saved_cred = override_creds(dns_resolver_cache);
- 	rkey = request_key(&key_type_dns_resolver, name, "");
-+	revert_creds(saved_cred);
- 	if (!IS_ERR(rkey)) {
-+		if (!(rkey->perm & KEY_USR_VIEW)) {
-+			down_read(&rkey->sem);
-+			rkey->perm |= KEY_USR_VIEW;
-+			up_read(&rkey->sem);
-+		}
- 		len = rkey->type_data.x[0];
- 		data = rkey->payload.data;
- 	} else {
-@@ -164,4 +176,61 @@ out:
- 	return rc;
- }
- 
-+int __init cifs_init_dns_resolver(void)
-+{
-+	struct cred *cred;
-+	struct key *keyring;
-+	int ret;
-+
-+	printk(KERN_NOTICE "Registering the %s key type\n",
-+	       key_type_dns_resolver.name);
-+
-+	/* create an override credential set with a special thread keyring in
-+	 * which DNS requests are cached
-+	 *
-+	 * this is used to prevent malicious redirections from being installed
-+	 * with add_key().
-+	 */
-+	cred = prepare_kernel_cred(NULL);
-+	if (!cred)
-+		return -ENOMEM;
-+
-+	keyring = key_alloc(&key_type_keyring, ".dns_resolver", 0, 0, cred,
-+			    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			    KEY_USR_VIEW | KEY_USR_READ,
-+			    KEY_ALLOC_NOT_IN_QUOTA);
-+	if (IS_ERR(keyring)) {
-+		ret = PTR_ERR(keyring);
-+		goto failed_put_cred;
-+	}
-+
-+	ret = key_instantiate_and_link(keyring, NULL, 0, NULL, NULL);
-+	if (ret < 0)
-+		goto failed_put_key;
-+
-+	ret = register_key_type(&key_type_dns_resolver);
-+	if (ret < 0)
-+		goto failed_put_key;
-+
-+	/* instruct request_key() to use this special keyring as a cache for
-+	 * the results it looks up */
-+	cred->thread_keyring = keyring;
-+	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
-+	dns_resolver_cache = cred;
-+	return 0;
-+
-+failed_put_key:
-+	key_put(keyring);
-+failed_put_cred:
-+	put_cred(cred);
-+	return ret;
-+}
- 
-+void __exit cifs_exit_dns_resolver(void)
-+{
-+	key_revoke(dns_resolver_cache->thread_keyring);
-+	unregister_key_type(&key_type_dns_resolver);
-+	put_cred(dns_resolver_cache);
-+	printk(KERN_NOTICE "Unregistered %s key type\n",
-+	       key_type_dns_resolver.name);
-+}
---- a/fs/cifs/dns_resolve.h
-+++ b/fs/cifs/dns_resolve.h
-@@ -24,8 +24,8 @@
- #define _DNS_RESOLVE_H
- 
- #ifdef __KERNEL__
--#include <linux/key-type.h>
--extern struct key_type key_type_dns_resolver;
-+extern int __init cifs_init_dns_resolver(void);
-+extern void __exit cifs_exit_dns_resolver(void);
- extern int dns_resolve_server_name_to_ip(const char *unc, char **ip_addr);
- #endif /* KERNEL */
- 
+ config EDAC_MPC85XX
+ 	tristate "Freescale MPC83xx / MPC85xx"
+-	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
++	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || PPC_85xx)
+ 	help
+ 	  Support for error detection and correction on the Freescale
+ 	  MPC8349, MPC8560, MPC8540, MPC8548
 
 
