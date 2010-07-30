@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab0G3R52 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:57:28 -0400
-Received: from kroah.org ([198.145.64.141]:58657 "EHLO coco.kroah.org"
+	id S933113Ab0G3SLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:11:20 -0400
+Received: from kroah.org ([198.145.64.141]:59128 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932380Ab0G3R4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:16 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:43 2010
-Message-Id: <20100730175143.016050252@clark.site>
+	id S932732Ab0G3R51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
+Message-Id: <20100730175149.193511268@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:59 -0700
+Date: Fri, 30 Jul 2010 10:53:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Vorontsov <avorontsov@mvista.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: [102/205] powerpc/cpm1: Fix build with various CONFIG_*_UCODE_PATCH combinations
+        Daniel Mack <daniel@caiaq.de>, Alagu Sankar <alagusankar@embwise.com>,
+        Volker Ernst <volker.ernst@txtr.com>, Dan Williams <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Holger Schurig <hs4233@mail.mn-solutions.de>,
+        Bing Zhao <bzhao@marvell.com>, libertas-dev@lists.infradead.org,
+        linux-wireless@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: [168/205] libertas/sdio: 8686: set ECSI bit for 1-bit transfers
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Vorontsov <avorontsov@mvista.com>
+From: Daniel Mack <daniel@caiaq.de>
 
-commit 2069a6ae19a34d96cc9cb284eb645b165138e03f upstream.
+commit 8a64c0f6b7ec7f758c4ef445e49f479e27fa2236 upstream.
 
-Warnings are treated as errors for arch/powerpc code, so build fails
-with CONFIG_I2C_SPI_UCODE_PATCH=y:
+When operating in 1-bit mode, SDAT1 is used as dedicated interrupt line.
+However, the 8686 will only drive this line when the ECSI bit is set in
+the CCCR_IF register.
 
-    CC      arch/powerpc/sysdev/micropatch.o
-  cc1: warnings being treated as errors
-  arch/powerpc/sysdev/micropatch.c: In function 'cpm_load_patch':
-  arch/powerpc/sysdev/micropatch.c:630: warning: unused variable 'smp'
-  make[1]: *** [arch/powerpc/sysdev/micropatch.o] Error 1
+Thanks to Alagu Sankar for pointing me in the right direction.
 
-And with CONFIG_USB_SOF_UCODE_PATCH=y:
-
-  CC      arch/powerpc/sysdev/micropatch.o
-  cc1: warnings being treated as errors
-  arch/powerpc/sysdev/micropatch.c: In function 'cpm_load_patch':
-  arch/powerpc/sysdev/micropatch.c:629: warning: unused variable 'spp'
-  arch/powerpc/sysdev/micropatch.c:628: warning: unused variable 'iip'
-  make[1]: *** [arch/powerpc/sysdev/micropatch.o] Error 1
-
-This patch fixes these issues by introducing proper #ifdefs.
-
-Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Alagu Sankar <alagusankar@embwise.com>
+Cc: Volker Ernst <volker.ernst@txtr.com>
+Cc: Dan Williams <dcbw@redhat.com>
+Cc: John W. Linville <linville@tuxdriver.com>
+Cc: Holger Schurig <hs4233@mail.mn-solutions.de>
+Cc: Bing Zhao <bzhao@marvell.com>
+Cc: libertas-dev@lists.infradead.org
+Cc: linux-wireless@vger.kernel.org
+Cc: linux-mmc@vger.kernel.org
+Acked-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/sysdev/micropatch.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/wireless/libertas/if_sdio.c |   22 ++++++++++++++++++++++
+ include/linux/mmc/sdio.h                |    2 ++
+ 2 files changed, 24 insertions(+)
 
---- a/arch/powerpc/sysdev/micropatch.c
-+++ b/arch/powerpc/sysdev/micropatch.c
-@@ -626,9 +626,14 @@ cpm_load_patch(cpm8xx_t	*cp)
- {
- 	volatile uint		*dp;		/* Dual-ported RAM. */
- 	volatile cpm8xx_t	*commproc;
-+#if defined(CONFIG_I2C_SPI_UCODE_PATCH) || \
-+    defined(CONFIG_I2C_SPI_SMC1_UCODE_PATCH)
- 	volatile iic_t		*iip;
- 	volatile struct spi_pram *spp;
-+#ifdef CONFIG_I2C_SPI_SMC1_UCODE_PATCH
- 	volatile smc_uart_t	*smp;
-+#endif
-+#endif
- 	int	i;
+--- a/drivers/net/wireless/libertas/if_sdio.c
++++ b/drivers/net/wireless/libertas/if_sdio.c
+@@ -35,6 +35,8 @@
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/sdio_func.h>
+ #include <linux/mmc/sdio_ids.h>
++#include <linux/mmc/sdio.h>
++#include <linux/mmc/host.h>
  
- 	commproc = cp;
+ #include "host.h"
+ #include "decl.h"
+@@ -943,6 +945,7 @@ static int if_sdio_probe(struct sdio_fun
+ 	int ret, i;
+ 	unsigned int model;
+ 	struct if_sdio_packet *packet;
++	struct mmc_host *host = func->card->host;
+ 
+ 	lbs_deb_enter(LBS_DEB_SDIO);
+ 
+@@ -1023,6 +1026,25 @@ static int if_sdio_probe(struct sdio_fun
+ 	if (ret)
+ 		goto disable;
+ 
++	/* For 1-bit transfers to the 8686 model, we need to enable the
++	 * interrupt flag in the CCCR register. Set the MMC_QUIRK_LENIENT_FN0
++	 * bit to allow access to non-vendor registers. */
++	if ((card->model == IF_SDIO_MODEL_8686) &&
++	    (host->caps & MMC_CAP_SDIO_IRQ) &&
++	    (host->ios.bus_width == MMC_BUS_WIDTH_1)) {
++		u8 reg;
++
++		func->card->quirks |= MMC_QUIRK_LENIENT_FN0;
++		reg = sdio_f0_readb(func, SDIO_CCCR_IF, &ret);
++		if (ret)
++			goto release_int;
++
++		reg |= SDIO_BUS_ECSI;
++		sdio_f0_writeb(func, reg, SDIO_CCCR_IF, &ret);
++		if (ret)
++			goto release_int;
++	}
++
+ 	card->ioport = sdio_readb(func, IF_SDIO_IOPORT, &ret);
+ 	if (ret)
+ 		goto release_int;
+--- a/include/linux/mmc/sdio.h
++++ b/include/linux/mmc/sdio.h
+@@ -94,6 +94,8 @@
+ 
+ #define  SDIO_BUS_WIDTH_1BIT	0x00
+ #define  SDIO_BUS_WIDTH_4BIT	0x02
++#define  SDIO_BUS_ECSI		0x20	/* Enable continuous SPI interrupt */
++#define  SDIO_BUS_SCSI		0x40	/* Support continuous SPI interrupt */
+ 
+ #define  SDIO_BUS_ASYNC_INT	0x20
+ 
 
 
