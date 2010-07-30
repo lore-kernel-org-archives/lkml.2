@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab0G3SQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:16:57 -0400
-Received: from kroah.org ([198.145.64.141]:58897 "EHLO coco.kroah.org"
+	id S932673Ab0G3SQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:16:52 -0400
+Received: from kroah.org ([198.145.64.141]:58905 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760030Ab0G3R4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:49 -0400
+	id S1760057Ab0G3R4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:46 2010
-Message-Id: <20100730175146.058711817@clark.site>
+Message-Id: <20100730175146.153291915@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:30 -0700
+Date: Fri, 30 Jul 2010 10:52:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        August Huber <gus@pbx.org>,
-        Elina Pasheva <epasheva@sierrawireless.com>
-Subject: [133/205] USB: Add PID for Sierra 250U to drivers/usb/serial/sierra.c
+        Colin Leitner <colin.leitner@googlemail.com>
+Subject: [134/205] USB: ftdi_sio: support for Signalyzer tools based on FTDI chips
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: august huber <gus@pbx.org>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit 9d72c81d657340e54a260a3b621f4a9f5b33829c upstream.
+commit 77dbd74e16b566e9d5eeb4be18ae3ee7d5902bd3 upstream.
 
-Add VID/PID for Sierra Wireless 250U USB dongle to sierra.c
-Allows use of 3G radio only
+ftdi_sio: support for Signalyzer tools based on FTDI chips
 
-Signed-off-by: August Huber <gus@pbx.org>
-Cc: Elina Pasheva <epasheva@sierrawireless.com>
+This patch adds support for the Xverve Signalyzers.
+
+Signed-off-by: Colin Leitner <colin.leitner@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/sierra.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c     |    8 ++++++++
+ drivers/usb/serial/ftdi_sio_ids.h |    9 +++++++++
+ 2 files changed, 17 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -245,6 +245,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1199, 0x0021) },	/* Sierra Wireless AirCard 597E */
- 	{ USB_DEVICE(0x1199, 0x0112) }, /* Sierra Wireless AirCard 580 */
- 	{ USB_DEVICE(0x1199, 0x0120) },	/* Sierra Wireless USB Dongle 595U */
-+	{ USB_DEVICE(0x1199, 0x0301) },	/* Sierra Wireless USB Dongle 250U */
- 	/* Sierra Wireless C597 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x0023, 0xFF, 0xFF, 0xFF) },
- 	/* Sierra Wireless T598 */
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -743,6 +743,14 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, MJSG_SR_RADIO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_HD_RADIO_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MJSG_XM_RADIO_PID) },
++	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_ST_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SLITE_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SH2_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SH4_PID),
++		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1024,3 +1024,12 @@
+ #define MJSG_SR_RADIO_PID	0x9379
+ #define MJSG_XM_RADIO_PID	0x937A
+ #define MJSG_HD_RADIO_PID	0x937C
++
++/*
++ * Xverve Signalyzer tools (http://www.signalyzer.com/)
++ */
++#define XVERVE_SIGNALYZER_ST_PID	0xBCA0
++#define XVERVE_SIGNALYZER_SLITE_PID	0xBCA1
++#define XVERVE_SIGNALYZER_SH2_PID	0xBCA2
++#define XVERVE_SIGNALYZER_SH4_PID	0xBCA4
++
 
 
