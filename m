@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab0G3Ijv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 04:39:51 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:47004 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932099Ab0G3Ijt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 04:39:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=SCjmnA6WefJeq+NCXMoib4bjn9UndGgrrWn1ScBRGKNaFn7MLunKsGKbXtEI28Fkyh
-         ifp1Vso8qYidkhOqwGquf0ferCJuXMekUCOrWxR+yFa5hh9Ynkcoz6c7cDF+DzHJstOz
-         WtsO2WkWcWlRwO/ZYgl4CKzcur5iC8KojnWD8=
-Date: Fri, 30 Jul 2010 16:43:53 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bus error on make allyesconfig, kernelbuild with HEAD
-Message-ID: <20100730084353.GB5638@cr0.nay.redhat.com>
-References: <20100729105225.GA13192@faui48a.informatik.uni-erlangen.de>
- <AANLkTi=cYgV69VyNZ+TKs_f-+3AJmyo_RaYS57R72j50@mail.gmail.com>
- <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de>
+	id S1755929Ab0G3Iqo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 04:46:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59290 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755791Ab0G3Iqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 04:46:42 -0400
+Message-ID: <4C52913C.9020204@kernel.org>
+Date: Fri, 30 Jul 2010 10:45:48 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100729121002.GC13192@faui48a.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dtor@mail.ru>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+In-Reply-To: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Jul 2010 08:45:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 02:10:02PM +0200, Christoph Egger wrote:
->On Thu, Jul 29, 2010 at 07:26:00PM +0800, Américo Wang wrote:
->> On Thu, Jul 29, 2010 at 6:52 PM, Christoph Egger <siccegge@cs.fau.de> wrote:
->> > Hi all!
->> >
->> >    Building the linux kernel, as well as doing a"make allyesconfig"
->> > on a fresh checkout of linux HEAD results in the same Bus Error in
->> > fixdep (details below). This is a i5 box running 32bit Ubuntu Lucid
->> > with plenty of (free) RAM. Haven't found any hints to what might be
->> > wrong on scanning over the web archives.
->> >
->> > Regards
->> >
->> >    Christoph
->> >
->> > -----
->> >  % make allyesconfig
->> >  HOSTCC  scripts/basic/fixdep
->> > fixdep: mmap: Cannot allocate memory
->> 
->> So what does 'ls -lh scripts/basic/.fixdep.d' say?
->> Seems this file is too big...
->
->Also I don't get the mmap stuff if I call fixdep directly (the way I
->think it is called staring at the build system) -- it still dies with
->an bus error:
->
->=======
->% scripts/basic/fixdep scripts/basic/.fixdep.d scripts/basic/fixdep "gcc -Wp,-MD,scripts/basic/.fixdep.d -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer     -o  scripts/basic/fixdep scripts/basic/fixdep.c" 
->cmd_scripts/basic/fixdep := gcc -Wp,-MD,scripts/basic/.fixdep.d -Wall  -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer  -o scripts/basic/fixdep scripts/basic/fixdep.c
->
->deps_scripts/basic/fixdep := \
->  scripts/basic/fixdep.c \
->    $(wildcard include/config/his/driver.h) \
->    $(wildcard include/config/my/option.h) \
->    $(wildcard include/config/.h) \
->    $(wildcard include/config/foo.h) \
->    $(wildcard include/config/boom.h) \
->zsh: bus error  scripts/basic/fixdep scripts/basic/.fixdep.d  scripts/basic/fixdep
->=======
->
->gdb isn't of any use for that unfortunately
->
->valgrund:
->=======
->==11601== Process terminating with default action of signal 7 (SIGBUS)
->==11601==  Non-existent physical address at address 0x64F2B000
->==11601==    at 0x8048BF0: parse_dep_file (in /var/tmp/siccegge/letssee/scripts/basic/fixdep)
->=======
+On 07/29/2010 07:09 AM, Guenter Roeck wrote:
+> The following comment is found in include/linux/sysfs.h:
+> 
+>    /* FIXME
+>     * The *owner field is no longer used.
+>     * x86 tree has been cleaned up. The owner
+>     * attribute is still left for other arches.
+>     */
+> 
+> As it turns out, the *owner field is (again?) initialized in several modules,
+> suggesting that such initialization may be creeping back into the code.
+> 
+> This patch set removes the above comment, the *owner field, and each instance
+> in the code where it was found to be initialized.
+> 
+> Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
+> and sparc defconfig builds.
 
-This is useful. :) Looks like parse_dep_file() accesses out of
-the mmap'ed memory range...
+Yeah, the change is way overdue.  Maybe we should have just removed
+them back then.
 
-Please attach your scripts/basic/.fixdep.d. Thanks much!
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
