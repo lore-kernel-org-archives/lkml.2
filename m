@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab0G3RSZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:18:25 -0400
-Received: from kroah.org ([198.145.64.141]:46278 "EHLO coco.kroah.org"
+	id S1760517Ab0G3TKw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:10:52 -0400
+Received: from kroah.org ([198.145.64.141]:51483 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756613Ab0G3RSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:02 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:01 2010
-Message-Id: <20100730171501.832934979@clark.site>
+	id S1757107Ab0G3RSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:03 2010
+Message-Id: <20100730171503.743348082@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:12 -0700
+Date: Fri, 30 Jul 2010 10:14:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [024/165] TPM: ReadPubEK output struct fix
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [045/165] x86: Fix vsyscall on gcc 4.5 with -Os
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit 02a077c52ef7631275a79862ffd9f3dbe9d38bc2 upstream.
+commit 124482935fb7fb9303c8a8ab930149c6a93d9910 upstream.
 
-This patch adds a missing element of the ReadPubEK command output,
-that prevents future overflow of this buffer when copying the
-TPM output result into it.
+This fixes the -Os breaks with gcc 4.5 bug.  rdtsc_barrier needs to be
+force inlined, otherwise user space will jump into kernel space and
+kill init.
 
-Prevents a kernel panic in case the user tries to read the
-pubek from sysfs.
+This also addresses http://gcc.gnu.org/bugzilla/show_bug.cgi?id=44129
+I believe.
 
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+LKML-Reference: <20100618210859.GA10913@basil.fritz.box>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm.h |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/include/asm/system.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -224,6 +224,7 @@ struct	tpm_readpubek_params_out {
- 	u8	algorithm[4];
- 	u8	encscheme[2];
- 	u8	sigscheme[2];
-+	__be32	paramsize;
- 	u8	parameters[12]; /*assuming RSA*/
- 	__be32	keysize;
- 	u8	modulus[256];
+--- a/arch/x86/include/asm/system.h
++++ b/arch/x86/include/asm/system.h
+@@ -449,7 +449,7 @@ void stop_this_cpu(void *dummy);
+  *
+  * (Could use an alternative three way for this if there was one.)
+  */
+-static inline void rdtsc_barrier(void)
++static __always_inline void rdtsc_barrier(void)
+ {
+ 	alternative(ASM_NOP3, "mfence", X86_FEATURE_MFENCE_RDTSC);
+ 	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
 
 
