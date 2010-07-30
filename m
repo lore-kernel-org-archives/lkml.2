@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab0G3TFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:05:16 -0400
-Received: from kroah.org ([198.145.64.141]:51648 "EHLO coco.kroah.org"
+	id S1758176Ab0G3TFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:05:37 -0400
+Received: from kroah.org ([198.145.64.141]:51642 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757734Ab0G3RSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:48 -0400
+	id S1757892Ab0G3RSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:47 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:05 2010
-Message-Id: <20100730171505.738488952@clark.site>
+Message-Id: <20100730171505.645500077@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:55 -0700
+Date: Fri, 30 Jul 2010 10:14:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephane Glondu <steph@glondu.net>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [067/165] staging: rtl8192su: add USB VID/PID for HWNUm-300
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [066/165] x86: Do not try to disable hpet if it hasnt been initialized before
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Glondu <steph@glondu.net>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 488d3749620779ab2668c0dba2962836e51e3cd6 upstream.
+commit ff4878089e1eaeac79d57878ad4ea32910fb4037 upstream.
 
-The Hercules Wireless N USB mini (HWNUm-300) uses the RTL8191S chipset
-and seems to work with this driver.
+hpet_disable is called unconditionally on machine reboot if hpet support
+is compiled in the kernel.
+hpet_disable only checks if the machine is hpet capable but doesn't make
+sure that hpet has been initialized.
 
-Signed-off-by: Stephane Glondu <steph@glondu.net>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+[ tglx: Made it a one liner and removed the redundant hpet_address check ]
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Venkatesh Pallipadi <venki@google.com>
+LKML-Reference: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/rtl8192su/r8192U_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/hpet.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/rtl8192su/r8192U_core.c
-+++ b/drivers/staging/rtl8192su/r8192U_core.c
-@@ -127,6 +127,8 @@ static struct usb_device_id rtl8192_usb_
- 	{USB_DEVICE(0x2001, 0x3301)},
- 	/* Zinwell */
- 	{USB_DEVICE(0x5a57, 0x0290)},
-+	/* Guillemot */
-+	{USB_DEVICE(0x06f8, 0xe031)},
- 	//92SU
- 	{USB_DEVICE(0x0bda, 0x8172)},
- 	{}
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -949,7 +949,7 @@ fs_initcall(hpet_late_init);
+ 
+ void hpet_disable(void)
+ {
+-	if (is_hpet_capable()) {
++	if (is_hpet_capable() && hpet_virt_address) {
+ 		unsigned long cfg = hpet_readl(HPET_CFG);
+ 
+ 		if (hpet_legacy_int_enabled) {
 
 
