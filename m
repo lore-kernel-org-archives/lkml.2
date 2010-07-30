@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760528Ab0G3TOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:14:11 -0400
-Received: from kroah.org ([198.145.64.141]:46330 "EHLO coco.kroah.org"
+	id S1760591Ab0G3TNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:13:44 -0400
+Received: from kroah.org ([198.145.64.141]:46335 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756752Ab0G3RSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:09 -0400
+	id S1756801Ab0G3RSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:10 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:02 2010
-Message-Id: <20100730171502.456178805@clark.site>
+Message-Id: <20100730171502.551939522@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:19 -0700
+Date: Fri, 30 Jul 2010 10:14:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jason Baron <jbaron@redhat.com>
-Subject: [031/165] dynamic debug: move ddebug_remove_module() down into free_module()
+        Daniel J Blueman <daniel.blueman@gmail.com>,
+        Eric Anholt <eric@anholt.net>
+Subject: [032/165] i915: fix lock imbalance on error path...
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Baron <jbaron@redhat.com>
+From: Daniel J Blueman <daniel.blueman@gmail.com>
 
-commit b82bab4bbe9efa7bc7177fc20620fff19bd95484 upstream.
+commit f953c9353f5fe6e98fa7f32f51060a74d845b5f8 upstream.
 
-The command
+While investigating Intel i5 Arrandale GPU lockups with -rc4, I
+noticed a lock imbalance.
 
-	echo "file ec.c +p" >/sys/kernel/debug/dynamic_debug/control
-
-causes an oops.
-
-Move the call to ddebug_remove_module() down into free_module().  In this
-way it should be called from all error paths.  Currently, we are missing
-the remove if the module init routine fails.
-
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-Reported-by: Thomas Renninger <trenn@suse.de>
-Tested-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/module.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -870,7 +870,6 @@ SYSCALL_DEFINE2(delete_module, const cha
- 	mutex_lock(&module_mutex);
- 	/* Store the name of the last unloaded module for diagnostic purposes */
- 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
--	ddebug_remove_module(mod->name);
- 	free_module(mod);
- 
-  out:
-@@ -1533,6 +1532,9 @@ static void free_module(struct module *m
- 	remove_sect_attrs(mod);
- 	mod_kobject_remove(mod);
- 
-+	/* Remove dynamic debug info */
-+	ddebug_remove_module(mod->name);
-+
- 	/* Arch-specific cleanup. */
- 	module_arch_cleanup(mod);
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -192,6 +192,7 @@ int i965_reset(struct drm_device *dev, u
+ 		}
+ 	} else {
+ 		DRM_ERROR("Error occurred. Don't know how to reset this chip.\n");
++		mutex_unlock(&dev->struct_mutex);
+ 		return -ENODEV;
+ 	}
  
 
 
