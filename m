@@ -1,63 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab0G3KaF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 06:30:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47654 "EHLO hera.kernel.org"
+	id S932139Ab0G3Kaj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 06:30:39 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:54847 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584Ab0G3KaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 06:30:01 -0400
-Message-ID: <4C52A98A.7060507@kernel.org>
-Date: Fri, 30 Jul 2010 12:29:30 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1758227Ab0G3Kaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 06:30:35 -0400
+Date: Fri, 30 Jul 2010 11:30:18 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
+Message-ID: <20100730103018.GE3571@csn.ul.ie>
+References: <20100729153719.4ABD.A69D9226@jp.fujitsu.com> <20100729142413.GB3571@csn.ul.ie> <20100730115222.4AD8.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-CC: Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: RAID/block regression starting from 2.6.32, bisected
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net> <20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu> <4C5073F3.1060406@vlnb.net>
-In-Reply-To: <4C5073F3.1060406@vlnb.net>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Jul 2010 10:29:35 +0000 (UTC)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100730115222.4AD8.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jul 30, 2010 at 01:54:53PM +0900, KOSAKI Motohiro wrote:
+> > > (1) and (8) might be solved
+> > > by sleeping awhile, but it's unrelated on io-congestion. but might not be. It only works
+> > > by lucky. So I don't like to depned on luck. 
+> > 
+> > In this case, waiting a while really in the right thing to do. It stalls
+> > the caller, but it's a high-order allocation. The alternative is for it
+> > to keep scanning which when under memory pressure could result in far
+> > too many pages being evicted. How long to wait is a tricky one to answer
+> > but I would recommend making this a low priority.
+> 
+> For case (1), just lock_page() instead trylock is brilliant way than random sleep. 
+> Is there any good reason to give up synchrounous lumpy reclaim when trylock_page() failed?
+> IOW, briefly lock_page() and wait_on_page_writeback() have the same latency. why should
+> we only avoid former?
+> 
 
-On 07/28/2010 08:16 PM, Vladislav Bolkhovitin wrote:
-> In recent kernels we are experiencing a problem that in our setup
-> using SCST BLOCKIO backend some BIOs are finished, i.e. the finish
-> callback called for them, with error -EIO. It happens quite often,
-> much more often than one would expect to have an actual IO
-> error. (BLOCKIO backend just converts all incoming SCSI commands to
-> the corresponding block requests.)
-> 
-> After some investigation, we figured out, that, most likely,
-> raid5.c::make_request() for some reason sometimes calls bio_endio()
-> with not BIO_UPTODATE bios.
-> 
-> We bisected it to commit: 
-> 
-> commit a82afdfcb8c0df09776b6458af6b68fc58b2e87b
-> Author: Tejun Heo <tj@kernel.org>
-> Date:   Fri Jul 3 17:48:16 2009 +0900
-> 
->     block: use the same failfast bits for bio and request
+No reason. Using lock_page() in the synchronous case would be a sensible
+choice. As you are realising, there are a number of warts around lumpy
+reclaim that are long overdue for a good look :/
 
-That commit doesn't (or at least isn't supposed to) make any behavior
-difference.  It's just repositioning flag bits.  If the commit is
-actually causing the problem, I think one possibility is that whatever
-code could be using hard coded constants which now are mapped to
-different flags.  The mixed merge changes have been in mainline for
-quite some time and shipping in all major distros too and this is the
-first time this is reported, so I don't think it could be a widespread
-problem.
+> side note: page lock contention is very common case.
+> 
+> For case (8), I don't think sleeping is right way. get_page() is used in really various place of
+> our kernel. so we can't assume it's only temporary reference count increasing.
 
-Thanks.
+In what case is a munlocked pages reference count permanently increased and
+why is this not a memory leak?
+
+> In the other
+> hand, this contention is not so common because shrink_page_list() is excluded from IO
+> activity by page-lock and wait_on_page_writeback(). so I think giving up this case don't
+> makes too many pages eviction.
+> If you disagree, can you please explain your expected bad scinario?
+> 
+
+Right now, I can't think of a problem with calling lock_page instead of
+trylock for synchronous lumpy reclaim.
+
+> > > > > 3. pageout() is intended anynchronous api. but doesn't works so.
+> > > > > 
+> > > > > pageout() call ->writepage with wbc->nonblocking=1. because if the system have
+> > > > > default vm.dirty_ratio (i.e. 20), we have 80% clean memory. so, getting stuck
+> > > > > on one page is stupid, we should scan much pages as soon as possible.
+> > > > > 
+> > > > > HOWEVER, block layer ignore this argument. if slow usb memory device connect
+> > > > > to the system, ->writepage() will sleep long time. because submit_bio() call
+> > > > > get_request_wait() unconditionally and it doesn't have any PF_MEMALLOC task
+> > > > > bonus.
+> > > > 
+> > > > Is this not a problem in the writeback layer rather than pageout()
+> > > > specifically?
+> > > 
+> > > Well, outside pageout(), probably only XFS makes PF_MEMALLOC + writeout. 
+> > > because PF_MEMALLOC is enabled only very limited situation. but I don't know
+> > > XFS detail at all. I can't tell this area...
+> > > 
+> > 
+> > All direct reclaimers have PF_MEMALLOC set so it's not that limited a
+> > situation. See here
+> 
+> Yes, all direct reclaimers have PF_MEMALLOC. but usually all direct reclaimers don't call
+> any IO related function except pageout(). As far as I know, current shrink_icache() and 
+> shrink_dcache() doesn't make IO. Am I missing something?
+> 
+
+Not that I'm aware of but it's not something I would know offhand. Will
+go digging.
 
 -- 
-tejun
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
