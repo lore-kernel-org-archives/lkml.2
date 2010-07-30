@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760295Ab0G3S5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:57:38 -0400
-Received: from kroah.org ([198.145.64.141]:51853 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758585Ab0G3RTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:20 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:08 2010
-Message-Id: <20100730171508.401427766@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:25 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [097/165] ext4: fix error handling in migrate
-In-Reply-To: <20100730171550.GA1299@kroah.com
+	id S1760311Ab0G3S5p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:57:45 -0400
+Received: from n3-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.156]:21444 "HELO
+	n3-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760292Ab0G3S5h convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 14:57:37 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 476558.53123.bm@omp203.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=3fVkWBV+mb6SWLTjCknxDMrQW1moOeMyWyPKTjUkOonsNM6JcYl9fCtsIrRp7Vyp8aUiWblWcmM/0K0/aS/m7i0dIfyznYMjR1e57cvgiYYttLHIBihXIRTXCLAeZ2f336AnujEm36CJQc9vUG+fR8G+dRsH7urpj0gPcpozqPo=;
+Message-ID: <355626.7330.qm@web180313.mail.gq1.yahoo.com>
+X-YMail-OSG: w_IiF3AVM1n038sLG2fRJ9rM.UPj_HFTNGvhqgRVqkRWkPf
+ COzgR4h1P4LijoACw0LhAcRsidodH005lGDAp_48Vxq7vgop2rc4pEzaEAFb
+ 96b4ObTMPrC8Q6gOfG0H5HS9giDQ3T8.J9BMDVLXEF0.AAU_qmHC3RZd36QR
+ X5vIzdI3MMD7fQRkntj24d1kjYkaNdstN1ro4JmlIZONiu7gXrzHS9CQhpi3
+ HCa3i1n_zD.mF8cONbi6NQm7NbOZ23cy57L0IML50XqxkOsdBLDwYqv0m3Cd
+ 4xgfd4ixVVLULFoQAbu3W9_hxXCVwBKs6ZDPy9ao-
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.105.279950
+Date: Fri, 30 Jul 2010 11:57:35 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv5 2/3] USB: gadget: Use new composite features in some gadgets
+To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>,
+        Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+In-Reply-To: <20100730165450.GA4943@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-------------------
+> 
+>  We shouldn't be using _any_ netchip
+> ids anymore now that we
+> have our own vendor id assigned to us.
 
-commit f39490bcd1691d65dc33689222a12e1fc13dd824 upstream (as of v2.6.33-git11)
+That's too extreme; the original handful of
+NetChip IDs were (and are!!) correctly assigned,
+and there's no reason to change them.  In fact,
+there's a lot of reason to continue using them
+while config files and drivers expect to see
+those specific IDs (as is reasonable).  That's
+to avoid breaking working configs...
 
-Set i_nlink to zero for temporary inode from very beginning.
-otherwise we may fail to start new journal handle and this
-inode will be unreferenced but with i_nlink == 1
-Since we hold inode reference it can not be pruned.
+For new IDs, yes:  use Linux-foundation VIDS/PIDs.
 
-Also add missed journal_start retval check.
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- fs/ext4/migrate.c |   29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
-
---- a/fs/ext4/migrate.c
-+++ b/fs/ext4/migrate.c
-@@ -494,14 +494,10 @@ int ext4_ext_migrate(struct inode *inode
- 	}
- 	i_size_write(tmp_inode, i_size_read(inode));
- 	/*
--	 * We don't want the inode to be reclaimed
--	 * if we got interrupted in between. We have
--	 * this tmp inode carrying reference to the
--	 * data blocks of the original file. We set
--	 * the i_nlink to zero at the last stage after
--	 * switching the original file to extent format
-+	 * Set the i_nlink to zero so it will be deleted later
-+	 * when we drop inode reference.
- 	 */
--	tmp_inode->i_nlink = 1;
-+	tmp_inode->i_nlink = 0;
- 
- 	ext4_ext_tree_init(handle, tmp_inode);
- 	ext4_orphan_add(handle, tmp_inode);
-@@ -528,6 +524,16 @@ int ext4_ext_migrate(struct inode *inode
- 	up_read((&EXT4_I(inode)->i_data_sem));
- 
- 	handle = ext4_journal_start(inode, 1);
-+	if (IS_ERR(handle)) {
-+		/*
-+		 * It is impossible to update on-disk structures without
-+		 * a handle, so just rollback in-core changes and live other
-+		 * work to orphan_list_cleanup()
-+		 */
-+		ext4_orphan_del(NULL, tmp_inode);
-+		retval = PTR_ERR(handle);
-+		goto out;
-+	}
- 
- 	ei = EXT4_I(inode);
- 	i_data = ei->i_data;
-@@ -609,15 +615,8 @@ err_out:
- 
- 	/* Reset the extent details */
- 	ext4_ext_tree_init(handle, tmp_inode);
--
--	/*
--	 * Set the i_nlink to zero so that
--	 * generic_drop_inode really deletes the
--	 * inode
--	 */
--	tmp_inode->i_nlink = 0;
--
- 	ext4_journal_stop(handle);
-+out:
- 	unlock_new_inode(tmp_inode);
- 	iput(tmp_inode);
- 
-
+- Dave
 
