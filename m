@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab0G3SAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:00:30 -0400
-Received: from kroah.org ([198.145.64.141]:59284 "EHLO coco.kroah.org"
+	id S932862Ab0G3R7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:59:54 -0400
+Received: from kroah.org ([198.145.64.141]:59146 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932848Ab0G3R55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:51 2010
-Message-Id: <20100730175151.675394300@clark.site>
+	id S932741Ab0G3R5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
+Message-Id: <20100730175149.470021602@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:33 -0700
+Date: Fri, 30 Jul 2010 10:53:08 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, linux-mips@linux-mips.org,
-        manuel.lauss@googlemail.com
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruno Randolf <br1@einfach.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: [196/205] MIPS: MTX-1: Fix PCI on the MeshCube and related boards
+        Johannes Berg <johannes@sipsolutions.net>,
+        Ming Lei <tom.leiming@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [171/205] firmware_class: fix memory leak - free allocated pages
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +29,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruno Randolf <randolf.bruno@googlemail.com>
+From: David Woodhouse <David.Woodhouse@intel.com>
 
-commit 98a0f86a54bb195c28ae1ccb5a5f5cda12cf7121 upstream.
+commit dd336c554d8926c3348a2d5f2a5ef5597f6d1a06 upstream.
 
-This patch fixes a regression introduced by commit "MIPS: Alchemy: MTX-1:
-Use linux gpio api." (bb706b28bbd647c2fd7f22d6bf03a18b9552be05) which broke
-PCI bus operation. The problem is caused by alchemy_gpio2_enable() which
-resets the GPIO2 block. Two PCI signals (PCI_SERR and PCI_RST) are connected
-to GPIO2 and they obviously do not to like the reset. Since GPIO2 is
-correctly initialized by the boot monitor (YAMON) it is not necessary to
-call this function, so just remove it.
+fix memory leak introduced by the patch 6e03a201bbe:
+firmware: speed up request_firmware()
 
-Also replace gpio_set_value() with alchemy_gpio_set_value() to avoid
-problems in case gpiolib gets initialized after PCI. And since alchemy
-gpio_set_value() calls au_sync() we don't have to au_sync() again later.
+1. vfree won't release pages there were allocated explicitly and mapped
+using vmap. The memory has to be vunmap-ed and the pages needs
+to be freed explicitly
 
-Signed-off-by: Bruno Randolf <br1@einfach.org>
-To: linux-mips@linux-mips.org
-To: manuel.lauss@googlemail.com
-Patchwork: https://patchwork.linux-mips.org/patch/1448/
-Tested-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+2. page array is moved into the 'struct
+firmware' so that we can free it from release_firmware()
+and not only in fw_dev_release()
+
+The fix doesn't break the firmware load speed.
+
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: Ming Lei <tom.leiming@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Singed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/mips/alchemy/mtx-1/board_setup.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/base/firmware_class.c |   26 ++++++++++++++++++++------
+ include/linux/firmware.h      |    1 +
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
---- a/arch/mips/alchemy/mtx-1/board_setup.c
-+++ b/arch/mips/alchemy/mtx-1/board_setup.c
-@@ -67,8 +67,6 @@ static void mtx1_power_off(void)
- 
- void __init board_setup(void)
- {
--	alchemy_gpio2_enable();
--
- #if defined(CONFIG_USB_OHCI_HCD) || defined(CONFIG_USB_OHCI_HCD_MODULE)
- 	/* Enable USB power switch */
- 	alchemy_gpio_direction_output(204, 0);
-@@ -117,11 +115,11 @@ mtx1_pci_idsel(unsigned int devsel, int
- 
- 	if (assert && devsel != 0)
- 		/* Suppress signal to Cardbus */
--		gpio_set_value(1, 0);	/* set EXT_IO3 OFF */
-+		alchemy_gpio_set_value(1, 0);	/* set EXT_IO3 OFF */
- 	else
--		gpio_set_value(1, 1);	/* set EXT_IO3 ON */
-+		alchemy_gpio_set_value(1, 1);	/* set EXT_IO3 ON */
- 
--	au_sync_udelay(1);
-+	udelay(1);
- 	return 1;
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -130,6 +130,17 @@ static ssize_t firmware_loading_show(str
+ 	return sprintf(buf, "%d\n", loading);
  }
  
++static void firmware_free_data(const struct firmware *fw)
++{
++	int i;
++	vunmap(fw->data);
++	if (fw->pages) {
++		for (i = 0; i < PFN_UP(fw->size); i++)
++			__free_page(fw->pages[i]);
++		kfree(fw->pages);
++	}
++}
++
+ /* Some architectures don't have PAGE_KERNEL_RO */
+ #ifndef PAGE_KERNEL_RO
+ #define PAGE_KERNEL_RO PAGE_KERNEL
+@@ -162,21 +173,21 @@ static ssize_t firmware_loading_store(st
+ 			mutex_unlock(&fw_lock);
+ 			break;
+ 		}
+-		vfree(fw_priv->fw->data);
+-		fw_priv->fw->data = NULL;
++		firmware_free_data(fw_priv->fw);
++		memset(fw_priv->fw, 0, sizeof(struct firmware));
++		/* If the pages are not owned by 'struct firmware' */
+ 		for (i = 0; i < fw_priv->nr_pages; i++)
+ 			__free_page(fw_priv->pages[i]);
+ 		kfree(fw_priv->pages);
+ 		fw_priv->pages = NULL;
+ 		fw_priv->page_array_size = 0;
+ 		fw_priv->nr_pages = 0;
+-		fw_priv->fw->size = 0;
+ 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
+ 		mutex_unlock(&fw_lock);
+ 		break;
+ 	case 0:
+ 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
+-			vfree(fw_priv->fw->data);
++			vunmap(fw_priv->fw->data);
+ 			fw_priv->fw->data = vmap(fw_priv->pages,
+ 						 fw_priv->nr_pages,
+ 						 0, PAGE_KERNEL_RO);
+@@ -184,7 +195,10 @@ static ssize_t firmware_loading_store(st
+ 				dev_err(dev, "%s: vmap() failed\n", __func__);
+ 				goto err;
+ 			}
+-			/* Pages will be freed by vfree() */
++			/* Pages are now owned by 'struct firmware' */
++			fw_priv->fw->pages = fw_priv->pages;
++			fw_priv->pages = NULL;
++
+ 			fw_priv->page_array_size = 0;
+ 			fw_priv->nr_pages = 0;
+ 			complete(&fw_priv->completion);
+@@ -578,7 +592,7 @@ release_firmware(const struct firmware *
+ 			if (fw->data == builtin->data)
+ 				goto free_fw;
+ 		}
+-		vfree(fw->data);
++		firmware_free_data(fw);
+ 	free_fw:
+ 		kfree(fw);
+ 	}
+--- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -12,6 +12,7 @@
+ struct firmware {
+ 	size_t size;
+ 	const u8 *data;
++	struct page **pages;
+ };
+ 
+ struct device;
 
 
