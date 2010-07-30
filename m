@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760352Ab0G3TA4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:00:56 -0400
-Received: from kroah.org ([198.145.64.141]:51748 "EHLO coco.kroah.org"
+	id S1760338Ab0G3TAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:00:53 -0400
+Received: from kroah.org ([198.145.64.141]:51787 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756405Ab0G3RTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:04 -0400
+	id S1758270Ab0G3RTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:09 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:07 2010
-Message-Id: <20100730171507.084356788@clark.site>
+Message-Id: <20100730171507.536657367@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:10 -0700
+Date: Fri, 30 Jul 2010 10:15:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Surbhi Palande <surbhi.palande@canonical.com>,
         "Theodore Tso" <tytso@mit.edu>
-Subject: [082/165] ext4: replace BUG() with return -EIO in ext4_ext_get_blocks
+Subject: [087/165] ext4: Patch up how we claim metadata blocks for quota purposes
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +25,266 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 034fb4c95fc0fed4ec4a50778127b92c6f2aec01 upstream (as of v2.6.33-rc3)
+commit 0637c6f4135f592f094207c7c21e7c0fc5557834 upstream (as of v2.6.33-rc3)
 
-This patch fixes the Kernel BZ #14286.  When the address of an extent
-corresponding to a valid block is corrupted, a -EIO should be reported
-instead of a BUG().  This situation should not normally not occur
-except in the case of a corrupted filesystem.  If however it does,
-then the system should not panic directly but depending on the mount
-time options appropriate action should be taken. If the mount options
-so permit, the I/O should be gracefully aborted by returning a -EIO.
+As reported in Kernel Bugzilla #14936, commit d21cd8f triggered a BUG
+in the function ext4_da_update_reserve_space() found in
+fs/ext4/inode.c.  The root cause of this BUG() was caused by the fact
+that ext4_calc_metadata_amount() can severely over-estimate how many
+metadata blocks will be needed, especially when using direct
+block-mapped files.
 
-http://bugzilla.kernel.org/show_bug.cgi?id=14286
+In addition, it can also badly *under* estimate how much space is
+needed, since ext4_calc_metadata_amount() assumes that the blocks are
+contiguous, and this is not always true.  If the application is
+writing blocks to a sparse file, the number of metadata blocks
+necessary can be severly underestimated by the functions
+ext4_da_reserve_space(), ext4_da_update_reserve_space() and
+ext4_da_release_space().  This was the cause of the dq_claim_space
+reports found on kerneloops.org.
 
-Signed-off-by: Surbhi Palande <surbhi.palande@canonical.com>
+Unfortunately, doing this right means that we need to massively
+over-estimate the amount of free space needed.  So in some cases we
+may need to force the inode to be written to disk asynchronously in
+to avoid spurious quota failures.
+
+http://bugzilla.kernel.org/show_bug.cgi?id=14936
+
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/extents.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/ext4/inode.c |  153 ++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 82 insertions(+), 71 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -3196,7 +3196,13 @@ int ext4_ext_get_blocks(handle_t *handle
- 	 * this situation is possible, though, _during_ tree modification;
- 	 * this is why assert can't be put in ext4_ext_find_extent()
- 	 */
--	BUG_ON(path[depth].p_ext == NULL && depth != 0);
-+	if (path[depth].p_ext == NULL && depth != 0) {
-+		ext4_error(inode->i_sb, __func__, "bad extent address "
-+			   "inode: %lu, iblock: %d, depth: %d",
-+			   inode->i_ino, iblock, depth);
-+		err = -EIO;
-+		goto out2;
-+	}
- 	eh = path[depth].p_hdr;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1085,43 +1085,47 @@ static int ext4_calc_metadata_amount(str
+ 	return ext4_indirect_calc_metadata_amount(inode, blocks);
+ }
  
- 	ex = path[depth].p_ext;
++/*
++ * Called with i_data_sem down, which is important since we can call
++ * ext4_discard_preallocations() from here.
++ */
+ static void ext4_da_update_reserve_space(struct inode *inode, int used)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+-	int total, mdb, mdb_free, mdb_claim = 0;
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	int mdb_free = 0;
+ 
+-	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
+-	/* recalculate the number of metablocks still need to be reserved */
+-	total = EXT4_I(inode)->i_reserved_data_blocks - used;
+-	mdb = ext4_calc_metadata_amount(inode, total);
+-
+-	/* figure out how many metablocks to release */
+-	BUG_ON(mdb > EXT4_I(inode)->i_reserved_meta_blocks);
+-	mdb_free = EXT4_I(inode)->i_reserved_meta_blocks - mdb;
+-
+-	if (mdb_free) {
+-		/* Account for allocated meta_blocks */
+-		mdb_claim = EXT4_I(inode)->i_allocated_meta_blocks;
+-		BUG_ON(mdb_free < mdb_claim);
+-		mdb_free -= mdb_claim;
++	spin_lock(&ei->i_block_reservation_lock);
++	if (unlikely(used > ei->i_reserved_data_blocks)) {
++		ext4_msg(inode->i_sb, KERN_NOTICE, "%s: ino %lu, used %d "
++			 "with only %d reserved data blocks\n",
++			 __func__, inode->i_ino, used,
++			 ei->i_reserved_data_blocks);
++		WARN_ON(1);
++		used = ei->i_reserved_data_blocks;
++	}
++
++	/* Update per-inode reservations */
++	ei->i_reserved_data_blocks -= used;
++	used += ei->i_allocated_meta_blocks;
++	ei->i_reserved_meta_blocks -= ei->i_allocated_meta_blocks;
++	ei->i_allocated_meta_blocks = 0;
++	percpu_counter_sub(&sbi->s_dirtyblocks_counter, used);
+ 
+-		/* update fs dirty blocks counter */
++	if (ei->i_reserved_data_blocks == 0) {
++		/*
++		 * We can release all of the reserved metadata blocks
++		 * only when we have written all of the delayed
++		 * allocation blocks.
++		 */
++		mdb_free = ei->i_allocated_meta_blocks;
+ 		percpu_counter_sub(&sbi->s_dirtyblocks_counter, mdb_free);
+-		EXT4_I(inode)->i_allocated_meta_blocks = 0;
+-		EXT4_I(inode)->i_reserved_meta_blocks = mdb;
++		ei->i_allocated_meta_blocks = 0;
+ 	}
+-
+-	/* update per-inode reservations */
+-	BUG_ON(used  > EXT4_I(inode)->i_reserved_data_blocks);
+-	EXT4_I(inode)->i_reserved_data_blocks -= used;
+-	percpu_counter_sub(&sbi->s_dirtyblocks_counter, used + mdb_claim);
+ 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
+ 
+-	vfs_dq_claim_block(inode, used + mdb_claim);
+-
+-	/*
+-	 * free those over-booking quota for metadata blocks
+-	 */
++	/* Update quota subsystem */
++	vfs_dq_claim_block(inode, used);
+ 	if (mdb_free)
+ 		vfs_dq_release_reservation_block(inode, mdb_free);
+ 
+@@ -1130,7 +1134,8 @@ static void ext4_da_update_reserve_space
+ 	 * there aren't any writers on the inode, we can discard the
+ 	 * inode's preallocations.
+ 	 */
+-	if (!total && (atomic_read(&inode->i_writecount) == 0))
++	if ((ei->i_reserved_data_blocks == 0) &&
++	    (atomic_read(&inode->i_writecount) == 0))
+ 		ext4_discard_preallocations(inode);
+ }
+ 
+@@ -1843,7 +1848,8 @@ static int ext4_da_reserve_space(struct
+ {
+ 	int retries = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+-	unsigned long md_needed, mdblocks, total = 0;
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	unsigned long md_needed, md_reserved, total = 0;
+ 
+ 	/*
+ 	 * recalculate the amount of metadata blocks to reserve
+@@ -1851,35 +1857,44 @@ static int ext4_da_reserve_space(struct
+ 	 * worse case is one extent per block
+ 	 */
+ repeat:
+-	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
+-	total = EXT4_I(inode)->i_reserved_data_blocks + nrblocks;
+-	mdblocks = ext4_calc_metadata_amount(inode, total);
+-	BUG_ON(mdblocks < EXT4_I(inode)->i_reserved_meta_blocks);
+-
+-	md_needed = mdblocks - EXT4_I(inode)->i_reserved_meta_blocks;
++	spin_lock(&ei->i_block_reservation_lock);
++	md_reserved = ei->i_reserved_meta_blocks;
++	md_needed = ext4_calc_metadata_amount(inode, nrblocks);
+ 	total = md_needed + nrblocks;
+-	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
++	spin_unlock(&ei->i_block_reservation_lock);
+ 
+ 	/*
+ 	 * Make quota reservation here to prevent quota overflow
+ 	 * later. Real quota accounting is done at pages writeout
+ 	 * time.
+ 	 */
+-	if (vfs_dq_reserve_block(inode, total))
++	if (vfs_dq_reserve_block(inode, total)) {
++		/*
++		 * We tend to badly over-estimate the amount of
++		 * metadata blocks which are needed, so if we have
++		 * reserved any metadata blocks, try to force out the
++		 * inode and see if we have any better luck.
++		 */
++		if (md_reserved && retries++ <= 3)
++			goto retry;
+ 		return -EDQUOT;
++	}
+ 
+ 	if (ext4_claim_free_blocks(sbi, total)) {
+ 		vfs_dq_release_reservation_block(inode, total);
+ 		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
++		retry:
++			if (md_reserved)
++				write_inode_now(inode, (retries == 3));
+ 			yield();
+ 			goto repeat;
+ 		}
+ 		return -ENOSPC;
+ 	}
+-	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
+-	EXT4_I(inode)->i_reserved_data_blocks += nrblocks;
+-	EXT4_I(inode)->i_reserved_meta_blocks += md_needed;
+-	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
++	spin_lock(&ei->i_block_reservation_lock);
++	ei->i_reserved_data_blocks += nrblocks;
++	ei->i_reserved_meta_blocks += md_needed;
++	spin_unlock(&ei->i_block_reservation_lock);
+ 
+ 	return 0;       /* success */
+ }
+@@ -1887,49 +1902,45 @@ repeat:
+ static void ext4_da_release_space(struct inode *inode, int to_free)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+-	int total, mdb, mdb_free, release;
++	struct ext4_inode_info *ei = EXT4_I(inode);
+ 
+ 	if (!to_free)
+ 		return;		/* Nothing to release, exit */
+ 
+ 	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
+ 
+-	if (!EXT4_I(inode)->i_reserved_data_blocks) {
++	if (unlikely(to_free > ei->i_reserved_data_blocks)) {
+ 		/*
+-		 * if there is no reserved blocks, but we try to free some
+-		 * then the counter is messed up somewhere.
+-		 * but since this function is called from invalidate
+-		 * page, it's harmless to return without any action
++		 * if there aren't enough reserved blocks, then the
++		 * counter is messed up somewhere.  Since this
++		 * function is called from invalidate page, it's
++		 * harmless to return without any action.
+ 		 */
+-		printk(KERN_INFO "ext4 delalloc try to release %d reserved "
+-			    "blocks for inode %lu, but there is no reserved "
+-			    "data blocks\n", to_free, inode->i_ino);
+-		spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
+-		return;
++		ext4_msg(inode->i_sb, KERN_NOTICE, "ext4_da_release_space: "
++			 "ino %lu, to_free %d with only %d reserved "
++			 "data blocks\n", inode->i_ino, to_free,
++			 ei->i_reserved_data_blocks);
++		WARN_ON(1);
++		to_free = ei->i_reserved_data_blocks;
+ 	}
++	ei->i_reserved_data_blocks -= to_free;
+ 
+-	/* recalculate the number of metablocks still need to be reserved */
+-	total = EXT4_I(inode)->i_reserved_data_blocks - to_free;
+-	mdb = ext4_calc_metadata_amount(inode, total);
+-
+-	/* figure out how many metablocks to release */
+-	BUG_ON(mdb > EXT4_I(inode)->i_reserved_meta_blocks);
+-	mdb_free = EXT4_I(inode)->i_reserved_meta_blocks - mdb;
+-
+-	release = to_free + mdb_free;
+-
+-	/* update fs dirty blocks counter for truncate case */
+-	percpu_counter_sub(&sbi->s_dirtyblocks_counter, release);
++	if (ei->i_reserved_data_blocks == 0) {
++		/*
++		 * We can release all of the reserved metadata blocks
++		 * only when we have written all of the delayed
++		 * allocation blocks.
++		 */
++		to_free += ei->i_allocated_meta_blocks;
++		ei->i_allocated_meta_blocks = 0;
++	}
+ 
+-	/* update per-inode reservations */
+-	BUG_ON(to_free > EXT4_I(inode)->i_reserved_data_blocks);
+-	EXT4_I(inode)->i_reserved_data_blocks -= to_free;
++	/* update fs dirty blocks counter */
++	percpu_counter_sub(&sbi->s_dirtyblocks_counter, to_free);
+ 
+-	BUG_ON(mdb > EXT4_I(inode)->i_reserved_meta_blocks);
+-	EXT4_I(inode)->i_reserved_meta_blocks = mdb;
+ 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
+ 
+-	vfs_dq_release_reservation_block(inode, release);
++	vfs_dq_release_reservation_block(inode, to_free);
+ }
+ 
+ static void ext4_da_page_release_reservation(struct page *page,
 
 
