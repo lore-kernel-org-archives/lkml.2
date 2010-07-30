@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab0G3Sft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:35:49 -0400
-Received: from kroah.org ([198.145.64.141]:58005 "EHLO coco.kroah.org"
+	id S1760271Ab0G3SgL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:36:11 -0400
+Received: from kroah.org ([198.145.64.141]:57992 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759807Ab0G3Ryo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
-Message-Id: <20100730175137.026234500@clark.site>
+	id S1759801Ab0G3Rym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:42 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:36 2010
+Message-Id: <20100730175136.840621145@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:55 -0700
+Date: Fri, 30 Jul 2010 10:50:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [038/205] NFSv4: Ensure that /proc/self/mountinfo displays the minor version number
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [036/205] cmd640: fix kernel oops in test_irq() method
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit 0be8189f2c87fcc747d6a4a657a0b6e2161b2318 upstream.
+commit a9ddabc52ce3757a4331d6c1e8bf4065333cc51b upstream.
 
-Currently, we do not display the minor version mount parameter in the
-/proc mount info.
+When implementing the test_iqr() method, I forgot that this driver is not an
+ordinary PCI driver and also needs to support VLB variant of the chip. Moreover,
+'hwif->dev' should be NULL, potentially causing oops in pci_read_config_byte().
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/super.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ drivers/ide/cmd640.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -566,6 +566,22 @@ static void nfs_show_mountd_options(stru
- 	nfs_show_mountd_netid(m, nfss, showdefaults);
- }
+--- a/drivers/ide/cmd640.c
++++ b/drivers/ide/cmd640.c
+@@ -633,12 +633,10 @@ static void __init cmd640_init_dev(ide_d
  
-+#ifdef CONFIG_NFS_V4
-+static void nfs_show_nfsv4_options(struct seq_file *m, struct nfs_server *nfss,
-+				    int showdefaults)
-+{
-+	struct nfs_client *clp = nfss->nfs_client;
-+
-+	seq_printf(m, ",clientaddr=%s", clp->cl_ipaddr);
-+	seq_printf(m, ",minorversion=%u", clp->cl_minorversion);
-+}
-+#else
-+static void nfs_show_nfsv4_options(struct seq_file *m, struct nfs_server *nfss,
-+				    int showdefaults)
-+{
-+}
-+#endif
-+
- /*
-  * Describe the mount options in force on this server representation
-  */
-@@ -627,11 +643,9 @@ static void nfs_show_mount_options(struc
+ static int cmd640_test_irq(ide_hwif_t *hwif)
+ {
+-	struct pci_dev *dev	= to_pci_dev(hwif->dev);
+ 	int irq_reg		= hwif->channel ? ARTTIM23 : CFR;
+-	u8  irq_stat, irq_mask	= hwif->channel ? ARTTIM23_IDE23INTR :
++	u8  irq_mask		= hwif->channel ? ARTTIM23_IDE23INTR :
+ 						  CFR_IDE01INTR;
+-
+-	pci_read_config_byte(dev, irq_reg, &irq_stat);
++	u8  irq_stat		= get_cmd640_reg(irq_reg);
  
- 	if (version != 4)
- 		nfs_show_mountd_options(m, nfss, showdefaults);
-+	else
-+		nfs_show_nfsv4_options(m, nfss, showdefaults);
- 
--#ifdef CONFIG_NFS_V4
--	if (clp->rpc_ops->version == 4)
--		seq_printf(m, ",clientaddr=%s", clp->cl_ipaddr);
--#endif
- 	if (nfss->options & NFS_OPTION_FSCACHE)
- 		seq_printf(m, ",fsc");
+ 	return (irq_stat & irq_mask) ? 1 : 0;
  }
 
 
