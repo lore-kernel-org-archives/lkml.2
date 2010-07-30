@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab0G3SKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:10:04 -0400
-Received: from kroah.org ([198.145.64.141]:59181 "EHLO coco.kroah.org"
+	id S932756Ab0G3R5d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:57:33 -0400
+Received: from kroah.org ([198.145.64.141]:58692 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932762Ab0G3R5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:35 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
-Message-Id: <20100730175149.915596118@clark.site>
+	id S932580Ab0G3R4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:22 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:43 2010
+Message-Id: <20100730175143.538252486@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:13 -0700
+Date: Fri, 30 Jul 2010 10:52:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [176/205] 3c503: Fix IRQ probing
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [107/205] edac: mpc85xx: fix MPC85xx dependency
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Anton Vorontsov <avorontsov@mvista.com>
 
-commit b0cf4dfb7cd21556efd9a6a67edcba0840b4d98d upstream.
+commit 1cd8521e7d77def75fdb1cb35ecd135385e4be4f upstream.
 
-The driver attempts to select an IRQ for the NIC automatically by
-testing which of the supported IRQs are available and then probing
-each available IRQ with probe_irq_{on,off}().  There are obvious race
-conditions here, besides which:
-1. The test for availability is done by passing a NULL handler, which
-   now always returns -EINVAL, thus the device cannot be opened:
-   <http://bugs.debian.org/566522>
-2. probe_irq_off() will report only the first ISA IRQ handled,
-   potentially leading to a false negative.
+Since commit 5753c082f66eca5be81f6bda85c1718c5eea6ada ("powerpc/85xx:
+Kconfig cleanup"), there is no MPC85xx Kconfig symbol anymore, so the
+driver became non-selectable.
 
-There was another bug that meant it ignored all error codes from
-request_irq() except -EBUSY, so it would 'succeed' despite this
-(possibly causing conflicts with other ISA devices).  This was fixed
-by ab08999d6029bb2c79c16be5405d63d2bedbdfea 'WARNING: some
-request_irq() failures ignored in el2_open()', which exposed bug 1.
+This patch fixes the issue by switching to PPC_85xx symbol.
 
-This patch:
-1. Replaces the use of probe_irq_{on,off}() with a real interrupt handler
-2. Adds a delay before checking the interrupt-seen flag
-3. Disables interrupts on all failure paths
-4. Distinguishes error codes from the second request_irq() call,
-   consistently with the first
-
-Compile-tested only.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Cc: Peter Tyser <ptyser@xes-inc.com>
+Cc: Dave Jiang <djiang@mvista.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/3c503.c |   42 ++++++++++++++++++++++++++++++------------
- 1 file changed, 30 insertions(+), 12 deletions(-)
+ drivers/edac/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/3c503.c
-+++ b/drivers/net/3c503.c
-@@ -380,6 +380,12 @@ out:
-     return retval;
- }
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -196,7 +196,7 @@ config EDAC_I5100
  
-+static irqreturn_t el2_probe_interrupt(int irq, void *seen)
-+{
-+	*(bool *)seen = true;
-+	return IRQ_HANDLED;
-+}
-+
- static int
- el2_open(struct net_device *dev)
- {
-@@ -391,23 +397,35 @@ el2_open(struct net_device *dev)
- 
- 	outb(EGACFR_NORM, E33G_GACFR);	/* Enable RAM and interrupts. */
- 	do {
--	    retval = request_irq(*irqp, NULL, 0, "bogus", dev);
--	    if (retval >= 0) {
-+		bool seen;
-+
-+		retval = request_irq(*irqp, el2_probe_interrupt, 0,
-+				     dev->name, &seen);
-+		if (retval == -EBUSY)
-+			continue;
-+		if (retval < 0)
-+			goto err_disable;
-+
- 		/* Twinkle the interrupt, and check if it's seen. */
--		unsigned long cookie = probe_irq_on();
-+		seen = false;
-+		smp_wmb();
- 		outb_p(0x04 << ((*irqp == 9) ? 2 : *irqp), E33G_IDCFR);
- 		outb_p(0x00, E33G_IDCFR);
--		if (*irqp == probe_irq_off(cookie) &&	/* It's a good IRQ line! */
--		    ((retval = request_irq(dev->irq = *irqp,
--					   eip_interrupt, 0,
--					   dev->name, dev)) == 0))
--		    break;
--	    } else {
--		    if (retval != -EBUSY)
--			    return retval;
--	    }
-+		msleep(1);
-+		free_irq(*irqp, el2_probe_interrupt);
-+		if (!seen)
-+			continue;
-+
-+		retval = request_irq(dev->irq = *irqp, eip_interrupt, 0,
-+				     dev->name, dev);
-+		if (retval == -EBUSY)
-+			continue;
-+		if (retval < 0)
-+			goto err_disable;
- 	} while (*++irqp);
-+
- 	if (*irqp == 0) {
-+	err_disable:
- 	    outb(EGACFR_IRQOFF, E33G_GACFR);	/* disable interrupts. */
- 	    return -EAGAIN;
- 	}
+ config EDAC_MPC85XX
+ 	tristate "Freescale MPC83xx / MPC85xx"
+-	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
++	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || PPC_85xx)
+ 	help
+ 	  Support for error detection and correction on the Freescale
+ 	  MPC8349, MPC8560, MPC8540, MPC8548
 
 
