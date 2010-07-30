@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364Ab0G3SlZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:41:25 -0400
-Received: from kroah.org ([198.145.64.141]:57850 "EHLO coco.kroah.org"
+	id S933392Ab0G3Sln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:41:43 -0400
+Received: from kroah.org ([198.145.64.141]:57829 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759667Ab0G3RyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:19 -0400
+	id S1759717Ab0G3RyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:16 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:34 2010
-Message-Id: <20100730175134.854667631@clark.site>
+Message-Id: <20100730175134.582895339@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:31 -0700
+Date: Fri, 30 Jul 2010 10:50:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Beulich <jbeulich@novell.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [014/205] fix mis-applied upstream commit ac9721f3f54b27a16c7e1afb2481e7ee95a70318
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [011/205] tcp: tcp_synack_options() fix
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@novell.com>
 
-For some reason one of the changes to sys_perf_event_open() got
-mis-applied, thus breaking (at least) error handling paths (pointed
-out by means of a compiler warning).
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
+[ Upstream commit de213e5eedecdfb1b1eea7e6be28bc64cac5c078 ]
+
+Commit 33ad798c924b4a (tcp: options clean up) introduced a problem
+if MD5+SACK+timestamps were used in initial SYN message.
+
+Some stacks (old linux for example) try to negotiate MD5+SACK+TSTAMP
+sessions, but since 40 bytes of tcp options space are not enough to
+store all the bits needed, we chose to disable timestamps in this case.
+
+We send a SYN-ACK _without_ timestamp option, but socket has timestamps
+enabled and all further outgoing messages contain a TS block, all with
+the initial timestamp of the remote peer.
+
+Fix is to really disable timestamps option for the whole session.
+
+Reported-by: Bijay Singh <Bijay.Singh@guavus.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- kernel/perf_event.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ net/ipv4/tcp_output.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4870,6 +4870,15 @@ SYSCALL_DEFINE5(perf_event_open,
- 	if (event_fd < 0)
- 		return event_fd;
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -667,7 +667,6 @@ static unsigned tcp_synack_options(struc
+ 	u8 cookie_plus = (xvp != NULL && !xvp->cookie_out_never) ?
+ 			 xvp->cookie_plus :
+ 			 0;
+-	bool doing_ts = ireq->tstamp_ok;
  
-+	/*
-+	 * Get the target context (task or percpu):
-+	 */
-+	ctx = find_get_context(pid, cpu);
-+	if (IS_ERR(ctx)) {
-+		err = PTR_ERR(ctx);
-+		goto err_fd;
-+	}
-+
- 	if (group_fd != -1) {
- 		group_leader = perf_fget_light(group_fd, &fput_needed);
- 		if (IS_ERR(group_leader)) {
-@@ -4884,15 +4893,6 @@ SYSCALL_DEFINE5(perf_event_open,
+ #ifdef CONFIG_TCP_MD5SIG
+ 	*md5 = tcp_rsk(req)->af_specific->md5_lookup(sk, req);
+@@ -680,7 +679,7 @@ static unsigned tcp_synack_options(struc
+ 		 * rather than TS in order to fit in better with old,
+ 		 * buggy kernels, but that was deemed to be unnecessary.
+ 		 */
+-		doing_ts &= !ireq->sack_ok;
++		ireq->tstamp_ok &= !ireq->sack_ok;
+ 	}
+ #else
+ 	*md5 = NULL;
+@@ -695,7 +694,7 @@ static unsigned tcp_synack_options(struc
+ 		opts->options |= OPTION_WSCALE;
+ 		remaining -= TCPOLEN_WSCALE_ALIGNED;
+ 	}
+-	if (likely(doing_ts)) {
++	if (likely(ireq->tstamp_ok)) {
+ 		opts->options |= OPTION_TS;
+ 		opts->tsval = TCP_SKB_CB(skb)->when;
+ 		opts->tsecr = req->ts_recent;
+@@ -703,7 +702,7 @@ static unsigned tcp_synack_options(struc
+ 	}
+ 	if (likely(ireq->sack_ok)) {
+ 		opts->options |= OPTION_SACK_ADVERTISE;
+-		if (unlikely(!doing_ts))
++		if (unlikely(!ireq->tstamp_ok))
+ 			remaining -= TCPOLEN_SACKPERM_ALIGNED;
  	}
  
- 	/*
--	 * Get the target context (task or percpu):
--	 */
--	ctx = find_get_context(pid, cpu);
--	if (IS_ERR(ctx)) {
--		err = PTR_ERR(ctx);
--		goto err_fd;
--	}
--
--	/*
- 	 * Look up the group leader (we will attach this event to it):
+@@ -711,7 +710,7 @@ static unsigned tcp_synack_options(struc
+ 	 * If the <SYN> options fit, the same options should fit now!
  	 */
- 	if (group_leader) {
+ 	if (*md5 == NULL &&
+-	    doing_ts &&
++	    ireq->tstamp_ok &&
+ 	    cookie_plus > TCPOLEN_COOKIE_BASE) {
+ 		int need = cookie_plus; /* has TCPOLEN_COOKIE_BASE */
+ 
 
 
