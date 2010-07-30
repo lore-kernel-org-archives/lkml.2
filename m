@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932425Ab0G3RtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:49:24 -0400
-Received: from kroah.org ([198.145.64.141]:36017 "EHLO coco.kroah.org"
+	id S932634Ab0G3Rth (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:49:37 -0400
+Received: from kroah.org ([198.145.64.141]:36011 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932380Ab0G3Rfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:33 -0400
+	id S932377Ab0G3Rfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:32 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:11 2010
-Message-Id: <20100730173111.359649789@clark.site>
+Message-Id: <20100730173111.273896180@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:01 -0700
+Date: Fri, 30 Jul 2010 10:31:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jon Povey <jon.povey@racelogic.co.uk>, Maulik Mankad <x0082077@ti.com>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: [096/140] USB: g_serial: dont set low_latency flag
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [095/140] USB: obey the sysfs power/wakeup setting
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jon Povey <jon.povey@racelogic.co.uk>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 44a0c0190b500ee6bcfc0976fe540f65dee2cd67 upstream.
+commit 48826626263d4a61d06fd8c5805da31f925aefa0 upstream.
 
-No longer set low_latency flag as it causes this warning backtrace:
+This patch (as1403) is a partial reversion of an earlier change
+(commit 5f677f1d45b2bf08085bbba7394392dfa586fa8e "USB: fix remote
+wakeup settings during system sleep").  After hearing from a user, I
+realized that remote wakeup should be enabled during system sleep
+whenever userspace allows it, and not only if a driver requests it
+too.
 
-  WARNING: at kernel/mutex.c:207 __mutex_lock_slowpath+0x6c/0x288()
+Indeed, there could be a device with no driver, that does nothing but
+generate a wakeup request when the user presses a button.  Such a
+device should be allowed to do its job.
 
-Fix associated locking and wakeups.
+The problem fixed by the earlier patch -- device generating a wakeup
+request for no reason, causing system suspend to abort -- was also
+addressed by a later patch ("USB: don't enable remote wakeup by
+default", accepted but not yet merged into mainline).  The device
+won't be able to generate the bogus wakeup requests because it will be
+disabled for remote wakeup by default.  Hence this reversion will not
+re-introduce any old problems.
 
-Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
-Cc: Maulik Mankad <x0082077@ti.com>
-Acked-by: David Brownell <dbrownell@users.sourceforge.net>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
+
 ---
- drivers/usb/gadget/u_serial.c |   15 ++-------------
+ drivers/usb/core/driver.c |   15 ++-------------
  1 file changed, 2 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -535,17 +535,11 @@ recycle:
- 		list_move(&req->list, &port->read_pool);
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1790,9 +1790,6 @@ int usb_external_resume_device(struct us
+ 
+ static void choose_wakeup(struct usb_device *udev, pm_message_t msg)
+ {
+-	int			w, i;
+-	struct usb_interface	*intf;
+-
+ 	/* Remote wakeup is needed only when we actually go to sleep.
+ 	 * For things like FREEZE and QUIESCE, if the device is already
+ 	 * autosuspended then its current wakeup setting is okay.
+@@ -1802,18 +1799,10 @@ static void choose_wakeup(struct usb_dev
+ 		return;
  	}
  
--	/* Push from tty to ldisc; this is immediate with low_latency, and
--	 * may trigger callbacks to this driver ... so drop the spinlock.
-+	/* Push from tty to ldisc; without low_latency set this is handled by
-+	 * a workqueue, so we won't get callbacks and can hold port_lock
+-	/* If remote wakeup is permitted, see whether any interface drivers
++	/* Allow remote wakeup if it is enabled, even if no interface drivers
+ 	 * actually want it.
  	 */
- 	if (tty && do_push) {
--		spin_unlock_irq(&port->port_lock);
- 		tty_flip_buffer_push(tty);
--		wake_up_interruptible(&tty->read_wait);
--		spin_lock_irq(&port->port_lock);
+-	w = 0;
+-	if (device_may_wakeup(&udev->dev) && udev->actconfig) {
+-		for (i = 0; i < udev->actconfig->desc.bNumInterfaces; i++) {
+-			intf = udev->actconfig->interface[i];
+-			w |= intf->needs_remote_wakeup;
+-		}
+-	}
 -
--		/* tty may have been closed */
--		tty = port->port_tty;
- 	}
+-	udev->do_remote_wakeup = w;
++	udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
+ }
  
- 
-@@ -783,11 +777,6 @@ static int gs_open(struct tty_struct *tt
- 	port->open_count = 1;
- 	port->openclose = false;
- 
--	/* low_latency means ldiscs work in tasklet context, without
--	 * needing a workqueue schedule ... easier to keep up.
--	 */
--	tty->low_latency = 1;
--
- 	/* if connected, start the I/O stream */
- 	if (port->port_usb) {
- 		struct gserial	*gser = port->port_usb;
+ int usb_suspend(struct device *dev, pm_message_t msg)
 
 
