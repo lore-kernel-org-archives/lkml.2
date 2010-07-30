@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab0G3Rav (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:30:51 -0400
-Received: from kroah.org ([198.145.64.141]:52021 "EHLO coco.kroah.org"
+	id S1758795Ab0G3RTn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:19:43 -0400
+Received: from kroah.org ([198.145.64.141]:51979 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758802Ab0G3RTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:10 2010
-Message-Id: <20100730171510.387195355@clark.site>
+	id S1758769Ab0G3RTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:38 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:09 2010
+Message-Id: <20100730171509.855043933@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:47 -0700
+Date: Fri, 30 Jul 2010 10:15:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [119/165] ext4: Do not zero out uninitialized extents beyond i_size
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        "Theodore Tso" <tytso@mit.edu>, Akira Fujita <a-fujita@rs.jp.nec.com>
+Subject: [113/165] ext4: allow defrag (EXT4_IOC_MOVE_EXT) in 32bit compat mode
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,199 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 21ca087a3891efab4d45488db8febee474d26c68 upstream (as of v2.6.34-git13)
+commit b684b2ee9409f2890a8b3aea98525bbe5f84e276 upstream (as of v2.6.34-git13)
 
-The extents code will sometimes zero out blocks and mark them as
-initialized instead of splitting an extent into several smaller ones.
-This optimization however, causes problems if the extent is beyond
-i_size because fsck will complain if there are uninitialized blocks
-after i_size as this can not be distinguished from an inode that has
-an incorrect i_size field.
+I have an x86_64 kernel with i386 userspace. e4defrag fails on the
+EXT4_IOC_MOVE_EXT ioctl because it is not wired up for the compat
+case. It seems that struct move_extent is compat save, only types
+with fixed widths are used:
+{
+        __u32 reserved;         /* should be zero */
+        __u32 donor_fd;         /* donor file descriptor */
+        __u64 orig_start;       /* logical start offset in block for orig */
+        __u64 donor_start;      /* logical start offset in block for donor */
+        __u64 len;              /* block length to be moved */
+        __u64 moved_len;        /* moved block length */
+};
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15742
+Lets just wire up EXT4_IOC_MOVE_EXT for the compat case.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Eric Sandeen <sandeen@redhat.com>
+CC: Akira Fujita <a-fujita@rs.jp.nec.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/extents.c |   67 +++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 51 insertions(+), 16 deletions(-)
+ fs/ext4/ioctl.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2533,11 +2533,21 @@ static int ext4_ext_convert_to_initializ
- 	struct ext4_extent *ex2 = NULL;
- 	struct ext4_extent *ex3 = NULL;
- 	struct ext4_extent_header *eh;
--	ext4_lblk_t ee_block;
-+	ext4_lblk_t ee_block, eof_block;
- 	unsigned int allocated, ee_len, depth;
- 	ext4_fsblk_t newblock;
- 	int err = 0;
- 	int ret = 0;
-+	int may_zeroout;
-+
-+	ext_debug("ext4_ext_convert_to_initialized: inode %lu, logical"
-+		"block %llu, max_blocks %u\n", inode->i_ino,
-+		(unsigned long long)iblock, max_blocks);
-+
-+	eof_block = (inode->i_size + inode->i_sb->s_blocksize - 1) >>
-+		inode->i_sb->s_blocksize_bits;
-+	if (eof_block < iblock + max_blocks)
-+		eof_block = iblock + max_blocks;
- 
- 	depth = ext_depth(inode);
- 	eh = path[depth].p_hdr;
-@@ -2546,16 +2556,23 @@ static int ext4_ext_convert_to_initializ
- 	ee_len = ext4_ext_get_actual_len(ex);
- 	allocated = ee_len - (iblock - ee_block);
- 	newblock = iblock - ee_block + ext_pblock(ex);
-+
- 	ex2 = ex;
- 	orig_ex.ee_block = ex->ee_block;
- 	orig_ex.ee_len   = cpu_to_le16(ee_len);
- 	ext4_ext_store_pblock(&orig_ex, ext_pblock(ex));
- 
-+	/*
-+	 * It is safe to convert extent to initialized via explicit
-+	 * zeroout only if extent is fully insde i_size or new_size.
-+	 */
-+	may_zeroout = ee_block + ee_len <= eof_block;
-+
- 	err = ext4_ext_get_access(handle, inode, path + depth);
- 	if (err)
- 		goto out;
- 	/* If extent has less than 2*EXT4_EXT_ZERO_LEN zerout directly */
--	if (ee_len <= 2*EXT4_EXT_ZERO_LEN) {
-+	if (ee_len <= 2*EXT4_EXT_ZERO_LEN && may_zeroout) {
- 		err =  ext4_ext_zeroout(inode, &orig_ex);
- 		if (err)
- 			goto fix_extent_len;
-@@ -2586,7 +2603,7 @@ static int ext4_ext_convert_to_initializ
- 	if (allocated > max_blocks) {
- 		unsigned int newdepth;
- 		/* If extent has less than EXT4_EXT_ZERO_LEN zerout directly */
--		if (allocated <= EXT4_EXT_ZERO_LEN) {
-+		if (allocated <= EXT4_EXT_ZERO_LEN && may_zeroout) {
- 			/*
- 			 * iblock == ee_block is handled by the zerouout
- 			 * at the beginning.
-@@ -2662,7 +2679,7 @@ static int ext4_ext_convert_to_initializ
- 		ex3->ee_len = cpu_to_le16(allocated - max_blocks);
- 		ext4_ext_mark_uninitialized(ex3);
- 		err = ext4_ext_insert_extent(handle, inode, path, ex3, 0);
--		if (err == -ENOSPC) {
-+		if (err == -ENOSPC && may_zeroout) {
- 			err =  ext4_ext_zeroout(inode, &orig_ex);
- 			if (err)
- 				goto fix_extent_len;
-@@ -2686,8 +2703,10 @@ static int ext4_ext_convert_to_initializ
- 		 * update the extent length after successful insert of the
- 		 * split extent
- 		 */
--		orig_ex.ee_len = cpu_to_le16(ee_len -
--						ext4_ext_get_actual_len(ex3));
-+		ee_len -= ext4_ext_get_actual_len(ex3);
-+		orig_ex.ee_len = cpu_to_le16(ee_len);
-+		may_zeroout = ee_block + ee_len <= eof_block;
-+
- 		depth = newdepth;
- 		ext4_ext_drop_refs(path);
- 		path = ext4_ext_find_extent(inode, iblock, path);
-@@ -2711,7 +2730,7 @@ static int ext4_ext_convert_to_initializ
- 		 * otherwise give the extent a chance to merge to left
- 		 */
- 		if (le16_to_cpu(orig_ex.ee_len) <= EXT4_EXT_ZERO_LEN &&
--							iblock != ee_block) {
-+			iblock != ee_block && may_zeroout) {
- 			err =  ext4_ext_zeroout(inode, &orig_ex);
- 			if (err)
- 				goto fix_extent_len;
-@@ -2780,7 +2799,7 @@ static int ext4_ext_convert_to_initializ
- 	goto out;
- insert:
- 	err = ext4_ext_insert_extent(handle, inode, path, &newex, 0);
--	if (err == -ENOSPC) {
-+	if (err == -ENOSPC && may_zeroout) {
- 		err =  ext4_ext_zeroout(inode, &orig_ex);
- 		if (err)
- 			goto fix_extent_len;
-@@ -2840,14 +2859,21 @@ static int ext4_split_unwritten_extents(
- 	struct ext4_extent *ex2 = NULL;
- 	struct ext4_extent *ex3 = NULL;
- 	struct ext4_extent_header *eh;
--	ext4_lblk_t ee_block;
-+	ext4_lblk_t ee_block, eof_block;
- 	unsigned int allocated, ee_len, depth;
- 	ext4_fsblk_t newblock;
- 	int err = 0;
-+	int may_zeroout;
-+
-+	ext_debug("ext4_split_unwritten_extents: inode %lu, logical"
-+		"block %llu, max_blocks %u\n", inode->i_ino,
-+		(unsigned long long)iblock, max_blocks);
-+
-+	eof_block = (inode->i_size + inode->i_sb->s_blocksize - 1) >>
-+		inode->i_sb->s_blocksize_bits;
-+	if (eof_block < iblock + max_blocks)
-+		eof_block = iblock + max_blocks;
- 
--	ext_debug("ext4_split_unwritten_extents: inode %lu,"
--		  "iblock %llu, max_blocks %u\n", inode->i_ino,
--		  (unsigned long long)iblock, max_blocks);
- 	depth = ext_depth(inode);
- 	eh = path[depth].p_hdr;
- 	ex = path[depth].p_ext;
-@@ -2855,12 +2881,19 @@ static int ext4_split_unwritten_extents(
- 	ee_len = ext4_ext_get_actual_len(ex);
- 	allocated = ee_len - (iblock - ee_block);
- 	newblock = iblock - ee_block + ext_pblock(ex);
-+
- 	ex2 = ex;
- 	orig_ex.ee_block = ex->ee_block;
- 	orig_ex.ee_len   = cpu_to_le16(ee_len);
- 	ext4_ext_store_pblock(&orig_ex, ext_pblock(ex));
- 
- 	/*
-+	 * It is safe to convert extent to initialized via explicit
-+	 * zeroout only if extent is fully insde i_size or new_size.
-+	 */
-+	may_zeroout = ee_block + ee_len <= eof_block;
-+
-+	/*
-  	 * If the uninitialized extent begins at the same logical
-  	 * block where the write begins, and the write completely
-  	 * covers the extent, then we don't need to split it.
-@@ -2894,7 +2927,7 @@ static int ext4_split_unwritten_extents(
- 		ex3->ee_len = cpu_to_le16(allocated - max_blocks);
- 		ext4_ext_mark_uninitialized(ex3);
- 		err = ext4_ext_insert_extent(handle, inode, path, ex3, flags);
--		if (err == -ENOSPC) {
-+		if (err == -ENOSPC && may_zeroout) {
- 			err =  ext4_ext_zeroout(inode, &orig_ex);
- 			if (err)
- 				goto fix_extent_len;
-@@ -2918,8 +2951,10 @@ static int ext4_split_unwritten_extents(
- 		 * update the extent length after successful insert of the
- 		 * split extent
- 		 */
--		orig_ex.ee_len = cpu_to_le16(ee_len -
--						ext4_ext_get_actual_len(ex3));
-+		ee_len -= ext4_ext_get_actual_len(ex3);
-+		orig_ex.ee_len = cpu_to_le16(ee_len);
-+		may_zeroout = ee_block + ee_len <= eof_block;
-+
- 		depth = newdepth;
- 		ext4_ext_drop_refs(path);
- 		path = ext4_ext_find_extent(inode, iblock, path);
-@@ -2965,7 +3000,7 @@ static int ext4_split_unwritten_extents(
- 	goto out;
- insert:
- 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
--	if (err == -ENOSPC) {
-+	if (err == -ENOSPC && may_zeroout) {
- 		err =  ext4_ext_zeroout(inode, &orig_ex);
- 		if (err)
- 			goto fix_extent_len;
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -375,6 +375,8 @@ long ext4_compat_ioctl(struct file *file
+ 		break;
+ 	case EXT4_IOC_GROUP_ADD:
+ 		break;
++	case EXT4_IOC_MOVE_EXT:
++		break;
+ 	default:
+ 		return -ENOIOCTLCMD;
+ 	}
 
 
