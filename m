@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab0G3Xzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 19:55:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46832 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751102Ab0G3Xzw (ORCPT
+	id S1753351Ab0G3X52 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 19:57:28 -0400
+Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:54572 "EHLO
+	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab0G3X50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 19:55:52 -0400
-Date: Fri, 30 Jul 2010 16:55:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [patch 1/2] workqueue: mark init_workqueues() as
- early_initcall()
-Message-Id: <20100730165522.22dc982b.akpm@linux-foundation.org>
-In-Reply-To: <20100730215751.690706748@sbsiddha-MOBL3.sc.intel.com>
-References: <20100730215751.690706748@sbsiddha-MOBL3.sc.intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Jul 2010 19:57:26 -0400
+Date: Fri, 30 Jul 2010 19:56:49 -0400
+From: Ben Blum <bblum@andrew.cmu.edu>
+To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Cc: akpm@linux-foundation.org, bblum@andrew.cmu.edu, ebiederm@xmission.com,
+        lizf@cn.fujitsu.com, matthltc@us.ibm.com, menage@google.com,
+        oleg@redhat.com
+Subject: [PATCH v4 0/2] cgroups: implement moving a threadgroup's threads
+ atomically with cgroup.procs
+Message-ID: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
+X-SMTP-Spam-Clean: 8% (
+ BODY_SIZE_1700_1799 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, TO_NO_NAME 0, __CD 0, __CP_URI_IN_BODY 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NO_WWW 0, __USER_AGENT 0)
+X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Jul 2010 14:57:37 -0700
-Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+This patch series is a revision of http://lkml.org/lkml/2010/6/25/11 .
 
-> Mark init_workqueues() as early_initcall() and thus it will be initialized
-> before smp bringup. init_workqueues() registers for the hotcpu notifier
-> and thus it should cope with the processors that are brought online after
-> the workqueues are initialized.
-> 
-> x86 smp bringup code uses workqueues and uses a workaround for the
-> cold boot process (as the workqueues are initialized post smp_init()).
-> Marking init_workqueues() as early_initcall() will pave the way for
-> cleaning up this code.
-> 
+This patch series implements a write function for the 'cgroup.procs'
+per-cgroup file, which enables atomic movement of multithreaded
+applications between cgroups. Writing the thread-ID of any thread in a
+threadgroup to a cgroup's procs file causes all threads in the group to
+be moved to that cgroup safely with respect to threads forking/exiting.
+(Possible usage scenario: If running a multithreaded build system that
+sucks up system resources, this lets you restrict it all at once into a
+new cgroup to keep it under control.)
 
-I sure hope this has been tested against linux-next. 
-kernel/workqueue.c has been vastly changed and -tip doesn't know about
-that.  linux-next should include -tip and is hence a better tree to
-develop and test against.
+Example: Suppose pid 31337 clones new threads 31338 and 31339.
 
-AFAICT the main thing which needs checking is that the new
-init_workqueues() doesn't do anything which requires that
-sched_init_smp() has been executed.
+# cat /dev/cgroup/tasks
+...
+31337
+31338
+31339
+# mkdir /dev/cgroup/foo
+# echo 31337 > /dev/cgroup/foo/cgroup.procs
+# cat /dev/cgroup/foo/tasks
+31337
+31338
+31339
 
-The patch otherwise looks OK and killing that hack in the x86 code was
-most merciful.
+A new lock, called threadgroup_fork_lock and living in signal_struct, is
+introduced to ensure atomicity when moving threads between cgroups. It's
+taken for writing during the operation, and taking for reading in fork()
+around the calls to cgroup_fork() and cgroup_post_fork(). I put calls to
+down_read/up_read directly in copy_process(), since new inline functions
+seemed like overkill.
 
-for_each_gcwq_cpu(), for_each_online_gcwq_cpu() and for_each_cwq_cpu()
-make me cry.
+-- Ben
+
+---
+ Documentation/cgroups/cgroups.txt |   13 -
+ include/linux/init_task.h         |    9
+ include/linux/sched.h             |   10
+ kernel/cgroup.c                   |  426 +++++++++++++++++++++++++++++++++-----
+ kernel/cgroup_freezer.c           |    4
+ kernel/cpuset.c                   |    4
+ kernel/fork.c                     |   16 +
+ kernel/ns_cgroup.c                |    4
+ kernel/sched.c                    |    4
+ 9 files changed, 440 insertions(+), 50 deletions(-)
