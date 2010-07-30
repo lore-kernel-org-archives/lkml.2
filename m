@@ -1,186 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab0G3Ih1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 04:37:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43287 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755376Ab0G3IhY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 04:37:24 -0400
-Subject: [PATCH] block: move register_disk() from fs/partitions/check.c to
- genhd.c and unexport it
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 10:37:31 +0200
-Message-ID: <1280479051.1446.4.camel@yio.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1755765Ab0G3IiI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 04:38:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24829 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753765Ab0G3IiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 04:38:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,285,1278313200"; 
+   d="scan'208";a="643213029"
+Date: Fri, 30 Jul 2010 15:58:19 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/5]  [RFC] transfer ASYNC vmscan writeback IO to the
+ flusher threads
+Message-ID: <20100730075819.GE8811@localhost>
+References: <20100729115142.102255590@intel.com>
+ <20100729232330.GO655@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100729232330.GO655@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay.sievers@vrfy.org>
-Subject: block: move register_disk() from fs/partitions/check.c to genhd.c and unexport it
+On Fri, Jul 30, 2010 at 07:23:30AM +0800, Dave Chinner wrote:
+> On Thu, Jul 29, 2010 at 07:51:42PM +0800, Wu Fengguang wrote:
+> > Andrew,
+> > 
+> > It's possible to transfer ASYNC vmscan writeback IOs to the flusher threads.
+> > This simple patchset shows the basic idea. Since it's a big behavior change,
+> > there are inevitably lots of details to sort out. I don't know where it will
+> > go after tests and discussions, so the patches are intentionally kept simple.
+> > 
+> > sync livelock avoidance (need more to be complete, but this is minimal required for the last two patches)
+> > 	[PATCH 1/5] writeback: introduce wbc.for_sync to cover the two sync stages
+> > 	[PATCH 2/5] writeback: stop periodic/background work on seeing sync works
+> > 	[PATCH 3/5] writeback: prevent sync livelock with the sync_after timestamp
+> > 
+> > let the flusher threads do ASYNC writeback for pageout()
+> > 	[PATCH 4/5] writeback: introduce bdi_start_inode_writeback()
+> > 	[PATCH 5/5] vmscan: transfer async file writeback to the flusher
+> 
+> I really do not like this - all it does is transfer random page writeback
+> from vmscan to the flusher threads rather than avoiding random page
+> writeback altogether. Random page writeback is nasty - just say no.
 
-Disk code belongs into genhd, not in the partition code.
-Follow-up patches will need to re-shuffle some code, which
-needs to be in one file, to fix bad sysfs attribute creation
-timing.
+There are cases we have to do pageout().
 
-Signed-Off-By: Kay Sievers <kay.sievers@vrfy.org>
----
- block/genhd.c          |   58 ++++++++++++++++++++++++++++++++++++++++++++++++
- fs/partitions/check.c  |   59 -------------------------------------------------
- include/linux/blkdev.h |    1 
- 3 files changed, 58 insertions(+), 60 deletions(-)
+- a stressed memcg with lots of dirty pages
+- a large NUMA system whose nodes have unbalanced vmscan rate and dirty pages
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -504,6 +504,64 @@ static int exact_lock(dev_t devt, void *
- 	return 0;
- }
- 
-+static void register_disk(struct gendisk *disk)
-+{
-+	struct device *ddev = disk_to_dev(disk);
-+	struct block_device *bdev;
-+	struct disk_part_iter piter;
-+	struct hd_struct *part;
-+	int err;
-+
-+	ddev->parent = disk->driverfs_dev;
-+
-+	dev_set_name(ddev, disk->disk_name);
-+
-+	/* delay uevents, until we scanned partition table */
-+	dev_set_uevent_suppress(ddev, 1);
-+
-+	if (device_add(ddev))
-+		return;
-+#ifndef CONFIG_SYSFS_DEPRECATED
-+	err = sysfs_create_link(block_depr, &ddev->kobj,
-+				kobject_name(&ddev->kobj));
-+	if (err) {
-+		device_del(ddev);
-+		return;
-+	}
-+#endif
-+	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
-+	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
-+
-+	/* No minors to use for partitions */
-+	if (!disk_partitionable(disk))
-+		goto exit;
-+
-+	/* No such device (e.g., media were just removed) */
-+	if (!get_capacity(disk))
-+		goto exit;
-+
-+	bdev = bdget_disk(disk, 0);
-+	if (!bdev)
-+		goto exit;
-+
-+	bdev->bd_invalidated = 1;
-+	err = blkdev_get(bdev, FMODE_READ);
-+	if (err < 0)
-+		goto exit;
-+	blkdev_put(bdev, FMODE_READ);
-+
-+exit:
-+	/* announce disk after possible partitions are created */
-+	dev_set_uevent_suppress(ddev, 0);
-+	kobject_uevent(&ddev->kobj, KOBJ_ADD);
-+
-+	/* announce possible partitions */
-+	disk_part_iter_init(&piter, disk, 0);
-+	while ((part = disk_part_iter_next(&piter)))
-+		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
-+	disk_part_iter_exit(&piter);
-+}
-+
- /**
-  * add_disk - add partitioning information to kernel list
-  * @disk: per-device partitioning information
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -482,65 +482,6 @@ out_put:
- 	return ERR_PTR(err);
- }
- 
--/* Not exported, helper to add_disk(). */
--void register_disk(struct gendisk *disk)
--{
--	struct device *ddev = disk_to_dev(disk);
--	struct block_device *bdev;
--	struct disk_part_iter piter;
--	struct hd_struct *part;
--	int err;
--
--	ddev->parent = disk->driverfs_dev;
--
--	dev_set_name(ddev, disk->disk_name);
--
--	/* delay uevents, until we scanned partition table */
--	dev_set_uevent_suppress(ddev, 1);
--
--	if (device_add(ddev))
--		return;
--#ifndef CONFIG_SYSFS_DEPRECATED
--	err = sysfs_create_link(block_depr, &ddev->kobj,
--				kobject_name(&ddev->kobj));
--	if (err) {
--		device_del(ddev);
--		return;
--	}
--#endif
--	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
--	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
--
--	/* No minors to use for partitions */
--	if (!disk_partitionable(disk))
--		goto exit;
--
--	/* No such device (e.g., media were just removed) */
--	if (!get_capacity(disk))
--		goto exit;
--
--	bdev = bdget_disk(disk, 0);
--	if (!bdev)
--		goto exit;
--
--	bdev->bd_invalidated = 1;
--	err = blkdev_get(bdev, FMODE_READ);
--	if (err < 0)
--		goto exit;
--	blkdev_put(bdev, FMODE_READ);
--
--exit:
--	/* announce disk after possible partitions are created */
--	dev_set_uevent_suppress(ddev, 0);
--	kobject_uevent(&ddev->kobj, KOBJ_ADD);
--
--	/* announce possible partitions */
--	disk_part_iter_init(&piter, disk, 0);
--	while ((part = disk_part_iter_next(&piter)))
--		kobject_uevent(&part_to_dev(part)->kobj, KOBJ_ADD);
--	disk_part_iter_exit(&piter);
--}
--
- static bool disk_unlock_native_capacity(struct gendisk *disk)
- {
- 	const struct block_device_operations *bdops = disk->fops;
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -771,7 +771,6 @@ static inline void rq_flush_dcache_pages
- 
- extern int blk_register_queue(struct gendisk *disk);
- extern void blk_unregister_queue(struct gendisk *disk);
--extern void register_disk(struct gendisk *dev);
- extern void generic_make_request(struct bio *bio);
- extern void blk_rq_init(struct request_queue *q, struct request *rq);
- extern void blk_put_request(struct request *);
+In the above cases, the whole system may not be that stressed,
+except for some local LRU list being busy scanned.  If the local
+memory stress lead to lots of pageout(), it could bring down the whole
+system by congesting the disks with many small seeky IO.
 
+It may be an overkill to push global writeback (ie. it's silly to sync
+1GB dirty data because there is a small stressed 100MB LRU list). The
+obvious solution is to keep the pageout() calls and make them more IO
+wise by doing write-around at the same time.  The write-around pages
+will likely be in the same stressed LRU list, hence will do good for
+page reclaim as well.
 
+Transferring ASYNC work to the flushers helps the kswapd-vs-flusher
+priority problem too. Currently the kswapd/direct reclaim either have
+to skip dirty pages on congestion, or to risk being blocked in
+get_request_wait(), both are not good options. However the use of
+bdi_start_inode_writeback() do ask for a good vmscan throttling scheme
+to prevent it falsely OOM before the flusher is able to clean the
+transfered pages. This would be tricky.
+
+If the system is globally memory stressed and run into pageout(), we
+can safely kick the flusher threads for more writeback. There are 3
+possible schemes:
+
+- to kick writeback for N pages, eg. the existing wakeup_flusher_threads() calls
+
+- to lower dirty_expire_interval, eg. to enqueue the current inode
+  (that contains the current dirty page for pageout()) _plus_ all
+  older inodes for writeback. This can be done when servicing the
+  for_reclaim writeback work.
+
+- to lower dirty throttle limit (trying to find a criterion...)
+
+Thanks,
+Fengguang
