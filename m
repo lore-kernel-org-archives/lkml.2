@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759719Ab0G3Swa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:52:30 -0400
-Received: from kroah.org ([198.145.64.141]:35619 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759361Ab0G3ReV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759359Ab0G3ReV (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 30 Jul 2010 13:34:21 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
-Message-Id: <20100730173105.740594314@clark.site>
+Received: from kroah.org ([198.145.64.141]:35424 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759298Ab0G3Rdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:33:51 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
+Message-Id: <20100730173103.252264794@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:58 -0700
+Date: Fri, 30 Jul 2010 10:29:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [033/140] NFSv4: Ensure that /proc/self/mountinfo displays the minor version number
+        "David S. Miller" <davem@davemloft.net>
+Subject: [005/140] net: Fix FDDI and TR config checks in ipv4 arp and LLC.
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 0be8189f2c87fcc747d6a4a657a0b6e2161b2318 upstream.
+From: David S. Miller <davem@davemloft.net>
 
-Currently, we do not display the minor version mount parameter in the
-/proc mount info.
+[ Upstream commit f0ecde1466f21edf577b809735f4f35f354777a0 ]
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Need to check both CONFIG_FOO and CONFIG_FOO_MODULE
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/nfs/super.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ net/ipv4/arp.c    |    6 +++---
+ net/llc/llc_sap.c |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -565,6 +565,22 @@ static void nfs_show_mountd_options(stru
- 	nfs_show_mountd_netid(m, nfss, showdefaults);
- }
+--- a/net/ipv4/arp.c
++++ b/net/ipv4/arp.c
+@@ -619,13 +619,13 @@ struct sk_buff *arp_create(int type, int
+ #endif
+ #endif
  
-+#ifdef CONFIG_NFS_V4
-+static void nfs_show_nfsv4_options(struct seq_file *m, struct nfs_server *nfss,
-+				    int showdefaults)
-+{
-+	struct nfs_client *clp = nfss->nfs_client;
-+
-+	seq_printf(m, ",clientaddr=%s", clp->cl_ipaddr);
-+	seq_printf(m, ",minorversion=%u", clp->cl_minorversion);
-+}
-+#else
-+static void nfs_show_nfsv4_options(struct seq_file *m, struct nfs_server *nfss,
-+				    int showdefaults)
-+{
-+}
-+#endif
-+
- /*
-  * Describe the mount options in force on this server representation
-  */
-@@ -626,11 +642,9 @@ static void nfs_show_mount_options(struc
- 
- 	if (version != 4)
- 		nfs_show_mountd_options(m, nfss, showdefaults);
-+	else
-+		nfs_show_nfsv4_options(m, nfss, showdefaults);
- 
--#ifdef CONFIG_NFS_V4
--	if (clp->rpc_ops->version == 4)
--		seq_printf(m, ",clientaddr=%s", clp->cl_ipaddr);
--#endif
- 	if (nfss->options & NFS_OPTION_FSCACHE)
- 		seq_printf(m, ",fsc");
- }
+-#ifdef CONFIG_FDDI
++#if defined(CONFIG_FDDI) || defined(CONFIG_FDDI_MODULE)
+ 	case ARPHRD_FDDI:
+ 		arp->ar_hrd = htons(ARPHRD_ETHER);
+ 		arp->ar_pro = htons(ETH_P_IP);
+ 		break;
+ #endif
+-#ifdef CONFIG_TR
++#if defined(CONFIG_TR) || defined(CONFIG_TR_MODULE)
+ 	case ARPHRD_IEEE802_TR:
+ 		arp->ar_hrd = htons(ARPHRD_IEEE802);
+ 		arp->ar_pro = htons(ETH_P_IP);
+@@ -1005,7 +1005,7 @@ static int arp_req_set(struct net *net,
+ 			return -EINVAL;
+ 	}
+ 	switch (dev->type) {
+-#ifdef CONFIG_FDDI
++#if defined(CONFIG_FDDI) || defined(CONFIG_FDDI_MODULE)
+ 	case ARPHRD_FDDI:
+ 		/*
+ 		 * According to RFC 1390, FDDI devices should accept ARP
+--- a/net/llc/llc_sap.c
++++ b/net/llc/llc_sap.c
+@@ -30,7 +30,7 @@ static int llc_mac_header_len(unsigned s
+ 	case ARPHRD_ETHER:
+ 	case ARPHRD_LOOPBACK:
+ 		return sizeof(struct ethhdr);
+-#ifdef CONFIG_TR
++#if defined(CONFIG_TR) || defined(CONFIG_TR_MODULE)
+ 	case ARPHRD_IEEE802_TR:
+ 		return sizeof(struct trh_hdr);
+ #endif
 
 
