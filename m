@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760388Ab0G3TBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:01:49 -0400
-Received: from kroah.org ([198.145.64.141]:51727 "EHLO coco.kroah.org"
+	id S1758142Ab0G3RS5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:18:57 -0400
+Received: from kroah.org ([198.145.64.141]:51691 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687Ab0G3RTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:00 -0400
+	id S1757940Ab0G3RSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:54 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:06 2010
-Message-Id: <20100730171506.809197866@clark.site>
+Message-Id: <20100730171506.251657218@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:07 -0700
+Date: Fri, 30 Jul 2010 10:15:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Corey Minyard <minyard@acm.org>
-Subject: [079/165] USB: FTDI: Add support for the RT System VX-7 radio programming cable
+        August Huber <gus@pbx.org>,
+        Elina Pasheva <epasheva@sierrawireless.com>
+Subject: [073/165] USB: Add PID for Sierra 250U to drivers/usb/serial/sierra.c
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <minyard@acm.org>
+From: august huber <gus@pbx.org>
 
-commit fcc6cb789c77ffee31710eec64efeb25f2124f7a upstream.
+commit 9d72c81d657340e54a260a3b621f4a9f5b33829c upstream.
 
-RT Systems has put out bunch of ham radio cables based on the FT232RL
-chip.  Each cable type has a unique PID, this adds one for the Yaesu VX-7
-radios.
+Add VID/PID for Sierra Wireless 250U USB dongle to sierra.c
+Allows use of 3G radio only
 
-Signed-off-by: Corey Minyard <minyard@acm.org>
+Signed-off-by: August Huber <gus@pbx.org>
+Cc: Elina Pasheva <epasheva@sierrawireless.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/serial/sierra.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -697,6 +697,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -703,6 +703,12 @@
- #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
- 
- /*
-+ * RT Systems programming cables for various ham radios
-+ */
-+#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
-+#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
-+
-+/*
-  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-  * http://winglucofacts.com/cables/
-  */
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -210,6 +210,7 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x1199, 0x0021) },	/* Sierra Wireless AirCard 597E */
+ 	{ USB_DEVICE(0x1199, 0x0112) }, /* Sierra Wireless AirCard 580 */
+ 	{ USB_DEVICE(0x1199, 0x0120) },	/* Sierra Wireless USB Dongle 595U */
++	{ USB_DEVICE(0x1199, 0x0301) },	/* Sierra Wireless USB Dongle 250U */
+ 	/* Sierra Wireless C597 */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x0023, 0xFF, 0xFF, 0xFF) },
+ 	/* Sierra Wireless T598 */
 
 
