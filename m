@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760117Ab0G3SNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:13:13 -0400
-Received: from kroah.org ([198.145.64.141]:59081 "EHLO coco.kroah.org"
+	id S1760104Ab0G3SNq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:13:46 -0400
+Received: from kroah.org ([198.145.64.141]:59069 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932701Ab0G3R5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:17 -0400
+	id S932693Ab0G3R5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:15 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:48 2010
-Message-Id: <20100730175148.397424555@clark.site>
+Message-Id: <20100730175148.221104936@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:56 -0700
+Date: Fri, 30 Jul 2010 10:52:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>, Karsten Keil <isdn@linux-pingi.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [159/205] isdn/gigaset: remove dummy CAPI method implementations
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [157/205] PCI/PM: Do not use native PCIe PME by default
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit e487639dc8ca6bd6c19a4140f45ebc88da56ddd5 upstream.
+commit b27759f880018b0cd43543dc94c921341b64b5ec upstream.
 
-Dummy implementations for the optional CAPI controller operations
-load_firmware and reset_ctr can cause userspace callers to hang
-indefinitely. It's better not to implement them at all.
+Commit c7f486567c1d0acd2e4166c47069835b9f75e77b
+(PCI PM: PCIe PME root port service driver) causes the native PCIe
+PME signaling to be used by default, if the BIOS allows the kernel to
+control the standard configuration registers of PCIe root ports.
+However, the native PCIe PME is coupled to the native PCIe hotplug
+and calling pcie_pme_acpi_setup() makes some BIOSes expect that
+the native PCIe hotplug will be used as well.  That, in turn, causes
+problems to appear on systems where the PCIe hotplug driver is not
+loaded.  The usual symptom, as reported by Jaroslav Kameník and
+others, is that the ACPI GPE associated with PCIe hotplug keeps
+firing continuously causing kacpid to take substantial percentage
+of CPU time.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Acked-by: Karsten Keil <isdn@linux-pingi.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+To work around this issue, change the default so that the native
+PCIe PME signaling is only used if directly requested with the help
+of the pcie_pme= command line switch.
+
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=15924 , which is
+a listed regression from 2.6.33.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-by: Jaroslav Kameník <jaroslav@kamenik.cz>
+Tested-by: Antoni Grzymala <antekgrzymala@gmail.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/gigaset/capi.c |   28 ++--------------------------
- 1 file changed, 2 insertions(+), 26 deletions(-)
+ Documentation/kernel-parameters.txt |    4 +++-
+ drivers/pci/pcie/pme/pcie_pme.c     |   19 +++++++++++++------
+ 2 files changed, 16 insertions(+), 7 deletions(-)
 
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -933,30 +933,6 @@ void gigaset_isdn_stop(struct cardstate
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2013,7 +2013,9 @@ and is between 256 and 4096 characters.
+ 			WARNING: Forcing ASPM on may cause system lockups.
+ 
+ 	pcie_pme=	[PCIE,PM] Native PCIe PME signaling options:
+-		off	Do not use native PCIe PME signaling.
++			Format: {auto|force}[,nomsi]
++		auto	Use native PCIe PME signaling if the BIOS allows the
++			kernel to control PCIe config registers of root ports.
+ 		force	Use native PCIe PME signaling even if the BIOS refuses
+ 			to allow the kernel to control the relevant PCIe config
+ 			registers.
+--- a/drivers/pci/pcie/pme/pcie_pme.c
++++ b/drivers/pci/pcie/pme/pcie_pme.c
+@@ -34,7 +34,7 @@
+  * being registered.  Consequently, the interrupt-based PCIe PME signaling will
+  * not be used by any PCIe root ports in that case.
   */
+-static bool pcie_pme_disabled;
++static bool pcie_pme_disabled = true;
  
  /*
-- * load firmware
-- */
--static int gigaset_load_firmware(struct capi_ctr *ctr, capiloaddata *data)
--{
--	struct cardstate *cs = ctr->driverdata;
--
--	/* AVM specific operation, not needed for Gigaset -- ignore */
--	dev_notice(cs->dev, "load_firmware ignored\n");
--
--	return 0;
--}
--
--/*
-- * reset (deactivate) controller
-- */
--static void gigaset_reset_ctr(struct capi_ctr *ctr)
--{
--	struct cardstate *cs = ctr->driverdata;
--
--	/* AVM specific operation, not needed for Gigaset -- ignore */
--	dev_notice(cs->dev, "reset_ctr ignored\n");
--}
--
--/*
-  * register CAPI application
-  */
- static void gigaset_register_appl(struct capi_ctr *ctr, u16 appl,
-@@ -2213,8 +2189,8 @@ int gigaset_isdn_regdev(struct cardstate
- 	iif->ctr.driverdata    = cs;
- 	strncpy(iif->ctr.name, isdnid, sizeof(iif->ctr.name));
- 	iif->ctr.driver_name   = "gigaset";
--	iif->ctr.load_firmware = gigaset_load_firmware;
--	iif->ctr.reset_ctr     = gigaset_reset_ctr;
-+	iif->ctr.load_firmware = NULL;
-+	iif->ctr.reset_ctr     = NULL;
- 	iif->ctr.register_appl = gigaset_register_appl;
- 	iif->ctr.release_appl  = gigaset_release_appl;
- 	iif->ctr.send_message  = gigaset_send_message;
+  * The PCI Express Base Specification 2.0, Section 6.1.8, states the following:
+@@ -64,12 +64,19 @@ bool pcie_pme_msi_disabled;
+ 
+ static int __init pcie_pme_setup(char *str)
+ {
+-	if (!strcmp(str, "off"))
+-		pcie_pme_disabled = true;
+-	else if (!strcmp(str, "force"))
++	if (!strncmp(str, "auto", 4))
++		pcie_pme_disabled = false;
++	else if (!strncmp(str, "force", 5))
+ 		pcie_pme_force_enable = true;
+-	else if (!strcmp(str, "nomsi"))
+-		pcie_pme_msi_disabled = true;
++
++	str = strchr(str, ',');
++	if (str) {
++		str++;
++		str += strspn(str, " \t");
++		if (*str && !strcmp(str, "nomsi"))
++			pcie_pme_msi_disabled = true;
++	}
++
+ 	return 1;
+ }
+ __setup("pcie_pme=", pcie_pme_setup);
 
 
