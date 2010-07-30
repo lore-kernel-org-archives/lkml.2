@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577Ab0G3Rmz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:42:55 -0400
-Received: from kroah.org ([198.145.64.141]:36207 "EHLO coco.kroah.org"
+	id S932552Ab0G3Rmu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:42:50 -0400
+Received: from kroah.org ([198.145.64.141]:36211 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932477Ab0G3RgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758824Ab0G3RgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Jul 2010 13:36:08 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:14 2010
-Message-Id: <20100730173114.216192225@clark.site>
+Message-Id: <20100730173114.312980649@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:33 -0700
+Date: Fri, 30 Jul 2010 10:31:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        Divy Le Ray <divy@chelsio.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [128/140] 3c503: Fix IRQ probing
+Subject: [129/140] cxgb3: fix linkup issue
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-commit b0cf4dfb7cd21556efd9a6a67edcba0840b4d98d upstream.
+commit 9441cad99b4b09d6b627351c2d282833868c116c upstream.
 
-The driver attempts to select an IRQ for the NIC automatically by
-testing which of the supported IRQs are available and then probing
-each available IRQ with probe_irq_{on,off}().  There are obvious race
-conditions here, besides which:
-1. The test for availability is done by passing a NULL handler, which
-   now always returns -EINVAL, thus the device cannot be opened:
-   <http://bugs.debian.org/566522>
-2. probe_irq_off() will report only the first ISA IRQ handled,
-   potentially leading to a false negative.
+I encountered an issue that not to link up on cxgb3 fabric.
+I bisected and found that this regression was introduced by
+0f07c4ee8c800923ae7918c231532a9256233eed.
 
-There was another bug that meant it ignored all error codes from
-request_irq() except -EBUSY, so it would 'succeed' despite this
-(possibly causing conflicts with other ISA devices).  This was fixed
-by ab08999d6029bb2c79c16be5405d63d2bedbdfea 'WARNING: some
-request_irq() failures ignored in el2_open()', which exposed bug 1.
+Correct to pass phy_addr to cphy_init() at t3_xaui_direct_phy_prep().
 
-This patch:
-1. Replaces the use of probe_irq_{on,off}() with a real interrupt handler
-2. Adds a delay before checking the interrupt-seen flag
-3. Disables interrupts on all failure paths
-4. Distinguishes error codes from the second request_irq() call,
-   consistently with the first
-
-Compile-tested only.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Acked-by: Divy Le Ray <divy@chelsio.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/3c503.c |   42 ++++++++++++++++++++++++++++++------------
- 1 file changed, 30 insertions(+), 12 deletions(-)
+ drivers/net/cxgb3/ael1002.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/3c503.c
-+++ b/drivers/net/3c503.c
-@@ -380,6 +380,12 @@ out:
-     return retval;
- }
- 
-+static irqreturn_t el2_probe_interrupt(int irq, void *seen)
-+{
-+	*(bool *)seen = true;
-+	return IRQ_HANDLED;
-+}
-+
- static int
- el2_open(struct net_device *dev)
+--- a/drivers/net/cxgb3/ael1002.c
++++ b/drivers/net/cxgb3/ael1002.c
+@@ -934,7 +934,7 @@ static struct cphy_ops xaui_direct_ops =
+ int t3_xaui_direct_phy_prep(struct cphy *phy, struct adapter *adapter,
+ 			    int phy_addr, const struct mdio_ops *mdio_ops)
  {
-@@ -391,23 +397,35 @@ el2_open(struct net_device *dev)
- 
- 	outb(EGACFR_NORM, E33G_GACFR);	/* Enable RAM and interrupts. */
- 	do {
--	    retval = request_irq(*irqp, NULL, 0, "bogus", dev);
--	    if (retval >= 0) {
-+		bool seen;
-+
-+		retval = request_irq(*irqp, el2_probe_interrupt, 0,
-+				     dev->name, &seen);
-+		if (retval == -EBUSY)
-+			continue;
-+		if (retval < 0)
-+			goto err_disable;
-+
- 		/* Twinkle the interrupt, and check if it's seen. */
--		unsigned long cookie = probe_irq_on();
-+		seen = false;
-+		smp_wmb();
- 		outb_p(0x04 << ((*irqp == 9) ? 2 : *irqp), E33G_IDCFR);
- 		outb_p(0x00, E33G_IDCFR);
--		if (*irqp == probe_irq_off(cookie) &&	/* It's a good IRQ line! */
--		    ((retval = request_irq(dev->irq = *irqp,
--					   eip_interrupt, 0,
--					   dev->name, dev)) == 0))
--		    break;
--	    } else {
--		    if (retval != -EBUSY)
--			    return retval;
--	    }
-+		msleep(1);
-+		free_irq(*irqp, el2_probe_interrupt);
-+		if (!seen)
-+			continue;
-+
-+		retval = request_irq(dev->irq = *irqp, eip_interrupt, 0,
-+				     dev->name, dev);
-+		if (retval == -EBUSY)
-+			continue;
-+		if (retval < 0)
-+			goto err_disable;
- 	} while (*++irqp);
-+
- 	if (*irqp == 0) {
-+	err_disable:
- 	    outb(EGACFR_IRQOFF, E33G_GACFR);	/* disable interrupts. */
- 	    return -EAGAIN;
- 	}
+-	cphy_init(phy, adapter, MDIO_PRTAD_NONE, &xaui_direct_ops, mdio_ops,
++	cphy_init(phy, adapter, phy_addr, &xaui_direct_ops, mdio_ops,
+ 		  SUPPORTED_10000baseT_Full | SUPPORTED_AUI | SUPPORTED_TP,
+ 		  "10GBASE-CX4");
+ 	return 0;
 
 
