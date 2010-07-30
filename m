@@ -1,51 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758515Ab0G3LKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 07:10:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62794 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab0G3LKO (ORCPT
+	id S1758414Ab0G3LO2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 07:14:28 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:45906 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755372Ab0G3LO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 07:10:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=afDyG49QIaKcyqW5UDtQgjuVNUfwJqt4oFA6Cf8cIAHQcaPDPrmDSFowCduVSWVaCH
-         R9jBCiuIqF9fxsFXVAUgb/rZBami7u+Ni+UlDQlE8Z4UiZkVtiS69A1GJ+CjecBWDKvq
-         6UWZH/ZrldvZDrPI1CjUf0gav5Q5NHKeu5Zo4=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] fs: nfs: misused copy_to_user() return value
-Date: Fri, 30 Jul 2010 15:09:50 +0400
-Message-Id: <1280488190-20979-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 30 Jul 2010 07:14:26 -0400
+Date: Fri, 30 Jul 2010 21:12:44 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 0/5]  [RFC] transfer ASYNC vmscan writeback IO to the
+ flusher threads
+Message-ID: <20100730111244.GC2126@dastard>
+References: <20100729115142.102255590@intel.com>
+ <20100729232330.GO655@dastard>
+ <20100730075819.GE8811@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100730075819.GE8811@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_to_user() returns nonzero value on error, this value may be any
-value between 0 and requested count, not only requested count.
+On Fri, Jul 30, 2010 at 03:58:19PM +0800, Wu Fengguang wrote:
+> On Fri, Jul 30, 2010 at 07:23:30AM +0800, Dave Chinner wrote:
+> > On Thu, Jul 29, 2010 at 07:51:42PM +0800, Wu Fengguang wrote:
+> > > Andrew,
+> > > 
+> > > It's possible to transfer ASYNC vmscan writeback IOs to the flusher threads.
+> > > This simple patchset shows the basic idea. Since it's a big behavior change,
+> > > there are inevitably lots of details to sort out. I don't know where it will
+> > > go after tests and discussions, so the patches are intentionally kept simple.
+> > > 
+> > > sync livelock avoidance (need more to be complete, but this is minimal required for the last two patches)
+> > > 	[PATCH 1/5] writeback: introduce wbc.for_sync to cover the two sync stages
+> > > 	[PATCH 2/5] writeback: stop periodic/background work on seeing sync works
+> > > 	[PATCH 3/5] writeback: prevent sync livelock with the sync_after timestamp
+> > > 
+> > > let the flusher threads do ASYNC writeback for pageout()
+> > > 	[PATCH 4/5] writeback: introduce bdi_start_inode_writeback()
+> > > 	[PATCH 5/5] vmscan: transfer async file writeback to the flusher
+> > 
+> > I really do not like this - all it does is transfer random page writeback
+> > from vmscan to the flusher threads rather than avoiding random page
+> > writeback altogether. Random page writeback is nasty - just say no.
+> 
+> There are cases we have to do pageout().
+> 
+> - a stressed memcg with lots of dirty pages
+> - a large NUMA system whose nodes have unbalanced vmscan rate and dirty pages
+> 
+> In the above cases, the whole system may not be that stressed,
+> except for some local LRU list being busy scanned.  If the local
+> memory stress lead to lots of pageout(), it could bring down the whole
+> system by congesting the disks with many small seeky IO.
+> 
+> It may be an overkill to push global writeback (ie. it's silly to sync
+> 1GB dirty data because there is a small stressed 100MB LRU list).
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- fs/nfs/idmap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+No it isn't. Dirty pages have to cleaned sometime and it reclaim has
+a need to clean pages, we may as well start cleaning them all.
+Kicking background writeback is effectively just starting work we
+have already delayed into the future a little bit earlier than we
+otherwise would have.
 
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index 21a84d4..a9f2cd5 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -362,7 +362,7 @@ idmap_pipe_upcall(struct file *filp, struct rpc_pipe_msg *msg,
- 	unsigned long left;
- 
- 	left = copy_to_user(dst, data, mlen);
--	if (left == mlen) {
-+	if (left)
- 		msg->errno = -EFAULT;
- 		return -EFAULT;
- 	}
+Doing this is only going to hurt performance if the same pages are
+being frequently dirtied, but the cahnges to flush expired inodes
+first in background writeback should avoid the worst of that
+behaviour. Further, the more clean pages we have, the faster
+susbequent memory reclaims are going to free up pages....
+
+
+> The
+> obvious solution is to keep the pageout() calls and make them more IO
+> wise by doing write-around at the same time.  The write-around pages
+> will likely be in the same stressed LRU list, hence will do good for
+> page reclaim as well.
+
+You've kind of already done that by telling it to writeback 1024
+pages starting with a specific page. However, the big problem with
+this is that it asusme that the inode has contiguous dirty pages in
+the cache.  That assumption fall down in many cases e.g. when you
+are writing lots of small files like kernel trees contain, and so
+you still end up with random IO patterns coming out of reclaim.
+
+> Transferring ASYNC work to the flushers helps the
+> kswapd-vs-flusher priority problem too. Currently the
+> kswapd/direct reclaim either have to skip dirty pages on
+> congestion, or to risk being blocked in get_request_wait(), both
+> are not good options. However the use of
+> bdi_start_inode_writeback() do ask for a good vmscan throttling
+> scheme to prevent it falsely OOM before the flusher is able to
+> clean the transfered pages. This would be tricky.
+
+I have no problem with that aspect ofthe patch - my issue is that it
+does nothing to prevent the problem that causes excessive congestion
+in the first place...
+
+Cheers,
+
+Dave.
 -- 
-1.7.0.4
-
+Dave Chinner
+david@fromorbit.com
