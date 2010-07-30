@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760231Ab0G3Sex (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:34:53 -0400
-Received: from kroah.org ([198.145.64.141]:58041 "EHLO coco.kroah.org"
+	id S1760254Ab0G3SfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:35:10 -0400
+Received: from kroah.org ([198.145.64.141]:58019 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759824Ab0G3Ryt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:49 -0400
+	id S1759433Ab0G3Ryq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:46 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
-Message-Id: <20100730175137.468770716@clark.site>
+Message-Id: <20100730175137.206355956@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:00 -0700
+Date: Fri, 30 Jul 2010 10:50:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [043/205] TPM: ReadPubEK output struct fix
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jon Smirl <jonsmirl@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Peter Korsgaard <jacmet@sunsite.dk>
+Subject: [040/205] powerpc/5200: Fix build error in sound code.
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+From: Grant Likely <grant.likely@secretlab.ca>
 
-commit 02a077c52ef7631275a79862ffd9f3dbe9d38bc2 upstream.
+commit f487537c2b6b23332bbea7ecb1fe793b6c74d5b2 upstream.
 
-This patch adds a missing element of the ReadPubEK command output,
-that prevents future overflow of this buffer when copying the
-TPM output result into it.
+Compiling in the MPC5200 sound drivers results in the following build error:
 
-Prevents a kernel panic in case the user tries to read the
-pubek from sysfs.
+sound/soc/fsl/mpc5200_psc_ac97.o: In function `to_psc_dma_stream':
+mpc5200_psc_ac97.c:(.text+0x0): multiple definition of `to_psc_dma_stream'
+sound/soc/fsl/mpc5200_dma.o:mpc5200_dma.c:(.text+0x0): first defined here
+sound/soc/fsl/efika-audio-fabric.o: In function `to_psc_dma_stream':
+efika-audio-fabric.c:(.text+0x0): multiple definition of `to_psc_dma_stream'
+sound/soc/fsl/mpc5200_dma.o:mpc5200_dma.c:(.text+0x0): first defined here
+make[3]: *** [sound/soc/fsl/built-in.o] Error 1
+make[2]: *** [sound/soc/fsl] Error 2
+make[1]: *** [sound/soc] Error 2
+make: *** [sound] Error 2
 
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+This patch fixes it by declaring the inline function in the header file to
+also be a static.
+
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Jon Smirl <jonsmirl@gmail.com>
+Tested-by: John Hilmar Linkhorst <John.Linkhorst@rwth-aachen.de>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm.h |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/fsl/mpc5200_dma.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -224,6 +224,7 @@ struct	tpm_readpubek_params_out {
- 	u8	algorithm[4];
- 	u8	encscheme[2];
- 	u8	sigscheme[2];
-+	__be32	paramsize;
- 	u8	parameters[12]; /*assuming RSA*/
- 	__be32	keysize;
- 	u8	modulus[256];
+--- a/sound/soc/fsl/mpc5200_dma.h
++++ b/sound/soc/fsl/mpc5200_dma.h
+@@ -73,7 +73,7 @@ struct psc_dma {
+ };
+ 
+ /* Utility for retrieving psc_dma_stream structure from a substream */
+-inline struct psc_dma_stream *
++static inline struct psc_dma_stream *
+ to_psc_dma_stream(struct snd_pcm_substream *substream, struct psc_dma *psc_dma)
+ {
+ 	if (substream->pstr->stream == SNDRV_PCM_STREAM_CAPTURE)
 
 
