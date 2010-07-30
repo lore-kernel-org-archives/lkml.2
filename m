@@ -1,123 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758543Ab0G3M0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 08:26:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5245 "EHLO mga11.intel.com"
+	id S1758534Ab0G3MbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 08:31:23 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:36182 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755659Ab0G3M0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 08:26:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,287,1278313200"; 
-   d="scan'208";a="591295448"
-Date: Fri, 30 Jul 2010 20:25:53 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 0/5]  [RFC] transfer ASYNC vmscan writeback IO to the
- flusher threads
-Message-ID: <20100730122553.GA6262@localhost>
-References: <20100729232330.GO655@dastard>
- <20100730075819.GE8811@localhost>
- <20100730181014.4AEA.A69D9226@jp.fujitsu.com>
+	id S1755659Ab0G3MbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 08:31:21 -0400
+Message-ID: <4C52C614.4030803@bfs.de>
+Date: Fri, 30 Jul 2010 14:31:16 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100730181014.4AEA.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Kulikov Vasiliy <segooon@gmail.com>
+CC: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Beregalov <a.beregalov@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Mithlesh Thukral <mithlesh@linsyssoft.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/9] staging: otus: check kmalloc() return value
+References: <1280488080-20777-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1280488080-20777-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > There are cases we have to do pageout().
-> > 
-> > - a stressed memcg with lots of dirty pages
-> > - a large NUMA system whose nodes have unbalanced vmscan rate and dirty pages
-> 
-> - 32bit highmem system too
-
-Ah yes!
-
-> can you please see following commit? this describe current design.
-
-Good staff. Thanks.
-
-Thanks,
-Fengguang
 
 
+Kulikov Vasiliy schrieb:
+> kmalloc() may fail, if so return error from zfwUsbSubmitControl().
 > 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/staging/otus/wrap_usb.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> 
-> commit c4e2d7ddde9693a4c05da7afd485db02c27a7a09
-> Author: akpm <akpm>
-> Date:   Sun Dec 22 01:07:33 2002 +0000
-> 
->     [PATCH] Give kswapd writeback higher priority than pdflush
-> 
->     The `low latency page reclaim' design works by preventing page
->     allocators from blocking on request queues (and by preventing them from
->     blocking against writeback of individual pages, but that is immaterial
->     here).
-> 
->     This has a problem under some situations.  pdflush (or a write(2)
->     caller) could be saturating the queue with highmem pages.  This
->     prevents anyone from writing back ZONE_NORMAL pages.  We end up doing
->     enormous amounts of scenning.
-> 
->     A test case is to mmap(MAP_SHARED) almost all of a 4G machine's memory,
->     then kill the mmapping applications.  The machine instantly goes from
->     0% of memory dirty to 95% or more.  pdflush kicks in and starts writing
->     the least-recently-dirtied pages, which are all highmem.  The queue is
->     congested so nobody will write back ZONE_NORMAL pages.  kswapd chews
->     50% of the CPU scanning past dirty ZONE_NORMAL pages and page reclaim
->     efficiency (pages_reclaimed/pages_scanned) falls to 2%.
-> 
->     So this patch changes the policy for kswapd.  kswapd may use all of a
->     request queue, and is prepared to block on request queues.
-> 
->     What will now happen in the above scenario is:
-> 
->     1: The page alloctor scans some pages, fails to reclaim enough
->        memory and takes a nap in blk_congetion_wait().
-> 
->     2: kswapd() will scan the ZONE_NORMAL LRU and will start writing
->        back pages.  (These pages will be rotated to the tail of the
->        inactive list at IO-completion interrupt time).
-> 
->        This writeback will saturate the queue with ZONE_NORMAL pages.
->        Conveniently, pdflush will avoid the congested queues.  So we end up
->        writing the correct pages.
-> 
->     In this test, kswapd CPU utilisation falls from 50% to 2%, page reclaim
->     efficiency rises from 2% to 40% and things are generally a lot happier.
-> 
-> 
->     The downside is that kswapd may now do a lot less page reclaim,
->     increasing page allocation latency, causing more direct reclaim,
->     increasing lock contention in the VM, etc.  But I have not been able to
->     demonstrate that in testing.
-> 
-> 
->     The other problem is that there is only one kswapd, and there are lots
->     of disks.  That is a generic problem - without being able to co-opt
->     user processes we don't have enough threads to keep lots of disks saturated.
-> 
->     One fix for this would be to add an additional "really congested"
->     threshold in the request queues, so kswapd can still perform
->     nonblocking writeout.  This gives kswapd priority over pdflush while
->     allowing kswapd to feed many disk queues.  I doubt if this will be
->     called for.
-> 
->     BKrev: 3e051055aitHp3bZBPSqmq21KGs5aQ
-> 
-> 
+> diff --git a/drivers/staging/otus/wrap_usb.c b/drivers/staging/otus/wrap_usb.c
+> index 93459ca..9f04047 100644
+> --- a/drivers/staging/otus/wrap_usb.c
+> +++ b/drivers/staging/otus/wrap_usb.c
+> @@ -104,6 +104,11 @@ u32_t zfwUsbSubmitControl(zdev_t *dev, u8_t req, u16_t value, u16_t index,
+>  
+>  	if (size > 0) {
+>  		buf = kmalloc(size, GFP_KERNEL);
+> +		if (buf == NULL) {
+> +			pr_err("zfwUsbSubmitControl() failed, "
+> +				  "kmalloc() returned NULL\n");
+> +			return 1;
+> +		}
+>  		memcpy(buf, (u8_t *)data, size);
+>  	} else
+>  		buf = NULL;
+
+
+We had a memdup() somewhere had'nt we ?
+
+re,
+ wh
