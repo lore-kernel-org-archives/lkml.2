@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760060Ab0G3R4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:56:52 -0400
-Received: from kroah.org ([198.145.64.141]:58610 "EHLO coco.kroah.org"
+	id S932713Ab0G3R5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:57:19 -0400
+Received: from kroah.org ([198.145.64.141]:58648 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932334Ab0G3R4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
-Message-Id: <20100730175142.404820479@clark.site>
+	id S932378Ab0G3R4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:43 2010
+Message-Id: <20100730175142.933028717@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:53 -0700
+Date: Fri, 30 Jul 2010 10:51:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Paul Gortmaker <p_gortmaker@yahoo.com>
-Subject: [096/205] rtc: fix ds1388 time corruption
+        Anton Vorontsov <avorontsov@mvista.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: [101/205] powerpc/cpm: Reintroduce global spi_pram struct (fixes build issue)
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,48 +26,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+From: Anton Vorontsov <avorontsov@mvista.com>
 
-commit 96fc3a45ea073136566f3c2676cad52f8b39a7df upstream.
+commit 56825c88ff438f4dbb51a44591cc29e707fe783a upstream.
 
-The ds1307 driver misreads the ds1388 registers when checking for 12 or 24
-hour mode.  Instead of checking the hour register it reads the minute
-register.  Therefore the driver thinks minutes >= 40 has the 12HR bit set
-and resets the minute register by zeroing the high bits.  This results in
-minutes are reset to 0-9, jumping back in time 40 or 50 minutes.  The time
-jump is also written back to the RTC.
+spi_t was removed in commit 644b2a680ccc51a9ec4d6beb12e9d47d2dee98e2
+("powerpc/cpm: Remove SPI defines and spi structs"), the commit assumed
+that spi_t isn't used anywhere outside of the spi_mpc8xxx driver. But
+it appears that the struct is needed for micropatch code. So, let's
+reintroduce the struct.
 
-Signed-off-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Cc: Wan ZongShun <mcuos.com@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes the following build issue:
+
+    CC      arch/powerpc/sysdev/micropatch.o
+  micropatch.c: In function 'cpm_load_patch':
+  micropatch.c:629: error: expected '=', ',', ';', 'asm' or '__attribute__' before '*' token
+  micropatch.c:629: error: 'spp' undeclared (first use in this function)
+  micropatch.c:629: error: (Each undeclared identifier is reported only once
+  micropatch.c:629: error: for each function it appears in.)
+
+Reported-by: LEROY Christophe <christophe.leroy@c-s.fr>
+Reported-by: Tony Breeds <tony@bakeyournoodle.com>
+Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-ds1307.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/cpm.h   |   24 ++++++++++++++++++++++++
+ arch/powerpc/sysdev/micropatch.c |    7 ++++---
+ drivers/spi/spi_mpc8xxx.c        |   22 ----------------------
+ 3 files changed, 28 insertions(+), 25 deletions(-)
 
---- a/drivers/rtc/rtc-ds1307.c
-+++ b/drivers/rtc/rtc-ds1307.c
-@@ -775,7 +775,7 @@ static int __devinit ds1307_probe(struct
+--- a/arch/powerpc/include/asm/cpm.h
++++ b/arch/powerpc/include/asm/cpm.h
+@@ -7,6 +7,30 @@
+ #include <linux/of.h>
  
- read_rtc:
- 	/* read RTC registers */
--	tmp = ds1307->read_block_data(ds1307->client, 0, 8, buf);
-+	tmp = ds1307->read_block_data(ds1307->client, ds1307->offset, 8, buf);
- 	if (tmp != 8) {
- 		pr_debug("read error %d\n", tmp);
- 		err = -EIO;
-@@ -860,7 +860,7 @@ read_rtc:
- 		if (ds1307->regs[DS1307_REG_HOUR] & DS1307_BIT_PM)
- 			tmp += 12;
- 		i2c_smbus_write_byte_data(client,
--				DS1307_REG_HOUR,
-+				ds1307->offset + DS1307_REG_HOUR,
- 				bin2bcd(tmp));
- 	}
+ /*
++ * SPI Parameter RAM common to QE and CPM.
++ */
++struct spi_pram {
++	__be16	rbase;	/* Rx Buffer descriptor base address */
++	__be16	tbase;	/* Tx Buffer descriptor base address */
++	u8	rfcr;	/* Rx function code */
++	u8	tfcr;	/* Tx function code */
++	__be16	mrblr;	/* Max receive buffer length */
++	__be32	rstate;	/* Internal */
++	__be32	rdp;	/* Internal */
++	__be16	rbptr;	/* Internal */
++	__be16	rbc;	/* Internal */
++	__be32	rxtmp;	/* Internal */
++	__be32	tstate;	/* Internal */
++	__be32	tdp;	/* Internal */
++	__be16	tbptr;	/* Internal */
++	__be16	tbc;	/* Internal */
++	__be32	txtmp;	/* Internal */
++	__be32	res;	/* Tx temp. */
++	__be16  rpbase;	/* Relocation pointer (CPM1 only) */
++	__be16	res1;	/* Reserved */
++};
++
++/*
+  * USB Controller pram common to QE and CPM.
+  */
+ struct usb_ctlr {
+--- a/arch/powerpc/sysdev/micropatch.c
++++ b/arch/powerpc/sysdev/micropatch.c
+@@ -16,6 +16,7 @@
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ #include <asm/8xx_immap.h>
++#include <asm/cpm.h>
+ #include <asm/cpm1.h>
  
+ /*
+@@ -626,7 +627,7 @@ cpm_load_patch(cpm8xx_t	*cp)
+ 	volatile uint		*dp;		/* Dual-ported RAM. */
+ 	volatile cpm8xx_t	*commproc;
+ 	volatile iic_t		*iip;
+-	volatile spi_t		*spp;
++	volatile struct spi_pram *spp;
+ 	volatile smc_uart_t	*smp;
+ 	int	i;
+ 
+@@ -668,8 +669,8 @@ cpm_load_patch(cpm8xx_t	*cp)
+ 	/* Put SPI above the IIC, also 32-byte aligned.
+ 	*/
+ 	i = (RPBASE + sizeof(iic_t) + 31) & ~31;
+-	spp = (spi_t *)&commproc->cp_dparam[PROFF_SPI];
+-	spp->spi_rpbase = i;
++	spp = (struct spi_pram *)&commproc->cp_dparam[PROFF_SPI];
++	spp->rpbase = i;
+ 
+ # if defined(CONFIG_I2C_SPI_UCODE_PATCH)
+ 	commproc->cp_cpmcr1 = 0x802a;
+--- a/drivers/spi/spi_mpc8xxx.c
++++ b/drivers/spi/spi_mpc8xxx.c
+@@ -66,28 +66,6 @@ struct mpc8xxx_spi_reg {
+ 	__be32 receive;
+ };
+ 
+-/* SPI Parameter RAM */
+-struct spi_pram {
+-	__be16	rbase;	/* Rx Buffer descriptor base address */
+-	__be16	tbase;	/* Tx Buffer descriptor base address */
+-	u8	rfcr;	/* Rx function code */
+-	u8	tfcr;	/* Tx function code */
+-	__be16	mrblr;	/* Max receive buffer length */
+-	__be32	rstate;	/* Internal */
+-	__be32	rdp;	/* Internal */
+-	__be16	rbptr;	/* Internal */
+-	__be16	rbc;	/* Internal */
+-	__be32	rxtmp;	/* Internal */
+-	__be32	tstate;	/* Internal */
+-	__be32	tdp;	/* Internal */
+-	__be16	tbptr;	/* Internal */
+-	__be16	tbc;	/* Internal */
+-	__be32	txtmp;	/* Internal */
+-	__be32	res;	/* Tx temp. */
+-	__be16  rpbase;	/* Relocation pointer (CPM1 only) */
+-	__be16	res1;	/* Reserved */
+-};
+-
+ /* SPI Controller mode register definitions */
+ #define	SPMODE_LOOP		(1 << 30)
+ #define	SPMODE_CI_INACTIVEHIGH	(1 << 29)
 
 
