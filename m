@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125Ab0G3SYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:24:18 -0400
-Received: from kroah.org ([198.145.64.141]:58580 "EHLO coco.kroah.org"
+	id S933160Ab0G3SYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:24:33 -0400
+Received: from kroah.org ([198.145.64.141]:58573 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759987Ab0G3Rzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:52 -0400
+	id S1759981Ab0G3Rzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:51 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
-Message-Id: <20100730175142.021229423@clark.site>
+Message-Id: <20100730175141.915693421@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:49 -0700
+Date: Fri, 30 Jul 2010 10:51:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lubomir Rintel <lkundrak@v3.sk>, Christoph Hellwig <hch@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [092/205] sysvfs: fix NULL deref. when allocating new inode
+        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [091/205] cfq: Dont allow queue merges for queues that have no process references
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lubomir Rintel <lkundrak@v3.sk>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit 46c23d7f520e315dde86881b38ba92ebdf34ced5 upstream.
+commit c10b61f0910466b4b99c266a7d76ac4390743fb5 upstream.
 
-A call to sysv_write_inode() in sysv_new_inode() to its new interface that
-replaced wait flag with writeback structure.  This was broken by
-a9185b41a4f84971b930c519f0c63bd450c4810d ("pass writeback_control to
-->write_inode").
+Hi,
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+A user reported a kernel bug when running a particular program that did
+the following:
+
+created 32 threads
+- each thread took a mutex, grabbed a global offset, added a buffer size
+  to that offset, released the lock
+- read from the given offset in the file
+- created a new thread to do the same
+- exited
+
+The result is that cfq's close cooperator logic would trigger, as the
+threads were issuing I/O within the mean seek distance of one another.
+This workload managed to routinely trigger a use after free bug when
+walking the list of merge candidates for a particular cfqq
+(cfqq->new_cfqq).  The logic used for merging queues looks like this:
+
+static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
+{
+	int process_refs, new_process_refs;
+	struct cfq_queue *__cfqq;
+
+	/* Avoid a circular list and skip interim queue merges */
+	while ((__cfqq = new_cfqq->new_cfqq)) {
+		if (__cfqq == cfqq)
+			return;
+		new_cfqq = __cfqq;
+	}
+
+	process_refs = cfqq_process_refs(cfqq);
+	/*
+	 * If the process for the cfqq has gone away, there is no
+	 * sense in merging the queues.
+	 */
+	if (process_refs == 0)
+		return;
+
+	/*
+	 * Merge in the direction of the lesser amount of work.
+	 */
+	new_process_refs = cfqq_process_refs(new_cfqq);
+	if (new_process_refs >= process_refs) {
+		cfqq->new_cfqq = new_cfqq;
+		atomic_add(process_refs, &new_cfqq->ref);
+	} else {
+		new_cfqq->new_cfqq = cfqq;
+		atomic_add(new_process_refs, &cfqq->ref);
+	}
+}
+
+When a merge candidate is found, we add the process references for the
+queue with less references to the queue with more.  The actual merging
+of queues happens when a new request is issued for a given cfqq.  In the
+case of the test program, it only does a single pread call to read in
+1MB, so the actual merge never happens.
+
+Normally, this is fine, as when the queue exits, we simply drop the
+references we took on the other cfqqs in the merge chain:
+
+	/*
+	 * If this queue was scheduled to merge with another queue, be
+	 * sure to drop the reference taken on that queue (and others in
+	 * the merge chain).  See cfq_setup_merge and cfq_merge_cfqqs.
+	 */
+	__cfqq = cfqq->new_cfqq;
+	while (__cfqq) {
+		if (__cfqq == cfqq) {
+			WARN(1, "cfqq->new_cfqq loop detected\n");
+			break;
+		}
+		next = __cfqq->new_cfqq;
+		cfq_put_queue(__cfqq);
+		__cfqq = next;
+	}
+
+However, there is a hole in this logic.  Consider the following (and
+keep in mind that each I/O keeps a reference to the cfqq):
+
+q1->new_cfqq = q2   // q2 now has 2 process references
+q3->new_cfqq = q2   // q2 now has 3 process references
+
+// the process associated with q2 exits
+// q2 now has 2 process references
+
+// queue 1 exits, drops its reference on q2
+// q2 now has 1 process reference
+
+// q3 exits, so has 0 process references, and hence drops its references
+// to q2, which leaves q2 also with 0 process references
+
+q4 comes along and wants to merge with q3
+
+q3->new_cfqq still points at q2!  We follow that link and end up at an
+already freed cfqq.
+
+So, the fix is to not follow a merge chain if the top-most queue does
+not have a process reference, otherwise any queue in the chain could be
+already freed.  I also changed the logic to disallow merging with a
+queue that does not have any process references.  Previously, we did
+this check for one of the merge candidates, but not the other.  That
+doesn't really make sense.
+
+Without the attached patch, my system would BUG within a couple of
+seconds of running the reproducer program.  With the patch applied, my
+system ran the program for over an hour without issues.
+
+This addresses the following bugzilla:
+    https://bugzilla.kernel.org/show_bug.cgi?id=16217
+
+Thanks a ton to Phil Carns for providing the bug report and an excellent
+reproducer.
+
+[ Note for stable: this applies to 2.6.32/33/34 ].
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-by: Phil Carns <carns@mcs.anl.gov>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/sysv/ialloc.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ block/cfq-iosched.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/fs/sysv/ialloc.c
-+++ b/fs/sysv/ialloc.c
-@@ -25,6 +25,7 @@
- #include <linux/stat.h>
- #include <linux/string.h>
- #include <linux/buffer_head.h>
-+#include <linux/writeback.h>
- #include "sysv.h"
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1930,6 +1930,15 @@ static void cfq_setup_merge(struct cfq_q
+ 	int process_refs, new_process_refs;
+ 	struct cfq_queue *__cfqq;
  
- /* We don't trust the value of
-@@ -139,6 +140,9 @@ struct inode * sysv_new_inode(const stru
- 	struct inode *inode;
- 	sysv_ino_t ino;
- 	unsigned count;
-+	struct writeback_control wbc = {
-+		.sync_mode = WB_SYNC_NONE
-+	};
++	/*
++	 * If there are no process references on the new_cfqq, then it is
++	 * unsafe to follow the ->new_cfqq chain as other cfqq's in the
++	 * chain may have dropped their last reference (not just their
++	 * last process reference).
++	 */
++	if (!cfqq_process_refs(new_cfqq))
++		return;
++
+ 	/* Avoid a circular list and skip interim queue merges */
+ 	while ((__cfqq = new_cfqq->new_cfqq)) {
+ 		if (__cfqq == cfqq)
+@@ -1938,17 +1947,17 @@ static void cfq_setup_merge(struct cfq_q
+ 	}
  
- 	inode = new_inode(sb);
- 	if (!inode)
-@@ -177,7 +181,7 @@ struct inode * sysv_new_inode(const stru
- 	mark_inode_dirty(inode);
+ 	process_refs = cfqq_process_refs(cfqq);
++	new_process_refs = cfqq_process_refs(new_cfqq);
+ 	/*
+ 	 * If the process for the cfqq has gone away, there is no
+ 	 * sense in merging the queues.
+ 	 */
+-	if (process_refs == 0)
++	if (process_refs == 0 || new_process_refs == 0)
+ 		return;
  
- 	inode->i_mode = mode;		/* for sysv_write_inode() */
--	sysv_write_inode(inode, 0);	/* ensure inode not allocated again */
-+	sysv_write_inode(inode, &wbc);	/* ensure inode not allocated again */
- 	mark_inode_dirty(inode);	/* cleared by sysv_write_inode() */
- 	/* That's it. */
- 	unlock_super(sb);
+ 	/*
+ 	 * Merge in the direction of the lesser amount of work.
+ 	 */
+-	new_process_refs = cfqq_process_refs(new_cfqq);
+ 	if (new_process_refs >= process_refs) {
+ 		cfqq->new_cfqq = new_cfqq;
+ 		atomic_add(process_refs, &new_cfqq->ref);
 
 
