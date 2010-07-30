@@ -1,92 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759698Ab0G3Spi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:45:38 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39550 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933411Ab0G3Spb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 14:45:31 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Jaya Kumar <jayakumar.lkml@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Peter Jones <pjones@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] VIDEO: sa1100fb: register driver using platform_driver_probe
-Date: Fri, 30 Jul 2010 20:45:18 +0200
-Message-Id: <1280515518-19209-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S933389Ab0G3SpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:45:18 -0400
+Received: from kroah.org ([198.145.64.141]:35816 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932295Ab0G3Re5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:08 2010
+Message-Id: <20100730173108.771658390@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:30:32 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>
+Subject: [067/140] amd64-agp: Probe unknown AGP devices the right way
+In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-	WARNING: vmlinux.o(.devinit.text+0x364): Section mismatch in reference from the function sa1100fb_probe() to the function .init.text:sa1100fb_init_fbinfo()
-	The function __devinit sa1100fb_probe() references
-	a function __init sa1100fb_init_fbinfo().
-	If sa1100fb_init_fbinfo is only used by sa1100fb_probe then
-	annotate sa1100fb_init_fbinfo with a matching annotation.
+------------------
 
-Commit c2e13037e6794bd0d9de3f9ecabf5615f15c160b addressed a section
-mismatch in this driver but introduced new ones as sa1100fb_probe
-references many more .init variables and functions (some of them
-indirectly) so using platform_driver_probe is less intrusive.
+From: Ben Hutchings <ben@decadent.org.uk>
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+commit 6fd024893911dcb51b4a0aa71971db5ba38f7071 upstream.
+
+The current initialisation code probes 'unsupported' AGP devices
+simply by calling its own probe function.  It does not lock these
+devices or even check whether another driver is already bound to
+them.
+
+We must use the device core to manage this.  So if the specific
+device id table didn't match anything and agp_try_unsupported=1,
+switch the device id table and call driver_attach() again.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/video/sa1100fb.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/char/agp/amd64-agp.c |   27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/video/sa1100fb.c b/drivers/video/sa1100fb.c
-index e8b76d6..35fc741 100644
---- a/drivers/video/sa1100fb.c
-+++ b/drivers/video/sa1100fb.c
-@@ -1351,7 +1351,6 @@ static struct fb_monspecs monspecs __initdata = {
- 	.vfmax	= 65,
- };
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -499,6 +499,10 @@ static int __devinit agp_amd64_probe(str
+ 	u8 cap_ptr;
+ 	int err;
  
--
- static struct sa1100fb_info * __init sa1100fb_init_fbinfo(struct device *dev)
- {
- 	struct sa1100fb_mach_info *inf;
-@@ -1435,7 +1434,7 @@ static struct sa1100fb_info * __init sa1100fb_init_fbinfo(struct device *dev)
- 	return fbi;
- }
- 
--static int __devinit sa1100fb_probe(struct platform_device *pdev)
-+static int __init sa1100fb_probe(struct platform_device *pdev)
- {
- 	struct sa1100fb_info *fbi;
- 	int ret, irq;
-@@ -1501,7 +1500,6 @@ static int __devinit sa1100fb_probe(struct platform_device *pdev)
- }
- 
- static struct platform_driver sa1100fb_driver = {
--	.probe		= sa1100fb_probe,
- 	.suspend	= sa1100fb_suspend,
- 	.resume		= sa1100fb_resume,
- 	.driver		= {
-@@ -1514,7 +1512,7 @@ int __init sa1100fb_init(void)
- 	if (fb_get_options("sa1100fb", NULL))
++	/* The Highlander principle */
++	if (agp_bridges_found)
++		return -ENODEV;
++
+ 	cap_ptr = pci_find_capability(pdev, PCI_CAP_ID_AGP);
+ 	if (!cap_ptr)
  		return -ENODEV;
- 
--	return platform_driver_register(&sa1100fb_driver);
-+	return platform_driver_probe(&sa1100fb_driver, sa1100fb_probe);
+@@ -562,6 +566,8 @@ static void __devexit agp_amd64_remove(s
+ 			   amd64_aperture_sizes[bridge->aperture_size_idx].size);
+ 	agp_remove_bridge(bridge);
+ 	agp_put_bridge(bridge);
++
++	agp_bridges_found--;
  }
  
- int __init sa1100fb_setup(char *options)
--- 
-1.7.1
+ #ifdef CONFIG_PM
+@@ -709,6 +715,11 @@ static struct pci_device_id agp_amd64_pc
+ 
+ MODULE_DEVICE_TABLE(pci, agp_amd64_pci_table);
+ 
++static DEFINE_PCI_DEVICE_TABLE(agp_amd64_pci_promisc_table) = {
++	{ PCI_DEVICE_CLASS(0, 0) },
++	{ }
++};
++
+ static struct pci_driver agp_amd64_pci_driver = {
+ 	.name		= "agpgart-amd64",
+ 	.id_table	= agp_amd64_pci_table,
+@@ -734,7 +745,6 @@ int __init agp_amd64_init(void)
+ 		return err;
+ 
+ 	if (agp_bridges_found == 0) {
+-		struct pci_dev *dev;
+ 		if (!agp_try_unsupported && !agp_try_unsupported_boot) {
+ 			printk(KERN_INFO PFX "No supported AGP bridge found.\n");
+ #ifdef MODULE
+@@ -750,17 +760,10 @@ int __init agp_amd64_init(void)
+ 			return -ENODEV;
+ 
+ 		/* Look for any AGP bridge */
+-		dev = NULL;
+-		err = -ENODEV;
+-		for_each_pci_dev(dev) {
+-			if (!pci_find_capability(dev, PCI_CAP_ID_AGP))
+-				continue;
+-			/* Only one bridge supported right now */
+-			if (agp_amd64_probe(dev, NULL) == 0) {
+-				err = 0;
+-				break;
+-			}
+-		}
++		agp_amd64_pci_driver.id_table = agp_amd64_pci_promisc_table;
++		err = driver_attach(&agp_amd64_pci_driver.driver);
++		if (err == 0 && agp_bridges_found == 0)
++			err = -ENODEV;
+ 	}
+ 	return err;
+ }
+
 
