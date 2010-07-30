@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760577Ab0G3TMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:12:37 -0400
-Received: from kroah.org ([198.145.64.141]:46364 "EHLO coco.kroah.org"
+	id S1756914Ab0G3RSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:18:13 -0400
+Received: from kroah.org ([198.145.64.141]:46185 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756933Ab0G3RSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:16 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:03 2010
-Message-Id: <20100730171503.011184174@clark.site>
+	id S1754782Ab0G3RRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:17:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:00 2010
+Message-Id: <20100730171500.496954194@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:25 -0700
+Date: Fri, 30 Jul 2010 10:13:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [037/165] drm/radeon/kms: add quirk for ASUS HD 3600 board
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [009/165] cifs: dont attempt busy-file rename unless its in same directory
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit e153b70b89770968a704eda0b55707c6066b2d44 upstream.
+commit ed0e3ace576d297a5c7015401db1060bbf677b94 upstream.
 
-Connector is actually DVI rather than HDMI.
+Busy-file renames don't actually work across directories, so we need
+to limit this code to renames within the same dir.
 
-Reported-by: trapDoor <trapdoor6@gmail.com>
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This fixes the bug detailed here:
+
+    https://bugzilla.redhat.com/show_bug.cgi?id=591938
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/cifs/inode.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -161,6 +161,15 @@ static bool radeon_atom_apply_quirks(str
- 		}
- 	}
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -1284,6 +1284,10 @@ cifs_do_rename(int xid, struct dentry *f
+ 	if (rc == 0 || rc != -ETXTBSY)
+ 		return rc;
  
-+	/* ASUS HD 3600 board lists the DVI port as HDMI */
-+	if ((dev->pdev->device == 0x9598) &&
-+	    (dev->pdev->subsystem_vendor == 0x1043) &&
-+	    (dev->pdev->subsystem_device == 0x01e4)) {
-+		if (*connector_type == DRM_MODE_CONNECTOR_HDMIA) {
-+			*connector_type = DRM_MODE_CONNECTOR_DVII;
-+		}
-+	}
++	/* open-file renames don't work across directories */
++	if (to_dentry->d_parent != from_dentry->d_parent)
++		return rc;
 +
- 	/* ASUS HD 3450 board lists the DVI port as HDMI */
- 	if ((dev->pdev->device == 0x95C5) &&
- 	    (dev->pdev->subsystem_vendor == 0x1043) &&
+ 	/* open the file to be renamed -- we need DELETE perms */
+ 	rc = CIFSSMBOpen(xid, pTcon, fromPath, FILE_OPEN, DELETE,
+ 			 CREATE_NOT_DIR, &srcfid, &oplock, NULL,
 
 
