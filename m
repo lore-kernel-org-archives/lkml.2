@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758760Ab0G3RTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:19:34 -0400
-Received: from kroah.org ([198.145.64.141]:51903 "EHLO coco.kroah.org"
+	id S1759231Ab0G3Rbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:31:32 -0400
+Received: from kroah.org ([198.145.64.141]:51969 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758699Ab0G3RT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:27 -0400
+	id S1758765Ab0G3RTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:09 2010
-Message-Id: <20100730171508.938610139@clark.site>
+Message-Id: <20100730171509.768917193@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:31 -0700
+Date: Fri, 30 Jul 2010 10:15:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Akira Fujita <a-fujita@rs.jp.nec.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [103/165] ext4: Code cleanup for EXT4_IOC_MOVE_EXT ioctl
+        Jing Zhang <zj.barak@gmail.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [112/165] ext4: rename ext4_mb_release_desc() to ext4_mb_unload_buddy()
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit c437b2733520599a2c6e0dbcdeae611319f84707 upstream (as of v2.6.33-git11)
+commit e39e07fdfd98be8650385f12a7b81d6adc547510 upstream (as of v2.6.34-git13)
 
-a) Fix sparse warning in ext4_ioctl()
-b) Remove unneeded variable in mext_leaf_block()
-c) Fix spelling typo in mext_check_arguments()
+This function cleans up after ext4_mb_load_buddy(), so the renaming
+makes the code clearer.
 
-Signed-off-by: Akira Fujita <a-fujita@rs.jp.nec.com>
+Signed-off-by: Jing Zhang <zj.barak@gmail.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/ioctl.c       |    3 ++-
- fs/ext4/move_extent.c |    4 +---
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ fs/ext4/mballoc.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -258,7 +258,8 @@ setversion_out:
- 		if (me.moved_len > 0)
- 			file_remove_suid(donor_filp);
- 
--		if (copy_to_user((struct move_extent *)arg, &me, sizeof(me)))
-+		if (copy_to_user((struct move_extent __user *)arg,
-+				 &me, sizeof(me)))
- 			err = -EFAULT;
- mext_out:
- 		fput(donor_filp);
---- a/fs/ext4/move_extent.c
-+++ b/fs/ext4/move_extent.c
-@@ -477,7 +477,6 @@ mext_leaf_block(handle_t *handle, struct
- 	struct ext4_extent *oext, *o_start, *o_end, *prev_ext;
- 	struct ext4_extent new_ext, start_ext, end_ext;
- 	ext4_lblk_t new_ext_end;
--	ext4_fsblk_t new_phys_end;
- 	int oext_alen, new_ext_alen, end_ext_alen;
- 	int depth = ext_depth(orig_inode);
- 	int ret;
-@@ -491,7 +490,6 @@ mext_leaf_block(handle_t *handle, struct
- 	new_ext.ee_len = dext->ee_len;
- 	new_ext_alen = ext4_ext_get_actual_len(&new_ext);
- 	new_ext_end = le32_to_cpu(new_ext.ee_block) + new_ext_alen - 1;
--	new_phys_end = ext_pblock(&new_ext) + new_ext_alen - 1;
- 
- 	/*
- 	 * Case: original extent is first
-@@ -932,7 +930,7 @@ out2:
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -1150,7 +1150,7 @@ err:
+ 	return ret;
  }
  
- /**
-- * mext_check_argumants - Check whether move extent can be done
-+ * mext_check_arguments - Check whether move extent can be done
-  *
-  * @orig_inode:		original inode
-  * @donor_inode:	donor inode
+-static void ext4_mb_release_desc(struct ext4_buddy *e4b)
++static void ext4_mb_unload_buddy(struct ext4_buddy *e4b)
+ {
+ 	if (e4b->bd_bitmap_page)
+ 		page_cache_release(e4b->bd_bitmap_page);
+@@ -1618,7 +1618,7 @@ int ext4_mb_try_best_found(struct ext4_a
+ 	}
+ 
+ 	ext4_unlock_group(ac->ac_sb, group);
+-	ext4_mb_release_desc(e4b);
++	ext4_mb_unload_buddy(e4b);
+ 
+ 	return 0;
+ }
+@@ -1674,7 +1674,7 @@ int ext4_mb_find_by_goal(struct ext4_all
+ 		ext4_mb_use_best_found(ac, e4b);
+ 	}
+ 	ext4_unlock_group(ac->ac_sb, group);
+-	ext4_mb_release_desc(e4b);
++	ext4_mb_unload_buddy(e4b);
+ 
+ 	return 0;
+ }
+@@ -2044,7 +2044,7 @@ repeat:
+ 			if (!ext4_mb_good_group(ac, group, cr)) {
+ 				/* someone did allocation from this group */
+ 				ext4_unlock_group(sb, group);
+-				ext4_mb_release_desc(&e4b);
++				ext4_mb_unload_buddy(&e4b);
+ 				continue;
+ 			}
+ 
+@@ -2058,7 +2058,7 @@ repeat:
+ 				ext4_mb_complex_scan_group(ac, &e4b);
+ 
+ 			ext4_unlock_group(sb, group);
+-			ext4_mb_release_desc(&e4b);
++			ext4_mb_unload_buddy(&e4b);
+ 
+ 			if (ac->ac_status != AC_STATUS_CONTINUE)
+ 				break;
+@@ -2148,7 +2148,7 @@ static int ext4_mb_seq_groups_show(struc
+ 	ext4_lock_group(sb, group);
+ 	memcpy(&sg, ext4_get_group_info(sb, group), i);
+ 	ext4_unlock_group(sb, group);
+-	ext4_mb_release_desc(&e4b);
++	ext4_mb_unload_buddy(&e4b);
+ 
+ 	seq_printf(seq, "#%-5u: %-5u %-5u %-5u [", group, sg.info.bb_free,
+ 			sg.info.bb_fragments, sg.info.bb_first_free);
+@@ -2568,7 +2568,7 @@ static void release_blocks_on_commit(jou
+ 		}
+ 		ext4_unlock_group(sb, entry->group);
+ 		kmem_cache_free(ext4_free_ext_cachep, entry);
+-		ext4_mb_release_desc(&e4b);
++		ext4_mb_unload_buddy(&e4b);
+ 	}
+ 
+ 	mb_debug(1, "freed %u blocks in %u structures\n", count, count2);
+@@ -3705,7 +3705,7 @@ out:
+ 	ext4_unlock_group(sb, group);
+ 	if (ac)
+ 		kmem_cache_free(ext4_ac_cachep, ac);
+-	ext4_mb_release_desc(&e4b);
++	ext4_mb_unload_buddy(&e4b);
+ 	put_bh(bitmap_bh);
+ 	return free;
+ }
+@@ -3809,7 +3809,7 @@ repeat:
+ 		if (bitmap_bh == NULL) {
+ 			ext4_error(sb, __func__, "Error in reading block "
+ 					"bitmap for %u", group);
+-			ext4_mb_release_desc(&e4b);
++			ext4_mb_unload_buddy(&e4b);
+ 			continue;
+ 		}
+ 
+@@ -3818,7 +3818,7 @@ repeat:
+ 		ext4_mb_release_inode_pa(&e4b, bitmap_bh, pa, ac);
+ 		ext4_unlock_group(sb, group);
+ 
+-		ext4_mb_release_desc(&e4b);
++		ext4_mb_unload_buddy(&e4b);
+ 		put_bh(bitmap_bh);
+ 
+ 		list_del(&pa->u.pa_tmp_list);
+@@ -4082,7 +4082,7 @@ ext4_mb_discard_lg_preallocations(struct
+ 		ext4_mb_release_group_pa(&e4b, pa, ac);
+ 		ext4_unlock_group(sb, group);
+ 
+-		ext4_mb_release_desc(&e4b);
++		ext4_mb_unload_buddy(&e4b);
+ 		list_del(&pa->u.pa_tmp_list);
+ 		call_rcu(&(pa)->u.pa_rcu, ext4_mb_pa_callback);
+ 	}
+@@ -4584,7 +4584,7 @@ do_more:
+ 		atomic_add(count, &sbi->s_flex_groups[flex_group].free_blocks);
+ 	}
+ 
+-	ext4_mb_release_desc(&e4b);
++	ext4_mb_unload_buddy(&e4b);
+ 
+ 	*freed += count;
+ 
 
 
