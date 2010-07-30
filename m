@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760209Ab0G3SyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:54:04 -0400
-Received: from kroah.org ([198.145.64.141]:35583 "EHLO coco.kroah.org"
+	id S1759329Ab0G3ReM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:34:12 -0400
+Received: from kroah.org ([198.145.64.141]:51877 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759338Ab0G3ReP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
-Message-Id: <20100730173105.192832960@clark.site>
+	id S1758663Ab0G3RTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:23 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:08 2010
+Message-Id: <20100730171508.663721228@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:52 -0700
+Date: Fri, 30 Jul 2010 10:15:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Doug Kehn <rdkehn@yahoo.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [027/140] net/core: neighbour update Oops
-In-Reply-To: <20100730173205.GA22581@kroah.com>
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [100/165] ext4: make "offset" consistent in ext4_check_dir_entry()
+In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Doug Kehn <rdkehn@yahoo.com>
+commit b8b8afe236e97b6359d46d3a3f8c46455e192271 upstream (as of v2.6.33-git11)
 
-commit 91a72a70594e5212c97705ca6a694bd307f7a26b upstream.
+The callers of ext4_check_dir_entry() usually pass in the "file
+offset" (ext4_readdir, htree_dirblock_to_tree, search_dirblock,
+ext4_dx_find_entry, empty_dir), but a few callers (add_dirent_to_buf,
+ext4_delete_entry) only pass in the buffer offset.
 
-When configuring DMVPN (GRE + openNHRP) and a GRE remote
-address is configured a kernel Oops is observed.  The
-obserseved Oops is caused by a NULL header_ops pointer
-(neigh->dev->header_ops) in neigh_update_hhs() when
+To accomodate those last two (which would be hard to fix otherwise),
+this patch changes ext4_check_dir_entry() to print the physical block
+number and the relative offset as well as the passed-in offset.
 
-void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
-= neigh->dev->header_ops->cache_update;
-
-is executed.  The dev associated with the NULL header_ops is
-the GRE interface.  This patch guards against the
-possibility that header_ops is NULL.
-
-This Oops was first observed in kernel version 2.6.26.8.
-
-Signed-off-by: Doug Kehn <rdkehn@yahoo.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- net/core/neighbour.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/ext4/dir.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -945,7 +945,10 @@ static void neigh_update_hhs(struct neig
- {
- 	struct hh_cache *hh;
- 	void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
--		= neigh->dev->header_ops->cache_update;
-+		= NULL;
-+
-+	if (neigh->dev->header_ops)
-+		update = neigh->dev->header_ops->cache_update;
+--- a/fs/ext4/dir.c
++++ b/fs/ext4/dir.c
+@@ -84,9 +84,11 @@ int ext4_check_dir_entry(const char *fun
  
- 	if (update) {
- 		for (hh = neigh->hh; hh; hh = hh->hh_next) {
+ 	if (error_msg != NULL)
+ 		ext4_error(dir->i_sb, function,
+-			"bad entry in directory #%lu: %s - "
+-			"offset=%u, inode=%u, rec_len=%d, name_len=%d",
+-			dir->i_ino, error_msg, offset,
++			"bad entry in directory #%lu: %s - block=%llu"
++			"offset=%u(%u), inode=%u, rec_len=%d, name_len=%d",
++			dir->i_ino, error_msg,
++			(unsigned long long) bh->b_blocknr,
++			(unsigned) (offset%bh->b_size), offset,
+ 			le32_to_cpu(de->inode),
+ 			rlen, de->name_len);
+ 	return error_msg == NULL ? 1 : 0;
 
 
