@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab0G3Rfr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:35:47 -0400
-Received: from kroah.org ([198.145.64.141]:35672 "EHLO coco.kroah.org"
+	id S932463Ab0G3RqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:46:00 -0400
+Received: from kroah.org ([198.145.64.141]:36089 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759390Ab0G3Rea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:06 2010
-Message-Id: <20100730173106.441098554@clark.site>
+	id S1759274Ab0G3Rft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:49 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:12 2010
+Message-Id: <20100730173112.751439205@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:06 -0700
+Date: Fri, 30 Jul 2010 10:31:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [041/140] mac80211: do not wip out old supported rates
+        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: [111/140] KVM: MMU: invalidate and flush on spte small->large page size change
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+Always invalidate spte and flush TLBs when changing page size, to make
+sure different sized translations for the same address are never cached
+in a CPU's TLB.
 
-commit f0b058b61711ebf5be94d6865ca7b2c259b71d37 upstream.
+Currently the only case where this occurs is when a non-leaf spte pointer is
+overwritten by a leaf, large spte entry. This can happen after dirty
+logging is disabled on a memslot, for example.
 
-Use old supported rates, if AP do not provide supported rates
-information element in a new managment frame.
+Noticed by Andrea.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+KVM-Stable-Tag
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+(cherry picked from commit 3be2264be3c00865116f997dc53ebcc90fe7fc4b)
 ---
- net/mac80211/scan.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ arch/x86/kvm/mmu.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -60,7 +60,7 @@ ieee80211_bss_info_update(struct ieee802
- 			  bool beacon)
- {
- 	struct ieee80211_bss *bss;
--	int clen;
-+	int clen, srlen;
- 	s32 signal = 0;
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1907,6 +1907,8 @@ static void mmu_set_spte(struct kvm_vcpu
  
- 	if (local->hw.flags & IEEE80211_HW_SIGNAL_DBM)
-@@ -92,23 +92,24 @@ ieee80211_bss_info_update(struct ieee802
- 	if (bss->dtim_period == 0)
- 		bss->dtim_period = 1;
- 
--	bss->supp_rates_len = 0;
-+	/* replace old supported rates if we get new values */
-+	srlen = 0;
- 	if (elems->supp_rates) {
--		clen = IEEE80211_MAX_SUPP_RATES - bss->supp_rates_len;
-+		clen = IEEE80211_MAX_SUPP_RATES;
- 		if (clen > elems->supp_rates_len)
- 			clen = elems->supp_rates_len;
--		memcpy(&bss->supp_rates[bss->supp_rates_len], elems->supp_rates,
--		       clen);
--		bss->supp_rates_len += clen;
-+		memcpy(bss->supp_rates, elems->supp_rates, clen);
-+		srlen += clen;
- 	}
- 	if (elems->ext_supp_rates) {
--		clen = IEEE80211_MAX_SUPP_RATES - bss->supp_rates_len;
-+		clen = IEEE80211_MAX_SUPP_RATES - srlen;
- 		if (clen > elems->ext_supp_rates_len)
- 			clen = elems->ext_supp_rates_len;
--		memcpy(&bss->supp_rates[bss->supp_rates_len],
--		       elems->ext_supp_rates, clen);
--		bss->supp_rates_len += clen;
-+		memcpy(bss->supp_rates + srlen, elems->ext_supp_rates, clen);
-+		srlen += clen;
- 	}
-+	if (srlen)
-+		bss->supp_rates_len = srlen;
- 
- 	bss->wmm_used = elems->wmm_param || elems->wmm_info;
- 
+ 			child = page_header(pte & PT64_BASE_ADDR_MASK);
+ 			mmu_page_remove_parent_pte(child, sptep);
++			__set_spte(sptep, shadow_trap_nonpresent_pte);
++			kvm_flush_remote_tlbs(vcpu->kvm);
+ 		} else if (pfn != spte_to_pfn(*sptep)) {
+ 			pgprintk("hfn old %lx new %lx\n",
+ 				 spte_to_pfn(*sptep), pfn);
 
 
