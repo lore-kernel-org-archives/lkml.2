@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab0G3S1s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:27:48 -0400
-Received: from kroah.org ([198.145.64.141]:58270 "EHLO coco.kroah.org"
+	id S933186Ab0G3S2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:28:00 -0400
+Received: from kroah.org ([198.145.64.141]:58263 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759786Ab0G3Rz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:26 -0400
+	id S1759766Ab0G3RzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:25 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:40 2010
-Message-Id: <20100730175140.451142291@clark.site>
+Message-Id: <20100730175140.368545735@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:32 -0700
+Date: Fri, 30 Jul 2010 10:51:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: [075/205] netfilter: ip6t_REJECT: fix a dst leak in ipv6 REJECT
+        Stephen Hemminger <shemminger@vyatta.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [074/205] ipv6: fix NULL reference in proxy neighbor discovery
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: stephen hemminger <shemminger@vyatta.com>
 
-commit 499031ac8a3df6738f6186ded9da853e8ea18253 upstream.
+commit 9f888160bdcccf0565dd2774956b8d9456e610be upstream.
 
-We should release dst if dst->error is set.
+The addition of TLLAO option created a kernel OOPS regression
+for the case where neighbor advertisement is being sent via
+proxy path.  When using proxy, ipv6_get_ifaddr() returns NULL
+causing the NULL dereference.
 
-Bug introduced in 2.6.14 by commit e104411b82f5c
-([XFRM]: Always release dst_entry on error in xfrm_lookup)
+Change causing the bug was:
+commit f7734fdf61ec6bb848e0bafc1fb8bad2c124bb50
+Author: Octavian Purdila <opurdila@ixiacom.com>
+Date:   Fri Oct 2 11:39:15 2009 +0000
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+    make TLLAO option for NA packets configurable
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv6/netfilter/ip6t_REJECT.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/ipv6/ndisc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/netfilter/ip6t_REJECT.c
-+++ b/net/ipv6/netfilter/ip6t_REJECT.c
-@@ -96,9 +96,11 @@ static void send_reset(struct net *net,
- 	fl.fl_ip_dport = otcph.source;
- 	security_skb_classify_flow(oldskb, &fl);
- 	dst = ip6_route_output(net, NULL, &fl);
--	if (dst == NULL)
-+	if (dst == NULL || dst->error) {
-+		dst_release(dst);
- 		return;
--	if (dst->error || xfrm_lookup(net, &dst, &fl, NULL, 0))
-+	}
-+	if (xfrm_lookup(net, &dst, &fl, NULL, 0))
- 		return;
+--- a/net/ipv6/ndisc.c
++++ b/net/ipv6/ndisc.c
+@@ -586,6 +586,7 @@ static void ndisc_send_na(struct net_dev
+ 		src_addr = solicited_addr;
+ 		if (ifp->flags & IFA_F_OPTIMISTIC)
+ 			override = 0;
++		inc_opt |= ifp->idev->cnf.force_tllao;
+ 		in6_ifa_put(ifp);
+ 	} else {
+ 		if (ipv6_dev_get_saddr(dev_net(dev), dev, daddr,
+@@ -599,7 +600,6 @@ static void ndisc_send_na(struct net_dev
+ 	icmp6h.icmp6_solicited = solicited;
+ 	icmp6h.icmp6_override = override;
  
- 	hh_len = (dst->dev->hard_header_len + 15)&~15;
+-	inc_opt |= ifp->idev->cnf.force_tllao;
+ 	__ndisc_send(dev, neigh, daddr, src_addr,
+ 		     &icmp6h, solicited_addr,
+ 		     inc_opt ? ND_OPT_TARGET_LL_ADDR : 0);
 
 
