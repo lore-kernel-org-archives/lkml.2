@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760338Ab0G3TAx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:00:53 -0400
-Received: from kroah.org ([198.145.64.141]:51787 "EHLO coco.kroah.org"
+	id S1760378Ab0G3TBo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:01:44 -0400
+Received: from kroah.org ([198.145.64.141]:51732 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758270Ab0G3RTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:09 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:07 2010
-Message-Id: <20100730171507.536657367@clark.site>
+	id S1758203Ab0G3RTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:01 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:06 2010
+Message-Id: <20100730171506.902841631@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:15 -0700
+Date: Fri, 30 Jul 2010 10:15:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [087/165] ext4: Patch up how we claim metadata blocks for quota purposes
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [080/165] ethtool: Fix potential user buffer overflow for ETHTOOL_{G, S}RXFH
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,266 +26,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit 0637c6f4135f592f094207c7c21e7c0fc5557834 upstream (as of v2.6.33-rc3)
+commit bf988435bd5b53529f4408a8efb1f433f6ddfda9 upstream.
 
-As reported in Kernel Bugzilla #14936, commit d21cd8f triggered a BUG
-in the function ext4_da_update_reserve_space() found in
-fs/ext4/inode.c.  The root cause of this BUG() was caused by the fact
-that ext4_calc_metadata_amount() can severely over-estimate how many
-metadata blocks will be needed, especially when using direct
-block-mapped files.
+struct ethtool_rxnfc was originally defined in 2.6.27 for the
+ETHTOOL_{G,S}RXFH command with only the cmd, flow_type and data
+fields.  It was then extended in 2.6.30 to support various additional
+commands.  These commands should have been defined to use a new
+structure, but it is too late to change that now.
 
-In addition, it can also badly *under* estimate how much space is
-needed, since ext4_calc_metadata_amount() assumes that the blocks are
-contiguous, and this is not always true.  If the application is
-writing blocks to a sparse file, the number of metadata blocks
-necessary can be severly underestimated by the functions
-ext4_da_reserve_space(), ext4_da_update_reserve_space() and
-ext4_da_release_space().  This was the cause of the dq_claim_space
-reports found on kerneloops.org.
+Since user-space may still be using the old structure definition
+for the ETHTOOL_{G,S}RXFH commands, and since they do not need the
+additional fields, only copy the originally defined fields to and
+from user-space.
 
-Unfortunately, doing this right means that we need to massively
-over-estimate the amount of free space needed.  So in some cases we
-may need to force the inode to be written to disk asynchronously in
-to avoid spurious quota failures.
-
-http://bugzilla.kernel.org/show_bug.cgi?id=14936
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/inode.c |  153 ++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 82 insertions(+), 71 deletions(-)
+ include/linux/ethtool.h |    2 ++
+ net/core/ethtool.c      |   38 +++++++++++++++++++++++++++++---------
+ 2 files changed, 31 insertions(+), 9 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1085,43 +1085,47 @@ static int ext4_calc_metadata_amount(str
- 	return ext4_indirect_calc_metadata_amount(inode, blocks);
+--- a/include/linux/ethtool.h
++++ b/include/linux/ethtool.h
+@@ -357,6 +357,8 @@ struct ethtool_rxnfc {
+ 	__u32				flow_type;
+ 	/* The rx flow hash value or the rule DB size */
+ 	__u64				data;
++	/* The following fields are not valid and must not be used for
++	 * the ETHTOOL_{G,X}RXFH commands. */
+ 	struct ethtool_rx_flow_spec	fs;
+ 	__u32				rule_cnt;
+ 	__u32				rule_locs[0];
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -216,22 +216,34 @@ static int ethtool_get_drvinfo(struct ne
+ 	return 0;
  }
  
-+/*
-+ * Called with i_data_sem down, which is important since we can call
-+ * ext4_discard_preallocations() from here.
-+ */
- static void ext4_da_update_reserve_space(struct inode *inode, int used)
+-static int ethtool_set_rxnfc(struct net_device *dev, void __user *useraddr)
++static int ethtool_set_rxnfc(struct net_device *dev,
++			     u32 cmd, void __user *useraddr)
  {
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
--	int total, mdb, mdb_free, mdb_claim = 0;
-+	struct ext4_inode_info *ei = EXT4_I(inode);
-+	int mdb_free = 0;
+-	struct ethtool_rxnfc cmd;
++	struct ethtool_rxnfc info;
++	size_t info_size = sizeof(info);
  
--	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
--	/* recalculate the number of metablocks still need to be reserved */
--	total = EXT4_I(inode)->i_reserved_data_blocks - used;
--	mdb = ext4_calc_metadata_amount(inode, total);
--
--	/* figure out how many metablocks to release */
--	BUG_ON(mdb > EXT4_I(inode)->i_reserved_meta_blocks);
--	mdb_free = EXT4_I(inode)->i_reserved_meta_blocks - mdb;
--
--	if (mdb_free) {
--		/* Account for allocated meta_blocks */
--		mdb_claim = EXT4_I(inode)->i_allocated_meta_blocks;
--		BUG_ON(mdb_free < mdb_claim);
--		mdb_free -= mdb_claim;
-+	spin_lock(&ei->i_block_reservation_lock);
-+	if (unlikely(used > ei->i_reserved_data_blocks)) {
-+		ext4_msg(inode->i_sb, KERN_NOTICE, "%s: ino %lu, used %d "
-+			 "with only %d reserved data blocks\n",
-+			 __func__, inode->i_ino, used,
-+			 ei->i_reserved_data_blocks);
-+		WARN_ON(1);
-+		used = ei->i_reserved_data_blocks;
-+	}
+ 	if (!dev->ethtool_ops->set_rxnfc)
+ 		return -EOPNOTSUPP;
+ 
+-	if (copy_from_user(&cmd, useraddr, sizeof(cmd)))
++	/* struct ethtool_rxnfc was originally defined for
++	 * ETHTOOL_{G,S}RXFH with only the cmd, flow_type and data
++	 * members.  User-space might still be using that
++	 * definition. */
++	if (cmd == ETHTOOL_SRXFH)
++		info_size = (offsetof(struct ethtool_rxnfc, data) +
++			     sizeof(info.data));
 +
-+	/* Update per-inode reservations */
-+	ei->i_reserved_data_blocks -= used;
-+	used += ei->i_allocated_meta_blocks;
-+	ei->i_reserved_meta_blocks -= ei->i_allocated_meta_blocks;
-+	ei->i_allocated_meta_blocks = 0;
-+	percpu_counter_sub(&sbi->s_dirtyblocks_counter, used);
++	if (copy_from_user(&info, useraddr, info_size))
+ 		return -EFAULT;
  
--		/* update fs dirty blocks counter */
-+	if (ei->i_reserved_data_blocks == 0) {
-+		/*
-+		 * We can release all of the reserved metadata blocks
-+		 * only when we have written all of the delayed
-+		 * allocation blocks.
-+		 */
-+		mdb_free = ei->i_allocated_meta_blocks;
- 		percpu_counter_sub(&sbi->s_dirtyblocks_counter, mdb_free);
--		EXT4_I(inode)->i_allocated_meta_blocks = 0;
--		EXT4_I(inode)->i_reserved_meta_blocks = mdb;
-+		ei->i_allocated_meta_blocks = 0;
- 	}
--
--	/* update per-inode reservations */
--	BUG_ON(used  > EXT4_I(inode)->i_reserved_data_blocks);
--	EXT4_I(inode)->i_reserved_data_blocks -= used;
--	percpu_counter_sub(&sbi->s_dirtyblocks_counter, used + mdb_claim);
- 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
- 
--	vfs_dq_claim_block(inode, used + mdb_claim);
--
--	/*
--	 * free those over-booking quota for metadata blocks
--	 */
-+	/* Update quota subsystem */
-+	vfs_dq_claim_block(inode, used);
- 	if (mdb_free)
- 		vfs_dq_release_reservation_block(inode, mdb_free);
- 
-@@ -1130,7 +1134,8 @@ static void ext4_da_update_reserve_space
- 	 * there aren't any writers on the inode, we can discard the
- 	 * inode's preallocations.
- 	 */
--	if (!total && (atomic_read(&inode->i_writecount) == 0))
-+	if ((ei->i_reserved_data_blocks == 0) &&
-+	    (atomic_read(&inode->i_writecount) == 0))
- 		ext4_discard_preallocations(inode);
+-	return dev->ethtool_ops->set_rxnfc(dev, &cmd);
++	return dev->ethtool_ops->set_rxnfc(dev, &info);
  }
  
-@@ -1843,7 +1848,8 @@ static int ext4_da_reserve_space(struct
+-static int ethtool_get_rxnfc(struct net_device *dev, void __user *useraddr)
++static int ethtool_get_rxnfc(struct net_device *dev,
++			     u32 cmd, void __user *useraddr)
  {
- 	int retries = 0;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
--	unsigned long md_needed, mdblocks, total = 0;
-+	struct ext4_inode_info *ei = EXT4_I(inode);
-+	unsigned long md_needed, md_reserved, total = 0;
+ 	struct ethtool_rxnfc info;
++	size_t info_size = sizeof(info);
+ 	const struct ethtool_ops *ops = dev->ethtool_ops;
+ 	int ret;
+ 	void *rule_buf = NULL;
+@@ -239,7 +251,15 @@ static int ethtool_get_rxnfc(struct net_
+ 	if (!ops->get_rxnfc)
+ 		return -EOPNOTSUPP;
  
- 	/*
- 	 * recalculate the amount of metadata blocks to reserve
-@@ -1851,35 +1857,44 @@ static int ext4_da_reserve_space(struct
- 	 * worse case is one extent per block
- 	 */
- repeat:
--	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
--	total = EXT4_I(inode)->i_reserved_data_blocks + nrblocks;
--	mdblocks = ext4_calc_metadata_amount(inode, total);
--	BUG_ON(mdblocks < EXT4_I(inode)->i_reserved_meta_blocks);
--
--	md_needed = mdblocks - EXT4_I(inode)->i_reserved_meta_blocks;
-+	spin_lock(&ei->i_block_reservation_lock);
-+	md_reserved = ei->i_reserved_meta_blocks;
-+	md_needed = ext4_calc_metadata_amount(inode, nrblocks);
- 	total = md_needed + nrblocks;
--	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
-+	spin_unlock(&ei->i_block_reservation_lock);
+-	if (copy_from_user(&info, useraddr, sizeof(info)))
++	/* struct ethtool_rxnfc was originally defined for
++	 * ETHTOOL_{G,S}RXFH with only the cmd, flow_type and data
++	 * members.  User-space might still be using that
++	 * definition. */
++	if (cmd == ETHTOOL_GRXFH)
++		info_size = (offsetof(struct ethtool_rxnfc, data) +
++			     sizeof(info.data));
++
++	if (copy_from_user(&info, useraddr, info_size))
+ 		return -EFAULT;
  
- 	/*
- 	 * Make quota reservation here to prevent quota overflow
- 	 * later. Real quota accounting is done at pages writeout
- 	 * time.
- 	 */
--	if (vfs_dq_reserve_block(inode, total))
-+	if (vfs_dq_reserve_block(inode, total)) {
-+		/*
-+		 * We tend to badly over-estimate the amount of
-+		 * metadata blocks which are needed, so if we have
-+		 * reserved any metadata blocks, try to force out the
-+		 * inode and see if we have any better luck.
-+		 */
-+		if (md_reserved && retries++ <= 3)
-+			goto retry;
- 		return -EDQUOT;
-+	}
+ 	if (info.cmd == ETHTOOL_GRXCLSRLALL) {
+@@ -257,7 +277,7 @@ static int ethtool_get_rxnfc(struct net_
+ 		goto err_out;
  
- 	if (ext4_claim_free_blocks(sbi, total)) {
- 		vfs_dq_release_reservation_block(inode, total);
- 		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
-+		retry:
-+			if (md_reserved)
-+				write_inode_now(inode, (retries == 3));
- 			yield();
- 			goto repeat;
- 		}
- 		return -ENOSPC;
- 	}
--	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
--	EXT4_I(inode)->i_reserved_data_blocks += nrblocks;
--	EXT4_I(inode)->i_reserved_meta_blocks += md_needed;
--	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
-+	spin_lock(&ei->i_block_reservation_lock);
-+	ei->i_reserved_data_blocks += nrblocks;
-+	ei->i_reserved_meta_blocks += md_needed;
-+	spin_unlock(&ei->i_block_reservation_lock);
+ 	ret = -EFAULT;
+-	if (copy_to_user(useraddr, &info, sizeof(info)))
++	if (copy_to_user(useraddr, &info, info_size))
+ 		goto err_out;
  
- 	return 0;       /* success */
- }
-@@ -1887,49 +1902,45 @@ repeat:
- static void ext4_da_release_space(struct inode *inode, int to_free)
- {
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
--	int total, mdb, mdb_free, release;
-+	struct ext4_inode_info *ei = EXT4_I(inode);
- 
- 	if (!to_free)
- 		return;		/* Nothing to release, exit */
- 
- 	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
- 
--	if (!EXT4_I(inode)->i_reserved_data_blocks) {
-+	if (unlikely(to_free > ei->i_reserved_data_blocks)) {
- 		/*
--		 * if there is no reserved blocks, but we try to free some
--		 * then the counter is messed up somewhere.
--		 * but since this function is called from invalidate
--		 * page, it's harmless to return without any action
-+		 * if there aren't enough reserved blocks, then the
-+		 * counter is messed up somewhere.  Since this
-+		 * function is called from invalidate page, it's
-+		 * harmless to return without any action.
- 		 */
--		printk(KERN_INFO "ext4 delalloc try to release %d reserved "
--			    "blocks for inode %lu, but there is no reserved "
--			    "data blocks\n", to_free, inode->i_ino);
--		spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
--		return;
-+		ext4_msg(inode->i_sb, KERN_NOTICE, "ext4_da_release_space: "
-+			 "ino %lu, to_free %d with only %d reserved "
-+			 "data blocks\n", inode->i_ino, to_free,
-+			 ei->i_reserved_data_blocks);
-+		WARN_ON(1);
-+		to_free = ei->i_reserved_data_blocks;
- 	}
-+	ei->i_reserved_data_blocks -= to_free;
- 
--	/* recalculate the number of metablocks still need to be reserved */
--	total = EXT4_I(inode)->i_reserved_data_blocks - to_free;
--	mdb = ext4_calc_metadata_amount(inode, total);
--
--	/* figure out how many metablocks to release */
--	BUG_ON(mdb > EXT4_I(inode)->i_reserved_meta_blocks);
--	mdb_free = EXT4_I(inode)->i_reserved_meta_blocks - mdb;
--
--	release = to_free + mdb_free;
--
--	/* update fs dirty blocks counter for truncate case */
--	percpu_counter_sub(&sbi->s_dirtyblocks_counter, release);
-+	if (ei->i_reserved_data_blocks == 0) {
-+		/*
-+		 * We can release all of the reserved metadata blocks
-+		 * only when we have written all of the delayed
-+		 * allocation blocks.
-+		 */
-+		to_free += ei->i_allocated_meta_blocks;
-+		ei->i_allocated_meta_blocks = 0;
-+	}
- 
--	/* update per-inode reservations */
--	BUG_ON(to_free > EXT4_I(inode)->i_reserved_data_blocks);
--	EXT4_I(inode)->i_reserved_data_blocks -= to_free;
-+	/* update fs dirty blocks counter */
-+	percpu_counter_sub(&sbi->s_dirtyblocks_counter, to_free);
- 
--	BUG_ON(mdb > EXT4_I(inode)->i_reserved_meta_blocks);
--	EXT4_I(inode)->i_reserved_meta_blocks = mdb;
- 	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
- 
--	vfs_dq_release_reservation_block(inode, release);
-+	vfs_dq_release_reservation_block(inode, to_free);
- }
- 
- static void ext4_da_page_release_reservation(struct page *page,
+ 	if (rule_buf) {
+@@ -1112,12 +1132,12 @@ int dev_ethtool(struct net *net, struct
+ 	case ETHTOOL_GRXCLSRLCNT:
+ 	case ETHTOOL_GRXCLSRULE:
+ 	case ETHTOOL_GRXCLSRLALL:
+-		rc = ethtool_get_rxnfc(dev, useraddr);
++		rc = ethtool_get_rxnfc(dev, ethcmd, useraddr);
+ 		break;
+ 	case ETHTOOL_SRXFH:
+ 	case ETHTOOL_SRXCLSRLDEL:
+ 	case ETHTOOL_SRXCLSRLINS:
+-		rc = ethtool_set_rxnfc(dev, useraddr);
++		rc = ethtool_set_rxnfc(dev, ethcmd, useraddr);
+ 		break;
+ 	case ETHTOOL_GGRO:
+ 		rc = ethtool_get_gro(dev, useraddr);
 
 
