@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760591Ab0G3TNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:13:44 -0400
-Received: from kroah.org ([198.145.64.141]:46335 "EHLO coco.kroah.org"
+	id S1756725Ab0G3RSG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:18:06 -0400
+Received: from kroah.org ([198.145.64.141]:46181 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756801Ab0G3RSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:02 2010
-Message-Id: <20100730171502.551939522@clark.site>
+	id S1754711Ab0G3RRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:17:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:00 2010
+Message-Id: <20100730171500.411450212@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:20 -0700
+Date: Fri, 30 Jul 2010 10:13:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel J Blueman <daniel.blueman@gmail.com>,
-        Eric Anholt <eric@anholt.net>
-Subject: [032/165] i915: fix lock imbalance on error path...
+        Jeff Layton <jlayton@redhat.com>
+Subject: [008/165] cifs: remove bogus first_time check in NTLMv2 session setup code
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel J Blueman <daniel.blueman@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit f953c9353f5fe6e98fa7f32f51060a74d845b5f8 upstream.
+commit 8a224d489454b7457105848610cfebebdec5638d upstream.
 
-While investigating Intel i5 Arrandale GPU lockups with -rc4, I
-noticed a lock imbalance.
+This bug appears to be the result of a cut-and-paste mistake from the
+NTLMv1 code. The function to generate the MAC key was commented out, but
+not the conditional above it. The conditional then ended up causing the
+session setup key not to be copied to the buffer unless this was the
+first session on the socket, and that made all but the first NTLMv2
+session setup fail.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Fix this by removing the conditional and all of the commented clutter
+that made it difficult to see.
+
+Reported-by: Gunther Deschner <gdeschne@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_drv.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/cifs/sess.c |   10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -192,6 +192,7 @@ int i965_reset(struct drm_device *dev, u
- 		}
- 	} else {
- 		DRM_ERROR("Error occurred. Don't know how to reset this chip.\n");
-+		mutex_unlock(&dev->struct_mutex);
- 		return -ENODEV;
- 	}
+--- a/fs/cifs/sess.c
++++ b/fs/cifs/sess.c
+@@ -723,15 +723,7 @@ ssetup_ntlmssp_authenticate:
  
+ 		/* calculate session key */
+ 		setup_ntlmv2_rsp(ses, v2_sess_key, nls_cp);
+-		if (first_time) /* should this be moved into common code
+-				   with similar ntlmv2 path? */
+-		/*   cifs_calculate_ntlmv2_mac_key(ses->server->mac_signing_key,
+-				response BB FIXME, v2_sess_key); */
+-
+-		/* copy session key */
+-
+-	/*	memcpy(bcc_ptr, (char *)ntlm_session_key,LM2_SESS_KEY_SIZE);
+-		bcc_ptr += LM2_SESS_KEY_SIZE; */
++		/* FIXME: calculate MAC key */
+ 		memcpy(bcc_ptr, (char *)v2_sess_key,
+ 		       sizeof(struct ntlmv2_resp));
+ 		bcc_ptr += sizeof(struct ntlmv2_resp);
 
 
