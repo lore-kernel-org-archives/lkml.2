@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab0G3SbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:31:16 -0400
-Received: from kroah.org ([198.145.64.141]:58169 "EHLO coco.kroah.org"
+	id S1752314Ab0G3Sbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:31:55 -0400
+Received: from kroah.org ([198.145.64.141]:58134 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759890Ab0G3RzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:39 2010
-Message-Id: <20100730175139.135167643@clark.site>
+	id S1759429Ab0G3RzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:38 2010
+Message-Id: <20100730175138.672205842@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:18 -0700
+Date: Fri, 30 Jul 2010 10:51:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        sroland@vmware.com, Alex Deucher <alexdeucher@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [061/205] drm/radeon/r100/r200: fix calculation of compressed cube maps
+        Daniel J Blueman <daniel.blueman@gmail.com>,
+        Eric Anholt <eric@anholt.net>
+Subject: [056/205] i915: fix lock imbalance on error path...
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,96 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Scheidegger <sroland@vmware.com>
+From: Daniel J Blueman <daniel.blueman@gmail.com>
 
-commit 37cf6b03f9f28c62dafb0b9ce5f1ba29c8baffa9 upstream.
+commit f953c9353f5fe6e98fa7f32f51060a74d845b5f8 upstream.
 
-This needs similar handling to other compressed textures.
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=26428
+While investigating Intel i5 Arrandale GPU lockups with -rc4, I
+noticed a lock imbalance.
 
-Signed-off-by: sroland@vmware.com
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r100.c |   58 ++++++++++++++++++++++--------------------
- 1 file changed, 31 insertions(+), 27 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -2829,33 +2829,6 @@ static inline void r100_cs_track_texture
- 	DRM_ERROR("compress format            %d\n", t->compress_format);
- }
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -341,6 +341,7 @@ int i965_reset(struct drm_device *dev, u
+ 		}
+ 	} else {
+ 		DRM_ERROR("Error occurred. Don't know how to reset this chip.\n");
++		mutex_unlock(&dev->struct_mutex);
+ 		return -ENODEV;
+ 	}
  
--static int r100_cs_track_cube(struct radeon_device *rdev,
--			      struct r100_cs_track *track, unsigned idx)
--{
--	unsigned face, w, h;
--	struct radeon_bo *cube_robj;
--	unsigned long size;
--
--	for (face = 0; face < 5; face++) {
--		cube_robj = track->textures[idx].cube_info[face].robj;
--		w = track->textures[idx].cube_info[face].width;
--		h = track->textures[idx].cube_info[face].height;
--
--		size = w * h;
--		size *= track->textures[idx].cpp;
--
--		size += track->textures[idx].cube_info[face].offset;
--
--		if (size > radeon_bo_size(cube_robj)) {
--			DRM_ERROR("Cube texture offset greater than object size %lu %lu\n",
--				  size, radeon_bo_size(cube_robj));
--			r100_cs_track_texture_print(&track->textures[idx]);
--			return -1;
--		}
--	}
--	return 0;
--}
--
- static int r100_track_compress_size(int compress_format, int w, int h)
- {
- 	int block_width, block_height, block_bytes;
-@@ -2886,6 +2859,37 @@ static int r100_track_compress_size(int
- 	return sz;
- }
- 
-+static int r100_cs_track_cube(struct radeon_device *rdev,
-+			      struct r100_cs_track *track, unsigned idx)
-+{
-+	unsigned face, w, h;
-+	struct radeon_bo *cube_robj;
-+	unsigned long size;
-+	unsigned compress_format = track->textures[idx].compress_format;
-+
-+	for (face = 0; face < 5; face++) {
-+		cube_robj = track->textures[idx].cube_info[face].robj;
-+		w = track->textures[idx].cube_info[face].width;
-+		h = track->textures[idx].cube_info[face].height;
-+
-+		if (compress_format) {
-+			size = r100_track_compress_size(compress_format, w, h);
-+		} else
-+			size = w * h;
-+		size *= track->textures[idx].cpp;
-+
-+		size += track->textures[idx].cube_info[face].offset;
-+
-+		if (size > radeon_bo_size(cube_robj)) {
-+			DRM_ERROR("Cube texture offset greater than object size %lu %lu\n",
-+				  size, radeon_bo_size(cube_robj));
-+			r100_cs_track_texture_print(&track->textures[idx]);
-+			return -1;
-+		}
-+	}
-+	return 0;
-+}
-+
- static int r100_cs_track_texture_check(struct radeon_device *rdev,
- 				       struct r100_cs_track *track)
- {
 
 
