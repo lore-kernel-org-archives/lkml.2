@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab0G3SXc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:23:32 -0400
-Received: from kroah.org ([198.145.64.141]:58604 "EHLO coco.kroah.org"
+	id S933148Ab0G3SXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:23:42 -0400
+Received: from kroah.org ([198.145.64.141]:58596 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327Ab0G3R4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:06 -0400
+	id S932302Ab0G3R4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
-Message-Id: <20100730175142.318054023@clark.site>
+Message-Id: <20100730175142.217237871@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:52 -0700
+Date: Fri, 30 Jul 2010 10:51:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikael Pettersson <mikpe@it.uu.se>, Khem Raj <raj.khem@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: [095/205] compiler-gcc.h: gcc-4.5 needs noclone and noinline on __naked functions
+        Liu Aleaxander <Aleaxander@gmail.com>,
+        Boaz Harrosh <bharrosh@panasas.com>, Jeff Dike <jdike@addtoit.com>
+Subject: [094/205] um: os-linux/mem.c needs sys/stat.h
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,70 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikael Pettersson <mikpe@it.uu.se>
+From: Liu Aleaxander <aleaxander@gmail.com>
 
-commit 9c695203a7ddbe49dba5f22f4c941d24f47475df upstream.
+commit fb967ecc584c20c74a007de749ca597068b0fcac upstream.
 
-A __naked function is defined in C but with a body completely implemented
-by asm(), including any prologue and epilogue.  These asm() bodies expect
-standard calling conventions for parameter passing.  Older GCCs implement
-that correctly, but 4.[56] currently do not, see GCC PR44290.  In the
-Linux kernel this breaks ARM, causing most arch/arm/mm/copypage-*.c
-modules to get miscompiled, resulting in kernel crashes during bootup.
+The os-linux/mem.c file calls fchmod function, which is declared in sys/stat.h
+header file, so include it.  Fixes build breakage under FC13.
 
-Part of the kernel fix is to augment the __naked function attribute to
-also imply noinline and noclone.  This patch implements that, and has been
-verified to fix boot failures with gcc-4.5 compiled 2.6.34 and 2.6.35-rc1
-kernels.  The patch is a no-op with older GCCs.
-
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
-Signed-off-by: Khem Raj <raj.khem@gmail.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
+Signed-off-by: Liu Aleaxander <Aleaxander@gmail.com>
+Acked-by: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Jeff Dike <jdike@addtoit.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/compiler-gcc.h  |   10 +++++++++-
- include/linux/compiler-gcc4.h |    4 ++++
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ arch/um/os-Linux/mem.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -58,8 +58,12 @@
-  * naked functions because then mcount is called without stack and frame pointer
-  * being set up and there is no chance to restore the lr register to the value
-  * before mcount was called.
-+ *
-+ * The asm() bodies of naked functions often depend on standard calling conventions,
-+ * therefore they must be noinline and noclone.  GCC 4.[56] currently fail to enforce
-+ * this, so we must do so ourselves.  See GCC PR44290.
-  */
--#define __naked				__attribute__((naked)) notrace
-+#define __naked				__attribute__((naked)) noinline __noclone notrace
- 
- #define __noreturn			__attribute__((noreturn))
- 
-@@ -85,3 +89,7 @@
- #define _gcc_header(x) __gcc_header(linux/compiler-gcc##x.h)
- #define gcc_header(x) _gcc_header(x)
- #include gcc_header(__GNUC__)
-+
-+#if !defined(__noclone)
-+#define __noclone	/* not needed */
-+#endif
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -48,6 +48,10 @@
-  * unreleased.  Really, we need to have autoconf for the kernel.
-  */
- #define unreachable() __builtin_unreachable()
-+
-+/* Mark a function definition as prohibited from being cloned. */
-+#define __noclone	__attribute__((__noclone__))
-+
- #endif
- 
- #endif
+--- a/arch/um/os-Linux/mem.c
++++ b/arch/um/os-Linux/mem.c
+@@ -10,6 +10,7 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <string.h>
++#include <sys/stat.h>
+ #include <sys/mman.h>
+ #include <sys/param.h>
+ #include "init.h"
 
 
