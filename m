@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760098Ab0G3SM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:12:26 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:56850 "EHLO mail-out1.uio.no"
+	id S932696Ab0G3R5P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:57:15 -0400
+Received: from kroah.org ([198.145.64.141]:58643 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760085Ab0G3SMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 14:12:13 -0400
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended file stats available [ver #6]
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Phil Pishioneri <pgp@psu.edu>
-Cc: Volker.Lendecke@SerNet.DE, Jeremy Allison <jra@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-In-Reply-To: <4C5311F4.2050100@psu.edu>
-References: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	 <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	 <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	 <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	 <20100722162712.GB10352@jeremy-laptop>
-	 <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	 <1279817930.3621.14.camel@heimdal.trondhjem.org>
-	 <20100722180204.GA32008@samba1>  <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>
-	 <1279825160.3621.71.camel@heimdal.trondhjem.org> <4C5311F4.2050100@psu.edu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 14:11:46 -0400
-Message-ID: <1280513506.12852.22.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 13 msgs/h 1 sum rcpts/h 14 sum msgs/h 1 total rcpts 704 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: DB2457AE5CC7BC818B903552960ADEBD40F060CD
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 289 max/h 6 blacklist 0 greylist 0 ratelimit 0
+	id S932370Ab0G3R4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:42 2010
+Message-Id: <20100730175142.813457452@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:51:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [100/205] powerpc: Fix logic error in fixup_irqs
+In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-30 at 13:55 -0400, Phil Pishioneri wrote:
-> On 7/22/10 2:59 PM, Trond Myklebust wrote:
-> > The fact remains that most of us would be hard pressed to name an
-> > application
-> 
-> Microsoft Office?
-> 
-> > that requires you to share the same dataset to both
-> > Windows/CIFS and posix NFS clients.
-> 
-> NFS client: Mac OS X (NFSv3, since v4 on it is still alpha *cough*).
-> 
-> > tends to discourage mixing the two environments.
-> 
-> Or is "discourage" not strong enough term to describe that we shouldn't 
-> be doing this?
-> 
-> -Phil
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-Your Mac has a perfectly functional CIFS client, as do your Linux boxes.
-They both interoperate just fine with Samba, and would presumably
-continue to do so if someone were to decide to reuse the ctime field on
-your Samba box as storage for a create time.
+------------------
 
-  Trond
+From: Johannes Berg <johannes@sipsolutions.net>
+
+commit 3cd8519248e9e17d982c6fab0f1a89bca6feb49a upstream.
+
+When SPARSE_IRQ is set, irq_to_desc() can
+return NULL. While the code here has a
+check for NULL, it's not really correct.
+Fix it by separating the check for it.
+
+This fixes CPU hot unplug for me.
+
+Reported-by: Alastair Bridgewater <alastair.bridgewater@gmail.com>
+Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/powerpc/kernel/irq.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -294,7 +294,10 @@ void fixup_irqs(cpumask_t map)
+ 		cpumask_t mask;
+ 
+ 		desc = irq_to_desc(irq);
+-		if (desc && desc->status & IRQ_PER_CPU)
++		if (!desc)
++			continue;
++
++		if (desc->status & IRQ_PER_CPU)
+ 			continue;
+ 
+ 		cpumask_and(&mask, desc->affinity, &map);
+
 
