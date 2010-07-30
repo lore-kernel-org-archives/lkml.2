@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760193Ab0G3SZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:25:10 -0400
-Received: from kroah.org ([198.145.64.141]:58520 "EHLO coco.kroah.org"
+	id S932440Ab0G3SZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:25:43 -0400
+Received: from kroah.org ([198.145.64.141]:58507 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759778Ab0G3Rzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:41 -0400
+	id S1759963Ab0G3Rzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:39 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:41 2010
-Message-Id: <20100730175141.319373528@clark.site>
+Message-Id: <20100730175141.142808738@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:42 -0700
+Date: Fri, 30 Jul 2010 10:51:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        Muli Ben-Yehuda <muli@il.ibm.com>,
-        Corinna Schultz <cschultz@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [085/205] x86, Calgary: Increase max PHB number
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Prasad <prasad@linux.vnet.ibm.com>
+Subject: [083/205] x86: Send a SIGTRAP for user icebp traps
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,49 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darrick J. Wong <djwong@us.ibm.com>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit 499a00e92dd9a75395081f595e681629eb1eebad upstream.
+commit a1e80fafc9f0742a1776a0490258cb64912411b0 upstream.
 
-Newer systems (x3950M2) can have 48 PHBs per chassis and 8
-chassis, so bump the limits up and provide an explanation
-of the requirements for each class.
+Before we had a generic breakpoint layer, x86 used to send a
+sigtrap for any debug event that happened in userspace,
+except if it was caused by lazy dr7 switches.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-Acked-by: Muli Ben-Yehuda <muli@il.ibm.com>
-Cc: Corinna Schultz <cschultz@linux.vnet.ibm.com>
-LKML-Reference: <20100624212647.GI15515@tux1.beaverton.ibm.com>
-[ v2: Fixed build bug, added back PHBS_PER_CALGARY == 4 ]
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Currently we only send such signal for single step or breakpoint
+events.
+
+However, there are three other kind of debug exceptions:
+
+- debug register access detected: trigger an exception if the
+  next instruction touches the debug registers. We don't use
+  it.
+- task switch, but we don't use tss.
+- icebp/int01 trap. This instruction (0xf1) is undocumented and
+  generates an int 1 exception. Unlike single step through TF
+  flag, it doesn't set the single step origin of the exception
+  in dr6.
+
+icebp then used to be reported in userspace using trap signals
+but this have been incidentally broken with the new breakpoint
+code. Reenable this. Since this is the only debug event that
+doesn't set anything in dr6, this is all we have to check.
+
+This fixes a regression in Wine where World Of Warcraft got broken
+as it uses this for software protection checks purposes. And
+probably other apps do.
+
+Reported-and-tested-by: Alexandre Julliard <julliard@winehq.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Prasad <prasad@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/pci-calgary_64.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ arch/x86/kernel/traps.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -103,11 +103,16 @@ int use_calgary __read_mostly = 0;
- #define PMR_SOFTSTOPFAULT	0x40000000
- #define PMR_HARDSTOP		0x20000000
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -529,6 +529,7 @@ asmlinkage __kprobes struct pt_regs *syn
+ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+ {
+ 	struct task_struct *tsk = current;
++	int user_icebp = 0;
+ 	unsigned long dr6;
+ 	int si_code;
  
--#define MAX_NUM_OF_PHBS		8 /* how many PHBs in total? */
--#define MAX_NUM_CHASSIS		8 /* max number of chassis */
--/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
--#define MAX_PHB_BUS_NUM		(MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
--#define PHBS_PER_CALGARY	4
-+/*
-+ * The maximum PHB bus number.
-+ * x3950M2 (rare): 8 chassis, 48 PHBs per chassis = 384
-+ * x3950M2: 4 chassis, 48 PHBs per chassis        = 192
-+ * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
-+ * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
-+ */
-+#define MAX_PHB_BUS_NUM		384
+@@ -537,6 +538,14 @@ dotraplinkage void __kprobes do_debug(st
+ 	/* Filter out all the reserved bits which are preset to 1 */
+ 	dr6 &= ~DR6_RESERVED;
+ 
++	/*
++	 * If dr6 has no reason to give us about the origin of this trap,
++	 * then it's very likely the result of an icebp/int01 trap.
++	 * User wants a sigtrap for that.
++	 */
++	if (!dr6 && user_mode(regs))
++		user_icebp = 1;
 +
-+#define PHBS_PER_CALGARY	  4
+ 	/* Catch kmemcheck conditions first of all! */
+ 	if ((dr6 & DR_STEP) && kmemcheck_trap(regs))
+ 		return;
+@@ -578,7 +587,7 @@ dotraplinkage void __kprobes do_debug(st
+ 		regs->flags &= ~X86_EFLAGS_TF;
+ 	}
+ 	si_code = get_si_code(tsk->thread.debugreg6);
+-	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS))
++	if (tsk->thread.debugreg6 & (DR_STEP | DR_TRAP_BITS) || user_icebp)
+ 		send_sigtrap(tsk, regs, error_code, si_code);
+ 	preempt_conditional_cli(regs);
  
- /* register offsets in Calgary's internal register space */
- static const unsigned long tar_offsets[] = {
 
 
