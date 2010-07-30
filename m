@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab0G3RaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:30:22 -0400
-Received: from kroah.org ([198.145.64.141]:52030 "EHLO coco.kroah.org"
+	id S932252Ab0G3RaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:30:19 -0400
+Received: from kroah.org ([198.145.64.141]:52039 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758806Ab0G3RTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:45 -0400
+	id S1758800Ab0G3RTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:46 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:10 2010
-Message-Id: <20100730171510.494899478@clark.site>
+Message-Id: <20100730171510.584273650@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:48 -0700
+Date: Fri, 30 Jul 2010 10:15:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [120/165] ext4: clean up inode bitmaps manipulation in ext4_free_inode
+        Dmitry Monakhov <dmonakhov@openvz.org>, Jan Kara <jack@suse.cz>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [121/165] ext4: init statistics after journal recovery
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,124 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit d17413c08cd2b1dd2bf2cfdbb0f7b736b2b2b15c upstrea (as of v2..34-git13)
+commit 84061e07c5fbbbf9dc8aef8fb750fc3a2dfc31f3 upstream (as of v2.6.34-git13)
 
-- Reorganize locking scheme to batch two atomic operation in to one.
-  This also allow us to state what healthy group must obey following rule
-  ext4_free_inodes_count(sb, gdp) == ext4_count_free(inode_bitmap, NUM);
-- Fix possible undefined pointer dereference.
-- Even if group descriptor stats aren't accessible we have to update
-  inode bitmaps.
-- Move non-group members update out of group_lock.
+Currently block/inode/dir counters initialized before journal was
+recovered. In fact after journal recovery this info will probably
+change. And freeblocks it critical for correct delalloc mode
+accounting.
 
-Note: this commit has been observed to fix fs corruption problems
-under heavy fs load
+https://bugzilla.kernel.org/show_bug.cgi?id=15768
 
 Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Acked-by: Jan Kara <jack@suse.cz>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/ialloc.c |   85 +++++++++++++++++++++++++------------------------------
- 1 file changed, 39 insertions(+), 46 deletions(-)
+ fs/ext4/super.c |   41 ++++++++++++++++++-----------------------
+ 1 file changed, 18 insertions(+), 23 deletions(-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -244,57 +244,50 @@ void ext4_free_inode(handle_t *handle, s
- 	if (fatal)
- 		goto error_return;
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2695,24 +2695,6 @@ static int ext4_fill_super(struct super_
+ 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
+ 	spin_lock_init(&sbi->s_next_gen_lock);
  
--	/* Ok, now we can actually update the inode bitmaps.. */
--	cleared = ext4_clear_bit_atomic(ext4_group_lock_ptr(sb, block_group),
--					bit, bitmap_bh->b_data);
--	if (!cleared)
--		ext4_error(sb, "ext4_free_inode",
--			   "bit already cleared for inode %lu", ino);
--	else {
--		gdp = ext4_get_group_desc(sb, block_group, &bh2);
+-	err = percpu_counter_init(&sbi->s_freeblocks_counter,
+-			ext4_count_free_blocks(sb));
+-	if (!err) {
+-		err = percpu_counter_init(&sbi->s_freeinodes_counter,
+-				ext4_count_free_inodes(sb));
+-	}
+-	if (!err) {
+-		err = percpu_counter_init(&sbi->s_dirs_counter,
+-				ext4_count_dirs(sb));
+-	}
+-	if (!err) {
+-		err = percpu_counter_init(&sbi->s_dirtyblocks_counter, 0);
+-	}
+-	if (err) {
+-		ext4_msg(sb, KERN_ERR, "insufficient memory");
+-		goto failed_mount3;
+-	}
 -
-+	fatal = -ESRCH;
-+	gdp = ext4_get_group_desc(sb, block_group, &bh2);
-+	if (gdp) {
- 		BUFFER_TRACE(bh2, "get_write_access");
- 		fatal = ext4_journal_get_write_access(handle, bh2);
--		if (fatal) goto error_return;
--
--		if (gdp) {
--			ext4_lock_group(sb, block_group);
--			count = ext4_free_inodes_count(sb, gdp) + 1;
--			ext4_free_inodes_set(sb, gdp, count);
--			if (is_directory) {
--				count = ext4_used_dirs_count(sb, gdp) - 1;
--				ext4_used_dirs_set(sb, gdp, count);
--				if (sbi->s_log_groups_per_flex) {
--					ext4_group_t f;
--
--					f = ext4_flex_group(sbi, block_group);
--					atomic_dec(&sbi->s_flex_groups[f].used_dirs);
--				}
--
--			}
--			gdp->bg_checksum = ext4_group_desc_csum(sbi,
--							block_group, gdp);
--			ext4_unlock_group(sb, block_group);
--			percpu_counter_inc(&sbi->s_freeinodes_counter);
--			if (is_directory)
--				percpu_counter_dec(&sbi->s_dirs_counter);
-+	}
-+	ext4_lock_group(sb, block_group);
-+	cleared = ext4_clear_bit(bit, bitmap_bh->b_data);
-+	if (fatal || !cleared) {
-+		ext4_unlock_group(sb, block_group);
-+		goto out;
-+	}
+ 	sbi->s_stripe = ext4_get_stripe_size(sbi);
+ 	sbi->s_max_writeback_mb_bump = 128;
  
--			if (sbi->s_log_groups_per_flex) {
--				ext4_group_t f;
-+	count = ext4_free_inodes_count(sb, gdp) + 1;
-+	ext4_free_inodes_set(sb, gdp, count);
-+	if (is_directory) {
-+		count = ext4_used_dirs_count(sb, gdp) - 1;
-+		ext4_used_dirs_set(sb, gdp, count);
-+		percpu_counter_dec(&sbi->s_dirs_counter);
-+	}
-+	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
-+	ext4_unlock_group(sb, block_group);
+@@ -2832,7 +2814,20 @@ static int ext4_fill_super(struct super_
+ 	set_task_ioprio(sbi->s_journal->j_task, journal_ioprio);
  
--				f = ext4_flex_group(sbi, block_group);
--				atomic_inc(&sbi->s_flex_groups[f].free_inodes);
--			}
--		}
--		BUFFER_TRACE(bh2, "call ext4_handle_dirty_metadata");
--		err = ext4_handle_dirty_metadata(handle, NULL, bh2);
--		if (!fatal) fatal = err;
-+	percpu_counter_inc(&sbi->s_freeinodes_counter);
-+	if (sbi->s_log_groups_per_flex) {
-+		ext4_group_t f = ext4_flex_group(sbi, block_group);
-+
-+		atomic_inc(&sbi->s_flex_groups[f].free_inodes);
-+		if (is_directory)
-+			atomic_dec(&sbi->s_flex_groups[f].used_dirs);
+ no_journal:
+-
++	err = percpu_counter_init(&sbi->s_freeblocks_counter,
++				  ext4_count_free_blocks(sb));
++	if (!err)
++		err = percpu_counter_init(&sbi->s_freeinodes_counter,
++					  ext4_count_free_inodes(sb));
++	if (!err)
++		err = percpu_counter_init(&sbi->s_dirs_counter,
++					  ext4_count_dirs(sb));
++	if (!err)
++		err = percpu_counter_init(&sbi->s_dirtyblocks_counter, 0);
++	if (err) {
++		ext4_msg(sb, KERN_ERR, "insufficient memory");
++		goto failed_mount_wq;
++	}
+ 	if (test_opt(sb, NOBH)) {
+ 		if (!(test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_WRITEBACK_DATA)) {
+ 			ext4_msg(sb, KERN_WARNING, "Ignoring nobh option - "
+@@ -2965,6 +2960,10 @@ failed_mount_wq:
+ 		jbd2_journal_destroy(sbi->s_journal);
+ 		sbi->s_journal = NULL;
  	}
--	BUFFER_TRACE(bitmap_bh, "call ext4_handle_dirty_metadata");
--	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
--	if (!fatal)
--		fatal = err;
--	sb->s_dirt = 1;
-+	BUFFER_TRACE(bh2, "call ext4_handle_dirty_metadata");
-+	fatal = ext4_handle_dirty_metadata(handle, NULL, bh2);
-+out:
-+	if (cleared) {
-+		BUFFER_TRACE(bitmap_bh, "call ext4_handle_dirty_metadata");
-+		err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
-+		if (!fatal)
-+			fatal = err;
-+		sb->s_dirt = 1;
-+	} else
-+		ext4_error(sb, "ext4_free_inode",
-+			   "bit already cleared for inode %lu", ino);
-+
- error_return:
- 	brelse(bitmap_bh);
- 	ext4_std_error(sb, fatal);
++	percpu_counter_destroy(&sbi->s_freeblocks_counter);
++	percpu_counter_destroy(&sbi->s_freeinodes_counter);
++	percpu_counter_destroy(&sbi->s_dirs_counter);
++	percpu_counter_destroy(&sbi->s_dirtyblocks_counter);
+ failed_mount3:
+ 	if (sbi->s_flex_groups) {
+ 		if (is_vmalloc_addr(sbi->s_flex_groups))
+@@ -2972,10 +2971,6 @@ failed_mount3:
+ 		else
+ 			kfree(sbi->s_flex_groups);
+ 	}
+-	percpu_counter_destroy(&sbi->s_freeblocks_counter);
+-	percpu_counter_destroy(&sbi->s_freeinodes_counter);
+-	percpu_counter_destroy(&sbi->s_dirs_counter);
+-	percpu_counter_destroy(&sbi->s_dirtyblocks_counter);
+ failed_mount2:
+ 	for (i = 0; i < db_count; i++)
+ 		brelse(sbi->s_group_desc[i]);
 
 
