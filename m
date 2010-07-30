@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab0G3Esa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 00:48:30 -0400
-Received: from smtp108.prem.mail.sp1.yahoo.com ([98.136.44.63]:22711 "HELO
-	smtp108.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751742Ab0G3Es3 (ORCPT
+	id S1752323Ab0G3Ex0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 00:53:26 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40704 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab0G3ExY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 00:48:29 -0400
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: a2gGXb8VM1lZ15h7ziapDxbbLi9C3TA1MFYgboLsqn5H6ax
- 1OgoVysY.LPca2g.TtMewEkBPur7o6GnNui5cAuCbxdHn6oOBW0DilS1Sfm4
- fum73gbhKKaensl_7HZew4WND_u_YAYHAgYqzZrWjO.JUzHwRwWkLtpnXiEn
- NyZIpo9FSMvL5lsLpicjjPSGsvjGUu3oIS0DEu_cGLtZVez8j0Lj2beaLOGs
- nGdjt6oDWgQMK40zaj1XiLlLTNvp82Cm1dF.OGQRrVczpDDUQgfr1uMEg4_X
- _acpsfAWaSp8DQO540y5mdRdRw_uinM6x_wd8slhgBLAf8Wj3hQWezdlR
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4C52599C.60907@schaufler-ca.com>
-Date: Thu, 29 Jul 2010 21:48:28 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 30 Jul 2010 00:53:24 -0400
+Message-ID: <4C525AAF.6020102@canonical.com>
+Date: Fri, 30 Jul 2010 12:53:03 +0800
+From: Bryan Wu <bryan.wu@canonical.com>
+Reply-To: bryan.wu@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [AppArmor #7 0/13] AppArmor security module
-References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com> <alpine.LRH.2.00.1007300903440.7719@tundra.namei.org>
-In-Reply-To: <alpine.LRH.2.00.1007300903440.7719@tundra.namei.org>
+To: Sergei Shtylyov <sshtylyov@mvista.com>, felipe.balbi@nokia.com
+CC: linux-usb@vger.kernel.org, kernel-team@lists.ubuntu.com,
+        linux-kernel@vger.kernel.org, ricardo.salveti@canonical.com,
+        david-b@pacbell.net
+Subject: Re: [PATCH] musb: move usb_add_hcd to the core init code from gadget
+ code (v2)
+References: <1279895783-7313-1-git-send-email-bryan.wu@canonical.com> <4C49B529.8080408@ru.mvista.com>
+In-Reply-To: <4C49B529.8080408@ru.mvista.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Morris wrote:
-> On Thu, 29 Jul 2010, John Johansen wrote:
->
->   
->> This is the seveth general posting of the newest version of the
->> AppArmor security module it has been rewritten to use the security_path
->> hooks instead of the previous vfs approach.  The current implementation
->> is aimed at being as semantically close to previous versions of AppArmor
->> as possible while using the existing LSM infrastructure.
->>     
->
-> Applied to
-> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
->
-> Please carry out any further development against the above tree.
->   
+On 07/23/2010 11:28 PM, Sergei Shtylyov wrote:
+> Hello.
+> 
+> Bryan Wu wrote:
+> 
+>> BugLink: http://bugs.launchpad.net/bugs/608312
+> 
+>> v2:
+>> fix the building error on latest 2.6.35-rc kernel, since v1 was
+>> generated in
+>> 2.6.33 kernel.
+> 
+>    The remarks about patch changes should follow the --- tear line.
+> 
 
-Now wasn't that an adventure?
+Thanks Sergei, I will take care of it in the future.
 
+Any other comments about this patch?
+
+Felipe, could you please take a look? or need I ping you in the Facebook, -:))
+
+-Bryan
+
+>> v1:
+>> usb_add_hcd was only called when we insmod the gadget class module or
+>> built-in
+>> that gadget class driver. If musb is configured as OTG controller, we
+>> need to
+>> insmod or built-in gadget class driver to make our Host mode fucntion
+>> works.
+> 
+>> In our Ubuntu system, normally we compiled all the gadget class
+>> drivers as
+>> modules. Then users can insmod the gadget modules as they want. But
+>> without the
+>> gadget class driver running, we needs host function to support common USB
+>> devices.
+> 
+>> This patch fix this issue and tested on omap3 beagle board and Gumstix
+>> board.
+> 
+>> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> 
+> WBR, Sergei
