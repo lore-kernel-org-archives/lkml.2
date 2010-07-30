@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab0G3Qmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 12:42:53 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:59348 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753061Ab0G3Qmv (ORCPT
+	id S1753864Ab0G3QrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 12:47:13 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:28155 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab0G3QrM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 12:42:51 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=at/wi+AqCMRTohAscARdo/+Aviv48cWq8ZG/bPPzeoldXjDBC3TMdcpIopeO9FfxjJy3+u9xqKLe4fl+QfwHA6r8klt41iMdnIYl615xOVRx+a8sOC5JhQaZTAXRb1DM;
-Date: Fri, 30 Jul 2010 09:42:47 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        linux-pci <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI: MSI: Restore read_msi_msg_desc(); add
- get_cached_msi_msg_desc()
-Message-ID: <20100730094247.05cb070e@virtuousgeek.org>
-In-Reply-To: <1279893388.2089.9.camel@achroite.uk.solarflarecom.com>
-References: <20100723102202.871a3131.sfr@canb.auug.org.au>
-	<1279847985.4883.391.camel@localhost>
-	<1279850740.6381.19.camel@concordia>
-	<1279893388.2089.9.camel@achroite.uk.solarflarecom.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Fri, 30 Jul 2010 12:47:12 -0400
+Date: Fri, 30 Jul 2010 18:48:41 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv5 2/3] USB: gadget: Use new composite features in some
+ gadgets
+In-reply-to: <231296.268.qm@web180308.mail.gq1.yahoo.com>
+To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <op.vgn0zfyq7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <231296.268.qm@web180308.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 14:56:28 +0100
-Ben Hutchings <bhutchings@solarflare.com> wrote:
+> --- On Wed, 7/28/10, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
+>> use the new features of composite framework.  Because it
+>> handles default strings there is no longer the need for
+>> the gadgets drivers to handle many of the strings.
 
-> commit 2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 "PCI: MSI: Remove
-> unsafe and unnecessary hardware access" changed read_msi_msg_desc() to
-> return the last MSI message written instead of reading it from the
-> device, since it may be called while the device is in a reduced
-> power state.
-> 
-> However, the pSeries platform code really does need to read messages
-> from the device, since they are initially written by firmware.
-> Therefore:
-> - Restore the previous behaviour of read_msi_msg_desc()
-> - Add new functions get_cached_msi_msg{,_desc}() which return the
->   last MSI message written
-> - Use the new functions where appropriate
-> 
-> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-> ---
-> Compile-tested only.
-> 
+On Fri, 30 Jul 2010 00:21:18 +0200, David Brownell <david-b@pacbell.net> wrote:
+> The gadgets should always identify the same, and
+> thus handle their strings -- *unless* module params
+> are applied by users to override those defaults.
 
-Applied to linux-next with Michael's ack, thanks.  I hope it actually
-works, I didn't see a tested-by!
+This is not how many gadgets seem to work at least as
+far as the iManufacturer is concerned which is usually built
+at run-time as "Linux <version> with <gadget-name>".
+
+The patch does not change the behaviour of the gadget since all
+it does is take advantage of code put in composite.c in the 1/2
+patch.  Therefore, modified gadgets will still use the same
+strings only code that handles string ID reservation is placed in
+composite.c now (since it needs to be there to fix the module
+parameters anyway).
+
+>> -static unsigned short gfs_vendor_id    = 0x0525;    /* XXX NetChip */
+>> -static unsigned short gfs_product_id   = 0xa4ac;    /* XXX */
+
+> Look -- you can't assign NetChip numbers!!!
+
+/me ashamed
+
+Obviously, you're absolutely right.  I left the XXX mark to remember
+to clear the situation with the IDs but then completely forgot about
+it after g_multi got pulled. (It's especially bad since there is a
+conflict with hid.c).
+
+So, to fix the situation, I need to ask Greg for the IDs?
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
