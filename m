@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab0G3HhH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 03:37:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51319 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab0G3HhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 03:37:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=VO4RL4ZWG38vyJW5FEdqjo/gIU0aNHfJYQ4q3XRZ6BfKfy+gO0FnVu9U0QOtOKo2+m
-         +knfP5g0ZNRbk3LU04FpNDF4ckBPTdrzDym/gWeIkQh0hQLW6T74mz7obWcCDMrzLDy1
-         TBgxoXfA8k6a1Ys34xsHeL9wqdoWJ8oWoZHsc=
-From: Changli Gao <xiaosuo@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Jamal Hadi Salim <hadi@cyberus.ca>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH] act_nat: the checksum of ICMP doesn't have pseudo header
-Date: Fri, 30 Jul 2010 08:04:18 +0800
-Message-Id: <1280448258-1893-1-git-send-email-xiaosuo@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754460Ab0G3HhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 03:37:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18492 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753896Ab0G3HhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 03:37:09 -0400
+Date: Fri, 30 Jul 2010 09:37:04 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Milan Broz <mbroz@redhat.com>, util-linux-ng@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk
+Subject: Re: [PATCH] loop: add some basic read-only sysfs attributes
+Message-ID: <20100730073704.GH1981@nb.net.home>
+References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> <AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> <4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> <20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-after updating the value of the ICMP payload, inet_proto_csum_replace4() should
-be called with zero pseudohdr.
+On Thu, Jul 29, 2010 at 06:07:31PM +0200, Kay Sievers wrote:
+> Sure it does. Sysfs attributes need to be created _before_ uevents are
+> sent out. The current behavior is that all blockdev attributes are
+> safely created before the event is sent.
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-----
- net/sched/act_nat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-diff --git a/net/sched/act_nat.c b/net/sched/act_nat.c
-index 24e614c..59f05ee 100644
---- a/net/sched/act_nat.c
-+++ b/net/sched/act_nat.c
-@@ -246,7 +246,7 @@ static int tcf_nat(struct sk_buff *skb, struct tc_action *a,
- 			iph->saddr = new_addr;
- 
- 		inet_proto_csum_replace4(&icmph->checksum, skb, addr, new_addr,
--					 1);
-+					 0);
- 		break;
- 	}
- 	default:
+ Hmm... I see that in add_disk(), the "queue" subdirectory is created
+ after disk registration (the register_disk() calls kobject_uevent()).
+ Is it true?
+
+    Karel
+
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
