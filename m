@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab0G3G64 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 02:58:56 -0400
-Received: from sh.osrg.net ([192.16.179.4]:58837 "EHLO sh.osrg.net"
+	id S1755570Ab0G3HAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 03:00:19 -0400
+Received: from centrinvest.ru ([94.25.115.130]:58484 "EHLO centrinvest.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754647Ab0G3G6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 02:58:54 -0400
-Date: Fri, 30 Jul 2010 15:58:04 +0900
-To: rjw@sisk.pl, mchehab@redhat.com
-Cc: linux-kernel@vger.kernel.org, kernel-testers@vger.kernel.org,
-        maciej.rutecki@gmail.com, zdenek.kabelac@gmail.com, greg@kroah.com
-Subject: Re: [Bug #15977] WARNING: at lib/dma-debug.c:866 check_for_stack
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <PRbv8sgxY6G.A.ksG.eWYSMB@chimera>
-References: <wQMMFC59mnE.A.v-E.iUYSMB@chimera>
-	<PRbv8sgxY6G.A.ksG.eWYSMB@chimera>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100730155605S.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 30 Jul 2010 15:58:05 +0900 (JST)
+	id S1754647Ab0G3HAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 03:00:17 -0400
+From: "Andrey Panin" <pazke@centrinvest.ru>
+Date: Fri, 30 Jul 2010 11:00:11 +0400
+To: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>
+Subject: Re: Problem with e1000e, 802.1Q VLAN's and IPMI
+Message-ID: <20100730070011.GA29453@centrinvest.ru>
+Mail-Followup-To: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"e1000-devel@lists.sourceforge.net" <e1000-devel@lists.sourceforge.net>,
+	"Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+	"Allan, Bruce W" <bruce.w.allan@intel.com>,
+	"Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+	"Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+	"Ronciak, John" <john.ronciak@intel.com>
+References: <20100726073920.GD30155@centrinvest.ru>
+ <alpine.WNT.2.00.1007260936160.4488@jbrandeb-desk1.amr.corp.intel.com>
+ <20100727120552.GA31741@centrinvest.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727120552.GA31741@centrinvest.ru>
+X-Uname: Linux 2.6.26-1-amd64 x86_64
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Anti-Virus: kav4lms: continue
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 14:15:49 +0200 (CEST)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
+On 208, 07 27, 2010 at 04:05:52 +0400, Andrey Panin wrote:
+> On 207, 07 26, 2010 at 09:45:06AM -0700, Brandeburg, Jesse wrote:
+> > 
+> > On Mon, 26 Jul 2010, Andrey Panin wrote:
+> > > I have a problem using IPMI on Super Micro X7SBL motherboard (AOC-IPMI20-E BMC).
+> > > BMC shares ethernet port with onboard e1000e. It works when IPMI traffic is 
+> > > untagged (CrcStripping=0 module option used), but if I try to use 802.1Q vlan
+> > > for IPMI traffic BMC stops responding right after "ifup eth0". 
+> > 
+> > We've heard of this issue (or similar) before.  I believe for the other 
+> > guys they had to run IPMI traffic untagged, if your main network is 
+> > running untagged.  The problem in this case is that the tags are being 
+> > stripped in hardware even for the SMBUS packets, at which point the BMC 
+> > that is stupid and doesn't understand offloading hardware gets confused 
+> > that the traffic it is receiving doesn't have a vlan tag.
 > 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+> I suspected something like that. Unfortunately Super Micro isn't interested
+> in fixing their BMC, at least latest firmware doesn't fix the issue.
 > 
+> > > I tested 2.6.26 (debian stable kernel) and 2.6.35-rc6.
+> > > Looks like there is some problem with 802.1Q tags stripping/inserting.
+> > 
+> > Thanks for testing the latest kernel.
+> > 
+> > > There was no such problem with e1000 driver from 2.6.18.
+> > 
+> > Hm, that is an interesting statement.  The major changes to the driver 
+> > include stripping tags all the time when not in promisc mode, and there 
+> > have been some fixes and attempts to fix the ipmi issues some 
+> > (particularly supermicro) BMCs have.  I'm quite surprised it worked for 
+> > you at all (there have been quite a few issues in this area)
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15977
-> Subject		: WARNING: at lib/dma-debug.c:866 check_for_stack
-> Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-> Date		: 2010-05-14 8:56 (71 days old)
-> Message-ID	: <AANLkTikyx2eaxaiUCFDSfpmn1UG0t2GOxArz6F4wp1LJ@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=127382742729825&w=2
+> After some sleep I'm not so sure that it was really working :(
+> I'll retest it more thoroughly this evening.
 
-looks like easy to fix this. But seems that linux-next still has the
-bug. Or a fix was already posted somewhere else?
-
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH] DVB: dib0700: fix the usage of stack buffers for DMA
-
-We can't use a stack buffer for DMA.
-
-This should fix:
-
-http://bugzilla.kernel.org/show_bug.cgi?id=15977
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- drivers/media/dvb/dvb-usb/dib0700_core.c |   15 ++++++++++++---
- 1 files changed, 12 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb/dvb-usb/dib0700_core.c
-index 7deade7..54a0d2c 100644
---- a/drivers/media/dvb/dvb-usb/dib0700_core.c
-+++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
-@@ -301,14 +301,23 @@ struct i2c_algorithm dib0700_i2c_algo = {
- int dib0700_identify_state(struct usb_device *udev, struct dvb_usb_device_properties *props,
- 			struct dvb_usb_device_description **desc, int *cold)
- {
--	u8 b[16];
--	s16 ret = usb_control_msg(udev, usb_rcvctrlpipe(udev,0),
--		REQUEST_GET_VERSION, USB_TYPE_VENDOR | USB_DIR_IN, 0, 0, b, 16, USB_CTRL_GET_TIMEOUT);
-+	void *b;
-+	s16 ret;
-+
-+	b = kmalloc(16, GFP_KERNEL);
-+	if (!b)
-+		return -ENOMEM;
-+
-+	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev,0),
-+			      REQUEST_GET_VERSION, USB_TYPE_VENDOR | USB_DIR_IN,
-+			      0, 0, b, 16, USB_CTRL_GET_TIMEOUT);
- 
- 	deb_info("FW GET_VERSION length: %d\n",ret);
- 
- 	*cold = ret <= 0;
- 
-+	kfree(b);
-+
- 	deb_info("cold: %d\n", *cold);
- 	return 0;
- }
--- 
-1.6.5
-
+After retest I can confirm that tagged IPMI works with 2.6.18 e1000 driver.
