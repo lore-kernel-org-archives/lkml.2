@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab0G3R6n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:58:43 -0400
-Received: from kroah.org ([198.145.64.141]:59000 "EHLO coco.kroah.org"
+	id S1759442Ab0G3SDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:03:23 -0400
+Received: from kroah.org ([198.145.64.141]:59338 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932388Ab0G3R5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:05 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:47 2010
-Message-Id: <20100730175147.407056643@clark.site>
+	id S932865Ab0G3R6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:58:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:52 2010
+Message-Id: <20100730175152.521106357@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:45 -0700
+Date: Fri, 30 Jul 2010 10:53:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Avi Kivity <avi@redhat.com>
-Subject: [148/205] KVM: MMU: Remove user access when allowing kernel access to gpte.w=0 page
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [205/205] drm/i915: make sure we shut off the panel in eDP configs
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-If cr0.wp=0, we have to allow the guest kernel access to a page with pte.w=0.
-We do that by setting spte.w=1, since the host cr0.wp must remain set so the
-host can write protect pages.  Once we allow write access, we must remove
-user access otherwise we mistakenly allow the user to write the page.
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Reviewed-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-(cherry picked from commit 69325a122580d3a7b26589e8efdd6663001c3297)
+commit 5620ae29f1eabe655f44335231b580a78c8364ea upstream.
+
+Fix error from the last pull request.  Making sure we shut the panel off
+is more correct and saves power.
+
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/x86/kvm/mmu.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1837,6 +1837,9 @@ static int set_spte(struct kvm_vcpu *vcp
- 
- 		spte |= PT_WRITABLE_MASK;
- 
-+		if (!tdp_enabled && !(pte_access & ACC_WRITE_MASK))
-+			spte &= ~PT_USER_MASK;
-+
- 		/*
- 		 * Optimization: for pte sync, if spte was writable the hash
- 		 * lookup is unnecessary (and expensive). Write protection
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -758,7 +758,7 @@ intel_dp_dpms(struct drm_encoder *encode
+ 			intel_dp_link_down(intel_encoder, dp_priv->DP);
+ 			if (IS_eDP(intel_encoder)) {
+ 				ironlake_edp_backlight_off(dev);
+-				ironlake_edp_backlight_off(dev);
++				ironlake_edp_panel_off(dev);
+ 			}
+ 		}
+ 	} else {
 
 
