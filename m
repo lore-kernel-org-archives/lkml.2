@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759928Ab0G3RzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:55:22 -0400
-Received: from kroah.org ([198.145.64.141]:58034 "EHLO coco.kroah.org"
+	id S933157Ab0G3S1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:27:33 -0400
+Received: from kroah.org ([198.145.64.141]:58279 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759819Ab0G3Rys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:48 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
-Message-Id: <20100730175137.385602192@clark.site>
+	id S1759823Ab0G3Rz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:40 2010
+Message-Id: <20100730175140.539828900@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:59 -0700
+Date: Fri, 30 Jul 2010 10:51:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [042/205] hostap: Protect against initialization interrupt
+        Julia Lawall <julia@diku.dk>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [076/205] SCSI: aacraid: Eliminate use after free
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,119 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Gardner <tim.gardner@canonical.com>
+From: Julia Lawall <julia@diku.dk>
 
-commit d6a574ff6bfb842bdb98065da053881ff527be46 upstream.
+commit 8a52da632ceb9d8b776494563df579e87b7b586b upstream.
 
-Use an irq spinlock to hold off the IRQ handler until
-enough early card init is complete such that the handler
-can run without faulting.
+The debugging code using the freed structure is moved before the kfree.
 
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@free@
+expression E;
+position p;
+@@
+kfree@p(E)
+
+@@
+expression free.E, subE<=free.E, E1;
+position free.p;
+@@
+
+  kfree@p(E)
+  ...
+(
+  subE = E1
+|
+* E
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 
 ---
- drivers/net/wireless/hostap/hostap_cs.c   |   15 +++++++++++++--
- drivers/net/wireless/hostap/hostap_hw.c   |   13 +++++++++++++
- drivers/net/wireless/hostap/hostap_wlan.h |    2 +-
- 3 files changed, 27 insertions(+), 3 deletions(-)
+ drivers/scsi/aacraid/commctrl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/hostap/hostap_cs.c
-+++ b/drivers/net/wireless/hostap/hostap_cs.c
-@@ -603,6 +603,7 @@ static int prism2_config(struct pcmcia_d
- 	local_info_t *local;
- 	int ret = 1;
- 	struct hostap_cs_priv *hw_priv;
-+	unsigned long flags;
- 
- 	PDEBUG(DEBUG_FLOW, "prism2_config()\n");
- 
-@@ -637,6 +638,12 @@ static int prism2_config(struct pcmcia_d
- 	link->dev_node = &hw_priv->node;
- 
- 	/*
-+	 * Make sure the IRQ handler cannot proceed until at least
-+	 * dev->base_addr is initialized.
-+	 */
-+	spin_lock_irqsave(&local->irq_init_lock, flags);
-+
-+	/*
- 	 * Allocate an interrupt line.  Note that this does not assign a
- 	 * handler to the interrupt, unless the 'Handler' member of the
- 	 * irq structure is initialized.
-@@ -646,7 +653,7 @@ static int prism2_config(struct pcmcia_d
- 		link->irq.Handler = prism2_interrupt;
- 		ret = pcmcia_request_irq(link, &link->irq);
- 		if (ret)
--			goto failed;
-+			goto failed_unlock;
- 	}
- 
- 	/*
-@@ -656,11 +663,13 @@ static int prism2_config(struct pcmcia_d
- 	 */
- 	ret = pcmcia_request_configuration(link, &link->conf);
- 	if (ret)
--		goto failed;
-+		goto failed_unlock;
- 
- 	dev->irq = link->irq.AssignedIRQ;
- 	dev->base_addr = link->io.BasePort1;
- 
-+	spin_unlock_irqrestore(&local->irq_init_lock, flags);
-+
- 	/* Finally, report what we've done */
- 	printk(KERN_INFO "%s: index 0x%02x: ",
- 	       dev_info, link->conf.ConfigIndex);
-@@ -689,6 +698,8 @@ static int prism2_config(struct pcmcia_d
- 	}
- 	return ret;
- 
-+ failed_unlock:
-+	 spin_unlock_irqrestore(&local->irq_init_lock, flags);
-  failed:
- 	kfree(hw_priv);
- 	prism2_release((u_long)link);
---- a/drivers/net/wireless/hostap/hostap_hw.c
-+++ b/drivers/net/wireless/hostap/hostap_hw.c
-@@ -2630,6 +2630,18 @@ static irqreturn_t prism2_interrupt(int
- 	iface = netdev_priv(dev);
- 	local = iface->local;
- 
-+	/* Detect early interrupt before driver is fully configued */
-+	spin_lock(&local->irq_init_lock);
-+	if (!dev->base_addr) {
-+		if (net_ratelimit()) {
-+			printk(KERN_DEBUG "%s: Interrupt, but dev not configured\n",
-+			       dev->name);
-+		}
-+		spin_unlock(&local->irq_init_lock);
-+		return IRQ_HANDLED;
-+	}
-+	spin_unlock(&local->irq_init_lock);
-+
- 	prism2_io_debug_add(dev, PRISM2_IO_DEBUG_CMD_INTERRUPT, 0, 0);
- 
- 	if (local->func->card_present && !local->func->card_present(local)) {
-@@ -3147,6 +3159,7 @@ prism2_init_local_data(struct prism2_hel
- 	spin_lock_init(&local->cmdlock);
- 	spin_lock_init(&local->baplock);
- 	spin_lock_init(&local->lock);
-+	spin_lock_init(&local->irq_init_lock);
- 	mutex_init(&local->rid_bap_mtx);
- 
- 	if (card_idx < 0 || card_idx >= MAX_PARM_DEVICES)
---- a/drivers/net/wireless/hostap/hostap_wlan.h
-+++ b/drivers/net/wireless/hostap/hostap_wlan.h
-@@ -654,7 +654,7 @@ struct local_info {
- 	rwlock_t iface_lock; /* hostap_interfaces read lock; use write lock
- 			      * when removing entries from the list.
- 			      * TX and RX paths can use read lock. */
--	spinlock_t cmdlock, baplock, lock;
-+	spinlock_t cmdlock, baplock, lock, irq_init_lock;
- 	struct mutex rid_bap_mtx;
- 	u16 infofid; /* MAC buffer id for info frame */
- 	/* txfid, intransmitfid, next_txtid, and next_alloc are protected by
+--- a/drivers/scsi/aacraid/commctrl.c
++++ b/drivers/scsi/aacraid/commctrl.c
+@@ -655,9 +655,9 @@ static int aac_send_raw_srb(struct aac_d
+ 				/* Does this really need to be GFP_DMA? */
+ 				p = kmalloc(usg->sg[i].count,GFP_KERNEL|__GFP_DMA);
+ 				if(!p) {
+-					kfree (usg);
+-					dprintk((KERN_DEBUG"aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
++					dprintk((KERN_DEBUG "aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
+ 					  usg->sg[i].count,i,usg->count));
++					kfree(usg);
+ 					rcode = -ENOMEM;
+ 					goto cleanup;
+ 				}
 
 
