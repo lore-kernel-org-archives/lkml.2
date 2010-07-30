@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525Ab0G3S4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:56:41 -0400
-Received: from kroah.org ([198.145.64.141]:35457 "EHLO coco.kroah.org"
+	id S1759365Ab0G3S4s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:56:48 -0400
+Received: from kroah.org ([198.145.64.141]:35420 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759305Ab0G3Rdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:33:55 -0400
+	id S1759240Ab0G3Rdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:33:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:03 2010
-Message-Id: <20100730173103.602021718@clark.site>
+Message-Id: <20100730173103.173507234@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:34 -0700
+Date: Fri, 30 Jul 2010 10:29:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [009/140] tcp: tcp_synack_options() fix
+Subject: [004/140] ipv6: Fix default multicast hops setting.
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit de213e5eedecdfb1b1eea7e6be28bc64cac5c078 ]
+[ Upstream commit f935aa9e99d6ec74a50871c120e6b21de7256efb ]
 
-Commit 33ad798c924b4a (tcp: options clean up) introduced a problem
-if MD5+SACK+timestamps were used in initial SYN message.
+As per RFC 3493 the default multicast hops setting
+for a socket should be "1" just like ipv4.
 
-Some stacks (old linux for example) try to negotiate MD5+SACK+TSTAMP
-sessions, but since 40 bytes of tcp options space are not enough to
-store all the bits needed, we chose to disable timestamps in this case.
+Ironically we have a IPV6_DEFAULT_MCASTHOPS macro
+it just wasn't being used.
 
-We send a SYN-ACK _without_ timestamp option, but socket has timestamps
-enabled and all further outgoing messages contain a TS block, all with
-the initial timestamp of the remote peer.
-
-Fix is to really disable timestamps option for the whole session.
-
-Reported-by: Bijay Singh <Bijay.Singh@guavus.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Elliot Hughes <enh@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp_output.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ net/ipv6/af_inet6.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -659,7 +659,6 @@ static unsigned tcp_synack_options(struc
- 	u8 cookie_plus = (xvp != NULL && !xvp->cookie_out_never) ?
- 			 xvp->cookie_plus :
- 			 0;
--	bool doing_ts = ireq->tstamp_ok;
+--- a/net/ipv6/af_inet6.c
++++ b/net/ipv6/af_inet6.c
+@@ -199,7 +199,7 @@ lookup_protocol:
  
- #ifdef CONFIG_TCP_MD5SIG
- 	*md5 = tcp_rsk(req)->af_specific->md5_lookup(sk, req);
-@@ -672,7 +671,7 @@ static unsigned tcp_synack_options(struc
- 		 * rather than TS in order to fit in better with old,
- 		 * buggy kernels, but that was deemed to be unnecessary.
- 		 */
--		doing_ts &= !ireq->sack_ok;
-+		ireq->tstamp_ok &= !ireq->sack_ok;
- 	}
- #else
- 	*md5 = NULL;
-@@ -687,7 +686,7 @@ static unsigned tcp_synack_options(struc
- 		opts->options |= OPTION_WSCALE;
- 		remaining -= TCPOLEN_WSCALE_ALIGNED;
- 	}
--	if (likely(doing_ts)) {
-+	if (likely(ireq->tstamp_ok)) {
- 		opts->options |= OPTION_TS;
- 		opts->tsval = TCP_SKB_CB(skb)->when;
- 		opts->tsecr = req->ts_recent;
-@@ -695,7 +694,7 @@ static unsigned tcp_synack_options(struc
- 	}
- 	if (likely(ireq->sack_ok)) {
- 		opts->options |= OPTION_SACK_ADVERTISE;
--		if (unlikely(!doing_ts))
-+		if (unlikely(!ireq->tstamp_ok))
- 			remaining -= TCPOLEN_SACKPERM_ALIGNED;
- 	}
- 
-@@ -703,7 +702,7 @@ static unsigned tcp_synack_options(struc
- 	 * If the <SYN> options fit, the same options should fit now!
- 	 */
- 	if (*md5 == NULL &&
--	    doing_ts &&
-+	    ireq->tstamp_ok &&
- 	    cookie_plus > TCPOLEN_COOKIE_BASE) {
- 		int need = cookie_plus; /* has TCPOLEN_COOKIE_BASE */
- 
+ 	inet_sk(sk)->pinet6 = np = inet6_sk_generic(sk);
+ 	np->hop_limit	= -1;
+-	np->mcast_hops	= -1;
++	np->mcast_hops	= IPV6_DEFAULT_MCASTHOPS;
+ 	np->mc_loop	= 1;
+ 	np->pmtudisc	= IPV6_PMTUDISC_WANT;
+ 	np->ipv6only	= net->ipv6.sysctl.bindv6only;
 
 
