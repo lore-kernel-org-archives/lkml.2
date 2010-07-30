@@ -1,149 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab0G3LnL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 07:43:11 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:65382 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157Ab0G3LnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 07:43:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=oZNSF/Axb01fqsbozOpEu7sWGdm6wRlBr1SrqJd+znfX3zUmbOZbkBa7EhDSbn9+Xl
-         xfrnmvg804EeU/a9D4rbC1v5PgZ1oSL+xW53d7EQxrU139RYrHQ3DBu4o7dEmEX3VaqE
-         AF8rOGNwjEsLNsI2f5cjjQnlPSwlY9TyZOAus=
-Subject: Re: [PATCH v2]Resend:videobuf_dma_sg: a new implementation for mmap
-From: "Figo.zhang" <figo1802@gmail.com>
-To: npiggin@suse.de, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        akpm <akpm@linux-foundation.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-media <linux-media@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <201007301131.17638.laurent.pinchart@ideasonboard.com>
-References: <1280448482.2648.2.camel@localhost.localdomain>
-	 <201007301131.17638.laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 19:39:40 +0800
-Message-ID: <1280489980.2648.12.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1758525Ab0G3LwA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 07:52:00 -0400
+Received: from mx1.riseup.net ([204.13.164.18]:52605 "EHLO mx1.riseup.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab0G3Lv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 07:51:59 -0400
+X-Greylist: delayed 1080 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Jul 2010 07:51:59 EDT
+From: Francisco Jerez <currojerez@riseup.net>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@redhat.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm: nouveau: set TASK_(UN)INTERRUPTIBLE before schedule_timeout()
+References: <1280132635-7961-1-git-send-email-segooon@gmail.com>
+Date: Fri, 30 Jul 2010 13:31:49 +0200
+In-Reply-To: <1280132635-7961-1-git-send-email-segooon@gmail.com> (Kulikov
+	Vasiliy's message of "Mon, 26 Jul 2010 12:23:54 +0400")
+Message-ID: <87pqy5dx3u.fsf@riseup.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-30 at 11:31 +0200, Laurent Pinchart wrote:
-> Hi,
-> 
-> On Friday 30 July 2010 02:08:02 Figo.zhang wrote:
-> > a mmap issue for videobuf-dma-sg: it will alloc a new page for mmaping when
-> > it encounter page fault at video_vm_ops->fault(). pls see
-> > http://www.spinics.net/lists/linux-media/msg21243.html
-> > 
-> > a new implementation for mmap, it translate to vmalloc to page at
-> > video_vm_ops->fault().
-> > 
-> > in v2, if mem->dma.vmalloc is NULL at video_vm_ops->fault(), it will alloc
-> > memory by vmlloc_32().
-> 
-> You're replacing allocation in videobuf_vm_fault by allocationg in 
-> videobuf_vm_fault. I don't see the point. videobuf_vm_fault needs to go away 
-> completely.
-in now videobuf code, the mmap alloc a new buf, the capture dma buffer
-using vmalloc() alloc buffer, how is
-relationship with them? in usrspace , the mmap region will not the
-actual capture dma data, how is work? 
+--==-=-=
+Content-Type: multipart/mixed; boundary="=-=-="
 
-> 
-> This has been discussed previously: fixing videobuf is not really possible. A 
-> videobuf2 implementation is needed and is (slowly) being worked on. 
-hi Mauro, do you think this is a issue for videobuf-dma-sg?
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I wouldn't 
-> bother with this patch, just drop it.
-> 
-> > Signed-off-by: Figo.zhang <figo1802@gmail.com>
-> > ---
-> > drivers/media/video/videobuf-dma-sg.c |   50
-> > +++++++++++++++++++++++++++------ 1 files changed, 41 insertions(+), 9
-> > deletions(-)
-> > 
-> > diff --git a/drivers/media/video/videobuf-dma-sg.c
-> > b/drivers/media/video/videobuf-dma-sg.c index 8359e6b..f7295da 100644
-> > --- a/drivers/media/video/videobuf-dma-sg.c
-> > +++ b/drivers/media/video/videobuf-dma-sg.c
-> > @@ -201,10 +201,11 @@ int videobuf_dma_init_kernel(struct videobuf_dmabuf
-> > *dma, int direction, dprintk(1, "init kernel [%d pages]\n", nr_pages);
-> > 
-> >  	dma->direction = direction;
-> > -	dma->vmalloc = vmalloc_32(nr_pages << PAGE_SHIFT);
-> > -	if (NULL == dma->vmalloc) {
-> > -		dprintk(1, "vmalloc_32(%d pages) failed\n", nr_pages);
-> > -		return -ENOMEM;
-> > +	if (!dma->vmalloc)
-> > +		dma->vmalloc = vmalloc_32(nr_pages << PAGE_SHIFT);
-> > +		if (NULL == dma->vmalloc) {
-> > +			dprintk(1, "vmalloc_32(%d pages) failed\n", nr_pages);
-> > +			return -ENOMEM;
-> >  	}
-> > 
-> >  	dprintk(1, "vmalloc is at addr 0x%08lx, size=%d\n",
-> > @@ -397,16 +398,47 @@ static void videobuf_vm_close(struct vm_area_struct
-> > *vma) */
-> >  static int videobuf_vm_fault(struct vm_area_struct *vma, struct vm_fault
-> > *vmf) {
-> > -	struct page *page;
-> > +	struct page *page = NULL;
-> > +	struct videobuf_mapping *map = vma->vm_private_data;
-> > +	struct videobuf_queue *q = map->q;
-> > +	struct videobuf_dma_sg_memory *mem = NULL;
-> > +
-> > +	unsigned long offset;
-> > +	unsigned long page_nr;
-> > +	int first;
-> > 
-> >  	dprintk(3, "fault: fault @ %08lx [vma %08lx-%08lx]\n",
-> >  		(unsigned long)vmf->virtual_address,
-> >  		vma->vm_start, vma->vm_end);
-> > 
-> > -	page = alloc_page(GFP_USER | __GFP_DMA32);
-> > -	if (!page)
-> > -		return VM_FAULT_OOM;
-> > -	clear_user_highpage(page, (unsigned long)vmf->virtual_address);
-> > +	mutex_lock(&q->vb_lock);
-> > +	offset = (unsigned long)vmf->virtual_address - vma->vm_start;
-> > +	page_nr = offset >> PAGE_SHIFT;
-> > +
-> > +	for (first = 0; first < VIDEO_MAX_FRAME; first++) {
-> > +			if (NULL == q->bufs[first])
-> > +				continue;
-> > +
-> > +			MAGIC_CHECK(mem->magic, MAGIC_SG_MEM);
-> > +
-> > +			if (q->bufs[first]->map == map)
-> > +				break;
-> > +	}
-> > +
-> > +	mem = q->bufs[first]->priv;
-> > +	if (!mem)
-> > +		return VM_FAULT_SIGBUS;
-> > +	if (!mem->dma.vmalloc) {
-> > +		mem->dma.vmalloc = vmalloc_32(PAGE_ALIGN(q->bufs[first]->size));
-> > +		if (NULL == mem->dma.vmalloc) {
-> > +			dprintk(1, "%s: vmalloc_32() failed\n", __func__);
-> > +			return VM_FAULT_OOM;
-> > +		}
-> > +	} else
-> > +		page = vmalloc_to_page(mem->dma.vmalloc+
-> > +				(offset & (~PAGE_MASK)));
-> > +	mutex_unlock(&q->vb_lock);
-> > +
-> >  	vmf->page = page;
-> > 
-> >  	return 0;
-> 
+Kulikov Vasiliy <segooon@gmail.com> writes:
 
+> set_current_state() is called only once before the first iteration.
+> After return from schedule_timeout() current state is TASK_RUNNING. If
+> we are going to wait again, set_current_state() must be called.
+>
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/gpu/drm/nouveau/nouveau_fence.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+Thanks, I've pushed this patch to the Nouveau kernel tree.
 
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_fence.c b/drivers/gpu/drm/no=
+uveau/nouveau_fence.c
+> index 813d853..b7777ae 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_fence.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_fence.c
+> @@ -186,7 +186,6 @@ nouveau_fence_wait(void *sync_obj, void *sync_arg, bo=
+ol lazy, bool intr)
+>  	unsigned long timeout =3D jiffies + (3 * DRM_HZ);
+>  	int ret =3D 0;
+>=20=20
+> -	__set_current_state(intr ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE);
+>=20=20
+>  	while (1) {
+>  		if (nouveau_fence_signalled(sync_obj, sync_arg))
+> @@ -197,6 +196,8 @@ nouveau_fence_wait(void *sync_obj, void *sync_arg, bo=
+ol lazy, bool intr)
+>  			break;
+>  		}
+>=20=20
+> +		__set_current_state(intr ? TASK_INTERRUPTIBLE
+> +			: TASK_UNINTERRUPTIBLE);
+>  		if (lazy)
+>  			schedule_timeout(1);
 
+--=-=-=--
+
+--==-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iF4EAREIAAYFAkxSuCYACgkQg5k4nX1Sv1vadwD9FqBG3qG4YT1xRtBLXTV247+B
+CBR5DUsiwWuW+liC6rYBAJsea9gomnt1TvoYoHAZm8pKr+WYi0nK8kIsjCx1XxyK
+=p9i6
+-----END PGP SIGNATURE-----
+--==-=-=--
