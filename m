@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab0G3TIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:08:14 -0400
-Received: from kroah.org ([198.145.64.141]:51568 "EHLO coco.kroah.org"
+	id S1757553Ab0G3TIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:08:37 -0400
+Received: from kroah.org ([198.145.64.141]:51559 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757548Ab0G3RSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:35 -0400
+	id S1757483Ab0G3RSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:34 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:04 2010
-Message-Id: <20100730171504.703859446@clark.site>
+Message-Id: <20100730171504.613595071@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:43 -0700
+Date: Fri, 30 Jul 2010 10:14:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Ilpo=20J=C3=A4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Doug Kehn <rdkehn@yahoo.com>, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [055/165] tcp: fix crash in tcp_xmit_retransmit_queue
+Subject: [054/165] net/core: neighbour update Oops
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+From: Doug Kehn <rdkehn@yahoo.com>
 
-commit 45e77d314585869dfe43c82679f7e08c9b35b898 upstream.
+commit 91a72a70594e5212c97705ca6a694bd307f7a26b upstream.
 
-It can happen that there are no packets in queue while calling
-tcp_xmit_retransmit_queue(). tcp_write_queue_head() then returns
-NULL and that gets deref'ed to get sacked into a local var.
+When configuring DMVPN (GRE + openNHRP) and a GRE remote
+address is configured a kernel Oops is observed.  The
+obserseved Oops is caused by a NULL header_ops pointer
+(neigh->dev->header_ops) in neigh_update_hhs() when
 
-There is no work to do if no packets are outstanding so we just
-exit early.
+void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
+= neigh->dev->header_ops->cache_update;
 
-This oops was introduced by 08ebd1721ab8fd (tcp: remove tp->lost_out
-guard to make joining diff nicer).
+is executed.  The dev associated with the NULL header_ops is
+the GRE interface.  This patch guards against the
+possibility that header_ops is NULL.
 
-Signed-off-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
-Reported-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
-Tested-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+This Oops was first observed in kernel version 2.6.26.8.
+
+Signed-off-by: Doug Kehn <rdkehn@yahoo.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/tcp_output.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/core/neighbour.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2037,6 +2037,9 @@ void tcp_xmit_retransmit_queue(struct so
- 	int mib_idx;
- 	int fwd_rexmitting = 0;
- 
-+	if (!tp->packets_out)
-+		return;
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -945,7 +945,10 @@ static void neigh_update_hhs(struct neig
+ {
+ 	struct hh_cache *hh;
+ 	void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
+-		= neigh->dev->header_ops->cache_update;
++		= NULL;
 +
- 	if (!tp->lost_out)
- 		tp->retransmit_high = tp->snd_una;
++	if (neigh->dev->header_ops)
++		update = neigh->dev->header_ops->cache_update;
  
+ 	if (update) {
+ 		for (hh = neigh->hh; hh; hh = hh->hh_next) {
 
 
