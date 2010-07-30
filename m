@@ -1,40 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab0G3WFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 18:05:19 -0400
-Received: from tuxonice.net ([74.207.252.127]:37722 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab0G3WFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 18:05:17 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C534C9D.8000600@tuxonice.net>
-Date: Sat, 31 Jul 2010 08:05:17 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Bojan Smojver <bojan@rexursive.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
-References: <1280465201.2600.10.camel@shrek.rexursive.com> <1280486667.2608.1.camel@shrek.rexursive.com>
-In-Reply-To: <1280486667.2608.1.camel@shrek.rexursive.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755056Ab0G3WQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 18:16:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48116 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752606Ab0G3WQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 18:16:20 -0400
+Date: Fri, 30 Jul 2010 15:06:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 6/6] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-Id: <20100730150601.199c5618.akpm@linux-foundation.org>
+In-Reply-To: <1280497020-22816-7-git-send-email-mel@csn.ul.ie>
+References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie>
+	<1280497020-22816-7-git-send-email-mel@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bojan.
+On Fri, 30 Jul 2010 14:37:00 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-On 30/07/10 20:44, Bojan Smojver wrote:
-> On Fri, 2010-07-30 at 14:46 +1000, Bojan Smojver wrote:
->> This patch speeds up hibernate/thaw operations
->
-> This is probably a bit simpler.
+> There are a number of cases where pages get cleaned but two of concern
+> to this patch are;
+>   o When dirtying pages, processes may be throttled to clean pages if
+>     dirty_ratio is not met.
 
-In general, it looks good. Is an order 6 allocation really necessary, 
-though? I guess they'll be more reliably achieved with swsusp freeing so 
-much memory beforehand but still...
+Ambiguous.  I assume you meant "if dirty_ratio is exceeded".
 
-Regards,
+>   o Pages belonging to inodes dirtied longer than
+>     dirty_writeback_centisecs get cleaned.
+> 
+> The problem for reclaim is that dirty pages can reach the end of the LRU if
+> pages are being dirtied slowly so that neither the throttling or a flusher
+> thread waking periodically cleans them.
+> 
+> Background flush is already cleaning old or expired inodes first but the
+> expire time is too far in the future at the time of page reclaim. To mitigate
+> future problems, this patch wakes flusher threads to clean 4M of data -
+> an amount that should be manageable without causing congestion in many cases.
+> 
+> Ideally, the background flushers would only be cleaning pages belonging
+> to the zone being scanned but it's not clear if this would be of benefit
+> (less IO) or not (potentially less efficient IO if an inode is scattered
+> across multiple zones).
+> 
 
-Nigel
+Sigh.  We have sooo many problems with writeback and latency.  Read
+https://bugzilla.kernel.org/show_bug.cgi?id=12309 and weep.  Everyone's
+running away from the issue and here we are adding code to solve some
+alleged stack-overflow problem which seems to be largely a non-problem,
+by making changes which may worsen our real problems.
+
+direct-reclaim wants to write a dirty page because that page is in the
+zone which the caller wants to allcoate from!  Telling the flusher
+threads to perform generic writeback will sometimes cause them to just
+gum the disk up with pages from different zones, making it even
+harder/slower to allocate a page from the zones we're interested in,
+no?
+
+If/when that happens, the problem will be rare, subtle, will take a
+long time to get reported and will take years to understand and fix and
+will probably be reported in the monster bug report which everyone's
+hiding from anyway.
+
