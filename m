@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab0G3QrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 12:47:13 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:28155 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab0G3QrM convert rfc822-to-8bit (ORCPT
+	id S1754130Ab0G3QsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 12:48:01 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:55970 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753615Ab0G3Qr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 12:47:12 -0400
-Date: Fri, 30 Jul 2010 18:48:41 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv5 2/3] USB: gadget: Use new composite features in some
- gadgets
-In-reply-to: <231296.268.qm@web180308.mail.gq1.yahoo.com>
-To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <op.vgn0zfyq7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <231296.268.qm@web180308.mail.gq1.yahoo.com>
+	Fri, 30 Jul 2010 12:47:59 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=naLRoPcm/mFJXmaa216YqtmlIYlP1Q6h5ECNvg1mZhjyuvpPb9b+qayGumJGlTrBoLPaeDEfVo9gURB5LIm6x1oguSo7Gd2h4b1U99WsKB5NTLKVumammjCgfGd9vC2y;
+Date: Fri, 30 Jul 2010 09:47:55 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Do not run NVidia quirks related to MSI with MSI
+ disabled
+Message-ID: <20100730094755.7f53b7d8@virtuousgeek.org>
+In-Reply-To: <201007232219.55331.rjw@sisk.pl>
+References: <201007232219.55331.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> --- On Wed, 7/28/10, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
->> use the new features of composite framework.  Because it
->> handles default strings there is no longer the need for
->> the gadgets drivers to handle many of the strings.
+On Fri, 23 Jul 2010 22:19:55 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-On Fri, 30 Jul 2010 00:21:18 +0200, David Brownell <david-b@pacbell.net> wrote:
-> The gadgets should always identify the same, and
-> thus handle their strings -- *unless* module params
-> are applied by users to override those defaults.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> There is no reason to run NVidia-specific quirks related to HT MSI
+> mappings with MSI disabled via pci=nomsi, so make
+> __nv_msi_ht_cap_quirk() return immediately in that case.
+> 
+> This allows at least one machine to boot 100% of the time with
+> pci=nomsi (it still doesn't boot reliably without that).
+> 
+> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16443 .
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+>  drivers/pci/quirks.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> Index: linux-2.6/drivers/pci/quirks.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/quirks.c
+> +++ linux-2.6/drivers/pci/quirks.c
+> @@ -2390,6 +2390,9 @@ static void __devinit __nv_msi_ht_cap_qu
+>  	int pos;
+>  	int found;
+>  
+> +	if (!pci_msi_enabled())
+> +		return;
+> +
+>  	/* check if there is HT MSI cap or enabled on this device */
+>  	found = ht_check_msi_mapping(dev);
 
-This is not how many gadgets seem to work at least as
-far as the iManufacturer is concerned which is usually built
-at run-time as "Linux <version> with <gadget-name>".
-
-The patch does not change the behaviour of the gadget since all
-it does is take advantage of code put in composite.c in the 1/2
-patch.  Therefore, modified gadgets will still use the same
-strings only code that handles string ID reservation is placed in
-composite.c now (since it needs to be there to fix the module
-parameters anyway).
-
->> -static unsigned short gfs_vendor_id    = 0x0525;    /* XXX NetChip */
->> -static unsigned short gfs_product_id   = 0xa4ac;    /* XXX */
-
-> Look -- you can't assign NetChip numbers!!!
-
-/me ashamed
-
-Obviously, you're absolutely right.  I left the XXX mark to remember
-to clear the situation with the IDs but then completely forgot about
-it after g_multi got pulled. (It's especially bad since there is a
-conflict with hid.c).
-
-So, to fix the situation, I need to ask Greg for the IDs?
+applied to linux-next with a cc: stable.  Thanks.
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Jesse Barnes, Intel Open Source Technology Center
