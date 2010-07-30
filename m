@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab0G3SJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:09:47 -0400
-Received: from kroah.org ([198.145.64.141]:59188 "EHLO coco.kroah.org"
+	id S933124Ab0G3SKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:10:04 -0400
+Received: from kroah.org ([198.145.64.141]:59181 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932764Ab0G3R5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:50 2010
-Message-Id: <20100730175149.998070695@clark.site>
+	id S932762Ab0G3R5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:49 2010
+Message-Id: <20100730175149.915596118@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:14 -0700
+Date: Fri, 30 Jul 2010 10:53:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [177/205] mac80211: fix supported rates IE if AP doesnt give us its rates
+        Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [176/205] 3c503: Fix IRQ probing
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 76f273640134f3eb8257179cd5b3bc6ba5fe4a96 upstream.
+commit b0cf4dfb7cd21556efd9a6a67edcba0840b4d98d upstream.
 
-If AP do not provide us supported rates before assiociation, send
-all rates we are supporting instead of empty information element.
+The driver attempts to select an IRQ for the NIC automatically by
+testing which of the supported IRQs are available and then probing
+each available IRQ with probe_irq_{on,off}().  There are obvious race
+conditions here, besides which:
+1. The test for availability is done by passing a NULL handler, which
+   now always returns -EINVAL, thus the device cannot be opened:
+   <http://bugs.debian.org/566522>
+2. probe_irq_off() will report only the first ISA IRQ handled,
+   potentially leading to a false negative.
 
-v1 -> v2: Add comment.
+There was another bug that meant it ignored all error codes from
+request_irq() except -EBUSY, so it would 'succeed' despite this
+(possibly causing conflicts with other ISA devices).  This was fixed
+by ab08999d6029bb2c79c16be5405d63d2bedbdfea 'WARNING: some
+request_irq() failures ignored in el2_open()', which exposed bug 1.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch:
+1. Replaces the use of probe_irq_{on,off}() with a real interrupt handler
+2. Adds a delay before checking the interrupt-seen flag
+3. Disables interrupts on all failure paths
+4. Distinguishes error codes from the second request_irq() call,
+   consistently with the first
+
+Compile-tested only.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/work.c |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ drivers/net/3c503.c |   42 ++++++++++++++++++++++++++++++------------
+ 1 file changed, 30 insertions(+), 12 deletions(-)
 
---- a/net/mac80211/work.c
-+++ b/net/mac80211/work.c
-@@ -213,15 +213,25 @@ static void ieee80211_send_assoc(struct
+--- a/drivers/net/3c503.c
++++ b/drivers/net/3c503.c
+@@ -380,6 +380,12 @@ out:
+     return retval;
+ }
  
- 	sband = local->hw.wiphy->bands[wk->chan->band];
++static irqreturn_t el2_probe_interrupt(int irq, void *seen)
++{
++	*(bool *)seen = true;
++	return IRQ_HANDLED;
++}
++
+ static int
+ el2_open(struct net_device *dev)
+ {
+@@ -391,23 +397,35 @@ el2_open(struct net_device *dev)
  
--	/*
--	 * Get all rates supported by the device and the AP as
--	 * some APs don't like getting a superset of their rates
--	 * in the association request (e.g. D-Link DAP 1353 in
--	 * b-only mode)...
--	 */
--	rates_len = ieee80211_compatible_rates(wk->assoc.supp_rates,
--					       wk->assoc.supp_rates_len,
--					       sband, &rates);
-+	if (wk->assoc.supp_rates_len) {
-+		/*
-+		 * Get all rates supported by the device and the AP as
-+		 * some APs don't like getting a superset of their rates
-+		 * in the association request (e.g. D-Link DAP 1353 in
-+		 * b-only mode)...
-+		 */
-+		rates_len = ieee80211_compatible_rates(wk->assoc.supp_rates,
-+						       wk->assoc.supp_rates_len,
-+						       sband, &rates);
-+	} else {
-+		/*
-+		 * In case AP not provide any supported rates information
-+		 * before association, we send information element(s) with
-+		 * all rates that we support.
-+		 */
-+		rates = ~0;
-+		rates_len = sband->n_bitrates;
-+	}
- 
- 	skb = alloc_skb(local->hw.extra_tx_headroom +
- 			sizeof(*mgmt) + /* bit too much but doesn't matter */
+ 	outb(EGACFR_NORM, E33G_GACFR);	/* Enable RAM and interrupts. */
+ 	do {
+-	    retval = request_irq(*irqp, NULL, 0, "bogus", dev);
+-	    if (retval >= 0) {
++		bool seen;
++
++		retval = request_irq(*irqp, el2_probe_interrupt, 0,
++				     dev->name, &seen);
++		if (retval == -EBUSY)
++			continue;
++		if (retval < 0)
++			goto err_disable;
++
+ 		/* Twinkle the interrupt, and check if it's seen. */
+-		unsigned long cookie = probe_irq_on();
++		seen = false;
++		smp_wmb();
+ 		outb_p(0x04 << ((*irqp == 9) ? 2 : *irqp), E33G_IDCFR);
+ 		outb_p(0x00, E33G_IDCFR);
+-		if (*irqp == probe_irq_off(cookie) &&	/* It's a good IRQ line! */
+-		    ((retval = request_irq(dev->irq = *irqp,
+-					   eip_interrupt, 0,
+-					   dev->name, dev)) == 0))
+-		    break;
+-	    } else {
+-		    if (retval != -EBUSY)
+-			    return retval;
+-	    }
++		msleep(1);
++		free_irq(*irqp, el2_probe_interrupt);
++		if (!seen)
++			continue;
++
++		retval = request_irq(dev->irq = *irqp, eip_interrupt, 0,
++				     dev->name, dev);
++		if (retval == -EBUSY)
++			continue;
++		if (retval < 0)
++			goto err_disable;
+ 	} while (*++irqp);
++
+ 	if (*irqp == 0) {
++	err_disable:
+ 	    outb(EGACFR_IRQOFF, E33G_GACFR);	/* disable interrupts. */
+ 	    return -EAGAIN;
+ 	}
 
 
