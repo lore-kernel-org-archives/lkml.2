@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758775Ab0G3RTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:19:39 -0400
-Received: from kroah.org ([198.145.64.141]:51957 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758757Ab0G3RTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758760Ab0G3RTe (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 30 Jul 2010 13:19:34 -0400
+Received: from kroah.org ([198.145.64.141]:51903 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758699Ab0G3RT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:27 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:09 2010
-Message-Id: <20100730171509.587274036@clark.site>
+Message-Id: <20100730171508.938610139@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:38 -0700
+Date: Fri, 30 Jul 2010 10:15:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Jing Zhang <zj.barak@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [110/165] ext4: fix memory leaks in error path handling of ext4_ext_zeroout()
+        Akira Fujita <a-fujita@rs.jp.nec.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [103/165] ext4: Code cleanup for EXT4_IOC_MOVE_EXT ioctl
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,62 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit b720303df7352d4a7a1f61e467e0a124913c0d41 upstream (as of v2.6.34-git13)
+commit c437b2733520599a2c6e0dbcdeae611319f84707 upstream (as of v2.6.33-git11)
 
-When EIO occurs after bio is submitted, there is no memory free
-operation for bio, which results in memory leakage. And there is also
-no check against bio_alloc() for bio.
+a) Fix sparse warning in ext4_ioctl()
+b) Remove unneeded variable in mext_leaf_block()
+c) Fix spelling typo in mext_check_arguments()
 
-Acked-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-Signed-off-by: Jing Zhang <zj.barak@gmail.com>
+Signed-off-by: Akira Fujita <a-fujita@rs.jp.nec.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/extents.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ fs/ext4/ioctl.c       |    3 ++-
+ fs/ext4/move_extent.c |    4 +---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2446,7 +2446,7 @@ static void bi_complete(struct bio *bio,
- /* FIXME!! we need to try to merge to left or right after zero-out  */
- static int ext4_ext_zeroout(struct inode *inode, struct ext4_extent *ex)
- {
--	int ret = -EIO;
-+	int ret;
- 	struct bio *bio;
- 	int blkbits, blocksize;
- 	sector_t ee_pblock;
-@@ -2470,6 +2470,9 @@ static int ext4_ext_zeroout(struct inode
- 			len = ee_len;
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -258,7 +258,8 @@ setversion_out:
+ 		if (me.moved_len > 0)
+ 			file_remove_suid(donor_filp);
  
- 		bio = bio_alloc(GFP_NOIO, len);
-+		if (!bio)
-+			return -ENOMEM;
-+
- 		bio->bi_sector = ee_pblock;
- 		bio->bi_bdev   = inode->i_sb->s_bdev;
+-		if (copy_to_user((struct move_extent *)arg, &me, sizeof(me)))
++		if (copy_to_user((struct move_extent __user *)arg,
++				 &me, sizeof(me)))
+ 			err = -EFAULT;
+ mext_out:
+ 		fput(donor_filp);
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -477,7 +477,6 @@ mext_leaf_block(handle_t *handle, struct
+ 	struct ext4_extent *oext, *o_start, *o_end, *prev_ext;
+ 	struct ext4_extent new_ext, start_ext, end_ext;
+ 	ext4_lblk_t new_ext_end;
+-	ext4_fsblk_t new_phys_end;
+ 	int oext_alen, new_ext_alen, end_ext_alen;
+ 	int depth = ext_depth(orig_inode);
+ 	int ret;
+@@ -491,7 +490,6 @@ mext_leaf_block(handle_t *handle, struct
+ 	new_ext.ee_len = dext->ee_len;
+ 	new_ext_alen = ext4_ext_get_actual_len(&new_ext);
+ 	new_ext_end = le32_to_cpu(new_ext.ee_block) + new_ext_alen - 1;
+-	new_phys_end = ext_pblock(&new_ext) + new_ext_alen - 1;
  
-@@ -2497,17 +2500,15 @@ static int ext4_ext_zeroout(struct inode
- 		submit_bio(WRITE, bio);
- 		wait_for_completion(&event);
- 
--		if (test_bit(BIO_UPTODATE, &bio->bi_flags))
--			ret = 0;
--		else {
--			ret = -EIO;
--			break;
-+		if (!test_bit(BIO_UPTODATE, &bio->bi_flags)) {
-+			bio_put(bio);
-+			return -EIO;
- 		}
- 		bio_put(bio);
- 		ee_len    -= done;
- 		ee_pblock += done  << (blkbits - 9);
- 	}
--	return ret;
-+	return 0;
+ 	/*
+ 	 * Case: original extent is first
+@@ -932,7 +930,7 @@ out2:
  }
  
- #define EXT4_EXT_ZERO_LEN 7
+ /**
+- * mext_check_argumants - Check whether move extent can be done
++ * mext_check_arguments - Check whether move extent can be done
+  *
+  * @orig_inode:		original inode
+  * @donor_inode:	donor inode
 
 
