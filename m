@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759015Ab0G3RU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:20:59 -0400
-Received: from kroah.org ([198.145.64.141]:52330 "EHLO coco.kroah.org"
+	id S1758924Ab0G3RUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:20:33 -0400
+Received: from kroah.org ([198.145.64.141]:52218 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758828Ab0G3RUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:14 2010
-Message-Id: <20100730171513.925423623@clark.site>
+	id S1753767Ab0G3RUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:12 2010
+Message-Id: <20100730171512.693905979@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:26 -0700
+Date: Fri, 30 Jul 2010 10:16:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Shanyu Zhao <shanyu.zhao@intel.com>,
-        Pradeep Kulkarni <pradeepx.kulkarni@intel.com>,
-        Reinette Chatre <reinette.chatre@intel.com>
-Subject: [158/165] iwlagn: verify flow id in compressed BA packet
+        Johannes Berg <johannes@sipsolutions.net>,
+        Ming Lei <tom.leiming@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [144/165] firmware_class: fix memory leak - free allocated pages
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +29,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shanyu Zhao <shanyu.zhao@intel.com>
+From: David Woodhouse <David.Woodhouse@intel.com>
 
-commit b561e8274f75831ee87e4ea378cbb1f9f050a51a upstream.
+commit dd336c554d8926c3348a2d5f2a5ef5597f6d1a06 upstream.
 
-The flow id (scd_flow) in a compressed BA packet should match the txq_id
-of the queue from which the aggregated packets were sent. However, in
-some hardware like the 1000 series, sometimes the flow id is 0 for the
-txq_id (10 to 19). This can cause the annoying message:
-[ 2213.306191] iwlagn 0000:01:00.0: Received BA when not expected
-[ 2213.310178] iwlagn 0000:01:00.0: Read index for DMA queue txq id (0),
-index 5, is out of range [0-256] 7 7.
+fix memory leak introduced by the patch 6e03a201bbe:
+firmware: speed up request_firmware()
 
-And even worse, if agg->wait_for_ba is true when the bad BA is arriving,
-this can cause system hang due to NULL pointer dereference because the
-code is operating in a wrong tx queue!
+1. vfree won't release pages there were allocated explicitly and mapped
+using vmap. The memory has to be vunmap-ed and the pages needs
+to be freed explicitly
 
-Signed-off-by: Shanyu Zhao <shanyu.zhao@intel.com>
-Signed-off-by: Pradeep Kulkarni <pradeepx.kulkarni@intel.com>
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+2. page array is moved into the 'struct
+firmware' so that we can free it from release_firmware()
+and not only in fw_dev_release()
+
+The fix doesn't break the firmware load speed.
+
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: Ming Lei <tom.leiming@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Singed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-tx.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/base/firmware_class.c |   26 ++++++++++++++++++++------
+ include/linux/firmware.h      |    1 +
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -1479,6 +1479,11 @@ void iwl_rx_reply_compressed_ba(struct i
- 	sta_id = ba_resp->sta_id;
- 	tid = ba_resp->tid;
- 	agg = &priv->stations[sta_id].tid[tid].agg;
-+	if (unlikely(agg->txq_id != scd_flow)) {
-+		IWL_ERR(priv, "BA scd_flow %d does not match txq_id %d\n",
-+			scd_flow, agg->txq_id);
-+		return;
-+	}
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -125,6 +125,17 @@ static ssize_t firmware_loading_show(str
+ 	return sprintf(buf, "%d\n", loading);
+ }
  
- 	/* Find index just before block-ack window */
- 	index = iwl_queue_dec_wrap(ba_resp_scd_ssn & 0xff, txq->q.n_bd);
++static void firmware_free_data(const struct firmware *fw)
++{
++	int i;
++	vunmap(fw->data);
++	if (fw->pages) {
++		for (i = 0; i < PFN_UP(fw->size); i++)
++			__free_page(fw->pages[i]);
++		kfree(fw->pages);
++	}
++}
++
+ /* Some architectures don't have PAGE_KERNEL_RO */
+ #ifndef PAGE_KERNEL_RO
+ #define PAGE_KERNEL_RO PAGE_KERNEL
+@@ -157,21 +168,21 @@ static ssize_t firmware_loading_store(st
+ 			mutex_unlock(&fw_lock);
+ 			break;
+ 		}
+-		vfree(fw_priv->fw->data);
+-		fw_priv->fw->data = NULL;
++		firmware_free_data(fw_priv->fw);
++		memset(fw_priv->fw, 0, sizeof(struct firmware));
++		/* If the pages are not owned by 'struct firmware' */
+ 		for (i = 0; i < fw_priv->nr_pages; i++)
+ 			__free_page(fw_priv->pages[i]);
+ 		kfree(fw_priv->pages);
+ 		fw_priv->pages = NULL;
+ 		fw_priv->page_array_size = 0;
+ 		fw_priv->nr_pages = 0;
+-		fw_priv->fw->size = 0;
+ 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
+ 		mutex_unlock(&fw_lock);
+ 		break;
+ 	case 0:
+ 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
+-			vfree(fw_priv->fw->data);
++			vunmap(fw_priv->fw->data);
+ 			fw_priv->fw->data = vmap(fw_priv->pages,
+ 						 fw_priv->nr_pages,
+ 						 0, PAGE_KERNEL_RO);
+@@ -179,7 +190,10 @@ static ssize_t firmware_loading_store(st
+ 				dev_err(dev, "%s: vmap() failed\n", __func__);
+ 				goto err;
+ 			}
+-			/* Pages will be freed by vfree() */
++			/* Pages are now owned by 'struct firmware' */
++			fw_priv->fw->pages = fw_priv->pages;
++			fw_priv->pages = NULL;
++
+ 			fw_priv->page_array_size = 0;
+ 			fw_priv->nr_pages = 0;
+ 			complete(&fw_priv->completion);
+@@ -572,7 +586,7 @@ release_firmware(const struct firmware *
+ 			if (fw->data == builtin->data)
+ 				goto free_fw;
+ 		}
+-		vfree(fw->data);
++		firmware_free_data(fw);
+ 	free_fw:
+ 		kfree(fw);
+ 	}
+--- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -11,6 +11,7 @@
+ struct firmware {
+ 	size_t size;
+ 	const u8 *data;
++	struct page **pages;
+ };
+ 
+ struct device;
 
 
