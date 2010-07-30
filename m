@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab0G3Olx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 10:41:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49135 "EHLO mx2.suse.de"
+	id S932215Ab0G3Ouf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 10:50:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13721 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752139Ab0G3Olv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 10:41:51 -0400
-Date: Fri, 30 Jul 2010 07:36:22 -0700
-From: Greg KH <gregkh@suse.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tejun Heo <tj@kernel.org>, Guenter Roeck <guenter.roeck@ericsson.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Richard Purdie <rpurdie@rpsys.net>, Paul Mackerras <paulus@samba.org>,
-        Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Nick Cheng <nick.cheng@areca.com.tw>,
-        James Smart <james.smart@emulex.com>,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-        Benjamin Thery <benjamin.thery@bull.net>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
-Message-ID: <20100730143622.GA30105@suse.de>
-References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com> <4C52913C.9020204@kernel.org> <1280485690.1902.8.camel@pasglop>
+	id S1758692Ab0G3Oua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 10:50:30 -0400
+Date: Fri, 30 Jul 2010 10:53:31 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH] kconfig: use long options in conf
+Message-ID: <20100730145330.GL20261@redhat.com>
+References: <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <20100729081316.GA4990@merkur.ravnborg.org> <4C5148A5.10809@suse.cz> <20100729144748.GI6249@redhat.com> <4C519899.9020206@suse.cz> <20100729151650.GA20261@redhat.com> <20100729193454.GC7877@merkur.ravnborg.org> <20100729195052.GB20261@redhat.com> <20100729230419.GA9357@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1280485690.1902.8.camel@pasglop>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100729230419.GA9357@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 08:28:10PM +1000, Benjamin Herrenschmidt wrote:
-> On Fri, 2010-07-30 at 10:45 +0200, Tejun Heo wrote:
-> > On 07/29/2010 07:09 AM, Guenter Roeck wrote:
-> > > The following comment is found in include/linux/sysfs.h:
-> > > 
-> > >    /* FIXME
-> > >     * The *owner field is no longer used.
-> > >     * x86 tree has been cleaned up. The owner
-> > >     * attribute is still left for other arches.
-> > >     */
-> > > 
-> > > As it turns out, the *owner field is (again?) initialized in several modules,
-> > > suggesting that such initialization may be creeping back into the code.
-> > > 
-> > > This patch set removes the above comment, the *owner field, and each instance
-> > > in the code where it was found to be initialized.
-> > > 
-> > > Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
-> > > and sparc defconfig builds.
-> > 
-> > Yeah, the change is way overdue.  Maybe we should have just removed
-> > them back then.
-> 
-> I'm happy with the powerpc related patches as long as we all agree that
-> needs to go. Do you need me to put some of this in powerpc.git or are
-> you carrying them all to Linus ?
+On Fri, Jul 30, 2010 at 01:04:19AM +0200, Sam Ravnborg wrote:
+> First off let me correct myself.
+> nonint_oldconfig does the following:
+> - print any new options to stderr
+> - if tere are any new options exit with exit code 2
+> - it does _not_ touch the current configuration (as I wrongly implied above)
+it does touch the current configuration if there aren't new options
+but whatever
 
-I can carry them all in my driver-core tree if you don't object.
+Acked-by: Aristeu Rozanski <aris@redhat.com>
 
-thanks,
+-- 
+Aristeu
 
-greg k-h
