@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759732Ab0G3Ryp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:54:45 -0400
-Received: from kroah.org ([198.145.64.141]:57823 "EHLO coco.kroah.org"
+	id S1760257Ab0G3Sfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:35:31 -0400
+Received: from kroah.org ([198.145.64.141]:58012 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759708Ab0G3RyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:34 2010
-Message-Id: <20100730175134.492926106@clark.site>
+	id S1759811Ab0G3Ryp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
+Message-Id: <20100730175137.115021082@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:27 -0700
+Date: Fri, 30 Jul 2010 10:50:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Timo=20Ter=C3=A4s?= <timo.teras@iki.fi>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [010/205] r8169: fix mdio_read and update mdio_write according to hw specs
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [039/205] SUNRPC: Fix a re-entrancy bug in xs_tcp_read_calldir()
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-From: Timo Teräs <timo.teras@iki.fi>
+commit b76ce56192bcf618013fb9aecd83488cffd645cc upstream.
 
-[ Upstream commit 81a95f049962ec20a9aed888e676208b206f0f2e ]
+If the attempt to read the calldir fails, then instead of storing the read
+bytes, we currently discard them. This leads to a garbage final result when
+upon re-entry to the same routine, we read the remaining bytes.
 
-Realtek confirmed that a 20us delay is needed after mdio_read and
-mdio_write operations. Reduce the delay in mdio_write, and add it
-to mdio_read too. Also add a comment that the 20us is from hw specs.
+Fixes the regression in bugzilla number 16213. Please see
+    https://bugzilla.kernel.org/show_bug.cgi?id=16213
 
-Signed-off-by: Timo Teräs <timo.teras@iki.fi>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/r8169.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -558,10 +558,10 @@ static void mdio_write(void __iomem *ioa
- 		udelay(25);
- 	}
- 	/*
--	 * Some configurations require a small delay even after the write
--	 * completed indication or the next write might fail.
-+	 * According to hardware specs a 20us delay is required after write
-+	 * complete indication, but before sending next command.
+---
+ net/sunrpc/xprtsock.c |   38 ++++++++++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 16 deletions(-)
+
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -224,7 +224,8 @@ struct sock_xprt {
+ 	 * State of TCP reply receive
  	 */
--	udelay(25);
-+	udelay(20);
+ 	__be32			tcp_fraghdr,
+-				tcp_xid;
++				tcp_xid,
++				tcp_calldir;
+ 
+ 	u32			tcp_offset,
+ 				tcp_reclen;
+@@ -942,7 +943,7 @@ static inline void xs_tcp_read_calldir(s
+ {
+ 	size_t len, used;
+ 	u32 offset;
+-	__be32	calldir;
++	char *p;
+ 
+ 	/*
+ 	 * We want transport->tcp_offset to be 8 at the end of this routine
+@@ -951,26 +952,33 @@ static inline void xs_tcp_read_calldir(s
+ 	 * transport->tcp_offset is 4 (after having already read the xid).
+ 	 */
+ 	offset = transport->tcp_offset - sizeof(transport->tcp_xid);
+-	len = sizeof(calldir) - offset;
++	len = sizeof(transport->tcp_calldir) - offset;
+ 	dprintk("RPC:       reading CALL/REPLY flag (%Zu bytes)\n", len);
+-	used = xdr_skb_read_bits(desc, &calldir, len);
++	p = ((char *) &transport->tcp_calldir) + offset;
++	used = xdr_skb_read_bits(desc, p, len);
+ 	transport->tcp_offset += used;
+ 	if (used != len)
+ 		return;
+ 	transport->tcp_flags &= ~TCP_RCV_READ_CALLDIR;
+-	transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
+-	transport->tcp_flags |= TCP_RCV_COPY_DATA;
+ 	/*
+ 	 * We don't yet have the XDR buffer, so we will write the calldir
+ 	 * out after we get the buffer from the 'struct rpc_rqst'
+ 	 */
+-	if (ntohl(calldir) == RPC_REPLY)
++	switch (ntohl(transport->tcp_calldir)) {
++	case RPC_REPLY:
++		transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
++		transport->tcp_flags |= TCP_RCV_COPY_DATA;
+ 		transport->tcp_flags |= TCP_RPC_REPLY;
+-	else
++		break;
++	case RPC_CALL:
++		transport->tcp_flags |= TCP_RCV_COPY_CALLDIR;
++		transport->tcp_flags |= TCP_RCV_COPY_DATA;
+ 		transport->tcp_flags &= ~TCP_RPC_REPLY;
+-	dprintk("RPC:       reading %s CALL/REPLY flag %08x\n",
+-			(transport->tcp_flags & TCP_RPC_REPLY) ?
+-				"reply for" : "request with", calldir);
++		break;
++	default:
++		dprintk("RPC:       invalid request message type\n");
++		xprt_force_disconnect(&transport->xprt);
++	}
+ 	xs_tcp_check_fraghdr(transport);
  }
  
- static int mdio_read(void __iomem *ioaddr, int reg_addr)
-@@ -581,6 +581,12 @@ static int mdio_read(void __iomem *ioadd
- 		}
- 		udelay(25);
+@@ -990,12 +998,10 @@ static inline void xs_tcp_read_common(st
+ 		/*
+ 		 * Save the RPC direction in the XDR buffer
+ 		 */
+-		__be32	calldir = transport->tcp_flags & TCP_RPC_REPLY ?
+-					htonl(RPC_REPLY) : 0;
+-
+ 		memcpy(rcvbuf->head[0].iov_base + transport->tcp_copied,
+-			&calldir, sizeof(calldir));
+-		transport->tcp_copied += sizeof(calldir);
++			&transport->tcp_calldir,
++			sizeof(transport->tcp_calldir));
++		transport->tcp_copied += sizeof(transport->tcp_calldir);
+ 		transport->tcp_flags &= ~TCP_RCV_COPY_CALLDIR;
  	}
-+	/*
-+	 * According to hardware specs a 20us delay is required after read
-+	 * complete indication, but before sending next command.
-+	 */
-+	udelay(20);
-+
- 	return value;
- }
  
 
 
