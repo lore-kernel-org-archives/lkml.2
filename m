@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265Ab0G3EDi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 00:03:38 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49034 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750787Ab0G3EDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 00:03:36 -0400
-Date: Fri, 30 Jul 2010 14:03:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Erik Gilling'" <konkers@android.com>,
-        "'Colin Cross'" <ccross@android.com>,
-        "'Olof Johansson'" <olof@lixom.net>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Changhwan Youn'" <chaos.youn@samsung.com>
-Subject: Re: linux-next: manual merge of the tegra tree with the s5p tree
-Message-Id: <20100730140331.04c60f73.sfr@canb.auug.org.au>
-In-Reply-To: <015801cb2f8a$9bca9b90$d35fd2b0$%kim@samsung.com>
-References: <20100730105834.d7ac047f.sfr@canb.auug.org.au>
-	<015801cb2f8a$9bca9b90$d35fd2b0$%kim@samsung.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__30_Jul_2010_14_03_31_+1000_nxCMXc1MDbujn7/M"
+	id S1750836Ab0G3EFI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 00:05:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56411 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784Ab0G3EFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 00:05:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=vM0Qkp/o/zgX0O7bOiLy7JON0XKh5iBx8ekRS4x4s5dDBj1Jaef7PKdeTSQSIVJNgF
+         vtUdgyUI+4m+H96C/mCmSc/K4V+P/TUIS0zztvSh2uVbK8+2tmRituw7LjeseqwcoVA1
+         C/L31o1eb2m4tn56eI0HLeurf46vjroS+XUJw=
+Message-ID: <4C524F7A.20505@gmail.com>
+Date: Thu, 29 Jul 2010 21:05:14 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-kernel@vger.kernel.org,
+        ksummit-2010-discuss@lists.linux-foundation.org
+Subject: Re: PSA: Please update your flash plugin!
+References: <E1OefgE-0005vu-JN@tytso-glaptop>
+In-Reply-To: <E1OefgE-0005vu-JN@tytso-glaptop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__30_Jul_2010_14_03_31_+1000_nxCMXc1MDbujn7/M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Fri, 30 Jul 2010 10:57:41 +0900 Kukjin Kim <kgene.kim@samsung.com> wrote:
+On 07/29/2010 07:50 PM, Theodore Ts'o wrote:
+> This is a public service announcement --- if you are running Flash 10.0,
+> make sure you upgrade to 10.1.  Flash 10.0 has a horrible security
+> vulnerability:
 >
-> If there is some conflicts, how can/should I do for it...
-> Stephen, please let me know.
+> 	http://www.adobe.com/support/security/bulletins/apsb10-14.html
+>
+> I have Google Analytics running on the ksummit2010 website, and in
+> addition to discovering that 59% used Firefox and 25% were using Chrome,
+> and that the most popular screen resolution was 1280x800 followed by
+> 1280x1024, etc. --- I also was able to find that while 59% were running
+> Flash 10.1, over 40% of the visitors to the ksummit2010 web site were
+> running a vulnerable version of Adobe flash, which has a remote code
+> execution vulerability.
+>
+> If you were visiting that site from your development system, which you
+> use to push changes to a subsystem maintianer, or even Linus, hopefully
+> I don't need to tell you what a bad idea it is to leave yourself open
+> and vulnerable like this.  (This particular security problem with Flash
+> has been announced for almost 2 months at this point!)
+>
+> 						- Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-In this case, do nothing :-)  The conflicts will get fixed up when either
-Russell or Linus merges your tree into theirs.  My email was more of a
-"heads up" to let you know that there is some conflict.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+biggest problem here is they havn't updated their x86_64(pure64) version 
+yet. hopefully hey release an update soon.
 
---Signature=_Fri__30_Jul_2010_14_03_31_+1000_nxCMXc1MDbujn7/M
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMUk8TAAoJEDMEi1NhKgbsjxYH/j2XOyb04TJDWEYkhGCYYHPg
-nTLTvvhBW7zeweGuE1fS7M0FEl0/tPDt8aMqJA1pEUttghl9puiwVR5mB38Cf4ID
-jAcvTmyur/SCMF0vjrsQdyrrxRpjKILiKcnKHKRrq8T46/KuumfxudWp1xGV/Tqe
-hAMYSu7PprQOVB881FltUSWvQMYeqa3EwfuABmxTOsrTFt4SlSann2JnDErE3C5I
-VUt0YplQMVmCc7OH1j4jNSkycz/fdwRHLvg4QSeiZ3RpZJUuI+t1bPTfMdH7KswI
-VR7q2H+z4EAHHhzhK/9O4v5KGvn3mBIx5hR4TRfU5mze7nagYn/MNuX0QM63c6U=
-=TCMY
------END PGP SIGNATURE-----
-
---Signature=_Fri__30_Jul_2010_14_03_31_+1000_nxCMXc1MDbujn7/M--
+Justin P. Mattock
