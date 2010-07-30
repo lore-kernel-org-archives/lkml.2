@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab0G3TJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:09:44 -0400
-Received: from kroah.org ([198.145.64.141]:51508 "EHLO coco.kroah.org"
+	id S1760415Ab0G3TJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:09:59 -0400
+Received: from kroah.org ([198.145.64.141]:51499 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757218Ab0G3RS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:04 2010
-Message-Id: <20100730171504.015024565@clark.site>
+	id S1757190Ab0G3RS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:03 2010
+Message-Id: <20100730171503.923738937@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:36 -0700
+Date: Fri, 30 Jul 2010 10:14:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: [048/165] sched: Prevent compiler from optimising the sched_avg_update() loop
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [047/165] x86, Calgary: Limit the max PHB number to 256
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,49 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Darrick J. Wong <djwong@us.ibm.com>
 
-commit 0d98bb2656e9bd2dfda2d089db1fe1dbdab41504 upstream.
+commit d596043d71ff0d7b3d0bead19b1d68c55f003093 upstream.
 
-GCC 4.4.1 on ARM has been observed to replace the while loop in
-sched_avg_update with a call to uldivmod, resulting in the
-following build failure at link-time:
+The x3950 family can have as many as 256 PCI buses in a single system, so
+change the limits to the maximum.  Since there can only be 256 PCI buses in one
+domain, we no longer need the BUG_ON check.
 
-kernel/built-in.o: In function `sched_avg_update':
- kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
- kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
-make: *** [.tmp_vmlinux1] Error 1
-
-This patch introduces a fake data hazard to the loop body to
-prevent the compiler optimising the loop away.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+LKML-Reference: <20100701004519.GQ15515@tux1.beaverton.ibm.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/pci-calgary_64.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1261,6 +1261,12 @@ static void sched_avg_update(struct rq *
- 	s64 period = sched_avg_period();
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -109,7 +109,7 @@ int use_calgary __read_mostly = 0;
+  * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
+  * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
+  */
+-#define MAX_PHB_BUS_NUM		384
++#define MAX_PHB_BUS_NUM		256
  
- 	while ((s64)(rq->clock - rq->age_stamp) > period) {
-+		/*
-+		 * Inline assembly required to prevent the compiler
-+		 * optimising this loop into a divmod call.
-+		 * See __iter_div_u64_rem() for another example of this.
-+		 */
-+		asm("" : "+rm" (rq->age_stamp));
- 		rq->age_stamp += period;
- 		rq->rt_avg /= 2;
- 	}
+ #define PHBS_PER_CALGARY	  4
+ 
+@@ -1058,8 +1058,6 @@ static int __init calgary_init_one(struc
+ 	struct iommu_table *tbl;
+ 	int ret;
+ 
+-	BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
+-
+ 	bbar = busno_to_bbar(dev->bus->number);
+ 	ret = calgary_setup_tar(dev, bbar);
+ 	if (ret)
 
 
