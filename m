@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab0G3JJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 05:09:34 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:55281 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab0G3JJc (ORCPT
+	id S932115Ab0G3JMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 05:12:34 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:35439 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755987Ab0G3JMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 05:09:32 -0400
-Date: Fri, 30 Jul 2010 17:09:22 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Jamal Hadi Salim <hadi@cyberus.ca>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] act_nat: the checksum of ICMP doesn't have pseudo
-	header
-Message-ID: <20100730090922.GA7807@gondor.apana.org.au>
-References: <1280448258-1893-1-git-send-email-xiaosuo@gmail.com>
+	Fri, 30 Jul 2010 05:12:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAAI0Ukx5LclT/2dsb2JhbACgF3K+VYU5BA
+Date: Fri, 30 Jul 2010 19:12:26 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Frank Mayhar <fmayhar@google.com>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: VFS scalability git tree
+Message-ID: <20100730091226.GA10437@amd>
+References: <20100722190100.GA22269@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1280448258-1893-1-git-send-email-xiaosuo@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100722190100.GA22269@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 08:04:18AM +0800, Changli Gao wrote:
-> after updating the value of the ICMP payload, inet_proto_csum_replace4() should
-> be called with zero pseudohdr.
+On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
+> I'm pleased to announce I have a git tree up of my vfs scalability work.
 > 
-> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+> http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
+> 
+> Branch vfs-scale-working
+> 
+> The really interesting new item is the store-free path walk, (43fe2b)
+> which I've re-introduced. It has had a complete redesign, it has much
+> better performance and scalability in more cases, and is actually sane
+> code now.
 
-No, the code is correct as is.  We need to update the checksum
-even if the checksum is partial, which is what the 1 is for.
+Things are progressing well here with fixes and improvements to the
+branch.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+One thing that has been brought to my attention is that store-free path
+walking (rcu-walk) drops into the normal refcounted walking on any
+filesystem that has posix ACLs enabled.
+
+Having misread that IS_POSIXACL is based on a superblock flag, I had
+thought we only drop out of rcu-walk in case of encountering an inode
+that actually has acls.
+
+This is quite an important point for any performance testing work.
+ACLs can actually be rcu checked quite easily in most cases, but it
+takes a bit of work on APIs.
+
+Filesystems defining their own ->permission and ->d_revalidate will
+also not use rcu-walk. These could likewise be made to support rcu-walk
+more widely, but it will require knowledge of rcu-walk to be pushed
+into filesystems.
+
+It's not a big deal, basically: no blocking, no stores, no referencing
+non-rcu-protected data, and confirm with seqlock. That is usually the
+case in fastpaths. If it cannot be satisfied, then just return -ECHILD
+and you'll get called in the usual ref-walk mode next time.
+
+But for now, keep this in mind if you plan to do any serious performance
+testing work, *do not mount filesystems with ACL support*.
+
+Thanks,
+Nick
+
