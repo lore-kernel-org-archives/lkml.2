@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab0G3RhX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:37:23 -0400
-Received: from kroah.org ([198.145.64.141]:36143 "EHLO coco.kroah.org"
+	id S932529Ab0G3Rh1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:37:27 -0400
+Received: from kroah.org ([198.145.64.141]:36187 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932442Ab0G3Rf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:13 2010
-Message-Id: <20100730173113.342711700@clark.site>
+	id S932468Ab0G3RgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:36:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:14 2010
+Message-Id: <20100730173113.948773760@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:23 -0700
+Date: Fri, 30 Jul 2010 10:31:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Baruch Siach <baruch@tkos.co.il>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [118/140] dm9000: fix "BUG: spinlock recursion"
+        Richard Airlie <richard@backtrace.co.uk>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [125/140] staging: rtl8192su: add Support for Belkin F5D8053 v6
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,121 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Baruch Siach <baruch@tkos.co.il>
+From: Richard Airlie <richard@backtrace.co.uk>
 
-commit 380fefb2ddabd4cd5f14dbe090481f0544e65078 upstream.
+commit d615da093eb0f691a73a754589e2a4a24a6f1ca7 upstream.
 
-dm9000_set_rx_csum and dm9000_hash_table are called from atomic context (in
-dm9000_init_dm9000), and from non-atomic context (via ethtool_ops and
-net_device_ops respectively). This causes a spinlock recursion BUG. Fix this by
-renaming these functions to *_unlocked for the atomic context, and make the
-original functions locking wrappers for use in the non-atomic context.
+Please find attached a patch which adds the device ID for the Belkin
+F5D8053 v6 to the rtl8192su driver. I've tested this in 2.6.34-rc3
+(Ubuntu 9.10 amd64) and the network adapter is working flawlessly.
 
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Richard Airlie <richard@backtrace.co.uk>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/dm9000.c |   38 +++++++++++++++++++++++++++-----------
- 1 file changed, 27 insertions(+), 11 deletions(-)
+ drivers/staging/rtl8192su/r8192U_core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/dm9000.c
-+++ b/drivers/net/dm9000.c
-@@ -475,17 +475,13 @@ static uint32_t dm9000_get_rx_csum(struc
- 	return dm->rx_csum;
- }
- 
--static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
-+static int dm9000_set_rx_csum_unlocked(struct net_device *dev, uint32_t data)
- {
- 	board_info_t *dm = to_dm9000_board(dev);
--	unsigned long flags;
- 
- 	if (dm->can_csum) {
- 		dm->rx_csum = data;
--
--		spin_lock_irqsave(&dm->lock, flags);
- 		iow(dm, DM9000_RCSR, dm->rx_csum ? RCSR_CSUM : 0);
--		spin_unlock_irqrestore(&dm->lock, flags);
- 
- 		return 0;
- 	}
-@@ -493,6 +489,19 @@ static int dm9000_set_rx_csum(struct net
- 	return -EOPNOTSUPP;
- }
- 
-+static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
-+{
-+	board_info_t *dm = to_dm9000_board(dev);
-+	unsigned long flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&dm->lock, flags);
-+	ret = dm9000_set_rx_csum_unlocked(dev, data);
-+	spin_unlock_irqrestore(&dm->lock, flags);
-+
-+	return ret;
-+}
-+
- static int dm9000_set_tx_csum(struct net_device *dev, uint32_t data)
- {
- 	board_info_t *dm = to_dm9000_board(dev);
-@@ -721,7 +730,7 @@ static unsigned char dm9000_type_to_char
-  *  Set DM9000 multicast address
-  */
- static void
--dm9000_hash_table(struct net_device *dev)
-+dm9000_hash_table_unlocked(struct net_device *dev)
- {
- 	board_info_t *db = netdev_priv(dev);
- 	struct dev_mc_list *mcptr = dev->mc_list;
-@@ -730,12 +739,9 @@ dm9000_hash_table(struct net_device *dev
- 	u32 hash_val;
- 	u16 hash_table[4];
- 	u8 rcr = RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN;
--	unsigned long flags;
- 
- 	dm9000_dbg(db, 1, "entering %s\n", __func__);
- 
--	spin_lock_irqsave(&db->lock, flags);
--
- 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
- 		iow(db, oft, dev->dev_addr[i]);
- 
-@@ -765,6 +771,16 @@ dm9000_hash_table(struct net_device *dev
- 	}
- 
- 	iow(db, DM9000_RCR, rcr);
-+}
-+
-+static void
-+dm9000_hash_table(struct net_device *dev)
-+{
-+	board_info_t *db = netdev_priv(dev);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+	dm9000_hash_table_unlocked(dev);
- 	spin_unlock_irqrestore(&db->lock, flags);
- }
- 
-@@ -784,7 +800,7 @@ dm9000_init_dm9000(struct net_device *de
- 	db->io_mode = ior(db, DM9000_ISR) >> 6;	/* ISR bit7:6 keeps I/O mode */
- 
- 	/* Checksum mode */
--	dm9000_set_rx_csum(dev, db->rx_csum);
-+	dm9000_set_rx_csum_unlocked(dev, db->rx_csum);
- 
- 	/* GPIO0 on pre-activate PHY */
- 	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */
-@@ -811,7 +827,7 @@ dm9000_init_dm9000(struct net_device *de
- 	iow(db, DM9000_ISR, ISR_CLR_STATUS); /* Clear interrupt status */
- 
- 	/* Set address filter table */
--	dm9000_hash_table(dev);
-+	dm9000_hash_table_unlocked(dev);
- 
- 	imr = IMR_PAR | IMR_PTM | IMR_PRM;
- 	if (db->type != TYPE_DM9000E)
+--- a/drivers/staging/rtl8192su/r8192U_core.c
++++ b/drivers/staging/rtl8192su/r8192U_core.c
+@@ -118,6 +118,7 @@ static struct usb_device_id rtl8192_usb_
+ 	{USB_DEVICE(0x07aa, 0x0043)},
+ 	/* Belkin */
+ 	{USB_DEVICE(0x050d, 0x805E)},
++	{USB_DEVICE(0x050d, 0x815F)}, /* Belkin F5D8053 v6 */
+ 	/* Sitecom */
+ 	{USB_DEVICE(0x0df6, 0x0031)},
+ 	{USB_DEVICE(0x0df6, 0x004b)},	/* WL-349 */
 
 
