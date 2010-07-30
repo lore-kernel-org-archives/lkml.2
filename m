@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab0G3Rkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:40:42 -0400
-Received: from kroah.org ([198.145.64.141]:36266 "EHLO coco.kroah.org"
+	id S1759544Ab0G3Rlt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:41:49 -0400
+Received: from kroah.org ([198.145.64.141]:36229 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759491Ab0G3RgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:36:20 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:15 2010
-Message-Id: <20100730173115.272208746@clark.site>
+	id S1759461Ab0G3RgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:36:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:14 2010
+Message-Id: <20100730173114.655397012@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:45 -0700
+Date: Fri, 30 Jul 2010 10:31:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Ritz <daniel.ritz@gmx.ch>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>
-Subject: [140/140] V4L/DVB (13830): uvcvideo: add another YUYV format GUID for iSight cameras
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [133/140] V4L/DVB: uvcvideo: Add support for V4L2_PIX_FMT_Y16
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,53 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Ritz <daniel.ritz@gmx.ch>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 68f194e027ecfbbc8d5515bc40787e542eed59e9 upstream.
+commit 61421206833a4085d9bdf35b2b84cd9a67dfdfac upstream.
 
-For some unknown reason, on a MacBookPro5,3 the iSight sometimes report
-a different video format GUID. This patch add the other (wrong) GUID to
-the format table, making the iSight work always w/o other problems.
+The Miricle 307K (17dc:0202) camera reports a 16-bit greyscale format,
+support it in the driver.
 
-What it should report: 32595559-0000-0010-8000-00aa00389b71
-What it often reports: 32595559-0000-0010-8000-000000389b71
-
-Signed-off-by: Daniel Ritz <daniel.ritz@gmx.ch>
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Leann Ogasawara <leann.ogasawara@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/uvc/uvc_driver.c |    5 +++++
- drivers/media/video/uvc/uvcvideo.h   |    3 +++
- 2 files changed, 8 insertions(+)
+ drivers/media/video/uvc/uvc_driver.c |    7 ++++++-
+ drivers/media/video/uvc/uvcvideo.h   |    4 +++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
 --- a/drivers/media/video/uvc/uvc_driver.c
 +++ b/drivers/media/video/uvc/uvc_driver.c
-@@ -59,6 +59,11 @@ static struct uvc_format_desc uvc_fmts[]
- 		.fcc		= V4L2_PIX_FMT_YUYV,
+@@ -84,11 +84,16 @@ static struct uvc_format_desc uvc_fmts[]
+ 		.fcc		= V4L2_PIX_FMT_UYVY,
  	},
  	{
-+		.name		= "YUV 4:2:2 (YUYV)",
-+		.guid		= UVC_GUID_FORMAT_YUY2_ISIGHT,
-+		.fcc		= V4L2_PIX_FMT_YUYV,
+-		.name		= "Greyscale",
++		.name		= "Greyscale (8-bit)",
+ 		.guid		= UVC_GUID_FORMAT_Y800,
+ 		.fcc		= V4L2_PIX_FMT_GREY,
+ 	},
+ 	{
++		.name		= "Greyscale (16-bit)",
++		.guid		= UVC_GUID_FORMAT_Y16,
++		.fcc		= V4L2_PIX_FMT_Y16,
 +	},
 +	{
- 		.name		= "YUV 4:2:0 (NV12)",
- 		.guid		= UVC_GUID_FORMAT_NV12,
- 		.fcc		= V4L2_PIX_FMT_NV12,
+ 		.name		= "RGB Bayer",
+ 		.guid		= UVC_GUID_FORMAT_BY8,
+ 		.fcc		= V4L2_PIX_FMT_SBGGR8,
 --- a/drivers/media/video/uvc/uvcvideo.h
 +++ b/drivers/media/video/uvc/uvcvideo.h
-@@ -113,6 +113,9 @@ struct uvc_xu_control {
- #define UVC_GUID_FORMAT_YUY2 \
- 	{ 'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, \
+@@ -128,11 +128,13 @@ struct uvc_xu_control {
+ #define UVC_GUID_FORMAT_Y800 \
+ 	{ 'Y',  '8',  '0',  '0', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
-+#define UVC_GUID_FORMAT_YUY2_ISIGHT \
-+	{ 'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, \
-+	 0x80, 0x00, 0x00, 0x00, 0x00, 0x38, 0x9b, 0x71}
- #define UVC_GUID_FORMAT_NV12 \
- 	{ 'N',  'V',  '1',  '2', 0x00, 0x00, 0x10, 0x00, \
++#define UVC_GUID_FORMAT_Y16 \
++	{ 'Y',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ #define UVC_GUID_FORMAT_BY8 \
+ 	{ 'B',  'Y',  '8',  ' ', 0x00, 0x00, 0x10, 0x00, \
  	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
+ 
+-
+ /* ------------------------------------------------------------------------
+  * Driver specific constants.
+  */
 
 
