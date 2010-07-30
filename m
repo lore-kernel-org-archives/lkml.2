@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933027Ab0G3SEq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:04:46 -0400
-Received: from kroah.org ([198.145.64.141]:59299 "EHLO coco.kroah.org"
+	id S932932Ab0G3SDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:03:38 -0400
+Received: from kroah.org ([198.145.64.141]:59333 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932855Ab0G3R6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:58:00 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:51 2010
-Message-Id: <20100730175151.870128719@clark.site>
+	id S932771Ab0G3R6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:58:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:52 2010
+Message-Id: <20100730175152.416558813@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:53:35 -0700
+Date: Fri, 30 Jul 2010 10:53:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Copeland <me@bobcopeland.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [198/205] ath5k: initialize ah->ah_current_channel
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Eric Anholt <eric@anholt.net>
+Subject: [204/205] drm/i915: make sure eDP panel is turned on
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,91 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Copeland <me@bobcopeland.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-commit b6855772f4a22c4fbdd4fcaceff5c8a527035123 upstream.
+commit 9934c132989d5c488d2e15188220ce240960ce96 upstream.
 
-ath5k assumes ah_current_channel is always a valid pointer in
-several places, but a newly created interface may not have a
-channel.  To avoid null pointer dereferences, set it up to point
-to the first available channel until later reconfigured.
+When enabling the eDP port, we need to make sure the panel is turned on
+after training the link.  If we don't, it likely won't come back after
+suspend or may not come up at all.
 
-This fixes the following oops:
-$ rmmod ath5k
-$ insmod ath5k
-$ iw phy0 set distance 11000
+For unknown reasons, unlocking the panel regs before initiating a power
+on sequence is necessary.  There are known bugs in the PCH panel
+sequencing logic, apparently this is one possible workaround.
 
-BUG: unable to handle kernel NULL pointer dereference at 00000006
-IP: [<d0a1ff24>] ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k]
-*pde = 00000000
-Oops: 0000 [#1]
-last sysfs file: /sys/devices/pci0000:00/0000:00:0e.0/ieee80211/phy0/index
-Modules linked in: usbhid option usb_storage usbserial usblp evdev lm90
-scx200_acb i2c_algo_bit i2c_dev i2c_core via_rhine ohci_hcd ne2k_pci
-8390 leds_alix2 xt_IMQ imq nf_nat_tftp nf_conntrack_tftp nf_nat_irc nf_cc
+Fixes https://bugs.freedesktop.org/show_bug.cgi?id=28739.
 
-Pid: 1597, comm: iw Not tainted (2.6.32.14 #8)
-EIP: 0060:[<d0a1ff24>] EFLAGS: 00010296 CPU: 0
-EIP is at ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k]
-EAX: 000000c2 EBX: 00000000 ECX: ffffffff EDX: c12d2080
-ESI: 00000019 EDI: cf8c0000 EBP: d0a30edc ESP: cfa09bf4
-  DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
-Process iw (pid: 1597, ti=cfa09000 task=cf88a000 task.ti=cfa09000)
-Stack:
-  d0a34f35 d0a353f8 d0a30edc 000000fe cf8c0000 00000000 1900063d cfa8c9e0
-<0> cfa8c9e8 cfa8c0c0 cfa8c000 d0a27f0c 199d84b4 cfa8c200 00000010 d09bfdc7
-<0> 00000000 00000000 ffffffff d08e0d28 cf9263c0 00000001 cfa09cc4 00000000
-Call Trace:
-  [<d0a27f0c>] ? ath5k_hw_attach+0xc8c/0x3c10 [ath5k]
-  [<d09bfdc7>] ? __ieee80211_request_smps+0x1347/0x1580 [mac80211]
-  [<d08e0d28>] ? nl80211_send_scan_start+0x7b8/0x4520 [cfg80211]
-  [<c10f5db9>] ? nla_parse+0x59/0xc0
-  [<c11ca8d9>] ? genl_rcv_msg+0x169/0x1a0
-  [<c11ca770>] ? genl_rcv_msg+0x0/0x1a0
-  [<c11c7e68>] ? netlink_rcv_skb+0x38/0x90
-  [<c11c9649>] ? genl_rcv+0x19/0x30
-  [<c11c7c03>] ? netlink_unicast+0x1b3/0x220
-  [<c11c893e>] ? netlink_sendmsg+0x26e/0x290
-  [<c11a409e>] ? sock_sendmsg+0xbe/0xf0
-  [<c1032780>] ? autoremove_wake_function+0x0/0x50
-  [<c104d846>] ? __alloc_pages_nodemask+0x106/0x530
-  [<c1074933>] ? do_lookup+0x53/0x1b0
-  [<c10766f9>] ? __link_path_walk+0x9b9/0x9e0
-  [<c11acab0>] ? verify_iovec+0x50/0x90
-  [<c11a42b1>] ? sys_sendmsg+0x1e1/0x270
-  [<c1048e50>] ? find_get_page+0x10/0x50
-  [<c104a96f>] ? filemap_fault+0x5f/0x370
-  [<c1059159>] ? __do_fault+0x319/0x370
-  [<c11a55b4>] ? sys_socketcall+0x244/0x290
-  [<c101962c>] ? do_page_fault+0x1ec/0x270
-  [<c1019440>] ? do_page_fault+0x0/0x270
-  [<c1002ae5>] ? syscall_call+0x7/0xb
-Code: 00 b8 fe 00 00 00 b9 f8 53 a3 d0 89 5c 24 14 89 7c 24 10 89 44 24
-0c 89 6c 24 08 89 4c 24 04 c7 04 24 35 4f a3 d0 e8 7c 30 60 f0 <0f> b7
-43 06 ba 06 00 00 00 a8 10 75 0e 83 e0 20 83 f8 01 19 d2
-EIP: [<d0a1ff24>] ath5k_hw_set_coverage_class+0x74/0x1b0 [ath5k] SS:ESP
-0068:cfa09bf4
-CR2: 0000000000000006
----[ end trace 54f73d6b10ceb87b ]---
-
-Reported-by: Steve Brown <sbrown@cortland.com>
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Tested-by: "Paulo J. S. Silva" <pjssilva@gmail.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath5k/attach.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_dp.c |   53 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 51 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath5k/attach.c
-+++ b/drivers/net/wireless/ath/ath5k/attach.c
-@@ -124,6 +124,7 @@ int ath5k_hw_attach(struct ath5k_softc *
- 	ah->ah_cw_min = AR5K_TUNE_CWMIN;
- 	ah->ah_limit_tx_retries = AR5K_INIT_TX_RETRY;
- 	ah->ah_software_retry = false;
-+	ah->ah_current_channel = &sc->channels[0];
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -677,6 +677,51 @@ intel_dp_mode_set(struct drm_encoder *en
+ 	}
+ }
  
- 	/*
- 	 * Find the mac version
++static void ironlake_edp_panel_on (struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	unsigned long timeout = jiffies + msecs_to_jiffies(5000);
++	u32 pp, pp_status;
++
++	pp_status = I915_READ(PCH_PP_STATUS);
++	if (pp_status & PP_ON)
++		return;
++
++	pp = I915_READ(PCH_PP_CONTROL);
++	pp |= PANEL_UNLOCK_REGS | POWER_TARGET_ON;
++	I915_WRITE(PCH_PP_CONTROL, pp);
++	do {
++		pp_status = I915_READ(PCH_PP_STATUS);
++	} while (((pp_status & PP_ON) == 0) && !time_after(jiffies, timeout));
++
++	if (time_after(jiffies, timeout))
++		DRM_DEBUG_KMS("panel on wait timed out: 0x%08x\n", pp_status);
++
++	pp &= ~(PANEL_UNLOCK_REGS | EDP_FORCE_VDD);
++	I915_WRITE(PCH_PP_CONTROL, pp);
++}
++
++static void ironlake_edp_panel_off (struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	unsigned long timeout = jiffies + msecs_to_jiffies(5000);
++	u32 pp, pp_status;
++
++	pp = I915_READ(PCH_PP_CONTROL);
++	pp &= ~POWER_TARGET_ON;
++	I915_WRITE(PCH_PP_CONTROL, pp);
++	do {
++		pp_status = I915_READ(PCH_PP_STATUS);
++	} while ((pp_status & PP_ON) && !time_after(jiffies, timeout));
++
++	if (time_after(jiffies, timeout))
++		DRM_DEBUG_KMS("panel off wait timed out\n");
++
++	/* Make sure VDD is enabled so DP AUX will work */
++	pp |= EDP_FORCE_VDD;
++	I915_WRITE(PCH_PP_CONTROL, pp);
++}
++
+ static void ironlake_edp_backlight_on (struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -711,14 +756,18 @@ intel_dp_dpms(struct drm_encoder *encode
+ 	if (mode != DRM_MODE_DPMS_ON) {
+ 		if (dp_reg & DP_PORT_EN) {
+ 			intel_dp_link_down(intel_encoder, dp_priv->DP);
+-			if (IS_eDP(intel_encoder))
++			if (IS_eDP(intel_encoder)) {
++				ironlake_edp_backlight_off(dev);
+ 				ironlake_edp_backlight_off(dev);
++			}
+ 		}
+ 	} else {
+ 		if (!(dp_reg & DP_PORT_EN)) {
+ 			intel_dp_link_train(intel_encoder, dp_priv->DP, dp_priv->link_configuration);
+-			if (IS_eDP(intel_encoder))
++			if (IS_eDP(intel_encoder)) {
++				ironlake_edp_panel_on(dev);
+ 				ironlake_edp_backlight_on(dev);
++			}
+ 		}
+ 	}
+ 	dp_priv->dpms_mode = mode;
 
 
