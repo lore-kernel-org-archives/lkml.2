@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab0G3RYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:24:48 -0400
-Received: from kroah.org ([198.145.64.141]:52241 "EHLO coco.kroah.org"
+	id S1759095Ab0G3RZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:25:18 -0400
+Received: from kroah.org ([198.145.64.141]:52210 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758884Ab0G3RUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:13 -0400
+	id S1758877Ab0G3RUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:10 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:12 2010
-Message-Id: <20100730171512.867170538@clark.site>
+Message-Id: <20100730171512.600292870@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:14 -0700
+Date: Fri, 30 Jul 2010 10:16:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Giuliano Pochini <pochini@shiny.it>, Takashi Iwai <tiwai@suse.de>
-Subject: [146/165] ALSA: Echoaudio, fix Guru Meditation #00000005.48454C50
+        Baruch Siach <baruch@tkos.co.il>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [143/165] dm9000: fix "BUG: spinlock recursion"
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,42 +26,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Giuliano Pochini <pochini@shiny.it>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit b721e68bdc5b39c51bf6a1469f8d3663fbe03243 upstream.
+commit 380fefb2ddabd4cd5f14dbe090481f0544e65078 upstream.
 
-This patch fixes a division by zero error in the irq handler.
+dm9000_set_rx_csum and dm9000_hash_table are called from atomic context (in
+dm9000_init_dm9000), and from non-atomic context (via ethtool_ops and
+net_device_ops respectively). This causes a spinlock recursion BUG. Fix this by
+renaming these functions to *_unlocked for the atomic context, and make the
+original functions locking wrappers for use in the non-atomic context.
 
-There is a small window between the hw_params() callback and when
-runtime->frame_bits is set by ALSA middle layer. When another substream is
-already running, if an interrupt is delivered during that window the irq
-handler calls pcm_pointer() which does a division by zero. The patch below
-makes the irq handler skip substreams that are initialized but not started
-yet. Cc to Clemens Ladisch because he proposed an alternate fix.
-
-For more information, please read the original thread in the linux-kernel
-mailing list: http://lkml.org/lkml/2010/2/2/187
-
-Signed-off-by: Giuliano Pochini <pochini@shiny.it>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/echoaudio/echoaudio.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/net/dm9000.c |   38 +++++++++++++++++++++++++++-----------
+ 1 file changed, 27 insertions(+), 11 deletions(-)
 
---- a/sound/pci/echoaudio/echoaudio.c
-+++ b/sound/pci/echoaudio/echoaudio.c
-@@ -1821,7 +1821,9 @@ static irqreturn_t snd_echo_interrupt(in
- 	/* The hardware doesn't tell us which substream caused the irq,
- 	thus we have to check all running substreams. */
- 	for (ss = 0; ss < DSP_MAXPIPES; ss++) {
--		if ((substream = chip->substream[ss])) {
-+		substream = chip->substream[ss];
-+		if (substream && ((struct audiopipe *)substream->runtime->
-+				private_data)->state == PIPE_STATE_STARTED) {
- 			period = pcm_pointer(substream) /
- 				substream->runtime->period_size;
- 			if (period != chip->last_period[ss]) {
+--- a/drivers/net/dm9000.c
++++ b/drivers/net/dm9000.c
+@@ -471,17 +471,13 @@ static uint32_t dm9000_get_rx_csum(struc
+ 	return dm->rx_csum;
+ }
+ 
+-static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
++static int dm9000_set_rx_csum_unlocked(struct net_device *dev, uint32_t data)
+ {
+ 	board_info_t *dm = to_dm9000_board(dev);
+-	unsigned long flags;
+ 
+ 	if (dm->can_csum) {
+ 		dm->rx_csum = data;
+-
+-		spin_lock_irqsave(&dm->lock, flags);
+ 		iow(dm, DM9000_RCSR, dm->rx_csum ? RCSR_CSUM : 0);
+-		spin_unlock_irqrestore(&dm->lock, flags);
+ 
+ 		return 0;
+ 	}
+@@ -489,6 +485,19 @@ static int dm9000_set_rx_csum(struct net
+ 	return -EOPNOTSUPP;
+ }
+ 
++static int dm9000_set_rx_csum(struct net_device *dev, uint32_t data)
++{
++	board_info_t *dm = to_dm9000_board(dev);
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&dm->lock, flags);
++	ret = dm9000_set_rx_csum_unlocked(dev, data);
++	spin_unlock_irqrestore(&dm->lock, flags);
++
++	return ret;
++}
++
+ static int dm9000_set_tx_csum(struct net_device *dev, uint32_t data)
+ {
+ 	board_info_t *dm = to_dm9000_board(dev);
+@@ -667,7 +676,7 @@ static unsigned char dm9000_type_to_char
+  *  Set DM9000 multicast address
+  */
+ static void
+-dm9000_hash_table(struct net_device *dev)
++dm9000_hash_table_unlocked(struct net_device *dev)
+ {
+ 	board_info_t *db = netdev_priv(dev);
+ 	struct dev_mc_list *mcptr = dev->mc_list;
+@@ -676,12 +685,9 @@ dm9000_hash_table(struct net_device *dev
+ 	u32 hash_val;
+ 	u16 hash_table[4];
+ 	u8 rcr = RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN;
+-	unsigned long flags;
+ 
+ 	dm9000_dbg(db, 1, "entering %s\n", __func__);
+ 
+-	spin_lock_irqsave(&db->lock, flags);
+-
+ 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
+ 		iow(db, oft, dev->dev_addr[i]);
+ 
+@@ -711,6 +717,16 @@ dm9000_hash_table(struct net_device *dev
+ 	}
+ 
+ 	iow(db, DM9000_RCR, rcr);
++}
++
++static void
++dm9000_hash_table(struct net_device *dev)
++{
++	board_info_t *db = netdev_priv(dev);
++	unsigned long flags;
++
++	spin_lock_irqsave(&db->lock, flags);
++	dm9000_hash_table_unlocked(dev);
+ 	spin_unlock_irqrestore(&db->lock, flags);
+ }
+ 
+@@ -729,7 +745,7 @@ dm9000_init_dm9000(struct net_device *de
+ 	db->io_mode = ior(db, DM9000_ISR) >> 6;	/* ISR bit7:6 keeps I/O mode */
+ 
+ 	/* Checksum mode */
+-	dm9000_set_rx_csum(dev, db->rx_csum);
++	dm9000_set_rx_csum_unlocked(dev, db->rx_csum);
+ 
+ 	/* GPIO0 on pre-activate PHY */
+ 	iow(db, DM9000_GPR, 0);	/* REG_1F bit0 activate phyxcer */
+@@ -749,7 +765,7 @@ dm9000_init_dm9000(struct net_device *de
+ 	iow(db, DM9000_ISR, ISR_CLR_STATUS); /* Clear interrupt status */
+ 
+ 	/* Set address filter table */
+-	dm9000_hash_table(dev);
++	dm9000_hash_table_unlocked(dev);
+ 
+ 	imr = IMR_PAR | IMR_PTM | IMR_PRM;
+ 	if (db->type != TYPE_DM9000E)
 
 
