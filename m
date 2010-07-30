@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566Ab0G3RrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:47:13 -0400
-Received: from kroah.org ([198.145.64.141]:36059 "EHLO coco.kroah.org"
+	id S932658Ab0G3RrR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:47:17 -0400
+Received: from kroah.org ([198.145.64.141]:36053 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396Ab0G3Rfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:42 -0400
+	id S932406Ab0G3Rfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:40 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:12 2010
-Message-Id: <20100730173112.133217277@clark.site>
+Message-Id: <20100730173112.037258996@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:09 -0700
+Date: Fri, 30 Jul 2010 10:31:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [104/140] USB: sisusbvga: Fix for USB 3.0
+        Paul Mortier <mortier@btinternet.com>
+Subject: [103/140] USB: adds Artisman USB dongle to list of quirky devices
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Paul Mortier <mortier@btinternet.com>
 
-commit 20a12f007feee1cfa761b431047271d1141d8031 upstream.
+commit 47f19c0eedb377ad1ee8114f464d001ec5f96a69 upstream.
 
-Super speed is also fast enough to let sisusbvga operate.
-Therefor expand the checks.
+When an attempt is made to read the interface strings of the Artisman
+Watchdog USB dongle (idVendor:idProduct 04b4:0526) an error is written
+to the dmesg log (uhci_result_common: failed with status 440000) and the
+dongle resets itself, resulting in a disconnect/reconnect loop.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Adding the dongle to the list of devices in quirks.c, with the same
+quirk Alan Stern's previous patch for the Saitek Cyborg Gold 3D
+joystick, stops the device from resetting and allows it to be used with
+no problems.
+
+Signed-off-by: Paul Mortier <mortier@btinternet.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/misc/sisusbvga/sisusb.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/core/quirks.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -2435,7 +2435,8 @@ sisusb_open(struct inode *inode, struct
- 	}
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -41,6 +41,10 @@ static const struct usb_device_id usb_qu
+ 	/* Philips PSC805 audio device */
+ 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	if (!sisusb->devinit) {
--		if (sisusb->sisusb_dev->speed == USB_SPEED_HIGH) {
-+		if (sisusb->sisusb_dev->speed == USB_SPEED_HIGH ||
-+		    sisusb->sisusb_dev->speed == USB_SPEED_SUPER) {
- 			if (sisusb_init_gfxdevice(sisusb, 0)) {
- 				mutex_unlock(&sisusb->lock);
- 				dev_err(&sisusb->sisusb_dev->dev, "Failed to initialize device\n");
-@@ -3167,7 +3168,7 @@ static int sisusb_probe(struct usb_inter
++	/* Artisman Watchdog Dongle */
++	{ USB_DEVICE(0x04b4, 0x0526), .driver_info =
++			USB_QUIRK_CONFIG_INTF_STRINGS },
++
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	sisusb->present = 1;
- 
--	if (dev->speed == USB_SPEED_HIGH) {
-+	if (dev->speed == USB_SPEED_HIGH || dev->speed == USB_SPEED_SUPER) {
- 		int initscreen = 1;
- #ifdef INCL_SISUSB_CON
- 		if (sisusb_first_vc > 0 &&
 
 
