@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933285Ab0G3Snh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:43:37 -0400
-Received: from kroah.org ([198.145.64.141]:35875 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932314Ab0G3RfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:35:07 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:09 2010
-Message-Id: <20100730173109.398607672@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:39 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <rmk@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: [074/140] sched: Prevent compiler from optimising the sched_avg_update() loop
-In-Reply-To: <20100730173205.GA22581@kroah.com>
+	id S933426Ab0G3Snq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:43:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39531 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933404Ab0G3Snm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 14:43:42 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: trivial@kernel.org
+Cc: Michal Marek <mmarek@suse.cz>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Christoph Hellwig <hch@lst.de>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] trivial: fix a typo in a filename
+Date: Fri, 30 Jul 2010 20:43:20 +0200
+Message-Id: <1280515401-13610-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
-
-------------------
-
-From: Will Deacon <will.deacon@arm.com>
-
-commit 0d98bb2656e9bd2dfda2d089db1fe1dbdab41504 upstream.
-
-GCC 4.4.1 on ARM has been observed to replace the while loop in
-sched_avg_update with a call to uldivmod, resulting in the
-following build failure at link-time:
-
-kernel/built-in.o: In function `sched_avg_update':
- kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
- kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
-make: *** [.tmp_vmlinux1] Error 1
-
-This patch introduces a fake data hazard to the loop body to
-prevent the compiler optimising the loop away.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- kernel/sched.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ scripts/Makefile.modpost |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1259,6 +1259,12 @@ static void sched_avg_update(struct rq *
- 	s64 period = sched_avg_period();
+diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+index 8f14c81..82a2420 100644
+--- a/scripts/Makefile.modpost
++++ b/scripts/Makefile.modpost
+@@ -30,7 +30,7 @@
+ #     - See include/linux/module.h for more details
  
- 	while ((s64)(rq->clock - rq->age_stamp) > period) {
-+		/*
-+		 * Inline assembly required to prevent the compiler
-+		 * optimising this loop into a divmod call.
-+		 * See __iter_div_u64_rem() for another example of this.
-+		 */
-+		asm("" : "+rm" (rq->age_stamp));
- 		rq->age_stamp += period;
- 		rq->rt_avg /= 2;
- 	}
-
+ # Step 4 is solely used to allow module versioning in external modules,
+-# where the CRC of each module is retrieved from the Module.symers file.
++# where the CRC of each module is retrieved from the Module.symvers file.
+ 
+ # KBUILD_MODPOST_WARN can be set to avoid error out in case of undefined
+ # symbols in the final module linking stage
+-- 
+1.7.1
 
