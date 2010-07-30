@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab0G3Ouf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 10:50:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13721 "EHLO mx1.redhat.com"
+	id S1758666Ab0G3Ou0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 10:50:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51893 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758692Ab0G3Oua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 10:50:30 -0400
-Date: Fri, 30 Jul 2010 10:53:31 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Uwe Kleine-Koig <u.kleine-koenig@pengutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH] kconfig: use long options in conf
-Message-ID: <20100730145330.GL20261@redhat.com>
-References: <4C4EFE80.7050808@suse.cz> <20100728203622.GA32086@merkur.ravnborg.org> <20100729081316.GA4990@merkur.ravnborg.org> <4C5148A5.10809@suse.cz> <20100729144748.GI6249@redhat.com> <4C519899.9020206@suse.cz> <20100729151650.GA20261@redhat.com> <20100729193454.GC7877@merkur.ravnborg.org> <20100729195052.GB20261@redhat.com> <20100729230419.GA9357@merkur.ravnborg.org>
+	id S1751369Ab0G3OuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 10:50:25 -0400
+Message-ID: <4C52E692.3070405@kernel.org>
+Date: Fri, 30 Jul 2010 16:49:54 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100729230419.GA9357@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Sridhar Samudrala <samudrala@us.ibm.com>,
+        Jeff Dike <jdike@linux.intel.com>, Juan Quintela <quintela@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        David Stevens <dlstevens@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost: locking/rcu cleanup
+References: <20100729122325.GA24337@redhat.com>
+In-Reply-To: <20100729122325.GA24337@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 30 Jul 2010 14:49:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 01:04:19AM +0200, Sam Ravnborg wrote:
-> First off let me correct myself.
-> nonint_oldconfig does the following:
-> - print any new options to stderr
-> - if tere are any new options exit with exit code 2
-> - it does _not_ touch the current configuration (as I wrongly implied above)
-it does touch the current configuration if there aren't new options
-but whatever
+Hello,
 
-Acked-by: Aristeu Rozanski <aris@redhat.com>
+On 07/29/2010 02:23 PM, Michael S. Tsirkin wrote:
+> I saw WARN_ON(!list_empty(&dev->work_list)) trigger
+> so our custom flush is not as airtight as need be.
+
+Could be but it's also possible that something has queued something
+after the last flush?  Is the problem reproducible?
+
+> This patch switches to a simple atomic counter + srcu instead of
+> the custom locked queue + flush implementation.
+> 
+> This will slow down the setup ioctls, which should not matter -
+> it's slow path anyway. We use the expedited flush to at least
+> make sure it has a sane time bound.
+> 
+> Works fine for me. I got reports that with many guests,
+> work lock is highly contended, and this patch should in theory
+> fix this as well - but I haven't tested this yet.
+
+Hmmm... vhost_poll_flush() becomes synchronize_srcu_expedited().  Can
+you please explain how it works?  synchronize_srcu_expedited() is an
+extremely heavy operation involving scheduling the cpu_stop task on
+all cpus.  I'm not quite sure whether doing it from every flush is a
+good idea.  Is flush supposed to be a very rare operation?
+
+Having custom implementation is fine too but let's try to implement
+something generic if at all possible.
+
+Thanks.
 
 -- 
-Aristeu
-
+tejun
