@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab0G3RmN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:42:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63013 "EHLO mga01.intel.com"
+	id S932530Ab0G3Rmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:42:38 -0400
+Received: from kroah.org ([198.145.64.141]:36216 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759489Ab0G3RmH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:42:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,288,1278313200"; 
-   d="scan'208";a="591398664"
-From: "Allan, Bruce W" <bruce.w.allan@intel.com>
-To: Marc Haber <mh+linux-kernel@zugschlus.de>
-CC: Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Date: Fri, 30 Jul 2010 10:42:03 -0700
-Subject: RE: e1000e crashes with 2.6.34.x and ThinkPad T60
-Thread-Topic: e1000e crashes with 2.6.34.x and ThinkPad T60
-Thread-Index: Acsv5p0nTR9Wc6UMSLarpVPZQCnw3gAJoQ3g
-Message-ID: <8DD2590731AB5D4C9DBF71A877482A9001649C4653@orsmsx509.amr.corp.intel.com>
-References: <20100724092644.GA13353@torres.zugschlus.de>
- <8DD2590731AB5D4C9DBF71A877482A9001623EC48E@orsmsx509.amr.corp.intel.com>
- <20100730125614.GB21444@torres.zugschlus.de>
-In-Reply-To: <20100730125614.GB21444@torres.zugschlus.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1759401Ab0G3RgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:36:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:14 2010
+Message-Id: <20100730173114.395944673@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:31:35 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [130/140] mac80211: fix supported rates IE if AP doesnt give us its rates
+In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 30, 2010 5:56 AM, Marc Haber wrote:
-> On Mon, Jul 26, 2010 at 09:13:45AM -0700, Allan, Bruce W wrote:
->> Adding e1000-devel (the Intel LAN developers list).
->> 
->> Please supply the full dmesg you meant to attach with the original
->> report, as well as the output of lspci -vvv.
-> 
-> Stupid me.
-> 
-> Greetings
-> Marc
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-Please also provide an eeprom dump from the wired LOM via 'ethtool -e ethX'.
+------------------
 
-Thanks,
-Bruce.
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+
+commit 76f273640134f3eb8257179cd5b3bc6ba5fe4a96 upstream.
+
+If AP do not provide us supported rates before assiociation, send
+all rates we are supporting instead of empty information element.
+
+v1 -> v2: Add comment.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/mac80211/mlme.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -270,12 +270,6 @@ static void ieee80211_send_assoc(struct
+ 	if (wk->bss->wmm_used)
+ 		wmm = 1;
+ 
+-	/* get all rates supported by the device and the AP as
+-	 * some APs don't like getting a superset of their rates
+-	 * in the association request (e.g. D-Link DAP 1353 in
+-	 * b-only mode) */
+-	rates_len = ieee80211_compatible_rates(wk->bss, sband, &rates);
+-
+ 	if ((wk->bss->cbss.capability & WLAN_CAPABILITY_SPECTRUM_MGMT) &&
+ 	    (local->hw.flags & IEEE80211_HW_SPECTRUM_MGMT))
+ 		capab |= WLAN_CAPABILITY_SPECTRUM_MGMT;
+@@ -310,6 +304,17 @@ static void ieee80211_send_assoc(struct
+ 	*pos++ = wk->ssid_len;
+ 	memcpy(pos, wk->ssid, wk->ssid_len);
+ 
++	if (wk->bss->supp_rates_len) {
++		/* get all rates supported by the device and the AP as
++		 * some APs don't like getting a superset of their rates
++		 * in the association request (e.g. D-Link DAP 1353 in
++		 * b-only mode) */
++		rates_len = ieee80211_compatible_rates(wk->bss, sband, &rates);
++	} else {
++		rates = ~0;
++		rates_len = sband->n_bitrates;
++	}
++
+ 	/* add all rates which were marked to be used above */
+ 	supp_rates_len = rates_len;
+ 	if (supp_rates_len > 8)
+
+
