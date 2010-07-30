@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758100Ab0G3TEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:04:55 -0400
-Received: from kroah.org ([198.145.64.141]:51661 "EHLO coco.kroah.org"
+	id S1758016Ab0G3TFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:05:16 -0400
+Received: from kroah.org ([198.145.64.141]:51648 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757962Ab0G3RSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:18:50 -0400
+	id S1757734Ab0G3RSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:48 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:05 2010
-Message-Id: <20100730171505.906265417@clark.site>
+Message-Id: <20100730171505.738488952@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:57 -0700
+Date: Fri, 30 Jul 2010 10:14:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [069/165] USB: obey the sysfs power/wakeup setting
+        Stephane Glondu <steph@glondu.net>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [067/165] staging: rtl8192su: add USB VID/PID for HWNUm-300
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Stephane Glondu <steph@glondu.net>
 
-commit 48826626263d4a61d06fd8c5805da31f925aefa0 upstream.
+commit 488d3749620779ab2668c0dba2962836e51e3cd6 upstream.
 
-This patch (as1403) is a partial reversion of an earlier change
-(commit 5f677f1d45b2bf08085bbba7394392dfa586fa8e "USB: fix remote
-wakeup settings during system sleep").  After hearing from a user, I
-realized that remote wakeup should be enabled during system sleep
-whenever userspace allows it, and not only if a driver requests it
-too.
+The Hercules Wireless N USB mini (HWNUm-300) uses the RTL8191S chipset
+and seems to work with this driver.
 
-Indeed, there could be a device with no driver, that does nothing but
-generate a wakeup request when the user presses a button.  Such a
-device should be allowed to do its job.
-
-The problem fixed by the earlier patch -- device generating a wakeup
-request for no reason, causing system suspend to abort -- was also
-addressed by a later patch ("USB: don't enable remote wakeup by
-default", accepted but not yet merged into mainline).  The device
-won't be able to generate the bogus wakeup requests because it will be
-disabled for remote wakeup by default.  Hence this reversion will not
-re-introduce any old problems.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Stephane Glondu <steph@glondu.net>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/usb/core/driver.c |   15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/staging/rtl8192su/r8192U_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/core/driver.c
-+++ b/drivers/usb/core/driver.c
-@@ -1743,9 +1743,6 @@ int usb_external_resume_device(struct us
- 
- static void choose_wakeup(struct usb_device *udev, pm_message_t msg)
- {
--	int			w, i;
--	struct usb_interface	*intf;
--
- 	/* Remote wakeup is needed only when we actually go to sleep.
- 	 * For things like FREEZE and QUIESCE, if the device is already
- 	 * autosuspended then its current wakeup setting is okay.
-@@ -1755,18 +1752,10 @@ static void choose_wakeup(struct usb_dev
- 		return;
- 	}
- 
--	/* If remote wakeup is permitted, see whether any interface drivers
-+	/* Allow remote wakeup if it is enabled, even if no interface drivers
- 	 * actually want it.
- 	 */
--	w = 0;
--	if (device_may_wakeup(&udev->dev) && udev->actconfig) {
--		for (i = 0; i < udev->actconfig->desc.bNumInterfaces; i++) {
--			intf = udev->actconfig->interface[i];
--			w |= intf->needs_remote_wakeup;
--		}
--	}
--
--	udev->do_remote_wakeup = w;
-+	udev->do_remote_wakeup = device_may_wakeup(&udev->dev);
- }
- 
- int usb_suspend(struct device *dev, pm_message_t msg)
+--- a/drivers/staging/rtl8192su/r8192U_core.c
++++ b/drivers/staging/rtl8192su/r8192U_core.c
+@@ -127,6 +127,8 @@ static struct usb_device_id rtl8192_usb_
+ 	{USB_DEVICE(0x2001, 0x3301)},
+ 	/* Zinwell */
+ 	{USB_DEVICE(0x5a57, 0x0290)},
++	/* Guillemot */
++	{USB_DEVICE(0x06f8, 0xe031)},
+ 	//92SU
+ 	{USB_DEVICE(0x0bda, 0x8172)},
+ 	{}
 
 
