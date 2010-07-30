@@ -1,89 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760692Ab0G3TSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:18:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:33897 "EHLO
+	id S1760670Ab0G3TS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:18:28 -0400
+Received: from mail.windriver.com ([147.11.1.11]:33857 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760633Ab0G3TSL (ORCPT
+	with ESMTP id S1760626Ab0G3TSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 15:18:11 -0400
+	Fri, 30 Jul 2010 15:18:04 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: linux-kernel@vger.kernel.org
 Cc: kgdb-bugreport@lists.sourceforge.net, mingo@elte.hu,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
         Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 01/15] kgdb: remove custom hex_to_bin()implementation
-Date: Fri, 30 Jul 2010 14:17:22 -0500
-Message-Id: <1280517456-1167-2-git-send-email-jason.wessel@windriver.com>
+Subject: [PATCH 02/15] gdbstub: Optimize kgdb's "thread:" response for the gdb serial protocol
+Date: Fri, 30 Jul 2010 14:17:23 -0500
+Message-Id: <1280517456-1167-3-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
 In-Reply-To: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
 References: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 30 Jul 2010 19:17:40.0298 (UTC) FILETIME=[E0BDDAA0:01CB301B]
+X-OriginalArrivalTime: 30 Jul 2010 19:17:41.0017 (UTC) FILETIME=[E12B9090:01CB301B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+The gdb debugger understands how to parse short versions of the thread
+reference string as long as the bytes are paired in sets of two
+characters.  The kgdb implementation was always sending 8 leading
+zeros which could be omitted, and further optimized in the case of
+non-negative thread numbers.  The negative numbers are used to
+reference a specific cpu in the case of kgdb.
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+An example of the previous i386 stop packet looks like:
+    T05thread:00000000000003bb;
+
+New stop packet response:
+    T05thread:03bb;
+
+The previous ThreadInfo response looks like:
+    m00000000fffffffe,0000000000000001,0000000000000002,0000000000000003,0000000000000004,0000000000000005,0000000000000006,0000000000000007,000000000000000c,0000000000000088,000000000000008a,000000000000008b,000000000000008c,000000000000008d,000000000000008e,00000000000000d4,00000000000000d5,00000000000000dd
+
+New ThreadInfo response:
+    mfffffffe,01,02,03,04,05,06,07,0c,88,8a,8b,8c,8d,8e,d4,d5,dd
+
+A few bytes saved means better response time when using kgdb over a
+serial line.
+
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
- kernel/debug/gdbstub.c |   21 +++++----------------
- 1 files changed, 5 insertions(+), 16 deletions(-)
+ kernel/debug/gdbstub.c |   37 +++++++++++++++++++------------------
+ 1 files changed, 19 insertions(+), 18 deletions(-)
 
 diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
-index e8fd686..3517fd7 100644
+index 3517fd7..e117cfd 100644
 --- a/kernel/debug/gdbstub.c
 +++ b/kernel/debug/gdbstub.c
-@@ -52,17 +52,6 @@ static unsigned long		gdb_regs[(NUMREGBYTES +
-  * GDB remote protocol parser:
+@@ -367,28 +367,31 @@ static void error_packet(char *pkt, int error)
+  * remapped to negative TIDs.
   */
  
--static int hex(char ch)
--{
--	if ((ch >= 'a') && (ch <= 'f'))
--		return ch - 'a' + 10;
--	if ((ch >= '0') && (ch <= '9'))
--		return ch - '0';
--	if ((ch >= 'A') && (ch <= 'F'))
--		return ch - 'A' + 10;
--	return -1;
--}
--
- #ifdef CONFIG_KGDB_KDB
- static int gdbstub_read_wait(void)
+-#define BUF_THREAD_ID_SIZE	16
++#define BUF_THREAD_ID_SIZE	8
+ 
+ static char *pack_threadid(char *pkt, unsigned char *id)
  {
-@@ -123,8 +112,8 @@ static void get_packet(char *buffer)
- 		buffer[count] = 0;
+-	char *limit;
++	unsigned char *limit;
++	int lzero = 1;
++
++	limit = id + (BUF_THREAD_ID_SIZE / 2);
++	while (id < limit) {
++		if (!lzero || *id != 0) {
++			pkt = pack_hex_byte(pkt, *id);
++			lzero = 0;
++		}
++		id++;
++	}
  
- 		if (ch == '#') {
--			xmitcsum = hex(gdbstub_read_wait()) << 4;
--			xmitcsum += hex(gdbstub_read_wait());
-+			xmitcsum = hex_to_bin(gdbstub_read_wait()) << 4;
-+			xmitcsum += hex_to_bin(gdbstub_read_wait());
+-	limit = pkt + BUF_THREAD_ID_SIZE;
+-	while (pkt < limit)
+-		pkt = pack_hex_byte(pkt, *id++);
++	if (lzero)
++		pkt = pack_hex_byte(pkt, 0);
  
- 			if (checksum != xmitcsum)
- 				/* failed checksum */
-@@ -280,8 +269,8 @@ int kgdb_hex2mem(char *buf, char *mem, int count)
- 	tmp_hex = tmp_raw - 1;
- 	while (tmp_hex >= buf) {
- 		tmp_raw--;
--		*tmp_raw = hex(*tmp_hex--);
--		*tmp_raw |= hex(*tmp_hex--) << 4;
-+		*tmp_raw = hex_to_bin(*tmp_hex--);
-+		*tmp_raw |= hex_to_bin(*tmp_hex--) << 4;
- 	}
+ 	return pkt;
+ }
  
- 	return probe_kernel_write(mem, tmp_raw, count);
-@@ -304,7 +293,7 @@ int kgdb_hex2long(char **ptr, unsigned long *long_val)
- 		(*ptr)++;
- 	}
- 	while (**ptr) {
--		hex_val = hex(**ptr);
-+		hex_val = hex_to_bin(**ptr);
- 		if (hex_val < 0)
- 			break;
+ static void int_to_threadref(unsigned char *id, int value)
+ {
+-	unsigned char *scan;
+-	int i = 4;
+-
+-	scan = (unsigned char *)id;
+-	while (i--)
+-		*scan++ = 0;
+-	put_unaligned_be32(value, scan);
++	put_unaligned_be32(value, id);
+ }
  
+ static struct task_struct *getthread(struct pt_regs *regs, int tid)
+@@ -601,7 +604,7 @@ static void gdb_cmd_query(struct kgdb_state *ks)
+ {
+ 	struct task_struct *g;
+ 	struct task_struct *p;
+-	unsigned char thref[8];
++	unsigned char thref[BUF_THREAD_ID_SIZE];
+ 	char *ptr;
+ 	int i;
+ 	int cpu;
+@@ -621,8 +624,7 @@ static void gdb_cmd_query(struct kgdb_state *ks)
+ 			for_each_online_cpu(cpu) {
+ 				ks->thr_query = 0;
+ 				int_to_threadref(thref, -cpu - 2);
+-				pack_threadid(ptr, thref);
+-				ptr += BUF_THREAD_ID_SIZE;
++				ptr = pack_threadid(ptr, thref);
+ 				*(ptr++) = ',';
+ 				i++;
+ 			}
+@@ -631,8 +633,7 @@ static void gdb_cmd_query(struct kgdb_state *ks)
+ 		do_each_thread(g, p) {
+ 			if (i >= ks->thr_query && !finished) {
+ 				int_to_threadref(thref, p->pid);
+-				pack_threadid(ptr, thref);
+-				ptr += BUF_THREAD_ID_SIZE;
++				ptr = pack_threadid(ptr, thref);
+ 				*(ptr++) = ',';
+ 				ks->thr_query++;
+ 				if (ks->thr_query % KGDB_MAX_THREAD_QUERY == 0)
+@@ -851,7 +852,7 @@ int gdb_serial_stub(struct kgdb_state *ks)
+ 	memset(remcom_out_buffer, 0, sizeof(remcom_out_buffer));
+ 
+ 	if (kgdb_connected) {
+-		unsigned char thref[8];
++		unsigned char thref[BUF_THREAD_ID_SIZE];
+ 		char *ptr;
+ 
+ 		/* Reply to host that an exception has occurred */
 -- 
 1.6.4.rc1
 
