@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab0G3OfD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 10:35:03 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51509 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab0G3OfA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 10:35:00 -0400
+	id S1756608Ab0G3Olx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 10:41:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49135 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752139Ab0G3Olv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 10:41:51 -0400
+Date: Fri, 30 Jul 2010 07:36:22 -0700
+From: Greg KH <gregkh@suse.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Tejun Heo <tj@kernel.org>, Guenter Roeck <guenter.roeck@ericsson.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>, Paul Mackerras <paulus@samba.org>,
+        Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+Message-ID: <20100730143622.GA30105@suse.de>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com> <4C52913C.9020204@kernel.org> <1280485690.1902.8.camel@pasglop>
 MIME-Version: 1.0
-In-Reply-To: <4C52E013.7010105@redhat.com>
-References: <20100722101541.GU15652@nb.net.home> <1280410435-7017-1-git-send-email-mbroz@redhat.com> 
-	<AANLkTikKAPToXUSecEThgXfufM73huircg2YB-UiG_ZY@mail.gmail.com> 
-	<4C518AC9.4040208@redhat.com> <AANLkTikseiXY0zZ7AsyJgUXrqWsbjCgHqCabeg_SdWzZ@mail.gmail.com> 
-	<20100729145827.GB1981@nb.net.home> <AANLkTinq4TUobEwnfpMFAkCugTokSZ-8KQ-ryuv6jXCc@mail.gmail.com> 
-	<20100729195616.GF1981@nb.net.home> <4C51E36F.6060906@redhat.com> 
-	<AANLkTimq0UVtR-ooutKTfOOE=cS-vxR4gR-aVc1feOzJ@mail.gmail.com> 
-	<4C52E013.7010105@redhat.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 30 Jul 2010 16:34:43 +0200
-Message-ID: <AANLkTik7DZ6-4UOTZnJiFJ5c19wGd4ko4Kc6zE7UMG8U@mail.gmail.com>
-Subject: Re: [PATCH v2] loop: add some basic read-only sysfs attributes
-To: Milan Broz <mbroz@redhat.com>
-Cc: Karel Zak <kzak@redhat.com>, util-linux-ng@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280485690.1902.8.camel@pasglop>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 16:22, Milan Broz <mbroz@redhat.com> wrote:
-> On 07/30/2010 06:36 AM, Kay Sievers wrote:
->
->> Alternatively, these attributes could be created and removed/created
->> with the ioctl, and before the 'change' event, only if there is an
->> active backing file, but I would expect the attribute group at the
->> device to work just fine.
-> I have no idea how you can add attribute group before add_disk() which
-> initializes kobj (it ends with BUG_ON in internal_create_group
-> - because !kobj->sd). Perhaps I missed something?
+On Fri, Jul 30, 2010 at 08:28:10PM +1000, Benjamin Herrenschmidt wrote:
+> On Fri, 2010-07-30 at 10:45 +0200, Tejun Heo wrote:
+> > On 07/29/2010 07:09 AM, Guenter Roeck wrote:
+> > > The following comment is found in include/linux/sysfs.h:
+> > > 
+> > >    /* FIXME
+> > >     * The *owner field is no longer used.
+> > >     * x86 tree has been cleaned up. The owner
+> > >     * attribute is still left for other arches.
+> > >     */
+> > > 
+> > > As it turns out, the *owner field is (again?) initialized in several modules,
+> > > suggesting that such initialization may be creeping back into the code.
+> > > 
+> > > This patch set removes the above comment, the *owner field, and each instance
+> > > in the code where it was found to be initialized.
+> > > 
+> > > Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
+> > > and sparc defconfig builds.
+> > 
+> > Yeah, the change is way overdue.  Maybe we should have just removed
+> > them back then.
+> 
+> I'm happy with the powerpc related patches as long as we all agree that
+> needs to go. Do you need me to put some of this in powerpc.git or are
+> you carrying them all to Linus ?
 
-Attribute groups handle the creation of a kobject (subdir) for you,
-you only supply a name to the group. Without a name, they will put all
-the attributes in the root of the device.
+I can carry them all in my driver-core tree if you don't object.
 
-The 'struct device' has a member **groups, and that can have a list of
-attribute groups assigned. You assign them before you register the
-device, and the core will take care of everything.
+thanks,
 
-> Anyway, second approach works - now is loop attributes available only
-> when loop is configured and before CHANGE uevent is sent.
->
-> Ok with that?
-
-Sounds good, nothing to complain from a sysfs timing perspective.
-
-Now you have do decide if you prefer that over the attribute group
-approach. :) The code with attribute groups, instead of custom kobject
-stuff, might be a bit easier to understand.
-
-Thanks,
-Kay
+greg k-h
