@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759031Ab0G3RVE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:21:04 -0400
-Received: from kroah.org ([198.145.64.141]:52349 "EHLO coco.kroah.org"
+	id S1759045Ab0G3RVH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:21:07 -0400
+Received: from kroah.org ([198.145.64.141]:52355 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758880Ab0G3RUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:20:35 -0400
+	id S1758934Ab0G3RUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:20:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:14 2010
-Message-Id: <20100730171514.186002717@clark.site>
+Message-Id: <20100730171514.267286115@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:16:29 -0700
+Date: Fri, 30 Jul 2010 10:16:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tony Luck <tony.luck@intel.com>
-Subject: [161/165] [IA64] Fix spinaphore down_spin()
+        Andre Osterhues <aosterhues@escrypt.com>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [162/165] ecryptfs: Bugfix for error related to ecryptfs_hash_buckets
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Andre Osterhues <aosterhues@escrypt.com>
 
-commit b70f4e85bfc4d7000036355b714a92d5c574f1be upstream.
+commit a6f80fb7b5986fda663d94079d3bba0937a6b6ff upstream.
 
-Typo in down_spin() meant it only read the low 32 bits of the
-"serve" value, instead of the full 64 bits. This results in the
-system hanging when the values in ticket/serve get larger than
-32-bits. A big enough system running the right test can hit this
-in a just a few hours.
+The function ecryptfs_uid_hash wrongly assumes that the
+second parameter to hash_long() is the number of hash
+buckets instead of the number of hash bits.
+This patch fixes that and renames the variable
+ecryptfs_hash_buckets to ecryptfs_hash_bits to make it
+clearer.
 
-Broken since 883a3acf5b0d4782ac35981227a0d094e8b44850
-    [IA64] Re-implement spinaphores using ticket lock concepts
+Fixes: CVE-2010-2492
 
-Reported via IRC by Bjorn Helgaas
-
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Andre Osterhues <aosterhues@escrypt.com>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/ia64/mm/tlb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ecryptfs/messaging.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/arch/ia64/mm/tlb.c
-+++ b/arch/ia64/mm/tlb.c
-@@ -120,7 +120,7 @@ static inline void down_spin(struct spin
- 	ia64_invala();
+--- a/fs/ecryptfs/messaging.c
++++ b/fs/ecryptfs/messaging.c
+@@ -30,9 +30,9 @@ static struct mutex ecryptfs_msg_ctx_lis
  
- 	for (;;) {
--		asm volatile ("ld4.c.nc %0=[%1]" : "=r"(serve) : "r"(&ss->serve) : "memory");
-+		asm volatile ("ld8.c.nc %0=[%1]" : "=r"(serve) : "r"(&ss->serve) : "memory");
- 		if (time_before(t, serve))
- 			return;
- 		cpu_relax();
+ static struct hlist_head *ecryptfs_daemon_hash;
+ struct mutex ecryptfs_daemon_hash_mux;
+-static int ecryptfs_hash_buckets;
++static int ecryptfs_hash_bits;
+ #define ecryptfs_uid_hash(uid) \
+-        hash_long((unsigned long)uid, ecryptfs_hash_buckets)
++        hash_long((unsigned long)uid, ecryptfs_hash_bits)
+ 
+ static u32 ecryptfs_msg_counter;
+ static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
+@@ -485,18 +485,19 @@ int ecryptfs_init_messaging(void)
+ 	}
+ 	mutex_init(&ecryptfs_daemon_hash_mux);
+ 	mutex_lock(&ecryptfs_daemon_hash_mux);
+-	ecryptfs_hash_buckets = 1;
+-	while (ecryptfs_number_of_users >> ecryptfs_hash_buckets)
+-		ecryptfs_hash_buckets++;
++	ecryptfs_hash_bits = 1;
++	while (ecryptfs_number_of_users >> ecryptfs_hash_bits)
++		ecryptfs_hash_bits++;
+ 	ecryptfs_daemon_hash = kmalloc((sizeof(struct hlist_head)
+-					* ecryptfs_hash_buckets), GFP_KERNEL);
++					* (1 << ecryptfs_hash_bits)),
++				       GFP_KERNEL);
+ 	if (!ecryptfs_daemon_hash) {
+ 		rc = -ENOMEM;
+ 		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
+ 		mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 		goto out;
+ 	}
+-	for (i = 0; i < ecryptfs_hash_buckets; i++)
++	for (i = 0; i < (1 << ecryptfs_hash_bits); i++)
+ 		INIT_HLIST_HEAD(&ecryptfs_daemon_hash[i]);
+ 	mutex_unlock(&ecryptfs_daemon_hash_mux);
+ 	ecryptfs_msg_ctx_arr = kmalloc((sizeof(struct ecryptfs_msg_ctx)
+@@ -553,7 +554,7 @@ void ecryptfs_release_messaging(void)
+ 		int i;
+ 
+ 		mutex_lock(&ecryptfs_daemon_hash_mux);
+-		for (i = 0; i < ecryptfs_hash_buckets; i++) {
++		for (i = 0; i < (1 << ecryptfs_hash_bits); i++) {
+ 			int rc;
+ 
+ 			hlist_for_each_entry(daemon, elem,
 
 
