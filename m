@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933143Ab0G3S0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:26:18 -0400
-Received: from kroah.org ([198.145.64.141]:58451 "EHLO coco.kroah.org"
+	id S933176Ab0G3S0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:26:23 -0400
+Received: from kroah.org ([198.145.64.141]:58382 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759846Ab0G3Rze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:55:34 -0400
+	id S1759946Ab0G3Rzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:55:33 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:40 2010
-Message-Id: <20100730175140.881401989@clark.site>
+Message-Id: <20100730175140.795118576@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:51:37 -0700
+Date: Fri, 30 Jul 2010 10:51:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vince Weaver <vweaver1@eecs.utk.edu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [080/205] perf, x86: Fix incorrect branches event on AMD CPUs
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [079/205] amd64_edac: Fix syndrome calculation on K8
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,43 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vince Weaver <vweaver1@eecs.utk.edu>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit f287d332ce835f77a4f5077d2c0ef1e3f9ea42d2 upstream.
+commit 41c310447fe06bcedc22b75752c18b60e0b9521b upstream.
 
-While doing some performance counter validation tests on some
-assembly language programs I noticed that the "branches:u"
-count was very wrong on AMD machines.
+When calculating the DCT channel from the syndrome we need to know the
+syndrome type (x4 vs x8). On F10h, this is read out from extended PCI
+cfg space register F3x180 while on K8 we only support x4 syndromes and
+don't have extended PCI config space anyway.
 
-It looks like the wrong event was selected.
+Make the code accessing F3x180 F10h only and fall back to x4 syndromes
+on everything else.
 
-Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <alpine.DEB.2.00.1007011526010.23160@cl320.eecs.utk.edu>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reported-by: Jeffrey Merkey <jeffmerkey@gmail.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/perf_event_amd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/edac/amd64_edac.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -102,8 +102,8 @@ static const u64 amd_perfmon_event_map[]
-   [PERF_COUNT_HW_INSTRUCTIONS]		= 0x00c0,
-   [PERF_COUNT_HW_CACHE_REFERENCES]	= 0x0080,
-   [PERF_COUNT_HW_CACHE_MISSES]		= 0x0081,
--  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c4,
--  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c5,
-+  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= 0x00c2,
-+  [PERF_COUNT_HW_BRANCH_MISSES]		= 0x00c3,
- };
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -1958,20 +1958,20 @@ static int get_channel_from_ecc_syndrome
+ 	u32 value = 0;
+ 	int err_sym = 0;
  
- static u64 amd_pmu_event_map(int hw_event)
+-	amd64_read_pci_cfg(pvt->misc_f3_ctl, 0x180, &value);
++	if (boot_cpu_data.x86 == 0x10) {
+ 
+-	/* F3x180[EccSymbolSize]=1, x8 symbols */
+-	if (boot_cpu_data.x86 == 0x10 &&
+-	    boot_cpu_data.x86_model > 7 &&
+-	    value & BIT(25)) {
+-		err_sym = decode_syndrome(syndrome, x8_vectors,
+-					  ARRAY_SIZE(x8_vectors), 8);
+-		return map_err_sym_to_channel(err_sym, 8);
+-	} else {
+-		err_sym = decode_syndrome(syndrome, x4_vectors,
+-					  ARRAY_SIZE(x4_vectors), 4);
+-		return map_err_sym_to_channel(err_sym, 4);
++		amd64_read_pci_cfg(pvt->misc_f3_ctl, 0x180, &value);
++
++		/* F3x180[EccSymbolSize]=1 => x8 symbols */
++		if (boot_cpu_data.x86_model > 7 &&
++		    value & BIT(25)) {
++			err_sym = decode_syndrome(syndrome, x8_vectors,
++						  ARRAY_SIZE(x8_vectors), 8);
++			return map_err_sym_to_channel(err_sym, 8);
++		}
+ 	}
++	err_sym = decode_syndrome(syndrome, x4_vectors, ARRAY_SIZE(x4_vectors), 4);
++	return map_err_sym_to_channel(err_sym, 4);
+ }
+ 
+ /*
 
 
