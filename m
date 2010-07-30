@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab0G3STb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:19:31 -0400
-Received: from kroah.org ([198.145.64.141]:58800 "EHLO coco.kroah.org"
+	id S932807Ab0G3STK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:19:10 -0400
+Received: from kroah.org ([198.145.64.141]:58806 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760022Ab0G3R4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:35 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:44 2010
-Message-Id: <20100730175144.850129306@clark.site>
+	id S1760024Ab0G3R4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:36 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:45 2010
+Message-Id: <20100730175144.946036771@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:17 -0700
+Date: Fri, 30 Jul 2010 10:52:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [120/205] x86: Do not try to disable hpet if it hasnt been initialized before
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [121/205] x86, pci, mrst: Add extra sanity check in walking the PCI extended cap chain
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-commit ff4878089e1eaeac79d57878ad4ea32910fb4037 upstream.
+commit f82c3d71d6fd2e6a3e3416f09099e29087e39abf upstream.
 
-hpet_disable is called unconditionally on machine reboot if hpet support
-is compiled in the kernel.
-hpet_disable only checks if the machine is hpet capable but doesn't make
-sure that hpet has been initialized.
+The fixed bar capability structure is searched in PCI extended
+configuration space.  We need to make sure there is a valid capability
+ID to begin with otherwise, the search code may stuck in a infinite
+loop which results in boot hang.  This patch adds additional check for
+cap ID 0, which is also invalid, and indicates end of chain.
 
-[ tglx: Made it a one liner and removed the redundant hpet_address check ]
+End of chain is supposed to have all fields zero, but that doesn't
+seem to always be the case in the field.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Venkatesh Pallipadi <venki@google.com>
-LKML-Reference: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+LKML-Reference: <1279306706-27087-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/hpet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/pci/mrst.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -959,7 +959,7 @@ fs_initcall(hpet_late_init);
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -66,8 +66,9 @@ static int fixed_bar_cap(struct pci_bus
+ 					  devfn, pos, 4, &pcie_cap))
+ 			return 0;
  
- void hpet_disable(void)
- {
--	if (is_hpet_capable()) {
-+	if (is_hpet_capable() && hpet_virt_address) {
- 		unsigned int cfg = hpet_readl(HPET_CFG);
+-		if (pcie_cap == 0xffffffff)
+-			return 0;
++		if (PCI_EXT_CAP_ID(pcie_cap) == 0x0000 ||
++			PCI_EXT_CAP_ID(pcie_cap) == 0xffff)
++			break;
  
- 		if (hpet_legacy_int_enabled) {
+ 		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
+ 			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+@@ -76,7 +77,7 @@ static int fixed_bar_cap(struct pci_bus
+ 				return pos;
+ 		}
+ 
+-		pos = pcie_cap >> 20;
++		pos = PCI_EXT_CAP_NEXT(pcie_cap);
+ 	}
+ 
+ 	return 0;
 
 
