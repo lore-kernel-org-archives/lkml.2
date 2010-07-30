@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab0G3TR5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:17:57 -0400
-Received: from kroah.org ([198.145.64.141]:46219 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753862Ab0G3RRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:17:52 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:01 2010
-Message-Id: <20100730171501.024785778@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:14:03 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rob Landley <rob@landley.net>, "David S. Miller" <davem@davemloft.net>
-Subject: [015/165] sparc: Fix use of uid16_t and gid16_t in asm/stat.h
-In-Reply-To: <20100730171550.GA1299@kroah.com
+	id S1760653Ab0G3TSX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:18:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:33859 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760627Ab0G3TSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 15:18:04 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: kgdb-bugreport@lists.sourceforge.net, mingo@elte.hu,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Dongdong Deng <dongdong.deng@windriver.com>
+Subject: [PATCH 08/15] gdbstub: do not directly use dbg_reg_def[] in gdb_cmd_reg_set()
+Date: Fri, 30 Jul 2010 14:17:29 -0500
+Message-Id: <1280517456-1167-9-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
+References: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 30 Jul 2010 19:17:46.0111 (UTC) FILETIME=[E434D8F0:01CB301B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+Presently the usable registers definitions on x86 are not contiguous
+for kgdb.  The x86 kgdb uses a case statement for the sparse register
+accesses.  The array which defines the registers (dbg_reg_def) should
+not be used directly in order to safely work with sparse register
+definitions.
 
-------------------
+Specifically there was a problem when gdb accesses ORIG_AX, which is
+accessed only through the case statement.
 
-From: Rob Landley <rob@landley.net>
+This patch encodes register memory using the size information provided
+from the debugger which avoids the need to look up the size of the
+register.  The dbg_set_reg() function always further validates the
+inputs from the debugger.
 
-commit 7469a9acf919d36836f6c635099d8edc9be4528a upstream.
-
-Signed-off-by: Rob Landley <rob@landley.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
 ---
- arch/sparc/include/asm/stat.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/debug/gdbstub.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
---- a/arch/sparc/include/asm/stat.h
-+++ b/arch/sparc/include/asm/stat.h
-@@ -53,8 +53,8 @@ struct stat {
- 	ino_t		st_ino;
- 	mode_t		st_mode;
- 	short		st_nlink;
--	uid16_t		st_uid;
--	gid16_t		st_gid;
-+	unsigned short	st_uid;
-+	unsigned short	st_gid;
- 	unsigned short	st_rdev;
- 	off_t		st_size;
- 	time_t		st_atime;
-
+diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
+index 4ef9ddd..fc7b174 100644
+--- a/kernel/debug/gdbstub.c
++++ b/kernel/debug/gdbstub.c
+@@ -604,6 +604,7 @@ static void gdb_cmd_reg_set(struct kgdb_state *ks)
+ {
+ 	unsigned long regnum;
+ 	char *ptr = &remcom_in_buffer[1];
++	int i = 0;
+ 
+ 	kgdb_hex2long(&ptr, &regnum);
+ 	if (*ptr++ != '=' ||
+@@ -612,7 +613,14 @@ static void gdb_cmd_reg_set(struct kgdb_state *ks)
+ 		error_packet(remcom_out_buffer, -EINVAL);
+ 		return;
+ 	}
+-	kgdb_hex2mem(ptr, (char *)gdb_regs, dbg_reg_def[regnum].size);
++	memset(gdb_regs, 0, sizeof(gdb_regs));
++	while (i < sizeof(gdb_regs) * 2)
++		if (hex_to_bin(ptr[i]) >= 0)
++			i++;
++		else
++			break;
++	i = i / 2;
++	kgdb_hex2mem(ptr, (char *)gdb_regs, i);
+ 	dbg_set_reg(regnum, gdb_regs, ks->linux_regs);
+ 	strcpy(remcom_out_buffer, "OK");
+ }
+-- 
+1.6.4.rc1
 
