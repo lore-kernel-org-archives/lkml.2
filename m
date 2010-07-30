@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760525Ab0G3THS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 15:07:18 -0400
-Received: from mailbigip.dreamhost.com ([208.97.132.5]:41863 "EHLO
-	homiemail-a6.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760490Ab0G3TG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 15:06:56 -0400
-X-Greylist: delayed 14890 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Jul 2010 15:06:56 EDT
-Subject: [PATCH RESEND] Fix /proc/softirqs file formatting
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: kobayashi.kk@ncos.nec.co.jp
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Jul 2010 15:06:49 -0400
-Message-ID: <1280516809.1955.0.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1760493Ab0G3THy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 15:07:54 -0400
+Received: from kroah.org ([198.145.64.141]:51573 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757582Ab0G3RSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:18:36 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:04 2010
+Message-Id: <20100730171504.792414129@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:14:44 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Paul Gortmaker <p_gortmaker@yahoo.com>
+Subject: [056/165] rtc: fix ds1388 time corruption
+In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-The length of the BLOCK_IPOLL string is making it's value be printed too
-far to the right. This patch fixes this and makes the output a bit
-neater.
+------------------
 
-Currently:
-                CPU0
-      HI:          0
-   TIMER:     599792
-  NET_TX:          2
-  NET_RX:          6
-   BLOCK:      80807
-BLOCK_IOPOLL:          0
- TASKLET:      20012
-   SCHED:          0
- HRTIMER:         63
-     RCU:     619279
+From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
 
-With patch:
-                    CPU0
-          HI:          0
-       TIMER:     585582
-      NET_TX:          2
-      NET_RX:          6
-       BLOCK:      80320
-BLOCK_IOPOLL:          0
-     TASKLET:      19287
-       SCHED:          0
-     HRTIMER:         62
-         RCU:     604441
+commit 96fc3a45ea073136566f3c2676cad52f8b39a7df upstream.
 
+The ds1307 driver misreads the ds1388 registers when checking for 12 or 24
+hour mode.  Instead of checking the hour register it reads the minute
+register.  Therefore the driver thinks minutes >= 40 has the 12HR bit set
+and resets the minute register by zeroing the high bits.  This results in
+minutes are reset to 0-9, jumping back in time 40 or 50 minutes.  The time
+jump is also written back to the RTC.
 
+Signed-off-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+Cc: Wan ZongShun <mcuos.com@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Thanks,
-Davidlohr
- 
-
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- fs/proc/softirqs.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-ds1307.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/proc/softirqs.c b/fs/proc/softirqs.c
-index 1807c24..3799473 100644
---- a/fs/proc/softirqs.c
-+++ b/fs/proc/softirqs.c
-@@ -10,13 +10,13 @@ static int show_softirqs(struct seq_file *p, void *v)
- {
- 	int i, j;
+--- a/drivers/rtc/rtc-ds1307.c
++++ b/drivers/rtc/rtc-ds1307.c
+@@ -775,7 +775,7 @@ static int __devinit ds1307_probe(struct
  
--	seq_printf(p, "                ");
-+	seq_printf(p, "                    ");
- 	for_each_possible_cpu(i)
- 		seq_printf(p, "CPU%-8d", i);
- 	seq_printf(p, "\n");
+ read_rtc:
+ 	/* read RTC registers */
+-	tmp = ds1307->read_block_data(ds1307->client, 0, 8, buf);
++	tmp = ds1307->read_block_data(ds1307->client, ds1307->offset, 8, buf);
+ 	if (tmp != 8) {
+ 		pr_debug("read error %d\n", tmp);
+ 		err = -EIO;
+@@ -860,7 +860,7 @@ read_rtc:
+ 		if (ds1307->regs[DS1307_REG_HOUR] & DS1307_BIT_PM)
+ 			tmp += 12;
+ 		i2c_smbus_write_byte_data(client,
+-				DS1307_REG_HOUR,
++				ds1307->offset + DS1307_REG_HOUR,
+ 				bin2bcd(tmp));
+ 	}
  
- 	for (i = 0; i < NR_SOFTIRQS; i++) {
--		seq_printf(p, "%8s:", softirq_to_name[i]);
-+		seq_printf(p, "%12s:", softirq_to_name[i]);
- 		for_each_possible_cpu(j)
- 			seq_printf(p, " %10u", kstat_softirqs_cpu(i, j));
- 		seq_printf(p, "\n");
--- 
-1.7.0.4
-
-
 
 
