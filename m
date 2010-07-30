@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0G3SRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:17:41 -0400
-Received: from kroah.org ([198.145.64.141]:58882 "EHLO coco.kroah.org"
+	id S1760207Ab0G3SRz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:17:55 -0400
+Received: from kroah.org ([198.145.64.141]:58854 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760049Ab0G3R4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:47 -0400
+	id S1760045Ab0G3R4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:45 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:45 2010
-Message-Id: <20100730175145.887990462@clark.site>
+Message-Id: <20100730175145.719487500@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:28 -0700
+Date: Fri, 30 Jul 2010 10:52:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        Ajay Kumar Gupta <ajay.gupta@ti.com>,
-        Felipe Balbi <felipe.balbi@nokia.com>
-Subject: [131/205] USB: MUSB: make non-OMAP platforms build with CONFIG_PM=y
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [129/205] USB: obey the sysfs power/wakeup setting
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,56 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 9297688a9257d73956d4bba484d9dd331ca72c25 upstream.
+commit 48826626263d4a61d06fd8c5805da31f925aefa0 upstream.
 
-Attempt to build MUSB driver with CONFIG_PM=y (e.g. in the OTG mode) on DaVinci
-results in these link errors:
+This patch (as1403) is a partial reversion of an earlier change
+(commit 5f677f1d45b2bf08085bbba7394392dfa586fa8e "USB: fix remote
+wakeup settings during system sleep").  After hearing from a user, I
+realized that remote wakeup should be enabled during system sleep
+whenever userspace allows it, and not only if a driver requests it
+too.
 
-drivers/built-in.o: In function `musb_restore_context':
-led-triggers.c:(.text+0x714d8): undefined reference to
-`musb_platform_restore_context'
-drivers/built-in.o: In function `musb_save_context':
-led-triggers.c:(.text+0x71788): undefined reference to
-`musb_platform_save_context'
+Indeed, there could be a device with no driver, that does nothing but
+generate a wakeup request when the user presses a button.  Such a
+device should be allowed to do its job.
 
-This turned out to be caused by commit 9957dd97ec5e98dd334f87ade1d9a0b24d1f86eb
-(usb: musb: Fix compile error for omaps for musb_hdrc). Revert it, taking into
-account the rename of CONFIG_ARCH_OMAP34XX into CONFIG_ARCH_OMAP3 (which that
-commit fixed in a completely inappropriate way) and the recent addition of
-OMAP4 support.
+The problem fixed by the earlier patch -- device generating a wakeup
+request for no reason, causing system suspend to abort -- was also
+addressed by a later patch ("USB: don't enable remote wakeup by
+default", accepted but not yet merged into mainline).  The device
+won't be able to generate the bogus wakeup requests because it will be
+disabled for remote wakeup by default.  Hence this reversion will not
+re-introduce any old problems.
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
-Acked-by: Felipe Balbi <felipe.balbi@nokia.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/musb/musb_core.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/core/driver.c |   13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -469,7 +469,8 @@ struct musb_csr_regs {
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1266,8 +1266,7 @@ static int usb_resume_both(struct usb_de
  
- struct musb_context_registers {
+ static void choose_wakeup(struct usb_device *udev, pm_message_t msg)
+ {
+-	int			w, i;
+-	struct usb_interface	*intf;
++	int	w;
  
--#ifdef CONFIG_PM
-+#if defined(CONFIG_ARCH_OMAP2430) || defined(CONFIG_ARCH_OMAP3) || \
-+    defined(CONFIG_ARCH_OMAP4)
- 	u32 otg_sysconfig, otg_forcestandby;
- #endif
- 	u8 power;
-@@ -483,7 +484,8 @@ struct musb_context_registers {
- 	struct musb_csr_regs index_regs[MUSB_C_NUM_EPS];
- };
+ 	/* Remote wakeup is needed only when we actually go to sleep.
+ 	 * For things like FREEZE and QUIESCE, if the device is already
+@@ -1279,16 +1278,10 @@ static void choose_wakeup(struct usb_dev
+ 		return;
+ 	}
  
--#ifdef CONFIG_PM
-+#if defined(CONFIG_ARCH_OMAP2430) || defined(CONFIG_ARCH_OMAP3) || \
-+    defined(CONFIG_ARCH_OMAP4)
- extern void musb_platform_save_context(struct musb *musb,
- 		struct musb_context_registers *musb_context);
- extern void musb_platform_restore_context(struct musb *musb,
+-	/* If remote wakeup is permitted, see whether any interface drivers
++	/* Enable remote wakeup if it is allowed, even if no interface drivers
+ 	 * actually want it.
+ 	 */
+-	w = 0;
+-	if (device_may_wakeup(&udev->dev) && udev->actconfig) {
+-		for (i = 0; i < udev->actconfig->desc.bNumInterfaces; i++) {
+-			intf = udev->actconfig->interface[i];
+-			w |= intf->needs_remote_wakeup;
+-		}
+-	}
++	w = device_may_wakeup(&udev->dev);
+ 
+ 	/* If the device is autosuspended with the wrong wakeup setting,
+ 	 * autoresume now so the setting can be changed.
 
 
