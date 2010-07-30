@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab0G3R7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:59:00 -0400
-Received: from kroah.org ([198.145.64.141]:59025 "EHLO coco.kroah.org"
+	id S932963Ab0G3R6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:58:54 -0400
+Received: from kroah.org ([198.145.64.141]:59014 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932625Ab0G3R5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:57:08 -0400
+	id S932621Ab0G3R5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:57:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:47 2010
-Message-Id: <20100730175147.690992452@clark.site>
+Message-Id: <20100730175147.590406432@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:48 -0700
+Date: Fri, 30 Jul 2010 10:52:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: [151/205] KVM: MMU: invalidate and flush on spte small->large page size change
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: [150/205] KVM: SVM: Implement workaround for Erratum 383
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +28,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Always invalidate spte and flush TLBs when changing page size, to make
-sure different sized translations for the same address are never cached
-in a CPU's TLB.
+This patch implements a workaround for AMD erratum 383 into
+KVM. Without this erratum fix it is possible for a guest to
+kill the host machine. This patch implements the suggested
+workaround for hypervisors which will be published by the
+next revision guide update.
 
-Currently the only case where this occurs is when a non-leaf spte pointer is
-overwritten by a leaf, large spte entry. This can happen after dirty
-logging is disabled on a memslot, for example.
+[jan: fix overflow warning on i386]
+[xiao: fix unused variable warning]
 
-Noticed by Andrea.
-
-KVM-Stable-Tag
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: stable@kernel.org
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 Signed-off-by: Avi Kivity <avi@redhat.com>
-(cherry picked from commit 3be2264be3c00865116f997dc53ebcc90fe7fc4b)
+(cherry picked from commit 67ec66077799f2fef84b21a643912b179c422281)
 ---
- arch/x86/kvm/mmu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/include/asm/msr-index.h |    1 
+ arch/x86/kvm/svm.c               |   81 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 82 insertions(+)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1895,6 +1895,8 @@ static void mmu_set_spte(struct kvm_vcpu
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -107,6 +107,7 @@
+ #define MSR_AMD64_PATCH_LOADER		0xc0010020
+ #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
+ #define MSR_AMD64_OSVW_STATUS		0xc0010141
++#define MSR_AMD64_DC_CFG		0xc0011022
+ #define MSR_AMD64_IBSFETCHCTL		0xc0011030
+ #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
+ #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -28,6 +28,7 @@
+ #include <linux/ftrace_event.h>
+ #include <linux/slab.h>
  
- 			child = page_header(pte & PT64_BASE_ADDR_MASK);
- 			mmu_page_remove_parent_pte(child, sptep);
-+			__set_spte(sptep, shadow_trap_nonpresent_pte);
-+			kvm_flush_remote_tlbs(vcpu->kvm);
- 		} else if (pfn != spte_to_pfn(*sptep)) {
- 			pgprintk("hfn old %lx new %lx\n",
- 				 spte_to_pfn(*sptep), pfn);
++#include <asm/tlbflush.h>
+ #include <asm/desc.h>
+ 
+ #include <asm/virtext.h>
+@@ -55,6 +56,8 @@ MODULE_LICENSE("GPL");
+ 
+ #define DEBUGCTL_RESERVED_BITS (~(0x3fULL))
+ 
++static bool erratum_383_found __read_mostly;
++
+ static const u32 host_save_user_msrs[] = {
+ #ifdef CONFIG_X86_64
+ 	MSR_STAR, MSR_LSTAR, MSR_CSTAR, MSR_SYSCALL_MASK, MSR_KERNEL_GS_BASE,
+@@ -298,6 +301,31 @@ static void skip_emulated_instruction(st
+ 	svm_set_interrupt_shadow(vcpu, 0);
+ }
+ 
++static void svm_init_erratum_383(void)
++{
++	u32 low, high;
++	int err;
++	u64 val;
++
++	/* Only Fam10h is affected */
++	if (boot_cpu_data.x86 != 0x10)
++		return;
++
++	/* Use _safe variants to not break nested virtualization */
++	val = native_read_msr_safe(MSR_AMD64_DC_CFG, &err);
++	if (err)
++		return;
++
++	val |= (1ULL << 47);
++
++	low  = lower_32_bits(val);
++	high = upper_32_bits(val);
++
++	native_write_msr_safe(MSR_AMD64_DC_CFG, low, high);
++
++	erratum_383_found = true;
++}
++
+ static int has_svm(void)
+ {
+ 	const char *msg;
+@@ -353,6 +381,8 @@ static int svm_hardware_enable(void *gar
+ 
+ 	wrmsrl(MSR_VM_HSAVE_PA, page_to_pfn(sd->save_area) << PAGE_SHIFT);
+ 
++	svm_init_erratum_383();
++
+ 	return 0;
+ }
+ 
+@@ -1280,8 +1310,59 @@ static int nm_interception(struct vcpu_s
+ 	return 1;
+ }
+ 
++static bool is_erratum_383(void)
++{
++	int err, i;
++	u64 value;
++
++	if (!erratum_383_found)
++		return false;
++
++	value = native_read_msr_safe(MSR_IA32_MC0_STATUS, &err);
++	if (err)
++		return false;
++
++	/* Bit 62 may or may not be set for this mce */
++	value &= ~(1ULL << 62);
++
++	if (value != 0xb600000000010015ULL)
++		return false;
++
++	/* Clear MCi_STATUS registers */
++	for (i = 0; i < 6; ++i)
++		native_write_msr_safe(MSR_IA32_MCx_STATUS(i), 0, 0);
++
++	value = native_read_msr_safe(MSR_IA32_MCG_STATUS, &err);
++	if (!err) {
++		u32 low, high;
++
++		value &= ~(1ULL << 2);
++		low    = lower_32_bits(value);
++		high   = upper_32_bits(value);
++
++		native_write_msr_safe(MSR_IA32_MCG_STATUS, low, high);
++	}
++
++	/* Flush tlb to evict multi-match entries */
++	__flush_tlb_all();
++
++	return true;
++}
++
+ static void svm_handle_mce(struct vcpu_svm *svm)
+ {
++	if (is_erratum_383()) {
++		/*
++		 * Erratum 383 triggered. Guest state is corrupt so kill the
++		 * guest.
++		 */
++		pr_err("KVM: Guest triggered AMD Erratum 383\n");
++
++		set_bit(KVM_REQ_TRIPLE_FAULT, &svm->vcpu.requests);
++
++		return;
++	}
++
+ 	/*
+ 	 * On an #MC intercept the MCE handler is not called automatically in
+ 	 * the host. So do it by hand here.
 
 
