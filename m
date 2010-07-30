@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759240Ab0G3S6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:58:21 -0400
-Received: from kroah.org ([198.145.64.141]:51847 "EHLO coco.kroah.org"
+	id S1760291Ab0G3S6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:58:35 -0400
+Received: from kroah.org ([198.145.64.141]:51842 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758569Ab0G3RTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:19 -0400
+	id S1758028Ab0G3RTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:18 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:08 2010
-Message-Id: <20100730171508.310029685@clark.site>
+Message-Id: <20100730171508.214861370@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:24 -0700
+Date: Fri, 30 Jul 2010 10:15:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tao Ma <tao.ma@oracle.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [096/165] ext4: Fix fencepost error in chosing choosing group vs file preallocation.
+        Eric Sandeen <sandeen@redhat.com>, Jiaying Zhang <jiayingz@google.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [095/165] ext4: Add flag to files with blocks intentionally past EOF
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +26,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit cc483f102c3f703e853c96f95a654f0106fb2603 upstream (as of v2.6.33-git11)
+commit c8d46e41bc744c8fa0092112af3942fcd46c8b18 upstream (as of v2.6.33-git11)
 
-The ext4 multiblock allocator decides whether to use group or file
-preallocation based on the file size.  When the file size reaches
-s_mb_stream_request (default is 16 blocks), it changes to use a
-file-specific preallocation. This is cool, but it has a tiny problem.
+fallocate() may potentially instantiate blocks past EOF, depending
+on the flags used when it is called.
 
-See a simple script:
-mkfs.ext4 -b 1024 /dev/sda8 1000000
-mount -t ext4 -o nodelalloc /dev/sda8 /mnt/ext4
-for((i=0;i<5;i++))
-do
-cat /mnt/4096>>/mnt/ext4/a	#4096 is a file with 4096 characters.
-cat /mnt/4096>>/mnt/ext4/b
-done
-debuge4fs -R 'stat a' /dev/sda8|grep BLOCKS -A 1
+e2fsck currently has a test for blocks past i_size, and it
+sometimes trips up - noticeably on xfstests 013 which runs fsstress.
 
-And you get
-BLOCKS:
-(0-14):8705-8719, (15):2356, (16-19):8465-8468
+This patch from Jiayang does fix it up - it (along with
+e2fsprogs updates and other patches recently from Aneesh) has
+survived many fsstress runs in a row.
 
-So there are 3 extents, a bit strange for the lonely 15th logical
-block.  As we write to the 16 blocks, we choose file preallocation in
-ext4_mb_group_or_file, but in ext4_mb_normalize_request, we meet with
-the 16*1024 range, so no preallocation will be carried. file b then
-reserves the space after '2356', so when when write 16, we start from
-another part.
-
-This patch just change the check in ext4_mb_group_or_file, so
-that for the lonely 15 we will still use group preallocation.
-After the patch, we will get:
-debuge4fs -R 'stat a' /dev/sda8|grep BLOCKS -A 1
-BLOCKS:
-(0-15):8705-8720, (16-19):8465-8468
-
-Looks more sane. Thanks.
-
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Jiaying Zhang <jiayingz@google.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/mballoc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ext4.h    |    6 ++++--
+ fs/ext4/extents.c |   22 +++++++++++++++++++++-
+ fs/ext4/inode.c   |    9 ++++++++-
+ fs/ext4/ioctl.c   |    9 +++++++++
+ 4 files changed, 42 insertions(+), 4 deletions(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3938,7 +3938,7 @@ static void ext4_mb_group_or_file(struct
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -284,10 +284,12 @@ struct flex_groups {
+ #define EXT4_TOPDIR_FL			0x00020000 /* Top of directory hierarchies*/
+ #define EXT4_HUGE_FILE_FL               0x00040000 /* Set to each huge file */
+ #define EXT4_EXTENTS_FL			0x00080000 /* Inode uses extents */
++#define EXT4_EA_INODE_FL	        0x00200000 /* Inode used for large EA */
++#define EXT4_EOFBLOCKS_FL		0x00400000 /* Blocks allocated beyond EOF */
+ #define EXT4_RESERVED_FL		0x80000000 /* reserved for ext4 lib */
  
- 	/* don't use group allocation for large files */
- 	size = max(size, isize);
--	if (size >= sbi->s_mb_stream_request) {
-+	if (size > sbi->s_mb_stream_request) {
- 		ac->ac_flags |= EXT4_MB_STREAM_ALLOC;
- 		return;
+-#define EXT4_FL_USER_VISIBLE		0x000BDFFF /* User visible flags */
+-#define EXT4_FL_USER_MODIFIABLE		0x000B80FF /* User modifiable flags */
++#define EXT4_FL_USER_VISIBLE		0x004BDFFF /* User visible flags */
++#define EXT4_FL_USER_MODIFIABLE		0x004B80FF /* User modifiable flags */
+ 
+ /* Flags that should be inherited by new inodes from their parent. */
+ #define EXT4_FL_INHERITED (EXT4_SECRM_FL | EXT4_UNRM_FL | EXT4_COMPR_FL |\
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3191,7 +3191,7 @@ int ext4_ext_get_blocks(handle_t *handle
+ {
+ 	struct ext4_ext_path *path = NULL;
+ 	struct ext4_extent_header *eh;
+-	struct ext4_extent newex, *ex;
++	struct ext4_extent newex, *ex, *last_ex;
+ 	ext4_fsblk_t newblock;
+ 	int err = 0, depth, ret, cache_type;
+ 	unsigned int allocated = 0;
+@@ -3372,6 +3372,19 @@ int ext4_ext_get_blocks(handle_t *handle
+ 						     EXT4_STATE_DIO_UNWRITTEN);
+ 		}
  	}
++
++	if (unlikely(EXT4_I(inode)->i_flags & EXT4_EOFBLOCKS_FL)) {
++		if (eh->eh_entries) {
++			last_ex = EXT_LAST_EXTENT(eh);
++			if (iblock + ar.len > le32_to_cpu(last_ex->ee_block)
++					    + ext4_ext_get_actual_len(last_ex))
++				EXT4_I(inode)->i_flags &= ~EXT4_EOFBLOCKS_FL;
++		} else {
++			WARN_ON(eh->eh_entries == 0);
++			ext4_error(inode->i_sb, __func__,
++				"inode#%lu, eh->eh_entries = 0!", inode->i_ino);
++			}
++	}
+ 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
+ 	if (err) {
+ 		/* free data blocks we just allocated */
+@@ -3505,6 +3518,13 @@ static void ext4_falloc_update_inode(str
+ 			i_size_write(inode, new_size);
+ 		if (new_size > EXT4_I(inode)->i_disksize)
+ 			ext4_update_i_disksize(inode, new_size);
++	} else {
++		/*
++		 * Mark that we allocate beyond EOF so the subsequent truncate
++		 * can proceed even if the new size is the same as i_size.
++		 */
++		if (new_size > i_size_read(inode))
++			EXT4_I(inode)->i_flags |= EXT4_EOFBLOCKS_FL;
+ 	}
+ 
+ }
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4490,6 +4490,8 @@ void ext4_truncate(struct inode *inode)
+ 	if (!ext4_can_truncate(inode))
+ 		return;
+ 
++	EXT4_I(inode)->i_flags &= ~EXT4_EOFBLOCKS_FL;
++
+ 	if (inode->i_size == 0 && !test_opt(inode->i_sb, NO_AUTO_DA_ALLOC))
+ 		ext4_set_inode_state(inode, EXT4_STATE_DA_ALLOC_CLOSE);
+ 
+@@ -5345,7 +5347,9 @@ int ext4_setattr(struct dentry *dentry,
+ 	}
+ 
+ 	if (S_ISREG(inode->i_mode) &&
+-	    attr->ia_valid & ATTR_SIZE && attr->ia_size < inode->i_size) {
++	    attr->ia_valid & ATTR_SIZE &&
++	    (attr->ia_size < inode->i_size ||
++	     (EXT4_I(inode)->i_flags & EXT4_EOFBLOCKS_FL))) {
+ 		handle_t *handle;
+ 
+ 		handle = ext4_journal_start(inode, 3);
+@@ -5376,6 +5380,9 @@ int ext4_setattr(struct dentry *dentry,
+ 				goto err_out;
+ 			}
+ 		}
++		/* ext4_truncate will clear the flag */
++		if ((EXT4_I(inode)->i_flags & EXT4_EOFBLOCKS_FL))
++			ext4_truncate(inode);
+ 	}
+ 
+ 	rc = inode_setattr(inode, attr);
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -92,6 +92,15 @@ long ext4_ioctl(struct file *filp, unsig
+ 			flags &= ~EXT4_EXTENTS_FL;
+ 		}
+ 
++		if (flags & EXT4_EOFBLOCKS_FL) {
++			/* we don't support adding EOFBLOCKS flag */
++			if (!(oldflags & EXT4_EOFBLOCKS_FL)) {
++				err = -EOPNOTSUPP;
++				goto flags_out;
++			}
++		} else if (oldflags & EXT4_EOFBLOCKS_FL)
++			ext4_truncate(inode);
++
+ 		handle = ext4_journal_start(inode, 1);
+ 		if (IS_ERR(handle)) {
+ 			err = PTR_ERR(handle);
 
 
