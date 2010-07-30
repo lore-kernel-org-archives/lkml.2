@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab0G3Rnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:43:41 -0400
-Received: from kroah.org ([198.145.64.141]:36181 "EHLO coco.kroah.org"
+	id S932549Ab0G3RoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:44:11 -0400
+Received: from kroah.org ([198.145.64.141]:36164 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932466Ab0G3RgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:36:03 -0400
+	id S932300Ab0G3RgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:36:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:13 2010
-Message-Id: <20100730173113.865090180@clark.site>
+Message-Id: <20100730173113.604252476@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:31:29 -0700
+Date: Fri, 30 Jul 2010 10:31:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ayaz Abdulla <aabdulla@nvidia.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [124/140] forcedeth: fix tx limit2 flag check
+        Giuliano Pochini <pochini@shiny.it>, Takashi Iwai <tiwai@suse.de>
+Subject: [121/140] ALSA: Echoaudio, fix Guru Meditation #00000005.48454C50
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,37 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ayaz Abdulla <aabdulla@nvidia.com>
+From: Giuliano Pochini <pochini@shiny.it>
 
-commit 5c659322a904a7cc0265e7b183372b9bdebec6db upstream.
+commit b721e68bdc5b39c51bf6a1469f8d3663fbe03243 upstream.
 
-This is a fix for bug 572201 @ bugs.debian.org
+This patch fixes a division by zero error in the irq handler.
 
-This patch fixes the TX_LIMIT feature flag. The previous logic check
-for TX_LIMIT2 also took into account a device that only had TX_LIMIT
-set.
+There is a small window between the hw_params() callback and when
+runtime->frame_bits is set by ALSA middle layer. When another substream is
+already running, if an interrupt is delivered during that window the irq
+handler calls pcm_pointer() which does a division by zero. The patch below
+makes the irq handler skip substreams that are initialized but not started
+yet. Cc to Clemens Ladisch because he proposed an alternate fix.
 
-Reported-by: Stephen Mulcahu <stephen.mulcahy@deri.org>
-Reported-by: Ben Huchings <ben@decadent.org.uk>
-Signed-off-by: Ayaz Abdulla <aabdulla@nvidia.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+For more information, please read the original thread in the linux-kernel
+mailing list: http://lkml.org/lkml/2010/2/2/187
+
+Signed-off-by: Giuliano Pochini <pochini@shiny.it>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/forcedeth.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/echoaudio/echoaudio.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/forcedeth.c
-+++ b/drivers/net/forcedeth.c
-@@ -5900,7 +5900,7 @@ static int __devinit nv_probe(struct pci
- 	/* Limit the number of tx's outstanding for hw bug */
- 	if (id->driver_data & DEV_NEED_TX_LIMIT) {
- 		np->tx_limit = 1;
--		if ((id->driver_data & DEV_NEED_TX_LIMIT2) &&
-+		if (((id->driver_data & DEV_NEED_TX_LIMIT2) == DEV_NEED_TX_LIMIT2) &&
- 		    pci_dev->revision >= 0xA2)
- 			np->tx_limit = 0;
- 	}
+--- a/sound/pci/echoaudio/echoaudio.c
++++ b/sound/pci/echoaudio/echoaudio.c
+@@ -1821,7 +1821,9 @@ static irqreturn_t snd_echo_interrupt(in
+ 	/* The hardware doesn't tell us which substream caused the irq,
+ 	thus we have to check all running substreams. */
+ 	for (ss = 0; ss < DSP_MAXPIPES; ss++) {
+-		if ((substream = chip->substream[ss])) {
++		substream = chip->substream[ss];
++		if (substream && ((struct audiopipe *)substream->runtime->
++				private_data)->state == PIPE_STATE_STARTED) {
+ 			period = pcm_pointer(substream) /
+ 				substream->runtime->period_size;
+ 			if (period != chip->last_period[ss]) {
 
 
