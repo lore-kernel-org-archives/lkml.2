@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095Ab0G3SWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:22:45 -0400
-Received: from kroah.org ([198.145.64.141]:58671 "EHLO coco.kroah.org"
+	id S1760047Ab0G3SWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:22:49 -0400
+Received: from kroah.org ([198.145.64.141]:58661 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932395Ab0G3R4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:18 -0400
+	id S932389Ab0G3R4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:17 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:43 2010
-Message-Id: <20100730175143.253375153@clark.site>
+Message-Id: <20100730175143.125651296@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:01 -0700
+Date: Fri, 30 Jul 2010 10:52:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [104/205] sdhci-s3c: add missing remove function
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [103/205] kmemleak: Add support for NO_BOOTMEM configurations
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 9d51a6b2487724e8713cd2794cf09ffeee5f6932 upstream.
+commit 9078370c0d2cfe4a905aa34f398bbb0d65921a2b upstream.
 
-System will crash sooner or later once the memory with the code of the
-s3c-sdhci.ko module is reused for something else. I really have no idea
-how the lack of remove function went unnoticed into the mainline code.
+With commits 08677214 and 59be5a8e, alloc_bootmem()/free_bootmem() and
+friends use the early_res functions for memory management when
+NO_BOOTMEM is enabled. This patch adds the kmemleak calls in the
+corresponding code paths for bootmem allocations.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/host/sdhci-s3c.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ kernel/early_res.c |    6 ++++++
+ mm/page_alloc.c    |    5 +++++
+ 2 files changed, 11 insertions(+)
 
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -373,6 +373,26 @@ static int __devinit sdhci_s3c_probe(str
+--- a/kernel/early_res.c
++++ b/kernel/early_res.c
+@@ -7,6 +7,8 @@
+ #include <linux/bootmem.h>
+ #include <linux/mm.h>
+ #include <linux/early_res.h>
++#include <linux/slab.h>
++#include <linux/kmemleak.h>
  
- static int __devexit sdhci_s3c_remove(struct platform_device *pdev)
- {
-+	struct sdhci_host *host =  platform_get_drvdata(pdev);
-+	struct sdhci_s3c *sc = sdhci_priv(host);
-+	int ptr;
+ /*
+  * Early reserved memory areas.
+@@ -319,6 +321,8 @@ void __init free_early(u64 start, u64 en
+ 	struct early_res *r;
+ 	int i;
+ 
++	kmemleak_free_part(__va(start), end - start);
 +
-+	sdhci_remove_host(host, 1);
+ 	i = find_overlapped_early(start, end);
+ 	r = &early_res[i];
+ 	if (i >= max_early_res || r->end != end || r->start != start)
+@@ -333,6 +337,8 @@ void __init free_early_partial(u64 start
+ 	struct early_res *r;
+ 	int i;
+ 
++	kmemleak_free_part(__va(start), end - start);
 +
-+	for (ptr = 0; ptr < 3; ptr++) {
-+		clk_disable(sc->clk_bus[ptr]);
-+		clk_put(sc->clk_bus[ptr]);
-+	}
-+	clk_disable(sc->clk_io);
-+	clk_put(sc->clk_io);
-+
-+	iounmap(host->ioaddr);
-+	release_resource(sc->ioarea);
-+	kfree(sc->ioarea);
-+
-+	sdhci_free_host(host);
-+	platform_set_drvdata(pdev, NULL);
-+
- 	return 0;
- }
+ 	if (start == end)
+ 		return;
+ 
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3440,6 +3440,11 @@ void * __init __alloc_memory_core_early(
+ 		ptr = phys_to_virt(addr);
+ 		memset(ptr, 0, size);
+ 		reserve_early_without_check(addr, addr + size, "BOOTMEM");
++		/*
++		 * The min_count is set to 0 so that bootmem allocated blocks
++		 * are never reported as leaks.
++		 */
++		kmemleak_alloc(ptr, size, 0, 0);
+ 		return ptr;
+ 	}
  
 
 
