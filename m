@@ -1,121 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933458Ab0G3Ssr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:48:47 -0400
-Received: from kroah.org ([198.145.64.141]:35746 "EHLO coco.kroah.org"
+	id S933497Ab0G3Ssy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:48:54 -0400
+Received: from fieldses.org ([174.143.236.118]:51127 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932278Ab0G3Rem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:07 2010
-Message-Id: <20100730173107.494639376@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:18 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        sroland@vmware.com, Alex Deucher <alexdeucher@gmail.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [053/140] drm/radeon/r100/r200: fix calculation of compressed cube maps
-In-Reply-To: <20100730173205.GA22581@kroah.com>
+	id S932278Ab0G3Sss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 14:48:48 -0400
+Date: Fri, 30 Jul 2010 14:47:38 -0400
+To: =?utf-8?B?Si5BLiBNYWdhbGzDs24=?= <jamagallon@ono.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-nfs@vger.kernel.org
+Subject: Re: Questions and problems with NFS4
+Message-ID: <20100730184738.GF21729@fieldses.org>
+References: <20100728004611.00c46b13@werewolf.home>
+ <4C507208.6030309@oracle.com>
+ <20100730021837.65549fa7@werewolf.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100730021837.65549fa7@werewolf.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Jul 30, 2010 at 02:18:37AM +0200, J.A. Magallón wrote:
+> First of all, plz correct me if this is in some kind of wiki, web page or
+> the like, but I have not been able to find it. All this things should be
+> on a document somewhere, perhaps even in the kernel itself...
 
-------------------
+Agreed.
 
-From: Roland Scheidegger <sroland@vmware.com>
+> These are the things I have found out (thanks to your answers...).
+> I'm a long time unix admin, not new to NFS, but all this things were not
+> obvious to me, so perhaps they deserve to be in a document, something like
+> "NFS 3 to 4 migration for dummy admins":
+> 
+> - Everything just works if you mount shares as nfs4. Even, if you have a
+>   bunch of linux boxen with recent kernel/nfs-utils, probably you are
+>   already doing nfs4... modern mount tries nfs4 first.
+> 
+> - Using nfsroot with fsid=0 is not mandatory, nor bind-mounting everything
+>   under some /export (like many documents say), that only forces you to
 
-commit 37cf6b03f9f28c62dafb0b9ce5f1ba29c8baffa9 upstream.
+We should update that documentation.
 
-This needs similar handling to other compressed textures.
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=26428
+>   use the old way of specifying paths in the server (absolute, not
+>   relative to /export).
+> 
+> - Even if you use nfsroot(fsid=0), and you mount it on the client
+>   at /somepoint, you are not forced to mount everything else under
+>   /somepoint (plz, correct me if I'm wrong).
+> 
+> - You can strip your server for NFS4, but not too much... Old daemons
+>   are still needed locally. For example, you can get rid of NFS2 and
+>   UDP for nfsd (-N 2 -U, -any os still uses NFS2??-), and old
+>   mount protocols (-N 1 -N 2 for mountd)...
+> 
+> - ... but they can be firewalled, use is just local
+> 
+> - portmap/rpcbind is not needed, but still used because nfsd is not
+>   yet proper clean for only-nfs4-behavior.
+> 
+> There are also some things I have not been able to discover, like
+> using the interesting things of NFS4:
+> 
+> - How do you activate delegations ? Is this an automatic thing, or
+>   do I have to add any option somewhere ?
 
-Signed-off-by: sroland@vmware.com
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+It's automatic.  You can turn them off on the server side with
+/proc/sys/fs/leases-enable.  They'll be turned off automatically if the
+server can't open a tcp connection back to the client (for example, if
+the client is behind a NAT).
 
----
- drivers/gpu/drm/radeon/r100.c |   58 ++++++++++++++++++++++--------------------
- 1 file changed, 31 insertions(+), 27 deletions(-)
+> - How do you use cache ? Many docs talk about fsc option, but man
+>   does not mention it (nfs-utils 1.2.2).
+>   I have tried to use cachefiles module, and cachefilesd, but
+>   when I try to run it, I get:
 
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -2750,33 +2750,6 @@ static inline void r100_cs_track_texture
- 	DRM_ERROR("compress format            %d\n", t->compress_format);
- }
- 
--static int r100_cs_track_cube(struct radeon_device *rdev,
--			      struct r100_cs_track *track, unsigned idx)
--{
--	unsigned face, w, h;
--	struct radeon_bo *cube_robj;
--	unsigned long size;
--
--	for (face = 0; face < 5; face++) {
--		cube_robj = track->textures[idx].cube_info[face].robj;
--		w = track->textures[idx].cube_info[face].width;
--		h = track->textures[idx].cube_info[face].height;
--
--		size = w * h;
--		size *= track->textures[idx].cpp;
--
--		size += track->textures[idx].cube_info[face].offset;
--
--		if (size > radeon_bo_size(cube_robj)) {
--			DRM_ERROR("Cube texture offset greater than object size %lu %lu\n",
--				  size, radeon_bo_size(cube_robj));
--			r100_cs_track_texture_print(&track->textures[idx]);
--			return -1;
--		}
--	}
--	return 0;
--}
--
- static int r100_track_compress_size(int compress_format, int w, int h)
- {
- 	int block_width, block_height, block_bytes;
-@@ -2807,6 +2780,37 @@ static int r100_track_compress_size(int
- 	return sz;
- }
- 
-+static int r100_cs_track_cube(struct radeon_device *rdev,
-+			      struct r100_cs_track *track, unsigned idx)
-+{
-+	unsigned face, w, h;
-+	struct radeon_bo *cube_robj;
-+	unsigned long size;
-+	unsigned compress_format = track->textures[idx].compress_format;
-+
-+	for (face = 0; face < 5; face++) {
-+		cube_robj = track->textures[idx].cube_info[face].robj;
-+		w = track->textures[idx].cube_info[face].width;
-+		h = track->textures[idx].cube_info[face].height;
-+
-+		if (compress_format) {
-+			size = r100_track_compress_size(compress_format, w, h);
-+		} else
-+			size = w * h;
-+		size *= track->textures[idx].cpp;
-+
-+		size += track->textures[idx].cube_info[face].offset;
-+
-+		if (size > radeon_bo_size(cube_robj)) {
-+			DRM_ERROR("Cube texture offset greater than object size %lu %lu\n",
-+				  size, radeon_bo_size(cube_robj));
-+			r100_cs_track_texture_print(&track->textures[idx]);
-+			return -1;
-+		}
-+	}
-+	return 0;
-+}
-+
- static int r100_cs_track_texture_check(struct radeon_device *rdev,
- 				       struct r100_cs_track *track)
- {
+I haven't used that.  I don't believe there's anything NFSv4-specific
+about it.
 
-
+--b.
