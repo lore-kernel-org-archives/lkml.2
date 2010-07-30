@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760282Ab0G3SgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:36:16 -0400
-Received: from kroah.org ([198.145.64.141]:57986 "EHLO coco.kroah.org"
+	id S1759906Ab0G3SgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:36:08 -0400
+Received: from kroah.org ([198.145.64.141]:57999 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759793Ab0G3Ryl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:36 2010
-Message-Id: <20100730175136.757829061@clark.site>
+	id S1759803Ab0G3Ryn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:43 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:37 2010
+Message-Id: <20100730175136.936203198@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:52 -0700
+Date: Fri, 30 Jul 2010 10:50:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [035/205] math-emu: correct test for downshifting fraction in _FP_FROM_INT()
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [037/205] NFSv4: Fix an embarassing typo in encode_attrs()
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,56 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikael Pettersson <mikpe@it.uu.se>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit f8324e20f8289dffc646d64366332e05eaacab25 upstream.
+commit d3f6baaa34c54040b3ef30950e59b54ac0624b21 upstream.
 
-The kernel's math-emu code contains a macro _FP_FROM_INT() which is
-used to convert an integer to a raw normalized floating-point value.
-It does this basically in three steps:
+Apparently, we have never been able to set the atime correctly from the
+NFSv4 client.
 
-1. Compute the exponent from the number of leading zero bits.
-2. Downshift large fractions to put the MSB in the right position
-   for normalized fractions.
-3. Upshift small fractions to put the MSB in the right position.
-
-There is an boundary error in step 2, causing a fraction with its
-MSB exactly one bit above the normalized MSB position to not be
-downshifted.  This results in a non-normalized raw float, which when
-packed becomes a massively inaccurate representation for that input.
-
-The impact of this depends on a number of arch-specific factors,
-but it is known to have broken emulation of FXTOD instructions
-on UltraSPARC III, which was originally reported as GCC bug 44631
-<http://gcc.gnu.org/bugzilla/show_bug.cgi?id=44631>.
-
-Any arch which uses math-emu to emulate conversions from integers to
-same-size floats may be affected.
-
-The fix is simple: the exponent comparison used to determine if the
-fraction should be downshifted must be "<=" not "<".
-
-I'm sending a kernel module to test this as a reply to this message.
-There are also SPARC user-space test cases in the GCC bug entry.
-
-Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: 小倉一夫 <ka-ogura@bd6.so-net.ne.jp>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/math-emu/op-common.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4xdr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/math-emu/op-common.h
-+++ b/include/math-emu/op-common.h
-@@ -799,7 +799,7 @@ do {									\
- 		X##_e -= (_FP_W_TYPE_SIZE - rsize);			\
- 	X##_e = rsize - X##_e - 1;					\
- 									\
--	if (_FP_FRACBITS_##fs < rsize && _FP_WFRACBITS_##fs < X##_e)	\
-+	if (_FP_FRACBITS_##fs < rsize && _FP_WFRACBITS_##fs <= X##_e)	\
- 	  __FP_FRAC_SRS_1(ur_, (X##_e - _FP_WFRACBITS_##fs + 1), rsize);\
- 	_FP_FRAC_DISASSEMBLE_##wc(X, ur_, rsize);			\
- 	if ((_FP_WFRACBITS_##fs - X##_e - 1) > 0)			\
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -862,8 +862,8 @@ static void encode_attrs(struct xdr_stre
+ 		bmval1 |= FATTR4_WORD1_TIME_ACCESS_SET;
+ 		*p++ = cpu_to_be32(NFS4_SET_TO_CLIENT_TIME);
+ 		*p++ = cpu_to_be32(0);
+-		*p++ = cpu_to_be32(iap->ia_mtime.tv_sec);
+-		*p++ = cpu_to_be32(iap->ia_mtime.tv_nsec);
++		*p++ = cpu_to_be32(iap->ia_atime.tv_sec);
++		*p++ = cpu_to_be32(iap->ia_atime.tv_nsec);
+ 	}
+ 	else if (iap->ia_valid & ATTR_ATIME) {
+ 		bmval1 |= FATTR4_WORD1_TIME_ACCESS_SET;
 
 
