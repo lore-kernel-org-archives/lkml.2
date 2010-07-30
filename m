@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab0G3RDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:03:42 -0400
-Received: from kroah.org ([198.145.64.141]:35525 "EHLO coco.kroah.org"
+	id S1755743Ab0G3RDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:03:45 -0400
+Received: from kroah.org ([198.145.64.141]:35543 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755002Ab0G3RDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:03:36 -0400
+	id S1755398Ab0G3RDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:03:39 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 09:59:54 2010
-Message-Id: <20100730165954.539928245@clark.site>
+Message-Id: <20100730165954.802259904@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 09:57:24 -0700
+Date: Fri, 30 Jul 2010 09:57:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [08/17] hostap: Protect against initialization interrupt
+        Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>
+Subject: [11/17] amd64-agp: Probe unknown AGP devices the right way
 In-Reply-To: <20100730170054.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +25,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Gardner <tim.gardner@canonical.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit d6a574ff6bfb842bdb98065da053881ff527be46 upstream.
+commit 6fd024893911dcb51b4a0aa71971db5ba38f7071 upstream.
 
-Use an irq spinlock to hold off the IRQ handler until
-enough early card init is complete such that the handler
-can run without faulting.
+The current initialisation code probes 'unsupported' AGP devices
+simply by calling its own probe function.  It does not lock these
+devices or even check whether another driver is already bound to
+them.
 
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+We must use the device core to manage this.  So if the specific
+device id table didn't match anything and agp_try_unsupported=1,
+switch the device id table and call driver_attach() again.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/net/wireless/hostap/hostap_cs.c   |   10 ++++++++++
- drivers/net/wireless/hostap/hostap_hw.c   |   13 +++++++++++++
- drivers/net/wireless/hostap/hostap_wlan.h |    2 +-
- 3 files changed, 24 insertions(+), 1 deletion(-)
+ drivers/char/agp/amd64-agp.c |   27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
 
---- a/drivers/net/wireless/hostap/hostap_cs.c
-+++ b/drivers/net/wireless/hostap/hostap_cs.c
-@@ -557,6 +557,7 @@ static int prism2_config(struct pcmcia_d
- 	config_info_t conf;
- 	cistpl_cftable_entry_t dflt = { 0 };
- 	struct hostap_cs_priv *hw_priv;
-+	unsigned long flags;
+--- a/drivers/char/agp/amd64-agp.c
++++ b/drivers/char/agp/amd64-agp.c
+@@ -491,6 +491,10 @@ static int __devinit agp_amd64_probe(str
+ 	u8 cap_ptr;
+ 	int err;
  
- 	PDEBUG(DEBUG_FLOW, "prism2_config()\n");
- 
-@@ -688,6 +689,12 @@ static int prism2_config(struct pcmcia_d
- 	link->dev_node = &hw_priv->node;
- 
- 	/*
-+	 * Make sure the IRQ handler cannot proceed until at least
-+	 * dev->base_addr is initialized.
-+	 */
-+	spin_lock_irqsave(&local->irq_init_lock, flags);
++	/* The Highlander principle */
++	if (agp_bridges_found)
++		return -ENODEV;
 +
-+	/*
- 	 * Allocate an interrupt line.  Note that this does not assign a
- 	 * handler to the interrupt, unless the 'Handler' member of the
- 	 * irq structure is initialized.
-@@ -712,6 +719,8 @@ static int prism2_config(struct pcmcia_d
- 	dev->irq = link->irq.AssignedIRQ;
- 	dev->base_addr = link->io.BasePort1;
- 
-+	spin_unlock_irqrestore(&local->irq_init_lock, flags);
+ 	cap_ptr = pci_find_capability(pdev, PCI_CAP_ID_AGP);
+ 	if (!cap_ptr)
+ 		return -ENODEV;
+@@ -554,6 +558,8 @@ static void __devexit agp_amd64_remove(s
+ 			   amd64_aperture_sizes[bridge->aperture_size_idx].size);
+ 	agp_remove_bridge(bridge);
+ 	agp_put_bridge(bridge);
 +
- 	/* Finally, report what we've done */
- 	printk(KERN_INFO "%s: index 0x%02x: ",
- 	       dev_info, link->conf.ConfigIndex);
-@@ -742,6 +751,7 @@ static int prism2_config(struct pcmcia_d
- 	return ret;
++	agp_bridges_found--;
+ }
  
-  cs_failed:
-+	spin_unlock_irqrestore(&local->irq_init_lock, flags);
- 	cs_error(link, last_fn, last_ret);
+ #ifdef CONFIG_PM
+@@ -701,6 +707,11 @@ static struct pci_device_id agp_amd64_pc
  
-  failed:
---- a/drivers/net/wireless/hostap/hostap_hw.c
-+++ b/drivers/net/wireless/hostap/hostap_hw.c
-@@ -2631,6 +2631,18 @@ static irqreturn_t prism2_interrupt(int
- 	iface = netdev_priv(dev);
- 	local = iface->local;
+ MODULE_DEVICE_TABLE(pci, agp_amd64_pci_table);
  
-+	/* Detect early interrupt before driver is fully configued */
-+	spin_lock(&local->irq_init_lock);
-+	if (!dev->base_addr) {
-+		if (net_ratelimit()) {
-+			printk(KERN_DEBUG "%s: Interrupt, but dev not configured\n",
-+			       dev->name);
-+		}
-+		spin_unlock(&local->irq_init_lock);
-+		return IRQ_HANDLED;
-+	}
-+	spin_unlock(&local->irq_init_lock);
++static DEFINE_PCI_DEVICE_TABLE(agp_amd64_pci_promisc_table) = {
++	{ PCI_DEVICE_CLASS(0, 0) },
++	{ }
++};
 +
- 	prism2_io_debug_add(dev, PRISM2_IO_DEBUG_CMD_INTERRUPT, 0, 0);
+ static struct pci_driver agp_amd64_pci_driver = {
+ 	.name		= "agpgart-amd64",
+ 	.id_table	= agp_amd64_pci_table,
+@@ -725,7 +736,6 @@ int __init agp_amd64_init(void)
+ 		return err;
  
- 	if (local->func->card_present && !local->func->card_present(local)) {
-@@ -3187,6 +3199,7 @@ prism2_init_local_data(struct prism2_hel
- 	spin_lock_init(&local->cmdlock);
- 	spin_lock_init(&local->baplock);
- 	spin_lock_init(&local->lock);
-+	spin_lock_init(&local->irq_init_lock);
- 	mutex_init(&local->rid_bap_mtx);
+ 	if (agp_bridges_found == 0) {
+-		struct pci_dev *dev;
+ 		if (!agp_try_unsupported && !agp_try_unsupported_boot) {
+ 			printk(KERN_INFO PFX "No supported AGP bridge found.\n");
+ #ifdef MODULE
+@@ -741,17 +751,10 @@ int __init agp_amd64_init(void)
+ 			return -ENODEV;
  
- 	if (card_idx < 0 || card_idx >= MAX_PARM_DEVICES)
---- a/drivers/net/wireless/hostap/hostap_wlan.h
-+++ b/drivers/net/wireless/hostap/hostap_wlan.h
-@@ -653,7 +653,7 @@ struct local_info {
- 	rwlock_t iface_lock; /* hostap_interfaces read lock; use write lock
- 			      * when removing entries from the list.
- 			      * TX and RX paths can use read lock. */
--	spinlock_t cmdlock, baplock, lock;
-+	spinlock_t cmdlock, baplock, lock, irq_init_lock;
- 	struct mutex rid_bap_mtx;
- 	u16 infofid; /* MAC buffer id for info frame */
- 	/* txfid, intransmitfid, next_txtid, and next_alloc are protected by
+ 		/* Look for any AGP bridge */
+-		dev = NULL;
+-		err = -ENODEV;
+-		for_each_pci_dev(dev) {
+-			if (!pci_find_capability(dev, PCI_CAP_ID_AGP))
+-				continue;
+-			/* Only one bridge supported right now */
+-			if (agp_amd64_probe(dev, NULL) == 0) {
+-				err = 0;
+-				break;
+-			}
+-		}
++		agp_amd64_pci_driver.id_table = agp_amd64_pci_promisc_table;
++		err = driver_attach(&agp_amd64_pci_driver.driver);
++		if (err == 0 && agp_bridges_found == 0)
++			err = -ENODEV;
+ 	}
+ 	return err;
+ }
 
 
