@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab0G3PBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 11:01:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45457 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab0G3PBl (ORCPT
+	id S1751152Ab0G3PQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 11:16:53 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45072 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab0G3PQw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 11:01:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=XRvdAnBiXm5nrwJDCp1Q+CBmuQT2CEMb2cFBaiUMHCyfdSwAePrWdF/ckbe3zYdqCR
-         Sfh91Jv0xskaR8ZqFraTKQsy1rjTOcwgQRbFeYkZYh+JxBnrBvsYesRX7YOCQ5Egd8lx
-         r/N1tuDrp/79Mo6UaNb9H6jzNoMlmRyez80Q8=
+	Fri, 30 Jul 2010 11:16:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinZgu-4V8pwSZJMBw_FTHgRCMELy96ADkrBMoKt@mail.gmail.com>
-References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
-	<1280440089-3203-2-git-send-email-john.johansen@canonical.com>
-	<AANLkTikk3tNM-fsXuS_SeAWgaYYCFrFAToRXOBkPxwy9@mail.gmail.com>
-	<4C52A307.7080002@canonical.com>
-	<AANLkTi=mcrGTMBonxby1gR1OijPB4z072i6cNsLxNU09@mail.gmail.com>
-	<AANLkTinZgu-4V8pwSZJMBw_FTHgRCMELy96ADkrBMoKt@mail.gmail.com>
-Date: Fri, 30 Jul 2010 18:01:39 +0300
-X-Google-Sender-Auth: NaUVaFKIy_mFD0R3WiKnUiZuhbs
-Message-ID: <AANLkTimJp3fxBox7wFYxVJySKrM12mSVYYOjiXcHt_YC@mail.gmail.com>
-Subject: Re: [PATCH 01/13] AppArmor: misc. base functions and defines
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, laijs@cn.fujitsu.com
+X-Originating-IP: [93.173.51.182]
+In-Reply-To: <1280328333-31336-1-git-send-email-ernesto@ti.com>
+References: <1280328333-31336-1-git-send-email-ernesto@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 30 Jul 2010 18:16:30 +0300
+Message-ID: <AANLkTinhr8KhmJ9QMKeUHpPWsXuiBjZaFzHuwdrwww6=@mail.gmail.com>
+Subject: Re: [PATCH 00/10] staging:ti dspbridge: Remove DSP_FAILED and 
+	DSP_SUCCEEDED macros
+To: Ernesto Ramos <ernesto@ti.com>
+Cc: gregkh@suse.de, omar.ramirez@ti.com, ameya.palande@nokia.com,
+        felipe.contreras@nokia.com, fernando.lugo@ti.com,
+        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com, nm@ti.com,
+        linux-omap@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 5:24 PM, Changli Gao <xiaosuo@gmail.com> wrote:
-> On Fri, Jul 30, 2010 at 6:53 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
->> On Fri, Jul 30, 2010 at 1:01 PM, John Johansen
->>>
->>> vfree can sleep, and skipping the schedule_work parts won't work for
->>> apparmor as many of these allocations are being freed via rcu callbacks
->>> as most of our object life cycles are dependent on cred refcounting.
->>
->> Can someone point me to where vfree() actually sleeps? I'm unable to
->> find the exact spot.
+Hi Ernesto,
+
+On Wed, Jul 28, 2010 at 5:45 PM, Ernesto Ramos <ernesto@ti.com> wrote:
+> This series of patches is targetted to remove macros DSP_FAILED
+> and DSP_SUCCEEDED since bridge driver currently uses standard kernel
+> error codes.
+
+These macros were often used to test for success, instead for errors.
+
+This often leads to dspbridge code being highly nested, and hard to
+read. The excessive indentation sometimes even lead to longer lines,
+which were broken to meet the 80-chars recommendation, where the real
+problem is actually the redundant indentation (e.g. check out this
+patch http://www.mail-archive.com/linux-omap@vger.kernel.org/msg26700.html).
+
+E.g. the following error testing is very common in the bridge code:
+
+do_something1();
+if (success) {
+    do_something2();
+    if (success) {
+        do_something3();
+        ....
+    }
+}
+
+The kernel alternative would be to check for errors, and take error
+paths out of the code flow, e.g.:
+
+do_something1();
+if (error)
+    leave;
+
+do_something2();
+if (error)
+    leave;
+
+do_something3();
+if (error)
+    leave;
+
+This leads to code which is much more easier to read.
+
+If you could hunt some of those highly nested areas and make them test
+for error instead of success, it can be really great.
+
+Thanks,
+Ohad.
+
 >
-> http://lxr.linux.no/linux+v2.6.34.1/mm/vmalloc.c#L1405 . vfree ->
-> __vunmap, vunmap -> __vunmap, and there is a might_sleep() function in
-> vunmap.
-
-Yes, but that doesn't answer my question. Where's the actual call-site
-that can sleep? I can't find it!
-
-> BTW: I'll respin the kvmalloc patch later.
-
-Great!
+> Ernesto Ramos (10):
+>  staging:ti dspbridge: remove DSP_SUCCEEDED macro from core
+>  staging:ti dspbridge: remove DSP_SUCCEEDED macro from pmgr
+>  staging:ti dspbridge: remove DSP_SUCCEEDED macro from rmgr
+>  staging:ti dspbridge: remove DSP_SUCCEEDED macro from services
+>  staging:ti dspbridge: remove DSP_SUCCEEDED macro definition
+>  staging:ti dspbridge: remove DSP_FAILED macro from core
+>  staging:ti dspbridge: remove DSP_FAILED macro from pmgr
+>  staging:ti dspbridge: remove DSP_FAILED macro from rmgr
+>  staging:ti dspbridge: remove DSP_FAILED macro from services
+>  staging:ti dspbridge: remove DSP_FAILED macro definition
+>
+>  drivers/staging/tidspbridge/core/chnl_sm.c         |   42 ++--
+>  drivers/staging/tidspbridge/core/dsp-clock.c       |    4 +-
+>  drivers/staging/tidspbridge/core/io_sm.c           |  111 +++++-----
+>  drivers/staging/tidspbridge/core/msg_sm.c          |   26 ++--
+>  drivers/staging/tidspbridge/core/tiomap3430.c      |   61 +++---
+>  drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |    8 +-
+>  drivers/staging/tidspbridge/core/tiomap_io.c       |   41 ++--
+>  .../staging/tidspbridge/include/dspbridge/dbdefs.h |    4 -
+>  drivers/staging/tidspbridge/pmgr/chnl.c            |   10 +-
+>  drivers/staging/tidspbridge/pmgr/cmm.c             |  137 ++++++-------
+>  drivers/staging/tidspbridge/pmgr/cod.c             |   18 +-
+>  drivers/staging/tidspbridge/pmgr/dbll.c            |   32 ++--
+>  drivers/staging/tidspbridge/pmgr/dev.c             |   79 +++----
+>  drivers/staging/tidspbridge/pmgr/dmm.c             |   12 +-
+>  drivers/staging/tidspbridge/pmgr/dspapi.c          |   82 ++++----
+>  drivers/staging/tidspbridge/pmgr/io.c              |    4 +-
+>  drivers/staging/tidspbridge/pmgr/msg.c             |    2 +-
+>  drivers/staging/tidspbridge/rmgr/dbdcd.c           |   48 ++--
+>  drivers/staging/tidspbridge/rmgr/disp.c            |   62 +++---
+>  drivers/staging/tidspbridge/rmgr/drv.c             |   39 ++--
+>  drivers/staging/tidspbridge/rmgr/drv_interface.c   |   10 +-
+>  drivers/staging/tidspbridge/rmgr/dspdrv.c          |   16 +-
+>  drivers/staging/tidspbridge/rmgr/mgr.c             |   32 ++--
+>  drivers/staging/tidspbridge/rmgr/nldr.c            |  106 +++++-----
+>  drivers/staging/tidspbridge/rmgr/node.c            |  224 ++++++++++----------
+>  drivers/staging/tidspbridge/rmgr/proc.c            |  137 ++++++------
+>  drivers/staging/tidspbridge/rmgr/pwr.c             |   26 +--
+>  drivers/staging/tidspbridge/rmgr/rmm.c             |   12 +-
+>  drivers/staging/tidspbridge/rmgr/strm.c            |   75 ++++----
+>  drivers/staging/tidspbridge/services/cfg.c         |   21 +-
+>  30 files changed, 710 insertions(+), 771 deletions(-)
+>
+>
