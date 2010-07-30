@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759284Ab0G3RdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:33:09 -0400
-Received: from kroah.org ([198.145.64.141]:51921 "EHLO coco.kroah.org"
+	id S1758975Ab0G3Rd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:33:26 -0400
+Received: from kroah.org ([198.145.64.141]:51894 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757953Ab0G3RT3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:19:29 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:09 2010
-Message-Id: <20100730171509.117308260@clark.site>
+	id S1758686Ab0G3RT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:19:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:15:08 2010
+Message-Id: <20100730171508.848265188@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:15:33 -0700
+Date: Fri, 30 Jul 2010 10:15:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [105/165] ext4: Fixed inode allocator to correctly track a flex_bgs used_dirs
+        Akira Fujita <a-fujita@rs.jp.nec.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [102/165] ext4: Fix the NULL reference in double_down_write_data_sem()
 In-Reply-To: <20100730171550.GA1299@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-commit c4caae25187ff3f5e837c6f04eb1acc2723c72d3 upstream (as of v2.6.34-rc3)
+commit 7247c0caa23d94a1cb6b307edba9dc45fb0798d4 upstream (as of v2.6.33-git11)
 
-When used_dirs was introduced for the flex_groups struct, it looks
-like the accounting was not put into place properly, in some places
-manipulating free_inodes rather than used_dirs.
+If EXT4_IOC_MOVE_EXT ioctl is called with NULL donor_fd, fget() in
+ext4_ioctl() gets inappropriate file structure for donor; so we need
+to do this check earlier, before calling double_down_write_data_sem().
 
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Akira Fujita <a-fujita@rs.jp.nec.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/ext4/ialloc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ext4/move_extent.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -268,7 +268,7 @@ void ext4_free_inode(handle_t *handle, s
- 					ext4_group_t f;
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -953,14 +953,6 @@ mext_check_arguments(struct inode *orig_
+ 	unsigned int blkbits = orig_inode->i_blkbits;
+ 	unsigned int blocksize = 1 << blkbits;
  
- 					f = ext4_flex_group(sbi, block_group);
--					atomic_dec(&sbi->s_flex_groups[f].free_inodes);
-+					atomic_dec(&sbi->s_flex_groups[f].used_dirs);
- 				}
- 
- 			}
-@@ -779,7 +779,7 @@ static int ext4_claim_inode(struct super
- 		if (sbi->s_log_groups_per_flex) {
- 			ext4_group_t f = ext4_flex_group(sbi, group);
- 
--			atomic_inc(&sbi->s_flex_groups[f].free_inodes);
-+			atomic_inc(&sbi->s_flex_groups[f].used_dirs);
- 		}
+-	/* Regular file check */
+-	if (!S_ISREG(orig_inode->i_mode) || !S_ISREG(donor_inode->i_mode)) {
+-		ext4_debug("ext4 move extent: The argument files should be "
+-			"regular file [ino:orig %lu, donor %lu]\n",
+-			orig_inode->i_ino, donor_inode->i_ino);
+-		return -EINVAL;
+-	}
+-
+ 	if (donor_inode->i_mode & (S_ISUID|S_ISGID)) {
+ 		ext4_debug("ext4 move extent: suid or sgid is set"
+ 			   " to donor file [ino:orig %lu, donor %lu]\n",
+@@ -1207,6 +1199,14 @@ ext4_move_extents(struct file *o_filp, s
+ 			orig_inode->i_ino, donor_inode->i_ino);
+ 		return -EINVAL;
  	}
- 	gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
++
++	/* Regular file check */
++	if (!S_ISREG(orig_inode->i_mode) || !S_ISREG(donor_inode->i_mode)) {
++		ext4_debug("ext4 move extent: The argument files should be "
++			"regular file [ino:orig %lu, donor %lu]\n",
++			orig_inode->i_ino, donor_inode->i_ino);
++		return -EINVAL;
++	}
+ 
+ 	/* Protect orig and donor inodes against a truncate */
+ 	ret1 = mext_inode_double_lock(orig_inode, donor_inode);
 
 
