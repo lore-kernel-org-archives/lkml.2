@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab0G3Sn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:43:26 -0400
-Received: from kroah.org ([198.145.64.141]:35883 "EHLO coco.kroah.org"
+	id S933285Ab0G3Snh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:43:37 -0400
+Received: from kroah.org ([198.145.64.141]:35875 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316Ab0G3RfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932314Ab0G3RfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Jul 2010 13:35:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:09 2010
-Message-Id: <20100730173109.486121092@clark.site>
+Message-Id: <20100730173109.398607672@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:30:40 -0700
+Date: Fri, 30 Jul 2010 10:30:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Shi <alex.shi@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [075/140] sched: Fix over-scheduling bug
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: [074/140] sched: Prevent compiler from optimising the sched_avg_update() loop
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex,Shi <alex.shi@intel.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 3c93717cfa51316e4dbb471e7c0f9d243359d5f8 upstream.
+commit 0d98bb2656e9bd2dfda2d089db1fe1dbdab41504 upstream.
 
-Commit e70971591 ("sched: Optimize unused cgroup configuration") introduced
-an imbalanced scheduling bug.
+GCC 4.4.1 on ARM has been observed to replace the while loop in
+sched_avg_update with a call to uldivmod, resulting in the
+following build failure at link-time:
 
-If we do not use CGROUP, function update_h_load won't update h_load. When the
-system has a large number of tasks far more than logical CPU number, the
-incorrect cfs_rq[cpu]->h_load value will cause load_balance() to pull too
-many tasks to the local CPU from the busiest CPU. So the busiest CPU keeps
-going in a round robin. That will hurt performance.
+kernel/built-in.o: In function `sched_avg_update':
+ kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
+ kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
+make: *** [.tmp_vmlinux1] Error 1
 
-The issue was found originally by a scientific calculation workload that
-developed by Yanmin. With that commit, the workload performance drops
-about 40%.
+This patch introduces a fake data hazard to the loop body to
+prevent the compiler optimising the loop away.
 
- CPU  before    after
-
- 00   : 2       : 7
- 01   : 1       : 7
- 02   : 11      : 6
- 03   : 12      : 7
- 04   : 6       : 6
- 05   : 11      : 7
- 06   : 10      : 6
- 07   : 12      : 7
- 08   : 11      : 6
- 09   : 12      : 6
- 10   : 1       : 6
- 11   : 1       : 6
- 12   : 6       : 6
- 13   : 2       : 6
- 14   : 2       : 6
- 15   : 1       : 6
-
-Reviewed-by: Yanmin zhang <yanmin.zhang@intel.com>
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1276754893.9452.5442.camel@debian>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched.c |    3 ---
- 1 file changed, 3 deletions(-)
+ kernel/sched.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -1719,9 +1719,6 @@ static void update_shares_locked(struct
+@@ -1259,6 +1259,12 @@ static void sched_avg_update(struct rq *
+ 	s64 period = sched_avg_period();
  
- static void update_h_load(long cpu)
- {
--	if (root_task_group_empty())
--		return;
--
- 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
- }
- 
+ 	while ((s64)(rq->clock - rq->age_stamp) > period) {
++		/*
++		 * Inline assembly required to prevent the compiler
++		 * optimising this loop into a divmod call.
++		 * See __iter_div_u64_rem() for another example of this.
++		 */
++		asm("" : "+rm" (rq->age_stamp));
+ 		rq->age_stamp += period;
+ 		rq->rt_avg /= 2;
+ 	}
 
 
