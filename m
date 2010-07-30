@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760234Ab0G3SyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:54:23 -0400
-Received: from kroah.org ([198.145.64.141]:35568 "EHLO coco.kroah.org"
+	id S1760256Ab0G3Syi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:54:38 -0400
+Received: from kroah.org ([198.145.64.141]:35563 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759330Ab0G3ReN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:34:13 -0400
+	id S1759328Ab0G3ReM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:12 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:05 2010
-Message-Id: <20100730173105.014912750@clark.site>
+Message-Id: <20100730173104.928023725@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:29:50 -0700
+Date: Fri, 30 Jul 2010 10:29:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tom Herbert <therbert@google.com>,
+        Brandon Philips <bphilips@suse.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [025/140] net: fix problem in reading sock TX queue
+Subject: [024/140] sky2: enable rx/tx in sky2_phy_reinit()
 In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tom Herbert <therbert@google.com>
+From: Brandon Philips <brandon@ifup.org>
 
-commit b0f77d0eae0c58a5a9691a067ada112ceeae2d00 upstream.
+commit 38000a94a902e94ca8b5498f7871c6316de8957a upstream.
 
-Fix problem in reading the tx_queue recorded in a socket.  In
-dev_pick_tx, the TX queue is read by doing a check with
-sk_tx_queue_recorded on the socket, followed by a sk_tx_queue_get.
-The problem is that there is not mutual exclusion across these
-calls in the socket so it it is possible that the queue in the
-sock can be invalidated after sk_tx_queue_recorded is called so
-that sk_tx_queue get returns -1, which sets 65535 in queue_index
-and thus dev_pick_tx returns 65536 which is a bogus queue and
-can cause crash in dev_queue_xmit.
+sky2_phy_reinit is called by the ethtool helpers sky2_set_settings,
+sky2_nway_reset and sky2_set_pauseparam when netif_running.
 
-We fix this by only calling sk_tx_queue_get which does the proper
-checks.  The interface is that sk_tx_queue_get returns the TX queue
-if the sock argument is non-NULL and TX queue is recorded, else it
-returns -1.  sk_tx_queue_recorded is no longer used so it can be
-completely removed.
+However, at the end of sky2_phy_init GM_GP_CTRL has GM_GPCR_RX_ENA and
+GM_GPCR_TX_ENA cleared. So, doing these commands causes the device to
+stop working:
 
-Signed-off-by: Tom Herbert <therbert@google.com>
+$ ethtool -r eth0
+$ ethtool -A eth0 autoneg off
+
+Fix this issue by enabling Rx/Tx after running sky2_phy_init in
+sky2_phy_reinit.
+
+Signed-off-by: Brandon Philips <bphilips@suse.de>
+Tested-by: Brandon Philips <bphilips@suse.de>
+Cc: stable@kernel.org
+Tested-by: Mike McCormack <mikem@ring3k.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/net/sock.h |    7 +------
- net/core/dev.c     |    7 +++----
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/net/sky2.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1130,12 +1130,7 @@ static inline void sk_tx_queue_clear(str
- 
- static inline int sk_tx_queue_get(const struct sock *sk)
- {
--	return sk->sk_tx_queue_mapping;
--}
--
--static inline bool sk_tx_queue_recorded(const struct sock *sk)
--{
--	return (sk && sk->sk_tx_queue_mapping >= 0);
-+	return sk ? sk->sk_tx_queue_mapping : -1;
+--- a/drivers/net/sky2.c
++++ b/drivers/net/sky2.c
+@@ -716,11 +716,24 @@ static void sky2_phy_power_down(struct s
+ 	sky2_write8(hw, B2_TST_CTRL1, TST_CFG_WRITE_OFF);
  }
  
- static inline void sk_set_socket(struct sock *sk, struct socket *sock)
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1915,12 +1915,11 @@ static inline u16 dev_cap_txqueue(struct
- static struct netdev_queue *dev_pick_tx(struct net_device *dev,
- 					struct sk_buff *skb)
++/* Enable Rx/Tx */
++static void sky2_enable_rx_tx(struct sky2_port *sky2)
++{
++	struct sky2_hw *hw = sky2->hw;
++	unsigned port = sky2->port;
++	u16 reg;
++
++	reg = gma_read16(hw, port, GM_GP_CTRL);
++	reg |= GM_GPCR_RX_ENA | GM_GPCR_TX_ENA;
++	gma_write16(hw, port, GM_GP_CTRL, reg);
++}
++
+ /* Force a renegotiation */
+ static void sky2_phy_reinit(struct sky2_port *sky2)
  {
--	u16 queue_index;
-+	int queue_index;
- 	struct sock *sk = skb->sk;
+ 	spin_lock_bh(&sky2->phy_lock);
+ 	sky2_phy_init(sky2->hw, sky2->port);
++	sky2_enable_rx_tx(sky2);
+ 	spin_unlock_bh(&sky2->phy_lock);
+ }
  
--	if (sk_tx_queue_recorded(sk)) {
--		queue_index = sk_tx_queue_get(sk);
--	} else {
-+	queue_index = sk_tx_queue_get(sk);
-+	if (queue_index < 0) {
- 		const struct net_device_ops *ops = dev->netdev_ops;
+@@ -1971,7 +1984,6 @@ static void sky2_link_up(struct sky2_por
+ {
+ 	struct sky2_hw *hw = sky2->hw;
+ 	unsigned port = sky2->port;
+-	u16 reg;
+ 	static const char *fc_name[] = {
+ 		[FC_NONE]	= "none",
+ 		[FC_TX]		= "tx",
+@@ -1979,10 +1991,7 @@ static void sky2_link_up(struct sky2_por
+ 		[FC_BOTH]	= "both",
+ 	};
  
- 		if (ops->ndo_select_queue) {
+-	/* enable Rx/Tx */
+-	reg = gma_read16(hw, port, GM_GP_CTRL);
+-	reg |= GM_GPCR_RX_ENA | GM_GPCR_TX_ENA;
+-	gma_write16(hw, port, GM_GP_CTRL, reg);
++	sky2_enable_rx_tx(sky2);
+ 
+ 	gm_phy_write(hw, port, PHY_MARV_INT_MASK, PHY_M_DEF_MSK);
+ 
 
 
