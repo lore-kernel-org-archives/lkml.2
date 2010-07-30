@@ -1,62 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283Ab0G3Sm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:42:57 -0400
-Received: from kroah.org ([198.145.64.141]:57787 "EHLO coco.kroah.org"
+	id S933397Ab0G3SnT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:43:19 -0400
+Received: from kroah.org ([198.145.64.141]:35898 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759698Ab0G3RyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:34 2010
-Message-Id: <20100730175134.131112660@clark.site>
+	id S1758218Ab0G3RfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:35:08 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:09 2010
+Message-Id: <20100730173109.679284206@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:23 -0700
+Date: Fri, 30 Jul 2010 10:30:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [006/205] gro: Fix bogus gso_size on the first fraglist entry
-In-Reply-To: <20100730175238.GA3924@kroah.com>
+        Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [077/140] cfq: Dont allow queue merges for queues that have no process references
+In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
+From: Jeff Moyer <jmoyer@redhat.com>
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+commit c10b61f0910466b4b99c266a7d76ac4390743fb5 upstream.
 
-[ Upstream commit 622e0ca1cd4d459f5af4f2c65f4dc0dd823cb4c3 ]
+Hi,
 
-When GRO produces fraglist entries, and the resulting skb hits
-an interface that is incapable of TSO but capable of FRAGLIST,
-we end up producing a bogus packet with gso_size non-zero.
+A user reported a kernel bug when running a particular program that did
+the following:
 
-This was reported in the field with older versions of KVM that
-did not set the TSO bits on tuntap.
+created 32 threads
+- each thread took a mutex, grabbed a global offset, added a buffer size
+  to that offset, released the lock
+- read from the given offset in the file
+- created a new thread to do the same
+- exited
 
-This patch fixes that.
+The result is that cfq's close cooperator logic would trigger, as the
+threads were issuing I/O within the mean seek distance of one another.
+This workload managed to routinely trigger a use after free bug when
+walking the list of merge candidates for a particular cfqq
+(cfqq->new_cfqq).  The logic used for merging queues looks like this:
 
-Reported-by: Igor Zhang <yugzhang@redhat.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
+{
+	int process_refs, new_process_refs;
+	struct cfq_queue *__cfqq;
+
+	/* Avoid a circular list and skip interim queue merges */
+	while ((__cfqq = new_cfqq->new_cfqq)) {
+		if (__cfqq == cfqq)
+			return;
+		new_cfqq = __cfqq;
+	}
+
+	process_refs = cfqq_process_refs(cfqq);
+	/*
+	 * If the process for the cfqq has gone away, there is no
+	 * sense in merging the queues.
+	 */
+	if (process_refs == 0)
+		return;
+
+	/*
+	 * Merge in the direction of the lesser amount of work.
+	 */
+	new_process_refs = cfqq_process_refs(new_cfqq);
+	if (new_process_refs >= process_refs) {
+		cfqq->new_cfqq = new_cfqq;
+		atomic_add(process_refs, &new_cfqq->ref);
+	} else {
+		new_cfqq->new_cfqq = cfqq;
+		atomic_add(new_process_refs, &cfqq->ref);
+	}
+}
+
+When a merge candidate is found, we add the process references for the
+queue with less references to the queue with more.  The actual merging
+of queues happens when a new request is issued for a given cfqq.  In the
+case of the test program, it only does a single pread call to read in
+1MB, so the actual merge never happens.
+
+Normally, this is fine, as when the queue exits, we simply drop the
+references we took on the other cfqqs in the merge chain:
+
+	/*
+	 * If this queue was scheduled to merge with another queue, be
+	 * sure to drop the reference taken on that queue (and others in
+	 * the merge chain).  See cfq_setup_merge and cfq_merge_cfqqs.
+	 */
+	__cfqq = cfqq->new_cfqq;
+	while (__cfqq) {
+		if (__cfqq == cfqq) {
+			WARN(1, "cfqq->new_cfqq loop detected\n");
+			break;
+		}
+		next = __cfqq->new_cfqq;
+		cfq_put_queue(__cfqq);
+		__cfqq = next;
+	}
+
+However, there is a hole in this logic.  Consider the following (and
+keep in mind that each I/O keeps a reference to the cfqq):
+
+q1->new_cfqq = q2   // q2 now has 2 process references
+q3->new_cfqq = q2   // q2 now has 3 process references
+
+// the process associated with q2 exits
+// q2 now has 2 process references
+
+// queue 1 exits, drops its reference on q2
+// q2 now has 1 process reference
+
+// q3 exits, so has 0 process references, and hence drops its references
+// to q2, which leaves q2 also with 0 process references
+
+q4 comes along and wants to merge with q3
+
+q3->new_cfqq still points at q2!  We follow that link and end up at an
+already freed cfqq.
+
+So, the fix is to not follow a merge chain if the top-most queue does
+not have a process reference, otherwise any queue in the chain could be
+already freed.  I also changed the logic to disallow merging with a
+queue that does not have any process references.  Previously, we did
+this check for one of the merge candidates, but not the other.  That
+doesn't really make sense.
+
+Without the attached patch, my system would BUG within a couple of
+seconds of running the reproducer program.  With the patch applied, my
+system ran the program for over an hour without issues.
+
+This addresses the following bugzilla:
+    https://bugzilla.kernel.org/show_bug.cgi?id=16217
+
+Thanks a ton to Phil Carns for providing the bug report and an excellent
+reproducer.
+
+[ Note for stable: this applies to 2.6.32/33/34 ].
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-by: Phil Carns <carns@mcs.anl.gov>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/core/skbuff.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2729,6 +2729,7 @@ int skb_gro_receive(struct sk_buff **hea
- 	*NAPI_GRO_CB(nskb) = *NAPI_GRO_CB(p);
- 	skb_shinfo(nskb)->frag_list = p;
- 	skb_shinfo(nskb)->gso_size = pinfo->gso_size;
-+	pinfo->gso_size = 0;
- 	skb_header_release(p);
- 	nskb->prev = p;
+---
+ block/cfq-iosched.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1934,6 +1934,15 @@ static void cfq_setup_merge(struct cfq_q
+ 	int process_refs, new_process_refs;
+ 	struct cfq_queue *__cfqq;
  
++	/*
++	 * If there are no process references on the new_cfqq, then it is
++	 * unsafe to follow the ->new_cfqq chain as other cfqq's in the
++	 * chain may have dropped their last reference (not just their
++	 * last process reference).
++	 */
++	if (!cfqq_process_refs(new_cfqq))
++		return;
++
+ 	/* Avoid a circular list and skip interim queue merges */
+ 	while ((__cfqq = new_cfqq->new_cfqq)) {
+ 		if (__cfqq == cfqq)
+@@ -1942,17 +1951,17 @@ static void cfq_setup_merge(struct cfq_q
+ 	}
+ 
+ 	process_refs = cfqq_process_refs(cfqq);
++	new_process_refs = cfqq_process_refs(new_cfqq);
+ 	/*
+ 	 * If the process for the cfqq has gone away, there is no
+ 	 * sense in merging the queues.
+ 	 */
+-	if (process_refs == 0)
++	if (process_refs == 0 || new_process_refs == 0)
+ 		return;
+ 
+ 	/*
+ 	 * Merge in the direction of the lesser amount of work.
+ 	 */
+-	new_process_refs = cfqq_process_refs(new_cfqq);
+ 	if (new_process_refs >= process_refs) {
+ 		cfqq->new_cfqq = new_cfqq;
+ 		atomic_add(process_refs, &new_cfqq->ref);
 
 
