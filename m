@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab0G3Svb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:51:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52150 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759801Ab0G3SvL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 14:51:11 -0400
-Date: Fri, 30 Jul 2010 20:51:06 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        Nicolas Pitre <nico@marvell.com>, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia@diku.dk>, Tejun Heo <tj@kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] MTD: pxa2xx: move pxa2xx_flash_probe to .devinit.text
-Message-ID: <20100730185106.GA25446@pengutronix.de>
-References: <1280504530-31737-1-git-send-email-u.kleine-koenig@pengutronix.de> <4C52F6C1.5090207@mvista.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C52F6C1.5090207@mvista.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S933449Ab0G3Svt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:51:49 -0400
+Received: from kroah.org ([198.145.64.141]:35639 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759371Ab0G3ReY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:34:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:31:06 2010
+Message-Id: <20100730173105.997040547@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 30 Jul 2010 10:30:01 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Vivek Natarajan <vnatarajan@atheros.com>,
+        Ranga Rao Ravuri <ranga.ravuri@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [036/140] ath9k: Avoid corrupt frames being forwarded to mac80211.
+In-Reply-To: <20100730173205.GA22581@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 07:58:57PM +0400, Sergei Shtylyov wrote:
-> Uwe Kleine-König wrote:
->
->> This fixes the following warning by modpost:
->
->> 	WARNING: vmlinux.o(.data+0x15018): Section mismatch in reference from the variable pxa2xx_flash_driver to the function .init.text:pxa2xx_flash_probe()
->> 	The variable pxa2xx_flash_driver references
->> 	the function __init pxa2xx_flash_probe()
->> 	If the reference is valid then annotate the
->> 	variable with __init* or __refdata (see linux/init.h) or name the variable:
->> 	*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
->
->> I choosed to do this instead of using platform_driver_probe as the remove
->
->    s/choosed/chose/
-oh right, thanks.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
->> function uses __devexit.
->
->    Perhaps remove() method should have been fixed instead -- I doubt that 
-> this is a hotplug device.
-Actually I don't care much.
+------------------
 
-Best regards
-Uwe
+From: Vivek Natarajan <vnatarajan@atheros.com>
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+commit 3a37495268ab45507b4cab9d4cb18c5496ab7a10 upstream.
+
+If bit 29 is set, MAC H/W can attempt to decrypt the received aggregate
+with WEP or TKIP, eventhough the received frame may be a CRC failed
+corrupted frame. If this bit is set, H/W obeys key type in keycache.
+If it is not set and if the key type in keycache is neither open nor
+AES, H/W forces key type to be open.  But bit 29 should be set to 1
+for AsyncFIFO feature to encrypt/decrypt the aggregate with WEP or TKIP.
+
+Reported-by: Johan Hovold <johan.hovold@lundinova.se>
+Signed-off-by: Vivek Natarajan <vnatarajan@atheros.com>
+Signed-off-by: Ranga Rao Ravuri <ranga.ravuri@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/wireless/ath/ath9k/initvals.h |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/net/wireless/ath/ath9k/initvals.h
++++ b/drivers/net/wireless/ath/ath9k/initvals.h
+@@ -246,7 +246,7 @@ static const u32 ar5416Common[][2] = {
+     { 0x00008258, 0x00000000 },
+     { 0x0000825c, 0x400000ff },
+     { 0x00008260, 0x00080922 },
+-    { 0x00008264, 0xa8000010 },
++    { 0x00008264, 0x88000010 },
+     { 0x00008270, 0x00000000 },
+     { 0x00008274, 0x40000000 },
+     { 0x00008278, 0x003e4180 },
+@@ -2766,7 +2766,7 @@ static const u32 ar9280Common_9280_2[][2
+     { 0x00008258, 0x00000000 },
+     { 0x0000825c, 0x400000ff },
+     { 0x00008260, 0x00080922 },
+-    { 0x00008264, 0xa8a00010 },
++    { 0x00008264, 0x88a00010 },
+     { 0x00008270, 0x00000000 },
+     { 0x00008274, 0x40000000 },
+     { 0x00008278, 0x003e4180 },
+@@ -3936,7 +3936,7 @@ static const u_int32_t ar9285Common_9285
+     { 0x00008258, 0x00000000 },
+     { 0x0000825c, 0x400000ff },
+     { 0x00008260, 0x00080922 },
+-    { 0x00008264, 0xa8a00010 },
++    { 0x00008264, 0x88a00010 },
+     { 0x00008270, 0x00000000 },
+     { 0x00008274, 0x40000000 },
+     { 0x00008278, 0x003e4180 },
+@@ -5073,7 +5073,7 @@ static const u_int32_t ar9287Common_9287
+     { 0x00008258, 0x00000000 },
+     { 0x0000825c, 0x400000ff },
+     { 0x00008260, 0x00080922 },
+-    { 0x00008264, 0xa8a00010 },
++    { 0x00008264, 0x88a00010 },
+     { 0x00008270, 0x00000000 },
+     { 0x00008274, 0x40000000 },
+     { 0x00008278, 0x003e4180 },
+
+
