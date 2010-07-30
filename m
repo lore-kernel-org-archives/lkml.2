@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab0G3R6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 13:58:21 -0400
-Received: from kroah.org ([198.145.64.141]:58955 "EHLO coco.kroah.org"
+	id S932889Ab0G3R6R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 13:58:17 -0400
+Received: from kroah.org ([198.145.64.141]:58941 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760074Ab0G3R46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:56:58 -0400
+	id S1760069Ab0G3R44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:56:56 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:46 2010
-Message-Id: <20100730175146.889355233@clark.site>
+Message-Id: <20100730175146.696263168@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:52:39 -0700
+Date: Fri, 30 Jul 2010 10:52:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felipe Balbi <felipe.balbi@nokia.com>
-Subject: [142/205] USB: musb: tusb6010: fix compile error with n8x0_defconfig
+        Oliver Neukum <oneukum@suse.de>
+Subject: [140/205] USB: add quirk for Broadcom BT dongle
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <felipe.balbi@nokia.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 2b795ea00c2bbb077a1199a4d729c8ac03a6bded upstream.
+commit 63ab71deae67b031045bb28bf8cff45180089f8f upstream.
 
-Drop the unnecessary empty stubs in tusb6010.c and avoid
-a compile error when building kernel for n8x0.
+This device needs to be reset when resuming
 
-Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/musb/tusb6010.c |   13 -------------
- 1 file changed, 13 deletions(-)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/musb/tusb6010.c
-+++ b/drivers/usb/musb/tusb6010.c
-@@ -29,19 +29,6 @@ static void tusb_source_power(struct mus
- #define TUSB_REV_MAJOR(reg_val)		((reg_val >> 4) & 0xf)
- #define TUSB_REV_MINOR(reg_val)		(reg_val & 0xf)
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -68,6 +68,9 @@ static const struct usb_device_id usb_qu
+ 	/* X-Rite/Gretag-Macbeth Eye-One Pro display colorimeter */
+ 	{ USB_DEVICE(0x0971, 0x2000), .driver_info = USB_QUIRK_NO_SET_INTF },
  
--#ifdef CONFIG_PM
--/* REVISIT: These should be only needed if somebody implements off idle */
--void musb_platform_save_context(struct musb *musb,
--			struct musb_context_registers *musb_context)
--{
--}
--
--void musb_platform_restore_context(struct musb *musb,
--			struct musb_context_registers *musb_context)
--{
--}
--#endif
--
- /*
-  * Checks the revision. We need to use the DMA register as 3.0 does not
-  * have correct versions for TUSB_PRCM_REV or TUSB_INT_CTRL_REV.
++	/* Broadcom BCM92035DGROM BT dongle */
++	{ USB_DEVICE(0x0a5c, 0x2021), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Action Semiconductor flash disk */
+ 	{ USB_DEVICE(0x10d6, 0x2200), .driver_info =
+ 			USB_QUIRK_STRING_FETCH_255 },
 
 
