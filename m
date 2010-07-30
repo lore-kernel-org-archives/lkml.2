@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab0G3Sgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 14:36:53 -0400
-Received: from kroah.org ([198.145.64.141]:57977 "EHLO coco.kroah.org"
+	id S933288Ab0G3Shh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 14:37:37 -0400
+Received: from kroah.org ([198.145.64.141]:57965 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759789Ab0G3Ryk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 13:54:40 -0400
+	id S1759781Ab0G3Ryi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 13:54:38 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Jul 30 10:51:36 2010
-Message-Id: <20100730175136.660204966@clark.site>
+Message-Id: <20100730175136.471274361@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 30 Jul 2010 10:50:51 -0700
+Date: Fri, 30 Jul 2010 10:50:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Doug Kehn <rdkehn@yahoo.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Tom Herbert <therbert@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [034/205] net/core: neighbour update Oops
+Subject: [032/205] net: fix problem in reading sock TX queue
 In-Reply-To: <20100730175238.GA3924@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Doug Kehn <rdkehn@yahoo.com>
+From: Tom Herbert <therbert@google.com>
 
-commit 91a72a70594e5212c97705ca6a694bd307f7a26b upstream.
+commit b0f77d0eae0c58a5a9691a067ada112ceeae2d00 upstream.
 
-When configuring DMVPN (GRE + openNHRP) and a GRE remote
-address is configured a kernel Oops is observed.  The
-obserseved Oops is caused by a NULL header_ops pointer
-(neigh->dev->header_ops) in neigh_update_hhs() when
+Fix problem in reading the tx_queue recorded in a socket.  In
+dev_pick_tx, the TX queue is read by doing a check with
+sk_tx_queue_recorded on the socket, followed by a sk_tx_queue_get.
+The problem is that there is not mutual exclusion across these
+calls in the socket so it it is possible that the queue in the
+sock can be invalidated after sk_tx_queue_recorded is called so
+that sk_tx_queue get returns -1, which sets 65535 in queue_index
+and thus dev_pick_tx returns 65536 which is a bogus queue and
+can cause crash in dev_queue_xmit.
 
-void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
-= neigh->dev->header_ops->cache_update;
+We fix this by only calling sk_tx_queue_get which does the proper
+checks.  The interface is that sk_tx_queue_get returns the TX queue
+if the sock argument is non-NULL and TX queue is recorded, else it
+returns -1.  sk_tx_queue_recorded is no longer used so it can be
+completely removed.
 
-is executed.  The dev associated with the NULL header_ops is
-the GRE interface.  This patch guards against the
-possibility that header_ops is NULL.
-
-This Oops was first observed in kernel version 2.6.26.8.
-
-Signed-off-by: Doug Kehn <rdkehn@yahoo.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Tom Herbert <therbert@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/core/neighbour.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/net/sock.h |    7 +------
+ net/core/dev.c     |    7 +++----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -948,7 +948,10 @@ static void neigh_update_hhs(struct neig
- {
- 	struct hh_cache *hh;
- 	void (*update)(struct hh_cache*, const struct net_device*, const unsigned char *)
--		= neigh->dev->header_ops->cache_update;
-+		= NULL;
-+
-+	if (neigh->dev->header_ops)
-+		update = neigh->dev->header_ops->cache_update;
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1146,12 +1146,7 @@ static inline void sk_tx_queue_clear(str
  
- 	if (update) {
- 		for (hh = neigh->hh; hh; hh = hh->hh_next) {
+ static inline int sk_tx_queue_get(const struct sock *sk)
+ {
+-	return sk->sk_tx_queue_mapping;
+-}
+-
+-static inline bool sk_tx_queue_recorded(const struct sock *sk)
+-{
+-	return (sk && sk->sk_tx_queue_mapping >= 0);
++	return sk ? sk->sk_tx_queue_mapping : -1;
+ }
+ 
+ static inline void sk_set_socket(struct sock *sk, struct socket *sock)
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1972,12 +1972,11 @@ static inline u16 dev_cap_txqueue(struct
+ static struct netdev_queue *dev_pick_tx(struct net_device *dev,
+ 					struct sk_buff *skb)
+ {
+-	u16 queue_index;
++	int queue_index;
+ 	struct sock *sk = skb->sk;
+ 
+-	if (sk_tx_queue_recorded(sk)) {
+-		queue_index = sk_tx_queue_get(sk);
+-	} else {
++	queue_index = sk_tx_queue_get(sk);
++	if (queue_index < 0) {
+ 		const struct net_device_ops *ops = dev->netdev_ops;
+ 
+ 		if (ops->ndo_select_queue) {
 
 
