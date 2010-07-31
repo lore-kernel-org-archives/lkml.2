@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab0GaHQR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 03:16:17 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22226 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab0GaHQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 03:16:15 -0400
-Message-ID: <4C53CD80.6070905@kernel.org>
-Date: Sat, 31 Jul 2010 00:15:12 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1754637Ab0GaIIO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 04:08:14 -0400
+Received: from borg.medozas.de ([188.40.89.202]:54082 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752873Ab0GaIIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 04:08:10 -0400
+Date: Sat, 31 Jul 2010 10:08:07 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: utz lehmann <lkml123@s2y4n2c.de>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
+        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
+  file stats available [ver #6]
+In-Reply-To: <1280524978.2452.9.camel@segv.aura.of.mankind>
+Message-ID: <alpine.LSU.2.01.1007311006070.19122@obet.zrqbmnf.qr>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>  <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>  <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>  <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> 
+ <AANLkTikBCXK6uEw  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> <1280524978.2452.9.camel@segv.aura.of.mankind>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 01/17 -v2] memblock: Add memblock_free/reserve_reserved_regions()
-References: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C53CDA0.00EE,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-So we can avoid export memblock_reserved_init_regions()
-Suggested by Ben.
+On Friday 2010-07-30 23:22, utz lehmann wrote:
+>On Thu, 2010-07-22 at 09:40 -0700, Linus Torvalds wrote:
+>> But the fact is, th Unix ctime semantics are insane and largely
+>> useless. There's a damn good reason almost nobody uses ctime under
+>> unix.
+>> 
+>> So what I'm suggesting is that we have a flag - either per-process or
+>> per-mount - that just says "use windows semantics for ctime".
+>
+>When abusing an existing time stamp use atime not ctime please.
+>ctime has it's uses. atime was just a mistake and is nearly useless.
 
--v2: use __init_memblock attribute
+MUAs make use of atime.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>And with noatime we already have creation time semantics for atime.
 
----
- include/linux/memblock.h |    2 ++
- mm/memblock.c            |   24 ++++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
-
-Index: linux-2.6/include/linux/memblock.h
-===================================================================
---- linux-2.6.orig/include/linux/memblock.h
-+++ linux-2.6/include/linux/memblock.h
-@@ -48,6 +48,8 @@ extern int memblock_can_resize;
- 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
- 
- u64 memblock_find_in_range(u64 start, u64 end, u64 size, u64 align);
-+int memblock_free_reserved_regions(void);
-+int memblock_reserve_reserved_regions(void);
- 
- extern void __init memblock_init(void);
- extern void __init memblock_analyze(void);
-Index: linux-2.6/mm/memblock.c
-===================================================================
---- linux-2.6.orig/mm/memblock.c
-+++ linux-2.6/mm/memblock.c
-@@ -170,6 +170,30 @@ u64 __init_memblock memblock_find_in_ran
- 	return memblock_find_base(size, align, start, end);
- }
- 
-+/*
-+ * Free memblock.reserved.regions
-+ */
-+int __init_memblock memblock_free_reserved_regions(void)
-+{
-+	if (memblock.reserved.regions == memblock_reserved_init_regions)
-+		return 0;
-+
-+	return memblock_free(__pa(memblock.reserved.regions),
-+		 sizeof(struct memblock_region) * memblock.reserved.max);
-+}
-+
-+/*
-+ * Reserve memblock.reserved.regions
-+ */
-+int __init_memblock memblock_reserve_reserved_regions(void)
-+{
-+	if (memblock.reserved.regions == memblock_reserved_init_regions)
-+		return 0;
-+
-+	return memblock_reserve(__pa(memblock.reserved.regions),
-+		 sizeof(struct memblock_region) * memblock.reserved.max);
-+}
-+
- static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
- {
- 	unsigned long i;
+noatime was a late afterthought, and because it can interfere with
+some programs, relatime came along too.
