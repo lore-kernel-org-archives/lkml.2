@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab0GaOoV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 10:44:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:49380 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756052Ab0GaOoT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 10:44:19 -0400
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended file stats available [ver #6]
-From: utz lehmann <lkml123@s2y4n2c.de>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
-        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-In-Reply-To: <alpine.LSU.2.01.1007311006070.19122@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	 <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	 <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	 <AANLkTikBCXK6uEw  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	 <1280524978.2452.9.camel@segv.aura.of.mankind>
-	 <alpine.LSU.2.01.1007311006070.19122@obet.zrqbmnf.qr>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 31 Jul 2010 16:43:53 +0200
-Message-ID: <1280587433.3284.10.camel@segv.aura.of.mankind>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:+29WgwjU907UmLb4pnM6kAtg/gTz5F2oMEdjGqL3kFp
- qPe98UFQz8MFuhzZkiMwh0qsXotDaWLvt3C93b00WEghLW3bhz
- 39mSoE5LWG0qHUD7iCuUq8u6CN4nS2yR5pt8PaBMLXZkse8XVw
- e03z6wx4ypwrluiFr5VvlB8fbw1h9UQ23xub9JOO0RZK5X+LgY
- vCmxqYU6HH5SVshe6n8dg==
+	id S1756426Ab0GaPEP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 11:04:15 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:58269 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756376Ab0GaPEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 11:04:14 -0400
+Date: Sat, 31 Jul 2010 08:04:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 93/93]Documentation/RCU/RTFP.txt update web address.
+Message-ID: <20100731150407.GC2470@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1279688215-29628-1-git-send-email-justinmattock@gmail.com>
+ <1279688215-29628-3-git-send-email-justinmattock@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279688215-29628-3-git-send-email-justinmattock@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-07-31 at 10:08 +0200, Jan Engelhardt wrote:
-> >When abusing an existing time stamp use atime not ctime please.
-> >ctime has it's uses. atime was just a mistake and is nearly useless.
+On Tue, Jul 20, 2010 at 09:56:43PM -0700, Justin P. Mattock wrote:
+> The patch below updates a broken web address.
+
+Good catch!!!
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 > 
-> MUAs make use of atime.
-
-I know mutt uses atime to detect new messages. But there are better and
-more reliable ways to do this.
-
+> ---
+>  Documentation/RCU/RTFP.txt |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> >And with noatime we already have creation time semantics for atime.
+> diff --git a/Documentation/RCU/RTFP.txt b/Documentation/RCU/RTFP.txt
+> index 5aea459..c43460d 100644
+> --- a/Documentation/RCU/RTFP.txt
+> +++ b/Documentation/RCU/RTFP.txt
+> @@ -606,7 +606,7 @@ Suparna Bhattacharya"
+>  ,Year="2006"
+>  ,pages="v2 123-138"
+>  ,note="Available:
+> -\url{http://www.linuxsymposium.org/2006/view_abstract.php?content_key=184}
+> +\url{http://www.linuxsymposium.org/2006/index_2006.php}
+>  \url{http://www.rdrop.com/users/paulmck/RCU/OLSrtRCU.2006.08.11a.pdf}
+>  [Viewed January 1, 2007]"
+>  ,annotation="
+> -- 
+> 1.7.1.rc1.21.gf3bd6
 > 
-> noatime was a late afterthought, and because it can interfere with
-> some programs, relatime came along too.
-
-There are people who prefer noatime over relatime.
-
-Using an existing time stamp for creation time is a bad idea IMHO. But
-when doing this use the least important one. Which is atime. For example
-ctime is used by backup programs.
-
-Anyway when we want to support creation time it should be an additional
-time stamp.
-
-
-utz
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
