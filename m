@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab0GaRiV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 13:38:21 -0400
+	id S1754586Ab0GaRiq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 13:38:46 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:64898 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab0GaRiT (ORCPT
+	with ESMTP id S1753307Ab0GaRio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 13:38:19 -0400
+	Sat, 31 Jul 2010 13:38:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=SI8fY2nxxXbpaLyokHltN+cpzi8cwU3XrjIm7Q426kebkJTTF16mRNrw3PBdvUPNxi
-         x3CkC9TVlGYnrMp9qyJuY8dIDPTjZmOEUiqUMBodSEN0oH1kr126cqP5HbWNKbkBV0Zn
-         xai1RVMj7Ph1PJHhnE1ulrEP93cThr+f57yi0=
+        b=ZHaZA8mDi4ndOoJFrqsVK3BW9k4/v32VX0AVkrz3jayHCR8TTbqauS0mxNslz6z/HV
+         EjNjPqfh/TCmDyGaQUSe2VCVDt3NFVvanFun1HtWkEPm5lJnwcsyhwkrMTDfM7cRMr8V
+         dyM/tXDMbOvyhd5O4TJDVfZqT9wnMP+y9HWiY=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Ungerer <gerg@uclinux.org>, Christoph Egger <siccegge@cs.fau.de>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] 68328serial: check return value of copy_*_user() instead of access_ok()
-Date: Sat, 31 Jul 2010 21:38:00 +0400
-Message-Id: <1280597881-8365-1-git-send-email-segooon@gmail.com>
+Cc: Li Yang <leoli@freescale.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>, linux-usb@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/7] usb: fsl_udc_core: check return value of create_proc_read_entry()
+Date: Sat, 31 Jul 2010 21:38:20 +0400
+Message-Id: <1280597900-8405-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As copy_*_user() calls access_ok() it should not be called explicitly.
+create_proc_read_entry() may fail, if so return -ENOMEM.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/serial/68328serial.c |   29 ++++++++++-------------------
- 1 files changed, 10 insertions(+), 19 deletions(-)
+ drivers/usb/gadget/fsl_udc_core.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/serial/68328serial.c b/drivers/serial/68328serial.c
-index 7356a56..ab6ad8b 100644
---- a/drivers/serial/68328serial.c
-+++ b/drivers/serial/68328serial.c
-@@ -869,7 +869,9 @@ static int get_serial_info(struct m68k_serial * info,
- 	tmp.close_delay = info->close_delay;
- 	tmp.closing_wait = info->closing_wait;
- 	tmp.custom_divisor = info->custom_divisor;
--	copy_to_user(retinfo,&tmp,sizeof(*retinfo));
-+	if (copy_to_user(retinfo, &tmp, sizeof(*retinfo)))
-+		return -EFAULT;
-+
+diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
+index 08a9a62..c3d1545 100644
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -2128,7 +2128,7 @@ static int fsl_proc_read(char *page, char **start, off_t off, int count,
+ 
+ #else				/* !CONFIG_USB_GADGET_DEBUG_FILES */
+ 
+-#define create_proc_file()	do {} while (0)
++#define create_proc_file()	({ (void *)1; })
+ #define remove_proc_file()	do {} while (0)
+ 
+ #endif				/* CONFIG_USB_GADGET_DEBUG_FILES */
+@@ -2373,9 +2373,14 @@ static int __init fsl_udc_probe(struct platform_device *pdev)
+ 		ret = -ENOMEM;
+ 		goto err_unregister;
+ 	}
+-	create_proc_file();
++	if (create_proc_file() == 0) {
++		ret = -ENOMEM;
++		goto err_pool;
++	}
  	return 0;
- }
  
-@@ -882,7 +884,8 @@ static int set_serial_info(struct m68k_serial * info,
- 
- 	if (!new_info)
- 		return -EFAULT;
--	copy_from_user(&new_serial,new_info,sizeof(new_serial));
-+	if (copy_from_user(&new_serial, new_info, sizeof(new_serial)))
-+		return -EFAULT;
- 	old_info = *info;
- 
- 	if (!capable(CAP_SYS_ADMIN)) {
-@@ -943,8 +946,7 @@ static int get_lsr_info(struct m68k_serial * info, unsigned int *value)
- 	status = 0;
- #endif
- 	local_irq_restore(flags);
--	put_user(status,value);
--	return 0;
-+	return put_user(status, value);
- }
- 
- /*
-@@ -999,27 +1001,16 @@ static int rs_ioctl(struct tty_struct *tty, struct file * file,
- 			send_break(info, arg ? arg*(100) : 250);
- 			return 0;
- 		case TIOCGSERIAL:
--			if (access_ok(VERIFY_WRITE, (void *) arg,
--						sizeof(struct serial_struct)))
--				return get_serial_info(info,
--					       (struct serial_struct *) arg);
--			return -EFAULT;
-+			return get_serial_info(info,
-+				       (struct serial_struct *) arg);
- 		case TIOCSSERIAL:
- 			return set_serial_info(info,
- 					       (struct serial_struct *) arg);
- 		case TIOCSERGETLSR: /* Get line status register */
--			if (access_ok(VERIFY_WRITE, (void *) arg,
--						sizeof(unsigned int)))
--				return get_lsr_info(info, (unsigned int *) arg);
--			return -EFAULT;
-+			return get_lsr_info(info, (unsigned int *) arg);
- 		case TIOCSERGSTRUCT:
--			if (!access_ok(VERIFY_WRITE, (void *) arg,
--						sizeof(struct m68k_serial)))
--				return -EFAULT;
--			copy_to_user((struct m68k_serial *) arg,
-+			return copy_to_user((struct m68k_serial *) arg,
- 				    info, sizeof(struct m68k_serial));
--			return 0;
--			
- 		default:
- 			return -ENOIOCTLCMD;
- 		}
++err_pool:
++	dma_pool_destroy(udc_controller->td_pool);
+ err_unregister:
+ 	device_unregister(&udc_controller->gadget.dev);
+ err_free_irq:
 -- 
 1.7.0.4
 
