@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab0GaG2I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 02:28:08 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33807
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755151Ab0GaG2F (ORCPT
+	id S1755395Ab0GaGdg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 02:33:36 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36027 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151Ab0GaGdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 02:28:05 -0400
-Date: Fri, 30 Jul 2010 23:28:22 -0700 (PDT)
-Message-Id: <20100730.232822.59674331.davem@davemloft.net>
-To: jon.mason@exar.com
-Cc: joe@perches.com, Ramkrishna.Vepa@exar.com, Sreenivasa.Honnur@exar.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] drivers/net/vxge/vxge-main.c: Use pr_<level>
- and netdev_<level>
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100728032117.GL28630@exar.com>
-References: <1280267223.24054.44.camel@Joe-Laptop.home>
-	<20100728032117.GL28630@exar.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 31 Jul 2010 02:33:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VyXcsnmm+bal+YnMb8QPRj1/u4bJdRRofhcK2m3pRCl4VnzTj9GVF1jGmWgSzel8ij
+         +OIq0/1GPf3XiIbFBBAgcHCcseEL9bC1VN53LgpVFxSoV2O8DVBkLzZiasZzCja6klJ1
+         cUa7USB7ONJZxwMGGVbhrqtqqbDePOueDCrvg=
+Date: Fri, 30 Jul 2010 23:33:29 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, vapier@gentoo.org, pavel@ucw.cz,
+        akpm@linux-foundation.org, khilman@deeprootsystems.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.y.miao@gmail.com
+Subject: Re: [PATCH] Input: Make ADS7846 independent on regulator
+Message-ID: <20100731063329.GA23620@core.coreip.homeip.net>
+References: <1280555108-27994-1-git-send-email-marek.vasut@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280555108-27994-1-git-send-email-marek.vasut@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Mason <jon.mason@exar.com>
-Date: Tue, 27 Jul 2010 22:21:18 -0500
+Hi Marek,
 
-> On Tue, Jul 27, 2010 at 02:47:03PM -0700, Joe Perches wrote:
->> Use pr_fmt, pr_<level> and netdev_<level> where appropriate.
->> 
->> Signed-off-by: Joe Perches <joe@perches.com>
+On Sat, Jul 31, 2010 at 07:45:08AM +0200, Marek Vasut wrote:
+> In case regulator was not found, ADS7846 failed to probe.
 > 
-> Acked-by: Jon Mason <jon.mason@exar.com>
+> This fixes a problem on some Sharp Zaurus devices, where there is no regulator
+> present and yet the touchscreen is used.
+> 
 
-Applied.
+Too many ifdefs to my taste... Can we have ads7846_regulator_enable()
+and friends stubbed out in case !CONFIG_REGULATOR?
+
+-- 
+Dmitry
