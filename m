@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab0GaGxG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 02:53:06 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65528 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151Ab0GaGxD (ORCPT
+	id S1755240Ab0GaHEO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 03:04:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53738 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab0GaHEM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 02:53:03 -0400
-Message-ID: <4C53C7E7.4040204@kernel.org>
-Date: Fri, 30 Jul 2010 23:51:19 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Sat, 31 Jul 2010 03:04:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=l98/fn2lTuRqaAZtYSRpzkSockL0WbvLuPK9giveqyQghKpkEMASyky2Y4q+uDVHX3
+         aZbiOkr/6of1RXchmhlOQh/cqpTTrHS5qbUTwc68q2JqrcB+lgnD+vOKXxTjLrA3OjUM
+         +RyjxQhT3fF7g+x/u3lAVYBbL9JcyZ3Cx0ISg=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] Input: Make ADS7846 independent on regulator
+Date: Sat, 31 Jul 2010 09:03:52 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, vapier@gentoo.org, pavel@ucw.cz,
+        akpm@linux-foundation.org, khilman@deeprootsystems.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eric.y.miao@gmail.com
+References: <1280555108-27994-1-git-send-email-marek.vasut@gmail.com> <20100731063329.GA23620@core.coreip.homeip.net>
+In-Reply-To: <20100731063329.GA23620@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] acpi: x2apic entry with uid < 255 could use processor statement
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C53C80F.0205,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007310903.52921.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dne So 31. července 2010 08:33:29 Dmitry Torokhov napsal(a):
+> Hi Marek,
+> 
+> On Sat, Jul 31, 2010 at 07:45:08AM +0200, Marek Vasut wrote:
+> > In case regulator was not found, ADS7846 failed to probe.
+> > 
+> > This fixes a problem on some Sharp Zaurus devices, where there is no
+> > regulator present and yet the touchscreen is used.
+> 
+> Too many ifdefs to my taste... Can we have ads7846_regulator_enable()
+> and friends stubbed out in case !CONFIG_REGULATOR?
 
-According to Intel x2apic spec page 46
+Hi,
 
-" The hand-off to
-OSPM will have processor IDs in the range of 0 to 254 for xAPIC/x2APIC and 0 to 255
-for SAPIC declared as either Processor() or Device() objects, but not both. Processor
-IDs outside these ranges must be declared as Device() objects."
+I believe you should ask the regulator guys about these. We can certainly just 
+remove the ifdefs (I was thinking about it, because it poluted the code quality 
+quite a bit). Just removing the ifdefs shouldn't cause any harm.
 
-So only check if Device is used when acpi_id >=255.
-
-that will help system with less 255 cpus, but some cpus apic id > 255,
-still can use Processor statement instead of Device() objects.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- drivers/acpi/processor_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/acpi/processor_core.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/processor_core.c
-+++ linux-2.6/drivers/acpi/processor_core.c
-@@ -69,7 +69,7 @@ static int map_x2apic_id(struct acpi_sub
- 	if (!(apic->lapic_flags & ACPI_MADT_ENABLED))
- 		return 0;
- 
--	if (device_declaration && (apic->uid == acpi_id)) {
-+	if ((device_declaration || (acpi_id < 255)) && (apic->uid == acpi_id)) {
- 		*apic_id = apic->local_apic_id;
- 		return 1;
- 	}
+Cheers
