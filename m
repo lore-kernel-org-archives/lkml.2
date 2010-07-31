@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab0GaGFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 02:05:09 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45303
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753404Ab0GaGFH (ORCPT
+	id S1754929Ab0GaGPn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 02:15:43 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:52873 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754536Ab0GaGPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 02:05:07 -0400
-Date: Fri, 30 Jul 2010 23:05:24 -0700 (PDT)
-Message-Id: <20100730.230524.39186905.davem@davemloft.net>
-To: dp@highloadlab.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, kaber@trash.net,
-        pekkas@netcore.fi, yoshfuji@linux-ipv6.org, eric.dumazet@gmail.com,
-        ilpo.jarvinen@helsinki.fi, akpm@linux-foundation.org,
-        steve@digidescorp.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, william.allen.simpson@gmail.com
-Subject: Re: [PATCH] tcp: cookie transactions setsockopt memory leak
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTinHWJviHmhVcFQkobsgxa4-AaFUpHmd1wybiB+u@mail.gmail.com>
-References: <AANLkTinHWJviHmhVcFQkobsgxa4-AaFUpHmd1wybiB+u@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 31 Jul 2010 02:15:42 -0400
+Date: Sat, 31 Jul 2010 08:15:36 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
+        linux-kernel@vger.kernel.org
+Subject: Re: b43 wireless driver inhibits access to /dev/hwrng
+Message-ID: <20100731061536.GA4945@ucw.cz>
+References: <20100722225212.GA19361@darkside.kls.lan>
+ <20100723143219.GA2426@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100723143219.GA2426@tuxdriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <dp@highloadlab.com>
-Date: Thu, 29 Jul 2010 15:59:36 +0400
-
-> From: Dmitry Popov <dp@highloadlab.com>
+On Fri 2010-07-23 10:32:19, John W. Linville wrote:
+> On Fri, Jul 23, 2010 at 12:52:12AM +0200, Mario 'BitKoenig' Holbe wrote:
+> > Hello,
+> > 
+> > the b43 wireless driver inhibits access to /dev/hwrng while the wireless
+> > network interface is down. When the interface is up, /dev/hwrng is
+> > accessible:
 > 
-> There is a bug in do_tcp_setsockopt(net/ipv4/tcp.c),
-> TCP_COOKIE_TRANSACTIONS case.
-> In some cases (when tp->cookie_values == NULL) new tcp_cookie_values
-> structure can be allocated (at cvp), but not bound to
-> tp->cookie_values. So a memory leak occurs.
+> <snip>
 > 
-> Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+> > I have no idea whether this issue belongs to the b43 driver or to the
+> > rng core.
+> 
+> The hwrng driver is provided by the b43 hardware, which is shutdown
+> when the network interface is down.  I'm not sure how one could expect
+> this to work.
 
-Applied and queued up for -stable, thanks Dmitry.
+Well... either don't provide hwrng interface, or power up enough of
+b43 hardware when user opens /dev/hwrng...?
+								Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
