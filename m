@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab0GaKkI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 06:40:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52842 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab0GaKkG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 06:40:06 -0400
-Date: Sat, 31 Jul 2010 11:38:49 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-Message-ID: <20100731103849.GH23886@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.00.1007281158150.21717@router.home> <20100728225756.GA6108@barrios-desktop> <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home> <20100729170313.GB16420@barrios-desktop> <alpine.DEB.2.00.1007291222410.17734@router.home> <20100729183320.GH18923@n2100.arm.linux.org.uk> <1280436919.16922.11246.camel@nimitz> <AANLkTi=DpH=vmUK84KhvOMgP=KL+YxXD0UhiJE+VRJyg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=DpH=vmUK84KhvOMgP=KL+YxXD0UhiJE+VRJyg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755060Ab0GaLVH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 07:21:07 -0400
+Received: from katalix.com ([82.103.140.233]:43932 "EHLO mail.katalix.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753362Ab0GaLVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 07:21:05 -0400
+X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Jul 2010 07:21:05 EDT
+Date: Sat, 31 Jul 2010 12:15:43 +0100
+From: James Chapman <james@bert.katalix.com>
+Message-Id: <201007311115.o6VBFhR7008492@bert.katalix.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 2.6.35-rc6] l2tp: fix export of header file for userspace
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 06:32:04PM +0900, Minchan Kim wrote:
-> On Fri, Jul 30, 2010 at 5:55 AM, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> > If you free up parts of the mem_map[] array, how does the buddy
-> > allocator still work?  I thought we required at 'struct page's to be
-> > contiguous and present for at least 2^MAX_ORDER-1 pages in one go.
+The header file l2tp.h should be exported to the installed
+include/linux/ tree for userspace programs.
 
-(Dave, I don't seem to have your mail to reply to.)
+This patch fixes compilation errors in L2TP userspace apps which want
+to use the new L2TP support introduced in 2.6.35.
 
-What you say is correct, and memory banks as a rule of thumb tend to be
-powers of two.
+Signed-off-by: James Chapman <jchapman@katalix.com>
 
-We do have the ability to change MAX_ORDER (which we need to do for some
-platforms where there's only 1MB of DMA-able memory.)
-
-However, in the case of two 512KB banks, the buddy allocator won't try
-to satisfy a 1MB request as it'll only have two separate 2x512K free
-'pages' to deal with, and 0x1M free 'pages'.
+Index: linux-2.6.35-rc6/include/linux/Kbuild
+===================================================================
+--- linux-2.6.35-rc6.orig/include/linux/Kbuild	2010-07-31 11:37:46.000000000 +0100
++++ linux-2.6.35-rc6/include/linux/Kbuild	2010-07-31 11:38:08.000000000 +0100
+@@ -276,6 +276,7 @@
+ 		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
+ unifdef-y += kvm_para.h
+ endif
++unifdef-y += l2tp.h
+ unifdef-y += llc.h
+ unifdef-y += loop.h
+ unifdef-y += lp.h
