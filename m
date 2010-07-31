@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab0GaBHS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 21:07:18 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:36108 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab0GaBHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 21:07:14 -0400
-Date: Fri, 30 Jul 2010 21:07:06 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        ak@linux.intel.com, konrad.wilk@oracle.com, akataria@vmware.com
-Subject: Re: [PATCH] swiotlb: enlarge iotlb buffer on demand
-Message-ID: <20100731010706.GA30319@andromeda.dapyr.net>
-References: <20100731003643E.fujita.tomonori@lab.ntt.co.jp> <20100730202724.GA920@andromeda.dapyr.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754000Ab0GaBKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 21:10:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41180 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572Ab0GaBKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 21:10:03 -0400
+Date: Sat, 31 Jul 2010 01:09:43 GMT
+From: tip-bot for Andres Salomon <dilinger@queued.net>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <20100616231928.16b539f0@dev.queued.net>
+References: <20100616231928.16b539f0@dev.queued.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/olpc] x86, olpc: Use pr_debug() for EC commands
+Message-ID: <tip-25971865d48a8d0ece5307a59dbd3f06d05a7567@git.kernel.org>
+Git-Commit-ID: 25971865d48a8d0ece5307a59dbd3f06d05a7567
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100730202724.GA920@andromeda.dapyr.net>
-User-Agent: Mutt/1.5.9i
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 31 Jul 2010 01:09:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I took your patch and was trying to fit it over the
-stable/swiotlb-0.8.4 branch and when I did so a found couple of things..
+Commit-ID:  25971865d48a8d0ece5307a59dbd3f06d05a7567
+Gitweb:     http://git.kernel.org/tip/25971865d48a8d0ece5307a59dbd3f06d05a7567
+Author:     Andres Salomon <dilinger@queued.net>
+AuthorDate: Wed, 16 Jun 2010 23:19:28 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 30 Jul 2010 18:01:52 -0700
 
+x86, olpc: Use pr_debug() for EC commands
 
-> > @@ -215,14 +222,14 @@ swiotlb_late_init_with_default_size(size_t default_size)
-> >  	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+Unconditionally printing EC debug messages was helpful when we were actually
+debugging the EC, but during normal operation it can get pretty annoying.
+Using pr_debug allows us finer-grained control.
 
-You should also initialize the __io_tlb_start array first:
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+LKML-Reference: <20100616231928.16b539f0@dev.queued.net>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/olpc.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-	__io_tlb_start = __get_free_pages(GFP_KERNEL,
-                get_order((io_tlb_nslabs / IO_TLB_SEGSIZE) * sizeof(char *)));
-        if (!__io_tlb_start)
-                goto cleanup1;
-
-> >  
-> >  	while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
-> > -		io_tlb_start = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
-> > -							order);
-> > -		if (io_tlb_start)
-> > +		__io_tlb_start[0] = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
-> > +							     order);
-
-Otherwise this will be a NULL pointer exception.
-> > +		if (__io_tlb_start[0])
-> >  			break;
-> >  		order--;
-> >  	}
-> >  
-> > -	if (!io_tlb_start)
-> > +	if (!__io_tlb_start[0])
-> >  		goto cleanup1;
-> >  
-> >  	if (order != get_order(bytes)) {
-> > @@ -231,13 +238,12 @@ swiotlb_late_init_with_default_size(size_t default_size)
-> >  		io_tlb_nslabs = SLABS_PER_PAGE << order;
-> >  		bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-> >  	}
-> > -	io_tlb_end = io_tlb_start + bytes;
-> > -	memset(io_tlb_start, 0, bytes);
-> > +	memset(__io_tlb_start[0], 0, bytes);
-> >  
-> >  	/*
-> >  	 * Allocate and initialize the free list array.  This array is used
-> >  	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
-> > -	 * between io_tlb_start and io_tlb_end.
-> > +	 * between io_tlb_start.
-> >  	 */
-> >  	io_tlb_list = (unsigned int *)__get_free_pages(GFP_KERNEL,
-> >  	                              get_order(io_tlb_nslabs * sizeof(int)));
-> > @@ -280,9 +286,8 @@ cleanup3:
-> >  	                                                 sizeof(int)));
-> >  	io_tlb_list = NULL;
-> >  cleanup2:
-> > -	io_tlb_end = NULL;
-> > -	free_pages((unsigned long)io_tlb_start, order);
-> > -	io_tlb_start = NULL;
-> > +	free_pages((unsigned long)__io_tlb_start[0], order);
-> > +	__io_tlb_start[0] = NULL;
-> >  cleanup1:
-> >  	io_tlb_nslabs = req_nslabs;
-> >  	return -ENOMEM;
-> > @@ -300,7 +305,7 @@ void __init swiotlb_free(void)
-> >  			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
-> >  		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
-> >  								 sizeof(int)));
-> > -		free_pages((unsigned long)io_tlb_start,
-> > +		free_pages((unsigned long)__io_tlb_start[0],
-> >  			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
-
-That isn't exactly right I think. You are de-allocating the first array,
-which size is determined by 'order'. Probably 10. And you not freeing
-the array, just the first entry.
-
-> >  	} else {
-> >  		free_bootmem_late(__pa(io_tlb_overflow_buffer),
-> > @@ -309,15 +314,36 @@ void __init swiotlb_free(void)
-> >  				  io_tlb_nslabs * sizeof(phys_addr_t));
-> >  		free_bootmem_late(__pa(io_tlb_list),
-> >  				  io_tlb_nslabs * sizeof(int));
-> > -		free_bootmem_late(__pa(io_tlb_start),
-> > +		free_bootmem_late(__pa(__io_tlb_start[0]),
-> >  				  io_tlb_nslabs << IO_TLB_SHIFT);
-
-I think you need this:
-
-                free_bootmem_late(__pa(__io_tlb_start[0]),
-                                  IO_TLB_SEGSIZE << IO_TLB_SHIFT);
-                free_bootmem_late(__pa(__io_tlb_start),
-                                  (io_tlb_nslabs / IO_TLB_SEGSIZE) * sizeof(char *));
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 1566052..f5ff3903 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -142,7 +142,7 @@ restart:
+ 	 * The OBF flag will sometimes misbehave due to what we believe
+ 	 * is a hardware quirk..
+ 	 */
+-	printk(KERN_DEBUG "olpc-ec:  running cmd 0x%x\n", cmd);
++	pr_devel("olpc-ec:  running cmd 0x%x\n", cmd);
+ 	outb(cmd, 0x6c);
+ 
+ 	if (wait_on_ibf(0x6c, 0)) {
+@@ -159,8 +159,7 @@ restart:
+ 						" EC accept data!\n");
+ 				goto err;
+ 			}
+-			printk(KERN_DEBUG "olpc-ec:  sending cmd arg 0x%x\n",
+-					inbuf[i]);
++			pr_devel("olpc-ec:  sending cmd arg 0x%x\n", inbuf[i]);
+ 			outb(inbuf[i], 0x68);
+ 		}
+ 	}
+@@ -173,8 +172,7 @@ restart:
+ 				goto restart;
+ 			}
+ 			outbuf[i] = inb(0x68);
+-			printk(KERN_DEBUG "olpc-ec:  received 0x%x\n",
+-					outbuf[i]);
++			pr_devel("olpc-ec:  received 0x%x\n", outbuf[i]);
+ 		}
+ 	}
+ 
