@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414Ab0GaFUS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 01:20:18 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51263
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751032Ab0GaFUQ (ORCPT
+	id S1752627Ab0GaF1s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 01:27:48 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43111 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab0GaF1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 01:20:16 -0400
-Date: Fri, 30 Jul 2010 22:20:34 -0700 (PDT)
-Message-Id: <20100730.222034.183058824.davem@davemloft.net>
-To: henrique.camargo@ensitec.com.br
-Cc: chaithrika@ti.com, srk@ti.com, khilman@deeprootsystems.com,
-        jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, segooon@gmail.com
-Subject: Re: [PATCH] drivers: Fixes a typo from "dev" to "ndev" that caused
- compilation erros.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTiko540hMAUhaJr5mNKzFK2-vBOTZmEOxZWZv7ci@mail.gmail.com>
-References: <AANLkTiko540hMAUhaJr5mNKzFK2-vBOTZmEOxZWZv7ci@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 31 Jul 2010 01:27:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=DWIV1Mn5F0+BYN9ovfHLIBxFTlhkMCsX6Von6/WY5T9FV5jq8K0aws2NhopfjTRbXx
+         LB3gCP2Ccl8MNTo8CW2f/PATv60Er47Uv3y/FEl2TF9wxmyrwwDlkhniujsQGvp6JupE
+         HspMrCVvEXEGmkRWu9gjKLbM1kow71DmzeSKo=
+MIME-Version: 1.0
+Date: Fri, 30 Jul 2010 23:27:46 -0600
+Message-ID: <AANLkTimTMNY5y1tL4Jed=W29nH-OuV++nnL-1PHGQuAy@mail.gmail.com>
+Subject: ll_rw_blk() Comments still in the code
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Henrique Camargo <henrique.camargo@ensitec.com.br>
-Date: Thu, 29 Jul 2010 12:51:49 -0300
+This function has been gone for a while and the code has some
+inaccurate comments remaining.
 
-> From: Henrique Camargo
+[root@cloudstream linux-2.6.34.1]#
+[root@cloudstream linux-2.6.34.1]# find . -name '*.c' -exec grep -H
+ll_rw_blk {} \;
+./fs/reiserfs/journal.c:                // since we're using ll_rw_blk
+above, it might have skipped over
+./drivers/s390/block/dasd.c: * Dasd request queue function. Called
+from ll_rw_blk.c
+./drivers/s390/char/tape_block.c: * Tape request queue function.
+Called from ll_rw_blk.c
+./block/blk-core.c:      * Request may not have originated from
+ll_rw_blk. if not,
+./block/elevator.c:              *   queue wasn't empty before this
+request, ll_rw_blk
+[root@cloudstream linux-2.6.34.1]# find . -name '*.h' -exec grep -H
+ll_rw_blk {} \;
+./include/linux/fs.h:#define BLKSECTSET _IO(0x12,102)/* set max
+sectors per request (ll_rw_blk.c) */
+./include/linux/fs.h:#define BLKSECTGET _IO(0x12,103)/* get max
+sectors per request (ll_rw_blk.c) */
+./include/linux/blkdev.h:        * ll_rw_blk doesn't touch it.
+./usr/include/linux/fs.h:#define BLKSECTSET _IO(0x12,102)/* set max
+sectors per request (ll_rw_blk.c) */
+./usr/include/linux/fs.h:#define BLKSECTGET _IO(0x12,103)/* get max
+sectors per request (ll_rw_blk.c) */
+[root@cloudstream linux-2.6.34.1]#
+[root@cloudstream linux-2.6.34.1]#
+[root@cloudstream linux-2.6.34.1]#
 
->From lines need valid email addresses.  But in this case since you
-are the person who wrote the patch, adding another From: tag in
-the message body is superfluous and you can just omit it.
 
-> diff --git a/drivers/net/davinci_emac.c b/drivers/net/davinci_emac.c
-> index 25e14d2..b89b7bf 100644
-> --- a/drivers/net/davinci_emac.c
-> +++ b/drivers/net/davinci_emac.c
-> @@ -1182,8 +1182,8 @@ static int emac_net_tx_complete(struct emac_priv *priv,
->         struct net_device *ndev = priv->ndev;
->         u32 cnt;
-> 
-> -       if (unlikely(num_tokens && netif_queue_stopped(dev)))
-> -               netif_start_queue(dev);
-> +       if (unlikely(num_tokens && netif_queue_stopped(ndev)))
-> +               netif_start_queue(ndev);
-
-Your patch is corrupted, tab characters have been turned into spaces by
-your email client.
-
-This makes your patch unusable.
-
-Please fix up these errors and resubmit your patch.
-
-Thank you.
+Jeff Merkey
