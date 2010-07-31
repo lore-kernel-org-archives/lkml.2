@@ -1,134 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab0GaFpd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 01:45:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42078 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab0GaFpb (ORCPT
+	id S1754336Ab0GaGFJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 02:05:09 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45303
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753404Ab0GaGFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 01:45:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Tf4kDGX0uT+Ms9QjdWyzFraTeEia18YVQp7m+vcmfIj4JWVRM9N1OYQ/AHlj/IZiox
-         IorExDEybxDPWumtqrTJaqdSPgiq6vjp5j+TOBn8tTqbfErOw4YFB2DG2SlPPya5gRJG
-         mxRmtVc4ZO1WMPSupEs0u8Rbfa9Hz6mVEYxTE=
-From: Marek Vasut <marek.vasut@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: dmitry.torokhov@gmail.com, vapier@gentoo.org, pavel@ucw.cz,
-        akpm@linux-foundation.org, khilman@deeprootsystems.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.y.miao@gmail.com, Marek Vasut <marek.vasut@gmail.com>
-Subject: [PATCH] Input: Make ADS7846 independent on regulator
-Date: Sat, 31 Jul 2010 07:45:08 +0200
-Message-Id: <1280555108-27994-1-git-send-email-marek.vasut@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 31 Jul 2010 02:05:07 -0400
+Date: Fri, 30 Jul 2010 23:05:24 -0700 (PDT)
+Message-Id: <20100730.230524.39186905.davem@davemloft.net>
+To: dp@highloadlab.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, kaber@trash.net,
+        pekkas@netcore.fi, yoshfuji@linux-ipv6.org, eric.dumazet@gmail.com,
+        ilpo.jarvinen@helsinki.fi, akpm@linux-foundation.org,
+        steve@digidescorp.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, william.allen.simpson@gmail.com
+Subject: Re: [PATCH] tcp: cookie transactions setsockopt memory leak
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTinHWJviHmhVcFQkobsgxa4-AaFUpHmd1wybiB+u@mail.gmail.com>
+References: <AANLkTinHWJviHmhVcFQkobsgxa4-AaFUpHmd1wybiB+u@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case regulator was not found, ADS7846 failed to probe.
+From: Dmitry Popov <dp@highloadlab.com>
+Date: Thu, 29 Jul 2010 15:59:36 +0400
 
-This fixes a problem on some Sharp Zaurus devices, where there is no regulator
-present and yet the touchscreen is used.
+> From: Dmitry Popov <dp@highloadlab.com>
+> 
+> There is a bug in do_tcp_setsockopt(net/ipv4/tcp.c),
+> TCP_COOKIE_TRANSACTIONS case.
+> In some cases (when tp->cookie_values == NULL) new tcp_cookie_values
+> structure can be allocated (at cvp), but not bound to
+> tp->cookie_values. So a memory leak occurs.
+> 
+> Signed-off-by: Dmitry Popov <dp@highloadlab.com>
 
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
----
- drivers/input/touchscreen/ads7846.c |   50 +++++++++++++++++++++++------------
- 1 files changed, 33 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
-index a9fdf55..dafaef6 100644
---- a/drivers/input/touchscreen/ads7846.c
-+++ b/drivers/input/touchscreen/ads7846.c
-@@ -791,7 +791,10 @@ static void ads7846_disable(struct ads7846 *ts)
- 		}
- 	}
- 
--	regulator_disable(ts->reg);
-+#ifdef	CONFIG_REGULATOR
-+	if (ts->reg)
-+		regulator_disable(ts->reg);
-+#endif
- 
- 	/* we know the chip's in lowpower mode since we always
- 	 * leave it that way after every request
-@@ -804,7 +807,10 @@ static void ads7846_enable(struct ads7846 *ts)
- 	if (!ts->disabled)
- 		return;
- 
--	regulator_enable(ts->reg);
-+#ifdef	CONFIG_REGULATOR
-+	if (ts->reg)
-+		regulator_enable(ts->reg);
-+#endif
- 
- 	ts->disabled = 0;
- 	ts->irq_disabled = 0;
-@@ -1161,18 +1167,21 @@ static int __devinit ads7846_probe(struct spi_device *spi)
- 
- 	ts->last_msg = m;
- 
-+#ifdef	CONFIG_REGULATOR
- 	ts->reg = regulator_get(&spi->dev, "vcc");
--	if (IS_ERR(ts->reg)) {
--		err = PTR_ERR(ts->reg);
--		dev_err(&spi->dev, "unable to get regulator: %d\n", err);
--		goto err_free_gpio;
--	}
--
--	err = regulator_enable(ts->reg);
--	if (err) {
--		dev_err(&spi->dev, "unable to enable regulator: %d\n", err);
--		goto err_put_regulator;
-+	if (IS_ERR(ts->reg))
-+		ts->reg = NULL;
-+	else {
-+		err = regulator_enable(ts->reg);
-+		if (err) {
-+			dev_err(&spi->dev, "unable to enable regulator: %d\n",
-+				err);
-+			goto err_put_regulator;
-+		}
- 	}
-+#else
-+	ts->reg = NULL;
-+#endif
- 
- 	if (request_irq(spi->irq, ads7846_irq, IRQF_TRIGGER_FALLING,
- 			spi->dev.driver->name, ts)) {
-@@ -1218,10 +1227,13 @@ static int __devinit ads7846_probe(struct spi_device *spi)
-  err_free_irq:
- 	free_irq(spi->irq, ts);
-  err_disable_regulator:
--	regulator_disable(ts->reg);
-+#ifdef	CONFIG_REGULATOR
-+	if (ts->reg)
-+		regulator_disable(ts->reg);
-  err_put_regulator:
--	regulator_put(ts->reg);
-- err_free_gpio:
-+	if (ts->reg)
-+		regulator_put(ts->reg);
-+#endif
- 	if (ts->gpio_pendown != -1)
- 		gpio_free(ts->gpio_pendown);
-  err_cleanup_filter:
-@@ -1251,8 +1263,12 @@ static int __devexit ads7846_remove(struct spi_device *spi)
- 	/* suspend left the IRQ disabled */
- 	enable_irq(ts->spi->irq);
- 
--	regulator_disable(ts->reg);
--	regulator_put(ts->reg);
-+#ifdef	CONFIG_REGULATOR
-+	if (ts->reg) {
-+		regulator_disable(ts->reg);
-+		regulator_put(ts->reg);
-+	}
-+#endif
- 
- 	if (ts->gpio_pendown != -1)
- 		gpio_free(ts->gpio_pendown);
--- 
-1.7.1
-
+Applied and queued up for -stable, thanks Dmitry.
