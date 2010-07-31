@@ -1,395 +1,627 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab0GaBug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 21:50:36 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:32809 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab0GaBuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 21:50:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=bGyHb3VQc4acAu5aOItbKzF72JggyoATdwlsy5BEZWyf7TWjyA6193fFf9rRIxFRJs
-         VXgMyWfF7OCTOVy2tS9xit+CzIbDbl+2jsQWb49smDTvepDUE/fzX2Xd7AvJVsWjDt/H
-         PwAL1RfThzPW/64djWRb1oFYW6wrECiOGUO74=
-From: Edgardo Hames <ehames@gmail.com>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, ehames@gmail.com
-Subject: [PATCH] Staging: wlan-ng: fix style issues for p80211hdr.h
-Date: Fri, 30 Jul 2010 22:51:55 -0300
-Message-Id: <1280541115-16429-1-git-send-email-ehames@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754592Ab0GaCbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 22:31:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5084 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754477Ab0GaCbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 22:31:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,290,1278313200"; 
+   d="scan'208";a="306550262"
+Date: Fri, 30 Jul 2010 19:22:50 -0700
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Chen Gong <gong.chen@linux.jf.intel.com>,
+        Jean Delvare <khali@linux-fr.org>, "Wan, Huaxu" <huaxu.wan@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH V3 2/5] Package Level Thermal Control and Power Limit
+	Notification: pkgtemp hwmon driver
+Message-ID: <20100731022250.GB26748@fenghua-desk.sc.intel.com>
+References: <1280448826-12004-1-git-send-email-fenghua.yu@intel.com> <1280448826-12004-3-git-send-email-fenghua.yu@intel.com> <4C537514.9090109@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C537514.9090109@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed typedef and other style issues.
+On Fri, Jul 30, 2010 at 05:57:56PM -0700, H. Peter Anvin wrote:
+> On 07/29/2010 05:13 PM, Fenghua Yu wrote:
+> > +
+> > +enum { SHOW_TEMP, SHOW_TJMAX, SHOW_TTARGET, SHOW_LABEL, SHOW_NAME } SHOW;
+> > +
+> 
+> This conflicts with an equally poorly named global variable in
+> drivers/hwmon/via-cputemp.c, and the conflict is causing a build failure.
+> 
+> I think both these drivers have the same bug: a missing "typedef" before
+> the enum keyword, as present in coretemp.c.  Of course, one can question
+> if it should be given a typename at all since in none of these drivers
+> they are actually referenced by type, and instead the enumeration is
+> just used as a source of constants, which can perfectly well be handled
+> with an unnamed enum:
+> 
+> enum { SHOW_TEMP, SHOW_TJMAX, SHOW_TTARGET, SHOW_LABEL, SHOW_NAME };
+> 
+> 	-hpa
+Yes, that global variable is definitely wrong. Belowing is updated patch which uses:
+enum { SHOW_TEMP, SHOW_TJMAX, SHOW_TTARGET, SHOW_LABEL, SHOW_NAME };
 
-Signed-off-by: Edgardo Hames <ehames@gmail.com>
+This patch adds a hwmon driver for package level thermal control. The driver
+dumps package level thermal information through sysfs interface so that upper
+level application (e.g. lm_sensor) can retrive the information.
+
+Instead of having the package level hwmon code in coretemp, I write a seperate
+driver pkgtemp because:
+
+First, package level thermal sensors include not only sensors for each core,
+but also sensors for uncore, memory controller or other components in the
+package. Logically it will be clear to have a seperate hwmon driver for package
+level hwmon to monitor wider range of sensors in a package. Merging package
+thermal driver into core thermal driver doesn't make sense and may mislead.
+
+Secondly, merging the two drivers together may cause coding mess. It's easier
+to include various package level sensors info if more sensor information is
+implemented. Coretemp code needs to consider a lot of legacy machine cases.
+Pkgtemp code only considers platform starting from Sandy Bridge.
+
+On a 1Sx4Cx2T Sandy Bridge platform, lm-sensors dumps the pkgtemp and coretemp:
+
+pkgtemp-isa-0000
+Adapter: ISA adapter
+physical id 0: +33.0°C  (high = +79.0°C, crit = +99.0°C)
+
+coretemp-isa-0000
+Adapter: ISA adapter
+Core 0:      +32.0°C  (high = +79.0°C, crit = +99.0°C)
+
+coretemp-isa-0001
+Adapter: ISA adapter
+Core 1:      +32.0°C  (high = +79.0°C, crit = +99.0°C)
+
+coretemp-isa-0002
+Adapter: ISA adapter
+Core 2:      +32.0°C  (high = +79.0°C, crit = +99.0°C)
+
+coretemp-isa-0003
+Adapter: ISA adapter
+Core 3:      +32.0°C  (high = +79.0°C, crit = +99.0°C)
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Reviewed-by: Len Brown <len.brown@intel.com>
 ---
- drivers/staging/wlan-ng/hfa384x.h      |    2 +-
- drivers/staging/wlan-ng/hfa384x_usb.c  |    4 ++--
- drivers/staging/wlan-ng/p80211conv.c   |    6 +++---
- drivers/staging/wlan-ng/p80211conv.h   |    2 +-
- drivers/staging/wlan-ng/p80211hdr.h    |   24 ++++++++++++------------
- drivers/staging/wlan-ng/p80211mgmt.h   |   24 ++++++++++++------------
- drivers/staging/wlan-ng/p80211netdev.c |   12 ++++++------
- drivers/staging/wlan-ng/p80211netdev.h |    2 +-
- drivers/staging/wlan-ng/prism2sta.c    |    4 ++--
- 9 files changed, 40 insertions(+), 40 deletions(-)
+ arch/x86/configs/i386_defconfig   |    1 +
+ arch/x86/configs/x86_64_defconfig |    1 +
+ drivers/hwmon/Kconfig             |    7 +
+ drivers/hwmon/Makefile            |    1 +
+ drivers/hwmon/pkgtemp.c           |  456 +++++++++++++++++++++++++++++++++++++
+ 5 files changed, 466 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/pkgtemp.c
 
-diff --git a/drivers/staging/wlan-ng/hfa384x.h b/drivers/staging/wlan-ng/hfa384x.h
-index ab9bfaa..e3269f4 100644
---- a/drivers/staging/wlan-ng/hfa384x.h
-+++ b/drivers/staging/wlan-ng/hfa384x.h
-@@ -1409,7 +1409,7 @@ int hfa384x_drvr_start(hfa384x_t *hw);
- int hfa384x_drvr_stop(hfa384x_t *hw);
- int
- hfa384x_drvr_txframe(hfa384x_t *hw, struct sk_buff *skb,
--		     p80211_hdr_t *p80211_hdr, p80211_metawep_t *p80211_wep);
-+		     union p80211_hdr *p80211_hdr, p80211_metawep_t *p80211_wep);
- void hfa384x_tx_timeout(wlandevice_t *wlandev);
+diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+index d28fad1..e3a3243 100644
+--- a/arch/x86/configs/i386_defconfig
++++ b/arch/x86/configs/i386_defconfig
+@@ -1471,6 +1471,7 @@ CONFIG_HWMON=y
+ # CONFIG_SENSORS_GL518SM is not set
+ # CONFIG_SENSORS_GL520SM is not set
+ # CONFIG_SENSORS_CORETEMP is not set
++# CONFIG_SENSORS_PKGTEMP is not set
+ # CONFIG_SENSORS_IT87 is not set
+ # CONFIG_SENSORS_LM63 is not set
+ # CONFIG_SENSORS_LM75 is not set
+diff --git a/arch/x86/configs/x86_64_defconfig b/arch/x86/configs/x86_64_defconfig
+index 6c86acd..4251f83 100644
+--- a/arch/x86/configs/x86_64_defconfig
++++ b/arch/x86/configs/x86_64_defconfig
+@@ -1456,6 +1456,7 @@ CONFIG_HWMON=y
+ # CONFIG_SENSORS_GL518SM is not set
+ # CONFIG_SENSORS_GL520SM is not set
+ # CONFIG_SENSORS_CORETEMP is not set
++# CONFIG_SENSORS_PKGTEMP is not set
+ # CONFIG_SENSORS_IT87 is not set
+ # CONFIG_SENSORS_LM63 is not set
+ # CONFIG_SENSORS_LM75 is not set
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index e19cf8e..3a858e8 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -407,6 +407,13 @@ config SENSORS_CORETEMP
+ 	  sensor inside your CPU. Most of the family 6 CPUs
+ 	  are supported. Check documentation/driver for details.
  
- int hfa384x_cmd_initialize(hfa384x_t *hw);
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 563017a..925a7c5 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -2706,7 +2706,7 @@ int hfa384x_drvr_stop(hfa384x_t *hw)
- *	interrupt
- ----------------------------------------------------------------*/
- int hfa384x_drvr_txframe(hfa384x_t *hw, struct sk_buff *skb,
--			 p80211_hdr_t *p80211_hdr,
-+			 union p80211_hdr *p80211_hdr,
- 			 p80211_metawep_t *p80211_wep)
- {
- 	int usbpktlen = sizeof(hfa384x_tx_frame_t);
-@@ -2752,7 +2752,7 @@ int hfa384x_drvr_txframe(hfa384x_t *hw, struct sk_buff *skb,
- 
- 	/* copy the header over to the txdesc */
- 	memcpy(&(hw->txbuff.txfrm.desc.frame_control), p80211_hdr,
--	       sizeof(p80211_hdr_t));
-+	       sizeof(union p80211_hdr));
- 
- 	/* if we're using host WEP, increase size by IV+ICV */
- 	if (p80211_wep->data) {
-diff --git a/drivers/staging/wlan-ng/p80211conv.c b/drivers/staging/wlan-ng/p80211conv.c
-index 059e150..409a7c8 100644
---- a/drivers/staging/wlan-ng/p80211conv.c
-+++ b/drivers/staging/wlan-ng/p80211conv.c
-@@ -103,7 +103,7 @@ static u8 oui_8021h[] = { 0x00, 0x00, 0xf8 };
- *	May be called in interrupt or non-interrupt context
- ----------------------------------------------------------------*/
- int skb_ether_to_p80211(wlandevice_t *wlandev, u32 ethconv,
--			struct sk_buff *skb, p80211_hdr_t *p80211_hdr,
-+			struct sk_buff *skb, union p80211_hdr *p80211_hdr,
- 			p80211_metawep_t *p80211_wep)
- {
- 
-@@ -280,7 +280,7 @@ int skb_p80211_to_ether(wlandevice_t *wlandev, u32 ethconv,
- 	unsigned int payload_offset;
- 	u8 daddr[WLAN_ETHADDR_LEN];
- 	u8 saddr[WLAN_ETHADDR_LEN];
--	p80211_hdr_t *w_hdr;
-+	union p80211_hdr *w_hdr;
- 	wlan_ethhdr_t *e_hdr;
- 	wlan_llc_t *e_llc;
- 	wlan_snap_t *e_snap;
-@@ -290,7 +290,7 @@ int skb_p80211_to_ether(wlandevice_t *wlandev, u32 ethconv,
- 	payload_length = skb->len - WLAN_HDR_A3_LEN - WLAN_CRC_LEN;
- 	payload_offset = WLAN_HDR_A3_LEN;
- 
--	w_hdr = (p80211_hdr_t *) skb->data;
-+	w_hdr = (union p80211_hdr *) skb->data;
- 
- 	/* setup some vars for convenience */
- 	fc = le16_to_cpu(w_hdr->a3.fc);
-diff --git a/drivers/staging/wlan-ng/p80211conv.h b/drivers/staging/wlan-ng/p80211conv.h
-index 6fe163b..65ab211 100644
---- a/drivers/staging/wlan-ng/p80211conv.h
-+++ b/drivers/staging/wlan-ng/p80211conv.h
-@@ -153,7 +153,7 @@ struct wlandevice;
- int skb_p80211_to_ether(struct wlandevice *wlandev, u32 ethconv,
- 			struct sk_buff *skb);
- int skb_ether_to_p80211(struct wlandevice *wlandev, u32 ethconv,
--			struct sk_buff *skb, p80211_hdr_t *p80211_hdr,
-+			struct sk_buff *skb, union p80211_hdr *p80211_hdr,
- 			p80211_metawep_t *p80211_wep);
- 
- int p80211_stt_findproto(u16 proto);
-diff --git a/drivers/staging/wlan-ng/p80211hdr.h b/drivers/staging/wlan-ng/p80211hdr.h
-index 419de4d..1f6e4eb 100644
---- a/drivers/staging/wlan-ng/p80211hdr.h
-+++ b/drivers/staging/wlan-ng/p80211hdr.h
-@@ -94,7 +94,7 @@
- 
- /* Control */
- #define WLAN_FSTYPE_BLOCKACKREQ		0x8
--#define WLAN_FSTYPE_BLOCKACK  		0x9
-+#define WLAN_FSTYPE_BLOCKACK		0x9
- #define WLAN_FSTYPE_PSPOLL		0x0a
- #define WLAN_FSTYPE_RTS			0x0b
- #define WLAN_FSTYPE_CTS			0x0c
-@@ -133,13 +133,13 @@
- 
- #define WLAN_GET_FC_FTYPE(n)	((((u16)(n)) & (BIT(2) | BIT(3))) >> 2)
- #define WLAN_GET_FC_FSTYPE(n)	((((u16)(n)) & (BIT(4)|BIT(5)|BIT(6)|BIT(7))) >> 4)
--#define WLAN_GET_FC_TODS(n) 	((((u16)(n)) & (BIT(8))) >> 8)
-+#define WLAN_GET_FC_TODS(n)	((((u16)(n)) & (BIT(8))) >> 8)
- #define WLAN_GET_FC_FROMDS(n)	((((u16)(n)) & (BIT(9))) >> 9)
- #define WLAN_GET_FC_ISWEP(n)	((((u16)(n)) & (BIT(14))) >> 14)
- 
- #define WLAN_SET_FC_FTYPE(n)	(((u16)(n)) << 2)
- #define WLAN_SET_FC_FSTYPE(n)	(((u16)(n)) << 4)
--#define WLAN_SET_FC_TODS(n) 	(((u16)(n)) << 8)
-+#define WLAN_SET_FC_TODS(n)	(((u16)(n)) << 8)
- #define WLAN_SET_FC_FROMDS(n)	(((u16)(n)) << 9)
- #define WLAN_SET_FC_ISWEP(n)	(((u16)(n)) << 14)
- 
-@@ -147,16 +147,16 @@
- 
- /* Generic 802.11 Header types */
- 
--typedef struct p80211_hdr_a3 {
-+struct p80211_hdr_a3 {
- 	u16 fc;
- 	u16 dur;
- 	u8 a1[ETH_ALEN];
- 	u8 a2[ETH_ALEN];
- 	u8 a3[ETH_ALEN];
- 	u16 seq;
--} __attribute__ ((packed)) p80211_hdr_a3_t;
-+} __attribute__ ((packed));
- 
--typedef struct p80211_hdr_a4 {
-+struct p80211_hdr_a4 {
- 	u16 fc;
- 	u16 dur;
- 	u8 a1[ETH_ALEN];
-@@ -164,18 +164,18 @@ typedef struct p80211_hdr_a4 {
- 	u8 a3[ETH_ALEN];
- 	u16 seq;
- 	u8 a4[ETH_ALEN];
--} __attribute__ ((packed)) p80211_hdr_a4_t;
-+} __attribute__ ((packed));
- 
--typedef union p80211_hdr {
--	p80211_hdr_a3_t a3;
--	p80211_hdr_a4_t a4;
--} __attribute__ ((packed)) p80211_hdr_t;
-+union p80211_hdr {
-+	struct p80211_hdr_a3 a3;
-+	struct p80211_hdr_a4 a4;
-+} __attribute__ ((packed));
- 
- /* Frame and header length macros */
- 
- #define WLAN_CTL_FRAMELEN(fstype) (\
- 	(fstype) == WLAN_FSTYPE_BLOCKACKREQ	? 24 : \
--	(fstype) == WLAN_FSTYPE_BLOCKACK   	? 152 : \
-+	(fstype) == WLAN_FSTYPE_BLOCKACK	? 152 : \
- 	(fstype) == WLAN_FSTYPE_PSPOLL		? 20 : \
- 	(fstype) == WLAN_FSTYPE_RTS		? 20 : \
- 	(fstype) == WLAN_FSTYPE_CTS		? 14 : \
-diff --git a/drivers/staging/wlan-ng/p80211mgmt.h b/drivers/staging/wlan-ng/p80211mgmt.h
-index deb52f5..3b5e811 100644
---- a/drivers/staging/wlan-ng/p80211mgmt.h
-+++ b/drivers/staging/wlan-ng/p80211mgmt.h
-@@ -298,7 +298,7 @@ typedef struct wlan_fr_mgmt {
- 	u16 type;
- 	u16 len;		/* DOES NOT include CRC !!!! */
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -310,7 +310,7 @@ typedef struct wlan_fr_beacon {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -333,7 +333,7 @@ typedef struct wlan_fr_ibssatim {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 
-@@ -349,7 +349,7 @@ typedef struct wlan_fr_disassoc {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -364,7 +364,7 @@ typedef struct wlan_fr_assocreq {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -381,7 +381,7 @@ typedef struct wlan_fr_assocresp {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -398,7 +398,7 @@ typedef struct wlan_fr_reassocreq {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -416,7 +416,7 @@ typedef struct wlan_fr_reassocresp {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -433,7 +433,7 @@ typedef struct wlan_fr_probereq {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -448,7 +448,7 @@ typedef struct wlan_fr_proberesp {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -469,7 +469,7 @@ typedef struct wlan_fr_authen {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-@@ -486,7 +486,7 @@ typedef struct wlan_fr_deauthen {
- 	u16 type;
- 	u16 len;
- 	u8 *buf;
--	p80211_hdr_t *hdr;
-+	union p80211_hdr *hdr;
- 	/* used for target specific data, skb in Linux */
- 	void *priv;
- 	/*-- fixed fields -----------*/
-diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-index ead8a35..c299ace 100644
---- a/drivers/staging/wlan-ng/p80211netdev.c
-+++ b/drivers/staging/wlan-ng/p80211netdev.c
-@@ -264,7 +264,7 @@ static void p80211netdev_rx_bh(unsigned long arg)
- 	wlandevice_t *wlandev = (wlandevice_t *) arg;
- 	struct sk_buff *skb = NULL;
- 	netdevice_t *dev = wlandev->netdev;
--	p80211_hdr_a3_t *hdr;
-+	struct p80211_hdr_a3 *hdr;
- 	u16 fc;
- 
- 	/* Let's empty our our queue */
-@@ -288,7 +288,7 @@ static void p80211netdev_rx_bh(unsigned long arg)
- 				netif_rx_ni(skb);
- 				continue;
- 			} else {
--				hdr = (p80211_hdr_a3_t *) skb->data;
-+				hdr = (struct p80211_hdr_a3 *) skb->data;
- 				fc = le16_to_cpu(hdr->fc);
- 				if (p80211_rx_typedrop(wlandev, fc)) {
- 					dev_kfree_skb(skb);
-@@ -350,7 +350,7 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
- 	int result = 0;
- 	int txresult = -1;
- 	wlandevice_t *wlandev = netdev->ml_priv;
--	p80211_hdr_t p80211_hdr;
-+	union p80211_hdr p80211_hdr;
- 	p80211_metawep_t p80211_wep;
- 
- 	if (skb == NULL)
-@@ -361,7 +361,7 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
- 		goto failed;
- 	}
- 
--	memset(&p80211_hdr, 0, sizeof(p80211_hdr_t));
-+	memset(&p80211_hdr, 0, sizeof(union p80211_hdr));
- 	memset(&p80211_wep, 0, sizeof(p80211_metawep_t));
- 
- 	if (netif_queue_stopped(netdev)) {
-@@ -401,8 +401,8 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
- 			goto failed;
- 		}
- 		/* move the header over */
--		memcpy(&p80211_hdr, skb->data, sizeof(p80211_hdr_t));
--		skb_pull(skb, sizeof(p80211_hdr_t));
-+		memcpy(&p80211_hdr, skb->data, sizeof(union p80211_hdr));
-+		skb_pull(skb, sizeof(union p80211_hdr));
- 	} else {
- 		if (skb_ether_to_p80211
- 		    (wlandev, wlandev->ethconv, skb, &p80211_hdr,
-diff --git a/drivers/staging/wlan-ng/p80211netdev.h b/drivers/staging/wlan-ng/p80211netdev.h
-index 098ccf7..3e19dad 100644
---- a/drivers/staging/wlan-ng/p80211netdev.h
-+++ b/drivers/staging/wlan-ng/p80211netdev.h
-@@ -184,7 +184,7 @@ typedef struct wlandevice {
- 	int (*close) (struct wlandevice *wlandev);
- 	void (*reset) (struct wlandevice *wlandev);
- 	int (*txframe) (struct wlandevice *wlandev, struct sk_buff *skb,
--			p80211_hdr_t *p80211_hdr,
-+			union p80211_hdr *p80211_hdr,
- 			p80211_metawep_t *p80211_wep);
- 	int (*mlmerequest) (struct wlandevice *wlandev, p80211msg_t *msg);
- 	int (*set_multicast_list) (struct wlandevice *wlandev,
-diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
-index 1a502bc..6f5fc01 100644
---- a/drivers/staging/wlan-ng/prism2sta.c
-+++ b/drivers/staging/wlan-ng/prism2sta.c
-@@ -130,7 +130,7 @@ static int prism2sta_open(wlandevice_t *wlandev);
- static int prism2sta_close(wlandevice_t *wlandev);
- static void prism2sta_reset(wlandevice_t *wlandev);
- static int prism2sta_txframe(wlandevice_t *wlandev, struct sk_buff *skb,
--			     p80211_hdr_t *p80211_hdr,
-+			     union p80211_hdr *p80211_hdr,
- 			     p80211_metawep_t *p80211_wep);
- static int prism2sta_mlmerequest(wlandevice_t *wlandev, p80211msg_t *msg);
- static int prism2sta_getcardinfo(wlandevice_t *wlandev);
-@@ -268,7 +268,7 @@ static void prism2sta_reset(wlandevice_t *wlandev)
- *	process thread
- ----------------------------------------------------------------*/
- static int prism2sta_txframe(wlandevice_t *wlandev, struct sk_buff *skb,
--			     p80211_hdr_t *p80211_hdr,
-+			     union p80211_hdr *p80211_hdr,
- 			     p80211_metawep_t *p80211_wep)
- {
- 	hfa384x_t *hw = (hfa384x_t *) wlandev->priv;
++config SENSORS_PKGTEMP
++	tristate "Intel processor package temperature sensor"
++	depends on X86 && PCI && EXPERIMENTAL
++	help
++	  If you say yes here you get support for the package level temperature
++	  sensor inside your CPU. Check documentation/driver for details.
++
+ config SENSORS_IBMAEM
+ 	tristate "IBM Active Energy Manager temperature/power sensors and control"
+ 	select IPMI_SI
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 2138ceb..879814e 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -39,6 +39,7 @@ obj-$(CONFIG_SENSORS_AMS)	+= ams/
+ obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
+ obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
+ obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
++obj-$(CONFIG_SENSORS_PKGTEMP)	+= pkgtemp.o
+ obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
+ obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
+ obj-$(CONFIG_SENSORS_EMC1403)	+= emc1403.o
+diff --git a/drivers/hwmon/pkgtemp.c b/drivers/hwmon/pkgtemp.c
+new file mode 100644
+index 0000000..8dc8bb7
+--- /dev/null
++++ b/drivers/hwmon/pkgtemp.c
+@@ -0,0 +1,456 @@
++/*
++ * pkgtemp.c - Linux kernel module for processor package hardware monitoring
++ *
++ * Copyright (C) 2010 Fenghua Yu <fenghua.yu@intel.com>
++ *
++ * Inspired from many hwmon drivers especially coretemp.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301 USA.
++ */
++
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/jiffies.h>
++#include <linux/hwmon.h>
++#include <linux/sysfs.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
++#include <linux/mutex.h>
++#include <linux/list.h>
++#include <linux/platform_device.h>
++#include <linux/cpu.h>
++#include <linux/pci.h>
++#include <asm/msr.h>
++#include <asm/processor.h>
++
++#define DRVNAME	"pkgtemp"
++
++enum { SHOW_TEMP, SHOW_TJMAX, SHOW_TTARGET, SHOW_LABEL, SHOW_NAME };
++
++/*
++ * Functions declaration
++ */
++
++static struct pkgtemp_data *pkgtemp_update_device(struct device *dev);
++
++struct pkgtemp_data {
++	struct device *hwmon_dev;
++	struct mutex update_lock;
++	const char *name;
++	u32 id;
++	u16 phys_proc_id;
++	char valid;		/* zero until following fields are valid */
++	unsigned long last_updated;	/* in jiffies */
++	int temp;
++	int tjmax;
++	int ttarget;
++	u8 alarm;
++};
++
++/*
++ * Sysfs stuff
++ */
++
++static ssize_t show_name(struct device *dev, struct device_attribute
++			  *devattr, char *buf)
++{
++	int ret;
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct pkgtemp_data *data = dev_get_drvdata(dev);
++
++	if (attr->index == SHOW_NAME)
++		ret = sprintf(buf, "%s\n", data->name);
++	else	/* show label */
++		ret = sprintf(buf, "physical id %d\n",
++			      data->phys_proc_id);
++	return ret;
++}
++
++static ssize_t show_alarm(struct device *dev, struct device_attribute
++			  *devattr, char *buf)
++{
++	struct pkgtemp_data *data = pkgtemp_update_device(dev);
++	/* read the Out-of-spec log, never clear */
++	return sprintf(buf, "%d\n", data->alarm);
++}
++
++static ssize_t show_temp(struct device *dev,
++			 struct device_attribute *devattr, char *buf)
++{
++	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
++	struct pkgtemp_data *data = pkgtemp_update_device(dev);
++	int err = 0;
++
++	if (attr->index == SHOW_TEMP)
++		err = data->valid ? sprintf(buf, "%d\n", data->temp) : -EAGAIN;
++	else if (attr->index == SHOW_TJMAX)
++		err = sprintf(buf, "%d\n", data->tjmax);
++	else
++		err = sprintf(buf, "%d\n", data->ttarget);
++	return err;
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp, NULL, SHOW_TEMP);
++static SENSOR_DEVICE_ATTR(temp1_crit, S_IRUGO, show_temp, NULL, SHOW_TJMAX);
++static SENSOR_DEVICE_ATTR(temp1_max, S_IRUGO, show_temp, NULL, SHOW_TTARGET);
++static DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_alarm, NULL);
++static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, show_name, NULL, SHOW_LABEL);
++static SENSOR_DEVICE_ATTR(name, S_IRUGO, show_name, NULL, SHOW_NAME);
++
++static struct attribute *pkgtemp_attributes[] = {
++	&sensor_dev_attr_name.dev_attr.attr,
++	&sensor_dev_attr_temp1_label.dev_attr.attr,
++	&dev_attr_temp1_crit_alarm.attr,
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group pkgtemp_group = {
++	.attrs = pkgtemp_attributes,
++};
++
++static struct pkgtemp_data *pkgtemp_update_device(struct device *dev)
++{
++	struct pkgtemp_data *data = dev_get_drvdata(dev);
++	unsigned int cpu;
++	int err;
++
++	mutex_lock(&data->update_lock);
++
++	if (!data->valid || time_after(jiffies, data->last_updated + HZ)) {
++		u32 eax, edx;
++
++		data->valid = 0;
++		cpu = data->id;
++		err = rdmsr_on_cpu(cpu, MSR_IA32_PACKAGE_THERM_STATUS,
++				   &eax, &edx);
++		if (!err) {
++			data->alarm = (eax >> 5) & 1;
++			data->temp = data->tjmax - (((eax >> 16)
++							& 0x7f) * 1000);
++			data->valid = 1;
++		} else
++			dev_dbg(dev, "Temperature data invalid (0x%x)\n", eax);
++
++		data->last_updated = jiffies;
++	}
++
++	mutex_unlock(&data->update_lock);
++	return data;
++}
++
++static int get_tjmax(int cpu, struct device *dev)
++{
++	int default_tjmax = 100000;
++	int err;
++	u32 eax, edx;
++	u32 val;
++
++	/* IA32_TEMPERATURE_TARGET contains the TjMax value */
++	err = rdmsr_safe_on_cpu(cpu, MSR_IA32_TEMPERATURE_TARGET, &eax, &edx);
++	if (!err) {
++		val = (eax >> 16) & 0xff;
++		if ((val > 80) && (val < 120)) {
++			dev_info(dev, "TjMax is %d C.\n", val);
++			return val * 1000;
++		}
++	}
++	dev_warn(dev, "Unable to read TjMax from CPU.\n");
++	return default_tjmax;
++}
++
++static int __devinit pkgtemp_probe(struct platform_device *pdev)
++{
++	struct pkgtemp_data *data;
++	int err;
++	u32 eax, edx;
++#ifdef CONFIG_SMP
++	struct cpuinfo_x86 *c = &cpu_data(pdev->id);
++#endif
++
++	data = kzalloc(sizeof(struct pkgtemp_data), GFP_KERNEL);
++	if (!data) {
++		err = -ENOMEM;
++		dev_err(&pdev->dev, "Out of memory\n");
++		goto exit;
++	}
++
++	data->id = pdev->id;
++#ifdef CONFIG_SMP
++	data->phys_proc_id = c->phys_proc_id;
++#endif
++	data->name = "pkgtemp";
++	mutex_init(&data->update_lock);
++
++	/* test if we can access the THERM_STATUS MSR */
++	err = rdmsr_safe_on_cpu(data->id, MSR_IA32_PACKAGE_THERM_STATUS,
++				&eax, &edx);
++	if (err) {
++		dev_err(&pdev->dev,
++			"Unable to access THERM_STATUS MSR, giving up\n");
++		goto exit_free;
++	}
++
++	data->tjmax = get_tjmax(data->id, &pdev->dev);
++	platform_set_drvdata(pdev, data);
++
++	err = rdmsr_safe_on_cpu(data->id, MSR_IA32_TEMPERATURE_TARGET,
++				&eax, &edx);
++	if (err) {
++		dev_warn(&pdev->dev, "Unable to read"
++				" IA32_TEMPERATURE_TARGET MSR\n");
++	} else {
++		data->ttarget = data->tjmax - (((eax >> 8) & 0xff) * 1000);
++		err = device_create_file(&pdev->dev,
++				&sensor_dev_attr_temp1_max.dev_attr);
++		if (err)
++			goto exit_free;
++	}
++
++	err = sysfs_create_group(&pdev->dev.kobj, &pkgtemp_group);
++	if (err)
++		goto exit_free;
++
++	data->hwmon_dev = hwmon_device_register(&pdev->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		err = PTR_ERR(data->hwmon_dev);
++		dev_err(&pdev->dev, "Class registration failed (%d)\n",
++			err);
++		goto exit_class;
++	}
++
++	return 0;
++
++exit_class:
++	sysfs_remove_group(&pdev->dev.kobj, &pkgtemp_group);
++exit_free:
++	kfree(data);
++exit:
++	return err;
++}
++
++static int __devexit pkgtemp_remove(struct platform_device *pdev)
++{
++	struct pkgtemp_data *data = platform_get_drvdata(pdev);
++
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&pdev->dev.kobj, &pkgtemp_group);
++	platform_set_drvdata(pdev, NULL);
++	kfree(data);
++	return 0;
++}
++
++static struct platform_driver pkgtemp_driver = {
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = DRVNAME,
++	},
++	.probe = pkgtemp_probe,
++	.remove = __devexit_p(pkgtemp_remove),
++};
++
++struct pdev_entry {
++	struct list_head list;
++	struct platform_device *pdev;
++	unsigned int cpu;
++#ifdef CONFIG_SMP
++	u16 phys_proc_id;
++#endif
++};
++
++static LIST_HEAD(pdev_list);
++static DEFINE_MUTEX(pdev_list_mutex);
++
++static int __cpuinit pkgtemp_device_add(unsigned int cpu)
++{
++	int err;
++	struct platform_device *pdev;
++	struct pdev_entry *pdev_entry;
++#ifdef CONFIG_SMP
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++#endif
++
++	mutex_lock(&pdev_list_mutex);
++
++#ifdef CONFIG_SMP
++	/* Only keep the first entry in each package */
++	list_for_each_entry(pdev_entry, &pdev_list, list) {
++		if (c->phys_proc_id == pdev_entry->phys_proc_id) {
++			err = 0;        /* Not an error */
++			goto exit;
++		}
++	}
++#endif
++
++	pdev = platform_device_alloc(DRVNAME, cpu);
++	if (!pdev) {
++		err = -ENOMEM;
++		printk(KERN_ERR DRVNAME ": Device allocation failed\n");
++		goto exit;
++	}
++
++	pdev_entry = kzalloc(sizeof(struct pdev_entry), GFP_KERNEL);
++	if (!pdev_entry) {
++		err = -ENOMEM;
++		goto exit_device_put;
++	}
++
++	err = platform_device_add(pdev);
++	if (err) {
++		printk(KERN_ERR DRVNAME ": Device addition failed (%d)\n",
++		       err);
++		goto exit_device_free;
++	}
++
++#ifdef CONFIG_SMP
++	pdev_entry->phys_proc_id = c->phys_proc_id;
++#endif
++	pdev_entry->pdev = pdev;
++	pdev_entry->cpu = cpu;
++	list_add_tail(&pdev_entry->list, &pdev_list);
++	mutex_unlock(&pdev_list_mutex);
++
++	return 0;
++
++exit_device_free:
++	kfree(pdev_entry);
++exit_device_put:
++	platform_device_put(pdev);
++exit:
++	mutex_unlock(&pdev_list_mutex);
++	return err;
++}
++
++#ifdef CONFIG_HOTPLUG_CPU
++static void pkgtemp_device_remove(unsigned int cpu)
++{
++	struct pdev_entry *p, *n;
++	unsigned int i;
++	int err;
++
++	mutex_lock(&pdev_list_mutex);
++	list_for_each_entry_safe(p, n, &pdev_list, list) {
++		if (p->cpu != cpu)
++			continue;
++
++		platform_device_unregister(p->pdev);
++		list_del(&p->list);
++		kfree(p);
++		for_each_cpu(i, cpu_core_mask(cpu)) {
++			if (i != cpu) {
++				err = pkgtemp_device_add(i);
++				if (!err)
++					break;
++			}
++		}
++		break;
++	}
++	mutex_unlock(&pdev_list_mutex);
++}
++
++static int __cpuinit pkgtemp_cpu_callback(struct notifier_block *nfb,
++				 unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (unsigned long) hcpu;
++
++	switch (action) {
++	case CPU_ONLINE:
++	case CPU_DOWN_FAILED:
++		pkgtemp_device_add(cpu);
++		break;
++	case CPU_DOWN_PREPARE:
++		pkgtemp_device_remove(cpu);
++		break;
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block pkgtemp_cpu_notifier __refdata = {
++	.notifier_call = pkgtemp_cpu_callback,
++};
++#endif				/* !CONFIG_HOTPLUG_CPU */
++
++static int __init pkgtemp_init(void)
++{
++	int i, err = -ENODEV;
++	struct pdev_entry *p, *n;
++
++	/* quick check if we run Intel */
++	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
++		goto exit;
++
++	err = platform_driver_register(&pkgtemp_driver);
++	if (err)
++		goto exit;
++
++	for_each_online_cpu(i) {
++		struct cpuinfo_x86 *c = &cpu_data(i);
++
++		if (!cpu_has(c, X86_FEATURE_PTS))
++			continue;
++
++		err = pkgtemp_device_add(i);
++		if (err)
++			goto exit_devices_unreg;
++	}
++	if (list_empty(&pdev_list)) {
++		err = -ENODEV;
++		goto exit_driver_unreg;
++	}
++
++#ifdef CONFIG_HOTPLUG_CPU
++	register_hotcpu_notifier(&pkgtemp_cpu_notifier);
++#endif
++	return 0;
++
++exit_devices_unreg:
++	mutex_lock(&pdev_list_mutex);
++	list_for_each_entry_safe(p, n, &pdev_list, list) {
++		platform_device_unregister(p->pdev);
++		list_del(&p->list);
++		kfree(p);
++	}
++	mutex_unlock(&pdev_list_mutex);
++exit_driver_unreg:
++	platform_driver_unregister(&pkgtemp_driver);
++exit:
++	return err;
++}
++
++static void __exit pkgtemp_exit(void)
++{
++	struct pdev_entry *p, *n;
++#ifdef CONFIG_HOTPLUG_CPU
++	unregister_hotcpu_notifier(&pkgtemp_cpu_notifier);
++#endif
++	mutex_lock(&pdev_list_mutex);
++	list_for_each_entry_safe(p, n, &pdev_list, list) {
++		platform_device_unregister(p->pdev);
++		list_del(&p->list);
++		kfree(p);
++	}
++	mutex_unlock(&pdev_list_mutex);
++	platform_driver_unregister(&pkgtemp_driver);
++}
++
++MODULE_AUTHOR("Fenghua Yu <fenghua.yu@intel.com>");
++MODULE_DESCRIPTION("Intel processor package temperature monitor");
++MODULE_LICENSE("GPL");
++
++module_init(pkgtemp_init)
++module_exit(pkgtemp_exit)
 -- 
-1.7.0.4
+1.6.0.3
 
