@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab0GaJnL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 05:43:11 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36832 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab0GaJnI (ORCPT
+	id S1755646Ab0GaJnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 05:43:09 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:52724 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab0GaJnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 05:43:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LFFBSk5JuuW9Sar2FKSEj+zVmQEN9KxVygiileFruZNcQJHqfeKdl1rGzgMo44c14G
-         TxJZYlelkaxjZcT/NplfDGcCp27jVNMq9BZ9b3l4jQ4BWcGkmMJgmTBgbTDRLIF1752W
-         GUQQvHffzw+11X/39qETCuF4iKzaY6kBNecu4=
-Date: Sat, 31 Jul 2010 02:43:04 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: Make keyboard.c match braille-only keyboards
-Message-ID: <20100731094304.GA3533@core.coreip.homeip.net>
-References: <20100730204117.GI4824@const.famille.thibault.fr>
+	Sat, 31 Jul 2010 05:43:07 -0400
+Message-ID: <4C53F01A.8090205@cs.helsinki.fi>
+Date: Sat, 31 Jul 2010 12:42:50 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100730204117.GI4824@const.famille.thibault.fr>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Catalin Marinas <catalin.marinas@gmail.com>
+CC: Daniel J Blueman <daniel.blueman@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.35-rc6 patch] increase kmemleak robustness at boot
+References: <AANLkTin-9jtHP1xmhUp4uUQNZD64pN3Ee5Kn2cqH64Go@mail.gmail.com>	<4C505F86.7050509@cs.helsinki.fi>	<AANLkTintAmpBcxbZUmMd7B7yHpVKs77xHgkjSxMY_O6J@mail.gmail.com>	<AANLkTik-M_=G4Ks=U6hRm1dBTzbzovR47jdhjTjNqekX@mail.gmail.com>	<4C519A6E.8000002@cs.helsinki.fi>	<AANLkTik4oyv4edZ6dyKiA59C9TSHWn2grQqTh30MRmC=@mail.gmail.com>	<AANLkTinAtDQoB9VhX4J=HJSkYTM8ERBDXG8ZYng1SGYL@mail.gmail.com> <AANLkTi=+_bSNY3pnowGmU-NEVzL7VWYeGhT44y7SL3L7@mail.gmail.com>
+In-Reply-To: <AANLkTi=+_bSNY3pnowGmU-NEVzL7VWYeGhT44y7SL3L7@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 10:41:18PM +0200, Samuel Thibault wrote:
-> drivers/char/keyboard.c also handles braille keys, so it should also match
-> braille-only keyboards.
+Catalin Marinas wrote:
+>> Right. I guess the required earlylog buffer size would be smaller if
+>> we initialized kmemleak earlier. Can we do that in mm_init() after
+>> kmem_cache_init()?
 > 
+> Kmemleak uses kmem_cache_alloc() internally so we could initialise it
+> as soon as kmem_cache_init() was called. But it's really strange the
+> amount of early allocations that Daniel is getting. I've been happy so
+> far with 400, usually with standard Ubuntu-like configs and some
+> debugging turned on. Any idea what's causing these allocations?
 
-Applied to 'next', thanks Samuel.
+No idea. I wonder if kmemleak can dump out the call-sites for the 
+overflow case somehow to see what's going on?
 
--- 
-Dmitry
+			Pekka
