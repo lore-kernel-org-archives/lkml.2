@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab0GaFD2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 01:03:28 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:38632 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab0GaFD1 (ORCPT
+	id S1752212Ab0GaFJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 01:09:56 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38642
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751143Ab0GaFJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 01:03:27 -0400
-Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
-From: Bojan Smojver <bojan@rexursive.com>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1280551286.3097.6.camel@shrek.rexursive.com>
-References: <1280465201.2600.10.camel@shrek.rexursive.com>
-	 <1280486667.2608.1.camel@shrek.rexursive.com>
-	 <4C534C9D.8000600@tuxonice.net>
-	 <1280532174.2583.1.camel@shrek.rexursive.com>
-	 <4C5362E7.3000706@tuxonice.net>
-	 <1280538184.2583.11.camel@shrek.rexursive.com>
-	 <4C537A01.5040808@tuxonice.net>
-	 <1280540035.2658.5.camel@shrek.rexursive.com>
-	 <1280551286.3097.6.camel@shrek.rexursive.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 31 Jul 2010 15:03:25 +1000
-Message-ID: <1280552605.3080.1.camel@shrek.rexursive.com>
+	Sat, 31 Jul 2010 01:09:54 -0400
+Date: Fri, 30 Jul 2010 22:10:12 -0700 (PDT)
+Message-Id: <20100730.221012.112594570.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH -next] net: ks8842 depends on DMA_ENGINE
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100729101427.2aafd6e7.randy.dunlap@oracle.com>
+References: <20100729143211.9e7edaed.sfr@canb.auug.org.au>
+	<20100729101427.2aafd6e7.randy.dunlap@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-07-31 at 14:41 +1000, Bojan Smojver wrote:
-> I did 3 hibernate/thaw cycles with it. Images varied from about 850
-> MB, 1.1 GB to 750 MB. I was getting 156/141 MB/s, 121/118 MBs and
-> 141/130 MBs speeds. Obviously, these things depend on compression
-> ratios achieved etc. 
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Thu, 29 Jul 2010 10:14:27 -0700
 
-For the record, my machine usually does around 32 MB/s on hibernate and
-54 MB/s on thaw with regular in-kernel swsusp.
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> ks8842 uses dma channel functions, so it should depend on DMA_ENGINE.
+> 
+> ERROR: "__dma_request_channel" [drivers/net/ks8842.ko] undefined!
+> ERROR: "dma_release_channel" [drivers/net/ks8842.ko] undefined!
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
--- 
-Bojan
-
+Applied, thanks Randy.
