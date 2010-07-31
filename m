@@ -1,120 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab0GaHKI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 03:10:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41603 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab0GaHKE (ORCPT
+	id S1754171Ab0GaHQR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 03:16:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22226 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab0GaHQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 03:10:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=oib+arg+IYMrFTztoZ4VjV8s8ymf226PZSxZgWdTgeFUprmHzI/5tzOtaIeuX+LpXO
-         vqtgewt/pXxR23NS3R+xUge5pJzpDeBFCAn0D2rqx+orN17xq8h7aYPm2Ek5m8NbisIq
-         TFPDdqaOelXCf7oX6neLeo0s+jfZlszqgwtw4=
-From: Marek Vasut <marek.vasut@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: dmitry.torokhov@gmail.com, vapier@gentoo.org, pavel@ucw.cz,
-        akpm@linux-foundation.org, khilman@deeprootsystems.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.y.miao@gmail.com, Marek Vasut <marek.vasut@gmail.com>
-Subject: [PATCH v2] Input: Make ADS7846 independent on regulator
-Date: Sat, 31 Jul 2010 09:09:42 +0200
-Message-Id: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 31 Jul 2010 03:16:15 -0400
+Message-ID: <4C53CD80.6070905@kernel.org>
+Date: Sat, 31 Jul 2010 00:15:12 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 01/17 -v2] memblock: Add memblock_free/reserve_reserved_regions()
+References: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1280432737-1808-1-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C53CDA0.00EE,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case regulator was not found, ADS7846 failed to probe.
 
-This fixes a problem on some Sharp Zaurus devices, where there is no regulator
-present and the touchscreen is used.
+So we can avoid export memblock_reserved_init_regions()
+Suggested by Ben.
 
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+-v2: use __init_memblock attribute
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
- drivers/input/touchscreen/ads7846.c |   38 +++++++++++++++++++---------------
- 1 files changed, 21 insertions(+), 17 deletions(-)
+ include/linux/memblock.h |    2 ++
+ mm/memblock.c            |   24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
-diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
-index a9fdf55..53b318b 100644
---- a/drivers/input/touchscreen/ads7846.c
-+++ b/drivers/input/touchscreen/ads7846.c
-@@ -791,7 +791,8 @@ static void ads7846_disable(struct ads7846 *ts)
- 		}
- 	}
+Index: linux-2.6/include/linux/memblock.h
+===================================================================
+--- linux-2.6.orig/include/linux/memblock.h
++++ linux-2.6/include/linux/memblock.h
+@@ -48,6 +48,8 @@ extern int memblock_can_resize;
+ 	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
  
--	regulator_disable(ts->reg);
-+	if (ts->reg)
-+		regulator_disable(ts->reg);
+ u64 memblock_find_in_range(u64 start, u64 end, u64 size, u64 align);
++int memblock_free_reserved_regions(void);
++int memblock_reserve_reserved_regions(void);
  
- 	/* we know the chip's in lowpower mode since we always
- 	 * leave it that way after every request
-@@ -804,7 +805,8 @@ static void ads7846_enable(struct ads7846 *ts)
- 	if (!ts->disabled)
- 		return;
+ extern void __init memblock_init(void);
+ extern void __init memblock_analyze(void);
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -170,6 +170,30 @@ u64 __init_memblock memblock_find_in_ran
+ 	return memblock_find_base(size, align, start, end);
+ }
  
--	regulator_enable(ts->reg);
-+	if (ts->reg)
-+		regulator_enable(ts->reg);
- 
- 	ts->disabled = 0;
- 	ts->irq_disabled = 0;
-@@ -1162,16 +1164,15 @@ static int __devinit ads7846_probe(struct spi_device *spi)
- 	ts->last_msg = m;
- 
- 	ts->reg = regulator_get(&spi->dev, "vcc");
--	if (IS_ERR(ts->reg)) {
--		err = PTR_ERR(ts->reg);
--		dev_err(&spi->dev, "unable to get regulator: %d\n", err);
--		goto err_free_gpio;
--	}
--
--	err = regulator_enable(ts->reg);
--	if (err) {
--		dev_err(&spi->dev, "unable to enable regulator: %d\n", err);
--		goto err_put_regulator;
-+	if (IS_ERR(ts->reg))
-+		ts->reg = NULL;
-+	else {
-+		err = regulator_enable(ts->reg);
-+		if (err) {
-+			dev_err(&spi->dev, "unable to enable regulator: %d\n",
-+				err);
-+			goto err_put_regulator;
-+		}
- 	}
- 
- 	if (request_irq(spi->irq, ads7846_irq, IRQF_TRIGGER_FALLING,
-@@ -1218,10 +1219,11 @@ static int __devinit ads7846_probe(struct spi_device *spi)
-  err_free_irq:
- 	free_irq(spi->irq, ts);
-  err_disable_regulator:
--	regulator_disable(ts->reg);
-+	if (ts->reg)
-+		regulator_disable(ts->reg);
-  err_put_regulator:
--	regulator_put(ts->reg);
-- err_free_gpio:
-+	if (ts->reg)
-+		regulator_put(ts->reg);
- 	if (ts->gpio_pendown != -1)
- 		gpio_free(ts->gpio_pendown);
-  err_cleanup_filter:
-@@ -1251,8 +1253,10 @@ static int __devexit ads7846_remove(struct spi_device *spi)
- 	/* suspend left the IRQ disabled */
- 	enable_irq(ts->spi->irq);
- 
--	regulator_disable(ts->reg);
--	regulator_put(ts->reg);
-+	if (ts->reg) {
-+		regulator_disable(ts->reg);
-+		regulator_put(ts->reg);
-+	}
- 
- 	if (ts->gpio_pendown != -1)
- 		gpio_free(ts->gpio_pendown);
--- 
-1.7.1
-
++/*
++ * Free memblock.reserved.regions
++ */
++int __init_memblock memblock_free_reserved_regions(void)
++{
++	if (memblock.reserved.regions == memblock_reserved_init_regions)
++		return 0;
++
++	return memblock_free(__pa(memblock.reserved.regions),
++		 sizeof(struct memblock_region) * memblock.reserved.max);
++}
++
++/*
++ * Reserve memblock.reserved.regions
++ */
++int __init_memblock memblock_reserve_reserved_regions(void)
++{
++	if (memblock.reserved.regions == memblock_reserved_init_regions)
++		return 0;
++
++	return memblock_reserve(__pa(memblock.reserved.regions),
++		 sizeof(struct memblock_region) * memblock.reserved.max);
++}
++
+ static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
+ {
+ 	unsigned long i;
