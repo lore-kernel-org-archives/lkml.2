@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab0GaKLp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 06:11:45 -0400
-Received: from purkki.adurom.net ([80.68.90.206]:45436 "EHLO purkki.adurom.net"
+	id S1753589Ab0GaK2P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 06:28:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57516 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137Ab0GaKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 06:11:44 -0400
-X-Greylist: delayed 2073 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Jul 2010 06:11:44 EDT
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Luke-Jr <luke@dashjr.org>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] p54spi: replace internal "cx3110x" name with "p54spi"
-References: <201006012117.00432.luke@dashjr.org>
-	<1275465299.3915.0.camel@jlt3.sipsolutions.net>
-	<201006021406.15393.luke@dashjr.org>
-	<1275640607.9953.15.camel@jlt3.sipsolutions.net>
-From: Kalle Valo <kvalo@adurom.com>
-Date: Sat, 31 Jul 2010 12:37:07 +0300
-In-Reply-To: <1275640607.9953.15.camel@jlt3.sipsolutions.net> (Johannes Berg's message of "Fri\, 04 Jun 2010 10\:36\:47 +0200")
-Message-ID: <87iq3wdmbg.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1752049Ab0GaK2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 06:28:14 -0400
+Message-ID: <4C53FAA7.60903@kernel.org>
+Date: Sat, 31 Jul 2010 12:27:51 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [patch 1/2] workqueue: mark init_workqueues() as early_initcall()
+References: <20100730215751.690706748@sbsiddha-MOBL3.sc.intel.com> <20100730165522.22dc982b.akpm@linux-foundation.org>
+In-Reply-To: <20100730165522.22dc982b.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 31 Jul 2010 10:27:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Berg <johannes@sipsolutions.net> writes:
+Hello,
 
-> On Wed, 2010-06-02 at 14:06 -0500, Luke-Jr wrote:
->
->> > >  	.driver = {
->> > > -		/* use cx3110x name because board-n800.c uses that for the
->> > > -		 * SPI port */
->> > > -		.name		= "cx3110x",
->> > > +		.name		= "p54spi",
->> > >  		.bus		= &spi_bus_type,
->> > 
->> > maybe that comment wasn't clear enough ... it needs to be that way to be
->> > properly linked up against SPI.
->> 
->> I don't understand what you mean here. Does the hardware-side of SPI use 
->> string identifiers? These are the only two instances of "cx3110x" in the 
->> kernel source; N8x0 board files expect "p54spi"
->
-> Hm, ok, I thought that the board stuff needed cx3110x. Hopefully it
-> doesn't differ in n810s?
+On 07/31/2010 01:55 AM, Andrew Morton wrote:
+> On Fri, 30 Jul 2010 14:57:37 -0700
+> for_each_gcwq_cpu(), for_each_online_gcwq_cpu() and for_each_cwq_cpu()
+> make me cry.
 
-I changed the n8x0 board files (for both n800 and n810) in mainline to
-use p54spi. So this patch is correct.
+Yeah, those are new additions for unbound workqueue support and I
+should have added comments there.  Will do so.
 
-The old maemo kernels and the closed driver used cx3110x to identify
-the spi device.
+Thanks.
 
 -- 
-Kalle Valo
+tejun
