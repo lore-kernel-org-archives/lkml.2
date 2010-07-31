@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab0GaKGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 06:06:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58415 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab0GaKGY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 06:06:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=eSHYSyn9U5YZTJtFsJu8Io9bK1VQz+MLrcmapV3+gMqBAVYIdVEUubUe0hul+zY4QZ
-         NQPtkFp9J27VA6jiJkGf2IBFh9UxiE+PJpfqpvzebBplqYrBbQCbTiaPM+1wJzEdw27V
-         p+3rjPlcxwBHtqg+H5pT64Bz/BWl+kZmfcW1s=
+	id S1752995Ab0GaKLp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 06:11:45 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:45436 "EHLO purkki.adurom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751137Ab0GaKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 06:11:44 -0400
+X-Greylist: delayed 2073 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Jul 2010 06:11:44 EDT
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Luke-Jr <luke@dashjr.org>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] p54spi: replace internal "cx3110x" name with "p54spi"
+References: <201006012117.00432.luke@dashjr.org>
+	<1275465299.3915.0.camel@jlt3.sipsolutions.net>
+	<201006021406.15393.luke@dashjr.org>
+	<1275640607.9953.15.camel@jlt3.sipsolutions.net>
+From: Kalle Valo <kvalo@adurom.com>
+Date: Sat, 31 Jul 2010 12:37:07 +0300
+In-Reply-To: <1275640607.9953.15.camel@jlt3.sipsolutions.net> (Johannes Berg's message of "Fri\, 04 Jun 2010 10\:36\:47 +0200")
+Message-ID: <87iq3wdmbg.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1007201518470.9608@router.home>
-References: <AANLkTimVSZ584-dTIJFalTStvT1kPBQmnDdgUTsoSFQT@mail.gmail.com>
-	<AANLkTikZLVYavu0EeQJ2VelymBoC2LQZTfc44FOAzwe4@mail.gmail.com>
-	<alpine.DEB.2.00.1007201518470.9608@router.home>
-Date: Sat, 31 Jul 2010 12:06:22 +0200
-Message-ID: <AANLkTimZhoLA8snZkUYGTnRYriYzrPvnLw6AM7NaJBcx@mail.gmail.com>
-Subject: Re: Regression 2.6.33->2.6.34: OOPS at boot, kmalloc corruption?
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 10:19 PM, Christoph Lameter
-<cl@linux-foundation.org> wrote:
-> On Tue, 20 Jul 2010, Pekka Enberg wrote:
+Johannes Berg <johannes@sipsolutions.net> writes:
+
+> On Wed, 2010-06-02 at 14:06 -0500, Luke-Jr wrote:
 >
->> It's slab corruption that can be cause by many things. Can you please
->> try to reproduce with CONFIG_SLUB_DEBUG_ON=y?
+>> > >  	.driver = {
+>> > > -		/* use cx3110x name because board-n800.c uses that for the
+>> > > -		 * SPI port */
+>> > > -		.name		= "cx3110x",
+>> > > +		.name		= "p54spi",
+>> > >  		.bus		= &spi_bus_type,
+>> > 
+>> > maybe that comment wasn't clear enough ... it needs to be that way to be
+>> > properly linked up against SPI.
+>> 
+>> I don't understand what you mean here. Does the hardware-side of SPI use 
+>> string identifiers? These are the only two instances of "cx3110x" in the 
+>> kernel source; N8x0 board files expect "p54spi"
 >
-> Or simply reboot and add a parameter slub_debug to the other parameters.
+> Hm, ok, I thought that the board stuff needed cx3110x. Hopefully it
+> doesn't differ in n810s?
 
-I finally had the opportunity to reboot this system again.
+I changed the n8x0 board files (for both n800 and n810) in mainline to
+use p54spi. So this patch is correct.
 
-CONFIG_SLUB_DEBUG=y was set, so I tried adding slub_debug to the commandline.
+The old maemo kernels and the closed driver used cx3110x to identify
+the spi device.
 
-With slub_debug added the system boots normal, I could not see any
-errors in the syslog. When I remove slub_debug it crashed againb
-before reaching userspace.
-
-After the KMS fixes from Alex Deucher vanilla kernel 2.6.35-rc6 works
-for me. So I would thing my problems with earlier 2.6.35-rcs where
-just these KMS errors and this kmalloc problem has already been fixed
-in mainline.
-
-So I have switched this system to 2.6.35-rc6 and will stay with this kernel.
-
-Thanks, Torsten
+-- 
+Kalle Valo
