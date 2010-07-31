@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab0GaTSl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 15:18:41 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41154 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab0GaTSj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 15:18:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=WrZfj/HTuzdnX26J65HY1SwiheD42D3NgD43DrKTghmG4T4EoPZDWYFSXp1/sNBTDq
-         txvqfRdOAPAfndpvNWsTU9lc1aSfIKF+FrB6nn7aTf4hfokHGq0MLKkVuqITz/sHw68D
-         yQTw0aqCSoOjMIjw7QG60clbH52YtdlJe+OaU=
-Date: Sat, 31 Jul 2010 21:17:43 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Li Yang <leoli@freescale.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>, linux-usb@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] usb: fsl_udc_core: check return value of
-	create_proc_read_entry()
-Message-ID: <20100731191743.GF26313@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Kulikov Vasiliy <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org, Li Yang <leoli@freescale.com>,
-	David Brownell <dbrownell@users.sourceforge.net>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Dinh Nguyen <Dinh.Nguyen@freescale.com>,
-	Anton Vorontsov <avorontsov@ru.mvista.com>,
-	linux-usb@vger.kernel.org, linuxppc-dev@ozlabs.org,
-	linux-kernel@vger.kernel.org
-References: <1280597900-8405-1-git-send-email-segooon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280597900-8405-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756338Ab0GaT1l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 15:27:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30784 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755438Ab0GaT1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 15:27:40 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1280599521.2720.5.camel@segv.aura.of.mankind>
+References: <1280599521.2720.5.camel@segv.aura.of.mankind> <1280524978.2452.9.camel@segv.aura.of.mankind> <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> <AANLkTikBCXK6uEw <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> <3533.1280595212@redhat.com> 
+To: utz lehmann <lkml123@s2y4n2c.de>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
+Date: Sat, 31 Jul 2010 20:26:49 +0100
+Message-ID: <5618.1280604409@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 31, 2010 at 09:38:20PM +0400, Kulikov Vasiliy wrote:
-> create_proc_read_entry() may fail, if so return -ENOMEM.
-> 
+utz lehmann <lkml123@s2y4n2c.de> wrote:
 
-It can fail, but also we return NULL if procfs is disabled.  I haven't
-looked at it very carefully, would this patch break the module if procfs
-was disabled?
+> How does this works right with noatime or relatime (which is default)?
 
-The same applies to the similar patches in this set.
+Don't do that then.
 
-regards,
-dan carpenter
+> We had used FS-Cache with a few 10000s files cached. Doesn't it mean
+> that the cleanup has to stat them all?
 
+Yes.
 
+> Why didn't cachefilesd managed the cache index in a separate database
+> like other caches?
+
+Because using atime is much simpler since the filesystem updates it
+automatically.  If you have a separate database then you have redundant
+information and you need to maintain metadata integrity which has a cost, both
+in terms of disk usage and performance.  I'm working on it, but you don't get
+it for free.
+
+David
