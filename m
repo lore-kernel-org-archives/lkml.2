@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab0GaOXe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 10:23:34 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46331 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab0GaOXd (ORCPT
+	id S1756130Ab0GaOoV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 10:44:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49380 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756052Ab0GaOoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 10:23:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:subject:message-id:mime-version
-         :content-type;
-        b=IWLKX/8RjPKkb0cA2yiI3Alhza1xflSx7DrWd7Gwr9qMz4SG7D3n972rMV3fv6Q3R4
-         rKS0TrjjvSc+i4Uofc59gYXROEEmGQD88KCYk9HOWmQDMylLrQZqHDzeLb4415KgtNRs
-         oK+xDSTBdGg2l7YVz/fG8LQ5vXlyHUY2q7l/8=
-Date: Sat, 31 Jul 2010 22:23:33 +0800 (SGT)
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-X-X-Sender: root@boston.corp.fedex.com
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: usb3.0 not recognizing hard disk.
-Message-ID: <Pine.LNX.4.64.1007312217240.2820@boston.corp.fedex.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Sat, 31 Jul 2010 10:44:19 -0400
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended file stats available [ver #6]
+From: utz lehmann <lkml123@s2y4n2c.de>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
+        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+In-Reply-To: <alpine.LSU.2.01.1007311006070.19122@obet.zrqbmnf.qr>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	 <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	 <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	 <AANLkTikBCXK6uEw  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	 <1280524978.2452.9.camel@segv.aura.of.mankind>
+	 <alpine.LSU.2.01.1007311006070.19122@obet.zrqbmnf.qr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 31 Jul 2010 16:43:53 +0200
+Message-ID: <1280587433.3284.10.camel@segv.aura.of.mankind>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:+29WgwjU907UmLb4pnM6kAtg/gTz5F2oMEdjGqL3kFp
+ qPe98UFQz8MFuhzZkiMwh0qsXotDaWLvt3C93b00WEghLW3bhz
+ 39mSoE5LWG0qHUD7iCuUq8u6CN4nS2yR5pt8PaBMLXZkse8XVw
+ e03z6wx4ypwrluiFr5VvlB8fbw1h9UQ23xub9JOO0RZK5X+LgY
+ vCmxqYU6HH5SVshe6n8dg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2010-07-31 at 10:08 +0200, Jan Engelhardt wrote:
+> >When abusing an existing time stamp use atime not ctime please.
+> >ctime has it's uses. atime was just a mistake and is nearly useless.
+> 
+> MUAs make use of atime.
 
-I'm trying out USB3.0 and connected a hard disk enclosure with a 
-known-good hard disk to an USB 3.0 express-card.
+I know mutt uses atime to detect new messages. But there are better and
+more reliable ways to do this.
 
->From dmesg, it's able to recognize the card and disk, but I can't even use 
-"fdisk /dev/sdb" ... what else do I need?
+> 
+> >And with noatime we already have creation time semantics for atime.
+> 
+> noatime was a late afterthought, and because it can interfere with
+> some programs, relatime came along too.
 
-xhci_hcd 0000:05:00.0: enabling device (0000 -> 0002)
-xhci_hcd 0000:05:00.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
-xhci_hcd 0000:05:00.0: setting latency timer to 64
-xhci_hcd 0000:05:00.0: xHCI Host Controller
-xhci_hcd 0000:05:00.0: new USB bus registered, assigned bus number 3
-xhci_hcd 0000:05:00.0: irq 19, io mem 0xf0000000
-usb usb3: No SuperSpeed endpoint companion for config 1  interface 0
-altsetting 0 ep 129: using minimum values
-xHCI xhci_add_endpoint called for root hub
-xHCI xhci_check_bandwidth called for root hub
-hub 3-0:1.0: USB hub found
-hub 3-0:1.0: 4 ports detected
-hub 3-0:1.0: unable to enumerate USB device on port 3
-usb 3-1: new SuperSpeed USB device using xhci_hcd and address 2
-xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
-xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
-xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
-xhci_hcd 0000:05:00.0: WARN: short transfer on control ep
+There are people who prefer noatime over relatime.
 
-Initializing USB Mass Storage driver...
-scsi7 : usb-storage 3-2:1.0
-usbcore: registered new interface driver usb-storage
-USB Mass Storage support registered.
-scsi 7:0:0:0: Direct-Access     ASMT     2105             0    PQ: 0 ANSI: 
-0
-sd 7:0:0:0: Attached scsi generic sg1 type 0
-sd 7:0:0:0: [sdb] Attached SCSI removable disk
+Using an existing time stamp for creation time is a bad idea IMHO. But
+when doing this use the least important one. Which is atime. For example
+ctime is used by backup programs.
+
+Anyway when we want to support creation time it should be an additional
+time stamp.
 
 
-
-# here's the same disk connected to USB2.0 port showing the partition 
-table and fdisk works
-
-Initializing USB Mass Storage driver...
-scsi6 : usb-storage 1-1.2:1.0
-usbcore: registered new interface driver usb-storage
-USB Mass Storage support registered.
-scsi 6:0:0:0: Direct-Access     SAMSUNG  MMDOE56G5MXP-0VB VBM1 PQ: 0 ANSI: 
-0
-sd 6:0:0:0: Attached scsi generic sg1 type 0
-sd 6:0:0:0: [sdb] 500118192 512-byte logical blocks: (256 GB/238 GiB)
-sd 6:0:0:0: [sdb] Write Protect is off
-sd 6:0:0:0: [sdb] Mode Sense: 23 00 00 00
-sd 6:0:0:0: [sdb] Assuming drive cache: write through
-sd 6:0:0:0: [sdb] Assuming drive cache: write through
-  sdb: sdb1 sdb2 sdb3 sdb4 < sdb5 sdb6 sdb7 sdb8 sdb9 sdb10 sdb11 sdb12 
-sdb13 sdb14 sdb15 >
-sd 6:0:0:0: [sdb] Assuming drive cache: write through
-sd 6:0:0:0: [sdb] Attached SCSI disk
+utz
 
 
-Thanks,
-Jeff
