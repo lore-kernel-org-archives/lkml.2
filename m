@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757217Ab0GaVfm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 17:35:42 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:40595 "EHLO
+	id S1757235Ab0GaVfn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 17:35:43 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:40612 "EHLO
 	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756705Ab0GaVfg (ORCPT
+	with ESMTP id S1757022Ab0GaVfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 17:35:36 -0400
+	Sat, 31 Jul 2010 17:35:37 -0400
 From: Sam Ravnborg <sam@ravnborg.org>
 To: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
         linux-kbuild <linux-kbuild@vger.kernel.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH 1/9] kconfig: use long options in conf
-Date: Sat, 31 Jul 2010 23:35:26 +0200
-Message-Id: <1280612134-8220-1-git-send-email-sam@ravnborg.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>, Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH 5/9] kconfig: print more info when we see a recursive dependency
+Date: Sat, 31 Jul 2010 23:35:30 +0200
+Message-Id: <1280612134-8220-5-git-send-email-sam@ravnborg.org>
 X-Mailer: git-send-email 1.6.0.6
 In-Reply-To: <20100731213429.GA8200@merkur.ravnborg.org>
 References: <20100731213429.GA8200@merkur.ravnborg.org>
@@ -21,451 +21,261 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The list of options supported by conf is growing
-and their abbreviation did not resemble anything usefull.
+From: Roman Zippel <zippel@linux-m68k.org>
 
-So drop the single letter options in favour of long options.
+Consider following kconfig file:
 
-The long options are named equal to what we know from
-the make target.
-The internal implmentation was changed to match this,
-resulting in much more readable code.
+config TEST1
+	bool "test 1"
+	depends on TEST2
 
-Support for short options is dropped - no one is supposed
-to call this program direct anyway.
+config TEST2
+	bool "test 2"
+	depends on TEST1
+
+Previously kconfig would report:
+
+foo:6:error: found recursive dependency: TEST2 -> TEST1 -> TEST2
+
+With the following patch kconfig reports:
+foo:5:error: recursive dependency detected!
+foo:5:  symbol TEST2 depends on TEST1
+foo:1:  symbol TEST1 depends on TEST2
+
+Note that we now report where the offending symbols are defined.
+This can be a great help for complex situations involving
+several files.
+
+Patch is originally from Roman Zippel with a few adjustments by Sam.
 
 Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>
 ---
- scripts/kconfig/Makefile |   70 +++++++++-----------
- scripts/kconfig/conf.c   |  161 +++++++++++++++++++++------------------------
- 2 files changed, 105 insertions(+), 126 deletions(-)
+ scripts/kconfig/symbol.c |  142 +++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 127 insertions(+), 15 deletions(-)
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 0a34335..b712bdb 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -21,17 +21,17 @@ menuconfig: $(obj)/mconf
- 	$< $(Kconfig)
- 
- config: $(obj)/conf
--	$< $(Kconfig)
-+	$< --oldaskconfig $(Kconfig)
- 
- nconfig: $(obj)/nconf
- 	$< $(Kconfig)
- 
- oldconfig: $(obj)/conf
--	$< -o $(Kconfig)
-+	$< --$@ $(Kconfig)
- 
- silentoldconfig: $(obj)/conf
- 	$(Q)mkdir -p include/generated
--	$< -s $(Kconfig)
-+	$< --$@ $(Kconfig)
- 
- # if no path is given, then use src directory to find file
- ifdef LSMOD
-@@ -44,15 +44,15 @@ endif
- localmodconfig: $(obj)/streamline_config.pl $(obj)/conf
- 	$(Q)mkdir -p include/generated
- 	$(Q)perl $< $(srctree) $(Kconfig) $(LSMOD_F) > .tmp.config
--	$(Q)if [ -f .config ]; then 				\
--			cmp -s .tmp.config .config ||		\
--			(mv -f .config .config.old.1;		\
--			 mv -f .tmp.config .config;		\
--			 $(obj)/conf -s $(Kconfig);		\
--			 mv -f .config.old.1 .config.old)	\
--	else							\
--			mv -f .tmp.config .config;		\
--			$(obj)/conf -s $(Kconfig);		\
-+	$(Q)if [ -f .config ]; then					\
-+			cmp -s .tmp.config .config ||			\
-+			(mv -f .config .config.old.1;			\
-+			 mv -f .tmp.config .config;			\
-+			 $(obj)/conf --silentoldconfig $(Kconfig);	\
-+			 mv -f .config.old.1 .config.old)		\
-+	else								\
-+			mv -f .tmp.config .config;			\
-+			$(obj)/conf --silentoldconfig $(Kconfig);	\
- 	fi
- 	$(Q)rm -f .tmp.config
- 
-@@ -60,24 +60,18 @@ localyesconfig: $(obj)/streamline_config.pl $(obj)/conf
- 	$(Q)mkdir -p include/generated
- 	$(Q)perl $< $(srctree) $(Kconfig) $(LSMOD_F) > .tmp.config
- 	$(Q)sed -i s/=m/=y/ .tmp.config
--	$(Q)if [ -f .config ]; then 				\
--			cmp -s .tmp.config .config ||		\
--			(mv -f .config .config.old.1;		\
--			 mv -f .tmp.config .config;		\
--			 $(obj)/conf -s $(Kconfig);		\
--			 mv -f .config.old.1 .config.old)	\
--	else							\
--			mv -f .tmp.config .config;		\
--			$(obj)/conf -s $(Kconfig);		\
-+	$(Q)if [ -f .config ]; then					\
-+			cmp -s .tmp.config .config ||			\
-+			(mv -f .config .config.old.1;			\
-+			 mv -f .tmp.config .config;			\
-+			 $(obj)/conf --silentoldconfig $(Kconfig);	\
-+			 mv -f .config.old.1 .config.old)		\
-+	else								\
-+			mv -f .tmp.config .config;			\
-+			$(obj)/conf --silentoldconfig $(Kconfig);	\
- 	fi
- 	$(Q)rm -f .tmp.config
- 
--nonint_oldconfig: $(obj)/conf
--	$< -b $(Kconfig)
--
--loose_nonint_oldconfig: $(obj)/conf
--	$< -B $(Kconfig)
--
- # Create new linux.pot file
- # Adjust charset to UTF-8 in .po file to accept UTF-8 in Kconfig files
- # The symlink is used to repair a deficiency in arch/um
-@@ -101,30 +95,26 @@ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
- 	$(Q)rm -f arch/um/Kconfig.arch
- 	$(Q)rm -f $(obj)/config.pot
- 
--PHONY += randconfig allyesconfig allnoconfig allmodconfig defconfig
--
--randconfig: $(obj)/conf
--	$< -r $(Kconfig)
-+PHONY += allnoconfig allyesconfig allmodconfig randconfig
- 
--allyesconfig: $(obj)/conf
--	$< -y $(Kconfig)
-+allnoconfig allyesconfig allmodconfig randconfig: $(obj)/conf
-+	$< --$@ $(Kconfig)
- 
--allnoconfig: $(obj)/conf
--	$< -n $(Kconfig)
-+PHONY += nonint_oldconfig loose_nonint_oldconfig defconfig
- 
--allmodconfig: $(obj)/conf
--	$< -m $(Kconfig)
-+nonint_oldconfig loose_nonint_oldconfig: $(obj)/conf
-+	$< --$@ $(Kconfig)
- 
- defconfig: $(obj)/conf
- ifeq ($(KBUILD_DEFCONFIG),)
--	$< -d $(Kconfig)
-+	$< --defconfig $(Kconfig)
- else
- 	@echo "*** Default configuration is based on '$(KBUILD_DEFCONFIG)'"
--	$(Q)$< -D arch/$(SRCARCH)/configs/$(KBUILD_DEFCONFIG) $(Kconfig)
-+	$(Q)$< --defconfig=arch/$(SRCARCH)/configs/$(KBUILD_DEFCONFIG) $(Kconfig)
- endif
- 
- %_defconfig: $(obj)/conf
--	$(Q)$< -D arch/$(SRCARCH)/configs/$@ $(Kconfig)
-+	$(Q)$< --defconfig=arch/$(SRCARCH)/configs/$@ $(Kconfig)
- 
- # Help text used by make help
- help:
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index bde01b4..2dec584 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -10,6 +10,7 @@
- #include <string.h>
- #include <time.h>
- #include <unistd.h>
-+#include <getopt.h>
- #include <sys/stat.h>
- #include <sys/time.h>
- 
-@@ -23,18 +24,19 @@
- static void conf(struct menu *menu);
- static void check_conf(struct menu *menu);
- 
--enum {
--	ask_all,
--	ask_new,
--	ask_silent,
--	dont_ask,
--	dont_ask_dont_tell,
--	set_default,
--	set_yes,
--	set_mod,
--	set_no,
--	set_random
--} input_mode = ask_all;
-+enum input_mode {
-+	oldaskconfig,
-+	silentoldconfig,
-+	oldconfig,
-+	allnoconfig,
-+	allyesconfig,
-+	allmodconfig,
-+	randconfig,
-+	defconfig,
-+	nonint_oldconfig,
-+	loose_nonint_oldconfig,
-+} input_mode = oldaskconfig;
-+
- char *defconfig_file;
- 
- static int indent = 1;
-@@ -100,14 +102,14 @@ static int conf_askvalue(struct symbol *sym, const char *def)
- 	}
- 
- 	switch (input_mode) {
--	case ask_new:
--	case ask_silent:
-+	case oldconfig:
-+	case silentoldconfig:
- 		if (sym_has_value(sym)) {
- 			printf("%s\n", def);
- 			return 0;
- 		}
- 		check_stdin();
--	case ask_all:
-+	case oldaskconfig:
- 		fflush(stdout);
- 		fgets(line, 128, stdin);
- 		return 1;
-@@ -297,15 +299,15 @@ static int conf_choice(struct menu *menu)
- 			printf("?");
- 		printf("]: ");
- 		switch (input_mode) {
--		case ask_new:
--		case ask_silent:
-+		case oldconfig:
-+		case silentoldconfig:
- 			if (!is_new) {
- 				cnt = def;
- 				printf("%d\n", cnt);
- 				break;
- 			}
- 			check_stdin();
--		case ask_all:
-+		case oldaskconfig:
- 			fflush(stdout);
- 			fgets(line, 128, stdin);
- 			strip(line);
-@@ -363,9 +365,9 @@ static void conf(struct menu *menu)
- 
- 		switch (prop->type) {
- 		case P_MENU:
--			if ((input_mode == ask_silent ||
--			     input_mode == dont_ask ||
--			     input_mode == dont_ask_dont_tell) &&
-+			if ((input_mode == silentoldconfig ||
-+			     input_mode == nonint_oldconfig ||
-+			     input_mode == loose_nonint_oldconfig) &&
- 			    rootEntry != menu) {
- 				check_conf(menu);
- 				return;
-@@ -424,9 +426,9 @@ static void check_conf(struct menu *menu)
- 	if (sym && !sym_has_value(sym)) {
- 		if (sym_is_changable(sym) ||
- 		    (sym_is_choice(sym) && sym_get_tristate_value(sym) == yes)) {
--			if (input_mode == dont_ask ||
--			    input_mode == dont_ask_dont_tell) {
--				if (input_mode == dont_ask &&
-+			if (input_mode == nonint_oldconfig ||
-+			    input_mode == loose_nonint_oldconfig) {
-+				if (input_mode == nonint_oldconfig &&
- 				    sym->name && !sym_is_choice_value(sym)) {
- 					if (!unset_variables)
- 						fprintf(stderr, "The following"
-@@ -448,6 +450,20 @@ static void check_conf(struct menu *menu)
- 		check_conf(child);
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index 9f180ab..bc1e158 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -783,6 +783,110 @@ struct symbol **sym_re_search(const char *pattern)
+ 	return sym_arr;
  }
  
-+static struct option long_opts[] = {
-+	{"oldaskconfig",    no_argument,       NULL, oldaskconfig},
-+	{"oldconfig",       no_argument,       NULL, oldconfig},
-+	{"silentoldconfig", no_argument,       NULL, silentoldconfig},
-+	{"defconfig",       optional_argument, NULL, defconfig},
-+	{"allnoconfig",     no_argument,       NULL, allnoconfig},
-+	{"allyesconfig",    no_argument,       NULL, allyesconfig},
-+	{"allmodconfig",    no_argument,       NULL, allmodconfig},
-+	{"randconfig",      no_argument,       NULL, randconfig},
-+	{"nonint_oldconfig",       no_argument, NULL, nonint_oldconfig},
-+	{"loose_nonint_oldconfig", no_argument, NULL, loose_nonint_oldconfig},
-+	{NULL, 0, NULL, 0}
-+};
++/*
++ * When we check for recursive dependencies we use a stack to save
++ * current state so we can print out relevant info to user.
++ * The entries are located on the call stack so no need to free memory.
++ * Note inser() remove() must always match to properly clear the stack.
++ */
++static struct dep_stack {
++	struct dep_stack *prev, *next;
++	struct symbol *sym;
++	struct property *prop;
++	struct expr *expr;
++} *check_top;
 +
- int main(int ac, char **av)
- {
- 	int opt;
-@@ -458,38 +474,16 @@ int main(int ac, char **av)
- 	bindtextdomain(PACKAGE, LOCALEDIR);
- 	textdomain(PACKAGE);
- 
--	while ((opt = getopt(ac, av, "osbBdD:nmyrh")) != -1) {
-+	while ((opt = getopt_long_only(ac, av, "", long_opts, NULL)) != -1) {
-+		input_mode = (enum input_mode)opt;
- 		switch (opt) {
--		case 'o':
--			input_mode = ask_silent;
--			break;
--		case 's':
--			input_mode = ask_silent;
-+		case silentoldconfig:
- 			sync_kconfig = 1;
- 			break;
--		case 'b':
--			input_mode = dont_ask;
--			break;
--		case 'B':
--			input_mode = dont_ask_dont_tell;
--			break;
--		case 'd':
--			input_mode = set_default;
--			break;
--		case 'D':
--			input_mode = set_default;
-+		case defconfig:
- 			defconfig_file = optarg;
- 			break;
--		case 'n':
--			input_mode = set_no;
--			break;
--		case 'm':
--			input_mode = set_mod;
--			break;
--		case 'y':
--			input_mode = set_yes;
--			break;
--		case 'r':
-+		case randconfig:
- 		{
- 			struct timeval now;
- 			unsigned int seed;
-@@ -502,17 +496,12 @@ int main(int ac, char **av)
- 
- 			seed = (unsigned int)((now.tv_sec + 1) * (now.tv_usec + 1));
- 			srand(seed);
--
--			input_mode = set_random;
- 			break;
- 		}
--		case 'h':
--			printf(_("See README for usage info\n"));
--			exit(0);
--			break;
--		default:
-+		case '?':
- 			fprintf(stderr, _("See README for usage info\n"));
- 			exit(1);
++static void dep_stack_insert(struct dep_stack *stack, struct symbol *sym)
++{
++	memset(stack, 0, sizeof(*stack));
++	if (check_top)
++		check_top->next = stack;
++	stack->prev = check_top;
++	stack->sym = sym;
++	check_top = stack;
++}
++
++static void dep_stack_remove(void)
++{
++	check_top = check_top->prev;
++	if (check_top)
++		check_top->next = NULL;
++}
++
++/*
++ * Called when we have detected a recursive dependency.
++ * check_top point to the top of the stact so we use
++ * the ->prev pointer to locate the bottom of the stack.
++ */
++static void sym_check_print_recursive(struct symbol *last_sym)
++{
++	struct dep_stack *stack;
++	struct symbol *sym, *next_sym;
++	struct menu *menu = NULL;
++	struct property *prop;
++	struct dep_stack cv_stack;
++
++	if (sym_is_choice_value(last_sym)) {
++		dep_stack_insert(&cv_stack, last_sym);
++		last_sym = prop_get_symbol(sym_get_choice_prop(last_sym));
++	}
++
++	for (stack = check_top; stack != NULL; stack = stack->prev)
++		if (stack->sym == last_sym)
 +			break;
- 		}
- 	}
- 	if (ac == optind) {
-@@ -537,7 +526,7 @@ int main(int ac, char **av)
- 	}
++	if (!stack) {
++		fprintf(stderr, "unexpected recursive dependency error\n");
++		return;
++	}
++
++	for (; stack; stack = stack->next) {
++		sym = stack->sym;
++		next_sym = stack->next ? stack->next->sym : last_sym;
++		prop = stack->prop;
++
++		/* for choice values find the menu entry (used below) */
++		if (sym_is_choice(sym) || sym_is_choice_value(sym)) {
++			for (prop = sym->prop; prop; prop = prop->next) {
++				menu = prop->menu;
++				if (prop->menu)
++					break;
++			}
++		}
++		if (stack->sym == last_sym)
++			fprintf(stderr, "%s:%d:error: recursive dependency detected!\n",
++				prop->file->name, prop->lineno);
++		if (stack->expr) {
++			fprintf(stderr, "%s:%d:\tsymbol %s %s value contains %s\n",
++				prop->file->name, prop->lineno,
++				sym->name ? sym->name : "<choice>",
++				prop_get_type_name(prop->type),
++				next_sym->name ? next_sym->name : "<choice>");
++		} else if (stack->prop) {
++			fprintf(stderr, "%s:%d:\tsymbol %s depends on %s\n",
++				prop->file->name, prop->lineno,
++				sym->name ? sym->name : "<choice>",
++				next_sym->name ? next_sym->name : "<choice>");
++		} else if (sym_is_choice(sym)) {
++			fprintf(stderr, "%s:%d:\tchoice %s contains symbol %s\n",
++				menu->file->name, menu->lineno,
++				sym->name ? sym->name : "<choice>",
++				next_sym->name ? next_sym->name : "<choice>");
++		} else if (sym_is_choice_value(sym)) {
++			fprintf(stderr, "%s:%d:\tsymbol %s is part of choice %s\n",
++				menu->file->name, menu->lineno,
++				sym->name ? sym->name : "<choice>",
++				next_sym->name ? next_sym->name : "<choice>");
++		} else {
++			fprintf(stderr, "%s:%d:\tsymbol %s is selected by %s\n",
++				prop->file->name, prop->lineno,
++				sym->name ? sym->name : "<choice>",
++				next_sym->name ? next_sym->name : "<choice>");
++		}
++	}
++
++	if (check_top == &cv_stack)
++		dep_stack_remove();
++}
  
- 	switch (input_mode) {
--	case set_default:
-+	case defconfig:
- 		if (!defconfig_file)
- 			defconfig_file = conf_get_default_confname();
- 		if (conf_read(defconfig_file)) {
-@@ -547,27 +536,27 @@ int main(int ac, char **av)
- 			exit(1);
- 		}
- 		break;
--	case ask_silent:
--	case ask_all:
--	case ask_new:
--	case dont_ask:
--	case dont_ask_dont_tell:
-+	case silentoldconfig:
-+	case oldaskconfig:
-+	case oldconfig:
-+	case nonint_oldconfig:
-+	case loose_nonint_oldconfig:
- 		conf_read(NULL);
- 		break;
--	case set_no:
--	case set_mod:
--	case set_yes:
--	case set_random:
-+	case allnoconfig:
-+	case allyesconfig:
-+	case allmodconfig:
-+	case randconfig:
- 		name = getenv("KCONFIG_ALLCONFIG");
- 		if (name && !stat(name, &tmpstat)) {
- 			conf_read_simple(name, S_DEF_USER);
+ static struct symbol *sym_check_expr_deps(struct expr *e)
+ {
+@@ -819,24 +923,33 @@ static struct symbol *sym_check_sym_deps(struct symbol *sym)
+ {
+ 	struct symbol *sym2;
+ 	struct property *prop;
++	struct dep_stack stack;
++
++	dep_stack_insert(&stack, sym);
+ 
+ 	sym2 = sym_check_expr_deps(sym->rev_dep.expr);
+ 	if (sym2)
+-		return sym2;
++		goto out;
+ 
+ 	for (prop = sym->prop; prop; prop = prop->next) {
+ 		if (prop->type == P_CHOICE || prop->type == P_SELECT)
+ 			continue;
++		stack.prop = prop;
+ 		sym2 = sym_check_expr_deps(prop->visible.expr);
+ 		if (sym2)
  			break;
- 		}
- 		switch (input_mode) {
--		case set_no:	 name = "allno.config"; break;
--		case set_mod:	 name = "allmod.config"; break;
--		case set_yes:	 name = "allyes.config"; break;
--		case set_random: name = "allrandom.config"; break;
-+		case allnoconfig:	name = "allno.config"; break;
-+		case allyesconfig:	name = "allyes.config"; break;
-+		case allmodconfig:	name = "allmod.config"; break;
-+		case randconfig:	name = "allrandom.config"; break;
- 		default: break;
- 		}
- 		if (!stat(name, &tmpstat))
-@@ -592,37 +581,37 @@ int main(int ac, char **av)
+ 		if (prop->type != P_DEFAULT || sym_is_choice(sym))
+ 			continue;
++		stack.expr = prop->expr;
+ 		sym2 = sym_check_expr_deps(prop->expr);
+ 		if (sym2)
+ 			break;
++		stack.expr = NULL;
  	}
  
- 	switch (input_mode) {
--	case set_no:
-+	case allnoconfig:
- 		conf_set_all_new_symbols(def_no);
- 		break;
--	case set_yes:
-+	case allyesconfig:
- 		conf_set_all_new_symbols(def_yes);
- 		break;
--	case set_mod:
-+	case allmodconfig:
- 		conf_set_all_new_symbols(def_mod);
- 		break;
--	case set_random:
-+	case randconfig:
- 		conf_set_all_new_symbols(def_random);
- 		break;
--	case set_default:
-+	case defconfig:
- 		conf_set_all_new_symbols(def_default);
- 		break;
--	case ask_new:
--	case ask_all:
-+	case oldconfig:
-+	case oldaskconfig:
- 		rootEntry = &rootmenu;
- 		conf(&rootmenu);
--		input_mode = ask_silent;
-+		input_mode = silentoldconfig;
- 		/* fall through */
--	case dont_ask:
--	case dont_ask_dont_tell:
--	case ask_silent:
-+	case nonint_oldconfig:
-+	case loose_nonint_oldconfig:
-+	case silentoldconfig:
- 		/* Update until a loop caused no more changes */
- 		do {
- 			conf_cnt = 0;
- 			check_conf(&rootmenu);
- 		} while (conf_cnt &&
--			 (input_mode != dont_ask &&
--			  input_mode != dont_ask_dont_tell));
-+			 (input_mode != nonint_oldconfig &&
-+			  input_mode != loose_nonint_oldconfig));
- 		break;
++out:
++	dep_stack_remove();
++
+ 	return sym2;
+ }
+ 
+@@ -845,6 +958,9 @@ static struct symbol *sym_check_choice_deps(struct symbol *choice)
+ 	struct symbol *sym, *sym2;
+ 	struct property *prop;
+ 	struct expr *e;
++	struct dep_stack stack;
++
++	dep_stack_insert(&stack, choice);
+ 
+ 	prop = sym_get_choice_prop(choice);
+ 	expr_list_for_each_sym(prop->expr, e, sym)
+@@ -858,10 +974,8 @@ static struct symbol *sym_check_choice_deps(struct symbol *choice)
+ 
+ 	expr_list_for_each_sym(prop->expr, e, sym) {
+ 		sym2 = sym_check_sym_deps(sym);
+-		if (sym2) {
+-			fprintf(stderr, " -> %s", sym->name);
++		if (sym2)
+ 			break;
+-		}
+ 	}
+ out:
+ 	expr_list_for_each_sym(prop->expr, e, sym)
+@@ -871,6 +985,8 @@ out:
+ 	    prop_get_symbol(sym_get_choice_prop(sym2)) == choice)
+ 		sym2 = choice;
+ 
++	dep_stack_remove();
++
+ 	return sym2;
+ }
+ 
+@@ -880,18 +996,20 @@ struct symbol *sym_check_deps(struct symbol *sym)
+ 	struct property *prop;
+ 
+ 	if (sym->flags & SYMBOL_CHECK) {
+-		fprintf(stderr, "%s:%d:error: found recursive dependency: %s",
+-		        sym->prop->file->name, sym->prop->lineno,
+-			sym->name ? sym->name : "<choice>");
++		sym_check_print_recursive(sym);
+ 		return sym;
+ 	}
+ 	if (sym->flags & SYMBOL_CHECKED)
+ 		return NULL;
+ 
+ 	if (sym_is_choice_value(sym)) {
++		struct dep_stack stack;
++
+ 		/* for choice groups start the check with main choice symbol */
++		dep_stack_insert(&stack, sym);
+ 		prop = sym_get_choice_prop(sym);
+ 		sym2 = sym_check_deps(prop_get_symbol(prop));
++		dep_stack_remove();
+ 	} else if (sym_is_choice(sym)) {
+ 		sym2 = sym_check_choice_deps(sym);
+ 	} else {
+@@ -900,14 +1018,8 @@ struct symbol *sym_check_deps(struct symbol *sym)
+ 		sym->flags &= ~SYMBOL_CHECK;
  	}
  
-@@ -638,7 +627,7 @@ int main(int ac, char **av)
- 			fprintf(stderr, _("\n*** Error during update of the kernel configuration.\n\n"));
- 			return 1;
- 		}
--	} else if (!unset_variables || input_mode != dont_ask) {
-+	} else if (!unset_variables || input_mode != nonint_oldconfig) {
- 		if (conf_write(NULL)) {
- 			fprintf(stderr, _("\n*** Error during writing of the kernel configuration.\n\n"));
- 			exit(1);
+-	if (sym2) {
+-		fprintf(stderr, " -> %s", sym->name ? sym->name : "<choice>");
+-		if (sym2 == sym) {
+-			fprintf(stderr, "\n");
+-			zconfnerrs++;
+-			sym2 = NULL;
+-		}
+-	}
++	if (sym2 && sym2 == sym)
++		sym2 = NULL;
+ 
+ 	return sym2;
+ }
 -- 
 1.6.0.6
 
