@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab0GaBTA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 21:19:00 -0400
-Received: from tuxonice.net ([74.207.252.127]:53290 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767Ab0GaBS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 21:18:59 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C537A01.5040808@tuxonice.net>
-Date: Sat, 31 Jul 2010 11:18:57 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Bojan Smojver <bojan@rexursive.com>
-CC: linux-kernel@vger.kernel.org
+	id S1754323Ab0GaBd6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 21:33:58 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:34536 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab0GaBd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 21:33:57 -0400
 Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
-References: <1280465201.2600.10.camel@shrek.rexursive.com>	 <1280486667.2608.1.camel@shrek.rexursive.com>	 <4C534C9D.8000600@tuxonice.net>	 <1280532174.2583.1.camel@shrek.rexursive.com>	 <4C5362E7.3000706@tuxonice.net> <1280538184.2583.11.camel@shrek.rexursive.com>
-In-Reply-To: <1280538184.2583.11.camel@shrek.rexursive.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+From: Bojan Smojver <bojan@rexursive.com>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4C537A01.5040808@tuxonice.net>
+References: <1280465201.2600.10.camel@shrek.rexursive.com>
+	 <1280486667.2608.1.camel@shrek.rexursive.com>
+	 <4C534C9D.8000600@tuxonice.net>
+	 <1280532174.2583.1.camel@shrek.rexursive.com>
+	 <4C5362E7.3000706@tuxonice.net>
+	 <1280538184.2583.11.camel@shrek.rexursive.com>
+	 <4C537A01.5040808@tuxonice.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 31 Jul 2010 11:33:55 +1000
+Message-ID: <1280540035.2658.5.camel@shrek.rexursive.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Sat, 2010-07-31 at 11:18 +1000, Nigel Cunningham wrote:
+> It should be possible to do the allocation at that point. I might see
+> if I can take a look later on. 
 
-On 31/07/10 11:03, Bojan Smojver wrote:
-> On Sat, 2010-07-31 at 09:40 +1000, Nigel Cunningham wrote:
->
->> How about vmallocing the cmp as well? That would greatly reduce the
->> potential for page allocation failures while still letting you use an
->> order 6 area.
->
-> In save_image(), that worked. In load_image() it would cause a crash
-> (something about kernel not being able to satisfy paging request). So, I
-> just made it __get_free_pages() instead. But, yeah good point.
->
-> Keep in mind that I have absolutely no idea how kernel memory allocation
-> works. I'm kinda coping and pasting code and hoping it doesn't crash :-)
+Maybe it's related to the fact that with vmalloc() you get a different
+thing then with __get_free_pages() in terms of using it with devices.
 
-It should be possible to do the allocation at that point. I might see if 
-I can take a look later on.
+If found this in Linux Device Drivers:
+---------------
+Addresses allocated by vmalloc can't be used outside of the
+microprocessor, because they make sense only on top of the processor's
+MMU. When a driver needs a real physical address (such as a DMA address,
+used by peripheral hardware to drive the system's bus), you can't easily
+use vmalloc. The right time to call vmalloc is when you are allocating
+memory for a large sequential buffer that exists only in software.
+---------------
 
->>> PS. I guess with this, read_sync can simply disappear as well.
->>
->> I haven't looked at the code for a while, but it might still be needed
->> for the header? I know that in TuxOnIce, I need to read the first page
->> synchronously when bootstrapping reading the image (can't read the next
->> page until you know where it is, and its location is on the first page).
->> Since swsusp uses those index pages, I think it would have the same
->> issue - they would need to be read before it could read the following
->> pages. Of course I'm going off memory :)
->
-> I think it can go, because the header is already read/written with&bio
-> set to NULL (sync read). See patch to remove read_sync.
+I'm guessing the page allocated by vmalloc() eventually gets passed down
+the I/O chain and is supposed to be read into by some hardware, which
+then causes a crash. (He, he... kernel according to Bojan - please
+ignore :-).
 
-Okee doke.
+In the first iteration of the patch, I allocated just one page using
+__get_free_page() and used that for I/O operations. The only overhead
+there was memcpy() from the page to vmalloc()-ed cmp. I can go back to
+that easily. It didn't actually make any significant difference to
+performance.
 
-By the way, please inline your patches. It makes it much easier to read 
-and comment on them.
+-- 
+Bojan
 
-Oh, and I've said it privately but not publicly: great work!
-
-Regards,
-
-Nigel
