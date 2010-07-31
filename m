@@ -1,95 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab0GaReE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 13:34:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34982 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab0GaReB (ORCPT
+	id S1753782Ab0GaRiV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 13:38:21 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:64898 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab0GaRiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 13:34:01 -0400
-Date: Sat, 31 Jul 2010 13:33:28 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: [PATCH] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
-Message-ID: <20100731173328.GA21072@infradead.org>
-References: <20100728071705.GA22964@localhost>
- <20100731161358.GA5147@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100731161358.GA5147@localhost>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 31 Jul 2010 13:38:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=SI8fY2nxxXbpaLyokHltN+cpzi8cwU3XrjIm7Q426kebkJTTF16mRNrw3PBdvUPNxi
+         x3CkC9TVlGYnrMp9qyJuY8dIDPTjZmOEUiqUMBodSEN0oH1kr126cqP5HbWNKbkBV0Zn
+         xai1RVMj7Ph1PJHhnE1ulrEP93cThr+f57yi0=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Ungerer <gerg@uclinux.org>, Christoph Egger <siccegge@cs.fau.de>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/7] 68328serial: check return value of copy_*_user() instead of access_ok()
+Date: Sat, 31 Jul 2010 21:38:00 +0400
+Message-Id: <1280597881-8365-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 12:13:58AM +0800, Wu Fengguang wrote:
-> FYI I did some memory stress test and find there are much more order-1
-> (and higher) users than fork(). This means lots of running applications
-> may stall on direct reclaim.
-> 
-> Basically all of these slab caches will do high order allocations:
+As copy_*_user() calls access_ok() it should not be called explicitly.
 
-It looks much, much worse on my system.  Basically all inode structures,
-and also tons of frequently allocated xfs structures fall into this
-category,  None of them actually anywhere near the size of a page, which
-makes me wonder why we do such high order allocations:
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/serial/68328serial.c |   29 ++++++++++-------------------
+ 1 files changed, 10 insertions(+), 19 deletions(-)
 
-slabinfo - version: 2.1
-# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables <limit> <batchcount> <sharedfactor> : slabdata <active_slabs> <num_slabs> <sharedavail>
-nfsd4_stateowners      0      0    424   19    2 : tunables    0    0    0 : slabdata      0      0      0
-kvm_vcpu               0      0  10400    3    8 : tunables    0    0    0 : slabdata      0      0      0
-kmalloc_dma-512       32     32    512   16    2 : tunables    0    0    0 : slabdata      2      2      0
-mqueue_inode_cache     18     18    896   18    4 : tunables    0    0    0 : slabdata      1      1      0
-xfs_inode         279008 279008   1024   16    4 : tunables    0    0    0 : slabdata  17438  17438      0
-xfs_efi_item          44     44    360   22    2 : tunables    0    0    0 : slabdata      2      2      0
-xfs_efd_item          44     44    368   22    2 : tunables    0    0    0 : slabdata      2      2      0
-xfs_trans             40     40    800   20    4 : tunables    0    0    0 : slabdata      2      2      0
-xfs_da_state          32     32    488   16    2 : tunables    0    0    0 : slabdata      2      2      0
-nfs_inode_cache        0      0   1016   16    4 : tunables    0    0    0 : slabdata      0      0      0
-isofs_inode_cache      0      0    632   25    4 : tunables    0    0    0 : slabdata      0      0      0
-fat_inode_cache        0      0    664   12    2 : tunables    0    0    0 : slabdata      0      0      0
-hugetlbfs_inode_cache     14     14    584   14    2 : tunables    0    0    0 : slabdata      1      1      0
-ext4_inode_cache       0      0    968   16    4 : tunables    0    0    0 : slabdata      0      0      0
-ext2_inode_cache      21     21    776   21    4 : tunables    0    0    0 : slabdata      1      1      0
-ext3_inode_cache       0      0    800   20    4 : tunables    0    0    0 : slabdata      0      0      0
-rpc_inode_cache       19     19    832   19    4 : tunables    0    0    0 : slabdata      1      1      0
-UDP-Lite               0      0    768   21    4 : tunables    0    0    0 : slabdata      0      0      0
-ip_dst_cache         170    378    384   21    2 : tunables    0    0    0 : slabdata     18     18      0
-RAW                   63     63    768   21    4 : tunables    0    0    0 : slabdata      3      3      0
-UDP                   52     84    768   21    4 : tunables    0    0    0 : slabdata      4      4      0
-TCP                   60    100   1600   20    8 : tunables    0    0    0 : slabdata      5      5      0
-blkdev_queue          42     42   2216   14    8 : tunables    0    0    0 : slabdata      3      3      0
-sock_inode_cache     650    713    704   23    4 : tunables    0    0    0 : slabdata     31     31      0
-skbuff_fclone_cache     36     36    448   18    2 : tunables    0    0    0 : slabdata      2      2      0
-shmem_inode_cache   3620   3948    776   21    4 : tunables    0    0    0 : slabdata    188    188      0
-proc_inode_cache    1818   1875    632   25    4 : tunables    0    0    0 : slabdata     75     75      0
-bdev_cache            57     57    832   19    4 : tunables    0    0    0 : slabdata      3      3      0
-inode_cache         7934   7938    584   14    2 : tunables    0    0    0 : slabdata    567    567      0
-files_cache          689    713    704   23    4 : tunables    0    0    0 : slabdata     31     31      0
-signal_cache         301    342    896   18    4 : tunables    0    0    0 : slabdata     19     19      0
-sighand_cache        192    210   2112   15    8 : tunables    0    0    0 : slabdata     14     14      0
-task_struct          311    325   5616    5    8 : tunables    0    0    0 : slabdata     65     65      0
-idr_layer_cache      578    585    544   15    2 : tunables    0    0    0 : slabdata     39     39      0
-radix_tree_node    74738  74802    560   14    2 : tunables    0    0    0 : slabdata   5343   5343      0
-kmalloc-8192          29     32   8192    4    8 : tunables    0    0    0 : slabdata      8      8      0
-kmalloc-4096         194    208   4096    8    8 : tunables    0    0    0 : slabdata     26     26      0
-kmalloc-2048         310    352   2048   16    8 : tunables    0    0    0 : slabdata     22     22      0
-kmalloc-1024        1607   1616   1024   16    4 : tunables    0    0    0 : slabdata    101    101      0
-kmalloc-512          484    512    512   16    2 : tunables    0    0    0 : slabdata     32     32      0
+diff --git a/drivers/serial/68328serial.c b/drivers/serial/68328serial.c
+index 7356a56..ab6ad8b 100644
+--- a/drivers/serial/68328serial.c
++++ b/drivers/serial/68328serial.c
+@@ -869,7 +869,9 @@ static int get_serial_info(struct m68k_serial * info,
+ 	tmp.close_delay = info->close_delay;
+ 	tmp.closing_wait = info->closing_wait;
+ 	tmp.custom_divisor = info->custom_divisor;
+-	copy_to_user(retinfo,&tmp,sizeof(*retinfo));
++	if (copy_to_user(retinfo, &tmp, sizeof(*retinfo)))
++		return -EFAULT;
++
+ 	return 0;
+ }
+ 
+@@ -882,7 +884,8 @@ static int set_serial_info(struct m68k_serial * info,
+ 
+ 	if (!new_info)
+ 		return -EFAULT;
+-	copy_from_user(&new_serial,new_info,sizeof(new_serial));
++	if (copy_from_user(&new_serial, new_info, sizeof(new_serial)))
++		return -EFAULT;
+ 	old_info = *info;
+ 
+ 	if (!capable(CAP_SYS_ADMIN)) {
+@@ -943,8 +946,7 @@ static int get_lsr_info(struct m68k_serial * info, unsigned int *value)
+ 	status = 0;
+ #endif
+ 	local_irq_restore(flags);
+-	put_user(status,value);
+-	return 0;
++	return put_user(status, value);
+ }
+ 
+ /*
+@@ -999,27 +1001,16 @@ static int rs_ioctl(struct tty_struct *tty, struct file * file,
+ 			send_break(info, arg ? arg*(100) : 250);
+ 			return 0;
+ 		case TIOCGSERIAL:
+-			if (access_ok(VERIFY_WRITE, (void *) arg,
+-						sizeof(struct serial_struct)))
+-				return get_serial_info(info,
+-					       (struct serial_struct *) arg);
+-			return -EFAULT;
++			return get_serial_info(info,
++				       (struct serial_struct *) arg);
+ 		case TIOCSSERIAL:
+ 			return set_serial_info(info,
+ 					       (struct serial_struct *) arg);
+ 		case TIOCSERGETLSR: /* Get line status register */
+-			if (access_ok(VERIFY_WRITE, (void *) arg,
+-						sizeof(unsigned int)))
+-				return get_lsr_info(info, (unsigned int *) arg);
+-			return -EFAULT;
++			return get_lsr_info(info, (unsigned int *) arg);
+ 		case TIOCSERGSTRUCT:
+-			if (!access_ok(VERIFY_WRITE, (void *) arg,
+-						sizeof(struct m68k_serial)))
+-				return -EFAULT;
+-			copy_to_user((struct m68k_serial *) arg,
++			return copy_to_user((struct m68k_serial *) arg,
+ 				    info, sizeof(struct m68k_serial));
+-			return 0;
+-			
+ 		default:
+ 			return -ENOIOCTLCMD;
+ 		}
+-- 
+1.7.0.4
+
