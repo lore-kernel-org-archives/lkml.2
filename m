@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab0GaVZc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 17:25:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50965 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab0GaVZb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 17:25:31 -0400
-Date: Sat, 31 Jul 2010 22:25:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: Ondrej Zary <linux@rainbow-software.org>, linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] cyber2000fb: fix machine hang on module load
-Message-ID: <20100731212509.GA3633@n2100.arm.linux.org.uk>
-References: <201007312255.30729.linux@rainbow-software.org> <4C5493DD.7010402@garzik.org>
+	id S1756828Ab0GaV2w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 17:28:52 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:45249 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072Ab0GaV2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 17:28:51 -0400
+X-Greylist: delayed 430 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Jul 2010 17:28:51 EDT
+Date: Sat, 31 Jul 2010 23:21:35 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] hwmon: f71882fg: use a muxed resource lock for the
+ Super I/O port
+Message-ID: <20100731212135.GB3711@salidar.me.mortis.eu>
+References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
+ <1269523063-30346-1-git-send-email-me@mortis.eu>
+ <1269523063-30346-2-git-send-email-me@mortis.eu>
+ <20100425103540.GA5185@salidar.me.mortis.eu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JP+T4n/bALQSJXh8"
 Content-Disposition: inline
-In-Reply-To: <4C5493DD.7010402@garzik.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100425103540.GA5185@salidar.me.mortis.eu>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 31, 2010 at 05:21:33PM -0400, Jeff Garzik wrote:
-> On 07/31/2010 04:55 PM, Ondrej Zary wrote:
->> I was testing two CyberPro 2000 based PCI cards on x86 and the machine always
->> hanged completely when the cyber2000fb module was loaded. It seems that the
->> card hangs when some registers are accessed too quickly after writing RAMDAC
->> control register. With this patch, both card work.
->>
->> Add delay after RAMDAC control register write to prevent hangs on module load.
->>
->> Signed-off-by: Ondrej Zary<linux@rainbow-software.org>
->>
->> --- linux-2.6.35-rc2-orig/drivers/video/cyber2000fb.c	2010-06-06 05:43:24.000000000 +0200
->> +++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-07-27 23:12:37.000000000 +0200
->> @@ -436,6 +436,8 @@ static void cyber2000fb_write_ramdac_ctr
->>   	cyber2000fb_writeb(i | 4, 0x3cf, cfb);
->>   	cyber2000fb_writeb(val, 0x3c6, cfb);
->>   	cyber2000fb_writeb(i, 0x3cf, cfb);
->> +	/* prevent card lock-up observed on x86 with CyberPro 2000 */
->> +	cyber2000fb_readb(0x3cf, cfb);
->>   }
->
-> IIRC, cyber2000 is basically an S3 graphics chip.
 
-No such luck.  It's a proprietary Integraphics chip, mainly used in
-ARM Netwinders some 10 years ago.  It's completely different from the
-S3 chips such as Trio64.
+--JP+T4n/bALQSJXh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sun, Apr 25, 2010 at 12:35:40 +0200, Giel van Schijndel wrote:
+> On Thu, Mar 25, 2010 at 14:17:42 +0100, Giel van Schijndel wrote:
+>> Sleep while acquiring a resource lock on the Super I/O port. This
+>> should prevent collisions from causing the hardware probe to fail
+>> with -EBUSY.
+>=20
+> Fix a bug which caused f71882fg_find() to pretend to be succesfull on
+> Super I/O ports which didn't have a Fintek chip attached.  This was
+> caused by returning 0 instead of -ENODEV, adding several 'err =3D
+> -ENODEV' statements preceding the 'goto exit' statements fixed this.
+>=20
+> Patch follows this line:
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> Sleep while acquiring a resource lock on the Super I/O port. This
+> should prevent collisions from causing the hardware probe to fail with
+> -EBUSY.
+>=20
+> Signed-off-by: Giel van Schijndel <me@mortis.eu>
+
+All of this patch's dependencies now reside in mainline, so I'd like to
+"renew" the request for applying it.
+
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+
+--JP+T4n/bALQSJXh8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkxUk98ACgkQZBYm/87l50ISyACeKr0sv9RE0iR5Jwleotj+WIXo
+JpkAn0gdr/wNbW1ytVRo9HNvA1drgMYH
+=9U23
+-----END PGP SIGNATURE-----
+
+--JP+T4n/bALQSJXh8--
