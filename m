@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab0GaIIO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 04:08:14 -0400
-Received: from borg.medozas.de ([188.40.89.202]:54082 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752873Ab0GaIIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 04:08:10 -0400
-Date: Sat, 31 Jul 2010 10:08:07 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: utz lehmann <lkml123@s2y4n2c.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
-        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
-  file stats available [ver #6]
-In-Reply-To: <1280524978.2452.9.camel@segv.aura.of.mankind>
-Message-ID: <alpine.LSU.2.01.1007311006070.19122@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>  <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>  <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>  <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> 
- <AANLkTikBCXK6uEw  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> <1280524978.2452.9.camel@segv.aura.of.mankind>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1754858Ab0GaIKf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 04:10:35 -0400
+Received: from mailer.igp.gob.pe ([200.60.148.146]:60661 "EHLO
+	mailer.igp.gob.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab0GaIKc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 04:10:32 -0400
+Message-ID: <28045.41.217.66.5.1280564021.squirrel@www.igp.gob.pe>
+Date: Sat, 31 Jul 2010 10:13:41 +0200 (CEST)
+Subject: 
+From: "WESTERN UNION CENTER" <info@wcn.com>
+Reply-To: wcn.paymentcenter@gmail.com
+User-Agent: SquirrelMail/1.4.9a
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Friday 2010-07-30 23:22, utz lehmann wrote:
->On Thu, 2010-07-22 at 09:40 -0700, Linus Torvalds wrote:
->> But the fact is, th Unix ctime semantics are insane and largely
->> useless. There's a damn good reason almost nobody uses ctime under
->> unix.
->> 
->> So what I'm suggesting is that we have a flag - either per-process or
->> per-mount - that just says "use windows semantics for ctime".
->
->When abusing an existing time stamp use atime not ctime please.
->ctime has it's uses. atime was just a mistake and is nearly useless.
 
-MUAs make use of atime.
 
->And with noatime we already have creation time semantics for atime.
+Attention,
 
-noatime was a late afterthought, and because it can interfere with
-some programs, relatime came along too.
+We wish to inform you that the United Nations Organization (UN) has taking
+over the Inheritance/Winning payment issue in which you presently have
+with your transaction agents. Your funds was withdrawn by UN on your
+behalf based on the fact that you where subjected to too many process that
+will make you spend more money before receiving your funds.
+
+Your Inheritance/Winning payment was paid out to the United Nations
+Organization, and they have succeeded in depositing your funds with us.
+They have ordered Western Union to take full responsibility in the
+transfer process of your funds, and we have received your application for
+the first installment of $5,600 USD from the total amount of $380,000.00
+USD, Three
+Hundred And Eighty Thousand United States Dollars.
+
+For some security reasons ,we need you to reconfirm your personal data's
+
+Full Names**
+Contact Address**
+Country**
+Occupation**
+Telephone Number**
+Age**
+
+before receiving the MTCN for the first installment, and we will email you
+others after 24 hours of receiving each payment.
+
+Yours truly
+Dr. Phillip Morgan
+E-mail: wcn.paymentcenter@gmail.com
+>From Western union payment Centers.
+
