@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab0GaPbM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 11:31:12 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58298 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625Ab0GaPbK (ORCPT
+	id S1756530Ab0GaP4I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 11:56:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49185 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab0GaP4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 11:31:10 -0400
-Date: Sat, 31 Jul 2010 16:30:31 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-Message-ID: <20100731153031.GE27064@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home> <20100729170313.GB16420@barrios-desktop> <alpine.DEB.2.00.1007291222410.17734@router.home> <20100729183320.GH18923@n2100.arm.linux.org.uk> <1280436919.16922.11246.camel@nimitz> <20100729221426.GA28699@n2100.arm.linux.org.uk> <1280450338.16922.11735.camel@nimitz> <alpine.DEB.2.00.1007300745180.9007@router.home>
+	Sat, 31 Jul 2010 11:56:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=jk3LBAlUUPJCBEsjg7GC9mVNcfr7aP0hJxJUvsxra7oTAjNrkp1AdvZ7xjt4HWBmR4
+         Wa09TBQG1TQGQO1c1YonD8xfQdGQVk92VVL5drzfjidzua9rP8WdMbBpIOJXNjRoV3Pa
+         4Bpfgv5TBT5DC37aOvBjgT9iRss5Fx5EVlgzE=
+Message-ID: <4C54479E.7000004@gmail.com>
+Date: Sat, 31 Jul 2010 08:56:14 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1007300745180.9007@router.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: paulmck@linux.vnet.ibm.com
+CC: trivial@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 93/93]Documentation/RCU/RTFP.txt update web address.
+References: <1279688215-29628-1-git-send-email-justinmattock@gmail.com> <1279688215-29628-3-git-send-email-justinmattock@gmail.com> <20100731150407.GC2470@linux.vnet.ibm.com>
+In-Reply-To: <20100731150407.GC2470@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 07:48:00AM -0500, Christoph Lameter wrote:
-> On Thu, 29 Jul 2010, Dave Hansen wrote:
-> 
-> > SPARSEMEM_EXTREME would be a bit different.  It's a 2-level lookup.
-> > You'd have 16 "section roots", each representing 256MB of address space.
-> > Each time we put memory under one of those roots, we'd fill in a
-> > 512-section second-level table, which is designed to always fit into one
-> > page.  If you start at 256MB, you won't waste all those entries.
-> 
-> That is certain a solution to the !MMU case and it would work very much
-> like a page table. If you have an MMU then the vmemmap sparsemem
-> configuration can take advantage of of that to avoid the 2 level lookup.
+On 07/31/2010 08:04 AM, Paul E. McKenney wrote:
+> On Tue, Jul 20, 2010 at 09:56:43PM -0700, Justin P. Mattock wrote:
+>> The patch below updates a broken web address.
+>
+> Good catch!!!
+>
+> Reviewed-by: Paul E. McKenney<paulmck@linux.vnet.ibm.com>
+>
 
-Looking at vmemmap sparsemem, we need to fix it as the page table
-allocation in there bypasses the arch defined page table setup.
+Thanks for having a look..
+glad you did this because I just looked over the one big patch I sent 
+for these and realized I left this one out.
+(I'll have to resend again and double check to make sure..)
 
-This causes a problem if you have 256-entry L2 page tables with no
-room for the additional Linux VM PTE support bits (such as young,
-dirty, etc), and need to glue two 256-entry L2 hardware page tables
-plus a Linux version to store its accounting in each page.  See
-arch/arm/include/asm/pgalloc.h.
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   Documentation/RCU/RTFP.txt |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/Documentation/RCU/RTFP.txt b/Documentation/RCU/RTFP.txt
+>> index 5aea459..c43460d 100644
+>> --- a/Documentation/RCU/RTFP.txt
+>> +++ b/Documentation/RCU/RTFP.txt
+>> @@ -606,7 +606,7 @@ Suparna Bhattacharya"
+>>   ,Year="2006"
+>>   ,pages="v2 123-138"
+>>   ,note="Available:
+>> -\url{http://www.linuxsymposium.org/2006/view_abstract.php?content_key=184}
+>> +\url{http://www.linuxsymposium.org/2006/index_2006.php}
+>>   \url{http://www.rdrop.com/users/paulmck/RCU/OLSrtRCU.2006.08.11a.pdf}
+>>   [Viewed January 1, 2007]"
+>>   ,annotation="
+>> --
+>> 1.7.1.rc1.21.gf3bd6
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-So this causes a problem with vmemmap:
-
-                pte_t entry;
-                void *p = vmemmap_alloc_block_buf(PAGE_SIZE, node);
-                if (!p)
-                        return NULL;
-                entry = pfn_pte(__pa(p) >> PAGE_SHIFT, PAGE_KERNEL);
-
-Are you willing for this stuff to be replaced by architectures as
-necessary?
+Justin P. Mattock
