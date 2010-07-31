@@ -1,250 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab0GaAHJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 20:07:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33757 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752255Ab0GaAHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 20:07:04 -0400
-Date: Sat, 31 Jul 2010 00:06:46 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
-        prarit@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, prarit@redhat.com,
-        hpa@linux.intel.com
-In-Reply-To: <1280515602.2682.10.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <1280515602.2682.10.camel@sbsiddha-MOBL3.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mtrr] x86, mtrr: Use stop machine context to rendezvous all the cpu's
-Message-ID: <tip-68f202e4e87cfab4439568bf397fcc5c7cf8d729@git.kernel.org>
-Git-Commit-ID: 68f202e4e87cfab4439568bf397fcc5c7cf8d729
-X-Mailer: tip-git-log-daemon
+	id S1753982Ab0GaAXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 20:23:37 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:51257 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab0GaAXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 20:23:35 -0400
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <dlezcano@free.fr>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Paul Menage <menage@google.com>
+Subject: Re: Remaining work for userns
+References: <20100729195629.GA13378@hallyn.com>
+	<20100729195812.GB19015@hallyn.com>
+	<20100729214008.GA2785@count0.beaverton.ibm.com>
+	<20100729223957.GA12387@hallyn.com>
+	<20100729230052.GB2785@count0.beaverton.ibm.com>
+	<20100729232352.GC13902@hallyn.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Fri, 30 Jul 2010 17:23:26 -0700
+In-Reply-To: <20100729232352.GC13902@hallyn.com> (Serge E. Hallyn's message of "Thu\, 29 Jul 2010 18\:23\:52 -0500")
+Message-ID: <m139v0ts75.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 31 Jul 2010 00:06:47 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  68f202e4e87cfab4439568bf397fcc5c7cf8d729
-Gitweb:     http://git.kernel.org/tip/68f202e4e87cfab4439568bf397fcc5c7cf8d729
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Fri, 30 Jul 2010 11:46:42 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 30 Jul 2010 15:59:49 -0700
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-x86, mtrr: Use stop machine context to rendezvous all the cpu's
+> Quoting Matt Helsley (matthltc@us.ibm.com):
+>> On Thu, Jul 29, 2010 at 05:39:57PM -0500, Serge E. Hallyn wrote:
+>> > Quoting Matt Helsley (matthltc@us.ibm.com):
+>> > > On Thu, Jul 29, 2010 at 02:58:12PM -0500, Serge E. Hallyn wrote:
+>> 
+>> <snip>
+>> 
+>> > 
+>> > BTW in the past the only reason I saw for keeping ns cgroup was
+>> > to lock tasks into a devices cgroup.  Until that lazy guy who was
+>> > going to do it gets off his butt and implements user namespaces,
+>> > you'll just have to use LSMs, which is the right way.
+>> 
+>> And the only missing piece of userns is replacing the cred checks
+>> right? If so, it might be possible to come up with a coccinelle semantic
+>> patch which would do all/most of the hard work -- depends on whether the
+>> all the checks fit a small number of semantic patterns.
+>
+> I think the thing that always puts the brakes on when I get started
+> is siginfo_t.  We need some way to reference user namespaces in there,
+> without enforcing lifetime rules on siginfo.
 
-Use the stop machine context rather than IPI's to rendezvous all the cpus for
-MTRR initialization that happens during cpu bringup or for MTRR modifications
-during runtime.
+As I recall signal delivery in the kernel lands the signal in the
+queue of the destination process before the syscall returns.  If that
+is true we should be able to handle signal delivery by just doing
+whatever conversions are needed during delivery.
 
-This avoids deadlock scenario (reported by Prarit) like:
+aka the userns should just be task->nsproxy->user_ns for
+task->signal->queue.  We cannot unshare the user namespace so there
+are no nasty races.
 
-cpu A holds a read_lock (tasklist_lock for example) with irqs enabled
-cpu B waits for the same lock with irqs disabled using write_lock_irq
-cpu C doing set_mtrr() (during AP bringup for example), which will try to
-rendezvous all the cpus using IPI's
+I am reminded that I may want to play with the user namespace and
+unshare when I get setns refresh and reviewed for inclusion.  Still
+none of that should affect the fact that a task should never be
+able to change user namespaces.
 
-This will result in C and A come to the rendezvous point and waiting
-for B. B is stuck forever waiting for the lock and thus not
-reaching the rendezvous point.
+> What you mention is definately a chunk as well, so if you are interested
+> in pursuing that that'd be great.
+>
+> Also, reviewing the patches at the top of
+> http://git.kernel.org/?p=linux/kernel/git/sergeh/linux-cr.git;a=shortlog;h=refs/heads/userns.feb16.1
+> to give us some fresh feedback on the general approach is
+> valuable.
+>
+> And from there, the whole discussion (which we've had several times
+> in the past) about how to have the VFS map userids should probably be
+> had again.  (I believe august 2008 was the last time we really got
+> into that)
 
-Using stop cpu (run in the process context of per cpu based keventd) to do
-this rendezvous, avoids this deadlock scenario.
+We now have user_ns_map_uid and user_ns_map_gid in next-next.git
+Serge I'm not certain how that interacts with your other work, but
+it is definitely something we want to build on.
 
-Also make sure all the cpu's are in the rendezvous handler before we proceed
-with the local_irq_save() on each cpu. This lock step disabling irqs on all
-the cpus will avoid other deadlock scenarios (for example involving
-with the blocking smp_call_function's etc).
+Eric
 
-   [ This problem is very old. Marking -stable only for 2.6.35 as the
-     stop_one_cpu_nowait() API is present only in 2.6.35. Any older
-     kernel interested in this fix need to do some more work in backporting
-     this patch. ]
-
-Reported-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1280515602.2682.10.camel@sbsiddha-MOBL3.sc.intel.com>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Cc: stable@kernel.org	[2.6.35]
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/mtrr/main.c |   56 ++++++++++++++++++++++++++++++---------
- arch/x86/kernel/smpboot.c       |    7 +++++
- 2 files changed, 50 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 79556bd..01c0f3e 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -35,6 +35,7 @@
- 
- #include <linux/types.h> /* FIXME: kvm_para.h needs this */
- 
-+#include <linux/stop_machine.h>
- #include <linux/kvm_para.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
-@@ -143,22 +144,28 @@ struct set_mtrr_data {
- 	mtrr_type	smp_type;
- };
- 
-+static DEFINE_PER_CPU(struct cpu_stop_work, mtrr_work);
-+
- /**
-- * ipi_handler - Synchronisation handler. Executed by "other" CPUs.
-+ * mtrr_work_handler - Synchronisation handler. Executed by "other" CPUs.
-  * @info: pointer to mtrr configuration data
-  *
-  * Returns nothing.
-  */
--static void ipi_handler(void *info)
-+static int mtrr_work_handler(void *info)
- {
- #ifdef CONFIG_SMP
- 	struct set_mtrr_data *data = info;
- 	unsigned long flags;
- 
-+	atomic_dec(&data->count);
-+	while (!atomic_read(&data->gate))
-+		cpu_relax();
-+
- 	local_irq_save(flags);
- 
- 	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
-+	while (atomic_read(&data->gate))
- 		cpu_relax();
- 
- 	/*  The master has cleared me to execute  */
-@@ -173,12 +180,13 @@ static void ipi_handler(void *info)
- 	}
- 
- 	atomic_dec(&data->count);
--	while (atomic_read(&data->gate))
-+	while (!atomic_read(&data->gate))
- 		cpu_relax();
- 
- 	atomic_dec(&data->count);
- 	local_irq_restore(flags);
- #endif
-+	return 0;
- }
- 
- static inline int types_compatible(mtrr_type type1, mtrr_type type2)
-@@ -198,7 +206,7 @@ static inline int types_compatible(mtrr_type type1, mtrr_type type2)
-  *
-  * This is kinda tricky, but fortunately, Intel spelled it out for us cleanly:
-  *
-- * 1. Send IPI to do the following:
-+ * 1. Queue work to do the following on all processors:
-  * 2. Disable Interrupts
-  * 3. Wait for all procs to do so
-  * 4. Enter no-fill cache mode
-@@ -215,14 +223,17 @@ static inline int types_compatible(mtrr_type type1, mtrr_type type2)
-  * 15. Enable interrupts.
-  *
-  * What does that mean for us? Well, first we set data.count to the number
-- * of CPUs. As each CPU disables interrupts, it'll decrement it once. We wait
-- * until it hits 0 and proceed. We set the data.gate flag and reset data.count.
-- * Meanwhile, they are waiting for that flag to be set. Once it's set, each
-+ * of CPUs. As each CPU announces that it started the rendezvous handler by
-+ * decrementing the count, We reset data.count and set the data.gate flag
-+ * allowing all the cpu's to proceed with the work. As each cpu disables
-+ * interrupts, it'll decrement data.count once. We wait until it hits 0 and
-+ * proceed. We clear the data.gate flag and reset data.count. Meanwhile, they
-+ * are waiting for that flag to be cleared. Once it's cleared, each
-  * CPU goes through the transition of updating MTRRs.
-  * The CPU vendors may each do it differently,
-  * so we call mtrr_if->set() callback and let them take care of it.
-  * When they're done, they again decrement data->count and wait for data.gate
-- * to be reset.
-+ * to be set.
-  * When we finish, we wait for data.count to hit 0 and toggle the data.gate flag
-  * Everyone then enables interrupts and we all continue on.
-  *
-@@ -234,6 +245,9 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
- {
- 	struct set_mtrr_data data;
- 	unsigned long flags;
-+	int cpu;
-+
-+	preempt_disable();
- 
- 	data.smp_reg = reg;
- 	data.smp_base = base;
-@@ -246,10 +260,15 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
- 	atomic_set(&data.gate, 0);
- 
- 	/* Start the ball rolling on other CPUs */
--	if (smp_call_function(ipi_handler, &data, 0) != 0)
--		panic("mtrr: timed out waiting for other CPUs\n");
-+	for_each_online_cpu(cpu) {
-+		struct cpu_stop_work *work = &per_cpu(mtrr_work, cpu);
-+
-+		if (cpu == smp_processor_id())
-+			continue;
-+
-+		stop_one_cpu_nowait(cpu, mtrr_work_handler, &data, work);
-+	}
- 
--	local_irq_save(flags);
- 
- 	while (atomic_read(&data.count))
- 		cpu_relax();
-@@ -259,6 +278,16 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
- 	smp_wmb();
- 	atomic_set(&data.gate, 1);
- 
-+	local_irq_save(flags);
-+
-+	while (atomic_read(&data.count))
-+		cpu_relax();
-+
-+	/* Ok, reset count and toggle gate */
-+	atomic_set(&data.count, num_booting_cpus() - 1);
-+	smp_wmb();
-+	atomic_set(&data.gate, 0);
-+
- 	/* Do our MTRR business */
- 
- 	/*
-@@ -279,7 +308,7 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
- 
- 	atomic_set(&data.count, num_booting_cpus() - 1);
- 	smp_wmb();
--	atomic_set(&data.gate, 0);
-+	atomic_set(&data.gate, 1);
- 
- 	/*
- 	 * Wait here for everyone to have seen the gate change
-@@ -289,6 +318,7 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
- 		cpu_relax();
- 
- 	local_irq_restore(flags);
-+	preempt_enable();
- }
- 
- /**
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index c4f33b2..11015fd 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -816,6 +816,13 @@ do_rest:
- 			if (cpumask_test_cpu(cpu, cpu_callin_mask))
- 				break;	/* It has booted */
- 			udelay(100);
-+			/*
-+			 * Allow other tasks to run while we wait for the
-+			 * AP to come online. This also gives a chance
-+			 * for the MTRR work(triggered by the AP coming online)
-+			 * to be completed in the stop machine context.
-+			 */
-+			schedule();
- 		}
- 
- 		if (cpumask_test_cpu(cpu, cpu_callin_mask))
