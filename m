@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab0GaT6k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 15:58:40 -0400
-Received: from kroah.org ([198.145.64.141]:39086 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755147Ab0GaT6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 15:58:39 -0400
-Date: Sat, 31 Jul 2010 12:55:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] v3 De-couple sysfs memory directories from memory
-	sections
-Message-ID: <20100731195506.GC4644@kroah.com>
-References: <4C451BF5.50304@austin.ibm.com> <1280554584.1902.31.camel@pasglop>
+	id S1756506Ab0GaUHO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 16:07:14 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39367 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab0GaUHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 16:07:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=eZ56d2yHUd6OQ5RDLvwT47PsB8wzbbZ03M8tRgzwsEHW9GP30Z5K5Hxj+VD7Tbng5B
+         IgRafdUorn6Z3y1UD9HQ8rlYWZ+vhzATyOIiI3qY/4N64mHF5l+fzhJvvIadXaHjf4Sr
+         cWYVBkUk3zv9bpEcxp+SqnGoT6n2mXxGD+q3Y=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280554584.1902.31.camel@pasglop>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1280282802-10618-2-git-send-email-johnstul@us.ibm.com>
+References: <1280282802-10618-1-git-send-email-johnstul@us.ibm.com>
+	<1280282802-10618-2-git-send-email-johnstul@us.ibm.com>
+Date: Sun, 1 Aug 2010 05:07:10 +0900
+Message-ID: <AANLkTimBkKHQ2ti0K+Lpi+2XctH+V=5n9Y155GwetR0a@mail.gmail.com>
+Subject: Re: [RFC][PATCH 2/2] Greatly improve TSC calibration using a timer
+From: "Kuwahara,T." <6vvetjsrt26xsrzlh1z0zn4d2grdah@gmail.com>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Clark Williams <williams@redhat.com>, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 31, 2010 at 03:36:24PM +1000, Benjamin Herrenschmidt wrote:
-> On Mon, 2010-07-19 at 22:45 -0500, Nathan Fontenot wrote:
-> > This set of patches de-couples the idea that there is a single
-> > directory in sysfs for each memory section.  The intent of the
-> > patches is to reduce the number of sysfs directories created to
-> > resolve a boot-time performance issue.  On very large systems
-> > boot time are getting very long (as seen on powerpc hardware)
-> > due to the enormous number of sysfs directories being created.
-> > On a system with 1 TB of memory we create ~63,000 directories.
-> > For even larger systems boot times are being measured in hours.
-> 
-> Greg, Kame, how do we proceed with these ? I'm happy to put them in
-> powerpc.git with appropriate acks or will you take them ?
+Hi John,
 
-I thought there would be at least one more round of these patches based
-on the review comments, right?
+How about using the O'Rourke's algorithm?
+It's much faster and accurate even if an SMI disturbance occurred
+during the calibration process.
 
-I'll be glad to take them when everyone agrees with them.
-
-thanks,
-
-greg k-h
+Reference
+O'Rourke, J. (1981). An on-line algorithm for fitting straight lines
+between data ranges.
+Communications of the ACM, 24, 574-578. doi:10.1145/358746.358758
