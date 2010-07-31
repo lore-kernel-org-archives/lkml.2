@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab0GaBQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Jul 2010 21:16:46 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:56002 "EHLO imr3.ericy.com"
+	id S1754049Ab0GaBTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Jul 2010 21:19:00 -0400
+Received: from tuxonice.net ([74.207.252.127]:53290 "EHLO mail.tuxonice.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab0GaBQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Jul 2010 21:16:45 -0400
-Date: Fri, 30 Jul 2010 18:13:39 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        lm-sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH V3 2/5] Package Level Thermal Control and Power Limit
- Notification: pkgtemp hwmon driver
-Message-ID: <20100731011339.GB28386@ericsson.com>
-References: <1280448826-12004-1-git-send-email-fenghua.yu@intel.com>
- <1280448826-12004-3-git-send-email-fenghua.yu@intel.com>
- <4C537514.9090109@zytor.com>
+	id S1750767Ab0GaBS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Jul 2010 21:18:59 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4C537A01.5040808@tuxonice.net>
+Date: Sat, 31 Jul 2010 11:18:57 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C537514.9090109@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bojan Smojver <bojan@rexursive.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
+References: <1280465201.2600.10.camel@shrek.rexursive.com>	 <1280486667.2608.1.camel@shrek.rexursive.com>	 <4C534C9D.8000600@tuxonice.net>	 <1280532174.2583.1.camel@shrek.rexursive.com>	 <4C5362E7.3000706@tuxonice.net> <1280538184.2583.11.camel@shrek.rexursive.com>
+In-Reply-To: <1280538184.2583.11.camel@shrek.rexursive.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 08:57:56PM -0400, H. Peter Anvin wrote:
-> On 07/29/2010 05:13 PM, Fenghua Yu wrote:
-> > +
-> > +enum { SHOW_TEMP, SHOW_TJMAX, SHOW_TTARGET, SHOW_LABEL, SHOW_NAME } SHOW;
-> > +
-> 
-> This conflicts with an equally poorly named global variable in
-> drivers/hwmon/via-cputemp.c, and the conflict is causing a build failure.
-> 
-> I think both these drivers have the same bug: a missing "typedef" before
-> the enum keyword, as present in coretemp.c.  Of course, one can question
-> if it should be given a typename at all since in none of these drivers
+Hi.
 
-Especially since it isn't really a type name, but a global variable named SHOW.
-Type name (also called tag) would be enum SHOW { ... }; . 
+On 31/07/10 11:03, Bojan Smojver wrote:
+> On Sat, 2010-07-31 at 09:40 +1000, Nigel Cunningham wrote:
+>
+>> How about vmallocing the cmp as well? That would greatly reduce the
+>> potential for page allocation failures while still letting you use an
+>> order 6 area.
+>
+> In save_image(), that worked. In load_image() it would cause a crash
+> (something about kernel not being able to satisfy paging request). So, I
+> just made it __get_free_pages() instead. But, yeah good point.
+>
+> Keep in mind that I have absolutely no idea how kernel memory allocation
+> works. I'm kinda coping and pasting code and hoping it doesn't crash :-)
 
-Guenter
+It should be possible to do the allocation at that point. I might see if 
+I can take a look later on.
 
-> they are actually referenced by type, and instead the enumeration is
-> just used as a source of constants, which can perfectly well be handled
-> with an unnamed enum:
-> 
-> enum { SHOW_TEMP, SHOW_TJMAX, SHOW_TTARGET, SHOW_LABEL, SHOW_NAME };
-> 
-> 	-hpa
+>>> PS. I guess with this, read_sync can simply disappear as well.
+>>
+>> I haven't looked at the code for a while, but it might still be needed
+>> for the header? I know that in TuxOnIce, I need to read the first page
+>> synchronously when bootstrapping reading the image (can't read the next
+>> page until you know where it is, and its location is on the first page).
+>> Since swsusp uses those index pages, I think it would have the same
+>> issue - they would need to be read before it could read the following
+>> pages. Of course I'm going off memory :)
+>
+> I think it can go, because the header is already read/written with&bio
+> set to NULL (sync read). See patch to remove read_sync.
+
+Okee doke.
+
+By the way, please inline your patches. It makes it much easier to read 
+and comment on them.
+
+Oh, and I've said it privately but not publicly: great work!
+
+Regards,
+
+Nigel
