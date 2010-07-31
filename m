@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab0GaVFr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 17:05:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64176 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab0GaVFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 17:05:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=oBmwe+vMauyX8GdcIntkNPAuWfUFyifbPNctfgXx4SA0iSC0pHjYRFU7UwtEFYeRXF
-         olZ3gDbncNmzNTd/jJVS2yxWqHWT297C77B54nJz5aIM8BUdbcCAEgM3CrZjd823NC7F
-         vKm+XU4jEs0/fDFlwC8K47Uxg9lloK1yQB5MU=
+	id S1756809Ab0GaVU3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 17:20:29 -0400
+Received: from borg.medozas.de ([188.40.89.202]:49624 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072Ab0GaVU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 17:20:26 -0400
+Date: Sat, 31 Jul 2010 23:20:24 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+cc: Andreas Dilger <adilger@dilger.ca>, Phil Pishioneri <pgp@psu.edu>,
+        Volker.Lendecke@SerNet.DE, Jeremy Allison <jra@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
+ file stats available [ver #6]
+In-Reply-To: <1280603032.3125.24.camel@heimdal.trondhjem.org>
+Message-ID: <alpine.LSU.2.01.1007312316580.27642@obet.zrqbmnf.qr>
+References: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>  <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>  <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>  <E1Obxpd-00CRIo-SF@intern.SerNet.DE> 
+ <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>  <20100722162712.GB10352@jeremy-laptop>  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>  <1279817930.3621.14.camel@heimdal.trondhjem.org>  <20100722180204.GA32008@samba1>
+ <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>  <1279825160.3621.71.camel@heimdal.trondhjem.org> <4C5311F4.2050100@psu.edu>  <1280513506.12852.22.camel@heimdal.trondhjem.org>  <09B770A6-48DB-4296-B6C2-BF46D4DC7E57@dilger.ca>
+ <1280603032.3125.24.camel@heimdal.trondhjem.org>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <201007311448.06959.d.haid@gogi.tv>
-References: <201007311448.06959.d.haid@gogi.tv>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Sat, 31 Jul 2010 14:05:24 -0700
-Message-ID: <AANLkTimA8JH2Ctw+dDtLMX3AUH-GKrEHtQQmMd-q7=0x@mail.gmail.com>
-Subject: Re: iw reg set does not work because udev and crda do not respond to 
-	boot-time request.
-To: Daniel Haid <d.haid@gogi.tv>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Kay Sievers <kay.sievers@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Netlink / udev folks, please review.
 
-On Sat, Jul 31, 2010 at 5:48 AM, Daniel Haid <d.haid@gogi.tv> wrote:
-> Hello,
+On Saturday 2010-07-31 21:03, Trond Myklebust wrote:
+>On Sat, 2010-07-31 at 12:41 -0600, Andreas Dilger wrote:
+>> On 2010-07-30, at 12:11, Trond Myklebust wrote:
+>> > Your Mac has a perfectly functional CIFS client, as do your Linux boxes.
+>> > They both interoperate just fine with Samba, and would presumably
+>> > continue to do so if someone were to decide to reuse the ctime field on
+>> > your Samba box as storage for a create time.
+>> 
+>> CIFS doesn't support symlinks (they just appear as the referenced file), so I've had applications that scan the filesystem recurse indefinitely due to symlinked directories on a CIFS share appearing as hard-linked directories on the client.  This doesn't happen when the filesystem is accessed via NFS.
 >
-> the driver of my wireless card seems to ask for "US"
-> regulatory data during boot, but since udev is not
-> running at that point (I think not even the root filesystem
-> is mounted) crda does not respond.
+>Sigh... So please explain how it would be useful to export that
+>particular filesystem through _both_ CIFS and NFS?
 
-CRDA is not the only thing called by the kernel where there would be
-an issue due to a delay with udev during bootup to react to a message.
-The kernel calls CRDA for udev through kobject_uevent_env(). Uevent
-messages are now broadcasted through
-netlinknetlink_broadcast_filtered() since the old method of using a
-direct call to /sbin/hotplug would lead to many processes being
-spawned and in some cases OOM. You can still use this though through
-CONFIG_UEVENT_HELPER_PATH which will issue call_usermodehelper()
-during early boot on an initramfs for example, if you so need it.
+Seems like a reasonable case for, say, a public "ftp server". For
+example, I keep ftp5.gwdg.de:/ftp/pub mounted, that's a little more
+convenient than always having to start an ftp cilent.
 
-I am not sure though if netlink broadcast messages would be reissued
-by the kernel during early boot if no one replied back to the send
-message but it is worth looking into. As far as I can tell you would
-be the first to notice this. In fact we actually had reports of two
-consecutive messages being being sent to userspace when only one was
-being sent to userspace so it may indeed be in fact true that messages
-are rebroadcasted somehow, I am just not sure so Cc'ing netdev and
-lkml.
-
-> The effect is that "iw reg set" does not work, because
-> the kernel seems to be still waiting for the "US"
-> regulatory data. Running
-> COUNTRY="US" crda
-> manually once fixes the problem (until the next reboot).
-
-iw reg set will be ignored by net/wireless/reg.c as it is still
-waiting for last_request to be processed. It seems in your case the
-assumption that the request will be reissued in case udev is running
-at early boot is incorrect and we need to further understand exactly
-how these messages get queued and perhaps reissued or not.
-
-I considered recently changing the way we handle requests to userspace
-to use a completion handler but that would sit idle there for a while
-blocking on the reg_mutex... so decided against it. But could take a
-look again.
-
-> What is the correct way of solving this? Should udev not
-> pick up the request later when it is started?
-
-We need a better understanding of how netlink broadcast messages get
-processed during early boot. Right now cfg80211 will drop duplicate
-requests or any request while we're still pending for the last one.
-Once we find out more details about how netlink broadcast messages get
-processed during early boot we can then rework things a bit. In the
-meantime can you try using CONFIG_UEVENT_HELPER_PATH during the
-initramfs?
-
-  Luis
+Conversely, since NFS is, well, non-existent on Windows, one would
+use CIFS there (had it ftp5 opened) to get the same convenience.
