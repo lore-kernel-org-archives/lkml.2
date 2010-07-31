@@ -1,49 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab0GaQes (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 12:34:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53782 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab0GaQeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 12:34:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MBlqp2CybRi2+PcTFN3cR4y4Sd/5VehlSkwqbgxXf3OrqxcMf/4/JN9p4RDIFHZKr9
-         kAoe7MwlzLo5pCIVq+gubIRpfFC8ZmMRr+eASUWqG7dnJPHMay+tixoR3Du5qNnysvNh
-         pA23d7+iH6zxlsDSI3cD23uZpWrhfg6JMNofM=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] video: igafb: introduce lost 'return'
-Date: Sat, 31 Jul 2010 20:34:30 +0400
-Message-Id: <1280594070-3328-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755597Ab0GaQjK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 12:39:10 -0400
+Received: from mailfe02.swip.net ([212.247.154.33]:60611 "EHLO swip.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753446Ab0GaQjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 12:39:08 -0400
+X-Cloudmark-Score: 0.000000 []
+X-Cloudmark-Analysis: v=1.1 cv=uQlts9P3TFIiE3mXDKsOajf6rXzGvPXEyWzE93HpGms= c=1 sm=1 a=Dyoqhi_TatcA:10 a=M58Ut_zYM0YA:10 a=Cfj4BQAnxiAA:10 a=DAjeMJoE8ggA:10 a=JKcCxCXLW36uQ2WHjp7kyQ==:17 a=JKcCxCXLW36uQ2WHjp7kyQ==:117
+Reply-To: <blairmoore05@aol.com>
+From: "UNITED NATION MALAYSIA" <info@un.org>
+To: info@info.net
+Subject: You Have Won $650,500.00
+Date: Sun, 1 Aug 2010 00:38:51 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <auto-000003914060@mailfe02.swip.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-If iga_init() fails, code releases resources and continues to use it.
-It seems that after releasing resources 'return' should be.
-
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/video/igafb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/video/igafb.c b/drivers/video/igafb.c
-index 15d2001..c4e6fc0 100644
---- a/drivers/video/igafb.c
-+++ b/drivers/video/igafb.c
-@@ -531,6 +531,7 @@ int __init igafb_init(void)
- 		iounmap(info->screen_base);
- 		kfree(par->mmap_map);
- 		kfree(info);
-+		return -ENODEV;
-         }
- 
- #ifdef CONFIG_SPARC
--- 
-1.7.0.4
 
