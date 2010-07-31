@@ -1,28 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab0GaQjK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 12:39:10 -0400
-Received: from mailfe02.swip.net ([212.247.154.33]:60611 "EHLO swip.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753446Ab0GaQjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 12:39:08 -0400
-X-Cloudmark-Score: 0.000000 []
-X-Cloudmark-Analysis: v=1.1 cv=uQlts9P3TFIiE3mXDKsOajf6rXzGvPXEyWzE93HpGms= c=1 sm=1 a=Dyoqhi_TatcA:10 a=M58Ut_zYM0YA:10 a=Cfj4BQAnxiAA:10 a=DAjeMJoE8ggA:10 a=JKcCxCXLW36uQ2WHjp7kyQ==:17 a=JKcCxCXLW36uQ2WHjp7kyQ==:117
-Reply-To: <blairmoore05@aol.com>
-From: "UNITED NATION MALAYSIA" <info@un.org>
-To: info@info.net
-Subject: You Have Won $650,500.00
-Date: Sun, 1 Aug 2010 00:38:51 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <auto-000003914060@mailfe02.swip.net>
+	id S1755750Ab0GaQsc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 12:48:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47271 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab0GaQsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Jul 2010 12:48:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=s1ofMfL4kSi3+fpVW07Q2V2pkd9/dFjQHcTCHt9qyJnx7jtuaLsJi8tEQv6vNJ8VdZ
+         mOZYfSh3aRQ3M3GnDWxcMXth6kJgHbxWTihRtUC2oFmai/5JXvqojRP2nq6NJz/vDvwf
+         ovpYo1to5ZQGVZf2fbkSVRf/giPDZKOLeZ7xw=
+From: Brian Gerst <brgerst@gmail.com>
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] x86-64: Directly access per-cpu IST
+Date: Sat, 31 Jul 2010 12:48:22 -0400
+Message-Id: <1280594903-6341-1-git-send-email-brgerst@gmail.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Use a direct per-cpu reference for the IST instead of using a scratch
+register.
+
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+---
+ arch/x86/kernel/entry_64.S |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 4db7c4d..59af275 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1065,6 +1065,7 @@ ENTRY(\sym)
+ END(\sym)
+ .endm
+ 
++#define INIT_TSS_IST(x) PER_CPU_VAR(init_tss) + (TSS_ist + ((x) - 1) * 8)
+ .macro paranoidzeroentry_ist sym do_sym ist
+ ENTRY(\sym)
+ 	INTR_FRAME
+@@ -1076,10 +1077,9 @@ ENTRY(\sym)
+ 	TRACE_IRQS_OFF
+ 	movq %rsp,%rdi		/* pt_regs pointer */
+ 	xorl %esi,%esi		/* no error code */
+-	PER_CPU(init_tss, %r12)
+-	subq $EXCEPTION_STKSZ, TSS_ist + (\ist - 1) * 8(%r12)
++	subq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
+ 	call \do_sym
+-	addq $EXCEPTION_STKSZ, TSS_ist + (\ist - 1) * 8(%r12)
++	addq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
+ 	jmp paranoid_exit	/* %ebx: no swapgs flag */
+ 	CFI_ENDPROC
+ END(\sym)
+-- 
+1.7.2
 
