@@ -1,57 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab0GaHEO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 03:04:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53738 "EHLO
+	id S1755452Ab0GaHKI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 03:10:08 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41603 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab0GaHEM convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751161Ab0GaHKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 03:04:12 -0400
+	Sat, 31 Jul 2010 03:10:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=l98/fn2lTuRqaAZtYSRpzkSockL0WbvLuPK9giveqyQghKpkEMASyky2Y4q+uDVHX3
-         aZbiOkr/6of1RXchmhlOQh/cqpTTrHS5qbUTwc68q2JqrcB+lgnD+vOKXxTjLrA3OjUM
-         +RyjxQhT3fF7g+x/u3lAVYBbL9JcyZ3Cx0ISg=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=oib+arg+IYMrFTztoZ4VjV8s8ymf226PZSxZgWdTgeFUprmHzI/5tzOtaIeuX+LpXO
+         vqtgewt/pXxR23NS3R+xUge5pJzpDeBFCAn0D2rqx+orN17xq8h7aYPm2Ek5m8NbisIq
+         TFPDdqaOelXCf7oX6neLeo0s+jfZlszqgwtw4=
 From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] Input: Make ADS7846 independent on regulator
-Date: Sat, 31 Jul 2010 09:03:52 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, vapier@gentoo.org, pavel@ucw.cz,
+To: linux-arm-kernel@lists.infradead.org
+Cc: dmitry.torokhov@gmail.com, vapier@gentoo.org, pavel@ucw.cz,
         akpm@linux-foundation.org, khilman@deeprootsystems.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eric.y.miao@gmail.com
-References: <1280555108-27994-1-git-send-email-marek.vasut@gmail.com> <20100731063329.GA23620@core.coreip.homeip.net>
-In-Reply-To: <20100731063329.GA23620@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007310903.52921.marek.vasut@gmail.com>
+        eric.y.miao@gmail.com, Marek Vasut <marek.vasut@gmail.com>
+Subject: [PATCH v2] Input: Make ADS7846 independent on regulator
+Date: Sat, 31 Jul 2010 09:09:42 +0200
+Message-Id: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne So 31. července 2010 08:33:29 Dmitry Torokhov napsal(a):
-> Hi Marek,
-> 
-> On Sat, Jul 31, 2010 at 07:45:08AM +0200, Marek Vasut wrote:
-> > In case regulator was not found, ADS7846 failed to probe.
-> > 
-> > This fixes a problem on some Sharp Zaurus devices, where there is no
-> > regulator present and yet the touchscreen is used.
-> 
-> Too many ifdefs to my taste... Can we have ads7846_regulator_enable()
-> and friends stubbed out in case !CONFIG_REGULATOR?
+In case regulator was not found, ADS7846 failed to probe.
 
-Hi,
+This fixes a problem on some Sharp Zaurus devices, where there is no regulator
+present and the touchscreen is used.
 
-I believe you should ask the regulator guys about these. We can certainly just 
-remove the ifdefs (I was thinking about it, because it poluted the code quality 
-quite a bit). Just removing the ifdefs shouldn't cause any harm.
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+---
+ drivers/input/touchscreen/ads7846.c |   38 +++++++++++++++++++---------------
+ 1 files changed, 21 insertions(+), 17 deletions(-)
 
-Cheers
+diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
+index a9fdf55..53b318b 100644
+--- a/drivers/input/touchscreen/ads7846.c
++++ b/drivers/input/touchscreen/ads7846.c
+@@ -791,7 +791,8 @@ static void ads7846_disable(struct ads7846 *ts)
+ 		}
+ 	}
+ 
+-	regulator_disable(ts->reg);
++	if (ts->reg)
++		regulator_disable(ts->reg);
+ 
+ 	/* we know the chip's in lowpower mode since we always
+ 	 * leave it that way after every request
+@@ -804,7 +805,8 @@ static void ads7846_enable(struct ads7846 *ts)
+ 	if (!ts->disabled)
+ 		return;
+ 
+-	regulator_enable(ts->reg);
++	if (ts->reg)
++		regulator_enable(ts->reg);
+ 
+ 	ts->disabled = 0;
+ 	ts->irq_disabled = 0;
+@@ -1162,16 +1164,15 @@ static int __devinit ads7846_probe(struct spi_device *spi)
+ 	ts->last_msg = m;
+ 
+ 	ts->reg = regulator_get(&spi->dev, "vcc");
+-	if (IS_ERR(ts->reg)) {
+-		err = PTR_ERR(ts->reg);
+-		dev_err(&spi->dev, "unable to get regulator: %d\n", err);
+-		goto err_free_gpio;
+-	}
+-
+-	err = regulator_enable(ts->reg);
+-	if (err) {
+-		dev_err(&spi->dev, "unable to enable regulator: %d\n", err);
+-		goto err_put_regulator;
++	if (IS_ERR(ts->reg))
++		ts->reg = NULL;
++	else {
++		err = regulator_enable(ts->reg);
++		if (err) {
++			dev_err(&spi->dev, "unable to enable regulator: %d\n",
++				err);
++			goto err_put_regulator;
++		}
+ 	}
+ 
+ 	if (request_irq(spi->irq, ads7846_irq, IRQF_TRIGGER_FALLING,
+@@ -1218,10 +1219,11 @@ static int __devinit ads7846_probe(struct spi_device *spi)
+  err_free_irq:
+ 	free_irq(spi->irq, ts);
+  err_disable_regulator:
+-	regulator_disable(ts->reg);
++	if (ts->reg)
++		regulator_disable(ts->reg);
+  err_put_regulator:
+-	regulator_put(ts->reg);
+- err_free_gpio:
++	if (ts->reg)
++		regulator_put(ts->reg);
+ 	if (ts->gpio_pendown != -1)
+ 		gpio_free(ts->gpio_pendown);
+  err_cleanup_filter:
+@@ -1251,8 +1253,10 @@ static int __devexit ads7846_remove(struct spi_device *spi)
+ 	/* suspend left the IRQ disabled */
+ 	enable_irq(ts->spi->irq);
+ 
+-	regulator_disable(ts->reg);
+-	regulator_put(ts->reg);
++	if (ts->reg) {
++		regulator_disable(ts->reg);
++		regulator_put(ts->reg);
++	}
+ 
+ 	if (ts->gpio_pendown != -1)
+ 		gpio_free(ts->gpio_pendown);
+-- 
+1.7.1
+
