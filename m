@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab0GaVcS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Jul 2010 17:32:18 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64762 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756949Ab0GaVcN (ORCPT
+	id S1756936Ab0GaVb6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Jul 2010 17:31:58 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:32991 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756838Ab0GaVbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Jul 2010 17:32:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wjbahvVzVUpe39L7metxaud5E4nh/iJcDy/32qy5BPixvg016f/jWqLcUYDFeR/b+b
-         VNNYsNTm2Y87raFedHCMFFpN5omUwh0Uo9cHl0C6vSBdJuTBtJp2axn71A8LtT5+pHfN
-         O5QNEY+cv0n1etI/J24Q2owCZGFboqYKhrJV8=
-Date: Sun, 1 Aug 2010 01:31:38 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86,setup: add serial_console_port_base in boot_params
-Message-ID: <20100731213138.GC29357@lenovo>
-References: <4C3F8B46.7080809@kernel.org> <20100731083409.GC5859@lenovo> <4C5469AF.2010608@zytor.com> <20100731183211.GB29357@lenovo> <4C548F7D.6000509@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C548F7D.6000509@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 31 Jul 2010 17:31:53 -0400
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Roman Zippel <zippel@linux-m68k.org>
+Subject: [PATCH] kconfig: save location of config symbols
+Date: Sat, 31 Jul 2010 23:31:45 +0200
+Message-Id: <1280611910-8155-4-git-send-email-sam@ravnborg.org>
+X-Mailer: git-send-email 1.6.0.6
+In-Reply-To: <20100731212907.GA7554@merkur.ravnborg.org>
+References: <20100731212907.GA7554@merkur.ravnborg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 31, 2010 at 02:02:53PM -0700, H. Peter Anvin wrote:
-> On 07/31/2010 11:32 AM, Cyrill Gorcunov wrote:
-> >>
-> >> No, this is the internal part of the boot protocol, so it's not an issue.
-> >>
-> > 
-> > Peter, I didn't mean any issue here, I meant that bootloaders don't know about
-> > this field yet and they will have to update own sources to pass port value
-> > at proper place of boot params. Or I miss something?
-> > 
-> 
-> Boot loaders that use the 16-bit entry point are unaffected.
-> 
-> Boot loaders which use the 32-bit entry point but properly clears the
-> zero page simply will not have the feature.
-> 
-> Boot loaders which use the 32-bit entry point but doesn't clear the zero
-> page are broken.
-> 
-> 	-hpa
->
+When we add a new config symbol save the file/line
+so we later can refer to their location.
 
-Well, Peter, seems I messed boot params with setup header. So I don't see
-any user of this field then, hmm...
+The information is saved as a property to a config symbol
+because we may have multiple definitions of the same symbol.
 
-	-- Cyrill
+This has the side-effect that a symbol always has
+at least one property.
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Cc: Roman Zippel <zippel@linux-m68k.org>
+---
+ scripts/kconfig/expr.h   |    1 +
+ scripts/kconfig/menu.c   |    2 ++
+ scripts/kconfig/symbol.c |    2 ++
+ 3 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/kconfig/expr.h b/scripts/kconfig/expr.h
+index 75a31e4..6ee2e4f 100644
+--- a/scripts/kconfig/expr.h
++++ b/scripts/kconfig/expr.h
+@@ -132,6 +132,7 @@ enum prop_type {
+ 	P_SELECT,   /* select BAR */
+ 	P_RANGE,    /* range 7..100 (for a symbol) */
+ 	P_ENV,      /* value from environment variable */
++	P_SYMBOL,   /* where a symbol is defined */
+ };
+ 
+ struct property {
+diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
+index 1179989..4fb5902 100644
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -58,6 +58,8 @@ void menu_add_entry(struct symbol *sym)
+ 	*last_entry_ptr = menu;
+ 	last_entry_ptr = &menu->next;
+ 	current_entry = menu;
++	if (sym)
++		menu_add_symbol(P_SYMBOL, sym, NULL);
+ }
+ 
+ void menu_end_entry(void)
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index c127fa3..9f180ab 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -961,6 +961,8 @@ const char *prop_get_type_name(enum prop_type type)
+ 		return "select";
+ 	case P_RANGE:
+ 		return "range";
++	case P_SYMBOL:
++		return "symbol";
+ 	case P_UNKNOWN:
+ 		break;
+ 	}
+-- 
+1.6.0.6
+
