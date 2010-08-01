@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514Ab0HATpc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 15:45:32 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:59828 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751423Ab0HATpa (ORCPT
+	id S1751315Ab0HAT4L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 15:56:11 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:17519 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab0HAT4I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 15:45:30 -0400
-Date: Sun, 1 Aug 2010 15:45:29 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Arjan van de Ven <arjan@infradead.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <arve@android.com>, <mjg59@srcf.ucam.org>, <pavel@ucw.cz>,
-        <florian@mickler.org>, <rjw@sisk.pl>, <swetland@google.com>,
-        <peterz@infradead.org>, <tglx@linutronix.de>,
-        <alan@lxorguk.ukuu.org.uk>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100801054816.GI2470@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.44L0.1008011542100.20420-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 1 Aug 2010 15:56:08 -0400
+X-IronPort-AV: E=Sophos;i="4.55,299,1278313200"; 
+   d="scan'208";a="417080526"
+Subject: Re: [PATCH] NFS: Fix build failure on !CONFIG_NFS_V3 && !CONFIG_NFS_V3
+References: <1280519035.12852.32.camel@heimdal.trondhjem.org> <20100801064415.GA10523@elte.hu> <AANLkTim=6q1FC8YZvmi2Cju_6+00mHHkNPpCLHB8e3=h@mail.gmail.com> <1280684100.4430.8.camel@heimdal.trondhjem.org> <20100801194502.GA3801@infradead.org>
+Thread-Topic: [PATCH] NFS: Fix build failure on !CONFIG_NFS_V3 && !CONFIG_NFS_V3
+thread-index: Acsxs5P4gtO4/A4nSmGXqBZmUF/Q2Q==
+Content-Transfer-Encoding: 8BIT
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Content-Type: text/plain;
+	charset="us-ascii"
+In-Reply-To: <20100801194502.GA3801@infradead.org>
+Message-ID: <E70766A7-AFAB-414A-8FB3-F36275A81CAB@netapp.com>
+Date: Sun, 1 Aug 2010 15:56:16 -0400
+To: "Christoph Hellwig" <hch@infradead.org>
+Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Ingo Molnar" <mingo@elte.hu>, <linux-nfs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, "Randy Dunlap" <rdunlap@xenotime.net>
+MIME-Version: 1.0 (iPhone Mail 8A306)
+X-OriginalArrivalTime: 01 Aug 2010 19:56:07.0840 (UTC) FILETIME=[94F85200:01CB31B3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Jul 2010, Paul E. McKenney wrote:
+On Aug 1, 2010, at 15:45, Christoph Hellwig <hch@infradead.org> wrote:
 
-> > > o	"Power-aware application" are applications that are permitted
-> > > 	to acquire suspend blockers on Android.  Verion 8 of the
-> > > 	suspend-blocker patch seems to use group permissions to
-> > > determine which applications are classified as power aware.
-> > > 
-> > > 	More generally, power-aware applications seem to be those that
-> > > 	have permission to exert some control over the system's
-> > > 	power state.
-> > 
-> > I don't like the term "Power aware application". An application is well
-> > behaved or it isn't. "aware" has nothing to do with it.
+> Btw, is there a reason to allow not building NFSv3?  If at all
+> building without v2 support would be more useful.
 > 
-> Applications are often complex enough to be aware of some things, naive
-> about others, well behaved in some ways, and ill-behaved in others.
-> This has been the case for some decades now, so it should not come as
-> a surprise.
-> 
-> I am of course open to suggestions for alternatives to the term "power
-> aware application", but most definitely not to obfuscating the difference
-> between power awareness (or whatever name one wishes to call it) and
-> the overall quality of the application, whatever "quality" might mean
-> in a given context.
+I am planning to separate nfsv2, nfsv3 and nfsv4 into loadable submodules at some point in the not-too-distant future. That seems like a better solution than these CONFIG suboptions that keep tripping us up.
 
-This is a false dichotomy.  The two of you have fallen into a logical 
-trap.  I forget the word used to describe an argument based on a 
-fundamental misunderstanding, but it applies here.
-
-The term "power-aware" has _nothing_ to do with how well behaved an
-application is, or its quality (in any sense).  Go back and re-read the
-definition; you'll see what I mean.
-
-Alan Stern
-
+Cheers
+    Trond
