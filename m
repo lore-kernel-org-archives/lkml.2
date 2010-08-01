@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab0HAPFP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 11:05:15 -0400
-Received: from mx.treblig.org ([80.68.94.177]:33414 "EHLO mx.treblig.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421Ab0HAPFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 11:05:13 -0400
-X-Greylist: delayed 2013 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Aug 2010 11:05:13 EDT
-Date: Sun, 1 Aug 2010 15:17:21 +0100
-From: "Dr. David Alan Gilbert" <linux@treblig.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        ksummit-2010-discuss@lists.linux-foundation.org
-Subject: Re: PSA: Please update your flash plugin!
-Message-ID: <20100801141721.GA11854@gallifrey>
-References: <E1OefgE-0005vu-JN@tytso-glaptop> <4C524F7A.20505@gmail.com> <4C558237.1040705@panasas.com>
+	id S1757370Ab0HAPQB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 11:16:01 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44669 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756395Ab0HAPP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 11:15:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Vn47yG/oFqfKFDl0FF2SW8TfK4lHVhrey/DmI/PyzyLnhTKfwl0qtkcCqvg/jW0jUs
+         iSOrqk9YjZiHRmjNTem7noq3fVDAvnTM1F8wKlNhJSzvPiCMWUeboCVpNoWEo3fYFo1h
+         pnMT8rbib1vybB4IJ192L05Rl3j6TxGBipoMU=
+Date: Mon, 2 Aug 2010 00:15:51 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/6] writeback: sync expired inodes first in background
+ writeback
+Message-ID: <20100801151551.GA8158@barrios-desktop>
+References: <20100722050928.653312535@intel.com>
+ <20100722061822.906037624@intel.com>
+ <20100726105736.GM5300@csn.ul.ie>
+ <20100726125635.GC11947@localhost>
+ <20100726125954.GT5300@csn.ul.ie>
+ <20100726131152.GF11947@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C558237.1040705@panasas.com>
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.31.5-kvm-i386-2009-10-30 (i686)
-X-Uptime: 15:11:27 up 258 days, 20:46,  1 user,  load average: 0.00, 0.00,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100726131152.GF11947@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Boaz Harrosh (bharrosh@panasas.com) wrote:
-> On 07/30/2010 07:05 AM, Justin P. Mattock wrote:
-> > On 07/29/2010 07:50 PM, Theodore Ts'o wrote:
+Hi Wu, 
 
-<snip - warning>
-
-> > biggest problem here is they havn't updated their x86_64(pure64) version 
-> > yet. hopefully hey release an update soon.
-> > 
-> > Justin P. Mattock
-> > --
+> Subject: writeback: sync expired inodes first in background writeback
+> From: Wu Fengguang <fengguang.wu@intel.com>
+> Date: Wed Jul 21 20:11:53 CST 2010
 > 
-> Here too. How do I run (any) Flash-10.1 on a 64bit system (say FC12) without
-> actually reverting to a 32bit browser? Do I still get to install half of my
-> system as 32bit duplicates?
+> A background flush work may run for ever. So it's reasonable for it to
+> mimic the kupdate behavior of syncing old/expired inodes first.
+> 
+> The policy is
+> - enqueue all newly expired inodes at each queue_io() time
+> - enqueue all dirty inodes if there are no more expired inodes to sync
+> 
+> This will help reduce the number of dirty pages encountered by page
+> reclaim, eg. the pageout() calls. Normally older inodes contain older
+> dirty pages, which are more close to the end of the LRU lists. So
+> syncing older inodes first helps reducing the dirty pages reached by
+> the page reclaim code.
+> 
+> CC: Jan Kara <jack@suse.cz>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/fs-writeback.c |   23 ++++++++++++++++++-----
+>  1 file changed, 18 insertions(+), 5 deletions(-)
+> 
+> --- linux-next.orig/fs/fs-writeback.c	2010-07-26 20:19:01.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2010-07-26 21:10:42.000000000 +0800
+> @@ -217,14 +217,14 @@ static void move_expired_inodes(struct l
+>  				struct writeback_control *wbc)
+>  {
+>  	unsigned long expire_interval = 0;
+> -	unsigned long older_than_this;
+> +	unsigned long older_than_this = 0; /* reset to kill gcc warning */
 
-nspluginwrapper works well enough for me on Ubuntu, but this
-isn't a kernel problem. (It seems to work better for me in Chrome
-than ff but hey that's another problem again).
+Maybe I am rather late. 
 
-Since there isn't an announced date for if a 64bit version is going
-to be available (only a fluffy statement that they intend to do one)
-it's a case of having to move back to 32.
+Nitpick. 
+uninitialized_var is consistent. :)
 
-See: http://www.theregister.co.uk/2010/06/11/64_bit_flash_for_linux_dead/
-
-Dave
+I haven't followed up this patch series. but his patch series is a fundamental way 
+to go for reducing pageout. 
 -- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+Kind regards,
+Minchan Kim
