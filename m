@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751190Ab0HATOf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 15:14:35 -0400
-Received: from torres.zugschlus.de ([85.214.131.164]:57986 "EHLO
-	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab0HATOd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 15:14:33 -0400
-Date: Sun, 1 Aug 2010 21:14:29 +0200
-From: Marc Haber <mh+linux-kernel@zugschlus.de>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: Re: e1000e crashes with 2.6.34.x and ThinkPad T60
-Message-ID: <20100801191429.GA12432@torres.zugschlus.de>
-References: <20100724092644.GA13353@torres.zugschlus.de> <8DD2590731AB5D4C9DBF71A877482A9001623EC48E@orsmsx509.amr.corp.intel.com> <20100730125614.GB21444@torres.zugschlus.de> <8DD2590731AB5D4C9DBF71A877482A9001649C4653@orsmsx509.amr.corp.intel.com>
+	id S1751210Ab0HAT1P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 15:27:15 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33042 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750940Ab0HAT1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 15:27:14 -0400
+Date: Sun, 1 Aug 2010 12:27:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mikael Abrahamsson <swmike@swm.pp.se>
+Cc: Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100801192708.GM2470@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100731215214.2543c07e@infradead.org>
+ <20100801054816.GI2470@linux.vnet.ibm.com>
+ <alpine.DEB.1.10.1008010812450.24755@uplift.swm.pp.se>
+ <alpine.DEB.1.10.1008010838430.24755@uplift.swm.pp.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8DD2590731AB5D4C9DBF71A877482A9001649C4653@orsmsx509.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.1.10.1008010838430.24755@uplift.swm.pp.se>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 10:42:03AM -0700, Allan, Bruce W wrote:
-> Please also provide an eeprom dump from the wired LOM via 'ethtool -e ethX'.
+On Sun, Aug 01, 2010 at 08:49:43AM +0200, Mikael Abrahamsson wrote:
+> On Sun, 1 Aug 2010, Mikael Abrahamsson wrote:
+> 
+> >it's just that mobile (low power) wasn't the intended target of
+> >the application when it was written, and this commonly shows.
 
-Offset          Values
-------          ------
-0x0000          00 16 41 aa be 37 30 0b b2 ff 51 00 ff ff ff ff
-0x0010          53 00 03 01 6b 02 01 20 aa 17 9a 10 86 80 df 80
-0x0020          00 00 00 20 54 7e 00 00 14 00 da 00 04 00 00 27
-0x0030          c9 6c 50 31 3e 07 0b 04 8b 29 00 00 00 f0 02 0f
-0x0040          08 10 00 00 04 0f ff 7f 01 4d ff ff ff ff ff ff
-0x0050          14 00 1d 00 14 00 1d 00 af aa 1e 00 00 00 1d 00
-0x0060          00 01 00 40 1f 12 07 40 ff ff ff ff ff ff ff ff
-0x0070          ff ff ff ff ff ff ff ff ff ff ff ff ff ff 7a a7
+Good points in both this and your earlier post!!!
 
-Greetings
-Marc
+> I have another aspect I just thought about. I work for a telephony
+> company. We provide Internet connectivity throught various means,
+> DSL, Ethernet to the Home, mobile etc.
+> 
+> For ETTH and DSL, network usage is pretty straight forward, you send
+> packets, they get delivered pretty quickly with low marginal cost
+> per packet. For mobile, this is not quite so simple. Mobile networks
+> are designed for terminal/UE (user equipment) to use low power, so
+> they go down in low power state after a while. Let's take the case
+> of 3G/HSPA:
+> 
+> After a short while (second) of idleness (no packets being sent),
+> the mobile network negotiates away the high speed resources (the one
+> that enables multimegabit/s transfers) and tries to give it to
+> someone else. After approximately 30 seconds, the terminal goes to
+> "idle", meaning it has no network resources at all. Next time it
+> wants to send something (or the network wants to deliver something
+> to it), network resources need to be negotiated again. This can take
+> 1-2 seconds and uses battery power of course. It also consumes
+> resources in the operator network (because mobility control units
+> need to talk to base stations, tunnels need to be re-negotiated
+> etc).
+> 
+> Anyhow, my point is that not only is there a benefit in having
+> multiple applications wake up at the same time for power reasons
+> within the device, there is also a point in having coordination of
+> their network access. If a device is running 3 IM programs at the
+> same time, it'd be beneficial if they were coordinated in their
+> communication with their Internet servers. Same goes for the "check
+> for new email" application. If they all were optimized to only wake
+> up the network connectivity once every 180 seconds instead of doing
+> it when the individual application felt like it, power and other
+> resources would be saved by all involved parties.
 
--- 
------------------------------------------------------------------------------
-Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
-Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
-Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
+This is a good point.  Within some limits, the timer-aggregation
+changes that have gone into Linux can handle this, but I am not sure
+whether or not 180 seconds is within the reasonable boundaries for
+timer jitter.
+
+Of course, the timers might be synchronized upon wakeup after a
+sufficiently long suspension, but they would not necessarily stay
+synchronized without the help of some other mechanism, such as the
+afore-mentioned timer-aggregation changes.
+
+						Thanx, Paul
