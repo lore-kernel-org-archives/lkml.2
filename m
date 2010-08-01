@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab0HAEqP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 00:46:15 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40872 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918Ab0HAEqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 00:46:13 -0400
-Date: Sat, 31 Jul 2010 21:46:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] drivers/acpi: call rcu_read_unlock in default case
-Message-ID: <20100801044608.GG2470@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <Pine.LNX.4.64.1007312234590.12199@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1007312234590.12199@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751691Ab0HAEwe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 00:52:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58366 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab0HAEwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 00:52:32 -0400
+Date: Sat, 31 Jul 2010 21:52:14 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100731215214.2543c07e@infradead.org>
+In-Reply-To: <20100731175841.GA9367@linux.vnet.ibm.com>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 31, 2010 at 10:35:28PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Adjust the default case so that it benefits from the call to rcu_read_unlock.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @rcu@
-> position p1;
-> @@
-> 
-> rcu_read_lock@p1();
-> ...
-> rcu_read_unlock();
-> 
-> @@
-> position rcu.p1;
-> @@
-> 
-> *rcu_read_lock@p1();
-> ... when != rcu_read_unlock();
-> // </smpl>
+On Sat, 31 Jul 2010 10:58:42 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-I don't claim to understand the SmPL above, but I do like the patch.
+> o	"Power-aware application" are applications that are permitted
+> 	to acquire suspend blockers on Android.  Verion 8 of the
+> 	suspend-blocker patch seems to use group permissions to
+> determine which applications are classified as power aware.
+> 
+> 	More generally, power-aware applications seem to be those that
+> 	have permission to exert some control over the system's
+> 	power state.
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+I don't like the term "Power aware application". An application is well
+behaved or it isn't. "aware" has nothing to do with it.
 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+
 > 
-> ---
->  drivers/acpi/atomicio.c             |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
+> REQUIREMENTS
 > 
-> diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
-> index 8f8bd73..f426010 100644
-> --- a/drivers/acpi/atomicio.c
-> +++ b/drivers/acpi/atomicio.c
-> @@ -267,6 +267,7 @@ EXPORT_SYMBOL_GPL(acpi_post_unmap_gar);
->  static int acpi_atomic_read_mem(u64 paddr, u64 *val, u32 width)
->  {
->  	void __iomem *addr;
-> +	int res = 0;
-> 
->  	rcu_read_lock();
->  	addr = __acpi_ioremap_fast(paddr, width);
-> @@ -284,16 +285,17 @@ static int acpi_atomic_read_mem(u64 paddr, u64 *val, u32 width)
->  		*val = readq(addr);
->  		break;
->  	default:
-> -		return -EINVAL;
-> +		res = -EINVAL;
->  	}
->  	rcu_read_unlock();
-> 
-> -	return 0;
-> +	return res;
->  }
-> 
->  static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
->  {
->  	void __iomem *addr;
-> +	int res = 0;
-> 
->  	rcu_read_lock();
->  	addr = __acpi_ioremap_fast(paddr, width);
-> @@ -311,11 +313,11 @@ static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
->  		writeq(val, addr);
->  		break;
->  	default:
-> -		return -EINVAL;
-> +		res = -EINVAL;
->  	}
->  	rcu_read_unlock();
-> 
-> -	return 0;
-> +	return res;
->  }
-> 
->  /* GAR accessing in atomic (including NMI) or process context */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> o	Reduce the system's power consumption in order to (1) extend
+> 	battery life and (2) preserve state until AC power can be
+> obtained.
+
+AC power is not relevant in discussions around power: Applications MUST
+behave well, AC or DC both. Just ask any data center operator on how
+much they run on DC and if he cares about power consumption.
+Conversely, most mobile usages (both phone, tablet or netbook) are "DC
+only"....
+
+
+
+
+
+ 
+> o	It is necessary to be able to use power-naive applications.
+> 	Many of these applications were designed for use in PC
+> platforms where power consumption has historically not been of great
+> 	concern, due to either (1) the availability of AC power or (2)
+> 	relatively undemanding laptop battery-lifetime expectations.
+> The system must be capable of running these power-naive applications
+> 	without requiring that these applications be modified, and
+> must be capable of reasonable power efficiency even when power-naive
+> 	applications are available.
+
+I don't buy this argument as is.
+
+I do buy that there are many sloppy applications; mostly written quickly
+for <appstore of the month>.  But most if not all of these are written
+for the device in question (at least that is true for Apple and Android)
+
+
+
