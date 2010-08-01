@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab0HANht (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 09:37:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32417 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328Ab0HANhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 09:37:46 -0400
-Date: Sun, 1 Aug 2010 09:40:18 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Neil Brown <neilb@suse.de>
-Cc: David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
-        Volker.Lendecke@sernet.de, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended file stats available [ver #6]
-Message-ID: <20100801094018.522e2f53@corrin.poochiereds.net>
-In-Reply-To: <20100729090401.4b0a21f8@notabene>
-References: <20100728111525.355a2bd3@notabene>
-	<alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	<20100722162712.GB10352@jeremy-laptop>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
-	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
-	<13591.1280338082@redhat.com>
-	<20100729090401.4b0a21f8@notabene>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756881Ab0HANjT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 09:39:19 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53426 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756701Ab0HANjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 09:39:17 -0400
+Message-ID: <4C5579E9.2030200@ontolinux.com>
+Date: Sun, 01 Aug 2010 15:43:05 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Glenn D <doiggl@velocitynet.com.au>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux reiserfs-devel <reiserfs-devel@vger.kernel.org>
+Subject: Re: Formal Reiser4 inclusion and todo list?
+References: <alpine.DEB.2.01.0904181302440.6162@bogon.housecafe.de> <49EB1E3F.1020905@gmail.com> <542E227E-E31D-496C-93FB-19393133297F@MailNewsRSS.com> <200904250153.33258.volkerarmin@googlemail.com> <2E9381E6-A09A-4330-9A61-C4B7D7CE0E71@MailNewsRSS.com> <49F2CF9A.1060202@inn.nl> <49F2D43F.90105@ontolab.com> <8c113a260904250416n28fbdacs682ef8e6859b7dbf@mail.gmail.com> <49F339A2.9080705@ontolab.com> <200904252027.n3PKReMx073755@mail.meer.net> <49F393A1.4030004@gmail.com> <0d42c3ebde41a3d0bcc01f9fccc07f1c@mail.velocitynet.com.au> <4C508BFC.3010008@ontolinux.com>
+In-Reply-To: <4C508BFC.3010008@ontolinux.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:BB9rU0NFx9XXBd4nXfQdvUngH8ULA6ZuWZv9bikLjkz
+ YVcyJGfmHc3NVfpmolBCithY/mb1lfySHZy9WiUokOD9NLALBn
+ IVNHMv524sfw4wHuMhjqKyjJEe9q6M2v/b2lgcoomH1U+wum6Y
+ /koQa2zFtYBgJ2t4DKtTAFLhvsQJcmM6Xo1Z7mmwhJANR5tNIn
+ ci9Pn21R4Ew+Nxm0460RA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Jul 2010 09:04:01 +1000
-Neil Brown <neilb@suse.de> wrote:
+Hi Glenn;
 
-> On Wed, 28 Jul 2010 18:28:02 +0100
-> David Howells <dhowells@redhat.com> wrote:
-> 
-> > Neil Brown <neilb@suse.de> wrote:
-> > 
-> > > ctime and mtime have real cache-coherence semantics which require them being
-> > > updated by the kernel (whether the cache is on an NFS client, in a backup
-> > > archive, or in a .o translation of a .c file).
-> > 
-> > So does creation time, at least for CIFS caching.  Creation time has potential
-> > for spotting when the object at a pathname has changed for something else,
-> > given the lack of inode number and inode generation from windows servers.
-> > Creation time gives us one more datum to use.
-> 
-> This justifies for me why a CIFS client would want to extract the
-> creation-time from the CIFS protocol, but not why you want to expose it via a
-> generic interface.
-> The kernel/filesystem doesn't need to maintain creation-time to meet this
-> need, only the CIFS server needs to maintain it - the kernel/filesystem just
-> needs to provide somewhere to store it - xattrs.
-> 
-> Given that we have an extensible attribute framework, it seems wrong to be
-> adding new attributes to *stat.  If a given filesystem wants to store certain
-> attributes more efficiently, then it is welcome to intercept xattr calls and
-> store (say) "cifs.birthtime" directly at a known offset in the inode.
-> 
+On the 28.07.2010 21:58, I wrote:
+> Aloha Glenn;
+>
+> At the 28.07.2010 17:21, you (doiggl@velocitynet.com.au) wrote:
+>>> The following items are still unaddressed:
+>>>
+>>> 1. running igrab() in the writepage() path is really going to hammer
+>>>     inode_lock.  Something else will need to be done here.
+>>>
+>>> 2. Running iput() in entd() is a bit surprising.  iirc there are 
+>>> various
+>>> ways
+>>>     in which this can recur into the filesystem, perform I/O, etc.  I
+>>> guess it
+>>>     works..
+>>>     But again, it will hammer inode_lock.
+>>>
+>>> 3. the writeout logic in entd_flush() is interesting (as in "holy 
+>>> cow").
+>>>     It's very central and really needs some good comments describing
+>> what's
+>>>     going on in there - what problems are being solved, which decisions
+>> were
+>>>     taken and why, etc.
+>>>
+>>> 4. reiser4_wait_page_writeback() needs commenting.
+>>>
+>>> 5. reading the comment in txnmgr.c regarding MAP_SHARED pages: a number
+>> of
+>>>     things have changed since then.  We have page-becoming-writeable
+>>>     notifications and probably soon we'll always take a pagefault 
+>>> when a
+>>>     MAP_SHARED page transitions from pte-clean to pte-dirty (although I
+>>> wouldn't
+>>>     recommend that a filesystem rely upon the latter for a while yet).
+>>>
+>>> Feel free to address them.
+>>>
+>>> Thanks,
+>>> Edward.
+>> Has the number of items reduced at all ?
+>> just curious
+>> Cheers Glenn
+>
+> I haven't looked at the code since several years. But as far as I have 
+> followed the development, all of the patch sets since then (April 
+> 2009) were only of cosmetical nature, or said with other words, to 
+> keep it coping with changes at different positions, like eg. VFS.
+> And in a handful of blogs I got no additional/other informations, 
+> despite that the maintainer is working at a company in the field of 
+> another file system since the end of last year, so that he has only 
+> few time for Reiser FSs, and also that the opinions are that the 
+> project is dead.
+>
 
-The problem with the above approach is that you're assuming that the
-data in question is always accessed via the CIFS server. If someone
-comes along and messes with the data outside of CIFS, then samba won't
-have knowledge of that and the birthtime will be wrong.
+We also found out that, like the ReiserFS maintainer, the starter of 
+this thread, who is also the starter and maintainer of the ReiserFS wiki 
+as well as the filler of the ReiserFS wiki with copyrighted materials, 
+has changed to the development of the Btrfs file system, too. For 
+example in June he made a patch with:
 
-There's some history behind this as well -- samba tracks windows ACLs
-via xattr and it can be very problematic keeping those up to date when
-the data is accessed outside of samba.
+-	tristate "Btrfs filesystem (EXPERIMENTAL) Unstable disk format"
+-	depends on EXPERIMENTAL
++	tristate "Btrfs filesystem"
 
-I think presenting this data via xattr makes the most sense. It's
-simple and as Neil points out, it also provides us with a clealy
-settable interface. If we ever get an xstat-like syscall, we can always
-present the same data via that as well.
+so that "Btrfs is highly experimental" could be substituted with "Btrfs 
+is under heavy development".
 
-I also think it's quite reasonable to consider tracking birthtime in a
-generic inode field. In the absence of that, filesystems could track
-this themselves in their filesystem-specific inode structs.
+Again, this gives something to think about the engagement of the person, 
+as well. We always had the impression that he, like a handful of other 
+persons, was only here at reiserfs to mess up the R4 development, to 
+work and make politics against this project, and to disturb the 
+developers and their businesses.
+Btw.: In the case of copying copyrighted materials into the ReiserFS 
+wiki the kernel.org administrator was already informed by us, but 
+explained that it's up to [Hans Reiser] to ask for removing these 
+materials from kernel.org, which is an argumentation we are unable to 
+understand, because the kernel.org administrator does know that 
+copyrighted materials are illegally publicated on the kernel.org website.
 
-Furthermore, I'll go ahead and propose the following (simple) semantics:
-
-1) birthtime is initialized to the current time when a new inode is
-created
-
-2) it's settable via the xattr to an arbitrary value
-
-Either way, the xattr for this ought to be named the same on all
-filesystems. Samba shouldn't need to know or care what the underlying
-filesystem is, as long as it presents the correct xattr.
-
-That should make samba happy, and be reasonably simple to implement.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Cheerio
+Christian *<:o)   O>-<   -(D)>-<
