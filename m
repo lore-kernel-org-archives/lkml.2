@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0HAJCQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 05:02:16 -0400
-Received: from www17.your-server.de ([213.133.104.17]:40674 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756060Ab0HAJCO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 05:02:14 -0400
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 1 Aug 2010 11:01:00 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6+; KDE/4.4.5; i686; ; )
+	id S1756692Ab0HAJJs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 05:09:48 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:45274 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab0HAJJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 05:09:46 -0400
+Date: Sun, 1 Aug 2010 11:09:44 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH] arch/sparc/mm: Use GFP_KERNEL
+Message-ID: <Pine.LNX.4.64.1008011109260.21594@ask.diku.dk>
 MIME-Version: 1.0
-Subject: 2.6.35-rc6+: i915: Bisected regression
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008011101.01429.thomas@m3y3r.de>
-X-Authenticated-Sender: thomas@m3y3r.de
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit makes suspend to ram unreliable for me:
+From: Julia Lawall <julia@diku.dk>
 
-commit d1b851fc0d105caa6b6e3e7c92d2987dfb52cbe0
-Author: Zou Nan hai <nanhai.zou@intel.com>
-Date:   Fri May 21 09:08:57 2010 +0800
+GFP_ATOMIC is not needed here, as evidenced by the other two uses of
+GFP_KERNEL in the same function.
 
-    drm/i915: implement BSD ring buffer V2
-    
-    The BSD (bit stream decoder) ring is used for accessing the BSD engine
-    which decodes video bitstream for H.264 and VC1 on G45+.  It is
-    asynchronous with the render ring and has access to separate parts of
-    the GPU from it, though the render cache is coherent between the two.
-    
-    Signed-off-by: Zou Nan hai <nanhai.zou@intel.com>
-    Signed-off-by: Xiang Hai hao <haihao.xiang@intel.com>
-    Signed-off-by: Eric Anholt <eric@anholt.net>
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-git revert didn't work on 2.6.35-rc6 so I just changed the HAS_BSD thing to:
+// <smpl>
+@@ identifier f; @@
 
-#define HAS_BSD(dev)            (0)
+*f(...,GFP_ATOMIC,...)
+... when != spin_unlock(...)
+    when != read_unlock(...)
+    when != write_unlock(...)
+    when != read_unlock_irq(...)
+    when != write_unlock_irq(...)
+    when != read_unlock_irqrestore(...)
+    when != write_unlock_irqrestore(...)
+    when != spin_unlock_irq(...)
+    when != spin_unlock_irqrestore(...)
+*f(...,GFP_KERNEL,...)
+// </smpl>
 
-with this change applied suspend to ram is back to the reliability of 2.6.34.y
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-with kind regards
-thomas
+---
+ arch/sparc/mm/iommu.c               |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/sparc/mm/iommu.c b/arch/sparc/mm/iommu.c
+index 7385806..07fc6a6 100644
+--- a/arch/sparc/mm/iommu.c
++++ b/arch/sparc/mm/iommu.c
+@@ -63,7 +63,7 @@ static void __init sbus_iommu_init(struct platform_device *op)
+ 	unsigned long *bitmap;
+ 	unsigned long tmp;
+ 
+-	iommu = kmalloc(sizeof(struct iommu_struct), GFP_ATOMIC);
++	iommu = kmalloc(sizeof(struct iommu_struct), GFP_KERNEL);
+ 	if (!iommu) {
+ 		prom_printf("Unable to allocate iommu structure\n");
+ 		prom_halt();
