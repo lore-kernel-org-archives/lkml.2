@@ -1,235 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab0HAFgr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 01:36:47 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:57949 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab0HAFgp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 01:36:45 -0400
-Message-ID: <4C5507F2.7090503@dcl.info.waseda.ac.jp>
-Date: Sun, 01 Aug 2010 14:36:50 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
+	id S1752702Ab0HAFsX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 01:48:23 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:39838 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab0HAFsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 01:48:22 -0400
+Date: Sat, 31 Jul 2010 22:48:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100801054816.GI2470@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100731215214.2543c07e@infradead.org>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH RFC] perf lock: Add new event "lock_acquired_waittime"
- for contention analysis
-References: <1279990529-8798-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100728163946.GB5394@nowhere>
-In-Reply-To: <20100728163946.GB5394@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100731215214.2543c07e@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/10 01:39, Frederic Weisbecker wrote:
- > On Sun, Jul 25, 2010 at 01:55:29AM +0900, Hitoshi Mitake wrote:
- >> Recording every lock events produces too large overhead
- >> both in CPU time and memory space.
- >> This overhead is a big problem which should be solved,
- >> but locks are important factor today.
- >>
- >> So I'd like to add a new lock event "lock_acquired_waittime"
- >> for contention analysis. lock_acquired() calculates time consumed
- >> for waiting the locks with held_lock->waittime_stamp set by
-lock_contended().
- >> If this value is 0, no contention occured. If this value is not 0,
- >> there is occurence of contention.
- >> So I inserted the branch based on this value into lock_acquired().
- >> New lock_acquired() calls trace_lock_acquired() when waittime is 0,
- >> and calls trace_lock_acquired_waittime(), function for the new event,
- >> when waittime is not 0.
- >>
- >> The traditional event, lock_acquired, is too high frequency event.
- >> But the event lock_acquired_waittime is not so high frequency,
- >> so overhead produced by tracing this event is not so large.
- >>
- >> This is an example:
- >> | mitake@X201i:~/linux/.../tools/perf% ./perf bench sched messaging
- >> | # Running sched/messaging benchmark...
- >> | # 20 sender and receiver processes per group
- >> | # 10 groups == 400 processes run
- >> |
- >> |      Total time: 1.712 [sec]
- >> | mitake@X201i:~/linux/.../tools/perf% sudo ./perf record -R -f -m
-1024 -c 1 -e lock:lock_acquired_waittime:r ./perf bench sched messaging
- >> | # Running sched/messaging benchmark...
- >> | # 20 sender and receiver processes per group
- >> | # 10 groups == 400 processes run
- >> |
- >> |      Total time: 1.754 [sec]
- >> | [ perf record: Woken up 1 times to write data ]
- >> | [ perf record: Captured and wrote 0.958 MB perf.data (~41837
-samples) ]
- >>
- >> "perf bench sched messaging" is a kernel bound program, but this result
- >> shows that overhead is, at least on my Core i3 laptop, small enough
-for discarding
- >> especially from CPU time perspective.
- >>
- >> This new event is not enough for analyzing complete lock behaviour.
- >> But measuring quantity of time consumed for lock contention will be
-possible.
- >>
- >> So I think this patch is useful for real world lock analysis.
- >> I'd like to write in new analyzer which use this event in Python.
- >>
- >> Cc: Ingo Molnar<mingo@elte.hu>
- >> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
- >> Cc: Paul Mackerras<paulus@samba.org>
- >> Cc: Arnaldo Carvalho de Melo<acme@redhat.com>
- >> Cc: Jens Axboe<jens.axboe@oracle.com>
- >> Cc: Jason Baron<jbaron@redhat.com>
- >> Cc: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
- >> Signed-off-by: Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>
- >>
- >> ---
- >
- >
- >
- > But those who only want to trace the time waited can just trace
- > lock_acquire and lock_acquired event. It seems it would be enough
- > to reduce the lock tracing overhead a bit.
- >
- > Also the problem with:
- >
- > if (cond)
- > 	trace_x()
- > else
- > 	trace_y()
- >
- > It adds a new condition, only used by tracing, that will always be
- > checked, whenever the tracing is on or off. So we lose a cool feature
- > of tracepoint here: any tracing code is hidden behind a boolean wall,
- > so that the tracing off path is optimized with a single branch check:
- >
- > static inline void trace_##name(proto)				\
- > {								\
- > 	if (unlikely(__tracepoint_##name.state))		\
- > 		__DO_TRACE(&__tracepoint_##name,		\
- > 			TP_PROTO(data_proto),			\
- > 			TP_ARGS(data_args));			\
- > }								\
- >
- >
- > When tracing is off, ie: __tracepoint_##name.state == 0, the only
- > extra code executed is the check of __tracepoint_##name.state.
- >
- > With your new tracepoint, you've added another branch that is
- > always checked (unless !CONFIG_TRACEPOINTS, due to compiler
- > optimizations).
+On Sat, Jul 31, 2010 at 09:52:14PM -0700, Arjan van de Ven wrote:
+> On Sat, 31 Jul 2010 10:58:42 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > o	"Power-aware application" are applications that are permitted
+> > 	to acquire suspend blockers on Android.  Verion 8 of the
+> > 	suspend-blocker patch seems to use group permissions to
+> > determine which applications are classified as power aware.
+> > 
+> > 	More generally, power-aware applications seem to be those that
+> > 	have permission to exert some control over the system's
+> > 	power state.
+> 
+> I don't like the term "Power aware application". An application is well
+> behaved or it isn't. "aware" has nothing to do with it.
 
-Sorry, this branch is not a good choice.
-But for my purpose, this tracing enable/disable feature is not enough.
-Because I wanted to suppress the frequency of lock event for contention 
-analysis,
-so branch for judging occurence of contention had to be added.
+Applications are often complex enough to be aware of some things, naive
+about others, well behaved in some ways, and ill-behaved in others.
+This has been the case for some decades now, so it should not come as
+a surprise.
 
- >
- > But well, that's not very important. Lockdep is already debugging
- > code not enabled in production kernel (at least not supposed to).
- >
+I am of course open to suggestions for alternatives to the term "power
+aware application", but most definitely not to obfuscating the difference
+between power awareness (or whatever name one wishes to call it) and
+the overall quality of the application, whatever "quality" might mean
+in a given context.
 
-I want to make lockdep production kernel feature with dynamic patching.
-Current lock event tracing and in kernel lock statistics (/proc/lock_stat)
-depend on lockdep. Overhead of these features must be devided into 
-individual.
+> > REQUIREMENTS
+> > 
+> > o	Reduce the system's power consumption in order to (1) extend
+> > 	battery life and (2) preserve state until AC power can be
+> > obtained.
+> 
+> AC power is not relevant in discussions around power: Applications MUST
+> behave well, AC or DC both. Just ask any data center operator on how
+> much they run on DC and if he cares about power consumption.
+> Conversely, most mobile usages (both phone, tablet or netbook) are "DC
+> only"....
 
-# BTW, I completely misunderstood the principle of lockdep,
-# I might understood it recently :( So I can work on it now.
+Alan Stern suggested "external power" in place of "AC", which makes sense
+to me.  His suggestion does have the virtue of rendering irrelevant the
+difference between an AC adapter and a DC adapter for use in automobiles.
 
- > The more important point is: do we really need this? Have you observed
- > lost events with only lock_acquire + lock_acquired events?
- >
- > You can check lost events with: perf trace -d
- > You can also tune the size of the buffers with the -m option in
- > perf record. The default size of perf record is not enough for lock
- > events.
+And in my experience, people working with mobile devices care -much- more
+about energy efficiency than do data-center operators.
 
-The purpose of this patch is suppressing the frequency of events,
-lost of events is out of scope of this patch.
+> > o	It is necessary to be able to use power-naive applications.
+> > 	Many of these applications were designed for use in PC
+> > platforms where power consumption has historically not been of great
+> > 	concern, due to either (1) the availability of AC power or (2)
+> > 	relatively undemanding laptop battery-lifetime expectations.
+> > The system must be capable of running these power-naive applications
+> > 	without requiring that these applications be modified, and
+> > must be capable of reasonable power efficiency even when power-naive
+> > 	applications are available.
+> 
+> I don't buy this argument as is.
+> 
+> I do buy that there are many sloppy applications; mostly written quickly
+> for <appstore of the month>.  But most if not all of these are written
+> for the device in question (at least that is true for Apple and Android)
 
- >
- >
- > Optimizing the size of the records is definetly something we want. But
- > I'm not sure this is the good way.
- >
- > Something like tuning the fields we want in a record seems to me a
- > more generic and wide tracing optimization, a gain that would be
- > propagated in every tracepoints and not only a specific and precise
- > tracing workload on specific tracepoints.
- >
- > Look at this example:
- >
- > fweisbec@nowhere:~$ cat /debug/tracing/events/sched/sched_switch/format
- > name: sched_switch
- > ID: 29
- > format:
- > 	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
- > 	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
- > 	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
- > 	field:int common_pid;	offset:4;	size:4;	signed:1;
- > 	field:int common_lock_depth;	offset:8;	size:4;	signed:1;
- >
- > 	field:char prev_comm[TASK_COMM_LEN];	offset:12;	size:16;	signed:1;
- > 	field:pid_t prev_pid;	offset:28;	size:4;	signed:1;
- > 	field:int prev_prio;	offset:32;	size:4;	signed:1;
- > 	field:long prev_state;	offset:40;	size:8;	signed:1;
- > 	field:char next_comm[TASK_COMM_LEN];	offset:48;	size:16;	signed:1;
- > 	field:pid_t next_pid;	offset:64;	size:4;	signed:1;
- > 	field:int next_prio;	offset:68;	size:4;	signed:1;
- >
- > print fmt: "prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s ==>
-next_comm=%s next_pid=%d next_prio=%d",
- > REC->prev_comm, REC->prev_pid, REC->prev_prio, REC->prev_state ?
-__print_flags(REC->prev_state, "|", { 1, "S"} , {
- > 2, "D" }, { 4, "T" }, { 8, "t" }, { 16, "Z" }, { 32, "X" }, { 64, "x"
-}, { 128, "W" }) : "R", REC->next_comm,
- > REC->next_pid, REC->next_prio
- >
- >
- > In typical scheduler tracing workloads, we don't need:
- > 	- common_flags (irq flags)
- > 	- common_preempt_count (if preempt_count != 0 on sched switch, it's
-a bug)
- > 	- common_pid (prev_pid == common_pid, may be prev_pid should be
-dropped in fact)
- > 	- common_lock_depth (not used yet in perf tools, and the BKL is dying)
- > 	- prio (not used yet in perf sched)
- > 	- comm (we already have some comm resolution in perf)
- >
- > I just talking about some tracing workloads, typically perf sched
-won't use the
- > aboves. But other kinds of instrumentation may need the prio for example.
- >
- > I let you imagine how much space we can save if we can bring some
-choice on the
- > fields we want, depending on what the user wants and so.
+Making an application power-aware or power-naive is a choice, similar to
+the choice between making an application SMP-aware or single-threaded.
+This sort of choice is completely orthogonal to ill-behavior, sloppiness,
+or whatever the pejorative of the day might be.
 
-Yeah, this will contribute to reducing overhead of tracing.
+The choice between power-aware and power-naive will depend on who is
+available to do the programming and how valuable power-awareness is
+for the application in question.  Given that people who program PC-class
+applications are much more common than are people who program with
+energy efficiency in mind, the power-naive choice will be attractive
+in many cases.
 
- >
- > If someone is willing to work on that, it would be definitely welcome.
- > I think we could use a kind of mask of fields we want.
- >
- > Note I think that's easy for common_* fields as they are always the same
- > and filled from tracing_generic_entry_update(), for the others it doesn't
- > looks easy, we would need to add more macros inside TP_fast_assign().
- > But having the support for common_* fields would be already a good
- > thing.
- >
- >
+Or do you have some other interpretation of what the Android guys are
+looking for?
 
-After I finish current pending works like lockdep enabling/disabling,
-and anyone don't do it, I'd like to work on it.
-Because tracing overhead is really critical problem for lock events.
-I want to try any method for reducing overhead.
-# But I don't have enough power, this will be very slow :(
+							Thanx, Paul
