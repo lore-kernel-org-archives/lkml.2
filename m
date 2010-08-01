@@ -1,850 +1,452 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab0HANbm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 09:31:42 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:49872 "EHLO vps.mortis.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756848Ab0HANbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 09:31:40 -0400
-From: Giel van Schijndel <me@mortis.eu>
-Cc: Laurens Leemans <laurens@signips.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Giel van Schijndel <me@mortis.eu>, Wim Van Sebroeck <wim@iguana.be>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, Marc Zyngier <maz@misterjones.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] watchdog: f71808e_wdt: new watchdog driver for Fintek F71808E and F71882FG
-Date: Sun,  1 Aug 2010 15:30:55 +0200
-Message-Id: <1280669455-31283-2-git-send-email-me@mortis.eu>
-X-Mailer: git-send-email 1.6.4.4
-In-Reply-To: <1280669455-31283-1-git-send-email-me@mortis.eu>
-References: <20100801132226.GE3711@salidar.me.mortis.eu>
- <1280669455-31283-1-git-send-email-me@mortis.eu>
-To: unlisted-recipients:; (no To-header on input)
+	id S1756833Ab0HANfG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 09:35:06 -0400
+Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:2982 "EHLO
+	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab0HANfC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 09:35:02 -0400
+X-Greylist: delayed 466 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Aug 2010 09:35:01 EDT
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
+Date: Sun, 1 Aug 2010 15:26:13 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc2-tschai; KDE/4.4.4; x86_64; ; )
+Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
+        "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+References: <cover.1280151963.git.m.nazarewicz@samsung.com> <201007271827.02606.hverkuil@xs4all.nl> <005801cb2e33$f8dec570$ea9c5050$%szyprowski@samsung.com>
+In-Reply-To: <005801cb2e33$f8dec570$ea9c5050$%szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008011526.13566.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new watchdog driver for the Fintek F71808E and F71882FG Super I/O
-controllers.
+Hi Marek,
 
-Signed-off-by: Giel van Schijndel <me@mortis.eu>
----
- drivers/watchdog/Kconfig       |   11 +
- drivers/watchdog/Makefile      |    1 +
- drivers/watchdog/f71808e_wdt.c |  768 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 780 insertions(+), 0 deletions(-)
- create mode 100644 drivers/watchdog/f71808e_wdt.c
+On Wednesday 28 July 2010 11:04:56 Marek Szyprowski wrote:
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index afcfacc..edfd57d 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -401,6 +401,17 @@ config ALIM7101_WDT
- 
- 	  Most people will say N.
- 
-+config F71808E_WDT
-+	tristate "Fintek F71808E and F71882FG Watchdog"
-+	depends on X86 && EXPERIMENTAL
-+	help
-+	  This is the driver for the hardware watchdog on the Fintek
-+	  F71808E and F71882FG Super I/O controllers.
-+
-+	  You can compile this driver directly into the kernel, or use
-+	  it as a module.  The module will be called f71808e_wdt.
-+
-+
- config GEODE_WDT
- 	tristate "AMD Geode CS5535/CS5536 Watchdog"
- 	depends on CS5535_MFGPT
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index 72f3e20..9e3d616 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -66,6 +66,7 @@ obj-$(CONFIG_ACQUIRE_WDT) += acquirewdt.o
- obj-$(CONFIG_ADVANTECH_WDT) += advantechwdt.o
- obj-$(CONFIG_ALIM1535_WDT) += alim1535_wdt.o
- obj-$(CONFIG_ALIM7101_WDT) += alim7101_wdt.o
-+obj-$(CONFIG_F71808E_WDT) += f71808e_wdt.o
- obj-$(CONFIG_GEODE_WDT) += geodewdt.o
- obj-$(CONFIG_SC520_WDT) += sc520_wdt.o
- obj-$(CONFIG_SBC_FITPC2_WATCHDOG) += sbc_fitpc2_wdt.o
-diff --git a/drivers/watchdog/f71808e_wdt.c b/drivers/watchdog/f71808e_wdt.c
-new file mode 100644
-index 0000000..7e5c266
---- /dev/null
-+++ b/drivers/watchdog/f71808e_wdt.c
-@@ -0,0 +1,768 @@
-+/***************************************************************************
-+ *   Copyright (C) 2006 by Hans Edgington <hans@edgington.nl>              *
-+ *   Copyright (C) 2007-2009 Hans de Goede <hdegoede@redhat.com>           *
-+ *   Copyright (C) 2010 Giel van Schijndel <me@mortis.eu>                  *
-+ *                                                                         *
-+ *   This program is free software; you can redistribute it and/or modify  *
-+ *   it under the terms of the GNU General Public License as published by  *
-+ *   the Free Software Foundation; either version 2 of the License, or     *
-+ *   (at your option) any later version.                                   *
-+ *                                                                         *
-+ *   This program is distributed in the hope that it will be useful,       *
-+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
-+ *   GNU General Public License for more details.                          *
-+ *                                                                         *
-+ *   You should have received a copy of the GNU General Public License     *
-+ *   along with this program; if not, write to the                         *
-+ *   Free Software Foundation, Inc.,                                       *
-+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
-+ ***************************************************************************/
-+
-+#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/miscdevice.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/notifier.h>
-+#include <linux/reboot.h>
-+#include <linux/uaccess.h>
-+#include <linux/watchdog.h>
-+
-+#define DRVNAME "f71808e_wdt"
-+
-+#define SIO_F71808FG_LD_WDT	0x07	/* Watchdog timer logical device */
-+#define SIO_UNLOCK_KEY		0x87	/* Key to enable Super-I/O */
-+#define SIO_LOCK_KEY		0xAA	/* Key to diasble Super-I/O */
-+
-+#define SIO_REG_LDSEL		0x07	/* Logical device select */
-+#define SIO_REG_DEVID		0x20	/* Device ID (2 bytes) */
-+#define SIO_REG_DEVREV		0x22	/* Device revision */
-+#define SIO_REG_MANID		0x23	/* Fintek ID (2 bytes) */
-+#define SIO_REG_ENABLE		0x30	/* Logical device enable */
-+#define SIO_REG_ADDR		0x60	/* Logical device address (2 bytes) */
-+
-+#define SIO_FINTEK_ID		0x1934	/* Manufacturers ID */
-+#define SIO_F71808_ID		0x0901  /* Chipset ID */
-+#define SIO_F71858_ID		0x0507  /* Chipset ID */
-+#define SIO_F71862_ID		0x0601	/* Chipset ID */
-+#define SIO_F71882_ID		0x0541	/* Chipset ID */
-+#define SIO_F71889_ID		0x0723	/* Chipset ID */
-+
-+#define	F71882FG_REG_START		0x01
-+
-+#define F71808FG_REG_WDO_CONF		0xf0
-+#define F71808FG_REG_WDT_CONF		0xf5
-+#define F71808FG_REG_WD_TIME		0xf6
-+
-+#define F71808FG_FLAG_WDOUT_EN		7
-+
-+#define F71808FG_FLAG_WDTMOUT_STS	5
-+#define F71808FG_FLAG_WD_EN		5
-+#define F71808FG_FLAG_WD_PULSE		4
-+#define F71808FG_FLAG_WD_UNIT		3
-+
-+/* Default values */
-+#define WATCHDOG_TIMEOUT	60	/* 1 minute default timeout */
-+#define WATCHDOG_MAX_TIMEOUT	(60 * 255)
-+#define WATCHDOG_PULSE_WIDTH	125	/* 125 ms, default pulse width for
-+					   watchdog signal */
-+
-+static unsigned short force_id;
-+module_param(force_id, ushort, 0);
-+MODULE_PARM_DESC(force_id, "Override the detected device ID");
-+
-+static const int max_timeout = WATCHDOG_MAX_TIMEOUT;
-+static int timeout = 60;	/* default timeout in seconds */
-+module_param(timeout, int, 0);
-+MODULE_PARM_DESC(timeout,
-+	"Watchdog timeout in seconds. 1<= timeout <="
-+			__MODULE_STRING(WATCHDOG_MAX_TIMEOUT) " (default="
-+			__MODULE_STRING(WATCHDOG_TIMEOUT) ")");
-+
-+static unsigned int pulse_width = WATCHDOG_PULSE_WIDTH;
-+module_param(pulse_width, uint, 0);
-+MODULE_PARM_DESC(pulse_width,
-+	"Watchdog signal pulse width. 0(=level), 1 ms, 25 ms, 125 ms or 5000 ms"
-+			" (default=" __MODULE_STRING(WATCHDOG_PULSE_WIDTH) ")");
-+
-+static int nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0444);
-+MODULE_PARM_DESC(nowayout, "Disable watchdog shutdown on close");
-+
-+static unsigned int start_withtimeout;
-+module_param(start_withtimeout, uint, 0);
-+MODULE_PARM_DESC(start_withtimeout, "Start watchdog timer on module load with"
-+	" given initial timeout. Zero (default) disables this feature.");
-+
-+enum chips { f71808fg, f71858fg, f71862fg, f71882fg, f71889fg };
-+
-+static const char *f71808e_names[] = {
-+	"f71808fg",
-+	"f71858fg",
-+	"f71862fg",
-+	"f71882fg",
-+	"f71889fg",
-+};
-+
-+/* Super-I/O Function prototypes */
-+static inline int superio_inb(int base, int reg);
-+static inline int superio_inw(int base, int reg);
-+static inline void superio_outb(int base, int reg, u8 val);
-+static inline void superio_set_bit(int base, int reg, int bit);
-+static inline void superio_clear_bit(int base, int reg, int bit);
-+static inline int superio_enter(int base);
-+static inline void superio_select(int base, int ld);
-+static inline void superio_exit(int base);
-+
-+struct watchdog_data {
-+	unsigned short	sioaddr;
-+	enum chips	type;
-+	unsigned long	opened;
-+	struct mutex	lock;
-+	char		expect_close;
-+	struct watchdog_info ident;
-+
-+	unsigned short	timeout;
-+	u8		timer_val;	/* content for the wd_time register */
-+	char		minutes_mode;
-+	u8		pulse_val;	/* pulse width flag */
-+	char		pulse_mode;	/* enable pulse output mode? */
-+	char		caused_reboot;	/* last reboot was by the watchdog */
-+};
-+
-+static struct watchdog_data watchdog = {
-+	.lock = __MUTEX_INITIALIZER(watchdog.lock),
-+};
-+
-+/* Super I/O functions */
-+static inline int superio_inb(int base, int reg)
-+{
-+	outb(reg, base);
-+	return inb(base + 1);
-+}
-+
-+static int superio_inw(int base, int reg)
-+{
-+	int val;
-+	val  = superio_inb(base, reg) << 8;
-+	val |= superio_inb(base, reg + 1);
-+	return val;
-+}
-+
-+static inline void superio_outb(int base, int reg, u8 val)
-+{
-+	outb(reg, base);
-+	outb(val, base + 1);
-+}
-+
-+static inline void superio_set_bit(int base, int reg, int bit)
-+{
-+	unsigned long val = superio_inb(base, reg);
-+	__set_bit(bit, &val);
-+	superio_outb(base, reg, val);
-+}
-+
-+static inline void superio_clear_bit(int base, int reg, int bit)
-+{
-+	unsigned long val = superio_inb(base, reg);
-+	__clear_bit(bit, &val);
-+	superio_outb(base, reg, val);
-+}
-+
-+static inline int superio_enter(int base)
-+{
-+	/* Don't step on other drivers' I/O space by accident */
-+	if (!request_muxed_region(base, 2, DRVNAME)) {
-+		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
-+				(int)base);
-+		return -EBUSY;
-+	}
-+
-+	/* according to the datasheet the key must be send twice! */
-+	outb(SIO_UNLOCK_KEY, base);
-+	outb(SIO_UNLOCK_KEY, base);
-+
-+	return 0;
-+}
-+
-+static inline void superio_select(int base, int ld)
-+{
-+	outb(SIO_REG_LDSEL, base);
-+	outb(ld, base + 1);
-+}
-+
-+static inline void superio_exit(int base)
-+{
-+	outb(SIO_LOCK_KEY, base);
-+	release_region(base, 2);
-+}
-+
-+static int watchdog_set_timeout(int timeout)
-+{
-+	if (timeout <= 0
-+	 || timeout >  max_timeout) {
-+		printk(KERN_ERR DRVNAME ": watchdog timeout out of range\n");
-+		return -EINVAL;
-+	}
-+
-+	mutex_lock(&watchdog.lock);
-+
-+	watchdog.timeout = timeout;
-+	if (timeout > 0xff) {
-+		watchdog.timer_val = DIV_ROUND_UP(timeout, 60);
-+		watchdog.minutes_mode = true;
-+	} else {
-+		watchdog.timer_val = timeout;
-+		watchdog.minutes_mode = false;
-+	}
-+
-+	mutex_unlock(&watchdog.lock);
-+
-+	return 0;
-+}
-+
-+static int watchdog_set_pulse_width(unsigned int pw)
-+{
-+	int err = 0;
-+
-+	mutex_lock(&watchdog.lock);
-+
-+	if        (pw <=    1) {
-+		watchdog.pulse_val = 0;
-+	} else if (pw <=   25) {
-+		watchdog.pulse_val = 1;
-+	} else if (pw <=  125) {
-+		watchdog.pulse_val = 2;
-+	} else if (pw <= 5000) {
-+		watchdog.pulse_val = 3;
-+	} else {
-+		printk(KERN_ERR DRVNAME ": pulse width out of range\n");
-+		err = -EINVAL;
-+		goto exit_unlock;
-+	}
-+
-+	watchdog.pulse_mode = pw;
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+	return err;
-+}
-+
-+static int watchdog_keepalive(void)
-+{
-+	int err = 0;
-+
-+	mutex_lock(&watchdog.lock);
-+	err = superio_enter(watchdog.sioaddr);
-+	if (err)
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	if (watchdog.minutes_mode)
-+		/* select minutes for timer units */
-+		superio_set_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+	else
-+		/* select seconds for timer units */
-+		superio_clear_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+
-+	/* Set timer value */
-+	superio_outb(watchdog.sioaddr, F71808FG_REG_WD_TIME,
-+			   watchdog.timer_val);
-+
-+	superio_exit(watchdog.sioaddr);
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+	return err;
-+}
-+
-+static int watchdog_start(void)
-+{
-+	/* Make sure we don't die as soon as the watchdog is enabled below */
-+	int err = watchdog_keepalive();
-+	if (err)
-+		return err;
-+
-+	mutex_lock(&watchdog.lock);
-+	err = superio_enter(watchdog.sioaddr);
-+	if (err)
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	/* Watchdog pin configuration */
-+	switch (watchdog.type) {
-+	case f71808fg:
-+		/* Set pin 21 to GPIO23/WDTRST#, then to WDTRST# */
-+		superio_clear_bit(watchdog.sioaddr, 0x2a, 3);
-+		superio_clear_bit(watchdog.sioaddr, 0x2b, 3);
-+		break;
-+
-+	case f71882fg:
-+		/* Set pin 56 to WDTRST# */
-+		superio_set_bit(watchdog.sioaddr, 0x29, 1);
-+		break;
-+
-+	default:
-+		/*
-+		 * 'default' label to shut up the compiler and catch
-+		 * programmer errors
-+		 */
-+		err = -ENODEV;
-+		goto exit_superio;
-+	}
-+
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+	superio_set_bit(watchdog.sioaddr, SIO_REG_ENABLE, 0);
-+	superio_set_bit(watchdog.sioaddr, F71808FG_REG_WDO_CONF,
-+			F71808FG_FLAG_WDOUT_EN);
-+
-+	superio_set_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+			F71808FG_FLAG_WD_EN);
-+
-+	if (watchdog.pulse_mode) {
-+		/* Select "pulse" output mode with given duration */
-+		u8 wdt_conf = superio_inb(watchdog.sioaddr,
-+				F71808FG_REG_WDT_CONF);
-+
-+		/* Set WD_PSWIDTH bits (1:0) */
-+		wdt_conf = (wdt_conf & 0xfc) | (watchdog.pulse_val & 0x03);
-+		/* Set WD_PULSE to "pulse" mode */
-+		wdt_conf |= BIT(F71808FG_FLAG_WD_PULSE);
-+
-+		superio_outb(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				wdt_conf);
-+	} else {
-+		/* Select "level" output mode */
-+		superio_clear_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_PULSE);
-+	}
-+
-+exit_superio:
-+	superio_exit(watchdog.sioaddr);
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+
-+	return err;
-+}
-+
-+static int watchdog_stop(void)
-+{
-+	int err = 0;
-+
-+	mutex_lock(&watchdog.lock);
-+	err = superio_enter(watchdog.sioaddr);
-+	if (err)
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	superio_clear_bit(watchdog.sioaddr, F71808FG_REG_WDT_CONF,
-+			F71808FG_FLAG_WD_EN);
-+
-+	superio_exit(watchdog.sioaddr);
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+
-+	return err;
-+}
-+
-+static int watchdog_get_status(void)
-+{
-+	int status = 0;
-+
-+	mutex_lock(&watchdog.lock);
-+	status = (watchdog.caused_reboot) ? WDIOF_CARDRESET : 0;
-+	mutex_unlock(&watchdog.lock);
-+
-+	return status;
-+}
-+
-+static bool watchdog_is_running(void)
-+{
-+	/*
-+	 * if we fail to determine the watchdog's status assume it to be
-+	 * running to be on the safe side
-+	 */
-+	bool is_running = true;
-+
-+	mutex_lock(&watchdog.lock);
-+	if (superio_enter(watchdog.sioaddr))
-+		goto exit_unlock;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	is_running = (superio_inb(watchdog.sioaddr, SIO_REG_ENABLE) & BIT(0))
-+		&& (superio_inb(watchdog.sioaddr, F71808FG_REG_WDT_CONF)
-+			& F71808FG_FLAG_WD_EN);
-+
-+	superio_exit(watchdog.sioaddr);
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+	return is_running;
-+}
-+
-+/* /dev/watchdog api */
-+
-+static int watchdog_open(struct inode *inode, struct file *file)
-+{
-+	int err;
-+
-+	/* If the watchdog is alive we don't need to start it again */
-+	if (test_and_set_bit(0, &watchdog.opened))
-+		return -EBUSY;
-+
-+	err = watchdog_start();
-+	if (err) {
-+		clear_bit(0, &watchdog.opened);
-+		return err;
-+	}
-+
-+	if (nowayout)
-+		__module_get(THIS_MODULE);
-+
-+	watchdog.expect_close = 0;
-+	return nonseekable_open(inode, file);
-+}
-+
-+static int watchdog_release(struct inode *inode, struct file *file)
-+{
-+	clear_bit(0, &watchdog.opened);
-+
-+	if (!watchdog.expect_close) {
-+		watchdog_keepalive();
-+		printk(KERN_CRIT DRVNAME
-+			": Unexpected close, not stopping watchdog!\n");
-+	} else if (!nowayout) {
-+		watchdog_stop();
-+	}
-+	return 0;
-+}
-+
-+/*
-+ *      watchdog_write:
-+ *      @file: file handle to the watchdog
-+ *      @buf: buffer to write
-+ *      @count: count of bytes
-+ *      @ppos: pointer to the position to write. No seeks allowed
-+ *
-+ *      A write to a watchdog device is defined as a keepalive signal. Any
-+ *      write of data will do, as we we don't define content meaning.
-+ */
-+
-+static ssize_t watchdog_write(struct file *file, const char __user *buf,
-+			    size_t count, loff_t *ppos)
-+{
-+	if (count) {
-+		if (!nowayout) {
-+			size_t i;
-+
-+			/* In case it was set long ago */
-+			bool expect_close = false;
-+
-+			for (i = 0; i != count; i++) {
-+				char c;
-+				if (get_user(c, buf + i))
-+					return -EFAULT;
-+				expect_close = (c == 'V');
-+			}
-+
-+			/* Properly order writes across fork()ed processes */
-+			mutex_lock(&watchdog.lock);
-+			watchdog.expect_close = expect_close;
-+			mutex_unlock(&watchdog.lock);
-+		}
-+
-+		/* someone wrote to us, we should restart timer */
-+		watchdog_keepalive();
-+	}
-+	return count;
-+}
-+
-+/*
-+ *      watchdog_ioctl:
-+ *      @inode: inode of the device
-+ *      @file: file handle to the device
-+ *      @cmd: watchdog command
-+ *      @arg: argument pointer
-+ *
-+ *      The watchdog API defines a common set of functions for all watchdogs
-+ *      according to their available features.
-+ */
-+static long watchdog_ioctl(struct file *file, unsigned int cmd,
-+	unsigned long arg)
-+{
-+	int status;
-+	int new_options;
-+	int new_timeout;
-+	union {
-+		struct watchdog_info __user *ident;
-+		int __user *i;
-+	} uarg;
-+
-+	uarg.i = (int __user *)arg;
-+
-+	switch (cmd) {
-+	case WDIOC_GETSUPPORT:
-+		return copy_to_user(uarg.ident, &watchdog.ident,
-+			sizeof(watchdog.ident)) ? -EFAULT : 0;
-+
-+	case WDIOC_GETSTATUS:
-+		status = watchdog_get_status();
-+		if (status < 0)
-+			return status;
-+		return put_user(status, uarg.i);
-+
-+	case WDIOC_GETBOOTSTATUS:
-+		return put_user(0, uarg.i);
-+
-+	case WDIOC_SETOPTIONS:
-+		if (get_user(new_options, uarg.i))
-+			return -EFAULT;
-+
-+		if (new_options & WDIOS_DISABLECARD)
-+			watchdog_stop();
-+
-+		if (new_options & WDIOS_ENABLECARD)
-+			return watchdog_start();
-+
-+
-+	case WDIOC_KEEPALIVE:
-+		watchdog_keepalive();
-+		return 0;
-+
-+	case WDIOC_SETTIMEOUT:
-+		if (get_user(new_timeout, uarg.i))
-+			return -EFAULT;
-+
-+		if (watchdog_set_timeout(new_timeout))
-+			return -EINVAL;
-+
-+		watchdog_keepalive();
-+		/* Fall */
-+
-+	case WDIOC_GETTIMEOUT:
-+		return put_user(watchdog.timeout, uarg.i);
-+
-+	default:
-+		return -ENOTTY;
-+
-+	}
-+}
-+
-+static int watchdog_notify_sys(struct notifier_block *this, unsigned long code,
-+	void *unused)
-+{
-+	if (code == SYS_DOWN || code == SYS_HALT)
-+		watchdog_stop();
-+	return NOTIFY_DONE;
-+}
-+
-+static const struct file_operations watchdog_fops = {
-+	.owner		= THIS_MODULE,
-+	.llseek		= no_llseek,
-+	.open		= watchdog_open,
-+	.release	= watchdog_release,
-+	.write		= watchdog_write,
-+	.unlocked_ioctl	= watchdog_ioctl,
-+};
-+
-+static struct miscdevice watchdog_miscdev = {
-+	.minor		= WATCHDOG_MINOR,
-+	.name		= "watchdog",
-+	.fops		= &watchdog_fops,
-+};
-+
-+static struct notifier_block watchdog_notifier = {
-+	.notifier_call = watchdog_notify_sys,
-+};
-+
-+static int __init watchdog_init(int sioaddr)
-+{
-+	int wdt_conf, err = 0;
-+
-+	/* No need to lock watchdog.lock here because no entry points
-+	 * into the module have been registered yet.
-+	 */
-+	watchdog.sioaddr = sioaddr;
-+	watchdog.ident.options = WDIOC_SETTIMEOUT
-+				| WDIOF_MAGICCLOSE
-+				| WDIOF_KEEPALIVEPING;
-+
-+	snprintf(watchdog.ident.identity,
-+		sizeof(watchdog.ident.identity), "%s watchdog",
-+		f71808e_names[watchdog.type]);
-+
-+	err = superio_enter(sioaddr);
-+	if (err)
-+		return err;
-+	superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+	wdt_conf = superio_inb(sioaddr, F71808FG_REG_WDT_CONF);
-+	watchdog.caused_reboot = wdt_conf & F71808FG_FLAG_WDTMOUT_STS;
-+
-+	superio_exit(sioaddr);
-+
-+	err = watchdog_set_timeout(timeout);
-+	if (err)
-+		return err;
-+	err = watchdog_set_pulse_width(pulse_width);
-+	if (err)
-+		return err;
-+
-+	err = register_reboot_notifier(&watchdog_notifier);
-+	if (err)
-+		return err;
-+
-+	err = misc_register(&watchdog_miscdev);
-+	if (err) {
-+		printk(KERN_ERR DRVNAME
-+			": cannot register miscdev on minor=%d\n",
-+				watchdog_miscdev.minor);
-+		goto exit_reboot;
-+	}
-+
-+	if (start_withtimeout) {
-+		if (start_withtimeout <= 0
-+		 || start_withtimeout >  max_timeout) {
-+			printk(KERN_ERR DRVNAME
-+				": starting timeout out of range\n");
-+			err = -EINVAL;
-+			goto exit_miscdev;
-+		}
-+
-+		err = watchdog_start();
-+		if (err) {
-+			printk(KERN_ERR DRVNAME
-+				": cannot start watchdog timer\n");
-+			goto exit_miscdev;
-+		}
-+
-+		mutex_lock(&watchdog.lock);
-+		err = superio_enter(sioaddr);
-+		if (err)
-+			goto exit_unlock;
-+		superio_select(watchdog.sioaddr, SIO_F71808FG_LD_WDT);
-+
-+		if (start_withtimeout > 0xff) {
-+			/* select minutes for timer units */
-+			superio_set_bit(sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+			superio_outb(sioaddr, F71808FG_REG_WD_TIME,
-+				DIV_ROUND_UP(start_withtimeout, 60));
-+		} else {
-+			/* select seconds for timer units */
-+			superio_clear_bit(sioaddr, F71808FG_REG_WDT_CONF,
-+				F71808FG_FLAG_WD_UNIT);
-+			superio_outb(sioaddr, F71808FG_REG_WD_TIME,
-+				start_withtimeout);
-+		}
-+
-+		superio_exit(sioaddr);
-+		mutex_unlock(&watchdog.lock);
-+
-+		if (nowayout)
-+			__module_get(THIS_MODULE);
-+
-+		printk(KERN_INFO DRVNAME
-+			": watchdog started with initial timeout of %u sec\n",
-+			start_withtimeout);
-+	}
-+
-+	return 0;
-+
-+exit_unlock:
-+	mutex_unlock(&watchdog.lock);
-+exit_miscdev:
-+	misc_deregister(&watchdog_miscdev);
-+exit_reboot:
-+	unregister_reboot_notifier(&watchdog_notifier);
-+
-+	return err;
-+}
-+
-+static int __init f71808e_find(int sioaddr)
-+{
-+	u16 devid;
-+	int err = superio_enter(sioaddr);
-+	if (err)
-+		return err;
-+
-+	devid = superio_inw(sioaddr, SIO_REG_MANID);
-+	if (devid != SIO_FINTEK_ID) {
-+		pr_debug(DRVNAME ": Not a Fintek device\n");
-+		err = -ENODEV;
-+		goto exit;
-+	}
-+
-+	devid = force_id ? force_id : superio_inw(sioaddr, SIO_REG_DEVID);
-+	switch (devid) {
-+	case SIO_F71808_ID:
-+		watchdog.type = f71808fg;
-+		break;
-+	case SIO_F71882_ID:
-+		watchdog.type = f71882fg;
-+		break;
-+	case SIO_F71862_ID:
-+	case SIO_F71889_ID:
-+		/* These have a watchdog, though it isn't implemented (yet). */
-+		err = -ENOSYS;
-+		goto exit;
-+	case SIO_F71858_ID:
-+		/* Confirmed (by datasheet) not to have a watchdog. */
-+		err = -ENODEV;
-+		goto exit;
-+	default:
-+		printk(KERN_INFO DRVNAME ": Unrecognized Fintek device: %04x\n",
-+		       (unsigned int)devid);
-+		err = -ENODEV;
-+		goto exit;
-+	}
-+
-+	printk(KERN_INFO DRVNAME ": Found %s watchdog chip, revision %d\n",
-+		f71808e_names[watchdog.type],
-+		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
-+exit:
-+	superio_exit(sioaddr);
-+	return err;
-+}
-+
-+static int __init f71808e_init(void)
-+{
-+	static const unsigned short addrs[] = { 0x2e, 0x4e };
-+	int err = -ENODEV;
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(addrs); i++) {
-+		err = f71808e_find(addrs[i]);
-+		if (err == 0)
-+			break;
-+	}
-+	if (i == ARRAY_SIZE(addrs))
-+		return err;
-+
-+	return watchdog_init(addrs[i]);
-+}
-+
-+static void __exit f71808e_exit(void)
-+{
-+	if (watchdog_is_running()) {
-+		printk(KERN_WARNING DRVNAME
-+			": Watchdog timer still running, stopping it\n");
-+		watchdog_stop();
-+	}
-+	misc_deregister(&watchdog_miscdev);
-+	unregister_reboot_notifier(&watchdog_notifier);
-+}
-+
-+MODULE_DESCRIPTION("F71808E Watchdog Driver");
-+MODULE_AUTHOR("Giel van Schijndel <me@mortis.eu>");
-+MODULE_LICENSE("GPL");
-+
-+module_init(f71808e_init);
-+module_exit(f71808e_exit);
+<snip>
+
+> > There are still desktops in the world, you know :-) It's nice if cma can
+> > also be used there. Having a region called 'dma' or something like that
+> > would be useful for drivers. And yes, for most embedded systems that would
+> > be the equivalent of common memory.
+> 
+> I really see no problem using CMA on desktops, although in most cases only
+> a few drivers will be able to make use of it.
+
+As past maintainer of ivtv I can testify that I know at least one driver that
+could definitely benefit from CMA.
+
+> 
+> > > > I think that the only thing that you want to set in the kernel params
+> > is
+> > > > the size of each region.
+> > >
+> > > Keeping it as a kernel parameter is very handy for development. But I
+> > agree
+> > > that we might make it dependent on some Kconfig entry. This way a
+> > platform
+> > > setup code would provide default region description just as an array of
+> > the
+> > > region structures and we will get rid of the parsing code in the release
+> > > versions.
+> > 
+> > I think that would help, yes.
+> > 
+> > > > The same with assigning regions to drivers: why would you want to do
+> > that?
+> > > > The driver should know which regions it can use (with possible
+> > fallbacks).
+> > >
+> > > I'm sorry, but this is again a little 'desktop-centric point-of-view'. On
+> > > desktop it is perfectly acceptable to have a separate memory region for
+> > each
+> > > device. In embedded world memory is a precious resource. Of course we can
+> > go
+> > > the 'separate memory region for each device' way, but we observed that at
+> > > least some memory can be recovered if we decide to share memory regions
+> > for
+> > > some of the devices.
+> > >
+> > > Assigning regions to the drivers is a way to describe how memory can be
+> > > shared. This is something that is independent from the actual drivers.
+> > > Device drivers cannot and mustn't have such knowledge.
+> > 
+> > You misunderstand me. I wasn't promoting separate memory regions for each
+> > device.  Quite the opposite: initially I would make regions shared by default.
+> > I actually do not see why device drivers can't have the knowledge to allocate
+> > their memory from particular regions. We are talking about embedded systems 
+> > where these types of memory allocations tend to be well defined. E.g. the
+> > video capture driver needs to allocate X video buffers at boot time. For
+> > most devices that will be the dma region, in the case of samsung devices
+> > that will be regions for particular memory banks.
+> 
+> Let me introduce one more example. As you may know we have 3 video-processor
+> capture devices (Samsung FIMC) and a hardware codec (like Samsung MFC). FIMC
+> can capture video data from camera sensor and accelerate common video
+> processing tasks (like up/down scaling and color space conversion). Two FIMC
+> and MFC are require for things like HD video encoding or decoding with
+> online display/preview. This task require huge video buffers that are
+> usually allocated and freed at the same time. The third FIMC can be used for
+> gfx acceleration (color space conversion and scaling are quite common tasks
+> in GUI). This latter task usually introduces a lot of memory fragmentation,
+> as gfx surfaces are usually quite small (definitely smaller than HD frames
+> or 8MPix picture from camera). It would be really wise to get that third
+> FIMC device to use memory buffer that will be shared with 3D accelerator
+> (which has quite similar usage scenarios and suffers from similar memory
+> fragmentation).
+
+OK, I understand. And I assume both gfx and 3D acceleration need to use a
+specific region? If they can use any type of memory, then this might be more
+appropriate for kmalloc and friends.
+
+> > The only time reserving regions for specific devices might be necessary is
+> > if you can get memory fragmentation if multiple drivers use the same region.
+> > But if drivers just allocate the memory at boot, then shared regions work
+> > fine.
+> > >
+> > > > And it can know that provided regions are setup by the platform code
+> > and
+> > > > not created dynamically. This will simplify things enormously.
+> > > >
+> > > > > +    1. The core of the CMA does not handle allocation of memory and
+> > > > > +       management of free space.  Dedicated allocators are used for
+> > > > > +       that purpose.
+> > > > > +
+> > > > > +       This way, if the provided solution does not match demands
+> > > > > +       imposed on a given system, one can develop a new algorithm
+> > and
+> > > > > +       easily plug it into the CMA framework.
+> > > > > +
+> > > > > +       The presented solution includes an implementation of a best-
+> > fit
+> > > > > +       algorithm.
+> > > >
+> > > > Again, do we really need user-settable per-region allocators? Just
+> > provide
+> > > > one with the option to later choose others through the kernel Kconfig
+> > files.
+> > >
+> > > From our experience, yes. Different allocators can cope with different
+> > memory
+> > > usage scenarios better or worse. This results in higher or lower memory
+> > > fragmentation. System use cases are something that kernel or drivers are
+> > > definitely not aware, so only user space can tune this parameter to get
+> > the
+> > > best possible system behavior.
+> > 
+> > Can you describe some of those usage scenarios? The cases I am familiar
+> > with
+> > are the standard: 'need to allocate X buffers of Y MB memory each on boot'
+> > and these buffers are only freed when the module is unloaded. While you can
+> > get fragmentation in that case if you creatively load and unload modules,
+> > this is not the normal usage in a deployed system.
+> 
+> We don't want to allocate X buffers of Y MB memory each on boot. Instead we
+> want to just reserve XX MB memory and then dynamically allocate buffers from
+> it. This enables us to perform the following 2 tasks:
+> 1. movie decoding in HD-quality (only one instance)
+> 2. two instances of SD-quality movie decoding and SD-quality move encoding 
+>    (example: video conference)
+> 
+> We know that these two use cases are exclusive, so they can use the same
+> reserved memory.
+
+When I said 'allocating X buffers of Y MB memory' I meant that you need to
+allocate a known amount of memory (X * Y MB in this case). So the boot args
+say e.g. dma=40MB and the driver just allocates X buffers from that region.
+
+Switching to SD quality requires releasing those buffers and instead allocating
+a number of smaller buffers from the same region.
+
+For these use-cases the allocator can be very simple and probably covers most
+use-cases.
+
+Anyway, I'm no expert on memory allocators and people on the linux-mm list are
+no doubt much more qualified to discuss this. My main concern is that of
+trying to add too much for a first release. It is simply easier to start simple
+and extend as needed. That makes it easier to be accepted in the mainline.
+
+> 
+> > We already have several 'normal' memory allocators (slab, slub, slob, sleb,
+> > whatever. I've lost track there.) and I'm not very enthusiastic about the
+> > idea of adding another bunch of them. Especially not in a first release.
+> >
+> > Keep it simple. Just fix the core problem first, even if you are not yet
+> > able to squeeze the last byte of memory from your system. Later you can 
+> > always add features as needed and optimize it further.
+> 
+> We are trying to keep it as simple as possible :)
+>  
+> > > > We can always add more complex scenarios later, but for an initial
+> > version
+> > > > I'd keep it simple.
+> > > >
+> > > > > +
+> > > > > +    2. CMA allows a run-time configuration of the memory regions it
+> > > > > +       will use to allocate chunks of memory from.  The set of
+> > memory
+> > > > > +       regions is given on command line so it can be easily changed
+> > > > > +       without the need for recompiling the kernel.
+> > > > > +
+> > > > > +       Each region has it's own size, alignment demand, a start
+> > > > > +       address (physical address where it should be placed) and an
+> > > > > +       allocator algorithm assigned to the region.
+> > > > > +
+> > > > > +       This means that there can be different algorithms running at
+> > > > > +       the same time, if different devices on the platform have
+> > > > > +       distinct memory usage characteristics and different algorithm
+> > > > > +       match those the best way.
+> > > >
+> > > > Seems overengineering to me. Just ensure that the code can be extended
+> > > > later to such hypothetical scenarios. They are hypothetical, right?
+> > >
+> > > Not really. Having the possibility to reconfigure memory configuration
+> > > without kernel recompilation is very handy when one is tuning the
+> > > configuration for the specific use case.
+> > >
+> > > > > +    3. When requesting memory, devices have to introduce themselves.
+> > > > > +       This way CMA knows who the memory is allocated for.  This
+> > > > > +       allows for the system architect to specify which memory
+> > regions
+> > > > > +       each device should use.
+> > > > > +
+> > > > > +       3a. Devices can also specify a "kind" of memory they want.
+> > > > > +           This makes it possible to configure the system in such
+> > > > > +           a way, that a single device may get memory from different
+> > > > > +           memory regions, depending on the "kind" of memory it
+> > > > > +           requested.  For example, a video codec driver might want
+> > to
+> > > > > +           allocate some shared buffers from the first memory bank
+> > and
+> > > > > +           the other from the second to get the highest possible
+> > > > > +           memory throughput.
+> > > >
+> > > > Not sure I understand this. Isn't this just two regions, one for each
+> > > > memory bank,
+> > > > and the driver requests some buffers from one region and some from the
+> > > > other?
+> > >
+> > > Right.
+> > >
+> > > > Not sure how a 'kind of memory' features in this.
+> > >
+> > > This 'kind' is a just cookie or a label used by the driver to distinguish
+> > > requests for both memory banks. This functionality is essential for our
+> > > hardware (just for hardware video codec we have 3 'kinds' of memory:
+> > memory
+> > > bank A, memory bank B and special region for the firmware).
+> > 
+> > Let me see if I understand: driver D needs memory from bank A, so it
+> > specifies
+> > e.g. label "a" when requesting memory. And the kernel parameters are then
+> > supposed
+> > to define a region for memory bank A (say region "bank-a" and tell the cma
+> > that
+> > requests from driver D for memory of kind "a" should go to region "bank-a".
+> > 
+> > Of course, the driver can also just request memory from the platform-
+> > defined
+> > region "bank-a" directly rather than having to rely on userspace provided
+> > parameters.
+> 
+> Right. Regions provided by kernel command line are considered to be alternative
+> to the default configuration for tuning/debugging purposes.
+> 
+> > > > > +    4. For greater flexibility and extensibility, the framework
+> > allows
+> > > > > +       device drivers to register private regions of reserved memory
+> > > > > +       which then may be used only by them.
+> > > > > +
+> > > > > +       As an effect, if a driver would not use the rest of the CMA
+> > > > > +       interface, it can still use CMA allocators and other
+> > > > > +       mechanisms.
+> > > >
+> > > > Why would you? Is there an actual driver that will need this?
+> > >
+> > > This feature has been added after posting v1 of this rfc/patch. Jonathan
+> > > Corbet suggested in
+> > <http://article.gmane.org/gmane.linux.kernel.mm/50689>
+> > > that viafb driver might register its own private memory and use cma just
+> > > as an allocator. IMHO this is a good idea, this way we might remove a
+> > bunch
+> > > of custom allocators from the drivers (yes, there are such all over the
+> > > kernel).
+> > 
+> > It goes back to whether we want per-device (or per-driver) regions or just
+> > have global regions.
+> 
+> IMHO both types of regions can coexist and we can make use of their
+> advantages. I see no point in limiting CMA only to one type of the regions.
+> 
+> > What I have seen in practice is that these drivers just
+> > need X amount of contiguous memory on boot. Having just a single region (as
+> > it will be for most systems) to carve the buffers from is just as efficient
+> > if not more than creating separate regions for each driver. Only if you
+> > start freeing and reallocating memory later on will you get into trouble.
+> 
+> > But if you do that, then you are trying to duplicate the behavior of the
+> > normal allocators in my opinion. I really don't think we want to go there.
+> 
+> Well, then why some drivers like viafb or omapfb have custom memory
+> allocators? This case shows that there is still a need for another one.
+
+I have no idea why they have allocators. Someone would have to analyze that
+code. Just because they use allocators doesn't necessarily mean that they
+really need them :-)
+
+> 
+> > > > > +       4a. Early in boot process, device drivers can also request
+> > the
+> > > > > +           CMA framework to a reserve a region of memory for them
+> > > > > +           which then will be used as a private region.
+> > > > > +
+> > > > > +           This way, drivers do not need to directly call bootmem,
+> > > > > +           memblock or similar early allocator but merely register
+> > an
+> > > > > +           early region and the framework will handle the rest
+> > > > > +           including choosing the right early allocator.
+> > > >
+> > > > The whole concept of private regions seems unnecessary to me.
+> > > >
+> > > > <big snip>
+> > > >
+> > > > It looks to me as if you tried to think of all possible hypothetical
+> > > > situations
+> > > > and write a framework for that. Of course, you may know more than I do,
+> > > > and some of these situations actually happen.
+> > >
+> > > Not exactly. We tried to design a solution that would cover all
+> > requirements
+> > > for OUR (quite specific) embedded hardware. However we didn't want to tie
+> > it
+> > > only to our platform. We just generalized most of our requirements so
+> > they can
+> > > be reused for other systems.
+> > >
+> > > > The basic design ideas are solid, I think. But you should get rid of
+> > all
+> > > > the fancy features and go back to basics. We can always add those
+> > features
+> > > > later should that become necessary. But removing features is much, much
+> > > harder.
+> > >
+> > > Well, please keep in mind that we cannot remove features that are
+> > essential
+> > > for our solution. We know that a simple framework have some advantages
+> > > (well, the most important one is the fact that it is easy to understand),
+> > > but making it too simple would render it useless from our point of view
+> > > (if it would not provide functionality required by our drivers and
+> > hardware).
+> > 
+> > Why not give a list of the requirements that your hardware has? The only
+> > requirement unique to your hardware that I am aware of is the need for
+> > buffers in specific memory banks (and apparently a special memory area for
+> > firmware).
+> 
+> Yes, this is a real hardware requirement that cannot be dropped. Other
+> requirements come from the system design (software).
+> 
+> > So besides a 'dma' region (which is probably sufficient for most systems)
+> > you would also have a 'banka' and 'bankb' region and perhaps a 'fw' region.
+> 
+> Actually this DMA region is either just a 'banka' or 'bankb'. There is no
+> special requirements for the common dma memory and no need for the separate
+> 'dma' region in our case. We just want to make it shared with at least camera
+> capture buffers.
+> 
+> > In the kernel parameters the user can specify the sizes for these regions
+> > that are reserved at boot time and drivers will use cma to get their memory
+> > from the relevant region using a simple allocator.
+> > 
+> > If there are other requirements in your hardware (or other hardware) that
+> > should be taken into account for an initial version of the cma, then I'm
+> > interested in hearing about it.
+> 
+> We will try to summarize our requirements again and repost them soon.
+>  
+> > One note: since the first version of the patch wasn't posted to linux-media
+> > I didn't follow the replies to that. If there are things in that thread
+> > that I should read, then just mail me some links.
+> 
+> I'm very sorry that the first version has been posted only to linux-mm.
+> The discussion was mainly about the way how the memory configuration and
+> device mapping should be provided (first version used only kernel parameters
+> for that). We should probably also CC a few more kernel subsystems that might
+> benefit from a common memory allocator, but we already were a bit scared by
+> the number of people and lists in this series. We really don't want to get
+> a 'spammer' label ;)
+
+You probably got the main interested parties now.
+
+Regarding regions and shared and per-driver buffers: I've been thinking about this
+a bit more and I have a proposal of my own.
+
+There are two different aspects to this: first there is the hardware aspect: if
+the hardware needs memory from specific memory banks or with specific requirements
+(e.g. DMAable), then those regions should be setup in the platform code. There you
+know the memory sizes/alignments/etc. since that is hw dependent. The other reason
+is that drivers need to be able to tell CMA that they need to allocate from such
+regions. You can't have a driver refer to a region that is specified through
+kernel parameters, that would create a very ugly dependency.
+
+The other aspect is how to setup buffers. A global buffer is simply setup by
+assigning a size to the region: "banka=20MB". Unless specified otherwise any
+driver that needs memory from banka will use that global banka buffer.
+
+Alternatively, you can set aside memory from a region specifically for drivers:
+banka/foo=30MB. This allocated 30 MB from region banka specifically for driver foo.
+
+You can also share that with another driver:
+
+banka/foo,bar=30MB
+
+Now this 30 MB buffer is shared between drivers foo and bar.
+
+The nice thing about this is that the driver will still only refer to region
+banka as setup by the platform code.
+
+And in the more general case you can have two standard regions: dma and common.
+So drivers can rely on the presence of a dma region when allocating buffers.
+
+What would make this even better is that CMA has the option to try and allocate
+additional memory on the fly if its memory pool becomes empty. E.g. if the dma
+pool is full, then it can try to do a kmalloc(..., GFP_KERNEL | __GFP_DMA).
+
+This allows you to setup the dma and common regions with size 0. So allocating
+from the dma region would effectively be the same as doing a kmalloc. Unless
+the user sets up a dma area in the kernel parameters.
+
+Obviously this is probably impossible if you need memory from specific memory
+banks, so this is something that is not available for every region.
+
+The nice thing about this is that it is very flexible for end users. For example,
+most users of the ivtv driver wouldn't have to do anything since most of the time
+it is able to assign the necessary buffers. But some users have multiple ivtv-based
+capture boards in their PC, and then it can become harder to have ivtv obtain the
+needed buffers. In that case they can preallocate the buffers by setting
+dma/ivtv=500MB or something like that.
+
+That would be a really nice feature...
+
+Regards,
+
+	Hans
+
 -- 
-1.6.4.4
-
+Hans Verkuil - video4linux developer - sponsored by TANDBERG, part of Cisco
