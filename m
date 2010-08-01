@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab0HALHn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 07:07:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45963 "EHLO hera.kernel.org"
+	id S1752510Ab0HALQR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 07:16:17 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6270 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156Ab0HALHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 07:07:41 -0400
-Message-ID: <4C55556C.6050206@kernel.org>
-Date: Sun, 01 Aug 2010 13:07:24 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1751748Ab0HALQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 07:16:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,297,1278313200"; 
+   d="scan'208";a="306827968"
+Date: Sun, 1 Aug 2010 19:15:44 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Mel Gorman <mel@csn.ul.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 6/6] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100801111544.GC7515@localhost>
+References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie>
+ <1280497020-22816-7-git-send-email-mel@csn.ul.ie>
+ <20100730150601.199c5618.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] workqueue: mark init_workqueues() as early_initcall()
-References: <20100730215751.690706748@sbsiddha-MOBL3.sc.intel.com>
-In-Reply-To: <20100730215751.690706748@sbsiddha-MOBL3.sc.intel.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 01 Aug 2010 11:07:14 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100730150601.199c5618.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 6ee0578b4daaea01c96b172c6aacca43fd9807a6 Mon Sep 17 00:00:00 2001
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Fri, 30 Jul 2010 14:57:37 -0700
+> Sigh.  We have sooo many problems with writeback and latency.  Read
+> https://bugzilla.kernel.org/show_bug.cgi?id=12309 and weep.  Everyone's
+> running away from the issue and here we are adding code to solve some
+> alleged stack-overflow problem which seems to be largely a non-problem,
+> by making changes which may worsen our real problems.
 
-Mark init_workqueues() as early_initcall() and thus it will be initialized
-before smp bringup. init_workqueues() registers for the hotcpu notifier
-and thus it should cope with the processors that are brought online after
-the workqueues are initialized.
+This looks like some vmscan/writeback interaction issue.
 
-x86 smp bringup code uses workqueues and uses a workaround for the
-cold boot process (as the workqueues are initialized post smp_init()).
-Marking init_workqueues() as early_initcall() will pave the way for
-cleaning up this code.
+Firstly, the CFQ io scheduler can already prevent read IO from being
+delayed by lots of ASYNC write IO. See the commits 365722bb/8e2967555
+in late 2009.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
-Audited and tested.  It should be fine.  Patch applied and pushed out
-to linux-next.  How shall we route the second patch?
+Reading a big file in an idle system:
+        680897928 bytes (681 MB) copied, 15.8986 s, 42.8 MB/s
 
-Thanks.
+Reading a big file while doing sequential writes to another file:
+        680897928 bytes (681 MB) copied, 27.6007 s, 24.7 MB/s
+        680897928 bytes (681 MB) copied, 25.6592 s, 26.5 MB/s
 
- include/linux/workqueue.h |    1 -
- init/main.c               |    2 --
- kernel/workqueue.c        |    4 +++-
- 3 files changed, 3 insertions(+), 4 deletions(-)
+So CFQ offers reasonable read performance under heavy writeback.
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 5f76001..51dc9a7 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -327,7 +327,6 @@ extern int schedule_delayed_work_on(int cpu, struct delayed_work *work,
- extern int schedule_on_each_cpu(work_func_t func);
- extern int keventd_up(void);
+Secondly, I can only feel the responsiveness lags when there are
+memory pressures _in addition to_ heavy writeback.
 
--extern void init_workqueues(void);
- int execute_in_process_context(work_func_t fn, struct execute_work *);
+        cp /dev/zero /tmp
 
- extern int flush_work(struct work_struct *work);
-diff --git a/init/main.c b/init/main.c
-index 3bdb152..5f2ec2c 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -32,7 +32,6 @@
- #include <linux/start_kernel.h>
- #include <linux/security.h>
- #include <linux/smp.h>
--#include <linux/workqueue.h>
- #include <linux/profile.h>
- #include <linux/rcupdate.h>
- #include <linux/moduleparam.h>
-@@ -786,7 +785,6 @@ static void __init do_initcalls(void)
-  */
- static void __init do_basic_setup(void)
- {
--	init_workqueues();
- 	cpuset_init_smp();
- 	usermodehelper_init();
- 	init_tmpfs();
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 1105c47..e2eb351 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3507,7 +3507,7 @@ out_unlock:
- }
- #endif /* CONFIG_FREEZER */
+No lags.
 
--void __init init_workqueues(void)
-+static int __init init_workqueues(void)
- {
- 	unsigned int cpu;
- 	int i;
-@@ -3559,4 +3559,6 @@ void __init init_workqueues(void)
- 	system_unbound_wq = alloc_workqueue("events_unbound", WQ_UNBOUND,
- 					    WQ_UNBOUND_MAX_ACTIVE);
- 	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq);
-+	return 0;
- }
-+early_initcall(init_workqueues);
--- 
-1.7.1
+        usemem 1g --sleep 1000
 
+Still no lags.
+
+        usemem 1g --sleep 1000
+
+Still no lags.
+
+        usemem 1g --sleep 1000
+
+Begin to feel lags at times. My desktop has 4G memory and no swap
+space. So the lags are correlated with page reclaim pressure.
+
+The above symptoms are matched very well by the patches posted by
+KOSAKI and me:
+
+- vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+- vmscan: synchronous lumpy reclaim don't call congestion_wait()
+
+However kernels as early as 2.6.18 are reported to have the problem,
+so there may be more hidden issues.
+
+Thanks,
+Fengguang
