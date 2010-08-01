@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab0HAXQl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 19:16:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34269 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695Ab0HAXQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 19:16:40 -0400
+	id S1751994Ab0HAXTY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 19:19:24 -0400
+Received: from n1-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.152]:37302 "HELO
+	n1-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751463Ab0HAXTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 19:19:23 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 354010.5520.bm@omp127.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=LSSY5+8DkxvLDa8koHcWAuhdjGWsPQ+wg131o+izGcfilHY0jDBOWesE+lzfsAxxs1NyjmOtKAy86NZuFS3OotdzdAd5FfEl/kEktEnhMj52s3juevEZNf6fbMt8uOQXB9UNe1b9bsT3KMEVX3HOSAkejS/aBTpXdiF1Jqo7wZM=;
+Message-ID: <85179.49541.qm@web180301.mail.gq1.yahoo.com>
+X-YMail-OSG: wLlqF44VM1nle.aBQhSxPn.rsM9TzFOpFKEPGktmJDcfs0B
+ HlqLoFo9l64kNRVDWN.N6aewEHMv.tv3KI1jFRmXNb0r54tsOYBwEoJ1YMfn
+ q3OlDBZ_8BP4j.wl3wmy_n0GLP.6sFWE_x5Pki6g7IPhXf_KuMRfAqKQYdsR
+ 39tKByL1w1xg1t9muSUR_a.6.am01F6Ulcjnq8JyieTzE3HLYJeGTGmDC3HX
+ yKmRl28WWR11nogQCtfNL99nm9tXioJvIUQeO51mCHsOs4UXJVTjHhK2P031
+ zpqifgUn8Lo2GTSYnMj4QUdVIJe1v7.php5v6hDOi
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.105.279950
+Date: Sun, 1 Aug 2010 16:19:21 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
 Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
-From: James Bottomley <James.Bottomley@suse.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Arjan van de Ven <arjan@infradead.org>, peterz@infradead.org,
-        swetland@google.com, linux-kernel@vger.kernel.org, florian@mickler.org,
-        linux-pm@lists.linux-foundation.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20100801054816.GI2470@linux.vnet.ibm.com>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	 <20100731215214.2543c07e@infradead.org>
-	 <20100801054816.GI2470@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 01 Aug 2010 18:16:33 -0500
-Message-ID: <1280704593.25620.48.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+To: "Ted Ts'o" <tytso@mit.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: peterz@infradead.org, swetland@google.com, linux-kernel@vger.kernel.org,
+        florian@mickler.org, linux-pm@lists.linux-foundation.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <201008020102.24674.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-07-31 at 22:48 -0700, Paul E. McKenney wrote:
-> On Sat, Jul 31, 2010 at 09:52:14PM -0700, Arjan van de Ven wrote:
-> > On Sat, 31 Jul 2010 10:58:42 -0700
-> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > > o	"Power-aware application" are applications that are permitted
-> > > 	to acquire suspend blockers on Android.  Verion 8 of the
-> > > 	suspend-blocker patch seems to use group permissions to
-> > > determine which applications are classified as power aware.
-> > > 
-> > > 	More generally, power-aware applications seem to be those that
-> > > 	have permission to exert some control over the system's
-> > > 	power state.
-> > 
-> > I don't like the term "Power aware application". An application is well
-> > behaved or it isn't. "aware" has nothing to do with it.
-> 
-> Applications are often complex enough to be aware of some things, naive
-> about others, well behaved in some ways, and ill-behaved in others.
-> This has been the case for some decades now, so it should not come as
-> a surprise.
-> 
-> I am of course open to suggestions for alternatives to the term "power
-> aware application", but most definitely not to obfuscating the difference
-> between power awareness (or whatever name one wishes to call it) and
-> the overall quality of the application, whatever "quality" might mean
-> in a given context.
 
-So the reason everyone's having trouble with this definition is that it
-actually conflates two separate axes of power management.
+> be "trusted" on some systems and they may not be "trusted"
+> on some other
+> system, depending on the configuration etc.
 
-There are good and bad applications in the power sense ... burns less vs
-burns more.
+Yes, let's reserve "trusted" for security contexts.
+One might view agressively bad power management as
+a security threat, of course:  when the machine
+becomes unavailable because its battery dies, that
+can be viewed as a security attack, since keeping the machine available is the primary security goal.
 
-And there are user mandated vs user optional processes ...
-necessary/wanted vs unnecessary/unwanted.
+Distinguish bugs from broken-by-design, too.
 
-What android actually does is reward well written applications because
-they "just work" and they don't have to be power aware at all ...
-they're usually event driven and split into the android
-provider/consumer model.
-
-Badly written applications that are not suspend block aware get shut
-down (by system suspend) when the screen turns off, so they're also
-power/suspend unaware.
-
-Applications that want to present the user with a choice in android are
-power/suspend aware because the only way they get to present the choice
-is via suspend blockers.
-
-The "power problem" always devolves to resolving a set of choices around
-a given set of control axes.  The problem is that the set of control
-axes isn't unique and doesn't have a well agreed upon selection.  This
-makes it hard to make definitive terminology because you have to pick
-the set of axes (implicitly or explicitly) before defining terms ...
-
-James
+- Dave
 
 
