@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0HAIrN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 04:47:13 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40249 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab0HAIrL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 04:47:11 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-In-Reply-To: <20100730103018.GE3571@csn.ul.ie>
-References: <20100730115222.4AD8.A69D9226@jp.fujitsu.com> <20100730103018.GE3571@csn.ul.ie>
-Message-Id: <20100801174229.4B08.A69D9226@jp.fujitsu.com>
+	id S1756334Ab0HAIra (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 04:47:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756093Ab0HAIr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 04:47:27 -0400
+Date: Sun, 1 Aug 2010 11:41:36 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Sridhar Samudrala <samudrala@us.ibm.com>,
+        Jeff Dike <jdike@linux.intel.com>, Juan Quintela <quintela@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        David Stevens <dlstevens@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vhost: locking/rcu cleanup
+Message-ID: <20100801084136.GC16158@redhat.com>
+References: <20100729122325.GA24337@redhat.com>
+ <4C52E692.3070405@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun,  1 Aug 2010 17:47:08 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C52E692.3070405@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > side note: page lock contention is very common case.
-> > 
-> > For case (8), I don't think sleeping is right way. get_page() is used in really various place of
-> > our kernel. so we can't assume it's only temporary reference count increasing.
+On Fri, Jul 30, 2010 at 04:49:54PM +0200, Tejun Heo wrote:
+> Hello,
 > 
-> In what case is a munlocked pages reference count permanently increased and
-> why is this not a memory leak?
+> On 07/29/2010 02:23 PM, Michael S. Tsirkin wrote:
+> > I saw WARN_ON(!list_empty(&dev->work_list)) trigger
+> > so our custom flush is not as airtight as need be.
+> 
+> Could be but it's also possible that something has queued something
+> after the last flush?
+> Is the problem reproducible?
 
-V4L, audio, GEM and/or other multimedia driver?
+Well, We do requeue from the job itself. So need to be careful with what
+we do with indexes here. Bug seemed to happen all the time when qemu was
+killed under stress but now I can't reproduce anymore :(
+Will try again later.
 
+> > This patch switches to a simple atomic counter + srcu instead of
+> > the custom locked queue + flush implementation.
+> > 
+> > This will slow down the setup ioctls, which should not matter -
+> > it's slow path anyway. We use the expedited flush to at least
+> > make sure it has a sane time bound.
+> > 
+> > Works fine for me. I got reports that with many guests,
+> > work lock is highly contended, and this patch should in theory
+> > fix this as well - but I haven't tested this yet.
+> 
+> Hmmm... vhost_poll_flush() becomes synchronize_srcu_expedited().  Can
+> you please explain how it works?  synchronize_srcu_expedited() is an
+> extremely heavy operation involving scheduling the cpu_stop task on
+> all cpus.  I'm not quite sure whether doing it from every flush is a
+> good idea.  Is flush supposed to be a very rare operation?
 
+It is rare - happens on guest reboot typically. I guess I will
+switch to regular synchronize_srcu.
 
+> Having custom implementation is fine too but let's try to implement
+> something generic if at all possible.
+> 
+> Thanks.
+
+Sure. It does seem that avoiding list lock would be pretty hard
+in generic code though.
+
+> -- 
+> tejun
