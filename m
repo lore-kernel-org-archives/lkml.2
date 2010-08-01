@@ -1,244 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab0HAH43 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 03:56:29 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:58896 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab0HAH42 (ORCPT
+	id S1755437Ab0HAH5p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 03:57:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53842 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab0HAH5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 03:56:28 -0400
-Message-ID: <4C5528A6.1060008@dcl.info.waseda.ac.jp>
-Date: Sun, 01 Aug 2010 16:56:22 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100724 Lanikai/3.1.1
+	Sun, 1 Aug 2010 03:57:43 -0400
+Subject: [PATCH] of/device: Replace struct of_device with struct of_platform
+To: sfr@canb.auug.org.au, monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
+        sparclinux@vger.kernel.org, davem@davemloft.net
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 01 Aug 2010 01:57:38 -0600
+Message-ID: <20100801074831.1099.3318.stgit@angua>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>, Jens Axboe <jaxboe@fusionio.com>
-CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH RFC] perf lock: Add new event "lock_acquired_waittime"
- for contention analysis
-References: <1279990529-8798-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100728163946.GB5394@nowhere> <4C5507F2.7090503@dcl.info.waseda.ac.jp>
-In-Reply-To: <4C5507F2.7090503@dcl.info.waseda.ac.jp>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010年08月01日 14:36, Hitoshi Mitake wrote:
-> On 07/29/10 01:39, Frederic Weisbecker wrote:
->  > On Sun, Jul 25, 2010 at 01:55:29AM +0900, Hitoshi Mitake wrote:
->  >> Recording every lock events produces too large overhead
->  >> both in CPU time and memory space.
->  >> This overhead is a big problem which should be solved,
->  >> but locks are important factor today.
->  >>
->  >> So I'd like to add a new lock event "lock_acquired_waittime"
->  >> for contention analysis. lock_acquired() calculates time consumed
->  >> for waiting the locks with held_lock->waittime_stamp set by
-> lock_contended().
->  >> If this value is 0, no contention occured. If this value is not 0,
->  >> there is occurence of contention.
->  >> So I inserted the branch based on this value into lock_acquired().
->  >> New lock_acquired() calls trace_lock_acquired() when waittime is 0,
->  >> and calls trace_lock_acquired_waittime(), function for the new event,
->  >> when waittime is not 0.
->  >>
->  >> The traditional event, lock_acquired, is too high frequency event.
->  >> But the event lock_acquired_waittime is not so high frequency,
->  >> so overhead produced by tracing this event is not so large.
->  >>
->  >> This is an example:
->  >> | mitake@X201i:~/linux/.../tools/perf% ./perf bench sched messaging
->  >> | # Running sched/messaging benchmark...
->  >> | # 20 sender and receiver processes per group
->  >> | # 10 groups == 400 processes run
->  >> |
->  >> | Total time: 1.712 [sec]
->  >> | mitake@X201i:~/linux/.../tools/perf% sudo ./perf record -R -f -m
-> 1024 -c 1 -e lock:lock_acquired_waittime:r ./perf bench sched messaging
->  >> | # Running sched/messaging benchmark...
->  >> | # 20 sender and receiver processes per group
->  >> | # 10 groups == 400 processes run
->  >> |
->  >> | Total time: 1.754 [sec]
->  >> | [ perf record: Woken up 1 times to write data ]
->  >> | [ perf record: Captured and wrote 0.958 MB perf.data (~41837
-> samples) ]
->  >>
->  >> "perf bench sched messaging" is a kernel bound program, but this result
->  >> shows that overhead is, at least on my Core i3 laptop, small enough
-> for discarding
->  >> especially from CPU time perspective.
->  >>
->  >> This new event is not enough for analyzing complete lock behaviour.
->  >> But measuring quantity of time consumed for lock contention will be
-> possible.
->  >>
->  >> So I think this patch is useful for real world lock analysis.
->  >> I'd like to write in new analyzer which use this event in Python.
->  >>
->  >> Cc: Ingo Molnar<mingo@elte.hu>
->  >> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
->  >> Cc: Paul Mackerras<paulus@samba.org>
->  >> Cc: Arnaldo Carvalho de Melo<acme@redhat.com>
->  >> Cc: Jens Axboe<jens.axboe@oracle.com>
->  >> Cc: Jason Baron<jbaron@redhat.com>
->  >> Cc: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
->  >> Signed-off-by: Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>
->  >>
->  >> ---
->  >
->  >
->  >
->  > But those who only want to trace the time waited can just trace
->  > lock_acquire and lock_acquired event. It seems it would be enough
->  > to reduce the lock tracing overhead a bit.
->  >
->  > Also the problem with:
->  >
->  > if (cond)
->  > trace_x()
->  > else
->  > trace_y()
->  >
->  > It adds a new condition, only used by tracing, that will always be
->  > checked, whenever the tracing is on or off. So we lose a cool feature
->  > of tracepoint here: any tracing code is hidden behind a boolean wall,
->  > so that the tracing off path is optimized with a single branch check:
->  >
->  > static inline void trace_##name(proto) \
->  > { \
->  > if (unlikely(__tracepoint_##name.state)) \
->  > __DO_TRACE(&__tracepoint_##name, \
->  > TP_PROTO(data_proto), \
->  > TP_ARGS(data_args)); \
->  > } \
->  >
->  >
->  > When tracing is off, ie: __tracepoint_##name.state == 0, the only
->  > extra code executed is the check of __tracepoint_##name.state.
->  >
->  > With your new tracepoint, you've added another branch that is
->  > always checked (unless !CONFIG_TRACEPOINTS, due to compiler
->  > optimizations).
->
-> Sorry, this branch is not a good choice.
-> But for my purpose, this tracing enable/disable feature is not enough.
-> Because I wanted to suppress the frequency of lock event for contention
-> analysis,
-> so branch for judging occurence of contention had to be added.
->
->  >
->  > But well, that's not very important. Lockdep is already debugging
->  > code not enabled in production kernel (at least not supposed to).
->  >
->
-> I want to make lockdep production kernel feature with dynamic patching.
-> Current lock event tracing and in kernel lock statistics (/proc/lock_stat)
-> depend on lockdep. Overhead of these features must be devided into
-> individual.
->
-> # BTW, I completely misunderstood the principle of lockdep,
-> # I might understood it recently :( So I can work on it now.
->
->  > The more important point is: do we really need this? Have you observed
->  > lost events with only lock_acquire + lock_acquired events?
->  >
->  > You can check lost events with: perf trace -d
->  > You can also tune the size of the buffers with the -m option in
->  > perf record. The default size of perf record is not enough for lock
->  > events.
->
-> The purpose of this patch is suppressing the frequency of events,
-> lost of events is out of scope of this patch.
->
->  >
->  >
->  > Optimizing the size of the records is definetly something we want. But
->  > I'm not sure this is the good way.
->  >
->  > Something like tuning the fields we want in a record seems to me a
->  > more generic and wide tracing optimization, a gain that would be
->  > propagated in every tracepoints and not only a specific and precise
->  > tracing workload on specific tracepoints.
->  >
->  > Look at this example:
->  >
->  > fweisbec@nowhere:~$ cat /debug/tracing/events/sched/sched_switch/format
->  > name: sched_switch
->  > ID: 29
->  > format:
->  > field:unsigned short common_type; offset:0; size:2; signed:0;
->  > field:unsigned char common_flags; offset:2; size:1; signed:0;
->  > field:unsigned char common_preempt_count; offset:3; size:1; signed:0;
->  > field:int common_pid; offset:4; size:4; signed:1;
->  > field:int common_lock_depth; offset:8; size:4; signed:1;
->  >
->  > field:char prev_comm[TASK_COMM_LEN]; offset:12; size:16; signed:1;
->  > field:pid_t prev_pid; offset:28; size:4; signed:1;
->  > field:int prev_prio; offset:32; size:4; signed:1;
->  > field:long prev_state; offset:40; size:8; signed:1;
->  > field:char next_comm[TASK_COMM_LEN]; offset:48; size:16; signed:1;
->  > field:pid_t next_pid; offset:64; size:4; signed:1;
->  > field:int next_prio; offset:68; size:4; signed:1;
->  >
->  > print fmt: "prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s ==>
-> next_comm=%s next_pid=%d next_prio=%d",
->  > REC->prev_comm, REC->prev_pid, REC->prev_prio, REC->prev_state ?
-> __print_flags(REC->prev_state, "|", { 1, "S"} , {
->  > 2, "D" }, { 4, "T" }, { 8, "t" }, { 16, "Z" }, { 32, "X" }, { 64, "x"
-> }, { 128, "W" }) : "R", REC->next_comm,
->  > REC->next_pid, REC->next_prio
->  >
->  >
->  > In typical scheduler tracing workloads, we don't need:
->  > - common_flags (irq flags)
->  > - common_preempt_count (if preempt_count != 0 on sched switch, it's
-> a bug)
->  > - common_pid (prev_pid == common_pid, may be prev_pid should be
-> dropped in fact)
->  > - common_lock_depth (not used yet in perf tools, and the BKL is dying)
->  > - prio (not used yet in perf sched)
->  > - comm (we already have some comm resolution in perf)
->  >
->  > I just talking about some tracing workloads, typically perf sched
-> won't use the
->  > aboves. But other kinds of instrumentation may need the prio for
-> example.
->  >
->  > I let you imagine how much space we can save if we can bring some
-> choice on the
->  > fields we want, depending on what the user wants and so.
->
-> Yeah, this will contribute to reducing overhead of tracing.
->
->  >
->  > If someone is willing to work on that, it would be definitely welcome.
->  > I think we could use a kind of mask of fields we want.
->  >
->  > Note I think that's easy for common_* fields as they are always the same
->  > and filled from tracing_generic_entry_update(), for the others it
-> doesn't
->  > looks easy, we would need to add more macros inside TP_fast_assign().
->  > But having the support for common_* fields would be already a good
->  > thing.
->  >
->  >
->
-> After I finish current pending works like lockdep enabling/disabling,
-> and anyone don't do it, I'd like to work on it.
-> Because tracing overhead is really critical problem for lock events.
-> I want to try any method for reducing overhead.
-> # But I don't have enough power, this will be very slow :(
->
+of_device is just an alias for platform_device, so remove it entirely.  Also
+replace to_of_device() with to_platform_device().
 
-Oops, I received the mail says that "jens.axboe@oracle.com" is invalid
-from mailer daemon of oracle.com .
-I added the email address "jaxboe@fusionio.com", sorry Jens.
+This patch was initially generated from the following semantic patch, and then
+edited by hand to pick up the bits that coccinelle didn't catch.
+
+@@
+@@
+-struct of_device
++struct platform_device
+
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+
+This patch is *huge*, so rather than posting it and having lists barf at me, I've pushed it out to my git tree.  You can view the branch[1] and the diff[2].
+
+[1] http://git.secretlab.ca/?p=linux-2.6.git;a=shortlog;h=refs/heads/devicetree/of-device-rename
+[2] http://git.secretlab.ca/?p=linux-2.6.git;a=commitdiff;h=48465300aab074396bdbad54b4fa01c793e5c987;hp=7fb8f881c54beb05dd4d2c947dada1c636581d87
+
+It is a very mechanical change, only replaces of_device references with platform_device.  I won't push it into linux-next right away because it's sure to cause a truckload of conflicts.  Instead, I'll wait until the merge window settles down, spin it again with all the new driver changes, repost and ask Linus to pull.
+
+If anyone has any problems with this plan, then please let me know.
+
+Cheers,
+g.
+
+ drivers/ata/pata_mpc52xx.c                    |    8 ++---
+ drivers/ata/pata_of_platform.c                |    4 +-
+ drivers/ata/sata_fsl.c                        |    8 ++---
+ drivers/atm/fore200e.c                        |   26 +++++++--------
+ drivers/block/xsysace.c                       |    4 +-
+ drivers/char/hw_random/n2-drv.c               |    4 +-
+ drivers/char/hw_random/n2rng.h                |    2 +
+ drivers/char/hw_random/pasemi-rng.c           |    4 +-
+ drivers/char/ipmi/ipmi_si_intf.c              |    4 +-
+ drivers/char/rtc.c                            |    2 +
+ drivers/char/xilinx_hwicap/xilinx_hwicap.c    |    4 +-
+ drivers/crypto/amcc/crypto4xx_core.c          |    4 +-
+ drivers/crypto/amcc/crypto4xx_core.h          |    2 +
+ drivers/crypto/n2_core.c                      |   20 ++++++-----
+ drivers/crypto/talitos.c                      |    6 ++-
+ drivers/dma/fsldma.c                          |    4 +-
+ drivers/dma/mpc512x_dma.c                     |    4 +-
+ drivers/dma/ppc4xx/adma.c                     |    8 ++---
+ drivers/edac/mpc85xx_edac.c                   |   12 +++----
+ drivers/edac/ppc4xx_edac.c                    |   12 +++----
+ drivers/hwmon/ams/ams.h                       |    2 +
+ drivers/hwmon/ultra45_env.c                   |    4 +-
+ drivers/i2c/busses/i2c-cpm.c                  |    8 ++---
+ drivers/i2c/busses/i2c-ibm_iic.c              |    6 ++-
+ drivers/i2c/busses/i2c-mpc.c                  |    4 +-
+ drivers/infiniband/hw/ehca/ehca_classes.h     |    2 +
+ drivers/infiniband/hw/ehca/ehca_main.c        |    4 +-
+ drivers/input/misc/sparcspkr.c                |   10 +++---
+ drivers/input/serio/i8042-sparcio.h           |    8 ++---
+ drivers/input/serio/xilinx_ps2.c              |    4 +-
+ drivers/leds/leds-gpio.c                      |    4 +-
+ drivers/macintosh/macio_sysfs.c               |    6 ++-
+ drivers/macintosh/smu.c                       |    6 ++-
+ drivers/macintosh/therm_adt746x.c             |    2 +
+ drivers/macintosh/therm_pm72.c                |    6 ++-
+ drivers/macintosh/therm_windtunnel.c          |    6 ++-
+ drivers/mmc/host/sdhci-of-core.c              |    8 ++---
+ drivers/mtd/maps/physmap_of.c                 |    8 ++---
+ drivers/mtd/maps/sun_uflash.c                 |    6 ++-
+ drivers/mtd/nand/fsl_elbc_nand.c              |    4 +-
+ drivers/mtd/nand/fsl_upm.c                    |    4 +-
+ drivers/mtd/nand/mpc5121_nfc.c                |    4 +-
+ drivers/mtd/nand/ndfc.c                       |    6 ++-
+ drivers/mtd/nand/pasemi_nand.c                |    4 +-
+ drivers/mtd/nand/socrates_nand.c              |    4 +-
+ drivers/net/can/mscan/mpc5xxx_can.c           |   18 +++++-----
+ drivers/net/can/sja1000/sja1000_of_platform.c |    4 +-
+ drivers/net/ehea/ehea.h                       |    4 +-
+ drivers/net/ehea/ehea_main.c                  |   12 +++----
+ drivers/net/fec_mpc52xx.c                     |    8 ++---
+ drivers/net/fec_mpc52xx_phy.c                 |    4 +-
+ drivers/net/fs_enet/fs_enet-main.c            |    4 +-
+ drivers/net/fs_enet/mac-fcc.c                 |    2 +
+ drivers/net/fs_enet/mac-fec.c                 |    2 +
+ drivers/net/fs_enet/mac-scc.c                 |    2 +
+ drivers/net/fs_enet/mii-bitbang.c             |    4 +-
+ drivers/net/fs_enet/mii-fec.c                 |    4 +-
+ drivers/net/fsl_pq_mdio.c                     |    4 +-
+ drivers/net/gianfar.c                         |   10 +++---
+ drivers/net/gianfar.h                         |    2 +
+ drivers/net/greth.c                           |    4 +-
+ drivers/net/ibm_newemac/core.c                |    6 ++-
+ drivers/net/ibm_newemac/core.h                |   12 +++----
+ drivers/net/ibm_newemac/mal.c                 |    4 +-
+ drivers/net/ibm_newemac/mal.h                 |    2 +
+ drivers/net/ibm_newemac/rgmii.c               |   18 +++++-----
+ drivers/net/ibm_newemac/rgmii.h               |   16 +++++----
+ drivers/net/ibm_newemac/tah.c                 |   14 ++++----
+ drivers/net/ibm_newemac/tah.h                 |   12 +++----
+ drivers/net/ibm_newemac/zmii.c                |   18 +++++-----
+ drivers/net/ibm_newemac/zmii.h                |   16 +++++----
+ drivers/net/ll_temac_main.c                   |    8 ++---
+ drivers/net/myri_sbus.c                       |    4 +-
+ drivers/net/myri_sbus.h                       |    2 +
+ drivers/net/niu.c                             |    8 ++---
+ drivers/net/phy/mdio-gpio.c                   |    4 +-
+ drivers/net/sunbmac.c                         |   18 +++++-----
+ drivers/net/sunbmac.h                         |    4 +-
+ drivers/net/sunhme.c                          |   22 ++++++-------
+ drivers/net/sunlance.c                        |   20 ++++++-----
+ drivers/net/sunqe.c                           |   16 +++++----
+ drivers/net/sunqe.h                           |    4 +-
+ drivers/net/ucc_geth.c                        |    8 ++---
+ drivers/net/xilinx_emaclite.c                 |    6 ++-
+ drivers/parport/parport_sunbpp.c              |    4 +-
+ drivers/pcmcia/electra_cf.c                   |    6 ++-
+ drivers/pcmcia/m8xx_pcmcia.c                  |    4 +-
+ drivers/rtc/rtc-mpc5121.c                     |    4 +-
+ drivers/sbus/char/bbc_envctrl.c               |    6 ++-
+ drivers/sbus/char/bbc_i2c.c                   |   18 +++++-----
+ drivers/sbus/char/bbc_i2c.h                   |   10 +++---
+ drivers/sbus/char/display7seg.c               |    4 +-
+ drivers/sbus/char/envctrl.c                   |    4 +-
+ drivers/sbus/char/flash.c                     |    4 +-
+ drivers/sbus/char/uctrl.c                     |    4 +-
+ drivers/scsi/qlogicpti.c                      |   14 ++++----
+ drivers/scsi/qlogicpti.h                      |    2 +
+ drivers/scsi/sun_esp.c                        |   44 +++++++++++++------------
+ drivers/serial/apbuart.c                      |    2 +
+ drivers/serial/cpm_uart/cpm_uart_core.c       |    4 +-
+ drivers/serial/mpc52xx_uart.c                 |    8 ++---
+ drivers/serial/nwpserial.c                    |    2 +
+ drivers/serial/of_serial.c                    |    6 ++-
+ drivers/serial/sunhv.c                        |    4 +-
+ drivers/serial/sunsab.c                       |    8 ++---
+ drivers/serial/sunsu.c                        |    8 ++---
+ drivers/serial/sunzilog.c                     |    6 ++-
+ drivers/serial/uartlite.c                     |    4 +-
+ drivers/serial/ucc_uart.c                     |    4 +-
+ drivers/spi/mpc512x_psc_spi.c                 |    4 +-
+ drivers/spi/mpc52xx_psc_spi.c                 |    4 +-
+ drivers/spi/mpc52xx_spi.c                     |    4 +-
+ drivers/spi/spi_mpc8xxx.c                     |    4 +-
+ drivers/spi/spi_ppc4xx.c                      |    4 +-
+ drivers/spi/xilinx_spi_of.c                   |    6 ++-
+ drivers/usb/gadget/fsl_qe_udc.c               |   10 +++---
+ drivers/usb/host/ehci-ppc-of.c                |    6 ++-
+ drivers/usb/host/ehci-xilinx-of.c             |    6 ++-
+ drivers/usb/host/fhci-hcd.c                   |    4 +-
+ drivers/usb/host/isp1760-if.c                 |    4 +-
+ drivers/usb/host/ohci-ppc-of.c                |    6 ++-
+ drivers/video/bw2.c                           |    4 +-
+ drivers/video/cg14.c                          |    6 ++-
+ drivers/video/cg3.c                           |    4 +-
+ drivers/video/cg6.c                           |    6 ++-
+ drivers/video/ffb.c                           |    4 +-
+ drivers/video/fsl-diu-fb.c                    |    8 ++---
+ drivers/video/leo.c                           |    6 ++-
+ drivers/video/mb862xx/mb862xxfb.c             |    4 +-
+ drivers/video/p9100.c                         |    4 +-
+ drivers/video/platinumfb.c                    |    4 +-
+ drivers/video/sunxvr1000.c                    |    4 +-
+ drivers/video/tcx.c                           |    6 ++-
+ drivers/video/xilinxfb.c                      |    4 +-
+ drivers/watchdog/cpwd.c                       |    4 +-
+ drivers/watchdog/gef_wdt.c                    |    2 +
+ drivers/watchdog/mpc8xxx_wdt.c                |    4 +-
+ drivers/watchdog/riowd.c                      |    4 +-
+ include/linux/of_device.h                     |    3 --
+ sound/aoa/soundbus/core.c                     |    2 +
+ sound/aoa/soundbus/soundbus.h                 |    2 +
+ sound/aoa/soundbus/sysfs.c                    |    2 +
+ sound/soc/fsl/mpc5200_dma.c                   |    4 +-
+ sound/soc/fsl/mpc5200_dma.h                   |    4 +-
+ sound/soc/fsl/mpc5200_psc_ac97.c              |    4 +-
+ sound/soc/fsl/mpc5200_psc_i2s.c               |    4 +-
+ sound/soc/fsl/mpc8610_hpcd.c                  |    4 +-
+ sound/sparc/amd7930.c                         |    8 ++---
+ sound/sparc/cs4231.c                          |   18 +++++-----
+ sound/sparc/dbri.c                            |    8 ++---
+ 150 files changed, 493 insertions(+), 496 deletions(-)
 
