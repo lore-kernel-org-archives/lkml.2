@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab0HASBm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 14:01:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42273 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750940Ab0HASBj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 14:01:39 -0400
+	id S1752329Ab0HASG5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 14:06:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47709 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab0HASG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 14:06:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=u1RNvpKlLkO+dzPGexIndZjDtruIGFAx4/HC+z95TsRfhxSlUQtpJ9gJahsBfpsjG4
+         4RpoxzikzL0OEbtIa2LjXmzOcayO++8MwvvpiwxZUlHTwT49TKg/HpLtHDTh60eExsV3
+         uBsf5LtF4BRbixdetaqDD1x1z6gfpmrrbVo0Y=
+Message-ID: <4C55B7CA.6030304@gmail.com>
+Date: Sun, 01 Aug 2010 11:07:06 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
-References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 1 Aug 2010 11:01:04 -0700
-Message-ID: <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com>
-Subject: Re: 2.6.35-rc6-git6: Reported regressions from 2.6.34
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <jaxboe@fusionio.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: trivial@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 33/33]Documentation/filesystems/affs.txt update web 	address.
+References: <1279687982-29413-1-git-send-email-justinmattock@gmail.com>	<1279687982-29413-3-git-send-email-justinmattock@gmail.com> <AANLkTik7hO2KBiye5cZt7=F9cGgQWQHKsPmJTMJfTDZB@mail.gmail.com>
+In-Reply-To: <AANLkTik7hO2KBiye5cZt7=F9cGgQWQHKsPmJTMJfTDZB@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 1, 2010 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+On 08/01/2010 10:59 AM, Geert Uytterhoeven wrote:
+> On Wed, Jul 21, 2010 at 06:52, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> The patch below updates a broken web address.
+>>
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   Documentation/filesystems/affs.txt |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/Documentation/filesystems/affs.txt b/Documentation/filesystems/affs.txt
+>> index 2d15244..9b19a59 100644
+>> --- a/Documentation/filesystems/affs.txt
+>> +++ b/Documentation/filesystems/affs.txt
+>> @@ -216,4 +216,4 @@ due to an incompatibility with the Amiga floppy controller.
+>>
+>>   If you are interested in an Amiga Emulator for Linux, look at
+>>
+>> -http://www.freiburg.linux.de/~uae/
+>> +http://www.freiburg.linux.de
 >
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16400
-> Subject         : 2.6.35-rc5 inconsistent lock state
-> Submitter       : Martin Pirker <lkml.collector@gmail.com>
-> Date            : 2010-07-14 20:33 (19 days old)
-> Message-ID      : <AANLkTikDF0TL6OyPVCzPlUTwxFehcrETn3ysgSSeTq92@mail.gmail.com>
-> References      : http://marc.info/?l=linux-kernel&m=127913961025267&w=2
+> That web page doesn't contain anything related to UAE?
+>
+> Google told me http://www.amigaemulator.org/
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+>
 
-This has a proposed patch. I don't know what the status of it is, though. Jens?
+ From what I remember I couldn't find/see anything(maybe I did see what 
+you posted, but had no idea that it was right). Anyways thanks for 
+posting that, I'll resend with this updated.
 
-   http://marc.info/?l=linux-kernel&m=127950018204029&w=2
-
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16393
-> Subject         : kernel BUG at fs/block_dev.c:765!
-> Submitter       : Markus Trippelsdorf <markus@trippelsdorf.de>
-> Date            : 2010-07-14 13:52 (19 days old)
-> Message-ID      : <20100714135217.GA1797@arch.tripp.de>
-> References      : http://marc.info/?l=linux-kernel&m=127911564213748&w=2
-
-This one is interesting. And I think I perhaps see where it's coming from.
-
-bd_start_claiming() (through bd_prepare_to_claim()) has two separate
-success cases: either there was no holder (bd_claiming is NULL) or the
-new holder was already claiming it (bd_claiming == holder).
-
-Note in particular the case of the holder _already_ holding it. What happens is:
-
- - bd_start_claiming() succeeds because we had _already_ claimed it
-with the same holder
-
- - then some error happens, and we call bd_abort_claiming(), which
-does whole->bd_claiming = NULL;
-
- - the original holder thinks it still holds the bd, but it has been released!
-
- - a new claimer comes in, and succeeds because bd_claiming is now NULL.
-
- - we now have two "owners" of the bd, but bd_claiming only points to
-the second one.
-
-I think bd_start_claiming() needs to do some kind of refcount for the
-nested holder case, and bd_abort_claiming() needs to decrement the
-refcount and only clear the bd_claiming field when it goes down to
-zero.
-
-I dunno. Maybe there's something else going on, but it does look
-suspicious, and the above would explain the BUG_ON().
-
-Tejun, Jens?
-
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16369
-> Subject         : Yet another 2.6.35 regression (AGP)?
-> Submitter       : Woody Suwalski <terraluna977@gmail.com>
-> Date            : 2010-07-09 14:21 (24 days old)
-> Message-ID      : <4C373084.8000503@gmail.com>
-> References      : http://marc.info/?l=linux-kernel&m=127868797119254&w=2
-
-Should hopefully be fixed by commit e7b96f28c58c ("agp/intel: Use the
-correct mask to detect i830 aperture size.")
-
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16365
-> Subject         : kernel BUG at fs/btrfs/extent-tree.c:1353
-> Submitter       : Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-> Date            : 2010-07-08 14:27 (25 days old)
-> Message-ID      : <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de>
-> References      : http://marc.info/?l=linux-kernel&m=127859960725931&w=2
-
-This one is reportedly fixed by commit 83ba7b071f30 ("writeback:
-simplify the write back thread queue")
-
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16215
-> Subject         : sysfs: cannot create duplicate filename '/class/net/bnep0'
-> Submitter       : Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-> Date            : 2010-06-15 14:55 (48 days old)
-> Handled-By      : Eric W. Biederman <ebiederm@xmission.com>
-
-Fixed by commit 24b1442d01ae155ea716dfb94ed21605541c317d.
-
-                             Linus
+Justin P. Mattock
