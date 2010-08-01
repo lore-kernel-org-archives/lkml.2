@@ -1,79 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab0HAIra (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 04:47:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49824 "EHLO mx1.redhat.com"
+	id S1756270Ab0HAItO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 04:49:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57929 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756093Ab0HAIr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 04:47:27 -0400
-Date: Sun, 1 Aug 2010 11:41:36 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Sridhar Samudrala <samudrala@us.ibm.com>,
-        Jeff Dike <jdike@linux.intel.com>, Juan Quintela <quintela@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        David Stevens <dlstevens@us.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost: locking/rcu cleanup
-Message-ID: <20100801084136.GC16158@redhat.com>
-References: <20100729122325.GA24337@redhat.com>
- <4C52E692.3070405@kernel.org>
+	id S1753898Ab0HAItM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 04:49:12 -0400
+Date: Sun, 1 Aug 2010 08:48:47 GMT
+From: tip-bot for Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <E1Oeuyt-0004XS-0y@eag09.americas.sgi.com>
+References: <E1Oeuyt-0004XS-0y@eag09.americas.sgi.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/uv] x86, UV: Initialize BAU hub map
+Message-ID: <tip-c4026cfd8febcd63dd278894108839f30e525a0e@git.kernel.org>
+Git-Commit-ID: c4026cfd8febcd63dd278894108839f30e525a0e
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4C52E692.3070405@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 01 Aug 2010 08:48:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 04:49:54PM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 07/29/2010 02:23 PM, Michael S. Tsirkin wrote:
-> > I saw WARN_ON(!list_empty(&dev->work_list)) trigger
-> > so our custom flush is not as airtight as need be.
-> 
-> Could be but it's also possible that something has queued something
-> after the last flush?
-> Is the problem reproducible?
+Commit-ID:  c4026cfd8febcd63dd278894108839f30e525a0e
+Gitweb:     http://git.kernel.org/tip/c4026cfd8febcd63dd278894108839f30e525a0e
+Author:     Cliff Wickman <cpw@sgi.com>
+AuthorDate: Fri, 30 Jul 2010 14:10:55 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 1 Aug 2010 09:18:41 +0200
 
-Well, We do requeue from the job itself. So need to be careful with what
-we do with indexes here. Bug seemed to happen all the time when qemu was
-killed under stress but now I can't reproduce anymore :(
-Will try again later.
+x86, UV: Initialize BAU hub map
 
-> > This patch switches to a simple atomic counter + srcu instead of
-> > the custom locked queue + flush implementation.
-> > 
-> > This will slow down the setup ioctls, which should not matter -
-> > it's slow path anyway. We use the expedited flush to at least
-> > make sure it has a sane time bound.
-> > 
-> > Works fine for me. I got reports that with many guests,
-> > work lock is highly contended, and this patch should in theory
-> > fix this as well - but I haven't tested this yet.
-> 
-> Hmmm... vhost_poll_flush() becomes synchronize_srcu_expedited().  Can
-> you please explain how it works?  synchronize_srcu_expedited() is an
-> extremely heavy operation involving scheduling the cpu_stop task on
-> all cpus.  I'm not quite sure whether doing it from every flush is a
-> good idea.  Is flush supposed to be a very rare operation?
+Fix uninitialized uvhub_mask:
 
-It is rare - happens on guest reboot typically. I guess I will
-switch to regular synchronize_srcu.
+- An unitialized bit map variable was causing initialization of
+  non-existant hubs (this one causes boot panics).
 
-> Having custom implementation is fine too but let's try to implement
-> something generic if at all possible.
-> 
-> Thanks.
+- And the bit map was too small for large machines.  This patch
+  makes it dynamic in size.
 
-Sure. It does seem that avoiding list lock would be pretty hard
-in generic code though.
+- Fix the case where socket 0 has no enabled cpu's. Don't assume
+  every hub has a socket 0.
 
-> -- 
-> tejun
+- uv_init_per_cpu() should be __init.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: <stable@kernel.org> # for .35.x
+LKML-Reference: <E1Oeuyt-0004XS-0y@eag09.americas.sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/tlb_uv.c |   26 ++++++++++++++------------
+ 1 files changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
+index 59efb53..312ef02 100644
+--- a/arch/x86/kernel/tlb_uv.c
++++ b/arch/x86/kernel/tlb_uv.c
+@@ -1484,15 +1484,16 @@ calculate_destination_timeout(void)
+ /*
+  * initialize the bau_control structure for each cpu
+  */
+-static void uv_init_per_cpu(int nuvhubs)
++static void __init uv_init_per_cpu(int nuvhubs)
+ {
+ 	int i;
+ 	int cpu;
+ 	int pnode;
+ 	int uvhub;
++	int have_hmaster;
+ 	short socket = 0;
+ 	unsigned short socket_mask;
+-	unsigned int uvhub_mask;
++	unsigned char *uvhub_mask;
+ 	struct bau_control *bcp;
+ 	struct uvhub_desc *bdp;
+ 	struct socket_desc *sdp;
+@@ -1516,28 +1517,29 @@ static void uv_init_per_cpu(int nuvhubs)
+ 	uvhub_descs = (struct uvhub_desc *)
+ 		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
+ 	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
++	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
+ 		pnode = uv_cpu_hub_info(cpu)->pnode;
+ 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
+-		uvhub_mask |= (1 << uvhub);
++		*(uvhub_mask + (uvhub/8)) |= (1 << (uvhub%8));
+ 		bdp = &uvhub_descs[uvhub];
+ 		bdp->num_cpus++;
+ 		bdp->uvhub = uvhub;
+ 		bdp->pnode = pnode;
+ 		/* kludge: 'assuming' one node per socket, and assuming that
+ 		   disabling a socket just leaves a gap in node numbers */
+-		socket = (cpu_to_node(cpu) & 1);;
++		socket = (cpu_to_node(cpu) & 1);
+ 		bdp->socket_mask |= (1 << socket);
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+ 		sdp->num_cpus++;
+ 	}
+-	uvhub = 0;
+-	while (uvhub_mask) {
+-		if (!(uvhub_mask & 1))
+-			goto nexthub;
++	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
++		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
++			continue;
++		have_hmaster = 0;
+ 		bdp = &uvhub_descs[uvhub];
+ 		socket_mask = bdp->socket_mask;
+ 		socket = 0;
+@@ -1551,8 +1553,10 @@ static void uv_init_per_cpu(int nuvhubs)
+ 				bcp->cpu = cpu;
+ 				if (i == 0) {
+ 					smaster = bcp;
+-					if (socket == 0)
++					if (!have_hmaster) {
++						have_hmaster++;
+ 						hmaster = bcp;
++					}
+ 				}
+ 				bcp->cpus_in_uvhub = bdp->num_cpus;
+ 				bcp->cpus_in_socket = sdp->num_cpus;
+@@ -1566,11 +1570,9 @@ nextsocket:
+ 			socket++;
+ 			socket_mask = (socket_mask >> 1);
+ 		}
+-nexthub:
+-		uvhub++;
+-		uvhub_mask = (uvhub_mask >> 1);
+ 	}
+ 	kfree(uvhub_descs);
++	kfree(uvhub_mask);
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		bcp->baudisabled = 0;
