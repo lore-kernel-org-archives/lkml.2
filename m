@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab0HAKuK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 06:50:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56198 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab0HAKuG (ORCPT
+	id S1756793Ab0HAKvL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 06:51:11 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43214 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab0HAKvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 06:50:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=mUaWc4Tmx5Xee+tKUVi2j0togv0Npo3p0onwYrDnWqH7egG6fJPStGQxDj6E+zLYlc
-         VO5wcTGy1SlIuvxW0FsM77OHuTCGoDXJLFtSTc+l5ou/JHC6i1GNFkE0HTGP7bVjW4mK
-         8yWfB1LcPYnECZ859RllaYJ2+2LUC7iqbuHbU=
-Date: Sun, 1 Aug 2010 12:49:41 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Li Yang <leoli@freescale.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>, linux-usb@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] usb: fsl_udc_core: check return value of
-	create_proc_read_entry()
-Message-ID: <20100801104941.GI26313@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Vasiliy Kulikov <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org, Li Yang <leoli@freescale.com>,
-	David Brownell <dbrownell@users.sourceforge.net>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Dinh Nguyen <Dinh.Nguyen@freescale.com>,
-	Anton Vorontsov <avorontsov@ru.mvista.com>,
-	linux-usb@vger.kernel.org, linuxppc-dev@ozlabs.org,
-	linux-kernel@vger.kernel.org
-References: <1280597900-8405-1-git-send-email-segooon@gmail.com> <20100731191743.GF26313@bicker> <20100801061934.GB2650@albatros>
+	Sun, 1 Aug 2010 06:51:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] vmscan: synchronous lumpy reclaim don't call congestion_wait()
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Andy Whitcroft <apw@shadowen.org>, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+In-Reply-To: <20100801104232.GA17573@localhost>
+References: <20100801180751.4B0E.A69D9226@jp.fujitsu.com> <20100801104232.GA17573@localhost>
+Message-Id: <20100801194520.4B14.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100801061934.GB2650@albatros>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sun,  1 Aug 2010 19:51:05 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 10:19:34AM +0400, Vasiliy Kulikov wrote:
-> On Sat, Jul 31, 2010 at 21:17 +0200, Dan Carpenter wrote:
-> > On Sat, Jul 31, 2010 at 09:38:20PM +0400, Kulikov Vasiliy wrote:
-> > > create_proc_read_entry() may fail, if so return -ENOMEM.
-> > > 
-> > 
-> > It can fail, but also we return NULL if procfs is disabled.  I haven't
-> > looked at it very carefully, would this patch break the module if procfs
-> > was disabled?
-> Probably you are right, but many drivers in tree compare return value
-> with NULL. Some of them interpret this as error, some of them simply
-> call pr_warn("Hmm, I cannot create file in proc, strange..."). Maybe
-> there is more simplier way to check it without #ifdefs?
+> > If the system 512MB memory, DEF_PRIORITY mean 128kB scan and It takes 4096
+> > shrink_page_list() calls to scan 128kB (i.e. 128kB/32=4096) memory.
 > 
+> Err you must forgot the page size.
 
-If the allocation fails, there is already a warning so no need to add
-another.
+page size? DEF_PRIORITY is 12.
 
-These things are one time allocation, normally near boot up when memory
-is plentifull.  The places that do check should be audited to make sure
-there isn't an unneeded dependency on PROC_FS.  I would just leave the
-rest.
+512MB >> DEF_PRIORITY
+ = 512MB / 4096
+ = 128kB
 
-regards,
-dan carpenter
+128kB scan mean 4096 times shrink_list(). because one shrink_list() scan
+SWAP_CLUSTER_MAX (i.e. 32).
+
+> 
+> 128kB means 128kB/4kB=32 pages which fit exactly into one
+> SWAP_CLUSTER_MAX batch. The shrink_page_list() call times
+> has nothing to do DEF_PRIORITY.
+
+Umm.. I haven't catch this mention.
 
