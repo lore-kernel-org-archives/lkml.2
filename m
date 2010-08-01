@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab0HAXIW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 19:08:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41949 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab0HAXIU (ORCPT
+	id S1752015Ab0HAXMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 19:12:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43201 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab0HAXMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 19:08:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=a9iZmrqyJozJbEL16K9/sLpGAB0AvNPLzWyvzHIw4GtkFdUrpPElmakeO1I6w7lbv9
-         LXp10YSoNjwbLtmY/vSN61u8k1c/dOMJQkI3ynMuzNN5MiOWmo2vj5ThYinLKNvsHZd8
-         mkV4jWnQ6qY/VhqkF8ClOH318Sw43hGMRKJM4=
-Date: Mon, 2 Aug 2010 01:08:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Pekka Paalanen <pq@iki.fi>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, nouveau@lists.freedesktop.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] x86,mmiotrace: add support for tracing STOS instruction
-Message-ID: <20100801230811.GA5561@nowhere>
-References: <20100731205101.GA5860@joi.lan> <20100801112303.3e9bea3e@daedalus.pq.iki.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100801112303.3e9bea3e@daedalus.pq.iki.fi>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 1 Aug 2010 19:12:14 -0400
+Date: Sun, 1 Aug 2010 16:12:12 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Ted Ts'o" <tytso@mit.edu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, stern@rowland.harvard.edu, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100801161212.23a5d043@infradead.org>
+In-Reply-To: <201008020102.24674.rjw@sisk.pl>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100801191228.GL2470@linux.vnet.ibm.com>
+	<20100801204026.GH31324@thunk.org>
+	<201008020102.24674.rjw@sisk.pl>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 11:23:03AM +0300, Pekka Paalanen wrote:
-> On Sat, 31 Jul 2010 22:51:01 +0200
-> Marcin Slusarz <marcin.slusarz@gmail.com> wrote:
+On Mon, 2 Aug 2010 01:02:24 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
-> > Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> > Cc: Pekka Paalanen <pq@iki.fi>
+> Generally speaking, you can divide applications into the ones that
+> will be allowed to influence ths system's behavior with respect to
+> power management and the others that won't be allowed to do it.  The
+> latter may be forcibly "frozen" (this way or another) when the
+> "trused" ones collectively decide it's a good idea to enter a deeper
+> "energy saving" state.  However, it is not a given that specific
+> applications will always be in the same group.  They may be "trusted"
+> on some systems and they may not be "trusted" on some other system,
+> depending on the configuration etc.  That even may change over time
+> on the same system.
 > 
-> I have not checked the correctness of this patch, but otherwise:
-> Acked-by: Pekka Paalanen <pq@iki.fi>
 
-
-
-Queued, thanks!
-
+it might even be a sliding scale; the voting rights don't have to be
+"0" and "1", but could also be "0.2" and such.... 
