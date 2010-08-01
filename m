@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab0HAIIe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 04:08:34 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53386 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab0HAIIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 04:08:31 -0400
+	id S1755658Ab0HAISi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 04:18:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28559 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752412Ab0HAISd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 04:18:33 -0400
+Message-ID: <4C552DC4.5000600@redhat.com>
+Date: Sun, 01 Aug 2010 11:18:12 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <20100801.010501.27813939.davem@davemloft.net>
-References: <20100801074831.1099.3318.stgit@angua> <20100801.010501.27813939.davem@davemloft.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 1 Aug 2010 02:08:10 -0600
-X-Google-Sender-Auth: cQJ2U2KHsFKLwoMF6GM42jELnW0
-Message-ID: <AANLkTinkfaDt5HWDby8W1gnms6VZ7DQcpTGu=0AUnx1B@mail.gmail.com>
-Subject: Re: [PATCH] of/device: Replace struct of_device with struct 
-	of_platform
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
-        sparclinux@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
+        davem@davemloft.net, herbert@gondor.hengli.com.au,
+        jdike@linux.intel.com
+Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM virtio-net.
+References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>	 <1280442682.9058.15.camel@localhost.localdomain>	 <4C525CD2.5080604@redhat.com> <1280504771.9058.25.camel@localhost.localdomain>
+In-Reply-To: <1280504771.9058.25.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 1, 2010 at 2:05 AM, David Miller <davem@davemloft.net> wrote:
+  On 07/30/2010 06:46 PM, Shirley Ma wrote:
+> Hello Avi,
 >
-> Subject should say "struct platform_device" not "struct of_platform",
-> I think :-)
+> On Fri, 2010-07-30 at 08:02 +0300, Avi Kivity wrote:
+>> get_user_pages() is indeed slow.  But what about
+>> get_user_pages_fast()?
+>>
+>> Note that when the page is first touched, get_user_pages_fast() falls
+>> back to get_user_pages(), so the latency needs to be measured after
+>> quite a bit of warm-up.
+> Yes, I used get_user_pages_fast, however if falled back to
+> get_user_pages() when the apps doesn't allocate buffer on the same page.
+> If I run a single ping, the RTT is extremely high, but when running
+> multiple pings, the RTT time reduce significantly, but still it is not
+> as fast as copy from my initial test. I am thinking that we might need
+> to pre-pin memory pool.
+>
 
-Gah!  yup, will fix.  Thanks.
-
-g.
+I don't understand.  Under what conditions do you use get_user_pages() 
+instead of get_user_pages_fast()?  Why?
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+error compiling committee.c: too many arguments to function
+
