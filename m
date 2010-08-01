@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab0HAXTY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 19:19:24 -0400
-Received: from n1-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.152]:37302 "HELO
-	n1-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751463Ab0HAXTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 19:19:23 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 354010.5520.bm@omp127.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=LSSY5+8DkxvLDa8koHcWAuhdjGWsPQ+wg131o+izGcfilHY0jDBOWesE+lzfsAxxs1NyjmOtKAy86NZuFS3OotdzdAd5FfEl/kEktEnhMj52s3juevEZNf6fbMt8uOQXB9UNe1b9bsT3KMEVX3HOSAkejS/aBTpXdiF1Jqo7wZM=;
-Message-ID: <85179.49541.qm@web180301.mail.gq1.yahoo.com>
-X-YMail-OSG: wLlqF44VM1nle.aBQhSxPn.rsM9TzFOpFKEPGktmJDcfs0B
- HlqLoFo9l64kNRVDWN.N6aewEHMv.tv3KI1jFRmXNb0r54tsOYBwEoJ1YMfn
- q3OlDBZ_8BP4j.wl3wmy_n0GLP.6sFWE_x5Pki6g7IPhXf_KuMRfAqKQYdsR
- 39tKByL1w1xg1t9muSUR_a.6.am01F6Ulcjnq8JyieTzE3HLYJeGTGmDC3HX
- yKmRl28WWR11nogQCtfNL99nm9tXioJvIUQeO51mCHsOs4UXJVTjHhK2P031
- zpqifgUn8Lo2GTSYnMj4QUdVIJe1v7.php5v6hDOi
-X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.105.279950
-Date: Sun, 1 Aug 2010 16:19:21 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
+	id S1752050Ab0HAXaw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 19:30:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34786 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751506Ab0HAXav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 19:30:51 -0400
 Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
-To: "Ted Ts'o" <tytso@mit.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: peterz@infradead.org, swetland@google.com, linux-kernel@vger.kernel.org,
-        florian@mickler.org, linux-pm@lists.linux-foundation.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tglx@linutronix.de,
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, peterz@infradead.org,
+        swetland@google.com, linux-kernel@vger.kernel.org, florian@mickler.org,
+        linux-pm@lists.linux-foundation.org, tglx@linutronix.de,
         alan@lxorguk.ukuu.org.uk, Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <201008020102.24674.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20100801204026.GH31324@thunk.org>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	 <20100731215214.2543c07e@infradead.org>
+	 <20100801054816.GI2470@linux.vnet.ibm.com>
+	 <20100731230101.7cc1d8c7@infradead.org>
+	 <20100801191228.GL2470@linux.vnet.ibm.com>
+	 <20100801204026.GH31324@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 01 Aug 2010 18:30:44 -0500
+Message-ID: <1280705444.25620.62.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2010-08-01 at 16:40 -0400, Ted Ts'o wrote:
+> This brings me back to a major problem I have with the pm_qos approach
+> to power management.  It assumes that applications know best, and that
+> they should be free to tell pm_qos subsystem whether they need 0ms
+> latency for wireless.
 
-> be "trusted" on some systems and they may not be "trusted"
-> on some other
-> system, depending on the configuration etc.
+Um, so this behaviour is isomorphic to the suspend block case for the
+applications.  I think everyone agrees that suspend block isn't optimal,
+but we were prepared to use it as a starting point given the lack of
+enthusiasm in android for the more innovative approaches that have been
+proposed.
 
-Yes, let's reserve "trusted" for security contexts.
-One might view agressively bad power management as
-a security threat, of course:  when the machine
-becomes unavailable because its battery dies, that
-can be viewed as a security attack, since keeping the machine available is the primary security goal.
+>   Right now, I can't even query the pm_qos
+> subsystem to see which application is responsible for keeping the
+> wireless on 100% of the time!
 
-Distinguish bugs from broken-by-design, too.
+That's hardly a fair criticism: this is easily fixable but the people
+looking into it have other calls on their time. At least you got some of
+the basic problems (like init from atomic context and sort efficiency)
+fixed this time around.  If some large organisation actually cared
+enough to contribute code, we might be moving faster ....
 
-- Dave
+>   And even if I could find out, maybe
+> some power management framework should be allowed to give a override
+> to the application's wishes.  OK, maybe the Opera web browser is
+> requesting the very best wireless QOS because it wants to beat Chrome
+> on some silly potato benchmark --- well, it's ***stupid*** to say that
+> my power management should be a one-size-fits all because applications
+> should be always as power efficient as possible whether they are
+> connected to AC mains or I have a 800mWh cell phone battery.  Worse
+> yet, it's stupid to say that the application should have the last
+> word.  Darn it, *I* own the mobile device, and I (or my proxy, which
+> might be the Android OS, or some power manage daemon) should be able
+> to say, "I don't care what the application claimed it wanted for power
+> QOS --- it's not getting more than 100ms wireless latency, and that's
+> final."
+
+That's why you present the user with choices and report on the outcomes.
+At the end of the day the choice becomes binary: if the mobile optimised
+browser burns you battery on the power meter, users will either
+uninstall and move on to the next browser or deny the current browser
+the ability to block suspend.
+
+> And note that this is something that might even change over time, or
+> depending on circumstances.  Maybe normally I might be willing to let
+> the application be profilgate with power, so that web pages render a
+> bit faster than they might otherwise --- but if I'm on an American
+> Airlines flight which has retrofitted its power jacks to use an AC
+> plug, and I only have a DC adaptor, and my laptop batteries are worn
+> out and only have half their endurance as they used to, I might want
+> to use a more stringent pm_qos than I might otherwise normally allow.
+
+Right, but this comes back to the axes of control.  They have to be
+presented to the user in a simple but meaningful manner.
+
+James
 
 
