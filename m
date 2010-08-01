@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab0HAGo2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 02:44:28 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40960 "EHLO mx2.mail.elte.hu"
+	id S1753410Ab0HAGsi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 02:48:38 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49909 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab0HAGo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 02:44:27 -0400
-Date: Sun, 1 Aug 2010 08:44:15 +0200
+	id S1751203Ab0HAGsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 02:48:37 -0400
+Date: Sun, 1 Aug 2010 08:48:27 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH] NFS: Fix build failure on !CONFIG_NFS_V3 && !CONFIG_NFS_V3
-Message-ID: <20100801064415.GA10523@elte.hu>
-References: <1280519035.12852.32.camel@heimdal.trondhjem.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: x86@kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] IOMMU updates for 2.6.36
+Message-ID: <20100801064827.GA19913@elte.hu>
+References: <1280249030-21332-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1280519035.12852.32.camel@heimdal.trondhjem.org>
+In-Reply-To: <1280249030-21332-1-git-send-email-joerg.roedel@amd.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
+X-ELTE-SpamScore: 0.5
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.0540]
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.3141]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+* Joerg Roedel <joerg.roedel@amd.com> wrote:
 
-> Hi Linus,
+> Hi Ingo,
 > 
-> Please pull from the "bugfixes" branch of the repository at
+> The following changes since commit b37fa16e78d6f9790462b3181602a26b5af36260:
+>   Linus Torvalds (1):
+>         Linux 2.6.35-rc6
 > 
->    git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
+> are available in the git repository at:
 > 
-> This will update the following files through the appended changesets.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-iommu.git iommu/2.6.36
 > 
->   Cheers,
->     Trond
+> Joerg Roedel (2):
+>       x86/amd-iommu: Export cache-coherency capability
+>       Merge branches 'iommu-api/2.6.36' and 'amd-iommu/2.6.36' into iommu/2.6.36
 > 
-> ----
->  fs/nfs/file.c          |   13 +++++++++++--
->  fs/nfs/nfsroot.c       |    2 +-
->  fs/nfs/write.c         |   27 +++++++++++++++++++--------
->  include/linux/nfs_fs.h |    1 +
->  4 files changed, 32 insertions(+), 11 deletions(-)
+> Kulikov Vasiliy (1):
+>       x86/amd-iommu: Use for_each_pci_dev()
+> 
+> Tom Lyon (1):
+>       iommu-api: Extension to check for interrupt remapping
+> 
+>  arch/x86/kernel/amd_iommu.c |    8 ++++++--
+>  drivers/pci/intel-iommu.c   |    2 ++
+>  include/linux/iommu.h       |    1 +
+>  3 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> The changes are all minor. There is one cleanup patch, and two patches that
+> extend the capabilities exported by the IOMMU-API. Please pull.
 
-FYI, these commits introduced a build failure on x86:
-
-  fs/nfs/file.c:508: error: implicit declaration of function ‘nfs_commit_inode’
-
-The nfs_commit_inode() prototype:
-
- #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
- extern int  nfs_commit_inode(struct inode *, int);
- extern struct nfs_write_data *nfs_commitdata_alloc(void);
- extern void nfs_commit_free(struct nfs_write_data *wdata);
- #endif
-
-is missing if the kernel is configured for legacy NFS:
-
- CONFIG_NFS_FS=y
- # CONFIG_NFS_V3 is not set
- # CONFIG_NFS_V4 is not set
-
-The fix below solves the build problem here, but I have not tested whether NFS 
-still works fine for this config.
-
-Thanks,
+Pulled, thanks Joerg!
 
 	Ingo
-
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/nfs_fs.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-index f6e2455..bf145c6 100644
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -492,11 +492,9 @@ extern int nfs_writeback_done(struct rpc_task *, struct nfs_write_data *);
- extern int nfs_wb_all(struct inode *inode);
- extern int nfs_wb_page(struct inode *inode, struct page* page);
- extern int nfs_wb_page_cancel(struct inode *inode, struct page* page);
--#if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
- extern int  nfs_commit_inode(struct inode *, int);
- extern struct nfs_write_data *nfs_commitdata_alloc(void);
- extern void nfs_commit_free(struct nfs_write_data *wdata);
--#endif
- 
- static inline int
- nfs_have_writebacks(struct inode *inode)
