@@ -1,81 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab0HAKVv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 06:21:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64836 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab0HAKVt convert rfc822-to-8bit (ORCPT
+	id S1756181Ab0HAKX0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 06:23:26 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:57462 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894Ab0HAKXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 06:21:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wAVxqq+F10PMVEwGnC8pa5VDcJz9uGk4fgD/pukim+IAs8ay5ru18pwlyW13R/Y8ET
-         3/ABSs/dj9xjSpC2G21fhFpFGoW1xwaQoV/WXHcJcRXPLmBT75duTqHSjFHLV8Z7PVwt
-         5M0rSRyYYkm4ielmx+LcmOpVPUipzCPjhwSvg=
+	Sun, 1 Aug 2010 06:23:25 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 1 Aug 2010 12:23:14 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH] firewire: core: add forgotten dummy driver methods, remove
+ unused ones
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org
+Message-ID: <tkrat.49951b72693972f0@s5r6.in-berlin.de>
 MIME-Version: 1.0
-In-Reply-To: <20100801092859.GA12213@merkur.ravnborg.org>
-References: <AANLkTik1p0oK=-msd0a-4wA88Z-Cv29qHVNUYeEETcJD@mail.gmail.com>
-	<1280647233-2578-1-git-send-email-nir.tzachar@gmail.com>
-	<20100801092859.GA12213@merkur.ravnborg.org>
-Date: Sun, 1 Aug 2010 13:21:47 +0300
-Message-ID: <AANLkTimXahVmYCo+UJYDkK_qQxCz0HByBGV9WoJtXWkP@mail.gmail.com>
-Subject: Re: [PATCH] nconfig: add search support
-From: Nir Tzachar <nir.tzachar@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: mmarek@suse.cz, rdunlap@xenotime.net, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trapdoor6@gmail.com,
-        justinmattock@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 1, 2010 at 12:28 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Sun, Aug 01, 2010 at 10:20:33AM +0300, nir.tzachar@gmail.com wrote:
->> From: Nir Tzachar <nir.tzachar@gmail.com>
->>
->> Remove the old hotkeys feature, and replace by a regular string search.
->> >From nconfig help:
->>
->> Pressing '/' triggers search mode. nconfig does regular string match, case
->> insensitive, starting at the begining of each menu line.
->> Pressing Enter highlights the next match, Backspace removes one character from
->> the match string. Pressing either '/' again or ESC exits search mode.
->>
->> Rebind the '/' key (which allowed to search for symbols) to F8
->>
->> Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
->
-> Got following warning when I build:
-> scripts/kconfig/nconf.c: In function ât_mext_matchâscripts/kconfig/nconf.c:512: warning: implicit declaration of function âblankâ
->
-> The searching works great! And good to see the capitilazation gone.
+There is an at least theoretic race condition in which .start_iso etc.
+could still be called between when the dummy driver is bound to the card
+and when the children devices are being shut down.  Add dummy_start_iso
+and friends.
 
-Perhaps now we can make nconfig the default?? ;)
+On the other hand, .enable, .set_config_rom, .read_csr, write_csr do not
+need to be implemented by the dummy driver, as commented.
 
-> But it is ackward that I have to press ESC to leave searcing.
->
-> I can navigate up/down, but entering a menu should terminate search.
-> Also pressing enter (to select a symbol) should terminate search.
->
-> I also tried to do first search using "/", then search for a symbol using F8.
-> Again search was not terminated when I came back.
->
-> There is likely much more cases...
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/firewire/core-card.c |   64 +++++++++++++++++++++--------------
+ 1 file changed, 38 insertions(+), 26 deletions(-)
 
-Sure, but we need to come up with a good description of the behavior
-we desire. As we did not discuss it, I just went ahead and implemented
-a POC.
+Index: b/drivers/firewire/core-card.c
+===================================================================
+--- a/drivers/firewire/core-card.c
++++ b/drivers/firewire/core-card.c
+@@ -552,15 +552,13 @@ EXPORT_SYMBOL(fw_card_add);
+  * as all IO to the card will be handled (and failed) by the dummy driver
+  * instead of calling into the module.  Only functions for iso context
+  * shutdown still need to be provided by the card driver.
++ *
++ * .read/write_csr() should never be called anymore after the dummy driver
++ * was bound since they are only used within request handler context.
++ * .set_config_rom() is never called since the card is taken out of card_list
++ * before switching to the dummy driver.
+  */
+ 
+-static int dummy_enable(struct fw_card *card,
+-			const __be32 *config_rom, size_t length)
+-{
+-	BUG();
+-	return -1;
+-}
+-
+ static int dummy_read_phy_reg(struct fw_card *card, int address)
+ {
+ 	return -ENODEV;
+@@ -572,17 +570,6 @@ static int dummy_update_phy_reg(struct f
+ 	return -ENODEV;
+ }
+ 
+-static int dummy_set_config_rom(struct fw_card *card,
+-				const __be32 *config_rom, size_t length)
+-{
+-	/*
+-	 * We take the card out of card_list before setting the dummy
+-	 * driver, so this should never get called.
+-	 */
+-	BUG();
+-	return -1;
+-}
+-
+ static void dummy_send_request(struct fw_card *card, struct fw_packet *packet)
+ {
+ 	packet->callback(packet, card, RCODE_CANCELLED);
+@@ -604,15 +591,40 @@ static int dummy_enable_phys_dma(struct 
+ 	return -ENODEV;
+ }
+ 
++static struct fw_iso_context *dummy_allocate_iso_context(struct fw_card *card,
++				int type, int channel, size_t header_size)
++{
++	return ERR_PTR(-ENODEV);
++}
++
++static int dummy_start_iso(struct fw_iso_context *ctx,
++			   s32 cycle, u32 sync, u32 tags)
++{
++	return -ENODEV;
++}
++
++static int dummy_set_iso_channels(struct fw_iso_context *ctx, u64 *channels)
++{
++	return -ENODEV;
++}
++
++static int dummy_queue_iso(struct fw_iso_context *ctx, struct fw_iso_packet *p,
++			   struct fw_iso_buffer *buffer, unsigned long payload)
++{
++	return -ENODEV;
++}
++
+ static const struct fw_card_driver dummy_driver_template = {
+-	.enable          = dummy_enable,
+-	.read_phy_reg    = dummy_read_phy_reg,
+-	.update_phy_reg  = dummy_update_phy_reg,
+-	.set_config_rom  = dummy_set_config_rom,
+-	.send_request    = dummy_send_request,
+-	.cancel_packet   = dummy_cancel_packet,
+-	.send_response   = dummy_send_response,
+-	.enable_phys_dma = dummy_enable_phys_dma,
++	.read_phy_reg		= dummy_read_phy_reg,
++	.update_phy_reg		= dummy_update_phy_reg,
++	.send_request		= dummy_send_request,
++	.send_response		= dummy_send_response,
++	.cancel_packet		= dummy_cancel_packet,
++	.enable_phys_dma	= dummy_enable_phys_dma,
++	.allocate_iso_context	= dummy_allocate_iso_context,
++	.start_iso		= dummy_start_iso,
++	.set_iso_channels	= dummy_set_iso_channels,
++	.queue_iso		= dummy_queue_iso,
+ };
+ 
+ void fw_card_release(struct kref *kref)
 
-As to your input, the main problem with terminating a search is how to
-still allow iteration between possible matches. We can let Return
-terminate the search and use a different key (say, 'p') to navigate to
-the next match. However, I dislike this idea, but if no one can come
-up with something prettier, I'll implement it.
+-- 
+Stefan Richter
+-=====-==-=- =--- ----=
+http://arcgraph.de/sr/
 
->        Sam
-
-Cheers.
