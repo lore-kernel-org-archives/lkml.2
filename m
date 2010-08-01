@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab0HAVXi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 17:23:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37257 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab0HAVXh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 17:23:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Cyn+Q7yylpXPLfjTgrHfvDRRpwH1N02qpkX5crHH1c+dmQ74e01ccjjK8MlnClxT2T
-         28xK7ozdAIZkVrejHJK/RsrxcCBP4aQsQ2ZC86gPReOlcQKF2AWhOAiUnBWtxXFRtu74
-         BI3KAOQM1zw3V7kt85HUI3icgoaXZaS15tSRE=
+	id S1751695Ab0HAVi7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 17:38:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53673 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab0HAVi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 17:38:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 2.6.35-rc6-git6: Reported regressions from 2.6.34
+Date: Sun, 1 Aug 2010 23:37:09 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera> <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com>
+In-Reply-To: <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Date: Sun, 1 Aug 2010 23:23:35 +0200
-Message-ID: <AANLkTi=hPg-12w9ihz-RsvD0d6Zawus14qF9hamA6nES@mail.gmail.com>
-Subject: Re: [PATCH 01/11] ARM: cam60: move cam60_spi_devices to .init.data
-From: "avictor.za@gmail.com" <avictor.za@gmail.com>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "Samuel R. C. Vale" <srcvale@holoscopio.com>,
-        Jiri Kosina <jkosina@suse.cz>, Andrew Victor <linux@maxim.org.za>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008012337.09961.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
+On Sunday, August 01, 2010, Linus Torvalds wrote:
+> On Sun, Aug 1, 2010 at 6:46 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+...
+> 
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16369
+> > Subject         : Yet another 2.6.35 regression (AGP)?
+> > Submitter       : Woody Suwalski <terraluna977@gmail.com>
+> > Date            : 2010-07-09 14:21 (24 days old)
+> > Message-ID      : <4C373084.8000503@gmail.com>
+> > References      : http://marc.info/?l=linux-kernel&m=127868797119254&w=2
+> 
+> Should hopefully be fixed by commit e7b96f28c58c ("agp/intel: Use the
+> correct mask to detect i830 aperture size.")
 
-> cam60_spi_devices is passed to at91_add_device_spi which calls
-> spi_register_board_info.  The latter makes a copy of it, so living in
-> .init.data is OK.
+Closed.
 
-The  copy still maintains a pointers to
-"cam60_spi_flash_platform_data", so I'm wondering if that and
-"cam60_spi_partitions" should maybe not be marked as __initdata.
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16365
+> > Subject         : kernel BUG at fs/btrfs/extent-tree.c:1353
+> > Submitter       : Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+> > Date            : 2010-07-08 14:27 (25 days old)
+> > Message-ID      : <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de>
+> > References      : http://marc.info/?l=linux-kernel&m=127859960725931&w=2
+> 
+> This one is reportedly fixed by commit 83ba7b071f30 ("writeback:
+> simplify the write back thread queue")
 
+Closed.
 
-Regards,
-  Andrew Victor
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16215
+> > Subject         : sysfs: cannot create duplicate filename '/class/net/bnep0'
+> > Submitter       : Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> > Date            : 2010-06-15 14:55 (48 days old)
+> > Handled-By      : Eric W. Biederman <ebiederm@xmission.com>
+> 
+> Fixed by commit 24b1442d01ae155ea716dfb94ed21605541c317d.
 
+Closed.
 
-
-> ---
->  arch/arm/mach-at91/board-cam60.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
-> index 02138af..05c7072 100644
-> --- a/arch/arm/mach-at91/board-cam60.c
-> +++ b/arch/arm/mach-at91/board-cam60.c
-> @@ -98,14 +98,14 @@ static struct mtd_partition __initdata cam60_spi_partitions[] = {
->        },
->  };
->
-> -static struct flash_platform_data __initdata cam60_spi_flash_platform_data = {
-> +static struct flash_platform_data cam60_spi_flash_platform_data __initdata = {
->        .name           = "spi_flash",
->        .parts          = cam60_spi_partitions,
->        .nr_parts       = ARRAY_SIZE(cam60_spi_partitions)
->  };
->  #endif
->
-> -static struct spi_board_info cam60_spi_devices[] = {
-> +static struct spi_board_info cam60_spi_devices[] __initdata = {
->  #if defined(CONFIG_MTD_DATAFLASH)
->        {       /* DataFlash chip */
->                .modalias       = "mtd_dataflash",
+Thanks,
+Rafael
