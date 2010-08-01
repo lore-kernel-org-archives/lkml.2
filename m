@@ -1,143 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756270Ab0HAItO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 04:49:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57929 "EHLO hera.kernel.org"
+	id S1756299Ab0HAIwH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 04:52:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29823 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753898Ab0HAItM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 04:49:12 -0400
-Date: Sun, 1 Aug 2010 08:48:47 GMT
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <E1Oeuyt-0004XS-0y@eag09.americas.sgi.com>
-References: <E1Oeuyt-0004XS-0y@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/uv] x86, UV: Initialize BAU hub map
-Message-ID: <tip-c4026cfd8febcd63dd278894108839f30e525a0e@git.kernel.org>
-Git-Commit-ID: c4026cfd8febcd63dd278894108839f30e525a0e
-X-Mailer: tip-git-log-daemon
+	id S1753819Ab0HAIwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 04:52:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,297,1278313200"; 
+   d="scan'208";a="306805065"
+Date: Sun, 1 Aug 2010 16:51:34 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Andy Whitcroft <apw@shadowen.org>, Rik van Riel <riel@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: [PATCH mmotm] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+Message-ID: <20100801085134.GA15577@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 01 Aug 2010 08:48:49 +0000 (UTC)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c4026cfd8febcd63dd278894108839f30e525a0e
-Gitweb:     http://git.kernel.org/tip/c4026cfd8febcd63dd278894108839f30e525a0e
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Fri, 30 Jul 2010 14:10:55 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 1 Aug 2010 09:18:41 +0200
+Fix "system goes unresponsive under memory pressure and lots of
+dirty/writeback pages" bug.
 
-x86, UV: Initialize BAU hub map
+	http://lkml.org/lkml/2010/4/4/86
 
-Fix uninitialized uvhub_mask:
+In the above thread, Andreas Mohr described that
 
-- An unitialized bit map variable was causing initialization of
-  non-existant hubs (this one causes boot panics).
+	Invoking any command locked up for minutes (note that I'm
+	talking about attempted additional I/O to the _other_,
+	_unaffected_ main system HDD - such as loading some shell
+	binaries -, NOT the external SSD18M!!).
 
-- And the bit map was too small for large machines.  This patch
-  makes it dynamic in size.
+This happens when the two conditions are both meet:
+- under memory pressure
+- writing heavily to a slow device
 
-- Fix the case where socket 0 has no enabled cpu's. Don't assume
-  every hub has a socket 0.
+OOM also happens in Andreas' system. The OOM trace shows that 3
+processes are stuck in wait_on_page_writeback() in the direct reclaim
+path. One in do_fork() and the other two in unix_stream_sendmsg(). They
+are blocked on this condition:
 
-- uv_init_per_cpu() should be __init.
+	(sc->order && priority < DEF_PRIORITY - 2)
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Cc: <stable@kernel.org> # for .35.x
-LKML-Reference: <E1Oeuyt-0004XS-0y@eag09.americas.sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+which was introduced in commit 78dc583d (vmscan: low order lumpy reclaim
+also should use PAGEOUT_IO_SYNC) one year ago. That condition may be too
+permissive. In Andreas' case, 512MB/1024 = 512KB. If the direct reclaim
+for the order-1 fork() allocation runs into a range of 512KB
+hard-to-reclaim LRU pages, it will be stalled.
+
+It's a severe problem in three ways.
+
+Firstly, it can easily happen in daily desktop usage.  vmscan priority
+can easily go below (DEF_PRIORITY - 2) on _local_ memory pressure. Even
+if the system has 50% globally reclaimable pages, it still has good
+opportunity to have 0.1% sized hard-to-reclaim ranges. For example, a
+simple dd can easily create a big range (up to 20%) of dirty pages in
+the LRU lists. And order-1 to order-3 allocations are more than common
+with SLUB. Try "grep -v '1 :' /proc/slabinfo" to get the list of high
+order slab caches. For example, the order-1 radix_tree_node slab cache
+may stall applications at swap-in time; the order-3 inode cache on most
+filesystems may stall applications when trying to read some file; the
+order-2 proc_inode_cache may stall applications when trying to open a
+/proc file.
+
+Secondly, once triggered, it will stall unrelated processes (not doing IO
+at all) in the system. This "one slow USB device stalls the whole system"
+avalanching effect is very bad.
+
+Thirdly, once stalled, the stall time could be intolerable long for the
+users.  When there are 20MB queued writeback pages and USB 1.1 is
+writing them in 1MB/s, wait_on_page_writeback() will stuck for up to 20
+seconds.  Not to mention it may be called multiple times.
+
+So raise the bar to only enable PAGEOUT_IO_SYNC when priority goes below
+DEF_PRIORITY/3, or 6.25% LRU size. As the default dirty throttle ratio is
+20%, it will hardly be triggered by pure dirty pages. We'd better treat
+PAGEOUT_IO_SYNC as some last resort workaround -- its stall time is so
+uncomfortably long (easily goes beyond 1s).
+
+The bar is only raised for (order < PAGE_ALLOC_COSTLY_ORDER) allocations,
+which are easy to satisfy in 1TB memory boxes. So, although 6.25% of
+memory could be an awful lot of pages to scan on a system with 1TB of
+memory, it won't really have to busy scan that much.
+
+Andreas tested an older version of this patch and reported that it
+mostly fixed his problem. Mel Gorman helped improve it and KOSAKI
+Motohiro will fix it further in the next patch.
+
+Reported-by: Andreas Mohr <andi@lisas.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- arch/x86/kernel/tlb_uv.c |   26 ++++++++++++++------------
- 1 files changed, 14 insertions(+), 12 deletions(-)
+ mm/vmscan.c |   51 ++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 43 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-index 59efb53..312ef02 100644
---- a/arch/x86/kernel/tlb_uv.c
-+++ b/arch/x86/kernel/tlb_uv.c
-@@ -1484,15 +1484,16 @@ calculate_destination_timeout(void)
+--- mmotm.orig/mm/vmscan.c	2010-07-20 11:21:08.000000000 +0800
++++ mmotm/mm/vmscan.c	2010-08-01 16:47:52.000000000 +0800
+@@ -1232,6 +1232,47 @@ static noinline_for_stack void update_is
+ }
+ 
  /*
-  * initialize the bau_control structure for each cpu
++ * Returns true if the caller should wait to clean dirty/writeback pages.
++ *
++ * If we are direct reclaiming for contiguous pages and we do not reclaim
++ * everything in the list, try again and wait for writeback IO to complete.
++ * This will stall high-order allocations noticeably. Only do that when really
++ * need to free the pages under high memory pressure.
++ */
++static inline bool should_reclaim_stall(unsigned long nr_taken,
++					unsigned long nr_freed,
++					int priority,
++					struct scan_control *sc)
++{
++	int lumpy_stall_priority;
++
++	/* kswapd should not stall on sync IO */
++	if (current_is_kswapd())
++		return false;
++
++	/* Only stall on lumpy reclaim */
++	if (!sc->lumpy_reclaim_mode)
++		return false;
++
++	/* If we have relaimed everything on the isolated list, no stall */
++	if (nr_freed == nr_taken)
++		return false;
++
++	/*
++	 * For high-order allocations, there are two stall thresholds.
++	 * High-cost allocations stall immediately where as lower
++	 * order allocations such as stacks require the scanning
++	 * priority to be much higher before stalling.
++	 */
++	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
++		lumpy_stall_priority = DEF_PRIORITY;
++	else
++		lumpy_stall_priority = DEF_PRIORITY / 3;
++
++	return priority <= lumpy_stall_priority;
++}
++
++/*
+  * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
+  * of reclaimed pages
   */
--static void uv_init_per_cpu(int nuvhubs)
-+static void __init uv_init_per_cpu(int nuvhubs)
- {
- 	int i;
- 	int cpu;
- 	int pnode;
- 	int uvhub;
-+	int have_hmaster;
- 	short socket = 0;
- 	unsigned short socket_mask;
--	unsigned int uvhub_mask;
-+	unsigned char *uvhub_mask;
- 	struct bau_control *bcp;
- 	struct uvhub_desc *bdp;
- 	struct socket_desc *sdp;
-@@ -1516,28 +1517,29 @@ static void uv_init_per_cpu(int nuvhubs)
- 	uvhub_descs = (struct uvhub_desc *)
- 		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
- 	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
-+	uvhub_mask = kzalloc((nuvhubs+7)/8, GFP_KERNEL);
- 	for_each_present_cpu(cpu) {
- 		bcp = &per_cpu(bau_control, cpu);
- 		memset(bcp, 0, sizeof(struct bau_control));
- 		pnode = uv_cpu_hub_info(cpu)->pnode;
- 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
--		uvhub_mask |= (1 << uvhub);
-+		*(uvhub_mask + (uvhub/8)) |= (1 << (uvhub%8));
- 		bdp = &uvhub_descs[uvhub];
- 		bdp->num_cpus++;
- 		bdp->uvhub = uvhub;
- 		bdp->pnode = pnode;
- 		/* kludge: 'assuming' one node per socket, and assuming that
- 		   disabling a socket just leaves a gap in node numbers */
--		socket = (cpu_to_node(cpu) & 1);;
-+		socket = (cpu_to_node(cpu) & 1);
- 		bdp->socket_mask |= (1 << socket);
- 		sdp = &bdp->socket[socket];
- 		sdp->cpu_number[sdp->num_cpus] = cpu;
- 		sdp->num_cpus++;
- 	}
--	uvhub = 0;
--	while (uvhub_mask) {
--		if (!(uvhub_mask & 1))
--			goto nexthub;
-+	for (uvhub = 0; uvhub < nuvhubs; uvhub++) {
-+		if (!(*(uvhub_mask + (uvhub/8)) & (1 << (uvhub%8))))
-+			continue;
-+		have_hmaster = 0;
- 		bdp = &uvhub_descs[uvhub];
- 		socket_mask = bdp->socket_mask;
- 		socket = 0;
-@@ -1551,8 +1553,10 @@ static void uv_init_per_cpu(int nuvhubs)
- 				bcp->cpu = cpu;
- 				if (i == 0) {
- 					smaster = bcp;
--					if (socket == 0)
-+					if (!have_hmaster) {
-+						have_hmaster++;
- 						hmaster = bcp;
-+					}
- 				}
- 				bcp->cpus_in_uvhub = bdp->num_cpus;
- 				bcp->cpus_in_socket = sdp->num_cpus;
-@@ -1566,11 +1570,9 @@ nextsocket:
- 			socket++;
- 			socket_mask = (socket_mask >> 1);
- 		}
--nexthub:
--		uvhub++;
--		uvhub_mask = (uvhub_mask >> 1);
- 	}
- 	kfree(uvhub_descs);
-+	kfree(uvhub_mask);
- 	for_each_present_cpu(cpu) {
- 		bcp = &per_cpu(bau_control, cpu);
- 		bcp->baudisabled = 0;
+@@ -1296,14 +1337,8 @@ shrink_inactive_list(unsigned long nr_to
+ 
+ 	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
+ 
+-	/*
+-	 * If we are direct reclaiming for contiguous pages and we do
+-	 * not reclaim everything in the list, try again and wait
+-	 * for IO to complete. This will stall high-order allocations
+-	 * but that should be acceptable to the caller
+-	 */
+-	if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
+-			sc->lumpy_reclaim_mode) {
++	/* Check if we should syncronously wait for writeback */
++	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
+ 		congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 
+ 		/*
