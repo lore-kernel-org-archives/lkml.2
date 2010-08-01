@@ -1,38 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab0HAMq7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 08:46:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55637 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab0HAMq6 convert rfc822-to-8bit (ORCPT
+	id S1755551Ab0HAMvV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 08:51:21 -0400
+Received: from www17.your-server.de ([213.133.104.17]:44346 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab0HAMvT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 08:46:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <!&!AAAAAAAAAAAYAAAAAAAAABQKOav+uulLkhg6V3tT33jCgAAAEAAAALhzLL+AknVFpfYx5gV21voBAAAAAA==@actcom.co.il>
-References: <1280597965-8525-1-git-send-email-segooon@gmail.com>
-	<4C55472E.6000307@ru.mvista.com>
-	<!&!AAAAAAAAAAAYAAAAAAAAABQKOav+uulLkhg6V3tT33jCgAAAEAAAALhzLL+AknVFpfYx5gV21voBAAAAAA==@actcom.co.il>
-Date: Sun, 1 Aug 2010 13:46:55 +0100
-Message-ID: <AANLkTinUUawgWu=2Bx85yCu7BwdM8fK-yR8ayrCOBSSi@mail.gmail.com>
-Subject: Re: Remove me!!!!
-From: Valeo de Vries <valeo@valeo.co.cc>
-To: Yehuda Mor <praxis@actcom.co.il>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 1 Aug 2010 08:51:19 -0400
+References: <201008011101.01429.thomas@m3y3r.de> <4C555DA0.6020109@s5r6.in-berlin.de>
+In-Reply-To: <4C555DA0.6020109@s5r6.in-berlin.de>
+Mime-Version: 1.0 (iPod Mail 8A293)
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <98E20220-BFC9-4231-AEF5-EB59588E6D2F@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zou Nan hai <nanhai.zou@intel.com>,
+        Xiang Hai hao <haihao.xiang@intel.com>, Eric Anholt <eric@anholt.net>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+X-Mailer: iPod Mail (8A293)
+From: Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: 2.6.35-rc6+: i915: Bisected regression
+Date: Sun, 1 Aug 2010 12:51:36 +0200
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to spam all those people with this...
+Am 01.08.2010 um 13:42 schrieb Stefan Richter <stefanr@s5r6.in-berlin.de>:
 
-On 1 August 2010 12:29, Yehuda Mor <praxis@actcom.co.il> wrote:
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Thomas Meyer wrote:
+>> This commit makes suspend to ram unreliable for me:
+>> 
+>> commit d1b851fc0d105caa6b6e3e7c92d2987dfb52cbe0
+>> Author: Zou Nan hai <nanhai.zou@intel.com>
+>> Date:   Fri May 21 09:08:57 2010 +0800
+>> 
+>>    drm/i915: implement BSD ring buffer V2
+>> 
+>>    The BSD (bit stream decoder) ring is used for accessing the BSD engine
+>>    which decodes video bitstream for H.264 and VC1 on G45+.  It is
+>>    asynchronous with the render ring and has access to separate parts of
+>>    the GPU from it, though the render cache is coherent between the two.
+>> 
+>>    Signed-off-by: Zou Nan hai <nanhai.zou@intel.com>
+>>    Signed-off-by: Xiang Hai hao <haihao.xiang@intel.com>
+>>    Signed-off-by: Eric Anholt <eric@anholt.net>
+>> 
+>> git revert didn't work on 2.6.35-rc6 so I just changed the HAS_BSD thing to:
+>> 
+>> #define HAS_BSD(dev)            (0)
+>> 
+>> with this change applied suspend to ram is back to the reliability of 2.6.34.y
+>> 
+>> with kind regards
+>> thomas
+> 
+> Added CCs.
+> 
+> Thomas, on what hardware did you observe the regression?
 
-...as all you need to do is read the above, which is at the bottom of
-every e-mail you receive from LKML.
+Is a Intel mobile express gm45 chipset.
 
-Valeo
+>  Is it suspend
+> or resume that is unreliable?
+
+suspend never finishes/hangs.
+
+>  What are the particular symptoms --- does
+> not suspend, crashes during suspend, crashes during resume...?
+
+Does not suspend, backlight is on.
+
+> -- 
+> Stefan Richter
+> -=====-==-=- =--- ----=
+> http://arcgraph.de/sr/
