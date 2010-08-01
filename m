@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab0HALtT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 07:49:19 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:59278 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab0HALtR (ORCPT
+	id S1755162Ab0HAMKm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 08:10:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62203 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab0HAMKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 07:49:17 -0400
-Date: Sun, 1 Aug 2010 13:49:15 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Nir Tzachar <nir.tzachar@gmail.com>
-Cc: mmarek@suse.cz, rdunlap@xenotime.net, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trapdoor6@gmail.com,
-        justinmattock@gmail.com
-Subject: Re: [PATCH] nconfig: add search support
-Message-ID: <20100801114915.GA12659@merkur.ravnborg.org>
-References: <AANLkTik1p0oK=-msd0a-4wA88Z-Cv29qHVNUYeEETcJD@mail.gmail.com> <1280647233-2578-1-git-send-email-nir.tzachar@gmail.com> <20100801092859.GA12213@merkur.ravnborg.org> <AANLkTimXahVmYCo+UJYDkK_qQxCz0HByBGV9WoJtXWkP@mail.gmail.com>
+	Sun, 1 Aug 2010 08:10:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=exFxVuCPjCL75xhbfSJWkBUTACQkgTjYoKMYhQMnCTvPTOX5AAnpVFSwuQpY4vaHTE
+         3HOpmh9xWJJ/7DPgr4Z9gQBnyqbJQbkfZ2+iXU+swbIg6zU43fREJWnVwvIL93vfXA9Q
+         y/Q3wmNnkmIzrlMX39UB/P6EMlJpv8lyQEAEg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimXahVmYCo+UJYDkK_qQxCz0HByBGV9WoJtXWkP@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Sun, 1 Aug 2010 15:10:40 +0300
+X-Google-Sender-Auth: -mP-5oH6rpjhfQBhhS9twYveSbQ
+Message-ID: <AANLkTiksVFpU+3iek4-TM2q=wSDGpW_nJAr8XtHT06LE@mail.gmail.com>
+Subject: Boot-time dynamic debugging?
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Jason Baron <jbaron@redhat.com>, Greg KH <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sure, but we need to come up with a good description of the behavior
-> we desire. As we did not discuss it, I just went ahead and implemented
-> a POC.
+Hi!
 
-How about something like this:
+Commit 346e15beb5343c2eb8216d820f2ed8f150822b08 ("driver core: basic
+infrastructure for per-module dynamic debug messages") removed
+"dynamic_printk" kernel parameter from the dynamic debugging subsystem
+(and forgot to update Documentation/kernel-parameters.txt). How can I
+use the new subsystem for enabling boot-time dev_dbg() calls for
+non-modular kernels?
 
-In search mode:
-- all normal letters / numbers are added to the search criteria
-
-arrow-up/arrow-down move cursor to prev/next match
-ESC terminate search mode
-
-All other keys terminate search and take usual action
-This include space, arrow-left/right, page-up/down, F*, enter, etc.
-
-	Sam
+                        Pekka
