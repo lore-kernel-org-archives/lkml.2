@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab0HARfV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 13:35:21 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:28617 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392Ab0HARfU convert rfc822-to-8bit (ORCPT
+	id S1752425Ab0HARfn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 13:35:43 -0400
+Received: from mail.olmeca.edu.mx ([200.79.20.9]:56427 "EHLO
+	mail.olmeca.edu.mx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab0HARfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 13:35:20 -0400
-X-IronPort-AV: E=Sophos;i="4.55,299,1278313200"; 
-   d="scan'208";a="417023148"
-Subject: Re: [PATCH] NFS: Fix build failure on !CONFIG_NFS_V3 && 
- !CONFIG_NFS_V3
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>
-In-Reply-To: <AANLkTim=6q1FC8YZvmi2Cju_6+00mHHkNPpCLHB8e3=h@mail.gmail.com>
-References: <1280519035.12852.32.camel@heimdal.trondhjem.org>
-	 <20100801064415.GA10523@elte.hu>
-	 <AANLkTim=6q1FC8YZvmi2Cju_6+00mHHkNPpCLHB8e3=h@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Sun, 01 Aug 2010 13:35:00 -0400
-Message-ID: <1280684100.4430.8.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 01 Aug 2010 17:35:01.0012 (UTC) FILETIME=[DE58E540:01CB319F]
+	Sun, 1 Aug 2010 13:35:41 -0400
+X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Aug 2010 13:35:41 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.olmeca.edu.mx 933B03D8249
+Date: Sun, 1 Aug 2010 12:27:42 -0500 (CDT)
+From: Web-Mail Admin <educacioncontinua@olmeca.edu.mx>
+Reply-To: Web-Mail Admin <webmailadmininfo@mail2world.com>
+Message-ID: <28762389.2049.1280683662020.JavaMail.root@mail.olmeca.edu.mx>
+Subject: Account Upgrade/Maintenance
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [200.79.20.9]
+X-Mailer: Zimbra 6.0.6_GA_2330.RHEL5 (zclient/6.0.6_GA_2330.RHEL5)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-08-01 at 10:10 -0700, Linus Torvalds wrote:
-> On Sat, Jul 31, 2010 at 11:44 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > FYI, these commits introduced a build failure on x86:
-> >
-> >  fs/nfs/file.c:508: error: implicit declaration of function ‘nfs_commit_inode’
-> 
-> Grr. Trond?
 
-Sorry. I was intending to put that declaration outside the #ifdef. The
-stub function is still declared in fs/nfs/write.c
 
-> > @@ -492,11 +492,9 @@ extern int nfs_writeback_done(struct rpc_task *, struct nfs_write_data *);
-> >  extern int nfs_wb_all(struct inode *inode);
-> >  extern int nfs_wb_page(struct inode *inode, struct page* page);
-> >  extern int nfs_wb_page_cancel(struct inode *inode, struct page* page);
-> > -#if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
-> >  extern int  nfs_commit_inode(struct inode *, int);
-> >  extern struct nfs_write_data *nfs_commitdata_alloc(void);
-> >  extern void nfs_commit_free(struct nfs_write_data *wdata);
-> > -#endif
-> 
-> No, I think perhaps the '#if' line should just be moved down one line.
-> The other function still only exist for V3/V4, it's just
-> nfs_commit_inode() that is available (as a stub that just returns 0)
-> for V2.
-> 
-> But maybe that stub should be made an inline function or #define?
-> 
-> Trond?
+Dear Web-Mail Account Owner:
 
-I'll convert it into an inlined stub just as it was prior to commit
-8fc795f703c5138e1a8bfb88c69f52632031aa6a.
+It has come to our notice that your email has not passed the verification/Update process that we are presently working on.
+We
+are currently upgrading our data base and e-mail account center .We are
+deleting all Old Web mail email account to create more space for new
+accounts. To prevent your account from closing you will have to update
+it so that we will know that it's a present used account. To complete
+your account re-confirmation, you must reply to this email immediately
+and enter your account details as requested below.
 
-Trond
+
+***********************************************
+Email User-name :........ .....
+EMAIL Password :...............
+Date of Birth :...............
+Country or Territory :........
+************************************************
+
+You have limited time to supply the above details for effective services
+by
+replying to this email and any delay or incorrect username or password,
+may
+cause our server to automatically log you out from our system.
+Thank you.
+Regards,
+&nbsp;
+Web Support Team.
+
+Thank you for usage 
