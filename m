@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab0HAEwe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 00:52:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58366 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab0HAEwc (ORCPT
+	id S1751957Ab0HAFFD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 01:05:03 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54544
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751135Ab0HAFFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 00:52:32 -0400
-Date: Sat, 31 Jul 2010 21:52:14 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100731215214.2543c07e@infradead.org>
-In-Reply-To: <20100731175841.GA9367@linux.vnet.ibm.com>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+	Sun, 1 Aug 2010 01:05:00 -0400
+Date: Sat, 31 Jul 2010 22:05:18 -0700 (PDT)
+Message-Id: <20100731.220518.212680999.davem@davemloft.net>
+To: herbert@gondor.hengli.com.au
+Cc: xiaosuo@gmail.com, hadi@cyberus.ca, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kaber@trash.net
+Subject: Re: [PATCH] act_nat: the checksum of ICMP doesn't have pseudo
+ header
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100730143016.GA10543@gondor.apana.org.au>
+References: <20100730102409.GA8590@gondor.apana.org.au>
+	<AANLkTimKXsgmOSVmw-cP6Zw6UoK5CSshK38Oo5tLuAeA@mail.gmail.com>
+	<20100730143016.GA10543@gondor.apana.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Jul 2010 10:58:42 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+From: Herbert Xu <herbert@gondor.apana.org.au>
+Date: Fri, 30 Jul 2010 22:30:16 +0800
 
-> o	"Power-aware application" are applications that are permitted
-> 	to acquire suspend blockers on Android.  Verion 8 of the
-> 	suspend-blocker patch seems to use group permissions to
-> determine which applications are classified as power aware.
+> On Fri, Jul 30, 2010 at 10:16:05PM +0800, Changli Gao wrote:
+>> 
+>> I know we need to update the ICMP checksum if we alter the payload(the
+>> inner IP header here) of ICMP. But I doubt if the update is really
+>> necessary if the checksum is partial, as the   checksum will be done
+>> later(by ether skb_checksum_help() or NIC hardware). In fact, as there
+>> isn't any pseudo header, the icmph->checksum should be always ZERO,
+>> otherwise skb_checksum_help() or NIC will give the wrong checksums,
+>> when the checksum is partial.
 > 
-> 	More generally, power-aware applications seem to be those that
-> 	have permission to exert some control over the system's
-> 	power state.
-
-I don't like the term "Power aware application". An application is well
-behaved or it isn't. "aware" has nothing to do with it.
-
-
+> Actually you are right.  I suppose the only reason this has never
+> shown up is because CHEKSUM_PARTIAL doesn't usually occur with
+> forwarded packets.
 > 
-> REQUIREMENTS
-> 
-> o	Reduce the system's power consumption in order to (1) extend
-> 	battery life and (2) preserve state until AC power can be
-> obtained.
+> Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-AC power is not relevant in discussions around power: Applications MUST
-behave well, AC or DC both. Just ask any data center operator on how
-much they run on DC and if he cares about power consumption.
-Conversely, most mobile usages (both phone, tablet or netbook) are "DC
-only"....
-
-
-
-
-
- 
-> o	It is necessary to be able to use power-naive applications.
-> 	Many of these applications were designed for use in PC
-> platforms where power consumption has historically not been of great
-> 	concern, due to either (1) the availability of AC power or (2)
-> 	relatively undemanding laptop battery-lifetime expectations.
-> The system must be capable of running these power-naive applications
-> 	without requiring that these applications be modified, and
-> must be capable of reasonable power efficiency even when power-naive
-> 	applications are available.
-
-I don't buy this argument as is.
-
-I do buy that there are many sloppy applications; mostly written quickly
-for <appstore of the month>.  But most if not all of these are written
-for the device in question (at least that is true for Apple and Android)
-
-
+Also applied, thanks.
 
