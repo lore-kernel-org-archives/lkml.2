@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab0HAGYp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 02:24:45 -0400
-Received: from swm.pp.se ([212.247.200.143]:42099 "EHLO uplift.swm.pp.se"
+	id S1754525Ab0HAGZJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 02:25:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32673 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751135Ab0HAGYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 02:24:44 -0400
-Date: Sun, 1 Aug 2010 08:24:43 +0200 (CEST)
-From: Mikael Abrahamsson <swmike@swm.pp.se>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100801054816.GI2470@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.1.10.1008010812450.24755@uplift.swm.pp.se>
-References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100731215214.2543c07e@infradead.org> <20100801054816.GI2470@linux.vnet.ibm.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Organization: People's Front Against WWW
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1751135Ab0HAGZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 02:25:07 -0400
+Date: Sun, 1 Aug 2010 02:19:19 -0400
+From: Chuck Ebbert <cebbert@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [000/165] 2.6.32.17-rc1 -stable review
+Message-ID: <20100801021919.1e8c2adb@katamari>
+In-Reply-To: <20100730171550.GA1299@kroah.com>
+References: <20100730171550.GA1299@kroah.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Jul 2010, Paul E. McKenney wrote:
+On Fri, 30 Jul 2010 10:15:50 -0700
+Greg KH <gregkh@suse.de> wrote:
 
-> available to do the programming and how valuable power-awareness is for 
-> the application in question.  Given that people who program PC-class 
-> applications are much more common than are people who program with 
-> energy efficiency in mind, the power-naive choice will be attractive in 
-> many cases.
+> 
+> This is the start of the stable review cycle for the 2.6.32.17 release.
+> There are 165 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let us know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
+> 
+> Responses should be made by August 1, 2010, 18:00:00 UTC.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.32.17-rc1.gz
+> and the diffstat can be found below.
+> 
 
-I own a Nokia N900. Some applications are ported straight from regular 
-Linux and they're definitely power-naive, as they have little or no 
-optimization for mobile. I agree that this is not "sloppy" or "bad", it's 
-just that mobile (low power) wasn't the intended target of the application 
-when it was written, and this commonly shows.
+I still don't see this one in 2.6.32-stable:
 
-Just like some people will burn CPU cycles by writing their application in 
-a high-level language because it requires fewer man-hours and that you get 
-thousands of cpu-hours for the cost of a man-hour programming the thing 
-(often by externalising the true cost of power which makes power even less 
-of a problem), not caring much about power is rational behaviour when 
-creating an application for pc.
+commit 1f5a81e41f8b1a782c68d3843e9ec1bfaadf7d72 upstream.
+Subject: ext4: Make sure the MOVE_EXT ioctl can't overwrite append-only files
 
-Just look at flash ads, they consume huge amounts of power and they 
-commonly never stop. I imagine that the power used by PCs around the world 
-displaying web pages with advertising with the monitor in power-save mode 
-(powered down) can be counted in gigawatts. When I need my battery to last 
-on my laptop I make sure I don't have any unneccessary tabs enabled 
-because it seriously affects my battery time. I think laptop users would 
-benefit from more power optimized applications as well, so if the OS could 
-do the same for laptop/desktop use as well (spending less time on programs 
-updating display when the display is off), I think there are real world 
-benefits for every desktop/laptop/mobile user.
-
-If nothing else, it's environmentally friendly.
-
--- 
-Mikael Abrahamsson    email: swmike@swm.pp.se
+This fixes CVE-2010-2066; I'm pretty sure 2.6.32 is vulnerable.
