@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab0HAPQV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 11:16:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64958 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756361Ab0HAPQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 11:16:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=bqfQruc9VCuNuoynwxbfHWSmq0WJ1HCXgxGotjgaDTLnm6dXIYQ3PH3stbTWbidZM+
-         p2Ta98KnKZHjr9Lziop3/hfwAoDohcboN9bqES6ZHecZoekDzIPZ5EgV4ivI5KIBCojo
-         cPtchjNY+8NuTA6EHMBohdJ4m8RjASWIhnPOw=
+	id S1757411Ab0HAPSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 11:18:06 -0400
+Received: from mx02.infracom.it ([62.196.48.10]:50117 "EHLO mx02.infracom.it"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757143Ab0HAPSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 11:18:04 -0400
+Message-ID: <4C559022.1010406@gmail.com>
+Date: Sun, 1 Aug 2010 17:17:54 +0200
+From: Roberto Oppedisano <roberto.oppedisano@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100710 Thunderbird/3.1
 MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-In-Reply-To: <!&!AAAAAAAAAAAYAAAAAAAAABQKOav+uulLkhg6V3tT33jCgAAAEAAAALhzLL+AknVFpfYx5gV21voBAAAAAA==@actcom.co.il>
-References: <1280597965-8525-1-git-send-email-segooon@gmail.com>
-	<4C55472E.6000307@ru.mvista.com>
-	<!&!AAAAAAAAAAAYAAAAAAAAABQKOav+uulLkhg6V3tT33jCgAAAEAAAALhzLL+AknVFpfYx5gV21voBAAAAAA==@actcom.co.il>
-Date: Sun, 1 Aug 2010 16:16:17 +0100
-Message-ID: <AANLkTik5jHuLuFNFpaWM5PXsKsG24n-6ukw8sA=L485i@mail.gmail.com>
-Subject: Re: Remove me!!!!
-From: trapDoor <trapdoor6@gmail.com>
-To: Yehuda Mor <praxis@actcom.co.il>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Rolland <rol@as2917.net>
+CC: Thomas Meyer <thomas@m3y3r.de>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zou Nan hai <nanhai.zou@intel.com>,
+        "Xiang Hai hao" <haihao.xiang@intel.com>,
+        Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: 2.6.35-rc6+: i915: Bisected regression
+References: <201008011101.01429.thomas@m3y3r.de>	<4C555DA0.6020109@s5r6.in-berlin.de>	<98E20220-BFC9-4231-AEF5-EB59588E6D2F@m3y3r.de> <20100801151409.252be86b@tux.DEF.witbe.net>
+In-Reply-To: <20100801151409.252be86b@tux.DEF.witbe.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 1, 2010 at 12:29 PM, Yehuda Mor <praxis@actcom.co.il> wrote:
+  On 01/08/2010 15:14, Paul Rolland wrote:
+> My machine has :
+> 00:02.0 0300: 8086:2a42 (rev 07)
+> 00:02.1 0380: 8086:2a43 (rev 07)
 >
-> Please, remove my address praxis@actcom.co.il from your lists! I am
-> receiving unwanted mail from a lot of people around kernel, ubuntu' debian,
-> etc - and I have no idea why!
+> 00:02.0 VGA compatible controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
+> 00:02.1 Display controller: Intel Corporation Mobile 4 Series Chipset Integrated Graphics Controller (rev 07)
 >
-> Thank you.
+> (Dell Vostro 1520, BIOS Revision A04)
 >
+>>>   Is it suspend
+>>> or resume that is unreliable?
+>> suspend never finishes/hangs.
+> and is randomly suffering from exactly the same problems...
+>
+> So, I've applied your hint (in i915_drv.h), rebuilt a kernel, booted, and
+> I've now successfully managed to go thru several suspend/resume cycles
+> without having the machine hanging while suspend !
+I have to add a me too (HP 6730B, same PCI ids).
+I was suffering from the same problem which seem completely gone with 
+the suggested hint.
 
-Hello,
-Here is what you need to do:
-To unsubscribe from this list [linux-kernel@vger.kernel.org]: send the
-line "unsubscribe linux-kernel" in the body of a message to:
-majordomo@vger.kernel.org
-
-And similarly, to unsubscribe from e.g linux-usb@vger.kernel.org you
-should send e-mail to: majordomo@vger.kernel.org with "unsubscribe
-linux-usb" in the body.
-
-Needless to say, you should send the e-mail(s) from the mailbox you
-receive unwanted mails on.
-
-----------------------------
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+R
 
 
--- 
-Regards
-trapDoor
