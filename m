@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab0HAOnR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 10:43:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38694 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab0HAOnQ (ORCPT
+	id S1757184Ab0HAOtd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 10:49:33 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:59536 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756152Ab0HAOtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 10:43:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=UIFcHZR9padj4Ff7Uct7S/zxnB9hTfyH7XGNjA/kbHnw1ezbi3zwU0cKXJXn3xKE08
-         rO/TkUtdQjqCKia7tqMVaP9TXgGTb9ZfLVch310JNChFDgQUZSCW+7y4gYyjASSx1zCa
-         yfUpW6xAdqQwx2fRyVCjGizkTl0/qgy4Ri0so=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@lst.de>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH] writeback: remove wb in get_next_work_item
-Date: Sun,  1 Aug 2010 23:42:54 +0900
-Message-Id: <1280673774-8072-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
+	Sun, 1 Aug 2010 10:49:31 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C558945.3030501@s5r6.in-berlin.de>
+Date: Sun, 01 Aug 2010 16:48:37 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Paul Rolland <rol@as2917.net>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: 2.6.35-rc6-git6: Reported regressions from 2.6.34
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
+In-Reply-To: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-83ba7b07 cleans up the writeback.
-So we don't use wb any more in get_next_work_item.
-Let's remove unnecessary argument.
+Rafael J. Wysocki wrote:
+> If you know of any other unresolved regressions from 2.6.34, please let us
+> know either and we'll add them to the list.
 
-CC: Christoph Hellwig <hch@lst.de>
-CC: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- fs/fs-writeback.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Subject		: 2.6.35-rc6+: i915: Bisected regression
+Submitter	: Thomas Meyer <thomas@m3y3r.de>
+Date		: Sun, 1 Aug 2010 11:01:00 +0200
+Message-ID	: <201008011101.01429.thomas@m3y3r.de>
+References	: http://lkml.org/lkml/2010/8/1/43
+First-Bad-Commit:
+http://git.kernel.org/linus/d1b851fc0d105caa6b6e3e7c92d2987dfb52cbe0
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index a178828..9a55257 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -712,7 +712,7 @@ static long wb_writeback(struct bdi_writeback *wb,
-  * Return the next wb_writeback_work struct that hasn't been processed yet.
-  */
- static struct wb_writeback_work *
--get_next_work_item(struct backing_dev_info *bdi, struct bdi_writeback *wb)
-+get_next_work_item(struct backing_dev_info *bdi)
- {
- 	struct wb_writeback_work *work = NULL;
- 
-@@ -770,7 +770,7 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
- 	struct wb_writeback_work *work;
- 	long wrote = 0;
- 
--	while ((work = get_next_work_item(bdi, wb)) != NULL) {
-+	while ((work = get_next_work_item(bdi)) != NULL) {
- 		/*
- 		 * Override sync mode, in case we must wait for completion
- 		 * because this thread is exiting now.
 -- 
-1.7.0.5
-
+Stefan Richter
+-=====-==-=- =--- ----=
+http://arcgraph.de/sr/
