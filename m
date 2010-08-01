@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab0HAOxv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 10:53:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52964 "EHLO ogre.sisk.pl"
+	id S1756330Ab0HAPFP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 11:05:15 -0400
+Received: from mx.treblig.org ([80.68.94.177]:33414 "EHLO mx.treblig.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756229Ab0HAOut convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 10:50:49 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Thomas Meyer" <thomas@m3y3r.de>
-References: <JKn8_uSlpqD.A.HLG.1LYVMB@chimera>
-In-Reply-To: <JKn8_uSlpqD.A.HLG.1LYVMB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1753421Ab0HAPFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 11:05:13 -0400
+X-Greylist: delayed 2013 seconds by postgrey-1.27 at vger.kernel.org; Sun, 01 Aug 2010 11:05:13 EDT
+Date: Sun, 1 Aug 2010 15:17:21 +0100
+From: "Dr. David Alan Gilbert" <linux@treblig.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        ksummit-2010-discuss@lists.linux-foundation.org
+Subject: Re: PSA: Please update your flash plugin!
+Message-ID: <20100801141721.GA11854@gallifrey>
+References: <E1OefgE-0005vu-JN@tytso-glaptop> <4C524F7A.20505@gmail.com> <4C558237.1040705@panasas.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <FMobw2FohV.A.ZlH.-PYVMB@chimera>
-Subject: [Bug #15673] 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  1 Aug 2010 16:44:21 +0200 (CEST)
+In-Reply-To: <4C558237.1040705@panasas.com>
+X-Chocolate: 70 percent or better cocoa solids preferably
+X-Operating-System: Linux/2.6.31.5-kvm-i386-2009-10-30 (i686)
+X-Uptime: 15:11:27 up 258 days, 20:46,  1 user,  load average: 0.00, 0.00,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.33 and 2.6.34.
+* Boaz Harrosh (bharrosh@panasas.com) wrote:
+> On 07/30/2010 07:05 AM, Justin P. Mattock wrote:
+> > On 07/29/2010 07:50 PM, Theodore Ts'o wrote:
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-be listed and let the tracking team know (either way).
+<snip - warning>
 
+> > biggest problem here is they havn't updated their x86_64(pure64) version 
+> > yet. hopefully hey release an update soon.
+> > 
+> > Justin P. Mattock
+> > --
+> 
+> Here too. How do I run (any) Flash-10.1 on a 64bit system (say FC12) without
+> actually reverting to a 32bit browser? Do I still get to install half of my
+> system as 32bit duplicates?
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15673
-Subject		: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
-Submitter	: Thomas Meyer <thomas@m3y3r.de>
-Date		: 2010-03-28 11:31 (127 days old)
-Message-ID	: <1269775909.5301.4.camel@localhost.localdomain>
-References	: http://marc.info/?l=linux-kernel&m=126977593326800&w=2
+nspluginwrapper works well enough for me on Ubuntu, but this
+isn't a kernel problem. (It seems to work better for me in Chrome
+than ff but hey that's another problem again).
 
+Since there isn't an announced date for if a 64bit version is going
+to be available (only a fluffy statement that they intend to do one)
+it's a case of having to move back to 32.
 
+See: http://www.theregister.co.uk/2010/06/11/64_bit_flash_for_linux_dead/
+
+Dave
+-- 
+ -----Open up your eyes, open up your mind, open up your code -------   
+/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
+\ gro.gilbert @ treblig.org |                               | In Hex /
+ \ _________________________|_____ http://www.treblig.org   |_______/
