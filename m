@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab0HASG5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 14:06:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47709 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab0HASG4 (ORCPT
+	id S1751117Ab0HATFh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 15:05:37 -0400
+Received: from n3-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.157]:29333 "HELO
+	n3-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750999Ab0HATFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 14:06:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=u1RNvpKlLkO+dzPGexIndZjDtruIGFAx4/HC+z95TsRfhxSlUQtpJ9gJahsBfpsjG4
-         4RpoxzikzL0OEbtIa2LjXmzOcayO++8MwvvpiwxZUlHTwT49TKg/HpLtHDTh60eExsV3
-         uBsf5LtF4BRbixdetaqDD1x1z6gfpmrrbVo0Y=
-Message-ID: <4C55B7CA.6030304@gmail.com>
-Date: Sun, 01 Aug 2010 11:07:06 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	Sun, 1 Aug 2010 15:05:35 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 977975.84211.bm@omp202.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=dWBk12f/kEHrDvPnHkO2vnDeggxJPcePV3G6yl5h7gJuQEEGg3dEmZfkZw3iqoVNRf4xvaixsoGnnbGa1s7fCr9OMh+sDk4vLB8cFzz+x6/HnbI8pihjQXTnNSFv0Qjkw4IreJGuwP3OKnzZ9FEcqW9Q7HMgEG/b7jhGC5uIieE=;
+Message-ID: <764692.87858.qm@web180303.mail.gq1.yahoo.com>
+X-YMail-OSG: PGDIu84VM1n.yTmRS94f0fJ9.4hiTh9mBbIBudA2_hdzJHD
+ Qydu2EAcI8cY5DuFxwrPVU0aVkuZJkMAKmikH6NKb2KdpAKmr2BMZ_v49D.k
+ gD2zHxLBM6KpU6rEd7V0QHnPjhau3BpVKJeVkNgmromo6bN9jwpqu7BGSR8S
+ 4KjCA2U0p.Z2HY.dgbWrP3nXsIU8NgH20X8X5_NJbdNj7A4fTSbVVL7IpDk4
+ O_ytwLL9qHVYYXjZVhh4Nev_0i_jJ6MeUNtJiu4uWxl9xDY0_PFueQhfm6jt
+ PTkBSKdtQazr9pyk4Ag_SuMnQfBa2R2.uq669fg--
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.105.279950
+Date: Sun, 1 Aug 2010 12:05:33 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv5 1/3] USB: gadget: composite: Better string override handling
+To: Greg KH <greg@kroah.com>, Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+In-Reply-To: <38424b23c94ddcff6f1808161912f362c2ccae39.1280316431.git.m.nazarewicz@samsung.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: trivial@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 33/33]Documentation/filesystems/affs.txt update web 	address.
-References: <1279687982-29413-1-git-send-email-justinmattock@gmail.com>	<1279687982-29413-3-git-send-email-justinmattock@gmail.com> <AANLkTik7hO2KBiye5cZt7=F9cGgQWQHKsPmJTMJfTDZB@mail.gmail.com>
-In-Reply-To: <AANLkTik7hO2KBiye5cZt7=F9cGgQWQHKsPmJTMJfTDZB@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2010 10:59 AM, Geert Uytterhoeven wrote:
-> On Wed, Jul 21, 2010 at 06:52, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> The patch below updates a broken web address.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   Documentation/filesystems/affs.txt |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/Documentation/filesystems/affs.txt b/Documentation/filesystems/affs.txt
->> index 2d15244..9b19a59 100644
->> --- a/Documentation/filesystems/affs.txt
->> +++ b/Documentation/filesystems/affs.txt
->> @@ -216,4 +216,4 @@ due to an incompatibility with the Amiga floppy controller.
->>
->>   If you are interested in an Amiga Emulator for Linux, look at
->>
->> -http://www.freiburg.linux.de/~uae/
->> +http://www.freiburg.linux.de
->
-> That web page doesn't contain anything related to UAE?
->
-> Google told me http://www.amigaemulator.org/
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
->
+> Hope this time everyone will be happy. :)
 
- From what I remember I couldn't find/see anything(maybe I did see what 
-you posted, but had no idea that it was right). Anyways thanks for 
-posting that, I'll resend with this updated.
+NAK.  You're still hard-wiring an un-managed
+serial number.  How many times do I have to say
+I will never accept such a broken policy??
 
-Justin P. Mattock
+
+
