@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab0HAFWi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 01:22:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20125 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab0HAFWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 01:22:36 -0400
-Message-ID: <4C55041C.1030008@kernel.org>
-Date: Sat, 31 Jul 2010 22:20:28 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
+	id S1752267Ab0HAF3L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 01:29:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59944 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab0HAF3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 01:29:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,296,1278313200"; 
+   d="scan'208";a="823620755"
+Date: Sun, 1 Aug 2010 13:27:59 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Andy Whitcroft <apw@shadowen.org>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] x86,setup: add serial_console_port_base in boot_params
-References: <4C3F8B46.7080809@kernel.org> <20100731083409.GC5859@lenovo>	<4C5469AF.2010608@zytor.com> <20100731183211.GB29357@lenovo>	<4C548F7D.6000509@zytor.com> <4C54D3AD.8020906@kernel.org> <m14offuk8p.fsf@fess.ebiederm.org>
-In-Reply-To: <m14offuk8p.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C550468.0161,ss=1,fgs=0
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: [PATCH] vmscan: remove wait_on_page_writeback() from pageout()
+Message-ID: <20100801052758.GB7515@localhost>
+References: <20100728183625.4A7F.A69D9226@jp.fujitsu.com>
+ <20100728095058.GF5300@csn.ul.ie>
+ <20100728185457.4A82.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100728185457.4A82.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2010 07:42 PM, Eric W. Biederman wrote:
-> Yinghai Lu <yinghai@kernel.org> writes:
+On Wed, Jul 28, 2010 at 05:59:55PM +0800, KOSAKI Motohiro wrote:
+> > On Wed, Jul 28, 2010 at 06:43:41PM +0900, KOSAKI Motohiro wrote:
+> > > > On Wed, Jul 28, 2010 at 04:46:54PM +0800, Wu Fengguang wrote:
+> > > > > The wait_on_page_writeback() call inside pageout() is virtually dead code.
+> > > > > 
+> > > > >         shrink_inactive_list()
+> > > > >           shrink_page_list(PAGEOUT_IO_ASYNC)
+> > > > >             pageout(PAGEOUT_IO_ASYNC)
+> > > > >           shrink_page_list(PAGEOUT_IO_SYNC)
+> > > > >             pageout(PAGEOUT_IO_SYNC)
+> > > > > 
+> > > > > Because shrink_page_list/pageout(PAGEOUT_IO_SYNC) is always called after
+> > > > > a preceding shrink_page_list/pageout(PAGEOUT_IO_ASYNC), the first
+> > > > > pageout(ASYNC) converts dirty pages into writeback pages, the second
+> > > > > shrink_page_list(SYNC) waits on the clean of writeback pages before
+> > > > > calling pageout(SYNC). The second shrink_page_list(SYNC) can hardly run
+> > > > > into dirty pages for pageout(SYNC) unless in some race conditions.
+> > > > > 
+> > > > 
+> > > > It's possible for the second call to run into dirty pages as there is a
+> > > > congestion_wait() call between the first shrink_page_list() call and the
+> > > > second. That's a big window.
+> > > > 
+> > > > > And the wait page-by-page behavior of pageout(SYNC) will lead to very
+> > > > > long stall time if running into some range of dirty pages.
+> > > > 
+> > > > True, but this is also lumpy reclaim which is depending on a contiguous
+> > > > range of pages. It's better for it to wait on the selected range of pages
+> > > > which is known to contain at least one old page than excessively scan and
+> > > > reclaim newer pages.
+> > > 
+> > > Today, I was successful to reproduce the Andres's issue. and I disagree this
+> > > opinion.
+> > 
+> > Is Andres's issue not covered by the patch "vmscan: raise the bar to
+> > PAGEOUT_IO_SYNC stalls" because wait_on_page_writeback() was the
+> > main problem?
 > 
->> On 07/31/2010 02:02 PM, H. Peter Anvin wrote:
->>> On 07/31/2010 11:32 AM, Cyrill Gorcunov wrote:
->>>>>
->>>>> No, this is the internal part of the boot protocol, so it's not an issue.
->>>>>
->>>>
->>>> Peter, I didn't mean any issue here, I meant that bootloaders don't know about
->>>> this field yet and they will have to update own sources to pass port value
->>>> at proper place of boot params. Or I miss something?
->>>>
->>>
->>> Boot loaders that use the 16-bit entry point are unaffected.
->>>
->>> Boot loaders which use the 32-bit entry point but properly clears the
->>> zero page simply will not have the feature.
->>>
->>> Boot loaders which use the 32-bit entry point but doesn't clear the zero
->>> page are broken.
->>>
->> can you if this one is right for kexec path?
-> 
-> I am walking out the door, but this seems like nonsense to me.
-> 
-> Further I don't see why we would add something to the zero page
-> when we have a perfectly good way to pass this information via
-> the kernel command line.  strstr and strtoul are trivial little
-> functions so I don't see why anything would need to parse anything
-> other than console= or early_printk=.  The difference in code size
-> is negligible.
-> 
-so you prefer to check command line for console info in arch/x86/boot/compressed/misc.c again?
+> Well, "vmscan: raise the bar to PAGEOUT_IO_SYNC stalls" is completely bandaid and
 
-that commandline is analyzed in arch/x86/boot/tty.c already.
+No joking. The (DEF_PRIORITY-2) is obviously too permissive and shall be fixed.
 
-Yinghai
+> much IO under slow USB flash memory device still cause such problem even if the patch is applied.
+
+As for this patch, raising the bar to PAGEOUT_IO_SYNC reduces both
+calls to congestion_wait() and wait_on_page_writeback(). So it
+absolutely helps by itself.
+
+> But removing wait_on_page_writeback() doesn't solve the issue perfectly because current
+> lumpy reclaim have multiple sick. again, I'm writing explaining mail.....
+
+Let's submit the two known working fixes first?
+
+Thanks,
+Fengguang
