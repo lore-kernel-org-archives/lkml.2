@@ -1,98 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab0HATiq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 15:38:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45954 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab0HATin (ORCPT
+	id S1751402Ab0HATl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 15:41:59 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:46038 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751049Ab0HATl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 15:38:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=LYkGG7OtSFsdHzrVkj2834ywhBqw2LKkNretWLZcZo6YaqKLvdPYncUgVcCOr5b1Ui
-         pz32FRKnZzhxJV5U6T5Q/ULjrfQNdeWgGPm2pJmfBd6uP91fgNd8JtLCigabnCSw9fvG
-         2JIkGREGSuskRrLNp7nW4wzDcoPT9kTOg+G0c=
-Message-ID: <4C55CD68.1020401@lwfinger.net>
-Date: Sun, 01 Aug 2010 14:39:20 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Sun, 1 Aug 2010 15:41:58 -0400
+Date: Sun, 1 Aug 2010 15:41:57 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: linux-pm@lists.linux-foundation.org, <linux-kernel@vger.kernel.org>,
+        <arve@android.com>, <mjg59@srcf.ucam.org>, <pavel@ucw.cz>,
+        <florian@mickler.org>, <rjw@sisk.pl>, <swetland@google.com>,
+        <peterz@infradead.org>, <tglx@linutronix.de>,
+        <alan@lxorguk.ukuu.org.uk>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <20100801043610.GF2470@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1008011521390.20420-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: 2.6.35-rc6-git6: Reported regressions from 2.6.34
-References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
-In-Reply-To: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2010 08:46 AM, Rafael J. Wysocki wrote:
-> This message contains a list of some regressions from 2.6.34,
-> for which there are no fixes in the mainline known to the tracking team.
-> If any of them have been fixed already, please let us know.
+> > > o	"Power-aware application" are applications that are permitted
+> > > 	to acquire suspend blockers on Android.  Verion 8 of the
+> > > 	suspend-blocker patch seems to use group permissions to determine
+> > > 	which applications are classified as power aware.
+> > > 
+> > > 	More generally, power-aware applications seem to be those that
+> > > 	have permission to exert some control over the system's
+> > > 	power state.
+> > 
+> > Notice that these definitions allow a program to be both power-naive
+> > and power-aware.  In addition, "power-awareness" isn't an inherent
+> > property of the application itself, since users are allowed to decide
+> > which programs may exert control over the system's power state.  The 
+> > same application could be power-aware on one system and non-power-aware 
+> > on another.
+
+I should have made a stronger point: "power-aware" is _not_ a good
+term for these applications.  "power-enabled" would be better but
+still not ideal.  Maybe "power-permitted"?  The definition is that
+they are _permitted_ to do something (acquire suspend blockers), not
+that they actually _do_ something.
+
+> > > REQUIREMENTS
+> > > 
+> > > o	Reduce the system's power consumption in order to (1) extend
+> > > 	battery life and (2) preserve state until AC power can be obtained.
+> > 
+> > External power, not necessarily AC power (a very minor point).
 > 
-> If you know of any other unresolved regressions from 2.6.34, please let us
-> know either and we'll add them to the list.  Also, please let us know
-> if any of the entries below are invalid.
+> A good one, though.
+
+Arjan's point here is well taken.  Even systems that always run on
+external power have motivation for conserving energy (e.g., they may
+be required by government regulation to do so).
+
+> > > o	In order to avoid overrunning hardware and/or kernel buffers,
+> > > 	input events must be delivered to the corresponding application
+> > > 	in a timely fashion.  The application might or might not be
+> > > 	required to actually process the events in a timely fashion,
+> > > 	depending on the specific application.
+> > 
+> > This goes well beyond overrunning buffers!  Events must be delivered in
+> > a timely fashion so that the system isn't perceived to be inoperative.
 > 
-> Each entry from the list will be sent additionally in an automatic reply
-> to this message with CCs to the people involved in reporting and handling
-> the issue.
+> Agreed for power-aware applications.  For power-naive applications,
+> the last event delivered can be buffered by the application with no
+> response if I understand correctly.  If there is a subsequent event
+> for that same application, then the prior event can be processed.
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16312
-> Subject		: WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
-> Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-> Date		: 2010-06-28 9:40 (35 days old)
-> Message-ID	: <AANLkTin24fr5O4_q5Xbo9Y_NKkEmtcp6Hgmr9_4qXaFz@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=127771804806465&w=2
-> Handled-By	: Jan Kara <jack@suse.cz>
-> Patch		: https://bugzilla.kernel.org/attachment.cgi?id=27272
+I was agreeing with the requirement but disagreeing with the reason
+given for it.  Even when buffers are large enough that the danger of
+overrunning them is infinitesimal, delays in input event delivery are
+still undesirable.
 
-I am beginning to think that Bug 16312 is not the same as Bug 16122. Even with
-the patches from 16312, I still get warnings as below:
+Besides, the Android kernel doesn't vary its behavior based on whether
+the recipient is power-permitted or power-naive; it _always_ delivers
+input events in a timely fashion.
 
-[   11.728776] ------------[ cut here ]------------
-[   11.728787] WARNING: at fs/fs-writeback.c:964 __mark_inode_dirty+0x10f/0x1a0()
-[   11.728790] Hardware name: HP Pavilion dv2700 Notebook PC
-[   11.728792] Modules linked in: loop(+) dm_mod ide_cd_mod cdrom
-snd_hda_codec_conexant ide_pci_generic arc4 ecb b43 rng_core mac80211
-snd_hda_intel r8712u(C) cfg80211 snd_hda_codec amd74xx snd_pcm sg ide_core
-rfkill led_class snd_timer ssb mmc_core pcmcia snd joydev k8temp hwmon
-i2c_nforce2 pcmcia_core forcedeth serio_raw snd_page_alloc i2c_core battery ac
-button ext4 mbcache jbd2 crc16 ohci_hcd sd_mod ehci_hcd usbcore fan processor
-ahci libahci libata scsi_mod thermal
-[   11.728854] Pid: 2449, comm: udisks-part-id Tainted: G         C
-2.6.35-rc6-realtek+ #15
-[   11.728857] Call Trace:
-[   11.728865]  [<ffffffff8104608a>] warn_slowpath_common+0x7a/0xb0
-[   11.728869]  [<ffffffff810460d5>] warn_slowpath_null+0x15/0x20
-[   11.728874]  [<ffffffff81129d5f>] __mark_inode_dirty+0x10f/0x1a0
-[   11.728879]  [<ffffffff8111e07d>] touch_atime+0x12d/0x170
-[   11.728885]  [<ffffffff810cab91>] generic_file_aio_read+0x5c1/0x720
-[   11.728890]  [<ffffffff81107ca2>] do_sync_read+0xd2/0x110
-[   11.728896]  [<ffffffff81077e7d>] ? trace_hardirqs_on+0xd/0x10
-[   11.728900]  [<ffffffff811083c3>] vfs_read+0xb3/0x170
-[   11.728906]  [<ffffffff81002d1c>] ? sysret_check+0x27/0x62
-[   11.728909]  [<ffffffff811084cc>] sys_read+0x4c/0x80
-[   11.728914]  [<ffffffff81002ceb>] system_call_fastpath+0x16/0x1b
-[   11.728917] ---[ end trace 32e16cacad33229f ]---
-[   11.728919] bdi-block not registered
+> > > o	If a power-aware application receives user input, then that
+> > > 	application must be given the opportunity to process that
+> > > 	input.
+> > 
+> > A better way to put this is: The API must provide a means for
+> > power-aware applications receiving user input to keep themselves
+> > running until they have been able to process the input.
+> 
+> Good point!  Would it also make sense to say "events" in general rather
+> than "input" in particular?
 
-The warnings do not occur with every boot and appear to be some kind of race
-condition.
+Sure.
 
-Larry
+> > > o	Power-naive applications must be prohibited from controlling
+> > > 	the system power state.  One acceptable approach is through
+> > > 	use of group permissions on a special power-control device.
+> > 
+> > You mean non-power-aware applications, not power-naive applications.  
+> > But then the statement is redundant; it follows directly from the
+> > definition of "power-aware".
+> 
+> I see your point, but I don't feel comfortable deleting this requirement.
+> My rationale is that the definition needs some enforcement mechanism,
+> and this requirement is calling out the need for such a mechanism.
+
+Then state it immediately after the definition as an implication of
+the definition, not as a separate system requirement.
+
+> > > o	When a power-aware application is preventing the system from
+> > > 	shutting down, and is also waiting on a power-naive application,
+> > > 	the power-aware application must set a timeout to handle
+> > > 	the possibility that the power-naive application might halt
+> > > 	or otherwise fail.  (Such timeouts are also used to limit the
+> > > 	number of kernel modifications required.)
+> > 
+> > No, this is not a requirement.  A power-optimized application would do 
+> > this, of course, by definition.  But a power-aware application doesn't 
+> > have to.
+> 
+> I am not sure we agree on the definition of "power-optimized application".
+> But leaving that aside, I thought that Arve and Brian explicitly
+> stated this as a requirement on power-aware applications -- one of the
+> responsibilities that came with the power to block suspend.
+
+No.  There are _no_ requirements on power-permitted (or power-aware if
+you prefer) applications, other than that the user decides to give it
+the appropriate permission.
+
+Internally, of course, Android may enforce this rule on their own
+software.  But it has no force in regard to external applications.
+
+> > > o	If no power-aware or power-optimized application are indicating
+> > > 	a need for the system to remain operating, the system is permitted
+> > > 	(even encouraged!) to suspend all execution, even if power-naive
+> > > 	applications are runnable.  (This requirement did appear to be
+> > > 	somewhat controversial.)
+> > 
+> > The controversy was not over the basic point but rather over the 
+> > detailed meaning of "runnable".  A technical matter, related to the 
+> > implementation of the scheduler.
+> 
+> OK, what would you suggest for the wording of this requirement?
+
+Change the last phrase to "regardless of the state of power-naive
+applications".
+
+Alan Stern
+
