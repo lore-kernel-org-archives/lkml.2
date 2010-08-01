@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab0HAOtd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 10:49:33 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:59536 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab0HAOtb (ORCPT
+	id S1757442Ab0HAOu5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 10:50:57 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52982 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757253Ab0HAOuy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 10:49:31 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C558945.3030501@s5r6.in-berlin.de>
-Date: Sun, 01 Aug 2010 16:48:37 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Sun, 1 Aug 2010 10:50:54 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Jean-Francois Moine" <moinejf@free.fr>, "Vish" <drkvi-a@yahoo.com>
+References: <JKn8_uSlpqD.A.HLG.1LYVMB@chimera>
+In-Reply-To: <JKn8_uSlpqD.A.HLG.1LYVMB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Paul Rolland <rol@as2917.net>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: 2.6.35-rc6-git6: Reported regressions from 2.6.34
-References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
-In-Reply-To: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <FMobw2FohV.A.9pG.pMYVMB@chimera>
+Subject: [Bug #16270] Image is a hit-or-a-miss. Often displayed green+purple
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun,  1 Aug 2010 16:44:23 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
-> If you know of any other unresolved regressions from 2.6.34, please let us
-> know either and we'll add them to the list.
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.33 and 2.6.34.
 
-Subject		: 2.6.35-rc6+: i915: Bisected regression
-Submitter	: Thomas Meyer <thomas@m3y3r.de>
-Date		: Sun, 1 Aug 2010 11:01:00 +0200
-Message-ID	: <201008011101.01429.thomas@m3y3r.de>
-References	: http://lkml.org/lkml/2010/8/1/43
-First-Bad-Commit:
-http://git.kernel.org/linus/d1b851fc0d105caa6b6e3e7c92d2987dfb52cbe0
+The following bug entry is on the current list of known regressions
+introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
--- 
-Stefan Richter
--=====-==-=- =--- ----=
-http://arcgraph.de/sr/
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16270
+Subject		: Image is a hit-or-a-miss. Often displayed green+purple
+Submitter	: Vish <drkvi-a@yahoo.com>
+Date		: 2010-06-22 10:47 (41 days old)
+First-Bad-Commit: http://git.kernel.org/linus/acef4a407ed6e0a9ed87a2747be592fe49e64bdd
+Handled-By	: Jean-Francois Moine <moinejf@free.fr>
+
+
