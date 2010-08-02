@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab0HBVWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 17:22:31 -0400
-Received: from xenotime.net ([72.52.115.56]:42593 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751076Ab0HBVW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 17:22:29 -0400
-Message-ID: <57767.148.87.67.132.1280784139.squirrel@www.xenotime.net>
-In-Reply-To: <1280647233-2578-1-git-send-email-nir.tzachar@gmail.com>
-References: <AANLkTik1p0oK=-msd0a-4wA88Z-Cv29qHVNUYeEETcJD@mail.gmail.com>
-    <1280647233-2578-1-git-send-email-nir.tzachar@gmail.com>
-Date: Mon, 2 Aug 2010 14:22:19 -0700 (PDT)
-Subject: Re: [PATCH] nconfig: add search support
-From: rdunlap@xenotime.net
-To: nir.tzachar@gmail.com
-Cc: mmarek@suse.cz, rdunlap@xenotime.net, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nir.tzachar@gmail.com, sam@ravnborg.org,
-        trapdoor6@gmail.com, justinmattock@gmail.com
-User-Agent: SquirrelMail/1.5.1
+	id S1755416Ab0HBVZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 17:25:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27557 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755125Ab0HBVZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 17:25:12 -0400
+Message-ID: <4C57371C.4000708@kernel.org>
+Date: Mon, 02 Aug 2010 14:22:36 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 2/2] x86: more early console output from	compressed/misc.c
+References: <4C56701B.1030000@kernel.org> <4C5670DA.2080703@zytor.com> <4C5680D2.4020302@kernel.org> <4C568D2B.205@kernel.org> <4C568D6F.3050004@kernel.org> <20100802174916.GD5544@lenovo> <4C5710C1.8020809@zytor.com> <20100802185410.GE5544@lenovo> <4C57153F.7030107@zytor.com> <4C571DF2.5080100@kernel.org> <4C5731AF.9040009@zytor.com> <4C5733CF.20100@zytor.com>
+In-Reply-To: <4C5733CF.20100@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C573786.01C5,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, August 1, 2010 12:20 am, nir.tzachar@gmail.com wrote:
-> From: Nir Tzachar <nir.tzachar@gmail.com>
->
->
-> Remove the old hotkeys feature, and replace by a regular string search.
-> From nconfig help:
->
->
-> Pressing '/' triggers search mode. nconfig does regular string match,
-> case insensitive, starting at the begining of each menu line. Pressing
-> Enter highlights the next match, Backspace removes one character from
-> the match string. Pressing either '/' again or ESC exits search mode.
->
-> Rebind the '/' key (which allowed to search for symbols) to F8
->
->
-> Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
-> ---
-> scripts/kconfig/nconf.c |  261
-> ++++++++++++++++++++++-------------------------
-> scripts/kconfig/nconf.h |    3 +- 2 files changed, 125 insertions(+), 139
-> deletions(-)
+On 08/02/2010 02:08 PM, H. Peter Anvin wrote:
+> On 08/02/2010 01:59 PM, H. Peter Anvin wrote:
+>> On 08/02/2010 12:35 PM, Yinghai Lu wrote:
+>>>
+>>> it seems I can not global variables in arch/x86/boot/compressed/misc.c
+>>>
+>>
+>> I just looked at it, it's the fact that we don't relocate the GOT that
+>> is causing problems.  It's relatively easy to fix: here is a patch, but
+>> in grand Linus tradition it is completely untested.
+>>
+> 
+> Untested indeed... here is one which doesn't clobber live registers.
+> 
+> 	-hpa
+> 
+
+still doesn't work.
+
+with global early_serial_base got :
+
+early console in setup code
+[    0.000000] bootconsole [uart0] enabled
 
 
-A few other comments:
+with static early_serial_base got :
 
-These help text lines should end with a period:
+early console in setup code
+early console in decompress_kernel
+decompress_kernel:
+  input: [0x24a0269-0x2e8b234], output: 0x1000000, heap: [0x2e909c0-0x2e979bf]
 
-  Pressing SpaceBar toggles between the above options
-
-  <Esc> always leaves the current window
-
-
-The F-key help along the bottom line should be forced to fit
-into 80 columns.  F9 (exit) especially should be visible.
-
-
-This F3 should be F5:
-
-  Press <Esc>, <F3> or <left-arrow> to go back one menu,
+Decompressing Linux... Parsing ELF... done.
+Booting the kernel.
+[    0.000000] bootconsole [uart0] enabled
 
 
-How about we make nconfig the default in linux-next
-so that it will be used more?
+Thanks
 
-
+Yinghai
