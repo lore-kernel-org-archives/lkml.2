@@ -1,124 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab0HBHDs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:03:48 -0400
-Received: from mail.lang.hm ([64.81.33.126]:51111 "EHLO bifrost.lang.hm"
+	id S1753072Ab0HBHLN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:11:13 -0400
+Received: from psi.thgersdorf.net ([188.40.92.130]:42576 "EHLO mail.psioc.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab0HBHDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:03:46 -0400
-Date: Mon, 2 Aug 2010 00:02:04 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Florian Mickler <florian@mickler.org>
-cc: Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
-        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100802085332.23dd22f6@schatten.dmk.lab>
-Message-ID: <alpine.DEB.2.00.1008012355210.25170@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100731215214.2543c07e@infradead.org> <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801204026.GH31324@thunk.org>
- <20100802030304.GU2470@linux.vnet.ibm.com> <20100801210548.23f77ff6@infradead.org> <alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm> <20100802074429.73a9dfd9@schatten.dmk.lab> <alpine.DEB.2.00.1008012303160.25170@asgard.lang.hm> <20100802084003.1c4c2bdb@schatten.dmk.lab>
- <20100802085332.23dd22f6@schatten.dmk.lab>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752555Ab0HBHLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 03:11:11 -0400
+X-Greylist: delayed 525 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Aug 2010 03:11:10 EDT
+Date: Mon, 2 Aug 2010 09:02:20 +0200
+From: Dieter Ries <mail@dieterries.net>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: linux-ext4@vger.kernel.org, tytso@mit.edu
+Subject: kjournald and flush being blocked for 120 sec
+Message-ID: <20100802070220.GA32114@Localhorst.asterix.local>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010, Florian Mickler wrote:
 
-> On Mon, 2 Aug 2010 08:40:03 +0200
-> Florian Mickler <florian@mickler.org> wrote:
->
->> On Sun, 1 Aug 2010 23:06:08 -0700 (PDT)
->> david@lang.hm wrote:
->>
->>> On Mon, 2 Aug 2010, Florian Mickler wrote:
->>>
->>>> On Sun, 1 Aug 2010 22:06:34 -0700 (PDT)
->>>> david@lang.hm wrote:
->>>>
->>>>> On Sun, 1 Aug 2010, Arjan van de Ven wrote:
->>>>>
->>>>>> I'm a little worried that this whole "I need to block suspend" is
->>>>>> temporary. Yes today there is silicon from ARM and Intel where suspend
->>>>>> is a heavy operation, yet at the same time it's not all THAT heavy
->>>>>> anymore.... at least on the Intel side it's good enough to use pretty
->>>>>> much all the time (when the screen is off for now, but that's a memory
->>>>>> controller issue more than anything else). I'm pretty sure the ARM guys
->>>>>> will not be far behind.
->>>>>
->>>>> remember that this 'block suspend' is really 'block overriding the fact
->>>>> that there are still runable processes and suspending anyway"
->>>>>
->>>>> having it labeled as 'suspend blocker' or even 'wakelock' makes it sound
->>>>> as if it blocks any attempt to suspend, and I'm not sure that's what's
->>>>> really intended. Itsounds like the normal syspend process would continue
->>>>> to work, just this 'ignore if these other apps are busy' mode of operation
->>>>> would not work.
->>>>>
->>>>> which makes me wonder, would it be possible to tell the normal idle
->>>>> detection mechanism to ignore specific processes when deciding if it
->>>>> should suspend or not? how about only considering processes in one cgroup
->>>>> when deciding to suspend and ignoring all others?
->>>>>
->>>>> David Lang
->>>>
->>>> We then get again to the "runnable tasks" problem that was
->>>> discussed earlier... the system get's "deadlock-prone" if a subset of
->>>> tasks is not run.
->>>> Interprocess dependencies are not so easy to get right in general.
->>>
->>> I'm not suggesting that you don't run the 'untrusted' tasks, just that you
->>> don't consider them when deciding if the system can suspend or not. if the
->>> system is awake, everything runs, if the system is idle (except for the
->>> activity of the 'untrusted' tasks) you suspend normally.
->>>
->>> David Lang
->>
->> Ah, yes. Sorry. It's pretty early in the morning over here, I don't
->> seem to have my eyes fully opened yet... A "ignore-these-processes"
->> cgroup could probably work... It would have the advantage of not having
->> to maintain a special purpose API....
->>
->>
->> Cheers,
->> Flo
->>
->
-> Thinking about it.. I don't know much about cgroups, but I think a
-> process can only be in one cgroup at a time. So you'd need to provide
->
-> a) a way to race free migrate them to the "suspend block" cgroup (or
-> dropping them out of the "ignore" cgroup)
+--AhhlLboLdkugWU4S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-why does it need to be race free? being in transition is going to be 
-logically the same as being in the other group.
+Hi there.
 
-it's not like applications will be moving back and forth between the two 
-groups is it? I expect that this would be a one-time thing at startup.
+I recently got a new server, 4 x Opteron 6128 on a Supermicro H8QGi+-F
+board, AMD SP5100 chipset, 3 S-ATA disks, one 500GB WD RE3 for system=20
+and 2 identical 2TB Hitachi for data.
 
-> b) you can't use cgroup for other purposes anymore. I.e. if you want to
-> have 2 groups that each only have half of the memory available, how
-> would you then integrate the cgroup-ignore-for-idle-approach with this?
+Creating a MD Raid 1 on the 2 2TB drives took 4 days, and now when I dd
+zeroes to a LVM Partitioni, ext3 fs, on the raid, performance ist good=20
+for the first ~4 GB, but then it gets horribly slow, sometimes stalls.=20
+In the end I get write rates of about 20MB/s, and this in dmesg:
 
-two answers to this
+[  484.128146] INFO: task kjournald:2496 blocked for more than 120 seconds.
+[  484.128286] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
+this message.
+[  484.128420] kjournald     D 00000000ffffdaac     0  2496      2 0x000000=
+00
+[  484.128427]  ffff88022650c420 0000000000000046 ffff880625721800 00000000=
+00000000
+[  484.128431]  ffffffff81632020 0000000000015300 0000000000015300 00000000=
+00015300
+[  484.128435]  ffff880224431fd8 0000000000015300 ffff88022650c420 ffff8802=
+24431fd8
+[  484.128439] Call Trace:
+[  484.128452]  [<ffffffff8100f52e>] ? read_tsc+0x5/0x16
+[  484.128459]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  484.128466]  [<ffffffff8136a3e8>] ? io_schedule+0x6b/0xaa
+[  484.128469]  [<ffffffff81106a5d>] ? sync_buffer+0x3b/0x3f
+[  484.128473]  [<ffffffff8136a931>] ? __wait_on_bit+0x3e/0x6f
+[  484.128477]  [<ffffffff8136a9d0>] ? out_of_line_wait_on_bit+0x6e/0x77
+[  484.128480]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  484.128486]  [<ffffffff8105cdeb>] ? wake_bit_function+0x0/0x2e
+[  484.128489]  [<ffffffff811069bb>] ? wait_on_buffer+0xe/0x2d
+[  484.128493]  [<ffffffff81106f4e>] ? sync_dirty_buffer+0x58/0x8f
+[  484.128498]  [<ffffffff8115a254>] ? journal_commit_transaction+0xa8e/0xd=
+ee
+[  484.128502]  [<ffffffff8105cdc1>] ? autoremove_wake_function+0x0/0x2a
+[  484.128506]  [<ffffffff8115cef4>] ? kjournald+0xde/0x220
+[  484.128510]  [<ffffffff8105cdc1>] ? autoremove_wake_function+0x0/0x2a
+[  484.128513]  [<ffffffff8115ce16>] ? kjournald+0x0/0x220
+[  484.128516]  [<ffffffff8105c96d>] ? kthread+0x75/0x7d
+[  484.128520]  [<ffffffff810097e4>] ? kernel_thread_helper+0x4/0x10
+[  484.128523]  [<ffffffff8105c8f8>] ? kthread+0x0/0x7d
+[  484.128526]  [<ffffffff810097e0>] ? kernel_thread_helper+0x0/0x10
+[  604.128155] INFO: task kjournald:2496 blocked for more than 120 seconds.
+[  604.128270] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
+this message.
+[  604.128404] kjournald     D 00000000ffffdaac     0  2496      2 0x000000=
+00
+[  604.128410]  ffff88022650c420 0000000000000046 ffff880625721800 00000000=
+00000000
+[  604.128414]  ffffffff81632020 0000000000015300 0000000000015300 00000000=
+00015300
+[  604.128417]  ffff880224431fd8 0000000000015300 ffff88022650c420 ffff8802=
+24431fd8
+[  604.128421] Call Trace:
+[  604.128434]  [<ffffffff8100f52e>] ? read_tsc+0x5/0x16
+[  604.128440]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  604.128447]  [<ffffffff8136a3e8>] ? io_schedule+0x6b/0xaa
+[  604.128450]  [<ffffffff81106a5d>] ? sync_buffer+0x3b/0x3f
+[  604.128453]  [<ffffffff8136a931>] ? __wait_on_bit+0x3e/0x6f
+[  604.128457]  [<ffffffff8136a9d0>] ? out_of_line_wait_on_bit+0x6e/0x77
+[  604.128460]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  604.128467]  [<ffffffff8105cdeb>] ? wake_bit_function+0x0/0x2e
+[  604.128470]  [<ffffffff811069bb>] ? wait_on_buffer+0xe/0x2d
+[  604.128473]  [<ffffffff81106f4e>] ? sync_dirty_buffer+0x58/0x8f
+[  604.128478]  [<ffffffff8115a254>] ? journal_commit_transaction+0xa8e/0xd=
+ee
+[  604.128482]  [<ffffffff8105cdc1>] ? autoremove_wake_function+0x0/0x2a
+[  604.128486]  [<ffffffff8115cef4>] ? kjournald+0xde/0x220
+[  604.128490]  [<ffffffff8105cdc1>] ? autoremove_wake_function+0x0/0x2a
+[  604.128493]  [<ffffffff8115ce16>] ? kjournald+0x0/0x220
+[  604.128496]  [<ffffffff8105c96d>] ? kthread+0x75/0x7d
+[  604.128500]  [<ffffffff810097e4>] ? kernel_thread_helper+0x4/0x10
+[  604.128503]  [<ffffffff8105c8f8>] ? kthread+0x0/0x7d
+[  604.128506]  [<ffffffff810097e0>] ? kernel_thread_helper+0x0/0x10
+[  844.128070] INFO: task flush-253:3:1753 blocked for more than 120 second=
+s.
+[  844.128184] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
+this message.
+[  844.128318] flush-253:3   D 000000010001618e     0  1753      2 0x000000=
+00
+[  844.128323]  ffff88022650d890 0000000000000046 ffff880625721800 00000000=
+00000000
+[  844.128327]  ffff880226d00da0 0000000000015300 0000000000015300 00000000=
+00015300
+[  844.128331]  ffff880226555fd8 0000000000015300 ffff88022650d890 ffff8802=
+26555fd8
+[  844.128335] Call Trace:
+[  844.128345]  [<ffffffff8100f52e>] ? read_tsc+0x5/0x16
+[  844.128351]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  844.128355]  [<ffffffff81106c5a>] ? end_buffer_async_write+0x0/0x129
+[  844.128360]  [<ffffffff8136a3e8>] ? io_schedule+0x6b/0xaa
+[  844.128363]  [<ffffffff81106a5d>] ? sync_buffer+0x3b/0x3f
+[  844.128367]  [<ffffffff8136a833>] ? __wait_on_bit_lock+0x3c/0x85
+[  844.128373]  [<ffffffff811aac20>] ? __lookup_tag+0xc9/0x13a
+[  844.128376]  [<ffffffff8136a8ea>] ? out_of_line_wait_on_bit_lock+0x6e/0x=
+77
+[  844.128380]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  844.128385]  [<ffffffff8105cdeb>] ? wake_bit_function+0x0/0x2e
+[  844.128388]  [<ffffffff81106eaf>] ? lock_buffer+0xe/0x2c
+[  844.128391]  [<ffffffff811070e0>] ? __block_write_full_page+0x15b/0x2a8
+[  844.128397]  [<ffffffff810b3e76>] ? __writepage+0xa/0x21
+[  844.128400]  [<ffffffff810b4ef0>] ? write_cache_pages+0x1d8/0x2f1
+[  844.128403]  [<ffffffff810b3e6c>] ? __writepage+0x0/0x21
+[  844.128410]  [<ffffffff8110054c>] ? writeback_single_inode+0xd1/0x2e5
+[  844.128413]  [<ffffffff81100ab6>] ? writeback_sb_inodes+0x136/0x204
+[  844.128417]  [<ffffffff8110115b>] ? writeback_inodes_wb+0x127/0x139
+[  844.128421]  [<ffffffff811012fb>] ? wb_writeback+0x18e/0x208
+[  844.128424]  [<ffffffff811013d8>] ? wb_do_writeback+0x63/0x149
+[  844.128428]  [<ffffffff811014a8>] ? wb_do_writeback+0x133/0x149
+[  844.128432]  [<ffffffff811014f8>] ? bdi_writeback_task+0x3a/0x113
+[  844.128435]  [<ffffffff8105cce7>] ? bit_waitqueue+0x14/0xa1
+[  844.128440]  [<ffffffff810c0513>] ? bdi_start_fn+0x0/0xc3
+[  844.128443]  [<ffffffff810c0576>] ? bdi_start_fn+0x63/0xc3
+[  844.128446]  [<ffffffff810c0513>] ? bdi_start_fn+0x0/0xc3
+[  844.128449]  [<ffffffff8105c96d>] ? kthread+0x75/0x7d
+[  844.128452]  [<ffffffff810097e4>] ? kernel_thread_helper+0x4/0x10
+[  844.128456]  [<ffffffff8105c8f8>] ? kthread+0x0/0x7d
+[  844.128459]  [<ffffffff810097e0>] ? kernel_thread_helper+0x0/0x10
+[  964.128053] INFO: task flush-253:3:1753 blocked for more than 120 second=
+s.
+[  964.128187] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
+this message.
+[  964.128321] flush-253:3   D 000000010001618e     0  1753      2 0x000000=
+00
+[  964.128325]  ffff88022650d890 0000000000000046 ffff880625721800 00000000=
+00000000
+[  964.128329]  ffff880226d00da0 0000000000015300 0000000000015300 00000000=
+00015300
+[  964.128332]  ffff880226555fd8 0000000000015300 ffff88022650d890 ffff8802=
+26555fd8
+[  964.128336] Call Trace:
+[  964.128344]  [<ffffffff8100f52e>] ? read_tsc+0x5/0x16
+[  964.128347]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  964.128351]  [<ffffffff81106c5a>] ? end_buffer_async_write+0x0/0x129
+[  964.128355]  [<ffffffff8136a3e8>] ? io_schedule+0x6b/0xaa
+[  964.128358]  [<ffffffff81106a5d>] ? sync_buffer+0x3b/0x3f
+[  964.128361]  [<ffffffff8136a833>] ? __wait_on_bit_lock+0x3c/0x85
+[  964.128364]  [<ffffffff811aac20>] ? __lookup_tag+0xc9/0x13a
+[  964.128368]  [<ffffffff8136a8ea>] ? out_of_line_wait_on_bit_lock+0x6e/0x=
+77
+[  964.128371]  [<ffffffff81106a22>] ? sync_buffer+0x0/0x3f
+[  964.128375]  [<ffffffff8105cdeb>] ? wake_bit_function+0x0/0x2e
+[  964.128378]  [<ffffffff81106eaf>] ? lock_buffer+0xe/0x2c
+[  964.128381]  [<ffffffff811070e0>] ? __block_write_full_page+0x15b/0x2a8
+[  964.128385]  [<ffffffff810b3e76>] ? __writepage+0xa/0x21
+[  964.128388]  [<ffffffff810b4ef0>] ? write_cache_pages+0x1d8/0x2f1
+[  964.128391]  [<ffffffff810b3e6c>] ? __writepage+0x0/0x21
+[  964.128395]  [<ffffffff8110054c>] ? writeback_single_inode+0xd1/0x2e5
+[  964.128399]  [<ffffffff81100ab6>] ? writeback_sb_inodes+0x136/0x204
+[  964.128403]  [<ffffffff8110115b>] ? writeback_inodes_wb+0x127/0x139
+[  964.128406]  [<ffffffff811012fb>] ? wb_writeback+0x18e/0x208
+[  964.128410]  [<ffffffff811013d8>] ? wb_do_writeback+0x63/0x149
+[  964.128413]  [<ffffffff811014a8>] ? wb_do_writeback+0x133/0x149
+[  964.128417]  [<ffffffff811014f8>] ? bdi_writeback_task+0x3a/0x113
+[  964.128420]  [<ffffffff8105cce7>] ? bit_waitqueue+0x14/0xa1
+[  964.128424]  [<ffffffff810c0513>] ? bdi_start_fn+0x0/0xc3
+[  964.128427]  [<ffffffff810c0576>] ? bdi_start_fn+0x63/0xc3
+[  964.128430]  [<ffffffff810c0513>] ? bdi_start_fn+0x0/0xc3
+[  964.128433]  [<ffffffff8105c96d>] ? kthread+0x75/0x7d
+[  964.128436]  [<ffffffff810097e4>] ? kernel_thread_helper+0x4/0x10
+[  964.128439]  [<ffffffff8105c8f8>] ? kthread+0x0/0x7d
+[  964.128442]  [<ffffffff810097e0>] ? kernel_thread_helper+0x0/0x10
 
-1. does this matter? do you really need to combine this 'suspend, even if 
-there are processes trying to run' with other cgroup limitations?
 
-2. who says that this must be limited to one cgroup? a cgroup can have 
-several different flags/limits set on it, so why can't one of them be this 
-'ignore for suspend' flag?
+I tried this with debian squeeze stock kernel (2.6.32-5-amd64), 2.6.34.1
+and now 2.6.35, but it's always kind of the same.
 
-these seem like simple issues, what I don't know is if it's possible for 
-the process that controlls suspend to follow such a flag without major 
-surgury on it's innards (if it can, this seems like a easy win, but I can 
-imagine internal designs where the software just knows that _something_ is 
-trying to run and would have a very hard time figuring out what)
+Any ideas where I could search for the problem?
 
-David Lang
+Greetings,
+
+cu
+Dieter
+
+--AhhlLboLdkugWU4S
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEARECAAYFAkxWbXwACgkQ5YzjaZZeXo1c1wCfQgyQTeRSzGmLmdi4tNHjc/43
+5a0AoIo5PyN42ZYgWTCggINCeCX4I1OS
+=ddwN
+-----END PGP SIGNATURE-----
+
+--AhhlLboLdkugWU4S--
