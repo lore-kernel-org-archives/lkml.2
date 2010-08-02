@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab0HBPuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:50:51 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61713 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969Ab0HBPuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:50:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=HL2ytz9HpeybByE6HFtFVoOiWCvhjODesfHBfBuSmbMuKRgKbX0iYps8oIAXI9ji48
-         9Qovel5sMXH1QIBu74rn5reKLrwBeMNB5RuafuesB464kductqBxtIGGyDZqhD8e5Boy
-         sMT9XZMK3tjvch9HABzV+6CMPu0aEoMWxuQCs=
-Message-ID: <4C56E966.3010503@gmail.com>
-Date: Mon, 02 Aug 2010 08:51:02 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1753958Ab0HBPx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:53:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45137 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab0HBPxZ (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 2 Aug 2010 11:53:25 -0400
+Date: Mon, 2 Aug 2010 11:52:48 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH -next] swiotlb: make io_tlb_overflow static
+Message-ID: <20100802155248.GA9177@phenom.dumpdata.com>
+References: <20100802234722U.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #16462] unable to connect to AP on legal channels 12/13
-References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>	<Aan7wZ97YaE.A.H2D.0pXVMB@chimera> <AANLkTikmgrKTLtgs1+h+BkS5X6qt9bP1wMDL4Gu7L3u3@mail.gmail.com>
-In-Reply-To: <AANLkTikmgrKTLtgs1+h+BkS5X6qt9bP1wMDL4Gu7L3u3@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802234722U.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C56E9F1.012B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 07:58 AM, Daniel J Blueman wrote:
-> On 1 August 2010 14:52, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
->> This message has been generated automatically as a part of a summary report
->> of recent regressions.
->>
->> The following bug entry is on the current list of known regressions
->> from 2.6.34.  Please verify if it still should be listed and let the tracking team
->> know (either way).
->>
->> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16462
->> Subject         : unable to connect to AP on legal channels 12/13
->> Submitter       : Daniel J Blueman<daniel.blueman@gmail.com>
->> Date            : 2010-07-25 17:06 (8 days old)
->
-> Yes, I just managed to reproduce this with 2.6.35-final, and will
-> update the bugzilla entry with the wire-capture needed.
+On Mon, Aug 02, 2010 at 11:48:06PM +0900, FUJITA Tomonori wrote:
+> We don't need to export io_tlb_overflow_buffer. I'll remove
+> io_tlb_overflow_buffer completely in the long term though.
 
+<nods>
 
-Oops just realized your talking about another bug. nevermind.
+> This can be applied to:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git
+> 
+> =
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Subject: [PATCH] swiotlb: make io_tlb_overflow static
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-Justin P. Mattock
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+I've stuck it in a new branch (devel/swiotlb-0.9).
+
+> ---
+>  lib/swiotlb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index a009055..72c382c 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -78,7 +78,7 @@ static unsigned long io_tlb_nslabs;
+>   */
+>  static unsigned long io_tlb_overflow = 32*1024;
+>  
+> -void *io_tlb_overflow_buffer;
+> +static void *io_tlb_overflow_buffer;
+>  
+>  /*
+>   * This is a free list describing the number of free entries available from
+> -- 
+> 1.6.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
