@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab0HBQrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:47:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33965 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab0HBQrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:47:06 -0400
-Date: Tue, 3 Aug 2010 02:47:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Jayamohan Kallickal <jayamohank@serverengines.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (scsi-post-merge tree related)
-Message-Id: <20100803024701.b3dff69a.sfr@canb.auug.org.au>
-In-Reply-To: <20100803024445.0bf7ec86.sfr@canb.auug.org.au>
-References: <20100803024445.0bf7ec86.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__3_Aug_2010_02_47_01_+1000_mkCCC.OXXw7uWLPu"
+	id S1751590Ab0HBQuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:50:06 -0400
+Received: from [198.24.6.8] ([198.24.6.8]:53276 "EHLO imr4.ericy.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750924Ab0HBQuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 12:50:04 -0400
+X-Greylist: delayed 1915 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Aug 2010 12:50:03 EDT
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Greg KH <gregkh@suse.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>, Paul Mackerras <paulus@samba.org>,
+        Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
+In-Reply-To: <20100730143622.GA30105@suse.de>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+	 <4C52913C.9020204@kernel.org> <1280485690.1902.8.camel@pasglop>
+	 <20100730143622.GA30105@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Mon, 2 Aug 2010 09:15:24 -0700
+Message-ID: <1280765724.5745.4.camel@groeck-laptop>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Aug_2010_02_47_01_+1000_mkCCC.OXXw7uWLPu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2010-07-30 at 10:36 -0400, Greg KH wrote:
+> On Fri, Jul 30, 2010 at 08:28:10PM +1000, Benjamin Herrenschmidt wrote:
+> > On Fri, 2010-07-30 at 10:45 +0200, Tejun Heo wrote:
+> > > On 07/29/2010 07:09 AM, Guenter Roeck wrote:
+> > > > The following comment is found in include/linux/sysfs.h:
+> > > > 
+> > > >    /* FIXME
+> > > >     * The *owner field is no longer used.
+> > > >     * x86 tree has been cleaned up. The owner
+> > > >     * attribute is still left for other arches.
+> > > >     */
+> > > > 
+> > > > As it turns out, the *owner field is (again?) initialized in several modules,
+> > > > suggesting that such initialization may be creeping back into the code.
+> > > > 
+> > > > This patch set removes the above comment, the *owner field, and each instance
+> > > > in the code where it was found to be initialized.
+> > > > 
+> > > > Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
+> > > > and sparc defconfig builds.
+> > > 
+> > > Yeah, the change is way overdue.  Maybe we should have just removed
+> > > them back then.
+> > 
+> > I'm happy with the powerpc related patches as long as we all agree that
+> > needs to go. Do you need me to put some of this in powerpc.git or are
+> > you carrying them all to Linus ?
+> 
+> I can carry them all in my driver-core tree if you don't object.
+> 
+Any final verdict ? 
 
-Hi all,
+Not that it is my decision to make, but I think it would be better to
+have it all in one tree. Otherwise the timing for the last patch would
+get a bit complicated.
 
-On Tue, 3 Aug 2010 02:44:45 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> After merging the final tree, today's linux-next build (powerpc allmodcon=
-fig)
-> failed like this:
->=20
-> ERROR: ".iscsi_boot_destroy_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] und=
-efined!
-> ERROR: ".iscsi_boot_create_host_kset" [drivers/scsi/be2iscsi/be2iscsi.ko]=
- undefined!
-> ERROR: ".iscsi_boot_create_target" [drivers/scsi/be2iscsi/be2iscsi.ko] un=
-defined!
-> ERROR: ".iscsi_boot_create_initiator" [drivers/scsi/be2iscsi/be2iscsi.ko]=
- undefined!
-> ERROR: ".iscsi_boot_create_ethernet" [drivers/scsi/be2iscsi/be2iscsi.ko] =
-undefined!
->=20
-> Caused by commit a33e2a708b2e83ee6111e45c8d3d49a112c3c887 ("[SCSI]
-> be2iscsi: Add support for iscsi boot").  For some reason, commit
-> ed94aa526655d915076dcdbbf4fc962b2a67fcb5 ("[SCSI] be2iscsi: select
-> ISCSI_BOOT_SYSFS") was not sufficient to make sure that
-> CONFIG_ISCSI_BOOT_SYSFS is defined for this build.
+Thanks,
+Guenter
 
-It turns out that drivers/firmware/Kconfig is only included on x86, ia64
-and blackfin.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__3_Aug_2010_02_47_01_+1000_mkCCC.OXXw7uWLPu
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMVvaFAAoJEDMEi1NhKgbsojsH/2g7zFwrVivrsdZZRUdMumTT
-UXuk6HexC6DwdyXh2A7PDAO3jAF9u5f/iRz611RBaSPf8+CiY6uyDZj7RBp5qzj5
-+POg2/J9muPHP6Cby9npGq+eOPPPt70cC+l9BaPTDHVPv+JBmJNpL8YPLLm5boLU
-r4A43FDC/r/6WjWjO7+kk4Sxa0jDerQQNJXDWY+DBgVisyvfwRUNnIW3Hv8B6nEi
-fELbC+s0HltkWWCMxElmZ58A/VO+2+ty3AqnRVeV7iaU+BNfWyR7uYpkzZXqNfMB
-E91keNtEd9Nlu9xOke33YBndlv5kl6TZrWTA0TQIrvXXmNfcAIRbrwbV2LtGtn0=
-=2yzk
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Aug_2010_02_47_01_+1000_mkCCC.OXXw7uWLPu--
