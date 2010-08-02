@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0HBPHe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:07:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52376 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab0HBPHd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:07:33 -0400
-Subject: Re: [PATCH RFC 02/12] x86/ticketlock: convert spin loop to C
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>
-In-Reply-To: <cf01e01095f802dc5082e82a8e96c84903e929a6.1279328276.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com>
-	 <cf01e01095f802dc5082e82a8e96c84903e929a6.1279328276.git.jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 02 Aug 2010 17:07:19 +0200
-Message-ID: <1280761639.1923.213.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753430Ab0HBPIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:08:16 -0400
+Received: from claw.goop.org ([74.207.240.146]:55733 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752215Ab0HBPIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 11:08:14 -0400
+Message-ID: <4C56DF5D.807@goop.org>
+Date: Mon, 02 Aug 2010 08:08:13 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: vatsa@linux.vnet.ibm.com, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+        npiggin@suse.de, kvm@vger.kernel.org, bharata@in.ibm.com,
+        Balbir Singh <balbir@in.ibm.com>, Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH RFC 2/4] Add yield hypercall for KVM guests
+References: <20100726061150.GB21699@linux.vnet.ibm.com> <20100726061445.GB8402@linux.vnet.ibm.com> <4C4DC3AD.7010404@goop.org> <4C5682A3.40409@redhat.com>
+In-Reply-To: <4C5682A3.40409@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-16 at 18:03 -0700, Jeremy Fitzhardinge wrote:
-> +       register union {
-> +               struct __raw_tickets tickets;
-> +               unsigned short slock;
-> +       } inc = { .slock = 1 << TICKET_SHIFT };
+  On 08/02/2010 01:32 AM, Avi Kivity wrote:
+>  On 07/26/2010 08:19 PM, Jeremy Fitzhardinge wrote:
+>>  On 07/25/2010 11:14 PM, Srivatsa Vaddagiri wrote:
+>>> Add KVM hypercall for yielding vcpu timeslice.
+>>
+>> Can you do a directed yield?
+>>
+>
+> A problem with directed yield is figuring out who to yield to.  One 
+> idea is to look for a random vcpu that is not running and donate some 
+> runtime to it.  In the best case, it's the lock holder and we cause it 
+> to start running.  Middle case it's not the lock holder, but we lose 
+> enough runtime to stop running, so at least we don't waste cpu.  Worst 
+> case we continue running not having woken the lock holder.  Spin 
+> again, yield again hoping to find the right vcpu.
 
-  register arch_spinlock_t inc = { .tickets = { .head = 1, .tail = 0 } };
+That can help with lockholder preemption, but on unlock you need to wake 
+up exactly the right vcpu - the next in the ticket queue - in order to 
+avoid burning masses of cpu.  If each cpu records what lock it is 
+spinning on and what its ticket is in a percpu variable, then the 
+unlocker can search for the next person to kick.
 
->From a quick look you can basically replace all TICKET_SHIFT usage (1 <<
-TICKET_SHIFT) with such a constant.
+     J
 
-[ Also, does gcc really listen to the register hint these days? ]
-
-> +       asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
-> +                     : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
-
- "+Q" (inc->slock)
-
-> +       for (;;) {
-> +               if (inc.tickets.head == inc.tickets.tail)
-> +                       return;
-> +               cpu_relax();
-> +               inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
-> +       }
-> +       barrier();              /* make sure nothing creeps before the lock is taken */
->  } 
-
-How will it ever get to that barrier() ?
