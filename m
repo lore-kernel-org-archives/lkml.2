@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0HBAth (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 20:49:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32408 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab0HBAtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 20:49:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,300,1278313200"; 
-   d="scan'208";a="823759635"
-Date: Mon, 2 Aug 2010 08:49:34 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [trival patch]x86: unmap vdso pages are missed
-Message-ID: <20100802004934.GA2505@sli10-desk.sh.intel.com>
-References: <1280476549.10564.2.camel@sli10-desk.sh.intel.com>
- <4C53058A.2050408@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C53058A.2050408@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752297Ab0HBAyS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 20:54:18 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:39434 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab0HBAyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 20:54:17 -0400
+Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
+From: Bojan Smojver <bojan@rexursive.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Nigel Cunningham <nigel@tuxonice.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1280465201.2600.10.camel@shrek.rexursive.com>
+	 <1280486667.2608.1.camel@shrek.rexursive.com>
+	 <4C534C9D.8000600@tuxonice.net>
+	 <1280532174.2583.1.camel@shrek.rexursive.com>
+	 <4C5362E7.3000706@tuxonice.net>
+	 <1280538184.2583.11.camel@shrek.rexursive.com>
+	 <4C537A01.5040808@tuxonice.net>
+	 <1280540035.2658.5.camel@shrek.rexursive.com>
+	 <1280551286.3097.6.camel@shrek.rexursive.com>
+	 <20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Aug 2010 10:54:13 +1000
+Message-ID: <1280710453.2727.8.camel@shrek.rexursive.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 31, 2010 at 01:02:02AM +0800, H. Peter Anvin wrote:
-> On 07/30/2010 12:55 AM, Shaohua Li wrote:
-> > The memory hasn't been unmapped.
-> > 
-> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+On Mon, 2010-08-02 at 09:17 +0900, KAMEZAWA Hiroyuki wrote:
+> Now, vmallc() is used here. Then, following will happen.
 > 
-> Looks right, but it would be really good if you could provide a more
-> verbose description about why this is the right thing to do.
- 
-We mapped vdso pages but never unmapped them and the vitrual address is lost after
-exitting from the function. So unmap vdso pages here.
+> 1. vmalloc()
+>    -> vmalloc adds vmap objects and set page table entries.
+> 
+> 2. saving image
+>    -> At taking snapshot of memory to the disk, above vmalloc() area
+> is
+>       saved to disk as it is.
+> ...
+> 3. At restore
+>    Because you dont't remember which vmalloc() area was used for
+> creating
+>    snapshot, you can't free it at swsusp_free().
+> 
+> memory leak ? 
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+To be honest, I'm not sure.
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index ac74869..80f23ed 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -67,6 +67,7 @@ static int __init init_vdso_vars(void)
- 	*(typeof(__ ## x) **) var_ref(VDSO64_SYMBOL(vbase, x), #x) = &__ ## x;
- #include "vextern.h"
- #undef VEXTERN
-+	vunmap(vbase);
- 	return 0;
- 
-  oom:
+However, I thought that by the time save_image() is called, snapshot has
+already been taken, no?
+------------------
+        error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
+        if (error)
+                goto Thaw;
+
+        if (in_suspend) {
+                unsigned int flags = 0;
+
+                if (hibernation_mode == HIBERNATION_PLATFORM)
+                        flags |= SF_PLATFORM_MODE;
+                pr_debug("PM: writing image.\n");
+                error = swsusp_write(flags);  <--- this calls save_image()
+------------------
+
+So, me thinks that these allocations will not be in the snapshot image.
+
+PS. Take everything I take with a grain (or two) of salt. I'm just a
+regular Linux user trying to make my Fedora hibernate/thaw process suck
+less.
+
+-- 
+Bojan
+
