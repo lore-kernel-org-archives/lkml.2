@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0HBDya (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 23:54:30 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:13460 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068Ab0HBDy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 23:54:29 -0400
-Date: Mon, 02 Aug 2010 12:54:22 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] MFD: LP3974 PMIC support
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, m.szyprowski@samsung.com,
-        broonie@opensource.wolfsonmicro.com, jy0922.shim@samsung.com
-Message-id: <20100802035422.GA2883@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.14 (2007-02-12)
-X-OriginalArrivalTime: 02 Aug 2010 03:54:27.0175 (UTC)
- FILETIME=[671B4F70:01CB31F6]
+	id S1752430Ab0HBD5p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 23:57:45 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37757 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191Ab0HBD5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 23:57:44 -0400
+Date: Mon, 2 Aug 2010 13:57:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Gustavo Silva <silvagustavosilva@gmail.com>
+Subject: linux-next: manual merge of the staging-next tree with the pcmcia
+ tree
+Message-Id: <20100802135740.bfdfc58c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+Hi Greg,
 
-LP3974 PMIC support. It has same functionality with max8998.
+Today's linux-next merge of the staging-next tree got a conflict in
+drivers/staging/comedi/drivers/quatech_daqp_cs.c between commit
+9b3efec734d2d79d82a6f5cef25a618d41a6b2c5 ("pcmcia: do not use io_req_t
+after call to pcmcia_request_io()") from the pcmcia tree and commit
+3420f6b4c1ac731e80d0911e0092705992cef14f ("Staging: comedi: drivers: fix
+coding style issues in quatech_daqp_cs.c") from the staging-next tree.
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index db63d40..50383b1 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -303,6 +303,18 @@ config MFD_MAX8998
- 	  accessing the device, additional drivers must be enabled in order
- 	  to use the functionality of the device.
- 
-+config MFD_LP3974
-+	bool "National Semiconductor LP3974 PMIC Support"
-+	depends on I2C=y
-+	select MFD_CORE
-+	select MFD_MAX8998
-+	help
-+	  Say yes here to support for National Semiconductor LP3974. This is
-+	  a Power Management IC. This driver provies common support for
-+	  accessing the device, additional drivers must be enabled in order
-+	  to use the functionality of the device.
-+	  Note that it has same functionality with max8998.
-+
- config MFD_WM8400
- 	tristate "Support Wolfson Microelectronics WM8400"
- 	select MFD_CORE
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index 0d68de2..cea9f48 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -30,6 +30,11 @@
- #include <linux/mfd/max8998.h>
- #include <linux/mfd/max8998-private.h>
- 
-+enum max8998_type {
-+	TYPE_MAX8998,
-+	TYPE_LP3974,
-+};
-+
- static struct mfd_cell max8998_devs[] = {
- 	{
- 		.name = "max8998-pmic",
-@@ -127,8 +132,8 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
- }
- 
- static const struct i2c_device_id max8998_i2c_id[] = {
--       { "max8998", 0 },
--       { }
-+       { "max8998", TYPE_MAX8998 },
-+       { "lp3974", TYPE_LP3974 },
- };
- MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
- 
+Just context changes.  I fixed it up (see below) and can carry the fixes
+as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/staging/comedi/drivers/quatech_daqp_cs.c
+index 25f4e67e,8b49cb1..0000000
+--- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
++++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
+@@@ -1150,11 -1151,13 +1148,11 @@@ static void daqp_cs_config(struct pcmci
+  	/* Finally, report what we've done */
+  	dev_info(&link->dev, "index 0x%02x", link->conf.ConfigIndex);
+  	if (link->conf.Attributes & CONF_ENABLE_IRQ)
+- 		printk(", irq %u", link->irq);
++ 		printk(KERN_INFO ", irq %u", link->irq);
+ -	if (link->io.NumPorts1)
+ -		printk(", io 0x%04x-0x%04x", link->io.BasePort1,
+ -		       link->io.BasePort1 + link->io.NumPorts1 - 1);
+ -	if (link->io.NumPorts2)
+ -		printk(" & 0x%04x-0x%04x", link->io.BasePort2,
+ -		       link->io.BasePort2 + link->io.NumPorts2 - 1);
+ +	if (link->resource[0])
+ +		printk(" & %pR", link->resource[0]);
+ +	if (link->resource[1])
+ +		printk(" & %pR", link->resource[1]);
+  	printk("\n");
+  
+  	return;
