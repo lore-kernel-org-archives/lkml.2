@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab0HBUyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:54:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24444 "EHLO mga14.intel.com"
+	id S1754828Ab0HBU4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:56:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42639 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306Ab0HBUyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:54:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,305,1278313200"; 
-   d="scan'208";a="307313947"
-Subject: Re: [PATCH] acpi: x2apic entry with uid < 255 could use processor
- statement
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <AANLkTi=HUTRqkj=zYV=5Z9fZAZa_sNmRanibaMLGrX0R@mail.gmail.com>
-References: <4C53C7E7.4040204@kernel.org>
-	 <1280776014.2703.9.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <AANLkTi=HUTRqkj=zYV=5Z9fZAZa_sNmRanibaMLGrX0R@mail.gmail.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Mon, 02 Aug 2010 13:53:30 -0700
-Message-Id: <1280782411.2703.21.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1751245Ab0HBU4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 16:56:53 -0400
+Message-ID: <4C572327.7040801@suse.de>
+Date: Mon, 02 Aug 2010 21:57:27 +0200
+From: Tejun Heo <teheo@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
+References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de> <4C56E5C7.90206@suse.de> <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 13:18 -0700, Yinghai Lu wrote:
-> On Mon, Aug 2, 2010 at 12:06 PM, Suresh Siddha
-> <suresh.b.siddha@intel.com> wrote:
-> > On Sat, 2010-07-31 at 07:51 +0100, Yinghai Lu wrote:
-> >> According to Intel x2apic spec page 46
-> >>
-> >> " The hand-off to
-> >> OSPM will have processor IDs in the range of 0 to 254 for xAPIC/x2APIC and 0 to 255
-> >> for SAPIC declared as either Processor() or Device() objects, but not both. Processor
-> >> IDs outside these ranges must be declared as Device() objects."
-> >>
-> >> So only check if Device is used when acpi_id >=255.
-> >>
-> >> that will help system with less 255 cpus, but some cpus apic id > 255,
-> >> still can use Processor statement instead of Device() objects.
-> >
-> > But the entries with apic_id < 255 are supposed to use local APIC
-> > structure and not local x2apic structure. So entries with apic id < 255
-> > must be processed using map_lapic_id() which doesn't have any
-> > device_declaration checks.
-> >
-> > Only for apic ids > 255, we use map_x2apic_id() which needs device
-> > declaration. So this patch is not needed. or Am I missing something?
+Hello, Thomas.
+
+On 08/02/2010 08:52 PM, Thomas Gleixner wrote:
+>> Ooh, another reason is timer locality.  If timers are shared per desc,
+>> they have much higher chance of being on the same processor.  Global
+>> timers would be pretty bad in that respect.
 > 
-> it is acpi_id aka  Processor id.
+> That's irrelevant. If you need to poll an interrupt, then it does not
+> matter at all whether you bounce some cache lines or not.
 > 
-> the system has less than 255 cpus, but some cpus apic_id > 255.
-> BIOS have apic entries for apic_id < 255, and some x2apic entries for
-> apic_id > 255.
+> In fact we have two cases:
 > 
-> but BIOS still use Processor statement for all cpus.
+>    1) An interrupt needs to be polled all the time. That sucks whether
+>       the poll timer bounces a few cache lines or not.
+> 
+>    2) Polling an irq for some time. Either it works again after a
+>       while, so your suckage is restricted to the poll period. If not
+>       see #1
 
-Ok. I think there might be some confusion or mis-interpretation of the
-words here. You referred to x2apic spec page 46, perhaps this is an
-older version. Newer x2apic version leaves all the ACPI definitions to
-the ACPI 4.0 spec.
+Hmm... for spurious and watch the above are true and if it were the
+above two it would definitely make more sense to use per-purpose
+global timers.  The problem is w/ expect tho.  It's supposed to be
+used with normal hot paths, so expect/unexpect operations better be
+low overhead and local.  I'll talk more about it in the other reply.
 
-And here is what ACPI 4.0 spec says:
+> And it's even less of an issue as the main users of this misfeature
+> are laptops and desktop machines, where locality is not really that
+> important. If an enterprise admin decides to ignore the fact that the
+> hardware is flaky, then he does not care about the cache line bounces
+> either.
 
-In Table5-33 for processor local x2apic structure:
+These problems do happen on intel chipset machines and is something
+which can be worked around with some effort.  Eh, let's talk on the
+other reply.
 
-ACPI Processor UID
-4
-12
-OSPM associates the X2APIC Structure with a processor object declared in
-the namespace using the Device statement, when the _UID child object of
-the processor device evaluates to a numeric value, by matching the
-numeric value with this field
+Thanks.
 
-And in page 312:
-
-<snip>
-The platform may declare processors with IDs in the range of 0-254 for
-APIC/x2APIC implementations and 0-255 for SAPIC implementations using
-either the ASL Processor statement or the ASL Device statement but not
-both. Processors with IDs outside these ranges must be declared using
-the ASL Device statement.
-</snip>
-
-And in the above paragraph "processors with IDs" are APIC id's and not
-ACPI Id's.
-
-So I think your bios need to implement ACPI device objects for the
-x2apic entries.
-
-thanks,
-suresh
-
+-- 
+tejun
