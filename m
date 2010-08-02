@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab0HBWmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 18:42:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57908 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab0HBWmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 18:42:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Date: Tue, 3 Aug 2010 00:40:20 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, stern@rowland.harvard.edu, swetland@google.com,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-References: <20100731175841.GA9367@linux.vnet.ibm.com> <201008022333.32623.rjw@sisk.pl> <20100802222752.GI2405@linux.vnet.ibm.com>
-In-Reply-To: <20100802222752.GI2405@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754243Ab0HBWow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 18:44:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39073 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754053Ab0HBWov (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 18:44:51 -0400
+Date: Mon, 2 Aug 2010 15:44:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Cc: Kevin Cernekee <cernekee@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: Additional fix : (was [v2]printk: fix delayed messages from CPU
+ hotplug events)
+Message-Id: <20100802154434.5615bcf9.akpm@linux-foundation.org>
+In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB02C5DB6D1F@dbde02.ent.ti.com>
+References: <EAF47CD23C76F840A9E7FCE10091EFAB02C5DB6D1F@dbde02.ent.ti.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008030040.20704.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 03, 2010, Paul E. McKenney wrote:
-> On Mon, Aug 02, 2010 at 11:33:32PM +0200, Rafael J. Wysocki wrote:
-> > On Monday, August 02, 2010, Paul E. McKenney wrote:
-> > > On Mon, Aug 02, 2010 at 03:52:20PM +0200, Rafael J. Wysocki wrote:
-> > > > On Monday, August 02, 2010, Paul E. McKenney wrote:
-> > > > > On Sun, Aug 01, 2010 at 03:47:08PM -0700, Arjan van de Ven wrote:
-> > > > > > On Sun, 1 Aug 2010 12:12:28 -0700
-> > > > > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > > ...
-> > > > > > Another one: freezing whole cgroups..... we have that today. it
-> > > > > > actually works quite well.... of course the hard part is the decision
-> > > > > > what to put in which cgroup, and at what frequency and duration you let
-> > > > > > cgroups run.
-> > > > > 
-> > > > > Indeed, the Android guys seemed to be quite excited by cgroup freezing
-> > > > > until they thought about the application-classification problem.
-> > > > > Seems like it should be easy for some types of applications, but I do
-> > > > > admit that apps can have non-trivial and non-obvious dependencies.
-> > > > 
-> > > > This isn't more difficult than deciding which applications will be allowed to
-> > > > use wakelocks (in the wakelocks world).  It actually seems to be pretty much
-> > > > equivalent to me. :-)
-> > > 
-> > > If I understand correctly, the problem they were concerned about was
-> > > instead "given that a certain set of apps are permitted to use wakelocks,
-> > > which of the other apps can safely be frozen when the display blanks
-> > > itself."
-> > 
-> > I _think_ the problem should be reformulated as "which of the other apps
-> > can be safely frozen without causing the wakelocks-using ones to have
-> > problems" instead (the particular scenario is that one of the wakelocks-using
-> > apps may need one of the other apps to process something and therefore the
-> > other app cannot be frozen; however, that may be resolved by thawing all of
-> > the other apps in such situations IMO).
-> 
-> I agree that your statement is equivalent to mine.  From what I can see,
-> the current Android code resolves this by not freezing any app while
-> a wakelock is held.
-> 
-> Just out of curiosity, how are you detecting the situation in order to
-> decide when to thaw the apps in the cgroup?
+On Tue, 29 Jun 2010 14:22:26 +0530
+"Shilimkar, Santosh" <santosh.shilimkar@ti.com> wrote:
 
-Well, in fact I would only be able to talk about that theoretically, as I'm
-currently not involved in any project using cgroups for power management.
-I have considered that, but I haven't tried to implement it.
+> Hi,
+> 
+> I have faced similar issue as what is being described in below with
+> latest kernel.
+> 
+> ------------------------------------------------
+> https://patchwork.kernel.org/patch/103347/
+> 
+> When a secondary CPU is being brought up, it is not uncommon for
+> printk() to be invoked when cpu_online(smp_processor_id()) == 0.  The
+> case that I witnessed personally was on MIPS:
+> 
+> http://lkml.org/lkml/2010/5/30/4
+> 
+> If (can_use_console() == 0), printk() will spool its output to log_buf
+> and it will be visible in "dmesg", but that output will NOT be echoed to
+> the console until somebody calls release_console_sem() from a CPU that
+> is online.  Therefore, the boot time messages from the new CPU can get
+> stuck in "limbo" for a long time, and might suddenly appear on the
+> screen when a completely unrelated event (e.g. "eth0: link is down")
+> occurs.
+> 
+> This patch modifies the console code so that any pending messages are
+> automatically flushed out to the console whenever a CPU hotplug
+> operation completes successfully or aborts.
+> 
+> -----------------------------------------------
+> 
+> Above patch fixes only half of the problem. I mean the cpu online
+> path prints are coming on the console.
+> 
+> But similar problem also exist if there are prints in the cpu offline
+> path. I got that fixed by adding below patch on top of you patch.
+>  
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index d370b74..f4d7352 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -982,6 +982,9 @@ static int __cpuinit console_cpu_notify(struct notifier_bloc
+>         switch (action) {
+>         case CPU_ONLINE:
+>         case CPU_UP_CANCELED:
+> +       case CPU_DEAD:
+> +       case CPU_DYING:
+> +       case CPU_DOWN_FAILED:
+>                 if (try_acquire_console_sem() == 0)
+>                         release_console_sem();
+>         }
 
-Thanks,
-Rafael
+The patch lacked a suitable title.  I called it "console: flush log
+messages for more cpu-hotplug events".
+
+The patch lacks a Signed-off-by:.  Please send one.
+
+The patch has its tabs replaced with spaces.  I fixed that.  Please
+reconfigure your email client for next time.
+
+The code which is being patch has changed.  It now does
+
+                acquire_console_sem();
+                release_console_sem();
+
+so the code may no longer work - perhaps it now deadlocks (unlikely). 
+Please retest?
+
+Finally, I don't understand the patch :( Who is sending out CPU_DEAD,
+CPU_DYING or CPU_DOWN_FAILED events during kernel boot?  I'd have
+thought that those events simply aren't occurring, and that the patch
+has no effect.  Confused - please explain further.
