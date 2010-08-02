@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486Ab0HBEVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 00:21:31 -0400
-Received: from phil.doycomm.com ([66.219.128.249]:54661 "EHLO phil.doycomm.com"
+	id S1752565Ab0HBEZl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 00:25:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35615 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab0HBEV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 00:21:29 -0400
-Subject: Re: Linux 2.6.35
-From: Donald Parsons <dparsons@brightdsl.net>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <201008012138.39036.bjorn.helgaas@hp.com>
-References: <1280716262.5125.42.camel@falcon.homelinux.org>
-	 <201008012138.39036.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Aug 2010 00:21:16 -0400
-Message-ID: <1280722876.5125.83.camel@falcon.homelinux.org>
+	id S1752200Ab0HBEZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 00:25:39 -0400
+Date: Mon, 2 Aug 2010 14:25:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: linux-next: build failure after merge of the final tree (kvm
+ tree related)
+Message-Id: <20100802142532.3d826ec3.sfr@canb.auug.org.au>
+In-Reply-To: <4C563E41.8000407@redhat.com>
+References: <20100726142725.fbc5d94e.sfr@canb.auug.org.au>
+	<20100802103350.9b1b8ff2.sfr@canb.auug.org.au>
+	<4C563E41.8000407@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__2_Aug_2010_14_25_32_+1000_67gFV6q/9.2MCtfE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-08-01 at 21:38 -0600, Bjorn Helgaas wrote:
-> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
-> > 2.6.35 still fails to boot for me, as first reported here:
-> >  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
-> > 
-> > I've manually bisected it down to around May 20 between
-> >   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
-> > Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
-> > 
-> > Unfortunately first time I tried was with 2.6.35-rc6 and
-> > it failed to boot.
-> > 
-> > Failure when switching from initramfs to real /root?
-> > Removing kernel "quiet" param appears to show several
-> > lines listing:
-> > 
-> >   usb drives/hubs? followed by
-> >   dracut switching root (when booting works)
-> >               or
-> >   usb drives/hubs? followed by
-> >         (missing dracut... line)
-> >   No root device found
-> >   Boot has failed, sleeping forever.   (when it does not boot)
-> > 
-> > Grub, typical entry:
-> > title Fedora (2.6.35)
-> > 	root (hd0,0)
-> > 	kernel /vmlinuz-2.6.35 ro
-> > root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
-> > SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
-> > rdblacklist=nouveau init=/sbin/bootchartd
-> > 	initrd /initramfs-2.6.35.img
-> > 
-> > 
-> > My boot failure seems to be different than other two reported
-> > in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
-> > under Bug #16173 and #16228
-> 
-> Will it boot with the "pci=nocrs" option?  If so, please open a
+--Signature=_Mon__2_Aug_2010_14_25_32_+1000_67gFV6q/9.2MCtfE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No, I tried this on a few attempts when I saw it mentioned under
-bug #16228.  But it had no effect/benefit.  Sorry, I should have
-mentioned this.
+Hi Avi,
 
-> report at https://bugzilla.kernel.org, mark it a regression, assign
-> it to me, and attach the complete dmesg log.  And please respond to
-> this thread with a pointer to the bugzilla.
-> 
-> Otherwise, a complete console log should have a clue.  The best
-> thing would be a log from a serial console or netconsole, with
-> "ignore_loglevel".
+On Mon, 02 Aug 2010 06:40:49 +0300 Avi Kivity <avi@redhat.com> wrote:
+>
+> Sorry.  Applied now, and will appear on next next.
 
-Maybe I will try netconsole tomorrow.  But is Ethernet up when
-this boot failure happens?  I think not, since initramfs should
-not need networking.
+Thanks.
 
-Should I try building sata driver into kernel?  Oh, I am using
-ext3, and fdisk -l shows:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Disk /dev/sda: 320.1 GB, 320072933376 bytes
-   Device Boot  Start       End      Blocks   Id  System
-/dev/sda1   *      1        50      401593+  83  Linux  (/boot)
-/dev/sda2          51      7051    56235532+  83  Linux  (/)
-/dev/sda3        7052      8377    10651095   82  Linux swap
-/dev/sda4        8378     38913   245280420   83  Linux  ()
-Disk /dev/sdb: 750.2 GB, 750156374016 bytes
-/dev/sdb1          1     91201   732572001   83  Linux  (/home)
+--Signature=_Mon__2_Aug_2010_14_25_32_+1000_67gFV6q/9.2MCtfE
+Content-Type: application/pgp-signature
 
-> Thanks a lot for your report!
-> 
-> Bjorn
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-And thanks for your interest!
-Don
+iQEcBAEBAgAGBQJMVki8AAoJEDMEi1NhKgbsAZUH/iYpuWV8X2RGcI3mUX98IZTm
+4y2SNiReUD4AQSYfBm5XwxfBD4VMIvqZuQS7cM+8svERdFe3wG1zzYOrlfsB7EeH
+Ph/QDFKZmV7lkVzO+CfEPq07bP3yTbykbc0sKLuo7Cx99H+IRwBRh19AkR3JgSiU
+xxKb2OtHUhWl3fWLWK9kQofTRgWlUglpZst3/FAIx7MrDBs0YoKvStYLfwj2lb5s
+PDVWwXvNoAfDc1kXNkprEFKa5MAWROD7kDSg+a8n3DsKZmofcaJAT2JUcFdPlRhI
+FLBUhp21hA9WC+DpEZZmSS5PQPXjIZkhcWMV0UWUMrS07hTgnVcBxC8VZybyz6Y=
+=1f5V
+-----END PGP SIGNATURE-----
 
-
-
+--Signature=_Mon__2_Aug_2010_14_25_32_+1000_67gFV6q/9.2MCtfE--
