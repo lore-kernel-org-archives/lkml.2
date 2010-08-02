@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab0HBPIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:08:16 -0400
-Received: from claw.goop.org ([74.207.240.146]:55733 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752215Ab0HBPIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:08:14 -0400
-Message-ID: <4C56DF5D.807@goop.org>
-Date: Mon, 02 Aug 2010 08:08:13 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: vatsa@linux.vnet.ibm.com, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-        npiggin@suse.de, kvm@vger.kernel.org, bharata@in.ibm.com,
-        Balbir Singh <balbir@in.ibm.com>, Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH RFC 2/4] Add yield hypercall for KVM guests
-References: <20100726061150.GB21699@linux.vnet.ibm.com> <20100726061445.GB8402@linux.vnet.ibm.com> <4C4DC3AD.7010404@goop.org> <4C5682A3.40409@redhat.com>
-In-Reply-To: <4C5682A3.40409@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753500Ab0HBPJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:09:09 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47194 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab0HBPJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 11:09:07 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: hp fk <fkhp101@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
+In-Reply-To: Your message of "Mon, 02 Aug 2010 23:02:01 +0800."
+             <AANLkTik8DSLFeGqHspYjykt_vCF7SxupKSxKcB2LLRhj@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com> <215375.1280753770@localhost> <AANLkTi=keL2rUzxdxgscTU9cQSNxOnAtGVuAwTq9Wfuq@mail.gmail.com> <6501.1280759131@localhost>
+            <AANLkTik8DSLFeGqHspYjykt_vCF7SxupKSxKcB2LLRhj@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1280761746_3871P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Mon, 02 Aug 2010 11:09:06 -0400
+Message-ID: <8023.1280761746@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020205.4C56DF92.0270,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/02/2010 01:32 AM, Avi Kivity wrote:
->  On 07/26/2010 08:19 PM, Jeremy Fitzhardinge wrote:
->>  On 07/25/2010 11:14 PM, Srivatsa Vaddagiri wrote:
->>> Add KVM hypercall for yielding vcpu timeslice.
->>
->> Can you do a directed yield?
->>
->
-> A problem with directed yield is figuring out who to yield to.  One 
-> idea is to look for a random vcpu that is not running and donate some 
-> runtime to it.  In the best case, it's the lock holder and we cause it 
-> to start running.  Middle case it's not the lock holder, but we lose 
-> enough runtime to stop running, so at least we don't waste cpu.  Worst 
-> case we continue running not having woken the lock holder.  Spin 
-> again, yield again hoping to find the right vcpu.
+--==_Exmh_1280761746_3871P
+Content-Type: text/plain; charset=us-ascii
 
-That can help with lockholder preemption, but on unlock you need to wake 
-up exactly the right vcpu - the next in the ticket queue - in order to 
-avoid burning masses of cpu.  If each cpu records what lock it is 
-spinning on and what its ticket is in a percpu variable, then the 
-unlocker can search for the next person to kick.
+On Mon, 02 Aug 2010 23:02:01 +0800, you said:
 
-     J
+>  HTTP if more of an access protocol,the logical network is woven in
+> the web page controled by html, the network needed is formed and take
+> part in by tcp/ip protocol which usually lies in kernel.
+> 
+> Kademlia itself has the responsibility to weave the p2p network and
+> bring a node into the p2p network before access can be done.
+
+You're still failing to explain why the kernel needs to do this
+rather than some -lkademlia in userspace.
+
+
+--==_Exmh_1280761746_3871P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMVt+ScC3lWbTT17ARAq86AJ42F83jxnhyxtsmcAwcpptyFgFY1QCdF+5E
+0Iihs0UgcjQom7mf8Nv6+EY=
+=gfCY
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1280761746_3871P--
 
