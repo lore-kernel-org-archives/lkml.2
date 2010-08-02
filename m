@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab0HBQ4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:56:06 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:35303 "EHLO sabe.cs.wisc.edu"
+	id S1752351Ab0HBQ7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:59:47 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39801 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751590Ab0HBQ4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:56:05 -0400
-Message-ID: <4C56F983.5080403@cs.wisc.edu>
-Date: Mon, 02 Aug 2010 11:59:47 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1752137Ab0HBQ7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 12:59:46 -0400
+Date: Mon, 2 Aug 2010 09:59:36 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+Message-ID: <20100802165936.GV3948@outflux.net>
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+ <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
+ <20100802122421.GA12130@infradead.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jayamohan Kallickal <jayamohank@serverengines.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: linux-next: build failure after merge of the final tree (scsi-post-merge
- tree related)
-References: <20100803024445.0bf7ec86.sfr@canb.auug.org.au> <20100803024701.b3dff69a.sfr@canb.auug.org.au>
-In-Reply-To: <20100803024701.b3dff69a.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802122421.GA12130@infradead.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 11:47 AM, Stephen Rothwell wrote:
-> Hi all,
->
-> On Tue, 3 Aug 2010 02:44:45 +1000 Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
->>
->> After merging the final tree, today's linux-next build (powerpc allmodconfig)
->> failed like this:
->>
->> ERROR: ".iscsi_boot_destroy_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
->> ERROR: ".iscsi_boot_create_host_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
->> ERROR: ".iscsi_boot_create_target" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
->> ERROR: ".iscsi_boot_create_initiator" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
->> ERROR: ".iscsi_boot_create_ethernet" [drivers/scsi/be2iscsi/be2iscsi.ko] undefined!
->>
->> Caused by commit a33e2a708b2e83ee6111e45c8d3d49a112c3c887 ("[SCSI]
->> be2iscsi: Add support for iscsi boot").  For some reason, commit
->> ed94aa526655d915076dcdbbf4fc962b2a67fcb5 ("[SCSI] be2iscsi: select
->> ISCSI_BOOT_SYSFS") was not sufficient to make sure that
->> CONFIG_ISCSI_BOOT_SYSFS is defined for this build.
->
-> It turns out that drivers/firmware/Kconfig is only included on x86, ia64
-> and blackfin.
->
+Hi Christoph,
 
-I think the iscsi_boot_sysfs module should just be moved to 
-drivers/scsi. It is a generic scsi/iscsi interface to export iscsi boot 
-info and is not tied to boot. I will send a patch in a couple minutes.
+On Mon, Aug 02, 2010 at 08:24:21AM -0400, Christoph Hellwig wrote:
+> As mentioned a few times during the past discussion moving broken
+> code into a LSM doesn't magically fix it.  In fact YAMA is not any kind
+> of (semi-)coherent security policy like Selinux, smack or similar but
+> just a random set of hacks that you didn't get past the subsystem
+> maintainers.
+
+I would love to have these "hacks" in the subsystem directly. But no one
+has stepped forward to decode Al Viro's hints.
+
+I'm getting pretty tired of moving this logic back and forth between the
+subsystems and an LSM. You yourself told me to put these things in an
+LSM[1], and yet now you're saying I shouldn't.
+
+> Al gave you some very clear advice how a the sticky check should be
+
+This is patently false. "Very clear advice" would have included actionable
+instructions. He (and everyone else) has ignored my requests for
+clarification[2]. If you see how the check should be implemented, please
+send a patch demonstrating how. I would greatly prefer having these
+protections in the VFS itself.
+
+> done for symlinks (if we need it at all, which I tend to disagree with),
+
+I can see how one might disagree with it, but anyone who handles day-to-day
+security threats understands this protection to be a clear and obvious
+solution for the past decade.
+
+> and the ptrace check completely breaks crash handlers that we have
+> in all kinds of applications.  If you can get it into the main ptrace
+
+I've seen two so far. Both are addressed with a one line fix. And I would
+stress that no other existing subsystem in the kernel can provide the same
+level of control that my ptrace exception logic provides. SELinux cannot do
+this.
+
+> code past Roland and Oleg that's fine, but just pushing it out into
+> a tree that has percieved easier merge criteria doesn't work.
+
+This advice is precisely counter to prior advise. It would seem that no one
+knows how to handle these patches. I find it very simple; either:
+ - let me put them in an LSM that people can choose to enable
+ - help me get the patches into shape for the subsystems directly
+
+Since the latter has been repeatedly denied, the former was suggested to
+me, which I implemented. The option "give up" is not available to me.
+Perhaps there is another option I could choose from so I can get these
+protections into the mainline kernel?
+
+-Kees
+
+[1] http://lkml.org/lkml/2010/6/1/78
+[2] http://lkml.org/lkml/2010/6/4/44
+
+-- 
+Kees Cook
+Ubuntu Security Team
