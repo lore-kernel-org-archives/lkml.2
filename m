@@ -1,302 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab0HBLUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 07:20:44 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:42515 "EHLO
+	id S1753678Ab0HBLUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 07:20:55 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:42511 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753558Ab0HBLUk (ORCPT
+	with ESMTP id S1753443Ab0HBLUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 07:20:40 -0400
-Message-Id: <20100802112015.913559637@szeredi.hu>
+	Mon, 2 Aug 2010 07:20:32 -0400
+Message-Id: <20100802112028.141259404@szeredi.hu>
 References: <20100802111955.025275647@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Mon, 02 Aug 2010 13:19:57 +0200
+Date: Mon, 02 Aug 2010 13:20:02 +0200
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] vfs: add helpers to get root and pwd
-Content-Disposition: inline; filename=vfs-add-get_fs-helpers.patch
+Subject: [PATCH 7/7] vfs: show unreachable paths in getcwd and proc
+Content-Disposition: inline; filename=vfs-unreachable-paths.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Add three helpers that retrieve a refcounted copy of the root and cwd
-from the supplied fs_struct.
+Prepend "(unreachable)" to path strings if the path is not reachable
+from the current root.
 
- get_fs_root()
- get_fs_pwd()
- get_fs_root_and_pwd()
+Two places updated are
+ - the return string from getcwd()
+ - and symlinks under /proc/$PID.
+
+Other uses of d_path() are left unchanged (we know that some old
+software crashes if /proc/mounts is changed).
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/cachefiles/daemon.c    |   14 ++------------
- fs/dcache.c               |   12 ++----------
- fs/fs_struct.c            |    7 +------
- fs/namei.c                |   15 +++------------
- fs/namespace.c            |    5 +----
- fs/proc/base.c            |   22 +++++++++++-----------
- include/linux/fs_struct.h |   27 +++++++++++++++++++++++++++
- kernel/auditsc.c          |    9 ++-------
- 8 files changed, 49 insertions(+), 62 deletions(-)
+ fs/dcache.c            |   54 +++++++++++++++++++++++++++++++++++++++++++++----
+ fs/proc/base.c         |    2 -
+ include/linux/dcache.h |    1 
+ include/linux/path.h   |    5 ++++
+ 4 files changed, 57 insertions(+), 5 deletions(-)
 
-Index: linux-2.6/fs/fs_struct.c
-===================================================================
---- linux-2.6.orig/fs/fs_struct.c	2010-07-06 17:59:05.000000000 +0200
-+++ linux-2.6/fs/fs_struct.c	2010-07-06 18:08:06.000000000 +0200
-@@ -106,12 +106,7 @@ struct fs_struct *copy_fs_struct(struct
- 		fs->in_exec = 0;
- 		rwlock_init(&fs->lock);
- 		fs->umask = old->umask;
--		read_lock(&old->lock);
--		fs->root = old->root;
--		path_get(&old->root);
--		fs->pwd = old->pwd;
--		path_get(&old->pwd);
--		read_unlock(&old->lock);
-+		get_fs_root_and_pwd(old, &fs->root, &fs->pwd);
- 	}
- 	return fs;
- }
-Index: linux-2.6/include/linux/fs_struct.h
-===================================================================
---- linux-2.6.orig/include/linux/fs_struct.h	2010-07-06 17:59:05.000000000 +0200
-+++ linux-2.6/include/linux/fs_struct.h	2010-07-06 18:08:06.000000000 +0200
-@@ -21,4 +21,31 @@ extern void free_fs_struct(struct fs_str
- extern void daemonize_fs_struct(void);
- extern int unshare_fs_struct(void);
- 
-+static inline void get_fs_root(struct fs_struct *fs, struct path *root)
-+{
-+	read_lock(&fs->lock);
-+	*root = fs->root;
-+	path_get(root);
-+	read_unlock(&fs->lock);
-+}
-+
-+static inline void get_fs_pwd(struct fs_struct *fs, struct path *pwd)
-+{
-+	read_lock(&fs->lock);
-+	*pwd = fs->pwd;
-+	path_get(pwd);
-+	read_unlock(&fs->lock);
-+}
-+
-+static inline void get_fs_root_and_pwd(struct fs_struct *fs, struct path *root,
-+				       struct path *pwd)
-+{
-+	read_lock(&fs->lock);
-+	*root = fs->root;
-+	path_get(root);
-+	*pwd = fs->pwd;
-+	path_get(pwd);
-+	read_unlock(&fs->lock);
-+}
-+
- #endif /* _LINUX_FS_STRUCT_H */
 Index: linux-2.6/fs/dcache.c
 ===================================================================
---- linux-2.6.orig/fs/dcache.c	2010-07-06 17:59:05.000000000 +0200
-+++ linux-2.6/fs/dcache.c	2010-07-06 18:08:06.000000000 +0200
-@@ -2012,10 +2012,7 @@ char *d_path(const struct path *path, ch
- 	if (path->dentry->d_op && path->dentry->d_op->d_dname)
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+--- linux-2.6.orig/fs/dcache.c	2010-07-06 18:08:19.000000000 +0200
++++ linux-2.6/fs/dcache.c	2010-07-06 18:08:22.000000000 +0200
+@@ -2017,6 +2017,11 @@ static int path_with_deleted(const struc
+ 	return prepend_path(path, root, buf, buflen);
+ }
  
--	read_lock(&current->fs->lock);
--	root = current->fs->root;
--	path_get(&root);
--	read_unlock(&current->fs->lock);
++static int prepend_unreachable(char **buffer, int *buflen)
++{
++	return prepend(buffer, buflen, "(unreachable)", 13);
++}
++
+ /**
+  * d_path - return the path of a dentry
+  * @path: path to report
+@@ -2062,6 +2067,39 @@ char *d_path(const struct path *path, ch
+ }
+ EXPORT_SYMBOL(d_path);
+ 
++/**
++ * d_path_with_unreachable - return the path of a dentry
++ * @path: path to report
++ * @buf: buffer to return value in
++ * @buflen: buffer length
++ *
++ * The difference from d_path() is that this prepends "(unreachable)"
++ * to paths which are unreachable from the current process' root.
++ */
++char *d_path_with_unreachable(const struct path *path, char *buf, int buflen)
++{
++	char *res = buf + buflen;
++	struct path root;
++	struct path tmp;
++	int error;
++
++	if (path->dentry->d_op && path->dentry->d_op->d_dname)
++		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
++
 +	get_fs_root(current->fs, &root);
- 	spin_lock(&dcache_lock);
- 	tmp = root;
- 	res = __d_path(path, &tmp, buf, buflen);
-@@ -2110,12 +2107,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 	if (!page)
- 		return -ENOMEM;
++	spin_lock(&dcache_lock);
++	tmp = root;
++	error = path_with_deleted(path, &tmp, &res, &buflen);
++	if (!error && !path_equal(&tmp, &root))
++		error = prepend_unreachable(&res, &buflen);
++	spin_unlock(&dcache_lock);
++	path_put(&root);
++	if (error)
++		res =  ERR_PTR(error);
++
++	return res;
++}
++
+ /*
+  * Helper function for dentry_operations.d_dname() members
+  */
+@@ -2154,15 +2192,23 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+ 		struct path tmp = root;
+-		char * cwd;
++		char *cwd = page + PAGE_SIZE;
++		int buflen = PAGE_SIZE;
  
--	read_lock(&current->fs->lock);
--	pwd = current->fs->pwd;
--	path_get(&pwd);
--	root = current->fs->root;
--	path_get(&root);
--	read_unlock(&current->fs->lock);
-+	get_fs_root_and_pwd(current->fs, &root, &pwd);
+-		cwd = __d_path(&pwd, &tmp, page, PAGE_SIZE);
++		prepend(&cwd, &buflen, "\0", 1);
++		error = prepend_path(&pwd, &tmp, &cwd, &buflen);
+ 		spin_unlock(&dcache_lock);
  
- 	error = -ENOENT;
- 	spin_lock(&dcache_lock);
+-		error = PTR_ERR(cwd);
+-		if (IS_ERR(cwd))
++		if (error)
+ 			goto out;
+ 
++		/* Unreachable from current root */
++		if (!path_equal(&tmp, &root)) {
++			error = prepend_unreachable(&cwd, &buflen);
++			if (error)
++				goto out;
++		}
++
+ 		error = -ERANGE;
+ 		len = PAGE_SIZE + page - cwd;
+ 		if (len <= size) {
+Index: linux-2.6/include/linux/dcache.h
+===================================================================
+--- linux-2.6.orig/include/linux/dcache.h	2010-07-06 17:59:04.000000000 +0200
++++ linux-2.6/include/linux/dcache.h	2010-07-06 18:08:22.000000000 +0200
+@@ -315,6 +315,7 @@ extern char *dynamic_dname(struct dentry
+ 
+ extern char *__d_path(const struct path *path, struct path *root, char *, int);
+ extern char *d_path(const struct path *, char *, int);
++extern char *d_path_with_unreachable(const struct path *, char *, int);
+ extern char *dentry_path(struct dentry *, char *, int);
+ 
+ /* Allocation counts.. */
 Index: linux-2.6/fs/proc/base.c
 ===================================================================
---- linux-2.6.orig/fs/proc/base.c	2010-07-06 17:59:05.000000000 +0200
-+++ linux-2.6/fs/proc/base.c	2010-07-06 18:08:06.000000000 +0200
-@@ -148,18 +148,13 @@ static unsigned int pid_entry_count_dirs
- 	return count;
- }
+--- linux-2.6.orig/fs/proc/base.c	2010-07-06 18:08:06.000000000 +0200
++++ linux-2.6/fs/proc/base.c	2010-07-06 18:08:22.000000000 +0200
+@@ -1426,7 +1426,7 @@ static int do_proc_readlink(struct path
+ 	if (!tmp)
+ 		return -ENOMEM;
  
--static int get_fs_path(struct task_struct *task, struct path *path, bool root)
-+static int get_task_root(struct task_struct *task, struct path *root)
- {
--	struct fs_struct *fs;
- 	int result = -ENOENT;
- 
- 	task_lock(task);
--	fs = task->fs;
--	if (fs) {
--		read_lock(&fs->lock);
--		*path = root ? fs->root : fs->pwd;
--		path_get(path);
--		read_unlock(&fs->lock);
-+	if (task->fs) {
-+		get_fs_root(task->fs, root);
- 		result = 0;
- 	}
- 	task_unlock(task);
-@@ -172,7 +167,12 @@ static int proc_cwd_link(struct inode *i
- 	int result = -ENOENT;
- 
- 	if (task) {
--		result = get_fs_path(task, path, 0);
-+		task_lock(task);
-+		if (task->fs) {
-+			get_fs_pwd(task->fs, path);
-+			result = 0;
-+		}
-+		task_unlock(task);
- 		put_task_struct(task);
- 	}
- 	return result;
-@@ -184,7 +184,7 @@ static int proc_root_link(struct inode *
- 	int result = -ENOENT;
- 
- 	if (task) {
--		result = get_fs_path(task, path, 1);
-+		result = get_task_root(task, path);
- 		put_task_struct(task);
- 	}
- 	return result;
-@@ -589,7 +589,7 @@ static int mounts_open_common(struct ino
- 				get_mnt_ns(ns);
- 		}
- 		rcu_read_unlock();
--		if (ns && get_fs_path(task, &root, 1) == 0)
-+		if (ns && get_task_root(task, &root) == 0)
- 			ret = 0;
- 		put_task_struct(task);
- 	}
-Index: linux-2.6/fs/cachefiles/daemon.c
+-	pathname = d_path(path, tmp, PAGE_SIZE);
++	pathname = d_path_with_unreachable(path, tmp, PAGE_SIZE);
+ 	len = PTR_ERR(pathname);
+ 	if (IS_ERR(pathname))
+ 		goto out;
+Index: linux-2.6/include/linux/path.h
 ===================================================================
---- linux-2.6.orig/fs/cachefiles/daemon.c	2010-07-06 18:08:00.000000000 +0200
-+++ linux-2.6/fs/cachefiles/daemon.c	2010-07-06 18:08:06.000000000 +0200
-@@ -552,7 +552,6 @@ static int cachefiles_daemon_tag(struct
-  */
- static int cachefiles_daemon_cull(struct cachefiles_cache *cache, char *args)
- {
--	struct fs_struct *fs;
- 	struct path path;
- 	const struct cred *saved_cred;
- 	int ret;
-@@ -573,11 +572,7 @@ static int cachefiles_daemon_cull(struct
- 	}
+--- linux-2.6.orig/include/linux/path.h	2010-07-06 17:59:04.000000000 +0200
++++ linux-2.6/include/linux/path.h	2010-07-06 18:08:22.000000000 +0200
+@@ -12,4 +12,9 @@ struct path {
+ extern void path_get(struct path *);
+ extern void path_put(struct path *);
  
- 	/* extract the directory dentry from the cwd */
--	fs = current->fs;
--	read_lock(&fs->lock);
--	path = fs->pwd;
--	path_get(&path);
--	read_unlock(&fs->lock);
-+	get_fs_pwd(current->fs, &path);
- 
- 	if (!S_ISDIR(path.dentry->d_inode->i_mode))
- 		goto notdir;
-@@ -629,7 +624,6 @@ inval:
-  */
- static int cachefiles_daemon_inuse(struct cachefiles_cache *cache, char *args)
- {
--	struct fs_struct *fs;
- 	struct path path;
- 	const struct cred *saved_cred;
- 	int ret;
-@@ -650,11 +644,7 @@ static int cachefiles_daemon_inuse(struc
- 	}
- 
- 	/* extract the directory dentry from the cwd */
--	fs = current->fs;
--	read_lock(&fs->lock);
--	path = fs->pwd;
--	path_get(&path);
--	read_unlock(&fs->lock);
-+	get_fs_pwd(current->fs, &path);
- 
- 	if (!S_ISDIR(path.dentry->d_inode->i_mode))
- 		goto notdir;
-Index: linux-2.6/fs/namei.c
-===================================================================
---- linux-2.6.orig/fs/namei.c	2010-07-06 17:59:05.000000000 +0200
-+++ linux-2.6/fs/namei.c	2010-07-06 18:08:06.000000000 +0200
-@@ -484,13 +484,8 @@ ok:
- 
- static __always_inline void set_root(struct nameidata *nd)
- {
--	if (!nd->root.mnt) {
--		struct fs_struct *fs = current->fs;
--		read_lock(&fs->lock);
--		nd->root = fs->root;
--		path_get(&nd->root);
--		read_unlock(&fs->lock);
--	}
-+	if (!nd->root.mnt)
-+		get_fs_root(current->fs, &nd->root);
- }
- 
- static int link_path_walk(const char *, struct nameidata *);
-@@ -1016,11 +1011,7 @@ static int path_init(int dfd, const char
- 		nd->path = nd->root;
- 		path_get(&nd->root);
- 	} else if (dfd == AT_FDCWD) {
--		struct fs_struct *fs = current->fs;
--		read_lock(&fs->lock);
--		nd->path = fs->pwd;
--		path_get(&fs->pwd);
--		read_unlock(&fs->lock);
-+		get_fs_pwd(current->fs, &nd->path);
- 	} else {
- 		struct dentry *dentry;
- 
-Index: linux-2.6/kernel/auditsc.c
-===================================================================
---- linux-2.6.orig/kernel/auditsc.c	2010-07-06 17:59:05.000000000 +0200
-+++ linux-2.6/kernel/auditsc.c	2010-07-06 18:08:06.000000000 +0200
-@@ -1837,13 +1837,8 @@ void __audit_getname(const char *name)
- 	context->names[context->name_count].ino  = (unsigned long)-1;
- 	context->names[context->name_count].osid = 0;
- 	++context->name_count;
--	if (!context->pwd.dentry) {
--		read_lock(&current->fs->lock);
--		context->pwd = current->fs->pwd;
--		path_get(&current->fs->pwd);
--		read_unlock(&current->fs->lock);
--	}
--
-+	if (!context->pwd.dentry)
-+		get_fs_pwd(current->fs, &context->pwd);
- }
- 
- /* audit_putname - intercept a putname request
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c	2010-07-06 17:59:05.000000000 +0200
-+++ linux-2.6/fs/namespace.c	2010-07-06 18:08:06.000000000 +0200
-@@ -2208,10 +2208,7 @@ SYSCALL_DEFINE2(pivot_root, const char _
- 		goto out1;
- 	}
- 
--	read_lock(&current->fs->lock);
--	root = current->fs->root;
--	path_get(&current->fs->root);
--	read_unlock(&current->fs->lock);
-+	get_fs_root(current->fs, &root);
- 	down_write(&namespace_sem);
- 	mutex_lock(&old.dentry->d_inode->i_mutex);
- 	error = -EINVAL;
++static inline int path_equal(const struct path *path1, const struct path *path2)
++{
++	return path1->mnt == path2->mnt && path1->dentry == path2->dentry;
++}
++
+ #endif  /* _LINUX_PATH_H */
 
 -- 
