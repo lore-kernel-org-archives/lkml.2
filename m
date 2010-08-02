@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab0HBAeE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 20:34:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43660 "EHLO smtps.tip.net.au"
+	id S1752254Ab0HBAml (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 20:42:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51536 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab0HBAeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 20:34:01 -0400
-Date: Mon, 2 Aug 2010 10:33:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: linux-next: build failure after merge of the final tree (kvm
- tree related)
-Message-Id: <20100802103350.9b1b8ff2.sfr@canb.auug.org.au>
-In-Reply-To: <20100726142725.fbc5d94e.sfr@canb.auug.org.au>
-References: <20100726142725.fbc5d94e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1751982Ab0HBAmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 20:42:40 -0400
+Date: Mon, 2 Aug 2010 10:42:27 +1000
+From: Neil Brown <neilb@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>, Bryan Mesich <bryan.mesich@ndsu.edu>,
+        scst-devel@lists.sourceforge.net, Jens Axboe <jens.axboe@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: RAID/block regression starting from 2.6.32, bisected
+Message-ID: <20100802104227.79340b49@notabene>
+In-Reply-To: <4C52A98A.7060507@kernel.org>
+References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>
+	<4C28EFD6.2070203@vlnb.net>
+	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>
+	<4C3EF3AD.5070509@vlnb.net>
+	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>
+	<4C4D7DF5.9060909@vlnb.net>
+	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>
+	<4C5073F3.1060406@vlnb.net>
+	<4C52A98A.7060507@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 30 Jul 2010 12:29:30 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-Hi Avi, Marcelo,
+> Hello,
+> 
+> On 07/28/2010 08:16 PM, Vladislav Bolkhovitin wrote:
+> > In recent kernels we are experiencing a problem that in our setup
+> > using SCST BLOCKIO backend some BIOs are finished, i.e. the finish
+> > callback called for them, with error -EIO. It happens quite often,
+> > much more often than one would expect to have an actual IO
+> > error. (BLOCKIO backend just converts all incoming SCSI commands to
+> > the corresponding block requests.)
+> > 
+> > After some investigation, we figured out, that, most likely,
+> > raid5.c::make_request() for some reason sometimes calls bio_endio()
+> > with not BIO_UPTODATE bios.
+> > 
+> > We bisected it to commit: 
+> > 
+> > commit a82afdfcb8c0df09776b6458af6b68fc58b2e87b
+> > Author: Tejun Heo <tj@kernel.org>
+> > Date:   Fri Jul 3 17:48:16 2009 +0900
+> > 
+> >     block: use the same failfast bits for bio and request
+> 
+> That commit doesn't (or at least isn't supposed to) make any behavior
+> difference.  It's just repositioning flag bits.  If the commit is
+> actually causing the problem, I think one possibility is that whatever
+> code could be using hard coded constants which now are mapped to
+> different flags.  The mixed merge changes have been in mainline for
+> quite some time and shipping in all major distros too and this is the
+> first time this is reported, so I don't think it could be a widespread
+> problem.
+> 
+> Thanks.
+> 
 
-On Mon, 26 Jul 2010 14:27:25 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the final tree, today's linux-next build (powerpc
-> ppc44x_defconfig) failed like this:
->=20
-> cc1: warnings being treated as errors
-> arch/powerpc/kvm/44x_tlb.c: In function 'kvmppc_mmu_map':
-> arch/powerpc/kvm/44x_tlb.c:319: error: format '%lx' expects type 'long un=
-signed int', but argument 2 has type 'gfn_t'
->=20
-> Caused by commit 05c07e00b15e00632a2502dcbf253415449e89da ("KVM: Use u64
-> for frame data types").  I applied the following patch for today:
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 26 Jul 2010 14:25:12 +1000
-> Subject: [PATCH] kvm: u64's should be printed with %llx
+The problem is that md/raid5 tests bio->bi_rw against RWA_MASK, which used to
+align with BIO_RW_AHEAD, and now doesn't.
+However the definition of bio_rw() in fs.h seems to justify that RWA_MASK
+should align with BIO_RW_AHEAD, as does the definition of READA.
 
-Ping?
+Given the current definitions, any WRITE request with BIO_RW_FAILFAST_DEV
+set is going to confused a number of drives which test
+     bio_rw(bio) == WRITE
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I guess RWA_MASK needs to be changed to (1<<BIO_RW_AHEAD), and READA need to
+be change to that value too.
 
---Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU
-Content-Type: application/pgp-signature
+Can I leave that to you Tejun?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMVhJuAAoJEDMEi1NhKgbsO+YH/1G2ZgXeyCQhhOK/ND9bErg5
-5fjNEBwn0FnVXrz4ftb+IJAtrjg0pj+FgifdfW25QTUI1G5j8m2MrP7+QEd/Ov9T
-CwcE8CnOnfGJe/GIG9i0Xja8bTsdXn2F3iKX4nWZsG83ozPHfRZG2ZY7r68HArak
-kyYTZYsMSC3Mtea+rWOYF2BqvJuHYaplV9FVWsdOCi4mqn68brnBsDcZQmh1pdrP
-/NqcieN35dh0zPIa0dw8NlPuuNByCq42cOu9JgaUl6naXoeyWzlkH3+hbvakJJVG
-qNYBafO8X1r4GVwLiGOSInonunzHolhPbIDSSABqBZN4/8fi223jQ4VYew30VX0=
-=gtSr
------END PGP SIGNATURE-----
-
---Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU--
+Thanks,
+NeilBrown
