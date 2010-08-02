@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab0HBMwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 08:52:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54986 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435Ab0HBMwg (ORCPT
+	id S1753401Ab0HBM4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 08:56:14 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43010 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab0HBM4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 08:52:36 -0400
-Date: Mon, 2 Aug 2010 14:52:34 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Tejun Heo <tj@kernel.org>, Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH 2/2] hwmon/mc13783-adc: don't access struct mc13783
-	directly
-Message-ID: <20100802125234.GB13900@pengutronix.de>
-References: <1280740459-11500-1-git-send-email-u.kleine-koenig@pengutronix.de> <1280740459-11500-2-git-send-email-u.kleine-koenig@pengutronix.de> <20100802100455.GC3334@sortiz-mobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100802100455.GC3334@sortiz-mobl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 2 Aug 2010 08:56:12 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: hp fk <fkhp101@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
+In-Reply-To: Your message of "Mon, 02 Aug 2010 20:24:38 +0800."
+             <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1280753770_76572P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 02 Aug 2010 08:56:10 -0400
+Message-ID: <215375.1280753770@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020206.4C56C06B.0201,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 12:04:56PM +0200, Samuel Ortiz wrote:
-> Hi Uwe,
-> 
-> On Mon, Aug 02, 2010 at 11:14:18AM +0200, Uwe Kleine-König wrote:
-> > There is a shiny new mc13783 API function that can be used instead.
-> > 
-> > While at it refactor the code a bit to reduce code duplication a bit.
-> > 
-> > This removes the last user of <linux/mfd/mc13783-private.h> and so this
-> > include file can go away.
-> That's correct, patch applied.
-> As I said, we can now move mc13783-private.h to drivers/mfd/
-Actually I'd fold it into mc13783-core.c.
+--==_Exmh_1280753770_76572P
+Content-Type: text/plain; charset=us-ascii
 
-And I didn't do it at once because I didn't expect you to take the hwmon
-change via your tree.  Will send a patch later.
+On Mon, 02 Aug 2010 20:24:38 +0800, hp fk said:
+> Kademlia protocol is widely used by many p2p applications, if kernel
+> support the Kademlia protocol and its p2p network infrastracture. it
+> will be easier to bring us into a new stage of network with much more
+> freedom and equality
 
-Best regards
-Uwe
+1) You failed to explain what kernel support, if any, would be needed for this
+protocol.  What does Kademlia do that the current kernel can't handle already?
+(Hint - if it runs on a Windows system without patching the Windows kernel, it
+almost certainly doesn't need extensive patches for Linux either).
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+2) You forgot to cc: netdev@vger.kernel.org, which is where all the networking
+people hang out.
+
+
+--==_Exmh_1280753770_76572P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMVsBqcC3lWbTT17ARAilVAKDCM2p5BjgcPJVsLBvWB1/hZHEyFwCfXF9j
+yJAtnU5cRuAEj9QxKr/NTx8=
+=jSZC
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1280753770_76572P--
+
