@@ -1,154 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab0HBTlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 15:41:18 -0400
-Received: from www84.your-server.de ([213.133.104.84]:36749 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab0HBTlR (ORCPT
+	id S1754717Ab0HBTqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 15:46:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40659 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754546Ab0HBTqN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 15:41:17 -0400
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Arnd Bergmann <arnd@arndb.de>, Vasiliy Kulikov <segooon@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Jiri Slaby <jslaby@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mtd@lists.infradead.org
-Cc: stefani@seibold.net
-Subject: [PATCH] Change struct flchip_shared spinlock locking into mutex
-Date: Mon,  2 Aug 2010 21:40:48 +0200
-Message-Id: <1280778048-6208-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.2
-X-Authenticated-Sender: stefani@seibold.net
+	Mon, 2 Aug 2010 15:46:13 -0400
+From: "Ramos Falcon, Ernesto" <ernesto@ti.com>
+To: "Menon, Nishanth" <nm@ti.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Mon, 2 Aug 2010 14:46:03 -0500
+Subject: RE: [PATCH 4/5] staging:ti dspbridge: remove unnecessary volatile
+ variables
+Thread-Topic: [PATCH 4/5] staging:ti dspbridge: remove unnecessary volatile
+ variables
+Thread-Index: AcsuZhYVK9gqGwrjSbKQvRJCBOkhWAEESdyw
+Message-ID: <B852767254C5C94EBB1040EE0EFA060094D16F7E@dlee01.ent.ti.com>
+References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
+ <1280328052-31292-2-git-send-email-ernesto@ti.com>
+ <1280328052-31292-3-git-send-email-ernesto@ti.com>
+ <1280328052-31292-4-git-send-email-ernesto@ti.com>
+ <1280328052-31292-5-git-send-email-ernesto@ti.com> <4C5046D5.6010306@ti.com>
+In-Reply-To: <4C5046D5.6010306@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+Hi,
 
-This patch prevent to schedule while atomic by changing the
-flchip_shared spinlock into a mutex. This should be save since no atomic
-path will use this lock.
+>-----Original Message-----
+>From: Menon, Nishanth
+>Sent: Wednesday, July 28, 2010 10:04 AM
+>To: Ramos Falcon, Ernesto
+>Cc: gregkh@suse.de; Ramirez Luna, Omar; ohad@wizery.com;
+>ameya.palande@nokia.com; felipe.contreras@nokia.com; Guzman Lugo, Fernando;
+>linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux-
+>omap@vger.kernel.org
+>Subject: Re: [PATCH 4/5] staging:ti dspbridge: remove unnecessary volatile
+>variables
 
-This patch is based on linux kernel 2.6.35. Please apply.
+<snip>
 
-It was requested by Arnd Bergmann and Vasiliy Kulikov.
+>> index 08a2f5f..ae1f394 100644
+>> --- a/drivers/staging/tidspbridge/core/tiomap3430.c
+>> +++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+>> @@ -404,7 +404,7 @@ static int bridge_brd_start(struct bridge_dev_context
+>*dev_ctxt,
+>>  		pr_err("%s: Illegal SM base\n", __func__);
+>>  		status = -EPERM;
+>>  	} else
+>> -		*((volatile u32 *)dw_sync_addr) = 0xffffffff;
+>> +		__raw_writel(0xffffffff, dw_sync_addr);
+>curious question: any reason not to use writel instead of __raw_writel?
+>
+I was not aware of the existence of writel, but I think I should use writel instead.
 
-- Stefani
+>>
+>>  	if (DSP_SUCCEEDED(status)) {
+>>  		resources = dev_context->resources;
+>> @@ -584,7 +584,7 @@ static int bridge_brd_start(struct bridge_dev_context
+>*dev_ctxt,
+>>  		dev_dbg(bridge, "Waiting for Sync @ 0x%x\n", dw_sync_addr);
+>>  		dev_dbg(bridge, "DSP c_int00 Address =  0x%x\n", dsp_addr);
+>>  		if (dsp_debug)
+>> -			while (*((volatile u16 *)dw_sync_addr))
+>> +			while (__raw_readw(dw_sync_addr))
+>>  				;;
+>
+>may be for a later on patch -> we seem to have a potential infinite loop
+>here..
+>
+This is done intentionally and it is used to debug the dsp.  The system will hang here, and then Lautherback or jtag can be connected to take control of the program execution from this point.
 
-shared->
+>> diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c
+>b/drivers/staging/tidspbridge/pmgr/cmm.c
+>> index 874ed64..b7cba1b 100644
+>> --- a/drivers/staging/tidspbridge/pmgr/cmm.c
+>> +++ b/drivers/staging/tidspbridge/pmgr/cmm.c
+>> @@ -1008,6 +1008,7 @@ void *cmm_xlator_alloc_buf(struct cmm_xlatorobject
+>*xlator, void *va_buf,
+>>  {
+>>  	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
+>>  	void *pbuf = NULL;
+>> +	void *tmp_va_buff;
+>>  	struct cmm_attrs attrs;
+>>
+>>  	DBC_REQUIRE(refs > 0);
+>> @@ -1019,16 +1020,16 @@ void *cmm_xlator_alloc_buf(struct
+>cmm_xlatorobject *xlator, void *va_buf,
+>>
+>>  	if (xlator_obj) {
+>>  		attrs.ul_seg_id = xlator_obj->ul_seg_id;
+>> -		*(volatile u32 *)va_buf = 0;
+>> +		__raw_writel(0, va_buf);
+>>  		/* Alloc SM */
+>>  		pbuf =
+>>  		    cmm_calloc_buf(xlator_obj->hcmm_mgr, pa_size, &attrs,
+>NULL);
+>>  		if (pbuf) {
+>>  			/* convert to translator(node/strm) process Virtual
+>>  			 * address */
+>> -			*(volatile u32 **)va_buf =
+>> -			    (u32 *) cmm_xlator_translate(xlator,
+>> +			 tmp_va_buff = cmm_xlator_translate(xlator,
+>>  							 pbuf, CMM_PA2VA);
+>> +			__raw_writel((u32)tmp_va_buff, va_buf);
+>
+>a) is the u32 cast of tmp_va_buff really necessary?
+>b) tmp_va_buff is used only in this branch, why not reduce the scope of
+>the variable to just to this if branch
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- drivers/mtd/chips/cfi_cmdset_0001.c |   20 ++++++++++----------
- include/linux/mtd/flashchip.h       |    2 +-
- 2 files changed, 11 insertions(+), 11 deletions(-)
+Agree!
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
-index 62f3ea9..3364061 100644
---- a/drivers/mtd/chips/cfi_cmdset_0001.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-@@ -717,7 +717,7 @@ static int cfi_intelext_partition_fixup(struct mtd_info *mtd,
- 		chip = &newcfi->chips[0];
- 		for (i = 0; i < cfi->numchips; i++) {
- 			shared[i].writing = shared[i].erasing = NULL;
--			spin_lock_init(&shared[i].lock);
-+			mutex_init(&shared[i].lock);
- 			for (j = 0; j < numparts; j++) {
- 				*chip = cfi->chips[i];
- 				chip->start += j << partshift;
-@@ -886,7 +886,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 		 */
- 		struct flchip_shared *shared = chip->priv;
- 		struct flchip *contender;
--		spin_lock(&shared->lock);
-+		mutex_lock(&shared->lock);
- 		contender = shared->writing;
- 		if (contender && contender != chip) {
- 			/*
-@@ -899,7 +899,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 			 * get_chip returns success we're clear to go ahead.
- 			 */
- 			ret = mutex_trylock(&contender->mutex);
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			if (!ret)
- 				goto retry;
- 			mutex_unlock(&chip->mutex);
-@@ -914,7 +914,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 				mutex_unlock(&contender->mutex);
- 				return ret;
- 			}
--			spin_lock(&shared->lock);
-+			mutex_lock(&shared->lock);
- 
- 			/* We should not own chip if it is already
- 			 * in FL_SYNCING state. Put contender and retry. */
-@@ -930,7 +930,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 		 * on this chip. Sleep. */
- 		if (mode == FL_ERASING && shared->erasing
- 		    && shared->erasing->oldstate == FL_ERASING) {
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&chip->wq, &wait);
- 			mutex_unlock(&chip->mutex);
-@@ -944,7 +944,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
- 		shared->writing = chip;
- 		if (mode == FL_ERASING)
- 			shared->erasing = chip;
--		spin_unlock(&shared->lock);
-+		mutex_unlock(&shared->lock);
- 	}
- 	ret = chip_ready(map, chip, adr, mode);
- 	if (ret == -EAGAIN)
-@@ -959,7 +959,7 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
- 
- 	if (chip->priv) {
- 		struct flchip_shared *shared = chip->priv;
--		spin_lock(&shared->lock);
-+		mutex_lock(&shared->lock);
- 		if (shared->writing == chip && chip->oldstate == FL_READY) {
- 			/* We own the ability to write, but we're done */
- 			shared->writing = shared->erasing;
-@@ -967,7 +967,7 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
- 				/* give back ownership to who we loaned it from */
- 				struct flchip *loaner = shared->writing;
- 				mutex_lock(&loaner->mutex);
--				spin_unlock(&shared->lock);
-+				mutex_unlock(&shared->lock);
- 				mutex_unlock(&chip->mutex);
- 				put_chip(map, loaner, loaner->start);
- 				mutex_lock(&chip->mutex);
-@@ -985,11 +985,11 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
- 			 * Don't let the switch below mess things up since
- 			 * we don't have ownership to resume anything.
- 			 */
--			spin_unlock(&shared->lock);
-+			mutex_unlock(&shared->lock);
- 			wake_up(&chip->wq);
- 			return;
- 		}
--		spin_unlock(&shared->lock);
-+		mutex_unlock(&shared->lock);
- 	}
- 
- 	switch(chip->oldstate) {
-diff --git a/include/linux/mtd/flashchip.h b/include/linux/mtd/flashchip.h
-index f43e9b4..23cc10f 100644
---- a/include/linux/mtd/flashchip.h
-+++ b/include/linux/mtd/flashchip.h
-@@ -92,7 +92,7 @@ struct flchip {
- /* This is used to handle contention on write/erase operations
-    between partitions of the same physical chip. */
- struct flchip_shared {
--	spinlock_t lock;
-+	struct mutex lock;
- 	struct flchip *writing;
- 	struct flchip *erasing;
- };
--- 
-1.7.2
 
