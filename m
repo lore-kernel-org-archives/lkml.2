@@ -1,91 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab0HBBL5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 21:11:57 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:59317 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752493Ab0HBBLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 21:11:52 -0400
-Date: Sun, 1 Aug 2010 18:11:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Arjan van de Ven <arjan@infradead.org>, peterz@infradead.org,
-        swetland@google.com, linux-kernel@vger.kernel.org, florian@mickler.org,
-        linux-pm@lists.linux-foundation.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100802011148.GT2470@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
- <20100731215214.2543c07e@infradead.org>
- <20100801054816.GI2470@linux.vnet.ibm.com>
- <1280704593.25620.48.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280704593.25620.48.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752682Ab0HBBLh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:11:37 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38029 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab0HBBJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 21:09:10 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 11/19] perf record: Release resources at exit
+Date: Sun,  1 Aug 2010 22:08:46 -0300
+Message-Id: <1280711334-30000-12-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1280711334-30000-1-git-send-email-acme@infradead.org>
+References: <1280711334-30000-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 06:16:33PM -0500, James Bottomley wrote:
-> On Sat, 2010-07-31 at 22:48 -0700, Paul E. McKenney wrote:
-> > On Sat, Jul 31, 2010 at 09:52:14PM -0700, Arjan van de Ven wrote:
-> > > On Sat, 31 Jul 2010 10:58:42 -0700
-> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > o	"Power-aware application" are applications that are permitted
-> > > > 	to acquire suspend blockers on Android.  Verion 8 of the
-> > > > 	suspend-blocker patch seems to use group permissions to
-> > > > determine which applications are classified as power aware.
-> > > > 
-> > > > 	More generally, power-aware applications seem to be those that
-> > > > 	have permission to exert some control over the system's
-> > > > 	power state.
-> > > 
-> > > I don't like the term "Power aware application". An application is well
-> > > behaved or it isn't. "aware" has nothing to do with it.
-> > 
-> > Applications are often complex enough to be aware of some things, naive
-> > about others, well behaved in some ways, and ill-behaved in others.
-> > This has been the case for some decades now, so it should not come as
-> > a surprise.
-> > 
-> > I am of course open to suggestions for alternatives to the term "power
-> > aware application", but most definitely not to obfuscating the difference
-> > between power awareness (or whatever name one wishes to call it) and
-> > the overall quality of the application, whatever "quality" might mean
-> > in a given context.
-> 
-> So the reason everyone's having trouble with this definition is that it
-> actually conflates two separate axes of power management.
-> 
-> There are good and bad applications in the power sense ... burns less vs
-> burns more.
-> 
-> And there are user mandated vs user optional processes ...
-> necessary/wanted vs unnecessary/unwanted.
-> 
-> What android actually does is reward well written applications because
-> they "just work" and they don't have to be power aware at all ...
-> they're usually event driven and split into the android
-> provider/consumer model.
-> 
-> Badly written applications that are not suspend block aware get shut
-> down (by system suspend) when the screen turns off, so they're also
-> power/suspend unaware.
-> 
-> Applications that want to present the user with a choice in android are
-> power/suspend aware because the only way they get to present the choice
-> is via suspend blockers.
-> 
-> The "power problem" always devolves to resolving a set of choices around
-> a given set of control axes.  The problem is that the set of control
-> axes isn't unique and doesn't have a well agreed upon selection.  This
-> makes it hard to make definitive terminology because you have to pick
-> the set of axes (implicitly or explicitly) before defining terms ...
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-That does seem to be about the size of it...  :-/
+So that we can reduce the noise on valgrind when looking for memory
+leaks.
 
-							Thanx, Paul
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |   32 ++++++++++++++++++++++++++------
+ 1 files changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index b938796..5ae0d93 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -439,6 +439,7 @@ static void atexit_header(void)
+ 
+ 		process_buildids();
+ 		perf_header__write(&session->header, output, true);
++		perf_session__delete(session);
+ 	}
+ }
+ 
+@@ -558,12 +559,15 @@ static int __cmd_record(int argc, const char **argv)
+ 	if (!file_new) {
+ 		err = perf_header__read(session, output);
+ 		if (err < 0)
+-			return err;
++			goto out_delete_session;
+ 	}
+ 
+ 	if (have_tracepoints(attrs, nr_counters))
+ 		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
+ 
++	/*
++ 	 * perf_session__delete(session) will be called at atexit_header()
++	 */
+ 	atexit(atexit_header);
+ 
+ 	if (forks) {
+@@ -768,6 +772,10 @@ static int __cmd_record(int argc, const char **argv)
+ 		bytes_written / 24);
+ 
+ 	return 0;
++
++out_delete_session:
++	perf_session__delete(session);
++	return err;
+ }
+ 
+ static const char * const record_usage[] = {
+@@ -824,7 +832,7 @@ static const struct option options[] = {
+ 
+ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ {
+-	int i,j;
++	int i, j, err = -ENOMEM;
+ 
+ 	argc = parse_options(argc, argv, options, record_usage,
+ 			    PARSE_OPT_STOP_AT_NON_OPTION);
+@@ -873,13 +881,13 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		for (j = 0; j < MAX_COUNTERS; j++) {
+ 			fd[i][j] = malloc(sizeof(int)*thread_num);
+ 			if (!fd[i][j])
+-				return -ENOMEM;
++				goto out_free_fd;
+ 		}
+ 	}
+ 	event_array = malloc(
+ 		sizeof(struct pollfd)*MAX_NR_CPUS*MAX_COUNTERS*thread_num);
+ 	if (!event_array)
+-		return -ENOMEM;
++		goto out_free_fd;
+ 
+ 	if (user_interval != ULLONG_MAX)
+ 		default_interval = user_interval;
+@@ -895,8 +903,20 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		default_interval = freq;
+ 	} else {
+ 		fprintf(stderr, "frequency and count are zero, aborting\n");
+-		exit(EXIT_FAILURE);
++		err = -EINVAL;
++		goto out_free_event_array;
+ 	}
+ 
+-	return __cmd_record(argc, argv);
++	err = __cmd_record(argc, argv);
++
++out_free_event_array:
++	free(event_array);
++out_free_fd:
++	for (i = 0; i < MAX_NR_CPUS; i++) {
++		for (j = 0; j < MAX_COUNTERS; j++)
++			free(fd[i][j]);
++	}
++	free(all_tids);
++	all_tids = NULL;
++	return err;
+ }
+-- 
+1.6.2.5
+
