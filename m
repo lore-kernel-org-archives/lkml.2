@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492Ab0HBS2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:28:53 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:34603 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab0HBS2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:28:50 -0400
-Date: Mon, 2 Aug 2010 20:28:48 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Backlund <tmb@mandriva.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@ozlabs.org, bug-make@gnu.org,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: make 3.82 fails on powerpc defconfig update [was: Linux 2.6.35]
-Message-ID: <20100802182848.GA16394@merkur.ravnborg.org>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com> <4C5686FF.9010803@mandriva.org>
+	id S1754367Ab0HBSbn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:31:43 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48267 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754029Ab0HBSbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:31:42 -0400
+Date: Mon, 2 Aug 2010 20:31:10 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 6/6] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100802183109.GJ3278@quack.suse.cz>
+References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie>
+ <1280497020-22816-7-git-send-email-mel@csn.ul.ie>
+ <20100730150601.199c5618.akpm@linux-foundation.org>
+ <20100731103321.GI3571@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C5686FF.9010803@mandriva.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100731103321.GI3571@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 11:51:11AM +0300, Thomas Backlund wrote:
-> Hi,
-> (please cc me as I'm not subscribed)
->
-> updating from make 3.81 to 3.82 gets me this:
->
-> [thomas@tmb linux-2.6.35]$ cp arch/powerpc/configs/ppc64_defconfig .config
-> [thomas@tmb linux-2.6.35]$ LC_ALL=C make oldconfig ARCH=powerpc
-> /mnt/work/2.6.35/linux-2.6.35/arch/powerpc/Makefile:183: *** mixed  
-> implicit and normal rules.  Stop.
->
-> The lines are:
->
-> 182:
-> 183: $(BOOT_TARGETS): vmlinux
-> 184:         $(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst  
-> %,$(boot)/%,$@)
-> 185:
->
-> BOOT_TARGETS are defined on line 166 as:
-> BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage% treeImage.%  
-> cuImage.% simpleImage.%
->
->
-> Now it's not a regression in the kernel as the same happends with the  
-> 2.6.34 tree too.
->
-> (btw, the host I'm syncing the defconfig with is a x86_64 machine)
->
->
-> Now, I dont know if this is "intended breakage" by the make update, or  
-> if the Makefile needs to be updated....
->
-> Any ideas how to fix ?
+On Sat 31-07-10 11:33:22, Mel Gorman wrote:
+> On Fri, Jul 30, 2010 at 03:06:01PM -0700, Andrew Morton wrote:
+> > Sigh.  We have sooo many problems with writeback and latency.  Read
+> > https://bugzilla.kernel.org/show_bug.cgi?id=12309 and weep.
+> 
+> You aren't joking.
+> 
+> > Everyone's
+> > running away from the issue and here we are adding code to solve some
+> > alleged stack-overflow problem which seems to be largely a non-problem,
+> > by making changes which may worsen our real problems.
+> > 
+> 
+> As it is, filesystems are beginnning to ignore writeback from direct
+> reclaim - such as xfs and btrfs. I'm lead to believe that ext3
+> effectively ignores writeback from direct reclaim although I don't have
+> access to code at the moment to double check (am on the road). So either
+> way, we are going to be facing this problem so the VM might as well be
+> aware of it :/
+  Umm, ext3 should be handling direct reclaim just fine. ext4 does however
+ignore it when a page does not have block already allocated (which is a
+common case with delayed allocation).
 
-This is in the category "intended breakage".
-We had a similar issue in the top-level Makefile which Paul (IIRC)
-helped me to fix long time ago.
-
-To fix popwerpc I suggest something along these lines.
-[Note: I did not test it - please do so.
-
-	Sam
-
-[PATCH] powerpc: fix build with make 3.82
-
-Thomas Backlund reported that the powerpc build broke with make 3.82.
-It failed with the following message:
-
-    arch/powerpc/Makefile:183: *** mixed implicit and normal rules.  Stop.
-
-The fix is to avoid mixing non-wildcard and wildcard targets.
-
-Reported-by: Thomas Backlund <tmb@mandriva.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
----
-diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
-index 77cfe7a..ad88b21 100644
---- a/arch/powerpc/Makefile
-+++ b/arch/powerpc/Makefile
-@@ -163,9 +163,11 @@ drivers-$(CONFIG_OPROFILE)	+= arch/powerpc/oprofile/
- # Default to zImage, override when needed
- all: zImage
- 
--BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
-+# With make 3.82 we cannot mix normal and wildcard targets
-+BOOT_TARGETS1 := zImage zImage.initrd uImaged
-+BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
- 
--PHONY += $(BOOT_TARGETS)
-+PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
- 
- boot := arch/$(ARCH)/boot
- 
-@@ -180,7 +182,9 @@ relocs_check: arch/powerpc/relocs_check.pl vmlinux
- zImage: relocs_check
- endif
- 
--$(BOOT_TARGETS): vmlinux
-+$(BOOT_TARGETS1): vmlinux
-+	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-+$(BOOT_TARGETS2): vmlinux
- 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
- 
- bootwrapper_install %.dtb:
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
