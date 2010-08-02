@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0HBNiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 09:38:06 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:57898 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab0HBNiE (ORCPT
+	id S1752915Ab0HBNk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 09:40:59 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:37126 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab0HBNk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 09:38:04 -0400
-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
-CC: Valdis.Kletnieks@vt.edu, miklos@szeredi.hu, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-reply-to: <AANLkTimpYoFmGoy_he0vND9FwixcuhBrz2a8NUbhoO4w@mail.gmail.com>
-	(message from Bastien ROUCARIES on Mon, 2 Aug 2010 15:21:48 +0200)
-Subject: Re: [PATCH 6/7] vfs: only add " (deleted)" where necessary
-References: <20100802111955.025275647@szeredi.hu>
-	<20100802112024.851698363@szeredi.hu>
-	<215565.1280754056@localhost> <AANLkTimpYoFmGoy_he0vND9FwixcuhBrz2a8NUbhoO4w@mail.gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Message-Id: <E1OfvDK-0003fw-WD@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 02 Aug 2010 15:37:58 +0200
+	Mon, 2 Aug 2010 09:40:57 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reply-To: konrad.wilk@oracle.com
+Organization: Oracle
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH] swiotlb: enlarge iotlb buffer on demand
+Date: Mon, 2 Aug 2010 09:40:08 -0400
+User-Agent: KMail/1.9.10
+Cc: konrad@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, ak@linux.intel.com, akataria@vmware.com
+References: <20100731003643E.fujita.tomonori@lab.ntt.co.jp> <20100731010706.GA30319@andromeda.dapyr.net> <20100801120224F.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100801120224F.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201008020940.09552.konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010, Bastien ROUCARIES wrote:
-> On Mon, Aug 2, 2010 at 3:00 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> > On Mon, 02 Aug 2010 13:20:01 +0200, Miklos Szeredi said:
+On Saturday 31 July 2010 23:03:11 FUJITA Tomonori wrote:
+> On Fri, 30 Jul 2010 21:07:06 -0400
+>
+> Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
+> > I took your patch and was trying to fit it over the
+> > stable/swiotlb-0.8.4 branch and when I did so a found couple of things..
 > >
-> >> Index: linux-2.6/fs/dcache.c
-> >> ===================================================================
-> >> --- linux-2.6.orig/fs/dcache.c        2010-07-06 18:08:16.000000000 +0200
-> >> +++ linux-2.6/fs/dcache.c     2010-07-06 18:08:19.000000000 +0200
-> >> @@ -1977,8 +1977,7 @@ global_root:
-> >>   * @buffer: buffer to return value in
-> >>   * @buflen: buffer length
-> >>   *
-> >> - * Convert a dentry into an ASCII path name. If the entry has been deleted
-> >> - * the string " (deleted)" is appended. Note that this is ambiguous.
-> >> + * Convert a dentry into an ASCII path name.
-> >>   *
-> >>   * Returns a pointer into the buffer or an error code if the
-> >>   * path was too long.
+> > > > @@ -215,14 +222,14 @@ swiotlb_late_init_with_default_size(size_t
+> > > > default_size) bytes = io_tlb_nslabs << IO_TLB_SHIFT;
 > >
-> > I'd prefer the comment about it being ambiguous remain.  I'm waiting to see how
-> > long it takes for somebody to create a security hole by creating a file called
-> > '/etc/some/thing/important (deleted)' and having some software Do The Wrong
-> > Thing instead to /etc/some/thing/important.
-> >
-> 
-> In order to close this kind of hole why not creating a deleted
-> directory on /proc and redirect symbolic link to this directory.
-> And do the same for unreachable. If we use the good permission it will
-> work from a backaward compatibily point of view
+> > You should also initialize the __io_tlb_start array first:
+>
+> Yeah, I know. As I wrote, this patchset breaks IA64.
+>
+> I really merge to swiotlb's two memory allocator mechanisms
+> (swiotlb_init_with_default_size and
+> swiotlb_late_init_with_default_size). I need to look at the x86 memory
+> boot code after memblock surgery finishes.
 
-Unfortunately the "(deleted)" thing is part of the userspace ABI and
-can't be changed.
+<nods>
+>
+> And as you know, I've not fixed the error path and swiotlb_free. I'll
+> do later if people are not against swiotlb dynamic allocation.
 
-The only thing we can do is make sure new interfaces use a saner
-convention.
+It looks to me like it would be a good patch.
 
-Thanks,
-Miklos
+I am curious about the handling of the -ENOMEM stage. Naturally we would 
+return an error the device - are the most common ones (ahci, r8169, 
+ata_piix - those that are DMA_32) equipped to deal with unavailable memory?
