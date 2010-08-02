@@ -1,168 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab0HBHRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:17:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60365 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab0HBHRX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:17:23 -0400
-Message-ID: <4C56706C.6040407@kernel.org>
-Date: Mon, 02 Aug 2010 00:14:52 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1752803Ab0HBHR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:17:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49549 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab0HBHR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 03:17:56 -0400
+Message-ID: <4C5670DA.2080703@zytor.com>
+Date: Mon, 02 Aug 2010 00:16:42 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] x86: more early console output from compressed/misc.c
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86, setup: reorgize the early_console_setup
 References: <4C56701B.1030000@kernel.org>
 In-Reply-To: <4C56701B.1030000@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C5670D3.0360,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/02/2010 12:13 AM, Yinghai Lu wrote:
+> also make main.c to include printf.c/string.c/cmdline.c
 
-will get
+No.  We don't include .c files that way.
 
-|Decompressing Linux... Parsing ELF... done.
-|Booting the kernel.
+	-hpa
 
-in serial console.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-reuse code from arch/x86/boot/
-and we can use printf if needed
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/boot/compressed/misc.c |   60 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 59 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/arch/x86/boot/compressed/misc.c
-===================================================================
---- linux-2.6.orig/arch/x86/boot/compressed/misc.c
-+++ linux-2.6/arch/x86/boot/compressed/misc.c
-@@ -125,12 +125,14 @@ static void error(char *m);
-  */
- static struct boot_params *real_mode;		/* Pointer to real-mode data */
- static int quiet;
-+static int debug;
- 
- void *memset(void *s, int c, size_t n);
- void *memcpy(void *dest, const void *src, size_t n);
- 
- static void __putstr(int, const char *);
- #define putstr(__x)  __putstr(0, __x)
-+#define puts(__x)  __putstr(0, __x)
- 
- #ifdef CONFIG_X86_64
- #define memptr long
-@@ -145,6 +147,9 @@ static char *vidmem;
- static int vidport;
- static int lines, cols;
- 
-+#include "../string.c"
-+#include "../printf.c"
-+
- #ifdef CONFIG_KERNEL_GZIP
- #include "../../../../lib/decompress_inflate.c"
- #endif
-@@ -161,6 +166,27 @@ static int lines, cols;
- #include "../../../../lib/decompress_unlzo.c"
- #endif
- 
-+static unsigned long fs;
-+static inline void set_fs(unsigned long seg)
-+{
-+	fs = seg << 4;  /* shift it back */
-+}
-+typedef unsigned long addr_t;
-+static inline char rdfs8(addr_t addr)
-+{
-+	return *((char *)(fs + addr));
-+}
-+#include "../cmdline.c"
-+int cmdline_find_option(const char *option, char *buffer, int bufsize)
-+{
-+	return __cmdline_find_option(real_mode->hdr.cmd_line_ptr, option, buffer, bufsize);
-+}
-+int cmdline_find_option_bool(const char *option)
-+{
-+	return __cmdline_find_option_bool(real_mode->hdr.cmd_line_ptr, option);
-+}
-+#include "../early_serial_console.c"
-+
- static void scroll(void)
- {
- 	int i;
-@@ -170,6 +196,16 @@ static void scroll(void)
- 		vidmem[i] = ' ';
- }
- 
-+static void serial_putchar(int ch)
-+{
-+	unsigned timeout = 0xffff;
-+
-+	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
-+		cpu_relax();
-+
-+	outb(ch, early_serial_base + TXR);
-+}
-+
- static void __putstr(int error, const char *s)
- {
- 	int x, y, pos;
-@@ -179,6 +215,14 @@ static void __putstr(int error, const ch
- 	if (!error)
- 		return;
- #endif
-+	if (early_serial_base) {
-+		const char *str = s;
-+		while (*str) {
-+			if (*str == '\n')
-+				serial_putchar('\r');
-+			serial_putchar(*str++);
-+		}
-+	}
- 
- 	if (real_mode->screen_info.orig_video_mode == 0 &&
- 	    lines == 0 && cols == 0)
-@@ -305,8 +349,12 @@ asmlinkage void decompress_kernel(void *
- {
- 	real_mode = rmode;
- 
--	if (real_mode->hdr.loadflags & QUIET_FLAG)
-+	if (cmdline_find_option_bool("quiet"))
- 		quiet = 1;
-+	if (cmdline_find_option_bool("debug"))
-+		debug = 1;
-+
-+	console_init();
- 
- 	if (real_mode->screen_info.orig_video_mode == 7) {
- 		vidmem = (char *) 0xb0000;
-@@ -322,6 +370,16 @@ asmlinkage void decompress_kernel(void *
- 	free_mem_ptr     = heap;	/* Heap */
- 	free_mem_end_ptr = heap + BOOT_HEAP_SIZE;
- 
-+	if (debug) {
-+		putstr("decompress_kernel:\n");
-+		printf("  input: [0x%lx-0x%lx], output: 0x%lx, heap: [0x%lx-0x%lx]\n",
-+			 (unsigned long)input_data,
-+			 (unsigned long)input_data + input_len - 1,
-+			 (unsigned long)output,
-+			 (unsigned long)heap,
-+			 (unsigned long)heap + BOOT_HEAP_SIZE - 1);
-+	}
-+
- 	if ((unsigned long)output & (MIN_KERNEL_ALIGN - 1))
- 		error("Destination address inappropriately aligned");
- #ifdef CONFIG_X86_64
