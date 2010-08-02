@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab0HBSfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:35:16 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58272 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754301Ab0HBSfO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:35:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=rwSu5bN2NypNbk2JGCN7nCBZdlpq/C2XtG2iZMQm+3zeKja0brQNb84rJre2i2WzU6
-         elYZMunhw+aAA5vwGqUad816aZf3NfdeARxrkhqXGjqvqCpGmhQeOX70UlgJPebiI1Er
-         l6BrixfTu9uCeW7n9Wu7mPEqGT5n5oz5qfhyI=
-Date: Mon, 2 Aug 2010 20:35:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Markus Metzger <markus.t.metzger@intel.com>,
-        Robert Richter <robert.richter@amd.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] BTS based perf user callchains
-Message-ID: <20100802183506.GA8962@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754462Ab0HBSjF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:39:05 -0400
+Received: from phil.doycomm.com ([66.219.128.249]:45352 "EHLO phil.doycomm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754334Ab0HBSjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:39:03 -0400
+Subject: Re: Linux 2.6.35
+From: Donald Parsons <dparsons@brightdsl.net>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <201008020748.09968.bjorn.helgaas@hp.com>
+References: <1280716262.5125.42.camel@falcon.homelinux.org>
+	 <201008012138.39036.bjorn.helgaas@hp.com>
+	 <1280722876.5125.83.camel@falcon.homelinux.org>
+	 <201008020748.09968.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Aug 2010 14:38:36 -0400
+Message-ID: <1280774316.5098.36.camel@falcon.homelinux.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-08-02 at 07:48 -0600, Bjorn Helgaas wrote:
 
-As you may know there is an issue with user stacktraces: it requires
-userspace apps to be built with frame pointers.
+> Netconsole has special kernel support that doesn't require the normal
+> networking stack to be configured, so it works quite early.  You
+> would want to build your networking driver into the kernel for the
+> most benefit.
 
-So there is something we can try: dump a piece of the top user stack page
-each time we have an event hit and let the tools deal with that later using
-the dwarf informations.
+I compiled network module sky2 and netconsole into kernel 2.6.35.
 
-But before trying that, which might require heavy copies, I would like to
-try something based on BTS. The idea is to look at the branch buffer and
-only pick addresses of branches that originated from "call" instructions.
+Inserted into kernel line:
+"debug netconsole=192.168.1.10/eth0,192.168.1.5/00:11:25:aa:79:f7"
 
-So we want BTS activated, only in user ring, without the need of interrupts
-once we reach the limit of the buffer, we can just run in a kind of live
-mode and read on need. This could be a secondary perf event that has no mmap
-buffer. Something only used by the kernel internally by others true perf events
-in a given context. Primary perf events can then read on this BTS buffer when
-they want.
+and ran on a laptop the cmd:   "nc -l -u 6666"
+using all default ports if I read documentation correctly.
 
-Now there are two ways:
+This failed to show any output at all. 
 
-- record the whole branch buffer each time we overflow on another perf event
-and let post processing userspace deal with "call" instruction filtering to
-build the stacktrace on top of the branch trace.
+> If that doesn't work, you could try capturing the log on VGA with a
+> digital camera or video camera, possibly with "boot_delay=" to
+> slow things down.
 
-- do the "call" filtering on record time. That requires to inspect each
-recorded branches and look at the instruction content from the fast path.
+What or how much do you want shot with my digital camera? I see
+maybe 3 or 4 screens fulls go by to where boot fails.
 
-I don't know which solution could be the faster one.
+I added "boot_delay=15" for next boot.
 
+> > Should I try building sata driver into kernel?
 
-I'm not even sure that will work. Also, while looking at the BTS implementation
-in perf, I see we have one BTS buffer per cpu. But that doesn't look right as
-the code flow is not linear per cpu but per task. Hence I suspect we need
-one BTS buffer per task. But may be someone tried that and encountered a
-problem?
+I think it is already in kernel, since no sata modules load
+in a booting kernel (assuming sata is part of module name).
 
+> I doubt that will make a difference.  It seems like the problem
+> is that we don't find your root filesystem, probably because there's
+> something wrong with the HBA leading to that device.  For example,
+> maybe the PCI core mistakenly moved or disabled the adapter, or
+> there's some problem with its interrupt.
 
-Tell me your feelings.
+I only see one sata compiled into kernel: CONFIG_SATA_PMP=y
+and I also see no sata's loaded with lsmod in a working
+kernel (2.6.34.1).
 
-Thanks.
+I am going to rebuild again with CONFIG_SATA_AHCI=y
+instead of =m as it is Fedora's config (do not know how
+it got changed).   These modules are loaded in 2.6.34.1:
+
+#lsmod | egrep "ata|ahci"
+ata_generic     3427  0 
+pata_acpi       3227  0 
+pata_jmicron    2547  0 
+ahci           35887  4 
+libata        157450  4 ata_generic,pata_acpi,pata_jmicron,ahci
+scsi_mod      147895  5 sg,sr_mod,usb_storage,sd_mod,libata
+
+Thanks,
+Don
 
