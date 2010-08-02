@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab0HBM4O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 08:56:14 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43010 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab0HBM4M (ORCPT
+	id S1752000Ab0HBM4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 08:56:45 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47383 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab0HBM4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 08:56:12 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: hp fk <fkhp101@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
-In-Reply-To: Your message of "Mon, 02 Aug 2010 20:24:38 +0800."
-             <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1280753770_76572P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 02 Aug 2010 08:56:10 -0400
-Message-ID: <215375.1280753770@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020206.4C56C06B.0201,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 2 Aug 2010 08:56:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IaFNj6kUWGqTbRi3XaeYrjBA7SOP1GkjgFoJq4cCWUAA/XO4V4cKbqLrpB01SJwU2u
+         YL0FKz7bZjNT96lU71/g7GTvuROj6K08KqSVS6lu+WmNGPwO7tK3IhsVLyuQB1yy+KVK
+         LVFmlBzpP5T/D/X0Sahi7vh5fOSoqEuUFe6nw=
+Date: Mon, 2 Aug 2010 16:56:38 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Joe Eloff <kagen101@gmail.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/9 v3] staging: dt3155: check put_user() return value
+Message-ID: <20100802125638.GA6412@albatros>
+References: <1280737873-5992-1-git-send-email-segooon@gmail.com>
+ <20100802124125.GG5814@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802124125.GG5814@verge.net.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1280753770_76572P
-Content-Type: text/plain; charset=us-ascii
+put_user() returns code was not checked for errors. To simplify the code
+fill local struct dt3155_read with data and copy it with single
+copy_to_user() call.
 
-On Mon, 02 Aug 2010 20:24:38 +0800, hp fk said:
-> Kademlia protocol is widely used by many p2p applications, if kernel
-> support the Kademlia protocol and its p2p network infrastracture. it
-> will be easier to bring us into a new stage of network with much more
-> freedom and equality
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/staging/dt3155/dt3155_drv.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
-1) You failed to explain what kernel support, if any, would be needed for this
-protocol.  What does Kademlia do that the current kernel can't handle already?
-(Hint - if it runs on a Windows system without patching the Windows kernel, it
-almost certainly doesn't need extensive patches for Linux either).
-
-2) You forgot to cc: netdev@vger.kernel.org, which is where all the networking
-people hang out.
-
-
---==_Exmh_1280753770_76572P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMVsBqcC3lWbTT17ARAilVAKDCM2p5BjgcPJVsLBvWB1/hZHEyFwCfXF9j
-yJAtnU5cRuAEj9QxKr/NTx8=
-=jSZC
------END PGP SIGNATURE-----
-
---==_Exmh_1280753770_76572P--
+diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+index 7316996..6031837 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -745,6 +745,7 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
+   struct dt3155_status *dts = &dt3155_status[minor];
+   struct dt3155_fbuffer *fb = &dts->fbuffer;
+   struct frame_info	*frame_info;
++  struct dt3155_read dt_read;
+ 
+   /* TODO: this should check the error flag and */
+   /*   return an error on hardware failures */
+@@ -797,14 +798,12 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
+ 
+   /* make this an offset */
+   offset = frame_info->addr - dts->mem_addr;
++  dt_read.offset = offset;
++  dt_read.frame_seq = fb->frame_count;
++  dt_read.state = dts->state;
++  memcpy(&dt_read.frame_info, frame_info, sizeof(struct frame_info));
+ 
+-  put_user(offset, (unsigned int __user *)buf);
+-  buf += sizeof(u32);
+-  put_user(fb->frame_count, (unsigned int __user *)buf);
+-  buf += sizeof(u32);
+-  put_user(dts->state, (unsigned int __user *)buf);
+-  buf += sizeof(u32);
+-  if (copy_to_user(buf, frame_info, sizeof(*frame_info)))
++  if (copy_to_user(buf, &dt_read, sizeof(struct dt3155_read)))
+       return -EFAULT;
+ 
+   return sizeof(struct dt3155_read);
+-- 
+1.7.0.4
 
