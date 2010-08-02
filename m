@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab0HBPCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:02:05 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42578 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab0HBPCD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:02:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=FDecmzmuyY3qNgP06ERAphasx1RKkAq0TRTpyRQ+EJSFI5TeS2SVO9X0OZcxAUyoBv
-         9WIExqJUVXCs3TlJRgSOYoHm5+fIOYDzZzgh5NjcJ02QM/37o37gxKYCoN1ULjkAqoyP
-         Mdg9mvVM1y0QdxED51C8olfoJ/yBADQSPcdZs=
+	id S1753144Ab0HBPFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:05:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48896 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752513Ab0HBPFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 11:05:21 -0400
+Date: Mon, 2 Aug 2010 17:02:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100802150206.GA10218@redhat.com>
+References: <1277996135.1917.198.camel@laptop> <4C2E2987.9040702@us.ibm.com> <1278094270.1917.288.camel@laptop> <20100702210637.GA12433@redhat.com> <20100726171230.GA27644@redhat.com> <1280166688.3375.5.camel@localhost> <20100726180834.GA26988@redhat.com> <20100727154155.GA13419@redhat.com> <20100730141901.GA9076@redhat.com> <20100801085022.GD16158@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <6501.1280759131@localhost>
-References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
-	<215375.1280753770@localhost>
-	<AANLkTi=keL2rUzxdxgscTU9cQSNxOnAtGVuAwTq9Wfuq@mail.gmail.com>
-	<6501.1280759131@localhost>
-Date: Mon, 2 Aug 2010 23:02:01 +0800
-Message-ID: <AANLkTik8DSLFeGqHspYjykt_vCF7SxupKSxKcB2LLRhj@mail.gmail.com>
-Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
-From: hp fk <fkhp101@gmail.com>
-To: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100801085022.GD16158@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/2  <Valdis.Kletnieks@vt.edu>:
-> On Mon, 02 Aug 2010 22:10:30 +0800, you said:
-> Two problems with that:
+On 08/01, Michael S. Tsirkin wrote:
 >
-> 1) There doesn't seem to be any push to get multiple HTTP-speaking
-> programs (firefox, wget, yum, etc) to a 'consolidated' one - letting the
-> kernel keep track of connections to userspace seems to work well
-> there.  You need to explain what *exactly* the kernel will be doing
-> to support this (in other words, have at least the start of an API
-> and what the semantics are..)
+> Oleg, I mean Ack the exporting of get/set affinity.
 
- HTTP if more of an access protocol,the logical network is woven in
-the web page controled by html, the network needed is formed and take
-part in by tcp/ip protocol which usually lies in kernel.
+Ah, I misunderstood.
 
-Kademlia itself has the responsibility to weave the p2p network and
-bring a node into the p2p network before access can be done.
+Yes, I believe the exporting is the lesser evil. Please feel free
+to add my ack.
+
+Oleg.
+
