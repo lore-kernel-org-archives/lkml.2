@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab0HBQKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:10:22 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:49420 "EHLO e3.ny.us.ibm.com"
+	id S1754192Ab0HBQKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:10:45 -0400
+Received: from sh.osrg.net ([192.16.179.4]:43700 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753991Ab0HBQKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:10:18 -0400
-Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
- virtio-net.
-From: Shirley Ma <mashirle@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-In-Reply-To: <20100801083113.GB16158@redhat.com>
-References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
-	 <1280442682.9058.15.camel@localhost.localdomain>
-	 <20100801083113.GB16158@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Aug 2010 09:10:11 -0700
-Message-ID: <1280765411.22830.15.camel@localhost.localdomain>
+	id S1753991Ab0HBQKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 12:10:42 -0400
+Date: Tue, 3 Aug 2010 01:10:25 +0900
+To: tao.ma@oracle.com
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH] ide: Use kzalloc in idedisk_prepare_flush.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1280740951-13487-1-git-send-email-tao.ma@oracle.com>
+References: <1280740951-13487-1-git-send-email-tao.ma@oracle.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100803010903I.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 03 Aug 2010 01:10:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michael,
+On Mon,  2 Aug 2010 17:22:31 +0800
+Tao Ma <tao.ma@oracle.com> wrote:
 
-On Sun, 2010-08-01 at 11:31 +0300, Michael S. Tsirkin wrote:
-> Could you provide an example of a good setup?
-> Specifically, is it a good idea for the vhost thread
-> to inherit CPU affinities from qemu? 
+> Signed-off-by: Tao Ma <tao.ma@oracle.com>
+> ---
+>  drivers/ide/ide-disk.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
+> index 33d6503..127a5a2 100644
+> --- a/drivers/ide/ide-disk.c
+> +++ b/drivers/ide/ide-disk.c
+> @@ -430,12 +430,11 @@ static void ide_disk_unlock_native_capacity(ide_drive_t *drive)
+>  static void idedisk_prepare_flush(struct request_queue *q, struct request *rq)
+>  {
+>  	ide_drive_t *drive = q->queuedata;
+> -	struct ide_cmd *cmd = kmalloc(sizeof(*cmd), GFP_ATOMIC);
+> +	struct ide_cmd *cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
+>  
+>  	/* FIXME: map struct ide_taskfile on rq->cmd[] */
+>  	BUG_ON(cmd == NULL);
+>  
+> -	memset(cmd, 0, sizeof(*cmd));
 
-I need to retest my set up with multi-threads vhost. My previous set up
-applies to single thread vhost. The single stream netperf/netserver set
-up, for example, if we have two quad-cores sockets to get the consistent
-9.4Gb/s BW:
-
-socket 1:
-cpu0: netperf/netserver
-cpu1: ixgbe 10GbE NIC IRQ 
-cpu2: I/O thread
-cpu3: vhost thread
-
-socket 2:
-cpu0: QEMU VCPU0
-cpu1: QEMU VCPU1
-cpu2:
-cpu3:
-
-Thanks
-Shirley
-
+This change conflicts with the change in linux-next (came from Jens'
+tree).
