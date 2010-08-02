@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab0HBIHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 04:07:22 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:58268
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752152Ab0HBIHS (ORCPT
+	id S1753916Ab0HBIIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 04:08:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48371 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab0HBIIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 04:07:18 -0400
-X-SpamScore: -29
-X-BigFish: VS-29(zz1102K1432N98dN936eMzz1202hzz15d4Rz32i2a8h87h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L6IMJV-02-1XV-02
-X-M-MSG: 
-Date: Mon, 2 Aug 2010 10:10:13 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Message-ID: <20100802081012.GA29744@amd.com>
-References: <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
- <bad58db98c165a61860827d4e720acf8.squirrel@www.codeaurora.org>
- <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
- <201007291026.55928.arnd@arndb.de>
- <1280546124.1902.30.camel@pasglop>
- <20100802074812.GM24084@amd.com>
- <1280736182.1902.55.camel@pasglop>
+	Mon, 2 Aug 2010 04:08:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=yDO/FCQcrEiq2/tVPsvelT2UJSjIfImdkEP0AEHeQx99/moj/ugUg54HVoT4ZB7ZPu
+         vogIEmUUlHIeIJdwtrWXU0JkADcKXsJxo58eAnZkx7qbOm6toiSzbsJ9G4AmUHq5xITb
+         0nVc5G4JKEicKzoUdDqYm4DTvAwj6zqjPovAI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1280736182.1902.55.camel@pasglop>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+In-Reply-To: <1280711334-30000-12-git-send-email-acme@infradead.org>
+References: <1280711334-30000-1-git-send-email-acme@infradead.org>
+	<1280711334-30000-12-git-send-email-acme@infradead.org>
+Date: Mon, 2 Aug 2010 11:08:39 +0300
+X-Google-Sender-Auth: D-mD4mEL0SwO9IqkmnqXRQ3qFeE
+Message-ID: <AANLkTikds+dU23bsmV+xSG0GX_f3NCesuOokMH7CJMoA@mail.gmail.com>
+Subject: Re: [PATCH 11/19] perf record: Release resources at exit
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 04:03:02AM -0400, Benjamin Herrenschmidt wrote:
-> On Mon, 2010-08-02 at 09:48 +0200, Roedel, Joerg wrote:
-> > > Hrm, indeed I just noticed that. Pretty gross... it should definitly
-> > be
-> > > renamed, is will caused endless confusion with unrelated iommu.h and
-> > > iommu_* interfaces which represent something different.
-> > 
-> > The first direction to go should be trying to unify all the different
-> > iommu* interfaces into the iommu-api. The generic api will definitly
-> > need to be extended for that, but since it is an in-kernel interface
-> > thats no problem. 
-> 
-> Well, I suppose I'm the de-facto candidate to take care of the powerpc
-> side then :-)
-> 
-> I don't have the bandwidth right now, but I'll try to have a look when
-> time permits.
+On Mon, Aug 2, 2010 at 4:08 AM, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+>
+> So that we can reduce the noise on valgrind when looking for memory
+> leaks.
+>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> LKML-Reference: <new-submission>
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Great :-)
+Yes, please.
 
--- 
-Joerg Roedel - AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
