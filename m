@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0HBHvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:51:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60316 "EHLO hera.kernel.org"
+	id S1753585Ab0HBHwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:52:00 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60304 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753337Ab0HBHvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:51:40 -0400
-Date: Mon, 2 Aug 2010 07:51:23 GMT
+	id S1753482Ab0HBHvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 03:51:24 -0400
+Date: Mon, 2 Aug 2010 07:51:04 GMT
 From: tip-bot for Dave Martin <dave.martin@linaro.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, dave.martin@linaro.org,
         hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
@@ -15,147 +15,113 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, dave.martin@linaro.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Remove unneeded code for tracking the cwd in perf sessions
-Message-ID: <tip-88ca895dd4e0e64ebd942adb7925fa60ca5b2a98@git.kernel.org>
-Git-Commit-ID: 88ca895dd4e0e64ebd942adb7925fa60ca5b2a98
+Subject: [tip:perf/core] perf report: Don't abbreviate file paths relative to the cwd
+Message-ID: <tip-361d13462585474267a0c41e956f1a1c19a93f17@git.kernel.org>
+Git-Commit-ID: 361d13462585474267a0c41e956f1a1c19a93f17
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 07:51:24 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 07:51:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  88ca895dd4e0e64ebd942adb7925fa60ca5b2a98
-Gitweb:     http://git.kernel.org/tip/88ca895dd4e0e64ebd942adb7925fa60ca5b2a98
+Commit-ID:  361d13462585474267a0c41e956f1a1c19a93f17
+Gitweb:     http://git.kernel.org/tip/361d13462585474267a0c41e956f1a1c19a93f17
 Author:     Dave Martin <dave.martin@linaro.org>
-AuthorDate: Tue, 27 Jul 2010 11:46:12 -0300
+AuthorDate: Tue, 27 Jul 2010 16:40:02 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 27 Jul 2010 11:46:12 -0300
+CommitDate: Tue, 27 Jul 2010 11:39:04 -0300
 
-perf tools: Remove unneeded code for tracking the cwd in perf sessions
+perf report: Don't abbreviate file paths relative to the cwd
 
-Tidy-up patch to remove some code and struct perf_session data members
-which are no longer needed due to the previous patch: "perf tools: Don't
-abbreviate file paths relative to the cwd".
+This avoids around some problems where the full path is executables and DSOs it
+needed for finding debug symbols on platforms with separated debug symbol files
+such as Ubuntu.  This is simpler than tracking an extra name for each image.
+
+The only impact should be that paths in verbose output from the perf tools
+become absolute, instead of relative to .
 
 LKML-Reference: <new-submission>
 Signed-off-by: Dave Martin <dave.martin@linaro.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-buildid-list.c |    4 +---
- tools/perf/builtin-diff.c         |    2 --
- tools/perf/builtin-report.c       |    2 --
- tools/perf/util/session.c         |   22 +---------------------
- tools/perf/util/symbol.h          |    1 -
- 5 files changed, 2 insertions(+), 29 deletions(-)
+ tools/perf/util/event.c |    2 +-
+ tools/perf/util/map.c   |   22 +---------------------
+ tools/perf/util/map.h   |    2 +-
+ 3 files changed, 3 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index 9989072..44a47e1 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -43,10 +43,8 @@ static int __cmd_buildid_list(void)
- 	if (session == NULL)
- 		return -1;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 121339f..5b81bb2 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -517,7 +517,7 @@ int event__process_mmap(event_t *self, struct perf_session *session)
+ 	map = map__new(&machine->user_dsos, self->mmap.start,
+ 			self->mmap.len, self->mmap.pgoff,
+ 			self->mmap.pid, self->mmap.filename,
+-			MAP__FUNCTION, session->cwd, session->cwdlen);
++			MAP__FUNCTION);
  
--	if (with_hits) {
--		symbol_conf.full_paths = true;
-+	if (with_hits)
- 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
--	}
+ 	if (thread == NULL || map == NULL)
+ 		goto out_problem;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index e672f2f..37cab90 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -17,16 +17,6 @@ static inline int is_anon_memory(const char *filename)
+ 	return strcmp(filename, "//anon") == 0;
+ }
  
- 	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
- 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 39e6627..fca1d44 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -180,8 +180,6 @@ static const struct option options[] = {
- 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
- 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
- 		    "load module symbols - WARNING: use only with -k and LIVE kernel"),
--	OPT_BOOLEAN('P', "full-paths", &symbol_conf.full_paths,
--		    "Don't shorten the pathnames taking into account the cwd"),
- 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
- 		   "only consider symbols in these dsos"),
- 	OPT_STRING('C', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index ce42bba..2f4b929 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -441,8 +441,6 @@ static const struct option options[] = {
- 		   "pretty printing style key: normal raw"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
- 		   "sort by key(s): pid, comm, dso, symbol, parent"),
--	OPT_BOOLEAN('P', "full-paths", &symbol_conf.full_paths,
--		    "Don't shorten the pathnames taking into account the cwd"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 0307918..8cbea12 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -96,8 +96,6 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
- 	self->hists_tree = RB_ROOT;
- 	self->last_match = NULL;
- 	self->mmap_window = 32;
--	self->cwd = NULL;
--	self->cwdlen = 0;
- 	self->machines = RB_ROOT;
- 	self->repipe = repipe;
- 	INIT_LIST_HEAD(&self->ordered_samples.samples_head);
-@@ -130,7 +128,6 @@ void perf_session__delete(struct perf_session *self)
+-static int strcommon(const char *pathname, char *cwd, int cwdlen)
+-{
+-	int n = 0;
+-
+-	while (n < cwdlen && pathname[n] == cwd[n])
+-		++n;
+-
+-	return n;
+-}
+-
+ void map__init(struct map *self, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso)
  {
- 	perf_header__exit(&self->header);
- 	close(self->fd);
--	free(self->cwd);
- 	free(self);
- }
+@@ -43,7 +33,7 @@ void map__init(struct map *self, enum map_type type,
  
-@@ -832,23 +829,6 @@ int perf_session__process_events(struct perf_session *self,
- 	if (perf_session__register_idle_thread(self) == NULL)
- 		return -ENOMEM;
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, char *filename,
+-		     enum map_type type, char *cwd, int cwdlen)
++		     enum map_type type)
+ {
+ 	struct map *self = malloc(sizeof(*self));
  
--	if (!symbol_conf.full_paths) {
--		char bf[PATH_MAX];
+@@ -52,16 +42,6 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		struct dso *dso;
+ 		int anon;
+ 
+-		if (cwd) {
+-			int n = strcommon(filename, cwd, cwdlen);
 -
--		if (getcwd(bf, sizeof(bf)) == NULL) {
--			err = -errno;
--out_getcwd_err:
--			pr_err("failed to get the current directory\n");
--			goto out_err;
+-			if (n == cwdlen) {
+-				snprintf(newfilename, sizeof(newfilename),
+-					 ".%s", filename + n);
+-				filename = newfilename;
+-			}
 -		}
--		self->cwd = strdup(bf);
--		if (self->cwd == NULL) {
--			err = -ENOMEM;
--			goto out_getcwd_err;
--		}
--		self->cwdlen = strlen(self->cwd);
--	}
 -
- 	if (!self->fd_pipe)
- 		err = __perf_session__process_events(self,
- 						     self->header.data_offset,
-@@ -856,7 +836,7 @@ out_getcwd_err:
- 						     self->size, ops);
- 	else
- 		err = __perf_session__process_pipe_events(self, ops);
--out_err:
-+
- 	return err;
- }
+ 		anon = is_anon_memory(filename);
  
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index bb1aab9..6452a07 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -68,7 +68,6 @@ struct symbol_conf {
- 			show_nr_samples,
- 			use_callchain,
- 			exclude_other,
--			full_paths,
- 			show_cpu_utilization;
- 	const char	*vmlinux_name,
- 			*source_prefix,
+ 		if (anon) {
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index f391345..3b2f706 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -106,7 +106,7 @@ void map__init(struct map *self, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso);
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, char *filename,
+-		     enum map_type type, char *cwd, int cwdlen);
++		     enum map_type type);
+ void map__delete(struct map *self);
+ struct map *map__clone(struct map *self);
+ int map__overlap(struct map *l, struct map *r);
