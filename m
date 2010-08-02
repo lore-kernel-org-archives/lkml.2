@@ -1,102 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab0HBUjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:39:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41221 "EHLO mail.zytor.com"
+	id S1755338Ab0HBUkH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:40:07 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:45562 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab0HBUjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:39:19 -0400
-Message-ID: <4C572CBB.1070403@zytor.com>
-Date: Mon, 02 Aug 2010 13:38:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1751102Ab0HBUkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 16:40:02 -0400
+Date: Mon, 2 Aug 2010 13:40:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@osdl.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner
+ comment
+Message-ID: <20100802204000.GH2405@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk>
+ <20100729114555.29508.4525.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 2/2] x86: more early console output from	compressed/misc.c
-References: <4C56701B.1030000@kernel.org> <4C5670DA.2080703@zytor.com> <4C5680D2.4020302@kernel.org> <4C568D2B.205@kernel.org> <4C568D6F.3050004@kernel.org> <20100802174916.GD5544@lenovo> <4C5710C1.8020809@zytor.com> <20100802185410.GE5544@lenovo> <4C57153F.7030107@zytor.com> <4C571DF2.5080100@kernel.org>
-In-Reply-To: <4C571DF2.5080100@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100729114555.29508.4525.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 12:35 PM, Yinghai Lu wrote:
+On Thu, Jul 29, 2010 at 12:45:55PM +0100, David Howells wrote:
+> Fix __task_cred()'s lockdep check by removing the following validation
+> condition:
 > 
-> it seems I can not global variables in arch/x86/boot/compressed/misc.c
+> 	lockdep_tasklist_lock_is_held()
 > 
+> as commit_creds() does not take the tasklist_lock, and nor do most of the
+> functions that call it, so this check is pointless and it can prevent
+> detection of the RCU lock not being held if the tasklist_lock is held.
+> 
+> Instead, add the following validation condition:
+> 
+> 	task->exit_state >= 0
+> 
+> to permit the access if the target task is dead and therefore unable to change
+> its own credentials.
+> 
+> 
+> Fix __task_cred()'s comment to:
+> 
+>  (1) discard the bit that says that the caller must prevent the target task
+>      from being deleted.  That shouldn't need saying.
+> 
+>  (2) Add a comment indicating the result of __task_cred() should not be passed
+>      directly to get_cred(), but rather than get_task_cred() should be used
+>      instead.
+> 
+> Also put a note into the documentation to enforce this point there too.
 
-Well, that should be fixed, then.  If we can't use the linker for what
-it's supposed to be used for it's just crap.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> and misc.c already include some decompress .c like
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Acked-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
 > 
-> #ifdef CONFIG_KERNEL_GZIP
-> #include "../../../../lib/decompress_inflate.c"
-> #endif
+>  Documentation/credentials.txt |    3 +++
+>  include/linux/cred.h          |   15 ++++++++++-----
+>  include/linux/sched.h         |    1 +
+>  3 files changed, 14 insertions(+), 5 deletions(-)
 > 
-> #ifdef CONFIG_KERNEL_BZIP2
-> #include "../../../../lib/decompress_bunzip2.c"
-> #endif
+> diff --git a/Documentation/credentials.txt b/Documentation/credentials.txt
+> index a2db352..995baf3 100644
+> --- a/Documentation/credentials.txt
+> +++ b/Documentation/credentials.txt
+> @@ -417,6 +417,9 @@ reference on them using:
+>  This does all the RCU magic inside of it.  The caller must call put_cred() on
+>  the credentials so obtained when they're finished with.
 > 
-> #ifdef CONFIG_KERNEL_LZMA
-> #include "../../../../lib/decompress_unlzma.c"
-> #endif
+> + [*] Note: The result of __task_cred() should not be passed directly to
+> +     get_cred() as this may race with commit_cred().
+> +
+>  There are a couple of convenience functions to access bits of another task's
+>  credentials, hiding the RCU magic from the caller:
 > 
-> #ifdef CONFIG_KERNEL_LZO
-> #include "../../../../lib/decompress_unlzo.c"
-> #endif
+> diff --git a/include/linux/cred.h b/include/linux/cred.h
+> index ce40cbc..4d2c395 100644
+> --- a/include/linux/cred.h
+> +++ b/include/linux/cred.h
+> @@ -274,13 +274,18 @@ static inline void put_cred(const struct cred *_cred)
+>   * @task: The task to query
+>   *
+>   * Access the objective credentials of a task.  The caller must hold the RCU
+> - * readlock.
+> + * readlock or the task must be dead and unable to change its own credentials.
+>   *
+> - * The caller must make sure task doesn't go away, either by holding a ref on
+> - * task or by holding tasklist_lock to prevent it from being unlinked.
+> + * The result of this function should not be passed directly to get_cred();
+> + * rather get_task_cred() should be used instead.
+>   */
+> -#define __task_cred(task) \
+> -	((const struct cred *)(rcu_dereference_check((task)->real_cred, rcu_read_lock_held() || lockdep_tasklist_lock_is_held())))
+> +#define __task_cred(task)						\
+> +	({								\
+> +		const struct task_struct *__t = (task);			\
+> +		rcu_dereference_check(__t->real_cred,			\
+> +				      rcu_read_lock_held() ||		\
+> +				      task_is_dead(__t));		\
+> +	})
 > 
-
-Yes, I know; that's crap in a lot of ways too... the whole decompression
-stuff is its own issue which is slowly being addressed.  It's not an
-excuse to make the code crappier than it already is.
-
+>  /**
+>   * get_current_cred - Get the current task's subjective credentials
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 747fcae..0478888 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -214,6 +214,7 @@ extern char ___assert_task_state[1 - 2*!!(
 > 
-> this patch change to misc.c are following lines:
+>  #define task_is_traced(task)	((task->state & __TASK_TRACED) != 0)
+>  #define task_is_stopped(task)	((task->state & __TASK_STOPPED) != 0)
+> +#define task_is_dead(task)	((task)->exit_state != 0)
+>  #define task_is_stopped_or_traced(task)	\
+>  			((task->state & (__TASK_STOPPED | __TASK_TRACED)) != 0)
+>  #define task_contributes_to_load(task)	\
 > 
-> #define BOOT_BOOT_H
-> #include "../isdigit.h"
-> #include "../string.c"
-> #include "../printf.c"
-> 
-> ...
-> 
-> static unsigned long fs;
-> static inline void set_fs(unsigned long seg)
-> {
->         fs = seg << 4;  /* shift it back */
-> }
-> typedef unsigned long addr_t;
-> static inline char rdfs8(addr_t addr)
-> {
->         return *((char *)(fs + addr));
-> }
-> #include "../cmdline.c"
-> static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
-> {
->         return __cmdline_find_option(real_mode->hdr.cmd_line_ptr, option, buffer, bufsize);
-> }
-> static inline int cmdline_find_option_bool(const char *option)
-> {
->         return __cmdline_find_option_bool(real_mode->hdr.cmd_line_ptr, option);
-> }
-> static int early_serial_base;
-> #include "../early_serial_console.c"
-> 
-> or put them in another file?
-> 
-
-Hmf... games with set_fs() aren't a whole lot of fun at all.  I think it
-would be better to define some wrappers specific to cmdline.c which
-allow it to be using a real pointer in 32-bit mode.
-
-I'll see if I can muck with it, it shouldn't take long.
-
-	-hpa
-
-
