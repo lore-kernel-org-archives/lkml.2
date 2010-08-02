@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab0HBU4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:56:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42639 "EHLO mx2.suse.de"
+	id S1755297Ab0HBU7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:59:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab0HBU4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:56:53 -0400
-Message-ID: <4C572327.7040801@suse.de>
-Date: Mon, 02 Aug 2010 21:57:27 +0200
-From: Tejun Heo <teheo@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1754553Ab0HBU7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 16:59:23 -0400
+Date: Mon, 2 Aug 2010 16:58:34 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+        kamezawa.hiroyu@jp.fujitsu.com, Andrea Righi <righi.andrea@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+        balbir@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 00/11] blkiocg async support
+Message-ID: <20100802205834.GD24697@redhat.com>
+References: <4C369009.80503@ds.jp.nec.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
-References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de> <4C56E5C7.90206@suse.de> <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C369009.80503@ds.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Thomas.
-
-On 08/02/2010 08:52 PM, Thomas Gleixner wrote:
->> Ooh, another reason is timer locality.  If timers are shared per desc,
->> they have much higher chance of being on the same processor.  Global
->> timers would be pretty bad in that respect.
+On Thu, Jul 08, 2010 at 10:57:13PM -0400, Munehiro Ikeda wrote:
+> These RFC patches are trial to add async (cached) write support on blkio
+> controller.
 > 
-> That's irrelevant. If you need to poll an interrupt, then it does not
-> matter at all whether you bounce some cache lines or not.
+> Only test which has been done is to compile, boot, and that write bandwidth
+> seems prioritized when pages which were dirtied by two different processes in
+> different cgroups are written back to a device simultaneously.  I know this
+> is the minimum (or less) test but I posted this as RFC because I would like
+> to hear your opinions about the design direction in the early stage.
 > 
-> In fact we have two cases:
+> Patches are for 2.6.35-rc4.
 > 
->    1) An interrupt needs to be polled all the time. That sucks whether
->       the poll timer bounces a few cache lines or not.
+> This patch series consists of two chunks.
 > 
->    2) Polling an irq for some time. Either it works again after a
->       while, so your suckage is restricted to the poll period. If not
->       see #1
+> (1) iotrack (patch 01/11 -- 06/11)
+> 
+> This is a functionality to track who dirtied a page, in exact which cgroup a
+> process which dirtied a page belongs to.  Blkio controller will read the info
+> later and prioritize when the page is actually written to a block device.
+> This work is originated from Ryo Tsuruta and Hirokazu Takahashi and includes
+> Andrea Righi's idea.  It was posted as a part of dm-ioband which was one of
+> proposals for IO controller.
+> 
+> 
+> (2) blkio controller modification (07/11 -- 11/11)
+> 
+> The main part of blkio controller async write support.
+> Currently async queues are device-wide and async write IOs are always treated
+> as root group.
+> These patches make async queues per a cfq_group per a device to control them.
+> Async write is handled by flush kernel thread.  Because queue pointers are
+> stored in cfq_io_context, io_context of the thread has to have multiple
+> cfq_io_contexts per a device.  So these patches make cfq_io_context per an
+> io_context per a cfq_group, which means per an io_context per a cgroup per a
+> device.
+> 
+> 
 
-Hmm... for spurious and watch the above are true and if it were the
-above two it would definitely make more sense to use per-purpose
-global timers.  The problem is w/ expect tho.  It's supposed to be
-used with normal hot paths, so expect/unexpect operations better be
-low overhead and local.  I'll talk more about it in the other reply.
+Muuh,
 
-> And it's even less of an issue as the main users of this misfeature
-> are laptops and desktop machines, where locality is not really that
-> important. If an enterprise admin decides to ignore the fact that the
-> hardware is flaky, then he does not care about the cache line bounces
-> either.
+You will require one more piece and that is support for per cgroup request
+descriptors on request queue. With writes, it is so easy to consume those
+128 request descriptors.
 
-These problems do happen on intel chipset machines and is something
-which can be worked around with some effort.  Eh, let's talk on the
-other reply.
-
-Thanks.
-
--- 
-tejun
+Thanks
+Vivek
