@@ -1,205 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab0HBTYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 15:24:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32858 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab0HBTYL (ORCPT
+	id S1754585Ab0HBTfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 15:35:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:48202 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab0HBTfU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 15:24:11 -0400
-Message-ID: <4C571B25.3080806@kernel.org>
-Date: Mon, 02 Aug 2010 12:23:17 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+	Mon, 2 Aug 2010 15:35:20 -0400
+Subject: Re: periods and deadlines in SCHED_DEADLINE
+From: Peter Zijlstra <peterz@infradead.org>
+To: Bjoern Brandenburg <bbb@email.unc.edu>
+Cc: Harald Gustafsson <hgu1972@gmail.com>, Raistlin <raistlin@linux.it>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Song Yuan <song.yuan@ericsson.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, setup: reorgize the early_console_setup
-References: <4C56701B.1030000@kernel.org> <20100802150958.GA5544@lenovo>
-In-Reply-To: <20100802150958.GA5544@lenovo>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C571B2A.02B2,ss=1,fgs=0
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <lucabe72@email.it>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>, bastoni@cs.unc.edu,
+        Giuseppe Lipari <lipari@retis.sssup.it>
+In-Reply-To: <B4F5A462-AE78-4BF0-B66E-4A5949A4A519@email.unc.edu>
+References: <1278682707.6083.227.camel@Palantir>
+	 <1278685800.1900.212.camel@laptop>
+	 <AANLkTilufL0jgoqQLKjxbu0egN2l6lCkF9JPCxBfV3Gz@mail.gmail.com>
+	 <1278786710.1998.63.camel@laptop>
+	 <AANLkTin0sj6ONjNcwX6IJHSgi7gKnCzkvD_jaLyOFNjs@mail.gmail.com>
+	 <B4F5A462-AE78-4BF0-B66E-4A5949A4A519@email.unc.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 02 Aug 2010 21:34:58 +0200
+Message-ID: <1280777698.1923.345.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 08:09 AM, Cyrill Gorcunov wrote:
-> On Mon, Aug 02, 2010 at 12:13:31AM -0700, Yinghai Lu wrote:
->>
->> Seperate early_console_setup from tty.c
->> also make main.c to include printf.c/string.c/cmdline.c
->>
->> will reuse early_serial_console.c/string.c/printf.c/cmdline.c in compressed/misc.c
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
+On Sun, 2010-07-11 at 09:32 +0200, Bjoern Brandenburg wrote:
+
+> Trying to infer whether a task is "hard" or "soft" from task
+> parameters is not a good idea, IMO. It's much better to make this an
+> explicit part of the task model that is configured via sched_setparam.
+> By default, tasks should be marked "soft" (this leaves more wiggle
+> room to the kernel); users who care can change the flag to "hard".
+
+I think we're in violent agreement here ;-) and I was convinced that was
+what we were talking about. The question was only how to represent that
+in the sched_param_ex structure, the options were:
+
+ struct sched_param_ex params;
+
+ params.flags |= SF_SOFT;
+ sched_setscheduler_ex( .policy = SCHED_DEADLINE, .param = &params);
+
+vs
+
+ sched_setscheduler_ex( .policy = SCHED_DEADLINE_{SOFT,HARD}, 
+                        .param = &params);
+
+> Taking a step back, I think the problem here is that we are trying to
+> shove too many concepts and properties into a single scheduler. Hard
+> (no tardiness) is different from soft (bounded tardiness) is different
+> from global is different from partitioned.
 > 
-> Hi Yinghai, I'll try to find some time for review though it looks somehow
-> too 'big' for me :)
+> From my point of view, it makes no sense to support hard deadlines
+> under G-EDF (this is backed up by our schedulability studies [1]).
+> Hard deadlines are best served by a P-EDF implementation (that only
+> migrates on task creation/admission).
 > 
-> Actually by reading your initial approach (which was much smaller in size) I
-> thought we end up in something like the patch below, though I'll review this
-> seris. So just to share (I've tested it under qemu). The idea is the same as
-> your was, so I pushed all constant parts into header and use it when needed
-> passing serial line base port via boot_params.
+The problem is more that we need to support things like cpu affinity and
+cpusets within the context of a 'global' scheduler.
 
-Eric doesn't like early_serial_console_base in zero page. and said that is fragile.
+Using cpusets we can partition the 'load-balancer' and create clusters
+(root-domains in linux scheduler speak).
 
-So try to include string.c/printf.c/cmdline.c/early_serial_console.c in arch/x86/boot/compressed/misc.c
-and analyze that command line again.
+Using cpu affinity we can limit tasks to a subset of their cluster's
+cpus.
 
-then kexec path will get support too. that is from arch/x86/boot/compressed/head_32.S or head_64.S, startup_32.
-and skip arch/x86/boot/main.c
+Esp. the latter is very hard to do, and I think we can get away with
+only allowing a single cpu or the full cluster (its a new policy, so
+there is no existing userspace to break).
 
-later with following patch for 3, we get all covered in c code.
-1. arch/x86/boot/main.c: setup code.
-2. arch/x86/boot/compressed/misc.c: decompress_kernel code : the 2 -v3 patches that i sent last night.
-3. arch/x86/kernel/head64.c: real kernel.
+This ends up meaning we need to support both P-EDF and G-EDF for soft,
+and since we want to re-use pretty much all the code and only have a
+different admission test for hard (initially), it would end up also
+being P/G-EDF for hard (even though as you rightly point out, hard G-EDF
+is pretty pointless -- but since the policy doesn't promise EDF, we
+could later improve it to be PD^2 or whatever, at which point global
+hard does start to make sense).
 
-maybe we can make early_serial_console.c and early_printk.c to share some .h etc later.
+(which I guess would suggest we use different policies instead of a
+flag, since that would make most sense if we end up replacing the hard
+part with another policy)
 
-Thanks
+So what I want to have is a sporadic task scheduler, not an EDF
+scheduler (hence also the request to s/SCHED_EDF/SCHED_DEADLINE/ --
+avoiding the obvious SCHED_SPORADIC in order to avoid confusion with the
+POSIX thing).
 
-Yinghai
+EDF is just the easiest of the many different ways to schedule a
+sporadic task set.
 
-[PATCH -v2] x86: Setup early console as early as possible
-
-Analyze "console=uart8250,io,0x3f8,115200n8" in i386_start_kernel/x86_64_start_kernel,
-and call setup_early_serial8250_console() to init early serial console.
-
-only can handle io port kind of 8250. because mmio need ioremap.
-
--v2: use boot_params.hdr.version instead of adding another variable, Suggested by hpa
-     update after using x86 memblock patchset
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/include/asm/setup.h |    2 ++
- arch/x86/kernel/head.c       |   27 +++++++++++++++++++++++++++
- arch/x86/kernel/head32.c     |    2 ++
- arch/x86/kernel/head64.c     |   13 +++++++++++--
- kernel/printk.c              |    4 ++++
- 5 files changed, 46 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/arch/x86/include/asm/setup.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/setup.h
-+++ linux-2.6/arch/x86/include/asm/setup.h
-@@ -42,6 +42,8 @@ static inline void visws_early_detect(vo
- #endif
- 
- extern unsigned long saved_video_mode;
-+int setup_early_serial8250_console(char *cmdline);
-+void setup_early_console(void);
- 
- extern void reserve_standard_io_resources(void);
- extern void i386_reserve_resources(void);
-Index: linux-2.6/arch/x86/kernel/head.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/head.c
-+++ linux-2.6/arch/x86/kernel/head.c
-@@ -54,3 +54,30 @@ void __init reserve_ebda_region(void)
- 	/* reserve all memory between lowmem and the 1MB mark */
- 	memblock_x86_reserve_range(lowmem, 0x100000, "* BIOS reserved");
- }
-+
-+
-+void __init setup_early_console(void)
-+{
-+#ifdef CONFIG_SERIAL_8250_CONSOLE
-+	char constr[64], *p, *q;
-+
-+	/* Can not handle mmio type 8250 uart yet, too early */
-+	p = strstr(boot_command_line, "console=uart8250,io,");
-+	if (!p)
-+		p = strstr(boot_command_line, "console=uart,io,");
-+	if (!p)
-+		return;
-+
-+	p += 8;	/* sizeof "console=" */
-+	q = strchr(p, ' ');
-+	if ((q - p) >= sizeof(constr))
-+		return;
-+
-+	memset(constr, 0, sizeof(constr));
-+	memcpy(constr, p, q - p);
-+
-+	lockdep_init();
-+
-+	setup_early_serial8250_console(constr);
-+#endif
-+}
-Index: linux-2.6/arch/x86/kernel/head32.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/head32.c
-+++ linux-2.6/arch/x86/kernel/head32.c
-@@ -31,6 +31,8 @@ static void __init i386_default_early_se
- 
- void __init i386_start_kernel(void)
- {
-+	setup_early_console();
-+
- 	memblock_init();
- 
- #ifdef CONFIG_X86_TRAMPOLINE
-Index: linux-2.6/arch/x86/kernel/head64.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/head64.c
-+++ linux-2.6/arch/x86/kernel/head64.c
-@@ -46,6 +46,10 @@ static void __init copy_bootdata(char *r
- {
- 	char * command_line;
- 
-+	/* make sure if it is copied already */
-+	if (boot_params.hdr.version)
-+		return;
-+
- 	memcpy(&boot_params, real_mode_data, sizeof boot_params);
- 	if (boot_params.hdr.cmd_line_ptr) {
- 		command_line = __va(boot_params.hdr.cmd_line_ptr);
-@@ -74,6 +78,10 @@ void __init x86_64_start_kernel(char * r
- 	/* clear bss before set_intr_gate with early_idt_handler */
- 	clear_bss();
- 
-+	/* boot_params is in bss */
-+	copy_bootdata(__va(real_mode_data));
-+	setup_early_console();
-+
- 	/* Make NULL pointers segfault */
- 	zap_identity_mappings();
- 
-@@ -97,9 +105,10 @@ void __init x86_64_start_kernel(char * r
- 
- void __init x86_64_start_reservations(char *real_mode_data)
- {
--	memblock_init();
--
- 	copy_bootdata(__va(real_mode_data));
-+	setup_early_console();
-+
-+	memblock_init();
- 
- 	memblock_x86_reserve_range(__pa_symbol(&_text), __pa_symbol(&__bss_stop), "TEXT DATA BSS");
- 
-Index: linux-2.6/kernel/printk.c
-===================================================================
---- linux-2.6.orig/kernel/printk.c
-+++ linux-2.6/kernel/printk.c
-@@ -1204,6 +1204,10 @@ void register_console(struct console *ne
- 	if (console_drivers && newcon->flags & CON_BOOT) {
- 		/* find the last or real console */
- 		for_each_console(bcon) {
-+			/* not again */
-+			if (bcon == newcon)
-+				return;
-+
- 			if (!(bcon->flags & CON_BOOT)) {
- 				printk(KERN_INFO "Too late to register bootconsole %s%d\n",
- 					newcon->name, newcon->index);
