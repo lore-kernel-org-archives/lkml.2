@@ -1,70 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab0HBWwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 18:52:43 -0400
-Received: from kroah.org ([198.145.64.141]:55348 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754409Ab0HBWwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 18:52:38 -0400
-Date: Mon, 2 Aug 2010 15:52:21 -0700
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: David Brownell <david-b@pacbell.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "mina86@mina86.com" <mina86@mina86.com>
-Subject: Re: [PATCHv5 2/3] USB: gadget: Use new composite features in some
- gadgets
-Message-ID: <20100802225221.GA12051@kroah.com>
-References: <231296.268.qm@web180308.mail.gq1.yahoo.com>
- <op.vgn0zfyq7p4s8u@pikus>
- <20100730165450.GA4943@kroah.com>
- <op.vgtl5umt7p4s8u@pikus>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <op.vgtl5umt7p4s8u@pikus>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754415Ab0HBWyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 18:54:13 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38700
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752853Ab0HBWyL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 18:54:11 -0400
+Date: Mon, 02 Aug 2010 15:54:29 -0700 (PDT)
+Message-Id: <20100802.155429.52193174.davem@davemloft.net>
+To: mst@redhat.com
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, krkumar2@in.ibm.com
+Subject: Re: [GIT PULL net-next-2.6] vhost-net patchset for 2.6.36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100728133231.GA1932@redhat.com>
+References: <20100701164127.GA3199@redhat.com>
+	<20100728133231.GA1932@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 07:14:08PM +0200, Michał Nazarewicz wrote:
-> >On Fri, Jul 30, 2010 at 06:48:41PM +0200, Michał Nazarewicz wrote:
-> >>So, to fix the situation, I need to ask Greg for the IDs?
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 28 Jul 2010 16:32:31 +0300
+
+> The following changes since commit 4cfa580e7eebb8694b875d2caff3b989ada2efac:
 > 
-> On Fri, 30 Jul 2010 18:54:50 +0200, Greg KH <greg@kroah.com> wrote:
-> >Yes you do.
+>   r6040: Fix args to phy_mii_ioctl(). (2010-07-21 21:10:49 -0700)
 > 
-> Could I ask for two IDs then.  One for the Multifunction Composite
-> Gadget (g_multi)
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
+> 
 
-You now have device id 0104 reserved for this.
-
-> and another for FunctionFS Gadget (g_ffs).
-
-You now have device id 0105 reserved for this.
-
-> Or is there some kind of procedure for that?
-
-Heh, nope, you just have to ask and have code that needs it.
-
-To keep everyone straight, here's the currently reserved device ids
-managed by us:
-
-1d6b  Linux Foundation
-	0001  1.1 root hub
-	0002  2.0 root hub
-	0003  3.0 root hub
-	0100  PTP Gadget
-	0101  Audio Gadget
-	0102  EEM Gadget
-	0103  NCM (Ethernet) Gadget
-	0104  Multifunction Composite Gadget
-	0105  FunctionFS Gadget
-
-thanks,
-
-greg k-h
+Pulled, thanks Michael.
