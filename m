@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab0HBIO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 04:14:28 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:52195 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751549Ab0HBIO1 (ORCPT
+	id S1753822Ab0HBIPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 04:15:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38684 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab0HBIPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 04:14:27 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEADYaVkx5LclT/2dsb2JhbACgDXK/BoU5BA
-Date: Mon, 2 Aug 2010 18:14:22 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Nick Piggin <npiggin@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: Linux 2.6.35
-Message-ID: <20100802081422.GA8892@amd>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
- <20100802103204.3d1b2863.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100802103204.3d1b2863.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 2 Aug 2010 04:15:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Q5pZWzySA3c3n2BnwFFHZXvtCg3ecEZ5+kKm+I8RBOeJwdRlKnTPazKo2PhfLTXP41
+         U+6tHOMdosAfzNRXONpx2qvk4HpJzAalfoo8EU94nAPKUMeQ3hq161NVU9N4xoD0ge+f
+         lu0+/WidE1CdQ/IDTTdq+uVqLCUKM0t7BRCQ4=
+Subject: [PATCH] bluetooth rfcomm: fix section mismatch warning
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Marcel Holtmann <marcel@holtmann.org>
+Content-Type: text/plain
+Date: Mon, 02 Aug 2010 16:16:16 +0800
+Message-Id: <1280736976.1730.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 10:32:04AM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> On Sun, 1 Aug 2010 16:52:42 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >
-> > On a slightly happier note: one thing I do hope we can merge in the
-> > upcoming merge window is Nick Piggin's cool VFS scalability series.
-> > I've been using it on my own machine, and gone through all the commits
-> > (not that I shouldn't go through some of them some more), and am
-> > personally really excited about it. It's seldom we see major
-> > performance improvements in core code that are quite that noticeable,
-> > and Nick's whole RCU pathname lookup in particular just tickles me
-> > pink.
-> 
-> To that end, Nick, can you please submit that tree for inclusion in
-> linux-next in case there are some interactions with some of the other
-> stuff there?  (or send it all to Al, instead (or both), I guess.)
+Introduced by Commit 2f8362afcd2da8b313ec3cc04a50af19d3592972
+( Bluetooth: Add __init and __exit marks to RFCOMM )
 
-Hi Stephen,
+WARNING: vmlinux.o(.init.text+0x246d1): Section mismatch in reference from the function rfcomm_init() to the function .exit.text:rfcomm_cleanup_ttys()
+The function __init rfcomm_init() references
+a function __exit rfcomm_cleanup_ttys().
+This is often seen when error handling in the init function
+uses functionality in the exit path.
+The fix is often to remove the __exit annotation of
+rfcomm_cleanup_ttys() so it may be used outside an exit section.
 
-I will work something out with Al and try to have something in
-linux-next ASAP.
+This patch removes the __exit annotation from rfcomm_cleanup_ttys to eliminate the warning.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ net/bluetooth/rfcomm/tty.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
+index 026205c..befc3a5 100644
+--- a/net/bluetooth/rfcomm/tty.c
++++ b/net/bluetooth/rfcomm/tty.c
+@@ -1183,7 +1183,7 @@ int __init rfcomm_init_ttys(void)
+ 	return 0;
+ }
+ 
+-void __exit rfcomm_cleanup_ttys(void)
++void rfcomm_cleanup_ttys(void)
+ {
+ 	tty_unregister_driver(rfcomm_tty_driver);
+ 	put_tty_driver(rfcomm_tty_driver);
+-- 
+1.5.4.3
+
+
 
