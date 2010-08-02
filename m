@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab0HBMW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 08:22:28 -0400
-Received: from mail-forward1.uio.no ([129.240.10.70]:53307 "EHLO
-	mail-forward1.uio.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab0HBMW0 (ORCPT
+	id S1753463Ab0HBMYY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 08:24:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50886 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab0HBMYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 08:22:26 -0400
-X-Greylist: delayed 1922 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Aug 2010 08:22:26 EDT
-Message-ID: <4C56B018.8030309@simula.no>
-Date: Mon, 02 Aug 2010 13:46:32 +0200
-From: Andreas Petlund <apetlund@simula.no>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100209 Shredder/3.0.2pre
+	Mon, 2 Aug 2010 08:24:22 -0400
+Date: Mon, 2 Aug 2010 08:24:21 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: James Morris <jmorris@namei.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@ftp.linux.org.uk>, Kees Cook <kees.cook@canonical.com>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+Message-ID: <20100802122421.GA12130@infradead.org>
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+ <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
 MIME-Version: 1.0
-To: Josh Hunt <johunt@akamai.com>
-CC: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        juhlenko@akamai.com
-Subject: Re: [PATCH] net: Add getsockopt support for TCP thin-streams
-References: <1280533775-7700-1-git-send-email-johunt@akamai.com>
-In-Reply-To: <1280533775-7700-1-git-send-email-johunt@akamai.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 8 msgs/h 1 sum rcpts/h 8 sum msgs/h 1 total rcpts 267 max rcpts/h 55 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 87FB503D69BA1BBC843037389757B3A85DAD199A
-X-UiO-SPAM-Test: remote_host: 128.39.37.254 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 11 total 16230 max/h 86 blacklist 0 greylist 0 ratelimit 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2010 01:49 AM, Josh Hunt wrote:
-> Initial TCP thin-stream commit did not add getsockopt support for the new
-> socket options: TCP_THIN_LINEAR_TIMEOUTS and TCP_THIN_DUPACK. This adds support
-> for them.
+On Mon, Aug 02, 2010 at 12:18:46PM +1000, James Morris wrote:
+> On Fri, 30 Jul 2010, James Morris wrote:
 > 
-> Signed-off-by: Josh Hunt <johunt@akamai.com>
-> ---
->  net/ipv4/tcp.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+> > One issue which needs to be addressed is to confirm that there is 
+> > consensus on the new Yama LSM module.  I had thought there was, based on 
+> > list discussion, but have since had differing feedback.
 > 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 65afeae..3ed3525 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -2591,6 +2591,12 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
->  			return -EFAULT;
->  		return 0;
->  	}
-> +	case TCP_THIN_LINEAR_TIMEOUTS:
-> +		val = tp->thin_lto;
-> +		break;
-> +	case TCP_THIN_DUPACK:
-> +		val = tp->thin_dupack;
-> +		break;
->  	default:
->  		return -ENOPROTOOPT;
->  	}
+> I'm going to revert the Yama stuff for 2.6.36 -- Christoph has nacked it 
+> to me off-list.
 
-Thanks for noticing and fixing this :)
+I'm also happy to do it on-list, but I really didn't want to do it
+before I've actually validated the patches in your tree still are the
+same that were objected before.
 
-Tested-by: Andreas Petlund <apetlund@simula.no>
-Acked-by: Andreas Petlund <apetlund@simula.no>
+As mentioned a few times during the past discussion moving broken
+code into a LSM doesn't magically fix it.  In fact YAMA is not any kind
+of (semi-)coherent security policy like Selinux, smack or similar but
+just a random set of hacks that you didn't get past the subsystem
+maintainers.
 
--Andreas
+Al gave you some very clear advice how a the sticky check should be
+done for symlinks (if we need it at all, which I tend to disagree with),
+and the ptrace check completely breaks crash handlers that we have
+in all kinds of applications.  If you can get it into the main ptrace
+code past Roland and Oleg that's fine, but just pushing it out into
+a tree that has percieved easier merge criteria doesn't work.
