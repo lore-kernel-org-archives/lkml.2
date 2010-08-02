@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab0HBCaR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 22:30:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18777 "EHLO mga11.intel.com"
+	id S1752761Ab0HBCbP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 22:31:15 -0400
+Received: from phil.doycomm.com ([66.219.128.249]:53339 "EHLO phil.doycomm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827Ab0HBCaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 22:30:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,301,1278313200"; 
-   d="scan'208";a="823778061"
-Date: Mon, 2 Aug 2010 10:30:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Sean Jensen-Grey <seanj@xyke.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, pvz@pvz.pp.se,
-        bgamari@gmail.com, larppaxyz@gmail.com, seanj@xyke.com,
-        kernel-bugs.dev1world@spamgourmet.com, akatopaz@gmail.com,
-        frankrq2009@gmx.com, thomas.pi@arcor.de, spawels13@gmail.com,
-        vshader@gmail.com, rockorequin@hotmail.com, ylalym@gmail.com,
-        theholyettlz@googlemail.com, hassium@yandex.ru
-Subject: Re: [PATCH 6/6] vmscan: Kick flusher threads to clean pages when
- reclaim is encountering dirty pages
-Message-ID: <20100802023008.GA13035@localhost>
-References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie>
- <1280497020-22816-7-git-send-email-mel@csn.ul.ie>
- <20100730150601.199c5618.akpm@linux-foundation.org>
- <20100801115640.GA18943@localhost>
- <20100801130300.GA19523@localhost>
- <80868B70-B17D-4007-AA15-5C11F0F95353@xyke.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <80868B70-B17D-4007-AA15-5C11F0F95353@xyke.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752420Ab0HBCbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 22:31:14 -0400
+Subject: Re: Linux 2.6.35
+From: Donald Parsons <dparsons@brightdsl.net>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 01 Aug 2010 22:31:02 -0400
+Message-ID: <1280716262.5125.42.camel@falcon.homelinux.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sean,
+2.6.35 still fails to boot for me, as first reported here:
+ http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
 
-On Mon, Aug 02, 2010 at 10:17:27AM +0800, Sean Jensen-Grey wrote:
-> Wu,
-> 
-> Thank you for doing this. This still bites me on a weekly basis. I don't have much time to test the patches this week, but I should get access to an identical box week after next.
+I've manually bisected it down to around May 20 between
+  2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
+Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
 
-That's OK.
+Unfortunately first time I tried was with 2.6.35-rc6 and
+it failed to boot.
 
-> BTW, I experience the issues even with 8-10GB of free ram. I have 12GB currently.
+Failure when switching from initramfs to real /root?
+Removing kernel "quiet" param appears to show several
+lines listing:
 
-Thanks for the important information. It means the patches proposed
-are not likely to help your case.
+  usb drives/hubs? followed by
+  dracut switching root (when booting works)
+              or
+  usb drives/hubs? followed by
+        (missing dracut... line)
+  No root device found
+  Boot has failed, sleeping forever.   (when it does not boot)
 
-In Comment #47 for bug 12309, your kernel 2.6.27 is too old though.  You may
-well benefit from Jens' CFQ low latency improvements if switching to a recent
-kernel.
+Grub, typical entry:
+title Fedora (2.6.35)
+	root (hd0,0)
+	kernel /vmlinuz-2.6.35 ro
+root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
+SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
+rdblacklist=nouveau init=/sbin/bootchartd
+	initrd /initramfs-2.6.35.img
 
-Thanks,
-Fengguang
+
+My boot failure seems to be different than other two reported
+in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
+under Bug #16173 and #16228
+ http://lkml.indiana.edu/hypermail/linux/kernel/1008.0/00080.html
+
+System is up to date Fedora 12 on Asus P5B Deluxe, Core2 6600 2.4GHz
+
+00:1f.2 SATA controller: Intel Corporation 82801HR/HO/HH (ICH8R/DO/DH)
+    6 port SATA AHCI Controller (rev 02)
+01:00.0 VGA compatible controller: nVidia Corporation G70 [GeForce 7600
+    GT] (rev a1)
+03:00.0 SATA controller: JMicron Technologies, Inc. 20360/20363 Serial
+    ATA Controller (rev 02)
+
+Using 2.6.34.1 shows
+# lsmod | grep ata
+ata_generic             3427  0 
+pata_acpi               3227  0 
+pata_jmicron            2547  0 
+libata                157450  4 ata_generic,pata_acpi,pata_jmicron,ahci
+scsi_mod              147895  5 sg,sd_mod,sr_mod,usb_storage,libata
+
+The .config's were made from 2.6.34.1/.config using oldconfig and enter
+key (defaults for any questions).
+
+Updating BIOS from 1232 to 1238 (latest) gave no change.
+Tried gcc's 4.4.4, 4.5.0, and 4.5.1 with no change.
+
+Thanks for any help,
+Don
+
