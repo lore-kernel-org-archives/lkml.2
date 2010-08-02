@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375Ab0HBQo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:44:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38671 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165Ab0HBQoY (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 2 Aug 2010 12:44:24 -0400
-Date: Mon, 2 Aug 2010 12:42:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, hpa@zytor.com
-Cc: jeremy@goop.org, Ian.Campbell@citrix.com, albert_herranz@yahoo.es,
-        x86@kernel.org, linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        iommu@lists.linux-foundation.org, tglx@linutronix.de
-Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
-Message-ID: <20100802164234.GC6961@phenom.dumpdata.com>
-References: <4C56E49E.6070102@zytor.com>
- <20100803004252B.fujita.tomonori@lab.ntt.co.jp>
- <4C56E8A9.1060004@zytor.com>
- <20100803010025R.fujita.tomonori@lab.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100803010025R.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C56F5B9.034B:SCFMA4539814,ss=1,fgs=0
+	id S1751581Ab0HBQpE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:45:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45288 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab0HBQpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 12:45:00 -0400
+Date: Tue, 3 Aug 2010 02:44:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Jayamohan Kallickal <jayamohank@serverengines.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: linux-next: build failure after merge of the final tree
+ (scsi-post-merge tree related)
+Message-Id: <20100803024445.0bf7ec86.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__3_Aug_2010_02_44_45_+1000_1iskTI2umx79Iw.5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 01:01:08AM +0900, FUJITA Tomonori wrote:
-> On Mon, 02 Aug 2010 08:47:53 -0700
-> "H. Peter Anvin" <hpa@zytor.com> wrote:
-> 
-> > On 08/02/2010 08:43 AM, FUJITA Tomonori wrote:
-> > > 
-> > > That's the difficult part because IOMMUs are not
-> > > interdependent. Hardware IOMMUs are related with swiotlb. GART and
-> > > AMD-IOMMU are too.
-> > > 
-> > > We could invent sorta IOMMU register interface and driver-ize IOMMUs
-> > > but they can't be interdependent completely.
-> > 
-> > Of course.  However, we need there to be as much structure to it as
-> > there can be.
-> 
-> Ok, let's see if Konrad can invent something clean.
+--Signature=_Tue__3_Aug_2010_02_44_45_+1000_1iskTI2umx79Iw.5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-<chuckles> Thank you for your vote of confidence.
-> 
-> But his attempt to create "swiotlb iommu function array" and "hardware
-> iommu function array" looks like to makes the code more unreadable.
+Hi ,
 
-Let me go to my favorite coffee shop and think this one through.
-Can I get concession for putting the original patch in (the simple, dumb one),
-and then:
- - start working on the IOMMU register interface without having to try
-   to get it done for 2.6.36, and
- - do the driverization as a seperate cleanup.
+After merging the final tree, today's linux-next build (powerpc allmodconfi=
+g)
+failed like this:
 
+ERROR: ".iscsi_boot_destroy_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] undef=
+ined!
+ERROR: ".iscsi_boot_create_host_kset" [drivers/scsi/be2iscsi/be2iscsi.ko] u=
+ndefined!
+ERROR: ".iscsi_boot_create_target" [drivers/scsi/be2iscsi/be2iscsi.ko] unde=
+fined!
+ERROR: ".iscsi_boot_create_initiator" [drivers/scsi/be2iscsi/be2iscsi.ko] u=
+ndefined!
+ERROR: ".iscsi_boot_create_ethernet" [drivers/scsi/be2iscsi/be2iscsi.ko] un=
+defined!
+
+Caused by commit a33e2a708b2e83ee6111e45c8d3d49a112c3c887 ("[SCSI]
+be2iscsi: Add support for iscsi boot").  For some reason, commit
+ed94aa526655d915076dcdbbf4fc962b2a67fcb5 ("[SCSI] be2iscsi: select
+ISCSI_BOOT_SYSFS") was not sufficient to make sure that
+CONFIG_ISCSI_BOOT_SYSFS is defined for this build.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__3_Aug_2010_02_44_45_+1000_1iskTI2umx79Iw.5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMVvX9AAoJEDMEi1NhKgbsDT4H/1J1U/yPtVK3zLin16pFlK+n
+XB5SYGKIHzNUMfB7lvfsDVblbK0GpCxgNl44UixouhzDyS+Xd9Rn/Ib8gcEW4ZzZ
+8wsJ9aVFL6iQ4OT8p58xjf3hE88JoBPSHmmZ3L2oPMiAqExEP0DxQGd6WS03ifMI
+o3LBQeVBNcOVNCSoUpb+Hmmob3dwIP1f0qLd4s14W69a25LyxT5Unyg9TAmGp2dJ
+nSb2LIeyKMSn+pLQ+5Z+EL6O5OxRUpYTSx76Qts9yb/CGzshmf6v5Rj72Oyz9nwU
+xdkczvT8UqER0UqFEG2syz4u7670YtCCs9Tcdl4QuV1SrXSGfds3ojuavFAXibc=
+=7TtO
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__3_Aug_2010_02_44_45_+1000_1iskTI2umx79Iw.5--
