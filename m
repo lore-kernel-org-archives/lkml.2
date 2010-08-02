@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366Ab0HBOiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:38:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46994 "EHLO hera.kernel.org"
+	id S1751615Ab0HBOjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:39:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5862 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab0HBOiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:38:04 -0400
-Date: Mon, 2 Aug 2010 14:36:42 +0000
-From: Konrad Rzeszutek <konrad@hera.kernel.org>
-To: torvalds@linux-foundation.org
-Cc: James.Bottomley@suse.de, linux-kernel@vger.kernel.org, pjones@redhat.com,
-        lenb@kernel.org, michaelc@cs.wisc.edu
-Subject: [GIT PULL] iBFT features for v2.6.36
-Message-ID: <20100802143642.GA15428@hera.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 14:36:42 +0000 (UTC)
+	id S1751077Ab0HBOjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 10:39:52 -0400
+Date: Mon, 2 Aug 2010 10:42:00 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Greg Freemyer <greg.freemyer@gmail.com>
+Cc: Neil Brown <neilb@suse.de>, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
+        Volker.Lendecke@sernet.de, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100802104200.2f058428@corrin.poochiereds.net>
+In-Reply-To: <AANLkTi=JvwrwpmteFcXW1f5s95+_w_iCT+04Sy7bbTtR@mail.gmail.com>
+References: <20100728111525.355a2bd3@notabene>
+	<alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	<20100722162712.GB10352@jeremy-laptop>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
+	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+	<13591.1280338082@redhat.com>
+	<20100729090401.4b0a21f8@notabene>
+	<20100801094018.522e2f53@corrin.poochiereds.net>
+	<AANLkTi=JvwrwpmteFcXW1f5s95+_w_iCT+04Sy7bbTtR@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2 Aug 2010 10:09:49 -0400
+Greg Freemyer <greg.freemyer@gmail.com> wrote:
 
-This pull requests consists of features to the iBFT driver. Specifically:
+> > Furthermore, I'll go ahead and propose the following (simple) semantics:
+> >
+> > 1) birthtime is initialized to the current time when a new inode is
+> > created
+> >
+> > 2) it's settable via the xattr to an arbitrary value
+> >
+> > Either way, the xattr for this ought to be named the same on all
+> > filesystems. Samba shouldn't need to know or care what the underlying
+> > filesystem is, as long as it presents the correct xattr.
+> >
+> > That should make samba happy, and be reasonably simple to implement.
+> 
+> Is there any reason to allow birthtime to be set in advance of the
+> current birthtime?
+> 
+> ie restore / copy tools clearly need to backdate it, but I'd prefer to
+> see it not advance-able.
+> 
+> Greg
 
- - support v1.03 of the spec. The spec in question is available at:
-   ftp://ftp.software.ibm.com/systems/support/bladecenter/iscsi_boot_firmware_table_v1.03.pdf
- - separate the iBFT parsing from the SysFS interface.
+Why not? Is there a good argument for prohibiting it? We allow people
+to set mtime in the future. Why not allow the same semantics here?
 
-These patches have been through a few rounds of review and have been in
-linux-next for two months. James Bottomley is using this tree in his
-branch for the BNX2 driver, so please merge these patches before his.
+We also have to consider that this may eventually be settable by via
+networked filesystem interfaces. If the client and server don't have
+synchronized clocks you may end up with the client getting an error
+back in some cases if you don't allow it.
 
-It's all at:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft-2.6.git for-linus
-
-Thanks,
-
-Konrad
-
-Konrad Rzeszutek Wilk (1):
-      ibft: For UEFI machines actually do scan ACPI for iBFT.
-
-Mike Christie (2):
-      ibft: separate ibft parsing from sysfs interface
-      ibft: convert iscsi_ibft module to iscsi boot lib
-
-Peter Jones (2):
-      ibft: Update iBFT handling for v1.03 of the spec.
-      ibft: Use IBFT_SIGN instead of open-coding the search string.
-
- drivers/firmware/Kconfig            |    9 +
- drivers/firmware/Makefile           |    1 +
- drivers/firmware/iscsi_boot_sysfs.c |  481 +++++++++++++++++++++++
- drivers/firmware/iscsi_ibft.c       |  726 +++++++++++++----------------------
- drivers/firmware/iscsi_ibft_find.c  |   56 +++-
- include/linux/iscsi_boot_sysfs.h    |  123 ++++++
- include/linux/iscsi_ibft.h          |   12 +-
- 7 files changed, 924 insertions(+), 484 deletions(-)
-
-What is iBFT?
-The iBFT is an equivalent to the Boot Flag, except that its geared
-towards iSCSI and hence requires much more information (such as
-the IP of target, passwords, which device to login, etc). iBFT
-is a data structure populated by the BIOS or the NIC to contain this
-so that the OS can read it and login to the iSCSI and present
-the boot device to the initrd for mounting / FS.
+-- 
+Jeff Layton <jlayton@redhat.com>
