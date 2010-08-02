@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab0HBBLh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 21:11:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38029 "EHLO
+	id S1752428Ab0HBBJH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:09:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37988 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab0HBBJK (ORCPT
+	with ESMTP id S1752168Ab0HBBJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 21:09:10 -0400
+	Sun, 1 Aug 2010 21:09:05 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 11/19] perf record: Release resources at exit
-Date: Sun,  1 Aug 2010 22:08:46 -0300
-Message-Id: <1280711334-30000-12-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Dave Martin <dave.martin@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 08/19] perf report: Don't abbreviate file paths relative to the cwd
+Date: Sun,  1 Aug 2010 22:08:43 -0300
+Message-Id: <1280711334-30000-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1280711334-30000-1-git-send-email-acme@infradead.org>
 References: <1280711334-30000-1-git-send-email-acme@infradead.org>
@@ -25,109 +23,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Dave Martin <dave.martin@linaro.org>
 
-So that we can reduce the noise on valgrind when looking for memory
-leaks.
+This avoids around some problems where the full path is executables and DSOs it
+needed for finding debug symbols on platforms with separated debug symbol files
+such as Ubuntu.  This is simpler than tracking an extra name for each image.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
+The only impact should be that paths in verbose output from the perf tools
+become absolute, instead of relative to .
+
 LKML-Reference: <new-submission>
+Signed-off-by: Dave Martin <dave.martin@linaro.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   32 ++++++++++++++++++++++++++------
- 1 files changed, 26 insertions(+), 6 deletions(-)
+ tools/perf/util/event.c |    2 +-
+ tools/perf/util/map.c   |   22 +---------------------
+ tools/perf/util/map.h   |    2 +-
+ 3 files changed, 3 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index b938796..5ae0d93 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -439,6 +439,7 @@ static void atexit_header(void)
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 121339f..5b81bb2 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -517,7 +517,7 @@ int event__process_mmap(event_t *self, struct perf_session *session)
+ 	map = map__new(&machine->user_dsos, self->mmap.start,
+ 			self->mmap.len, self->mmap.pgoff,
+ 			self->mmap.pid, self->mmap.filename,
+-			MAP__FUNCTION, session->cwd, session->cwdlen);
++			MAP__FUNCTION);
  
- 		process_buildids();
- 		perf_header__write(&session->header, output, true);
-+		perf_session__delete(session);
- 	}
+ 	if (thread == NULL || map == NULL)
+ 		goto out_problem;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index e672f2f..37cab90 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -17,16 +17,6 @@ static inline int is_anon_memory(const char *filename)
+ 	return strcmp(filename, "//anon") == 0;
  }
  
-@@ -558,12 +559,15 @@ static int __cmd_record(int argc, const char **argv)
- 	if (!file_new) {
- 		err = perf_header__read(session, output);
- 		if (err < 0)
--			return err;
-+			goto out_delete_session;
- 	}
- 
- 	if (have_tracepoints(attrs, nr_counters))
- 		perf_header__set_feat(&session->header, HEADER_TRACE_INFO);
- 
-+	/*
-+ 	 * perf_session__delete(session) will be called at atexit_header()
-+	 */
- 	atexit(atexit_header);
- 
- 	if (forks) {
-@@ -768,6 +772,10 @@ static int __cmd_record(int argc, const char **argv)
- 		bytes_written / 24);
- 
- 	return 0;
-+
-+out_delete_session:
-+	perf_session__delete(session);
-+	return err;
- }
- 
- static const char * const record_usage[] = {
-@@ -824,7 +832,7 @@ static const struct option options[] = {
- 
- int cmd_record(int argc, const char **argv, const char *prefix __used)
+-static int strcommon(const char *pathname, char *cwd, int cwdlen)
+-{
+-	int n = 0;
+-
+-	while (n < cwdlen && pathname[n] == cwd[n])
+-		++n;
+-
+-	return n;
+-}
+-
+ void map__init(struct map *self, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso)
  {
--	int i,j;
-+	int i, j, err = -ENOMEM;
+@@ -43,7 +33,7 @@ void map__init(struct map *self, enum map_type type,
  
- 	argc = parse_options(argc, argv, options, record_usage,
- 			    PARSE_OPT_STOP_AT_NON_OPTION);
-@@ -873,13 +881,13 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		for (j = 0; j < MAX_COUNTERS; j++) {
- 			fd[i][j] = malloc(sizeof(int)*thread_num);
- 			if (!fd[i][j])
--				return -ENOMEM;
-+				goto out_free_fd;
- 		}
- 	}
- 	event_array = malloc(
- 		sizeof(struct pollfd)*MAX_NR_CPUS*MAX_COUNTERS*thread_num);
- 	if (!event_array)
--		return -ENOMEM;
-+		goto out_free_fd;
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, char *filename,
+-		     enum map_type type, char *cwd, int cwdlen)
++		     enum map_type type)
+ {
+ 	struct map *self = malloc(sizeof(*self));
  
- 	if (user_interval != ULLONG_MAX)
- 		default_interval = user_interval;
-@@ -895,8 +903,20 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		default_interval = freq;
- 	} else {
- 		fprintf(stderr, "frequency and count are zero, aborting\n");
--		exit(EXIT_FAILURE);
-+		err = -EINVAL;
-+		goto out_free_event_array;
- 	}
+@@ -52,16 +42,6 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		struct dso *dso;
+ 		int anon;
  
--	return __cmd_record(argc, argv);
-+	err = __cmd_record(argc, argv);
-+
-+out_free_event_array:
-+	free(event_array);
-+out_free_fd:
-+	for (i = 0; i < MAX_NR_CPUS; i++) {
-+		for (j = 0; j < MAX_COUNTERS; j++)
-+			free(fd[i][j]);
-+	}
-+	free(all_tids);
-+	all_tids = NULL;
-+	return err;
- }
+-		if (cwd) {
+-			int n = strcommon(filename, cwd, cwdlen);
+-
+-			if (n == cwdlen) {
+-				snprintf(newfilename, sizeof(newfilename),
+-					 ".%s", filename + n);
+-				filename = newfilename;
+-			}
+-		}
+-
+ 		anon = is_anon_memory(filename);
+ 
+ 		if (anon) {
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index f391345..3b2f706 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -106,7 +106,7 @@ void map__init(struct map *self, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso);
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+ 		     u64 pgoff, u32 pid, char *filename,
+-		     enum map_type type, char *cwd, int cwdlen);
++		     enum map_type type);
+ void map__delete(struct map *self);
+ struct map *map__clone(struct map *self);
+ int map__overlap(struct map *l, struct map *r);
 -- 
 1.6.2.5
 
