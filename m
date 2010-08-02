@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab0HBO3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:29:44 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59382 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab0HBO3m convert rfc822-to-8bit (ORCPT
+	id S1753654Ab0HBOab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:30:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53309 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab0HBOaa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:29:42 -0400
+	Mon, 2 Aug 2010 10:30:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=googlemail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=o+CJAKbpedsKhgqx47vuMSZDtettbg3VVPnlWk4X1kMed04U/7L5Y90daZooBckOVN
-         lkIcR2BhBSfPBy23Q0cNnJNHrbSFiFW2MQBQVRLwy2BsB5/+6AocZt4kAoKpR57fNjYN
-         qeKkCSuSz0XBfuKpw7VKGD4EBVIY+ygkvc2W0=
+         :cc:content-type:content-transfer-encoding;
+        b=bMxbn4MWdfYkW6r6gdLS/+ZMt2tF+Re39eoAFnNzd9irwteUmocak5/qy/Z3MuL9Zf
+         oqw5MSpnM1hzWk8Z80vDw6zUxLlC3P/syA7DzEr8oQ3RqirUwbgN74m+QmjU45OZ38Ik
+         SpQM02DWad+R0LegmBFrORMrsyhiNPeIxNnBg=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=keL2rUzxdxgscTU9cQSNxOnAtGVuAwTq9Wfuq@mail.gmail.com>
-References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
-	<215375.1280753770@localhost>
-	<AANLkTi=keL2rUzxdxgscTU9cQSNxOnAtGVuAwTq9Wfuq@mail.gmail.com>
-Date: Mon, 2 Aug 2010 22:29:41 +0800
-Message-ID: <AANLkTikjUtTwaP5-LnYX8v3hjcuVbtenoH-yFvcPGf-+@mail.gmail.com>
-Subject: RE: a Great Idea - include Kademlia networking protocol in kernel
-From: hp fk <fkhp101@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <1280751836-1826-1-git-send-email-dfeng@redhat.com>
+References: <20100729130707.GA31154@shamino.rdu.redhat.com>
+	<1280751836-1826-1-git-send-email-dfeng@redhat.com>
+Date: Mon, 2 Aug 2010 16:30:28 +0200
+Message-ID: <AANLkTimk=LXAv_AS62y3a41_irkRzpwWUCeo5So7AzAh@mail.gmail.com>
+Subject: Re: [RFC PATCH V2] core_pattern: fix long parameters was truncated by 
+	core_pattern handler
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Roland McGrath <roland@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: hp fk <fkhp101@gmail.com>
-Date: 2010/8/2
-Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
-To: Valdis.Kletnieks@vt.edu
+> +                               rc = snprintf(NULL, 0, "%s", current->comm);
 
+rc = strlen(current->comm) would be smaller
 
-popular file sharing p2p applications like emule and bittorrent,
-innovative application like Osiris each has its own Kademlia protocol
-implementation in userspace presently. the imaginable kernel support
-needed is to reduce many repeated (different or same) Kademlia
-protocol implementations running in userspace to a consolidated one at
-kernel level, so that the Kademlia protocol as a p2p network
-infrastructure is provided in kernel and any p2p application could
-just use the interface provided by kernel, thus a great p2p network is
-easily created, and  applications on that network infrastructure could
-grow rapidly.
-
-2010/8/2  <Valdis.Kletnieks@vt.edu>:
-> 1) You failed to explain what kernel support, if any, would be needed for this
-> protocol.
+-- 
+vda
