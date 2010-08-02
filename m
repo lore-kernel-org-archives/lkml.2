@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab0HBP7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:59:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64980 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856Ab0HBP7I (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 2 Aug 2010 11:59:08 -0400
-Date: Mon, 2 Aug 2010 11:58:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: torvalds@linux-foundation.org
-Cc: fujita.tomonori@lab.ntt.co.jp, albert_herranz@yahoo.es,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] SWIOTLB features: separation of physical and virtual
- address translation for v2.6.36
-Message-ID: <20100802155818.GB28961@phenom.dumpdata.com>
+	id S1753984Ab0HBQAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:00:14 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:53816 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab0HBQAM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 12:00:12 -0400
+Date: Mon, 2 Aug 2010 21:29:45 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC][PATCH -mm] hibernation: freeze swap at hibernation (Was
+ Re: Memory corruption during hibernation since 2.6.31
+Message-ID: <20100802155945.GR3863@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <201007282334.08063.rjw@sisk.pl>
+ <20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100729142245.4AA5.A69D9226@jp.fujitsu.com>
+ <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.DEB.1.00.1007291027410.7491@tigran.mtv.corp.google.com>
+ <20100730090146.7e65d1c1.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTing_3HoC9oWNheHJPgQWp2xmN6-C_cyZxoJUqc_@mail.gmail.com>
+ <20100730131432.891df49a.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+In-Reply-To: <20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C56EB2D.019C:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-02 15:02:25]:
 
-Please include the following patches, located at this git tree:
+> +/*
+> + * Because updateing swap_map[] can make not-saved-status-change,
+> + * we use our own easy allocator.
+> + * Please see kernel/power/swap.c, Used swaps are recorded into
+> + * RB-tree.
+> + */
+> +swp_entry_t get_swap_for_hibernation(int type)
+> +{
+> +	pgoff_t off;
+> +	swp_entry_t val = {0};
+> +	struct swap_info_struct *si;
+> +
+> +	spin_lock(&swap_lock);
+> +	/*
+> +	 * Once hibernation starts to use swap, we freeze swap_map[]. Otherwise,
+> +	 * saved swap_map[] image to the disk will be an incomplete because it's
+> +	 * changing without synchronization with hibernation snap shot.
+> +	 * At resume, we just make swap_for_hibernation=false. We can forget
+> +	 * used maps easily.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git stable/swiotlb-0.8.3
+I don't understand the consequences of this action. Once swap_map is
+fixed, we get additional swapping because we need more free memory,
+what happens to the swapped out contents, since resume will never see
+the changes? How did this work before 2.6.31?
 
-in your new 2.6.36 branch.
+> +	 */
+> +	if (!swap_for_hibernation)
+> +		hibernation_freeze_swap();
+> +
+> +	si = swap_info[type];
+> +	if (!si || !(si->flags & SWP_WRITEOK))
+> +		goto done;
+> +
+> +	for (off = hibernation_offset[type]; off < si->max; ++off) {
+> +		if (!si->swap_map[off])
+> +			break;
 
-They have been reviewed, ack-ed, re-reviewed, tested and been brewing properly for 7
-weeks in linux-next. These set of patches separate the address translation
-(virt_to_phys, virt_to_bus, etc) and allocation of the SWIOTLB buffer
-from the SWIOTLB library. A more detailed explanation is right after the changelist.
+So this is a linear scan for the first free entry, right?
 
-The authors:
+> +	}
+> +	if (off < si->max) {
+> +		val = swp_entry(type, off);
+> +		hibernation_offset[type] = off + 1;
+> +	}
+> +done:
+> +	spin_unlock(&swap_lock);
+> +	return val;
+> +}
+> +
 
-FUJITA Tomonori (2):
-      swiotlb: add swiotlb_tbl_map_single library function
-      swiotlb: add the swiotlb initialization function with iotlb memory
-
-Konrad Rzeszutek Wilk (3):
-      swiotlb: Make internal bookkeeping functions have 'swiotlb_tbl' prefix.
-      swiotlb: search and replace "int dir" with "enum dma_data_direction dir"
-      swiotlb: Make swiotlb bookkeeping functions visible in the header file.
-
- include/linux/swiotlb.h |   27 +++++++++-
- lib/swiotlb.c           |  137 ++++++++++++++++++++++++++++-------------------
- 2 files changed, 106 insertions(+), 58 deletions(-)
-
-This patchset changelist:
-
-Since the last posting [v8.4]:
- - Added in this writeup in the patch.
-[v8 changes:]
- - Rolled-up the last two patches in one.
- - Rebased against linus latest. That meant dealing with swiotlb_sync_single_range_* changes.
- - added Acked-by: Fujita Tomonori and Tested-by: Albert Herranz
-[v7-v8 changes:]
- - Minimized the list of exported functions.
- - Integrated Fujita's patches and changed "swiotlb_tlb" to "swiotlb_tbl" in them.
-[v6-v7 changes:]
- - Minimized the amount of exported functions/variable with a prefix of: "swiotbl_tbl".
- - Made the usage of 'int dir' to be 'enum dma_data_direction'.
-[v5-v6 changes:]
- - Made the exported functions/variables have the 'swiotlb_bk' prefix.
- - dropped the checkpatches/other reworks
-
-.. and the writeup for this set set of patches:
-
-The idea behind this set of patches is to make it possible to have separate
-mechanisms for translating virtual to physical or virtual to DMA addresses
-on platforms which need an SWIOTLB, and where physical != PCI bus address
-and also to allocate the core IOTLB memory outside SWIOTLB.
-
-One customers of this is the pv-ops project, which can switch between
-different modes of operation depending on the environment it is running in:
-bare-metal or virtualized (Xen for now). Another is the Wii DMA - used to
-implement the MEM2 DMA facility needed by its EHCI controller (for details:
-http://lkml.org/lkml/2010/5/18/303)
-
-On bare-metal SWIOTLB is used when there are no hardware IOMMU. In virtualized
-environment it used when PCI pass-through is enabled for the guest. The problems
-with PCI pass-through is that the guest's idea of PFN's is not the real thing.
-To fix that, there is translation layer for PFN->machine frame number and vice-versa.
-To bubble that up to the SWIOTLB layer there are two possible solutions.
-
-One solution has been to wholesale copy the SWIOTLB, stick it in
-arch/x86/xen/swiotlb.c and modify the virt_to_phys, phys_to_virt and others
-to use the Xen address translation functions. Unfortunately, since the kernel can
-run on bare-metal, there would be big code overlap with the real SWIOTLB.
-(git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git xen/dom0/swiotlb-new)
-
-Another approach, which this set of patches explores, is to abstract the
-address translation and address determination functions away from the
-SWIOTLB book-keeping functions. This way the core SWIOTLB library functions
-are present in one place, while the address related functions are in
-a separate library that can be loaded when running under non-bare-metal platform.
-
-
+-- 
+	Three Cheers,
+	Balbir
