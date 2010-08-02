@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab0HBRwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 13:52:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62334 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab0HBRwf (ORCPT
+	id S1754116Ab0HBR4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 13:56:54 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34811 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab0HBR4w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 13:52:35 -0400
-Date: Mon, 2 Aug 2010 10:52:18 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        John Johansen <john.johansen@canonical.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH -next] apparmor: depends on NET
-Message-Id: <20100802105218.c2050fff.randy.dunlap@oracle.com>
-In-Reply-To: <20100802144432.70293bda.sfr@canb.auug.org.au>
-References: <20100802144432.70293bda.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C5705D9.00FA:SCFMA4539814,ss=1,fgs=0
+	Mon, 2 Aug 2010 13:56:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nRzDpnWHQ5l+gB/ciIzafqgoD/gJNC+S83F65uw8r0mF9PL7SzPbHNfqUe17mkB/0C
+         RreBappTj8drYmyZL09FYfaB4xwG1GexcRbGBnv5Gw+wixUB28T9Kn+26hYmi9OKte96
+         Cdn9Hl2PLjCGfaYcWd7/iCSbqJRs3HMOVIO6M=
+MIME-Version: 1.0
+In-Reply-To: <4C56701B.1030000@kernel.org>
+References: <4C56701B.1030000@kernel.org>
+Date: Mon, 2 Aug 2010 14:56:51 -0300
+Message-ID: <AANLkTi=r-vt=Pr+xchiR+s12RDU9xQbXnmCB4pTJcc2_@mail.gmail.com>
+Subject: Re: [PATCH 1/2] x86, setup: reorgize the early_console_setup
+From: Thiago Farina <tfransosi@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, Aug 2, 2010 at 4:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Index: linux-2.6/arch/x86/boot/string.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/boot/string.c
+> +++ linux-2.6/arch/x86/boot/string.c
+> @@ -12,7 +12,21 @@
+>  * Very basic string functions
+>  */
+>
+> -#include "boot.h"
+> +static inline int isdigit(int ch)
+> +{
+> +       return (ch >= '0') && (ch <= '9');
+> +}
+> +
+> +static inline int isxdigit(int ch)
+> +{
+> +       if (isdigit(ch))
+> +               return true;
+> +
+> +       if ((ch >= 'a') && (ch <= 'f'))
+> +               return true;
+> +
+> +       return (ch >= 'A') && (ch <= 'F');
+> +}
+>
 
-SECURITY_APPARMOR should depend on NET since AUDIT needs
-(depends on) NET.
+These to functions above can be fairly simplified by writting as:
 
-Fixes 70-80 errors that occur when CONFIG_NET is not enabled,
-but APPARMOR selects AUDIT without qualification.  E.g.:
+static bool inline is_hex_digit(int c) {
+  return (c >= '0' && c <= '9') ||
+            (c >= 'A' && c <= 'F') ||
+            (c >= 'a' && c <= 'f');
+}
 
-audit.c:(.text+0x33361): undefined reference to `netlink_unicast'
-(.text+0x333df): undefined reference to `netlink_unicast'
-audit.c:(.text+0x3341d): undefined reference to `skb_queue_tail'
-audit.c:(.text+0x33424): undefined reference to `kfree_skb'
-audit.c:(.text+0x334cb): undefined reference to `kfree_skb'
-audit.c:(.text+0x33597): undefined reference to `skb_put'
-audit.c:(.text+0x3369b): undefined reference to `__alloc_skb'
-audit.c:(.text+0x336d7): undefined reference to `kfree_skb'
-(.text+0x3374c): undefined reference to `__alloc_skb'
-auditfilter.c:(.text+0x35305): undefined reference to `skb_queue_tail'
-lsm_audit.c:(.text+0x2873): undefined reference to `init_net'
-lsm_audit.c:(.text+0x2878): undefined reference to `dev_get_by_index'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: John Johansen <john.johansen@canonical.com>
----
- security/apparmor/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20100802.orig/security/apparmor/Kconfig
-+++ linux-next-20100802/security/apparmor/Kconfig
-@@ -1,6 +1,6 @@
- config SECURITY_APPARMOR
- 	bool "AppArmor support"
--	depends on SECURITY
-+	depends on SECURITY && NET
- 	select AUDIT
- 	select SECURITY_PATH
- 	select SECURITYFS
+Thanks.
