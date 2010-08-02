@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab0HBNf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 09:35:28 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:52846 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab0HBNf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 09:35:26 -0400
-To: Valdis.Kletnieks@vt.edu
-CC: miklos@szeredi.hu, viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-reply-to: <215565.1280754056@localhost> (Valdis.Kletnieks@vt.edu)
-Subject: Re: [PATCH 6/7] vfs: only add " (deleted)" where necessary
-References: <20100802111955.025275647@szeredi.hu>
-            <20100802112024.851698363@szeredi.hu> <215565.1280754056@localhost>
-Message-Id: <E1OfvAm-0003eo-OP@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 02 Aug 2010 15:35:20 +0200
+	id S1753198Ab0HBNf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 09:35:56 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56131 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751879Ab0HBNfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 09:35:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [Bug #16337] general protection fault: 0000 [#1] SMP
+Date: Mon, 2 Aug 2010 15:34:51 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Pauli Nieminen <suokkos@gmail.com>
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera> <Aan7wZ97YaE.A.TCF.1qXVMB@chimera> <4C5618DA.1020407@gmail.com>
+In-Reply-To: <4C5618DA.1020407@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008021534.52133.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Aug 2010, Valdis.Kletnieks@vt.ed wrote:
-> On Mon, 02 Aug 2010 13:20:01 +0200, Miklos Szeredi said:
+On Monday, August 02, 2010, Justin P. Mattock wrote:
+> On 08/01/2010 06:52 AM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16337
+> > Subject		: general protection fault: 0000 [#1] SMP
+> > Submitter	: Justin P. Mattock<justinmattock@gmail.com>
+> > Date		: 2010-07-03 22:59 (30 days old)
+> > Message-ID	:<4C2FC0E3.6050101@gmail.com>
+> > References	: http://marc.info/?l=linux-kernel&m=127819798215589&w=2
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
 > 
-> > Index: linux-2.6/fs/dcache.c
-> > ===================================================================
-> > --- linux-2.6.orig/fs/dcache.c	2010-07-06 18:08:16.000000000 +0200
-> > +++ linux-2.6/fs/dcache.c	2010-07-06 18:08:19.000000000 +0200
-> > @@ -1977,8 +1977,7 @@ global_root:
-> >   * @buffer: buffer to return value in
-> >   * @buflen: buffer length
-> >   *
-> > - * Convert a dentry into an ASCII path name. If the entry has been deleted
-> > - * the string " (deleted)" is appended. Note that this is ambiguous.
-> > + * Convert a dentry into an ASCII path name.
-> >   *
-> >   * Returns a pointer into the buffer or an error code if the
-> >   * path was too long.
-> 
-> I'd prefer the comment about it being ambiguous remain.  I'm waiting
-> to see how long it takes for somebody to create a security hole by
-> creating a file called '/etc/some/thing/important (deleted)' and
-> having some software Do The Wrong Thing instead to
-> /etc/some/thing/important.
+> Ive played around with the machine that originally hit this. but still 
+> cant seem to reproduce or trigger this.
 
-The same comment is left intact on top of d_path().
+I'll close it, then.  Please reopen if you reproduce the issue.
 
-It is removed from __d_path() because this function no longer appends
-"(deleted)".
-
-Thanks,
-Miklos
+Rafael
