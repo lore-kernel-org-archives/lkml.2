@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab0HBDpR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 23:45:17 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36927 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752050Ab0HBDpP (ORCPT
+	id S1752278Ab0HBDya (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 23:54:30 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13460 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab0HBDy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 23:45:15 -0400
-X-AuditID: b753bd60-a82c0ba000005a63-eb-4c563f468a99
-Message-ID: <4C563F44.9080300@hitachi.com>
-Date: Mon, 02 Aug 2010 12:45:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCHv10 2.6.35-rc6-tip 9/14]  trace: uprobes trace_event	interface
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6> <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6> <4C510BCE.4010704@hitachi.com> <20100802022055.GB5581@nowhere>
-In-Reply-To: <20100802022055.GB5581@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+	Sun, 1 Aug 2010 23:54:29 -0400
+Date: Mon, 02 Aug 2010 12:54:22 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+Subject: [PATCH] MFD: LP3974 PMIC support
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, m.szyprowski@samsung.com,
+        broonie@opensource.wolfsonmicro.com, jy0922.shim@samsung.com
+Message-id: <20100802035422.GA2883@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.14 (2007-02-12)
+X-OriginalArrivalTime: 02 Aug 2010 03:54:27.0175 (UTC)
+ FILETIME=[671B4F70:01CB31F6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker wrote:
-> On Thu, Jul 29, 2010 at 02:04:14PM +0900, Masami Hiramatsu wrote:
->> Srikar Dronamraju wrote:
->>> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
->>> index c681fa7..16e2a8c 100644
->>> --- a/kernel/trace/Kconfig
->>> +++ b/kernel/trace/Kconfig
->>> @@ -482,6 +482,22 @@ config RING_BUFFER_BENCHMARK
->>>  
->>>  	  If unsure, say N.
->>>  
->>> +config UPROBE_EVENT
->>> +	bool "Enable uprobes-based dynamic events"
->>> +	depends on ARCH_SUPPORTS_UPROBES
->>> +	depends on MMU
->>> +	select UPROBES
->>> +	select PROBE_EVENTS
->>> +	select TRACING
->>> +	default n
->>> +	help
->>> +	  This allows the user to add tracing events on top of userspace dynamic
->>> +	  events (similar to tracepoints) on the fly via the traceevents interface.
->>> +	  Those events can be inserted wherever uprobes can probe, and record
->>> +	  various registers.
->>> +	  This option is required if you plan to use perf-probe subcommand of perf
->>> +	  tools on user space applications.
->>> +
->> Possible enhancement: Moving this config right after KPROBE_EVENT, because
->>  those two provide similar dynamic events.
->>
->> Thank you,
-> 
-> 
-> In fact this could be a menu "Dynamic Probes", perhaps default off, inside
-> which Kprobes and Uprobes would be default on (but depend on "Dynamic Probes").
-> 
-> So that you can quickly enable them all in one.
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-Hmm, I disagree with it, because both Kprobes and Uprobes provides
-APIs for modules too.
+LP3974 PMIC support. It has same functionality with max8998.
 
-I'd like to suggest below config tree
-
-Kenrel hacking
-  - Kprobes
-  - Uprobes
-  - Tracing
-     -- Dynamic Events
-        depends on Kprobes || Uprobes
-or
-	select Kprobes && Uprobes
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-2nd Research Dept.
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index db63d40..50383b1 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -303,6 +303,18 @@ config MFD_MAX8998
+ 	  accessing the device, additional drivers must be enabled in order
+ 	  to use the functionality of the device.
+ 
++config MFD_LP3974
++	bool "National Semiconductor LP3974 PMIC Support"
++	depends on I2C=y
++	select MFD_CORE
++	select MFD_MAX8998
++	help
++	  Say yes here to support for National Semiconductor LP3974. This is
++	  a Power Management IC. This driver provies common support for
++	  accessing the device, additional drivers must be enabled in order
++	  to use the functionality of the device.
++	  Note that it has same functionality with max8998.
++
+ config MFD_WM8400
+ 	tristate "Support Wolfson Microelectronics WM8400"
+ 	select MFD_CORE
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index 0d68de2..cea9f48 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -30,6 +30,11 @@
+ #include <linux/mfd/max8998.h>
+ #include <linux/mfd/max8998-private.h>
+ 
++enum max8998_type {
++	TYPE_MAX8998,
++	TYPE_LP3974,
++};
++
+ static struct mfd_cell max8998_devs[] = {
+ 	{
+ 		.name = "max8998-pmic",
+@@ -127,8 +132,8 @@ static int max8998_i2c_remove(struct i2c_client *i2c)
+ }
+ 
+ static const struct i2c_device_id max8998_i2c_id[] = {
+-       { "max8998", 0 },
+-       { }
++       { "max8998", TYPE_MAX8998 },
++       { "lp3974", TYPE_LP3974 },
+ };
+ MODULE_DEVICE_TABLE(i2c, max8998_i2c_id);
+ 
