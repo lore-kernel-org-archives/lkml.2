@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab0HBK5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 06:57:08 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:17006 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751393Ab0HBK5H (ORCPT
+	id S1752889Ab0HBLCq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 07:02:46 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:12942 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751310Ab0HBLCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 06:57:07 -0400
-X-Belgacom-Dynamic: yes
+	Mon, 2 Aug 2010 07:02:45 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPI/VkxQycSE/2dsb2JhbACgDHK+eg2FLAQ
-Date: Mon, 2 Aug 2010 12:57:04 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Viresh KUMAR <viresh.kumar@st.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        armando.visconti@st.com, shiraz.hashim@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org,
-        Linus Walleij <linus.ml.walleij@gmail.com>
-Subject: Re: [PATCH resend] Watchdog: Adding support for ARM Primecell
-	SP805 Watchdog
-Message-ID: <20100802105704.GT30740@infomag.iguana.be>
-References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com> <4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be> <4C285A72.7030303@st.com> <20100628162430.GN3788@infomag.iguana.be> <20100718193425.GD24707@n2100.arm.linux.org.uk> <20100726184601.GS11857@infomag.iguana.be> <4C4E5B1E.4040004@st.com>
+X-IronPort-Anti-Spam-Result: AvsEAJxBVkx5Ld2l/2dsb2JhbACgDHK+ZYU5BA
+Date: Mon, 2 Aug 2010 20:07:29 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@suse.de>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.35
+Message-ID: <20100802100729.GB9427@amd>
+References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
+ <20100802023322.GA19164@dastard>
+ <AANLkTint_s6h_EC7mDiPsyxr=C0GSrnrgJYkCCU7JEtN@mail.gmail.com>
+ <20100802055834.GB19164@dastard>
+ <20100802075537.GC7841@amd>
+ <20100802082428.GA23135@infradead.org>
+ <20100802090542.GA32322@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C4E5B1E.4040004@st.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100802090542.GA32322@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+On Mon, Aug 02, 2010 at 05:05:42AM -0400, Christoph Hellwig wrote:
+> On Mon, Aug 02, 2010 at 04:24:28AM -0400, Christoph Hellwig wrote:
+> > .36.  I'd much rather see the inode_lock scaling or the lockless path
+> > walk going in before, but I haven't checked how complicated the
+> > reordering would be.  The lockless path walk also is only rather
+> > theoretically useful until we do ACL checks lockless as we're having
+> > ACLs enabled pretty much everywhere at least in the distros.
+> 
+> >From a quick look it seems like the inode_lock splitup can easily
+> be moved forward, and it would help us with doing some work on the
+> writeback side.  The problem is that it would need rebasing ontop
+> of both the vfs and writeback (aka block) trees.
 
-> I will send V2 of this patch, which will include modification as suggested by
-> Linus walleij.
+inode_lock splitup is much simpler than dcache_lock, yes.
 
-After the discussion about the division: will there be a V2 of this patch or will V1 remain?
+And I have to rebase it on the work currently queued for 2.6.35
+anyway, so that's no problem. I can easily put it in front of
+dcache_lock patches in the series (as I said, I've kept everything
+independent and well split up).
 
-Kind regards,
-Wim.
+I do want opinions on how to do the big-picture merge, though,
+before I start moving things around. And obviously reviewing
+each of the parts is more important at this point than exact
+way to order the thing.
+
+But even the inode_lock patches I am wary of merging in 2.6.36
+without having much review or any linux-next / vfs-tree exposure.
 
