@@ -1,58 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab0HBSFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:05:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57230 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753940Ab0HBSFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:05:45 -0400
-X-Authority-Analysis: v=1.1 cv=rsPCLZWyMDYHS6UYEmJ4E6URGqccNA0A37lrbq4bmic= c=1 sm=0 a=WtVatY5aSSAA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=J50h3KNWAAAA:8 a=xiLza2LIHEBFdVsDR9wA:9 a=dumnpGywCKAfWJ3dTykFTPDQF0EA:4 a=CjuIK1q_8ugA:10 a=O-Ya0pC5jXMA:10 wl=env:18 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Mon, 2 Aug 2010 13:08:59 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Christian Stroetmann <stroetmann@ontolinux.com>
-Cc: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: Preview of changes to the Security susbystem for 2.6.36
-Message-ID: <20100802180859.GA29948@hallyn.com>
-References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
- <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
- <20100802063224.GR3948@outflux.net>
- <alpine.LRH.2.00.1008021639230.32603@tundra.namei.org>
- <20100802065746.GS3948@outflux.net>
- <4C569BCA.3050603@ontolinux.com>
+	id S1754189Ab0HBSJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:09:17 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:53854 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753109Ab0HBSJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:09:16 -0400
+Date: Mon, 2 Aug 2010 23:39:11 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        m-ikeda@ds.jp.nec.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 7/7][memcg] use spin lock instead of bit_spin_lock
+ in page_cgroup
+Message-ID: <20100802180911.GZ3863@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100727170225.64f78b15.kamezawa.hiroyu@jp.fujitsu.com>
+ <xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4C569BCA.3050603@ontolinux.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <xr93bp9sm8q1.fsf@ninji.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Christian Stroetmann (stroetmann@ontolinux.com):
-> Aloha James, Aloha Kees;
-> Ont the 02.08.2010 08:57,  Kees Cook wrote:
-> >On Mon, Aug 02, 2010 at 04:41:08PM +1000, James Morris wrote:
-> >>On Sun, 1 Aug 2010, Kees Cook wrote:
-> >>>Well, at least I'll have something for my summit presentation again.
-> >>>
-> >>>On the other hand, it's rather hard for me to defend against a private NAK.
+* Greg Thelen <gthelen@google.com> [2010-07-27 23:16:54]:
+
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 > 
-> A private NAK against a company's developer's OK
-> Where is the difference private and company? I thought that it
-> doesn't matter who and what a developer is, and where she/he comes
-> from.
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >
+> > This patch replaces page_cgroup's bit_spinlock with spinlock. In general,
+> > spinlock has good implementation than bit_spin_lock and we should use
+> > it if we have a room for it. In 64bit arch, we have extra 4bytes.
+> > Let's use it.
+> >
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > --
+> > Index: mmotm-0719/include/linux/page_cgroup.h
+> > ===================================================================
+> > --- mmotm-0719.orig/include/linux/page_cgroup.h
+> > +++ mmotm-0719/include/linux/page_cgroup.h
+> > @@ -10,8 +10,14 @@
+> >   * All page cgroups are allocated at boot or memory hotplug event,
+> >   * then the page cgroup for pfn always exists.
+> >   */
+> > +#ifdef CONFIG_64BIT
+> > +#define PCG_HAS_SPINLOCK
+> > +#endif
+> >  struct page_cgroup {
+> >  	unsigned long flags;
+> > +#ifdef PCG_HAS_SPINLOCK
+> > +	spinlock_t	lock;
+> > +#endif
+> >  	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
+> >  	unsigned short blk_cgroup;	/* Not Used..but will be. */
+> >  	struct page *page;
+> > @@ -90,6 +96,16 @@ static inline enum zone_type page_cgroup
+> >  	return page_zonenum(pc->page);
+> >  }
+> >  
+> > +#ifdef PCG_HAS_SPINLOCK
+> > +static inline void lock_page_cgroup(struct page_cgroup *pc)
+> > +{
+> > +	spin_lock(&pc->lock);
+> > +}
+> 
+> This is minor issue, but this patch breaks usage of PageCgroupLocked().
+> Example from __mem_cgroup_move_account() cases panic:
+> 	VM_BUG_ON(!PageCgroupLocked(pc));
+> 
+> I assume that this patch should also delete the following:
+> - PCG_LOCK definition from page_cgroup.h
+> - TESTPCGFLAG(Locked, LOCK) from page_cgroup.h
+> - PCGF_LOCK from memcontrol.c
+>
 
-That's not what private means in this case.  A private nak is one made
-in a private email, so that the list - and the submitter - can't see the
-rationale.  It is problematic because it doesn't really allow the other
-party to address the objection.
 
-(No big deal - Christoph has since responded in public.)
+Good catch! But from my understanding of the code we use spinlock_t
+only for 64 bit systems, so we still need the PCG* and TESTPGFLAGS.
+ 
+> > +static inline void unlock_page_cgroup(struct page_cgroup *pc)
+> > +{
+> > +	spin_unlock(&pc->lock);
+> > +}
+> > +#else
+> >  static inline void lock_page_cgroup(struct page_cgroup *pc)
+> >  {
+> >  	bit_spin_lock(PCG_LOCK, &pc->flags);
+> > @@ -99,6 +115,7 @@ static inline void unlock_page_cgroup(st
+> >  {
+> >  	bit_spin_unlock(PCG_LOCK, &pc->flags);
+> >  }
+> > +#endif
+> >  
+> >  static inline void SetPCGFileFlag(struct page_cgroup *pc, int idx)
+> >  {
+> > Index: mmotm-0719/mm/page_cgroup.c
+> > ===================================================================
+> > --- mmotm-0719.orig/mm/page_cgroup.c
+> > +++ mmotm-0719/mm/page_cgroup.c
+> > @@ -17,6 +17,9 @@ __init_page_cgroup(struct page_cgroup *p
+> >  	pc->mem_cgroup = 0;
+> >  	pc->page = pfn_to_page(pfn);
+> >  	INIT_LIST_HEAD(&pc->lru);
+> > +#ifdef PCG_HAS_SPINLOCK
+> > +	spin_lock_init(&pc->lock);
+> > +#endif
+> >  }
+> >  static unsigned long total_usage;
+> >  
 
--serge
+-- 
+	Three Cheers,
+	Balbir
