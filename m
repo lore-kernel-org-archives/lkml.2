@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab0HBPsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:48:55 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:27923 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753581Ab0HBPsx (ORCPT
+	id S1753896Ab0HBPt3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:49:29 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:38107 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab0HBPt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:48:53 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: DsqsXsQVM1myAr3Sl7go6YEdCBISgfOhaK27D9BiaLbqg1C
- 8rTTeqC0f5HLgOaIHKKNcq8FoeuAmh645LrSf3NkX1Xzgyc.CFUZWnhXmThk
- rL_1qrX0QUd0MDTtZ.h7w7.yuQWDwoGnJiauUqYgsFMh_.SckIvr2csnmN35
- FoRZwDeqHvTwVDb8h0tr3hWJn6XltZ.AxEUa2IPKlN5Rp0RRAc4aArdpcXb3
- SDMeOraM32C0AyE54bziFJ.r9VmnKPOre3hJDXdMBOMEabm1M
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 2 Aug 2010 10:48:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Dave Hansen <dave@linux.vnet.ibm.com>, Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-In-Reply-To: <20100731153031.GE27064@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1008021044380.18490@router.home>
-References: <alpine.DEB.2.00.1007291038100.16510@router.home> <20100729161856.GA16420@barrios-desktop> <alpine.DEB.2.00.1007291132210.17734@router.home> <20100729170313.GB16420@barrios-desktop> <alpine.DEB.2.00.1007291222410.17734@router.home>
- <20100729183320.GH18923@n2100.arm.linux.org.uk> <1280436919.16922.11246.camel@nimitz> <20100729221426.GA28699@n2100.arm.linux.org.uk> <1280450338.16922.11735.camel@nimitz> <alpine.DEB.2.00.1007300745180.9007@router.home>
- <20100731153031.GE27064@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 2 Aug 2010 11:49:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bOZulUAhcLcfKQ/bvhhDo/skzXnMxPjtW0UWWMIdxVONxGDdt4h8p4GB9V6WXoLtBK
+         MNwIM9RXo1bcQjNvp9MqZh5PpbpNaAxqJc7a1HxZk1tk9QIRjai7T4H6FssVptbq5n0L
+         V4tfja0WhMlv9hoPOC+EAXvNROkzsHd6xnLkM=
+Message-ID: <4C56E914.2080905@gmail.com>
+Date: Mon, 02 Aug 2010 08:49:40 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [Bug #16462] unable to connect to AP on legal channels 12/13
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>	<Aan7wZ97YaE.A.H2D.0pXVMB@chimera> <AANLkTikmgrKTLtgs1+h+BkS5X6qt9bP1wMDL4Gu7L3u3@mail.gmail.com>
+In-Reply-To: <AANLkTikmgrKTLtgs1+h+BkS5X6qt9bP1wMDL4Gu7L3u3@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Jul 2010, Russell King - ARM Linux wrote:
-
-> Looking at vmemmap sparsemem, we need to fix it as the page table
-> allocation in there bypasses the arch defined page table setup.
-
-You are required to define your own vmemmap_populate function. In that you
-can call some of the provided functions or use your own.
-
-> This causes a problem if you have 256-entry L2 page tables with no
-> room for the additional Linux VM PTE support bits (such as young,
-> dirty, etc), and need to glue two 256-entry L2 hardware page tables
-> plus a Linux version to store its accounting in each page.  See
-> arch/arm/include/asm/pgalloc.h.
+On 08/02/2010 07:58 AM, Daniel J Blueman wrote:
+> On 1 August 2010 14:52, Rafael J. Wysocki<rjw@sisk.pl>  wrote:
+>> This message has been generated automatically as a part of a summary report
+>> of recent regressions.
+>>
+>> The following bug entry is on the current list of known regressions
+>> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+>> know (either way).
+>>
+>> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16462
+>> Subject         : unable to connect to AP on legal channels 12/13
+>> Submitter       : Daniel J Blueman<daniel.blueman@gmail.com>
+>> Date            : 2010-07-25 17:06 (8 days old)
 >
-> So this causes a problem with vmemmap:
->
->                 pte_t entry;
->                 void *p = vmemmap_alloc_block_buf(PAGE_SIZE, node);
->                 if (!p)
->                         return NULL;
->                 entry = pfn_pte(__pa(p) >> PAGE_SHIFT, PAGE_KERNEL);
->
-> Are you willing for this stuff to be replaced by architectures as
-> necessary?
+> Yes, I just managed to reproduce this with 2.6.35-final, and will
+> update the bugzilla entry with the wire-capture needed.
 
-Sure its designed that way. If we missed anything we'd surely add it.
 
+ahh.. cool.. lets get this bug fixed...
+
+Justin P. Mattock
