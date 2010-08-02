@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab0HBNxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 09:53:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2002 "EHLO mx1.redhat.com"
+	id S1753570Ab0HBNyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 09:54:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56199 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753598Ab0HBNx2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 09:53:28 -0400
-Date: Mon, 2 Aug 2010 15:50:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Xiaotian Feng <dfeng@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Roland McGrath <roland@redhat.com>
-Subject: Re: [RFC PATCH V2] core_pattern: fix long parameters was truncated
-	by core_pattern handler
-Message-ID: <20100802135013.GA5877@redhat.com>
-References: <20100729130707.GA31154@shamino.rdu.redhat.com> <1280751836-1826-1-git-send-email-dfeng@redhat.com>
+	id S1751793Ab0HBNyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 09:54:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Date: Mon, 2 Aug 2010 15:52:20 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, stern@rowland.harvard.edu, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100801154708.19817b75@infradead.org> <20100802011006.GS2470@linux.vnet.ibm.com>
+In-Reply-To: <20100802011006.GS2470@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280751836-1826-1-git-send-email-dfeng@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008021552.20505.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02, Xiaotian Feng wrote:
->
-> @@ -1466,78 +1496,126 @@ static int format_corename(char *corename, long signr)
->  				goto out;
->  			/* Double percent, output one percent */
->  			case '%':
-> -				if (out_ptr == out_end)
-> -					goto out;
->  				*out_ptr++ = '%';
+On Monday, August 02, 2010, Paul E. McKenney wrote:
+> On Sun, Aug 01, 2010 at 03:47:08PM -0700, Arjan van de Ven wrote:
+> > On Sun, 1 Aug 2010 12:12:28 -0700
+> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+...
+> > Another one: freezing whole cgroups..... we have that today. it
+> > actually works quite well.... of course the hard part is the decision
+> > what to put in which cgroup, and at what frequency and duration you let
+> > cgroups run.
+> 
+> Indeed, the Android guys seemed to be quite excited by cgroup freezing
+> until they thought about the application-classification problem.
+> Seems like it should be easy for some types of applications, but I do
+> admit that apps can have non-trivial and non-obvious dependencies.
 
-Hmm. Not sure I understand why we do not need to check the space here.
+This isn't more difficult than deciding which applications will be allowed to
+use wakelocks (in the wakelocks world).  It actually seems to be pretty much
+equivalent to me. :-)
 
-> -				rc = snprintf(out_ptr, out_end - out_ptr,
-> -					      "%d", task_tgid_vnr(current));
-> -				if (rc > out_end - out_ptr)
-> -					goto out;
-> +				rc = snprintf(NULL, 0, "%d",
-> +					      task_tgid_vnr(current));
-> +				if (rc > out_end - out_ptr) {
-> +					ret = expand_corename(corename,
-> +							      &out_end,
-> +							      &out_ptr, &size);
-> +					if (ret)
-> +						return ret;
-> +				}
-> +				rc = snprintf(out_ptr, rc + 1, "%d",
-> +					      task_tgid_vnr(current));
+> > on the suspend blockers for drivers; the linux device runtime PM is
+> > effectively doing the same things; it allows drivers to suspend/resume
+> > individually (with a very nice API/programming model I should say) based
+> > on usage. And it works on a tree level, so that it's relatively easy
+> > to do things like "I want to go to <this magic deep idle state>, but
+> > only if <this set of devices is suspended already>". This is obviously
+> > an important functionality for all low power devices, ARM or x86. 
+> > Suspend blockers had this functionality as part of what it did (they do
+> > more obviously) but I'd wager that the current Linux infrastructure is
+> > outright nicer. 
+> 
+> This is what Rafael has been working on?
 
-Probably it makes sense to factor out this code?
+If you mean the runtime PM framework, then yes, I've been working on it.
 
-Roughly, something like:
+> Of course, the Android guys also want to pay attention to which apps
+> are running as well as to the state of devices on the system.
 
-	struct core_name {
-		char *corename;
-		int len, free;
-	};
+In fact the runtime PM framework is also important to Android, because it
+can be used in there, for example, to implement the "early suspend" thing
+I referred to in one of my previous messages in this thread.
 
-	static bool cn_printf(struct core_name *cn, const char *fmt, ...)
-	{
-		char *cur;
-		int need;
-		va_list ap;
-
-	retry:
-		cur = cn->corename + (cn->len - cn->free);
-		need = vsnprintf(cur, cn->free, fmt, ap);
-
-		if (likely(need < free)) {
-			free -= need;
-			return true;
-		}
-
-		increase ->len, realloc ->corename or return false;
-		goto retry;
-
-	}
-
-
-Then format_corename() can just do
-
-	if (!cn_printf(&cn, ...))
-		return -ENOMEM;
-
-consistently.
-
-
-
-Also. Not sure this really makes sense, but if we ever need to expand the
-string, perhaps it makes sense to remeber this fact so that the next time
-we start with len > CORENAME_MAX_SIZE. In any case, I think this needs a
-separate patch.
-
-Oleg.
-
+Thanks,
+Rafael
