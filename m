@@ -1,308 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab0HBNsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 09:48:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58935 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab0HBNsI (ORCPT
+	id S1753383Ab0HBNvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 09:51:42 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:43949 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab0HBNvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 09:48:08 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/2] mfd/mc13783: get rid of now unused private header
-Date: Mon,  2 Aug 2010 15:48:04 +0200
-Message-Id: <1280756884-25340-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100802100455.GC3334@sortiz-mobl>
-References: <20100802100455.GC3334@sortiz-mobl>
+	Mon, 2 Aug 2010 09:51:41 -0400
+Date: Mon, 2 Aug 2010 22:51:35 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Joe Eloff <kagen101@gmail.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9 v3] staging: dt3155: check put_user() return value
+Message-ID: <20100802135135.GJ5814@verge.net.au>
+References: <1280737873-5992-1-git-send-email-segooon@gmail.com>
+ <20100802124125.GG5814@verge.net.au>
+ <20100802125638.GA6412@albatros>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802125638.GA6412@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds all remaining definitions that are used by the core driver
-to the .c file.
+On Mon, Aug 02, 2010 at 04:56:38PM +0400, Vasiliy Kulikov wrote:
+> put_user() returns code was not checked for errors. To simplify the code
+> fill local struct dt3155_read with data and copy it with single
+> copy_to_user() call.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/mfd/mc13783-core.c          |   24 ++++-
- include/linux/mfd/mc13783-private.h |  220 -----------------------------------
- 2 files changed, 23 insertions(+), 221 deletions(-)
- delete mode 100644 include/linux/mfd/mc13783-private.h
+Looks good to me.
 
-diff --git a/drivers/mfd/mc13783-core.c b/drivers/mfd/mc13783-core.c
-index a4fa191..6834edb 100644
---- a/drivers/mfd/mc13783-core.c
-+++ b/drivers/mfd/mc13783-core.c
-@@ -11,9 +11,31 @@
-  */
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mutex.h>
-+#include <linux/interrupt.h>
- #include <linux/spi/spi.h>
- #include <linux/mfd/core.h>
--#include <linux/mfd/mc13783-private.h>
-+#include <linux/mfd/mc13783.h>
-+
-+struct mc13783 {
-+	struct spi_device *spidev;
-+	struct mutex lock;
-+	int irq;
-+	int flags;
-+
-+	irq_handler_t irqhandler[MC13783_NUM_IRQ];
-+	void *irqdata[MC13783_NUM_IRQ];
-+
-+	/* XXX these should go as platformdata to the regulator subdevice */
-+	struct mc13783_regulator_init_data *regulators;
-+	int num_regulators;
-+};
-+
-+#define MC13783_REG_REVISION			 7
-+#define MC13783_REG_ADC_0			43
-+#define MC13783_REG_ADC_1			44
-+#define MC13783_REG_ADC_2			45
- 
- #define MC13783_IRQSTAT0	0
- #define MC13783_IRQSTAT0_ADCDONEI	(1 << 0)
-diff --git a/include/linux/mfd/mc13783-private.h b/include/linux/mfd/mc13783-private.h
-deleted file mode 100644
-index 95cf936..0000000
---- a/include/linux/mfd/mc13783-private.h
-+++ /dev/null
-@@ -1,220 +0,0 @@
--/*
-- * Copyright 2009 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
-- *
-- * Initial development of this code was funded by
-- * Phytec Messtechnik GmbH, http://www.phytec.de
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-- */
--
--#ifndef __LINUX_MFD_MC13783_PRIV_H
--#define __LINUX_MFD_MC13783_PRIV_H
--
--#include <linux/platform_device.h>
--#include <linux/mfd/mc13783.h>
--#include <linux/mutex.h>
--#include <linux/interrupt.h>
--
--struct mc13783 {
--	struct spi_device *spidev;
--	struct mutex lock;
--	int irq;
--	int flags;
--
--	irq_handler_t irqhandler[MC13783_NUM_IRQ];
--	void *irqdata[MC13783_NUM_IRQ];
--
--	/* XXX these should go as platformdata to the regulator subdevice */
--	struct mc13783_regulator_init_data *regulators;
--	int num_regulators;
--};
--
--#define MC13783_REG_INTERRUPT_STATUS_0		 0
--#define MC13783_REG_INTERRUPT_MASK_0		 1
--#define MC13783_REG_INTERRUPT_SENSE_0		 2
--#define MC13783_REG_INTERRUPT_STATUS_1		 3
--#define MC13783_REG_INTERRUPT_MASK_1		 4
--#define MC13783_REG_INTERRUPT_SENSE_1		 5
--#define MC13783_REG_POWER_UP_MODE_SENSE		 6
--#define MC13783_REG_REVISION			 7
--#define MC13783_REG_SEMAPHORE			 8
--#define MC13783_REG_ARBITRATION_PERIPHERAL_AUDIO 9
--#define MC13783_REG_ARBITRATION_SWITCHERS	10
--#define MC13783_REG_ARBITRATION_REGULATORS_0	11
--#define MC13783_REG_ARBITRATION_REGULATORS_1	12
--#define MC13783_REG_POWER_CONTROL_0		13
--#define MC13783_REG_POWER_CONTROL_1		14
--#define MC13783_REG_POWER_CONTROL_2		15
--#define MC13783_REG_REGEN_ASSIGNMENT		16
--#define MC13783_REG_CONTROL_SPARE		17
--#define MC13783_REG_MEMORY_A			18
--#define MC13783_REG_MEMORY_B			19
--#define MC13783_REG_RTC_TIME			20
--#define MC13783_REG_RTC_ALARM			21
--#define MC13783_REG_RTC_DAY			22
--#define MC13783_REG_RTC_DAY_ALARM		23
--#define MC13783_REG_SWITCHERS_0			24
--#define MC13783_REG_SWITCHERS_1			25
--#define MC13783_REG_SWITCHERS_2			26
--#define MC13783_REG_SWITCHERS_3			27
--#define MC13783_REG_SWITCHERS_4			28
--#define MC13783_REG_SWITCHERS_5			29
--#define MC13783_REG_REGULATOR_SETTING_0		30
--#define MC13783_REG_REGULATOR_SETTING_1		31
--#define MC13783_REG_REGULATOR_MODE_0		32
--#define MC13783_REG_REGULATOR_MODE_1		33
--#define MC13783_REG_POWER_MISCELLANEOUS		34
--#define MC13783_REG_POWER_SPARE			35
--#define MC13783_REG_AUDIO_RX_0			36
--#define MC13783_REG_AUDIO_RX_1			37
--#define MC13783_REG_AUDIO_TX			38
--#define MC13783_REG_AUDIO_SSI_NETWORK		39
--#define MC13783_REG_AUDIO_CODEC			40
--#define MC13783_REG_AUDIO_STEREO_DAC		41
--#define MC13783_REG_AUDIO_SPARE			42
--#define MC13783_REG_ADC_0			43
--#define MC13783_REG_ADC_1			44
--#define MC13783_REG_ADC_2			45
--#define MC13783_REG_ADC_3			46
--#define MC13783_REG_ADC_4			47
--#define MC13783_REG_CHARGER			48
--#define MC13783_REG_USB				49
--#define MC13783_REG_CHARGE_USB_SPARE		50
--#define MC13783_REG_LED_CONTROL_0		51
--#define MC13783_REG_LED_CONTROL_1		52
--#define MC13783_REG_LED_CONTROL_2		53
--#define MC13783_REG_LED_CONTROL_3		54
--#define MC13783_REG_LED_CONTROL_4		55
--#define MC13783_REG_LED_CONTROL_5		56
--#define MC13783_REG_SPARE			57
--#define MC13783_REG_TRIM_0			58
--#define MC13783_REG_TRIM_1			59
--#define MC13783_REG_TEST_0			60
--#define MC13783_REG_TEST_1			61
--#define MC13783_REG_TEST_2			62
--#define MC13783_REG_TEST_3			63
--#define MC13783_REG_NB				64
--
--/*
-- * Reg Regulator Mode 0
-- */
--#define MC13783_REGCTRL_VAUDIO_EN	(1 << 0)
--#define MC13783_REGCTRL_VAUDIO_STBY	(1 << 1)
--#define MC13783_REGCTRL_VAUDIO_MODE	(1 << 2)
--#define MC13783_REGCTRL_VIOHI_EN	(1 << 3)
--#define MC13783_REGCTRL_VIOHI_STBY	(1 << 4)
--#define MC13783_REGCTRL_VIOHI_MODE	(1 << 5)
--#define MC13783_REGCTRL_VIOLO_EN	(1 << 6)
--#define MC13783_REGCTRL_VIOLO_STBY 	(1 << 7)
--#define MC13783_REGCTRL_VIOLO_MODE	(1 << 8)
--#define MC13783_REGCTRL_VDIG_EN		(1 << 9)
--#define MC13783_REGCTRL_VDIG_STBY	(1 << 10)
--#define MC13783_REGCTRL_VDIG_MODE	(1 << 11)
--#define MC13783_REGCTRL_VGEN_EN		(1 << 12)
--#define MC13783_REGCTRL_VGEN_STBY	(1 << 13)
--#define MC13783_REGCTRL_VGEN_MODE	(1 << 14)
--#define MC13783_REGCTRL_VRFDIG_EN	(1 << 15)
--#define MC13783_REGCTRL_VRFDIG_STBY	(1 << 16)
--#define MC13783_REGCTRL_VRFDIG_MODE	(1 << 17)
--#define MC13783_REGCTRL_VRFREF_EN	(1 << 18)
--#define MC13783_REGCTRL_VRFREF_STBY	(1 << 19)
--#define MC13783_REGCTRL_VRFREF_MODE	(1 << 20)
--#define MC13783_REGCTRL_VRFCP_EN	(1 << 21)
--#define MC13783_REGCTRL_VRFCP_STBY	(1 << 22)
--#define MC13783_REGCTRL_VRFCP_MODE	(1 << 23)
--
--/*
-- * Reg Regulator Mode 1
-- */
--#define MC13783_REGCTRL_VSIM_EN		(1 << 0)
--#define MC13783_REGCTRL_VSIM_STBY	(1 << 1)
--#define MC13783_REGCTRL_VSIM_MODE	(1 << 2)
--#define MC13783_REGCTRL_VESIM_EN	(1 << 3)
--#define MC13783_REGCTRL_VESIM_STBY	(1 << 4)
--#define MC13783_REGCTRL_VESIM_MODE	(1 << 5)
--#define MC13783_REGCTRL_VCAM_EN		(1 << 6)
--#define MC13783_REGCTRL_VCAM_STBY	(1 << 7)
--#define MC13783_REGCTRL_VCAM_MODE	(1 << 8)
--#define	MC13783_REGCTRL_VRFBG_EN	(1 << 9)
--#define MC13783_REGCTRL_VRFBG_STBY	(1 << 10)
--#define MC13783_REGCTRL_VVIB_EN		(1 << 11)
--#define MC13783_REGCTRL_VRF1_EN		(1 << 12)
--#define MC13783_REGCTRL_VRF1_STBY	(1 << 13)
--#define MC13783_REGCTRL_VRF1_MODE	(1 << 14)
--#define MC13783_REGCTRL_VRF2_EN		(1 << 15)
--#define MC13783_REGCTRL_VRF2_STBY	(1 << 16)
--#define MC13783_REGCTRL_VRF2_MODE	(1 << 17)
--#define MC13783_REGCTRL_VMMC1_EN	(1 << 18)
--#define MC13783_REGCTRL_VMMC1_STBY	(1 << 19)
--#define MC13783_REGCTRL_VMMC1_MODE	(1 << 20)
--#define MC13783_REGCTRL_VMMC2_EN	(1 << 21)
--#define MC13783_REGCTRL_VMMC2_STBY	(1 << 22)
--#define MC13783_REGCTRL_VMMC2_MODE	(1 << 23)
--
--/*
-- * Reg Regulator Misc.
-- */
--#define MC13783_REGCTRL_GPO1_EN		(1 << 6)
--#define MC13783_REGCTRL_GPO2_EN		(1 << 8)
--#define MC13783_REGCTRL_GPO3_EN		(1 << 10)
--#define MC13783_REGCTRL_GPO4_EN		(1 << 12)
--#define MC13783_REGCTRL_VIBPINCTRL	(1 << 14)
--
--/*
-- * Reg Switcher 4
-- */
--#define MC13783_SWCTRL_SW1A_MODE	(1 << 0)
--#define MC13783_SWCTRL_SW1A_STBY_MODE	(1 << 2)
--#define MC13783_SWCTRL_SW1A_DVS_SPEED	(1 << 6)
--#define MC13783_SWCTRL_SW1A_PANIC_MODE	(1 << 8)
--#define MC13783_SWCTRL_SW1A_SOFTSTART	(1 << 9)
--#define MC13783_SWCTRL_SW1B_MODE	(1 << 10)
--#define MC13783_SWCTRL_SW1B_STBY_MODE	(1 << 12)
--#define MC13783_SWCTRL_SW1B_DVS_SPEED	(1 << 14)
--#define MC13783_SWCTRL_SW1B_PANIC_MODE	(1 << 16)
--#define MC13783_SWCTRL_SW1B_SOFTSTART	(1 << 17)
--#define MC13783_SWCTRL_PLL_EN		(1 << 18)
--#define MC13783_SWCTRL_PLL_FACTOR	(1 << 19)
--
--/*
-- * Reg Switcher 5
-- */
--#define MC13783_SWCTRL_SW2A_MODE	(1 << 0)
--#define MC13783_SWCTRL_SW2A_STBY_MODE	(1 << 2)
--#define MC13783_SWCTRL_SW2A_DVS_SPEED	(1 << 6)
--#define MC13783_SWCTRL_SW2A_PANIC_MODE	(1 << 8)
--#define MC13783_SWCTRL_SW2A_SOFTSTART	(1 << 9)
--#define MC13783_SWCTRL_SW2B_MODE	(1 << 10)
--#define MC13783_SWCTRL_SW2B_STBY_MODE	(1 << 12)
--#define MC13783_SWCTRL_SW2B_DVS_SPEED	(1 << 14)
--#define MC13783_SWCTRL_SW2B_PANIC_MODE	(1 << 16)
--#define MC13783_SWCTRL_SW2B_SOFTSTART	(1 << 17)
--#define MC13783_SWSET_SW3		(1 << 18)
--#define MC13783_SWCTRL_SW3_EN		(1 << 20)
--#define MC13783_SWCTRL_SW3_STBY		(1 << 21)
--#define MC13783_SWCTRL_SW3_MODE		(1 << 22)
--
--static inline int mc13783_set_bits(struct mc13783 *mc13783, unsigned int offset,
--		u32 mask, u32 val)
--{
--	int ret;
--	mc13783_lock(mc13783);
--	ret = mc13783_reg_rmw(mc13783, offset, mask, val);
--	mc13783_unlock(mc13783);
--
--	return ret;
--}
--
--#endif /* __LINUX_MFD_MC13783_PRIV_H */
--- 
-1.7.1
+Reviewed-by: Simon Horman <horms@verge.net.au>
 
+> ---
+>  drivers/staging/dt3155/dt3155_drv.c |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+> index 7316996..6031837 100644
+> --- a/drivers/staging/dt3155/dt3155_drv.c
+> +++ b/drivers/staging/dt3155/dt3155_drv.c
+> @@ -745,6 +745,7 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
+>    struct dt3155_status *dts = &dt3155_status[minor];
+>    struct dt3155_fbuffer *fb = &dts->fbuffer;
+>    struct frame_info	*frame_info;
+> +  struct dt3155_read dt_read;
+>  
+>    /* TODO: this should check the error flag and */
+>    /*   return an error on hardware failures */
+> @@ -797,14 +798,12 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
+>  
+>    /* make this an offset */
+>    offset = frame_info->addr - dts->mem_addr;
+> +  dt_read.offset = offset;
+> +  dt_read.frame_seq = fb->frame_count;
+> +  dt_read.state = dts->state;
+> +  memcpy(&dt_read.frame_info, frame_info, sizeof(struct frame_info));
+>  
+> -  put_user(offset, (unsigned int __user *)buf);
+> -  buf += sizeof(u32);
+> -  put_user(fb->frame_count, (unsigned int __user *)buf);
+> -  buf += sizeof(u32);
+> -  put_user(dts->state, (unsigned int __user *)buf);
+> -  buf += sizeof(u32);
+> -  if (copy_to_user(buf, frame_info, sizeof(*frame_info)))
+> +  if (copy_to_user(buf, &dt_read, sizeof(struct dt3155_read)))
+>        return -EFAULT;
+>  
+>    return sizeof(struct dt3155_read);
+> -- 
+> 1.7.0.4
