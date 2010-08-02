@@ -1,177 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab0HBLUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 07:20:31 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:42502 "EHLO
+	id S1753537Ab0HBLUe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 07:20:34 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:42508 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab0HBLU3 (ORCPT
+	with ESMTP id S1753492Ab0HBLUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 07:20:29 -0400
-Message-Id: <20100802112022.340131929@szeredi.hu>
+	Mon, 2 Aug 2010 07:20:31 -0400
+Message-Id: <20100802112024.851698363@szeredi.hu>
 References: <20100802111955.025275647@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Mon, 02 Aug 2010 13:20:00 +0200
+Date: Mon, 02 Aug 2010 13:20:01 +0200
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] vfs: add prepend_path() helper
-Content-Disposition: inline; filename=vfs-add-prepend_path-helper.patch
+Subject: [PATCH 6/7] vfs: only add " (deleted)" where necessary
+Content-Disposition: inline; filename=vfs-d_path-move-deleted-into-callers.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Split off prepend_path() from __d_path().  This new helper takes an
-end-of-buffer pointer and buffer-length pointer just like the other
-prepend_* functions.  Move the " (deleted)" postfix out to __d_path().
+__d_path() has 4 callers:
 
-This patch doesn't change any functionality but paves the way for the
-following patches.
+  d_path()
+  sys_getcwd()
+  seq_path_root()
+  tomoyo_realpath_from_path2()
+
+Of these the only one which needs the " (deleted)" ending is d_path().
+
+sys_getcwd() checks for existence before calling __d_path().
+
+seq_path_root() is used to show the mountpoint path in
+/proc/PID/mountinfo, which is always a positive.
+
+And tomoyo doesn't want the deleted ending.
+
+Create a helper "path_with_deleted()" as subsequent patches will need
+this in multiple places.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/dcache.c |   94 +++++++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 58 insertions(+), 36 deletions(-)
+ fs/dcache.c |   32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
 
 Index: linux-2.6/fs/dcache.c
 ===================================================================
---- linux-2.6.orig/fs/dcache.c	2010-07-06 18:08:12.000000000 +0200
-+++ linux-2.6/fs/dcache.c	2010-07-06 18:08:16.000000000 +0200
-@@ -1903,48 +1903,30 @@ static int prepend_name(char **buffer, i
- }
- 
- /**
-- * __d_path - return the path of a dentry
-+ * Prepend path string to a buffer
-+ *
-  * @path: the dentry/vfsmount to report
-  * @root: root vfsmnt/dentry (may be modified by this function)
-- * @buffer: buffer to return value in
-- * @buflen: buffer length
-+ * @buffer: pointer to the end of the buffer
-+ * @buflen: pointer to buffer length
+--- linux-2.6.orig/fs/dcache.c	2010-07-06 18:08:16.000000000 +0200
++++ linux-2.6/fs/dcache.c	2010-07-06 18:08:19.000000000 +0200
+@@ -1977,8 +1977,7 @@ global_root:
+  * @buffer: buffer to return value in
+  * @buflen: buffer length
   *
 - * Convert a dentry into an ASCII path name. If the entry has been deleted
 - * the string " (deleted)" is appended. Note that this is ambiguous.
-- *
-- * Returns a pointer into the buffer or an error code if the
-- * path was too long.
-- *
-- * "buflen" should be positive. Caller holds the dcache_lock.
-+ * Caller holds the dcache_lock.
++ * Convert a dentry into an ASCII path name.
   *
-  * If path is not reachable from the supplied root, then the value of
-  * root is changed (without modifying refcounts).
-  */
--char *__d_path(const struct path *path, struct path *root,
--	       char *buffer, int buflen)
-+static int prepend_path(const struct path *path, struct path *root,
-+			char **buffer, int *buflen)
- {
- 	struct dentry *dentry = path->dentry;
- 	struct vfsmount *vfsmnt = path->mnt;
--	char *end = buffer + buflen;
--	char *retval;
-+	bool slash = false;
-+	int error = 0;
+  * Returns a pointer into the buffer or an error code if the
+  * path was too long.
+@@ -1995,12 +1994,6 @@ char *__d_path(const struct path *path,
+ 	int error;
  
- 	spin_lock(&vfsmount_lock);
--	prepend(&end, &buflen, "\0", 1);
--	if (d_unlinked(dentry) &&
--		(prepend(&end, &buflen, " (deleted)", 10) != 0))
--			goto Elong;
+ 	prepend(&res, &buflen, "\0", 1);
+-	if (d_unlinked(path->dentry)) {
+-		error = prepend(&res, &buflen, " (deleted)", 10);
+-		if (error)
+-			return ERR_PTR(error);
+-	}
 -
--	if (buflen < 1)
--		goto Elong;
--	/* Get '/' right */
--	retval = end-1;
--	*retval = '/';
--
--	for (;;) {
-+	while (dentry != root->dentry || vfsmnt != root->mnt) {
- 		struct dentry * parent;
- 
--		if (dentry == root->dentry && vfsmnt == root->mnt)
--			break;
- 		if (dentry == vfsmnt->mnt_root || IS_ROOT(dentry)) {
- 			/* Global root? */
- 			if (vfsmnt->mnt_parent == vfsmnt) {
-@@ -1956,16 +1938,22 @@ char *__d_path(const struct path *path,
- 		}
- 		parent = dentry->d_parent;
- 		prefetch(parent);
--		if ((prepend_name(&end, &buflen, &dentry->d_name) != 0) ||
--		    (prepend(&end, &buflen, "/", 1) != 0))
--			goto Elong;
--		retval = end;
-+		error = prepend_name(buffer, buflen, &dentry->d_name);
-+		if (!error)
-+			error = prepend(buffer, buflen, "/", 1);
-+		if (error)
-+			break;
-+
-+		slash = true;
- 		dentry = parent;
- 	}
- 
- out:
-+	if (!error && !slash)
-+		error = prepend(buffer, buflen, "/", 1);
-+
- 	spin_unlock(&vfsmount_lock);
--	return retval;
-+	return error;
- 
- global_root:
- 	/*
-@@ -1980,10 +1968,44 @@ global_root:
- 	root->mnt = vfsmnt;
- 	root->dentry = dentry;
- 	goto out;
-+}
- 
--Elong:
--	retval = ERR_PTR(-ENAMETOOLONG);
--	goto out;
-+/**
-+ * __d_path - return the path of a dentry
-+ * @path: the dentry/vfsmount to report
-+ * @root: root vfsmnt/dentry (may be modified by this function)
-+ * @buffer: buffer to return value in
-+ * @buflen: buffer length
-+ *
-+ * Convert a dentry into an ASCII path name. If the entry has been deleted
-+ * the string " (deleted)" is appended. Note that this is ambiguous.
-+ *
-+ * Returns a pointer into the buffer or an error code if the
-+ * path was too long.
-+ *
-+ * "buflen" should be positive. Caller holds the dcache_lock.
-+ *
-+ * If path is not reachable from the supplied root, then the value of
-+ * root is changed (without modifying refcounts).
-+ */
-+char *__d_path(const struct path *path, struct path *root,
-+	       char *buf, int buflen)
-+{
-+	char *res = buf + buflen;
-+	int error;
-+
-+	prepend(&res, &buflen, "\0", 1);
-+	if (d_unlinked(path->dentry)) {
-+		error = prepend(&res, &buflen, " (deleted)", 10);
-+		if (error)
-+			return ERR_PTR(error);
-+	}
-+
-+	error = prepend_path(path, root, &res, &buflen);
-+	if (error)
-+		return ERR_PTR(error);
-+
-+	return res;
+ 	error = prepend_path(path, root, &res, &buflen);
+ 	if (error)
+ 		return ERR_PTR(error);
+@@ -2008,6 +2001,22 @@ char *__d_path(const struct path *path,
+ 	return res;
  }
  
++/*
++ * same as __d_path but appends "(deleted)" for unlinked files.
++ */
++static int path_with_deleted(const struct path *path, struct path *root,
++				 char **buf, int *buflen)
++{
++	prepend(buf, buflen, "\0", 1);
++	if (d_unlinked(path->dentry)) {
++		int error = prepend(buf, buflen, " (deleted)", 10);
++		if (error)
++			return error;
++	}
++
++	return prepend_path(path, root, buf, buflen);
++}
++
  /**
+  * d_path - return the path of a dentry
+  * @path: path to report
+@@ -2026,9 +2035,10 @@ char *__d_path(const struct path *path,
+  */
+ char *d_path(const struct path *path, char *buf, int buflen)
+ {
+-	char *res;
++	char *res = buf + buflen;
+ 	struct path root;
+ 	struct path tmp;
++	int error;
+ 
+ 	/*
+ 	 * We have various synthetic filesystems that never get mounted.  On
+@@ -2043,7 +2053,9 @@ char *d_path(const struct path *path, ch
+ 	get_fs_root(current->fs, &root);
+ 	spin_lock(&dcache_lock);
+ 	tmp = root;
+-	res = __d_path(path, &tmp, buf, buflen);
++	error = path_with_deleted(path, &tmp, &res, &buflen);
++	if (error)
++		res = ERR_PTR(error);
+ 	spin_unlock(&dcache_lock);
+ 	path_put(&root);
+ 	return res;
 
 -- 
