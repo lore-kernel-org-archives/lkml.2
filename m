@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0HBFeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 01:34:18 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:35624 "EHLO mx01.d-labs.de"
+	id S1752598Ab0HBFoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 01:44:46 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:51174 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752745Ab0HBFeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 01:34:17 -0400
-Date: Mon, 2 Aug 2010 07:34:00 +0200
+	id S1751255Ab0HBFop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 01:44:45 -0400
+Date: Mon, 2 Aug 2010 07:44:29 +0200
 From: Florian Mickler <florian@mickler.org>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+To: david@lang.hm
+Cc: Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
+        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
+        pavel@ucw.cz, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
 Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100802073400.68a6edd7@schatten.dmk.lab>
-In-Reply-To: <20100801210548.23f77ff6@infradead.org>
+Message-ID: <20100802074429.73a9dfd9@schatten.dmk.lab>
+In-Reply-To: <alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
 References: <20100731175841.GA9367@linux.vnet.ibm.com>
 	<20100731215214.2543c07e@infradead.org>
 	<20100801054816.GI2470@linux.vnet.ibm.com>
@@ -25,6 +26,7 @@ References: <20100731175841.GA9367@linux.vnet.ibm.com>
 	<20100801204026.GH31324@thunk.org>
 	<20100802030304.GU2470@linux.vnet.ibm.com>
 	<20100801210548.23f77ff6@infradead.org>
+	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
 X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -33,24 +35,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 1 Aug 2010 22:06:34 -0700 (PDT)
+david@lang.hm wrote:
 
-On Sun, 1 Aug 2010 21:05:48 -0700
-Arjan van de Ven <arjan@infradead.org> wrote:
+> On Sun, 1 Aug 2010, Arjan van de Ven wrote:
+> 
+> > I'm a little worried that this whole "I need to block suspend" is
+> > temporary. Yes today there is silicon from ARM and Intel where suspend
+> > is a heavy operation, yet at the same time it's not all THAT heavy
+> > anymore.... at least on the Intel side it's good enough to use pretty
+> > much all the time (when the screen is off for now, but that's a memory
+> > controller issue more than anything else). I'm pretty sure the ARM guys
+> > will not be far behind.
+> 
+> remember that this 'block suspend' is really 'block overriding the fact 
+> that there are still runable processes and suspending anyway"
+> 
+> having it labeled as 'suspend blocker' or even 'wakelock' makes it sound 
+> as if it blocks any attempt to suspend, and I'm not sure that's what's 
+> really intended. Itsounds like the normal syspend process would continue 
+> to work, just this 'ignore if these other apps are busy' mode of operation 
+> would not work.
+> 
+> which makes me wonder, would it be possible to tell the normal idle 
+> detection mechanism to ignore specific processes when deciding if it 
+> should suspend or not? how about only considering processes in one cgroup 
+> when deciding to suspend and ignoring all others?
+> 
+> David Lang
 
-> I'm a little worried that this whole "I need to block suspend" is
-> temporary. Yes today there is silicon from ARM and Intel where suspend
-> is a heavy operation, yet at the same time it's not all THAT heavy
-> anymore.... at least on the Intel side it's good enough to use pretty
-> much all the time (when the screen is off for now, but that's a memory
-> controller issue more than anything else). I'm pretty sure the ARM guys
-> will not be far behind.
-
-I think that the only thing that really matters (longterm) with suspend
-is that processes don't get scheduled anymore when the system is
-suspended.
+We then get again to the "runnable tasks" problem that was
+discussed earlier... the system get's "deadlock-prone" if a subset of
+tasks is not run. 
+Interprocess dependencies are not so easy to get right in general.
 
 Cheers,
 Flo
-
-
