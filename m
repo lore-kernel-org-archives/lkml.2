@@ -1,126 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab0HBH5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:57:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38903 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab0HBH5X (ORCPT
+	id S1753678Ab0HBH6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:58:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65460 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab0HBH6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:57:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: [PATCH 6/6] vmscan: Kick flusher threads to clean pages when reclaim is encountering dirty pages
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <1280679686.3081.28.camel@heimdal.trondhjem.org>
-References: <20100801170115.4AFC.A69D9226@jp.fujitsu.com> <1280679686.3081.28.camel@heimdal.trondhjem.org>
-Message-Id: <20100802133259.4F89.A69D9226@jp.fujitsu.com>
+	Mon, 2 Aug 2010 03:58:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TXTSJzGDtgFBHbitsU1yDQVie5U24+JMhNw+UvJe1jee+NC1ZtDxUOPERByGIZtzu9
+         qIqa8YmSh3ymz5eZak7jCzQFH2Om7l/fzkAGQVth+dF8LODU6KkJRRqg+mFqtujXa4dS
+         +QfSkVrDppS9BQBdeAikNJ036d3isJczlQZok=
+Date: Mon, 2 Aug 2010 09:58:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 9/14]  trace: uprobes trace_event
+	interface
+Message-ID: <20100802075810.GB5292@nowhere>
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6> <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6> <4C510BCE.4010704@hitachi.com> <20100802022055.GB5581@nowhere> <4C563F44.9080300@hitachi.com> <20100802064638.GB22812@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon,  2 Aug 2010 16:57:18 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802064638.GB22812@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-> The problem that I am seeing is that the try_to_release_page() needs to
-> be told to act as a non-blocking call when the process is kswapd, just
-> like the pageout() call.
+On Mon, Aug 02, 2010 at 12:16:38PM +0530, Srikar Dronamraju wrote:
+> > > 
+> > > In fact this could be a menu "Dynamic Probes", perhaps default off, inside
+> > > which Kprobes and Uprobes would be default on (but depend on "Dynamic Probes").
+> > > 
+> > > So that you can quickly enable them all in one.
+> > 
+> > Hmm, I disagree with it, because both Kprobes and Uprobes provides
+> > APIs for modules too.
+> > 
+> > I'd like to suggest below config tree
+> > 
+> > Kenrel hacking
+> >   - Kprobes
+> >   - Uprobes
+> >   - Tracing
+> >      -- Dynamic Events
+> >         depends on Kprobes || Uprobes
+> > or
+> > 	select Kprobes && Uprobes
 > 
-> Currently, the sc->gfp_mask is set to GFP_KERNEL, which normally means
-> that the call may wait on I/O to complete. However, what I'm seeing in
-> the bugzilla above is that if kswapd waits on an RPC call, then the
-> whole VM may gum up: typically, the traces show that the socket layer
-> cannot allocate memory to hold the RPC reply from the server, and so it
-> is kicking kswapd to have it reclaim some pages, however kswapd is stuck
-> in try_to_release_page() waiting for that same I/O to complete, hence
-> the deadlock...
-
-Ah, I see. so as far as I understand, you mean
- - Socket layer use GFP_ATOMIC, then they don't call try_to_free_pages().
-   IOW, kswapd is only memory reclaiming thread.
- - Kswapd got stuck in ->release_page().
- - In usual use case, another thread call kmalloc(GFP_KERNEL) and makes
-   foreground reclaim, then, restore kswapd stucking. but your case
-   there is no such thread.
-
-Hm, interesting.
-
-In short term, current nfs fix (checking PF_MEMALLOC in nfs_wb_page())
-seems best way. it's no side effect if my understanding is correct.
+> I would agree with Masami since there could be people who might be
+> apprehensive to try out Uprobes (which would still be experimental) but
+> would be interested to use kprobes only since its more mature.
+> 
+> One change I would suggest would be to select respective events(i.e
+> kprobe_event, uprobe_event) instead of kprobes and uprobes.
 
 
-> IOW: I think kswapd at least should be calling try_to_release_page()
-> with a gfp-flag of '0' to avoid deadlocking on I/O.
+Yeah sure. The goal was to still have both selectable independently, but
+have a menu that can select all in one.
 
-Hmmm.
-0 seems to have very strong meanings rather than nfs required. 
-There is no reason to prevent grabbing mutex, calling cond_resched() etc etc...
+ie:
 
-[digging old git history]
+config DYNAMIC_PROBE
+	depends on (KPROBES || UPROBES) && EVENTS_TRACING
+	default n
 
-Ho hum...
+config KPROBES_EVENT:
+	depends on DYNAMIC_PROBE && KPROBES
+	default y
 
-Old commit log says passing gfp-flag=0 break xfs. but current xfs doesn't
-use gfp_mask argument. hm.
-
-
-============================================================
-commit 68678e2fc6cfdfd013a2513fe416726f3c05b28d
-Author: akpm <akpm>
-Date:   Tue Sep 10 18:09:08 2002 +0000
-
-    [PATCH] pass the correct flags to aops->releasepage()
-
-    Restore the gfp_mask in the VM's call to a_ops->releasepage().  We can
-    block in there again, and XFS (at least) can use that.
-
-    BKrev: 3d7e35445skDsKDFM6rdiwTY-5elsw
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5ed1ec3..89d801e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -208,7 +208,7 @@ shrink_list(struct list_head *page_list, int nr_pages,
-                 * Otherwise, leave the page on the LRU so it is swappable.
-                 */
-                if (PagePrivate(page)) {
--                       if (!try_to_release_page(page, 0))
-+                       if (!try_to_release_page(page, gfp_mask))
-                                goto keep_locked;
-                        if (!mapping && page_count(page) == 1)
-                                goto free_it;
-============================================================
-
-Now, gfp_mask of try_to_release_page() are used in two place.
-
-btrfs: btrfs_releasepage		(check GFP_WAIT)
-nfs: nfs_release_page			((gfp & GFP_KERNEL) == GFP_KERNEL)
-
-Probably, btrfs can remove such GFP_WAIT check from try_release_extent_mapping
-because it doesn't sleep. I dunno. if so, we can change it to 0 again. but
-I'm not sure it has enough worth thing.
-
-Chris, can we hear how btrfs handle gfp_mask argument of release_page()?
+config UPROBES_EVENT:
+	depends on DYNAMIC_PROBE && UPROBES
+	default y
 
 
-
-btw, VM fokls need more consider kswapd design. now kswapd oftern sleep.
-But Trond's bug report says, waiting itself can makes deadlock potentially.
-Perhaps it's merely imagine thing. but need to some consider...
-
-
-
+So that people who want dynamic probes just don't care and select dynamic probe.
+Those who want more granularity can still unselect uprobes events or kprobes
+events after that.
 
