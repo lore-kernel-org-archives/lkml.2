@@ -1,79 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab0HBUvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:51:24 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:55889 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab0HBUvX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:51:23 -0400
-Date: Mon, 2 Aug 2010 22:51:21 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Backlund <tmb@mandriva.org>
-Cc: Michal Marek <mmarek@suse.cz>, linuxppc-dev@ozlabs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        bug-make@gnu.org
-Subject: Re: make 3.82 fails on powerpc defconfig update [was: Linux 2.6.35]
-Message-ID: <20100802205121.GA16520@merkur.ravnborg.org>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com> <4C5686FF.9010803@mandriva.org> <20100802182848.GA16394@merkur.ravnborg.org> <4C572EB0.7060706@mandriva.org>
+	id S1755338Ab0HBUw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:52:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42549 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751264Ab0HBUwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 16:52:25 -0400
+Date: Mon, 2 Aug 2010 22:51:52 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
+ sync works
+Message-ID: <20100802205152.GL3278@quack.suse.cz>
+References: <20100729115142.102255590@intel.com>
+ <20100729121423.332557547@intel.com>
+ <20100729162027.GF12690@quack.suse.cz>
+ <20100730040306.GA5694@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="pWyiEgJYm5f9v55/"
 Content-Disposition: inline
-In-Reply-To: <4C572EB0.7060706@mandriva.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100730040306.GA5694@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--pWyiEgJYm5f9v55/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Fri 30-07-10 12:03:06, Wu Fengguang wrote:
+> On Fri, Jul 30, 2010 at 12:20:27AM +0800, Jan Kara wrote:
+> > On Thu 29-07-10 19:51:44, Wu Fengguang wrote:
+> > > The periodic/background writeback can run forever. So when any
+> > > sync work is enqueued, increase bdi->sync_works to notify the
+> > > active non-sync works to exit. Non-sync works queued after sync
+> > > works won't be affected.
+> >   Hmm, wouldn't it be simpler logic to just make for_kupdate and
+> > for_background work always yield when there's some other work to do (as
+> > they are livelockable from the definition of the target they have) and
+> > make sure any other work isn't livelockable?
 > 
-> Thanks, this seems to fix the first issue, but then I get the same erro on the following line 190:
+> Good idea!
 > 
-> 190: bootwrapper_install %.dtb:
-> 191:        $(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
+> > The only downside is that
+> > non-livelockable work cannot be "fair" in the sense that we cannot switch
+> > inodes after writing MAX_WRITEBACK_PAGES.
 > 
+> Cannot switch indoes _before_ finish with the current
+> MAX_WRITEBACK_PAGES batch? 
+  Well, even after writing all those MAX_WRITEBACK_PAGES. Because what you
+want to do in a non-livelockable work is: take inode, write it, never look at
+it again for this work. Because if you later return to the inode, it can
+have newer dirty pages and thus you cannot really avoid livelock. Of
+course, this all assumes .nr_to_write isn't set to something small. That
+avoids the livelock as well.
 
-Obviously - dunno how I missed that.
-Updated patch below.
+> >   I even had a patch for this but it's already outdated by now. But I
+> > can refresh it if we decide this is the way to go.
+> 
+> I'm very interested in your old patch, would you post it? Let's see
+> which one is easier to work with :)
+  OK, attached is the patch. I've rebased it against 2.6.35.
 
-I will do a proper submission after you
-confirm that powerpc build is working with make 3.82.
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-	Sam
+--pWyiEgJYm5f9v55/
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-mm-Stop-background-writeback-if-there-is-other-work-.patch"
 
-diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
-index 77cfe7a..ace7a3e 100644
---- a/arch/powerpc/Makefile
-+++ b/arch/powerpc/Makefile
-@@ -163,9 +163,11 @@ drivers-$(CONFIG_OPROFILE)	+= arch/powerpc/oprofile/
- # Default to zImage, override when needed
- all: zImage
+>From a6df0d4db148f983fe756df4791409db28dff459 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Mon, 2 Aug 2010 22:30:25 +0200
+Subject: [PATCH] mm: Stop background writeback if there is other work queued for the thread
+
+Background writeback and kupdate-style writeback are easily livelockable
+(from a definition of their target). This is inconvenient because it can
+make sync(1) stall forever waiting on its queued work to be finished.
+Fix the problem by interrupting background and kupdate writeback if there
+is some other work to do. We can return to them after completing all the
+queued work.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/fs-writeback.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index d5be169..542471e 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -633,6 +633,14 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 			break;
  
--BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
-+# With make 3.82 we cannot mix normal and wildcard targets
-+BOOT_TARGETS1 := zImage zImage.initrd uImaged
-+BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
- 
--PHONY += $(BOOT_TARGETS)
-+PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
- 
- boot := arch/$(ARCH)/boot
- 
-@@ -180,10 +182,16 @@ relocs_check: arch/powerpc/relocs_check.pl vmlinux
- zImage: relocs_check
- endif
- 
--$(BOOT_TARGETS): vmlinux
-+$(BOOT_TARGETS1): vmlinux
-+	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-+$(BOOT_TARGETS2): vmlinux
-+	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-+
-+
-+bootwrapper_install
- 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
- 
--bootwrapper_install %.dtb:
-+%.dtb:
- 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
- 
- define archhelp
+ 		/*
++		 * Background writeout and kupdate-style writeback are
++		 * easily livelockable. Stop them if there is other work
++		 * to do so that e.g. sync can proceed.
++		 */
++		if ((work->for_background || work->for_kupdate) &&
++		    !list_empty(&wb->bdi->work_list))
++			break;
++		/*
+ 		 * For background writeout, stop when we are below the
+ 		 * background dirty threshold
+ 		 */
+-- 
+1.6.4.2
+
+
+--pWyiEgJYm5f9v55/--
