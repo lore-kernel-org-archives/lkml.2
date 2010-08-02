@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab0HBES3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 00:18:29 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50439 "EHLO smtps.tip.net.au"
+	id S1752486Ab0HBEVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 00:21:31 -0400
+Received: from phil.doycomm.com ([66.219.128.249]:54661 "EHLO phil.doycomm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab0HBES1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 00:18:27 -0400
-Date: Mon, 2 Aug 2010 14:18:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: linux-next: build warning after merge of the final tree (usb tree
- related)
-Message-Id: <20100802141823.143b2a36.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1751255Ab0HBEV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 00:21:29 -0400
+Subject: Re: Linux 2.6.35
+From: Donald Parsons <dparsons@brightdsl.net>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <201008012138.39036.bjorn.helgaas@hp.com>
+References: <1280716262.5125.42.camel@falcon.homelinux.org>
+	 <201008012138.39036.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Aug 2010 00:21:16 -0400
+Message-ID: <1280722876.5125.83.camel@falcon.homelinux.org>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__2_Aug_2010_14_18_23_+1000_3k1TGobrxsBdi4CE"
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Aug_2010_14_18_23_+1000_3k1TGobrxsBdi4CE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 2010-08-01 at 21:38 -0600, Bjorn Helgaas wrote:
+> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
+> > 2.6.35 still fails to boot for me, as first reported here:
+> >  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
+> > 
+> > I've manually bisected it down to around May 20 between
+> >   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
+> > Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
+> > 
+> > Unfortunately first time I tried was with 2.6.35-rc6 and
+> > it failed to boot.
+> > 
+> > Failure when switching from initramfs to real /root?
+> > Removing kernel "quiet" param appears to show several
+> > lines listing:
+> > 
+> >   usb drives/hubs? followed by
+> >   dracut switching root (when booting works)
+> >               or
+> >   usb drives/hubs? followed by
+> >         (missing dracut... line)
+> >   No root device found
+> >   Boot has failed, sleeping forever.   (when it does not boot)
+> > 
+> > Grub, typical entry:
+> > title Fedora (2.6.35)
+> > 	root (hd0,0)
+> > 	kernel /vmlinuz-2.6.35 ro
+> > root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
+> > SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
+> > rdblacklist=nouveau init=/sbin/bootchartd
+> > 	initrd /initramfs-2.6.35.img
+> > 
+> > 
+> > My boot failure seems to be different than other two reported
+> > in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
+> > under Bug #16173 and #16228
+> 
+> Will it boot with the "pci=nocrs" option?  If so, please open a
 
-Hi Greg,
+No, I tried this on a few attempts when I saw it mentioned under
+bug #16228.  But it had no effect/benefit.  Sorry, I should have
+mentioned this.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) produced these warnings:
+> report at https://bugzilla.kernel.org, mark it a regression, assign
+> it to me, and attach the complete dmesg log.  And please respond to
+> this thread with a pointer to the bugzilla.
+> 
+> Otherwise, a complete console log should have a clue.  The best
+> thing would be a log from a serial console or netconsole, with
+> "ignore_loglevel".
 
-/scratch/sfr/next/drivers/usb/gadget/storage_common.c:718: warning: 'fsg_sh=
-ow_nofua' defined but not used
-/scratch/sfr/next/drivers/usb/gadget/storage_common.c:782: warning: 'fsg_st=
-ore_nofua' defined but not used
-/scratch/sfr/next/drivers/usb/gadget/storage_common.c:718: warning: 'fsg_sh=
-ow_nofua' defined but not used
-/scratch/sfr/next/drivers/usb/gadget/storage_common.c:782: warning: 'fsg_st=
-ore_nofua' defined but not used
+Maybe I will try netconsole tomorrow.  But is Ethernet up when
+this boot failure happens?  I think not, since initramfs should
+not need networking.
 
-Introduced by commit ed4825f7332669779540be27cb263daf22af3b1c ("USB:
-gadget: storage: optional SCSI WRITE FUA bit") from the usb tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Should I try building sata driver into kernel?  Oh, I am using
+ext3, and fdisk -l shows:
 
---Signature=_Mon__2_Aug_2010_14_18_23_+1000_3k1TGobrxsBdi4CE
-Content-Type: application/pgp-signature
+Disk /dev/sda: 320.1 GB, 320072933376 bytes
+   Device Boot  Start       End      Blocks   Id  System
+/dev/sda1   *      1        50      401593+  83  Linux  (/boot)
+/dev/sda2          51      7051    56235532+  83  Linux  (/)
+/dev/sda3        7052      8377    10651095   82  Linux swap
+/dev/sda4        8378     38913   245280420   83  Linux  ()
+Disk /dev/sdb: 750.2 GB, 750156374016 bytes
+/dev/sdb1          1     91201   732572001   83  Linux  (/home)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> Thanks a lot for your report!
+> 
+> Bjorn
 
-iQEcBAEBAgAGBQJMVkcPAAoJEDMEi1NhKgbsXEwH/08+Gh+wpscjwsZ+26SnJj39
-nNC6BLzhLXE39sFKomD75W62qHApGtyx1rM7H+35nli1MGvJb6UVRYhydSEfBJPE
-62CbDgxg94I8pbEjRYzUDw6oXqmbi2uW0ZIx/yUfqwGwBmCyIBRjsUnFZN1Mbh9B
-kgUZUIRQUJAaoaT3Iq18XffAwJVrwq+jcPpcaQsTlh1+T8sl4DhyAqAL2XC90zZQ
-egM/GkyAo4wsD2XcmlR8Gnqq279uEvvUK8+uXv1uFShl0ThzulMWmRYS5qdobTPp
-HSgyfUuM8pIN5C8/4G17qkYWmCHhK9lb6N4vjU5501QUqyrY9IGmJPd0VKqmjW4=
-=A1T8
------END PGP SIGNATURE-----
+And thanks for your interest!
+Don
 
---Signature=_Mon__2_Aug_2010_14_18_23_+1000_3k1TGobrxsBdi4CE--
+
+
