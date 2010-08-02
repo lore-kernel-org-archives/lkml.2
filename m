@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab0HBWe1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 18:34:27 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:33622 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab0HBWe0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 18:34:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:in-reply-to:message-id:references:user-agent
-         :x-archive:mime-version:content-type;
-        b=ehRPITN5aShLxltuKaYQy0lJXnx4tvKBWVjmzR2TjV8TDXCHXULQvgIzXE+4CY6FJi
-         Arc8MGMF6c8f+mub5kK4NI405zEpA38eSiDYC0h/b8GJhYssY7L/YFp2ByMuHE0LEcN5
-         Ld4ZM7MVBvz8nscAdduipALKHsNP9S+nJcGCA=
-Date: Mon, 2 Aug 2010 19:34:18 -0300 (BRT)
-From: "=?ISO-8859-15?Q?Fr=E9d=E9ric_L=2E_W=2E_Meunier?=" 
-	<fredlwm@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.35
-In-Reply-To: <alpine.LNX.2.00.1008021905460.8985@dyndns.pervalidus.net>
-Message-ID: <alpine.LNX.2.00.1008021933360.8985@dyndns.pervalidus.net>
-References: <1280716262.5125.42.camel@falcon.homelinux.org>  <201008012138.39036.bjorn.helgaas@hp.com> <1280722876.5125.83.camel@falcon.homelinux.org>  <201008020748.09968.bjorn.helgaas@hp.com> <7975590447314667432@unknownmsgid>
- <alpine.LNX.2.00.1008021905460.8985@dyndns.pervalidus.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-X-Archive: encrypt
+	id S1754174Ab0HBWmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 18:42:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57908 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753482Ab0HBWmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 18:42:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Date: Tue, 3 Aug 2010 00:40:20 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, stern@rowland.harvard.edu, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <201008022333.32623.rjw@sisk.pl> <20100802222752.GI2405@linux.vnet.ibm.com>
+In-Reply-To: <20100802222752.GI2405@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1824723376-1280788464=:8985"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008030040.20704.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tuesday, August 03, 2010, Paul E. McKenney wrote:
+> On Mon, Aug 02, 2010 at 11:33:32PM +0200, Rafael J. Wysocki wrote:
+> > On Monday, August 02, 2010, Paul E. McKenney wrote:
+> > > On Mon, Aug 02, 2010 at 03:52:20PM +0200, Rafael J. Wysocki wrote:
+> > > > On Monday, August 02, 2010, Paul E. McKenney wrote:
+> > > > > On Sun, Aug 01, 2010 at 03:47:08PM -0700, Arjan van de Ven wrote:
+> > > > > > On Sun, 1 Aug 2010 12:12:28 -0700
+> > > > > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > > > ...
+> > > > > > Another one: freezing whole cgroups..... we have that today. it
+> > > > > > actually works quite well.... of course the hard part is the decision
+> > > > > > what to put in which cgroup, and at what frequency and duration you let
+> > > > > > cgroups run.
+> > > > > 
+> > > > > Indeed, the Android guys seemed to be quite excited by cgroup freezing
+> > > > > until they thought about the application-classification problem.
+> > > > > Seems like it should be easy for some types of applications, but I do
+> > > > > admit that apps can have non-trivial and non-obvious dependencies.
+> > > > 
+> > > > This isn't more difficult than deciding which applications will be allowed to
+> > > > use wakelocks (in the wakelocks world).  It actually seems to be pretty much
+> > > > equivalent to me. :-)
+> > > 
+> > > If I understand correctly, the problem they were concerned about was
+> > > instead "given that a certain set of apps are permitted to use wakelocks,
+> > > which of the other apps can safely be frozen when the display blanks
+> > > itself."
+> > 
+> > I _think_ the problem should be reformulated as "which of the other apps
+> > can be safely frozen without causing the wakelocks-using ones to have
+> > problems" instead (the particular scenario is that one of the wakelocks-using
+> > apps may need one of the other apps to process something and therefore the
+> > other app cannot be frozen; however, that may be resolved by thawing all of
+> > the other apps in such situations IMO).
+> 
+> I agree that your statement is equivalent to mine.  From what I can see,
+> the current Android code resolves this by not freezing any app while
+> a wakelock is held.
+> 
+> Just out of curiosity, how are you detecting the situation in order to
+> decide when to thaw the apps in the cgroup?
 
---8323328-1824723376-1280788464=:8985
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8BIT
+Well, in fact I would only be able to talk about that theoretically, as I'm
+currently not involved in any project using cgroups for power management.
+I have considered that, but I haven't tried to implement it.
 
-On Mon, 2 Aug 2010, Frédéric L. W. Meunier wrote:
-
-> Am I missing something ?
->
-> make[2]: *** No rule to make target `firmware/radeon/R100_cp.bin', needed by 
-> `__fw_modbuild'.  Stop.
->
-> Not sure if it's because I use O= during make, or because I always patch the 
-> kernel, instead of using the tarball every release, or something else.
->
-> In linux-2.6.35/firmware/radeon there are R100_cp.bin.ihex and other files 
-> dated 20091122. 2.6.34 and earlier never gave such error.
-
-Well, I guess the problem is make 3.82. It worked with 3.81.
---8323328-1824723376-1280788464=:8985--
+Thanks,
+Rafael
