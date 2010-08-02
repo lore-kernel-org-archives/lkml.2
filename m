@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab0HBPc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:32:59 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47608 "EHLO sh.osrg.net"
+	id S1753653Ab0HBPfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:35:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41466 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753304Ab0HBPc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:32:57 -0400
-Date: Tue, 3 Aug 2010 00:26:36 +0900
-To: linux@arm.linux.org.uk
-Cc: fujita.tomonori@lab.ntt.co.jp, benh@kernel.crashing.org,
-        dwalker@codeaurora.org, arnd@arndb.de, Joerg.Roedel@amd.com,
-        linux-kernel@vger.kernel.org, stepanm@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100802100419.GC30670@n2100.arm.linux.org.uk>
-References: <20100802090326.GA30670@n2100.arm.linux.org.uk>
-	<20100802181919J.fujita.tomonori@lab.ntt.co.jp>
-	<20100802100419.GC30670@n2100.arm.linux.org.uk>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751700Ab0HBPfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 11:35:17 -0400
+Message-ID: <4C56E5C7.90206@suse.de>
+Date: Mon, 02 Aug 2010 17:35:35 +0200
+From: Tejun Heo <teheo@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
+References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de>
+In-Reply-To: <4C56E42D.5010300@suse.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100803002542M.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 03 Aug 2010 00:26:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010 11:04:19 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On 08/02/2010 05:28 PM, Tejun Heo wrote:
+> The reason why poll_irq() looks complicated is because different types
+> of timers on the same desc shares the timer.  The reason why it's
+> shared this way instead of across different descs of the same type is
+> to avoid locking overhead in maintaining the timer and linked lists of
+> its targets.  By sharing the timer in the same desc, everything can be
+> protected by desc->lock but if we use timers across different descs,
+> we need another layer of locking.
 
-> On Mon, Aug 02, 2010 at 06:20:01PM +0900, FUJITA Tomonori wrote:
-> > On Mon, 2 Aug 2010 10:03:26 +0100
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > 
-> > > On Mon, Aug 02, 2010 at 05:30:26PM +0900, FUJITA Tomonori wrote:
-> > > > ARM's iommu code (arch/plat-omap/include/plat/iommu.h) is a library to
-> > > > simplify the IOMMU implementations. It could be useful for all the
-> > > > iommu implementations.
-> > > 
-> > > ITYM OMAP's iommu code.
-> > 
-> > Yeah, I meant that we could extend it to make it useful for other
-> > iommu implementations. At least, we could make something generic like
-> > struct iommu_functions, I think. Then we can embed a generic iommu
-> > structure into an iommu specific struct (like we do with inode).
-> > 
-> > The current iommu-api (include/linux/iommu.h) is just about domain and
-> > mapping concept. We can implement it on the top of the above
-> > infrastructure.
-> > 
-> > I'm still trying to figure out how the DMA-API can work well with
-> > them.
-> 
-> I'm not sure it can in totality.  The DMA-API solves the host CPU <->
-> device aspect of DMA support only.
-> 
-> However, there is another use case for IOMMUs, which is to allow two
-> separate peripheral devices to communicate with each other via system
-> memory.  As the streaming DMA-API involves the idea of buffer ownership
-> (of a singular agent), it is unsuitable for this use case.
-> 
-> The coherent allocation part of the DMA-API also only deals with the
-> idea of there being a singular DMA agent accessing the allocated buffer
-> (in conjunction with the host CPU).
+Ooh, another reason is timer locality.  If timers are shared per desc,
+they have much higher chance of being on the same processor.  Global
+timers would be pretty bad in that respect.
 
-I don't have a clear idea what kinda API works well in the above case
-yet.
-
-But we have been talking about more bigger things? Not just about the
-interface, how things work together.
-
-- OMAP's iommu code is a library to simplify OMAP implementations.
-
-- include/linux/iommu.h is an interface to IOMMUs for specific
-  interfaces.
-
-- the DMA API could access to IOMMUs internally.
-
-IOMMU library provides generic iommu interfaces (a structure including
-IOMMU implementation specific function pointers). KVM uses some of
-them. Architectures could implement the DMA API on the top of some the
-interfaces too.
+-- 
+tejun
