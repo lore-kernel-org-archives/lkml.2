@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab0HBFoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 01:44:46 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:51174 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab0HBFop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 01:44:45 -0400
-Date: Mon, 2 Aug 2010 07:44:29 +0200
-From: Florian Mickler <florian@mickler.org>
-To: david@lang.hm
-Cc: Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
-        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100802074429.73a9dfd9@schatten.dmk.lab>
-In-Reply-To: <alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100731215214.2543c07e@infradead.org>
-	<20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100731230101.7cc1d8c7@infradead.org>
-	<20100801191228.GL2470@linux.vnet.ibm.com>
-	<20100801204026.GH31324@thunk.org>
-	<20100802030304.GU2470@linux.vnet.ibm.com>
-	<20100801210548.23f77ff6@infradead.org>
-	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752683Ab0HBF6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 01:58:40 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:40920 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751579Ab0HBF6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 01:58:39 -0400
+Date: Mon, 2 Aug 2010 15:58:34 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.35
+Message-ID: <20100802055834.GB19164@dastard>
+References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
+ <20100802023322.GA19164@dastard>
+ <AANLkTint_s6h_EC7mDiPsyxr=C0GSrnrgJYkCCU7JEtN@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTint_s6h_EC7mDiPsyxr=C0GSrnrgJYkCCU7JEtN@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Aug 2010 22:06:34 -0700 (PDT)
-david@lang.hm wrote:
+On Sun, Aug 01, 2010 at 07:50:02PM -0700, Linus Torvalds wrote:
+> On Sun, Aug 1, 2010 at 7:33 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >
+> > There hasn't been nearly enough review or testing of this patch
+> > series yet.  Before a merge, it needs to be split up in smaller,
+> > more digestable chunks for more comprehensive review, regression
+> > testing and behavioural analysis.
+> 
+> I dunno. We merge _way_ scarier things in the VM and the block layer,
+> for much less actual upside, and with less review.
 
-> On Sun, 1 Aug 2010, Arjan van de Ven wrote:
-> 
-> > I'm a little worried that this whole "I need to block suspend" is
-> > temporary. Yes today there is silicon from ARM and Intel where suspend
-> > is a heavy operation, yet at the same time it's not all THAT heavy
-> > anymore.... at least on the Intel side it's good enough to use pretty
-> > much all the time (when the screen is off for now, but that's a memory
-> > controller issue more than anything else). I'm pretty sure the ARM guys
-> > will not be far behind.
-> 
-> remember that this 'block suspend' is really 'block overriding the fact 
-> that there are still runable processes and suspending anyway"
-> 
-> having it labeled as 'suspend blocker' or even 'wakelock' makes it sound 
-> as if it blocks any attempt to suspend, and I'm not sure that's what's 
-> really intended. Itsounds like the normal syspend process would continue 
-> to work, just this 'ignore if these other apps are busy' mode of operation 
-> would not work.
-> 
-> which makes me wonder, would it be possible to tell the normal idle 
-> detection mechanism to ignore specific processes when deciding if it 
-> should suspend or not? how about only considering processes in one cgroup 
-> when deciding to suspend and ignoring all others?
-> 
-> David Lang
+Scary stuff outside of direct VFS/FS interfaces is generally hidden
+from me by my +6 Blinkers of Blissful Ignorance. I make the
+assumption that the experts involved know the risks and have weighed
+them up appropriately. ;)
 
-We then get again to the "runnable tasks" problem that was
-discussed earlier... the system get's "deadlock-prone" if a subset of
-tasks is not run. 
-Interprocess dependencies are not so easy to get right in general.
+> The RCU pathname lookup has some rather impressive performance
+> upsides, and I agree that it would be good to get a lot of review and
+> testing, but the latter isn't going to happen without it being
+> mainlined, and the former is sadly lacking. The person I'd like most
+> to review it is Al,
+
+Most definitely.
+
+> but anybody in the filesystem world should
+> basically see it as a #1 priority,
+
+Agreed - I've actually looked at every patch, commented on some
+of the more questionable things, got quoted by LWN for saying that
+it "fell off the locking cliff", have run benchmarks on it and sent
+patches fixing bugs back to Nick.
+
+It's just really hard to digest it all in one lump and core VFS
+changes on this scale scare me....
+
+> because unlike all the masturbatory
+> patches like xstat() that add new functionality that nobody will
+> likely ever use, Nick's patchseries improves on the thing that
+> everybody uses heavily every day without even thinking about it.
+> 
+> Is it tough to review? Yes. It's core code, not just some random
+> addition that adds a new feature and doesn't impact any old code. But
+> that's also the thing that makes it meaningful, and makes me think it
+> should get merged _much_ more eagerly than most code we ever see.
+
+I agree with you for the pure locking changes.
+
+But for the bits that change writeback, LRU ordering and reclaim
+calculations the benefits are not quite so obvious, nor is the
+correctness of the code/behaviour quite so provably correct.  Maybe
+I'm being a bit too paranoid, but generally it pays to be a bit
+conservative as a filesystem developer because the cost of screwing
+up can be pretty high...
 
 Cheers,
-Flo
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
