@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534Ab0HBIDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 04:03:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35438 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271Ab0HBID3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 04:03:29 -0400
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100802074812.GM24084@amd.com>
-References: <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
-	 <bad58db98c165a61860827d4e720acf8.squirrel@www.codeaurora.org>
-	 <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
-	 <201007291026.55928.arnd@arndb.de> <1280546124.1902.30.camel@pasglop>
-	 <20100802074812.GM24084@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Aug 2010 18:03:02 +1000
-Message-ID: <1280736182.1902.55.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753646Ab0HBIEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 04:04:10 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:17438 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753271Ab0HBIEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 04:04:08 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALIWVkx5LclT/2dsb2JhbACgEHK+foU5BA
+Date: Mon, 2 Aug 2010 18:03:53 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Nick Piggin <npiggin@suse.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 11/19] perf record: Release resources at exit
+Message-ID: <20100802080353.GA8713@amd>
+References: <1280711334-30000-1-git-send-email-acme@infradead.org>
+ <1280711334-30000-12-git-send-email-acme@infradead.org>
+ <20100802073009.GB7841@amd>
+ <20100802075422.GA24085@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802075422.GA24085@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 09:48 +0200, Roedel, Joerg wrote:
-> > Hrm, indeed I just noticed that. Pretty gross... it should definitly
-> be
-> > renamed, is will caused endless confusion with unrelated iommu.h and
-> > iommu_* interfaces which represent something different.
+On Mon, Aug 02, 2010 at 09:54:22AM +0200, Ingo Molnar wrote:
 > 
-> The first direction to go should be trying to unify all the different
-> iommu* interfaces into the iommu-api. The generic api will definitly
-> need to be extended for that, but since it is an in-kernel interface
-> thats no problem. 
+> * Nick Piggin <npiggin@suse.de> wrote:
+> 
+> > On Sun, Aug 01, 2010 at 10:08:46PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > > 
+> > > So that we can reduce the noise on valgrind when looking for memory
+> > > leaks.
+> > 
+> > Really? That's rather crappy of valgrind. exit is well defined to release 
+> > resources and that's often a more efficient way to do it It finds and 
+> > batches things a lot better, eg. it can avoid all TLB flushing of freeing 
+> > memory that munmap requires.
+> 
+> That's certainly true but there's no valgrind crappiness here: valgrind simply 
+> can do a better job of finding leaks if there's a well defined "all resources 
+> the app still knows about are freed now" point.
 
-Well, I suppose I'm the de-facto candidate to take care of the powerpc
-side then :-)
+"noise" sounds like false positives though. Certainly if this is
+instead allows valgrind to run in a particular mode that assumes
+no application resources consumed at exit(2) time, I wouldn't
+call it crappy :)
 
-I don't have the bandwidth right now, but I'll try to have a look when
-time permits.
-
-Cheers,
-Ben.
-
-
+But you could equally sprinkle in other valgrind specific annotations
+or semantics at various points in the code to improve its coverage,
+no?
