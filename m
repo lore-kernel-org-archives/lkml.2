@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615Ab0HBOjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:39:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5862 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab0HBOjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:39:52 -0400
-Date: Mon, 2 Aug 2010 10:42:00 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Greg Freemyer <greg.freemyer@gmail.com>
-Cc: Neil Brown <neilb@suse.de>, David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
-        Volker.Lendecke@sernet.de, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100802104200.2f058428@corrin.poochiereds.net>
-In-Reply-To: <AANLkTi=JvwrwpmteFcXW1f5s95+_w_iCT+04Sy7bbTtR@mail.gmail.com>
-References: <20100728111525.355a2bd3@notabene>
-	<alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	<20100722162712.GB10352@jeremy-laptop>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
-	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
-	<13591.1280338082@redhat.com>
-	<20100729090401.4b0a21f8@notabene>
-	<20100801094018.522e2f53@corrin.poochiereds.net>
-	<AANLkTi=JvwrwpmteFcXW1f5s95+_w_iCT+04Sy7bbTtR@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751700Ab0HBOm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:42:57 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61649 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab0HBOm4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 10:42:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=bG8Jtwi73RXZQ4DqQ37qF1QYStS6+wDXNzGswTU97wyfKnoHfpkEO3Zp5fU9VlMVYH
+         Ytl679tdqnQnfrqTiVu/QfRB3TlU3DDgekmtH8Z//OuxpO+E268Yl5XU1d313EuwgJut
+         1A466Mk20SxlP07Jvy+oKBCpFLlLZUebsSapQ=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikjUtTwaP5-LnYX8v3hjcuVbtenoH-yFvcPGf-+@mail.gmail.com>
+References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
+	<215375.1280753770@localhost>
+	<AANLkTi=keL2rUzxdxgscTU9cQSNxOnAtGVuAwTq9Wfuq@mail.gmail.com>
+	<AANLkTikjUtTwaP5-LnYX8v3hjcuVbtenoH-yFvcPGf-+@mail.gmail.com>
+Date: Mon, 2 Aug 2010 16:42:47 +0200
+Message-ID: <AANLkTina0PZmTaQLw228k5kQnE=GPyYJzcUbO3nkkHF3@mail.gmail.com>
+Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
+From: Damjan Jovanovic <damjan.jov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010 10:09:49 -0400
-Greg Freemyer <greg.freemyer@gmail.com> wrote:
+If all you want to do is share a Kademlia implementation among
+applications, it should be in a user-space shared library. This
+library could also be ported to other operating systems, unlike a
+Linux-only kernel module that portable applications wouldn't want to
+use anyway.
 
-> > Furthermore, I'll go ahead and propose the following (simple) semantics:
-> >
-> > 1) birthtime is initialized to the current time when a new inode is
-> > created
-> >
-> > 2) it's settable via the xattr to an arbitrary value
-> >
-> > Either way, the xattr for this ought to be named the same on all
-> > filesystems. Samba shouldn't need to know or care what the underlying
-> > filesystem is, as long as it presents the correct xattr.
-> >
-> > That should make samba happy, and be reasonably simple to implement.
-> 
-> Is there any reason to allow birthtime to be set in advance of the
-> current birthtime?
-> 
-> ie restore / copy tools clearly need to backdate it, but I'd prefer to
-> see it not advance-able.
-> 
-> Greg
+I think Kademlia only belongs in the kernel if something in the kernel
+itself needs it. And even then it shouldn't be exported to user space.
 
-Why not? Is there a good argument for prohibiting it? We allow people
-to set mtime in the future. Why not allow the same semantics here?
+Damjan Jovanovic
 
-We also have to consider that this may eventually be settable by via
-networked filesystem interfaces. If the client and server don't have
-synchronized clocks you may end up with the client getting an error
-back in some cases if you don't allow it.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+On Mon, Aug 2, 2010 at 4:29 PM, hp fk <fkhp101@gmail.com> wrote:
+> ---------- Forwarded message ----------
+> From: hp fk <fkhp101@gmail.com>
+> Date: 2010/8/2
+> Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
+> To: Valdis.Kletnieks@vt.edu
+>
+>
+> popular file sharing p2p applications like emule and bittorrent,
+> innovative application like Osiris each has its own Kademlia protocol
+> implementation in userspace presently. the imaginable kernel support
+> needed is to reduce many repeated (different or same) Kademlia
+> protocol implementations running in userspace to a consolidated one at
+> kernel level, so that the Kademlia protocol as a p2p network
+> infrastructure is provided in kernel and any p2p application could
+> just use the interface provided by kernel, thus a great p2p network is
+> easily created, and  applications on that network infrastructure could
+> grow rapidly.
+>
+> 2010/8/2  <Valdis.Kletnieks@vt.edu>:
+>> 1) You failed to explain what kernel support, if any, would be needed for this
+>> protocol.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
