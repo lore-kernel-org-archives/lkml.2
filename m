@@ -1,139 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab0HBIsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 04:48:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5194 "EHLO mx1.redhat.com"
+	id S1753401Ab0HBItj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 04:49:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32287 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab0HBIsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 04:48:51 -0400
-Message-ID: <4C568669.40001@redhat.com>
-Date: Mon, 02 Aug 2010 11:48:41 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1753264Ab0HBIti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 04:49:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,302,1278313200"; 
+   d="scan'208";a="307059289"
+Date: Mon, 2 Aug 2010 10:49:41 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH RESEND] jz4740-adc: check kmalloc() result
+Message-ID: <20100802084940.GA3334@sortiz-mobl>
+References: <1280711524.6538.3.camel@mola>
 MIME-Version: 1.0
-To: vatsa@linux.vnet.ibm.com
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        linux-kernel@vger.kernel.org, npiggin@suse.de,
-        Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
-        bharata@in.ibm.com, Balbir Singh <balbir@in.ibm.com>,
-        Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH RFC 3/4] Paravirtualized spinlock implementation for KVM
- guests
-References: <20100726061150.GB21699@linux.vnet.ibm.com> <20100726061537.GC8402@linux.vnet.ibm.com>
-In-Reply-To: <20100726061537.GC8402@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280711524.6538.3.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/26/2010 09:15 AM, Srivatsa Vaddagiri wrote:
-> Paravirtual spinlock implementation for KVM guests, based heavily on Xen guest's
-> spinlock implementation.
->
->
-> +
-> +static struct spinlock_stats
-> +{
-> +	u64 taken;
-> +	u32 taken_slow;
-> +
-> +	u64 released;
-> +
-> +#define HISTO_BUCKETS	30
-> +	u32 histo_spin_total[HISTO_BUCKETS+1];
-> +	u32 histo_spin_spinning[HISTO_BUCKETS+1];
-> +	u32 histo_spin_blocked[HISTO_BUCKETS+1];
-> +
-> +	u64 time_total;
-> +	u64 time_spinning;
-> +	u64 time_blocked;
-> +} spinlock_stats;
+Hi Axel,
 
-Could these be replaced by tracepoints when starting to spin/stopping 
-spinning etc?  Then userspace can reconstruct the histogram as well as 
-see which locks are involved and what call paths.
+On Mon, Aug 02, 2010 at 09:12:04AM +0800, Axel Lin wrote:
+> >From 40f965e63c4aefb402d85cf8392681565e172d2d Mon Sep 17 00:00:00 2001
+> From: Axel Lin <axel.lin@gmail.com>
+> Date: Mon, 2 Aug 2010 09:02:02 +0800
+> Subject: [PATCH] jz4740-adc: check kmalloc() result
+> 
+> If kmalloc() fails exit with -ENOMEM.
+Thanks a lot, patch applied against my for-next branch.
 
-> +struct kvm_spinlock {
-> +	unsigned char lock;		/* 0 ->  free; 1 ->  locked */
-> +	unsigned short spinners;	/* count of waiting cpus */
-> +};
-> +
-> +/*
-> + * Mark a cpu as interested in a lock.  Returns the CPU's previous
-> + * lock of interest, in case we got preempted by an interrupt.
-> + */
-> +static inline void spinning_lock(struct kvm_spinlock *pl)
-> +{
-> +	asm(LOCK_PREFIX " incw %0"
-> +	    : "+m" (pl->spinners) : : "memory");
-> +}
-> +
-> +/*
-> + * Mark a cpu as no longer interested in a lock.  Restores previous
-> + * lock of interest (NULL for none).
-> + */
-> +static inline void unspinning_lock(struct kvm_spinlock *pl)
-> +{
-> +	asm(LOCK_PREFIX " decw %0"
-> +	    : "+m" (pl->spinners) : : "memory");
-> +}
-> +
-> +static int kvm_spin_is_locked(struct arch_spinlock *lock)
-> +{
-> +	struct kvm_spinlock *sl = (struct kvm_spinlock *)lock;
-> +
-> +	return sl->lock != 0;
-> +}
-> +
-> +static int kvm_spin_is_contended(struct arch_spinlock *lock)
-> +{
-> +	struct kvm_spinlock *sl = (struct kvm_spinlock *)lock;
-> +
-> +	/* Not strictly true; this is only the count of contended
-> +	   lock-takers entering the slow path. */
-> +	return sl->spinners != 0;
-> +}
-> +
-> +static int kvm_spin_trylock(struct arch_spinlock *lock)
-> +{
-> +	struct kvm_spinlock *sl = (struct kvm_spinlock *)lock;
-> +	u8 old = 1;
-> +
-> +	asm("xchgb %b0,%1"
-> +	    : "+q" (old), "+m" (sl->lock) : : "memory");
-> +
-> +	return old == 0;
-> +}
-> +
-> +static noinline int kvm_spin_lock_slow(struct arch_spinlock *lock)
-> +{
-> +	struct kvm_spinlock *sl = (struct kvm_spinlock *)lock;
-> +	u64 start;
-> +
-> +	ADD_STATS(taken_slow, 1);
-> +
-> +	/* announce we're spinning */
-> +	spinning_lock(sl);
-> +
-> +	start = spin_time_start();
-> +	kvm_hypercall0(KVM_HC_YIELD);
+Cheers,
+Samuel.
 
-Oh.  This isn't really a yield since we expect to be woken up?  It's 
-more of a sleep.
 
-We already have a sleep hypercall, it's called HLT.  If we can use it, 
-the thing can work on older hosts.  It's tricky though:
-
-- if interrupts were enabled before we started spinning, sleep with 
-interrupts enabled.  This also allows the spinner to switch to another 
-process if some completion comes along so it's a good idea anyway.  Wake 
-up sends an IPI.
-- if not, we need to use NMI to wake up.  This is somewhat icky since 
-there's no atomic "enable NMI and sleep" instruction, so we have to 
-handle the case of the wake up arriving before HLT (can be done by 
-examining RIP and seeing if it's in the critical section).
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> This patch is against linux-next.
+> This resend separates the fix for jz4740-hwmon and jz474-adc in 2 patches.
+>  drivers/mfd/jz4740-adc.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
+> index 7a844ae..2846d24 100644
+> --- a/drivers/mfd/jz4740-adc.c
+> +++ b/drivers/mfd/jz4740-adc.c
+> @@ -260,6 +260,10 @@ static int __devinit jz4740_adc_probe(struct platform_device *pdev)
+>  	int irq;
+>  
+>  	adc = kmalloc(sizeof(*adc), GFP_KERNEL);
+> +	if (!adc) {
+> +		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
+> +		return -ENOMEM;
+> +	}
+>  
+>  	adc->irq = platform_get_irq(pdev, 0);
+>  	if (adc->irq < 0) {
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
