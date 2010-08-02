@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0HBM1c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 08:27:32 -0400
-Received: from thunk.org ([69.25.196.29]:57101 "EHLO thunker.thunk.org"
+	id S1753378Ab0HBM3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 08:29:34 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:48826 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752913Ab0HBM1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 08:27:31 -0400
-Date: Mon, 2 Aug 2010 08:27:26 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100802122726.GA6247@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
-	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-	arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-	florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-	swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-	alan@lxorguk.ukuu.org.uk
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
- <20100731215214.2543c07e@infradead.org>
- <20100801054816.GI2470@linux.vnet.ibm.com>
- <20100731230101.7cc1d8c7@infradead.org>
- <20100801191228.GL2470@linux.vnet.ibm.com>
- <20100801204026.GH31324@thunk.org>
- <20100802030304.GU2470@linux.vnet.ibm.com>
- <20100801210548.23f77ff6@infradead.org>
+	id S1751310Ab0HBM3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 08:29:33 -0400
+Date: Mon, 2 Aug 2010 17:57:14 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 11/14]  perf: perf interface for
+ uprobes
+Message-ID: <20100802122714.GC22812@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
+ <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
+ <20100730191903.GD12166@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100801210548.23f77ff6@infradead.org>
+In-Reply-To: <20100730191903.GD12166@ghostprotocols.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 09:05:48PM -0700, Arjan van de Ven wrote:
-> I'm a little worried that this whole "I need to block suspend" is
-> temporary. Yes today there is silicon from ARM and Intel where suspend
-> is a heavy operation, yet at the same time it's not all THAT heavy
-> anymore.... 
+Hi Arnaldo, 
 
-Part of the problem here may also be a naming problem.  There are
-multiple reasons why you might want to block suspend, and it goes far
-beyond what the CPU can do.
 
-Let's give another example, from the laptop world.  If you close the
-the MacBook, it "suspends".  That is, all processes stop, and the CPU
-enters a sleep state.  Sounds just like Linux's suspend-to-ram, right?
+> 
+> The following three hunks could be moved to a separate patch that I'd
+> apply on my perf/core branch, so to reduce this patchset size, like I
+> did with the s/kprobe/probe/g one that is already there:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=commitdiff;h=0e60836bbd392300198c5c2d918c18845428a1fe
 
-Except for the fact that if you insert a USB cable connected to a
-iPod/iPad/iPhone, the CPU wakes up, and iTunes will do a sync, and
-then the machine goes back to sleep.  And if the Mail application is
-in the middle of manipulating the IMAP mailbox, it will be allowed to
-finish what it is doing, and then the system goes to sleep.
+I will soon 2 patches instead of this patch splitting the 3 hunks into
+a new patch and the resuting patch after removing the previous 3 hunks.
 
-So in the case of both the MacBook, where the user has closed the
-laptop, and in the case of Cell Phone, where the user has pushed the
-button saying he/she's done working with the application, the _normal_
-thing to do force all processes to go to sleep, and then let the CPU
-go to sleep.
-
-But, you may have applications that are specially privileged so they
-can ignore the user command to suspend the machine.  Maybe it's an
-iTunes-like situation, where in response to some hardware interrupt,
-it's allowed to wake up, do its thing, and then go back to sleep,
-allowing the hardware to go back to sleep.  Maybe it's a mail
-application that wants to wakeup every 15 minutes, suck down any new
-mail, and then go back to sleep.  The suspend blocker is a way to
-achieve this --- and this has nothing to do with chip technology, but
-with a specific use case.
-
-						- Ted
+-Srikar
