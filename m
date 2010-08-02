@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab0HBBLI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 21:11:08 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:63993 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab0HBBLD (ORCPT
+	id S1752581Ab0HBBJL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:09:11 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37994 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab0HBBJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 21:11:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Rkwlinos8Ee6gseaDfrs4c92ENPwuvD9oXngjL7dU7GaP22g8E8+PT4PVnfoPUtHkO
-         TILn2p+DsqyEcMyNivkYFpqkXmARlWKsfxPxsmK08cRA6uOW1Ke7jMnVNF5O2xTHt8lg
-         4N8jYIrclrRfHS/veuSrOB8Ux/8B+S29TvTcM=
-Subject: [PATCH RESEND] jz4740-adc: check kmalloc() result
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain
-Date: Mon, 02 Aug 2010 09:12:04 +0800
-Message-Id: <1280711524.6538.3.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Sun, 1 Aug 2010 21:09:05 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 04/19] perf hist: Introduce routine to measure lenght of formatted entry
+Date: Sun,  1 Aug 2010 22:08:39 -0300
+Message-Id: <1280711334-30000-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1280711334-30000-1-git-send-email-acme@infradead.org>
+References: <1280711334-30000-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 40f965e63c4aefb402d85cf8392681565e172d2d Mon Sep 17 00:00:00 2001
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 2 Aug 2010 09:02:02 +0800
-Subject: [PATCH] jz4740-adc: check kmalloc() result
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-If kmalloc() fails exit with -ENOMEM.
+Will be used to figure out the window width needed in the new tree
+widget.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-This patch is against linux-next.
-This resend separates the fix for jz4740-hwmon and jz474-adc in 2 patches.
- drivers/mfd/jz4740-adc.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ tools/perf/util/hist.c |   27 +++++++++++++++++++++++++++
+ tools/perf/util/hist.h |    3 +++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/jz4740-adc.c b/drivers/mfd/jz4740-adc.c
-index 7a844ae..2846d24 100644
---- a/drivers/mfd/jz4740-adc.c
-+++ b/drivers/mfd/jz4740-adc.c
-@@ -260,6 +260,10 @@ static int __devinit jz4740_adc_probe(struct platform_device *pdev)
- 	int irq;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 0bc6790..f93095f 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -850,6 +850,33 @@ print_entries:
+ 	return ret;
+ }
  
- 	adc = kmalloc(sizeof(*adc), GFP_KERNEL);
-+	if (!adc) {
-+		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
-+		return -ENOMEM;
++/*
++ * See hists__fprintf to match the column widths
++ */
++unsigned int hists__sort_list_width(struct hists *self)
++{
++	struct sort_entry *se;
++	int ret = 9; /* total % */
++
++	if (symbol_conf.show_cpu_utilization) {
++		ret += 7; /* count_sys % */
++		ret += 6; /* count_us % */
++		if (perf_guest) {
++			ret += 13; /* count_guest_sys % */
++			ret += 12; /* count_guest_us % */
++		}
 +	}
++
++	if (symbol_conf.show_nr_samples)
++		ret += 11;
++
++	list_for_each_entry(se, &hist_entry__sort_list, list)
++		if (!se->elide)
++			ret += 2 + hists__col_len(self, se->se_width_idx);
++
++	return ret;
++}
++
+ static void hists__remove_entry_filter(struct hists *self, struct hist_entry *h,
+ 				       enum hist_filter filter)
+ {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 92962b2..65a48db 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -141,4 +141,7 @@ int hist_entry__tui_annotate(struct hist_entry *self);
  
- 	adc->irq = platform_get_irq(pdev, 0);
- 	if (adc->irq < 0) {
+ int hists__tui_browse_tree(struct rb_root *self, const char *help);
+ #endif
++
++unsigned int hists__sort_list_width(struct hists *self);
++
+ #endif	/* __PERF_HIST_H */
 -- 
-1.5.4.3
-
-
+1.6.2.5
 
