@@ -1,75 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab0HBXCD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 19:02:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47163 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751102Ab0HBXCA (ORCPT
+	id S1753904Ab0HBXEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 19:04:16 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47724
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751727Ab0HBXEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 19:02:00 -0400
-Date: Mon, 2 Aug 2010 16:01:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: igafb: introduce lost 'return'
-Message-Id: <20100802160129.8ca0cf05.akpm@linux-foundation.org>
-In-Reply-To: <1280594070-3328-1-git-send-email-segooon@gmail.com>
-References: <1280594070-3328-1-git-send-email-segooon@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Mon, 2 Aug 2010 19:04:14 -0400
+Date: Mon, 02 Aug 2010 16:04:33 -0700 (PDT)
+Message-Id: <20100802.160433.42797035.davem@davemloft.net>
+To: julia@diku.dk
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] arch/sparc/mm: Use GFP_KERNEL
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <Pine.LNX.4.64.1008011109260.21594@ask.diku.dk>
+References: <Pine.LNX.4.64.1008011109260.21594@ask.diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Jul 2010 20:34:30 +0400
-Kulikov Vasiliy <segooon@gmail.com> wrote:
+From: Julia Lawall <julia@diku.dk>
+Date: Sun, 1 Aug 2010 11:09:44 +0200 (CEST)
 
-> If iga_init() fails, code releases resources and continues to use it.
-> It seems that after releasing resources 'return' should be.
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/video/igafb.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> GFP_ATOMIC is not needed here, as evidenced by the other two uses of
+> GFP_KERNEL in the same function.
 > 
-> diff --git a/drivers/video/igafb.c b/drivers/video/igafb.c
-> index 15d2001..c4e6fc0 100644
-> --- a/drivers/video/igafb.c
-> +++ b/drivers/video/igafb.c
-> @@ -531,6 +531,7 @@ int __init igafb_init(void)
->  		iounmap(info->screen_base);
->  		kfree(par->mmap_map);
->  		kfree(info);
-> +		return -ENODEV;
->          }
->  
->  #ifdef CONFIG_SPARC
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+ ...
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Fair enough.
-
-We may as well do this, too:
-
---- a/drivers/video/igafb.c~drivers-video-igafbc-make-igafb_setup-and-igafb_init-static
-+++ a/drivers/video/igafb.c
-@@ -368,7 +368,7 @@ static int __init iga_init(struct fb_inf
- 	return 1;
- }
- 
--int __init igafb_init(void)
-+static int __init igafb_init(void)
- {
-         struct fb_info *info;
-         struct pci_dev *pdev;
-@@ -557,7 +557,7 @@ int __init igafb_init(void)
- 	return 0;
- }
- 
--int __init igafb_setup(char *options)
-+static int __init igafb_setup(char *options)
- {
-     char *this_opt;
- 
-_
-
+Applied, thanks Julia.
