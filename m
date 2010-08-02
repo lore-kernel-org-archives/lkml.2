@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab0HBQIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:08:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58481 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab0HBQIN convert rfc822-to-8bit (ORCPT
+	id S1752966Ab0HBQKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:10:14 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:36133 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753533Ab0HBQKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:08:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WnSviAH5xqGLWWbyRUZkUXQt8+M3nXRMTzTWwKPinESHZfRMFzo7zfg6WdqBB86JHs
-         1W5MJcXHPOtVx7B20aXzx0t1Wo+p3nCX7cba7UMY8mIasoS/iiw8DYX0b1oK5ftuBuc3
-         AvlvADl0fip9/0qLCdgTQCwCXvKqgXFymbTc4=
+	Mon, 2 Aug 2010 12:10:12 -0400
+X-Sasl-enc: umkJy9eSUYFumNHjNAmFouTjGUNyHSBcteU1IsDx6bT3 1280765404
+Date: Mon, 2 Aug 2010 13:10:01 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+Cc: Greg Freemyer <greg.freemyer@gmail.com>,
+        linux <linux-kernel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Karsten Schaefer <karsten.schaefer@uni-konstanz.de>
+Subject: Re: ext4 performance regression 2.6.27-stable versus 2.6.32 and
+ later
+Message-ID: <20100802161001.GF32757@khazad-dum.debian.net>
+References: <4C508A54.7070002@uni-konstanz.de>
+ <AANLkTimh3eKc-M4xphq0djnSa=4W4hUf7KRf=icdF9Rk@mail.gmail.com>
+ <4C56A240.1040506@uni-konstanz.de>
+ <20100802160405.GE32757@khazad-dum.debian.net>
 MIME-Version: 1.0
-In-Reply-To: <1280722876.5125.83.camel@falcon.homelinux.org>
-References: <1280716262.5125.42.camel@falcon.homelinux.org>
-	<201008012138.39036.bjorn.helgaas@hp.com>
-	<1280722876.5125.83.camel@falcon.homelinux.org>
-Date: Mon, 2 Aug 2010 18:08:12 +0200
-Message-ID: <AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com>
-Subject: Re: Linux 2.6.35
-From: Harald Hoyer <harald.hoyer@gmail.com>
-To: Donald Parsons <dparsons@brightdsl.net>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802160405.GE32757@khazad-dum.debian.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 2, 2010 at 6:21 AM, Donald Parsons <dparsons@brightdsl.net> wrote:
-> On Sun, 2010-08-01 at 21:38 -0600, Bjorn Helgaas wrote:
->> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
->> > 2.6.35 still fails to boot for me, as first reported here:
->> >  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
->> >
->> > I've manually bisected it down to around May 20 between
->> >   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
->> > Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
->> >
->> > Unfortunately first time I tried was with 2.6.35-rc6 and
->> > it failed to boot.
->> >
->> > Failure when switching from initramfs to real /root?
->> > Removing kernel "quiet" param appears to show several
->> > lines listing:
->> >
->> >   usb drives/hubs? followed by
->> >   dracut switching root (when booting works)
->> >               or
->> >   usb drives/hubs? followed by
->> >         (missing dracut... line)
->> >   No root device found
->> >   Boot has failed, sleeping forever.   (when it does not boot)
->> >
->> > Grub, typical entry:
->> > title Fedora (2.6.35)
->> >     root (hd0,0)
->> >     kernel /vmlinuz-2.6.35 ro
->> > root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
->> > SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
->> > rdblacklist=nouveau init=/sbin/bootchartd
->> >     initrd /initramfs-2.6.35.img
->> >
->> >
->> > My boot failure seems to be different than other two reported
->> > in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
->> > under Bug #16173 and #16228
->>
->> Will it boot with the "pci=nocrs" option?  If so, please open a
->
-> No, I tried this on a few attempts when I saw it mentioned under
-> bug #16228.  But it had no effect/benefit.  Sorry, I should have
-> mentioned this.
->
->> report at https://bugzilla.kernel.org, mark it a regression, assign
->> it to me, and attach the complete dmesg log.  And please respond to
->> this thread with a pointer to the bugzilla.
->>
->> Otherwise, a complete console log should have a clue.  The best
->> thing would be a log from a serial console or netconsole, with
->> "ignore_loglevel".
->
-> Maybe I will try netconsole tomorrow.  But is Ethernet up when
-> this boot failure happens?  I think not, since initramfs should
-> not need networking.
->
-> Should I try building sata driver into kernel?  Oh, I am using
-> ext3, and fdisk -l shows:
+On Mon, 02 Aug 2010, Henrique de Moraes Holschuh wrote:
+> On Mon, 02 Aug 2010, Kay Diederichs wrote:
+> > Performance-wise, we tried mounting with barrier versus nobarrier (or
+> > barrier=1 versus barrier=0) and re-did the 2.6.32+ benchmarks. It turned
+> > out that the benchmark difference with and without barrier is less than
+> > the variation between runs (which is much higher with 2.6.32+ than with
+> > 2.6.27-stable), so the influence seems to be minor.
+> 
+> Did you check interactions with the IO scheduler?
 
-# dracut --add-drivers "sata" ....
+Never mind, I reread your first message, and you did.  I apologise for the
+noise.
 
-or edit /etc/dracut.conf:
-
-add_drivers+=" sata "
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
