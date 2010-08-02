@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab0HBOKp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:10:45 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56263 "EHLO ogre.sisk.pl"
+	id S1753876Ab0HBOLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:11:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55159 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752109Ab0HBOKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:10:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Ted Ts'o" <tytso@mit.edu>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Date: Mon, 2 Aug 2010 16:08:57 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, stern@rowland.harvard.edu, swetland@google.com,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100801210548.23f77ff6@infradead.org> <20100802122726.GA6247@thunk.org>
-In-Reply-To: <20100802122726.GA6247@thunk.org>
+	id S1753600Ab0HBOLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 10:11:05 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Boot-time dynamic debugging?
+Date: Mon, 2 Aug 2010 16:13:59 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: Jason Baron <jbaron@redhat.com>, Greg KH <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, bjorn.helgaas@hp.com
+References: <AANLkTiksVFpU+3iek4-TM2q=wSDGpW_nJAr8XtHT06LE@mail.gmail.com> <20100802134705.GA2836@redhat.com> <AANLkTi=k5nkUk9LOS=EGHGSq=5Qe8_L-1d3_t9byxMrt@mail.gmail.com>
+In-Reply-To: <AANLkTi=k5nkUk9LOS=EGHGSq=5Qe8_L-1d3_t9byxMrt@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008021608.57483.rjw@sisk.pl>
+Message-Id: <201008021614.00038.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 02, 2010, Ted Ts'o wrote:
-> On Sun, Aug 01, 2010 at 09:05:48PM -0700, Arjan van de Ven wrote:
-> > I'm a little worried that this whole "I need to block suspend" is
-> > temporary. Yes today there is silicon from ARM and Intel where suspend
-> > is a heavy operation, yet at the same time it's not all THAT heavy
-> > anymore.... 
+On Monday 02 August 2010 15:53:24 Pekka Enberg wrote:
+> > On Sun, Aug 01, 2010 at 03:10:40PM +0300, Pekka Enberg wrote:
+> >> Commit 346e15beb5343c2eb8216d820f2ed8f150822b08 ("driver core: basic
+> >> infrastructure for per-module dynamic debug messages") removed
+> >> "dynamic_printk" kernel parameter from the dynamic debugging subsystem
+> >> (and forgot to update Documentation/kernel-parameters.txt). How can I
+> >> use the new subsystem for enabling boot-time dev_dbg() calls for
+> >> non-modular kernels?
 > 
-> Part of the problem here may also be a naming problem.  There are
-> multiple reasons why you might want to block suspend, and it goes far
-> beyond what the CPU can do.
+> On Mon, Aug 2, 2010 at 4:47 PM, Jason Baron <jbaron@redhat.com> wrote:
+> > Right now, you can not enable them dynamically from the boot command
+> > line (only via the debugfs file). However, Thomas Renninger, has posted
+> > a series to add back the boot-time functionality, see:
+> >
+> > Subject:    [patch 0/3] Dynamic Debug providing early boot debug messages via
+> > boot parameter
+> > http://marc.info/?l=linux-kernel&m=127970474426120&w=2
+> >
+> > So I intend to queue those up for 2.6.36, and also update the
+> > documentation.
 > 
-> Let's give another example, from the laptop world.  If you close the
-> the MacBook, it "suspends".  That is, all processes stop, and the CPU
-> enters a sleep state.  Sounds just like Linux's suspend-to-ram, right?
+> Oh, great!
 > 
-> Except for the fact that if you insert a USB cable connected to a
-> iPod/iPad/iPhone, the CPU wakes up, and iTunes will do a sync, and
-> then the machine goes back to sleep.  And if the Mail application is
-> in the middle of manipulating the IMAP mailbox, it will be allowed to
-> finish what it is doing, and then the system goes to sleep.
-
-I _think_ you can implement that with the current kernel's interfaces and
-an suitable power manager in user space.  At least you should be.
-
-The question really boils down to where the "power manager" activity should be
-located.  Should it be in the kernel or in user space?  Or is it better to have
-a "collective power manager", like in the wakelocks case?  Moreover, what
-should the power manager be responsible for and what the kernel's role should
-be in deciding what "power" state to go into?
-
-> So in the case of both the MacBook, where the user has closed the
-> laptop, and in the case of Cell Phone, where the user has pushed the
-> button saying he/she's done working with the application, the _normal_
-> thing to do force all processes to go to sleep, and then let the CPU
-> go to sleep.
+> Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+Thanks.
 > 
-> But, you may have applications that are specially privileged so they
-> can ignore the user command to suspend the machine.
+> Btw, can you easily enable all dev_dbg() calls with the boot parameter?
+I expect yes, but never explicitly tried it, dev_dbg should result in
+printk(KERN_DEBUG ...) after some macro/inline func processing.
 
-I frankly don't think it's legitimate to overrule the user.  If the user tells
-us "suspend" and specifies a set of devices that can be used for wakeup, we
-should follow, possibly monitoring the wakeup devices for events.
+Be aware that I sent another neat ddebug functionality:
+Subject on LKML: [PATCH] Dynamic Debug: Introduce global fake module param module.ddebug
 
-However, that doesn't apply 100% to the cell phone case, because on cell phones
-the software is actually owned by the device vendor and/or the network operator
-and they may want to have a mechanism to overrule the person using the phone.
-That is a more general issue, though.
-
-> Maybe it's an iTunes-like situation, where in response to some hardware
-> interrupt, it's allowed to wake up, do its thing, and then go back to sleep,
-> allowing the hardware to go back to sleep.  Maybe it's a mail
-> application that wants to wakeup every 15 minutes, suck down any new
-> mail, and then go back to sleep.  The suspend blocker is a way to
-> achieve this --- and this has nothing to do with chip technology, but
-> with a specific use case.
-
-Assuming that your "power manager activity" will be a collective one, along the
-Android lines.  Still, in principle, you can obtain a functionally equivalent
-behavior with the help of a power manager in user space.
+If, take the second post (same mail thread) which is the same patch
+with some documentation added.
+It's based on top of the patchseries mentioned above.
+Would be great if someone could pick it up as well.
+I was not sure about the fact that drivers must not use ddebug as parameter
+anymore with this patch and how to document that, quick review and/or
+comments appreciated.
 
 Thanks,
-Rafael
+
+      Thomas
