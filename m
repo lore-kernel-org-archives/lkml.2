@@ -1,188 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab0HBSpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:45:09 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:48653 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754454Ab0HBSpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:45:05 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201008021845.o72Ij016021377@stout.americas.sgi.com>
-Date: Mon, 02 Aug 2010 13:44:59 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.36-rc1
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
+	id S1754620Ab0HBSqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:46:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53850 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab0HBSqR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:46:17 -0400
+Message-ID: <4C57135F.4070404@ontolinux.com>
+Date: Mon, 02 Aug 2010 20:50:07 +0200
+From: Christian Stroetmann <stroetmann@ontolinux.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "Serge E. Hallyn" <serge@hallyn.com>
+CC: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org> <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org> <20100802063224.GR3948@outflux.net> <alpine.LRH.2.00.1008021639230.32603@tundra.namei.org> <20100802065746.GS3948@outflux.net> <4C569BCA.3050603@ontolinux.com> <20100802180859.GA29948@hallyn.com>
+In-Reply-To: <20100802180859.GA29948@hallyn.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:l5rQzWMbMpsuPLq2Xj3L3pJBjtE+x8CLIzb9b/vg/wr
+ VDqJunY1HftGWjZGpC0sViZJZTg+kaPWfPFJ4HuWJhD8SpmOTQ
+ I5dNVpJmUEy6rYOYTXs5rzTTWnrL7w1J+ykeTADZ/NAEKVoR0F
+ 7NpKRLgYeSlCQwduxzbL8BMwXeklKtTh9WeeJ6u9f6wuIkfj0e
+ bWilxrTBjSaAwJM/Lam7w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+Aloha Serge;
+On the 02.08.2010 20:08, Serge E. Hallyn wrote:
+> Quoting Christian Stroetmann (stroetmann@ontolinux.com):
+>    
+>> Aloha James, Aloha Kees;
+>> Ont the 02.08.2010 08:57,  Kees Cook wrote:
+>>      
+>>> On Mon, Aug 02, 2010 at 04:41:08PM +1000, James Morris wrote:
+>>>        
+>>>> On Sun, 1 Aug 2010, Kees Cook wrote:
+>>>>          
+>>>>> Well, at least I'll have something for my summit presentation again.
+>>>>>
+>>>>> On the other hand, it's rather hard for me to defend against a private NAK.
+>>>>>            
+>> A private NAK against a company's developer's OK
+>> Where is the difference private and company? I thought that it
+>> doesn't matter who and what a developer is, and where she/he comes
+>> from.
+>>      
+> That's not what private means in this case.  A private nak is one made
+> in a private email, so that the list - and the submitter - can't see the
+> rationale.  It is problematic because it doesn't really allow the other
+> party to address the objection.
+>
+> (No big deal - Christoph has since responded in public.)
+>
+>    
 
-  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
+Sorry, but AFAIK the NAK by Christoph that I meant was written in a 
+public e-mail with full context to the LSM mailing list some weeks ago 
+around the end of June (23 June 2010?!) and I thought Kees meant this 
+NAK. :D
 
-are available in the git repository at:
-  git://oss.sgi.com/xfs/xfs for-linus
+But thanks for trying to clearify the case.
 
-Alex Elder (1):
-      Merge branch 'v2.6.35'
+Sorry Kees, if you indeed meant with private NAK a NAK made in a private 
+e-mail.
 
-Christoph Hellwig (38):
-      xfs: drop dmapi hooks
-      xfs: remove unneeded #include statements
-      xfs: simplify log item descriptor tracking
-      xfs: merge iop_unpin_remove into iop_unpin
-      xfs: give xfs_item_ops methods the correct prototypes
-      xfs: give li_cb callbacks the correct prototype
-      xfs: simplify buffer pinning
-      xfs: simplify inode to transaction joining
-      xfs: fix the xfs_log_iovec i_addr type
-      xfs: kill the unused xlog_debug variable
-      xfs: remove the unused XFS_LOG_SLEEP and XFS_LOG_NOSLEEP flags
-      xfs: remove the unused XFS_TRANS_NOSLEEP/XFS_TRANS_WAIT flags
-      xfs: remove unused XFS_BMAPI_ flags
-      xfs: remove unused delta tracking code in xfs_bmapi
-      xfs: simplify xfs_vm_releasepage
-      xfs: simplify xfs_vm_writepage
-      xfs: avoid synchronous transaction in xfs_fs_write_inode
-      xfs: reduce stack usage in xfs_iomap
-      xfs: small cleanups for xfs_iomap / __xfs_get_blocks
-      xfs: remove explicit xfs_sync_data/xfs_sync_attr calls on umount
-      xfs: do not use emums for flags used in tracing
-      xfs: some iget tracing cleanups / fixes
-      xfs: remove xfs_iput_new
-      xfs: remove xfs_iput
-      xfs: split xfs_itrace_entry
-      xfs: remove incorrect log write optimization
-      xfs: allow writeback from kswapd
-      xfs: writepage always has buffers
-      xfs: remove a dmapi leftover
-      xfs: fix gcc 4.6 set but not read and unused statement warnings
-      xfs: clean up filestreams helpers
-      xfs: remove obsolete osyncisosync mount option
-      xfs: kill the b_strat callback in xfs_buf
-      xfs: simplify xfs_truncate_file
-      xfs: clean up xfs_bmap_get_bp
-      direct-io: move aio_complete into ->end_io
-      xfs: move aio completion after unwritten extent conversion
-      xfs simplify and speed up direct I/O completions
-
-Dave Chinner (8):
-      xfs: unregister inode shrinker before freeing filesystem structures
-      xfs: move inode shrinker unregister even earlier
-      xfs: don't block on buffer read errors
-      xfs: simplify and remove xfs_ireclaim
-      xfs: fix xfs_trans_add_item() lockdep warnings
-      xfs: fix memory reclaim recursion deadlock on locked inode buffer
-      xfs: use GFP_NOFS for page cache allocation
-      xfs: fix big endian build
-
-Eric Sandeen (1):
-      xfs: fix corruption case for block size < page size
-
-Kulikov Vasiliy (1):
-      xfs: fix unsigned underflow in xfs_free_eofblocks
-
-Tony Luck (1):
-      xfs: Fix build when CONFIG_XFS_POSIX_ACL=n
-
- Documentation/filesystems/xfs.txt |   11 -
- fs/direct-io.c                    |   26 +-
- fs/ext4/inode.c                   |   10 +-
- fs/ocfs2/aops.c                   |    7 +-
- fs/xfs/Makefile                   |    4 +-
- fs/xfs/linux-2.6/xfs_acl.c        |    2 +-
- fs/xfs/linux-2.6/xfs_aops.c       |  611 +++++++++++++------------------------
- fs/xfs/linux-2.6/xfs_aops.h       |    4 +-
- fs/xfs/linux-2.6/xfs_buf.c        |   62 ++---
- fs/xfs/linux-2.6/xfs_buf.h        |  119 ++++----
- fs/xfs/linux-2.6/xfs_dmapi_priv.h |   28 --
- fs/xfs/linux-2.6/xfs_export.c     |    8 +-
- fs/xfs/linux-2.6/xfs_file.c       |  104 +------
- fs/xfs/linux-2.6/xfs_fs_subr.c    |    4 -
- fs/xfs/linux-2.6/xfs_fs_subr.h    |   25 --
- fs/xfs/linux-2.6/xfs_ioctl.c      |   27 +--
- fs/xfs/linux-2.6/xfs_ioctl32.c    |    6 +-
- fs/xfs/linux-2.6/xfs_iops.c       |   10 +-
- fs/xfs/linux-2.6/xfs_linux.h      |    1 -
- fs/xfs/linux-2.6/xfs_quotaops.c   |    1 -
- fs/xfs/linux-2.6/xfs_super.c      |  171 ++++-------
- fs/xfs/linux-2.6/xfs_super.h      |    7 -
- fs/xfs/linux-2.6/xfs_sync.c       |   49 ++-
- fs/xfs/linux-2.6/xfs_sync.h       |    3 -
- fs/xfs/linux-2.6/xfs_trace.c      |    4 -
- fs/xfs/linux-2.6/xfs_trace.h      |  128 ++++++--
- fs/xfs/quota/xfs_dquot.c          |  114 +++----
- fs/xfs/quota/xfs_dquot_item.c     |  301 ++++++++-----------
- fs/xfs/quota/xfs_qm.c             |   15 +-
- fs/xfs/quota/xfs_qm_bhv.c         |   10 -
- fs/xfs/quota/xfs_qm_stats.c       |   10 -
- fs/xfs/quota/xfs_qm_syscalls.c    |   89 ++++--
- fs/xfs/quota/xfs_trans_dquot.c    |   35 +--
- fs/xfs/support/debug.c            |    1 -
- fs/xfs/xfs_alloc.c                |   15 +-
- fs/xfs/xfs_alloc.h                |   20 +-
- fs/xfs/xfs_alloc_btree.c          |    5 -
- fs/xfs/xfs_attr.c                 |   91 ++----
- fs/xfs/xfs_attr_leaf.c            |    5 +-
- fs/xfs/xfs_bmap.c                 |  327 +++-----------------
- fs/xfs/xfs_bmap.h                 |   37 +--
- fs/xfs/xfs_bmap_btree.c           |    5 -
- fs/xfs/xfs_btree.c                |    5 -
- fs/xfs/xfs_buf_item.c             |  228 +++++++--------
- fs/xfs/xfs_buf_item.h             |    2 +-
- fs/xfs/xfs_da_btree.c             |   20 +-
- fs/xfs/xfs_dfrag.c                |   16 +-
- fs/xfs/xfs_dir2.c                 |   11 +-
- fs/xfs/xfs_dir2_block.c           |    8 +-
- fs/xfs/xfs_dir2_data.c            |    2 -
- fs/xfs/xfs_dir2_leaf.c            |    4 +-
- fs/xfs/xfs_dir2_node.c            |    2 -
- fs/xfs/xfs_dir2_sf.c              |    2 -
- fs/xfs/xfs_dmapi.h                |  170 ----------
- fs/xfs/xfs_dmops.c                |   55 ----
- fs/xfs/xfs_error.c                |    4 -
- fs/xfs/xfs_extfree_item.c         |  278 +++++++----------
- fs/xfs/xfs_filestream.c           |   84 +++++-
- fs/xfs/xfs_filestream.h           |   82 -----
- fs/xfs/xfs_fsops.c                |    7 +-
- fs/xfs/xfs_ialloc.c               |    4 -
- fs/xfs/xfs_ialloc_btree.c         |    4 -
- fs/xfs/xfs_iget.c                 |  108 +-------
- fs/xfs/xfs_inode.c                |   60 ++---
- fs/xfs/xfs_inode.h                |    4 +-
- fs/xfs/xfs_inode_item.c           |  273 ++++++-----------
- fs/xfs/xfs_inode_item.h           |   12 +-
- fs/xfs/xfs_iomap.c                |   76 +++---
- fs/xfs/xfs_iomap.h                |   22 +-
- fs/xfs/xfs_itable.c               |    8 +-
- fs/xfs/xfs_log.c                  |   16 +-
- fs/xfs/xfs_log.h                  |   11 +-
- fs/xfs/xfs_log_cil.c              |    4 +-
- fs/xfs/xfs_log_recover.c          |   42 +--
- fs/xfs/xfs_mount.c                |    3 -
- fs/xfs/xfs_mount.h                |   69 -----
- fs/xfs/xfs_rename.c               |   63 +----
- fs/xfs/xfs_rtalloc.c              |    9 +-
- fs/xfs/xfs_rw.c                   |   15 -
- fs/xfs/xfs_trans.c                |  211 ++++++++-----
- fs/xfs/xfs_trans.h                |  117 +-------
- fs/xfs/xfs_trans_ail.c            |    1 -
- fs/xfs/xfs_trans_buf.c            |   75 +----
- fs/xfs/xfs_trans_extfree.c        |   23 +-
- fs/xfs/xfs_trans_inode.c          |   74 ++---
- fs/xfs/xfs_trans_item.c           |  441 --------------------------
- fs/xfs/xfs_trans_priv.h           |   18 +-
- fs/xfs/xfs_utils.c                |   87 ------
- fs/xfs/xfs_utils.h                |    1 -
- fs/xfs/xfs_vnodeops.c             |  293 ++++--------------
- include/linux/fs.h                |    3 +-
- 91 files changed, 1621 insertions(+), 4018 deletions(-)
- delete mode 100644 fs/xfs/linux-2.6/xfs_dmapi_priv.h
- delete mode 100644 fs/xfs/linux-2.6/xfs_fs_subr.h
- delete mode 100644 fs/xfs/xfs_dmapi.h
- delete mode 100644 fs/xfs/xfs_dmops.c
- delete mode 100644 fs/xfs/xfs_trans_item.c
+Have fun
+Christian Stroetmann
