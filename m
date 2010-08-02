@@ -1,449 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab0HBOST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:18:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44730 "EHLO hera.kernel.org"
+	id S1753228Ab0HBO3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:29:25 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56372 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab0HBOSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:18:16 -0400
-Message-ID: <4C56D3A1.1070102@kernel.org>
-Date: Mon, 02 Aug 2010 16:18:09 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1751879Ab0HBO3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 10:29:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC][PATCH -mm] hibernation: freeze swap at hibernation (Was Re: Memory corruption during hibernation since 2.6.31
+Date: Mon, 2 Aug 2010 16:27:37 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+References: <201007282334.08063.rjw@sisk.pl> <20100730131432.891df49a.kamezawa.hiroyu@jp.fujitsu.com> <20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, stable@kernel.org
-CC: Vladislav Bolkhovitin <vst@vlnb.net>, Bryan Mesich <bryan.mesich@ndsu.edu>,
-        scst-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com,
-        Neil Brown <neilb@suse.de>
-Subject: [PATCH RESEND 2/2 block#for-linus] bio, fs: separate out bio_types.h
- and define READ/WRITE constants in terms of BIO_RW_* flags
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net>	<4C52A98A.7060507@kernel.org> <20100802104227.79340b49@notabene> <4C56D259.8000504@kernel.org>
-In-Reply-To: <4C56D259.8000504@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 14:17:52 +0000 (UTC)
+Message-Id: <201008021627.38003.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux/fs.h hard coded READ/WRITE constants which should match BIO_RW_*
-flags.  This is fragile and caused breakage during BIO_RW_* flag
-rearrangement.  The hardcoding is to avoid include dependency hell.
+On Monday, August 02, 2010, KAMEZAWA Hiroyuki wrote:
+> On Fri, 30 Jul 2010 13:14:32 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Thu, 29 Jul 2010 21:10:10 -0700
+> > Hugh Dickins <hughd@google.com> wrote:
+> > 
+> > > On Thu, Jul 29, 2010 at 5:01 PM, KAMEZAWA Hiroyuki
+> > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > I think the best way is kexec(). But maybe rollback from hibernation failure
+> > > > will be difficult. Considering how crash-dump works well and under maintainance
+> > > > by many enterprise guys, hibernation-by-kexec is a choice. I think. It can make
+> > > > reuse of kdump code, ...or, hibernation-resume code can eat kdump image
+> > > > directly. Maybe the problem will be the speed of dump.
+> > > 
+> > > I've no appetite for a total rework of hibernation, and I don't see
+> > > how that would
+> > > address the issue: I'm just looking for some protection against swap
+> > > reuse danger.
+> > > 
+> > Okay ;) (And I forget that kexec has to prepare memory at boot time for 2nd kernel.
+> > It will be harmful for small device guys.)
+> > 
+> > I'll prepare a routine not-quick-fix.
+> 
+> Ok, here. Passed easy tests as
+> # echo disk > /sys/power/state
+> 
+> 
+> Looks like a big hammer ? But I think following kind of patch is required.
+> About swap-reuse, it's only possible when a page is added to swap cache
+> but try_to_unmap() fails and the page remains in memory. IIUC, most of this
+> kind of pages will be backed to swap by shrink_all_memory(). So, reuse-swap
+> happens only when the user unlucky. This patch ignores reuse-swap but freeze
+> swap_map[] for saving swap_map[] to the disk in consistent way.
+> 
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> swap_map[] is a one of objects which can be update while hibernation. I.E,
+> usage counter in swap_map[] is updated while hibernation is making a copy
+> of memory image to the disk.
+> 
+> At resume, hibenation code doesn't call swap_free() against the swaps they
+> used...So, the swap_map[] will turns to be an initial state.
+> 
+> With small consideration, the question is how swap_map[] updated before
+> dumping to the disk is treated. In swap-system view, there are no guarantee
+> that swap_map[] are properly reloaded and there is no leak in swap count.
+> 
+> This patch tries to freeze swap_map[] during hibernation.
+> By this, no updates will be happen to swap_map[] among save_image().
+> At load_image(), the swap_map[] has no record for swap entries used by
+> save_image(), we can simply forget it.
+> 
+> Note: I'm not a specialist of hibernation...so, I'm not sure the hooks
+>       to kernel/power/user.c is appropriate or not.
+>       And this disables swap-out once hibernation starts saving.
+>       Should we afraid of OOM ?
 
-Create linux/bio_types.h which contatins definitions for bio data
-structures and flags and include it from bio.h and fs.h, and make fs.h
-define all READ/WRITE related constants in terms of BIO_RW_* flags.
+OOM shoiuld not happen at that time, so no worry.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jens Axobe <axboe@kernel.dk>
----
- include/linux/bio.h       |  153 +-----------------------------------------
- include/linux/bio_types.h |  164 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h        |   17 ++--
- 3 files changed, 176 insertions(+), 158 deletions(-)
+I'll have a deeper look into the patch later today.
 
-Index: work/include/linux/bio.h
-===================================================================
---- work.orig/include/linux/bio.h
-+++ work/include/linux/bio.h
-@@ -9,7 +9,7 @@
-  *
-  * This program is distributed in the hope that it will be useful,
-  * but WITHOUT ANY WARRANTY; without even the implied warranty of
--
-+ *
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-  *
-@@ -28,6 +28,9 @@
-
- #include <asm/io.h>
-
-+/* struct bio, bio_vec and BIO_* flags are defined in bio_types.h */
-+#include <linux/bio_types.h>
-+
- #define BIO_DEBUG
-
- #ifdef BIO_DEBUG
-@@ -41,154 +44,6 @@
- #define BIO_MAX_SECTORS		(BIO_MAX_SIZE >> 9)
-
- /*
-- * was unsigned short, but we might as well be ready for > 64kB I/O pages
-- */
--struct bio_vec {
--	struct page	*bv_page;
--	unsigned int	bv_len;
--	unsigned int	bv_offset;
--};
--
--struct bio_set;
--struct bio;
--struct bio_integrity_payload;
--typedef void (bio_end_io_t) (struct bio *, int);
--typedef void (bio_destructor_t) (struct bio *);
--
--/*
-- * main unit of I/O for the block layer and lower layers (ie drivers and
-- * stacking drivers)
-- */
--struct bio {
--	sector_t		bi_sector;	/* device address in 512 byte
--						   sectors */
--	struct bio		*bi_next;	/* request queue link */
--	struct block_device	*bi_bdev;
--	unsigned long		bi_flags;	/* status, command, etc */
--	unsigned long		bi_rw;		/* bottom bits READ/WRITE,
--						 * top bits priority
--						 */
--
--	unsigned short		bi_vcnt;	/* how many bio_vec's */
--	unsigned short		bi_idx;		/* current index into bvl_vec */
--
--	/* Number of segments in this BIO after
--	 * physical address coalescing is performed.
--	 */
--	unsigned int		bi_phys_segments;
--
--	unsigned int		bi_size;	/* residual I/O count */
--
--	/*
--	 * To keep track of the max segment size, we account for the
--	 * sizes of the first and last mergeable segments in this bio.
--	 */
--	unsigned int		bi_seg_front_size;
--	unsigned int		bi_seg_back_size;
--
--	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
--
--	unsigned int		bi_comp_cpu;	/* completion CPU */
--
--	atomic_t		bi_cnt;		/* pin count */
--
--	struct bio_vec		*bi_io_vec;	/* the actual vec list */
--
--	bio_end_io_t		*bi_end_io;
--
--	void			*bi_private;
--#if defined(CONFIG_BLK_DEV_INTEGRITY)
--	struct bio_integrity_payload *bi_integrity;  /* data integrity */
--#endif
--
--	bio_destructor_t	*bi_destructor;	/* destructor */
--
--	/*
--	 * We can inline a number of vecs at the end of the bio, to avoid
--	 * double allocations for a small number of bio_vecs. This member
--	 * MUST obviously be kept at the very end of the bio.
--	 */
--	struct bio_vec		bi_inline_vecs[0];
--};
--
--/*
-- * bio flags
-- */
--#define BIO_UPTODATE	0	/* ok after I/O completion */
--#define BIO_RW_BLOCK	1	/* RW_AHEAD set, and read/write would block */
--#define BIO_EOF		2	/* out-out-bounds error */
--#define BIO_SEG_VALID	3	/* bi_phys_segments valid */
--#define BIO_CLONED	4	/* doesn't own data */
--#define BIO_BOUNCED	5	/* bio is a bounce bio */
--#define BIO_USER_MAPPED 6	/* contains user pages */
--#define BIO_EOPNOTSUPP	7	/* not supported */
--#define BIO_CPU_AFFINE	8	/* complete bio on same CPU as submitted */
--#define BIO_NULL_MAPPED 9	/* contains invalid user pages */
--#define BIO_FS_INTEGRITY 10	/* fs owns integrity data, not block layer */
--#define BIO_QUIET	11	/* Make BIO Quiet */
--#define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
--
--/*
-- * top 4 bits of bio flags indicate the pool this bio came from
-- */
--#define BIO_POOL_BITS		(4)
--#define BIO_POOL_NONE		((1UL << BIO_POOL_BITS) - 1)
--#define BIO_POOL_OFFSET		(BITS_PER_LONG - BIO_POOL_BITS)
--#define BIO_POOL_MASK		(1UL << BIO_POOL_OFFSET)
--#define BIO_POOL_IDX(bio)	((bio)->bi_flags >> BIO_POOL_OFFSET)	
--
--/*
-- * bio bi_rw flags
-- *
-- * bit 0 -- data direction
-- *	If not set, bio is a read from device. If set, it's a write to device.
-- * bit 1 -- fail fast device errors
-- * bit 2 -- fail fast transport errors
-- * bit 3 -- fail fast driver errors
-- * bit 4 -- rw-ahead when set
-- * bit 5 -- barrier
-- *	Insert a serialization point in the IO queue, forcing previously
-- *	submitted IO to be completed before this one is issued.
-- * bit 6 -- synchronous I/O hint.
-- * bit 7 -- Unplug the device immediately after submitting this bio.
-- * bit 8 -- metadata request
-- *	Used for tracing to differentiate metadata and data IO. May also
-- *	get some preferential treatment in the IO scheduler
-- * bit 9 -- discard sectors
-- *	Informs the lower level device that this range of sectors is no longer
-- *	used by the file system and may thus be freed by the device. Used
-- *	for flash based storage.
-- *	Don't want driver retries for any fast fail whatever the reason.
-- * bit 10 -- Tell the IO scheduler not to wait for more requests after this
--	one has been submitted, even if it is a SYNC request.
-- */
--enum bio_rw_flags {
--	BIO_RW,
--	BIO_RW_FAILFAST_DEV,
--	BIO_RW_FAILFAST_TRANSPORT,
--	BIO_RW_FAILFAST_DRIVER,
--	/* above flags must match REQ_* */
--	BIO_RW_AHEAD,
--	BIO_RW_BARRIER,
--	BIO_RW_SYNCIO,
--	BIO_RW_UNPLUG,
--	BIO_RW_META,
--	BIO_RW_DISCARD,
--	BIO_RW_NOIDLE,
--};
--
--/*
-- * First four bits must match between bio->bi_rw and rq->cmd_flags, make
-- * that explicit here.
-- */
--#define BIO_RW_RQ_MASK		0xf
--
--static inline bool bio_rw_flagged(struct bio *bio, enum bio_rw_flags flag)
--{
--	return (bio->bi_rw & (1 << flag)) != 0;
--}
--
--/*
-  * upper 16 bits of bi_rw define the io priority of this bio
-  */
- #define BIO_PRIO_SHIFT	(8 * sizeof(unsigned long) - IOPRIO_BITS)
-Index: work/include/linux/bio_types.h
-===================================================================
---- /dev/null
-+++ work/include/linux/bio_types.h
-@@ -0,0 +1,164 @@
-+/*
-+ * BIO data types and constants.  Include linux/bio.h for usual cases.
-+ * Directly include this file only to break include dependency loop.
-+ */
-+#ifndef __LINUX_BIO_TYPES_H
-+#define __LINUX_BIO_TYPES_H
-+
-+#ifdef CONFIG_BLOCK
-+
-+#include <linux/types.h>
-+
-+struct bio_set;
-+struct bio;
-+struct bio_integrity_payload;
-+struct page;
-+struct block_device;
-+
-+/*
-+ * was unsigned short, but we might as well be ready for > 64kB I/O pages
-+ */
-+struct bio_vec {
-+	struct page	*bv_page;
-+	unsigned int	bv_len;
-+	unsigned int	bv_offset;
-+};
-+
-+typedef void (bio_end_io_t) (struct bio *, int);
-+typedef void (bio_destructor_t) (struct bio *);
-+
-+/*
-+ * main unit of I/O for the block layer and lower layers (ie drivers and
-+ * stacking drivers)
-+ */
-+struct bio {
-+	sector_t		bi_sector;	/* device address in 512 byte
-+						   sectors */
-+	struct bio		*bi_next;	/* request queue link */
-+	struct block_device	*bi_bdev;
-+	unsigned long		bi_flags;	/* status, command, etc */
-+	unsigned long		bi_rw;		/* bottom bits READ/WRITE,
-+						 * top bits priority
-+						 */
-+
-+	unsigned short		bi_vcnt;	/* how many bio_vec's */
-+	unsigned short		bi_idx;		/* current index into bvl_vec */
-+
-+	/* Number of segments in this BIO after
-+	 * physical address coalescing is performed.
-+	 */
-+	unsigned int		bi_phys_segments;
-+
-+	unsigned int		bi_size;	/* residual I/O count */
-+
-+	/*
-+	 * To keep track of the max segment size, we account for the
-+	 * sizes of the first and last mergeable segments in this bio.
-+	 */
-+	unsigned int		bi_seg_front_size;
-+	unsigned int		bi_seg_back_size;
-+
-+	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
-+
-+	unsigned int		bi_comp_cpu;	/* completion CPU */
-+
-+	atomic_t		bi_cnt;		/* pin count */
-+
-+	struct bio_vec		*bi_io_vec;	/* the actual vec list */
-+
-+	bio_end_io_t		*bi_end_io;
-+
-+	void			*bi_private;
-+#if defined(CONFIG_BLK_DEV_INTEGRITY)
-+	struct bio_integrity_payload *bi_integrity;  /* data integrity */
-+#endif
-+
-+	bio_destructor_t	*bi_destructor;	/* destructor */
-+
-+	/*
-+	 * We can inline a number of vecs at the end of the bio, to avoid
-+	 * double allocations for a small number of bio_vecs. This member
-+	 * MUST obviously be kept at the very end of the bio.
-+	 */
-+	struct bio_vec		bi_inline_vecs[0];
-+};
-+
-+/*
-+ * bio flags
-+ */
-+#define BIO_UPTODATE	0	/* ok after I/O completion */
-+#define BIO_RW_BLOCK	1	/* RW_AHEAD set, and read/write would block */
-+#define BIO_EOF		2	/* out-out-bounds error */
-+#define BIO_SEG_VALID	3	/* bi_phys_segments valid */
-+#define BIO_CLONED	4	/* doesn't own data */
-+#define BIO_BOUNCED	5	/* bio is a bounce bio */
-+#define BIO_USER_MAPPED 6	/* contains user pages */
-+#define BIO_EOPNOTSUPP	7	/* not supported */
-+#define BIO_CPU_AFFINE	8	/* complete bio on same CPU as submitted */
-+#define BIO_NULL_MAPPED 9	/* contains invalid user pages */
-+#define BIO_FS_INTEGRITY 10	/* fs owns integrity data, not block layer */
-+#define BIO_QUIET	11	/* Make BIO Quiet */
-+#define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
-+
-+/*
-+ * top 4 bits of bio flags indicate the pool this bio came from
-+ */
-+#define BIO_POOL_BITS		(4)
-+#define BIO_POOL_NONE		((1UL << BIO_POOL_BITS) - 1)
-+#define BIO_POOL_OFFSET		(BITS_PER_LONG - BIO_POOL_BITS)
-+#define BIO_POOL_MASK		(1UL << BIO_POOL_OFFSET)
-+#define BIO_POOL_IDX(bio)	((bio)->bi_flags >> BIO_POOL_OFFSET)
-+
-+/*
-+ * bio bi_rw flags
-+ *
-+ * bit 0 -- data direction
-+ *	If not set, bio is a read from device. If set, it's a write to device.
-+ * bit 1 -- fail fast device errors
-+ * bit 2 -- fail fast transport errors
-+ * bit 3 -- fail fast driver errors
-+ * bit 4 -- rw-ahead when set
-+ * bit 5 -- barrier
-+ *	Insert a serialization point in the IO queue, forcing previously
-+ *	submitted IO to be completed before this one is issued.
-+ * bit 6 -- synchronous I/O hint.
-+ * bit 7 -- Unplug the device immediately after submitting this bio.
-+ * bit 8 -- metadata request
-+ *	Used for tracing to differentiate metadata and data IO. May also
-+ *	get some preferential treatment in the IO scheduler
-+ * bit 9 -- discard sectors
-+ *	Informs the lower level device that this range of sectors is no longer
-+ *	used by the file system and may thus be freed by the device. Used
-+ *	for flash based storage.
-+ *	Don't want driver retries for any fast fail whatever the reason.
-+ * bit 10 -- Tell the IO scheduler not to wait for more requests after this
-+	one has been submitted, even if it is a SYNC request.
-+ */
-+enum bio_rw_flags {
-+	BIO_RW,
-+	BIO_RW_FAILFAST_DEV,
-+	BIO_RW_FAILFAST_TRANSPORT,
-+	BIO_RW_FAILFAST_DRIVER,
-+	/* above flags must match REQ_* */
-+	BIO_RW_AHEAD,
-+	BIO_RW_BARRIER,
-+	BIO_RW_SYNCIO,
-+	BIO_RW_UNPLUG,
-+	BIO_RW_META,
-+	BIO_RW_DISCARD,
-+	BIO_RW_NOIDLE,
-+};
-+
-+/*
-+ * First four bits must match between bio->bi_rw and rq->cmd_flags, make
-+ * that explicit here.
-+ */
-+#define BIO_RW_RQ_MASK		0xf
-+
-+static inline bool bio_rw_flagged(struct bio *bio, enum bio_rw_flags flag)
-+{
-+	return (bio->bi_rw & (1 << flag)) != 0;
-+}
-+
-+#endif /* CONFIG_BLOCK */
-+#endif /* __LINUX_BIO_TYPES_H */
-Index: work/include/linux/fs.h
-===================================================================
---- work.orig/include/linux/fs.h
-+++ work/include/linux/fs.h
-@@ -8,6 +8,7 @@
-
- #include <linux/limits.h>
- #include <linux/ioctl.h>
-+#include <linux/bio_types.h>
-
- /*
-  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
-@@ -117,7 +118,7 @@ struct inodes_stat_t {
-  *			immediately wait on this read without caring about
-  *			unplugging.
-  * READA		Used for read-ahead operations. Lower priority, and the
-- *			 block layer could (in theory) choose to ignore this
-+ *			block layer could (in theory) choose to ignore this
-  *			request if it runs into resource problems.
-  * WRITE		A normal async write. Device will be plugged.
-  * SWRITE		Like WRITE, but a special case for ll_rw_block() that
-@@ -144,12 +145,12 @@ struct inodes_stat_t {
-  *			of this IO.
-  *
-  */
--#define RW_MASK		1
--#define RWA_MASK	2
--#define READ 0
--#define WRITE 1
--#define READA 16	/* read-ahead  - don't block if no resources */
--#define SWRITE 17	/* for ll_rw_block() - wait for buffer lock */
-+#define RW_MASK		(1 << BIO_RW)
-+#define RWA_MASK	(1 << BIO_RW_AHEAD)
-+#define READ		0
-+#define WRITE		RW_MASK
-+#define READA		RWA_MASK
-+#define SWRITE		(WRITE | READA)
- #define READ_SYNC	(READ | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_UNPLUG))
- #define READ_META	(READ | (1 << BIO_RW_META))
- #define WRITE_SYNC_PLUG	(WRITE | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_NOIDLE))
-@@ -2198,7 +2199,6 @@ static inline void insert_inode_hash(str
- extern void file_move(struct file *f, struct list_head *list);
- extern void file_kill(struct file *f);
- #ifdef CONFIG_BLOCK
--struct bio;
- extern void submit_bio(int, struct bio *);
- extern int bdev_read_only(struct block_device *);
- #endif
-@@ -2265,7 +2265,6 @@ static inline int xip_truncate_page(stru
- #endif
-
- #ifdef CONFIG_BLOCK
--struct bio;
- typedef void (dio_submit_t)(int rw, struct bio *bio, struct inode *inode,
- 			    loff_t file_offset);
- void dio_end_io(struct bio *bio, int error);
+Thanks,
+Rafael
