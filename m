@@ -1,145 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab0HBOIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:08:13 -0400
-Received: from www.tglx.de ([62.245.132.106]:38618 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab0HBOIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:08:12 -0400
-Date: Mon, 2 Aug 2010 16:07:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <teheo@suse.de>
-cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
-In-Reply-To: <4C529F59.3020404@suse.de>
-Message-ID: <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain>
-References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753635Ab0HBOJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:09:54 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44529 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab0HBOJv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 10:09:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dmRR2gIyvf5jSdu+vtE0D6lY3MQhZ1Tz7QP8kG5ddyxyB4sinQO/dWTJsXtPNH4mQu
+         ZeiKiUrqq6WIjaKn3OHhrUlZ3A2S2sW/SrVhvNt2W9VXCb1laN4F97Uv0dvs3UYeRpks
+         8FSUn9wopABwPyes4WxdT0d24laJNv6zQGvDg=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100801094018.522e2f53@corrin.poochiereds.net>
+References: <20100728111525.355a2bd3@notabene>
+	<alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	<20100722162712.GB10352@jeremy-laptop>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
+	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+	<13591.1280338082@redhat.com>
+	<20100729090401.4b0a21f8@notabene>
+	<20100801094018.522e2f53@corrin.poochiereds.net>
+Date: Mon, 2 Aug 2010 10:09:49 -0400
+Message-ID: <AANLkTi=JvwrwpmteFcXW1f5s95+_w_iCT+04Sy7bbTtR@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Greg Freemyer <greg.freemyer@gmail.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Neil Brown <neilb@suse.de>, David Howells <dhowells@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
+        Volker.Lendecke@sernet.de, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
+> Furthermore, I'll go ahead and propose the following (simple) semantics:
+>
+> 1) birthtime is initialized to the current time when a new inode is
+> created
+>
+> 2) it's settable via the xattr to an arbitrary value
+>
+> Either way, the xattr for this ought to be named the same on all
+> filesystems. Samba shouldn't need to know or care what the underlying
+> filesystem is, as long as it presents the correct xattr.
+>
+> That should make samba happy, and be reasonably simple to implement.
 
-On Fri, 30 Jul 2010, Tejun Heo wrote:
+Is there any reason to allow birthtime to be set in advance of the
+current birthtime?
 
-> Hello,
-> 
-> On 07/29/2010 10:44 AM, Thomas Gleixner wrote:
-> >> I'll ask Stephen to pull the above branch into linux-next until it
-> >> shows up via tip so that we don't lose any more linux-next testing
-> >> time.
-> > 
-> > I'm working on it already and I'm currently twisting my brain around
-> > the problem this patches will impose to the RT stuff, where we cannot
-> > access timer_list timers from atomic regions :(
-> 
-> Oh, I see.  A dull last ditch solution would be just disabling it on
-> CONFIG_PREEMPT_RT, but yeah that will be dull.  :-(
+ie restore / copy tools clearly need to backdate it, but I'd prefer to
+see it not advance-able.
 
-Yup, but I have some other issues with this series as well. That thing
-is massively overengineered. You mangle all the various functions into
-irq_poll which makes it really hard to understand what the code does
-under which circumstances.
-
-I understand most of the problems you want to solve, but I don't like
-the outcome too much.
-
-Let's look at the various parts:
-
-1) irq polling
-
-   - Get rid of the for_each_irq() loop in the poll timer.
-
-     You can solve this by adding the interrupt to a linked list and
-     let the poll timer run through the list. Also why is the simple
-     counter based decision not good enough ? Why do we need an extra
-     time period for this ?
-
-   - Reenable the interrupt from time to time to check whether the irq
-     storm subsided.
-
-     Generally a good idea, but we really do not want to wait for
-     another 10k unhandled interrupts flooding the machine. Ideally we
-     should read out the irq pending register from the irq chip to see
-     whether the interrupt is still asserted.
-
-2) irq watch
-
-   I have to admit, that I have no clue what this thing exactly
-   does. After staring into the code for quite a while I came to the
-   conclusion that it's a dynamic polling machinery, which adjusts
-   it's polling frequency depending on the number of good and bad
-   samples. The heuristics for this are completely non obvious.
-
-   Aside of that the watch mechanism adds unneccesary code to the hard
-   interrupt context. There is no reason why you need to update that
-   watch magic in the hard interrupt context. Analysing the stats can
-   be done in the watch timer as well. All it takes is in
-   handle_irq_event()
-
-   case IRQ_HANDLED:
-      	action->handled++;
-
-   and in the watch timer function
-
-        if (ret == IRQ_HANDLED)
-	        action->polled++;
-
-   irq_watch should use a separate global timer and a linked list. The
-   timer is started when an interrupt is added to the watch mechanism
-   and stopped when the list becomes empty.
-   
-   That's a clear separation of watch and poll and simplifies the
-   whole business a lot.
-
-3) irq expect
-
-   So you basically poll the interrupt until either the interrupt
-   happened or the device driver timeout occured.
-
-   That's really weird. What does it solve ? Not running into the
-   device driver timeout routine if the hardware interrupt has been
-   lost?
-
-   That's overkill, isn't it ? When the hardware loses an interrupt
-   occasionally then why isn't the device driver timeout routine
-   sufficient? If it does not check whether the device has an
-   interrupt pending despite the fact that it has not been delivered,
-   then this code needs to be fixed and not worked around with weird
-   polling in the generic irq code.
-
-   Btw, this polling is pretty bad in terms of power savings.
-
-   - The timers are not aligned, so if there are several expects armed
-     you get unbatched wakeups.
-
-   - If the poll interval is smaller than the average hardware
-     interrupt delivery time, you add more wakeups than necessary.
-
-   - If the hardware interrupt has happened, you let the poll timer
-     pending, which gives us an extra wakeup for each interrupt in the
-     worst case.
-
-   I assume your concern is to detect and deal with flaky interrupts,
-   but avoiding the permanent poll when the device is not used, right?
-
-   So that can be done simpler as well. One timer and a linked list
-   again.
-
-   expect_irq() adds the irq to the linked list and arms the timer, if
-   it is not armed already. unexpect_irq() removes the irq from the
-   linked list and deletes the timer when the list becomes empty.
-
-   That can reuse the list_head in irq_desc which you need for irq
-   poll and the timer interval should be fixed without dynamic
-   adjustment.
-
-   Keep it simple!
-
-Thanks
-
-	 tglx
+Greg
