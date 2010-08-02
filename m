@@ -1,51 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab0HBCu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 22:50:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58476 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751840Ab0HBCu0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 22:50:26 -0400
+	id S1752152Ab0HBDDN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 23:03:13 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:38581 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751840Ab0HBDDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 23:03:11 -0400
+Date: Sun, 1 Aug 2010 20:03:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100802030304.GU2470@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100731215214.2543c07e@infradead.org>
+ <20100801054816.GI2470@linux.vnet.ibm.com>
+ <20100731230101.7cc1d8c7@infradead.org>
+ <20100801191228.GL2470@linux.vnet.ibm.com>
+ <20100801204026.GH31324@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20100802023322.GA19164@dastard>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com> 
-	<20100802023322.GA19164@dastard>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 1 Aug 2010 19:50:02 -0700
-Message-ID: <AANLkTint_s6h_EC7mDiPsyxr=C0GSrnrgJYkCCU7JEtN@mail.gmail.com>
-Subject: Re: Linux 2.6.35
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100801204026.GH31324@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 1, 2010 at 7:33 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> There hasn't been nearly enough review or testing of this patch
-> series yet.  Before a merge, it needs to be split up in smaller,
-> more digestable chunks for more comprehensive review, regression
-> testing and behavioural analysis.
+On Sun, Aug 01, 2010 at 04:40:26PM -0400, Ted Ts'o wrote:
+> On Sun, Aug 01, 2010 at 12:12:28PM -0700, Paul E. McKenney wrote:
+> > 
+> > I understand that you would prefer that we group applications into
+> > "good" and "bad" categories, but then again, I suspect that most of us
+> > understood that before you posted this message.  Given your significant
+> > and well-appreciated contributions to power efficiency over the past
+> > several years, I must confess to be quite disappointed that you failed
+> > to do more than to simply restate your preference.
+> 
+> Paul, I very much agree with what you stated later, with respect to
+> doubting whether the whack-a-mole approach to application fixups is
+> workable.  Given how many applications screw up using fsync()
+> correctly, to the extent that XFS, ext4, and btrfs all had to agree on
+> a common hueristics to deal with the fact that application programmers
+> are aggressively ignorant, and outnumber the file system developers, I
+> too doubt the general strategy of relying only on application
+> programmers to do the right thing.  That's not to say that we
+> shouldn't give up on trying to influence application programmers ---
+> but relying on that as the only strategy seems to depart from the path
+> of wisdom.
 
-I dunno. We merge _way_ scarier things in the VM and the block layer,
-for much less actual upside, and with less review.
+Unless someone can reliably automate whacking the moles, history is not
+on the side of the mole-whackers.  I won't say that such automation
+is impossible, but only because of all the "impossible" things in my
+lifetime that have turned out to be possible.
 
-The RCU pathname lookup has some rather impressive performance
-upsides, and I agree that it would be good to get a lot of review and
-testing, but the latter isn't going to happen without it being
-mainlined, and the former is sadly lacking. The person I'd like most
-to review it is Al, but anybody in the filesystem world should
-basically see it as a #1 priority, because unlike all the masturbatory
-patches like xstat() that add new functionality that nobody will
-likely ever use, Nick's patchseries improves on the thing that
-everybody uses heavily every day without even thinking about it.
+And I agree that multiple approaches are likely to be needed here.
 
-Is it tough to review? Yes. It's core code, not just some random
-addition that adds a new feature and doesn't impact any old code. But
-that's also the thing that makes it meaningful, and makes me think it
-should get merged _much_ more eagerly than most code we ever see.
+> There is however a much bigger point, which is that it's unfortunately
+> black and white to talk about applications being "good" and "bad".  In
+> fact, it's a continuing point of concern I have with the whole qos
+> approach to power management.  In fact, power is often something that
+> needs to trade off against performance.  For example, an application
+> could aggressively prefetch e-mail messages or web pages that a user
+> _might_ view --- or it could aggressively pre-resolve DNS queries,
+> etc, which might make perfect sense when the device is hooked up to AC
+> mains, but which I might not want to do on when I only have 800mWh
+> worth of battery --- however, if I'm using a laptop with 94,000mWh,
+> maybe I'd be happy if the application was a bit more profligate.
+> 
+> So for Arjan to claim that all applications will be held to the same
+> standard, whether they are hooked up to the AC mains, or are limited
+> to 800mWh of battery, or 94,000 mWh worth of power, is vastly
+> oversimplifying the problem.  Of *course* if I'm writing an
+> application that will be running in a cloud data center, I'm going to
+> care about power.  But I may have different tradeoffs about what might
+> considered acceptible when considering the qualify of user experience
+> I'm delivering to the end-user when I'm connected to AC mains, versus
+> a cell phone battery, versus a 6-cell laptop battery.
 
-                           Linus
+And depending on how badly you need the application to run.  "Find me
+the nearest source of AC power!"  "Sorry, can't do that because that app
+is too poorly behaved to run when the battery is nearly exhausted."  ;-)
+
+Arjan did suggest taking user preferences into account, but we will see.
+
+> This brings me back to a major problem I have with the pm_qos approach
+> to power management.  It assumes that applications know best, and that
+> they should be free to tell pm_qos subsystem whether they need 0ms
+> latency for wireless.  Right now, I can't even query the pm_qos
+> subsystem to see which application is responsible for keeping the
+> wireless on 100% of the time!  And even if I could find out, maybe
+> some power management framework should be allowed to give a override
+> to the application's wishes.  OK, maybe the Opera web browser is
+> requesting the very best wireless QOS because it wants to beat Chrome
+> on some silly potato benchmark --- well, it's ***stupid*** to say that
+> my power management should be a one-size-fits all because applications
+> should be always as power efficient as possible whether they are
+> connected to AC mains or I have a 800mWh cell phone battery.  Worse
+> yet, it's stupid to say that the application should have the last
+> word.  Darn it, *I* own the mobile device, and I (or my proxy, which
+> might be the Android OS, or some power manage daemon) should be able
+> to say, "I don't care what the application claimed it wanted for power
+> QOS --- it's not getting more than 100ms wireless latency, and that's
+> final."
+> 
+> And note that this is something that might even change over time, or
+> depending on circumstances.  Maybe normally I might be willing to let
+> the application be profilgate with power, so that web pages render a
+> bit faster than they might otherwise --- but if I'm on an American
+> Airlines flight which has retrofitted its power jacks to use an AC
+> plug, and I only have a DC adaptor, and my laptop batteries are worn
+> out and only have half their endurance as they used to, I might want
+> to use a more stringent pm_qos than I might otherwise normally allow.
+
+Agreed!
+
+							Thanx, Paul
