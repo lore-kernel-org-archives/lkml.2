@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab0HBO40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:56:26 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44245 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab0HBO4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:56:24 -0400
-Date: Mon, 2 Aug 2010 23:56:12 +0900
-To: konrad.wilk@oracle.com
-Cc: fujita.tomonori@lab.ntt.co.jp, konrad@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        ak@linux.intel.com, akataria@vmware.com
-Subject: Re: [PATCH] swiotlb: enlarge iotlb buffer on demand
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <201008020940.09552.konrad.wilk@oracle.com>
-References: <20100731010706.GA30319@andromeda.dapyr.net>
-	<20100801120224F.fujita.tomonori@lab.ntt.co.jp>
-	<201008020940.09552.konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100802235521D.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 02 Aug 2010 23:56:13 +0900 (JST)
+	id S1752922Ab0HBO44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:56:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41340 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab0HBO4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 10:56:55 -0400
+Date: Mon, 2 Aug 2010 11:56:36 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 11/14]  perf: perf interface for uprobes
+Message-ID: <20100802145636.GI12166@ghostprotocols.net>
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
+ <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
+ <20100730191903.GD12166@ghostprotocols.net>
+ <20100802122714.GC22812@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802122714.GC22812@linux.vnet.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010 09:40:08 -0400
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+Em Mon, Aug 02, 2010 at 05:57:14PM +0530, Srikar Dronamraju escreveu:
+> Hi Arnaldo, 
+> 
+> 
+> > 
+> > The following three hunks could be moved to a separate patch that I'd
+> > apply on my perf/core branch, so to reduce this patchset size, like I
+> > did with the s/kprobe/probe/g one that is already there:
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=commitdiff;h=0e60836bbd392300198c5c2d918c18845428a1fe
+> 
+> I will soon 2 patches instead of this patch splitting the 3 hunks into
+> a new patch and the resuting patch after removing the previous 3 hunks.
 
-> I am curious about the handling of the -ENOMEM stage. Naturally we would 
-> return an error the device - are the most common ones (ahci, r8169, 
-> ata_piix - those that are DMA_32) equipped to deal with unavailable memory?
+Thanks, I'm just trying to erode the patchset by merging the completely
+uncontentious hunks. :)
 
-libata does dma mapping for ata drivers. It can handle mapping errors.
-
-Looks like r8169 can't handle errors.
-
-All drivers should handle mapping errors because IOMMUs are pretty
-common now. I think that drivers that vendor people are serious about
-can handle mapping errors.
+- Arnaldo
