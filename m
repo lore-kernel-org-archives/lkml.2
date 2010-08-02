@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab0HBMoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 08:44:32 -0400
-Received: from ausc60pc101.us.dell.com ([143.166.85.206]:54867 "EHLO
-	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab0HBMob (ORCPT
+	id S1753480Ab0HBMpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 08:45:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48556 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab0HBMpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 08:44:31 -0400
-X-Loopcount0: from 143.166.82.43
-Date: Mon, 2 Aug 2010 07:44:29 -0500
-From: Narendra K <Narendra_K@dell.com>
-To: sfr@canb.auug.org.au, jbarnes@virtuousgeek.org
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jordan_hargrave@dell.com, matt_domsch@dell.com, charles_rose@dell.com
-Subject: Re: linux-next: build warnings after merge of the pci tree
-Message-ID: <20100802124429.GA8013@auslistsprd01.us.dell.com>
-References: <EDA0A4495861324DA2618B4C45DCB3EE612CE1@blrx3m08.blr.amer.dell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 2 Aug 2010 08:45:16 -0400
+Date: Mon, 2 Aug 2010 14:45:14 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Sascha Hauer <s.hauer@pengutronix.de>,
+        Daniel Mack <daniel@caiaq.de>
+Subject: Re: [098/140] USB: ehci-mxc: bail out on transceiver problems
+Message-ID: <20100802124514.GD6193@pengutronix.de>
+References: <20100730173205.GA22581@kroah.com>
+ <20100730173111.572059486@clark.site>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xesSdrSSBC0PokLI"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <EDA0A4495861324DA2618B4C45DCB3EE612CE1@blrx3m08.blr.amer.dell.com>
-User-Agent: Mutt/1.5.9i
+In-Reply-To: <20100730173111.572059486@clark.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
-> Sent: Monday, August 02, 2010 6:49 AM
-> To: Jesse Barnes
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; K,
-> Narendra; Hargrave, Jordan
-> Subject: linux-next: build warnings after merge of the pci tree
-> 
-> Hi Jesse,
-> 
-> After merging the rr tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced lots of these warnings:
-> 
-> drivers/pci/pci.h: In function 'pci_create_firmware_label_files':
-> drivers/pci/pci.h:16: warning: 'return' with a value, in function
-> returning void
-> drivers/pci/pci.h: In function 'pci_remove_firmware_label_files':
-> drivers/pci/pci.h:18: warning: 'return' with a value, in function
-> returning void
-> 
-> Introduced by commit 911e1c9b05a8e3559a7aa89083930700a0b9e7ee ("PCI:
-> export SMBIOS provided firmware instance and label to sysfs").
-> 
-> Please build with and without the CONFIG options your new code depends
-> on ...  This adds considerably to the build noise.
 
-Jesse,
+--xesSdrSSBC0PokLI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry, I missed fixing these warnings that come when CONFIG_DMI is
-unset. I have fixed them in the below patch. Please consider it for
-inclusion.
+On Fri, Jul 30, 2010 at 10:31:03AM -0700, Greg KH wrote:
+> 2.6.33-stable review patch.  If anyone has any objections, please let us =
+know.
+>=20
+> ------------------
+>=20
+> From: Wolfram Sang <w.sang@pengutronix.de>
+>=20
+> commit 4c9715de52b9b6256bf1e9510917111a47b0c176 upstream.
+>=20
+> The old code registered the hcd even if there were no transceivers
+> detected, leading to oopses like this if we try to probe a non-existant
+> ULPI:
+>=20
+> [    2.730000] mxc-ehci mxc-ehci.0: unable to init transceiver
+> [    2.740000] timeout polling for ULPI device
+> [    2.740000] timeout polling for ULPI device
+> [    2.750000] mxc-ehci mxc-ehci.0: unable to enable vbus on transceiver
+> [    2.750000] mxc-ehci mxc-ehci.0: Freescale On-Chip EHCI Host Controller
+> [    2.760000] mxc-ehci mxc-ehci.0: new USB bus registered, assigned bus =
+number 2
+> [    2.770000] Unhandled fault: external abort on non-linefetch (0x808) a=
+t 0xc4876184
+> [    2.770000] Internal error: : 808 [#1] PREEMPT
+> [    2.770000] last sysfs file:
+> [    2.770000] Modules linked in:
+> [    2.770000] CPU: 0    Not tainted  (2.6.33.5 #5)
+> [    2.770000] PC is at ehci_hub_control+0x4d4/0x8f8
+> [    2.770000] LR is at ehci_mxc_setup+0xbc/0xdc
+> [    2.770000] pc : [<c0196dfc>]    lr : [<c019bc8c>]    psr: 00000093
+> [    2.770000] sp : c3815e40  ip : 00000001  fp : 60000013
+> [    2.770000] r10: c4876184  r9 : 00000000  r8 : c3814000
+> [    2.770000] r7 : c391d2cc  r6 : 00000001  r5 : 00000001  r4 : 00000000
+> [    2.770000] r3 : 80000000  r2 : 00000007  r1 : 80000000  r0 : c4876184
+> [    2.770000] Flags: nzcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM Segme=
+nt kernel
+> [    2.770000] Control: 0005317f  Table: a0004000  DAC: 00000017
+> [    2.770000] Process swapper (pid: 1, stack limit =3D 0xc3814270)
+> ...
+>=20
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Acked-by: Daniel Mack <daniel@caiaq.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-From: Narendra K <narendra_k@dell.com>
-Subject: [PATCH] PCI: Fix warnings when CONFIG_DMI unset
+Daniel mentioned that this patch could cause a "regression" with boards
+which have hardware problems in form of a floating chip select
+(originating from the reference design!). For such boards, the probing
+might now fail, leaving the boards without USB, while it worked before
+(although it only worked because of ignoring the actual problem).
 
-This patch fixes the below warnings introduced by the commit
-911e1c9b05a8e3559a7aa89083930700a0b9e7ee ("PCI:
-export SMBIOS provided firmware instance and label to sysfs").
+I can't make my mind if it is better to fix the potential OOPS or to
+keep those boards working for older kernels. I just wanted to mention
+it, so this is issue won't be overlooked.
 
-drivers/pci/pci.h: In function ‘pci_create_firmware_label_files’:
-drivers/pci/pci.h:16: warning: ‘return’ with a value, in function returning void
-drivers/pci/pci.h: In function ‘pci_remove_firmware_label_files’:
-drivers/pci/pci.h:18: warning: ‘return’ with a value, in function returning void
+Regards,
 
-The warnings are seen because of the below code, doing a retun 0
-from the functions 'pci_create_firmware_label_files' and
-'pci_remove_firmware_label_files' defined as void.
+   Wolfram
 
-+#ifndef CONFIG_DMI
-+static inline void pci_create_firmware_label_files(struct pci_dev *pdev)
-+{ return 0; }
-+static inline void pci_remove_firmware_label_files(struct pci_dev *pdev)
-+{ return 0; }
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Signed-off-by: Narendra K <narendra_k@dell.com>
----
- drivers/pci/pci.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+--xesSdrSSBC0PokLI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index d930338..95186ca 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -13,9 +13,9 @@ extern int pci_create_sysfs_dev_files(struct pci_dev *pdev);
- extern void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
- #ifndef CONFIG_DMI
- static inline void pci_create_firmware_label_files(struct pci_dev *pdev)
--{ return 0; }
-+{ return; }
- static inline void pci_remove_firmware_label_files(struct pci_dev *pdev)
--{ return 0; }
-+{ return; }
- #else
- extern void pci_create_firmware_label_files(struct pci_dev *pdev);
- extern void pci_remove_firmware_label_files(struct pci_dev *pdev);
--- 
-1.7.0.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-With regards,
-Narendra K
+iEYEARECAAYFAkxWvdoACgkQD27XaX1/VRsnuQCfUL8+X7MEkzyanQOXppYiK3Ei
+4EIAnjAAR+TC3rAJAj4klAe+p3E4S67O
+=xz2z
+-----END PGP SIGNATURE-----
+
+--xesSdrSSBC0PokLI--
