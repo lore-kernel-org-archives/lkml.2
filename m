@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab0HBUAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:00:35 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:51859 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab0HBUAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:00:33 -0400
-Date: Mon, 2 Aug 2010 15:59:40 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Mike Christie <michaelc@cs.wisc.edu>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jayamohan Kallickal <jayamohank@serverengines.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (scsi-post-merge tree related)
-Message-ID: <20100802195940.GC32503@andromeda.dapyr.net>
-References: <20100803024445.0bf7ec86.sfr@canb.auug.org.au> <20100803024701.b3dff69a.sfr@canb.auug.org.au> <1280768048.2843.242.camel@mulgrave.site> <4C570464.9010204@cs.wisc.edu> <20100802185925.GA32503@andromeda.dapyr.net> <4C5717E6.8010805@cs.wisc.edu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C5717E6.8010805@cs.wisc.edu>
-User-Agent: Mutt/1.5.9i
+	id S1755207Ab0HBUE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:04:58 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54609 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755146Ab0HBUE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 16:04:57 -0400
+Message-ID: <4C5724E8.9010204@kernel.dk>
+Date: Mon, 02 Aug 2010 22:04:56 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
+        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and
+ SWRITE  to match the corresponding BIO_RW_* bits
+References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net>	<4C52A98A.7060507@kernel.org> <20100802104227.79340b49@notabene> <4C56D397.8010305@kernel.org>
+In-Reply-To: <4C56D397.8010305@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >Yikes. Last minute change, eh?
-> 
-> I do not know what you mean. The patches always had iscsi_boot_sysfs in 
-> the firmware dir. You mean this is a last minute change?
+On 08/02/2010 04:17 PM, Tejun Heo wrote:
+> Aieee... thanks for root causing it Neil.  That was a stupid bug.  I
+> knew that READ/WRITE were hardcoded but forgot about READA.  :-(
+> Moving BIO_RW_AHEAD back to bit 1 might be a better solution but I'm
+> afraid that would cause more confusions downstream.  This patch
+> updates READA and SWRITE to match BIO_RW_AHEAD and should also appear
+> in -stable releases.  The next patch will create bio_types.h and
+> define all constants in terms of BIO_RW_*.
 
-Yes, this rename.
-> 
-> >
-> >>interface is generic and should be used on any arch and with anything
-> >>(ibft or iscsi driver) that wants to export iscsi boot info. The
-> >>attached patch moves iscsi_boot_sysfs to drivers/scsi. It was made over
-> >>linux-next. I have only compile tested it.
-> >
-> >did you compile test it with the x86 native iBFT driver?
-> 
-> Yes.
+Tejun, care to resend these against for-2.6.36? We can reference
+these for the stable backport (at least the first one should go in).
 
-Excellent. The patch does not look like it has changed at all, so:
+-- 
+Jens Axboe
 
- 1). Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
-   for the removal from firmware/ibft, and
- 2). Reviewed-by: Konrad Rzeszutek Wilk <konrad@kernel.org> for the
- the part that puts in drivers/scsi and will make it now under James'
- mainternship.
-
-James,
-
-I've asked Linus to pull my iBFT tree before yours as there was this
-dependency. Are you OK putting this patch in your tree, or would you prefer
-that I expunge Mike's patch from mine?
-
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
