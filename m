@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab0HBAcU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 20:32:20 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55847 "EHLO e6.ny.us.ibm.com"
+	id S1752265Ab0HBAeE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 20:34:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43660 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab0HBAcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 20:32:18 -0400
-Date: Sun, 1 Aug 2010 17:32:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100802003212.GR2470@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <Pine.LNX.4.44L0.1007311544470.5418-100000@netrider.rowland.org>
- <201008011741.31086.rjw@sisk.pl>
- <20100801195617.GN2470@linux.vnet.ibm.com>
- <201008020044.57155.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008020044.57155.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751982Ab0HBAeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 20:34:01 -0400
+Date: Mon, 2 Aug 2010 10:33:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: linux-next: build failure after merge of the final tree (kvm
+ tree related)
+Message-Id: <20100802103350.9b1b8ff2.sfr@canb.auug.org.au>
+In-Reply-To: <20100726142725.fbc5d94e.sfr@canb.auug.org.au>
+References: <20100726142725.fbc5d94e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 12:44:56AM +0200, Rafael J. Wysocki wrote:
-> On Sunday, August 01, 2010, Paul E. McKenney wrote:
-> > On Sun, Aug 01, 2010 at 05:41:30PM +0200, Rafael J. Wysocki wrote:
-> > > On Saturday, July 31, 2010, Alan Stern wrote:
-> > > > On Sat, 31 Jul 2010, Paul E. McKenney wrote:
-> ... 
-> > > > On Android this goes somewhat farther.  IIUC, they want hardly anything 
-> > > > to run while the display is powered off.  (But my understanding could 
-> > > > be wrong.)
-> > > 
-> > > Not really.  Quite a lot of things happen on these systems while the display
-> > > is off (let alone the periodic battery monitoring on Nexus One :-)).  They
-> > > can send things over the network and do similar stuff in that state.
-> > > 
-> > > I think the opposite is true, ie. the display is aggressively turned off
-> > > whenever it appears not to be used, because it draws a lot of power.
-> > 
-> > Fair enough.  It appears to me that Android won't suspend if the display
-> > is on, but I could easily be confused here.
-> 
-> That's correct.  In fact, Android uses a special mechanism called "early
-> suspend" (or similar) to suspend the display and some other devices before the
-> "real" suspend happens.
+--Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sounds good!
+Hi Avi, Marcelo,
 
-> ...
-> > > > > o	Power-naive applications must be prohibited from controlling
-> > > > > 	the system power state.  One acceptable approach is through
-> > > > > 	use of group permissions on a special power-control device.
-> > > > 
-> > > > You mean non-power-aware applications, not power-naive applications.  
-> > > > But then the statement is redundant; it follows directly from the
-> > > > definition of "power-aware".
-> > > 
-> > > Agreed.
-> > 
-> > OK, but I still believe that an enforcement mechanism is required.
-> 
-> The requirement is that power-oblivious applications should not participate
-> in deciding whether or not to put the system into a sleep state which is pretty
-> much by definition.
+On Mon, 26 Jul 2010 14:27:25 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the final tree, today's linux-next build (powerpc
+> ppc44x_defconfig) failed like this:
+>=20
+> cc1: warnings being treated as errors
+> arch/powerpc/kvm/44x_tlb.c: In function 'kvmppc_mmu_map':
+> arch/powerpc/kvm/44x_tlb.c:319: error: format '%lx' expects type 'long un=
+signed int', but argument 2 has type 'gfn_t'
+>=20
+> Caused by commit 05c07e00b15e00632a2502dcbf253415449e89da ("KVM: Use u64
+> for frame data types").  I applied the following patch for today:
+>=20
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 26 Jul 2010 14:25:12 +1000
+> Subject: [PATCH] kvm: u64's should be printed with %llx
 
-I moved this into the definitions section -- you and Alan convince me.  ;-)
+Ping?
 
-> > > > > o	Statistics of the power-control actions taken by power-aware
-> > > > > 	applications must be provided, and must be keyed off of program
-> > > > > 	name.
-> > > > > 
-> > > > > o	Power-aware applications can make use of power-naive infrastructure.
-> > > > > 	This means that a power-aware application must have some way,
-> > > > > 	whether explicit or implicit, to ensure that any power-naive
-> > > > > 	infrastructure is permitted to run when a power-aware application
-> > > > > 	needs it to run.
-> > > > > 
-> > > > > o	When a power-aware application is preventing the system from
-> > > > > 	shutting down, and is also waiting on a power-naive application,
-> > > > > 	the power-aware application must set a timeout to handle
-> > > > > 	the possibility that the power-naive application might halt
-> > > > > 	or otherwise fail.  (Such timeouts are also used to limit the
-> > > > > 	number of kernel modifications required.)
-> > > > 
-> > > > No, this is not a requirement.  A power-optimized application would do 
-> > > > this, of course, by definition.  But a power-aware application doesn't 
-> > > > have to.
-> > > 
-> > > Agreed.
-> > 
-> > Again, this requirement was explicitly called out by the Android folks.
-> 
-> Rather, there should be a mechanism allowing PM-driving applications to do
-> that, but they are not required to use that mechanism.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Fair enough!  I moved this into a new section that I am currently calling
-"SUGGESTED USAGE".
+--Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU
+Content-Type: application/pgp-signature
 
-							Thanx, Paul
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMVhJuAAoJEDMEi1NhKgbsO+YH/1G2ZgXeyCQhhOK/ND9bErg5
+5fjNEBwn0FnVXrz4ftb+IJAtrjg0pj+FgifdfW25QTUI1G5j8m2MrP7+QEd/Ov9T
+CwcE8CnOnfGJe/GIG9i0Xja8bTsdXn2F3iKX4nWZsG83ozPHfRZG2ZY7r68HArak
+kyYTZYsMSC3Mtea+rWOYF2BqvJuHYaplV9FVWsdOCi4mqn68brnBsDcZQmh1pdrP
+/NqcieN35dh0zPIa0dw8NlPuuNByCq42cOu9JgaUl6naXoeyWzlkH3+hbvakJJVG
+qNYBafO8X1r4GVwLiGOSInonunzHolhPbIDSSABqBZN4/8fi223jQ4VYew30VX0=
+=gtSr
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Aug_2010_10_33_50_+1000_2b=M6JtHd7WoB0uU--
