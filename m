@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab0HBUur (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:50:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65109 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab0HBUuq (ORCPT
+	id S1755342Ab0HBUvY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:51:24 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:55889 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab0HBUvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:50:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=r1N9aO7sIP1QTyfBMlMkfCgzE0IrYPUiTzkHLTf8h2Wy3RwDzi3KdUyPjnBeg9bFAD
-         HqPJQJmzcILV3EZwlsbXIR3yl4H3AR2c/s73Uf+5ryI+w9suDLFo0znWbx+wskE9MR/9
-         zDW52r86UQqwlvv+LmdDwu6UTgSnBiEXmSYE4=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]hostap:hostap_hw.c Fix typo.
-Date: Mon,  2 Aug 2010 13:50:43 -0700
-Message-Id: <1280782243-14778-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+	Mon, 2 Aug 2010 16:51:23 -0400
+Date: Mon, 2 Aug 2010 22:51:21 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Thomas Backlund <tmb@mandriva.org>
+Cc: Michal Marek <mmarek@suse.cz>, linuxppc-dev@ozlabs.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        bug-make@gnu.org
+Subject: Re: make 3.82 fails on powerpc defconfig update [was: Linux 2.6.35]
+Message-ID: <20100802205121.GA16520@merkur.ravnborg.org>
+References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com> <4C5686FF.9010803@mandriva.org> <20100802182848.GA16394@merkur.ravnborg.org> <4C572EB0.7060706@mandriva.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C572EB0.7060706@mandriva.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below fixes a typo in a comment.
+> 
+> Thanks, this seems to fix the first issue, but then I get the same erro on the following line 190:
+> 
+> 190: bootwrapper_install %.dtb:
+> 191:        $(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
+> 
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Obviously - dunno how I missed that.
+Updated patch below.
 
----
- drivers/net/wireless/hostap/hostap_hw.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I will do a proper submission after you
+confirm that powerpc build is working with make 3.82.
 
-diff --git a/drivers/net/wireless/hostap/hostap_hw.c b/drivers/net/wireless/hostap/hostap_hw.c
-index 2f999fc..e9d9d62 100644
---- a/drivers/net/wireless/hostap/hostap_hw.c
-+++ b/drivers/net/wireless/hostap/hostap_hw.c
-@@ -1896,7 +1896,7 @@ fail:
- /* Some SMP systems have reported number of odd errors with hostap_pci. fid
-  * register has changed values between consecutive reads for an unknown reason.
-  * This should really not happen, so more debugging is needed. This test
-- * version is a big slower, but it will detect most of such register changes
-+ * version is a bit slower, but it will detect most of such register changes
-  * and will try to get the correct fid eventually. */
- #define EXTRA_FID_READ_TESTS
+	Sam
+
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 77cfe7a..ace7a3e 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -163,9 +163,11 @@ drivers-$(CONFIG_OPROFILE)	+= arch/powerpc/oprofile/
+ # Default to zImage, override when needed
+ all: zImage
  
--- 
-1.7.1.rc1.21.gf3bd6
-
+-BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
++# With make 3.82 we cannot mix normal and wildcard targets
++BOOT_TARGETS1 := zImage zImage.initrd uImaged
++BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
+ 
+-PHONY += $(BOOT_TARGETS)
++PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
+ 
+ boot := arch/$(ARCH)/boot
+ 
+@@ -180,10 +182,16 @@ relocs_check: arch/powerpc/relocs_check.pl vmlinux
+ zImage: relocs_check
+ endif
+ 
+-$(BOOT_TARGETS): vmlinux
++$(BOOT_TARGETS1): vmlinux
++	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
++$(BOOT_TARGETS2): vmlinux
++	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
++
++
++bootwrapper_install
+ 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
+ 
+-bootwrapper_install %.dtb:
++%.dtb:
+ 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
+ 
+ define archhelp
