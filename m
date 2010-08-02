@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab0HBSqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:46:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53850 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab0HBSqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:46:17 -0400
-Message-ID: <4C57135F.4070404@ontolinux.com>
-Date: Mon, 02 Aug 2010 20:50:07 +0200
-From: Christian Stroetmann <stroetmann@ontolinux.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	id S1754531Ab0HBSrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:47:24 -0400
+Received: from THUNK.ORG ([69.25.196.29]:46731 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752102Ab0HBSrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:47:23 -0400
+Date: Mon, 2 Aug 2010 14:47:13 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: peterz@infradead.org, swetland@google.com, linux-kernel@vger.kernel.org,
+        florian@mickler.org, linux-pm@lists.linux-foundation.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100802184712.GA25653@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	James Bottomley <James.Bottomley@suse.de>, peterz@infradead.org,
+	swetland@google.com, linux-kernel@vger.kernel.org,
+	florian@mickler.org, linux-pm@lists.linux-foundation.org,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, tglx@linutronix.de,
+	alan@lxorguk.ukuu.org.uk, Arjan van de Ven <arjan@infradead.org>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100731215214.2543c07e@infradead.org>
+ <20100801054816.GI2470@linux.vnet.ibm.com>
+ <20100731230101.7cc1d8c7@infradead.org>
+ <20100801191228.GL2470@linux.vnet.ibm.com>
+ <20100801204026.GH31324@thunk.org>
+ <1280705444.25620.62.camel@mulgrave.site>
+ <20100802121241.GE27573@thunk.org>
+ <1280767880.2843.237.camel@mulgrave.site>
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: Preview of changes to the Security susbystem for 2.6.36
-References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org> <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org> <20100802063224.GR3948@outflux.net> <alpine.LRH.2.00.1008021639230.32603@tundra.namei.org> <20100802065746.GS3948@outflux.net> <4C569BCA.3050603@ontolinux.com> <20100802180859.GA29948@hallyn.com>
-In-Reply-To: <20100802180859.GA29948@hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:l5rQzWMbMpsuPLq2Xj3L3pJBjtE+x8CLIzb9b/vg/wr
- VDqJunY1HftGWjZGpC0sViZJZTg+kaPWfPFJ4HuWJhD8SpmOTQ
- I5dNVpJmUEy6rYOYTXs5rzTTWnrL7w1J+ykeTADZ/NAEKVoR0F
- 7NpKRLgYeSlCQwduxzbL8BMwXeklKtTh9WeeJ6u9f6wuIkfj0e
- bWilxrTBjSaAwJM/Lam7w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280767880.2843.237.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aloha Serge;
-On the 02.08.2010 20:08, Serge E. Hallyn wrote:
-> Quoting Christian Stroetmann (stroetmann@ontolinux.com):
->    
->> Aloha James, Aloha Kees;
->> Ont the 02.08.2010 08:57,  Kees Cook wrote:
->>      
->>> On Mon, Aug 02, 2010 at 04:41:08PM +1000, James Morris wrote:
->>>        
->>>> On Sun, 1 Aug 2010, Kees Cook wrote:
->>>>          
->>>>> Well, at least I'll have something for my summit presentation again.
->>>>>
->>>>> On the other hand, it's rather hard for me to defend against a private NAK.
->>>>>            
->> A private NAK against a company's developer's OK
->> Where is the difference private and company? I thought that it
->> doesn't matter who and what a developer is, and where she/he comes
->> from.
->>      
-> That's not what private means in this case.  A private nak is one made
-> in a private email, so that the list - and the submitter - can't see the
-> rationale.  It is problematic because it doesn't really allow the other
-> party to address the objection.
->
-> (No big deal - Christoph has since responded in public.)
->
->    
+On Mon, Aug 02, 2010 at 11:51:20AM -0500, James Bottomley wrote:
+> Actually, I don't necessarily agree with this.  In fact, I think it's a
+> dangerous proposition.  The reason is that the only class of
+> applications I've seen usefully made power aware are some of the system
+> housekeeping ones (as in don't index my man pages, prelink my binaries
+> etc. when I'm on battery power).  Perhaps I could see things that have
+> to poll (like imap without push support on the server) do a "poll when
+> woken else every X minutes", but the potential for annoying the user by
+> doing the wrong thing on power environment change is huge.
 
-Sorry, but AFAIK the NAK by Christoph that I meant was written in a 
-public e-mail with full context to the LSM mailing list some weeks ago 
-around the end of June (23 June 2010?!) and I thought Kees meant this 
-NAK. :D
+Sure, but that's why you need to let the user choose.  They can decide
+between, "behave as if you were on AC", and "try to save power as much
+as possible", and maybe one or two points in between, and let them
+choose how much performance/battery life they are willing to give up.
+If they are on a long flight to Europe/Australia with no power, they
+might choose a very different tradeoff point than if they know they
+are only going to be in the meeting room for an hour before they can
+recharge their battery.
 
-But thanks for trying to clearify the case.
+The point is you can annoy users by burning power to improve their
+"user experience" just as much as you can annoy users by trying to sip
+power as delicately as possible.  It's true that many applications
+don't do a lot in this space, but that's mainly becaue of application
+laziness.  Which is why I really don't buy Arjan's whack-a-mole
+approach to solving the problem.  I *know* I can save tons of power by
+doing "killall -STOP firefox" when I don't need to use the browser.
+I've don't the power management when I've been carefully nursing my
+battery while at a conference.  So I have no problem if the system
+does that automatically for me when I switch to a different virtual
+console --- in fact, I'd prefer it!  Similarly, having tools which
+forcibly choose different pm_qos settings, even if it's not what the
+applications want, is things that *can* very much make a difference.
 
-Sorry Kees, if you indeed meant with private NAK a NAK made in a private 
-e-mail.
+So yes, maybe applications won't do much with that.  But that just
+reinforces the argument that it's the framework or the kernel that
+needs to do these sorts of things, because the application programers
+won't.
 
-Have fun
-Christian Stroetmann
+							- Ted
