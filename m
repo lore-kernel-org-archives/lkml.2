@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab0HBTxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 15:53:36 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:51613 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab0HBTxe (ORCPT
+	id S1755169Ab0HBUAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:00:23 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34699 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab0HBUAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 15:53:34 -0400
-Date: Mon, 2 Aug 2010 15:52:48 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek <konrad@hera.kernel.org>, torvalds@linux-foundation.org,
-        James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
-        pjones@redhat.com, lenb@kernel.org, michaelc@cs.wisc.edu
-Subject: Re: [GIT PULL] iBFT features for v2.6.36
-Message-ID: <20100802195248.GB32503@andromeda.dapyr.net>
-References: <20100802143642.GA15428@hera.kernel.org> <4C570CDD.5070304@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C570CDD.5070304@zytor.com>
-User-Agent: Mutt/1.5.9i
+	Mon, 2 Aug 2010 16:00:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=V+DagO2i5gDf0pgznFKnTX5b83jDNBu4zyJonrZC7JHsLYloGqzwNpv1bBRYbp18ui
+         ttRpP/qqzAzy6tF9yFK0CHSTiTwa/h8XFinGNQIN6mfZQr4hJFu+BAnJayrtM/YADmPX
+         XeH0WG9RbwsBzseCP+muj0emTUD56/txQDmQc=
+MIME-Version: 1.0
+Date: Mon, 2 Aug 2010 15:00:19 -0500
+Message-ID: <AANLkTinSL+50rE7XtYv6uoYpF0sM6tHSwrjJA24+51wr@mail.gmail.com>
+Subject: [GIT PULL] 9p file system changes for the 2.6.36 merge window
+From: Eric Van Hensbergen <ericvh@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 11:22:21AM -0700, H. Peter Anvin wrote:
-> On 08/02/2010 07:36 AM, Konrad Rzeszutek wrote:
-> > What is iBFT?
-> > The iBFT is an equivalent to the Boot Flag, except that its geared
-> > towards iSCSI and hence requires much more information (such as
-> > the IP of target, passwords, which device to login, etc). iBFT
-> > is a data structure populated by the BIOS or the NIC to contain this
-> > so that the OS can read it and login to the iSCSI and present
-> > the boot device to the initrd for mounting / FS.
-> 
-> I really don't see iBFT as equivalent to the boot flag at all.  The boot
+Linus,
+   Please pull the following changes which represent the 9p changes
+for the 2.6.36
+merge window.  The bulk of the changes are related to support for a
+new Linux-specific
+variant of the 9P2000 protocol (9P2000.L) which include new extensions
+supporting
+extended attributes, and tighter mapped bindings for things like
+supporting links,
+symbolic links, special files, and Linux specific modes and
+permissions.  Also included
+are changes meant to address concerns you and Al Viro made with
+respect to our path
+resolution routines.
 
-I think for somebody who might confuse iBFT with a bar of soap
-the "equivalant" will put them in the right frame of mind. And yes
-it is not equivalant at all, should have said something like 'remotely akin' :-)
+     Thanks,
+         -eric
 
-> flag returns the status of the previous boot attempt; iBFT contains
-> information about where to find the current root.
-> 
-> Unfortunately, we're increasingly seeing a proliferation of this kind of
-> nonstandard ACPI tables, because it is difficult to add data to ACPI at
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+  Linus Torvalds (1):
+        Linux 2.6.35
 
-Keep in mind that iBFT is now a standard (woot!)
+are available in the git repository at:
 
-> runtime.  gPXE creates an aBFT table for AoE and sBFT for SRP, and
-> memdisk uses mBFT for MEMDISK at the moment.
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
 
-Oh man, didn't know those existed at all.
-> 
-> It would be good to have some kind of common structure framework for these.
+Aneesh Kumar K.V (7):
+      net/9p: Handle the server returned error properly
+      fs/9p: Pass the correct user credentials during attach
+      net/9p: Implement attrwalk 9p call
+      net/9p: Implement TXATTRCREATE 9p call
+      fs/9p: Add support user. xattr
+      fs/9p: Prevent parallel rename when doing fid_lookup
+      fs/9p: destroy fid on failed remove
 
-I need to grok those tables some more to figure out what they all do.
+Dan Carpenter (1):
+      9p: strlen() doesn't count the terminator
+
+Eric Van Hensbergen (3):
+      9p: Define and implement TLINK for 9P2000.L
+      fs/9p: remove sparse warning in vfs_inode
+      9p: fix sparse warnings in new xattr code
+
+Fang Wenqi (1):
+      virtio_9p.h needs <linux/types.h>
+
+M. Mohan Kumar (4):
+      9p: Make use of iounit for read/write
+      9p: Implement TMKNOD
+      9p: Implement TMKDIR
+      9p: Implement LOPEN
+
+Sripathi Kodi (3):
+      9p: readdir implementation for 9p2000.L
+      9p: getattr client implementation for 9P2000.L protocol.
+      9p: Implement client side of setattr for 9P2000.L protocol.
+
+Venkateswararao Jujjuri (JV) (3):
+      9p: Define and implement TLINK for 9P2000.L
+      9p: Define and implement TSYMLINK for 9P2000.L
+      fs/9p: This patch implements TLCREATE for 9p2000.L protocol.
+
+ fs/9p/Makefile            |    4 +-
+ fs/9p/fid.c               |  111 +++++--
+ fs/9p/v9fs.c              |    3 +-
+ fs/9p/v9fs.h              |    1 +
+ fs/9p/v9fs_vfs.h          |    1 +
+ fs/9p/vfs_dir.c           |  134 +++++++-
+ fs/9p/vfs_file.c          |   26 +-
+ fs/9p/vfs_inode.c         |  757 +++++++++++++++++++++++++++++++++++++++++++--
+ fs/9p/vfs_super.c         |   50 ++--
+ fs/9p/xattr.c             |  160 ++++++++++
+ fs/9p/xattr.h             |   27 ++
+ fs/9p/xattr_user.c        |   80 +++++
+ include/linux/virtio_9p.h |    1 +
+ include/net/9p/9p.h       |  113 +++++++
+ include/net/9p/client.h   |   33 ++
+ net/9p/client.c           |  393 +++++++++++++++++++++++-
+ net/9p/protocol.c         |   72 +++++
+ net/9p/trans_fd.c         |    2 +-
+ 18 files changed, 1845 insertions(+), 123 deletions(-)
+ create mode 100644 fs/9p/xattr.c
+ create mode 100644 fs/9p/xattr.h
+ create mode 100644 fs/9p/xattr_user.c
