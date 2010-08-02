@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab0HBXnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 19:43:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36725 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab0HBXnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 19:43:07 -0400
-Date: Mon, 2 Aug 2010 23:42:46 GMT
-From: tip-bot for Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        shaohua.li@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, shaohua.li@intel.com, hpa@linux.intel.com
-In-Reply-To: <20100802004934.GA2505@sli10-desk.sh.intel.com>
-References: <20100802004934.GA2505@sli10-desk.sh.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso: Unmap vdso pages
-Message-ID: <tip-be783a47214afc5a0aea9dafcbd9f1535ba05e94@git.kernel.org>
-Git-Commit-ID: be783a47214afc5a0aea9dafcbd9f1535ba05e94
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 23:42:46 +0000 (UTC)
+	id S1752284Ab0HBXt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 19:49:57 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:36603 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab0HBXt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 19:49:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 3 Aug 2010 08:45:00 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        gthelen@google.com, m-ikeda@ds.jp.nec.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/7][memcg] virtually indexed array library.
+Message-Id: <20100803084500.8bf99ff2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100802180051.GX3863@balbir.in.ibm.com>
+References: <20100727165155.8b458b7f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100727165303.7d7d18e9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100728124513.85bfa047.akpm@linux-foundation.org>
+	<20100729093226.7b899930.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100729132703.2d53e8a4.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100802180051.GX3863@balbir.in.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  be783a47214afc5a0aea9dafcbd9f1535ba05e94
-Gitweb:     http://git.kernel.org/tip/be783a47214afc5a0aea9dafcbd9f1535ba05e94
-Author:     Shaohua Li <shaohua.li@intel.com>
-AuthorDate: Mon, 2 Aug 2010 08:49:34 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 2 Aug 2010 15:11:59 -0700
+On Mon, 2 Aug 2010 23:30:51 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 
-x86, vdso: Unmap vdso pages
+> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-07-29 13:27:03]:
+> 
+> > On Thu, 29 Jul 2010 09:32:26 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > On Wed, 28 Jul 2010 12:45:13 -0700
+> > > Andrew Morton <akpm@linux-foundation.org> wrote:
+> > 
+> > > > My gut reaction to this sort of thing is "run away in terror".  It
+> > > > encourages kernel developers to operate like lackadaisical userspace
+> > > > developers and to assume that underlying code can perform heroic and
+> > > > immortal feats.  But it can't.  This is the kernel and the kernel is a
+> > > > tough and hostile place and callers should be careful and defensive and
+> > > > take great efforts to minimise the strain they put upon other systems.
+> > > > 
+> > > > IOW, can we avoid doing this?
+> > > > 
+> > > 
+> > 
+> > I'll use pre-allocated pointer array in the next version. It's simple even
+> > if a bit slow.
+> > 
+> > ==
+> > struct mem_cgroup *mem_cgroups[CONFIG_MAX_MEM_CGROUPS] __read_mostly;
+> > #define id_to_memcg(id)		mem_cgroups[id];
+> > ==
+> 
+> Hmm.. I thought we were going to reuse css_id() and use that to get to
+> the cgroup. May be I am missing something.
+> 
+?
+lookup_css_id() requires multi-level table lookup because of radix-tree.
+And compiler can't generate an optimized code. linear table lookup is quick.
 
-We mapped vdso pages but never unmapped them and the virtual address
-is lost after exiting from the function, so unmap vdso pages here.
+-Kame
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-LKML-Reference: <20100802004934.GA2505@sli10-desk.sh.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/vdso/vma.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index ac74869..80f23ed 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -67,6 +67,7 @@ static int __init init_vdso_vars(void)
- 	*(typeof(__ ## x) **) var_ref(VDSO64_SYMBOL(vbase, x), #x) = &__ ## x;
- #include "vextern.h"
- #undef VEXTERN
-+	vunmap(vbase);
- 	return 0;
- 
-  oom:
