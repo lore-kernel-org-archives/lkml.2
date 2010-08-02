@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab0HBHpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:45:21 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16190
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753213Ab0HBHpS (ORCPT
+	id S1753265Ab0HBHqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:46:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55683 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab0HBHq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:45:18 -0400
-X-SpamScore: -36
-X-BigFish: VS-36(zz1432N98dN936eM1447Rzz1202hzz15d4Rz32i2a8h87h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L6ILJ6-02-0Y3-02
-X-M-MSG: 
-Date: Mon, 2 Aug 2010 09:48:12 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Message-ID: <20100802074812.GM24084@amd.com>
-References: <ea4bbdecc271f7fa5749d09645f38c0d.squirrel@www.codeaurora.org>
- <bad58db98c165a61860827d4e720acf8.squirrel@www.codeaurora.org>
- <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
- <201007291026.55928.arnd@arndb.de>
- <1280546124.1902.30.camel@pasglop>
+	Mon, 2 Aug 2010 03:46:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=a0NzQFzHhF1qjwD3askOIY/TREwtK98rP0yoRL7P1oRW0wgVwMU7RpxvanUpWLyqDi
+         FS3hJoIRlRnqVEkoN1k8NYO6TKZfsZaMGWLX5gfAlT0jN2ZTutTWEXT7cSmTxnvvf7Pv
+         joorQ2Gv9UdLdivLB0gpMZHkw9igsPQx8Bu7M=
+Date: Mon, 2 Aug 2010 09:46:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 9/14]  trace: uprobes trace_event
+	interface
+Message-ID: <20100802074619.GA5292@nowhere>
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6> <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6> <4C510BCE.4010704@hitachi.com> <20100802022055.GB5581@nowhere> <4C563F44.9080300@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1280546124.1902.30.camel@pasglop>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <4C563F44.9080300@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 11:15:24PM -0400, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-07-29 at 10:26 +0200, Arnd Bergmann wrote:
-> > Exactly, thanks for the clarification. I also didn't realize that
-> > there
-> > is now an include/linux/iommu.h file that only describes the PCI
-> > SR-IOV
-> > interfaces, unlike the generic IOMMU support that we have in your
-> > include/linux/dma-mapping.h file.
+On Mon, Aug 02, 2010 at 12:45:08PM +0900, Masami Hiramatsu wrote:
+> Frederic Weisbecker wrote:
+> > On Thu, Jul 29, 2010 at 02:04:14PM +0900, Masami Hiramatsu wrote:
+> >> Srikar Dronamraju wrote:
+> >>> diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+> >>> index c681fa7..16e2a8c 100644
+> >>> --- a/kernel/trace/Kconfig
+> >>> +++ b/kernel/trace/Kconfig
+> >>> @@ -482,6 +482,22 @@ config RING_BUFFER_BENCHMARK
+> >>>  
+> >>>  	  If unsure, say N.
+> >>>  
+> >>> +config UPROBE_EVENT
+> >>> +	bool "Enable uprobes-based dynamic events"
+> >>> +	depends on ARCH_SUPPORTS_UPROBES
+> >>> +	depends on MMU
+> >>> +	select UPROBES
+> >>> +	select PROBE_EVENTS
+> >>> +	select TRACING
+> >>> +	default n
+> >>> +	help
+> >>> +	  This allows the user to add tracing events on top of userspace dynamic
+> >>> +	  events (similar to tracepoints) on the fly via the traceevents interface.
+> >>> +	  Those events can be inserted wherever uprobes can probe, and record
+> >>> +	  various registers.
+> >>> +	  This option is required if you plan to use perf-probe subcommand of perf
+> >>> +	  tools on user space applications.
+> >>> +
+> >> Possible enhancement: Moving this config right after KPROBE_EVENT, because
+> >>  those two provide similar dynamic events.
+> >>
+> >> Thank you,
 > > 
-> > Maybe we should rename linux/iommu.h to something more specific so we
-> > can reduce this confusion in the future.
+> > 
+> > In fact this could be a menu "Dynamic Probes", perhaps default off, inside
+> > which Kprobes and Uprobes would be default on (but depend on "Dynamic Probes").
+> > 
+> > So that you can quickly enable them all in one.
 > 
-> Hrm, indeed I just noticed that. Pretty gross... it should definitly be
-> renamed, is will caused endless confusion with unrelated iommu.h and
-> iommu_* interfaces which represent something different.
+> Hmm, I disagree with it, because both Kprobes and Uprobes provides
+> APIs for modules too.
 
-The first direction to go should be trying to unify all the different
-iommu* interfaces into the iommu-api. The generic api will definitly
-need to be extended for that, but since it is an in-kernel interface
-thats no problem.
 
--- 
-Joerg Roedel - AMD Operating System Research Center
+I'm not sure there is a point in maintaining a leightweight version
+for out of tree code. These modules could just select kprobes/uprobes
+events as well.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+As you prefer, that was just a suggestion to make it more simple.
+
+
+
+> 
+> I'd like to suggest below config tree
+> 
+> Kenrel hacking
+>   - Kprobes
+>   - Uprobes
+>   - Tracing
+>      -- Dynamic Events
+>         depends on Kprobes || Uprobes
+
+
+Yep, that version looks good.
 
