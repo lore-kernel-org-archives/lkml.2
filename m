@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab0HBOab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:30:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53309 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab0HBOaa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:30:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bMxbn4MWdfYkW6r6gdLS/+ZMt2tF+Re39eoAFnNzd9irwteUmocak5/qy/Z3MuL9Zf
-         oqw5MSpnM1hzWk8Z80vDw6zUxLlC3P/syA7DzEr8oQ3RqirUwbgN74m+QmjU45OZ38Ik
-         SpQM02DWad+R0LegmBFrORMrsyhiNPeIxNnBg=
+	id S1751366Ab0HBOiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:38:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46994 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751077Ab0HBOiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 10:38:04 -0400
+Date: Mon, 2 Aug 2010 14:36:42 +0000
+From: Konrad Rzeszutek <konrad@hera.kernel.org>
+To: torvalds@linux-foundation.org
+Cc: James.Bottomley@suse.de, linux-kernel@vger.kernel.org, pjones@redhat.com,
+        lenb@kernel.org, michaelc@cs.wisc.edu
+Subject: [GIT PULL] iBFT features for v2.6.36
+Message-ID: <20100802143642.GA15428@hera.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1280751836-1826-1-git-send-email-dfeng@redhat.com>
-References: <20100729130707.GA31154@shamino.rdu.redhat.com>
-	<1280751836-1826-1-git-send-email-dfeng@redhat.com>
-Date: Mon, 2 Aug 2010 16:30:28 +0200
-Message-ID: <AANLkTimk=LXAv_AS62y3a41_irkRzpwWUCeo5So7AzAh@mail.gmail.com>
-Subject: Re: [RFC PATCH V2] core_pattern: fix long parameters was truncated by 
-	core_pattern handler
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Xiaotian Feng <dfeng@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Roland McGrath <roland@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 14:36:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +                               rc = snprintf(NULL, 0, "%s", current->comm);
+Hi Linus,
 
-rc = strlen(current->comm) would be smaller
+This pull requests consists of features to the iBFT driver. Specifically:
 
--- 
-vda
+ - support v1.03 of the spec. The spec in question is available at:
+   ftp://ftp.software.ibm.com/systems/support/bladecenter/iscsi_boot_firmware_table_v1.03.pdf
+ - separate the iBFT parsing from the SysFS interface.
+
+These patches have been through a few rounds of review and have been in
+linux-next for two months. James Bottomley is using this tree in his
+branch for the BNX2 driver, so please merge these patches before his.
+
+It's all at:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft-2.6.git for-linus
+
+Thanks,
+
+Konrad
+
+Konrad Rzeszutek Wilk (1):
+      ibft: For UEFI machines actually do scan ACPI for iBFT.
+
+Mike Christie (2):
+      ibft: separate ibft parsing from sysfs interface
+      ibft: convert iscsi_ibft module to iscsi boot lib
+
+Peter Jones (2):
+      ibft: Update iBFT handling for v1.03 of the spec.
+      ibft: Use IBFT_SIGN instead of open-coding the search string.
+
+ drivers/firmware/Kconfig            |    9 +
+ drivers/firmware/Makefile           |    1 +
+ drivers/firmware/iscsi_boot_sysfs.c |  481 +++++++++++++++++++++++
+ drivers/firmware/iscsi_ibft.c       |  726 +++++++++++++----------------------
+ drivers/firmware/iscsi_ibft_find.c  |   56 +++-
+ include/linux/iscsi_boot_sysfs.h    |  123 ++++++
+ include/linux/iscsi_ibft.h          |   12 +-
+ 7 files changed, 924 insertions(+), 484 deletions(-)
+
+What is iBFT?
+The iBFT is an equivalent to the Boot Flag, except that its geared
+towards iSCSI and hence requires much more information (such as
+the IP of target, passwords, which device to login, etc). iBFT
+is a data structure populated by the BIOS or the NIC to contain this
+so that the OS can read it and login to the iSCSI and present
+the boot device to the initrd for mounting / FS.
