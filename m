@@ -1,66 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab0HBOwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 10:52:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53454 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab0HBOwa (ORCPT
+	id S1753145Ab0HBOwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 10:52:36 -0400
+Received: from pyrimidin.rz.uni-konstanz.de ([134.34.240.46]:2687 "EHLO
+	pyrimidin.rz.uni-konstanz.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751829Ab0HBOwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 10:52:30 -0400
-Date: Mon, 2 Aug 2010 11:52:18 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, paulus@samba.org
-Subject: Re: [PATCH v2] Re: perf annotate segfaults when source code has goto
- label that looks like hex number
-Message-ID: <20100802145218.GG12166@ghostprotocols.net>
-References: <20100722072044.GD27177@redhat.com>
- <20100722143345.GC17631@ghostprotocols.net>
- <20100722163851.GA10307@redhat.com>
- <20100722164711.GD17631@ghostprotocols.net>
- <20100722165222.GE17631@ghostprotocols.net>
- <20100722170541.GF17631@ghostprotocols.net>
- <20100722180538.GB10307@redhat.com>
- <20100722191132.GG17631@ghostprotocols.net>
- <1280739734.1923.20.camel@laptop>
+	Mon, 2 Aug 2010 10:52:33 -0400
+X-IronPort-AV: E=Sophos;i="4.55,303,1278288000"; 
+   d="scan'208";a="10864096"
+Message-ID: <4C56DBB0.9080405@uni-konstanz.de>
+Date: Mon, 02 Aug 2010 16:52:32 +0200
+From: Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100721)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280739734.1923.20.camel@laptop>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Dave Chinner <david@fromorbit.com>
+CC: linux <linux-kernel@vger.kernel.org>,
+        Ext4 Developers List <linux-ext4@vger.kernel.org>,
+        Karsten Schaefer <karsten.schaefer@uni-konstanz.de>
+Subject: Re: ext4 performance regression 2.6.27-stable versus 2.6.32 and later
+References: <4C508A54.7070002@uni-konstanz.de> <20100729232856.GP655@dastard>
+In-Reply-To: <20100729232856.GP655@dastard>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 02, 2010 at 11:02:14AM +0200, Peter Zijlstra escreveu:
-> On Thu, 2010-07-22 at 16:11 -0300, Arnaldo Carvalho de Melo wrote:
-> > > > diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> > > > @@ -976,13 +976,15 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
-> > > >     if (line_ip != -1) {
-> > > >             u64 start = map__rip_2objdump(self->ms.map, sym->start);
-> > > >             offset = line_ip - start;
-> > > > +           if (offset < 0 || (u64)line_ip > sym->end)
-> > > > +                   offset = -1;
-> > 
-> > > This part is good idea anyway. Even if label will be interpreted as ip
-> > > perf at least will not crash. It may miss-report something if check will
-> > > accidentally succeed though.
-> > 
-> > Yeah, we can possibly find a label which is a valid hex number and that
-> > falls inside the address range, but with what we have in objdump this
-> > seems to be the best we can have, I'll commit this.
+Dave Chinner schrieb:
+> On Wed, Jul 28, 2010 at 09:51:48PM +0200, Kay Diederichs wrote:
+>> Dear all,
+>>
+>> we reproducibly find significantly worse ext4 performance when our
+>> fileservers run 2.6.32 or later kernels, when compared to the
+>> 2.6.27-stable series.
+>>
+>> The hardware is RAID5 of 5 1TB WD10EACS disks (giving almost 4TB) in an
+>> external eSATA enclosure (STARDOM ST6600); disks are not partitioned but
+>> rather the complete disks are used:
+>> md5 : active raid5 sde[0] sdg[5] sdd[3] sdc[2] sdf[1]
+>>     3907045376 blocks super 1.2 level 5, 512k chunk, algorithm 2 [5/5]
+>> [UUUUU]
+>>
+>> The enclosure is connected using a Silicon Image (supported by
+>> sata_sil24) PCIe-X1 adapter to one of our fileservers (either the backup
+>> fileserver, 32bit desktop hardware with Intel(R) Pentium(R) D CPU
+>> 3.40GHz, or a production-fileserver 64bit Precision WorkStation 670 w/ 2
+>> Xeon 3.2GHz).
+>>
+>> The ext4 filesystem was created using
+>> mke2fs -j -T largefile -E stride=128,stripe_width=512 -O extent,uninit_bg
+>> It is mounted with noatime,data=writeback
+>>
+>> As operating system we usually use RHEL5.5, but to exclude problems with
+>> self-compiled kernels, we also booted USB sticks with latest Fedora12
+>> and FC13 .
+>>
+>> Our benchmarks consist of copying 100 6MB files from and to the RAID5,
+>> over NFS (NVSv3, GB ethernet, TCP, async export), and tar-ing and
+>> rsync-ing kernel trees back and forth. Before and after each individual
+>> benchmark part, we "sync" and "echo 3 > /proc/sys/vm/drop_caches" on
+>> both the client and the server.
+>>
+>> The problem:
+>> with 2.6.27.48 we typically get:
+>>  44 seconds for preparations
+>>  23 seconds to rsync 100 frames with 597M from nfs directory
+>>  33 seconds to rsync 100 frames with 595M to nfs directory
+>>  50 seconds to untar 24353 kernel files with 323M to nfs directory
+>>  56 seconds to rsync 24353 kernel files with 323M from nfs directory
+>>  67 seconds to run xds_par in nfs directory (reads and writes 600M)
+>> 301 seconds to run the script
+>>
+>> with 2.6.32.16 we find:
+>>  49 seconds for preparations
+>>  23 seconds to rsync 100 frames with 597M from nfs directory
+>> 261 seconds to rsync 100 frames with 595M to nfs directory
+>>  74 seconds to untar 24353 kernel files with 323M to nfs directory
+>>  67 seconds to rsync 24353 kernel files with 323M from nfs directory
+>> 290 seconds to run xds_par in nfs directory (reads and writes 600M)
+>> 797 seconds to run the script
+>>
+>> This is quite reproducible (times varying about 1-2% or so). All times
+>> include reading and writing on the client side (stock CentOS5.5 Nehalem
+>> machines with fast single SATA disks). The 2.6.32.16 times are the same
+>> with FC12 and FC13 (booted from USB stick).
+>>
+>> The 2.6.27-versus-2.6.32+ regression cannot be due to barriers because
+>> md RAID5 does not support barriers ("JBD: barrier-based sync failed on
+>> md5 - disabling barriers").
+>>
+>> What we tried: noop and deadline schedulers instead of cfq;
+>> modifications of /sys/block/sd[c-g]/queue/max_sectors_kb; switching
+>> on/off NCQ; blockdev --setra 8192 /dev/md5; increasing
+>> /sys/block/md5/md/stripe_cache_size
+>>
+>> When looking at the I/O statistics while the benchmark is running, we
+>> see very choppy patterns for 2.6.32, but quite smooth stats for
+>> 2.6.27-stable.
+>>
+>> It is not an NFS problem; we see the same effect when transferring the
+>> data using an rsync daemon. We believe, but are not sure, that the
+>> problem does not exist with ext3 - it's not so quick to re-format a 4 TB
+>> volume.
+>>
+>> Any ideas? We cannot believe that a general ext4 regression should have
+>> gone unnoticed. So is it due to the interaction of ext4 with md-RAID5 ?
 > 
-> Wouldn't it be better to re-write perf-annotate to not have wild monkey
-> sex with objdump and instead 'borrow' some of the objdump code to
-> generate the output ourselves? That way we don't rely on the output
-> syntax at all..
+> Try reverting 50797481a7bdee548589506d7d7b48b08bc14dcd (ext4: Avoid
+> group preallocation for closed files). IIRC it caused the same sort
+> of isevere performance regressions for postmark....
+> 
+> Cheers,
+> 
+> Dave.
 
-Right, the problem is that doing that seems like avoiding regular,
-mostly satisfying sex with a known partner to having a month long orgy
-blindfold.  You can try, I'll pass for now.
+Dave,
 
-- Arnaldo
+as you suggested, we reverted "ext4: Avoid group preallocation for
+closed files" and this indeed fixes a big part of the problem: after
+booting the NFS server we get
+
+NFS-Server: turn5 2.6.32.16p i686
+NFS-Client: turn10 2.6.18-194.8.1.el5 x86_64
+
+exported directory on the nfs-server:
+/dev/md5 /mnt/md5 ext4
+rw,seclabel,noatime,barrier=1,stripe=512,data=writeback 0 0
+
+ 48 seconds for preparations
+ 28 seconds to rsync 100 frames with 597M from nfs directory
+ 57 seconds to rsync 100 frames with 595M to nfs directory
+ 70 seconds to untar 24353 kernel files with 323M to nfs directory
+ 57 seconds to rsync 24353 kernel files with 323M from nfs directory
+133 seconds to run xds_par in nfs directory
+425 seconds to run the script
+
+
+For blktrace details, see my next email which is a response to Ted's.
+
+best,
+
+Kay
