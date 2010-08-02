@@ -1,84 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab0HBSjF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:39:05 -0400
-Received: from phil.doycomm.com ([66.219.128.249]:45352 "EHLO phil.doycomm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754334Ab0HBSjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:39:03 -0400
-Subject: Re: Linux 2.6.35
-From: Donald Parsons <dparsons@brightdsl.net>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <201008020748.09968.bjorn.helgaas@hp.com>
-References: <1280716262.5125.42.camel@falcon.homelinux.org>
-	 <201008012138.39036.bjorn.helgaas@hp.com>
-	 <1280722876.5125.83.camel@falcon.homelinux.org>
-	 <201008020748.09968.bjorn.helgaas@hp.com>
+	id S1754537Ab0HBSjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:39:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39028 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754517Ab0HBSjJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:39:09 -0400
+Subject: Re: [RFC] BTS based perf user callchains
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Markus Metzger <markus.t.metzger@intel.com>,
+        Robert Richter <robert.richter@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100802183506.GA8962@nowhere>
+References: <20100802183506.GA8962@nowhere>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Aug 2010 14:38:36 -0400
-Message-ID: <1280774316.5098.36.camel@falcon.homelinux.org>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 02 Aug 2010 20:38:52 +0200
+Message-ID: <1280774332.1923.245.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 07:48 -0600, Bjorn Helgaas wrote:
+On Mon, 2010-08-02 at 20:35 +0200, Frederic Weisbecker wrote:
+> I'm not even sure that will work. Also, while looking at the BTS implementation
+> in perf, I see we have one BTS buffer per cpu. But that doesn't look right as
+> the code flow is not linear per cpu but per task. Hence I suspect we need
+> one BTS buffer per task. But may be someone tried that and encountered a
+> problem? 
 
-> Netconsole has special kernel support that doesn't require the normal
-> networking stack to be configured, so it works quite early.  You
-> would want to build your networking driver into the kernel for the
-> most benefit.
-
-I compiled network module sky2 and netconsole into kernel 2.6.35.
-
-Inserted into kernel line:
-"debug netconsole=192.168.1.10/eth0,192.168.1.5/00:11:25:aa:79:f7"
-
-and ran on a laptop the cmd:   "nc -l -u 6666"
-using all default ports if I read documentation correctly.
-
-This failed to show any output at all. 
-
-> If that doesn't work, you could try capturing the log on VGA with a
-> digital camera or video camera, possibly with "boot_delay=" to
-> slow things down.
-
-What or how much do you want shot with my digital camera? I see
-maybe 3 or 4 screens fulls go by to where boot fails.
-
-I added "boot_delay=15" for next boot.
-
-> > Should I try building sata driver into kernel?
-
-I think it is already in kernel, since no sata modules load
-in a booting kernel (assuming sata is part of module name).
-
-> I doubt that will make a difference.  It seems like the problem
-> is that we don't find your root filesystem, probably because there's
-> something wrong with the HBA leading to that device.  For example,
-> maybe the PCI core mistakenly moved or disabled the adapter, or
-> there's some problem with its interrupt.
-
-I only see one sata compiled into kernel: CONFIG_SATA_PMP=y
-and I also see no sata's loaded with lsmod in a working
-kernel (2.6.34.1).
-
-I am going to rebuild again with CONFIG_SATA_AHCI=y
-instead of =m as it is Fedora's config (do not know how
-it got changed).   These modules are loaded in 2.6.34.1:
-
-#lsmod | egrep "ata|ahci"
-ata_generic     3427  0 
-pata_acpi       3227  0 
-pata_jmicron    2547  0 
-ahci           35887  4 
-libata        157450  4 ata_generic,pata_acpi,pata_jmicron,ahci
-scsi_mod      147895  5 sg,sr_mod,usb_storage,sd_mod,libata
-
-Thanks,
-Don
-
+IIRC we flush the buffer when we deschedule the counter.
