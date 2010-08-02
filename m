@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab0HBCQr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 22:16:47 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19724 "EHLO mga03.intel.com"
+	id S1752643Ab0HBCTB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 22:19:01 -0400
+Received: from tundra.namei.org ([65.99.196.166]:54212 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab0HBCQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 22:16:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,301,1278313200"; 
-   d="scan'208";a="306963096"
-Date: Mon, 2 Aug 2010 10:35:35 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <ying.huang@intel.com>
-Subject: Re: EFI runtime-services on x86_64
-Message-ID: <20100802103535.6442ab49@feng-i7>
-In-Reply-To: <201007301458.50263.bjorn.helgaas@hp.com>
-References: <201007301458.50263.bjorn.helgaas@hp.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	id S1751972Ab0HBCS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 22:18:59 -0400
+Date: Mon, 2 Aug 2010 12:18:46 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: linux-kernel@vger.kernel.org
+cc: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ftp.linux.org.uk>,
+        Kees Cook <kees.cook@canonical.com>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+In-Reply-To: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+Message-ID: <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+On Fri, 30 Jul 2010, James Morris wrote:
 
-On Sat, 31 Jul 2010 04:58:48 +0800
-Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> One issue which needs to be addressed is to confirm that there is 
+> consensus on the new Yama LSM module.  I had thought there was, based on 
+> list discussion, but have since had differing feedback.
 
-> Hello Feng,
-> 
-> Can you educate me about your commit 772be899bc, "86: Make EFI RTC
-> function depend on 32bit again"?
-> 
-> It adds "#ifdef CONFIG_X86_32" to avoid using efi_get_time() and
-> efi_set_rtc_mmss(), but there's no explanation of *why* those services
-> only work on 32-bit.
-> 
-> Is this an EFI spec limitation?  Do the other EFI runtime services
-> work on 64-bit, since you didn't touch them?  Or do we just not use
-> any of the others?
-> 
+I'm going to revert the Yama stuff for 2.6.36 -- Christoph has nacked it 
+to me off-list.
 
-Commit 772be899bc, "86: Make EFI RTC function depend on 32bit again" is
-a regression fix for 7bd867d "x86: Move get/set_wallclock to x86_platform_ops".
-These 2 commits just abstract the rtc service for legacy x86 PC/EFI/Virtualiation
-kernel, and has no functional change to existing code.
 
-I'm not familiar with EFI, but my understanding is current EFI code in 
-kernel only provides the get/set_time service for x86_32 platform.
-
-Cc Ying who is more familiar with EFI than me.
-
-Thanks,
-Feng
+- James
+-- 
+James Morris
+<jmorris@namei.org>
