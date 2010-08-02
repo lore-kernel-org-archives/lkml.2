@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab0HBBb4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 21:31:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45065 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371Ab0HBBby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 21:31:54 -0400
-Date: Mon, 2 Aug 2010 11:31:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alasdair G Kergon <agk@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Milan Broz <mbroz@redhat.com>
-Subject: linux-next: build failure after merge of the device-mapper tree
-Message-Id: <20100802113148.e0b70b34.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752594Ab0HBBcl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:32:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58799 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab0HBBck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 21:32:40 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 2 Aug 2010 10:27:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Bojan Smojver <bojan@rexursive.com>
+Cc: Nigel Cunningham <nigel@tuxonice.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
+Message-Id: <20100802102750.7d414819.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1280712068.2671.0.camel@shrek.rexursive.com>
+References: <1280465201.2600.10.camel@shrek.rexursive.com>
+	<1280486667.2608.1.camel@shrek.rexursive.com>
+	<4C534C9D.8000600@tuxonice.net>
+	<1280532174.2583.1.camel@shrek.rexursive.com>
+	<4C5362E7.3000706@tuxonice.net>
+	<1280538184.2583.11.camel@shrek.rexursive.com>
+	<4C537A01.5040808@tuxonice.net>
+	<1280540035.2658.5.camel@shrek.rexursive.com>
+	<1280551286.3097.6.camel@shrek.rexursive.com>
+	<20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
+	<1280710453.2727.8.camel@shrek.rexursive.com>
+	<20100802101058.d4f1c7b6.kamezawa.hiroyu@jp.fujitsu.com>
+	<1280712068.2671.0.camel@shrek.rexursive.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 02 Aug 2010 11:21:08 +1000
+Bojan Smojver <bojan@rexursive.com> wrote:
 
-Hi Alasdair,
+> On Mon, 2010-08-02 at 10:10 +0900, KAMEZAWA Hiroyuki wrote:
+> > Why swsusp can avoid memory leak is that it records which
+> > pages should be freed after resume in the bitmap, which will be saved
+> > to image header(?) 
+> 
+> Right. So, are you saying that all allocations in save_image() should be
+> done using __get_free_page() or __get_free_pages() and not with
+> vmalloc()?
+> 
+I don't say so but a consideration about following is required.
+(And it's good to write "we're safe because...as comment")
 
-After merging the device-mapper tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+ 1. Information about pointers used for vmalloc are saved into image.
+ 2. Information(1) is properly recovered after resume and we can free it.
+ 3. No more allocation will happen once we start wriritng to the disk.
 
-drivers/md/dm-crypt.c: In function 'crypt_ctr_cipher':
-drivers/md/dm-crypt.c:1095: error: 'bad_mem' undeclared (first use in this =
-function)
+Then, vmalloc() area itself's information will be saved as
+  "this vmalloc area is used"
 
-Caused by commit 460328b294ddd132945bdf536a9130f2d6cd6ace
-("dm-crypt-simplify-crypt_ctr").
+and, at resume, recoreved as
+  "this vmalloc area is used"
 
-Please do test builds ... "No functional change in this patch." :-(
+Then, you can free it because you remember pointers.
 
-I will use the device-mapper tree from next-20100730 for today.
+Then, you should make 
 
-P.S. the patch summaries could be more informative ... i.e. you should
-put "Subject:" lines in the patches.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+@@ -372,6 +380,38 @@ static int save_image(struct swap_map_handle *handle,
+ 	struct bio *bio;
+ 	struct timeval start;
+ 	struct timeval stop;
++	size_t ul, cl;
++	unsigned char *unc, *cmp, *wrk, *page; 
 
---Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad
-Content-Type: application/pgp-signature
+as global variable. Because global variables will be saved as it is,
+you can find it after resume and free used vmalloc() buffers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Maybe freeing it at swsusp_free() will be clean.
 
-iQEcBAEBAgAGBQJMViAEAAoJEDMEi1NhKgbsGS8H/iOLsG8KHtpAtfMyQBNG7EIT
-futcOSqvYKh/6F8TrU1Ak+OODsXQAYB+rONZyf4209PGrhsC4FWsx+XtnD7hD0It
-hCcCpYkvkSSmieTzs61shZkUgFzapUkf87v0b1gG4hge1I4kFcIKD21CY0pgoeJk
-8VzzJI9kJql0jdZxAf3btJQ7Kq9PJq13zqFcYnRramTtucn/fZN2cM1N8l3q3bpB
-koNgA0uAwFAjgTe9TrQ1Rr5ZaLlH0AMTunXJnUC2vZ2RvINFUPSNeFEHRndvubZm
-xPF0fc9ZsaUt7YN2SSjos73T7pkC84/Kj9l4vt8GiNBG5ZbJAecR5/K0G2wDraQ=
-=fCKs
------END PGP SIGNATURE-----
 
---Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad--
+Thanks,
+-Kame
+
