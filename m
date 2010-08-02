@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab0HBRpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 13:45:47 -0400
-Received: from claw.goop.org ([74.207.240.146]:43419 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab0HBRpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 13:45:45 -0400
-Message-ID: <4C570447.7050800@goop.org>
-Date: Mon, 02 Aug 2010 10:45:43 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1754074Ab0HBRqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 13:46:08 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:7739 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010Ab0HBRqG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 13:46:06 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "'gregkh@suse.de'" <gregkh@suse.de>
+CC: Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 1/1] staging: hv: Fix missing functions for net_device_ops
+ (resubmit)
+Thread-Topic: [PATCH 1/1] staging: hv: Fix missing functions for
+ net_device_ops (resubmit)
+Thread-Index: AQHLMmqUZKh2eb7ENEOe42IZNUMKnQ==
+Date: Mon, 2 Aug 2010 17:46:01 +0000
+Message-ID: <1FB5E1D5CA062146B38059374562DF7280E8556B@TK5EX14MBXC121.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Xen-devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Stodden <daniel.stodden@citrix.com>
-Subject: Re: [PATCH 00/16] xen/blkfront: various bugfixes and patches for
- blkfront
-References: <cover.1279658231.git.jeremy.fitzhardinge@citrix.com> <4C46577F.7050909@kernel.dk> <4C50CAAE.7020103@goop.org>
-In-Reply-To: <4C50CAAE.7020103@goop.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/28/2010 05:26 PM, Jeremy Fitzhardinge wrote:
->  On 07/20/2010 07:12 PM, Jens Axboe wrote:
->> On 07/20/2010 02:42 PM, Jeremy Fitzhardinge wrote:
->>> From: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
->>>
->>> Hi Jens,
->>>
->>> This series has various updates to blkfront, including:
->>>   - support for dynamic device resizing
->>>   - bugfixes for device hotplug
->>>   - various races and bugs fixed
->>>
->>> It can be pulled from:
->>>
->>> git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git 
->>> upstream/blkfront
->> They don't apply cleanly to the for-2.6.36 branch, it fails at patch 2:
->>
->> patching file drivers/block/xen-blkfront.c
->> Hunk #1 succeeded at 105 (offset 1 line).
->> Hunk #2 succeeded at 143 (offset 1 line).
->> Hunk #9 FAILED at 1080.
->> Hunk #10 succeeded at 1106 with fuzz 1 (offset 5 lines).
->> 1 out of 10 hunks FAILED -- saving rejects to file 
->> drivers/block/xen-blkfront.c.rej
->
-> Could you pull again?  I've merged it into your branch (we don't need 
-> any BKL locking), and added a couple of changes to fix some barrier 
-> issues up.
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-Ping?
+Subject: staging: hv: Fix missing functions for net_device_ops
+  Unlike in older kernels, ether_setup() no longer sets default
+functions. We need to put them into net_device_ops. For example,
+eth_change_mtu prevents setting MTU beyond 1500. This is necessary
+because we don't support jumbo frame at this time.
+  It affects kernel 2.6.32 and later, which are all versions
+containing Hyper-V drivers.
 
-     J
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+
+---
+ drivers/staging/hv/netvsc_drv.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 56e1157..64a0114 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -327,6 +327,9 @@ static const struct net_device_ops device_ops = {
+ 	.ndo_stop =			netvsc_close,
+ 	.ndo_start_xmit =		netvsc_start_xmit,
+ 	.ndo_set_multicast_list =	netvsc_set_multicast_list,
++	.ndo_change_mtu =		eth_change_mtu,
++	.ndo_validate_addr =		eth_validate_addr,
++	.ndo_set_mac_address =		eth_mac_addr,
+ };
+ 
+ static int netvsc_probe(struct device *device)
+-- 
+1.6.3.2
 
