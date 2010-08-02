@@ -1,99 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0HBVDj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 17:03:39 -0400
-Received: from mbox2.netikka.net ([213.250.81.203]:59149 "EHLO
-	mbox2.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452Ab0HBVDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 17:03:38 -0400
-Message-ID: <4C5732A7.2050003@mandriva.org>
-Date: Tue, 03 Aug 2010 00:03:35 +0300
-From: Thomas Backlund <tmb@mandriva.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100724 Mandriva/3.1.1-2mdv2011.0 (2011.0) Thunderbird/3.1.1
+	id S1755322Ab0HBVFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 17:05:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49752 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754194Ab0HBVFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 17:05:16 -0400
+Message-ID: <4C5732DC.8010800@zytor.com>
+Date: Mon, 02 Aug 2010 14:04:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Thomas Backlund <tmb@mandriva.org>, Michal Marek <mmarek@suse.cz>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "bug-make@gnu.org" <bug-make@gnu.org>
-Subject: Re: make 3.82 fails on powerpc defconfig update [was: Linux 2.6.35]
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com> <4C5686FF.9010803@mandriva.org> <20100802182848.GA16394@merkur.ravnborg.org> <4C572EB0.7060706@mandriva.org> <20100802205121.GA16520@merkur.ravnborg.org>
-In-Reply-To: <20100802205121.GA16520@merkur.ravnborg.org>
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: brgerst@gmail.com, Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: 6175ddf06b6172046a329e3abfd9c901a43efd2e breaks matroxfb console
+References: <201008022150.01037.linux@rainbow-software.org>
+In-Reply-To: <201008022150.01037.linux@rainbow-software.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-02.08.2010 23:51, Sam Ravnborg skrev:
->>
->> Thanks, this seems to fix the first issue, but then I get the same erro on the following line 190:
->>
->> 190: bootwrapper_install %.dtb:
->> 191:        $(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
->>
+On 08/02/2010 12:49 PM, Ondrej Zary wrote:
+> Hello,
+> matroxfb (at least with Mystique and Mystique 220) stopped working in 2.6.34 - 
+> the screen is completely corrupted. Bisection shows that 
+> 6175ddf06b6172046a329e3abfd9c901a43efd2e is first bad commit.
 > 
-> Obviously - dunno how I missed that.
-> Updated patch below.
-> 
-> I will do a proper submission after you
-> confirm that powerpc build is working with make 3.82.
+> Reverting 6175ddf06b6172046a329e3abfd9c901a43efd2e in 2.6.34 fixes the problem 
+> (1c5b9069e12e20d2fe883076ae0bf73966492108 must be reverted first).
 > 
 
-Yeah, that was an obvious fix, thanks!
+Sounds like another driver which used memcpy_toio() when it should have
+used iowrite32_rep() or __iowrite32_copy().
 
-One small typo fix below...
-(a missing ':')
+Hmm... is __iowrite32_copy() and iowrite32_rep() redundant?  If so, we
+should get rid of the former.
 
-Otherwise it works here, so:
+	-hpa
 
-Tested-by: Thomas Backlund <tmb@mandriva.org>
-
-> 	Sam
-> 
-> diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
-> index 77cfe7a..ace7a3e 100644
-> --- a/arch/powerpc/Makefile
-> +++ b/arch/powerpc/Makefile
-> @@ -163,9 +163,11 @@ drivers-$(CONFIG_OPROFILE)	+= arch/powerpc/oprofile/
->  # Default to zImage, override when needed
->  all: zImage
->  
-> -BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
-> +# With make 3.82 we cannot mix normal and wildcard targets
-> +BOOT_TARGETS1 := zImage zImage.initrd uImaged
-> +BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
->  
-> -PHONY += $(BOOT_TARGETS)
-> +PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
->  
->  boot := arch/$(ARCH)/boot
->  
-> @@ -180,10 +182,16 @@ relocs_check: arch/powerpc/relocs_check.pl vmlinux
->  zImage: relocs_check
->  endif
->  
-> -$(BOOT_TARGETS): vmlinux
-> +$(BOOT_TARGETS1): vmlinux
-> +	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-> +$(BOOT_TARGETS2): vmlinux
-> +	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-> +
-> +
-> +bootwrapper_install
-
-bootwrapper_install:
-
->  	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
->  
-> -bootwrapper_install %.dtb:
-> +%.dtb:
->  	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
->  
->  define archhelp
-> .
-> 
-
---
-Thomas
