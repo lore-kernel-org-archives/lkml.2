@@ -1,217 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab0HBJQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 05:16:10 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43346 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752388Ab0HBJQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 05:16:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: Bug 12309 - Large I/O operations result in poor interactive performance and high iowait times
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Clayton <andrew@digital-domain.net>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, pvz@pvz.pp.se,
-        bgamari@gmail.com, larppaxyz@gmail.com, seanj@xyke.com,
-        kernel-bugs.dev1world@spamgourmet.com, akatopaz@gmail.com,
-        frankrq2009@gmx.com, thomas.pi@arcor.de, spawels13@gmail.com,
-        vshader@gmail.com, rockorequin@hotmail.com, ylalym@gmail.com,
-        theholyettlz@googlemail.com, hassium@yandex.ru
-In-Reply-To: <20100802081253.GA27492@localhost>
-References: <20100802003616.5b31ed8b@digital-domain.net> <20100802081253.GA27492@localhost>
-Message-Id: <20100802171954.4F95.A69D9226@jp.fujitsu.com>
+	id S1753280Ab0HBJRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 05:17:32 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41067 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753072Ab0HBJR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 05:17:29 -0400
+Date: Mon, 2 Aug 2010 11:17:14 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 11/19] perf record: Release resources at exit
+Message-ID: <20100802091714.GA6781@elte.hu>
+References: <1280711334-30000-1-git-send-email-acme@infradead.org>
+ <1280711334-30000-12-git-send-email-acme@infradead.org>
+ <20100802073009.GB7841@amd>
+ <20100802075422.GA24085@elte.hu>
+ <20100802080353.GA8713@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon,  2 Aug 2010 18:16:02 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802080353.GA8713@amd>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.1199]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I've pointed to your two patches in the bug report, so hopefully someone
-> > who is seeing the issues can try them out.
+
+* Nick Piggin <npiggin@suse.de> wrote:
+
+> On Mon, Aug 02, 2010 at 09:54:22AM +0200, Ingo Molnar wrote:
+> > 
+> > * Nick Piggin <npiggin@suse.de> wrote:
+> > 
+> > > On Sun, Aug 01, 2010 at 10:08:46PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > > > 
+> > > > So that we can reduce the noise on valgrind when looking for memory
+> > > > leaks.
+> > > 
+> > > Really? That's rather crappy of valgrind. exit is well defined to release 
+> > > resources and that's often a more efficient way to do it It finds and 
+> > > batches things a lot better, eg. it can avoid all TLB flushing of freeing 
+> > > memory that munmap requires.
+> > 
+> > That's certainly true but there's no valgrind crappiness here: valgrind simply 
+> > can do a better job of finding leaks if there's a well defined "all resources 
+> > the app still knows about are freed now" point.
 > 
-> Thanks.
-> 
-> > I noticed your comment about the no swap situation
-> > 
-> > "#26: Per von Zweigbergk
-> > Disabling swap makes the terminal launch much faster while copying;
-> > However Firefox and vim hang much more aggressively and frequently
-> > during copying.
-> > 
-> > It's interesting to see processes behave differently. Is this
-> > reproducible at all?"
-> > 
-> > Recently there have been some other people who have noticed this.
-> > 
-> > Comment #460 From  Søren Holm   2010-07-22 20:33:00   (-) [reply] -------
-> > 
-> > I've tried stress also.
-> > I have 2 Gb og memory and 1.5 Gb swap
-> > 
-> > With swap activated stress -d 1 hangs my machine
-> > 
-> > Same does stress -d while swapiness set to 0
-> > 
-> > Widh swap deactivated things runs pretty fine. Of couse apps utilizing
-> > syncronous disk-io fight stress for priority.
-> > 
-> > Comment #461 From  Nels Nielson   2010-07-23 16:23:06   (-) [reply] -------
-> > 
-> > I can also confirm this. Disabling swap with swapoff -a solves the problem.
-> > I have 8gb of ram and 8gb of swap with a fake raid mirror.
-> > 
-> > Before this I couldn't do backups without the whole system grinding to a halt.
-> > Right now I am doing a backup from the drives, watching a movie from the same
-> > drives and more. No more iowait times and programs freezing as they are starved
-> > from being able to access the drives.
-> 
-> So swapping is another major cause of responsiveness lags.
-> 
-> I just tested the heavy swapping case with the patches to remove
-> the congestion_wait() and wait_on_page_writeback() stalls on high
-> order allocations. The patches work as expected. No single stall shows
-> up with the debug patch posted in http://lkml.org/lkml/2010/8/1/10.
-> 
-> However there are still stalls on get_request_wait():
-> - kswapd trying to pageout anonymous pages
-> - _any_ process in direct reclaim doing pageout()
+> "noise" sounds like false positives though. [...]
 
-Well, not any.
+Every predictive bug detection scheme is open to the potential of false 
+positives. I've yet to see a complex one that is 100% false positive free.
 
-current check is following.
+> [...] Certainly if this is instead allows valgrind to run in a particular 
+> mode that assumes no application resources consumed at exit(2) time, I 
+> wouldn't call it crappy :)
 
------------------------------------------------------------
-static int may_write_to_queue(struct backing_dev_info *bdi)
-{
-        if (current->flags & PF_SWAPWRITE)
-                return 1;
-        if (!bdi_write_congested(bdi))
-                return 1;
-        if (bdi == current->backing_dev_info)
-                return 1;
-        return 0;
-}
------------------------------------------------------------
+Most apps free their stuff before they exit - i do it in all my own C apps.
 
-It mean congestion ignorerance is happend when followings
-  (1) the task is kswapd
-  (2) the task is flusher thread
-  (3) this reclaim is called from zone reclaim (note: I'm thinking this is bug)
-  (4) this reclaim is called from __generic_file_aio_write()
+That is generally useful: for example it makes it easier to thread a program 
+later on - when exit() becomes pthread_exit() and a silent leak turns into a 
+real leak.
 
-(4) is root cause of this latency issue. this behavior was introduced
-by following.
+Hence Valgrind checking for exit() by default looks useful to me.
 
+> But you could equally sprinkle in other valgrind specific annotations or 
+> semantics at various points in the code to improve its coverage, no?
 
--------------------------------------------------------------------
-commit 94bc3c9279ae182ca996d89dc9a56b66b06d5d8f
-Author: akpm <akpm>
-Date:   Mon Sep 23 05:17:02 2002 +0000
+Yeah, and exit() sounds like a pretty convenient point, right? That's the 
+point where all resources are inactive hence a scan for leaks is expected to 
+be the most efficient in finding real leaks.
 
-    [PATCH] low-latency page reclaim
+Thanks,
 
-    Convert the VM to not wait on other people's dirty data.
-
-     - If we find a dirty page and its queue is not congested, do some writeback.
-
-     - If we find a dirty page and its queue _is_ congested then just
-       refile the page.
-
-     - If we find a PageWriteback page then just refile the page.
-
-     - There is additional throttling for write(2) callers.  Within
-       generic_file_write(), record their backing queue in ->current.
-       Within page reclaim, if this tasks encounters a page which is dirty
-       or under writeback onthis queue, block on it.  This gives some more
-       writer throttling and reduces the page refiling frequency.
-
-    It's somewhat CPU expensive - under really heavy load we only get a 50%
-    reclaim rate in pages coming off the tail of the LRU.  This can be
-    fixed by splitting the inactive list into reclaimable and
-    non-reclaimable lists.  But the CPU load isn't too bad, and latency is
-    much, much more important in these situations.
-
-    Example: with `mem=512m', running 4 instances of `dbench 100', 2.5.34
-    took 35 minutes to compile a kernel.  With this patch, it took three
-    minutes, 45 seconds.
-
-    I haven't done swapcache or MAP_SHARED pages yet.  If there's tons of
-    dirty swapcache or mmap data around we still stall heavily in page
-    reclaim.  That's less important.
-
-    This patch also has a tweak for swapless machines: don't even bother
-    bringing anon pages onto the inactive list if there is no swap online.
-
-    BKrev: 3d8ea3cekcPCHjOJ65jQtjjrJMyYeA
-
-diff --git a/mm/filemap.c b/mm/filemap.c
-index a27d273..9118a57 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1755,6 +1755,9 @@ generic_file_write_nolock(struct file *file, const struct iovec *iov,
-        if (unlikely(pos < 0))
-                return -EINVAL;
-
-+       /* We can write back this queue in page reclaim */
-+       current->backing_dev_info = mapping->backing_dev_info;
-+
-        pagevec_init(&lru_pvec);
-
-        if (unlikely(file->f_error)) {
--------------------------------------------------------------------
-
-But is this still necessary? now we have per-hask dirty accounting, the
-write hog tasks have already got some waiting penalty.
-
-As I said, per-task dirty accounting only makes a penalty to lots writing
-tasks. but the above makes a penalty to all of write(2) user.
-
-> 
-> Since 90% pages are dirty anonymous pages, the chances to stall is high.
-> kswapd can hardly make smooth progress. The applications end up doing
-> direct reclaim by themselves, which also ends up stuck in pageout().
-> They are not explicitly stalled in vmscan code, but implicitly in
-> get_request_wait() when trying to swapping out the dirty pages.
-> 
-> It sure hurts responsiveness with so many applications stalled on
-> get_request_wait(). But question is, what can we do otherwise? The
-> system is running short of memory and cannot keep up freeing enough
-> memory anyway. So page allocations have to be throttled somewhere..
-> 
-> But wait.. What if there are only 50% anonymous pages? In this case
-> applications don't necessarily need to sleep in get_request_wait().
-> The memory pressure is not really high. The poor man's solution is to
-> disable swapping totally, as the bug reporters find to be helpful..
-> 
-> One easy fix is to skip swap-out when bdi is congested and priority is
-> close to DEF_PRIORITY. However it would be unfair to selectively
-> (largely in random) keep some pages and reclaim the others that
-> actually have the same age.
-> 
-> A more complete fix may be to introduce some swap_out LRU list(s).
-> Pages in it will be swap out as fast as possible by a dedicated
-> kernel thread. And pageout() can freely add pages to it until it
-> grows larger than some threshold, eg. 30% reclaimable memory, at which
-> point pageout() will stall on the list. The basic idea is to switch
-> the random get_request_wait() stalls to some more global wise stalls.
-
-Yup, I'd prefer this idea. but probably it should retrieve writeback general,
-not only swapout.
-
-
-
-
-
+	Ingo
