@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab0HBNab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 09:30:31 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:60805 "EHLO h5.dl5rb.org.uk"
+	id S1752465Ab0HBNfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 09:35:11 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56122 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab0HBNa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 09:30:29 -0400
-Date: Mon, 2 Aug 2010 14:30:08 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        mingo@elte.hu, linux-mips@linux-mips.org
-Subject: Re: [PATCH 05/15] mips,kgdb: Individual register get/set for mips
-Message-ID: <20100802133008.GB5209@linux-mips.org>
-References: <1280517456-1167-1-git-send-email-jason.wessel@windriver.com>
- <1280517456-1167-6-git-send-email-jason.wessel@windriver.com>
+	id S1751095Ab0HBNfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 09:35:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [Bug #15704] [r8169] WARNING: at net/sched/sch_generic.c
+Date: Mon, 2 Aug 2010 15:33:23 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <JKn8_uSlpqD.A.HLG.1LYVMB@chimera> <FMobw2FohV.A.GfH.xPYVMB@chimera> <20100802074559.GA16551@swordfish>
+In-Reply-To: <20100802074559.GA16551@swordfish>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280517456-1167-6-git-send-email-jason.wessel@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008021533.23731.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 30, 2010 at 02:17:26PM -0500, Jason Wessel wrote:
-
-> Implement the ability to individually get and set registers for kdb
-> and kgdb for mips.
+On Monday, August 02, 2010, Sergey Senozhatsky wrote:
+> On (08/01/10 16:44), Rafael J. Wysocki wrote:
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15704
+> > Subject		: [r8169] WARNING: at net/sched/sch_generic.c
+> > Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > Date		: 2010-03-31 10:21 (124 days old)
+> > Message-ID	: <20100331102142.GA3294@swordfish.minsk.epam.com>
+> > References	: http://marc.info/?l=linux-kernel&m=127003090406108&w=2
+> > 
 > 
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-> CC: Ralf Baechle <ralf@linux-mips.org>
-> CC: linux-mips@linux-mips.org
+> Hello,
+> This laptop is no longer available. Sorry.
 
-Looks good; I think this should be be merged with the rest of your stuff.
+OK, thank for the update.
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
-
-  Ralf
+Rafael
