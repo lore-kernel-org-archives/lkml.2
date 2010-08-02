@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab0HBRMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 13:12:39 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:14029 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924Ab0HBRMi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 13:12:38 -0400
-Date: Mon, 02 Aug 2010 19:14:08 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv5 2/3] USB: gadget: Use new composite features in some
- gadgets
-In-reply-to: <20100730165450.GA4943@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: David Brownell <david-b@pacbell.net>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "mina86@mina86.com" <mina86@mina86.com>
-Message-id: <op.vgtl5umt7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <231296.268.qm@web180308.mail.gq1.yahoo.com>
- <op.vgn0zfyq7p4s8u@pikus> <20100730165450.GA4943@kroah.com>
+	id S1752818Ab0HBRNC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 13:13:02 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45574 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752137Ab0HBRM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 13:12:59 -0400
+Date: Mon, 2 Aug 2010 09:53:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>, Paul Mackerras <paulus@samba.org>,
+        Jean Delvare <khali@linux-fr.org>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+Message-ID: <20100802165327.GA4814@suse.de>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+ <4C52913C.9020204@kernel.org>
+ <1280485690.1902.8.camel@pasglop>
+ <20100730143622.GA30105@suse.de>
+ <1280765724.5745.4.camel@groeck-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280765724.5745.4.camel@groeck-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Jul 30, 2010 at 06:48:41PM +0200, Michał Nazarewicz wrote:
->> So, to fix the situation, I need to ask Greg for the IDs?
+On Mon, Aug 02, 2010 at 09:15:24AM -0700, Guenter Roeck wrote:
+> On Fri, 2010-07-30 at 10:36 -0400, Greg KH wrote:
+> > On Fri, Jul 30, 2010 at 08:28:10PM +1000, Benjamin Herrenschmidt wrote:
+> > > On Fri, 2010-07-30 at 10:45 +0200, Tejun Heo wrote:
+> > > > On 07/29/2010 07:09 AM, Guenter Roeck wrote:
+> > > > > The following comment is found in include/linux/sysfs.h:
+> > > > > 
+> > > > >    /* FIXME
+> > > > >     * The *owner field is no longer used.
+> > > > >     * x86 tree has been cleaned up. The owner
+> > > > >     * attribute is still left for other arches.
+> > > > >     */
+> > > > > 
+> > > > > As it turns out, the *owner field is (again?) initialized in several modules,
+> > > > > suggesting that such initialization may be creeping back into the code.
+> > > > > 
+> > > > > This patch set removes the above comment, the *owner field, and each instance
+> > > > > in the code where it was found to be initialized.
+> > > > > 
+> > > > > Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
+> > > > > and sparc defconfig builds.
+> > > > 
+> > > > Yeah, the change is way overdue.  Maybe we should have just removed
+> > > > them back then.
+> > > 
+> > > I'm happy with the powerpc related patches as long as we all agree that
+> > > needs to go. Do you need me to put some of this in powerpc.git or are
+> > > you carrying them all to Linus ?
+> > 
+> > I can carry them all in my driver-core tree if you don't object.
+> > 
+> Any final verdict ? 
+> 
+> Not that it is my decision to make, but I think it would be better to
+> have it all in one tree. Otherwise the timing for the last patch would
+> get a bit complicated.
 
-On Fri, 30 Jul 2010 18:54:50 +0200, Greg KH <greg@kroah.com> wrote:
-> Yes you do.
+I'll take it.
 
-Could I ask for two IDs then.  One for the Multifunction Composite
-Gadget (g_multi) and another for FunctionFS Gadget (g_ffs).  Or is
-there some kind of procedure for that?
+thanks,
 
-Again, sorry for all the confusion.  As soon as the gadgets will
-get their own IDs I'll repost the patches with fixed IDs and David's
-suggestions taken into consideration.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+greg k-h
