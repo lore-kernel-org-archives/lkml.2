@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab0HBHlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:41:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12892 "EHLO mx1.redhat.com"
+	id S1753180Ab0HBHnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:43:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52374 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab0HBHlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:41:13 -0400
-Message-ID: <4C567694.2090808@redhat.com>
-Date: Mon, 02 Aug 2010 10:41:08 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: MMU: move bits lost judgement into a separate
- function
-References: <4C4E5313.1080308@cn.fujitsu.com> <4C4E536E.7030109@cn.fujitsu.com>
-In-Reply-To: <4C4E536E.7030109@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752109Ab0HBHnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 03:43:31 -0400
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, linux-kernel@vger.kernel.org
+Cc: alan@lxorguk.ukuu.org.uk, pavan_savoy@sify.com,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH] drivers:staging:ti-st: update TODO
+Date: Mon,  2 Aug 2010 02:43:17 -0500
+Message-Id: <1280734997-602-1-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/27/2010 06:33 AM, Xiao Guangrong wrote:
-> Introduce spte_bits_lost() function to judge whether spte bits will
-> miss, it's more readable and can help us to cleanup code later
->
-> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
-> ---
->   arch/x86/kvm/mmu.c |   20 +++++++++++++++++---
->   1 files changed, 17 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index e10f2bd..dd6c192 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -303,6 +303,20 @@ static u64 __xchg_spte(u64 *sptep, u64 new_spte)
->   #endif
->   }
->
-> +static bool spte_bits_lost(u64 spte)
-> +{
-> +	if (!shadow_accessed_mask)
-> +		return false;
-> +
-> +	if (!is_shadow_present_pte(spte))
-> +		return false;
-> +
-> +	if (spte&  shadow_accessed_mask)
-> +		return false;
-> +
-> +	return true;
-> +}
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-IMO spte_has_volatile_bits() is a clearer name, "lost" implies they are 
-already gone.
+Removed TODO item 2 :
+Current UIM/KIM communicate via the rfkill device and identified by the unique idx
+assisgned by the rfkill sub-system to each of these rfkill entries.
 
+Removed TODO item 1 :
+Since there is no way we can test existance of multiple connectivity
+devices on  platform.
+However the basic infrastructure as in providing a context to ST driver
+exist.
+If multiple devices have to exist on a given platform, multiple ST
+platform devices need to be registered and each of the protocol drivers
+have to mention which platform device they want to bind to/make use of.
 
+Removed TODO item 3:
+Locking have been reviewed and commit
+36b5aee46b5e4788758409829926c631de0a64a3 documents locking.
+
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/staging/ti-st/TODO |   18 +-----------------
+ 1 files changed, 1 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/staging/ti-st/TODO b/drivers/staging/ti-st/TODO
+index 6a105ed..ebfd6bb 100644
+--- a/drivers/staging/ti-st/TODO
++++ b/drivers/staging/ti-st/TODO
+@@ -1,22 +1,6 @@
+ TODO:
+ 
+-1. A per-device/tty port context required to support multiple devices
+-on same platform.
+-Plan: Each BT, FM and GPS device would be a platform-device with its platform-data
+-mentioning which of the ST device it wants to attach itself onto.
+-
+-There by each of the ST device which is also a platform device upon receiving
+-a st_register() would know whether the registration from BT/FM or GPS was intended for it.
+-
+-2. Improve upon the way requirement of line discipline is communicated to
+-user-space, The current user-space application which open/installs ldisc
+-as and when required can be found at,
+-http://dev.omapzoom.org/pub/scm/jsistla/L23-btfm.git
+-branch: UIM
+-
+-3. Re-view/Re-work on the locking.
+-
+-4. Step up and maintain this driver to ensure that it continues
++1. Step up and maintain this driver to ensure that it continues
+ to work.  Having the hardware for this is pretty much a
+ requirement.  If this does not happen, the will be removed in
+ the 2.6.35 kernel release.
 -- 
-error compiling committee.c: too many arguments to function
+1.5.6.3
 
