@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab0HBVIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 17:08:37 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33621 "EHLO hera.kernel.org"
+	id S1754960Ab0HBVJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 17:09:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33541 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076Ab0HBVIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 17:08:35 -0400
-X-User-Agent: K-9 Mail for Android
-References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de> <4C56E5C7.90206@suse.de> <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain>
+	id S1751076Ab0HBVJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 17:09:26 -0400
+Message-ID: <4C5733CF.20100@zytor.com>
+Date: Mon, 02 Aug 2010 14:08:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
-From: Tejun Heo <tj@kernel.org>
-Date: Mon, 02 Aug 2010 23:06:57 +0200
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Greg KH <gregkh@suse.de>
-Message-ID: <07f0ab73-7a5e-45c3-b2a8-cff745dc6bc7@email.android.com>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 21:08:17 +0000 (UTC)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 2/2] x86: more early console output from	compressed/misc.c
+References: <4C56701B.1030000@kernel.org> <4C5670DA.2080703@zytor.com> <4C5680D2.4020302@kernel.org> <4C568D2B.205@kernel.org> <4C568D6F.3050004@kernel.org> <20100802174916.GD5544@lenovo> <4C5710C1.8020809@zytor.com> <20100802185410.GE5544@lenovo> <4C57153F.7030107@zytor.com> <4C571DF2.5080100@kernel.org> <4C5731AF.9040009@zytor.com>
+In-Reply-To: <4C5731AF.9040009@zytor.com>
+Content-Type: multipart/mixed;
+ boundary="------------000102070707070907080109"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Thomas.
+This is a multi-part message in MIME format.
+--------------000102070707070907080109
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-On 08/02/2010 08:52 PM, Thomas Gleixner wrote:
->> Ooh, another reason is timer locality.  If timers are shared per desc,
->> they have much higher chance of being on the same processor.  Global
->> timers would be pretty bad in that respect.
+On 08/02/2010 01:59 PM, H. Peter Anvin wrote:
+> On 08/02/2010 12:35 PM, Yinghai Lu wrote:
+>>
+>> it seems I can not global variables in arch/x86/boot/compressed/misc.c
+>>
 > 
-> That's irrelevant. If you need to poll an interrupt, then it does not
-> matter at all whether you bounce some cache lines or not.
+> I just looked at it, it's the fact that we don't relocate the GOT that
+> is causing problems.  It's relatively easy to fix: here is a patch, but
+> in grand Linus tradition it is completely untested.
 > 
-> In fact we have two cases:
-> 
->    1) An interrupt needs to be polled all the time. That sucks whether
->       the poll timer bounces a few cache lines or not.
-> 
->    2) Polling an irq for some time. Either it works again after a
->       while, so your suckage is restricted to the poll period. If not
->       see #1
 
-Hmm... for spurious and watch the above are true and if it were the
-above two it would definitely make more sense to use per-purpose
-global timers.  The problem is w/ expect tho.  It's supposed to be
-used with normal hot paths, so expect/unexpect operations better be
-low overhead and local.  I'll talk more about it in the other reply.
+Untested indeed... here is one which doesn't clobber live registers.
 
-> And it's even less of an issue as the main users of this misfeature
-> are laptops and desktop machines, where locality is not really that
-> important. If an enterprise admin decides to ignore the fact that the
-> hardware is flaky, then he does not care about the cache line bounces
-> either.
-
-These problems do happen on intel chipset machines and is something
-which can be worked around with some effort.  Eh, let's talk on the
-other reply.
-
-Thanks.
-
--- 
-tejun
+	-hpa
 
 
--- 
-tejun
+--------------000102070707070907080109
+Content-Type: text/plain;
+ name="diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="diff"
+
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index f543b70..58a8fb5 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -124,6 +124,19 @@ relocated:
+ 	rep	stosl
+ 
+ /*
++ * Adjust our own GOT
++ */
++	leal	_got(%ebx), %edx
++	leal	_egot(%ebx), %ecx
++1:
++	cmpl	%edx, %ecx
++	jae	2f
++	addl	%ebx, (%edx)
++	addl	$4, %edx
++	jmp	1b
++2:
++
++/*
+  * Do the decompression, and jump to the new kernel..
+  */
+ 	leal	z_extract_offset_negative(%ebx), %ebp
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index faff0dc..892db2d 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -280,6 +280,19 @@ relocated:
+ 	rep	stosq
+ 
+ /*
++ * Adjust our own GOT
++ */
++	leaq	_got(%rip), %rdx
++	leaq	_egot(%rip), %rcx
++1:
++	cmpq	%rdx, %rcx
++	jae	2f
++	addq	%rbx, (%rdx)
++	addq	$8, %rdx
++	jmp	1b
++2:
++	
++/*
+  * Do the decompression, and jump to the new kernel..
+  */
+ 	pushq	%rsi			/* Save the real mode argument */
+diff --git a/arch/x86/boot/compressed/vmlinux.lds.S b/arch/x86/boot/compressed/vmlinux.lds.S
+index 5ddabce..34d047c 100644
+--- a/arch/x86/boot/compressed/vmlinux.lds.S
++++ b/arch/x86/boot/compressed/vmlinux.lds.S
+@@ -41,6 +41,12 @@ SECTIONS
+ 		*(.rodata.*)
+ 		_erodata = . ;
+ 	}
++	.got : {
++		_got = .;
++		KEEP(*(.got.plt))
++		KEEP(*(.got))
++		_egot = .;
++	}
+ 	.data :	{
+ 		_data = . ;
+ 		*(.data)
+
+--------------000102070707070907080109--
