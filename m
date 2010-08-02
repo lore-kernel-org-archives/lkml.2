@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab0HBVwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 17:52:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54617 "EHLO mx1.suse.de"
+	id S1755522Ab0HBVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 17:54:09 -0400
+Received: from www.tglx.de ([62.245.132.106]:58590 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab0HBVwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 17:52:22 -0400
-Date: Tue, 3 Aug 2010 07:52:10 +1000
-From: Neil Brown <neilb@suse.de>
+	id S1753551Ab0HBVyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 17:54:07 -0400
+Date: Mon, 2 Aug 2010 23:51:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jens.axboe@kernel.dk>, stable@kernel.org,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and
- SWRITE to match the corresponding BIO_RW_* bits
-Message-ID: <20100803075210.22c7bd30@notabene>
-In-Reply-To: <4C56D30A.3000403@kernel.org>
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>
-	<4C28EFD6.2070203@vlnb.net>
-	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>
-	<4C3EF3AD.5070509@vlnb.net>
-	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>
-	<4C4D7DF5.9060909@vlnb.net>
-	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>
-	<4C5073F3.1060406@vlnb.net>
-	<4C52A98A.7060507@kernel.org>
-	<20100802104227.79340b49@notabene>
-	<4C56D30A.3000403@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
+In-Reply-To: <07f0ab73-7a5e-45c3-b2a8-cff745dc6bc7@email.android.com>
+Message-ID: <alpine.LFD.2.00.1008022319540.3225@localhost.localdomain>
+References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de> <4C56E5C7.90206@suse.de>
+ <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain> <07f0ab73-7a5e-45c3-b2a8-cff745dc6bc7@email.android.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Aug 2010 16:15:38 +0200
-Tejun Heo <tj@kernel.org> wrote:
+Tejun,
 
-> Commit a82afdf (block: use the same failfast bits for bio and request)
-> moved BIO_RW_* bits around such that they match up with REQ_* bits.
-> Unfortunately, fs.h hard coded READ, WRITE, READA and SWRITE as 0, 1,
-> 2 and 3, and expected them to match with BIO_RW_* bits.  READ/WRITE
-> didn't change but BIO_RW_AHEAD was moved to bit 4 instead of bit 1,
-> breaking READA and SWRITE.
-> 
-> This patch updates READA and SWRITE such that they match the BIO_RW_*
-> bits again.  A follow up patch will update the definitions to directly
-> use BIO_RW_* bits so that this kind of breakage won't happen again.
-> 
-> Stable: The offending commit a82afdf was released with v2.6.32, so
-> this patch should be applied to all kernels since then but it must
-> _NOT_ be applied to kernels earlier than that.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-and-bisected-by: Vladislav Bolkhovitin <vst@vlnb.net>
-> Root-caused-by: Neil Brown <neilb@suse.de>
-> Cc: Jens Axobe <axboe@kernel.dk>
-> Cc: stable@kernel.org
-> ---
-> Aieee... thanks for root causing it Neil.  That was a stupid bug.  I
-> knew that READ/WRITE were hardcoded but forgot about READA.  :-(
-> Moving BIO_RW_AHEAD back to bit 1 might be a better solution but I'm
-> afraid that would cause more confusions downstream.  This patch
-> updates READA and SWRITE to match BIO_RW_AHEAD and should also appear
-> in -stable releases.  The next patch will create bio_types.h and
-> define all constants in terms of BIO_RW_*.
-> 
-> Thanks.
-> 
-> (resending w/ Jens' new address)
-> 
->  include/linux/fs.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> Index: work/include/linux/fs.h
-> ===================================================================
-> --- work.orig/include/linux/fs.h
-> +++ work/include/linux/fs.h
-> @@ -148,8 +148,8 @@ struct inodes_stat_t {
->  #define RWA_MASK	2
+On Mon, 2 Aug 2010, Tejun Heo wrote:
 
-Close, but not quite there - RWA_MASK must be 16 too !!
+> Hello, Thomas.
+> 
+> On 08/02/2010 08:52 PM, Thomas Gleixner wrote:
+> >> Ooh, another reason is timer locality.  If timers are shared per desc,
+> >> they have much higher chance of being on the same processor.  Global
+> >> timers would be pretty bad in that respect.
+> > 
+> > That's irrelevant. If you need to poll an interrupt, then it does not
+> > matter at all whether you bounce some cache lines or not.
+> > 
+> > In fact we have two cases:
+> > 
+> >    1) An interrupt needs to be polled all the time. That sucks whether
+> >       the poll timer bounces a few cache lines or not.
+> > 
+> >    2) Polling an irq for some time. Either it works again after a
+> >       while, so your suckage is restricted to the poll period. If not
+> >       see #1
+> 
+> Hmm... for spurious and watch the above are true and if it were the
+> above two it would definitely make more sense to use per-purpose
+> global timers.  The problem is w/ expect tho.  It's supposed to be
+> used with normal hot paths, so expect/unexpect operations better be
+> low overhead and local.  I'll talk more about it in the other reply.
+
+No, it's not. You are just looking at it from the wrong
+perspective. The expect scenario is just a different form of
+watch. You worked around the problem by moving the timer to 3 seconds
++ slack if everything works as expected, but that's just sloppy. In
+fact you really want to kick that thing in when things go awry and
+take it away when it comes back to normal.  When things go awry, then
+the cache line bouncing is the least of your worries, really.
 
 Thanks,
-NeilBrown
 
-
->  #define READ 0
->  #define WRITE 1
-> -#define READA 2		/* read-ahead  - don't block if no resources */
-> -#define SWRITE 3	/* for ll_rw_block() - wait for buffer lock */
-> +#define READA 16	/* read-ahead  - don't block if no resources */
-> +#define SWRITE 17	/* for ll_rw_block() - wait for buffer lock */
->  #define READ_SYNC	(READ | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_UNPLUG))
->  #define READ_META	(READ | (1 << BIO_RW_META))
->  #define WRITE_SYNC_PLUG	(WRITE | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_NOIDLE))
+	tglx
 
