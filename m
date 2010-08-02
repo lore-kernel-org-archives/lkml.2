@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab0HBRkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 13:40:37 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46500 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab0HBRkg (ORCPT
+	id S1753882Ab0HBRly (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 13:41:54 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:52585 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab0HBRlx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 13:40:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=ou5EQB3QhmzMC9IEzKiQ+VSrsjD61ubSMZE6bKR53/CjkCu7O6S28E6fEX2TJS3qyn
-         vcYVsUk2ClpdNE9iauEuAitycxp1JL1m/V4iZ7wRWlxXLb6vWL06sy1JFGBJwulCkcv2
-         uT7q9i9a8Y4r1oUb9sa1RFtpQR0qRnMs+r2AA=
+	Mon, 2 Aug 2010 13:41:53 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 1/1] staging: hv: Fix missing functions for
+ net_device_ops
+Thread-Topic: [PATCH 1/1] staging: hv: Fix missing functions for
+ net_device_ops
+Thread-Index: AQHLMmQ5BGry+QOh3EmRF27A66ZhHpLO3dkA//+QKeA=
+Date: Mon, 2 Aug 2010 17:41:46 +0000
+Message-ID: <1FB5E1D5CA062146B38059374562DF7280E8553D@TK5EX14MBXC121.redmond.corp.microsoft.com>
+References: <1FB5E1D5CA062146B38059374562DF7280E8547C@TK5EX14MBXC121.redmond.corp.microsoft.com>
+ <20100802171754.GA8213@suse.de>
+In-Reply-To: <20100802171754.GA8213@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <8c697ddc279b861006c90dbb320a6079f6c04f92.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de> 
-	<8c697ddc279b861006c90dbb320a6079f6c04f92.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 2 Aug 2010 13:40:15 -0400
-Message-ID: <AANLkTikn68z2TRLYR4VV65qBdnCAWz1F97voGJGQ3x3F@mail.gmail.com>
-Subject: Re: [PATCH 3/6] arch/blackfin: Remove CONFIG_MEM_GENERIC_BOARD
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 2, 2010 at 12:01, Christian Dietrich wrote:
-> MEM_GENERIC_BOARD depends on GENERIC_BOARD, but this flag was removed
-> in 4f25eb85d64640bc656e72917113a84701521b99, therefore all references
-> to it from the source can be removed
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Monday, August 02, 2010 1:18 PM
+>
+> So what kernel versions are affected by this?
+> 
+> Please don't attach a patch and put it inline, it forces me to edit it
+> by hand.
+> 
+> Care to provide the above information and resend it so I can apply it?
 
-thanks, this one is OK and i'll merge it in a bit
--mike
+It affects kernel 2.6.32 and later, which are all versions contain Hyper-V drivers.
+I will send out an email with the inline patch only.
+
+Thanks,
+
+- Haiyang
+
