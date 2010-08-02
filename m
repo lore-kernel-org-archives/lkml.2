@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab0HBHvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:51:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60293 "EHLO hera.kernel.org"
+	id S1753513Ab0HBHv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:51:26 -0400
+Received: from www.tglx.de ([62.245.132.106]:52592 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385Ab0HBHvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:51:06 -0400
-Date: Mon, 2 Aug 2010 07:50:26 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        fweisbec@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, efault@gmx.de,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui: Show the scroll bar over the left window frame
-Message-ID: <tip-8d8c369f3d697e31e04133ca18b516952549ee33@git.kernel.org>
-Git-Commit-ID: 8d8c369f3d697e31e04133ca18b516952549ee33
-X-Mailer: tip-git-log-daemon
+	id S1753412Ab0HBHvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 03:51:21 -0400
+Date: Mon, 2 Aug 2010 09:50:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+Subject: Re: 2.6.33.6-rt26: oops (network related?)
+In-Reply-To: <1280602902.11380.6.camel@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1008020940090.9198@localhost.localdomain>
+References: <1280460642.2173.3.camel@localhost.localdomain> <1280602902.11380.6.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 02 Aug 2010 07:50:26 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8d8c369f3d697e31e04133ca18b516952549ee33
-Gitweb:     http://git.kernel.org/tip/8d8c369f3d697e31e04133ca18b516952549ee33
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 26 Jul 2010 14:08:48 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 27 Jul 2010 11:24:31 -0300
+On Sat, 31 Jul 2010, Fernando Lopez-Lezcano wrote:
 
-perf ui: Show the scroll bar over the left window frame
+> On Thu, 2010-07-29 at 20:30 -0700, Fernando Lopez-Lezcano wrote:
+> > Hi all...
+> > This may not be rt related but here it goes anyway. It happened when I
+> > tried to restart my iptables service (/sbin/service iptables start). I
+> > think a day or two ago I had another network related hang, but it was a
+> > complete hang (no clues left behind - power button to reset). 
+> 
+> Ok this one is rt related (apparently). The workstation (4 core, intel
+> based) hang hard while a process was starting a daily backup but the
+> logs captured the BUG:
+> 
+> --------
+> Jul 31 06:48:35 localhost kernel: ------------[ cut here ]------------
+> Jul 31 06:48:35 localhost kernel: kernel BUG at kernel/rtmutex.c:808!
 
-So that we gain two columns and look more like classical (at least in
-TUIs) scroll bars bars.
+Weird, line 808 is a comment. The BUG_ON in rt_spin_lock_slowlock() is
+at line 831.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/newt.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> Jul 31 06:48:35 localhost kernel: [<c0792332>] ? rt_spin_lock+0x8/0xa
+> Jul 31 06:48:35 localhost kernel: [<c075f896>] ? ipt_do_table+0xce/0x4f0
 
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index aed2149..cdd958e 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -347,12 +347,12 @@ static int ui_browser__show(struct ui_browser *self, const char *title)
- 		newtPopWindow();
- 	}
- 	ui_browser__refresh_dimensions(self);
--	newtCenteredWindow(self->width + 2, self->height, title);
-+	newtCenteredWindow(self->width, self->height, title);
- 	self->form = newt_form__new();
- 	if (self->form == NULL)
- 		return -1;
- 
--	self->sb = newtVerticalScrollbar(self->width + 1, 0, self->height,
-+	self->sb = newtVerticalScrollbar(self->width, 0, self->height,
- 					 HE_COLORSET_NORMAL,
- 					 HE_COLORSET_SELECTED);
- 	if (self->sb == NULL)
+Yeah, that's the iptables locking problem, which is fixed in rt27.
+
+Thanks,
+
+	tglx
+
