@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab0HBBJL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 21:09:11 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37994 "EHLO
+	id S1752535Ab0HBBJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:09:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37990 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab0HBBJF (ORCPT
+	with ESMTP id S1752094Ab0HBBJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 1 Aug 2010 21:09:05 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/19] perf hist: Introduce routine to measure lenght of formatted entry
-Date: Sun,  1 Aug 2010 22:08:39 -0300
-Message-Id: <1280711334-30000-5-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Dave Martin <dave.martin@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 09/19] perf tools: Remove unneeded code for tracking the cwd in perf sessions
+Date: Sun,  1 Aug 2010 22:08:44 -0300
+Message-Id: <1280711334-30000-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1280711334-30000-1-git-send-email-acme@infradead.org>
 References: <1280711334-30000-1-git-send-email-acme@infradead.org>
@@ -25,72 +23,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Dave Martin <dave.martin@linaro.org>
 
-Will be used to figure out the window width needed in the new tree
-widget.
+Tidy-up patch to remove some code and struct perf_session data members
+which are no longer needed due to the previous patch: "perf tools: Don't
+abbreviate file paths relative to the cwd".
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
 LKML-Reference: <new-submission>
+Signed-off-by: Dave Martin <dave.martin@linaro.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/hist.c |   27 +++++++++++++++++++++++++++
- tools/perf/util/hist.h |    3 +++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ tools/perf/builtin-buildid-list.c |    4 +---
+ tools/perf/builtin-diff.c         |    2 --
+ tools/perf/builtin-report.c       |    2 --
+ tools/perf/util/session.c         |   22 +---------------------
+ tools/perf/util/symbol.h          |    1 -
+ 5 files changed, 2 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 0bc6790..f93095f 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -850,6 +850,33 @@ print_entries:
- 	return ret;
+diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
+index 9989072..44a47e1 100644
+--- a/tools/perf/builtin-buildid-list.c
++++ b/tools/perf/builtin-buildid-list.c
+@@ -43,10 +43,8 @@ static int __cmd_buildid_list(void)
+ 	if (session == NULL)
+ 		return -1;
+ 
+-	if (with_hits) {
+-		symbol_conf.full_paths = true;
++	if (with_hits)
+ 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
+-	}
+ 
+ 	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
+ 
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 39e6627..fca1d44 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -180,8 +180,6 @@ static const struct option options[] = {
+ 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
+ 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
+ 		    "load module symbols - WARNING: use only with -k and LIVE kernel"),
+-	OPT_BOOLEAN('P', "full-paths", &symbol_conf.full_paths,
+-		    "Don't shorten the pathnames taking into account the cwd"),
+ 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+ 		   "only consider symbols in these dsos"),
+ 	OPT_STRING('C', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index ce42bba..2f4b929 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -441,8 +441,6 @@ static const struct option options[] = {
+ 		   "pretty printing style key: normal raw"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent"),
+-	OPT_BOOLEAN('P', "full-paths", &symbol_conf.full_paths,
+-		    "Don't shorten the pathnames taking into account the cwd"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 0307918..8cbea12 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -96,8 +96,6 @@ struct perf_session *perf_session__new(const char *filename, int mode, bool forc
+ 	self->hists_tree = RB_ROOT;
+ 	self->last_match = NULL;
+ 	self->mmap_window = 32;
+-	self->cwd = NULL;
+-	self->cwdlen = 0;
+ 	self->machines = RB_ROOT;
+ 	self->repipe = repipe;
+ 	INIT_LIST_HEAD(&self->ordered_samples.samples_head);
+@@ -130,7 +128,6 @@ void perf_session__delete(struct perf_session *self)
+ {
+ 	perf_header__exit(&self->header);
+ 	close(self->fd);
+-	free(self->cwd);
+ 	free(self);
  }
  
-+/*
-+ * See hists__fprintf to match the column widths
-+ */
-+unsigned int hists__sort_list_width(struct hists *self)
-+{
-+	struct sort_entry *se;
-+	int ret = 9; /* total % */
-+
-+	if (symbol_conf.show_cpu_utilization) {
-+		ret += 7; /* count_sys % */
-+		ret += 6; /* count_us % */
-+		if (perf_guest) {
-+			ret += 13; /* count_guest_sys % */
-+			ret += 12; /* count_guest_us % */
-+		}
-+	}
-+
-+	if (symbol_conf.show_nr_samples)
-+		ret += 11;
-+
-+	list_for_each_entry(se, &hist_entry__sort_list, list)
-+		if (!se->elide)
-+			ret += 2 + hists__col_len(self, se->se_width_idx);
-+
-+	return ret;
-+}
-+
- static void hists__remove_entry_filter(struct hists *self, struct hist_entry *h,
- 				       enum hist_filter filter)
- {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 92962b2..65a48db 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -141,4 +141,7 @@ int hist_entry__tui_annotate(struct hist_entry *self);
+@@ -832,23 +829,6 @@ int perf_session__process_events(struct perf_session *self,
+ 	if (perf_session__register_idle_thread(self) == NULL)
+ 		return -ENOMEM;
  
- int hists__tui_browse_tree(struct rb_root *self, const char *help);
- #endif
+-	if (!symbol_conf.full_paths) {
+-		char bf[PATH_MAX];
+-
+-		if (getcwd(bf, sizeof(bf)) == NULL) {
+-			err = -errno;
+-out_getcwd_err:
+-			pr_err("failed to get the current directory\n");
+-			goto out_err;
+-		}
+-		self->cwd = strdup(bf);
+-		if (self->cwd == NULL) {
+-			err = -ENOMEM;
+-			goto out_getcwd_err;
+-		}
+-		self->cwdlen = strlen(self->cwd);
+-	}
+-
+ 	if (!self->fd_pipe)
+ 		err = __perf_session__process_events(self,
+ 						     self->header.data_offset,
+@@ -856,7 +836,7 @@ out_getcwd_err:
+ 						     self->size, ops);
+ 	else
+ 		err = __perf_session__process_pipe_events(self, ops);
+-out_err:
 +
-+unsigned int hists__sort_list_width(struct hists *self);
-+
- #endif	/* __PERF_HIST_H */
+ 	return err;
+ }
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index bb1aab9..6452a07 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -68,7 +68,6 @@ struct symbol_conf {
+ 			show_nr_samples,
+ 			use_callchain,
+ 			exclude_other,
+-			full_paths,
+ 			show_cpu_utilization;
+ 	const char	*vmlinux_name,
+ 			*source_prefix,
 -- 
 1.6.2.5
 
