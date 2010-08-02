@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab0HBPfT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:35:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41466 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700Ab0HBPfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:35:17 -0400
-Message-ID: <4C56E5C7.90206@suse.de>
-Date: Mon, 02 Aug 2010 17:35:35 +0200
-From: Tejun Heo <teheo@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1753537Ab0HBPgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:36:39 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:36283 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751284Ab0HBPgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 11:36:37 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: hNHesaEVM1kYzu.saG1xN3pjLkZ2uaHQKtB22wOdROX7xVl
+ KM9yPGT91LFtZiykDAPpzg1kJg24CEH8DReMDYfQVdHnZNWWOAU1Jpd9dZgY
+ qc8w9I3XuDt2WY4c5Pa1EdefTUrLEtJWvysJXF53b60dwrNjzzreyencoX0w
+ 8xdWLHglzQGTLrDs4zFtHwLb52Ro99fzekBh887bl5MuQpn2XajSlhYrtfzC
+ pD4LrekD90ReelLothZfvYE3u4HbU8AISe0UIz9C1mvEnhXphaoj6
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 2 Aug 2010 10:36:33 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        Roland Dreier <rdreier@cisco.com>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@suse.de>
+Subject: Re: [S+Q2 07/19] slub: Allow removal of slab caches during boot
+In-Reply-To: <4C53EFBA.4090900@cs.helsinki.fi>
+Message-ID: <alpine.DEB.2.00.1008021036210.18455@router.home>
+References: <20100709190706.938177313@quilx.com>  <20100709190853.770833931@quilx.com>  <alpine.DEB.2.00.1007141647340.29110@chino.kir.corp.google.com> <1279498030.10390.1760.camel@pasglop> <alpine.DEB.2.00.1007191058220.29361@router.home>
+ <4C53EFBA.4090900@cs.helsinki.fi>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
-References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de>
-In-Reply-To: <4C56E42D.5010300@suse.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 05:28 PM, Tejun Heo wrote:
-> The reason why poll_irq() looks complicated is because different types
-> of timers on the same desc shares the timer.  The reason why it's
-> shared this way instead of across different descs of the same type is
-> to avoid locking overhead in maintaining the timer and linked lists of
-> its targets.  By sharing the timer in the same desc, everything can be
-> protected by desc->lock but if we use timers across different descs,
-> we need another layer of locking.
+On Sat, 31 Jul 2010, Pekka Enberg wrote:
 
-Ooh, another reason is timer locality.  If timers are shared per desc,
-they have much higher chance of being on the same processor.  Global
-timers would be pretty bad in that respect.
+> Christoph, Ben, should I queue this up for 2.6.36?
 
--- 
-tejun
+Yes.
