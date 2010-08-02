@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab0HBAyS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 20:54:18 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:39434 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab0HBAyR (ORCPT
+	id S1752326Ab0HBBBF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:01:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52535 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab0HBBBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 20:54:17 -0400
-Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
-From: Bojan Smojver <bojan@rexursive.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Nigel Cunningham <nigel@tuxonice.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1280465201.2600.10.camel@shrek.rexursive.com>
-	 <1280486667.2608.1.camel@shrek.rexursive.com>
-	 <4C534C9D.8000600@tuxonice.net>
-	 <1280532174.2583.1.camel@shrek.rexursive.com>
-	 <4C5362E7.3000706@tuxonice.net>
-	 <1280538184.2583.11.camel@shrek.rexursive.com>
-	 <4C537A01.5040808@tuxonice.net>
-	 <1280540035.2658.5.camel@shrek.rexursive.com>
-	 <1280551286.3097.6.camel@shrek.rexursive.com>
-	 <20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Aug 2010 10:54:13 +1000
-Message-ID: <1280710453.2727.8.camel@shrek.rexursive.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+	Sun, 1 Aug 2010 21:01:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TpjPZBNdD5nUUQReqm0c8z1EHzIt3FTUDQAOLNVmkptufhzGFdUF5BzYpfL6FYAUX7
+         +aYxaQFytXROkfB8IjlzIio6QSUmvFoaGfjqbccgJJxHKjZvGxNdrhY+0ebYZ6Dv2JpT
+         RCSsdwPXkl67GdMV4wZFNMzpZx0dqIyiww+FM=
+Message-ID: <4C5618DA.1020407@gmail.com>
+Date: Sun, 01 Aug 2010 18:01:14 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Pauli Nieminen <suokkos@gmail.com>
+Subject: Re: [Bug #16337] general protection fault: 0000 [#1] SMP
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera> <Aan7wZ97YaE.A.TCF.1qXVMB@chimera>
+In-Reply-To: <Aan7wZ97YaE.A.TCF.1qXVMB@chimera>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 09:17 +0900, KAMEZAWA Hiroyuki wrote:
-> Now, vmallc() is used here. Then, following will happen.
-> 
-> 1. vmalloc()
->    -> vmalloc adds vmap objects and set page table entries.
-> 
-> 2. saving image
->    -> At taking snapshot of memory to the disk, above vmalloc() area
-> is
->       saved to disk as it is.
-> ...
-> 3. At restore
->    Because you dont't remember which vmalloc() area was used for
-> creating
->    snapshot, you can't free it at swsusp_free().
-> 
-> memory leak ? 
+On 08/01/2010 06:52 AM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16337
+> Subject		: general protection fault: 0000 [#1] SMP
+> Submitter	: Justin P. Mattock<justinmattock@gmail.com>
+> Date		: 2010-07-03 22:59 (30 days old)
+> Message-ID	:<4C2FC0E3.6050101@gmail.com>
+> References	: http://marc.info/?l=linux-kernel&m=127819798215589&w=2
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-To be honest, I'm not sure.
+Ive played around with the machine that originally hit this. but still 
+cant seem to reproduce or trigger this.
 
-However, I thought that by the time save_image() is called, snapshot has
-already been taken, no?
-------------------
-        error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
-        if (error)
-                goto Thaw;
-
-        if (in_suspend) {
-                unsigned int flags = 0;
-
-                if (hibernation_mode == HIBERNATION_PLATFORM)
-                        flags |= SF_PLATFORM_MODE;
-                pr_debug("PM: writing image.\n");
-                error = swsusp_write(flags);  <--- this calls save_image()
-------------------
-
-So, me thinks that these allocations will not be in the snapshot image.
-
-PS. Take everything I take with a grain (or two) of salt. I'm just a
-regular Linux user trying to make my Fedora hibernate/thaw process suck
-less.
-
--- 
-Bojan
-
+Justin P. Mattock
