@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab0HBHnc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 03:43:32 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52374 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752109Ab0HBHnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 03:43:31 -0400
-From: pavan_savoy@ti.com
-To: gregkh@suse.de, linux-kernel@vger.kernel.org
-Cc: alan@lxorguk.ukuu.org.uk, pavan_savoy@sify.com,
-        Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH] drivers:staging:ti-st: update TODO
-Date: Mon,  2 Aug 2010 02:43:17 -0500
-Message-Id: <1280734997-602-1-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.5.6.3
+	id S1753206Ab0HBHpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 03:45:01 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60172 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109Ab0HBHpA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 03:45:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=B0dKyMu8JYtrFC4wIm7g3ctA6Qxg/pKbOWh1A6OmEAKPNWRK3vA/8GpfEPn3f+5qxb
+         DGiU348dT6/cjO1U9WYbcFBPQ2ASol18DqorOkrVW6dCxm3/7V5LzxEMm4Gv8H30URvW
+         1o7pHupsArR1wktnfsM+pF0evuIVTUIppvGqc=
+Date: Mon, 2 Aug 2010 10:45:59 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: Re: [Bug #15704] [r8169] WARNING: at net/sched/sch_generic.c
+Message-ID: <20100802074559.GA16551@swordfish>
+References: <JKn8_uSlpqD.A.HLG.1LYVMB@chimera>
+ <FMobw2FohV.A.GfH.xPYVMB@chimera>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+In-Reply-To: <FMobw2FohV.A.GfH.xPYVMB@chimera>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
 
-Removed TODO item 2 :
-Current UIM/KIM communicate via the rfkill device and identified by the unique idx
-assisgned by the rfkill sub-system to each of these rfkill entries.
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Removed TODO item 1 :
-Since there is no way we can test existance of multiple connectivity
-devices on  platform.
-However the basic infrastructure as in providing a context to ST driver
-exist.
-If multiple devices have to exist on a given platform, multiple ST
-platform devices need to be registered and each of the protocol drivers
-have to mention which platform device they want to bind to/make use of.
+On (08/01/10 16:44), Rafael J. Wysocki wrote:
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D15704
+> Subject		: [r8169] WARNING: at net/sched/sch_generic.c
+> Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Date		: 2010-03-31 10:21 (124 days old)
+> Message-ID	: <20100331102142.GA3294@swordfish.minsk.epam.com>
+> References	: http://marc.info/?l=3Dlinux-kernel&m=3D127003090406108&w=3D2
+>=20
 
-Removed TODO item 3:
-Locking have been reviewed and commit
-36b5aee46b5e4788758409829926c631de0a64a3 documents locking.
+Hello,
+This laptop is no longer available. Sorry.
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
----
- drivers/staging/ti-st/TODO |   18 +-----------------
- 1 files changed, 1 insertions(+), 17 deletions(-)
+	Sergey
 
-diff --git a/drivers/staging/ti-st/TODO b/drivers/staging/ti-st/TODO
-index 6a105ed..ebfd6bb 100644
---- a/drivers/staging/ti-st/TODO
-+++ b/drivers/staging/ti-st/TODO
-@@ -1,22 +1,6 @@
- TODO:
- 
--1. A per-device/tty port context required to support multiple devices
--on same platform.
--Plan: Each BT, FM and GPS device would be a platform-device with its platform-data
--mentioning which of the ST device it wants to attach itself onto.
--
--There by each of the ST device which is also a platform device upon receiving
--a st_register() would know whether the registration from BT/FM or GPS was intended for it.
--
--2. Improve upon the way requirement of line discipline is communicated to
--user-space, The current user-space application which open/installs ldisc
--as and when required can be found at,
--http://dev.omapzoom.org/pub/scm/jsistla/L23-btfm.git
--branch: UIM
--
--3. Re-view/Re-work on the locking.
--
--4. Step up and maintain this driver to ensure that it continues
-+1. Step up and maintain this driver to ensure that it continues
- to work.  Having the hardware for this is pretty much a
- requirement.  If this does not happen, the will be removed in
- the 2.6.35 kernel release.
--- 
-1.5.6.3
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkxWd7cACgkQfKHnntdSXjRp+gQAsatITEieaJx9BCWpOGazROaI
+/nljsRb9nNhvUTzXgUhIUTSaSYP391Ys6sq6I8iJPDhQAtBqYXBjZJSjP/5VXHL3
+cBM++M2MXeYxHCG9E6xWR5SnfPowJnaRtuS/1QbCxcn8W3Ep+0TaggNG1BCDdzix
+UA1Pz6uR0wWnxPLeUT4=
+=1WO1
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
