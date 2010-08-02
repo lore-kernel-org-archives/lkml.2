@@ -1,38 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab0HBGoa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 02:44:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752493Ab0HBGo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 02:44:28 -0400
-Message-ID: <4C566942.9020608@redhat.com>
-Date: Mon, 02 Aug 2010 08:44:18 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1752885Ab0HBGtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 02:49:11 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42380 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752493Ab0HBGtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 02:49:09 -0400
+Date: Mon, 2 Aug 2010 12:16:38 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 9/14]  trace: uprobes trace_event
+ interface
+Message-ID: <20100802064638.GB22812@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
+ <20100727111045.24690.31897.sendpatchset@localhost6.localdomain6>
+ <4C510BCE.4010704@hitachi.com>
+ <20100802022055.GB5581@nowhere>
+ <4C563F44.9080300@hitachi.com>
 MIME-Version: 1.0
-To: Alasdair G Kergon <agk@redhat.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the device-mapper tree
-References: <20100802113148.e0b70b34.sfr@canb.auug.org.au>
-In-Reply-To: <20100802113148.e0b70b34.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4C563F44.9080300@hitachi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 03:31 AM, Stephen Rothwell wrote:
-> After merging the device-mapper tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+> > 
+> > In fact this could be a menu "Dynamic Probes", perhaps default off, inside
+> > which Kprobes and Uprobes would be default on (but depend on "Dynamic Probes").
+> > 
+> > So that you can quickly enable them all in one.
 > 
-> drivers/md/dm-crypt.c: In function 'crypt_ctr_cipher':
-> drivers/md/dm-crypt.c:1095: error: 'bad_mem' undeclared (first use in this function)
+> Hmm, I disagree with it, because both Kprobes and Uprobes provides
+> APIs for modules too.
+> 
+> I'd like to suggest below config tree
+> 
+> Kenrel hacking
+>   - Kprobes
+>   - Uprobes
+>   - Tracing
+>      -- Dynamic Events
+>         depends on Kprobes || Uprobes
+> or
+> 	select Kprobes && Uprobes
 
-hmmmm, Alasdair you edited that patch?
-The version I sent compiled cleanly.
-(moreover it is just part of patchset which is not yet fully there, seems)
+I would agree with Masami since there could be people who might be
+apprehensive to try out Uprobes (which would still be experimental) but
+would be interested to use kprobes only since its more mature.
 
-Milan
+One change I would suggest would be to select respective events(i.e
+kprobe_event, uprobe_event) instead of kprobes and uprobes.
+	
+-
+Thanks and Regards
+Srikar
