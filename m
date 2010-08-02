@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752983Ab0HBIwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 04:52:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53835 "EHLO smtps.tip.net.au"
+	id S1753180Ab0HBIxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 04:53:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23995 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388Ab0HBIwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 04:52:44 -0400
-Date: Mon, 2 Aug 2010 18:52:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: Linux 2.6.35
-Message-Id: <20100802185226.7c760906.sfr@canb.auug.org.au>
-In-Reply-To: <20100802081422.GA8892@amd>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
-	<20100802103204.3d1b2863.sfr@canb.auug.org.au>
-	<20100802081422.GA8892@amd>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__2_Aug_2010_18_52_26_+1000_thQpjlDHviev8TkW"
+	id S1753021Ab0HBIxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 04:53:12 -0400
+Message-ID: <4C56876F.5000804@redhat.com>
+Date: Mon, 02 Aug 2010 11:53:03 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: vatsa@linux.vnet.ibm.com
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        linux-kernel@vger.kernel.org, npiggin@suse.de,
+        Jeremy Fitzhardinge <jeremy@goop.org>, kvm@vger.kernel.org,
+        bharata@in.ibm.com, Balbir Singh <balbir@in.ibm.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH RFC 3/4] Paravirtualized spinlock implementation for KVM
+ guests
+References: <20100726061150.GB21699@linux.vnet.ibm.com> <20100726061537.GC8402@linux.vnet.ibm.com>
+In-Reply-To: <20100726061537.GC8402@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Aug_2010_18_52_26_+1000_thQpjlDHviev8TkW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Nick,
-
-On Mon, 2 Aug 2010 18:14:22 +1000 Nick Piggin <npiggin@suse.de> wrote:
+  On 07/26/2010 09:15 AM, Srivatsa Vaddagiri wrote:
+> Paravirtual spinlock implementation for KVM guests, based heavily on Xen guest's
+> spinlock implementation.
 >
-> I will work something out with Al and try to have something in
-> linux-next ASAP.
+> +static void kvm_spin_unlock(struct arch_spinlock *lock)
+> +{
+> +	struct kvm_spinlock *sl = (struct kvm_spinlock *)lock;
+> +
+> +	ADD_STATS(released, 1);
+> +
+> +	smp_wmb();		/* make sure no writes get moved after unlock */
+> +	sl->lock = 0;		/* release lock */
+> +}
 
-OK, great.
+Wait, no wakeup?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+So it is a yield, not a sleep.  I'm worried it could seriously impact 
+fairness when one non-contending guest (or non-pv) is overcommitted 
+together with a spin-yield guest.
 
---Signature=_Mon__2_Aug_2010_18_52_26_+1000_thQpjlDHviev8TkW
-Content-Type: application/pgp-signature
+-- 
+error compiling committee.c: too many arguments to function
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMVodKAAoJEDMEi1NhKgbsfcEIAIh6M0KH0pSAXhhVdNaXj6qI
-+Bq6DWl6XyeWbvRk8aESTTDfiMuaif810eqkOVQlVp3VocoMgsWwsEsomRE0Uy1g
-LEG+1wota2ygc2jUgCq6op4Dlge2Ha8N0Vw+4g7ed0DwoqJHeUNjQkUKkT4JoSD+
-D+gWUlcCiDm23QmR0+ktyFNMK0+WdKxXVkMltzli90lXNh9m/QH/FoVO+hb4yZiP
-PGobhoVamS1SEk+exMsNZmQdhp0E7uhmDl3yH9A4NJJBmHLtOAOetljdp+rqO32M
-UM4occbBC8MwO+cP4viK5xjFJISFx3Qd5dQcSIQQnmmaQfGpDgXx/reTGA2yMjM=
-=68us
------END PGP SIGNATURE-----
-
---Signature=_Mon__2_Aug_2010_18_52_26_+1000_thQpjlDHviev8TkW--
