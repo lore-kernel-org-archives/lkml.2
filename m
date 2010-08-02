@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab0HBLCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 07:02:46 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:12942 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751310Ab0HBLCp (ORCPT
+	id S1753151Ab0HBLFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 07:05:21 -0400
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:32801 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab0HBLFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 07:02:45 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAJxBVkx5Ld2l/2dsb2JhbACgDHK+ZYU5BA
-Date: Mon, 2 Aug 2010 20:07:29 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Nick Piggin <npiggin@suse.de>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.35
-Message-ID: <20100802100729.GB9427@amd>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
- <20100802023322.GA19164@dastard>
- <AANLkTint_s6h_EC7mDiPsyxr=C0GSrnrgJYkCCU7JEtN@mail.gmail.com>
- <20100802055834.GB19164@dastard>
- <20100802075537.GC7841@amd>
- <20100802082428.GA23135@infradead.org>
- <20100802090542.GA32322@infradead.org>
+	Mon, 2 Aug 2010 07:05:19 -0400
+Date: Mon, 2 Aug 2010 13:05:17 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity
+ data
+Message-ID: <20100802110517.GA4556@schmichrtp.mainz.de.ibm.com>
+References: <20100715153410.774329000@de.ibm.com>
+ <yq1mxtspwab.fsf@sermon.lab.mkp.net>
+ <20100716083034.GA7474@schmichrtp.ibm.com>
+ <yq1bpa292wy.fsf@sermon.lab.mkp.net>
+ <20100720092850.GA4547@schmichrtp.mainz.de.ibm.com>
+ <yq1y6d579fy.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100802090542.GA32322@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <yq1y6d579fy.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 05:05:42AM -0400, Christoph Hellwig wrote:
-> On Mon, Aug 02, 2010 at 04:24:28AM -0400, Christoph Hellwig wrote:
-> > .36.  I'd much rather see the inode_lock scaling or the lockless path
-> > walk going in before, but I haven't checked how complicated the
-> > reordering would be.  The lockless path walk also is only rather
-> > theoretically useful until we do ACL checks lockless as we're having
-> > ACLs enabled pretty much everywhere at least in the distros.
+On Wed, Jul 21, 2010 at 12:20:01AM -0400, Martin K. Petersen wrote:
+> >>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
 > 
-> >From a quick look it seems like the inode_lock splitup can easily
-> be moved forward, and it would help us with doing some work on the
-> writeback side.  The problem is that it would need rebasing ontop
-> of both the vfs and writeback (aka block) trees.
+> Christof> To have a simple approach that covers the case with one
+> Christof> integrity data segment per user data segment, we only report
+> Christof> half the size for the scatterlist length when running
+> Christof> DIX. This guarantees that the other half can be used for
+> Christof> integrity data.
+> 
+> Yup, a few of our partners did something similar.
+> 
+> My concern is the scenario where we submit lots of 512-byte writes that
+> get merged into (in your case) 4 KB segments.  Each of those 512-byte
+> writes could come with an 8-byte integrity metadata tuple.  And so you'd
+> need 8 DI scatterlist elements per data element.
+> 
+> 
+> Christof> Meaning the integrity data sg list would have more entries
+> Christof> than max_segments? I have not seen this during my experiments,
+> Christof> but then i likely have not hit every case of a possible
+> Christof> request layout.
+> 
+> dd to the block device is usually a good way to issue long scatterlists.
+> 
+> 
+> Christof> Ok, i have to look into that as well. It would be an issue
+> Christof> with the approach we are looking at now: If there are
+> Christof> max_segments data segments, and more than max_segments
+> Christof> integrity data segments, we will overrun the hardware
+> Christof> constraint.
+> 
+> Ok.
 
-inode_lock splitup is much simpler than dcache_lock, yes.
+After looking at the given facts, this seems to be the missing part:
+The zfcp hardware interface has an maximum number of data segments
+that can be part of one request. In the experimental zfcp DIF/DIX
+patch (now in scsi-misc), zfcp reserves half of the data segments
+for integrity data. But if small bios have been merged until hitting
+queue_max_segments, there may be more integrity data segments.
 
-And I have to rebase it on the work currently queued for 2.6.35
-anyway, so that's no problem. I can easily put it in front of
-dcache_lock patches in the series (as I said, I've kept everything
-independent and well split up).
+To summarize the limits i see in the zfcp hardware:
+- Maximum size of 4k per segment
+- The segments must not cross page boundaries
+- The number of segments per request is limited
 
-I do want opinions on how to do the big-picture merge, though,
-before I start moving things around. And obviously reviewing
-each of the parts is more important at this point than exact
-way to order the thing.
+My preferred approach would be to set the limits on the queue, so that
+the request adheres to the hardware limitations and can be passed on
+directly to the hardware. I would like to avoid splitting large
+segments in the driver code, and i especially want to avoid having to
+copy the integrity data to new buffers to adhere to the hardware
+constraints.
 
-But even the inode_lock patches I am wary of merging in 2.6.36
-without having much review or any linux-next / vfs-tree exposure.
+Looking at the block layer, the number of integrity data segments
+could be limited with an additional check in ll_new_hw_segment.
 
+What would be the preferred approach for handling the integrity data
+limits in the block layer? Introduce new queue limits for integrity
+data, or assume that the limits for integrity data are the same as for
+user data? I can update my patch accordingly and include a check for
+the maximum number of segments.
+
+Christof
