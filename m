@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab0HBEKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 00:10:44 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51780 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab0HBEKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 00:10:42 -0400
-Date: Mon, 2 Aug 2010 14:10:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: linux-next: build warnings after merge of the final tree
-Message-Id: <20100802141035.f84f9132.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY"
+	id S1752470Ab0HBENb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 00:13:31 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:46240 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751451Ab0HBEN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 00:13:28 -0400
+X-Sasl-enc: wMY0sU0Xq45JQur/zNYE870DliEBMS6Tevv1861nVJ0V 1280722405
+Date: Mon, 2 Aug 2010 01:13:21 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Christoph Anton Mitterer <calestyo@scientia.net>
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [Pkg-sysvinit-devel] Bug#587665: Safety of early boot init of
+ /dev/random seed
+Message-ID: <20100802041321.GB6863@khazad-dum.debian.net>
+References: <4C2BDCF0.5080203@debian.org>
+ <20100701141022.GA3811@login1.uio.no>
+ <20100701171357.GE4789@khazad-dum.debian.net>
+ <20100702064415.GE3811@login1.uio.no>
+ <20100702232919.GA14437@login2.uio.no>
+ <20100703012833.GA20929@khazad-dum.debian.net>
+ <20100703151636.GB23648@khazad-dum.debian.net>
+ <20100703160819.GA12343@khazad-dum.debian.net>
+ <1278355233.9937.21.camel@calx>
+ <1280703171.10108.35.camel@fermat.scientia.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280703171.10108.35.camel@fermat.scientia.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 02 Aug 2010, Christoph Anton Mitterer wrote:
+> > > > 2. How dangerous it is to feed the pool with stale seed data in the next
+> > > >    boot (i.e. in a failure mode where we do not regenerate the seed file) ?
+> > 
+> > Not at all.
+> 
+> Are the above to statements also true for possibly "evil" random data?
 
-Hi all,
+Yes.  I think you could consider that seeding with evil data does as much
+damage as not seeding at all.
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig with CONFIG_DEBUG_SECTION_MISMATCH=3Dy) produced these warnings:
+Unless there is a big bad bug somewhere, in which case we'd very much like
+to know about it ;-)
 
-WARNING: mm/built-in.o(.text+0x24324): Section mismatch in reference from t=
-he function memblock_find_in_range() to the function .init.text:memblock_fi=
-nd_base()
-The function memblock_find_in_range() references
-the function __init memblock_find_base().
-This is often because memblock_find_in_range lacks a __init=20
-annotation or the annotation of memblock_find_base is wrong.
+> Working with a Gird-CA for the LHC - we're always interested in nice
+> tokens like:
+> http://www.entropykey.co.uk/
+> 
+> Unfortunately it's never really clear how well their contribution would
+> actually be.... and the paranoid below us could even believe, that
+> mighty government organisations have such devices hacked in order to
+> harm our crypto ;)
 
-WARNING: mm/built-in.o(.text+0x24610): Section mismatch in reference from t=
-he function memblock_double_array() to the function .init.text:memblock_fre=
-e()
-The function memblock_double_array() references
-the function __init memblock_free().
-This is often because memblock_double_array lacks a __init=20
-annotation or the annotation of memblock_free is wrong.
+Well, if you overestimate the entropy that thing will output, it might cause
+harm.  If it has a self-sabotage device that is intelligent enough not to
+fail the tests done by the application that feeds entropy to the kernel, it
+might cause harm.  The list goes on and on...
 
-WARNING: mm/built-in.o(.text+0x24670): Section mismatch in reference from t=
-he function memblock_double_array() to the function .init.text:memblock_fin=
-d_base()
-The function memblock_double_array() references
-the function __init memblock_find_base().
-This is often because memblock_double_array lacks a __init=20
-annotation or the annotation of memblock_find_base is wrong.
-
-WARNING: vmlinux.o(.text+0x10264): Section mismatch in reference from the f=
-unction setup_initial_memory_limit() to the function .init.text:memblock_se=
-t_current_limit()
-The function setup_initial_memory_limit() references
-the function __init memblock_set_current_limit().
-This is often because setup_initial_memory_limit lacks a __init=20
-annotation or the annotation of memblock_set_current_limit is wrong.
-
-Introduced by the memblock series in the tip tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMVkU7AAoJEDMEi1NhKgbsr5sIAJOQEL/NTEoJCq0Qdo5PnusC
-7+/Vz1APem8ZdiTeUxn6XeELN4y91dPK4g5kbILBh9NaS5o6B978M1pWvBCeuyjj
-hbAm07lq3ZtXR6S0JMlQXJ8p4DnMnDcwziniPBou8RH5aRJSJRvzWvQ/eFzQsx00
-eqCKAW3b8VJOPKR8OPODrrMve9ExPXvHviBia31QZMH/kRuHTTRCd6q7+LsXJ0lq
-iH5WMJakmh1RI9ZaLkybSfOBb2k5Lb/KKYahh8ncfzlp9g+4NvjzANZbE0vbPcBe
-zlHZkG2QvaKvQtRKGIdD9Vpm9iEMEAZsMV4RDWf6lnR6yooFv2y2SN/Mjbb8Sps=
-=+ZjI
------END PGP SIGNATURE-----
-
---Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY--
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
