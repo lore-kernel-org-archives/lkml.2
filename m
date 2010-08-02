@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab0HBKUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 06:20:54 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41022 "EHLO
+	id S1753003Ab0HBKWJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 06:22:09 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41098 "EHLO
 	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342Ab0HBKUx (ORCPT
+	with ESMTP id S1752233Ab0HBKWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 06:20:53 -0400
+	Mon, 2 Aug 2010 06:22:07 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 2 Aug 2010 19:15:59 +0900
+Date: Mon, 2 Aug 2010 19:17:15 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: linux-mm@kvack.org,
@@ -17,8 +17,8 @@ Cc: linux-mm@kvack.org,
         vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 3/5] memcg scalable file stat accounting method
-Message-Id: <20100802191559.6af0cded.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH -mm 4/5] memcg generic file stat accounting interface.
+Message-Id: <20100802191715.63ce81ed.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -32,181 +32,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-At accounting file events per memory cgroup, we need to find memory cgroup
-via page_cgroup->mem_cgroup. Now, we use lock_page_cgroup().
+Preparing for adding new status arounf file caches.(dirty, writeback,etc..)
+Using a unified macro and more generic names.
+All counters will have the same rule for updating.
 
-But, considering the context which page-cgroup for files are accessed,
-we can use alternative light-weight mutual execusion in the most case.
-At handling file-caches, the only race we have to take care of is "moving"
-account, IOW, overwriting page_cgroup->mem_cgroup. Because file status
-update is done while the page-cache is in stable state, we don't have to
-take care of race with charge/uncharge.
-
-Unlike charge/uncharge, "move" happens not so frequently. It happens only when
-rmdir() and task-moving (with a special settings.)
-This patch adds a race-checker for file-cache-status accounting v.s. account
-moving. The new per-cpu-per-memcg counter MEM_CGROUP_ON_MOVE is added.
-The routine for account move 
-  1. Increment it before start moving
-  2. Call synchronize_rcu()
-  3. Decrement it after the end of moving.
-By this, file-status-counting routine can check it needs to call
-lock_page_cgroup(). In most case, I doesn't need to call it.
-
-
-Changelog: 20100730
- - some cleanup.
-Changelog: 20100729
- - replaced __this_cpu_xxx() with this_cpu_xxx
-   (because we don't call spinlock)
- - added VM_BUG_ON().
+Changelog:
+ - clean up and moved mem_cgroup_stat_index to header file.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   78 +++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 66 insertions(+), 12 deletions(-)
+ include/linux/memcontrol.h  |   23 ++++++++++++++++++++++
+ include/linux/page_cgroup.h |   12 +++++------
+ mm/memcontrol.c             |   46 ++++++++++++++++++--------------------------
+ 3 files changed, 48 insertions(+), 33 deletions(-)
 
+Index: mmotm-0727/include/linux/memcontrol.h
+===================================================================
+--- mmotm-0727.orig/include/linux/memcontrol.h
++++ mmotm-0727/include/linux/memcontrol.h
+@@ -25,6 +25,29 @@ struct page_cgroup;
+ struct page;
+ struct mm_struct;
+ 
++/*
++ * Per-cpu Statistics for memory cgroup.
++ */
++enum mem_cgroup_stat_index {
++	/*
++	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
++	 */
++	MEM_CGROUP_STAT_CACHE,		/* # of pages charged as cache */
++	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
++	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
++	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
++	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
++	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
++	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
++	/* About file-stat please see memcontrol.h */
++	MEM_CGROUP_FSTAT_BASE,
++	MEM_CGROUP_FSTAT_FILE_MAPPED = MEM_CGROUP_FSTAT_BASE,
++	MEM_CGROUP_FSTAT_END,
++	MEM_CGROUP_STAT_NSTATS = MEM_CGROUP_FSTAT_END,
++};
++
++#define MEMCG_FSTAT_IDX(idx)	((idx) - MEM_CGROUP_FSTAT_BASE)
++
+ extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+ 					struct list_head *dst,
+ 					unsigned long *scanned, int order,
 Index: mmotm-0727/mm/memcontrol.c
 ===================================================================
 --- mmotm-0727.orig/mm/memcontrol.c
 +++ mmotm-0727/mm/memcontrol.c
-@@ -88,6 +88,7 @@ enum mem_cgroup_stat_index {
- 	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
- 	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
-+	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
+@@ -74,24 +74,6 @@ static int really_do_swap_account __init
+ #define THRESHOLDS_EVENTS_THRESH (7) /* once in 128 */
+ #define SOFTLIMIT_EVENTS_THRESH (10) /* once in 1024 */
  
- 	MEM_CGROUP_STAT_NSTATS,
- };
-@@ -1074,7 +1075,49 @@ static unsigned int get_swappiness(struc
- 	return swappiness;
- }
+-/*
+- * Statistics for memory cgroup.
+- */
+-enum mem_cgroup_stat_index {
+-	/*
+-	 * For MEM_CONTAINER_TYPE_ALL, usage = pagecache + rss.
+-	 */
+-	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
+-	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+-	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+-	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
+-	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
+-	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+-	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
+-	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
+-
+-	MEM_CGROUP_STAT_NSTATS,
+-};
  
--/* A routine for testing mem is not under move_account */
-+static void mem_cgroup_start_move(struct mem_cgroup *mem)
-+{
-+	int cpu;
-+	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
-+	spin_lock(&mc.lock);
-+	for_each_possible_cpu(cpu)
-+		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) += 1;
-+	spin_unlock(&mc.lock);
-+
-+	synchronize_rcu();
-+}
-+
-+static void mem_cgroup_end_move(struct mem_cgroup *mem)
-+{
-+	int cpu;
-+
-+	if (!mem)
-+		return;
-+	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
-+	spin_lock(&mc.lock);
-+	for_each_possible_cpu(cpu)
-+		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) -= 1;
-+	spin_unlock(&mc.lock);
-+}
-+
-+/*
-+ * mem_cgroup_is_moved -- checking a cgroup is mc.from target or not.
-+ *                          used for avoiding race.
-+ * mem_cgroup_under_move -- checking a cgroup is mc.from or mc.to or
-+ *			    under hierarchy of them. used for waiting at
-+ *			    memory pressure.
-+ * Result of is_moved can be trusted until the end of rcu_read_unlock().
-+ * The caller must do
-+ *	rcu_read_lock();
-+ *	result = mem_cgroup_is_moved();
-+ *	.....make use of result here....
-+ *	rcu_read_unlock();
-+ */
-+static bool mem_cgroup_is_moved(struct mem_cgroup *mem)
-+{
-+	VM_BUG_ON(!rcu_read_lock_held());
-+	return this_cpu_read(mem->stat->count[MEM_CGROUP_ON_MOVE]) > 0;
-+}
- 
- static bool mem_cgroup_under_move(struct mem_cgroup *mem)
- {
-@@ -1473,29 +1516,36 @@ void mem_cgroup_update_file_mapped(struc
+ struct mem_cgroup_stat_cpu {
+ 	s64 count[MEM_CGROUP_STAT_NSTATS];
+@@ -1512,7 +1494,8 @@ bool mem_cgroup_handle_oom(struct mem_cg
+  * Currently used to update mapped file statistics, but the routine can be
+  * generalized to update other statistics as well.
+  */
+-void mem_cgroup_update_file_mapped(struct page *page, int val)
++static void
++mem_cgroup_update_file_stat(struct page *page, unsigned int idx, int val)
  {
  	struct mem_cgroup *mem;
  	struct page_cgroup *pc;
-+	bool need_lock = false;
- 
- 	pc = lookup_page_cgroup(page);
- 	if (unlikely(!pc))
- 		return;
--
--	lock_page_cgroup(pc);
-+	rcu_read_lock();
- 	mem = id_to_memcg(pc->mem_cgroup);
--	if (!mem || !PageCgroupUsed(pc))
-+	if (likely(mem)) {
-+		if (mem_cgroup_is_moved(mem)) {
-+			/* need to serialize with move_account */
-+			lock_page_cgroup(pc);
-+			need_lock = true;
-+			mem = id_to_memcg(pc->mem_cgroup);
-+			if (unlikely(!mem))
-+				goto done;
-+		}
-+	}
-+	if (unlikely(!PageCgroupUsed(pc)))
+@@ -1536,11 +1519,11 @@ void mem_cgroup_update_file_mapped(struc
+ 	if (unlikely(!PageCgroupUsed(pc)))
  		goto done;
--
--	/*
--	 * Preemption is already disabled. We can use __this_cpu_xxx
--	 */
  	if (val > 0) {
--		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-+		this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
- 		SetPageCgroupFileMapped(pc);
+-		this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		SetPageCgroupFileMapped(pc);
++		this_cpu_inc(mem->stat->count[idx]);
++		set_bit(fflag_idx(MEMCG_FSTAT_IDX(idx)), &pc->flags);
  	} else {
--		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-+		this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
- 		ClearPageCgroupFileMapped(pc);
+-		this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		ClearPageCgroupFileMapped(pc);
++		this_cpu_dec(mem->stat->count[idx]);
++		clear_bit(fflag_idx(MEMCG_FSTAT_IDX(idx)), &pc->flags);
  	}
--
  done:
--	unlock_page_cgroup(pc);
-+	if (need_lock)
-+		unlock_page_cgroup(pc);
-+	rcu_read_unlock();
+ 	if (need_lock)
+@@ -1548,6 +1531,12 @@ done:
+ 	rcu_read_unlock();
  }
  
++void mem_cgroup_update_file_mapped(struct page *page, int val)
++{
++	return mem_cgroup_update_file_stat(page,
++		MEM_CGROUP_FSTAT_FILE_MAPPED, val);
++}
++
  /*
-@@ -3034,6 +3084,7 @@ move_account:
- 		lru_add_drain_all();
- 		drain_all_stock_sync();
- 		ret = 0;
-+		mem_cgroup_start_move(mem);
- 		for_each_node_state(node, N_HIGH_MEMORY) {
- 			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
- 				enum lru_list l;
-@@ -3047,6 +3098,7 @@ move_account:
- 			if (ret)
- 				break;
- 		}
-+		mem_cgroup_end_move(mem);
- 		memcg_oom_recover(mem);
- 		/* it seems parent cgroup doesn't have enough mem */
- 		if (ret == -ENOMEM)
-@@ -4513,6 +4565,7 @@ static void mem_cgroup_clear_mc(void)
- 	mc.to = NULL;
- 	mc.moving_task = NULL;
- 	spin_unlock(&mc.lock);
-+	mem_cgroup_end_move(from);
- 	memcg_oom_recover(from);
- 	memcg_oom_recover(to);
- 	wake_up_all(&mc.waitq);
-@@ -4543,6 +4596,7 @@ static int mem_cgroup_can_attach(struct 
- 			VM_BUG_ON(mc.moved_charge);
- 			VM_BUG_ON(mc.moved_swap);
- 			VM_BUG_ON(mc.moving_task);
-+			mem_cgroup_start_move(from);
- 			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = mem;
+  * size of first charge trial. "32" comes from vmscan.c's magic value.
+  * TODO: maybe necessary to use big numbers in big irons.
+@@ -2007,17 +1996,20 @@ static void __mem_cgroup_commit_charge(s
+ static void __mem_cgroup_move_account(struct page_cgroup *pc,
+ 	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
+ {
++	int i;
+ 	VM_BUG_ON(from == to);
+ 	VM_BUG_ON(PageLRU(pc->page));
+ 	VM_BUG_ON(!PageCgroupLocked(pc));
+ 	VM_BUG_ON(!PageCgroupUsed(pc));
+ 	VM_BUG_ON(id_to_memcg(pc->mem_cgroup) != from);
+ 
+-	if (PageCgroupFileMapped(pc)) {
++	for (i = MEM_CGROUP_FSTAT_BASE; i < MEM_CGROUP_FSTAT_END; ++i) {
++		if (!test_bit(fflag_idx(MEMCG_FSTAT_IDX(i)), &pc->flags))
++			continue;
+ 		/* Update mapped_file data for mem_cgroup */
+ 		preempt_disable();
+-		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+-		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
++		__this_cpu_dec(from->stat->count[i]);
++		__this_cpu_inc(to->stat->count[i]);
+ 		preempt_enable();
+ 	}
+ 	mem_cgroup_charge_statistics(from, pc, false);
+@@ -3447,7 +3439,7 @@ static int mem_cgroup_get_local_stat(str
+ 	s->stat[MCS_CACHE] += val * PAGE_SIZE;
+ 	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
+ 	s->stat[MCS_RSS] += val * PAGE_SIZE;
+-	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
++	val = mem_cgroup_read_stat(mem, MEM_CGROUP_FSTAT_FILE_MAPPED);
+ 	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
+ 	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGIN_COUNT);
+ 	s->stat[MCS_PGPGIN] += val;
+Index: mmotm-0727/include/linux/page_cgroup.h
+===================================================================
+--- mmotm-0727.orig/include/linux/page_cgroup.h
++++ mmotm-0727/include/linux/page_cgroup.h
+@@ -40,9 +40,14 @@ enum {
+ 	PCG_CACHE, /* charged as cache */
+ 	PCG_USED, /* this object is in use. */
+ 	PCG_ACCT_LRU, /* page has been accounted for */
+-	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
+ 	PCG_MIGRATION, /* under page migration */
++	PCG_FILE_FLAGS, /* see memcontrol.h */
+ };
++/*
++ * file-stat flags are defined regarding to memcg's stat information.
++ * Here, just defines a macro for indexing
++ */
++#define fflag_idx(idx)	((idx) + PCG_FILE_FLAGS)
+ 
+ #define TESTPCGFLAG(uname, lname)			\
+ static inline int PageCgroup##uname(struct page_cgroup *pc)	\
+@@ -76,11 +81,6 @@ CLEARPCGFLAG(AcctLRU, ACCT_LRU)
+ TESTPCGFLAG(AcctLRU, ACCT_LRU)
+ TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
+ 
+-
+-SETPCGFLAG(FileMapped, FILE_MAPPED)
+-CLEARPCGFLAG(FileMapped, FILE_MAPPED)
+-TESTPCGFLAG(FileMapped, FILE_MAPPED)
+-
+ SETPCGFLAG(Migration, MIGRATION)
+ CLEARPCGFLAG(Migration, MIGRATION)
+ TESTPCGFLAG(Migration, MIGRATION)
 
