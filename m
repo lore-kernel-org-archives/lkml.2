@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab0HBRjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 13:39:54 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60170 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab0HBRjx (ORCPT
+	id S1753889Ab0HBRkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 13:40:37 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46500 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab0HBRkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 13:39:53 -0400
+	Mon, 2 Aug 2010 13:40:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type;
-        b=iEbT0IFIDpnPQzKT82QTu42RUt+3A7Axunnd18FJkX+BR9WGUAfoFi6j3VhIfcXB92
-         +hjQxYfgTeAuUOI3NHcK2WAChndkYvC8up6RhUZBX18Rsrlx05jTwwVHzNRBlUyi4p20
-         heO6KzqgoD3RhRTk1VxynWsgtaqiwTCB9ulF0=
+        b=ou5EQB3QhmzMC9IEzKiQ+VSrsjD61ubSMZE6bKR53/CjkCu7O6S28E6fEX2TJS3qyn
+         vcYVsUk2ClpdNE9iauEuAitycxp1JL1m/V4iZ7wRWlxXLb6vWL06sy1JFGBJwulCkcv2
+         uT7q9i9a8Y4r1oUb9sa1RFtpQR0qRnMs+r2AA=
 MIME-Version: 1.0
-In-Reply-To: <ccdd80e85789f8b5cc2606195f331b3339e565a2.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
+In-Reply-To: <8c697ddc279b861006c90dbb320a6079f6c04f92.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
 References: <cover.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de> 
-	<ccdd80e85789f8b5cc2606195f331b3339e565a2.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<8c697ddc279b861006c90dbb320a6079f6c04f92.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
 From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 2 Aug 2010 13:39:31 -0400
-Message-ID: <AANLkTi=M+VVRbs4rj7ayqW+RQwMCg7Rvvy_YsHmm7AGt@mail.gmail.com>
-Subject: Re: [PATCH 6/6] arch/blackfin: Removing dead SND_BLACKFIN_AD183X
+Date: Mon, 2 Aug 2010 13:40:15 -0400
+Message-ID: <AANLkTikn68z2TRLYR4VV65qBdnCAWz1F97voGJGQ3x3F@mail.gmail.com>
+Subject: Re: [PATCH 3/6] arch/blackfin: Remove CONFIG_MEM_GENERIC_BOARD
 To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 Cc: uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
         vamos-dev@i4.informatik.uni-erlangen.de
@@ -30,9 +30,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 2, 2010 at 12:03, Christian Dietrich wrote:
-> CONFIG_SND_BLACKFIN_AD183X doesn't exist in Kconfig, therefore removing
-> all references to it from the source.
+On Mon, Aug 2, 2010 at 12:01, Christian Dietrich wrote:
+> MEM_GENERIC_BOARD depends on GENERIC_BOARD, but this flag was removed
+> in 4f25eb85d64640bc656e72917113a84701521b99, therefore all references
+> to it from the source can be removed
 
-NAK: this driver is pending for the ASoC tree
+thanks, this one is OK and i'll merge it in a bit
 -mike
