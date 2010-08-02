@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab0HBSwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:52:49 -0400
-Received: from www.tglx.de ([62.245.132.106]:53626 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754454Ab0HBSwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:52:47 -0400
-Date: Mon, 2 Aug 2010 20:52:32 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <teheo@suse.de>
-cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
-In-Reply-To: <4C56E5C7.90206@suse.de>
-Message-ID: <alpine.LFD.2.00.1008022022560.27107@localhost.localdomain>
-References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de>
- <4C56E5C7.90206@suse.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754664Ab0HBSyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:54:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49476 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab0HBSyU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:54:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=H1oNyzgX+hJg0jfGb7k9s8X96gKf0njAiMskORZU59taW2XVXl1OtHG+FGEkKEJNkq
+         EaTCJbYFq7nEvXOKAgdYHHa+M/h1N6No+P19J2e0JmVhti3aHjqxVGhrdw5dJqUmhAws
+         yoH/Qg4n9nHioN5/mpPZxUbu2QdIuqG66kfbk=
+Date: Mon, 2 Aug 2010 22:54:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 2/2] x86: more early console output from
+	compressed/misc.c
+Message-ID: <20100802185410.GE5544@lenovo>
+References: <4C56701B.1030000@kernel.org> <4C5670DA.2080703@zytor.com> <4C5680D2.4020302@kernel.org> <4C568D2B.205@kernel.org> <4C568D6F.3050004@kernel.org> <20100802174916.GD5544@lenovo> <4C5710C1.8020809@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C5710C1.8020809@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010, Tejun Heo wrote:
-
-> On 08/02/2010 05:28 PM, Tejun Heo wrote:
-> > The reason why poll_irq() looks complicated is because different types
-> > of timers on the same desc shares the timer.  The reason why it's
-> > shared this way instead of across different descs of the same type is
-> > to avoid locking overhead in maintaining the timer and linked lists of
-> > its targets.  By sharing the timer in the same desc, everything can be
-> > protected by desc->lock but if we use timers across different descs,
-> > we need another layer of locking.
+On Mon, Aug 02, 2010 at 11:38:57AM -0700, H. Peter Anvin wrote:
+> On 08/02/2010 10:49 AM, Cyrill Gorcunov wrote:
+> > On Mon, Aug 02, 2010 at 02:18:39AM -0700, Yinghai Lu wrote:
+> >>
+> >> will get
+> >>
+> >> |Decompressing Linux... Parsing ELF... done.
+> >> |Booting the kernel.
+> >>
+> >> in serial console.
+> >>
+> >> reuse code from arch/x86/boot/
+> >> and we can use printf if needed
+> >>
+...
+> > 
+> > It seems eventually we just add ~80 lines of code in compare with what we had before,
+> > just to print "Decompressing..." by serial line. Not sure Yinghai if it worth
+> > it. Though having printf that early might be quite useful for those who debugging
+> > or developing new compressors/decompressors. If it would be small non-intrusive
+> > patch I would both hands for it but now I simply don't know (to be fair mine
+> > proposal based on your initial patch not better either ;)
+> > 
 > 
-> Ooh, another reason is timer locality.  If timers are shared per desc,
-> they have much higher chance of being on the same processor.  Global
-> timers would be pretty bad in that respect.
+> Decompressing... is one thing, and if it was only that, I'd just suggest
+> killing off the console I/O in boot/compressed.  Getting an error
+> message out when there is a decompression failure is another thing.
+> 
+> Processing the command line a novo is somewhat painful, but it does deal
+> better with bootloaders that use the 32-bit entry point by necessity
+> (kexec, EFI) or due to sheer stupidity (Grub2).
+> 
+> As such, I think it's a worthwhile addition, as long as the source code
+> can be cleanly shared with the boot/ directory.
+> 
+> 	-hpa
+> 
 
-That's irrelevant. If you need to poll an interrupt, then it does not
-matter at all whether you bounce some cache lines or not.
+ok, fair enough, I just don't like nesting *.c inclusion you know but seems
+it would be the only more-less clean way here.
 
-In fact we have two cases:
-
-   1) An interrupt needs to be polled all the time. That sucks whether
-      the poll timer bounces a few cache lines or not.
-
-   2) Polling an irq for some time. Either it works again after a
-      while, so your suckage is restricted to the poll period. If not
-      see #1
-
-And it's even less of an issue as the main users of this misfeature
-are laptops and desktop machines, where locality is not really that
-important. If an enterprise admin decides to ignore the fact that the
-hardware is flaky, then he does not care about the cache line bounces
-either.
-
-Thanks,
-
-	tglx
+	-- Cyrill
