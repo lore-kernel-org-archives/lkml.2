@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab0HBQCD (ORCPT <rfc822;w@1wt.eu>);
+	id S1754034Ab0HBQCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:02:08 -0400
+Received: from sh.osrg.net ([192.16.179.4]:40880 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753887Ab0HBQCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Aug 2010 12:02:03 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:64490 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751827Ab0HBQCA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:02:00 -0400
-Date: Mon, 2 Aug 2010 18:01:58 +0200
-From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: Mike Frysinger <vapier@gentoo.org>, Graf Yang <graf.yang@analog.com>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Barry Song <barry.song@analog.com>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 3/6] arch/blackfin: Remove CONFIG_MEM_GENERIC_BOARD
-Message-ID: <8c697ddc279b861006c90dbb320a6079f6c04f92.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1280764206.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Tue, 3 Aug 2010 01:01:08 +0900
+To: hpa@zytor.com
+Cc: fujita.tomonori@lab.ntt.co.jp, jeremy@goop.org, Ian.Campbell@citrix.com,
+        konrad.wilk@oracle.com, albert_herranz@yahoo.es, x86@kernel.org,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        iommu@lists.linux-foundation.org, tglx@linutronix.de
+Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C56E8A9.1060004@zytor.com>
+References: <4C56E49E.6070102@zytor.com>
+	<20100803004252B.fujita.tomonori@lab.ntt.co.jp>
+	<4C56E8A9.1060004@zytor.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100803010025R.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 03 Aug 2010 01:01:10 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MEM_GENERIC_BOARD depends on GENERIC_BOARD, but this flag was removed
-in 4f25eb85d64640bc656e72917113a84701521b99, therefore all references
-to it from the source can be removed
+On Mon, 02 Aug 2010 08:47:53 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
----
- arch/blackfin/Kconfig                |    5 -----
- arch/blackfin/include/asm/mem_init.h |   18 ------------------
- 2 files changed, 0 insertions(+), 23 deletions(-)
+> On 08/02/2010 08:43 AM, FUJITA Tomonori wrote:
+> > 
+> > That's the difficult part because IOMMUs are not
+> > interdependent. Hardware IOMMUs are related with swiotlb. GART and
+> > AMD-IOMMU are too.
+> > 
+> > We could invent sorta IOMMU register interface and driver-ize IOMMUs
+> > but they can't be interdependent completely.
+> 
+> Of course.  However, we need there to be as much structure to it as
+> there can be.
 
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index f66294b..8e88316 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -328,11 +328,6 @@ config BF53x
- 	depends on (BF531 || BF532 || BF533 || BF534 || BF536 || BF537)
- 	default y
- 
--config MEM_GENERIC_BOARD
--	bool
--	depends on GENERIC_BOARD
--	default y
--
- config MEM_MT48LC64M4A2FB_7E
- 	bool
- 	depends on (BFIN533_STAMP)
-diff --git a/arch/blackfin/include/asm/mem_init.h b/arch/blackfin/include/asm/mem_init.h
-index 7c8fe83..2375799 100644
---- a/arch/blackfin/include/asm/mem_init.h
-+++ b/arch/blackfin/include/asm/mem_init.h
-@@ -10,7 +10,6 @@
- #if defined(CONFIG_MEM_MT48LC16M16A2TG_75) || \
-     defined(CONFIG_MEM_MT48LC64M4A2FB_7E) || \
-     defined(CONFIG_MEM_MT48LC16M8A2TG_75) || \
--    defined(CONFIG_MEM_GENERIC_BOARD) || \
-     defined(CONFIG_MEM_MT48LC32M8A2_75) || \
-     defined(CONFIG_MEM_MT48LC8M32B2B5_7) || \
-     defined(CONFIG_MEM_MT48LC32M16A2TG_75) || \
-@@ -178,7 +177,6 @@
- 
- #if defined(CONFIG_MEM_MT48LC32M8A2_75) || \
-     defined(CONFIG_MEM_MT48LC64M4A2FB_7E) || \
--    defined(CONFIG_MEM_GENERIC_BOARD) || \
-     defined(CONFIG_MEM_MT48LC32M16A2TG_75) || \
-     defined(CONFIG_MEM_MT48LC16M16A2TG_75) || \
-     defined(CONFIG_MEM_MT48LC32M8A2_75)
-@@ -248,22 +246,6 @@
- #define DDR_tWR		DDR_TWR(MIN_DDR_SCLK(15))
- #endif
- 
--#if defined(CONFIG_MEM_GENERIC_BOARD)
--#define DDR_SIZE	DEVSZ_512
--#define DDR_WIDTH	DEVWD_16
--#define DDR_MAX_tCK	13
--
--#define DDR_tRCD	DDR_TRCD(3)
--#define DDR_tWTR	DDR_TWTR(2)
--#define DDR_tWR		DDR_TWR(2)
--#define DDR_tMRD	DDR_TMRD(2)
--#define DDR_tRP		DDR_TRP(3)
--#define DDR_tRAS	DDR_TRAS(7)
--#define DDR_tRC		DDR_TRC(10)
--#define DDR_tRFC	DDR_TRFC(12)
--#define DDR_tREFI	DDR_TREFI(1288)
--#endif
--
- #if (CONFIG_SCLK_HZ < DDR_CLK_HZ(DDR_MAX_tCK))
- # error "CONFIG_SCLK_HZ is too small (<DDR_CLK_HZ(DDR_MAX_tCK) Hz)."
- #elif(CONFIG_SCLK_HZ <= 133333333)
--- 
-1.7.0.4
+Ok, let's see if Konrad can invent something clean.
 
+But his attempt to create "swiotlb iommu function array" and "hardware
+iommu function array" looks like to makes the code more unreadable.
