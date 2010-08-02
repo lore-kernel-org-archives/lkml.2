@@ -1,139 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab0HBUSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:18:04 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45586 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab0HBUSB (ORCPT
+	id S1755245Ab0HBUSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:18:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44010 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686Ab0HBUSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:18:01 -0400
+	Mon, 2 Aug 2010 16:18:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E0he5qvcJrzJ9rN4k4bfSy7wJh4q4DRkshxxFzZesVUDvfMQ72OtVybVkSAaXfQ05V
-         rYaMaajmDTgppIbHoZKDuveM3BNPu2r2dUuMV9faAqdtOd7E0lpRPiV+m0aEdbiKWDVX
-         SPNDFcE1LXT5sSk+IwVH/HO+95CMuVRr/1vVc=
-Date: Tue, 3 Aug 2010 00:17:50 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, setup: reorgize the early_console_setup
-Message-ID: <20100802201750.GG5544@lenovo>
-References: <4C56701B.1030000@kernel.org> <20100802150958.GA5544@lenovo> <4C571B25.3080806@kernel.org>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=xSd4D4Rl8EanBqu7pP/baCEkTSDY1oh1qjEt7hBAovFm1v7j9818fffhc7dAFLO87L
+         nKPDPWXXyVw6Kp51mfropxzicXth3ZDBLUSV7yYnGWsxH/w01feW6xHBfLfsLhvymZwb
+         kRqnxu2o+JyP9a0Q4u3HQtbZUROFrvFFSeedA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C571B25.3080806@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1280776014.2703.9.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <4C53C7E7.4040204@kernel.org>
+	<1280776014.2703.9.camel@sbsiddha-MOBL3.sc.intel.com>
+Date: Mon, 2 Aug 2010 13:18:49 -0700
+X-Google-Sender-Auth: Ojex5qH7bGS_YRrGZI3oXAIdEr0
+Message-ID: <AANLkTi=HUTRqkj=zYV=5Z9fZAZa_sNmRanibaMLGrX0R@mail.gmail.com>
+Subject: Re: [PATCH] acpi: x2apic entry with uid < 255 could use processor 
+	statement
+From: Yinghai Lu <yinghai@kernel.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 12:23:17PM -0700, Yinghai Lu wrote:
-> On 08/02/2010 08:09 AM, Cyrill Gorcunov wrote:
-> > On Mon, Aug 02, 2010 at 12:13:31AM -0700, Yinghai Lu wrote:
-> >>
-> >> Seperate early_console_setup from tty.c
-> >> also make main.c to include printf.c/string.c/cmdline.c
-> >>
-> >> will reuse early_serial_console.c/string.c/printf.c/cmdline.c in compressed/misc.c
-> >>
-> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> >>
-> >> ---
-> > 
-> > Hi Yinghai, I'll try to find some time for review though it looks somehow
-> > too 'big' for me :)
-> > 
-> > Actually by reading your initial approach (which was much smaller in size) I
-> > thought we end up in something like the patch below, though I'll review this
-> > seris. So just to share (I've tested it under qemu). The idea is the same as
-> > your was, so I pushed all constant parts into header and use it when needed
-> > passing serial line base port via boot_params.
-> 
-> Eric doesn't like early_serial_console_base in zero page. and said that is fragile.
-> 
+On Mon, Aug 2, 2010 at 12:06 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+> On Sat, 2010-07-31 at 07:51 +0100, Yinghai Lu wrote:
+>> According to Intel x2apic spec page 46
+>>
+>> " The hand-off to
+>> OSPM will have processor IDs in the range of 0 to 254 for xAPIC/x2APIC and 0 to 255
+>> for SAPIC declared as either Processor() or Device() objects, but not both. Processor
+>> IDs outside these ranges must be declared as Device() objects."
+>>
+>> So only check if Device is used when acpi_id >=255.
+>>
+>> that will help system with less 255 cpus, but some cpus apic id > 255,
+>> still can use Processor statement instead of Device() objects.
+>
+> But the entries with apic_id < 255 are supposed to use local APIC
+> structure and not local x2apic structure. So entries with apic id < 255
+> must be processed using map_lapic_id() which doesn't have any
+> device_declaration checks.
+>
+> Only for apic ids > 255, we use map_x2apic_id() which needs device
+> declaration. So this patch is not needed. or Am I missing something?
 
-yeah, and Peter noted too as well, I missed Eric's mail in first place.
+it is acpi_id aka  Processor id.
 
-> So try to include string.c/printf.c/cmdline.c/early_serial_console.c in arch/x86/boot/compressed/misc.c
-> and analyze that command line again.
-> 
-> then kexec path will get support too. that is from arch/x86/boot/compressed/head_32.S or head_64.S, startup_32.
-> and skip arch/x86/boot/main.c
-> 
-> later with following patch for 3, we get all covered in c code.
-> 1. arch/x86/boot/main.c: setup code.
-> 2. arch/x86/boot/compressed/misc.c: decompress_kernel code : the 2 -v3 patches that i sent last night.
-> 3. arch/x86/kernel/head64.c: real kernel.
-> 
-> maybe we can make early_serial_console.c and early_printk.c to share some .h etc later.
-> 
+the system has less than 255 cpus, but some cpus apic_id > 255.
+BIOS have apic entries for apic_id < 255, and some x2apic entries for
+apic_id > 255.
 
-yes, sounds tempting for me ;)
+but BIOS still use Processor statement for all cpus.
 
-> Thanks
-> 
-> Yinghai
-> 
-> [PATCH -v2] x86: Setup early console as early as possible
-> 
-> Analyze "console=uart8250,io,0x3f8,115200n8" in i386_start_kernel/x86_64_start_kernel,
-> and call setup_early_serial8250_console() to init early serial console.
-> 
-> only can handle io port kind of 8250. because mmio need ioremap.
-> 
-> -v2: use boot_params.hdr.version instead of adding another variable, Suggested by hpa
->      update after using x86 memblock patchset
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
-...
-> +
-> +	p += 8;	/* sizeof "console=" */
-> +	q = strchr(p, ' ');
-> +	if ((q - p) >= sizeof(constr))
-> +		return;
-> +
+Thanks
 
-I think the better would be to explicitly point q=0 here, ie if (!q || ...)
-(yes, it'll trigger with former too but anyway this would be somewhat cleaner)
-
-> +	memset(constr, 0, sizeof(constr));
-> +	memcpy(constr, p, q - p);
-> +
-> +	lockdep_init();
-> +
-> +	setup_early_serial8250_console(constr);
-> +#endif
-> +}
-
-...
-  
-> +	/* make sure if it is copied already */
-> +	if (boot_params.hdr.version)
-> +		return;
-> +
-
-And Yinghai, lets be more verbose here a bit, since for those who will
-be reading this code later might be non-obvious why we have checked for
-'version' here. I guess something like "an easy way to check if boot_params
-were already copied". Actually it's clean from commit message but I think
-we first read code comments and commit messages after, agreed? ;-)
-
->  	memcpy(&boot_params, real_mode_data, sizeof boot_params);
->  	if (boot_params.hdr.cmd_line_ptr) {
->  		command_line = __va(boot_params.hdr.cmd_line_ptr);
-> @@ -74,6 +78,10 @@ void __init x86_64_start_kernel(char * r
->  	/* clear bss before set_intr_gate with early_idt_handler */
->  	clear_bss();
->  
-... 
-
-Other then that looks good for me, thanks! My Reviewed-by if needed.
- 
-	-- Cyrill
+Yinghai
