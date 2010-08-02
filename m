@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab0HBNvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 09:51:42 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:43949 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366Ab0HBNvl (ORCPT
+	id S1753753Ab0HBNx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 09:53:27 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:50741 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753598Ab0HBNxZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 09:51:41 -0400
-Date: Mon, 2 Aug 2010 22:51:35 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Joe Eloff <kagen101@gmail.com>, Randy Dunlap <randy.dunlap@oracle.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9 v3] staging: dt3155: check put_user() return value
-Message-ID: <20100802135135.GJ5814@verge.net.au>
-References: <1280737873-5992-1-git-send-email-segooon@gmail.com>
- <20100802124125.GG5814@verge.net.au>
- <20100802125638.GA6412@albatros>
+	Mon, 2 Aug 2010 09:53:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ObnpNi2Bt54czFprUKiMQrCeZePUni9ry6pHiNKHFBWICOv04wHhsx6gBOyZqU1zOa
+         m7CJNqmNprqNrSSbZL6YyH4QBSfT6pXrosvKsN0K0SUDEDMJwFgfulZqfH3QSxZrXbtA
+         gycIYh8uaR2tRnkYUN3OFVSRkMAZ6892Rre+U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100802125638.GA6412@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100802134705.GA2836@redhat.com>
+References: <AANLkTiksVFpU+3iek4-TM2q=wSDGpW_nJAr8XtHT06LE@mail.gmail.com>
+	<20100802134705.GA2836@redhat.com>
+Date: Mon, 2 Aug 2010 16:53:24 +0300
+X-Google-Sender-Auth: DbNLk1lERHx1VZ0SykTzpg6NqM8
+Message-ID: <AANLkTi=k5nkUk9LOS=EGHGSq=5Qe8_L-1d3_t9byxMrt@mail.gmail.com>
+Subject: Re: Boot-time dynamic debugging?
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, trenn@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 04:56:38PM +0400, Vasiliy Kulikov wrote:
-> put_user() returns code was not checked for errors. To simplify the code
-> fill local struct dt3155_read with data and copy it with single
-> copy_to_user() call.
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> On Sun, Aug 01, 2010 at 03:10:40PM +0300, Pekka Enberg wrote:
+>> Commit 346e15beb5343c2eb8216d820f2ed8f150822b08 ("driver core: basic
+>> infrastructure for per-module dynamic debug messages") removed
+>> "dynamic_printk" kernel parameter from the dynamic debugging subsystem
+>> (and forgot to update Documentation/kernel-parameters.txt). How can I
+>> use the new subsystem for enabling boot-time dev_dbg() calls for
+>> non-modular kernels?
 
-Looks good to me.
+On Mon, Aug 2, 2010 at 4:47 PM, Jason Baron <jbaron@redhat.com> wrote:
+> Right now, you can not enable them dynamically from the boot command
+> line (only via the debugfs file). However, Thomas Renninger, has posted
+> a series to add back the boot-time functionality, see:
+>
+> Subject:    [patch 0/3] Dynamic Debug providing early boot debug messages via
+> boot parameter
+> http://marc.info/?l=linux-kernel&m=127970474426120&w=2
+>
+> So I intend to queue those up for 2.6.36, and also update the
+> documentation.
 
-Reviewed-by: Simon Horman <horms@verge.net.au>
+Oh, great!
 
-> ---
->  drivers/staging/dt3155/dt3155_drv.c |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-> index 7316996..6031837 100644
-> --- a/drivers/staging/dt3155/dt3155_drv.c
-> +++ b/drivers/staging/dt3155/dt3155_drv.c
-> @@ -745,6 +745,7 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
->    struct dt3155_status *dts = &dt3155_status[minor];
->    struct dt3155_fbuffer *fb = &dts->fbuffer;
->    struct frame_info	*frame_info;
-> +  struct dt3155_read dt_read;
->  
->    /* TODO: this should check the error flag and */
->    /*   return an error on hardware failures */
-> @@ -797,14 +798,12 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
->  
->    /* make this an offset */
->    offset = frame_info->addr - dts->mem_addr;
-> +  dt_read.offset = offset;
-> +  dt_read.frame_seq = fb->frame_count;
-> +  dt_read.state = dts->state;
-> +  memcpy(&dt_read.frame_info, frame_info, sizeof(struct frame_info));
->  
-> -  put_user(offset, (unsigned int __user *)buf);
-> -  buf += sizeof(u32);
-> -  put_user(fb->frame_count, (unsigned int __user *)buf);
-> -  buf += sizeof(u32);
-> -  put_user(dts->state, (unsigned int __user *)buf);
-> -  buf += sizeof(u32);
-> -  if (copy_to_user(buf, frame_info, sizeof(*frame_info)))
-> +  if (copy_to_user(buf, &dt_read, sizeof(struct dt3155_read)))
->        return -EFAULT;
->  
->    return sizeof(struct dt3155_read);
-> -- 
-> 1.7.0.4
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+
+Btw, can you easily enable all dev_dbg() calls with the boot parameter?
