@@ -1,1187 +1,780 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab0HBBJU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 21:09:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51005 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab0HBBJQ (ORCPT
+	id S1752745Ab0HBBJY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:09:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38050 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab0HBBJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 21:09:16 -0400
+	Sun, 1 Aug 2010 21:09:20 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/19] perf ui: New hists tree widget
-Date: Sun,  1 Aug 2010 22:08:42 -0300
-Message-Id: <1280711334-30000-8-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 17/19] perf probe: Rename common fields/functions from kprobe to probe.
+Date: Sun,  1 Aug 2010 22:08:52 -0300
+Message-Id: <1280711334-30000-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1280711334-30000-1-git-send-email-acme@infradead.org>
 References: <1280711334-30000-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-The stock newt checkbox tree widget we were using was not really
-suitable for hist entry + callchain browsing.
+As a precursor for perf to support uprobes, rename fields/functions
+that had kprobe in their name but can be shared across perf-kprobes
+and perf-uprobes to probe.
 
-The problems with it were manifold:
-
-- We needed to traverse the whole hist_entry rb_tree to add each entry +
-  callchains beforehand.
-
-- No control over the colors used for each row
-
-So a new tree widget, based mostly on slang, was written.
-
-It extends the ui_browser class already used for annotate to allow the
-user to fold/unfold branches in the callchains tree, using extra fields
-in the map_symbol class that is embedded in hist_entry and
-callchain_node instances to store the folding state and when changing
-this state calculates the number of rows that are produced when showing
-a particular hist_entry instance.
-
-This greatly speeds up browsing as we don't have to upfront touch all
-the entries and only calculate callchain related operations when some
-callchain branch is actually unfolded.
-
-The memory footprint is also reduced as the data structure is not
-duplicated, just some extra fields for controling callchain state and to
-simplify the process of seeking thru entries (nr_rows, row_offset) were
-added.
-
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Wielaard <mjw@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Naren A Devaiah <naren.devaiah@in.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <new-submission>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <20100729141351.GG21723@linux.vnet.ibm.com>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/hist.c   |    3 +
- tools/perf/util/newt.c   |  972 +++++++++++++++++++++++++++++++---------------
- tools/perf/util/sort.h   |   12 +
- tools/perf/util/symbol.h |    2 +
- 4 files changed, 678 insertions(+), 311 deletions(-)
+ tools/perf/builtin-probe.c     |    1 -
+ tools/perf/util/probe-event.c  |  135 ++++++++++++++++++++-------------------
+ tools/perf/util/probe-event.h  |   27 +++-----
+ tools/perf/util/probe-finder.c |   34 +++++-----
+ tools/perf/util/probe-finder.h |   10 ++--
+ 5 files changed, 101 insertions(+), 106 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index f93095f..d0f07f7 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -885,6 +885,9 @@ static void hists__remove_entry_filter(struct hists *self, struct hist_entry *h,
- 		return;
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 5455186..199d5e1 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -267,4 +267,3 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 	}
+ 	return 0;
+ }
+-
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 4445a1e..2e665cb 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1,5 +1,5 @@
+ /*
+- * probe-event.c : perf-probe definition to kprobe_events format converter
++ * probe-event.c : perf-probe definition to probe_events format converter
+  *
+  * Written by Masami Hiramatsu <mhiramat@redhat.com>
+  *
+@@ -120,8 +120,11 @@ static int open_vmlinux(void)
+ 	return open(machine.vmlinux_maps[MAP__FUNCTION]->dso->long_name, O_RDONLY);
+ }
  
- 	++self->nr_entries;
-+	if (h->ms.unfolded)
-+		self->nr_entries += h->nr_rows;
-+	h->row_offset = 0;
- 	self->stats.total_period += h->period;
- 	self->stats.nr_events[PERF_RECORD_SAMPLE] += h->nr_events;
+-/* Convert trace point to probe point with debuginfo */
+-static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
++/*
++ * Convert trace point to probe point with debuginfo
++ * Currently only handles kprobes.
++ */
++static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
+ 				       struct perf_probe_point *pp)
+ {
+ 	struct symbol *sym;
+@@ -151,8 +154,8 @@ static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
+ }
  
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index cdd958e..28f74eb 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -509,38 +509,6 @@ static int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ /* Try to find perf_probe_event with debuginfo */
+-static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
+-					   struct kprobe_trace_event **tevs,
++static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
++					   struct probe_trace_event **tevs,
+ 					   int max_tevs)
+ {
+ 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
+@@ -169,11 +172,11 @@ static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
+ 	}
+ 
+ 	/* Searching trace events corresponding to probe event */
+-	ntevs = find_kprobe_trace_events(fd, pev, tevs, max_tevs);
++	ntevs = find_probe_trace_events(fd, pev, tevs, max_tevs);
+ 	close(fd);
+ 
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+-		pr_debug("find %d kprobe_trace_events.\n", ntevs);
++		pr_debug("find %d probe_trace_events.\n", ntevs);
+ 		return ntevs;
+ 	}
+ 
+@@ -377,8 +380,8 @@ end:
+ 
+ #else	/* !DWARF_SUPPORT */
+ 
+-static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
+-					struct perf_probe_point *pp)
++static int kprobe_convert_to_perf_probe(struct probe_trace_point *tp,
++				       struct perf_probe_point *pp)
+ {
+ 	pp->function = strdup(tp->symbol);
+ 	if (pp->function == NULL)
+@@ -389,8 +392,8 @@ static int convert_to_perf_probe_point(struct kprobe_trace_point *tp,
  	return 0;
  }
  
--/*
-- * When debugging newt problems it was useful to be able to "unroll"
-- * the calls to newtCheckBoxTreeAdd{Array,Item}, so that we can generate
-- * a source file with the sequence of calls to these methods, to then
-- * tweak the arrays to get the intended results, so I'm keeping this code
-- * here, may be useful again in the future.
-- */
--#undef NEWT_DEBUG
--
--static void newt_checkbox_tree__add(newtComponent tree, const char *str,
--				    void *priv, int *indexes)
--{
--#ifdef NEWT_DEBUG
--	/* Print the newtCheckboxTreeAddArray to tinker with its index arrays */
--	int i = 0, len = 40 - strlen(str);
--
--	fprintf(stderr,
--		"\tnewtCheckboxTreeAddItem(tree, %*.*s\"%s\", (void *)%p, 0, ",
--		len, len, " ", str, priv);
--	while (indexes[i] != NEWT_ARG_LAST) {
--		if (indexes[i] != NEWT_ARG_APPEND)
--			fprintf(stderr, " %d,", indexes[i]);
--		else
--			fprintf(stderr, " %s,", "NEWT_ARG_APPEND");
--		++i;
--	}
--	fprintf(stderr, " %s", " NEWT_ARG_LAST);\n");
--	fflush(stderr);
--#endif
--	newtCheckboxTreeAddArray(tree, str, priv, 0, indexes);
--}
--
- static char *callchain_list__sym_name(struct callchain_list *self,
- 				      char *bf, size_t bfsize)
+-static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
+-				struct kprobe_trace_event **tevs __unused,
++static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
++				struct probe_trace_event **tevs __unused,
+ 				int max_tevs __unused)
  {
-@@ -576,147 +544,6 @@ static unsigned int hist_entry__annotate_browser_refresh(struct ui_browser *self
- 	return row;
+ 	if (perf_probe_event_need_dwarf(pev)) {
+@@ -781,16 +784,17 @@ bool perf_probe_event_need_dwarf(struct perf_probe_event *pev)
+ 	return false;
  }
  
--static void __callchain__append_graph_browser(struct callchain_node *self,
--					      newtComponent tree, u64 total,
--					      int *indexes, int depth)
--{
--	struct rb_node *node;
--	u64 new_total, remaining;
--	int idx = 0;
--
--	if (callchain_param.mode == CHAIN_GRAPH_REL)
--		new_total = self->children_hit;
--	else
--		new_total = total;
--
--	remaining = new_total;
--	node = rb_first(&self->rb_root);
--	while (node) {
--		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
--		struct rb_node *next = rb_next(node);
--		u64 cumul = cumul_hits(child);
--		struct callchain_list *chain;
--		int first = true, printed = 0;
--		int chain_idx = -1;
--		remaining -= cumul;
--
--		indexes[depth] = NEWT_ARG_APPEND;
--		indexes[depth + 1] = NEWT_ARG_LAST;
--
--		list_for_each_entry(chain, &child->val, list) {
--			char ipstr[BITS_PER_LONG / 4 + 1],
--			     *alloc_str = NULL;
--			const char *str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
--
--			if (first) {
--				double percent = cumul * 100.0 / new_total;
--
--				first = false;
--				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
--					str = "Not enough memory!";
--				else
--					str = alloc_str;
--			} else {
--				indexes[depth] = idx;
--				indexes[depth + 1] = NEWT_ARG_APPEND;
--				indexes[depth + 2] = NEWT_ARG_LAST;
--				++chain_idx;
--			}
--			newt_checkbox_tree__add(tree, str, &chain->ms, indexes);
--			free(alloc_str);
--			++printed;
--		}
--
--		indexes[depth] = idx;
--		if (chain_idx != -1)
--			indexes[depth + 1] = chain_idx;
--		if (printed != 0)
--			++idx;
--		__callchain__append_graph_browser(child, tree, new_total, indexes,
--						  depth + (chain_idx != -1 ? 2 : 1));
--		node = next;
--	}
--}
--
--static void callchain__append_graph_browser(struct callchain_node *self,
--					    newtComponent tree, u64 total,
--					    int *indexes, int parent_idx)
--{
--	struct callchain_list *chain;
--	int i = 0;
--
--	indexes[1] = NEWT_ARG_APPEND;
--	indexes[2] = NEWT_ARG_LAST;
--
--	list_for_each_entry(chain, &self->val, list) {
--		char ipstr[BITS_PER_LONG / 4 + 1], *str;
--
--		if (chain->ip >= PERF_CONTEXT_MAX)
--			continue;
--
--		if (!i++ && sort__first_dimension == SORT_SYM)
--			continue;
--
--		str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
--		newt_checkbox_tree__add(tree, str, &chain->ms, indexes);
--	}
--
--	indexes[1] = parent_idx;
--	indexes[2] = NEWT_ARG_APPEND;
--	indexes[3] = NEWT_ARG_LAST;
--	__callchain__append_graph_browser(self, tree, total, indexes, 2);
--}
--
--static void hist_entry__append_callchain_browser(struct hist_entry *self,
--						 newtComponent tree, u64 total, int parent_idx)
--{
--	struct rb_node *rb_node;
--	int indexes[1024] = { [0] = parent_idx, };
--	int idx = 0;
--	struct callchain_node *chain;
--
--	rb_node = rb_first(&self->sorted_chain);
--	while (rb_node) {
--		chain = rb_entry(rb_node, struct callchain_node, rb_node);
--		switch (callchain_param.mode) {
--		case CHAIN_FLAT:
--			break;
--		case CHAIN_GRAPH_ABS: /* falldown */
--		case CHAIN_GRAPH_REL:
--			callchain__append_graph_browser(chain, tree, total, indexes, idx++);
--			break;
--		case CHAIN_NONE:
--		default:
--			break;
--		}
--		rb_node = rb_next(rb_node);
--	}
--}
--
--static size_t hist_entry__append_browser(struct hist_entry *self,
--					 newtComponent tree,
--					 struct hists *hists)
--{
--	char s[256];
--	size_t ret;
--
--	if (symbol_conf.exclude_other && !self->parent)
--		return 0;
--
--	ret = hist_entry__snprintf(self, s, sizeof(s), hists, NULL,
--				   false, 0, false, hists->stats.total_period);
--	if (symbol_conf.use_callchain) {
--		int indexes[2];
--
--		indexes[0] = NEWT_ARG_APPEND;
--		indexes[1] = NEWT_ARG_LAST;
--		newt_checkbox_tree__add(tree, s, &self->ms, indexes);
--	} else
--		newtListboxAppendEntry(tree, s, &self->ms);
--
--	return ret;
--}
--
- int hist_entry__tui_annotate(struct hist_entry *self)
+-/* Parse kprobe_events event into struct probe_point */
+-int parse_kprobe_trace_command(const char *cmd, struct kprobe_trace_event *tev)
++/* Parse probe_events event into struct probe_point */
++static int parse_probe_trace_command(const char *cmd,
++					struct probe_trace_event *tev)
  {
- 	struct ui_browser browser;
-@@ -764,157 +591,48 @@ int hist_entry__tui_annotate(struct hist_entry *self)
+-	struct kprobe_trace_point *tp = &tev->point;
++	struct probe_trace_point *tp = &tev->point;
+ 	char pr;
+ 	char *p;
+ 	int ret, i, argc;
+ 	char **argv;
+ 
+-	pr_debug("Parsing kprobe_events: %s\n", cmd);
++	pr_debug("Parsing probe_events: %s\n", cmd);
+ 	argv = argv_split(cmd, &argc);
+ 	if (!argv) {
+ 		pr_debug("Failed to split arguments.\n");
+@@ -822,7 +826,7 @@ int parse_kprobe_trace_command(const char *cmd, struct kprobe_trace_event *tev)
+ 		tp->offset = 0;
+ 
+ 	tev->nargs = argc - 2;
+-	tev->args = zalloc(sizeof(struct kprobe_trace_arg) * tev->nargs);
++	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
+ 	if (tev->args == NULL) {
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -968,13 +972,13 @@ char *synthesize_perf_probe_command(struct perf_probe_event *pev)
+ }
+ #endif
+ 
+-static int __synthesize_kprobe_trace_arg_ref(struct kprobe_trace_arg_ref *ref,
++static int __synthesize_probe_trace_arg_ref(struct probe_trace_arg_ref *ref,
+ 					     char **buf, size_t *buflen,
+ 					     int depth)
+ {
+ 	int ret;
+ 	if (ref->next) {
+-		depth = __synthesize_kprobe_trace_arg_ref(ref->next, buf,
++		depth = __synthesize_probe_trace_arg_ref(ref->next, buf,
+ 							 buflen, depth + 1);
+ 		if (depth < 0)
+ 			goto out;
+@@ -992,10 +996,10 @@ out:
+ 
+ }
+ 
+-static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
++static int synthesize_probe_trace_arg(struct probe_trace_arg *arg,
+ 				       char *buf, size_t buflen)
+ {
+-	struct kprobe_trace_arg_ref *ref = arg->ref;
++	struct probe_trace_arg_ref *ref = arg->ref;
+ 	int ret, depth = 0;
+ 	char *tmp = buf;
+ 
+@@ -1015,7 +1019,7 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
+ 
+ 	/* Dereferencing arguments */
+ 	if (ref) {
+-		depth = __synthesize_kprobe_trace_arg_ref(ref, &buf,
++		depth = __synthesize_probe_trace_arg_ref(ref, &buf,
+ 							  &buflen, 1);
+ 		if (depth < 0)
+ 			return depth;
+@@ -1051,9 +1055,9 @@ static int synthesize_kprobe_trace_arg(struct kprobe_trace_arg *arg,
+ 	return buf - tmp;
+ }
+ 
+-char *synthesize_kprobe_trace_command(struct kprobe_trace_event *tev)
++char *synthesize_probe_trace_command(struct probe_trace_event *tev)
+ {
+-	struct kprobe_trace_point *tp = &tev->point;
++	struct probe_trace_point *tp = &tev->point;
+ 	char *buf;
+ 	int i, len, ret;
+ 
+@@ -1069,7 +1073,7 @@ char *synthesize_kprobe_trace_command(struct kprobe_trace_event *tev)
+ 		goto error;
+ 
+ 	for (i = 0; i < tev->nargs; i++) {
+-		ret = synthesize_kprobe_trace_arg(&tev->args[i], buf + len,
++		ret = synthesize_probe_trace_arg(&tev->args[i], buf + len,
+ 						  MAX_CMDLEN - len);
+ 		if (ret <= 0)
+ 			goto error;
+@@ -1082,7 +1086,7 @@ error:
+ 	return NULL;
+ }
+ 
+-int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
++static int convert_to_perf_probe_event(struct probe_trace_event *tev,
+ 				struct perf_probe_event *pev)
+ {
+ 	char buf[64] = "";
+@@ -1095,7 +1099,7 @@ int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
+ 		return -ENOMEM;
+ 
+ 	/* Convert trace_point to probe_point */
+-	ret = convert_to_perf_probe_point(&tev->point, &pev->point);
++	ret = kprobe_convert_to_perf_probe(&tev->point, &pev->point);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -1108,7 +1112,7 @@ int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
+ 		if (tev->args[i].name)
+ 			pev->args[i].name = strdup(tev->args[i].name);
+ 		else {
+-			ret = synthesize_kprobe_trace_arg(&tev->args[i],
++			ret = synthesize_probe_trace_arg(&tev->args[i],
+ 							  buf, 64);
+ 			pev->args[i].name = strdup(buf);
+ 		}
+@@ -1159,9 +1163,9 @@ void clear_perf_probe_event(struct perf_probe_event *pev)
+ 	memset(pev, 0, sizeof(*pev));
+ }
+ 
+-void clear_kprobe_trace_event(struct kprobe_trace_event *tev)
++static void clear_probe_trace_event(struct probe_trace_event *tev)
+ {
+-	struct kprobe_trace_arg_ref *ref, *next;
++	struct probe_trace_arg_ref *ref, *next;
+ 	int i;
+ 
+ 	if (tev->event)
+@@ -1222,7 +1226,7 @@ static int open_kprobe_events(bool readwrite)
+ }
+ 
+ /* Get raw string list of current kprobe_events */
+-static struct strlist *get_kprobe_trace_command_rawlist(int fd)
++static struct strlist *get_probe_trace_command_rawlist(int fd)
+ {
+ 	int ret, idx;
+ 	FILE *fp;
+@@ -1290,7 +1294,7 @@ static int show_perf_probe_event(struct perf_probe_event *pev)
+ int show_perf_probe_events(void)
+ {
+ 	int fd, ret;
+-	struct kprobe_trace_event tev;
++	struct probe_trace_event tev;
+ 	struct perf_probe_event pev;
+ 	struct strlist *rawlist;
+ 	struct str_node *ent;
+@@ -1307,20 +1311,20 @@ int show_perf_probe_events(void)
+ 	if (fd < 0)
+ 		return fd;
+ 
+-	rawlist = get_kprobe_trace_command_rawlist(fd);
++	rawlist = get_probe_trace_command_rawlist(fd);
+ 	close(fd);
+ 	if (!rawlist)
+ 		return -ENOENT;
+ 
+ 	strlist__for_each(ent, rawlist) {
+-		ret = parse_kprobe_trace_command(ent->s, &tev);
++		ret = parse_probe_trace_command(ent->s, &tev);
+ 		if (ret >= 0) {
+ 			ret = convert_to_perf_probe_event(&tev, &pev);
+ 			if (ret >= 0)
+ 				ret = show_perf_probe_event(&pev);
+ 		}
+ 		clear_perf_probe_event(&pev);
+-		clear_kprobe_trace_event(&tev);
++		clear_probe_trace_event(&tev);
+ 		if (ret < 0)
+ 			break;
+ 	}
+@@ -1330,20 +1334,19 @@ int show_perf_probe_events(void)
+ }
+ 
+ /* Get current perf-probe event names */
+-static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
++static struct strlist *get_probe_trace_event_names(int fd, bool include_group)
+ {
+ 	char buf[128];
+ 	struct strlist *sl, *rawlist;
+ 	struct str_node *ent;
+-	struct kprobe_trace_event tev;
++	struct probe_trace_event tev;
+ 	int ret = 0;
+ 
+ 	memset(&tev, 0, sizeof(tev));
+-
+-	rawlist = get_kprobe_trace_command_rawlist(fd);
++	rawlist = get_probe_trace_command_rawlist(fd);
+ 	sl = strlist__new(true, NULL);
+ 	strlist__for_each(ent, rawlist) {
+-		ret = parse_kprobe_trace_command(ent->s, &tev);
++		ret = parse_probe_trace_command(ent->s, &tev);
+ 		if (ret < 0)
+ 			break;
+ 		if (include_group) {
+@@ -1353,7 +1356,7 @@ static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
+ 				ret = strlist__add(sl, buf);
+ 		} else
+ 			ret = strlist__add(sl, tev.event);
+-		clear_kprobe_trace_event(&tev);
++		clear_probe_trace_event(&tev);
+ 		if (ret < 0)
+ 			break;
+ 	}
+@@ -1366,13 +1369,13 @@ static struct strlist *get_kprobe_trace_event_names(int fd, bool include_group)
+ 	return sl;
+ }
+ 
+-static int write_kprobe_trace_event(int fd, struct kprobe_trace_event *tev)
++static int write_probe_trace_event(int fd, struct probe_trace_event *tev)
+ {
+ 	int ret = 0;
+-	char *buf = synthesize_kprobe_trace_command(tev);
++	char *buf = synthesize_probe_trace_command(tev);
+ 
+ 	if (!buf) {
+-		pr_debug("Failed to synthesize kprobe trace event.\n");
++		pr_debug("Failed to synthesize probe trace event.\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1425,12 +1428,12 @@ static int get_new_event_name(char *buf, size_t len, const char *base,
  	return ret;
  }
  
--static const void *newt__symbol_tree_get_current(newtComponent self)
--{
--	if (symbol_conf.use_callchain)
--		return newtCheckboxTreeGetCurrent(self);
--	return newtListboxGetCurrent(self);
--}
--
--static void hist_browser__selection(newtComponent self, void *data)
--{
--	const struct map_symbol **symbol_ptr = data;
--	*symbol_ptr = newt__symbol_tree_get_current(self);
--}
--
- struct hist_browser {
--	newtComponent		form, tree;
--	const struct map_symbol *selection;
-+	struct ui_browser   b;
-+	struct hists	    *hists;
-+	struct hist_entry   *he_selection;
-+	struct map_symbol   *selection;
- };
- 
--static struct hist_browser *hist_browser__new(void)
-+static void hist_browser__reset(struct hist_browser *self);
-+static int hist_browser__run(struct hist_browser *self, const char *title,
-+			     struct newtExitStruct *es);
-+static unsigned int hist_browser__refresh_entries(struct ui_browser *self);
-+static void ui_browser__hists_seek(struct ui_browser *self,
-+				   off_t offset, int whence);
-+
-+static struct hist_browser *hist_browser__new(struct hists *hists)
+-static int __add_kprobe_trace_events(struct perf_probe_event *pev,
+-				     struct kprobe_trace_event *tevs,
++static int __add_probe_trace_events(struct perf_probe_event *pev,
++				     struct probe_trace_event *tevs,
+ 				     int ntevs, bool allow_suffix)
  {
--	struct hist_browser *self = malloc(sizeof(*self));
-+	struct hist_browser *self = zalloc(sizeof(*self));
- 
--	if (self != NULL)
--		self->form = NULL;
-+	if (self) {
-+		self->hists = hists;
-+		self->b.refresh_entries = hist_browser__refresh_entries;
-+		self->b.seek = ui_browser__hists_seek;
-+	}
- 
- 	return self;
- }
- 
- static void hist_browser__delete(struct hist_browser *self)
- {
--	newtFormDestroy(self->form);
-+	newtFormDestroy(self->b.form);
- 	newtPopWindow();
- 	free(self);
- }
- 
--static int hist_browser__populate(struct hist_browser *self, struct hists *hists,
--				  const char *title)
--{
--	int max_len = 0, idx, cols, rows;
--	struct ui_progress *progress;
--	struct rb_node *nd;
--	u64 curr_hist = 0;
--	char seq[] = ".", unit;
--	char str[256];
--	unsigned long nr_events = hists->stats.nr_events[PERF_RECORD_SAMPLE];
--
--	if (self->form) {
--		newtFormDestroy(self->form);
--		newtPopWindow();
--	}
--
--	nr_events = convert_unit(nr_events, &unit);
--	snprintf(str, sizeof(str), "Events: %lu%c                            ",
--		 nr_events, unit);
--	newtDrawRootText(0, 0, str);
--
--	newtGetScreenSize(NULL, &rows);
--
--	if (symbol_conf.use_callchain)
--		self->tree = newtCheckboxTreeMulti(0, 0, rows - 5, seq,
--						   NEWT_FLAG_SCROLL);
--	else
--		self->tree = newtListbox(0, 0, rows - 5,
--					(NEWT_FLAG_SCROLL |
--					 NEWT_FLAG_RETURNEXIT));
--
--	newtComponentAddCallback(self->tree, hist_browser__selection,
--				 &self->selection);
--
--	progress = ui_progress__new("Adding entries to the browser...",
--				    hists->nr_entries);
--	if (progress == NULL)
--		return -1;
--
--	idx = 0;
--	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
--		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
--		int len;
--
--		if (h->filtered)
--			continue;
--
--		len = hist_entry__append_browser(h, self->tree, hists);
--		if (len > max_len)
--			max_len = len;
--		if (symbol_conf.use_callchain)
--			hist_entry__append_callchain_browser(h, self->tree,
--							     hists->stats.total_period, idx++);
--		++curr_hist;
--		if (curr_hist % 5)
--			ui_progress__update(progress, curr_hist);
--	}
--
--	ui_progress__delete(progress);
--
--	newtGetScreenSize(&cols, &rows);
--
--	if (max_len > cols)
--		max_len = cols - 3;
--
--	if (!symbol_conf.use_callchain)
--		newtListboxSetWidth(self->tree, max_len);
--
--	newtCenteredWindow(max_len + (symbol_conf.use_callchain ? 5 : 0),
--			   rows - 5, title);
--	self->form = newt_form__new();
--	if (self->form == NULL)
--		return -1;
--
--	newtFormAddHotKey(self->form, 'A');
--	newtFormAddHotKey(self->form, 'a');
--	newtFormAddHotKey(self->form, 'D');
--	newtFormAddHotKey(self->form, 'd');
--	newtFormAddHotKey(self->form, 'T');
--	newtFormAddHotKey(self->form, 't');
--	newtFormAddHotKey(self->form, '?');
--	newtFormAddHotKey(self->form, 'H');
--	newtFormAddHotKey(self->form, 'h');
--	newtFormAddHotKey(self->form, NEWT_KEY_F1);
--	newtFormAddHotKey(self->form, NEWT_KEY_RIGHT);
--	newtFormAddHotKey(self->form, NEWT_KEY_TAB);
--	newtFormAddHotKey(self->form, NEWT_KEY_UNTAB);
--	newtFormAddComponents(self->form, self->tree, NULL);
--	self->selection = newt__symbol_tree_get_current(self->tree);
--
--	return 0;
--}
--
- static struct hist_entry *hist_browser__selected_entry(struct hist_browser *self)
- {
--	int *indexes;
--
--	if (!symbol_conf.use_callchain)
--		goto out;
--
--	indexes = newtCheckboxTreeFindItem(self->tree, (void *)self->selection);
--	if (indexes) {
--		bool is_hist_entry = indexes[1] == NEWT_ARG_LAST;
--		free(indexes);
--		if (is_hist_entry)
--			goto out;
--	}
--	return NULL;
--out:
--	return container_of(self->selection, struct hist_entry, ms);
-+	return self->he_selection;
- }
- 
- static struct thread *hist_browser__selected_thread(struct hist_browser *self)
- {
--	struct hist_entry *he = hist_browser__selected_entry(self);
--	return he ? he->thread : NULL;
-+	return self->he_selection->thread;
- }
- 
- static int hist_browser__title(char *bf, size_t size, const char *ev_name,
-@@ -936,7 +654,7 @@ static int hist_browser__title(char *bf, size_t size, const char *ev_name,
- 
- int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
- {
--	struct hist_browser *browser = hist_browser__new();
-+	struct hist_browser *browser = hist_browser__new(self);
- 	struct pstack *fstack;
- 	const struct thread *thread_filter = NULL;
- 	const struct dso *dso_filter = NULL;
-@@ -955,8 +673,6 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
- 
- 	hist_browser__title(msg, sizeof(msg), ev_name,
- 			    dso_filter, thread_filter);
--	if (hist_browser__populate(browser, self, msg) < 0)
--		goto out_free_stack;
- 
- 	while (1) {
- 		const struct thread *thread;
-@@ -965,7 +681,8 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
- 		int nr_options = 0, choice = 0, i,
- 		    annotate = -2, zoom_dso = -2, zoom_thread = -2;
- 
--		newtFormRun(browser->form, &es);
-+		if (hist_browser__run(browser, msg, &es))
-+			break;
- 
- 		thread = hist_browser__selected_thread(browser);
- 		dso = browser->selection->map ? browser->selection->map->dso : NULL;
-@@ -1100,8 +817,7 @@ zoom_out_dso:
- 			hists__filter_by_dso(self, dso_filter);
- 			hist_browser__title(msg, sizeof(msg), ev_name,
- 					    dso_filter, thread_filter);
--			if (hist_browser__populate(browser, self, msg) < 0)
--				goto out;
-+			hist_browser__reset(browser);
- 		} else if (choice == zoom_thread) {
- zoom_thread:
- 			if (thread_filter) {
-@@ -1119,8 +835,7 @@ zoom_out_thread:
- 			hists__filter_by_thread(self, thread_filter);
- 			hist_browser__title(msg, sizeof(msg), ev_name,
- 					    dso_filter, thread_filter);
--			if (hist_browser__populate(browser, self, msg) < 0)
--				goto out;
-+			hist_browser__reset(browser);
+ 	int i, fd, ret;
+-	struct kprobe_trace_event *tev = NULL;
++	struct probe_trace_event *tev = NULL;
+ 	char buf[64];
+ 	const char *event, *group;
+ 	struct strlist *namelist;
+@@ -1439,7 +1442,7 @@ static int __add_kprobe_trace_events(struct perf_probe_event *pev,
+ 	if (fd < 0)
+ 		return fd;
+ 	/* Get current event names */
+-	namelist = get_kprobe_trace_event_names(fd, false);
++	namelist = get_probe_trace_event_names(fd, false);
+ 	if (!namelist) {
+ 		pr_debug("Failed to get current event list.\n");
+ 		return -EIO;
+@@ -1474,7 +1477,7 @@ static int __add_kprobe_trace_events(struct perf_probe_event *pev,
+ 			ret = -ENOMEM;
+ 			break;
  		}
- 	}
- out_free_stack:
-@@ -1207,3 +922,638 @@ void exit_browser(bool wait_for_ok)
- 		newtFinished();
- 	}
+-		ret = write_kprobe_trace_event(fd, tev);
++		ret = write_probe_trace_event(fd, tev);
+ 		if (ret < 0)
+ 			break;
+ 		/* Add added event name to namelist */
+@@ -1511,21 +1514,21 @@ static int __add_kprobe_trace_events(struct perf_probe_event *pev,
+ 	return ret;
  }
-+
-+static void hist_browser__refresh_dimensions(struct hist_browser *self)
-+{
-+	/* 3 == +/- toggle symbol before actual hist_entry rendering */
-+	self->b.width = 3 + (hists__sort_list_width(self->hists) +
-+			     sizeof("[k]"));
-+}
-+
-+static void hist_browser__reset(struct hist_browser *self)
-+{
-+	self->b.nr_entries = self->hists->nr_entries;
-+	hist_browser__refresh_dimensions(self);
-+	ui_browser__reset_index(&self->b);
-+}
-+
-+static char tree__folded_sign(bool unfolded)
-+{
-+	return unfolded ? '-' : '+';
-+}
-+
-+static char map_symbol__folded(const struct map_symbol *self)
-+{
-+	return self->has_children ? tree__folded_sign(self->unfolded) : ' ';
-+}
-+
-+static char hist_entry__folded(const struct hist_entry *self)
-+{
-+	return map_symbol__folded(&self->ms);
-+}
-+
-+static char callchain_list__folded(const struct callchain_list *self)
-+{
-+	return map_symbol__folded(&self->ms);
-+}
-+
-+static bool map_symbol__toggle_fold(struct map_symbol *self)
-+{
-+	if (!self->has_children)
-+		return false;
-+
-+	self->unfolded = !self->unfolded;
-+	return true;
-+}
-+
-+#define LEVEL_OFFSET_STEP 3
-+
-+static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
-+						     struct callchain_node *chain_node,
-+						     u64 total, int level,
-+						     unsigned short row,
-+						     off_t *row_offset,
-+						     bool *is_current_entry)
-+{
-+	struct rb_node *node;
-+	int first_row = row, width, offset = level * LEVEL_OFFSET_STEP;
-+	u64 new_total, remaining;
-+
-+	if (callchain_param.mode == CHAIN_GRAPH_REL)
-+		new_total = chain_node->children_hit;
-+	else
-+		new_total = total;
-+
-+	remaining = new_total;
-+	node = rb_first(&chain_node->rb_root);
-+	while (node) {
-+		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
-+		struct rb_node *next = rb_next(node);
-+		u64 cumul = cumul_hits(child);
-+		struct callchain_list *chain;
-+		char folded_sign = ' ';
-+		int first = true;
-+		int extra_offset = 0;
-+
-+		remaining -= cumul;
-+
-+		list_for_each_entry(chain, &child->val, list) {
-+			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
-+			const char *str;
-+			int color;
-+			bool was_first = first;
-+
-+			if (first) {
-+				first = false;
-+				chain->ms.has_children = chain->list.next != &child->val ||
-+							 rb_first(&child->rb_root) != NULL;
-+			} else {
-+				extra_offset = LEVEL_OFFSET_STEP;
-+				chain->ms.has_children = chain->list.next == &child->val &&
-+							 rb_first(&child->rb_root) != NULL;
-+			}
-+
-+			folded_sign = callchain_list__folded(chain);
-+			if (*row_offset != 0) {
-+				--*row_offset;
-+				goto do_next;
-+			}
-+
-+			alloc_str = NULL;
-+			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+			if (was_first) {
-+				double percent = cumul * 100.0 / new_total;
-+
-+				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
-+					str = "Not enough memory!";
-+				else
-+					str = alloc_str;
-+			}
-+
-+			color = HE_COLORSET_NORMAL;
-+			width = self->b.width - (offset + extra_offset + 2);
-+			if (ui_browser__is_current_entry(&self->b, row)) {
-+				self->selection = &chain->ms;
-+				color = HE_COLORSET_SELECTED;
-+				*is_current_entry = true;
-+			}
-+
-+			SLsmg_set_color(color);
-+			SLsmg_gotorc(self->b.top + row, self->b.left);
-+			slsmg_write_nstring(" ", offset + extra_offset);
-+			slsmg_printf("%c ", folded_sign);
-+			slsmg_write_nstring(str, width);
-+			free(alloc_str);
-+
-+			if (++row == self->b.height)
-+				goto out;
-+do_next:
-+			if (folded_sign == '+')
-+				break;
-+		}
-+
-+		if (folded_sign == '-') {
-+			const int new_level = level + (extra_offset ? 2 : 1);
-+			row += hist_browser__show_callchain_node_rb_tree(self, child, new_total,
-+									 new_level, row, row_offset,
-+									 is_current_entry);
-+		}
-+		if (row == self->b.height)
-+			goto out;
-+		node = next;
-+	}
-+out:
-+	return row - first_row;
-+}
-+
-+static int hist_browser__show_callchain_node(struct hist_browser *self,
-+					     struct callchain_node *node,
-+					     int level, unsigned short row,
-+					     off_t *row_offset,
-+					     bool *is_current_entry)
-+{
-+	struct callchain_list *chain;
-+	int first_row = row,
-+	     offset = level * LEVEL_OFFSET_STEP,
-+	     width = self->b.width - offset;
-+	char folded_sign = ' ';
-+
-+	list_for_each_entry(chain, &node->val, list) {
-+		char ipstr[BITS_PER_LONG / 4 + 1], *s;
-+		int color;
-+		/*
-+		 * FIXME: This should be moved to somewhere else,
-+		 * probably when the callchain is created, so as not to
-+		 * traverse it all over again
-+		 */
-+		chain->ms.has_children = rb_first(&node->rb_root) != NULL;
-+		folded_sign = callchain_list__folded(chain);
-+
-+		if (*row_offset != 0) {
-+			--*row_offset;
-+			continue;
-+		}
-+
-+		color = HE_COLORSET_NORMAL;
-+		if (ui_browser__is_current_entry(&self->b, row)) {
-+			self->selection = &chain->ms;
-+			color = HE_COLORSET_SELECTED;
-+			*is_current_entry = true;
-+		}
-+
-+		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
-+		SLsmg_gotorc(self->b.top + row, self->b.left);
-+		SLsmg_set_color(color);
-+		slsmg_write_nstring(" ", offset);
-+		slsmg_printf("%c ", folded_sign);
-+		slsmg_write_nstring(s, width - 2);
-+
-+		if (++row == self->b.height)
-+			goto out;
-+	}
-+
-+	if (folded_sign == '-')
-+		row += hist_browser__show_callchain_node_rb_tree(self, node,
-+								 self->hists->stats.total_period,
-+								 level + 1, row,
-+								 row_offset,
-+								 is_current_entry);
-+out:
-+	return row - first_row;
-+}
-+
-+static int hist_browser__show_callchain(struct hist_browser *self,
-+					struct rb_root *chain,
-+					int level, unsigned short row,
-+					off_t *row_offset,
-+					bool *is_current_entry)
-+{
-+	struct rb_node *nd;
-+	int first_row = row;
-+
-+	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
-+		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
-+
-+		row += hist_browser__show_callchain_node(self, node, level,
-+							 row, row_offset,
-+							 is_current_entry);
-+		if (row == self->b.height)
-+			break;
-+	}
-+
-+	return row - first_row;
-+}
-+
-+static int hist_browser__show_entry(struct hist_browser *self,
-+				    struct hist_entry *entry,
-+				    unsigned short row)
-+{
-+	char s[256];
-+	double percent;
-+	int printed = 0;
-+	int color, width = self->b.width;
-+	char folded_sign = ' ';
-+	bool current_entry = ui_browser__is_current_entry(&self->b, row);
-+	off_t row_offset = entry->row_offset;
-+
-+	if (current_entry) {
-+		self->he_selection = entry;
-+		self->selection = &entry->ms;
-+	}
-+
-+	if (symbol_conf.use_callchain) {
-+		entry->ms.has_children = !RB_EMPTY_ROOT(&entry->sorted_chain);
-+		folded_sign = hist_entry__folded(entry);
-+	}
-+
-+	if (row_offset == 0) {
-+		hist_entry__snprintf(entry, s, sizeof(s), self->hists, NULL, false,
-+				     0, false, self->hists->stats.total_period);
-+		percent = (entry->period * 100.0) / self->hists->stats.total_period;
-+
-+		color = HE_COLORSET_SELECTED;
-+		if (!current_entry) {
-+			if (percent >= MIN_RED)
-+				color = HE_COLORSET_TOP;
-+			else if (percent >= MIN_GREEN)
-+				color = HE_COLORSET_MEDIUM;
-+			else
-+				color = HE_COLORSET_NORMAL;
-+		}
-+
-+		SLsmg_set_color(color);
-+		SLsmg_gotorc(self->b.top + row, self->b.left);
-+		if (symbol_conf.use_callchain) {
-+			slsmg_printf("%c ", folded_sign);
-+			width -= 2;
-+		}
-+		slsmg_write_nstring(s, width);
-+		++row;
-+		++printed;
-+	} else
-+		--row_offset;
-+
-+	if (folded_sign == '-' && row != self->b.height) {
-+		printed += hist_browser__show_callchain(self, &entry->sorted_chain,
-+							1, row, &row_offset,
-+							&current_entry);
-+		if (current_entry)
-+			self->he_selection = entry;
-+	}
-+
-+	return printed;
-+}
-+
-+static unsigned int hist_browser__refresh_entries(struct ui_browser *self)
-+{
-+	unsigned row = 0;
-+	struct rb_node *nd;
-+	struct hist_browser *hb = container_of(self, struct hist_browser, b);
-+
-+	if (self->first_visible_entry == NULL)
-+		self->first_visible_entry = rb_first(&hb->hists->entries);
-+
-+	for (nd = self->first_visible_entry; nd; nd = rb_next(nd)) {
-+		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+
-+		if (h->filtered)
-+			continue;
-+
-+		row += hist_browser__show_entry(hb, h, row);
-+		if (row == self->height)
-+			break;
-+	}
-+
-+	return row;
-+}
-+
-+static void callchain_node__init_have_children_rb_tree(struct callchain_node *self)
-+{
-+	struct rb_node *nd = rb_first(&self->rb_root);
-+
-+	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
-+		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
-+		struct callchain_list *chain;
-+		int first = true;
-+
-+		list_for_each_entry(chain, &child->val, list) {
-+			if (first) {
-+				first = false;
-+				chain->ms.has_children = chain->list.next != &child->val ||
-+							 rb_first(&child->rb_root) != NULL;
-+			} else
-+				chain->ms.has_children = chain->list.next == &child->val &&
-+							 rb_first(&child->rb_root) != NULL;
-+		}
-+
-+		callchain_node__init_have_children_rb_tree(child);
-+	}
-+}
-+
-+static void callchain_node__init_have_children(struct callchain_node *self)
-+{
-+	struct callchain_list *chain;
-+
-+	list_for_each_entry(chain, &self->val, list)
-+		chain->ms.has_children = rb_first(&self->rb_root) != NULL;
-+
-+	callchain_node__init_have_children_rb_tree(self);
-+}
-+
-+static void callchain__init_have_children(struct rb_root *self)
-+{
-+	struct rb_node *nd;
-+
-+	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
-+		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
-+		callchain_node__init_have_children(node);
-+	}
-+}
-+
-+static void hist_entry__init_have_children(struct hist_entry *self)
-+{
-+	if (!self->init_have_children) {
-+		callchain__init_have_children(&self->sorted_chain);
-+		self->init_have_children = true;
-+	}
-+}
-+
-+static struct rb_node *hists__filter_entries(struct rb_node *nd)
-+{
-+	while (nd != NULL) {
-+		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+		if (!h->filtered)
-+			return nd;
-+
-+		nd = rb_next(nd);
-+	}
-+
-+	return NULL;
-+}
-+
-+static struct rb_node *hists__filter_prev_entries(struct rb_node *nd)
-+{
-+	while (nd != NULL) {
-+		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
-+		if (!h->filtered)
-+			return nd;
-+
-+		nd = rb_prev(nd);
-+	}
-+
-+	return NULL;
-+}
-+
-+static void ui_browser__hists_seek(struct ui_browser *self,
-+				   off_t offset, int whence)
-+{
-+	struct hist_entry *h;
-+	struct rb_node *nd;
-+	bool first = true;
-+
-+	switch (whence) {
-+	case SEEK_SET:
-+		nd = hists__filter_entries(rb_first(self->entries));
-+		break;
-+	case SEEK_CUR:
-+		nd = self->first_visible_entry;
-+		goto do_offset;
-+	case SEEK_END:
-+		nd = hists__filter_prev_entries(rb_last(self->entries));
-+		first = false;
-+		break;
-+	default:
-+		return;
-+	}
-+
-+	/*
-+	 * Moves not relative to the first visible entry invalidates its
-+	 * row_offset:
-+	 */
-+	h = rb_entry(self->first_visible_entry, struct hist_entry, rb_node);
-+	h->row_offset = 0;
-+
-+	/*
-+	 * Here we have to check if nd is expanded (+), if it is we can't go
-+	 * the next top level hist_entry, instead we must compute an offset of
-+	 * what _not_ to show and not change the first visible entry.
-+	 *
-+	 * This offset increments when we are going from top to bottom and
-+	 * decreases when we're going from bottom to top.
-+	 *
-+	 * As we don't have backpointers to the top level in the callchains
-+	 * structure, we need to always print the whole hist_entry callchain,
-+	 * skipping the first ones that are before the first visible entry
-+	 * and stop when we printed enough lines to fill the screen.
-+	 */
-+do_offset:
-+	if (offset > 0) {
-+		do {
-+			h = rb_entry(nd, struct hist_entry, rb_node);
-+			if (h->ms.unfolded) {
-+				u16 remaining = h->nr_rows - h->row_offset;
-+				if (offset > remaining) {
-+					offset -= remaining;
-+					h->row_offset = 0;
-+				} else {
-+					h->row_offset += offset;
-+					offset = 0;
-+					self->first_visible_entry = nd;
-+					break;
-+				}
-+			}
-+			nd = hists__filter_entries(rb_next(nd));
-+			if (nd == NULL)
-+				break;
-+			--offset;
-+			self->first_visible_entry = nd;
-+		} while (offset != 0);
-+	} else if (offset < 0) {
-+		while (1) {
-+			h = rb_entry(nd, struct hist_entry, rb_node);
-+			if (h->ms.unfolded) {
-+				if (first) {
-+					if (-offset > h->row_offset) {
-+						offset += h->row_offset;
-+						h->row_offset = 0;
-+					} else {
-+						h->row_offset += offset;
-+						offset = 0;
-+						self->first_visible_entry = nd;
-+						break;
-+					}
-+				} else {
-+					if (-offset > h->nr_rows) {
-+						offset += h->nr_rows;
-+						h->row_offset = 0;
-+					} else {
-+						h->row_offset = h->nr_rows + offset;
-+						offset = 0;
-+						self->first_visible_entry = nd;
-+						break;
-+					}
-+				}
-+			}
-+
-+			nd = hists__filter_prev_entries(rb_prev(nd));
-+			if (nd == NULL)
-+				break;
-+			++offset;
-+			self->first_visible_entry = nd;
-+			if (offset == 0) {
-+				/*
-+				 * Last unfiltered hist_entry, check if it is
-+				 * unfolded, if it is then we should have
-+				 * row_offset at its last entry.
-+				 */
-+				h = rb_entry(nd, struct hist_entry, rb_node);
-+				if (h->ms.unfolded)
-+					h->row_offset = h->nr_rows;
-+				break;
-+			}
-+			first = false;
-+		}
-+	} else {
-+		self->first_visible_entry = nd;
-+		h = rb_entry(nd, struct hist_entry, rb_node);
-+		h->row_offset = 0;
-+	}
-+}
-+
-+static int callchain_node__count_rows_rb_tree(struct callchain_node *self)
-+{
-+	int n = 0;
-+	struct rb_node *nd;
-+
-+	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
-+		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
-+		struct callchain_list *chain;
-+		char folded_sign = ' '; /* No children */
-+
-+		list_for_each_entry(chain, &child->val, list) {
-+			++n;
-+			/* We need this because we may not have children */
-+			folded_sign = callchain_list__folded(chain);
-+			if (folded_sign == '+')
-+				break;
-+		}
-+
-+		if (folded_sign == '-') /* Have children and they're unfolded */
-+			n += callchain_node__count_rows_rb_tree(child);
-+	}
-+
-+	return n;
-+}
-+
-+static int callchain_node__count_rows(struct callchain_node *node)
-+{
-+	struct callchain_list *chain;
-+	bool unfolded = false;
-+	int n = 0;
-+
-+	list_for_each_entry(chain, &node->val, list) {
-+		++n;
-+		unfolded = chain->ms.unfolded;
-+	}
-+
-+	if (unfolded)
-+		n += callchain_node__count_rows_rb_tree(node);
-+
-+	return n;
-+}
-+
-+static int callchain__count_rows(struct rb_root *chain)
-+{
-+	struct rb_node *nd;
-+	int n = 0;
-+
-+	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
-+		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
-+		n += callchain_node__count_rows(node);
-+	}
-+
-+	return n;
-+}
-+
-+static bool hist_browser__toggle_fold(struct hist_browser *self)
-+{
-+	if (map_symbol__toggle_fold(self->selection)) {
-+		struct hist_entry *he = self->he_selection;
-+
-+		hist_entry__init_have_children(he);
-+		self->hists->nr_entries -= he->nr_rows;
-+
-+		if (he->ms.unfolded)
-+			he->nr_rows = callchain__count_rows(&he->sorted_chain);
-+		else
-+			he->nr_rows = 0;
-+		self->hists->nr_entries += he->nr_rows;
-+		self->b.nr_entries = self->hists->nr_entries;
-+
-+		return true;
-+	}
-+
-+	/* If it doesn't have children, no toggling performed */
-+	return false;
-+}
-+
-+static int hist_browser__run(struct hist_browser *self, const char *title,
-+			     struct newtExitStruct *es)
-+{
-+	char str[256], unit;
-+	unsigned long nr_events = self->hists->stats.nr_events[PERF_RECORD_SAMPLE];
-+
-+	self->b.entries = &self->hists->entries;
-+	self->b.nr_entries = self->hists->nr_entries;
-+
-+	hist_browser__refresh_dimensions(self);
-+
-+	nr_events = convert_unit(nr_events, &unit);
-+	snprintf(str, sizeof(str), "Events: %lu%c                            ",
-+		 nr_events, unit);
-+	newtDrawRootText(0, 0, str);
-+
-+	if (ui_browser__show(&self->b, title) < 0)
-+		return -1;
-+
-+	newtFormAddHotKey(self->b.form, 'A');
-+	newtFormAddHotKey(self->b.form, 'a');
-+	newtFormAddHotKey(self->b.form, '?');
-+	newtFormAddHotKey(self->b.form, 'h');
-+	newtFormAddHotKey(self->b.form, 'H');
-+	newtFormAddHotKey(self->b.form, 'd');
-+
-+	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
-+	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
-+	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
-+
-+	while (1) {
-+		ui_browser__run(&self->b, es);
-+
-+		if (es->reason != NEWT_EXIT_HOTKEY)
-+			break;
-+		switch (es->u.key) {
-+		case 'd': { /* Debug */
-+			static int seq;
-+			struct hist_entry *h = rb_entry(self->b.first_visible_entry,
-+							struct hist_entry, rb_node);
-+			ui_helpline__pop();
-+			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
-+					   seq++, self->b.nr_entries,
-+					   self->hists->nr_entries,
-+					   self->b.height,
-+					   self->b.index,
-+					   self->b.first_visible_entry_idx,
-+					   h->row_offset, h->nr_rows);
-+		}
-+			continue;
-+		case NEWT_KEY_ENTER:
-+			if (hist_browser__toggle_fold(self))
-+				break;
-+			/* fall thru */
-+		default:
-+			return 0;
-+		}
-+	}
-+	return 0;
-+}
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 03a1722..46e531d 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -38,6 +38,12 @@ extern struct sort_entry sort_sym;
- extern struct sort_entry sort_parent;
- extern enum sort_type sort__first_dimension;
  
-+/**
-+ * struct hist_entry - histogram entry
-+ *
-+ * @row_offset - offset from the first callchain expanded to appear on screen
-+ * @nr_rows - rows expanded in callchain, recalculated on folding/unfolding
-+ */
- struct hist_entry {
- 	struct rb_node		rb_node;
- 	u64			period;
-@@ -50,6 +56,12 @@ struct hist_entry {
- 	u64			ip;
- 	s32			cpu;
- 	u32			nr_events;
-+
-+	/* XXX These two should move to some tree widget lib */
-+	u16			row_offset;
-+	u16			nr_rows;
-+
-+	bool			init_have_children;
- 	char			level;
- 	u8			filtered;
- 	struct symbol		*parent;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index d436ee3..bb1aab9 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -102,6 +102,8 @@ struct ref_reloc_sym {
- struct map_symbol {
- 	struct map    *map;
+-static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
+-					  struct kprobe_trace_event **tevs,
++static int convert_to_probe_trace_events(struct perf_probe_event *pev,
++					  struct probe_trace_event **tevs,
+ 					  int max_tevs)
+ {
  	struct symbol *sym;
-+	bool	      unfolded;
-+	bool	      has_children;
+ 	int ret = 0, i;
+-	struct kprobe_trace_event *tev;
++	struct probe_trace_event *tev;
+ 
+ 	/* Convert perf_probe_event with debuginfo */
+-	ret = try_to_find_kprobe_trace_events(pev, tevs, max_tevs);
++	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs);
+ 	if (ret != 0)
+ 		return ret;
+ 
+ 	/* Allocate trace event buffer */
+-	tev = *tevs = zalloc(sizeof(struct kprobe_trace_event));
++	tev = *tevs = zalloc(sizeof(struct probe_trace_event));
+ 	if (tev == NULL)
+ 		return -ENOMEM;
+ 
+@@ -1538,7 +1541,7 @@ static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
+ 	tev->point.offset = pev->point.offset;
+ 	tev->nargs = pev->nargs;
+ 	if (tev->nargs) {
+-		tev->args = zalloc(sizeof(struct kprobe_trace_arg)
++		tev->args = zalloc(sizeof(struct probe_trace_arg)
+ 				   * tev->nargs);
+ 		if (tev->args == NULL) {
+ 			ret = -ENOMEM;
+@@ -1579,7 +1582,7 @@ static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
+ 
+ 	return 1;
+ error:
+-	clear_kprobe_trace_event(tev);
++	clear_probe_trace_event(tev);
+ 	free(tev);
+ 	*tevs = NULL;
+ 	return ret;
+@@ -1587,7 +1590,7 @@ error:
+ 
+ struct __event_package {
+ 	struct perf_probe_event		*pev;
+-	struct kprobe_trace_event	*tevs;
++	struct probe_trace_event	*tevs;
+ 	int				ntevs;
  };
  
- struct addr_location {
+@@ -1610,7 +1613,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 	for (i = 0; i < npevs; i++) {
+ 		pkgs[i].pev = &pevs[i];
+ 		/* Convert with or without debuginfo */
+-		ret  = convert_to_kprobe_trace_events(pkgs[i].pev,
++		ret  = convert_to_probe_trace_events(pkgs[i].pev,
+ 						      &pkgs[i].tevs, max_tevs);
+ 		if (ret < 0)
+ 			goto end;
+@@ -1619,24 +1622,24 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 
+ 	/* Loop 2: add all events */
+ 	for (i = 0; i < npevs && ret >= 0; i++)
+-		ret = __add_kprobe_trace_events(pkgs[i].pev, pkgs[i].tevs,
++		ret = __add_probe_trace_events(pkgs[i].pev, pkgs[i].tevs,
+ 						pkgs[i].ntevs, force_add);
+ end:
+ 	/* Loop 3: cleanup trace events  */
+ 	for (i = 0; i < npevs; i++)
+ 		for (j = 0; j < pkgs[i].ntevs; j++)
+-			clear_kprobe_trace_event(&pkgs[i].tevs[j]);
++			clear_probe_trace_event(&pkgs[i].tevs[j]);
+ 
+ 	return ret;
+ }
+ 
+-static int __del_trace_kprobe_event(int fd, struct str_node *ent)
++static int __del_trace_probe_event(int fd, struct str_node *ent)
+ {
+ 	char *p;
+ 	char buf[128];
+ 	int ret;
+ 
+-	/* Convert from perf-probe event to trace-kprobe event */
++	/* Convert from perf-probe event to trace-probe event */
+ 	ret = e_snprintf(buf, 128, "-:%s", ent->s);
+ 	if (ret < 0)
+ 		goto error;
+@@ -1662,7 +1665,7 @@ error:
+ 	return ret;
+ }
+ 
+-static int del_trace_kprobe_event(int fd, const char *group,
++static int del_trace_probe_event(int fd, const char *group,
+ 				  const char *event, struct strlist *namelist)
+ {
+ 	char buf[128];
+@@ -1679,7 +1682,7 @@ static int del_trace_kprobe_event(int fd, const char *group,
+ 		strlist__for_each_safe(ent, n, namelist)
+ 			if (strglobmatch(ent->s, buf)) {
+ 				found++;
+-				ret = __del_trace_kprobe_event(fd, ent);
++				ret = __del_trace_probe_event(fd, ent);
+ 				if (ret < 0)
+ 					break;
+ 				strlist__remove(namelist, ent);
+@@ -1688,7 +1691,7 @@ static int del_trace_kprobe_event(int fd, const char *group,
+ 		ent = strlist__find(namelist, buf);
+ 		if (ent) {
+ 			found++;
+-			ret = __del_trace_kprobe_event(fd, ent);
++			ret = __del_trace_probe_event(fd, ent);
+ 			if (ret >= 0)
+ 				strlist__remove(namelist, ent);
+ 		}
+@@ -1712,7 +1715,7 @@ int del_perf_probe_events(struct strlist *dellist)
+ 		return fd;
+ 
+ 	/* Get current event names */
+-	namelist = get_kprobe_trace_event_names(fd, true);
++	namelist = get_probe_trace_event_names(fd, true);
+ 	if (namelist == NULL)
+ 		return -EINVAL;
+ 
+@@ -1733,7 +1736,7 @@ int del_perf_probe_events(struct strlist *dellist)
+ 			event = str;
+ 		}
+ 		pr_debug("Group: %s, Event: %s\n", group, event);
+-		ret = del_trace_kprobe_event(fd, group, event, namelist);
++		ret = del_trace_probe_event(fd, group, event, namelist);
+ 		free(str);
+ 		if (ret < 0)
+ 			break;
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index ed362ac..5af3924 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -7,33 +7,33 @@
+ extern bool probe_event_dry_run;
+ 
+ /* kprobe-tracer tracing point */
+-struct kprobe_trace_point {
++struct probe_trace_point {
+ 	char		*symbol;	/* Base symbol */
+ 	unsigned long	offset;		/* Offset from symbol */
+ 	bool		retprobe;	/* Return probe flag */
+ };
+ 
+-/* kprobe-tracer tracing argument referencing offset */
+-struct kprobe_trace_arg_ref {
+-	struct kprobe_trace_arg_ref	*next;	/* Next reference */
++/* probe-tracer tracing argument referencing offset */
++struct probe_trace_arg_ref {
++	struct probe_trace_arg_ref	*next;	/* Next reference */
+ 	long				offset;	/* Offset value */
+ };
+ 
+ /* kprobe-tracer tracing argument */
+-struct kprobe_trace_arg {
++struct probe_trace_arg {
+ 	char				*name;	/* Argument name */
+ 	char				*value;	/* Base value */
+ 	char				*type;	/* Type name */
+-	struct kprobe_trace_arg_ref	*ref;	/* Referencing offset */
++	struct probe_trace_arg_ref	*ref;	/* Referencing offset */
+ };
+ 
+ /* kprobe-tracer tracing event (point + arg) */
+-struct kprobe_trace_event {
++struct probe_trace_event {
+ 	char				*event;	/* Event name */
+ 	char				*group;	/* Group name */
+-	struct kprobe_trace_point	point;	/* Trace point */
++	struct probe_trace_point	point;	/* Trace point */
+ 	int				nargs;	/* Number of args */
+-	struct kprobe_trace_arg		*args;	/* Arguments */
++	struct probe_trace_arg		*args;	/* Arguments */
+ };
+ 
+ /* Perf probe probing point */
+@@ -93,25 +93,18 @@ struct line_range {
+ /* Command string to events */
+ extern int parse_perf_probe_command(const char *cmd,
+ 				    struct perf_probe_event *pev);
+-extern int parse_kprobe_trace_command(const char *cmd,
+-				      struct kprobe_trace_event *tev);
+ 
+ /* Events to command string */
+ extern char *synthesize_perf_probe_command(struct perf_probe_event *pev);
+-extern char *synthesize_kprobe_trace_command(struct kprobe_trace_event *tev);
++extern char *synthesize_probe_trace_command(struct probe_trace_event *tev);
+ extern int synthesize_perf_probe_arg(struct perf_probe_arg *pa, char *buf,
+ 				     size_t len);
+ 
+ /* Check the perf_probe_event needs debuginfo */
+ extern bool perf_probe_event_need_dwarf(struct perf_probe_event *pev);
+ 
+-/* Convert from kprobe_trace_event to perf_probe_event */
+-extern int convert_to_perf_probe_event(struct kprobe_trace_event *tev,
+-				       struct perf_probe_event *pev);
+-
+ /* Release event contents */
+ extern void clear_perf_probe_event(struct perf_probe_event *pev);
+-extern void clear_kprobe_trace_event(struct kprobe_trace_event *tev);
+ 
+ /* Command string to line-range */
+ extern int parse_line_range_desc(const char *cmd, struct line_range *lr);
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index f88070e..840f1aa 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -366,10 +366,10 @@ static Dwarf_Die *die_find_member(Dwarf_Die *st_die, const char *name,
+  * Probe finder related functions
+  */
+ 
+-static struct kprobe_trace_arg_ref *alloc_trace_arg_ref(long offs)
++static struct probe_trace_arg_ref *alloc_trace_arg_ref(long offs)
+ {
+-	struct kprobe_trace_arg_ref *ref;
+-	ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
++	struct probe_trace_arg_ref *ref;
++	ref = zalloc(sizeof(struct probe_trace_arg_ref));
+ 	if (ref != NULL)
+ 		ref->offset = offs;
+ 	return ref;
+@@ -385,7 +385,7 @@ static int convert_variable_location(Dwarf_Die *vr_die, struct probe_finder *pf)
+ 	Dwarf_Word offs = 0;
+ 	bool ref = false;
+ 	const char *regs;
+-	struct kprobe_trace_arg *tvar = pf->tvar;
++	struct probe_trace_arg *tvar = pf->tvar;
+ 	int ret;
+ 
+ 	/* TODO: handle more than 1 exprs */
+@@ -459,10 +459,10 @@ static int convert_variable_location(Dwarf_Die *vr_die, struct probe_finder *pf)
+ }
+ 
+ static int convert_variable_type(Dwarf_Die *vr_die,
+-				 struct kprobe_trace_arg *tvar,
++				 struct probe_trace_arg *tvar,
+ 				 const char *cast)
+ {
+-	struct kprobe_trace_arg_ref **ref_ptr = &tvar->ref;
++	struct probe_trace_arg_ref **ref_ptr = &tvar->ref;
+ 	Dwarf_Die type;
+ 	char buf[16];
+ 	int ret;
+@@ -500,7 +500,7 @@ static int convert_variable_type(Dwarf_Die *vr_die,
+ 			while (*ref_ptr)
+ 				ref_ptr = &(*ref_ptr)->next;
+ 			/* Add new reference with offset +0 */
+-			*ref_ptr = zalloc(sizeof(struct kprobe_trace_arg_ref));
++			*ref_ptr = zalloc(sizeof(struct probe_trace_arg_ref));
+ 			if (*ref_ptr == NULL) {
+ 				pr_warning("Out of memory error\n");
+ 				return -ENOMEM;
+@@ -545,10 +545,10 @@ static int convert_variable_type(Dwarf_Die *vr_die,
+ 
+ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 				    struct perf_probe_arg_field *field,
+-				    struct kprobe_trace_arg_ref **ref_ptr,
++				    struct probe_trace_arg_ref **ref_ptr,
+ 				    Dwarf_Die *die_mem)
+ {
+-	struct kprobe_trace_arg_ref *ref = *ref_ptr;
++	struct probe_trace_arg_ref *ref = *ref_ptr;
+ 	Dwarf_Die type;
+ 	Dwarf_Word offs;
+ 	int ret, tag;
+@@ -574,7 +574,7 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 		pr_debug2("Array real type: (%x)\n",
+ 			 (unsigned)dwarf_dieoffset(&type));
+ 		if (tag == DW_TAG_pointer_type) {
+-			ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
++			ref = zalloc(sizeof(struct probe_trace_arg_ref));
+ 			if (ref == NULL)
+ 				return -ENOMEM;
+ 			if (*ref_ptr)
+@@ -605,7 +605,7 @@ static int convert_variable_fields(Dwarf_Die *vr_die, const char *varname,
+ 			return -EINVAL;
+ 		}
+ 
+-		ref = zalloc(sizeof(struct kprobe_trace_arg_ref));
++		ref = zalloc(sizeof(struct probe_trace_arg_ref));
+ 		if (ref == NULL)
+ 			return -ENOMEM;
+ 		if (*ref_ptr)
+@@ -738,7 +738,7 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
+ /* Show a probe point to output buffer */
+ static int convert_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+ {
+-	struct kprobe_trace_event *tev;
++	struct probe_trace_event *tev;
+ 	Dwarf_Addr eaddr;
+ 	Dwarf_Die die_mem;
+ 	const char *name;
+@@ -803,7 +803,7 @@ static int convert_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 
+ 	/* Find each argument */
+ 	tev->nargs = pf->pev->nargs;
+-	tev->args = zalloc(sizeof(struct kprobe_trace_arg) * tev->nargs);
++	tev->args = zalloc(sizeof(struct probe_trace_arg) * tev->nargs);
+ 	if (tev->args == NULL)
+ 		return -ENOMEM;
+ 	for (i = 0; i < pf->pev->nargs; i++) {
+@@ -1060,9 +1060,9 @@ static int find_probe_point_by_func(struct probe_finder *pf)
+ 	return _param.retval;
+ }
+ 
+-/* Find kprobe_trace_events specified by perf_probe_event from debuginfo */
+-int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
+-			     struct kprobe_trace_event **tevs, int max_tevs)
++/* Find probe_trace_events specified by perf_probe_event from debuginfo */
++int find_probe_trace_events(int fd, struct perf_probe_event *pev,
++			     struct probe_trace_event **tevs, int max_tevs)
+ {
+ 	struct probe_finder pf = {.pev = pev, .max_tevs = max_tevs};
+ 	struct perf_probe_point *pp = &pev->point;
+@@ -1072,7 +1072,7 @@ int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
+ 	Dwarf *dbg;
+ 	int ret = 0;
+ 
+-	pf.tevs = zalloc(sizeof(struct kprobe_trace_event) * max_tevs);
++	pf.tevs = zalloc(sizeof(struct probe_trace_event) * max_tevs);
+ 	if (pf.tevs == NULL)
+ 		return -ENOMEM;
+ 	*tevs = pf.tevs;
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index e1f61dc..4507d51 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -16,9 +16,9 @@ static inline int is_c_varname(const char *name)
+ }
+ 
+ #ifdef DWARF_SUPPORT
+-/* Find kprobe_trace_events specified by perf_probe_event from debuginfo */
+-extern int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
+-				    struct kprobe_trace_event **tevs,
++/* Find probe_trace_events specified by perf_probe_event from debuginfo */
++extern int find_probe_trace_events(int fd, struct perf_probe_event *pev,
++				    struct probe_trace_event **tevs,
+ 				    int max_tevs);
+ 
+ /* Find a perf_probe_point from debuginfo */
+@@ -33,7 +33,7 @@ extern int find_line_range(int fd, struct line_range *lr);
+ 
+ struct probe_finder {
+ 	struct perf_probe_event	*pev;		/* Target probe event */
+-	struct kprobe_trace_event *tevs;	/* Result trace events */
++	struct probe_trace_event *tevs;		/* Result trace events */
+ 	int			ntevs;		/* Number of trace events */
+ 	int			max_tevs;	/* Max number of trace events */
+ 
+@@ -50,7 +50,7 @@ struct probe_finder {
+ #endif
+ 	Dwarf_Op		*fb_ops;	/* Frame base attribute */
+ 	struct perf_probe_arg	*pvar;		/* Current target variable */
+-	struct kprobe_trace_arg	*tvar;		/* Current result variable */
++	struct probe_trace_arg	*tvar;		/* Current result variable */
+ };
+ 
+ struct line_finder {
 -- 
 1.6.2.5
 
