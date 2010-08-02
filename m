@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab0HBUhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:37:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45185 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab0HBUhE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:37:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Gb+ucbG8iQjfnHldOKmEe5CWSNUGL2NluGnQZbqDtKkEFlZEwh1M9f3wB0Fu3OXwWW
-         pz9UfbneT43uEBtZsTXiUpX5DK12rStq2fLJICs4RPD09An63oCHN1X1m+FMnVNn4Qud
-         MQTI4plkrPctu2R/vqnlxLzT+sJ+sSPIWVaXY=
-Date: Tue, 3 Aug 2010 00:36:59 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
+	id S1755327Ab0HBUjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:39:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41221 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab0HBUjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 16:39:19 -0400
+Message-ID: <4C572CBB.1070403@zytor.com>
+Date: Mon, 02 Aug 2010 13:38:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+MIME-Version: 1.0
 To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, setup: reorgize the early_console_setup
-Message-ID: <20100802203659.GH5544@lenovo>
-References: <4C56701B.1030000@kernel.org> <20100802150958.GA5544@lenovo> <4C571B25.3080806@kernel.org> <20100802201750.GG5544@lenovo> <4C572AD9.5070500@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C572AD9.5070500@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: Re: [PATCH -v3 2/2] x86: more early console output from	compressed/misc.c
+References: <4C56701B.1030000@kernel.org> <4C5670DA.2080703@zytor.com> <4C5680D2.4020302@kernel.org> <4C568D2B.205@kernel.org> <4C568D6F.3050004@kernel.org> <20100802174916.GD5544@lenovo> <4C5710C1.8020809@zytor.com> <20100802185410.GE5544@lenovo> <4C57153F.7030107@zytor.com> <4C571DF2.5080100@kernel.org>
+In-Reply-To: <4C571DF2.5080100@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 01:30:17PM -0700, Yinghai Lu wrote:
-...
-> >> +	/* make sure if it is copied already */
-> >> +	if (boot_params.hdr.version)
-> >> +		return;
-> >> +
-> > 
-> > And Yinghai, lets be more verbose here a bit, since for those who will
-> > be reading this code later might be non-obvious why we have checked for
-> > 'version' here. I guess something like "an easy way to check if boot_params
-> > were already copied". Actually it's clean from commit message but I think
-> > we first read code comments and commit messages after, agreed? ;-)
+On 08/02/2010 12:35 PM, Yinghai Lu wrote:
 > 
-> will change to 
-> 
->         /*
->          * hdr.version is always not 0, so check it to see
->          *  if boot_params is copied or not.
->          */
-> 
-> will resend this patch after memblock x86 changes.
-> 
-> YH
+> it seems I can not global variables in arch/x86/boot/compressed/misc.c
 > 
 
-ok, thanks!
+Well, that should be fixed, then.  If we can't use the linker for what
+it's supposed to be used for it's just crap.
 
-	-- Cyrill
+> and misc.c already include some decompress .c like
+> 
+> #ifdef CONFIG_KERNEL_GZIP
+> #include "../../../../lib/decompress_inflate.c"
+> #endif
+> 
+> #ifdef CONFIG_KERNEL_BZIP2
+> #include "../../../../lib/decompress_bunzip2.c"
+> #endif
+> 
+> #ifdef CONFIG_KERNEL_LZMA
+> #include "../../../../lib/decompress_unlzma.c"
+> #endif
+> 
+> #ifdef CONFIG_KERNEL_LZO
+> #include "../../../../lib/decompress_unlzo.c"
+> #endif
+> 
+
+Yes, I know; that's crap in a lot of ways too... the whole decompression
+stuff is its own issue which is slowly being addressed.  It's not an
+excuse to make the code crappier than it already is.
+
+> 
+> this patch change to misc.c are following lines:
+> 
+> #define BOOT_BOOT_H
+> #include "../isdigit.h"
+> #include "../string.c"
+> #include "../printf.c"
+> 
+> ...
+> 
+> static unsigned long fs;
+> static inline void set_fs(unsigned long seg)
+> {
+>         fs = seg << 4;  /* shift it back */
+> }
+> typedef unsigned long addr_t;
+> static inline char rdfs8(addr_t addr)
+> {
+>         return *((char *)(fs + addr));
+> }
+> #include "../cmdline.c"
+> static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
+> {
+>         return __cmdline_find_option(real_mode->hdr.cmd_line_ptr, option, buffer, bufsize);
+> }
+> static inline int cmdline_find_option_bool(const char *option)
+> {
+>         return __cmdline_find_option_bool(real_mode->hdr.cmd_line_ptr, option);
+> }
+> static int early_serial_base;
+> #include "../early_serial_console.c"
+> 
+> or put them in another file?
+> 
+
+Hmf... games with set_fs() aren't a whole lot of fun at all.  I think it
+would be better to define some wrappers specific to cmdline.c which
+allow it to be using a real pointer in 32-bit mode.
+
+I'll see if I can muck with it, it shouldn't take long.
+
+	-hpa
+
+
