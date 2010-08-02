@@ -1,46 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab0HBJFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 05:05:48 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46813 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab0HBJFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 05:05:46 -0400
-Date: Mon, 2 Aug 2010 05:05:42 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.35
-Message-ID: <20100802090542.GA32322@infradead.org>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
- <20100802023322.GA19164@dastard>
- <AANLkTint_s6h_EC7mDiPsyxr=C0GSrnrgJYkCCU7JEtN@mail.gmail.com>
- <20100802055834.GB19164@dastard>
- <20100802075537.GC7841@amd>
- <20100802082428.GA23135@infradead.org>
+	id S1753088Ab0HBJIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 05:08:22 -0400
+Received: from mail.lang.hm ([64.81.33.126]:60517 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752100Ab0HBJIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 05:08:21 -0400
+Date: Mon, 2 Aug 2010 02:06:55 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Florian Mickler <florian@mickler.org>
+cc: Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
+        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
+        pavel@ucw.cz, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <20100802092347.692dac32@schatten.dmk.lab>
+Message-ID: <alpine.DEB.2.00.1008020200450.25170@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100731215214.2543c07e@infradead.org> <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801204026.GH31324@thunk.org>
+ <20100802030304.GU2470@linux.vnet.ibm.com> <20100801210548.23f77ff6@infradead.org> <alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm> <20100802074429.73a9dfd9@schatten.dmk.lab> <alpine.DEB.2.00.1008012303160.25170@asgard.lang.hm> <20100802084003.1c4c2bdb@schatten.dmk.lab>
+ <20100802085332.23dd22f6@schatten.dmk.lab> <alpine.DEB.2.00.1008012355210.25170@asgard.lang.hm> <20100802092347.692dac32@schatten.dmk.lab>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100802082428.GA23135@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 04:24:28AM -0400, Christoph Hellwig wrote:
-> .36.  I'd much rather see the inode_lock scaling or the lockless path
-> walk going in before, but I haven't checked how complicated the
-> reordering would be.  The lockless path walk also is only rather
-> theoretically useful until we do ACL checks lockless as we're having
-> ACLs enabled pretty much everywhere at least in the distros.
+On Mon, 2 Aug 2010, Florian Mickler wrote:
 
->From a quick look it seems like the inode_lock splitup can easily
-be moved forward, and it would help us with doing some work on the
-writeback side.  The problem is that it would need rebasing ontop
-of both the vfs and writeback (aka block) trees.
+> On Mon, 2 Aug 2010 00:02:04 -0700 (PDT)
+> david@lang.hm wrote:
+>
+>> On Mon, 2 Aug 2010, Florian Mickler wrote:
+>>
+>>> On Mon, 2 Aug 2010 08:40:03 +0200
+>>> Florian Mickler <florian@mickler.org> wrote:
+>>>
+>>>> On Sun, 1 Aug 2010 23:06:08 -0700 (PDT)
+>>>> david@lang.hm wrote:
+>>>>
+>>>>> On Mon, 2 Aug 2010, Florian Mickler wrote:
+>>>>>
+>>>>>> On Sun, 1 Aug 2010 22:06:34 -0700 (PDT)
+>>>>>> david@lang.hm wrote:
+>>>>>>
+>>>>>>> On Sun, 1 Aug 2010, Arjan van de Ven wrote:
+>>>>>>>
+>>>>>>>> I'm a little worried that this whole "I need to block suspend" is
+>>>>>>>> temporary. Yes today there is silicon from ARM and Intel where suspend
+>>>>>>>> is a heavy operation, yet at the same time it's not all THAT heavy
+>>>>>>>> anymore.... at least on the Intel side it's good enough to use pretty
+>>>>>>>> much all the time (when the screen is off for now, but that's a memory
+>>>>>>>> controller issue more than anything else). I'm pretty sure the ARM guys
+>>>>>>>> will not be far behind.
+>>>>>>>
+>>>>>>> remember that this 'block suspend' is really 'block overriding the fact
+>>>>>>> that there are still runable processes and suspending anyway"
+>>>>>>>
+>>>>>>> having it labeled as 'suspend blocker' or even 'wakelock' makes it sound
+>>>>>>> as if it blocks any attempt to suspend, and I'm not sure that's what's
+>>>>>>> really intended. Itsounds like the normal syspend process would continue
+>>>>>>> to work, just this 'ignore if these other apps are busy' mode of operation
+>>>>>>> would not work.
+>>>>>>>
+>>>>>>> which makes me wonder, would it be possible to tell the normal idle
+>>>>>>> detection mechanism to ignore specific processes when deciding if it
+>>>>>>> should suspend or not? how about only considering processes in one cgroup
+>>>>>>> when deciding to suspend and ignoring all others?
+>>>>>>>
+>>>>>>> David Lang
+>>>>>>
+>>>>>> We then get again to the "runnable tasks" problem that was
+>>>>>> discussed earlier... the system get's "deadlock-prone" if a subset of
+>>>>>> tasks is not run.
+>>>>>> Interprocess dependencies are not so easy to get right in general.
+>>>>>
+>>>>> I'm not suggesting that you don't run the 'untrusted' tasks, just that you
+>>>>> don't consider them when deciding if the system can suspend or not. if the
+>>>>> system is awake, everything runs, if the system is idle (except for the
+>>>>> activity of the 'untrusted' tasks) you suspend normally.
+>>>>>
+>>> b) you can't use cgroup for other purposes anymore. I.e. if you want to
+>>> have 2 groups that each only have half of the memory available, how
+>>> would you then integrate the cgroup-ignore-for-idle-approach with this?
+>>
+>> two answers to this
+>>
+>> 1. does this matter? do you really need to combine this 'suspend, even if
+>> there are processes trying to run' with other cgroup limitations?
+>>
+>> 2. who says that this must be limited to one cgroup? a cgroup can have
+>> several different flags/limits set on it, so why can't one of them be this
+>> 'ignore for suspend' flag?
+>>
+>> these seem like simple issues, what I don't know is if it's possible for
+>> the process that controlls suspend to follow such a flag without major
+>> surgury on it's innards (if it can, this seems like a easy win, but I can
+>> imagine internal designs where the software just knows that _something_ is
+>> trying to run and would have a very hard time figuring out what)
+>>
+>> David Lang
+>
+> Well, i fear it becomes some sort of parallel-tree structure...
+> If you want a cgroups-partitioning for one kind of attribute you now
+> need 2 containers for every possible stamping of that attribute... one
+> being flagged with 'ignore-for-suspend-decision' and one without that
+> flag.
+> Do you see what I'm getting at, or do I need more coffee and it is
+> irelevant to this concept?
 
+yes, it could mean a doubleing in the number of cgroups that you need on a 
+system. and if there are other features like this you can end up in a 
+geometric explosion in the number of cgroups.
+
+in practice I question if there is likely to be a need for this sort of 
+thing on a system that's complex enough to use cgroups for other purposes.
+
+in particular, in this case the 'ignore for syspend' flag is not going to 
+be set for programs that are trusted to be well behaved. Such programs are 
+unlikely to be placed under other restraints (because they _are_ trusted 
+to be well behaved)
+
+David Lang
