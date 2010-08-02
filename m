@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0HBWJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 18:09:12 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60024 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab0HBWJK (ORCPT
+	id S1753799Ab0HBWNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 18:13:19 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:14595 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab0HBWNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 18:09:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:in-reply-to:message-id:references:user-agent
-         :x-archive:mime-version:content-type;
-        b=DB1Ekldau8LDtZhnlqWpBOCRy5YcsPu/hr4AX5qotDJg+nWQKYwE57agPOpgIUIaMk
-         8QgSviEIp7yFrZ33IQOJbWqpd6SoBWVt/3JeL6zuoVvmACOmCT0lyMxHeW/NqID+rZrs
-         27kyMS7fObyMusCVsTHWzYZYYEZj9BpKfT1tY=
-Date: Mon, 2 Aug 2010 19:09:04 -0300 (BRT)
-From: "=?ISO-8859-15?Q?Fr=E9d=E9ric_L=2E_W=2E_Meunier?=" 
-	<fredlwm@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.35
-In-Reply-To: <7975590447314667432@unknownmsgid>
-Message-ID: <alpine.LNX.2.00.1008021905460.8985@dyndns.pervalidus.net>
-References: <1280716262.5125.42.camel@falcon.homelinux.org>  <201008012138.39036.bjorn.helgaas@hp.com> <1280722876.5125.83.camel@falcon.homelinux.org>  <201008020748.09968.bjorn.helgaas@hp.com> <7975590447314667432@unknownmsgid>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-X-Archive: encrypt
+	Mon, 2 Aug 2010 18:13:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6062"; a="49643814"
+Message-ID: <4C5742FE.5040907@codeaurora.org>
+Date: Mon, 02 Aug 2010 15:13:18 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: linux-kernel@vger.kernel.org
+CC: linux-arm-msm@vger.kernel.org, rvaswani@codeaurora.org
+Subject: CPU Hotplug add/remove optimizations
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am I missing something ?
+  Hi,
 
-make[2]: *** No rule to make target `firmware/radeon/R100_cp.bin', needed by `__fw_modbuild'.  Stop.
+We are trying to use cpu hotplug to turn off a cpu when it is not in use 
+to improve power management. I am trying to optimize the cpu hotplug add 
+and cpu hotplug remove timings. Currently cpu hotplug add takes around 
+250ms and cpu hotplug remove takes 190 ms. For the current purposes we 
+want to assume that we are removing and adding the same core. It seems 
+that since we are actually not replacing the core – there could be a lot 
+of initialization overhead that could be saved and restored instead of 
+calibrating the entire core again.
+One such thing we have been looking at is that once a core is powered up 
+during cpu hotplug add, it runs the calibrate_delay routine to calculate 
+the value of loops_per_jiffy. In such a case could we bypass the 
+calibrate_delay function and just save and restore the value of 
+loops_per_jiffy?
+Does this approach seem wrong to anyone?
+Can we safely assume that the core will start at the same clock speed at 
+which the value was stored and then restored? And thus keeping the value 
+of loops_per_jiffy that we restored consistent with the rest of the system.
+Does anyone else have other ideas to achieve better results?
+I will be looking at implementing any solutions and advice and following 
+up with metrics and results.
 
-Not sure if it's because I use O= during make, or because I 
-always patch the kernel, instead of using the tarball every 
-release, or something else.
+Thanks,
+Rohit Vaswani
 
-In linux-2.6.35/firmware/radeon there are R100_cp.bin.ihex and 
-other files dated 20091122. 2.6.34 and earlier never gave such 
-error.
+--
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
