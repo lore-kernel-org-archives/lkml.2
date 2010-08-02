@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab0HBBVM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 21:21:12 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:34944 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab0HBBVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 21:21:10 -0400
-Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
-From: Bojan Smojver <bojan@rexursive.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Nigel Cunningham <nigel@tuxonice.net>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100802101058.d4f1c7b6.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1280465201.2600.10.camel@shrek.rexursive.com>
-	 <1280486667.2608.1.camel@shrek.rexursive.com>
-	 <4C534C9D.8000600@tuxonice.net>
-	 <1280532174.2583.1.camel@shrek.rexursive.com>
-	 <4C5362E7.3000706@tuxonice.net>
-	 <1280538184.2583.11.camel@shrek.rexursive.com>
-	 <4C537A01.5040808@tuxonice.net>
-	 <1280540035.2658.5.camel@shrek.rexursive.com>
-	 <1280551286.3097.6.camel@shrek.rexursive.com>
-	 <20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
-	 <1280710453.2727.8.camel@shrek.rexursive.com>
-	 <20100802101058.d4f1c7b6.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Aug 2010 11:21:08 +1000
-Message-ID: <1280712068.2671.0.camel@shrek.rexursive.com>
+	id S1752526Ab0HBBb4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 21:31:56 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45065 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752371Ab0HBBby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 21:31:54 -0400
+Date: Mon, 2 Aug 2010 11:31:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Milan Broz <mbroz@redhat.com>
+Subject: linux-next: build failure after merge of the device-mapper tree
+Message-Id: <20100802113148.e0b70b34.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 10:10 +0900, KAMEZAWA Hiroyuki wrote:
-> Why swsusp can avoid memory leak is that it records which
-> pages should be freed after resume in the bitmap, which will be saved
-> to image header(?) 
+--Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right. So, are you saying that all allocations in save_image() should be
-done using __get_free_page() or __get_free_pages() and not with
-vmalloc()?
+Hi Alasdair,
 
--- 
-Bojan
+After merging the device-mapper tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
+drivers/md/dm-crypt.c: In function 'crypt_ctr_cipher':
+drivers/md/dm-crypt.c:1095: error: 'bad_mem' undeclared (first use in this =
+function)
+
+Caused by commit 460328b294ddd132945bdf536a9130f2d6cd6ace
+("dm-crypt-simplify-crypt_ctr").
+
+Please do test builds ... "No functional change in this patch." :-(
+
+I will use the device-mapper tree from next-20100730 for today.
+
+P.S. the patch summaries could be more informative ... i.e. you should
+put "Subject:" lines in the patches.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMViAEAAoJEDMEi1NhKgbsGS8H/iOLsG8KHtpAtfMyQBNG7EIT
+futcOSqvYKh/6F8TrU1Ak+OODsXQAYB+rONZyf4209PGrhsC4FWsx+XtnD7hD0It
+hCcCpYkvkSSmieTzs61shZkUgFzapUkf87v0b1gG4hge1I4kFcIKD21CY0pgoeJk
+8VzzJI9kJql0jdZxAf3btJQ7Kq9PJq13zqFcYnRramTtucn/fZN2cM1N8l3q3bpB
+koNgA0uAwFAjgTe9TrQ1Rr5ZaLlH0AMTunXJnUC2vZ2RvINFUPSNeFEHRndvubZm
+xPF0fc9ZsaUt7YN2SSjos73T7pkC84/Kj9l4vt8GiNBG5ZbJAecR5/K0G2wDraQ=
+=fCKs
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Aug_2010_11_31_48_+1000_w4n8vlU6wBVMTyad--
