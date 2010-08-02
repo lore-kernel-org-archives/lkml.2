@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab0HBQEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:04:14 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:47321 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753924Ab0HBQEJ (ORCPT
+	id S1754076Ab0HBQEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:04:52 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49114 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab0HBQEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:04:09 -0400
-X-Sasl-enc: jJFgdeoSaF4P4Kg7STSEPo61MhAvLVQ3W/Y67ZWyBUe1 1280765048
-Date: Mon, 2 Aug 2010 13:04:05 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-Cc: Greg Freemyer <greg.freemyer@gmail.com>,
-        linux <linux-kernel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        Karsten Schaefer <karsten.schaefer@uni-konstanz.de>
-Subject: Re: ext4 performance regression 2.6.27-stable versus 2.6.32 and
- later
-Message-ID: <20100802160405.GE32757@khazad-dum.debian.net>
-References: <4C508A54.7070002@uni-konstanz.de>
- <AANLkTimh3eKc-M4xphq0djnSa=4W4hUf7KRf=icdF9Rk@mail.gmail.com>
- <4C56A240.1040506@uni-konstanz.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C56A240.1040506@uni-konstanz.de>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 2 Aug 2010 12:04:51 -0400
+Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+In-Reply-To: <20100801083113.GB16158@redhat.com>
+References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
+	 <1280442682.9058.15.camel@localhost.localdomain>
+	 <20100801083113.GB16158@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Aug 2010 09:04:35 -0700
+Message-ID: <1280765075.22830.10.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Aug 2010, Kay Diederichs wrote:
-> Performance-wise, we tried mounting with barrier versus nobarrier (or
-> barrier=1 versus barrier=0) and re-did the 2.6.32+ benchmarks. It turned
-> out that the benchmark difference with and without barrier is less than
-> the variation between runs (which is much higher with 2.6.32+ than with
-> 2.6.27-stable), so the influence seems to be minor.
+Hello Michael,
 
-Did you check interactions with the IO scheduler?
+On Sun, 2010-08-01 at 11:31 +0300, Michael S. Tsirkin wrote:
+> I think we should explore the idea for the driver to fall back on data
+> copy
+> for small message sizes.
+> The benefit of zero copy would then be CPU utilization on large
+> messages.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Yes, we used to have 128 bytes for small copy in other driver. I saw
+Xiaohui's patch here is using 64 bytes. I think we need to compare the
+performance on different platform to decide what's the best for small
+message size.
+
+Thanks
+Shirley
+
