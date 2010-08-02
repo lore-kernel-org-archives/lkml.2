@@ -1,116 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab0HBLVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 07:21:12 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:42505 "EHLO
+	id S1753385Ab0HBLU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 07:20:26 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:42493 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753463Ab0HBLUb (ORCPT
+	with ESMTP id S1753275Ab0HBLUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 07:20:31 -0400
-Message-Id: <20100802112014.481889344@szeredi.hu>
+	Mon, 2 Aug 2010 07:20:23 -0400
+Message-Id: <20100802112017.554748935@szeredi.hu>
 References: <20100802111955.025275647@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Mon, 02 Aug 2010 13:19:56 +0200
+Date: Mon, 02 Aug 2010 13:19:58 +0200
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/7] cachefiles: use path_get instead of lone dget
-Content-Disposition: inline; filename=cachefiles-fix-lone-dentry-ref.patch
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH 3/7] ia64: perfmon: add d_dname method
+Content-Disposition: inline; filename=vfs-add-d_dname-method.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Dentry references should not be acquired without a corresponding
-vfsmount ref.
+Switch ia64/perfmon to using the d_dname() instead of relying on
+__d_path() to prepend the name of the root dentry to the path.
 
-CC: David Howells <dhowells@redhat.com>
+CC: Tony Luck <tony.luck@intel.com>
+CC: Fenghua Yu <fenghua.yu@intel.com>
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/cachefiles/daemon.c |   26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ arch/ia64/kernel/perfmon.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-Index: linux-2.6/fs/cachefiles/daemon.c
+Index: linux-2.6/arch/ia64/kernel/perfmon.c
 ===================================================================
---- linux-2.6.orig/fs/cachefiles/daemon.c	2010-07-05 15:44:37.000000000 +0200
-+++ linux-2.6/fs/cachefiles/daemon.c	2010-07-05 15:47:40.000000000 +0200
-@@ -553,7 +553,7 @@ static int cachefiles_daemon_tag(struct
- static int cachefiles_daemon_cull(struct cachefiles_cache *cache, char *args)
- {
- 	struct fs_struct *fs;
--	struct dentry *dir;
-+	struct path path;
- 	const struct cred *saved_cred;
- 	int ret;
+--- linux-2.6.orig/arch/ia64/kernel/perfmon.c	2010-07-06 17:59:04.000000000 +0200
++++ linux-2.6/arch/ia64/kernel/perfmon.c	2010-07-06 18:08:09.000000000 +0200
+@@ -2191,8 +2191,15 @@ pfmfs_delete_dentry(struct dentry *dentr
+ 	return 1;
+ }
  
-@@ -575,22 +575,23 @@ static int cachefiles_daemon_cull(struct
- 	/* extract the directory dentry from the cwd */
- 	fs = current->fs;
- 	read_lock(&fs->lock);
--	dir = dget(fs->pwd.dentry);
-+	path = fs->pwd;
-+	path_get(&path);
- 	read_unlock(&fs->lock);
++static char *pfmfs_dname(struct dentry *dentry, char *buffer, int buflen)
++{
++	return dynamic_dname(dentry, buffer, buflen, "pfm:[%lu]",
++			     dentry->d_inode->i_ino);
++}
++
+ static const struct dentry_operations pfmfs_dentry_operations = {
+ 	.d_delete = pfmfs_delete_dentry,
++	.d_dname = pfmfs_dname,
+ };
  
--	if (!S_ISDIR(dir->d_inode->i_mode))
-+	if (!S_ISDIR(path.dentry->d_inode->i_mode))
- 		goto notdir;
  
- 	cachefiles_begin_secure(cache, &saved_cred);
--	ret = cachefiles_cull(cache, dir, args);
-+	ret = cachefiles_cull(cache, path.dentry, args);
- 	cachefiles_end_secure(cache, saved_cred);
+@@ -2202,8 +2209,7 @@ pfm_alloc_file(pfm_context_t *ctx)
+ 	struct file *file;
+ 	struct inode *inode;
+ 	struct path path;
+-	char name[32];
+-	struct qstr this;
++	struct qstr this = { .name = "" };
  
--	dput(dir);
-+	path_put(&path);
- 	_leave(" = %d", ret);
- 	return ret;
+ 	/*
+ 	 * allocate a new inode
+@@ -2218,11 +2224,6 @@ pfm_alloc_file(pfm_context_t *ctx)
+ 	inode->i_uid  = current_fsuid();
+ 	inode->i_gid  = current_fsgid();
  
- notdir:
--	dput(dir);
-+	path_put(&path);
- 	kerror("cull command requires dirfd to be a directory");
- 	return -ENOTDIR;
- 
-@@ -629,7 +630,7 @@ inval:
- static int cachefiles_daemon_inuse(struct cachefiles_cache *cache, char *args)
- {
- 	struct fs_struct *fs;
--	struct dentry *dir;
-+	struct path path;
- 	const struct cred *saved_cred;
- 	int ret;
- 
-@@ -651,22 +652,23 @@ static int cachefiles_daemon_inuse(struc
- 	/* extract the directory dentry from the cwd */
- 	fs = current->fs;
- 	read_lock(&fs->lock);
--	dir = dget(fs->pwd.dentry);
-+	path = fs->pwd;
-+	path_get(&path);
- 	read_unlock(&fs->lock);
- 
--	if (!S_ISDIR(dir->d_inode->i_mode))
-+	if (!S_ISDIR(path.dentry->d_inode->i_mode))
- 		goto notdir;
- 
- 	cachefiles_begin_secure(cache, &saved_cred);
--	ret = cachefiles_check_in_use(cache, dir, args);
-+	ret = cachefiles_check_in_use(cache, path.dentry, args);
- 	cachefiles_end_secure(cache, saved_cred);
- 
--	dput(dir);
-+	path_put(&path);
- 	//_leave(" = %d", ret);
- 	return ret;
- 
- notdir:
--	dput(dir);
-+	path_put(&path);
- 	kerror("inuse command requires dirfd to be a directory");
- 	return -ENOTDIR;
- 
+-	sprintf(name, "[%lu]", inode->i_ino);
+-	this.name = name;
+-	this.len  = strlen(name);
+-	this.hash = inode->i_ino;
+-
+ 	/*
+ 	 * allocate a new dcache entry
+ 	 */
 
 -- 
