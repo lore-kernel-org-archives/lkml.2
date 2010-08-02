@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab0HBQcl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:32:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5614 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab0HBQck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:32:40 -0400
-Message-ID: <4C56F318.7030409@redhat.com>
-Date: Mon, 02 Aug 2010 19:32:24 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
-        davem@davemloft.net, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com
-Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM virtio-net.
-References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>	 <1280442682.9058.15.camel@localhost.localdomain>	 <4C525CD2.5080604@redhat.com>	 <1280504771.9058.25.camel@localhost.localdomain>	 <4C552DC4.5000600@redhat.com>	 <1280764918.22830.7.camel@localhost.localdomain>	 <4C56EE3D.1050203@redhat.com> <1280766319.22830.24.camel@localhost.localdomain>
-In-Reply-To: <1280766319.22830.24.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754076Ab0HBQdG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:33:06 -0400
+Received: from xenotime.net ([72.52.115.56]:33419 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751852Ab0HBQdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 12:33:03 -0400
+Date: Mon, 2 Aug 2010 09:32:57 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: nir.tzachar@gmail.com
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org, trapdoor6@gmail.com, justinmattock@gmail.com
+Subject: Re: [PATCH] nconfig: add search support
+Message-Id: <20100802093257.41a5debe.rdunlap@xenotime.net>
+In-Reply-To: <1280647233-2578-1-git-send-email-nir.tzachar@gmail.com>
+References: <AANLkTik1p0oK=-msd0a-4wA88Z-Cv29qHVNUYeEETcJD@mail.gmail.com>
+	<1280647233-2578-1-git-send-email-nir.tzachar@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/02/2010 07:25 PM, Shirley Ma wrote:
-> On Mon, 2010-08-02 at 19:11 +0300, Avi Kivity wrote:
->> I don't understand this. gup_fast() only calls gup() if the page is
->> swapped out or read-only.
-> Oh, I used the page as read-only on xmit path. Should I use write
-> instead?
+On Sun,  1 Aug 2010 10:20:33 +0300 nir.tzachar@gmail.com wrote:
 
-No, for xmit getting the page as read only is fine.
+> From: Nir Tzachar <nir.tzachar@gmail.com>
+> 
+> Remove the old hotkeys feature, and replace by a regular string search.
+> From nconfig help:
+> 
+> Pressing '/' triggers search mode. nconfig does regular string match, case
+> insensitive, starting at the begining of each menu line.
 
-I was inaccurate, gup_fast() performs as follows:
+What is a "regular string match"?
+That's not the same as a regular expression match, right?
 
-- if .write = 1, gup_fast() will be fast if the page is mapped and writeable
-- if .write = 0, gup_fast() will be fast if the page is mapped
+Maybe it's a "simple string match"?
 
-so, using .write = 0 for the xmit path will be faster in more cases than 
-.write = 1.
+> Pressing Enter highlights the next match, Backspace removes one character from
+> the match string. Pressing either '/' again or ESC exits search mode.
+> 
+> Rebind the '/' key (which allowed to search for symbols) to F8
+> 
+> Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
+> ---
+>  scripts/kconfig/nconf.c |  261 ++++++++++++++++++++++-------------------------
+>  scripts/kconfig/nconf.h |    3 +-
+>  2 files changed, 125 insertions(+), 139 deletions(-)
+> 
+> diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+> index 762caf8..2a7cb37 100644
+> --- a/scripts/kconfig/nconf.c
+> +++ b/scripts/kconfig/nconf.c
+> @@ -41,9 +41,12 @@ static const char nconf_readme[] = N_(
+>  "   pressing <Enter> of <right-arrow>. Use <Esc> or <left-arrow> to go back.\n"
+>  "   Submenus are designated by \"--->\".\n"
+>  "\n"
+> -"   Shortcut: Press the option's highlighted letter (hotkey).\n"
+> -"             Pressing a hotkey more than once will sequence\n"
+> -"             through all visible items which use that hotkey.\n"
+> +"   Searching: pressing '/' triggers search mode. nconfig does a\n"
+> +"              regular string match, case insensitive, starting at\n"
+> +"              the begining of each menu line.\n"
+> +"              Pressing Enter highlights the next match, Backspace\n"
+> +"              removes one character from the match string.\n"
+> +"              Pressing either '/' again or ESC exits search mode.\n"
+>  "\n"
+>  "   You may also use the <PAGE UP> and <PAGE DOWN> keys to scroll\n"
+>  "   unseen options into view.\n"
 
-When are you seeing gup_fast() fall back to gup()?  It should be at most 
-once per page (when a guest starts up none of its pages are mapped, it 
-faults them in on demand).
 
--- 
-error compiling committee.c: too many arguments to function
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
