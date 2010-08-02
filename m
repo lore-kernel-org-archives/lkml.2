@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab0HBQ2y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 12:28:54 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56321 "EHLO smtps.tip.net.au"
+	id S1753903Ab0HBQcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 12:32:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5614 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752865Ab0HBQ2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 12:28:52 -0400
-Date: Tue, 3 Aug 2010 02:28:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Russell King <rmk@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-Message-Id: <20100803022845.890e6caa.sfr@canb.auug.org.au>
-In-Reply-To: <20100803022310.bec3ba79.sfr@canb.auug.org.au>
-References: <20100803022310.bec3ba79.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__3_Aug_2010_02_28_45_+1000_M6sttCO4pDDbt6bb"
+	id S1751852Ab0HBQck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 12:32:40 -0400
+Message-ID: <4C56F318.7030409@redhat.com>
+Date: Mon, 02 Aug 2010 19:32:24 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
+        davem@davemloft.net, herbert@gondor.hengli.com.au,
+        jdike@linux.intel.com
+Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM virtio-net.
+References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>	 <1280442682.9058.15.camel@localhost.localdomain>	 <4C525CD2.5080604@redhat.com>	 <1280504771.9058.25.camel@localhost.localdomain>	 <4C552DC4.5000600@redhat.com>	 <1280764918.22830.7.camel@localhost.localdomain>	 <4C56EE3D.1050203@redhat.com> <1280766319.22830.24.camel@localhost.localdomain>
+In-Reply-To: <1280766319.22830.24.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Aug_2010_02_28_45_+1000_M6sttCO4pDDbt6bb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  On 08/02/2010 07:25 PM, Shirley Ma wrote:
+> On Mon, 2010-08-02 at 19:11 +0300, Avi Kivity wrote:
+>> I don't understand this. gup_fast() only calls gup() if the page is
+>> swapped out or read-only.
+> Oh, I used the page as read-only on xmit path. Should I use write
+> instead?
 
-Hi all,
+No, for xmit getting the page as read only is fine.
 
-On Tue, 3 Aug 2010 02:23:10 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> Caused by commit 53e16bfaf19346f59b3502e207aa66c61332075c ("memblock:
-> Introduce for_each_memblock() and new accessors, and use it") interacting
-> with commit 2778f62056ada442414392d7ccd41188bb631619 ("ARM: initial LMB
-> trial") and some others from the arm tree.
+I was inaccurate, gup_fast() performs as follows:
 
-That same memblock commit broke the sh builds like this:
+- if .write = 1, gup_fast() will be fast if the page is mapped and writeable
+- if .write = 0, gup_fast() will be fast if the page is mapped
 
-c1: warnings being treated as errors
-arch/sh/mm/init.c: In function 'bootmem_init_one_node':
-arch/sh/mm/init.c:227: error: unused variable 'i'
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+so, using .write = 0 for the xmit path will be faster in more cases than 
+.write = 1.
 
---Signature=_Tue__3_Aug_2010_02_28_45_+1000_M6sttCO4pDDbt6bb
-Content-Type: application/pgp-signature
+When are you seeing gup_fast() fall back to gup()?  It should be at most 
+once per page (when a guest starts up none of its pages are mapped, it 
+faults them in on demand).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+-- 
+error compiling committee.c: too many arguments to function
 
-iQEcBAEBAgAGBQJMVvI9AAoJEDMEi1NhKgbsDYkH/35MAzoE2FkVa5hM7jzckBh4
-6ULsZARR0Yumtbycgrl27Gbyg6/a4yDlQQmfwBbX/owHM20WQgaLDre1ByobA3dA
-ggH++Xp3RzsqT3P0aM4c4kuCRenvDqqwGb57am3jTs2tYOCl2qWZS5kfKOABqBIE
-PYnijhi0clGer/yZ5QPRQPJ6dmybPuWtl7r97FQ4VjXYCEHiiUIpMArHSoU+WCCY
-QaHS8+nc/2Bf1tls4pNoImE3h8qb+AsICVU70cIBJchzm7AbW0xXt5UET8OWGB6u
-bIlF3p5BrR2NK+aYLuNFwFrXZ4T55duOV7EwUvPV+4K6CY2JDh3SMztyjkSgzZQ=
-=/s59
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Aug_2010_02_28_45_+1000_M6sttCO4pDDbt6bb--
