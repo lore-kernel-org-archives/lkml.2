@@ -1,104 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab0HBThe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 15:37:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32672 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab0HBThd (ORCPT
+	id S1754669Ab0HBTlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 15:41:18 -0400
+Received: from www84.your-server.de ([213.133.104.84]:36749 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab0HBTlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 15:37:33 -0400
-Message-ID: <4C571DF2.5080100@kernel.org>
-Date: Mon, 02 Aug 2010 12:35:14 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 2/2] x86: more early console output from	compressed/misc.c
-References: <4C56701B.1030000@kernel.org> <4C5670DA.2080703@zytor.com> <4C5680D2.4020302@kernel.org> <4C568D2B.205@kernel.org> <4C568D6F.3050004@kernel.org> <20100802174916.GD5544@lenovo> <4C5710C1.8020809@zytor.com> <20100802185410.GE5544@lenovo> <4C57153F.7030107@zytor.com>
-In-Reply-To: <4C57153F.7030107@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C571E4D.01D2,ss=1,fgs=0
+	Mon, 2 Aug 2010 15:41:17 -0400
+From: stefani@seibold.net
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Arnd Bergmann <arnd@arndb.de>, Vasiliy Kulikov <segooon@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Jiri Slaby <jslaby@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mtd@lists.infradead.org
+Cc: stefani@seibold.net
+Subject: [PATCH] Change struct flchip_shared spinlock locking into mutex
+Date: Mon,  2 Aug 2010 21:40:48 +0200
+Message-Id: <1280778048-6208-1-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.7.2
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 11:58 AM, H. Peter Anvin wrote:
-> On 08/02/2010 11:54 AM, Cyrill Gorcunov wrote:
->>
->> ok, fair enough, I just don't like nesting *.c inclusion you know but seems
->> it would be the only more-less clean way here.
->>
-> 
-> I don't mind it *as long as* the including file contains nothing but a
-> single #include statement -- which is just another way to say "the same
-> thing as this other file".  Don't combine files.
-> 
-> Look at most of the .c files in arch/x86/kernel/acpi/realmode/ for an
-> example.
+From: Stefani Seibold <stefani@seibold.net>
 
-it seems I can not global variables in arch/x86/boot/compressed/misc.c
+This patch prevent to schedule while atomic by changing the
+flchip_shared spinlock into a mutex. This should be save since no atomic
+path will use this lock.
 
-and misc.c already include some decompress .c like
+This patch is based on linux kernel 2.6.35. Please apply.
 
-#ifdef CONFIG_KERNEL_GZIP
-#include "../../../../lib/decompress_inflate.c"
-#endif
+It was requested by Arnd Bergmann and Vasiliy Kulikov.
 
-#ifdef CONFIG_KERNEL_BZIP2
-#include "../../../../lib/decompress_bunzip2.c"
-#endif
+- Stefani
 
-#ifdef CONFIG_KERNEL_LZMA
-#include "../../../../lib/decompress_unlzma.c"
-#endif
+shared->
 
-#ifdef CONFIG_KERNEL_LZO
-#include "../../../../lib/decompress_unlzo.c"
-#endif
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ drivers/mtd/chips/cfi_cmdset_0001.c |   20 ++++++++++----------
+ include/linux/mtd/flashchip.h       |    2 +-
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
+diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
+index 62f3ea9..3364061 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0001.c
++++ b/drivers/mtd/chips/cfi_cmdset_0001.c
+@@ -717,7 +717,7 @@ static int cfi_intelext_partition_fixup(struct mtd_info *mtd,
+ 		chip = &newcfi->chips[0];
+ 		for (i = 0; i < cfi->numchips; i++) {
+ 			shared[i].writing = shared[i].erasing = NULL;
+-			spin_lock_init(&shared[i].lock);
++			mutex_init(&shared[i].lock);
+ 			for (j = 0; j < numparts; j++) {
+ 				*chip = cfi->chips[i];
+ 				chip->start += j << partshift;
+@@ -886,7 +886,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 		 */
+ 		struct flchip_shared *shared = chip->priv;
+ 		struct flchip *contender;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		contender = shared->writing;
+ 		if (contender && contender != chip) {
+ 			/*
+@@ -899,7 +899,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 			 * get_chip returns success we're clear to go ahead.
+ 			 */
+ 			ret = mutex_trylock(&contender->mutex);
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			if (!ret)
+ 				goto retry;
+ 			mutex_unlock(&chip->mutex);
+@@ -914,7 +914,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 				mutex_unlock(&contender->mutex);
+ 				return ret;
+ 			}
+-			spin_lock(&shared->lock);
++			mutex_lock(&shared->lock);
+ 
+ 			/* We should not own chip if it is already
+ 			 * in FL_SYNCING state. Put contender and retry. */
+@@ -930,7 +930,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 		 * on this chip. Sleep. */
+ 		if (mode == FL_ERASING && shared->erasing
+ 		    && shared->erasing->oldstate == FL_ERASING) {
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			add_wait_queue(&chip->wq, &wait);
+ 			mutex_unlock(&chip->mutex);
+@@ -944,7 +944,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 		shared->writing = chip;
+ 		if (mode == FL_ERASING)
+ 			shared->erasing = chip;
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 	ret = chip_ready(map, chip, adr, mode);
+ 	if (ret == -EAGAIN)
+@@ -959,7 +959,7 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
+ 
+ 	if (chip->priv) {
+ 		struct flchip_shared *shared = chip->priv;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		if (shared->writing == chip && chip->oldstate == FL_READY) {
+ 			/* We own the ability to write, but we're done */
+ 			shared->writing = shared->erasing;
+@@ -967,7 +967,7 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
+ 				/* give back ownership to who we loaned it from */
+ 				struct flchip *loaner = shared->writing;
+ 				mutex_lock(&loaner->mutex);
+-				spin_unlock(&shared->lock);
++				mutex_unlock(&shared->lock);
+ 				mutex_unlock(&chip->mutex);
+ 				put_chip(map, loaner, loaner->start);
+ 				mutex_lock(&chip->mutex);
+@@ -985,11 +985,11 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
+ 			 * Don't let the switch below mess things up since
+ 			 * we don't have ownership to resume anything.
+ 			 */
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			wake_up(&chip->wq);
+ 			return;
+ 		}
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 
+ 	switch(chip->oldstate) {
+diff --git a/include/linux/mtd/flashchip.h b/include/linux/mtd/flashchip.h
+index f43e9b4..23cc10f 100644
+--- a/include/linux/mtd/flashchip.h
++++ b/include/linux/mtd/flashchip.h
+@@ -92,7 +92,7 @@ struct flchip {
+ /* This is used to handle contention on write/erase operations
+    between partitions of the same physical chip. */
+ struct flchip_shared {
+-	spinlock_t lock;
++	struct mutex lock;
+ 	struct flchip *writing;
+ 	struct flchip *erasing;
+ };
+-- 
+1.7.2
 
-this patch change to misc.c are following lines:
-
-#define BOOT_BOOT_H
-#include "../isdigit.h"
-#include "../string.c"
-#include "../printf.c"
-
-...
-
-static unsigned long fs;
-static inline void set_fs(unsigned long seg)
-{
-        fs = seg << 4;  /* shift it back */
-}
-typedef unsigned long addr_t;
-static inline char rdfs8(addr_t addr)
-{
-        return *((char *)(fs + addr));
-}
-#include "../cmdline.c"
-static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
-{
-        return __cmdline_find_option(real_mode->hdr.cmd_line_ptr, option, buffer, bufsize);
-}
-static inline int cmdline_find_option_bool(const char *option)
-{
-        return __cmdline_find_option_bool(real_mode->hdr.cmd_line_ptr, option);
-}
-static int early_serial_base;
-#include "../early_serial_console.c"
-
-or put them in another file?
-
-Thanks
-
-Yinghai
-
-Yinghai
