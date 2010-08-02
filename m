@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab0HBPbG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 11:31:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44767 "EHLO mail.zytor.com"
+	id S1753747Ab0HBPc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 11:32:59 -0400
+Received: from sh.osrg.net ([192.16.179.4]:47608 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab0HBPbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 11:31:04 -0400
-Message-ID: <4C56E49E.6070102@zytor.com>
-Date: Mon, 02 Aug 2010 08:30:38 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, jeremy@goop.org,
-        Ian.Campbell@citrix.com, albert_herranz@yahoo.es, x86@kernel.org,
-        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        iommu@lists.linux-foundation.org, tglx@linutronix.de
-Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
-References: <20100728095157I.fujita.tomonori@lab.ntt.co.jp> <20100728223816.GB32739@phenom.dumpdata.com> <4C50B4C2.2070807@zytor.com> <20100729161653G.fujita.tomonori@lab.ntt.co.jp> <20100729160557.GA4403@phenom.dumpdata.com> <20100802152552.GA4732@phenom.dumpdata.com>
-In-Reply-To: <20100802152552.GA4732@phenom.dumpdata.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753304Ab0HBPc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 11:32:57 -0400
+Date: Tue, 3 Aug 2010 00:26:36 +0900
+To: linux@arm.linux.org.uk
+Cc: fujita.tomonori@lab.ntt.co.jp, benh@kernel.crashing.org,
+        dwalker@codeaurora.org, arnd@arndb.de, Joerg.Roedel@amd.com,
+        linux-kernel@vger.kernel.org, stepanm@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100802100419.GC30670@n2100.arm.linux.org.uk>
+References: <20100802090326.GA30670@n2100.arm.linux.org.uk>
+	<20100802181919J.fujita.tomonori@lab.ntt.co.jp>
+	<20100802100419.GC30670@n2100.arm.linux.org.uk>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100803002542M.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 03 Aug 2010 00:26:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 08:25 AM, Konrad Rzeszutek Wilk wrote:
-> hpa, are your concerns that a) inserting a sub-system call in the
-> generic code is not good. Or b) that we have five IOMMUs (counting SWIOTLB in that
-> category) and that we don't jettison from memory the ones we don't need
-> (that would be the primary goal of driverization of those IOMMUs,
-> right?). Or c) we should remove all sub-system detect calls (Calgary, AMD,
-> Intel, AGP) altogether from pci-dma.c and depend more on
-> x86_init.iommu structure (perhaps expend it?)
+On Mon, 2 Aug 2010 11:04:19 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Sorry, had to deal with other stuff.
+> On Mon, Aug 02, 2010 at 06:20:01PM +0900, FUJITA Tomonori wrote:
+> > On Mon, 2 Aug 2010 10:03:26 +0100
+> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > 
+> > > On Mon, Aug 02, 2010 at 05:30:26PM +0900, FUJITA Tomonori wrote:
+> > > > ARM's iommu code (arch/plat-omap/include/plat/iommu.h) is a library to
+> > > > simplify the IOMMU implementations. It could be useful for all the
+> > > > iommu implementations.
+> > > 
+> > > ITYM OMAP's iommu code.
+> > 
+> > Yeah, I meant that we could extend it to make it useful for other
+> > iommu implementations. At least, we could make something generic like
+> > struct iommu_functions, I think. Then we can embed a generic iommu
+> > structure into an iommu specific struct (like we do with inode).
+> > 
+> > The current iommu-api (include/linux/iommu.h) is just about domain and
+> > mapping concept. We can implement it on the top of the above
+> > infrastructure.
+> > 
+> > I'm still trying to figure out how the DMA-API can work well with
+> > them.
+> 
+> I'm not sure it can in totality.  The DMA-API solves the host CPU <->
+> device aspect of DMA support only.
+> 
+> However, there is another use case for IOMMUs, which is to allow two
+> separate peripheral devices to communicate with each other via system
+> memory.  As the streaming DMA-API involves the idea of buffer ownership
+> (of a singular agent), it is unsuitable for this use case.
+> 
+> The coherent allocation part of the DMA-API also only deals with the
+> idea of there being a singular DMA agent accessing the allocated buffer
+> (in conjunction with the host CPU).
 
-Basically, a) and c) are the issues, with a) being the more immediate;
-the amount of code left in memory is relatively small and as such I'm
-not too concerned with that aspect specifically.
+I don't have a clear idea what kinda API works well in the above case
+yet.
 
-With five IOMMUs we're well past the point where we need to have a clean
-and generic interface instead of having everything be ad hoc and
-interdependent.
+But we have been talking about more bigger things? Not just about the
+interface, how things work together.
 
-	-hpa
+- OMAP's iommu code is a library to simplify OMAP implementations.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+- include/linux/iommu.h is an interface to IOMMUs for specific
+  interfaces.
 
+- the DMA API could access to IOMMUs internally.
+
+IOMMU library provides generic iommu interfaces (a structure including
+IOMMU implementation specific function pointers). KVM uses some of
+them. Architectures could implement the DMA API on the top of some the
+interfaces too.
