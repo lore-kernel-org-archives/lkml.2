@@ -1,131 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab0HBMlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 08:41:13 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43785 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab0HBMlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 08:41:11 -0400
-Date: Mon, 2 Aug 2010 18:08:51 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] perf: expose event__process function
-Message-ID: <20100802123851.GD22812@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
- <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
- <20100730191903.GD12166@ghostprotocols.net>
+	id S1753496Ab0HBMlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 08:41:31 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:43108 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab0HBMl3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 08:41:29 -0400
+Date: Mon, 2 Aug 2010 21:41:25 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Joe Eloff <kagen101@gmail.com>, Randy Dunlap <randy.dunlap@oracle.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9 v2] staging: dt3155: check put_user() return value
+Message-ID: <20100802124125.GG5814@verge.net.au>
+References: <1280737873-5992-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100730191903.GD12166@ghostprotocols.net>
+In-Reply-To: <1280737873-5992-1-git-send-email-segooon@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-event__process is useful in processing /proc/<pid>/maps.
-All of the functions that are called from event__process are defined
-in util/event.c. Though its defined in builtin-top.c, it could be
-reused for perf probe for uprobes. Hence moving it to util/event.c
-and exporting the function.
+On Mon, Aug 02, 2010 at 12:31:12PM +0400, Kulikov Vasiliy wrote:
+> put_user() return code was not checked for errors. To simplify the code
+> fill local struct dt3155_read with data and copy it with single
+> copy_to_user() call.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/staging/dt3155/dt3155_drv.c |   17 ++++++++---------
+>  1 files changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+> index 7316996..4013f09 100644
+> --- a/drivers/staging/dt3155/dt3155_drv.c
+> +++ b/drivers/staging/dt3155/dt3155_drv.c
+> @@ -745,10 +745,11 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
+>    struct dt3155_status *dts = &dt3155_status[minor];
+>    struct dt3155_fbuffer *fb = &dts->fbuffer;
+>    struct frame_info	*frame_info;
+> +  struct dt3155_read dt_read;
+>  
+>    /* TODO: this should check the error flag and */
+>    /*   return an error on hardware failures */
+> -  if (count != sizeof(struct dt3155_read))
+> +  if (count != sizeof(dt_read))
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
+I believe that sizeof(struct dt3155_read) is preferred,
+so this change isn't needed and sizeof(struct dt3155_read)
+should be used below (three times).
 
- tools/perf/builtin-top.c |   20 --------------------
- tools/perf/util/event.c  |   20 ++++++++++++++++++++
- tools/perf/util/event.h  |    1 +
- 3 files changed, 21 insertions(+), 20 deletions(-)
-
-
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 1e8e92e..b513e40 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1082,26 +1082,6 @@ static void event__process_sample(const event_t *self,
- 	}
- }
- 
--static int event__process(event_t *event, struct perf_session *session)
--{
--	switch (event->header.type) {
--	case PERF_RECORD_COMM:
--		event__process_comm(event, session);
--		break;
--	case PERF_RECORD_MMAP:
--		event__process_mmap(event, session);
--		break;
--	case PERF_RECORD_FORK:
--	case PERF_RECORD_EXIT:
--		event__process_task(event, session);
--		break;
--	default:
--		break;
--	}
--
--	return 0;
--}
--
- struct mmap_data {
- 	int			counter;
- 	void			*base;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 6b0db55..08b6424 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -554,6 +554,26 @@ int event__process_task(event_t *self, struct perf_session *session)
- 	return 0;
- }
- 
-+int event__process(event_t *event, struct perf_session *session)
-+{
-+	switch (event->header.type) {
-+	case PERF_RECORD_COMM:
-+		event__process_comm(event, session);
-+		break;
-+	case PERF_RECORD_MMAP:
-+		event__process_mmap(event, session);
-+		break;
-+	case PERF_RECORD_FORK:
-+	case PERF_RECORD_EXIT:
-+		event__process_task(event, session);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- void thread__find_addr_map(struct thread *self,
- 			   struct perf_session *session, u8 cpumode,
- 			   enum map_type type, pid_t pid, u64 addr,
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 887ee63..8e790da 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -154,6 +154,7 @@ int event__process_comm(event_t *self, struct perf_session *session);
- int event__process_lost(event_t *self, struct perf_session *session);
- int event__process_mmap(event_t *self, struct perf_session *session);
- int event__process_task(event_t *self, struct perf_session *session);
-+int event__process(event_t *event, struct perf_session *session);
- 
- struct addr_location;
- int event__preprocess_sample(const event_t *self, struct perf_session *session,
+>      {
+>        printk(KERN_INFO "DT3155 ERROR (NJC): count is not right\n");
+>        return -EINVAL;
+> @@ -797,17 +798,15 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
+>  
+>    /* make this an offset */
+>    offset = frame_info->addr - dts->mem_addr;
+> +  dt_read.offset = offset;
+> +  dt_read.frame_seq = fb->frame_count;
+> +  dt_read.state = dts->state;
+> +  memcpy(&dt_read.frame_info, frame_info, sizeof(frame_info));
+>  
+> -  put_user(offset, (unsigned int __user *)buf);
+> -  buf += sizeof(u32);
+> -  put_user(fb->frame_count, (unsigned int __user *)buf);
+> -  buf += sizeof(u32);
+> -  put_user(dts->state, (unsigned int __user *)buf);
+> -  buf += sizeof(u32);
+> -  if (copy_to_user(buf, frame_info, sizeof(*frame_info)))
+> +  if (copy_to_user(buf, &dt_read, sizeof(dt_read)))
+>        return -EFAULT;
+>  
+> -  return sizeof(struct dt3155_read);
+> +  return sizeof(dt_read);
+>  }
+>  
+>  static unsigned int dt3155_poll (struct file * filp, poll_table *wait)
+> -- 
+> 1.7.0.4
