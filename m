@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab0HBM3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 08:29:34 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:48826 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab0HBM3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 08:29:33 -0400
-Date: Mon, 2 Aug 2010 17:57:14 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	id S1753390Ab0HBMh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 08:37:59 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:18700 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752969Ab0HBMh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 08:37:57 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEABNZVkxQycSE/2dsb2JhbACgDXLBAg2FLAQ
+Date: Mon, 2 Aug 2010 14:37:55 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: David Daney <ddaney@caviumnetworks.com>, ralf@linux-mips.org
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv10 2.6.35-rc6-tip 11/14]  perf: perf interface for
- uprobes
-Message-ID: <20100802122714.GC22812@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
- <20100727111105.24690.48335.sendpatchset@localhost6.localdomain6>
- <20100730191903.GD12166@ghostprotocols.net>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, Marc Zyngier <maz@misterjones.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] watchdog: Add watchdog driver for OCTEON SOCs (v2).
+Message-ID: <20100802123755.GV30740@infomag.iguana.be>
+References: <20100724035826.GA27516@merkur.ravnborg.org> <1279991765-23962-1-git-send-email-ddaney@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100730191903.GD12166@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1279991765-23962-1-git-send-email-ddaney@caviumnetworks.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo, 
+Hi David, Ralf,
 
-
+> The OCTEON is a MIPS64 based SOC family with an on chip watchdog unit.
 > 
-> The following three hunks could be moved to a separate patch that I'd
-> apply on my perf/core branch, so to reduce this patchset size, like I
-> did with the s/kprobe/probe/g one that is already there:
+> The driver is split into two source files one for the C code and one
+> for assembly.  Assembly is needed to handle the NMI and then print the
+> machine state before the reboot is triggered.
 > 
-> http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=commitdiff;h=0e60836bbd392300198c5c2d918c18845428a1fe
+> v2: Stylistic changes suggested by Sam Ravnborg.
 
-I will soon 2 patches instead of this patch splitting the 3 hunks into
-a new patch and the resuting patch after removing the previous 3 hunks.
+This v2 looks good. only small remark is:
+> +static struct notifier_block octeon_wdt_cpu_notifier = {
+> +	.notifier_call = octeon_wdt_cpu_callback
+> +};
 
--Srikar
+Add a comma after octeon_wdt_cpu_callback.
+
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> Cc: Wim Van Sebroeck <wim@iguana.be>
+
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Marc Zyngier <maz@misterjones.org>
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: Sam Ravnborg <sam@ravnborg.org>
+
+Kind regards,
+Wim.
+
