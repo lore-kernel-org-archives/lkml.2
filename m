@@ -1,177 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab0HBUPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:15:48 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37497 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab0HBUPr (ORCPT
+	id S1755169Ab0HBUSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:18:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45586 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754433Ab0HBUSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:15:47 -0400
+	Mon, 2 Aug 2010 16:18:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=yERnKhBAtWb8eBmpSI9vEpnjBxTk0JT2yL3dGORvQkd9KQrGhdZ+IAMCzPd6Qu6NI/
-         WayS6evsWacU0EgphDUaEOBWqXU5DHkVgdBV6WMPi2e/eY50QDBsrCME6IqunBGwDglg
-         /K1K7X6qFSRHshL/MB6wg7WDE9Wq+MZYJfT1k=
-From: Edgardo Hames <ehames@gmail.com>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, ehames@gmail.com
-Subject: [PATCH] Staging: wlan-ng: remove typedef in p80211hdr.h
-Date: Mon,  2 Aug 2010 17:17:17 -0300
-Message-Id: <1280780237-1982-1-git-send-email-ehames@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=E0he5qvcJrzJ9rN4k4bfSy7wJh4q4DRkshxxFzZesVUDvfMQ72OtVybVkSAaXfQ05V
+         rYaMaajmDTgppIbHoZKDuveM3BNPu2r2dUuMV9faAqdtOd7E0lpRPiV+m0aEdbiKWDVX
+         SPNDFcE1LXT5sSk+IwVH/HO+95CMuVRr/1vVc=
+Date: Tue, 3 Aug 2010 00:17:50 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86, setup: reorgize the early_console_setup
+Message-ID: <20100802201750.GG5544@lenovo>
+References: <4C56701B.1030000@kernel.org> <20100802150958.GA5544@lenovo> <4C571B25.3080806@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C571B25.3080806@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the only typedef in p80211hdr.h.
+On Mon, Aug 02, 2010 at 12:23:17PM -0700, Yinghai Lu wrote:
+> On 08/02/2010 08:09 AM, Cyrill Gorcunov wrote:
+> > On Mon, Aug 02, 2010 at 12:13:31AM -0700, Yinghai Lu wrote:
+> >>
+> >> Seperate early_console_setup from tty.c
+> >> also make main.c to include printf.c/string.c/cmdline.c
+> >>
+> >> will reuse early_serial_console.c/string.c/printf.c/cmdline.c in compressed/misc.c
+> >>
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >>
+> >> ---
+> > 
+> > Hi Yinghai, I'll try to find some time for review though it looks somehow
+> > too 'big' for me :)
+> > 
+> > Actually by reading your initial approach (which was much smaller in size) I
+> > thought we end up in something like the patch below, though I'll review this
+> > seris. So just to share (I've tested it under qemu). The idea is the same as
+> > your was, so I pushed all constant parts into header and use it when needed
+> > passing serial line base port via boot_params.
+> 
+> Eric doesn't like early_serial_console_base in zero page. and said that is fragile.
+> 
 
-Signed-off-by: Edgardo Hames <ehames@gmail.com>
----
- drivers/staging/wlan-ng/cfg80211.c     |    2 +-
- drivers/staging/wlan-ng/p80211msg.h    |    4 ++--
- drivers/staging/wlan-ng/p80211netdev.h |    2 +-
- drivers/staging/wlan-ng/p80211req.c    |    6 +++---
- drivers/staging/wlan-ng/prism2fw.c     |    8 ++++----
- drivers/staging/wlan-ng/prism2sta.c    |    4 ++--
- 6 files changed, 13 insertions(+), 13 deletions(-)
+yeah, and Peter noted too as well, I missed Eric's mail in first place.
 
-diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-index 53ca0ba..d32875a 100644
---- a/drivers/staging/wlan-ng/cfg80211.c
-+++ b/drivers/staging/wlan-ng/cfg80211.c
-@@ -311,7 +311,7 @@ int prism2_get_station(struct wiphy *wiphy, struct net_device *dev,
- 	if (wlandev->mlmerequest == NULL)
- 		return -EOPNOTSUPP;
- 
--	result = wlandev->mlmerequest(wlandev, (p80211msg_t *) &quality);
-+	result = wlandev->mlmerequest(wlandev, (struct p80211msg *) &quality);
- 
- 
- 	if (result == 0) {
-diff --git a/drivers/staging/wlan-ng/p80211msg.h b/drivers/staging/wlan-ng/p80211msg.h
-index c691d3e..8e0f9a0 100644
---- a/drivers/staging/wlan-ng/p80211msg.h
-+++ b/drivers/staging/wlan-ng/p80211msg.h
-@@ -50,10 +50,10 @@
- 
- #define WLAN_DEVNAMELEN_MAX	16
- 
--typedef struct p80211msg {
-+struct p80211msg {
- 	u32 msgcode;
- 	u32 msglen;
- 	u8 devname[WLAN_DEVNAMELEN_MAX];
--} __attribute__ ((packed)) p80211msg_t;
-+} __attribute__ ((packed));
- 
- #endif /* _P80211MSG_H */
-diff --git a/drivers/staging/wlan-ng/p80211netdev.h b/drivers/staging/wlan-ng/p80211netdev.h
-index 3c72162..1ec3374 100644
---- a/drivers/staging/wlan-ng/p80211netdev.h
-+++ b/drivers/staging/wlan-ng/p80211netdev.h
-@@ -186,7 +186,7 @@ typedef struct wlandevice {
- 	int (*txframe) (struct wlandevice *wlandev, struct sk_buff *skb,
- 			union p80211_hdr *p80211_hdr,
- 			struct p80211_metawep *p80211_wep);
--	int (*mlmerequest) (struct wlandevice *wlandev, p80211msg_t *msg);
-+	int (*mlmerequest) (struct wlandevice *wlandev, struct p80211msg *msg);
- 	int (*set_multicast_list) (struct wlandevice *wlandev,
- 				   netdevice_t *dev);
- 	void (*tx_timeout) (struct wlandevice *wlandev);
-diff --git a/drivers/staging/wlan-ng/p80211req.c b/drivers/staging/wlan-ng/p80211req.c
-index 83ae126..179194e 100644
---- a/drivers/staging/wlan-ng/p80211req.c
-+++ b/drivers/staging/wlan-ng/p80211req.c
-@@ -72,7 +72,7 @@
- #include "p80211metastruct.h"
- #include "p80211req.h"
- 
--static void p80211req_handlemsg(wlandevice_t *wlandev, p80211msg_t *msg);
-+static void p80211req_handlemsg(wlandevice_t *wlandev, struct p80211msg *msg);
- static int p80211req_mibset_mibget(wlandevice_t *wlandev,
- 				   struct p80211msg_dot11req_mibget *mib_msg,
- 				   int isget);
-@@ -96,7 +96,7 @@ static int p80211req_mibset_mibget(wlandevice_t *wlandev,
- int p80211req_dorequest(wlandevice_t *wlandev, u8 *msgbuf)
- {
- 	int result = 0;
--	p80211msg_t *msg = (p80211msg_t *) msgbuf;
-+	struct p80211msg *msg = (struct p80211msg *) msgbuf;
- 
- 	/* Check to make sure the MSD is running */
- 	if (!((wlandev->msdstate == WLAN_MSD_HWPRESENT &&
-@@ -150,7 +150,7 @@ int p80211req_dorequest(wlandevice_t *wlandev, u8 *msgbuf)
- * Call context:
- *	Process thread
- ----------------------------------------------------------------*/
--static void p80211req_handlemsg(wlandevice_t *wlandev, p80211msg_t *msg)
-+static void p80211req_handlemsg(wlandevice_t *wlandev, struct p80211msg *msg)
- {
- 	switch (msg->msgcode) {
- 
-diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
-index 5b97c4a..fd5ddb2 100644
---- a/drivers/staging/wlan-ng/prism2fw.c
-+++ b/drivers/staging/wlan-ng/prism2fw.c
-@@ -983,7 +983,7 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 	int result = 0;
- 	struct p80211msg_p2req_ramdl_state rstatemsg;
- 	struct p80211msg_p2req_ramdl_write rwritemsg;
--	p80211msg_t *msgp;
-+	struct p80211msg *msgp;
- 	u32 resultcode;
- 	int i;
- 	int j;
-@@ -1029,7 +1029,7 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 	rstatemsg.enable.data = P80211ENUM_truth_true;
- 	rstatemsg.exeaddr.data = startaddr;
- 
--	msgp = (p80211msg_t *) &rstatemsg;
-+	msgp = (struct p80211msg *) &rstatemsg;
- 	result = prism2mgmt_ramdl_state(wlandev, msgp);
- 	if (result) {
- 		printk(KERN_ERR
-@@ -1070,7 +1070,7 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 			    ("Sending xxxdl_write message addr=%06x len=%d.\n",
- 			     currdaddr, currlen);
- 
--			msgp = (p80211msg_t *) &rwritemsg;
-+			msgp = (struct p80211msg *) &rwritemsg;
- 			result = prism2mgmt_ramdl_write(wlandev, msgp);
- 
- 			/* Check the results */
-@@ -1097,7 +1097,7 @@ int writeimage(wlandevice_t *wlandev, struct imgchunk *fchunk,
- 	rstatemsg.enable.data = P80211ENUM_truth_false;
- 	rstatemsg.exeaddr.data = 0;
- 
--	msgp = (p80211msg_t *) &rstatemsg;
-+	msgp = (struct p80211msg *) &rstatemsg;
- 	result = prism2mgmt_ramdl_state(wlandev, msgp);
- 	if (result) {
- 		printk(KERN_ERR
-diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
-index e5c5768..ed751f4 100644
---- a/drivers/staging/wlan-ng/prism2sta.c
-+++ b/drivers/staging/wlan-ng/prism2sta.c
-@@ -132,7 +132,7 @@ static void prism2sta_reset(wlandevice_t *wlandev);
- static int prism2sta_txframe(wlandevice_t *wlandev, struct sk_buff *skb,
- 			     union p80211_hdr *p80211_hdr,
- 			     struct p80211_metawep *p80211_wep);
--static int prism2sta_mlmerequest(wlandevice_t *wlandev, p80211msg_t *msg);
-+static int prism2sta_mlmerequest(wlandevice_t *wlandev, struct p80211msg *msg);
- static int prism2sta_getcardinfo(wlandevice_t *wlandev);
- static int prism2sta_globalsetup(wlandevice_t *wlandev);
- static int prism2sta_setmulticast(wlandevice_t *wlandev, netdevice_t *dev);
-@@ -309,7 +309,7 @@ static int prism2sta_txframe(wlandevice_t *wlandev, struct sk_buff *skb,
- * Call context:
- *	process thread
- ----------------------------------------------------------------*/
--static int prism2sta_mlmerequest(wlandevice_t *wlandev, p80211msg_t *msg)
-+static int prism2sta_mlmerequest(wlandevice_t *wlandev, struct p80211msg *msg)
- {
- 	hfa384x_t *hw = (hfa384x_t *) wlandev->priv;
- 
--- 
-1.7.0.4
+> So try to include string.c/printf.c/cmdline.c/early_serial_console.c in arch/x86/boot/compressed/misc.c
+> and analyze that command line again.
+> 
+> then kexec path will get support too. that is from arch/x86/boot/compressed/head_32.S or head_64.S, startup_32.
+> and skip arch/x86/boot/main.c
+> 
+> later with following patch for 3, we get all covered in c code.
+> 1. arch/x86/boot/main.c: setup code.
+> 2. arch/x86/boot/compressed/misc.c: decompress_kernel code : the 2 -v3 patches that i sent last night.
+> 3. arch/x86/kernel/head64.c: real kernel.
+> 
+> maybe we can make early_serial_console.c and early_printk.c to share some .h etc later.
+> 
 
+yes, sounds tempting for me ;)
+
+> Thanks
+> 
+> Yinghai
+> 
+> [PATCH -v2] x86: Setup early console as early as possible
+> 
+> Analyze "console=uart8250,io,0x3f8,115200n8" in i386_start_kernel/x86_64_start_kernel,
+> and call setup_early_serial8250_console() to init early serial console.
+> 
+> only can handle io port kind of 8250. because mmio need ioremap.
+> 
+> -v2: use boot_params.hdr.version instead of adding another variable, Suggested by hpa
+>      update after using x86 memblock patchset
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+...
+> +
+> +	p += 8;	/* sizeof "console=" */
+> +	q = strchr(p, ' ');
+> +	if ((q - p) >= sizeof(constr))
+> +		return;
+> +
+
+I think the better would be to explicitly point q=0 here, ie if (!q || ...)
+(yes, it'll trigger with former too but anyway this would be somewhat cleaner)
+
+> +	memset(constr, 0, sizeof(constr));
+> +	memcpy(constr, p, q - p);
+> +
+> +	lockdep_init();
+> +
+> +	setup_early_serial8250_console(constr);
+> +#endif
+> +}
+
+...
+  
+> +	/* make sure if it is copied already */
+> +	if (boot_params.hdr.version)
+> +		return;
+> +
+
+And Yinghai, lets be more verbose here a bit, since for those who will
+be reading this code later might be non-obvious why we have checked for
+'version' here. I guess something like "an easy way to check if boot_params
+were already copied". Actually it's clean from commit message but I think
+we first read code comments and commit messages after, agreed? ;-)
+
+>  	memcpy(&boot_params, real_mode_data, sizeof boot_params);
+>  	if (boot_params.hdr.cmd_line_ptr) {
+>  		command_line = __va(boot_params.hdr.cmd_line_ptr);
+> @@ -74,6 +78,10 @@ void __init x86_64_start_kernel(char * r
+>  	/* clear bss before set_intr_gate with early_idt_handler */
+>  	clear_bss();
+>  
+... 
+
+Other then that looks good for me, thanks! My Reviewed-by if needed.
+ 
+	-- Cyrill
