@@ -1,76 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739Ab0HBEFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 00:05:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49570 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab0HBEFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 00:05:43 -0400
-Date: Sun, 1 Aug 2010 21:05:48 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100801210548.23f77ff6@infradead.org>
-In-Reply-To: <20100802030304.GU2470@linux.vnet.ibm.com>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100731215214.2543c07e@infradead.org>
-	<20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100731230101.7cc1d8c7@infradead.org>
-	<20100801191228.GL2470@linux.vnet.ibm.com>
-	<20100801204026.GH31324@thunk.org>
-	<20100802030304.GU2470@linux.vnet.ibm.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+	id S1751908Ab0HBEKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 00:10:44 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51780 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751255Ab0HBEKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 00:10:42 -0400
+Date: Mon, 2 Aug 2010 14:10:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: linux-next: build warnings after merge of the final tree
+Message-Id: <20100802141035.f84f9132.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Aug 2010 20:03:04 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > on application programmers to do the right thing.  That's not to
-> > say that we shouldn't give up on trying to influence application
-> > programmers --- but relying on that as the only strategy seems to
-> > depart from the path of wisdom.
-> 
-> Unless someone can reliably automate whacking the moles, history is
-> not on the side of the mole-whackers.  I won't say that such
-> automation is impossible, but only because of all the "impossible"
-> things in my lifetime that have turned out to be possible.
+--Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-we have a few things going for us here though
+Hi all,
 
-1) It's easy to programatically detect the problems
-  1a) so programmers can detect issues before they ship software,
-  unlike the fsync() thing Ted mentions. History is showing this is at
-  least relatively successful in open source, but not with Adobe's
-  proprietary software such as Flash
-2) Users can be made aware of what the bad guys are
-3) The business models of many of the mobile apps gives programmers a
-   strong incentive to ship well behaving. The moment your first and
-   second review of your app read "this app was identified as reducing
-   battery life a lot"... your revenues will not go beyond the $1.98..
-   ... assuming these first two guys didn't refund their app.
+After merging the final tree, today's linux-next build (powerpc
+allnoconfig with CONFIG_DEBUG_SECTION_MISMATCH=3Dy) produced these warnings:
 
-Since we can detect who the bad guys are, we can also automatically
-quarantine them for the common cases..... which is good news.
+WARNING: mm/built-in.o(.text+0x24324): Section mismatch in reference from t=
+he function memblock_find_in_range() to the function .init.text:memblock_fi=
+nd_base()
+The function memblock_find_in_range() references
+the function __init memblock_find_base().
+This is often because memblock_find_in_range lacks a __init=20
+annotation or the annotation of memblock_find_base is wrong.
 
+WARNING: mm/built-in.o(.text+0x24610): Section mismatch in reference from t=
+he function memblock_double_array() to the function .init.text:memblock_fre=
+e()
+The function memblock_double_array() references
+the function __init memblock_free().
+This is often because memblock_double_array lacks a __init=20
+annotation or the annotation of memblock_free is wrong.
 
-I'm a little worried that this whole "I need to block suspend" is
-temporary. Yes today there is silicon from ARM and Intel where suspend
-is a heavy operation, yet at the same time it's not all THAT heavy
-anymore.... at least on the Intel side it's good enough to use pretty
-much all the time (when the screen is off for now, but that's a memory
-controller issue more than anything else). I'm pretty sure the ARM guys
-will not be far behind.
+WARNING: mm/built-in.o(.text+0x24670): Section mismatch in reference from t=
+he function memblock_double_array() to the function .init.text:memblock_fin=
+d_base()
+The function memblock_double_array() references
+the function __init memblock_find_base().
+This is often because memblock_double_array lacks a __init=20
+annotation or the annotation of memblock_find_base is wrong.
 
+WARNING: vmlinux.o(.text+0x10264): Section mismatch in reference from the f=
+unction setup_initial_memory_limit() to the function .init.text:memblock_se=
+t_current_limit()
+The function setup_initial_memory_limit() references
+the function __init memblock_set_current_limit().
+This is often because setup_initial_memory_limit lacks a __init=20
+annotation or the annotation of memblock_set_current_limit is wrong.
+
+Introduced by the memblock series in the tip tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMVkU7AAoJEDMEi1NhKgbsr5sIAJOQEL/NTEoJCq0Qdo5PnusC
+7+/Vz1APem8ZdiTeUxn6XeELN4y91dPK4g5kbILBh9NaS5o6B978M1pWvBCeuyjj
+hbAm07lq3ZtXR6S0JMlQXJ8p4DnMnDcwziniPBou8RH5aRJSJRvzWvQ/eFzQsx00
+eqCKAW3b8VJOPKR8OPODrrMve9ExPXvHviBia31QZMH/kRuHTTRCd6q7+LsXJ0lq
+iH5WMJakmh1RI9ZaLkybSfOBb2k5Lb/KKYahh8ncfzlp9g+4NvjzANZbE0vbPcBe
+zlHZkG2QvaKvQtRKGIdD9Vpm9iEMEAZsMV4RDWf6lnR6yooFv2y2SN/Mjbb8Sps=
+=+ZjI
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__2_Aug_2010_14_10_35_+1000_I=XGqEgkTrk.17vY--
