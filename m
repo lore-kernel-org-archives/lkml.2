@@ -1,571 +1,540 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab0HBTDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 15:03:50 -0400
-Received: from kroah.org ([198.145.64.141]:37004 "EHLO coco.kroah.org"
+	id S1754669Ab0HBTE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 15:04:57 -0400
+Received: from kroah.org ([198.145.64.141]:47009 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754294Ab0HBTDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 15:03:13 -0400
-Date: Mon, 2 Aug 2010 12:00:30 -0700
+	id S1753374Ab0HBTEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 15:04:54 -0400
+Date: Mon, 2 Aug 2010 12:04:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.27.49
-Message-ID: <20100802190030.GB17098@kroah.com>
-References: <20100802190010.GA17098@kroah.com>
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.33.7
+Message-ID: <20100802190426.GE17098@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100802190010.GA17098@kroah.com>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 6411139..382a8dd 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 27
--EXTRAVERSION = .48
-+EXTRAVERSION = .49
- NAME = Trembling Tortoise
- 
- # *DOCUMENTATION*
-diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-index 34bc987..d8a4dc6 100644
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -102,11 +102,16 @@ int use_calgary __read_mostly = 0;
- #define PMR_SOFTSTOPFAULT	0x40000000
- #define PMR_HARDSTOP		0x20000000
- 
--#define MAX_NUM_OF_PHBS		8 /* how many PHBs in total? */
--#define MAX_NUM_CHASSIS		8 /* max number of chassis */
--/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
--#define MAX_PHB_BUS_NUM		(MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
--#define PHBS_PER_CALGARY	4
-+/*
-+ * The maximum PHB bus number.
-+ * x3950M2 (rare): 8 chassis, 48 PHBs per chassis = 384
-+ * x3950M2: 4 chassis, 48 PHBs per chassis        = 192
-+ * x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
-+ * x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
-+ */
-+#define MAX_PHB_BUS_NUM		256
-+
-+#define PHBS_PER_CALGARY	  4
- 
- /* register offsets in Calgary's internal register space */
- static const unsigned long tar_offsets[] = {
-@@ -1092,8 +1097,6 @@ static int __init calgary_init_one(struct pci_dev *dev)
- 	struct iommu_table *tbl;
- 	int ret;
- 
--	BUG_ON(dev->bus->number >= MAX_PHB_BUS_NUM);
--
- 	bbar = busno_to_bbar(dev->bus->number);
- 	ret = calgary_setup_tar(dev, bbar);
- 	if (ret)
-diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
-index 7495c52..e144ad8 100644
---- a/drivers/char/agp/amd64-agp.c
-+++ b/drivers/char/agp/amd64-agp.c
-@@ -491,6 +491,10 @@ static int __devinit agp_amd64_probe(struct pci_dev *pdev,
- 	u8 cap_ptr;
- 	int err;
- 
-+	/* The Highlander principle */
-+	if (agp_bridges_found)
-+		return -ENODEV;
-+
- 	cap_ptr = pci_find_capability(pdev, PCI_CAP_ID_AGP);
- 	if (!cap_ptr)
- 		return -ENODEV;
-@@ -554,6 +558,8 @@ static void __devexit agp_amd64_remove(struct pci_dev *pdev)
- 			   amd64_aperture_sizes[bridge->aperture_size_idx].size);
- 	agp_remove_bridge(bridge);
- 	agp_put_bridge(bridge);
-+
-+	agp_bridges_found--;
- }
- 
- #ifdef CONFIG_PM
-@@ -701,6 +707,11 @@ static struct pci_device_id agp_amd64_pci_table[] = {
- 
- MODULE_DEVICE_TABLE(pci, agp_amd64_pci_table);
- 
-+static DEFINE_PCI_DEVICE_TABLE(agp_amd64_pci_promisc_table) = {
-+	{ PCI_DEVICE_CLASS(0, 0) },
-+	{ }
-+};
-+
- static struct pci_driver agp_amd64_pci_driver = {
- 	.name		= "agpgart-amd64",
- 	.id_table	= agp_amd64_pci_table,
-@@ -725,7 +736,6 @@ int __init agp_amd64_init(void)
- 		return err;
- 
- 	if (agp_bridges_found == 0) {
--		struct pci_dev *dev;
- 		if (!agp_try_unsupported && !agp_try_unsupported_boot) {
- 			printk(KERN_INFO PFX "No supported AGP bridge found.\n");
- #ifdef MODULE
-@@ -741,17 +751,10 @@ int __init agp_amd64_init(void)
- 			return -ENODEV;
- 
- 		/* Look for any AGP bridge */
--		dev = NULL;
--		err = -ENODEV;
--		for_each_pci_dev(dev) {
--			if (!pci_find_capability(dev, PCI_CAP_ID_AGP))
--				continue;
--			/* Only one bridge supported right now */
--			if (agp_amd64_probe(dev, NULL) == 0) {
--				err = 0;
--				break;
--			}
--		}
-+		agp_amd64_pci_driver.id_table = agp_amd64_pci_promisc_table;
-+		err = driver_attach(&agp_amd64_pci_driver.driver);
-+		if (err == 0 && agp_bridges_found == 0)
-+			err = -ENODEV;
- 	}
- 	return err;
- }
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 2b8f439..a7f98c9 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -52,6 +52,7 @@ struct coretemp_data {
- 	struct mutex update_lock;
- 	const char *name;
- 	u32 id;
-+	u16 core_id;
- 	char valid;		/* zero until following fields are valid */
- 	unsigned long last_updated;	/* in jiffies */
- 	int temp;
-@@ -74,7 +75,7 @@ static ssize_t show_name(struct device *dev, struct device_attribute
- 	if (attr->index == SHOW_NAME)
- 		ret = sprintf(buf, "%s\n", data->name);
- 	else	/* show label */
--		ret = sprintf(buf, "Core %d\n", data->id);
-+		ret = sprintf(buf, "Core %d\n", data->core_id);
- 	return ret;
- }
- 
-@@ -216,6 +217,9 @@ static int __devinit coretemp_probe(struct platform_device *pdev)
- 	}
- 
- 	data->id = pdev->id;
-+#ifdef CONFIG_SMP
-+	data->core_id = c->cpu_core_id;
-+#endif
- 	data->name = "coretemp";
- 	mutex_init(&data->update_lock);
- 
-@@ -313,6 +317,10 @@ struct pdev_entry {
- 	struct list_head list;
- 	struct platform_device *pdev;
- 	unsigned int cpu;
-+#ifdef CONFIG_SMP
-+	u16 phys_proc_id;
-+	u16 cpu_core_id;
-+#endif
- };
- 
- static LIST_HEAD(pdev_list);
-@@ -323,6 +331,22 @@ static int __cpuinit coretemp_device_add(unsigned int cpu)
- 	int err;
- 	struct platform_device *pdev;
- 	struct pdev_entry *pdev_entry;
-+#ifdef CONFIG_SMP
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+#endif
-+
-+	mutex_lock(&pdev_list_mutex);
-+
-+#ifdef CONFIG_SMP
-+	/* Skip second HT entry of each core */
-+	list_for_each_entry(pdev_entry, &pdev_list, list) {
-+		if (c->phys_proc_id == pdev_entry->phys_proc_id &&
-+		    c->cpu_core_id == pdev_entry->cpu_core_id) {
-+			err = 0;	/* Not an error */
-+			goto exit;
-+		}
-+	}
-+#endif
- 
- 	pdev = platform_device_alloc(DRVNAME, cpu);
- 	if (!pdev) {
-@@ -346,7 +370,10 @@ static int __cpuinit coretemp_device_add(unsigned int cpu)
- 
- 	pdev_entry->pdev = pdev;
- 	pdev_entry->cpu = cpu;
--	mutex_lock(&pdev_list_mutex);
-+#ifdef CONFIG_SMP
-+	pdev_entry->phys_proc_id = c->phys_proc_id;
-+	pdev_entry->cpu_core_id = c->cpu_core_id;
-+#endif
- 	list_add_tail(&pdev_entry->list, &pdev_list);
- 	mutex_unlock(&pdev_list_mutex);
- 
-@@ -357,6 +384,7 @@ exit_device_free:
- exit_device_put:
- 	platform_device_put(pdev);
- exit:
-+	mutex_unlock(&pdev_list_mutex);
- 	return err;
- }
- 
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-index e9ca3cb..fb97c42 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -1158,7 +1158,7 @@ static ssize_t create_child(struct device *dev,
- 
- 	return ret ? ret : count;
- }
--static DEVICE_ATTR(create_child, S_IWUGO, NULL, create_child);
-+static DEVICE_ATTR(create_child, S_IWUSR, NULL, create_child);
- 
- static ssize_t delete_child(struct device *dev,
- 			    struct device_attribute *attr,
-@@ -1178,7 +1178,7 @@ static ssize_t delete_child(struct device *dev,
- 	return ret ? ret : count;
- 
- }
--static DEVICE_ATTR(delete_child, S_IWUGO, NULL, delete_child);
-+static DEVICE_ATTR(delete_child, S_IWUSR, NULL, delete_child);
- 
- int ipoib_add_pkey_attr(struct net_device *dev)
- {
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 598d2e9..b91eb58 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1705,6 +1705,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
- 	case BOND_MODE_ALB:
- 		new_slave->state = BOND_STATE_ACTIVE;
- 		bond_set_slave_inactive_flags(new_slave);
-+		bond_select_active_slave(bond);
- 		break;
- 	default:
- 		dprintk("This slave is always active in trunk mode\n");
-diff --git a/drivers/net/cpmac.c b/drivers/net/cpmac.c
-index ec6b0af..5cbdd37 100644
---- a/drivers/net/cpmac.c
-+++ b/drivers/net/cpmac.c
-@@ -1174,7 +1174,8 @@ static int __devinit cpmac_probe(struct platform_device *pdev)
- 		if (netif_msg_drv(priv))
- 			printk(KERN_ERR "%s: Could not attach to PHY\n",
- 			       dev->name);
--		return PTR_ERR(priv->phy);
-+		rc = PTR_ERR(priv->phy);
-+		goto fail;
- 	}
- 
- 	if ((rc = register_netdev(dev))) {
-diff --git a/drivers/net/sky2.c b/drivers/net/sky2.c
-index aa9ff46..50e32df 100644
---- a/drivers/net/sky2.c
-+++ b/drivers/net/sky2.c
-@@ -688,11 +688,24 @@ static void sky2_phy_power_down(struct sky2_hw *hw, unsigned port)
- 	sky2_write8(hw, B2_TST_CTRL1, TST_CFG_WRITE_OFF);
- }
- 
-+/* Enable Rx/Tx */
-+static void sky2_enable_rx_tx(struct sky2_port *sky2)
-+{
-+	struct sky2_hw *hw = sky2->hw;
-+	unsigned port = sky2->port;
-+	u16 reg;
-+
-+	reg = gma_read16(hw, port, GM_GP_CTRL);
-+	reg |= GM_GPCR_RX_ENA | GM_GPCR_TX_ENA;
-+	gma_write16(hw, port, GM_GP_CTRL, reg);
-+}
-+
- /* Force a renegotiation */
- static void sky2_phy_reinit(struct sky2_port *sky2)
- {
- 	spin_lock_bh(&sky2->phy_lock);
- 	sky2_phy_init(sky2->hw, sky2->port);
-+	sky2_enable_rx_tx(sky2);
- 	spin_unlock_bh(&sky2->phy_lock);
- }
- 
-@@ -1862,7 +1875,6 @@ static void sky2_link_up(struct sky2_port *sky2)
- {
- 	struct sky2_hw *hw = sky2->hw;
- 	unsigned port = sky2->port;
--	u16 reg;
- 	static const char *fc_name[] = {
- 		[FC_NONE]	= "none",
- 		[FC_TX]		= "tx",
-@@ -1870,10 +1882,7 @@ static void sky2_link_up(struct sky2_port *sky2)
- 		[FC_BOTH]	= "both",
- 	};
- 
--	/* enable Rx/Tx */
--	reg = gma_read16(hw, port, GM_GP_CTRL);
--	reg |= GM_GPCR_RX_ENA | GM_GPCR_TX_ENA;
--	gma_write16(hw, port, GM_GP_CTRL, reg);
-+	sky2_enable_rx_tx(sky2);
- 
- 	gm_phy_write(hw, port, PHY_MARV_INT_MASK, PHY_M_DEF_MSK);
- 
-diff --git a/drivers/net/wireless/hostap/hostap_cs.c b/drivers/net/wireless/hostap/hostap_cs.c
-index 3b4e55c..055e991 100644
---- a/drivers/net/wireless/hostap/hostap_cs.c
-+++ b/drivers/net/wireless/hostap/hostap_cs.c
-@@ -557,6 +557,7 @@ static int prism2_config(struct pcmcia_device *link)
- 	config_info_t conf;
- 	cistpl_cftable_entry_t dflt = { 0 };
- 	struct hostap_cs_priv *hw_priv;
-+	unsigned long flags;
- 
- 	PDEBUG(DEBUG_FLOW, "prism2_config()\n");
- 
-@@ -688,6 +689,12 @@ static int prism2_config(struct pcmcia_device *link)
- 	link->dev_node = &hw_priv->node;
- 
- 	/*
-+	 * Make sure the IRQ handler cannot proceed until at least
-+	 * dev->base_addr is initialized.
-+	 */
-+	spin_lock_irqsave(&local->irq_init_lock, flags);
-+
-+	/*
- 	 * Allocate an interrupt line.  Note that this does not assign a
- 	 * handler to the interrupt, unless the 'Handler' member of the
- 	 * irq structure is initialized.
-@@ -712,6 +719,8 @@ static int prism2_config(struct pcmcia_device *link)
- 	dev->irq = link->irq.AssignedIRQ;
- 	dev->base_addr = link->io.BasePort1;
- 
-+	spin_unlock_irqrestore(&local->irq_init_lock, flags);
-+
- 	/* Finally, report what we've done */
- 	printk(KERN_INFO "%s: index 0x%02x: ",
- 	       dev_info, link->conf.ConfigIndex);
-@@ -742,6 +751,7 @@ static int prism2_config(struct pcmcia_device *link)
- 	return ret;
- 
-  cs_failed:
-+	spin_unlock_irqrestore(&local->irq_init_lock, flags);
- 	cs_error(link, last_fn, last_ret);
- 
-  failed:
-diff --git a/drivers/net/wireless/hostap/hostap_hw.c b/drivers/net/wireless/hostap/hostap_hw.c
-index 3153fe9..04b890f 100644
---- a/drivers/net/wireless/hostap/hostap_hw.c
-+++ b/drivers/net/wireless/hostap/hostap_hw.c
-@@ -2631,6 +2631,18 @@ static irqreturn_t prism2_interrupt(int irq, void *dev_id)
- 	iface = netdev_priv(dev);
- 	local = iface->local;
- 
-+	/* Detect early interrupt before driver is fully configued */
-+	spin_lock(&local->irq_init_lock);
-+	if (!dev->base_addr) {
-+		if (net_ratelimit()) {
-+			printk(KERN_DEBUG "%s: Interrupt, but dev not configured\n",
-+			       dev->name);
-+		}
-+		spin_unlock(&local->irq_init_lock);
-+		return IRQ_HANDLED;
-+	}
-+	spin_unlock(&local->irq_init_lock);
-+
- 	prism2_io_debug_add(dev, PRISM2_IO_DEBUG_CMD_INTERRUPT, 0, 0);
- 
- 	if (local->func->card_present && !local->func->card_present(local)) {
-@@ -3187,6 +3199,7 @@ prism2_init_local_data(struct prism2_helper_functions *funcs, int card_idx,
- 	spin_lock_init(&local->cmdlock);
- 	spin_lock_init(&local->baplock);
- 	spin_lock_init(&local->lock);
-+	spin_lock_init(&local->irq_init_lock);
- 	mutex_init(&local->rid_bap_mtx);
- 
- 	if (card_idx < 0 || card_idx >= MAX_PARM_DEVICES)
-diff --git a/drivers/net/wireless/hostap/hostap_wlan.h b/drivers/net/wireless/hostap/hostap_wlan.h
-index a68f97c..1c986f2 100644
---- a/drivers/net/wireless/hostap/hostap_wlan.h
-+++ b/drivers/net/wireless/hostap/hostap_wlan.h
-@@ -653,7 +653,7 @@ struct local_info {
- 	rwlock_t iface_lock; /* hostap_interfaces read lock; use write lock
- 			      * when removing entries from the list.
- 			      * TX and RX paths can use read lock. */
--	spinlock_t cmdlock, baplock, lock;
-+	spinlock_t cmdlock, baplock, lock, irq_init_lock;
- 	struct mutex rid_bap_mtx;
- 	u16 infofid; /* MAC buffer id for info frame */
- 	/* txfid, intransmitfid, next_txtid, and next_alloc are protected by
-diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
-index a735526..a7b7da1 100644
---- a/drivers/scsi/aacraid/commctrl.c
-+++ b/drivers/scsi/aacraid/commctrl.c
-@@ -645,9 +645,9 @@ static int aac_send_raw_srb(struct aac_dev* dev, void __user * arg)
- 				/* Does this really need to be GFP_DMA? */
- 				p = kmalloc(usg->sg[i].count,GFP_KERNEL|__GFP_DMA);
- 				if(!p) {
--					kfree (usg);
--					dprintk((KERN_DEBUG"aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
-+					dprintk((KERN_DEBUG "aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
- 					  usg->sg[i].count,i,usg->count));
-+					kfree(usg);
- 					rcode = -ENOMEM;
- 					goto cleanup;
- 				}
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index cff0c53..31a1668 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -1594,6 +1594,14 @@ CIFSSMBWrite(const int xid, struct cifsTconInfo *tcon,
- 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
- 		*nbytes = (*nbytes) << 16;
- 		*nbytes += le16_to_cpu(pSMBr->Count);
-+
-+		/*
-+		 * Mask off high 16 bits when bytes written as returned by the
-+		 * server is greater than bytes requested by the client. Some
-+		 * OS/2 servers are known to set incorrect CountHigh values.
-+		 */
-+		if (*nbytes > count)
-+			*nbytes &= 0xFFFF;
- 	}
- 
- 	cifs_buf_release(pSMB);
-@@ -1679,6 +1687,14 @@ CIFSSMBWrite2(const int xid, struct cifsTconInfo *tcon,
- 		*nbytes = le16_to_cpu(pSMBr->CountHigh);
- 		*nbytes = (*nbytes) << 16;
- 		*nbytes += le16_to_cpu(pSMBr->Count);
-+
-+		/*
-+		 * Mask off high 16 bits when bytes written as returned by the
-+		 * server is greater than bytes requested by the client. OS/2
-+		 * servers are known to set incorrect CountHigh values.
-+		 */
-+		if (*nbytes > count)
-+			*nbytes &= 0xFFFF;
- 	}
- 
- /*	cifs_small_buf_release(pSMB); */ /* Freed earlier now in SendReceive2 */
-diff --git a/fs/cifs/sess.c b/fs/cifs/sess.c
-index 3890cc2..52c72ea 100644
---- a/fs/cifs/sess.c
-+++ b/fs/cifs/sess.c
-@@ -482,15 +482,7 @@ CIFS_SessSetup(unsigned int xid, struct cifsSesInfo *ses, int first_time,
- 
- 		/* calculate session key */
- 		setup_ntlmv2_rsp(ses, v2_sess_key, nls_cp);
--		if (first_time) /* should this be moved into common code
--				   with similar ntlmv2 path? */
--		/*   cifs_calculate_ntlmv2_mac_key(ses->server->mac_signing_key,
--				response BB FIXME, v2_sess_key); */
--
--		/* copy session key */
--
--	/*	memcpy(bcc_ptr, (char *)ntlm_session_key,LM2_SESS_KEY_SIZE);
--		bcc_ptr += LM2_SESS_KEY_SIZE; */
-+		/* FIXME: calculate MAC key */
- 		memcpy(bcc_ptr, (char *)v2_sess_key,
- 		       sizeof(struct ntlmv2_resp));
- 		bcc_ptr += sizeof(struct ntlmv2_resp);
-diff --git a/fs/ecryptfs/messaging.c b/fs/ecryptfs/messaging.c
-index 1b5c200..517bd46 100644
---- a/fs/ecryptfs/messaging.c
-+++ b/fs/ecryptfs/messaging.c
-@@ -30,9 +30,9 @@ static struct mutex ecryptfs_msg_ctx_lists_mux;
- 
- static struct hlist_head *ecryptfs_daemon_hash;
- struct mutex ecryptfs_daemon_hash_mux;
--static int ecryptfs_hash_buckets;
-+static int ecryptfs_hash_bits;
- #define ecryptfs_uid_hash(uid) \
--        hash_long((unsigned long)uid, ecryptfs_hash_buckets)
-+        hash_long((unsigned long)uid, ecryptfs_hash_bits)
- 
- static u32 ecryptfs_msg_counter;
- static struct ecryptfs_msg_ctx *ecryptfs_msg_ctx_arr;
-@@ -599,18 +599,19 @@ int ecryptfs_init_messaging(unsigned int transport)
- 	}
- 	mutex_init(&ecryptfs_daemon_hash_mux);
- 	mutex_lock(&ecryptfs_daemon_hash_mux);
--	ecryptfs_hash_buckets = 1;
--	while (ecryptfs_number_of_users >> ecryptfs_hash_buckets)
--		ecryptfs_hash_buckets++;
-+	ecryptfs_hash_bits = 1;
-+	while (ecryptfs_number_of_users >> ecryptfs_hash_bits)
-+		ecryptfs_hash_bits++;
- 	ecryptfs_daemon_hash = kmalloc((sizeof(struct hlist_head)
--					* ecryptfs_hash_buckets), GFP_KERNEL);
-+					* (1 << ecryptfs_hash_bits)),
-+				       GFP_KERNEL);
- 	if (!ecryptfs_daemon_hash) {
- 		rc = -ENOMEM;
- 		printk(KERN_ERR "%s: Failed to allocate memory\n", __func__);
- 		mutex_unlock(&ecryptfs_daemon_hash_mux);
- 		goto out;
- 	}
--	for (i = 0; i < ecryptfs_hash_buckets; i++)
-+	for (i = 0; i < (1 << ecryptfs_hash_bits); i++)
- 		INIT_HLIST_HEAD(&ecryptfs_daemon_hash[i]);
- 	mutex_unlock(&ecryptfs_daemon_hash_mux);
- 	ecryptfs_msg_ctx_arr = kmalloc((sizeof(struct ecryptfs_msg_ctx)
-@@ -680,7 +681,7 @@ void ecryptfs_release_messaging(unsigned int transport)
- 		int i;
- 
- 		mutex_lock(&ecryptfs_daemon_hash_mux);
--		for (i = 0; i < ecryptfs_hash_buckets; i++) {
-+		for (i = 0; i < (1 << ecryptfs_hash_bits); i++) {
- 			int rc;
- 
- 			hlist_for_each_entry(daemon, elem,
-diff --git a/include/math-emu/op-common.h b/include/math-emu/op-common.h
-index 408f743..a4cb9d1 100644
---- a/include/math-emu/op-common.h
-+++ b/include/math-emu/op-common.h
-@@ -793,7 +793,7 @@ do {									\
- 		X##_e -= (_FP_W_TYPE_SIZE - rsize);			\
- 	X##_e = rsize - X##_e - 1;					\
- 									\
--	if (_FP_FRACBITS_##fs < rsize && _FP_WFRACBITS_##fs < X##_e)	\
-+	if (_FP_FRACBITS_##fs < rsize && _FP_WFRACBITS_##fs <= X##_e)	\
- 	  __FP_FRAC_SRS_1(ur_, (X##_e - _FP_WFRACBITS_##fs + 1), rsize);\
- 	_FP_FRAC_DISASSEMBLE_##wc(X, ur_, rsize);			\
- 	if ((_FP_WFRACBITS_##fs - X##_e - 1) > 0)			\
-diff --git a/net/ipv6/netfilter/ip6t_REJECT.c b/net/ipv6/netfilter/ip6t_REJECT.c
-index 44c8d65..1be1a6c 100644
---- a/net/ipv6/netfilter/ip6t_REJECT.c
-+++ b/net/ipv6/netfilter/ip6t_REJECT.c
-@@ -95,9 +95,11 @@ static void send_reset(struct sk_buff *oldskb)
- 	fl.fl_ip_dport = otcph.source;
- 	security_skb_classify_flow(oldskb, &fl);
- 	dst = ip6_route_output(&init_net, NULL, &fl);
--	if (dst == NULL)
-+	if (dst == NULL || dst->error) {
-+		dst_release(dst);
- 		return;
--	if (dst->error || xfrm_lookup(&dst, &fl, NULL, 0))
-+	}
-+	if (xfrm_lookup(&dst, &fl, NULL, 0))
- 		return;
- 
- 	hh_len = (dst->dev->hard_header_len + 15)&~15;
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index f05e36a..78480c2 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1292,7 +1292,7 @@ static unsigned int *reloc_location(struct elf_info *elf,
- 	int section = sechdr->sh_info;
- 
- 	return (void *)elf->hdr + sechdrs[section].sh_offset +
--		(r->r_offset - sechdrs[section].sh_addr);
-+		r->r_offset - sechdrs[section].sh_addr;
- }
- 
- static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
+I'm announcing the release of the 2.6.33.7 kernel.
+
+All users of the 2.6.33 kernel series should upgrade.
+
+This is the last 2.6.33 release, so everyone should be moved to the .34
+kernel at this point in time, hopefully the .35 kernel instead of .34 as
+.34 is not going to be maintained for much longer.
+
+The updated 2.6.33.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.33.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.33.y.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                        |    2 
+ arch/arm/kernel/kprobes-decode.c                |    5 
+ arch/arm/mach-omap2/board-rx51-peripherals.c    |   17 ++
+ arch/arm/mach-realview/Kconfig                  |    2 
+ arch/arm/mach-realview/include/mach/barriers.h  |    8 +
+ arch/ia64/mm/tlb.c                              |    2 
+ arch/mips/include/asm/mipsregs.h                |    9 +
+ arch/mips/math-emu/cp1emu.c                     |   15 +-
+ arch/powerpc/include/asm/cpm.h                  |   24 +++
+ arch/powerpc/kernel/irq.c                       |    5 
+ arch/powerpc/sysdev/micropatch.c                |   12 +
+ arch/sparc/include/asm/stat.h                   |    4 
+ arch/x86/include/asm/msr-index.h                |    1 
+ arch/x86/include/asm/suspend_32.h               |    2 
+ arch/x86/include/asm/suspend_64.h               |    2 
+ arch/x86/include/asm/system.h                   |    2 
+ arch/x86/kernel/acpi/cstate.c                   |    9 +
+ arch/x86/kernel/acpi/sleep.c                    |    2 
+ arch/x86/kernel/apic/apic.c                     |    2 
+ arch/x86/kernel/hpet.c                          |    2 
+ arch/x86/kernel/pci-calgary_64.c                |   17 +-
+ arch/x86/kernel/traps.c                         |   11 +
+ arch/x86/kvm/mmu.c                              |    5 
+ arch/x86/kvm/svm.c                              |   96 ++++++++++++++
+ arch/x86/power/cpu.c                            |    4 
+ block/cfq-iosched.c                             |   13 +
+ drivers/acpi/processor_idle.c                   |    2 
+ drivers/acpi/sleep.c                            |  157 ------------------------
+ drivers/ata/ahci.c                              |   10 +
+ drivers/ata/ata_generic.c                       |    6 
+ drivers/base/firmware_class.c                   |   26 +++
+ drivers/char/agp/amd64-agp.c                    |   27 ++--
+ drivers/char/tpm/tpm.h                          |    1 
+ drivers/char/tpm/tpm_tis.c                      |    9 +
+ drivers/cpufreq/cpufreq.c                       |   11 -
+ drivers/edac/Kconfig                            |    2 
+ drivers/edac/amd64_edac.c                       |   24 +--
+ drivers/gpu/drm/i915/i915_drv.c                 |    1 
+ drivers/gpu/drm/i915/i915_gem.c                 |   13 +
+ drivers/gpu/drm/i915/i915_reg.h                 |   64 +++++++++
+ drivers/gpu/drm/i915/intel_display.c            |    4 
+ drivers/gpu/drm/radeon/r100.c                   |   61 +++++----
+ drivers/gpu/drm/radeon/r200.c                   |    5 
+ drivers/gpu/drm/radeon/r300.c                   |    5 
+ drivers/gpu/drm/radeon/radeon_atombios.c        |   20 ++-
+ drivers/gpu/drm/radeon/radeon_connectors.c      |   27 +---
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    1 
+ drivers/gpu/drm/radeon/radeon_legacy_tv.c       |    4 
+ drivers/hwmon/coretemp.c                        |   32 ++++
+ drivers/hwmon/it87.c                            |   22 +++
+ drivers/hwmon/k10temp.c                         |   14 +-
+ drivers/hwmon/k8temp.c                          |   12 +
+ drivers/ide/cmd640.c                            |    6 
+ drivers/ide/ide-taskfile.c                      |    6 
+ drivers/infiniband/ulp/ipoib/ipoib_main.c       |    4 
+ drivers/input/keyboard/twl4030_keypad.c         |   17 +-
+ drivers/input/serio/i8042-x86ia64io.h           |    7 +
+ drivers/md/raid10.c                             |   12 -
+ drivers/media/dvb/dvb-core/dvb_net.c            |   12 +
+ drivers/media/dvb/ttpci/Kconfig                 |    5 
+ drivers/media/video/cx23885/cx23885-i2c.c       |   12 +
+ drivers/media/video/cx88/cx88-i2c.c             |   16 ++
+ drivers/media/video/uvc/uvc_driver.c            |   30 ++++
+ drivers/media/video/uvc/uvcvideo.h              |    7 -
+ drivers/mmc/host/sdhci-s3c.c                    |   20 +++
+ drivers/net/3c503.c                             |   42 ++++--
+ drivers/net/cpmac.c                             |    3 
+ drivers/net/cxgb3/ael1002.c                     |    2 
+ drivers/net/dm9000.c                            |   38 ++++-
+ drivers/net/forcedeth.c                         |    2 
+ drivers/net/r8169.c                             |   11 +
+ drivers/net/sky2.c                              |   19 ++
+ drivers/net/usb/pegasus.h                       |    2 
+ drivers/net/veth.c                              |    1 
+ drivers/net/wireless/ath/ath5k/attach.c         |    1 
+ drivers/net/wireless/ath/ath5k/base.c           |    7 -
+ drivers/net/wireless/ath/ath9k/initvals.h       |    8 -
+ drivers/net/wireless/hostap/hostap_cs.c         |   15 +-
+ drivers/net/wireless/hostap/hostap_hw.c         |   13 +
+ drivers/net/wireless/hostap/hostap_wlan.h       |    2 
+ drivers/net/wireless/iwlwifi/iwl-scan.c         |    1 
+ drivers/net/wireless/iwlwifi/iwl-tx.c           |    5 
+ drivers/net/wireless/libertas/if_sdio.c         |   22 +++
+ drivers/net/wireless/p54/p54pci.c               |    2 
+ drivers/rtc/rtc-ds1307.c                        |    4 
+ drivers/scsi/aacraid/commctrl.c                 |    4 
+ drivers/serial/cpm_uart/cpm_uart_core.c         |  143 ++++++++++++---------
+ drivers/spi/spi_mpc8xxx.c                       |   22 ---
+ drivers/ssb/driver_chipcommon.c                 |    3 
+ drivers/ssb/driver_chipcommon_pmu.c             |   17 +-
+ drivers/ssb/pci.c                               |   46 ++++++-
+ drivers/ssb/sprom.c                             |   15 ++
+ drivers/staging/rtl8192su/r8192U_core.c         |    1 
+ drivers/usb/core/driver.c                       |   15 --
+ drivers/usb/core/quirks.c                       |    7 +
+ drivers/usb/gadget/u_serial.c                   |   16 --
+ drivers/usb/host/ehci-mxc.c                     |   13 +
+ drivers/usb/misc/sisusbvga/sisusb.c             |    5 
+ drivers/usb/serial/ftdi_sio.c                   |    9 +
+ drivers/usb/serial/ftdi_sio_ids.h               |   15 ++
+ drivers/usb/serial/option.c                     |    4 
+ drivers/usb/serial/sierra.c                     |    1 
+ fs/btrfs/ioctl.c                                |    4 
+ fs/cifs/cifsfs.c                                |    6 
+ fs/cifs/dns_resolve.c                           |   69 ++++++++++
+ fs/cifs/dns_resolve.h                           |    4 
+ fs/cifs/inode.c                                 |    4 
+ fs/cifs/sess.c                                  |   10 -
+ fs/ecryptfs/messaging.c                         |   17 +-
+ fs/nfs/nfs4xdr.c                                |    4 
+ fs/nfs/super.c                                  |   22 ++-
+ include/acpi/processor.h                        |    3 
+ include/linux/acpi.h                            |    1 
+ include/linux/ethtool.h                         |    2 
+ include/linux/fb.h                              |    4 
+ include/linux/firmware.h                        |    1 
+ include/linux/ieee80211.h                       |    2 
+ include/linux/mmc/sdio.h                        |    2 
+ include/linux/pci_ids.h                         |    1 
+ include/linux/ssb/ssb.h                         |    1 
+ include/linux/ssb/ssb_driver_chipcommon.h       |    2 
+ include/linux/ssb/ssb_regs.h                    |    3 
+ include/math-emu/op-common.h                    |    2 
+ include/net/sock.h                              |    7 -
+ kernel/futex.c                                  |   17 --
+ kernel/irq/manage.c                             |    3 
+ kernel/module.c                                 |    4 
+ kernel/sched.c                                  |    9 -
+ net/bridge/br_fdb.c                             |    6 
+ net/core/dev.c                                  |   17 +-
+ net/core/ethtool.c                              |   43 ++++--
+ net/core/neighbour.c                            |    5 
+ net/core/skbuff.c                               |    1 
+ net/dccp/input.c                                |    6 
+ net/ipv4/arp.c                                  |    6 
+ net/ipv4/syncookies.c                           |    2 
+ net/ipv4/tcp_output.c                           |   12 +
+ net/ipv6/af_inet6.c                             |    2 
+ net/ipv6/ndisc.c                                |    2 
+ net/ipv6/netfilter/ip6t_REJECT.c                |    6 
+ net/llc/llc_sap.c                               |    2 
+ net/mac80211/mlme.c                             |   17 +-
+ net/mac80211/rx.c                               |    5 
+ net/mac80211/scan.c                             |   21 +--
+ net/netfilter/ipvs/ip_vs_conn.c                 |    4 
+ net/sunrpc/xprtsock.c                           |   38 +++--
+ scripts/mod/modpost.c                           |    2 
+ sound/pci/echoaudio/echoaudio.c                 |    4 
+ sound/pci/hda/patch_realtek.c                   |    1 
+ sound/soc/codecs/wm8776.c                       |    1 
+ tools/perf/util/callchain.h                     |    3 
+ virt/kvm/ioapic.c                               |    3 
+ 152 files changed, 1298 insertions(+), 638 deletions(-)
+
+Adam Jackson (1):
+      drm/i915: Make G4X-style PLL search more permissive
+
+Alan Stern (1):
+      USB: obey the sysfs power/wakeup setting
+
+Alex Deucher (6):
+      drm/radeon/kms: fix shared ddc handling
+      drm/radeon/kms: fix shared ddc harder
+      drm/radeon/kms: add quirk for ASUS HD 3600 board
+      drm/radeon/kms: fix possible mis-detection of sideport on rs690/rs740
+      drm/radeon/kms: fix legacy LVDS dpms sequence
+      drm/radeon/kms: fix legacy tv-out pal mode
+
+Alex,Shi (1):
+      sched: Fix over-scheduling bug
+
+Andi Kleen (1):
+      x86: Fix vsyscall on gcc 4.5 with -Os
+
+Andre Osterhues (1):
+      ecryptfs: Bugfix for error related to ecryptfs_hash_buckets
+
+Andreas Herrmann (1):
+      hwmon: (k8temp) Fix temperature reporting for ASB1 processor revisions
+
+Andrej Gelenberg (1):
+      revert "[CPUFREQ] remove rwsem lock from CPUFREQ_GOV_STOP call (second call site)"
+
+Ang Way Chuang (1):
+      V4L/DVB: dvb-core: Fix ULE decapsulation bug
+
+Anton Vorontsov (3):
+      powerpc/cpm: Reintroduce global spi_pram struct (fixes build issue)
+      powerpc/cpm1: Fix build with various CONFIG_*_UCODE_PATCH combinations
+      edac: mpc85xx: fix MPC85xx dependency
+
+Avi Kivity (1):
+      KVM: MMU: Remove user access when allowing kernel access to gpte.w=0 page
+
+Ayaz Abdulla (1):
+      forcedeth: fix tx limit2 flag check
+
+Baruch Siach (1):
+      dm9000: fix "BUG: spinlock recursion"
+
+Ben Hutchings (5):
+      amd64-agp: Probe unknown AGP devices the right way
+      ethtool: Fix potential kernel buffer overflow in ETHTOOL_GRXCLSRLALL
+      ethtool: Fix potential user buffer overflow for ETHTOOL_{G, S}RXFH
+      V4L/DVB: budget: Select correct frontends
+      3c503: Fix IRQ probing
+
+Bob Copeland (1):
+      ath5k: initialize ah->ah_current_channel
+
+Borislav Petkov (1):
+      amd64_edac: Fix syndrome calculation on K8
+
+Brandon Philips (1):
+      sky2: enable rx/tx in sky2_phy_reinit()
+
+Catalin Marinas (1):
+      ARM: 6201/1: RealView: Do not use outer_sync() on ARM11MPCore boards with L220
+
+Christoph Fritz (1):
+      ssb: Handle Netbook devices where the SPROM address is changed
+
+Colin Leitner (1):
+      USB: ftdi_sio: support for Signalyzer tools based on FTDI chips
+
+Corey Minyard (1):
+      USB: FTDI: Add support for the RT System VX-7 radio programming cable
+
+Dan Rosenberg (1):
+      Btrfs: fix checks in BTRFS_IOC_CLONE_RANGE
+
+Daniel J Blueman (1):
+      i915: fix lock imbalance on error path...
+
+Daniel Mack (1):
+      libertas/sdio: 8686: set ECSI bit for 1-bit transfers
+
+Daniel Ritz (1):
+      V4L/DVB (13830): uvcvideo: add another YUYV format GUID for iSight cameras
+
+Darrick J. Wong (2):
+      x86, Calgary: Increase max PHB number
+      x86, Calgary: Limit the max PHB number to 256
+
+Dave Airlie (2):
+      fb: fix colliding defines for fb flags.
+      drm/i915: enable low power render writes on GEN3 hardware.
+
+David Howells (1):
+      CIFS: Fix a malicious redirect problem in the DNS lookup code
+
+David S. Miller (2):
+      ipv6: Fix default multicast hops setting.
+      net: Fix FDDI and TR config checks in ipv4 arp and LLC.
+
+David Woodhouse (1):
+      firmware_class: fix memory leak - free allocated pages
+
+Dennis Jansen (1):
+      USB: option: Add support for AMOI Skypephone S2
+
+Dmitry Torokhov (2):
+      Input: twl40300-keypad - fix handling of "all ground" rows
+      Input: RX51 keymap - fix recent compile breakage
+
+Dongdong Deng (1):
+      serial: cpm_uart: implement the cpm_uart_early_write() function for console poll
+
+Doug Kehn (1):
+      net/core: neighbour update Oops
+
+Eric Dumazet (4):
+      tcp: tcp_synack_options() fix
+      tcp: use correct net ns in cookie_v4_check()
+      veth: Dont kfree_skb() after dev_forward_skb()
+      netfilter: ip6t_REJECT: fix a dst leak in ipv6 REJECT
+
+Florian Fainelli (1):
+      cpmac: do not leak struct net_device on phy_connect errors
+
+Frederic Weisbecker (2):
+      perf: Resurrect flat callchains
+      x86: Send a SIGTRAP for user icebp traps
+
+Giuliano Pochini (1):
+      ALSA: Echoaudio, fix Guru Meditation #00000005.48454C50
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.33.7
+
+Herbert Xu (1):
+      gro: Fix bogus gso_size on the first fraglist entry
+
+Hiroshi Shimamoto (1):
+      cxgb3: fix linkup issue
+
+Ilpo Järvinen (1):
+      tcp: fix crash in tcp_xmit_retransmit_queue
+
+Jason Baron (1):
+      dynamic debug: move ddebug_remove_module() down into free_module()
+
+Javier Cardona (1):
+      mac80211: Handle mesh action frames in ieee80211_rx_h_action
+
+Jean Delvare (6):
+      hwmon: (k8temp) Bypass core swapping on single-core processors
+      hwmon: (k10temp) Do not blacklist known working CPU models
+      hwmon: (coretemp) Properly label the sensors
+      hwmon: (coretemp) Skip duplicate CPU entries
+      hwmon: (it87) Fix in7 on IT8720F
+      V4L/DVB: FusionHDTV: Use quick reads for I2C IR device probing
+
+Jeff Layton (2):
+      cifs: remove bogus first_time check in NTLMv2 session setup code
+      cifs: don't attempt busy-file rename unless it's in same directory
+
+Jeff Moyer (1):
+      cfq: Don't allow queue merges for queues that have no process references
+
+Joakim Tjernlund (1):
+      rtc: fix ds1388 time corruption
+
+Joerg Albert (1):
+      p54pci: add Symbol AP-300 minipci adapters pciid
+
+Joerg Roedel (2):
+      KVM: SVM: Handle MCEs early in the vmexit process
+      KVM: SVM: Implement workaround for Erratum 383
+
+Johannes Berg (1):
+      powerpc: Fix logic error in fixup_irqs
+
+John W. Linville (1):
+      iwlwifi: cancel scan watchdog in iwl_bg_abort_scan
+
+Jon Povey (2):
+      USB: g_serial: don't set low_latency flag
+      USB: g_serial: fix tty cleanup on unload
+
+Julia Lawall (1):
+      SCSI: aacraid: Eliminate use after free
+
+Kamal Mostafa (1):
+      Input: i8042 - add Gigabyte Spring Peak to dmi_noloop_table
+
+Keith Packard (1):
+      drm/i915: Define MI_ARB_STATE bits
+
+Krzysztof Halasa (1):
+      kbuild: Fix modpost segfault
+
+Laurent Pinchart (3):
+      V4L/DVB: uvcvideo: Add support for unbranded Arkmicro 18ec:3290 webcams
+      V4L/DVB: uvcvideo: Add support for Packard Bell EasyNote MX52 integrated webcam
+      V4L/DVB: uvcvideo: Add support for V4L2_PIX_FMT_Y16
+
+Len Brown (1):
+      ACPI: skip checking BM_STS if the BIOS doesn't ask for it
+
+Linus Torvalds (2):
+      drm/i915: fix hibernation since i915 self-reclaim fixes
+      drm/i915: add 'reclaimable' to i915 self-reclaimable page allocations
+
+Luis R. Rodriguez (1):
+      ath5k: drop warning on jumbo frames
+
+Luke Yelavich (1):
+      ALSA: hda - Add Macbook 5,2 quirk
+
+Marcelo Tosatti (2):
+      KVM: MMU: invalidate and flush on spte small->large page size change
+      KVM: read apic->irr with ioapic lock held
+
+Marek Szyprowski (1):
+      sdhci-s3c: add missing remove function
+
+Mark Brown (1):
+      ASoC: Remove duplicate AUX definition from WM8776
+
+Matthew Garrett (1):
+      ACPI: Unconditionally set SCI_EN on resume
+
+Michal Hocko (1):
+      futex: futex_find_get_task remove credentails check
+
+Mikael Pettersson (1):
+      math-emu: correct test for downshifting fraction in _FP_FROM_INT()
+
+Mikulas Patocka (1):
+      ide: Fix IDE taskfile with cfq scheduler
+
+Nicolas Pitre (1):
+      ARM: 6226/1: fix kprobe bug in ldr instruction emulation
+
+Oliver Neukum (2):
+      USB: sisusbvga: Fix for USB 3.0
+      USB: add quirk for Broadcom BT dongle
+
+Ondrej Zary (1):
+      PM / x86: Save/restore MISC_ENABLE register
+
+Or Gerlitz (1):
+      IPoIB: Fix world-writable child interface control sysfs attributes
+
+Paul Mortier (1):
+      USB: adds Artisman USB dongle to list of quirky devices
+
+Prasanna S. Panchamukhi (1):
+      md: raid10: Fix null pointer dereference in fix_read_error()
+
+Rajiv Andrade (2):
+      TPM: ReadPubEK output struct fix
+      tpm_tis: fix subsequent suspend failures
+
+Richard Airlie (1):
+      staging: rtl8192su: add Support for Belkin F5D8053 v6
+
+Rob Landley (1):
+      sparc: Fix use of uid16_t and gid16_t in asm/stat.h
+
+Roland Scheidegger (3):
+      drm/radeon/r200: handle more hw tex coord types
+      drm/radeon/r100/r200: fix calculation of compressed cube maps
+      drm/radeon/kms: CS checker texture fixes for r1xx/r2xx/r3xx
+
+Sergei Shtylyov (1):
+      cmd640: fix kernel oops in test_irq() method
+
+Shane McDonald (1):
+      MIPS FPU emulator: allow Cause bits of FCSR to be writeable by ctc1
+
+Shanyu Zhao (1):
+      iwlagn: verify flow id in compressed BA packet
+
+Stanislaw Gruszka (2):
+      mac80211: do not wip out old supported rates
+      mac80211: fix supported rates IE if AP doesn't give us it's rates
+
+Stefano Stabellini (1):
+      x86: Do not try to disable hpet if it hasn't been initialized before
+
+Sven Wegener (1):
+      ipvs: Add missing locking during connection table hashing and unhashing
+
+Tadashi Abe (1):
+      pegasus: fix USB device ID for ETX-US2
+
+Tejun Heo (1):
+      ahci,ata_generic: let ata_generic handle new MBP w/ MCP89
+
+Thomas Gleixner (1):
+      genirq: Deal with desc->set_type() changing desc->chip
+
+Tim Gardner (1):
+      hostap: Protect against initialization interrupt
+
+Timo Teräs (2):
+      r8169: fix random mdio_write failures
+      r8169: fix mdio_read and update mdio_write according to hw specs
+
+Tom Herbert (1):
+      net: fix problem in reading sock TX queue
+
+Tony Luck (1):
+      Fix spinaphore down_spin()
+
+Trond Myklebust (3):
+      NFSv4: Fix an embarassing typo in encode_attrs()
+      NFSv4: Ensure that /proc/self/mountinfo displays the minor version number
+      SUNRPC: Fix a re-entrancy bug in xs_tcp_read_calldir()
+
+Vivek Natarajan (1):
+      ath9k: Avoid corrupt frames being forwarded to mac80211.
+
+Will Deacon (1):
+      sched: Prevent compiler from optimising the sched_avg_update() loop
+
+Wolfram Sang (1):
+      USB: ehci-mxc: bail out on transceiver problems
+
+Yinghai Lu (1):
+      x86: Fix x2apic preenabled system with kexec
+
+Yoichi Yuasa (1):
+      net/dccp: expansion of error code size
+
+august huber (1):
+      USB: Add PID for Sierra 250U to drivers/usb/serial/sierra.c
+
+stephen hemminger (2):
+      bridge: fdb cleanup runs too often
+      ipv6: fix NULL reference in proxy neighbor discovery
+
+Ömer Sezgin Ugurlu (1):
+      USB: option: add support for 1da5:4518
+
