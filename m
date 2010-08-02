@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab0HBCd3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Aug 2010 22:33:29 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:59188 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751827Ab0HBCd2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Aug 2010 22:33:28 -0400
-Date: Mon, 2 Aug 2010 12:33:22 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.35
-Message-ID: <20100802023322.GA19164@dastard>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752068Ab0HBCmG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Aug 2010 22:42:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20615 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751827Ab0HBCmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Aug 2010 22:42:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,301,1278313200"; 
+   d="scan'208";a="541017502"
+Subject: Re: EFI runtime-services on x86_64
+From: Huang Ying <ying.huang@intel.com>
+To: "Tang, Feng" <feng.tang@intel.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100802103535.6442ab49@feng-i7>
+References: <201007301458.50263.bjorn.helgaas@hp.com>
+	 <20100802103535.6442ab49@feng-i7>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Aug 2010 10:42:00 +0800
+Message-ID: <1280716920.2771.1519.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 04:52:42PM -0700, Linus Torvalds wrote:
-> On a slightly happier note: one thing I do hope we can merge in the
-> upcoming merge window is Nick Piggin's cool VFS scalability series.
-> I've been using it on my own machine, and gone through all the commits
-> (not that I shouldn't go through some of them some more), and am
-> personally really excited about it. It's seldom we see major
-> performance improvements in core code that are quite that noticeable,
-> and Nick's whole RCU pathname lookup in particular just tickles me
-> pink.
+Hi, Bjorn,
 
-There hasn't been nearly enough review or testing of this patch
-series yet.  Before a merge, it needs to be split up in smaller,
-more digestable chunks for more comprehensive review, regression
-testing and behavioural analysis.
+On Mon, 2010-08-02 at 10:35 +0800, Tang, Feng wrote:
+> Hi Bjorn,
+> 
+> On Sat, 31 Jul 2010 04:58:48 +0800
+> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> 
+> > Hello Feng,
+> > 
+> > Can you educate me about your commit 772be899bc, "86: Make EFI RTC
+> > function depend on 32bit again"?
+> > 
+> > It adds "#ifdef CONFIG_X86_32" to avoid using efi_get_time() and
+> > efi_set_rtc_mmss(), but there's no explanation of *why* those services
+> > only work on 32-bit.
+> > 
+> > Is this an EFI spec limitation?  Do the other EFI runtime services
+> > work on 64-bit, since you didn't touch them?  Or do we just not use
+> > any of the others?
+> > 
+> 
+> Commit 772be899bc, "86: Make EFI RTC function depend on 32bit again" is
+> a regression fix for 7bd867d "x86: Move get/set_wallclock to x86_platform_ops".
+> These 2 commits just abstract the rtc service for legacy x86 PC/EFI/Virtualiation
+> kernel, and has no functional change to existing code.
+> 
+> I'm not familiar with EFI, but my understanding is current EFI code in 
+> kernel only provides the get/set_time service for x86_32 platform.
 
-There's probably only a handful of people who have done any testing
-on the patchset so far, and given the widespread changes it needs a
-lot more testing than this before we should consider merging any of
-it.
+I think get/set_time service should have worked on x86_64 too. Just
+lacks proper debugging/testing for recent kernels.
 
-I really want to see this move forward too, but it changes lots of
-critical infrastructure in subtle ways and so, IMO, this is not
-a patchset we should be gung-ho about.
+Best Regards,
+Huang Ying
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
