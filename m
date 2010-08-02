@@ -1,127 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab0HBJIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 05:08:22 -0400
-Received: from mail.lang.hm ([64.81.33.126]:60517 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab0HBJIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 05:08:21 -0400
-Date: Mon, 2 Aug 2010 02:06:55 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Florian Mickler <florian@mickler.org>
-cc: Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
-        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100802092347.692dac32@schatten.dmk.lab>
-Message-ID: <alpine.DEB.2.00.1008020200450.25170@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100731215214.2543c07e@infradead.org> <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801204026.GH31324@thunk.org>
- <20100802030304.GU2470@linux.vnet.ibm.com> <20100801210548.23f77ff6@infradead.org> <alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm> <20100802074429.73a9dfd9@schatten.dmk.lab> <alpine.DEB.2.00.1008012303160.25170@asgard.lang.hm> <20100802084003.1c4c2bdb@schatten.dmk.lab>
- <20100802085332.23dd22f6@schatten.dmk.lab> <alpine.DEB.2.00.1008012355210.25170@asgard.lang.hm> <20100802092347.692dac32@schatten.dmk.lab>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752896Ab0HBJOh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 05:14:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51532 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab0HBJOg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 05:14:36 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        lm-sensors@lm-sensors.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 1/2] mfd/mc13783: new function exposing flags
+Date: Mon,  2 Aug 2010 11:14:17 +0200
+Message-Id: <1280740459-11500-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010, Florian Mickler wrote:
+This is needed for the mc13783-adc driver to decide if a touch screen is
+connected.  If so some channels are not available as generic hwmon inputs.
 
-> On Mon, 2 Aug 2010 00:02:04 -0700 (PDT)
-> david@lang.hm wrote:
->
->> On Mon, 2 Aug 2010, Florian Mickler wrote:
->>
->>> On Mon, 2 Aug 2010 08:40:03 +0200
->>> Florian Mickler <florian@mickler.org> wrote:
->>>
->>>> On Sun, 1 Aug 2010 23:06:08 -0700 (PDT)
->>>> david@lang.hm wrote:
->>>>
->>>>> On Mon, 2 Aug 2010, Florian Mickler wrote:
->>>>>
->>>>>> On Sun, 1 Aug 2010 22:06:34 -0700 (PDT)
->>>>>> david@lang.hm wrote:
->>>>>>
->>>>>>> On Sun, 1 Aug 2010, Arjan van de Ven wrote:
->>>>>>>
->>>>>>>> I'm a little worried that this whole "I need to block suspend" is
->>>>>>>> temporary. Yes today there is silicon from ARM and Intel where suspend
->>>>>>>> is a heavy operation, yet at the same time it's not all THAT heavy
->>>>>>>> anymore.... at least on the Intel side it's good enough to use pretty
->>>>>>>> much all the time (when the screen is off for now, but that's a memory
->>>>>>>> controller issue more than anything else). I'm pretty sure the ARM guys
->>>>>>>> will not be far behind.
->>>>>>>
->>>>>>> remember that this 'block suspend' is really 'block overriding the fact
->>>>>>> that there are still runable processes and suspending anyway"
->>>>>>>
->>>>>>> having it labeled as 'suspend blocker' or even 'wakelock' makes it sound
->>>>>>> as if it blocks any attempt to suspend, and I'm not sure that's what's
->>>>>>> really intended. Itsounds like the normal syspend process would continue
->>>>>>> to work, just this 'ignore if these other apps are busy' mode of operation
->>>>>>> would not work.
->>>>>>>
->>>>>>> which makes me wonder, would it be possible to tell the normal idle
->>>>>>> detection mechanism to ignore specific processes when deciding if it
->>>>>>> should suspend or not? how about only considering processes in one cgroup
->>>>>>> when deciding to suspend and ignoring all others?
->>>>>>>
->>>>>>> David Lang
->>>>>>
->>>>>> We then get again to the "runnable tasks" problem that was
->>>>>> discussed earlier... the system get's "deadlock-prone" if a subset of
->>>>>> tasks is not run.
->>>>>> Interprocess dependencies are not so easy to get right in general.
->>>>>
->>>>> I'm not suggesting that you don't run the 'untrusted' tasks, just that you
->>>>> don't consider them when deciding if the system can suspend or not. if the
->>>>> system is awake, everything runs, if the system is idle (except for the
->>>>> activity of the 'untrusted' tasks) you suspend normally.
->>>>>
->>> b) you can't use cgroup for other purposes anymore. I.e. if you want to
->>> have 2 groups that each only have half of the memory available, how
->>> would you then integrate the cgroup-ignore-for-idle-approach with this?
->>
->> two answers to this
->>
->> 1. does this matter? do you really need to combine this 'suspend, even if
->> there are processes trying to run' with other cgroup limitations?
->>
->> 2. who says that this must be limited to one cgroup? a cgroup can have
->> several different flags/limits set on it, so why can't one of them be this
->> 'ignore for suspend' flag?
->>
->> these seem like simple issues, what I don't know is if it's possible for
->> the process that controlls suspend to follow such a flag without major
->> surgury on it's innards (if it can, this seems like a easy win, but I can
->> imagine internal designs where the software just knows that _something_ is
->> trying to run and would have a very hard time figuring out what)
->>
->> David Lang
->
-> Well, i fear it becomes some sort of parallel-tree structure...
-> If you want a cgroups-partitioning for one kind of attribute you now
-> need 2 containers for every possible stamping of that attribute... one
-> being flagged with 'ignore-for-suspend-decision' and one without that
-> flag.
-> Do you see what I'm getting at, or do I need more coffee and it is
-> irelevant to this concept?
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/mfd/mc13783-core.c  |    6 ++++++
+ include/linux/mfd/mc13783.h |    2 ++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-yes, it could mean a doubleing in the number of cgroups that you need on a 
-system. and if there are other features like this you can end up in a 
-geometric explosion in the number of cgroups.
+diff --git a/drivers/mfd/mc13783-core.c b/drivers/mfd/mc13783-core.c
+index ead84e4..a4fa191 100644
+--- a/drivers/mfd/mc13783-core.c
++++ b/drivers/mfd/mc13783-core.c
+@@ -226,6 +226,12 @@ int mc13783_reg_rmw(struct mc13783 *mc13783, unsigned int offset,
+ }
+ EXPORT_SYMBOL(mc13783_reg_rmw);
+ 
++int mc13783_get_flags(struct mc13783 *mc13783)
++{
++	return mc13783->flags;
++}
++EXPORT_SYMBOL(mc13783_get_flags);
++
+ int mc13783_irq_mask(struct mc13783 *mc13783, int irq)
+ {
+ 	int ret;
+diff --git a/include/linux/mfd/mc13783.h b/include/linux/mfd/mc13783.h
+index 4a894f6..0fa44fb 100644
+--- a/include/linux/mfd/mc13783.h
++++ b/include/linux/mfd/mc13783.h
+@@ -21,6 +21,8 @@ int mc13783_reg_write(struct mc13783 *mc13783, unsigned int offset, u32 val);
+ int mc13783_reg_rmw(struct mc13783 *mc13783, unsigned int offset,
+ 		u32 mask, u32 val);
+ 
++int mc13783_get_flags(struct mc13783 *mc13783);
++
+ int mc13783_irq_request(struct mc13783 *mc13783, int irq,
+ 		irq_handler_t handler, const char *name, void *dev);
+ int mc13783_irq_request_nounmask(struct mc13783 *mc13783, int irq,
+-- 
+1.7.1
 
-in practice I question if there is likely to be a need for this sort of 
-thing on a system that's complex enough to use cgroups for other purposes.
-
-in particular, in this case the 'ignore for syspend' flag is not going to 
-be set for programs that are trusted to be well behaved. Such programs are 
-unlikely to be placed under other restraints (because they _are_ trusted 
-to be well behaved)
-
-David Lang
