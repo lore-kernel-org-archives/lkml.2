@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab0HBTfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 15:35:21 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48202 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab0HBTfU convert rfc822-to-8bit (ORCPT
+	id S1754614Ab0HBThe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 15:37:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32672 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab0HBThd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 15:35:20 -0400
-Subject: Re: periods and deadlines in SCHED_DEADLINE
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bjoern Brandenburg <bbb@email.unc.edu>
-Cc: Harald Gustafsson <hgu1972@gmail.com>, Raistlin <raistlin@linux.it>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Song Yuan <song.yuan@ericsson.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+	Mon, 2 Aug 2010 15:37:33 -0400
+Message-ID: <4C571DF2.5080100@kernel.org>
+Date: Mon, 02 Aug 2010 12:35:14 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <lucabe72@email.it>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>, bastoni@cs.unc.edu,
-        Giuseppe Lipari <lipari@retis.sssup.it>
-In-Reply-To: <B4F5A462-AE78-4BF0-B66E-4A5949A4A519@email.unc.edu>
-References: <1278682707.6083.227.camel@Palantir>
-	 <1278685800.1900.212.camel@laptop>
-	 <AANLkTilufL0jgoqQLKjxbu0egN2l6lCkF9JPCxBfV3Gz@mail.gmail.com>
-	 <1278786710.1998.63.camel@laptop>
-	 <AANLkTin0sj6ONjNcwX6IJHSgi7gKnCzkvD_jaLyOFNjs@mail.gmail.com>
-	 <B4F5A462-AE78-4BF0-B66E-4A5949A4A519@email.unc.edu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 02 Aug 2010 21:34:58 +0200
-Message-ID: <1280777698.1923.345.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 2/2] x86: more early console output from	compressed/misc.c
+References: <4C56701B.1030000@kernel.org> <4C5670DA.2080703@zytor.com> <4C5680D2.4020302@kernel.org> <4C568D2B.205@kernel.org> <4C568D6F.3050004@kernel.org> <20100802174916.GD5544@lenovo> <4C5710C1.8020809@zytor.com> <20100802185410.GE5544@lenovo> <4C57153F.7030107@zytor.com>
+In-Reply-To: <4C57153F.7030107@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C571E4D.01D2,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-11 at 09:32 +0200, Bjoern Brandenburg wrote:
-
-> Trying to infer whether a task is "hard" or "soft" from task
-> parameters is not a good idea, IMO. It's much better to make this an
-> explicit part of the task model that is configured via sched_setparam.
-> By default, tasks should be marked "soft" (this leaves more wiggle
-> room to the kernel); users who care can change the flag to "hard".
-
-I think we're in violent agreement here ;-) and I was convinced that was
-what we were talking about. The question was only how to represent that
-in the sched_param_ex structure, the options were:
-
- struct sched_param_ex params;
-
- params.flags |= SF_SOFT;
- sched_setscheduler_ex( .policy = SCHED_DEADLINE, .param = &params);
-
-vs
-
- sched_setscheduler_ex( .policy = SCHED_DEADLINE_{SOFT,HARD}, 
-                        .param = &params);
-
-> Taking a step back, I think the problem here is that we are trying to
-> shove too many concepts and properties into a single scheduler. Hard
-> (no tardiness) is different from soft (bounded tardiness) is different
-> from global is different from partitioned.
+On 08/02/2010 11:58 AM, H. Peter Anvin wrote:
+> On 08/02/2010 11:54 AM, Cyrill Gorcunov wrote:
+>>
+>> ok, fair enough, I just don't like nesting *.c inclusion you know but seems
+>> it would be the only more-less clean way here.
+>>
 > 
-> From my point of view, it makes no sense to support hard deadlines
-> under G-EDF (this is backed up by our schedulability studies [1]).
-> Hard deadlines are best served by a P-EDF implementation (that only
-> migrates on task creation/admission).
+> I don't mind it *as long as* the including file contains nothing but a
+> single #include statement -- which is just another way to say "the same
+> thing as this other file".  Don't combine files.
 > 
-The problem is more that we need to support things like cpu affinity and
-cpusets within the context of a 'global' scheduler.
+> Look at most of the .c files in arch/x86/kernel/acpi/realmode/ for an
+> example.
 
-Using cpusets we can partition the 'load-balancer' and create clusters
-(root-domains in linux scheduler speak).
+it seems I can not global variables in arch/x86/boot/compressed/misc.c
 
-Using cpu affinity we can limit tasks to a subset of their cluster's
-cpus.
+and misc.c already include some decompress .c like
 
-Esp. the latter is very hard to do, and I think we can get away with
-only allowing a single cpu or the full cluster (its a new policy, so
-there is no existing userspace to break).
+#ifdef CONFIG_KERNEL_GZIP
+#include "../../../../lib/decompress_inflate.c"
+#endif
 
-This ends up meaning we need to support both P-EDF and G-EDF for soft,
-and since we want to re-use pretty much all the code and only have a
-different admission test for hard (initially), it would end up also
-being P/G-EDF for hard (even though as you rightly point out, hard G-EDF
-is pretty pointless -- but since the policy doesn't promise EDF, we
-could later improve it to be PD^2 or whatever, at which point global
-hard does start to make sense).
+#ifdef CONFIG_KERNEL_BZIP2
+#include "../../../../lib/decompress_bunzip2.c"
+#endif
 
-(which I guess would suggest we use different policies instead of a
-flag, since that would make most sense if we end up replacing the hard
-part with another policy)
+#ifdef CONFIG_KERNEL_LZMA
+#include "../../../../lib/decompress_unlzma.c"
+#endif
 
-So what I want to have is a sporadic task scheduler, not an EDF
-scheduler (hence also the request to s/SCHED_EDF/SCHED_DEADLINE/ --
-avoiding the obvious SCHED_SPORADIC in order to avoid confusion with the
-POSIX thing).
+#ifdef CONFIG_KERNEL_LZO
+#include "../../../../lib/decompress_unlzo.c"
+#endif
 
-EDF is just the easiest of the many different ways to schedule a
-sporadic task set.
 
+this patch change to misc.c are following lines:
+
+#define BOOT_BOOT_H
+#include "../isdigit.h"
+#include "../string.c"
+#include "../printf.c"
+
+...
+
+static unsigned long fs;
+static inline void set_fs(unsigned long seg)
+{
+        fs = seg << 4;  /* shift it back */
+}
+typedef unsigned long addr_t;
+static inline char rdfs8(addr_t addr)
+{
+        return *((char *)(fs + addr));
+}
+#include "../cmdline.c"
+static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
+{
+        return __cmdline_find_option(real_mode->hdr.cmd_line_ptr, option, buffer, bufsize);
+}
+static inline int cmdline_find_option_bool(const char *option)
+{
+        return __cmdline_find_option_bool(real_mode->hdr.cmd_line_ptr, option);
+}
+static int early_serial_base;
+#include "../early_serial_console.c"
+
+or put them in another file?
+
+Thanks
+
+Yinghai
+
+Yinghai
