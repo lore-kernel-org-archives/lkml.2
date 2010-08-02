@@ -1,214 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab0HBSXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 14:23:20 -0400
-Received: from toccata.ens-lyon.org ([140.77.166.68]:57548 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab0HBSXT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 14:23:19 -0400
-X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Aug 2010 14:23:19 EDT
-Date: Mon, 2 Aug 2010 20:14:49 +0200
-From: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: PC Beeps not working with HDA Intel module
-Message-ID: <20100802181449.GA3071@pema>
-References: <AANLkTild_NZP5B33ITuaS67bvuREiukbQCtcguKEO4XG@mail.gmail.com>
+	id S1754258Ab0HBSYu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 14:24:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41215 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751881Ab0HBSYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 14:24:49 -0400
+Message-ID: <4C570CDD.5070304@zytor.com>
+Date: Mon, 02 Aug 2010 11:22:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="NzB8fVQJ5HfG6fxh"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTild_NZP5B33ITuaS67bvuREiukbQCtcguKEO4XG@mail.gmail.com>
+To: Konrad Rzeszutek <konrad@hera.kernel.org>
+CC: torvalds@linux-foundation.org, James.Bottomley@suse.de,
+        linux-kernel@vger.kernel.org, pjones@redhat.com, lenb@kernel.org,
+        michaelc@cs.wisc.edu
+Subject: Re: [GIT PULL] iBFT features for v2.6.36
+References: <20100802143642.GA15428@hera.kernel.org>
+In-Reply-To: <20100802143642.GA15428@hera.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/02/2010 07:36 AM, Konrad Rzeszutek wrote:
+> What is iBFT?
+> The iBFT is an equivalent to the Boot Flag, except that its geared
+> towards iSCSI and hence requires much more information (such as
+> the IP of target, passwords, which device to login, etc). iBFT
+> is a data structure populated by the BIOS or the NIC to contain this
+> so that the OS can read it and login to the iSCSI and present
+> the boot device to the initrd for mounting / FS.
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+I really don't see iBFT as equivalent to the boot flag at all.  The boot
+flag returns the status of the previous boot attempt; iBFT contains
+information about where to find the current root.
 
-Dear Daniel,
+Unfortunately, we're increasingly seeing a proliferation of this kind of
+nonstandard ACPI tables, because it is difficult to add data to ACPI at
+runtime.  gPXE creates an aBFT table for AoE and sBFT for SRP, and
+memdisk uses mBFT for MEMDISK at the moment.
 
-Many thanks for your helpful e-mail and sorry for the delay, it was hard
-to find the time for testing.
+It would be good to have some kind of common structure framework for these.
 
-Daniel J Blueman (2010/07/05 12:20 +0100):
-> 
-> On Jun 26, 12:40 pm, Shérab <Sebastien.Hinderer@ens-lyon.org> wrote:
-> > Dear all,
-> >
-> > The problem is on a computer with an HDA Intel sound card, Intel G45
-> > DEVCTG chip and appears will all version s of the kernel.
-> >
-> > Running e.g.
-> > beep 440
-> > produces a beep whose audible frequency is very low, definitely not 440
-> > Hz.
-> >
-> > However, it is worth notiing that grub is able to produce a beep of the
-> > right frequency at boot time.
-> >
-> > Can this problem be fixed ?
-> >
-> > Should you need any additional bit of information or testing, please ask.
-> 
-> I was finding the same with my Dell Studio 1557.
-
-Good to know one is not alone.
-
-> It may be worth using some printk calls [1] showing what frequency
-> value is sent to the codec,
-
-I applied your patch on top of
-9fe6206f400646a2322096b56c59891d530e8d51
-
-When a console bell is produced, one gets:
-HDA beep: linear value 241
-
-And running the command
-beep 440
-produces the following output:
-HDA beep: linear value 248
-
-Aso, the printk you added saying "printk(KERN_ERR "HDA beep: standard
-value" never appears in the logs.
-Was this result predictable ?
-I thought that to each standard value one linear value would correspond,
-or something like that.
-
-> then checking with the codec datasheet -
-> we'll need to know which one, eg from 'dmesg' or 'alsa-info.sh' (from
-> http://www.alsa-project.org/alsa-info.sh).
-
-I attach the bzipped alsa-info.txt, hope this will help you guys.
-
-> We'll probably need to check the configuration registers of the beep
-> widget to check what divider it's using...
-
-That I don't know how to do, sorry. Any clue would be warmly
-appreciated.
-
-Thanks again,
-Shérab.
-
---NzB8fVQJ5HfG6fxh
-Content-Type: application/octet-stream
-Content-Disposition: attachment; filename="alsa-info.txt.bz2"
-Content-Transfer-Encoding: base64
-
-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
-RJL71OsB7hTKdI//F3JFOFCQVBA1IA==
-
---NzB8fVQJ5HfG6fxh--
+	-hpa
