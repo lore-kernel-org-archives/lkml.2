@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab0HBUet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 16:34:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44789 "EHLO mail.zytor.com"
+	id S1755306Ab0HBUgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 16:36:18 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:56374 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754873Ab0HBUes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 16:34:48 -0400
-Message-ID: <4C572BA1.3060206@zytor.com>
-Date: Mon, 02 Aug 2010 13:33:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1752388Ab0HBUgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 16:36:16 -0400
+Date: Mon, 2 Aug 2010 13:36:09 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, stern@rowland.harvard.edu, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100802203609.GG2405@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100801154708.19817b75@infradead.org>
+ <20100802011006.GS2470@linux.vnet.ibm.com>
+ <201008021552.20505.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Thiago Farina <tfransosi@gmail.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86, setup: reorgize the early_console_setup
-References: <4C56701B.1030000@kernel.org>	<AANLkTi=r-vt=Pr+xchiR+s12RDU9xQbXnmCB4pTJcc2_@mail.gmail.com>	<4C570DFE.503@zytor.com> <AANLkTinWQ8Td6LcUGn3RmAyDuL0o35-YtjFtpNwJOb3M@mail.gmail.com>
-In-Reply-To: <AANLkTinWQ8Td6LcUGn3RmAyDuL0o35-YtjFtpNwJOb3M@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008021552.20505.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 12:09 PM, Thiago Farina wrote:
-> On Mon, Aug 2, 2010 at 3:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 08/02/2010 10:56 AM, Thiago Farina wrote:
->>>
->>> These to functions above can be fairly simplified by writting as:
->>>
->>> static bool inline is_hex_digit(int c) {
->>>   return (c >= '0' && c <= '9') ||
->>>             (c >= 'A' && c <= 'F') ||
->>>             (c >= 'a' && c <= 'f');
->>> }
->>>
->>
->> a) You lose the isdigit() functionality, which is useful on its own.
->> b) Does this enahance readability in any way?
->> c) Your proposed renaming is nonstandard.
->>
+On Mon, Aug 02, 2010 at 03:52:20PM +0200, Rafael J. Wysocki wrote:
+> On Monday, August 02, 2010, Paul E. McKenney wrote:
+> > On Sun, Aug 01, 2010 at 03:47:08PM -0700, Arjan van de Ven wrote:
+> > > On Sun, 1 Aug 2010 12:12:28 -0700
+> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> ...
+> > > Another one: freezing whole cgroups..... we have that today. it
+> > > actually works quite well.... of course the hard part is the decision
+> > > what to put in which cgroup, and at what frequency and duration you let
+> > > cgroups run.
+> > 
+> > Indeed, the Android guys seemed to be quite excited by cgroup freezing
+> > until they thought about the application-classification problem.
+> > Seems like it should be easy for some types of applications, but I do
+> > admit that apps can have non-trivial and non-obvious dependencies.
 > 
-> What about this instead?
-> 
-> static inline bool isxdigit(int ch) {
->   return (isdigit(ch) || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f');
-> }
-> 
->> As such, I don't think this is a good idea.
->>
+> This isn't more difficult than deciding which applications will be allowed to
+> use wakelocks (in the wakelocks world).  It actually seems to be pretty much
+> equivalent to me. :-)
 
-Again, I don't think it adds any readability; the compiler will produce
-the same code.
+If I understand correctly, the problem they were concerned about was
+instead "given that a certain set of apps are permitted to use wakelocks,
+which of the other apps can safely be frozen when the display blanks
+itself."
 
-	-hpa
+> > > on the suspend blockers for drivers; the linux device runtime PM is
+> > > effectively doing the same things; it allows drivers to suspend/resume
+> > > individually (with a very nice API/programming model I should say) based
+> > > on usage. And it works on a tree level, so that it's relatively easy
+> > > to do things like "I want to go to <this magic deep idle state>, but
+> > > only if <this set of devices is suspended already>". This is obviously
+> > > an important functionality for all low power devices, ARM or x86. 
+> > > Suspend blockers had this functionality as part of what it did (they do
+> > > more obviously) but I'd wager that the current Linux infrastructure is
+> > > outright nicer. 
+> > 
+> > This is what Rafael has been working on?
+> 
+> If you mean the runtime PM framework, then yes, I've been working on it.
+> 
+> > Of course, the Android guys also want to pay attention to which apps
+> > are running as well as to the state of devices on the system.
+> 
+> In fact the runtime PM framework is also important to Android, because it
+> can be used in there, for example, to implement the "early suspend" thing
+> I referred to in one of my previous messages in this thread.
+
+Now we just need to convince the Android guys of that.  ;-)
+
+							Thanx, Paul
