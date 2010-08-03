@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab0HCNxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:53:14 -0400
-Received: from mx4.sophos.com ([74.202.89.161]:43070 "EHLO mx4.sophos.com"
+	id S1756715Ab0HCNyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:54:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12105 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755949Ab0HCNxN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:53:13 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.35 hangs on early boot in KVM
-Date: Tue, 3 Aug 2010 14:53:08 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-References: <201008031028.57263.tvrtko.ursulin@sophos.com> <201008031045.02979.tvrtko.ursulin@sophos.com>
-In-Reply-To: <201008031045.02979.tvrtko.ursulin@sophos.com>
+	id S1755865Ab0HCNyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 09:54:36 -0400
+Date: Tue, 3 Aug 2010 10:54:20 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        kernel-team@lists.ubuntu.com, Will Deacon <Will.Deacon@arm.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>
+Subject: Re: [PATCH 0/2] perf: symbol offset breakage with separated debug
+Message-ID: <20100803135420.GV29507@ghostprotocols.net>
+References: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
 MIME-Version: 1.0
-Message-ID: <201008031453.09023.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 03/08/2010 14:53:10,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 03/08/2010 14:53:11,
-	Serialize complete at 03/08/2010 14:53:11
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 Aug 2010 10:45:02 Tvrtko Ursulin wrote:
-> On Tuesday 03 Aug 2010 10:28:56 Tvrtko Ursulin wrote:
-> > I have basically built 2.6.35 with make oldconfig from a working 2.6.34.
-> > Latter works fine in kvm while 2.6.35 hangs very early. I see nothing
-> > after grub (have early printk and verbose bootup enabled), just a
-> > blinking VGA cursor and CPU at 100%.
-> >
-> > Config is attached. Any ideas what options I could toggle to debug this?
-> > I tried gzip instead of lzma but it isn't that.
->
-> Just discovered I did not removed the quiet boot option, what I thought I
-> have.. with that removed I see that it hangs just after "Booting the
-> kernel." line.
+Em Tue, Aug 03, 2010 at 12:48:34PM +0100, Dave Martin escreveu:
+> Hi all,
+> 
+> I've hit some problems in trying to get perf record/report to
+> work correctly on systems with separated debug images (Ubuntu,
+> in particular).  I worked on some patches to ensure that
+> separate debug images do actually get loaded, when present --
+> these commits have now been merged in linux-2.6-tip/master.
+> (See below for a list of the commits.)
+> 
+> Now that these are in place, I'm observing a new problem which
+> can mess up symbol locations -- though I think there might be a
+> practical workaround, I can't see a trivial solution, so I'm
+> keen to hear if anyone has any ideas.
+> 
+> 
+> The problem:
+> 
+> perf makes some incorrect assumptions, which mean that the
+> symbol locations seen by perf report and friends can be
+> incorrect.
+> 
+> My analysis:
+> 
+> 	a) perf represents symbols as offsets from the start of
+> 		the mmap'd code region which contains each
+> 		symbol.
 
-Bisection so far:
+The symbol library in perf uses separate map_ip and unmap_ip to cope
+with those, covering things like prelinked binaries, the kernel with its
+absolute addresses, kexec cases where we capture a reference relocation
+symbol so that we can adjust later when using the unrelocated vmlinux,
+etc.
+ 
+> 	b) For shared libs (ET_DYN objects), the desired offset
+> 		is (usually) equal to the VMA of each given
 
-good: 3de29cab1f8d62db557a4afed0fb17eebfe64438
-bad: 537b60d17894b7c19a6060feae40299d7109d6e7
+VMA here stands for Virtual Memory Address, not Virtual Memory Area
+where a map is loaded, right? I guess so, but trying to get to common
+ground.
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+> 		symbol in the image.  Perf assumes that these
+> 		offsets are always equal, and this normally
+> 		works.
+> 
+> 		Atypical link configurations could cause this
+
+Which ones? We need to detect those and act accordingly, doing
+adjustments at load time or by using a separate map_ip/unmap_ip pair of
+functions in struct map.
+
+I'll continue reading your patches, the first one probably fixes a bug,
+but wonder if you looked at the struct map->{map_ip,unmap_ip} routines
+in tools/perf/util/map.h.
+
+- Arnaldo
