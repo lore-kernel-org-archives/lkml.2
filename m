@@ -1,45 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab0HCEdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:33:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:32990 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab0HCEdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:33:13 -0400
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Yinghai Lu <yinghai@kernel.org>
-In-Reply-To: <4C57895C.1070402@zytor.com>
-References: <20100803022310.bec3ba79.sfr@canb.auug.org.au>
-	 <20100802162810.GB4755@flint.arm.linux.org.uk>
-	 <1280799724.1902.84.camel@pasglop>  <4C57895C.1070402@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 Aug 2010 14:32:35 +1000
-Message-ID: <1280809955.1902.85.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754901Ab0HCEdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:33:18 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:58890 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab0HCEdP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 00:33:15 -0400
+Message-ID: <4C579BFA.40302@cs.helsinki.fi>
+Date: Tue, 03 Aug 2010 07:32:58 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux-foundation.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        Roland Dreier <rdreier@cisco.com>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@suse.de>
+Subject: Re: [S+Q2 07/19] slub: Allow removal of slab caches during boot
+References: <20100709190706.938177313@quilx.com>  <20100709190853.770833931@quilx.com>  <alpine.DEB.2.00.1007141647340.29110@chino.kir.corp.google.com> <1279498030.10390.1760.camel@pasglop> <alpine.DEB.2.00.1007191058220.29361@router.home> <4C53EFBA.4090900@cs.helsinki.fi> <alpine.DEB.2.00.1008021036210.18455@router.home>
+In-Reply-To: <alpine.DEB.2.00.1008021036210.18455@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 20:13 -0700, H. Peter Anvin wrote:
-> I still think that the memblock approach of having a separate data
-> structure for all of memory and one for various used blocks is flawed,
-> and that it would be a lot better to have a single data structure with
-> attributes.  It would definitely make allocation saner.  Given that,
-> there is a strong reason to keep as little of the guts exposed as
-> possible.
+Christoph Lameter wrote:
+> On Sat, 31 Jul 2010, Pekka Enberg wrote:
+> 
+>> Christoph, Ben, should I queue this up for 2.6.36?
+> 
+> Yes.
 
-I agree, and in fact, turning the current implementation into a single
-list with attributes wouldn't necessarily be that hard as a first step. 
-
-Ben.
-
-
+Applied, thanks!
