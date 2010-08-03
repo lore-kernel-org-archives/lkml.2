@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab0HCPo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:44:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51653 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932273Ab0HCPoY (ORCPT
+	id S932310Ab0HCPol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:44:41 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37607 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932186Ab0HCPob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:44:24 -0400
+	Tue, 3 Aug 2010 11:44:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Pc2hbQqLY9n1wRD+HsUsxhr2Mm1wcm7EGRuwPhQ3eK8dgdlEn3+YKxi5JW4TZT1KVK
-         qYxZpRcQFKI664cXjp+PhIpPkjJysMQZ5vj2s+pQM5e3egB20bYmjy5un7DFgDkK03UA
-         o9Cej2iiJl+IDRnxLTo2RNHKv1ocLKwASqxTo=
+        b=bL+7KwW9N4yevrwCUlIiQi7p63SobCrOLrRBlOYZ78tAafZZ2Wyb+XxpgoWhDzMmzg
+         0lBEOyDL0yagjKF5SxU9HVWEKf43/m/T1As/PozS6QSl7cBn4cudZWkiisjw1Baed4Aj
+         iZwd9pz3onPLocyzIctlM/fyx2DbxBP8Z8kx4=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        =?UTF-8?q?Charles=20Cl=C3=A9ment?= <caratorn@gmail.com>,
-        Jim Lieb <lieb@canonical.com>, "David S. Miller" <davem@davemloft.net>,
-        Alexander Beregalov <a.beregalov@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/11] staging: vt6655: do not use PCI resources before pci_enable_device()
-Date: Tue,  3 Aug 2010 19:44:20 +0400
-Message-Id: <1280850260-6209-1-git-send-email-segooon@gmail.com>
+Cc: Thomas Winischhofer <thomas@winischhofer.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roel Kluin <roel.kluin@gmail.com>, Dan Carpenter <error27@gmail.com>,
+        Christoph Egger <siccegge@stud.informatik.uni-erlangen.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 11/11] sis: do not use PCI resources before pci_enable_device()
+Date: Tue,  3 Aug 2010 19:44:27 +0400
+Message-Id: <1280850268-6298-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -52,28 +52,40 @@ identifier request ~= "pci_request.*|pci_resource.*";
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/staging/vt6655/device_main.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/video/sis/sis_main.c |   13 +++++--------
+ 1 files changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index d498442..67c7b97 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -955,12 +955,13 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
-     pDevice->dev = dev;
-     pDevice->next_module = root_device_dev;
-     root_device_dev = dev;
--    dev->irq = pcid->irq;
+diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
+index 559bf17..47ba64e 100644
+--- a/drivers/video/sis/sis_main.c
++++ b/drivers/video/sis/sis_main.c
+@@ -5782,6 +5782,11 @@ sisfb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	ivideo->subsysvendor = pdev->subsystem_vendor;
+ 	ivideo->subsysdevice = pdev->subsystem_device;
  
-     if (pci_enable_device(pcid)) {
-         device_free_info(pDevice);
-         return -ENODEV;
-     }
-+    dev->irq = pcid->irq;
++	if (!ivideo->sisvga_enabled && pci_enable_device(pdev)) {
++		framebuffer_release(sis_fb_info);
++		return -EIO;
++	}
 +
- #ifdef	DEBUG
- 	printk("Before get pci_info memaddr is %x\n",pDevice->memaddr);
+ #ifndef MODULE
+ 	if(sisfb_mode_idx == -1) {
+ 		sisfb_get_vga_mode_from_kernel();
+@@ -5923,14 +5928,6 @@ sisfb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	}
  #endif
+ 
+-	if(!ivideo->sisvga_enabled) {
+-		if(pci_enable_device(pdev)) {
+-			if(ivideo->nbridge) pci_dev_put(ivideo->nbridge);
+-			pci_set_drvdata(pdev, NULL);
+-			framebuffer_release(sis_fb_info);
+-			return -EIO;
+-		}
+-	}
+ 
+ 	ivideo->video_base = pci_resource_start(pdev, 0);
+ 	ivideo->mmio_base  = pci_resource_start(pdev, 1);
 -- 
 1.7.0.4
 
