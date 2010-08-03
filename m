@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0HCFz3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 01:55:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45658 "EHLO hera.kernel.org"
+	id S1755294Ab0HCFzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 01:55:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45669 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755093Ab0HCFz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 01:55:26 -0400
-Date: Tue, 3 Aug 2010 05:54:59 GMT
+	id S1755199Ab0HCFzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 01:55:40 -0400
+Date: Tue, 3 Aug 2010 05:55:18 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
         hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
@@ -17,34 +17,65 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf session: Invalidate last_match when removing threads from rb_tree
-Message-ID: <tip-70597f21f128b7dd6a2490078bea99d704b6f8c3@git.kernel.org>
-Git-Commit-ID: 70597f21f128b7dd6a2490078bea99d704b6f8c3
+Subject: [tip:perf/core] perf tools: Don't keep unreferenced maps when unmaps are detected
+Message-ID: <tip-0a1eae391d0d92b60cff9f55cdaf3861b4e33922@git.kernel.org>
+Git-Commit-ID: 0a1eae391d0d92b60cff9f55cdaf3861b4e33922
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 05:54:59 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 05:55:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  70597f21f128b7dd6a2490078bea99d704b6f8c3
-Gitweb:     http://git.kernel.org/tip/70597f21f128b7dd6a2490078bea99d704b6f8c3
+Commit-ID:  0a1eae391d0d92b60cff9f55cdaf3861b4e33922
+Gitweb:     http://git.kernel.org/tip/0a1eae391d0d92b60cff9f55cdaf3861b4e33922
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 2 Aug 2010 18:59:28 -0300
+AuthorDate: Mon, 2 Aug 2010 19:45:23 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 2 Aug 2010 19:01:09 -0300
+CommitDate: Mon, 2 Aug 2010 19:45:23 -0300
 
-perf session: Invalidate last_match when removing threads from rb_tree
+perf tools: Don't keep unreferenced maps when unmaps are detected
 
-If we receive two PERF_RECORD_EXIT for the same thread, we can end up
-reusing session->last_match and trying to remove the thread twice from
-the rb_tree, causing a segfault, so invalidade last_match in
-perf_session__remove_thread.
+For a file with:
 
-Receiving two PERF_RECORD_EXIT for the same thread is a bug, but its a
-harmless one if we make the tool more robust, like this patch does.
+[root@emilia linux-2.6-tip]# perf report -D -fi allmodconfig-j32.perf.data | grep events:
+     TOTAL events:      36933
+      MMAP events:       9056
+      LOST events:          0
+      COMM events:       1702
+      EXIT events:       1887
+  THROTTLE events:          8
+UNTHROTTLE events:          8
+      FORK events:       1894
+      READ events:          0
+    SAMPLE events:      22378
+      ATTR events:          0
+EVENT_TYPE events:          0
+TRACING_DATA events:          0
+  BUILD_ID events:          0
+[root@emilia linux-2.6-tip]#
+
+Testing with valgrind and making perf_session__delete() a nop, so that
+we can notice how many maps were actually deleted due to not having any
+samples on it:
+
+==== HEAP SUMMARY:
+
+Before:
+
+==10339==     in use at exit: 8,909,997 bytes in 68,690 blocks
+==10339==   total heap usage: 78,696 allocs, 10,007 frees, 11,925,853 bytes allocated
+
+After:
+
+==10506==     in use at exit: 8,902,605 bytes in 68,606 blocks
+==10506==   total heap usage: 78,696 allocs, 10,091 frees, 11,925,853 bytes allocated
+
+I.e. just 84 detected unmaps with no hits out of 9056 for this workload,
+not much, but in some other long running workload this may save more
+bytes.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -53,18 +84,110 @@ Cc: Stephane Eranian <eranian@google.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/util/hist.c |    2 ++
+ tools/perf/util/map.c  |   31 +++++++++++++++++++++----------
+ tools/perf/util/map.h  |    3 ++-
+ 3 files changed, 25 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 5d2fd52..fa9d652 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -166,6 +166,7 @@ void perf_session__delete(struct perf_session *self)
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index a6cea28..e7263d4 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -93,6 +93,8 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ 	if (self != NULL) {
+ 		*self = *template;
+ 		self->nr_events = 1;
++		if (self->ms.map)
++			self->ms.map->referenced = true;
+ 		if (symbol_conf.use_callchain)
+ 			callchain_init(self->callchain);
+ 	}
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 801e696..3a7eb6e 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -29,6 +29,7 @@ void map__init(struct map *self, enum map_type type,
+ 	self->unmap_ip = map__unmap_ip;
+ 	RB_CLEAR_NODE(&self->rb_node);
+ 	self->groups   = NULL;
++	self->referenced = false;
+ }
  
- void perf_session__remove_thread(struct perf_session *self, struct thread *th)
+ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
+@@ -387,6 +388,7 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
  {
-+	self->last_match = NULL;
- 	rb_erase(&th->rb_node, &self->threads);
- 	/*
- 	 * We may have references to this thread, for instance in some hist_entry
+ 	struct rb_root *root = &self->maps[map->type];
+ 	struct rb_node *next = rb_first(root);
++	int err = 0;
+ 
+ 	while (next) {
+ 		struct map *pos = rb_entry(next, struct map, rb_node);
+@@ -403,20 +405,16 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
+ 
+ 		rb_erase(&pos->rb_node, root);
+ 		/*
+-		 * We may have references to this map, for instance in some
+-		 * hist_entry instances, so just move them to a separate
+-		 * list.
+-		 */
+-		list_add_tail(&pos->node, &self->removed_maps[map->type]);
+-		/*
+ 		 * Now check if we need to create new maps for areas not
+ 		 * overlapped by the new map:
+ 		 */
+ 		if (map->start > pos->start) {
+ 			struct map *before = map__clone(pos);
+ 
+-			if (before == NULL)
+-				return -ENOMEM;
++			if (before == NULL) {
++				err = -ENOMEM;
++				goto move_map;
++			}
+ 
+ 			before->end = map->start - 1;
+ 			map_groups__insert(self, before);
+@@ -427,14 +425,27 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
+ 		if (map->end < pos->end) {
+ 			struct map *after = map__clone(pos);
+ 
+-			if (after == NULL)
+-				return -ENOMEM;
++			if (after == NULL) {
++				err = -ENOMEM;
++				goto move_map;
++			}
+ 
+ 			after->start = map->end + 1;
+ 			map_groups__insert(self, after);
+ 			if (verbose >= 2)
+ 				map__fprintf(after, fp);
+ 		}
++move_map:
++		/*
++		 * If we have references, just move them to a separate list.
++		 */
++		if (pos->referenced)
++			list_add_tail(&pos->node, &self->removed_maps[map->type]);
++		else
++			map__delete(pos);
++
++		if (err)
++			return err;
+ 	}
+ 
+ 	return 0;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 5b51bbd..7857579 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -29,7 +29,8 @@ struct map {
+ 	};
+ 	u64			start;
+ 	u64			end;
+-	enum map_type		type;
++	u8 /* enum map_type */	type;
++	bool			referenced;
+ 	u32			priv;
+ 	u64			pgoff;
+ 
