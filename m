@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab0HCEN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:13:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35285 "EHLO smtps.tip.net.au"
+	id S1754410Ab0HCEQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:16:49 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35383 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254Ab0HCEN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:13:57 -0400
-Date: Tue, 3 Aug 2010 14:13:51 +1000
+	id S1750777Ab0HCEQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 00:16:48 -0400
+Date: Tue, 3 Aug 2010 14:16:46 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Jeremy Fitzhardinge <jeremy@goop.org>,
         Xen Devel <Xen-devel@lists.xensource.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alex Nixon <alex.nixon@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Sheng Yang <sheng@linux.intel.com>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Subject: linux-next: manual merge of the xen tree with the swiotlb tree
-Message-Id: <20100803141351.cd70beca.sfr@canb.auug.org.au>
+Message-Id: <20100803141646.594e0fee.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,11 +28,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi all,
 
 Today's linux-next merge of the xen tree got a conflict in
-drivers/xen/Kconfig drivers/xen/Makefile between commit
-b097186fd29d5bc5a26d1ae87995821ffc27b66e ("swiotlb-xen: SWIOTLB library
-for Xen PV guest with PCI passthrough") from the swiotlb tree and commit
-183d03cc4ff39e0f0d952c09aa96d0abfd6e0c3c ("xen: Xen PCI platform device
-driver") from the xen tree.
+include/xen/xen-ops.h between commit
+08bbc9da92f7e44b9c208c6a1adba70c403b255e ("xen: Add
+xen_create_contiguous_region") from the swiotlb tree and commit
+016b6f5fe8398b0291cece60b749d7c930a2e09c ("xen: Add suspend/resume
+support for PV on HVM guests") from the xen tree.
 
 Just overlapping additions.  I fixed it up (see below) and can carry the
 fix as necessary.
@@ -39,36 +40,20 @@ fix as necessary.
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/xen/Kconfig
-index 97199c2,0a88269..0000000
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@@ -62,8 -62,13 +62,18 @@@ config XEN_SYS_HYPERVISO
-  	 virtual environment, /sys/hypervisor will still be present,
-  	 but will have no xen contents.
+diff --cc include/xen/xen-ops.h
+index d789c93,46bc81e..0000000
+--- a/include/xen/xen-ops.h
++++ b/include/xen/xen-ops.h
+@@@ -14,10 -15,6 +15,12 @@@ void xen_mm_unpin_all(void)
+  void xen_timer_resume(void);
+  void xen_arch_resume(void);
   
- +config SWIOTLB_XEN
- +	def_bool y
- +	depends on SWIOTLB
+ +extern unsigned long *xen_contiguous_bitmap;
+ +int xen_create_contiguous_region(unsigned long vstart, unsigned int order,
+ +				unsigned int address_bits);
  +
-+ config XEN_PLATFORM_PCI
-+ 	tristate "xen platform pci device driver"
-+ 	depends on XEN_PVHVM
-+ 	default m
-+ 	help
-+ 	  Driver for the Xen PCI Platform device: it is responsible for
-+ 	  initializing xenbus and grant_table when running in a Xen HVM
-+ 	  domain. As a consequence this driver is required to run any Xen PV
-+ 	  frontend on Xen HVM.
-++
-  endmenu
-diff --cc drivers/xen/Makefile
-index 85f84cf,e392fb7..0000000
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@@ -10,4 -10,4 +10,5 @@@ obj-$(CONFIG_XEN_BALLOON)	+= balloon.
-  obj-$(CONFIG_XEN_DEV_EVTCHN)	+= evtchn.o
-  obj-$(CONFIG_XENFS)		+= xenfs/
-  obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
- +obj-$(CONFIG_SWIOTLB_XEN)	+= swiotlb-xen.o
-+ obj-$(CONFIG_XEN_PLATFORM_PCI)	+= platform-pci.o
+ +void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
+ +
++ int xen_setup_shutdown_event(void);
++ 
+  #endif /* INCLUDE_XEN_OPS_H */
