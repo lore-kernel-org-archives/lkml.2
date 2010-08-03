@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab0HCTp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 15:45:58 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:42737 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757516Ab0HCTp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 15:45:56 -0400
-Date: Tue, 3 Aug 2010 15:45:53 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100803194553.GA27688@Krystal>
-References: <20100714193652.GA13630@nowhere> <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com> <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal> <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal> <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal> <1280855904.1923.675.camel@laptop> <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+	id S932160Ab0HCTug (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 15:50:36 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:45613 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757332Ab0HCTuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 15:50:35 -0400
+Date: Tue, 3 Aug 2010 21:50:32 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH] arch/powerpc: Drop unnecessary of_node_put
+Message-ID: <Pine.LNX.4.64.1008032149410.20393@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 15:27:19 up 192 days, 22:04,  7 users,  load average: 0.07, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Tue, Aug 3, 2010 at 10:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > FWIW I really utterly detest the whole concept of sub-buffers.
-> 
-> I'm not quite sure why. Is it something fundamental, or just an
-> implementation issue?
+From: Julia Lawall <julia@diku.dk>
 
-The real issue here, IMHO, is that Perf has tied gory ring buffer implementation
-details to the userspace perf ABI, and there is now strong unwillingness from
-Perf developers to break this ABI.
+for_each_node_by_name only exits when its first argument is NULL, and a
+subsequent call to of_node_put on that argument is unnecessary.
 
-About the sub-buffer definition: it only means that a buffer is splitted into
-many regions. Their boundary are synchronization points between the data
-producer and consumer. This involves padding the end of regions when records do
-not fit in the remaining space.
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-I think that the problem lays in that Peter wants all his ring-buffer data to be
-side-to-side, without padding. He needs this because the perf ABI, presented to
-the user-space perf program, requires this: every implementation detail is
-exposed to user-space through a mmap'd memory region (yeah, even the control
-data is touched by both the kernel and userland through that shared page).
+// <smpl>
+@@
+iterator name for_each_node_by_name;
+expression np,E;
+identifier l;
+@@
 
-When Perf has been initially proposed, I've thought that because the perf
-user-space tool is shipped along with the kernel sources, we could change the
-ABI easily afterward, but Peter seems to disagree and wants it to stay the as it
-is for backward compatibility and not offending contributors. If I had known
-this when the ABI first came in, I would have surely nack'd it.
+for_each_node_by_name(np,...) {
+  ... when != break;
+      when != goto l;
+}
+... when != np = E
+- of_node_put(np);
+// </smpl>
 
-Now we are stucked with this ABI which exposes every tiny ring buffer
-implementation detail to userspace, which simply kills any future enhancement.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Thanks,
+---
+ arch/powerpc/platforms/powermac/feature.c |    1 -
+ arch/powerpc/platforms/powermac/pci.c     |    2 --
+ 2 files changed, 3 deletions(-)
 
-Mathieu
-
-P.S.: I'm holding back reply to the rest of your email to increase focus on the
-fundamental perf ABI problem.
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+diff -u -p a/arch/powerpc/platforms/powermac/feature.c b/arch/powerpc/platforms/powermac/feature.c
+--- a/arch/powerpc/platforms/powermac/feature.c
++++ b/arch/powerpc/platforms/powermac/feature.c
+@@ -2872,7 +2872,6 @@ set_initial_features(void)
+ 				core99_airport_enable(np, 0, 0);
+ 			}
+ 		}
+-		of_node_put(np);
+ 	}
+ 
+ 	/* On all machines that support sound PM, switch sound off */
+diff -u -p a/arch/powerpc/platforms/powermac/pci.c b/arch/powerpc/platforms/powermac/pci.c
+--- a/arch/powerpc/platforms/powermac/pci.c
++++ b/arch/powerpc/platforms/powermac/pci.c
+@@ -1155,13 +1155,11 @@ void __init pmac_pcibios_after_init(void
+ 			pmac_call_feature(PMAC_FTR_1394_CABLE_POWER, nd, 0, 0);
+ 		}
+ 	}
+-	of_node_put(nd);
+ 	for_each_node_by_name(nd, "ethernet") {
+ 		if (nd->parent && of_device_is_compatible(nd, "gmac")
+ 		    && of_device_is_compatible(nd->parent, "uni-north"))
+ 			pmac_call_feature(PMAC_FTR_GMAC_ENABLE, nd, 0, 0);
+ 	}
+-	of_node_put(nd);
+ }
+ 
+ void pmac_pci_fixup_cardbus(struct pci_dev* dev)
