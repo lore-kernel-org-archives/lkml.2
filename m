@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab0HCFJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 01:09:58 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:64188 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab0HCFJ5 (ORCPT
+	id S1754905Ab0HCFRK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 01:17:10 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:49754 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab0HCFRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 01:09:57 -0400
-Date: Tue, 3 Aug 2010 14:04:11 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH -mm 1/5] quick lookup memcg by ID
-Message-Id: <20100803140411.cc2c0844.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100803135413.38b64f8f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100803133109.c0e6f150.nishimura@mxp.nes.nec.co.jp>
-	<20100803133723.bb6487a0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100803135129.4316dfff.nishimura@mxp.nes.nec.co.jp>
-	<20100803135413.38b64f8f.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Aug 2010 01:17:08 -0400
+Date: Tue, 3 Aug 2010 10:46:59 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        linux-kernel@vger.kernel.org, npiggin@suse.de, kvm@vger.kernel.org,
+        bharata@in.ibm.com, Balbir Singh <balbir@in.ibm.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH RFC 2/4] Add yield hypercall for KVM guests
+Message-ID: <20100803051659.GB29526@linux.vnet.ibm.com>
+Reply-To: vatsa@linux.vnet.ibm.com
+References: <20100726061150.GB21699@linux.vnet.ibm.com>
+ <20100726061445.GB8402@linux.vnet.ibm.com>
+ <4C4DC3AD.7010404@goop.org>
+ <20100728145516.GB27739@linux.vnet.ibm.com>
+ <4C568477.4000602@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C568477.4000602@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Aug 2010 13:54:13 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Mon, Aug 02, 2010 at 11:40:23AM +0300, Avi Kivity wrote:
+> >>Can you do a directed yield?
+> >We don't have that support yet in Linux scheduler.
+> 
+> If you think it's useful, it would be good to design it into the
+> interface, and fall back to ordinary yield if the host doesn't
+> support it.
+> 
+> A big advantage of directed yield vs yield is that you conserve
+> resources within a VM; a simple yield will cause the guest to drop
+> its share of cpu to other guest.
 
-> On Tue, 3 Aug 2010 13:51:29 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> 
-> > On Tue, 3 Aug 2010 13:37:23 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > On Tue, 3 Aug 2010 13:31:09 +0900
-> > > Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > > 
-> > (snip)
-> > > > > +/* 0 is unused */
-> > > > > +static atomic_t mem_cgroup_num;
-> > > > > +#define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
-> > > > > +static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
-> > > > > +
-> > > > > +static struct mem_cgroup *id_to_memcg(unsigned short id)
-> > > > > +{
-> > > > > +	/*
-> > > > > +	 * This array is set to NULL when mem_cgroup is freed.
-> > > > > +	 * IOW, there are no more references && rcu_synchronized().
-> > > > > +	 * This lookup-caching is safe.
-> > > > > +	 */
-> > > > > +	if (unlikely(!mem_cgroups[id])) {
-> > > > > +		struct cgroup_subsys_state *css;
-> > > > > +
-> > > > > +		rcu_read_lock();
-> > > > > +		css = css_lookup(&mem_cgroup_subsys, id);
-> > > > > +		rcu_read_unlock();
-> > > > > +		if (!css)
-> > > > > +			return NULL;
-> > > > > +		mem_cgroups[id] = container_of(css, struct mem_cgroup, css);
-> > > > > +	}
-> > > > > +	return mem_cgroups[id];
-> > > > > +}
-> > > > id_to_memcg() seems to be called under rcu_read_lock() already, so I think
-> > > > rcu_read_lock()/unlock() would be unnecessary.
-> > > > 
-Ah, looking into [2/5], this would not be true necessarily..
-So, it might be better to leave as it is.
+Hmm .. I see possibility of modifying yield to reclaim its "lost" timeslice when
+its scheduled next as well. Basically remember what timeslice we have given
+up and add that as its "bonus" when it runs next. That would keep the dynamics
+of yield donation/reclaim local to the (physical) cpu and IMHO is less complex
+than dealing with directed yield between tasks located across different physical
+cpus. That would also address the fairness issue with yield you are pointing at?
 
-Sorry for noise.
-
-> > > 
-> > > Maybe. I thought about which is better to add
-> > > 
-> > > 	VM_BUG_ON(!rcu_read_lock_held);
-> > > or
-> > > 	rcu_read_lock()
-> > > 	..
-> > > 	rcu_read_unlock()
-> > > 
-> > > Do you like former ? If so, it's ok to remove rcu-read-lock.
-> > > 
-> > Yes, I personally like the former.
-> 
-> ok, will rewrite in that style.
-> 
-> -Kame
-> 
+- vatsa
