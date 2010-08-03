@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab0HCE4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:56:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39264 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab0HCE4L convert rfc822-to-8bit (ORCPT
+	id S1755101Ab0HCE47 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:56:59 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:60370 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069Ab0HCE46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:56:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100802011006.GS2470@linux.vnet.ibm.com>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100731215214.2543c07e@infradead.org>
-	<20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100731230101.7cc1d8c7@infradead.org>
-	<20100801191228.GL2470@linux.vnet.ibm.com>
-	<20100801154708.19817b75@infradead.org>
-	<20100802011006.GS2470@linux.vnet.ibm.com>
-Date: Mon, 2 Aug 2010 21:56:10 -0700
-Message-ID: <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Aug 2010 00:56:58 -0400
+Date: Tue, 3 Aug 2010 13:51:29 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH -mm 1/5] quick lookup memcg by ID
+Message-Id: <20100803135129.4316dfff.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100803133723.bb6487a0.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100803133109.c0e6f150.nishimura@mxp.nes.nec.co.jp>
+	<20100803133723.bb6487a0.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 1, 2010 at 6:10 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Sun, Aug 01, 2010 at 03:47:08PM -0700, Arjan van de Ven wrote:
-...
->> Another one: freezing whole cgroups..... we have that today. it
->> actually works quite well.... of course the hard part is the decision
->> what to put in which cgroup, and at what frequency and duration you let
->> cgroups run.
->
-> Indeed, the Android guys seemed to be quite excited by cgroup freezing
-> until they thought about the application-classification problem.
-> Seems like it should be easy for some types of applications, but I do
-> admit that apps can have non-trivial and non-obvious dependencies.
->
+On Tue, 3 Aug 2010 13:37:23 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-The dependencies is what made this solution uninteresting to us. For
-instance, we currently use cgroup scheduling to reduce the impact of
-some background tasks, but we occasionally saw a watchdog restart of
-the system process were critical services were waiting on a kernel
-mutex owned by a background task for more than 20 seconds. If we froze
-a cgroup instead, we would not hit this particular problem since tasks
-cannot be frozen while executing kernel code the same way they can be
-preempted, but nothing prevents a task from being frozen while holding
-a user-space resource.
-
--- 
-Arve Hjønnevåg
+> On Tue, 3 Aug 2010 13:31:09 +0900
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> 
+(snip)
+> > > +/* 0 is unused */
+> > > +static atomic_t mem_cgroup_num;
+> > > +#define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
+> > > +static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
+> > > +
+> > > +static struct mem_cgroup *id_to_memcg(unsigned short id)
+> > > +{
+> > > +	/*
+> > > +	 * This array is set to NULL when mem_cgroup is freed.
+> > > +	 * IOW, there are no more references && rcu_synchronized().
+> > > +	 * This lookup-caching is safe.
+> > > +	 */
+> > > +	if (unlikely(!mem_cgroups[id])) {
+> > > +		struct cgroup_subsys_state *css;
+> > > +
+> > > +		rcu_read_lock();
+> > > +		css = css_lookup(&mem_cgroup_subsys, id);
+> > > +		rcu_read_unlock();
+> > > +		if (!css)
+> > > +			return NULL;
+> > > +		mem_cgroups[id] = container_of(css, struct mem_cgroup, css);
+> > > +	}
+> > > +	return mem_cgroups[id];
+> > > +}
+> > id_to_memcg() seems to be called under rcu_read_lock() already, so I think
+> > rcu_read_lock()/unlock() would be unnecessary.
+> > 
+> 
+> Maybe. I thought about which is better to add
+> 
+> 	VM_BUG_ON(!rcu_read_lock_held);
+> or
+> 	rcu_read_lock()
+> 	..
+> 	rcu_read_unlock()
+> 
+> Do you like former ? If so, it's ok to remove rcu-read-lock.
+> 
+Yes, I personally like the former.
