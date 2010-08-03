@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab0HCEKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:10:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45648 "EHLO hera.kernel.org"
+	id S1754551Ab0HCEN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:13:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35285 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754356Ab0HCEKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:10:23 -0400
-Date: Tue, 3 Aug 2010 04:10:06 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de
-In-Reply-To: <4C5752F2.8030206@kernel.org>
-References: <4C5752F2.8030206@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/setup] x86, setup: move isdigit.h to ctype.h, header files on top.
-Message-ID: <tip-6238b47b58480cd9c092600c05338dbe261b71ce@git.kernel.org>
-Git-Commit-ID: 6238b47b58480cd9c092600c05338dbe261b71ce
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 04:10:06 +0000 (UTC)
+	id S1752254Ab0HCEN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 00:13:57 -0400
+Date: Tue, 3 Aug 2010 14:13:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Sheng Yang <sheng@linux.intel.com>
+Subject: linux-next: manual merge of the xen tree with the swiotlb tree
+Message-Id: <20100803141351.cd70beca.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6238b47b58480cd9c092600c05338dbe261b71ce
-Gitweb:     http://git.kernel.org/tip/6238b47b58480cd9c092600c05338dbe261b71ce
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Mon, 2 Aug 2010 21:03:46 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 2 Aug 2010 21:07:20 -0700
+Hi all,
 
-x86, setup: move isdigit.h to ctype.h, header files on top.
+Today's linux-next merge of the xen tree got a conflict in
+drivers/xen/Kconfig drivers/xen/Makefile between commit
+b097186fd29d5bc5a26d1ae87995821ffc27b66e ("swiotlb-xen: SWIOTLB library
+for Xen PV guest with PCI passthrough") from the swiotlb tree and commit
+183d03cc4ff39e0f0d952c09aa96d0abfd6e0c3c ("xen: Xen PCI platform device
+driver") from the xen tree.
 
-It is a subset of <ctype.h> functionality, so name it ctype.h.  Also,
-reorganize header files so #include statements are clustered near the
-top as they should be.
+Just overlapping additions.  I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-LKML-Reference: <4C5752F2.8030206@kernel.org>
----
- arch/x86/boot/boot.h                 |    3 +--
- arch/x86/boot/compressed/misc.h      |    1 +
- arch/x86/boot/compressed/string.c    |    2 --
- arch/x86/boot/{isdigit.h => ctype.h} |    0
- 4 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 00cf51c..c7093bd 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -28,6 +28,7 @@
- #include "bitops.h"
- #include <asm/cpufeature.h>
- #include <asm/processor-flags.h>
-+#include "ctype.h"
- 
- /* Useful macros */
- #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-@@ -200,8 +201,6 @@ static inline int memcmp_gs(const void *s1, addr_t s2, size_t len)
- 	return diff;
- }
- 
--#include "isdigit.h"
--
- /* Heap -- available for dynamic lists. */
- extern char _end[];
- extern char *HEAP;
-diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
-index a267849..3f19c81 100644
---- a/arch/x86/boot/compressed/misc.h
-+++ b/arch/x86/boot/compressed/misc.h
-@@ -20,6 +20,7 @@
- #include <asm/bootparam.h>
- 
- #define BOOT_BOOT_H
-+#include "../ctype.h"
- 
- /* misc.c */
- extern struct boot_params *real_mode;		/* Pointer to real-mode data */
-diff --git a/arch/x86/boot/compressed/string.c b/arch/x86/boot/compressed/string.c
-index 7995c6a..19b3e69 100644
---- a/arch/x86/boot/compressed/string.c
-+++ b/arch/x86/boot/compressed/string.c
-@@ -1,4 +1,2 @@
- #include "misc.h"
--
--#include "../isdigit.h"
- #include "../string.c"
-diff --git a/arch/x86/boot/isdigit.h b/arch/x86/boot/ctype.h
-similarity index 100%
-rename from arch/x86/boot/isdigit.h
-rename to arch/x86/boot/ctype.h
+diff --cc drivers/xen/Kconfig
+index 97199c2,0a88269..0000000
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@@ -62,8 -62,13 +62,18 @@@ config XEN_SYS_HYPERVISO
+  	 virtual environment, /sys/hypervisor will still be present,
+  	 but will have no xen contents.
+  
+ +config SWIOTLB_XEN
+ +	def_bool y
+ +	depends on SWIOTLB
+ +
++ config XEN_PLATFORM_PCI
++ 	tristate "xen platform pci device driver"
++ 	depends on XEN_PVHVM
++ 	default m
++ 	help
++ 	  Driver for the Xen PCI Platform device: it is responsible for
++ 	  initializing xenbus and grant_table when running in a Xen HVM
++ 	  domain. As a consequence this driver is required to run any Xen PV
++ 	  frontend on Xen HVM.
+++
+  endmenu
+diff --cc drivers/xen/Makefile
+index 85f84cf,e392fb7..0000000
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@@ -10,4 -10,4 +10,5 @@@ obj-$(CONFIG_XEN_BALLOON)	+= balloon.
+  obj-$(CONFIG_XEN_DEV_EVTCHN)	+= evtchn.o
+  obj-$(CONFIG_XENFS)		+= xenfs/
+  obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
+ +obj-$(CONFIG_SWIOTLB_XEN)	+= swiotlb-xen.o
++ obj-$(CONFIG_XEN_PLATFORM_PCI)	+= platform-pci.o
