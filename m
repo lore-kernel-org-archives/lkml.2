@@ -1,92 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab0HCHWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 03:22:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49147 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362Ab0HCHWK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 03:22:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=DZNA3oLayAAmoD1lxddI81b7Yxakl7LZevsmkjh93YYoRPZrKVaslsg6j5N/KBnjPV
-         WjFUpAY4Kgf3Fzzk0nA8A8p13NgMsQSZZxal60vIEeIgamXF8Z/YipwvK+yX/sy2Ck/H
-         W2m2Tq5CCvkZcLmMciIbE3BnyhA7eyv0ctoNo=
+	id S1755537Ab0HCHXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 03:23:00 -0400
+Received: from mail.aixigo.de ([195.14.232.227]:17040 "EHLO mail.aixigo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755347Ab0HCHW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 03:22:59 -0400
+X-Greylist: delayed 1141 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Aug 2010 03:22:57 EDT
+Message-ID: <4C57BF1E.9080804@aixigo.de>
+Date: Tue, 03 Aug 2010 09:02:54 +0200
+From: Harald Dunkel <harald.dunkel@aixigo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100721 Mnenhy/0.8.3 Thunderbird/3.1.1
 MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Tue, 3 Aug 2010 15:21:49 +0800
-Message-ID: <AANLkTikuUi=i6Lk-ZpE65Gr0tWOeVnrnpWPe85T=J=Ph@mail.gmail.com>
-Subject: [PATCH] kexec: set prstatus.pr_pid to cpu id when current->pid is 0
-To: Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
+Subject: Re: 2.6.34 on Samsung P460: reset after "Waiting for /dev to be fully
+ 	populated"
+References: <4BFB947E.9080509@aixigo.de> <20100525184621.89487735.akpm@linux-foundation.org> <AANLkTil_-pV3jBkdBrWlz6iKr_lo2b3ZUFUvP8MFoByg@mail.gmail.com> <4BFD1F93.7080000@aixigo.de>
+In-Reply-To: <4BFD1F93.7080000@aixigo.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Kay,
 
-I found that from gdb 7.1 to gdb-cvs-head cannot analyze the core file
-that get from kdump.
-What I got:
-[New <main task>]
-[New Thread 2719]
-../../src/gdb/thread.c:884: internal-error: switch_to_thread:
-Assertion `inf != NULL' failed.
-A problem internal to GDB has been detected,
-further debugging may prove unreliable.
-Quit this debugging session? (y or n)
-That is because:
- objdump -h ./vmcore
+Sorry for the delay.
 
-./vmcore:     file format elf64-x86-64
+It crashes when the "processor" acpi module is loaded.
+If I blacklist this module, then the laptop boots fine.
 
-Sections:
-Idx Name          Size      VMA               LMA               File off  Algn
-  0 note0         00000a48  0000000000000000  0000000000000000  00000238  2**0
-                  CONTENTS, READONLY
-  1 .reg/0        000000d8  0000000000000000  0000000000000000  000002bc  2**2
-                  CONTENTS
-  2 .reg          000000d8  0000000000000000  0000000000000000  000002bc  2**2
-                  CONTENTS
-  3 .reg/2719     000000d8  0000000000000000  0000000000000000  00000420  2**2
-                  CONTENTS
-  4 .reg/0        000000d8  0000000000000000  0000000000000000  00000584  2**2
-                  CONTENTS
-  5 .reg/0        000000d8  0000000000000000  0000000000000000  000006e8  2**2
-                  CONTENTS
-Each of reg/n is a cpu core note.  It will be a GDB thread.  n is the
-prstatus.pr_pid that will be the thread lwpid.  Because the 3 threads
-pid is same, so GDB get error.
+The same problem exists for 2.6.35 and older kernels.
 
-current->pid is 0 because this cpu is in idle.  So I add a check, set
-prstatus.pr_pid to cpu id when current->pid is 0.  Then GDB work OK
-with the core.
+Of course I would be glad to help to track this down.
 
-Thanks,
-Hui
 
-Signed-off-by: Hui Zhu <teawater@gmail.com>
----
- kernel/kexec.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Regards
 
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1191,7 +1191,10 @@ void crash_save_cpu(struct pt_regs *regs
- 	if (!buf)
- 		return;
- 	memset(&prstatus, 0, sizeof(prstatus));
--	prstatus.pr_pid = current->pid;
-+	if (current->pid)
-+		prstatus.pr_pid = current->pid;
-+	else
-+		prstatus.pr_pid = cpu;
- 	elf_core_copy_kernel_regs(&prstatus.pr_reg, regs);
- 	buf = append_elf_note(buf, KEXEC_CORE_NOTE_NAME, NT_PRSTATUS,
- 		      	      &prstatus, sizeof(prstatus));
+Harri
+
