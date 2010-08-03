@@ -1,42 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab0HCKfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 06:35:11 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43000 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754253Ab0HCKfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 06:35:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,308,1278313200"; 
-   d="scan'208";a="592392289"
-Date: Tue, 3 Aug 2010 12:34:11 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ian Molton <ian@mnementh.co.uk>
-Subject: Re: [PATCH 2/2] tc6387xb: add __devinit/__devexit annotation for
- tc6387xb_probe/tc6387xb_remove
-Message-ID: <20100803103410.GD2635@sortiz-mobl>
-References: <1280814345.15753.4.camel@mola>
+	id S1755993Ab0HCKf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 06:35:56 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50521 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab0HCKfz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 06:35:55 -0400
+Date: Tue, 3 Aug 2010 00:36:35 -1000 (HST)
+From: Jeff Roberson <jroberson@jroberson.net>
+X-X-Sender: jroberson@desktop
+To: linux-kernel@vger.kernel.org
+cc: aaronp@clustrix.com
+Subject: PCI-E Link training bug
+Message-ID: <alpine.BSF.2.00.1008030030430.1414@desktop>
+User-Agent: Alpine 2.00 (BSF 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280814345.15753.4.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="2547152148-253849894-1280831798=:1414"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 01:45:45PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/tc6387xb.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-Applied, thanks a lot.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Cheers,
-Samuel.
+--2547152148-253849894-1280831798=:1414
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Hello Folks,
+
+At least one intel chipset will occasionally negotiate a 4x link for an 8x 
+device in an 8x port.  It is a known errata in the 5400 mch.  Simply 
+disabling and re-enabling the link is all that is required to restore full 
+throughput.  Toggling the retrain bit in the pci-e link control register 
+alone is insufficient.
+
+I have added a small bit of code to the pcie port device which checks for 
+this condition and attempts to retrain the link.  It is possible that it 
+will give a false positive if the port is capable of accepting lesser 
+width devices.  This should be harmless although I would not rule out poor 
+implementations having issues with gratuitous retraining.
+
+Thanks,
+Jeff
+--2547152148-253849894-1280831798=:1414
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=pcie.diff
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.BSF.2.00.1008030036350.1414@desktop>
+Content-Description: 
+Content-Disposition: attachment; filename=pcie.diff
+
+ZGlmZiAtciBkMDIxZDAxNzQyYWUgZHJpdmVycy9wY2kvcGNpZS9wb3J0ZHJ2
+X3BjaS5jDQotLS0gYS9kcml2ZXJzL3BjaS9wY2llL3BvcnRkcnZfcGNpLmMJ
+VHVlIE1hciAwOSAxNToxMzo1OCAyMDEwIC0wODAwDQorKysgYi9kcml2ZXJz
+L3BjaS9wY2llL3BvcnRkcnZfcGNpLmMJVHVlIEF1ZyAwMyAwMzoyNTo1MSAy
+MDEwIC0wNzAwDQpAQCAtNzAsNiArNzAsNDcgQEANCiAjZW5kaWYNCiANCiAv
+Kg0KKyAqIHBjaWVfcG9ydGRydl9jaGVja19saW5rIC0gQ2hlY2sgZm9yIGxp
+bmsgd2lkdGggbWlzbWF0Y2gNCisgKiBAZGV2OiBQQ0ktRXhwcmVzcyBwb3J0
+IGRldmljZSB0byBjb25kaXRpb25hbGx5IHJldHJhaW4NCisgKg0KKyAqIFZl
+cmlmeSB0aGF0IHRoZSBuZWdvdGlhdGVkIGxpbmsgbWF0Y2hlcyB0aGUgbGlu
+a3MgY2FwYWJpbGl0eSBhbmQNCisgKiBhdHRlbXB0IHRvIHJldHJhaW4gaWYg
+aXQgZG9lcyBub3QuICBUaGlzIG1heSBiZSBhIHBlcmZlY3RseSB2YWxpZA0K
+KyAqIGNvbmZpZ3VyYXRpb24sIGhvd2V2ZXIsIG9uIHNvbWUgaW50ZWwgY2hp
+cHNldHMgKGk1NDAwKSBhbiBlcnJhdGENCisgKiBtYXkgY2F1c2UgdGhlIGxp
+bmsgdG8gbmVnb3RpYXRlIGRvd24gZXJyb25lb3VzbHkuDQorICovDQorc3Rh
+dGljIGlubGluZSB2b2lkDQorcGNpZV9wb3J0ZHJ2X2NoZWNrX2xpbmsoc3Ry
+dWN0IHBjaV9kZXYgKmRldikNCit7DQorCXUzMiBsaW5rY2FwOw0KKwl1MTYg
+bGlua3N0YXQ7DQorCXUxNiBsaW5rY3RybDsNCisJaW50IGNhcHdpZHRoOw0K
+KwlpbnQgd2lkdGg7DQorCWludCBwb3M7DQorCWludCBpOw0KKw0KKwlwb3Mg
+PSBwY2lfZmluZF9jYXBhYmlsaXR5KGRldiwgUENJX0NBUF9JRF9FWFApOw0K
+Kwlmb3IgKGkgPSAwOyBpIDwgMzsgaSsrKSB7DQorCQlwY2lfcmVhZF9jb25m
+aWdfZHdvcmQoZGV2LCBwb3MgKyBQQ0lfRVhQX0xOS0NBUCwgJmxpbmtjYXAp
+Ow0KKwkJcGNpX3JlYWRfY29uZmlnX3dvcmQoZGV2LCBwb3MgKyBQQ0lfRVhQ
+X0xOS1NUQSwgJmxpbmtzdGF0KTsNCisJCWNhcHdpZHRoID0gKGxpbmtjYXAg
+Pj4gNCkgJiAweDNmOw0KKwkJd2lkdGggPSAobGlua3N0YXQgPj4gNCkgJiAw
+eDNmOw0KKwkJaWYgKHdpZHRoID09IGNhcHdpZHRoIHx8IHdpZHRoID09IDAp
+DQorCQkJcmV0dXJuOw0KKwkJZGV2X3ByaW50ayhLRVJOX0lORk8sICZkZXYt
+PmRldiwNCisJCSAgICAiTGluayB3aWR0aCBtaXNtYXRjaDogJWQgIT0gJWQs
+IHJldHJhaW5pbmdcbiIsDQorCQkgICAgY2Fwd2lkdGgsIHdpZHRoKTsNCisJ
+CXBjaV9yZWFkX2NvbmZpZ193b3JkKGRldiwgcG9zICsgUENJX0VYUF9MTktD
+VEwsICZsaW5rY3RybCk7DQorCQlwY2lfd3JpdGVfY29uZmlnX3dvcmQoZGV2
+LCBwb3MgKyBQQ0lfRVhQX0xOS0NUTCwNCisJCSAgICBsaW5rY3RybCB8IFBD
+SV9FWFBfTE5LQ1RMX0RJUyk7DQorCQltc2xlZXAoMTI1KTsNCisJCXBjaV93
+cml0ZV9jb25maWdfd29yZChkZXYsIHBvcyArIFBDSV9FWFBfTE5LQ1RMLA0K
+KwkJICAgIGxpbmtjdHJsIHwgUENJX0VYUF9MTktDVExfUkwpOw0KKwkJbXNs
+ZWVwKDEyNSk7DQorCX0NCit9DQorDQorLyoNCiAgKiBwY2llX3BvcnRkcnZf
+cHJvYmUgLSBQcm9iZSBQQ0ktRXhwcmVzcyBwb3J0IGRldmljZXMNCiAgKiBA
+ZGV2OiBQQ0ktRXhwcmVzcyBwb3J0IGRldmljZSBiZWluZyBwcm9iZWQNCiAg
+Kg0KQEAgLTk5LDYgKzE0MCw3IEBADQogCQlwY2lfZGlzYWJsZV9kZXZpY2Uo
+ZGV2KTsNCiAJCXJldHVybiAtRU5PTUVNOw0KIAl9DQorCXBjaWVfcG9ydGRy
+dl9jaGVja19saW5rKGRldik7DQogDQogCXBjaWVfcG9ydGRydl9zYXZlX2Nv
+bmZpZyhkZXYpOw0KIA0KZGlmZiAtciBkMDIxZDAxNzQyYWUgaW5jbHVkZS9s
+aW51eC9wY2lfcmVncy5oDQotLS0gYS9pbmNsdWRlL2xpbnV4L3BjaV9yZWdz
+LmgJVHVlIE1hciAwOSAxNToxMzo1OCAyMDEwIC0wODAwDQorKysgYi9pbmNs
+dWRlL2xpbnV4L3BjaV9yZWdzLmgJVHVlIEF1ZyAwMyAwMzoyNTo1MSAyMDEw
+IC0wNzAwDQpAQCAtNDAwLDYgKzQwMCw3IEBADQogI2RlZmluZSAgUENJX0VY
+UF9MTktDQVBfTDFFTAkweDM4MDAwCS8qIEwxIEV4aXQgTGF0ZW5jeSAqLw0K
+ICNkZWZpbmUgIFBDSV9FWFBfTE5LQ0FQX0NMS1BNCTB4NDAwMDAJLyogTDEg
+Q2xvY2sgUG93ZXIgTWFuYWdlbWVudCAqLw0KICNkZWZpbmUgUENJX0VYUF9M
+TktDVEwJCTE2CS8qIExpbmsgQ29udHJvbCAqLw0KKyNkZWZpbmUgIFBDSV9F
+WFBfTE5LQ1RMX0RJUwkweDEwCS8qIERpc2FibGUgTGluayAqLw0KICNkZWZp
+bmUgIFBDSV9FWFBfTE5LQ1RMX1JMCTB4MjAJLyogUmV0cmFpbiBMaW5rICov
+DQogI2RlZmluZSAgUENJX0VYUF9MTktDVExfQ0NDCTB4NDAJLyogQ29tbW9u
+IENsb2NrIENPbmZpZ3VyYXRpb24gKi8NCiAjZGVmaW5lICBQQ0lfRVhQX0xO
+S0NUTF9DTEtSRVFfRU4gMHgxMDAJLyogRW5hYmxlIGNsa3JlcSAqLw0K
+
+--2547152148-253849894-1280831798=:1414--
