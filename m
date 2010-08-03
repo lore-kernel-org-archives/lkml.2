@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab0HCCDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 22:03:21 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:51443 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab0HCCDT (ORCPT
+	id S1752302Ab0HCCIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 22:08:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33477 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab0HCCIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 22:03:19 -0400
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH] x86,setup: add serial_console_port_base in boot_params
-References: <4C3F8B46.7080809@kernel.org> <20100731083409.GC5859@lenovo>
-	<4C5469AF.2010608@zytor.com> <20100731183211.GB29357@lenovo>
-	<4C548F7D.6000509@zytor.com> <4C54D3AD.8020906@kernel.org>
-	<m14offuk8p.fsf@fess.ebiederm.org> <4C55041C.1030008@kernel.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 02 Aug 2010 19:03:04 -0700
-In-Reply-To: <4C55041C.1030008@kernel.org> (Yinghai Lu's message of "Sat\, 31 Jul 2010 22\:20\:28 -0700")
-Message-ID: <m18w4o4fmv.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	Mon, 2 Aug 2010 22:08:36 -0400
+From: Tao Ma <tao.ma@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: davem@davemloft.net, linux-ide@vger.kernel.org, Tao Ma <tao.ma@oracle.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH v2] ide: Use kzalloc in idedisk_prep_fn.
+Date: Tue,  3 Aug 2010 10:06:32 +0800
+Message-Id: <1280801192-14419-1-git-send-email-tao.ma@oracle.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100803010903I.fujita.tomonori@lab.ntt.co.jp>
+References: <20100803010903I.fujita.tomonori@lab.ntt.co.jp>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C577A16.012D:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
+> 
+> This change conflicts with the change in linux-next (came from Jens'
+> tree).
+Thanks for pointing it out. Here is the updated one.
 
-> On 07/31/2010 07:42 PM, Eric W. Biederman wrote:
->> Yinghai Lu <yinghai@kernel.org> writes:
->> 
->>> On 07/31/2010 02:02 PM, H. Peter Anvin wrote:
->>>> On 07/31/2010 11:32 AM, Cyrill Gorcunov wrote:
->>>>>>
->>>>>> No, this is the internal part of the boot protocol, so it's not an issue.
->>>>>>
->>>>>
->>>>> Peter, I didn't mean any issue here, I meant that bootloaders don't know about
->>>>> this field yet and they will have to update own sources to pass port value
->>>>> at proper place of boot params. Or I miss something?
->>>>>
->>>>
->>>> Boot loaders that use the 16-bit entry point are unaffected.
->>>>
->>>> Boot loaders which use the 32-bit entry point but properly clears the
->>>> zero page simply will not have the feature.
->>>>
->>>> Boot loaders which use the 32-bit entry point but doesn't clear the zero
->>>> page are broken.
->>>>
->>> can you if this one is right for kexec path?
->> 
->> I am walking out the door, but this seems like nonsense to me.
->> 
->> Further I don't see why we would add something to the zero page
->> when we have a perfectly good way to pass this information via
->> the kernel command line.  strstr and strtoul are trivial little
->> functions so I don't see why anything would need to parse anything
->> other than console= or early_printk=.  The difference in code size
->> is negligible.
->> 
-> so you prefer to check command line for console info in arch/x86/boot/compressed/misc.c again?
->
-> that commandline is analyzed in arch/x86/boot/tty.c already.
+Regards,
+Tao
 
-Instead of changing 2 or 3 bootloaders, waiting years for the change
-to propagate, and then trying to change users habits.
+>From 5b8ae2eb7e3ecb54ea8db3b296727106148f17b3 Mon Sep 17 00:00:00 2001
+From: Tao Ma <tao.ma@oracle.com>
+Date: Tue, 3 Aug 2010 08:18:27 +0800
+Subject: [PATCH v2] ide: Use kzalloc in idedisk_prep_fn.
 
-I definitely do.
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ drivers/ide/ide-disk.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Eric
+diff --git a/drivers/ide/ide-disk.c b/drivers/ide/ide-disk.c
+index 7433e07..471bb0d 100644
+--- a/drivers/ide/ide-disk.c
++++ b/drivers/ide/ide-disk.c
+@@ -435,12 +435,11 @@ static int idedisk_prep_fn(struct request_queue *q, struct request *rq)
+ 	if (!(rq->cmd_flags & REQ_FLUSH))
+ 		return BLKPREP_OK;
+ 
+-	cmd = kmalloc(sizeof(*cmd), GFP_ATOMIC);
++	cmd = kzalloc(sizeof(*cmd), GFP_ATOMIC);
+ 
+ 	/* FIXME: map struct ide_taskfile on rq->cmd[] */
+ 	BUG_ON(cmd == NULL);
+ 
+-	memset(cmd, 0, sizeof(*cmd));
+ 	if (ata_id_flush_ext_enabled(drive->id) &&
+ 	    (drive->capacity64 >= (1UL << 28)))
+ 		cmd->tf.command = ATA_CMD_FLUSH_EXT;
+-- 
+1.7.1.571.gba4d01
+
