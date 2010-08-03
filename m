@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991Ab0HCP2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:28:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61986 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756938Ab0HCP22 (ORCPT
+	id S932178Ab0HCPbK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:31:10 -0400
+Received: from mx4.sophos.com ([74.202.89.161]:38151 "EHLO mx4.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756379Ab0HCPbI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:28:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=VQn1cAGJxqLhcY0bo3VCvr7JPsJEFk4esyQLYgTEHwVqT9gqCgyG3gGzKXaJvL/kzp
-         QEw541MEXrOneNBrjV2mHunYRcP6TOxjEemZ/Uv0dsGUD15dAJjSkJ8iQrV9CYtR5s+G
-         umvWFq8vike/cl9Wp4kAfZfDWKgsV2k+n3ig4=
-Date: Tue, 3 Aug 2010 17:27:47 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: [patch] pata_winbond: fix module init
-Message-ID: <20100803152549.GQ26313@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-	alan@lxorguk.ukuu.org.uk
+	Tue, 3 Aug 2010 11:31:08 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: 2.6.35 hangs on early boot in KVM
+Date: Tue, 3 Aug 2010 16:31:02 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, <hpa@zytor.com>, <bp@amd64.org>
+References: <201008031028.57263.tvrtko.ursulin@sophos.com> <201008031557.04613.tvrtko.ursulin@sophos.com> <201008031617.21418.tvrtko.ursulin@sophos.com>
+In-Reply-To: <201008031617.21418.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-ID: <201008031631.03111.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 03/08/2010 16:31:05,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 03/08/2010 16:31:06,
+	Serialize complete at 03/08/2010 16:31:06
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-winbond_init_one() returns 0 on success and an error code on failure.
-In the original code, we always just released the regions and return
--ENODEV.  This was introduce in 2006 by 7e45b0e5f6f6 "[PATCH] libata:
-Winbond support".
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
----
-Compile tested.
+On Tuesday 03 Aug 2010 16:17:20 Tvrtko Ursulin wrote:
+> On Tuesday 03 Aug 2010 15:57:03 Tvrtko Ursulin wrote:
+> > On Tuesday 03 Aug 2010 15:51:08 Avi Kivity wrote:
+> > >   On 08/03/2010 12:28 PM, Tvrtko Ursulin wrote:
+> > > > I have basically built 2.6.35 with make oldconfig from a working
+> > > > 2.6.34. Latter works fine in kvm while 2.6.35 hangs very early. I see
+> > > > nothing after grub (have early printk and verbose bootup enabled),
+> > > > just a blinking VGA cursor and CPU at 100%.
+> > >
+> > > Please copy kvm@vger.kernel.org on kvm issues.
+> > >
+> > > > CONFIG_PRINTK_TIME=y
+> > >
+> > > Try disabling this as a workaround.
+> >
+> > I am in the middle of a bisect run with five builds left to go, currently
+> > I have:
+> >
+> > bad 537b60d17894b7c19a6060feae40299d7109d6e7
+> > good 93c9d7f60c0cb7715890b1f9e159da6f4d1f5a65
+>
+> Bisect is looking good, narrowed it to ten revisions, but I am not sure to
+> make it to the end today:
+>
+> bad cb41838bbc4403f7270a94b93a9a0d9fc9c2e7ea
+> good 41d59102e146a4423a490b8eca68a5860af4fe1c
+>
+> One interesting waning spotted:
+>
+> include/config/auto.conf:555:warning: symbol value '-fcall-saved-ecx
+> -fcall- saved-edx' invalid for ARCH_HWEIGHT_CFLAGS
 
-diff --git a/drivers/ata/pata_winbond.c b/drivers/ata/pata_winbond.c
-index 6d8619b..b34b594 100644
---- a/drivers/ata/pata_winbond.c
-+++ b/drivers/ata/pata_winbond.c
-@@ -248,9 +248,10 @@ static __init int winbond_init(void)
- 
- 			if (request_region(port, 2, "pata_winbond")) {
- 				ret = winbond_init_one(port);
--				if (ret <= 0)
-+				if (ret < 0)
- 					release_region(port, 2);
--				else ct+= ret;
-+				else
-+					ct++;
- 			}
- 		}
- 	}
+Copying Peter and Borislav, guys please look at the above warning. I am
+bisecting a non-bootable 2.6.35 under KVM and while I am not there yet, it is
+close to the hweight commit (cb41838bbc4403f7270a94b93a9a0d9fc9c2e7ea) and I
+spotted this warning.
+
+Tvrtko
+
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
