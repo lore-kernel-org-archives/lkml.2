@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab0HCRtR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:49:17 -0400
-Received: from www.tglx.de ([62.245.132.106]:60438 "EHLO www.tglx.de"
+	id S1757421Ab0HCRtZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:49:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51851 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932114Ab0HCRtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:49:13 -0400
-Date: Tue, 3 Aug 2010 19:48:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner
- comment
-In-Reply-To: <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1008031943400.3225@localhost.localdomain>
-References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk>  <20100729114555.29508.4525.stgit@warthog.procyon.org.uk> <20100802204000.GH2405@linux.vnet.ibm.com>  <201008030055.o730tgXK091413@www262.sakura.ne.jp> <30552.1280828047@redhat.com>
- <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757323Ab0HCRtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 13:49:22 -0400
+Date: Tue, 3 Aug 2010 17:49:02 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <201008031815.09764.florian@openwrt.org>
+References: <201008031815.09764.florian@openwrt.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what c_ident is
+Message-ID: <tip-c0366f5f5c1615c4f70b1bd646149ba9233830b9@git.kernel.org>
+Git-Commit-ID: c0366f5f5c1615c4f70b1bd646149ba9233830b9
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1025026541-1280857702=:3225"
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 17:49:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Commit-ID:  c0366f5f5c1615c4f70b1bd646149ba9233830b9
+Gitweb:     http://git.kernel.org/tip/c0366f5f5c1615c4f70b1bd646149ba9233830b9
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Tue, 3 Aug 2010 10:09:56 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 3 Aug 2010 10:09:56 -0700
 
---8323328-1025026541-1280857702=:3225
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+x86, cpu: RDC doesn't have CPUID, which is what c_ident is
 
-On Tue, 3 Aug 2010, Linus Torvalds wrote:
+c_ident is supposed to be a CPUID identifier, and RDC doesn't have
+that.
 
-> Added Oleg and Thomas to the participants.
-> 
-> Oleg/Thomas: the whole thread is on lkml, but I'm quoting most of the
-> relevant parts..
-> 
-> On Tue, Aug 3, 2010 at 2:34 AM, David Howells <dhowells@redhat.com> wrote:
-> >
-> > A previous patch:
-> >
-> >        commit 8f92054e7ca1d3a3ae50fb42d2253ac8730d9b2a
-> >        Author: David Howells <dhowells@redhat.com>
-> >        Date:   Thu Jul 29 12:45:55 2010 +0100
-> >        Subject: CRED: Fix __task_cred()'s lockdep check and banner comment
-> >
-> > fixed the lockdep checks on __task_cred().  This has shown up a place in the
-> > signalling code where a lock should be held - namely that
-> > check_kill_permission() requires its callers to hold the RCU lock.
-> 
-> It's not just check_kill_permission(), is it? I thought we could do
-> the "for_each_process()" loops with just RCU, rather than holding the
-> whole tasklist_lock? So I _think_ that getting the RCU read-lock would
-> make it possible to get rid of the tasklist_lock in there too? At
-> least in kill_something_info().
-> 
-> Yes/no? What am I missing? This is an Oleg question, mainly.
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Mark Kelly <mark@bifferos.com>
+Cc: Florian Fainelli <florian@openwrt.org>
+LKML-Reference: <201008031815.09764.florian@openwrt.org>
+---
+ arch/x86/kernel/cpu/rdc.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Yes, almost all places in the kernel which hold tasklist_lock read
-locked are safe with RCU. I started to work on that, but got
-distracted.
+diff --git a/arch/x86/kernel/cpu/rdc.c b/arch/x86/kernel/cpu/rdc.c
+index c2bcdcc..e5e241c 100644
+--- a/arch/x86/kernel/cpu/rdc.c
++++ b/arch/x86/kernel/cpu/rdc.c
+@@ -65,7 +65,6 @@ static void __cpuinit rdc_identify(struct cpuinfo_x86 *c)
  
-Thanks,
-
-	tglx
---8323328-1025026541-1280857702=:3225--
+ static const struct cpu_dev __cpuinitconst rdc_cpu_dev = {
+ 	.c_vendor	= "RDC",
+-	.c_ident	= { "RDC" },
+ 	.c_identify	= rdc_identify,
+ 	.c_x86_vendor	= X86_VENDOR_RDC,
+ };
