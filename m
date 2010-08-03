@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755140Ab0HCFde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 01:33:34 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55282 "EHLO e7.ny.us.ibm.com"
+	id S1755153Ab0HCFfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 01:35:44 -0400
+Received: from sh.osrg.net ([192.16.179.4]:34137 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab0HCFdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 01:33:32 -0400
-Date: Tue, 3 Aug 2010 11:03:27 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        linux-kernel@vger.kernel.org, npiggin@suse.de, kvm@vger.kernel.org,
-        bharata@in.ibm.com, Balbir Singh <balbir@in.ibm.com>,
-        Jan Beulich <JBeulich@novell.com>, peterz@infradead.org, mingo@elte.hu,
-        efault@gmx.de
-Subject: Re: [PATCH RFC 2/4] Add yield hypercall for KVM guests
-Message-ID: <20100803053327.GC29526@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <20100726061150.GB21699@linux.vnet.ibm.com>
- <20100726061445.GB8402@linux.vnet.ibm.com>
- <4C4DC3AD.7010404@goop.org>
- <20100728145516.GB27739@linux.vnet.ibm.com>
- <4C568477.4000602@redhat.com>
- <20100803051659.GB29526@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100803051659.GB29526@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754720Ab0HCFfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 01:35:43 -0400
+Date: Tue, 3 Aug 2010 14:35:09 +0900
+To: konrad.wilk@oracle.com
+Cc: fujita.tomonori@lab.ntt.co.jp, hpa@zytor.com, jeremy@goop.org,
+        Ian.Campbell@citrix.com, albert_herranz@yahoo.es, x86@kernel.org,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        iommu@lists.linux-foundation.org, tglx@linutronix.de
+Subject: Re: [PATCH 9/9] x86: Detect whether we should use Xen SWIOTLB.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100802164234.GC6961@phenom.dumpdata.com>
+References: <4C56E8A9.1060004@zytor.com>
+	<20100803010025R.fujita.tomonori@lab.ntt.co.jp>
+	<20100802164234.GC6961@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100803143407J.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 03 Aug 2010 14:35:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 10:46:59AM +0530, Srivatsa Vaddagiri wrote:
-> On Mon, Aug 02, 2010 at 11:40:23AM +0300, Avi Kivity wrote:
-> > >>Can you do a directed yield?
-> > >We don't have that support yet in Linux scheduler.
-> > 
-> > If you think it's useful, it would be good to design it into the
-> > interface, and fall back to ordinary yield if the host doesn't
-> > support it.
-> > 
-> > A big advantage of directed yield vs yield is that you conserve
-> > resources within a VM; a simple yield will cause the guest to drop
-> > its share of cpu to other guest.
+On Mon, 2 Aug 2010 12:42:34 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+
+> > But his attempt to create "swiotlb iommu function array" and "hardware
+> > iommu function array" looks like to makes the code more unreadable.
 > 
-> Hmm .. I see possibility of modifying yield to reclaim its "lost" timeslice when
-> its scheduled next as well. Basically remember what timeslice we have given
-> up and add that as its "bonus" when it runs next. That would keep the dynamics
-> of yield donation/reclaim local to the (physical) cpu and IMHO is less complex
-> than dealing with directed yield between tasks located across different physical
-> cpus. That would also address the fairness issue with yield you are pointing at?
+> Let me go to my favorite coffee shop and think this one through.
+> Can I get concession for putting the original patch in (the simple, dumb one),
+> and then:
+>  - start working on the IOMMU register interface without having to try
+>    to get it done for 2.6.36, and
+>  - do the driverization as a seperate cleanup.
 
-Basically with directed yield, we need to deal with these issues:
+We could simplify swiotlb initialization after 2.6.36. If we merge my
+patches to expand swiotlb memory dynamically, we could initialize
+swiotlb before any hw IOMMUs (see the commit
+186a25026c44d1bfa97671110ff14dcd0c99678e).
 
-- Timeslice inflation of target (lock-holder) vcpu affecting fair-time of other
-  guests vcpus.
-- Intra-VM fairness - different vcpus could get different fair-time, depending
-  on how much of a lock-holder/spinner a vcpu is
+If you can make Xen swiotlb initialized like HW iommu, the IOMMU
+initialization could be cleaner.
 
-By simply educating yield to reclaim its lost share, I feel we can avoid these
-complexities and get most of the benefit of yield-on-contention.
-
-CCing other shceduler experts for their opinion of directed yield.
-
-- vatsa
+As I wrote, I also want to simplify swiotlb's init memory
+allocation. I'll see what I can do on the whole issue.
