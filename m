@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0HCEpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:45:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62178 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab0HCEps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:45:48 -0400
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity data
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100715153410.774329000@de.ibm.com>
-	<yq1mxtspwab.fsf@sermon.lab.mkp.net>
-	<20100716083034.GA7474@schmichrtp.ibm.com>
-	<yq1bpa292wy.fsf@sermon.lab.mkp.net>
-	<20100720092850.GA4547@schmichrtp.mainz.de.ibm.com>
-	<yq1y6d579fy.fsf@sermon.lab.mkp.net>
-	<20100802110517.GA4556@schmichrtp.mainz.de.ibm.com>
-Date: Tue, 03 Aug 2010 00:44:50 -0400
-In-Reply-To: <20100802110517.GA4556@schmichrtp.mainz.de.ibm.com> (Christof
-	Schmitt's message of "Mon, 2 Aug 2010 13:05:17 +0200")
-Message-ID: <yq1vd7s8ful.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755041Ab0HCEqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:46:31 -0400
+Received: from mail.lang.hm ([64.81.33.126]:58815 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453Ab0HCEqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 00:46:30 -0400
+Date: Mon, 2 Aug 2010 21:44:44 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100731215214.2543c07e@infradead.org> <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801204026.GH31324@thunk.org>
+ <20100802030304.GU2470@linux.vnet.ibm.com> <20100801210548.23f77ff6@infradead.org> <alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm> <20100802140933.GB2405@linux.vnet.ibm.com> <alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
+ <AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C579EF5.0002:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+On Mon, 2 Aug 2010, Arve Hj?nnev?g wrote:
 
-Christof> To summarize the limits i see in the zfcp hardware:
-Christof> - Maximum size of 4k per segment
-Christof> - The segments must not cross page boundaries
-Christof> - The number of segments per request is limited
+> On Mon, Aug 2, 2010 at 5:08 PM,  <david@lang.hm> wrote:
+>> On Mon, 2 Aug 2010, Paul E. McKenney wrote:
+>>
+>>
+>> you are close, but I think what I'm proposing is actually simpler (assuming
+>> that the scheduler can be configured to generate the appropriate stats)
+>>
+>> my thought was not to move applications between cgroups as they
+>> aquire/release the suspend-block lock, bur rather to say that any
+>> application that you would trust to get the suspend-block lock should be in
+>> cgroup A while all other applications are in cgroup B
+>>
+>> when you are deciding if the system shoudl go to sleep because it is idle,
+>> ignore the activity of all applications in cgroup B
+>>
+>> if cgroup A applications are busy, the system is not idle and should not
+>> suspend.
+>>
+>
+> Triggering suspend from idle has been suggested before. However, idle
+> is not a signal that it is safe to suspend since timers stop in
+> suspend (or the code could temporarily be waiting on a non-wakeup
+> interrupt). If you add suspend blockers or wakelocks to prevent
+> suspend while events you care about are pending, then it does not make
+> a lot of sense to prevent suspend just because the cpu is not idle.
 
-The interesting thing here is that your hw has a limit for the total
-number of segments whereas other DIX HBAs have separate limits for data
-and integrity scatterlists.
+isn't this a matter of making the suspend decision look at what timers 
+have been set to expire in the near future and/or tweaking how long the 
+system needs to be idle before going to sleep?
 
+to properly do a good job at suspending hyperagressivly you need to look 
+at when you need to wake back up (after all, if you are only going to 
+sleep for 1 second, it makes no sense to try and enter a sleep state that 
+takes .5 seconds to get into and .6 seconds to get out of, you need to 
+pick a lighter power saving mode)
 
-Christof> What would be the preferred approach for handling the
-Christof> integrity data limits in the block layer? Introduce new queue
-Christof> limits for integrity data, or assume that the limits for
-Christof> integrity data are the same as for user data? I can update my
-Christof> patch accordingly and include a check for the maximum number
-Christof> of segments.
+if you really want to have the application be able to say 'I am ready for 
+you to go to sleep NOW and I don't want any chance of waking back up until 
+the system is ready for me to do so' it may be possible to have a special 
+dev file that when a program attempts to read from it the program is 
+considered to have been idle forever (expiring any 'delay since last 
+activity' timers that are running for that process) and when the device 
+wakes back up (or after a little bit of time if the device decides not to 
+go back to sleep), allow the return from the blocking call to allow the 
+app to continue running.
 
-I've been messing with this tonight.  It's not entirely trivial because
-of the housekeeping involved, having to accomodate different types of
-hardware, having to avoid breaking existing setups, and having to work
-with integrity compiled and without.
+but I am not sure that something like that is needed. I think just 
+checking for timers that are due to expire 'soon' and tweaking how long 
+the system must be 'idle' before it decides to go to sleep should be good 
+enough.
 
-My first attempt at this got quite messy.  I think I have found a way
-but it's bedtime here.  Give me a day or two to get back to you with
-something that'll hopefully work for everyone.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+David Lang
