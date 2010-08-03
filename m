@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab0HCOZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 10:25:06 -0400
-Received: from corp-190-12-5-204-cue.puntonet.ec ([190.12.5.204]:36783 "EHLO
-	mail02.institutodelcancer.med.ec" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755500Ab0HCOZE (ORCPT
+	id S1756255Ab0HCO34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 10:29:56 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52917 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753995Ab0HCO3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 10:25:04 -0400
-Message-ID: <f2ae64170e423204de12f058aaf7cafb.squirrel@mail02.institutodelcancer.med.ec>
-Date: Tue, 3 Aug 2010 09:58:19 -0500 (ECT)
-Subject: Confirm Your Webmail Account 
-From: "info_webmaster" <info@webmaster.com>
-Reply-To: customercarewebdept104@w.cn
-User-Agent: SquirrelMail/1.4.17
+	Tue, 3 Aug 2010 10:29:54 -0400
+Date: Tue, 3 Aug 2010 10:29:52 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Valdis.Kletnieks@vt.edu
+cc: "Justin P. Mattock" <justinmattock@gmail.com>, <linux-usb@vger.kernel.org>,
+        <dbrownell@users.sourceforge.net>, <gregkh@suse.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2]drivers/usb/core/sysfs.c Fix variable 'retval' set
+ but not used
+In-Reply-To: <58611.1280834905@localhost>
+Message-ID: <Pine.LNX.4.44L0.1008031027250.1853-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Subscriber,
+On Tue, 3 Aug 2010 Valdis.Kletnieks@vt.edu wrote:
 
-Due to user complaints of spam e-mail to our webmail system, our research
-shows that management is committed to your e-mail and used to send spam
-messages on our web mail system. As a result, our network engineer will
-perform a maintenance in our webmail system, your username will be
-disabled if you do not send us the required information within 48 hours.
-Information requested:
+> On Mon, 02 Aug 2010 21:26:28 PDT, "Justin P. Mattock" said:
+> > diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+> 
+> >  	if (alt->string)
+> > -		retval = device_create_file(&intf->dev, &dev_attr_interface);
+> > +		device_create_file(&intf->dev, &dev_attr_interface);
+> >  	intf->sysfs_files_created = 1;
+> >  	return 0;
 
-Their names:
-Username:
-Password:
-Retype Password:
+Justin, did you try compiling your new code?  Those unused values are 
+there because device_create_file is declared as __must_check.
 
+> What should the code do if device_create_file() manages to fail? Yes, ignoring
+> the return value is one option, but is it the best one?  'return ret;' might be
+> another one. Somebody who understands this code and has more caffeine than me
+> should look this over.
 
-We value your business and thank you for using our Webmail service
-equipment maintenance. XTension webmail service Email:
-customercarewebdept104@w.cn
+Failure to create a file in sysfs is almost never fatal and usually not 
+even dangerous.  Ignoring the error is generally better than failing 
+the entire operation.
+
+Alan Stern
+
