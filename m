@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab0HCQfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 12:35:16 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46425 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755510Ab0HCQfN (ORCPT
+	id S932383Ab0HCQgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 12:36:11 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:34530 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755510Ab0HCQgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 12:35:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=k0wP5RTNfH6Xx4ADnhD8FPjsDnOX5nfA7l3DVQT2qt/bNs9ZuH4Y+HKBKlqvHKld7Z
-         HxOiafP59YQefiN096qSAePf5VyhjqaofUyYVv3zjLQbl4EytyqY7/kVZXsIQKDujVRi
-         nnwik/7TKmbi+hj/YeVHdwNIpwllM462dKxEI=
-Date: Tue, 3 Aug 2010 20:35:08 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
+	Tue, 3 Aug 2010 12:36:08 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=pmgwnMwsgiqKcB8Wmzlj1BsKvJb5Tjy/tYsdHiSYXd8zx4o/HTe+/Mfpa9C4S1pkz/t8ePoiF9kff/DpP+4BNSXbh0fb1eUi13D2hAe5OD2oORbYReMEzUeLpgv2gUGD;
+Date: Tue, 3 Aug 2010 09:36:05 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
 To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: kernel-janitors@vger.kernel.org, Kyle McMartin <kyle@mcmartin.ca>,
-        Helge Deller <deller@gmx.de>,
+Cc: Kulikov Vasiliy <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
         "James E.J. Bottomley" <jejb@parisc-linux.org>,
         Frans Pop <elendil@planet.nl>, Thomas Gleixner <tglx@linutronix.de>,
         linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 07/11] parisc: superio: do not use PCI resources before
  pci_enable_device()
-Message-ID: <20100803163508.GA7914@albatros>
-References: <1280850253-6128-1-git-send-email-segooon@gmail.com>
- <1280851880.2774.36.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Message-ID: <20100803093605.21248480@virtuousgeek.org>
 In-Reply-To: <1280851880.2774.36.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+References: <1280850253-6128-1-git-send-email-segooon@gmail.com>
+	<1280851880.2774.36.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 11:11 -0500, James Bottomley wrote:
+On Tue, 03 Aug 2010 11:11:20 -0500
+James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
+
 > On Tue, 2010-08-03 at 19:44 +0400, Kulikov Vasiliy wrote:
 > >  drivers/parisc/superio.c |    5 +++--
 > >  1 files changed, 3 insertions(+), 2 deletions(-)
@@ -66,11 +65,7 @@ On Tue, Aug 03, 2010 at 11:11 -0500, James Bottomley wrote:
 > >  	 * PDC hasn't done this for us, since it's using polled I/O.
 > 
 > This really makes no sense; we want the information printed before we
-> start all the discovery prints, not after.
-
-Right, I missed it.
-
-> I assume lots of
+> start all the discovery prints, not after.  I assume lots of
 > initialisers want this too, so it looks particularly silly not to have
 > pci_name() returning the correct value until enable time.
 > 
@@ -78,16 +73,12 @@ Right, I missed it.
 > isn't true for parisc, and even for other things, it would be better to
 > print something than nothing.
 
-Not name, but pdev-irq. I was not searching for pci_name() as you can
-see in coccinelle script :)
+Right.  Some of these "enable before use" patches are ok, for example
+in some cases the IRQ may not be fully set up or resources may not be
+enabled, so re-ordering things makes sense.
 
-As it is only printing wrong value, the worst case is fooling user that
-reads logs.
+But just printing these values at init time should be harmless.  So
+perhaps a smarter static check script is in order.
 
-
-Is it OK to move pci_enable_device() just before this printk()?
-
-> 
-> James
-> 
-> 
+-- 
+Jesse Barnes, Intel Open Source Technology Center
