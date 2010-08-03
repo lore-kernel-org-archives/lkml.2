@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab0HCLI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 07:08:58 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34027 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421Ab0HCLI4 (ORCPT
+	id S1755940Ab0HCLNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 07:13:05 -0400
+Received: from sypressi.dnainternet.net ([83.102.40.135]:49280 "EHLO
+	sypressi.dnainternet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755475Ab0HCLNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 07:08:56 -0400
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
-	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
-	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
-	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>
-	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>
-	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>
-	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>
-	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 03 Aug 2010 04:08:49 -0700
-In-Reply-To: <4C57E32A.9070401@kernel.org> (Yinghai Lu's message of "Tue\, 03 Aug 2010 02\:36\:42 -0700")
-Message-ID: <m18w4onebi.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Tue, 3 Aug 2010 07:13:04 -0400
+X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Aug 2010 07:13:03 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -1.36
+From: Anssi Hannula <anssi.hannula@iki.fi>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH 0/2] ALSA: hda - support HDMI HBR passthrough
+Date: Tue, 3 Aug 2010 14:04:01 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.35-0.rc5.1mdv; KDE/4.4.92; x86_64; ; )
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+References: <1280831338-4596-1-git-send-email-anssi.hannula@iki.fi> <s5h62zsm076.wl%tiwai@suse.de>
+In-Reply-To: <s5h62zsm076.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008031404.01578.anssi.hannula@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
+Takashi Iwai kirjoitti tiistai, 3. elokuuta 2010 13:59:09:
+> At Tue,  3 Aug 2010 13:28:56 +0300,
+> 
+> Anssi Hannula wrote:
+> > Hi all!
+> > 
+> > This patchset adds support for passing through IEC 61937 encapsulated
+> > compressed audio at high bitrates (i.e. those over 6.144Mbps).
+> > At least TrueHD and DTS-HD are such formats.
+> > 
+> > I've tested this using an NVIDIA hdmi codec and the following ffmpeg
+> > patch which adds support for TrueHD in its IEC 61937 muxer:
+> > http://lists.mplayerhq.hu/pipermail/ffmpeg-devel/2010-August/094317.html
+> > 
+> > One needs to set the AES0 & 0x02 (non-audio) bit during playback so that
+> > the data is not transmitted as normal 8 channel PCM audio.
+> 
+> Thanks, I applied both patches.
+> 
+> There are some magic numbers there like 0x8000, and I'm going to define
+> them...
 
-> On 08/03/2010 02:15 AM, Eric W. Biederman wrote:
->> Yinghai Lu <yinghai@kernel.org> writes:
->> 
->> 
->> You can't share an edge triggered ISA irq, it isn't really physically
->> possible.  So I don't see how this extra complexity will change anything.
->> 
+Yeah, I guess all the Stream Format bits should be defined to get rid of all 
+the existing magic numbers in snd_hda_calc_stream_format() as well.
 
->
-> Dave's system mptble:
+> 
+> Takashi
+> 
+> > ---
+> > 
+> > Anssi Hannula (2):
+> >       ALSA: hda - Set Stream Type in Stream Format according to AES0
+> >       ALSA: hda - Add support for HDMI HBR passthrough
+> >  
+> >  sound/pci/hda/hda_codec.c       |    6 ++++-
+> >  sound/pci/hda/hda_codec.h       |    6 ++++-
+> >  sound/pci/hda/hda_intel.c       |    3 +-
+> >  sound/pci/hda/patch_hdmi.c      |   40
+> >  ++++++++++++++++++++++++++++++++++++++- sound/pci/hda/patch_intelhdmi.c
+> >  |    3 +-
+> >  sound/pci/hda/patch_nvhdmi.c    |    3 +-
+> >  6 files changed, 53 insertions(+), 8 deletions(-)
 
-Interesting he has ISA irqs on bus #10 on the same apic id and pin as
-pci irqs.  Blink.  I had missed we had that print out.
-
-The immediate issue are these lines:
-> Int: type 0, pol 0, trig 0, bus 03, IRQ 00, APIC ID 0, APIC INT 10
-> Int: type 0, pol 0, trig 0, bus 04, IRQ 00, APIC ID 0, APIC INT 10
-> Int: type 0, pol 0, trig 0, bus 04, IRQ 01, APIC ID 0, APIC INT 11
-
-Which get the apic id wrong, and thus cause us to mishandle them and
-get 
-
-You are right Dave's mptable does the  arguably broken:
-
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 28, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 34, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 01, IRQ 02, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 05, IRQ 01, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 06, IRQ 00, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 07, IRQ 0c, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 07, IRQ 12, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 07, IRQ 15, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 07, IRQ 28, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 08, IRQ 01, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 09, IRQ 02, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 09, APIC ID 8, APIC INT 09
-
-Where busses 0,1,5,6,7,8,9 result in level triggered interrupts and
-bus 0x0a results in an edge triggered interrupt.
-
-As I read the code.  First we will do a generic isa setup, marking the
-interrupt ioapic table entry edge triggered.  Then we will do a pci
-setup for any pin we use as pci, and then we will set pin_programmed
-stopping us from updating the pin any more, during setup.
-
-For the common case I think we still do the right thing, even now, for
-these broken bios tables.  There is likely an uncommon case for which
-something like your shared_legacy_irq deserves to be used, especially
-at it preserves our well tested historical behavior.
-
-Eric
-
+-- 
+Anssi Hannula
