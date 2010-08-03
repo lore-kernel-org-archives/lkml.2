@@ -1,57 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab0HCQt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 12:49:58 -0400
-Received: from DELFT.AURA.CS.CMU.EDU ([128.2.209.12]:43580 "EHLO
-	delft.aura.cs.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932283Ab0HCQt4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 12:49:56 -0400
-X-Greylist: delayed 2280 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Aug 2010 12:49:56 EDT
-Date: Tue, 3 Aug 2010 12:11:41 -0400
-From: Jan Harkes <jaharkes@cs.cmu.edu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, stable@kernel.org,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH] coda: rename REQ_* to CODA_REQ_*
-Message-ID: <20100803161141.GA14888@cs.cmu.edu>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>,
-	Jens Axboe <jaxboe@fusionio.com>, stable@kernel.org,
-	Vladislav Bolkhovitin <vst@vlnb.net>,
-	Bryan Mesich <bryan.mesich@ndsu.edu>,
-	scst-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-raid@vger.kernel.org, dm-devel@redhat.com,
-	Neil Brown <neilb@suse.de>
-References: <4C5073F3.1060406@vlnb.net>
- <4C52A98A.7060507@kernel.org>
- <20100802104227.79340b49@notabene>
- <4C56D397.8010305@kernel.org>
- <4C5724E8.9010204@kernel.dk>
- <4C57E722.5060809@kernel.org>
- <4C57FA57.2000601@kernel.dk>
- <4C57FBAD.1080809@fusionio.com>
- <4C583B3B.3060301@kernel.org>
- <4C583DAD.4080507@kernel.org>
+	id S932423Ab0HCQu2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 12:50:28 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:41516 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932283Ab0HCQuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 12:50:24 -0400
+Date: Tue, 3 Aug 2010 09:50:10 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+Message-ID: <20100803165010.GG3948@outflux.net>
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+ <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
+ <20100802122421.GA12130@infradead.org>
+ <20100802165936.GV3948@outflux.net>
+ <15424.1280775073@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C583DAD.4080507@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <15424.1280775073@localhost>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 06:02:53PM +0200, Tejun Heo wrote:
-> REQ_* constants are used for block layer requests causing inconsistent
-> duplicate definitions of REQ_WRITE.  Rename REQ_* used by coda to
-> CODA_REQ_*.
+On Mon, Aug 02, 2010 at 02:51:13PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 02 Aug 2010 09:59:36 PDT, Kees Cook said:
+> > > Al gave you some very clear advice how a the sticky check should be
+> > 
+> > This is patently false. "Very clear advice" would have included actionable
+> > instructions. He (and everyone else) has ignored my requests for
+> > clarification[2]. If you see how the check should be implemented, please
+> > send a patch demonstrating how. I would greatly prefer having these
+> > protections in the VFS itself.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> You're overlooking step zero of Al's advice: First, *think* about the issue
+> in a deep fashion, rather than a knee-jerk patch to fix one instance of
+> the problem.
 
-Looks good to me.
+I think this is unfair. This solution has been used for 15 years in other
+hardened kernel patches. It's not knee-jerk at all. Not fixing this is not
+getting the "good" for the sake of wanting the "perfect".
 
-Acked-by: Jan Harkes <jaharkes@cs.cmu.edu>
+> The problem is that although your patch closes *one set* of symlink attacks
+> that has been traditionally a problem, it doesn't do a very good job of
+> creating a conceptual model and then *really* dealing with the issue. That's
+> the big distinction between SELinux, Tomoyo, Smack, and your proposal - they
+> form a *model* of what's important to protect, and what actions need to be
+> taken to *actually* protect them.  They don't just apply one arbitrary rule
+> that closes some attacks - they make an honest effort to deal with all
+> variants of the attack, and other attacks that allow bypass, and so on.
 
+Okay, thanks for this explanation of why people don't want Yama as an LSM.
+I disagree with the logic, but at least I understand the reasoning now.
+"Since Yama does not provide a security model, it cannot be an LSM." This
+then leaves a gap for people wanting to make small changes to the logic of
+how the kernel works without resorting to endlessly carrying a patchset.
+
+> The reason people are worried that this might grow into a "large" LSM is that
+> quite often, throwing in a bunch of ad-hoc rules may create *apparent*
+> security, but not provide any *real* security.  You yourself admit that Yama
+
+I can accept this as a theoretical position, but it's not like I've
+suddenly invented some new unproven protection. Given a choice between
+fighting to have it be an LSM and fighting to have it in the VFS, I prefer
+the VFS, since I'm trying to fix a flaw in DAC.
+
+> only closes one set of symlink attacks without addressing the general issue of
+> symlinks, hard links, TOCTOU races, and a lot of *other* similar "the file you
+> actually opened is not the one you intended to open" attacks. And the reason it
+> doesn't address the general issue is because it lacks a security model.  And
+> the reason you're having so much trouble getting it into the tree is because if
+> you're going to apply this at either the VFS or LSM layers, you need to address
+> the *general* problem and not one ad-hoc variant of it.
+
+Well, here we disagree. DAC is flawed, this fixes a giant class of security
+problems. The model is "fix what sticky means for symlinks" and "fix when
+hardlinks are created". :P
+
+> And quite frankly, the idea of this morphing into a "large" LSM containing a
+> lot of ad-hoc rules scares most security people, because without a good
+> conceptual model, it's hard to define if the security is in fact working, or
+> what the problem is if it isn't working.
+
+I have regression tests for all the Yama features. I can prove if it's
+working or not.
+
+> > I've seen two so far. Both are addressed with a one line fix. And I would
+> > stress that no other existing subsystem in the kernel can provide the same
+> > level of control that my ptrace exception logic provides. SELinux cannot do
+> > this.
+> 
+> Quick question: Now is that "SELinux doesn't consider the added granularity
+> important and doesn't bother doing it", or "SELinux can't do it *currently*",
+> or "there are innate structural reasons why SELinux is by design unable to do
+> it"?  Note that it's a big difference, and it's dangerous for your cause to
+> bring it up without understanding which it is, and why...
+
+I don't know the answer to this, but other people I've asked have said they
+didn't think it was possible. I would tend to agree since it requires an
+explicit action from the debugee.
+
+MAC is system-owner defined. This is programmer defined. I want my program
+to be able to declare that a single specific pid can PTRACE it and nothing
+else. Another example of programmer defined access control would be the
+ability to "give up" access to syscalls, a finer-grained version of
+SECCOMP.
+
+> You were told to go back and form an actual *security model*. What's important
+> to protect? What attacks can be made against it? What syscalls are included in
+> the forseeable attacks (hint - probably more than you think - if you're
+> mediating symlink access, a bit of thought will show symlinks aren't the only
+> problem you need to worry about to *actually* secure the resource).
+
+Cross-uid symlink following and cross-permission hardlink creation are
+flaws in DAC that lead to a large persistent class of ToCToU
+vulnerabilities that are trivially avoidable. It's been fixed for 15 years.
+I'm not exactly sure how to model this. We've discussed how shared /tmp is
+one aspect of the problem, but it's not the entire problem. We've discussed
+how per-user /tmp is untenable in the short-term, etc. This is a way to get
+there now while per-user /tmp is slowly adopted over the next 15 years.
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
