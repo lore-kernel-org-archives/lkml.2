@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab0HCSZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 14:25:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57336 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757392Ab0HCSZK (ORCPT
+	id S932276Ab0HCSZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 14:25:59 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:18138 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab0HCSZ5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 14:25:10 -0400
-Date: Tue, 3 Aug 2010 11:23:54 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
-        akpm@linux-foundation.org, sds@tycho.nsa.gov, jmorris@namei.org
-Subject: Re: [PATCH] kernel: rounddown helper function
-Message-Id: <20100803112354.8761e49d.randy.dunlap@oracle.com>
-In-Reply-To: <20100803181607.30614.36916.stgit@paris.rdu.redhat.com>
-References: <20100803181607.30614.36916.stgit@paris.rdu.redhat.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C585ED3.028D:SCFMA4539814,ss=1,fgs=0
+	Tue, 3 Aug 2010 14:25:57 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "'gregkh@suse.de'" <gregkh@suse.de>
+CC: Hank Janssen <hjanssen@microsoft.com>
+Subject: [PATCH 1/1] staging: hv: Fix missing functions for net_device_ops
+ (submit again)
+Thread-Topic: [PATCH 1/1] staging: hv: Fix missing functions for
+ net_device_ops (submit again)
+Thread-Index: AQHLMzlQWsjA8B1QnEq3K3jKXwO8xg==
+Date: Tue, 3 Aug 2010 18:25:53 +0000
+Message-ID: <1FB5E1D5CA062146B38059374562DF728380C30F@TK5EX14MBXC126.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Aug 2010 14:16:07 -0400 Eric Paris wrote:
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-> The roundup() helper function will round a given value up to a multiple of
-> another given value.  aka  roundup(11, 7) would give 14 = 7 * 2.  This new
-> function does the opposite.  It will round a given number down to the
-> nearest multiple of the second number: rounddown(11, 7) would give 7.
-> 
-> I need this in some future SELinux code and can carry the macro myself, but
-> figured I would put it in the core kernel so others might find and use it
-> if need be.
-> 
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> ---
-> 
->  include/linux/kernel.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 7d5b10f..d6092fd 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -59,6 +59,7 @@ extern const char linux_proc_banner[];
->  #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
->  #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
->  #define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
-> +#define rounddown(x, y) ((x) - ((x) % (y)))
->  #define DIV_ROUND_CLOSEST(x, divisor)(			\
->  {							\
->  	typeof(divisor) __divisor = divisor;		\
-> 
-> --
+Fix missing functions for net_device_ops.
+Unlike in older kernels, ether_setup() no longer sets default
+functions. We need to put them into net_device_ops. For example,
+eth_change_mtu prevents setting MTU beyond 1500. This is necessary
+because we don't support jumbo frame at this time.
+It affects kernel 2.6.32 and later, which are all versions
+containing Hyper-V drivers.
 
-I'm more used to seeing it like
-
-#define DIV_ROUND_DOWN(n, d)	(((n) / (d)) * (d))
-
-but since multiply/divide/modulus are usually slower, your (SELinux) way is better,
-I suppose.
-
-and the usual caveats apply:  don't use these macros with expressions (nor with y
-or d == 0).
-
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/staging/hv/netvsc_drv.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 56e1157..64a0114 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -327,6 +327,9 @@ static const struct net_device_ops device_ops = {
+ 	.ndo_stop =			netvsc_close,
+ 	.ndo_start_xmit =		netvsc_start_xmit,
+ 	.ndo_set_multicast_list =	netvsc_set_multicast_list,
++	.ndo_change_mtu =		eth_change_mtu,
++	.ndo_validate_addr =		eth_validate_addr,
++	.ndo_set_mac_address =		eth_mac_addr,
+ };
+ 
+ static int netvsc_probe(struct device *device)
+-- 
+1.6.3.2
+
