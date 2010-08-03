@@ -1,59 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab0HCLPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 07:15:36 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44858 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755641Ab0HCLPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 07:15:35 -0400
-Message-ID: <4C57FA57.2000601@kernel.dk>
-Date: Tue, 03 Aug 2010 13:15:35 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1756099Ab0HCLPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 07:15:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48871 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756067Ab0HCLPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 07:15:43 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH 1/2 block#for-2.6.36] bio, fs: update RWA_MASK, READA
- and  SWRITE to match the corresponding BIO_RW_* bits
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net>	<4C52A98A.7060507@kernel.org> <20100802104227.79340b49@notabene> <4C56D397.8010305@kernel.org> <4C5724E8.9010204@kernel.dk> <4C57E722.5060809@kernel.org>
-In-Reply-To: <4C57E722.5060809@kernel.org>
+In-Reply-To: <1280832249.19803.37.camel@thorin>
+References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
+	<1280832249.19803.37.camel@thorin>
+Date: Tue, 3 Aug 2010 12:15:39 +0100
+Message-ID: <AANLkTi=ZAjW13Qw0c+fvLbFSNFNpk6Q61tpudf064GiX@mail.gmail.com>
+Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
+From: Valeo de Vries <valeo@valeo.co.cc>
+To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+Cc: hp fk <fkhp101@gmail.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-03 11:53, Tejun Heo wrote:
-> Commit a82afdf (block: use the same failfast bits for bio and request)
-> moved BIO_RW_* bits around such that they match up with REQ_* bits.
-> Unfortunately, fs.h hard coded RW_MASK, RWA_MASK, READ, WRITE, READA
-> and SWRITE as 0, 1, 2 and 3, and expected them to match with BIO_RW_*
-> bits.  READ/WRITE didn't change but BIO_RW_AHEAD was moved to bit 4
-> instead of bit 1, breaking RWA_MASK, READA and SWRITE.
-> 
-> This patch updates RWA_MASK, READA and SWRITE such that they match the
-> BIO_RW_* bits again.  A follow up patch will update the definitions to
-> directly use BIO_RW_* bits so that this kind of breakage won't happen
-> again.
-> 
-> Neil also spotted missing RWA_MASK conversion.
-> 
-> Stable: The offending commit a82afdf was released with v2.6.32, so
-> this patch should be applied to all kernels since then but it must
-> _NOT_ be applied to kernels earlier than that.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-and-bisected-by: Vladislav Bolkhovitin <vst@vlnb.net>
-> Root-caused-by: Neil Brown <neilb@suse.de>
-> Cc: Jens Axobe <axboe@kernel.dk>
-           ^^^^^
+On 3 August 2010 11:44, Bernd Petrovitsch <bernd@petrovitsch.priv.at> wrote:
+> On Mon, 2010-08-02 at 20:24 +0800, hp fk wrote:
+>
+> -ENO_REALNAME
+>
+>> Kademlia protocol is widely used by many p2p applications, if kernel
+>
+> -ENO_URL_WITH_INTRODUCTION_ON_KADEMLIA
+> -ENO_PATCH
 
-(Too) common typo :-)
+Candidate for LWN's quote of the week, surely!? ;)
 
-Anyway, applied to for-2.6.36, thanks a lot.
-
--- 
-Jens Axboe
-
+Valeo
