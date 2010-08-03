@@ -1,142 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab0HCJPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:15:13 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:51318 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755567Ab0HCJPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:15:12 -0400
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
-	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
-	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
-	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>
-	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>
-	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>
-	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 03 Aug 2010 02:15:07 -0700
-In-Reply-To: <4C57DACF.1090503@kernel.org> (Yinghai Lu's message of "Tue\, 03 Aug 2010 02\:01\:03 -0700")
-Message-ID: <m17hk8oy5g.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1755704Ab0HCJPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:15:37 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:45455 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755665Ab0HCJPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 05:15:35 -0400
+Message-ID: <1280826924.4c57de2c3a6b0@imp.free.fr>
+Date: Tue, 03 Aug 2010 11:15:24 +0200
+From: damien.wyart@free.fr
+To: Zeno Davatz <zdavatz@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Damien Wyart <damien.wyart@free.fr>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        mingo@elte.hu, yinghai@kernel.org
+Subject: Re: kmemleak, cpu usage jump out of nowhere
+References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com> <AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com> <1279100846.8592.53.camel@e102109-lin.cambridge.arm.com> <4C3D89AC.4040303@cs.helsinki.fi> <1279205891.6664.46.camel@e102109-lin.cambridge.arm.com> <AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com> <4C3F2F52.2050101@cs.helsinki.fi> <20100715162805.GA10240@brouette> <20100715191638.GA3694@brouette> <AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com> <20100715200012.GA4175@brouette> <AANLkTilnLXVSkWfnaPtpzxH-C3-5h1mnBz3O0vAFHG32@mail.gmail.com> <1280826359.1923.440.camel@laptop> <AANLkTi=VuLwcmjTpOeK-OzgiWeycu14hJpfUuH9cKnUj@mail.gmail.com>
+In-Reply-To: <AANLkTi=VuLwcmjTpOeK-OzgiWeycu14hJpfUuH9cKnUj@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.8
+X-Originating-IP: 193.252.149.197
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
-
-> On 08/03/2010 01:56 AM, Eric W. Biederman wrote:
->> Yinghai Lu <yinghai@kernel.org> writes:
->> 
->>> On 08/03/2010 01:00 AM, Eric W. Biederman wrote:
->>>> Yinghai Lu <yinghai@kernel.org> writes:
->>>>
->>>>>>> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
->>>>>>> ===================================================================
->>>>>>> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
->>>>>>> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
->>>>>>> @@ -1029,10 +1029,7 @@ static int pin_2_irq(int idx, int apic,
->>>>>>>  	} else {
->>>>>>>  		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
->>>>>>>  
->>>>>>> -		if (gsi >= NR_IRQS_LEGACY)
->>>>>>> -			irq = gsi;
->>>>>>> -		else
->>>>>>> -			irq = gsi_top + gsi;
->>>>>>> +		irq = gsi_to_irq(gsi);
->>>>>>>  	}
->>>>>>>  
->>>>>>>  #ifdef CONFIG_X86_32
->>>>>
->>>>> what is the point for making irq = gsi_top + gsi when mptable is used instead of acpi?
->>>>
->>>> Because it is only convention that when mptables are used that the
->>>> first apic pins 0-15 are the ISA irqs.  This thread witnessed and a
->>>> pci irq that came in pin < 16 that was not an ISA irq.  The truly rare
->>>> and exotic case would be for the ISA irqs to be outside the first 16
->>>> ioapic pins but the es7000 did exactly that.
->>>
->>> nvidia chipset if acpi is enabled, external pci device will use ioapic from 16 to 23.
->>>
->>> if mptable is used, external pci device will not use pin from 16 to 23..., and lot of devices will share same pin.
->> 
->> Exactly.  Pins < 16 are not necessarily ISA irqs, and can be possibly
->> shared level triggered PCI irqs.  Unfortunately there are strange
->> boards like the es7000 where pins > 16 are ISA irqs.
->> 
->> The other thing that is gained by having pin_2_irq always remap pins <
->> 16 is we can get away with the numerous hard codes in the arch/x86 and elsewhere
->> that assume irq < 16 is an ISA irq.
+> > Vacation.. but now I'm back ;-)
+> >
+> > Even something simple as: perf top -r 1 (make sure you're root in order
+> > to run with real-time prios) could give a clue as to what is consuming
+> > all your cpu-time.
+> >
+> > Or did the issue get sorted already?
 >
-> how about this one ?
-
-You can't share an edge triggered ISA irq, it isn't really physically
-possible.  So I don't see how this extra complexity will change anything.
-
-Eric
-
-
-> ---
->  arch/x86/kernel/apic/io_apic.c |   31 ++++++++++++++++++++++++++++---
->  1 file changed, 28 insertions(+), 3 deletions(-)
+> Thank you for the hint.
 >
-> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-> @@ -1013,6 +1013,28 @@ static inline int irq_trigger(int idx)
->  	return MPBIOS_trigger(idx);
->  }
->  
-> +static int shared_with_legacy(int apic, int pin)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < mp_irq_entries; i++) {
-> +		int bus = mp_irqs[i].srcbus;
-> +
-> +		if (!test_bit(bus, mp_bus_not_pci))
-> +			continue;
-> +
-> +		if (mp_ioapics[apic].apicid != mp_irqs[i].dstapic)
-> +			continue;
-> +
-> +		if (mp_irqs[i].dstirq != pin)
-> +			continue;
-> +
-> +		return mp_irqs[i].srcbusirq;
-> +	}
-> +
-> +	return -1;
-> +}
-> +
->  static int pin_2_irq(int idx, int apic, int pin)
->  {
->  	int irq;
-> @@ -1029,10 +1051,13 @@ static int pin_2_irq(int idx, int apic,
->  	} else {
->  		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
->  
-> -		if (gsi >= NR_IRQS_LEGACY)
-> +		if (gsi >= NR_IRQS_LEGACY) {
->  			irq = gsi;
-> -		else
-> -			irq = gsi_top + gsi;
-> +		} else {
-> +			irq = shared_with_legacy(apic, pin);
-> +			if (irq < 0)
-> +				irq = gsi_top + gsi;
-> +		}
->  	}
->  
->  #ifdef CONFIG_X86_32
+> I am on 2.6.35 now and all seems to be fine again.
+
+Are you 100% sure you compiled it with CONFIG_NO_BOOTMEM enabled?
+
+I did not test 2.6.35 yet but I did not see anything related to this bug
+commited since the discussion so I am very surprised the problem disappeared by
+itself...
+
+Will be on vacation very soon, so not sure I will have time to test 2.6.35
+before leaving.
+
+Damien
