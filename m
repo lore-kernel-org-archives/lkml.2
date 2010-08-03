@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab0HCIkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 04:40:14 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:39056 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753953Ab0HCIkK (ORCPT
+	id S1754644Ab0HCIsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 04:48:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30962 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171Ab0HCIsP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 04:40:10 -0400
-X-SpamScore: -61
-X-BigFish: VPS-61(z6c9Rz1432N1a09M9370J98dN936eM1447R9371Pzz1202hzz15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L6KILG-01-HP2-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM (was: Re: HDD not suspending properly / dead on resume)
-Date: Tue, 3 Aug 2010 10:36:50 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-pm-link-fix; KDE/4.4.5; x86_64; ; )
-CC: Tejun Heo <tj@kernel.org>,
+	Tue, 3 Aug 2010 04:48:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,308,1278313200"; 
+   d="scan'208";a="824197826"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <201008022248.45135.stephan.diestelhorst@gmail.com> <201008022338.05195.rjw@sisk.pl>
-In-Reply-To: <201008022338.05195.rjw@sisk.pl>
+        "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Tue, 3 Aug 2010 16:48:08 +0800
+Subject: RE: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Topic: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+Thread-Index: AcsvbdP2So8Wpr8uSbuirl5Bo+pEOQDeh58g
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D791BAB307B7E@shsmsx502.ccr.corp.intel.com>
+References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
+ <1280442682.9058.15.camel@localhost.localdomain>
+In-Reply-To: <1280442682.9058.15.camel@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-ID: <201008031036.51012.stephan.diestelhorst@amd.com>
-X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 August 2010, 23:38:05 Rafael J. Wysocki wrote:
-> On Monday, August 02, 2010, Stephan Diestelhorst wrote:
-> > On Wednesday 28 July 2010, 23:50:09 Rafael J. Wysocki wrote:
-> > > On Saturday, July 10, 2010, Tejun Heo wrote:
-> > > > On 07/10/2010 08:50 AM, Stephan Diestelhorst wrote:
-> > > > >> I have a box where this problem is kind of reproducible, but it happens _very_
-> > > > >> rarely.  Also I can't reproduce it on demand running suspend-resume in a tight
-> > > > >> loop.  Are you able to reproduce it more regurarly?
-> > > > > 
-> > > > > For me it is much more reproducible. If I run multiple direct writing
-> > > > > dd-s to the disk in question I trigger it rather reliably (~75% or
-> > > > > higher). See the attached script from an earlier email.
-> > > > > Maybe that helps triggering your case more reliabl, too?
-> > > > 
-> > > That didn't help, but the appended patch fixes the problem for me.
-> > 
-> > <snip>
-> > 
-> > Sorry for taking ages. Vacation and catching up after it are to blame,
-> > as is me forgetting to build a proper initrd...
-> > 
-> > Thanks for the patch! It certainly changes behaviour, however, in a
-> > very strange way for me. With your patch my machine does not suspend
-> > to ram anymore (a simple echo mem > /proc/sys/state blocks), and
-> > nothing happens in dmesg if there is a lot of write I/O while
-> > suspending. (A number of parallel dd's with oflag=direct)
-> > 
-> > If I stop the I/O, the system eventually goes into suspend to RAM.
-> > However, that takes a while, after the I/O has stopped, and also
-> > from "Preparing system for suspend" log entry until it is actually
-> > done.
-> > 
-> > Is this intentional?
-> 
-> It surely isn't.
-> 
-> > Let me know how I can debug this further!
-> > Ideally I'd like to be able to suspend the machine under I/O load,
-> > too. (E.g. during a compile job.)
-> > 
-> > Can you reproduce this at your end, too?
-> 
-> Well, I didn't try suspending with a number of parallel dd's with oflag=direct
-> in the background, but otherwise I'm not reproducing the issue with
-> the patch applied.
+>-----Original Message-----
+>From: Shirley Ma [mailto:mashirle@us.ibm.com]
+>Sent: Friday, July 30, 2010 6:31 AM
+>To: Xin, Xiaohui
+>Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+>mst@redhat.com; mingo@elte.hu; davem@davemloft.net; herbert@gondor.apana.org.au;
+>jdike@linux.intel.com
+>Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM virtio-net.
+>
+>Hello Xiaohui,
+>
+>On Thu, 2010-07-29 at 19:14 +0800, xiaohui.xin@intel.com wrote:
+>> The idea is simple, just to pin the guest VM user space and then
+>> let host NIC driver has the chance to directly DMA to it.
+>> The patches are based on vhost-net backend driver. We add a device
+>> which provides proto_ops as sendmsg/recvmsg to vhost-net to
+>> send/recv directly to/from the NIC driver. KVM guest who use the
+>> vhost-net backend may bind any ethX interface in the host side to
+>> get copyless data transfer thru guest virtio-net frontend.
+>
+>Since vhost-net already supports macvtap/tun backends, do you think
+>whether it's better to implement zero copy in macvtap/tun than inducing
+>a new media passthrough device here?
+>
+>> Our goal is to improve the bandwidth and reduce the CPU usage.
+>> Exact performance data will be provided later.
+>
+>I did some vhost performance measurement over 10Gb ixgbe, and found that
+>in order to get consistent BW results, netperf/netserver, qemu, vhost
+>threads smp affinities are required.
+>
+>Looking forward to these results for small message size comparison. For
+>large message size 10Gb ixgbe BW already reached by doing vhost smp
+>affinity w/i offloading support, we will see how much CPU utilization it
+>can be reduced.
+>
+>Please provide latency results as well. I did some experimental on
+>macvtap zero copy sendmsg, what I have found that get_user_pages latency
+>pretty high.
+>
+May you share me with your performance results (including BW and latency)on 
+vhost-net and how you get them(your configuration and especially with the affinity 
+settings)?
 
-Mhmhm, I have tried to reproduce my issue again, and also added some
-dev_printk's around your code to understand where the delay is
-happening.
+Thanks
+Xiaohui
 
-However, I have not been able to reproduce the issue (with and without
-the debug output) anymore, and I am happy to report that for now your
-patch helps.
-
-I'd like to keep this under observation for a little while longer,
-though.
-
-Many thanks,
-  Stephan
-
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+>Thanks
+>Shirley
+>
+>
+>
 
