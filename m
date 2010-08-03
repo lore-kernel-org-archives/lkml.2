@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab0HCIBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 04:01:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33742 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab0HCIBA convert rfc822-to-8bit (ORCPT
+	id S1754225Ab0HCIFM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 04:05:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26531 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654Ab0HCIFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 04:01:00 -0400
-Subject: Re: [PATCH RFC] perf lock: Add new event "lock_acquired_waittime"
- for contention analysis
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <4C57C72C.3070902@dcl.info.waseda.ac.jp>
-References: <1279990529-8798-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-	 <20100728163946.GB5394@nowhere>  <4C5507F2.7090503@dcl.info.waseda.ac.jp>
-	 <1280751784.1923.146.camel@laptop> <4C57C72C.3070902@dcl.info.waseda.ac.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 03 Aug 2010 10:00:40 +0200
-Message-ID: <1280822440.1923.403.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 3 Aug 2010 04:05:09 -0400
+Message-ID: <4C57CD9C.70602@kernel.org>
+Date: Tue, 03 Aug 2010 01:04:44 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: oops in ioapic_write_entry
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org> <m11vagw2fl.fsf@fess.ebiederm.org>
+In-Reply-To: <m11vagw2fl.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C57CDA7.01B9,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-03 at 16:37 +0900, Hitoshi Mitake wrote:
-> But, I believe that
->   - lock validation
->   - lock tracing
->   - in kernel light weight lock usage statistics
-> should be divided into individual features, at least.
-> And tracing and statistics should be available for production kernel, 
-> ideally.
+On 08/03/2010 01:00 AM, Eric W. Biederman wrote:
+> Yinghai Lu <yinghai@kernel.org> writes:
 > 
-> How do you think about this point? 
+>>>> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+>>>> ===================================================================
+>>>> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
+>>>> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+>>>> @@ -1029,10 +1029,7 @@ static int pin_2_irq(int idx, int apic,
+>>>>  	} else {
+>>>>  		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
+>>>>  
+>>>> -		if (gsi >= NR_IRQS_LEGACY)
+>>>> -			irq = gsi;
+>>>> -		else
+>>>> -			irq = gsi_top + gsi;
+>>>> +		irq = gsi_to_irq(gsi);
+>>>>  	}
+>>>>  
+>>>>  #ifdef CONFIG_X86_32
+>>
+>> what is the point for making irq = gsi_top + gsi when mptable is used instead of acpi?
+> 
+> Because it is only convention that when mptables are used that the
+> first apic pins 0-15 are the ISA irqs.  This thread witnessed and a
+> pci irq that came in pin < 16 that was not an ISA irq.  The truly rare
+> and exotic case would be for the ISA irqs to be outside the first 16
+> ioapic pins but the es7000 did exactly that.
 
-Both the lock usage and lock validation use the lock classification
-scheme and thus require the bloated lock structures, and hence I don't
-think its at all reasonable to do that runtime.
+nvidia chipset if acpi is enabled, external pci device will use ioapic from 16 to 23.
 
-lock tracing could possibly be done by patching all lock sites, but we'd
-have to be somewhat careful there too not to make the whole spinlock
-code even worse than it already is.
+if mptable is used, external pci device will not use pin from 16 to 23..., and lot of devices will share same pin.
+
+Yinghai
