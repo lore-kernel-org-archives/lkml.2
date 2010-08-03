@@ -1,118 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab0HCWT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 18:19:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8413 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab0HCWTx (ORCPT
+	id S1757907Ab0HCWXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:23:05 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50709 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298Ab0HCWXD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 18:19:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=kVY6nFxRaXhwkV+o1XITaUjqqotEm4j5NPR0gI5gBwaLKr9P5cSF4NPEx/MmqznRf
-	K+FADUlw7Jy8cjNOcteZQ==
-From: Michael Rubin <mrubin@google.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: jack@suse.cz, akpm@linux-foundation.org, david@fromorbit.com, hch@lst.de,
-        axboe@kernel.dk, Michael Rubin <mrubin@google.com>
-Subject: [PATCH 1/2] mm: helper functions for dirty and writeback accounting
-Date: Tue,  3 Aug 2010 15:19:08 -0700
-Message-Id: <1280873949-20460-2-git-send-email-mrubin@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1280873949-20460-1-git-send-email-mrubin@google.com>
-References: <1280873949-20460-1-git-send-email-mrubin@google.com>
+	Tue, 3 Aug 2010 18:23:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100803154112.GE2407@linux.vnet.ibm.com>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<AANLkTi=hoGF7egpyB9sLKJoXv5aiGrxfa9_5iH-96SA=@mail.gmail.com>
+	<20100803154112.GE2407@linux.vnet.ibm.com>
+Date: Tue, 3 Aug 2010 15:23:00 -0700
+Message-ID: <AANLkTim474Yp=MP3EX9pabc9XO8Q-McCns207SLPYuUb@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exporting account_pages_dirty and adding a symmetric routine
-account_pages_writeback.
+2010/8/3 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> On Mon, Aug 02, 2010 at 09:18:27PM -0700, Arve Hjønnevåg wrote:
+>> On Sat, Jul 31, 2010 at 10:58 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+...
+>> > o       Statistics of the power-control actions taken by power-aware
+>> >        applications must be provided, and must be keyed off of program
+>> >        name.
+>>
+>> We don't key the stats off the program name, but having useful
+>> statistics is critical too us. The current code in linux-next does not
+>> appear to allow this (I'm referring to pm_stay_awake here, etc not
+>> pm-qos.)
+>
+> OK, maybe I was confused earlier.  So you do not track statistics via
+> the device being open throughout the application's lifetime?
+>
 
-This allows code outside of the mm core to safely manipulate page state
-and not worry about the other accounting. Not using these routines means
-that some code will lose track of the accounting and we get bugs.
+The suspend blocker patchset does track statistics while the device is
+open, but it it not keyed of the program name. The name is passed from
+user-space and a single process can have the device open several
+times. The wakelock interface that we currently use just creates a new
+object every time it sees a new name and never frees it.
 
-These routines are in use by ceph and nilfs2.
+...
+>> > o       If no power-aware or power-optimized application are indicating
+>> >        a need for the system to remain operating, the system is permitted
+>> >        (even encouraged!) to suspend all execution, even if power-naive
+>> >        applications are runnable.  (This requirement did appear to be
+>> >        somewhat controversial.)
+>>
+>> I would say it should suspend even if power aware applications are
+>> runnable. Most applications do not exclusively perform critical work.
+>
+> The point being that a power-aware application does not block suspend
+> -unless- it holds a suspend blocker, correct?
 
-Signed-off-by: Michael Rubin <mrubin@google.com>
----
- fs/ceph/addr.c      |    8 ++------
- fs/nilfs2/segment.c |    2 +-
- include/linux/mm.h  |    1 +
- mm/page-writeback.c |   15 +++++++++++++++
- 4 files changed, 19 insertions(+), 7 deletions(-)
+Yes.
 
-diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
-index d9c60b8..359aa3a 100644
---- a/fs/ceph/addr.c
-+++ b/fs/ceph/addr.c
-@@ -106,12 +106,8 @@ static int ceph_set_page_dirty(struct page *page)
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(!PageUptodate(page));
- 
--		if (mapping_cap_account_dirty(mapping)) {
--			__inc_zone_page_state(page, NR_FILE_DIRTY);
--			__inc_bdi_stat(mapping->backing_dev_info,
--					BDI_RECLAIMABLE);
--			task_io_account_write(PAGE_CACHE_SIZE);
--		}
-+		if (mapping_cap_account_dirty(mapping))
-+			account_page_dirtied(page, page->mapping);
- 		radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 
-diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
-index c920164..967ed7d 100644
---- a/fs/nilfs2/segment.c
-+++ b/fs/nilfs2/segment.c
-@@ -1599,7 +1599,7 @@ nilfs_copy_replace_page_buffers(struct page *page, struct list_head *out)
- 	kunmap_atomic(kaddr, KM_USER0);
- 
- 	if (!TestSetPageWriteback(clone_page))
--		inc_zone_page_state(clone_page, NR_WRITEBACK);
-+		account_page_writeback(clone_page, page_mapping(clone_page));
- 	unlock_page(clone_page);
- 
- 	return 0;
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index a2b4804..b138392 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -855,6 +855,7 @@ int __set_page_dirty_no_writeback(struct page *page);
- int redirty_page_for_writepage(struct writeback_control *wbc,
- 				struct page *page);
- void account_page_dirtied(struct page *page, struct address_space *mapping);
-+void account_page_writeback(struct page *page, struct address_space *mapping);
- int set_page_dirty(struct page *page);
- int set_page_dirty_lock(struct page *page);
- int clear_page_dirty_for_io(struct page *page);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 37498ef..b8e7b3b 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1096,6 +1096,21 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
- 		task_io_account_write(PAGE_CACHE_SIZE);
- 	}
- }
-+EXPORT_SYMBOL(account_page_dirtied);
-+
-+/*
-+ * Helper function for set_page_writeback family.
-+ * NOTE: Unlike account_page_dirtied this does not rely on being atomic
-+ * wrt interrupts.
-+ */
-+
-+void account_page_writeback(struct page *page, struct address_space *mapping)
-+{
-+	if (mapping_cap_account_dirty(mapping))
-+		inc_zone_page_state(page, NR_WRITEBACK);
-+}
-+EXPORT_SYMBOL(account_page_writeback);
-+
- 
- /*
-  * For address_spaces which do not use buffers.  Just tag the page as dirty in
+>
+> Or am I missing some other subtlety?
+
+No.
+
+...
+>> > o       Any initialization of the API that controls the system power
+>> >        state must be unconditional, so as to be free from failure.
+>> >        (I don't currently understand how this relates, probably due to
+>> >        my current insufficient understanding of the proposed patch set.)
+>>
+>> Unconditional initialization makes it easier to add suspend blockers
+>> to existing kernel code since you don't have to add new failure exit
+>> paths. It is not a strong requirement.
+>
+> Ah, that makes more sense!  I moved this to a new "NICE-TO-HAVES"
+> section.  I also changed the last parenthesized sentence to read
+> "Such unconditional initialization reduces the intrusiveness of the
+> the Android patchset."  Does that work?
+>
+
+Sure.
+
+
+
 -- 
-1.7.1
-
+Arve Hjønnevåg
