@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724Ab0HCUbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 16:31:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57151 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757705Ab0HCUbe (ORCPT
+	id S1757753Ab0HCUcT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 16:32:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49627 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757726Ab0HCUcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 16:31:34 -0400
-Message-ID: <4C587C80.3040207@ti.com>
-Date: Tue, 03 Aug 2010 15:30:56 -0500
-From: Mike Turquette <mturquette@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Tue, 3 Aug 2010 16:32:18 -0400
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] Power management minisummit at Linux Plumbers Conference
- (November	3-5)
-References: <20100803182746.GA32276@srcf.ucam.org>
-In-Reply-To: <20100803182746.GA32276@srcf.ucam.org>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100803194553.GA27688@Krystal>
+References: <20100714193652.GA13630@nowhere> <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com> 
+	<20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal> 
+	<20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal> 
+	<20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal> 
+	<1280855904.1923.675.camel@laptop> <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com> 
+	<20100803194553.GA27688@Krystal>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 3 Aug 2010 13:02:59 -0700
+Message-ID: <AANLkTinW34tSZ0gLyRb4mjh1UX4w=34pNcjU=fY+y_oT@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett wrote:
-> I'm planning on finalising the schedule for the power management 
-> minisummit at the Linux Plumbers Conference by the end of this week. If 
-> anyone has topics that they'd like to discuss (or be discussed, if you 
-> can't make it) then please let me know or register at 
-> http://www.linuxplumbersconf.org/2010/ocw/events/proposals/ and file a 
+On Tue, Aug 3, 2010 at 12:45 PM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
+>
+> The real issue here, IMHO, is that Perf has tied gory ring buffer implementation
+> details to the userspace perf ABI, and there is now strong unwillingness from
+> Perf developers to break this ABI.
 
-That link did not really work for me, but I think I found the right 
-place after a few clicks.
+The thing is - I think my outlined buffer fragmentation model would
+work fine with the perf ABI too.  Exactly because there is no deep
+structure, just the same "stream of small events" both from a kernel
+and a user model standpoint. Sure, the stream would now contain a new
+event type, but that's trivial. It would still be _entirely_
+reasonable to have the actual data in the exact same ring buffer,
+including the whole mmap'ed area.
 
-> proposal there. We're likely to be concentrating on userspace/kernel 
-> interaction rather than pure kernel topics, so if you've got anything to 
-> say about how we can handle application requirements without 
-> compromising on our power savings then we'd love to hear from you.
+Of course, when user space actually parses it, user space would have
+to eventually defragment the event by allocating a new area and
+copying the fragments together in the right order, but that's pretty
+trivial to do. It certainly doesn't affect the current mmap'ed
+interface in the least.
 
-Just FYI, I proposed a discussion on the issues that create such a large 
-power gap between a CPUIdle-only system and a system with suspend (with 
-the assumption that the lowest C-state can be hit by both).
+Now, whether the perf people feel they want that kind of
+functionality, I don't know. It's possible that they simply do not
+want to handle events that are complex enough that they would have
+arbitrary size.
 
-I don't really want to present a formal lecture on it, but it would be 
-nice to discuss with the group what can be done to shrink that gap a 
-little in kernel space (badly behaving timers in platform-independent 
-code) and in userspace (power-aware timers, coalescing timers, etc).
-
-This is not intended to be another suspend-blocker discussion, but more 
-of a discussion on what it takes to get CPUIdle to be more effective.
-
-Regards,
-Mike
+                   Linus
