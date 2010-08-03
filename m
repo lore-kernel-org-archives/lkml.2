@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab0HCNWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:22:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51089 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751255Ab0HCNWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:22:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,309,1278313200"; 
-   d="scan'208";a="592433939"
-Date: Tue, 3 Aug 2010 21:22:16 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
- sync works
-Message-ID: <20100803132216.GA31893@localhost>
-References: <20100729115142.102255590@intel.com>
- <20100729121423.332557547@intel.com>
- <20100729162027.GF12690@quack.suse.cz>
- <20100730040306.GA5694@localhost>
- <20100802205152.GL3278@quack.suse.cz>
- <20100803030125.GA12070@localhost>
- <20100803105520.GA3322@quack.suse.cz>
- <20100803123922.GC3322@quack.suse.cz>
- <20100803125924.GA31827@localhost>
+	id S1756045Ab0HCNYL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:24:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:58146 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab0HCNYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 09:24:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Edgardo Hames <ehames@gmail.com>
+Subject: Re: [PATCH] Staging: wlan-ng: remove typedef in p80211ioctl.h
+Date: Tue, 3 Aug 2010 15:24:04 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org
+References: <1280593762-23120-1-git-send-email-ehames@gmail.com>
+In-Reply-To: <1280593762-23120-1-git-send-email-ehames@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100803125924.GA31827@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008031524.04730.arnd@arndb.de>
+X-Provags-ID: V02:K0:bPTTKnFMtrYf2mb/KDW8WqCn6eqZEIx0KbkjyAwjA5v
+ DsopyyGGpv472nlBLQLprLD3eloxf899dSgGXJSmzojR5VODtR
+ JfnaPeWrzyOl1Z6L2EleIfg7o0XjGiLj2sRFSVqEhOrshtaM2k
+ NxZORdL2vSgRk8OOeSFxW+5Lm4IWSfFSynOf02X7HIbCI0OfJm
+ VMa92/a4V6zhz1Hujs+rA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >   Fengguang, how about merging also the attached simple patch together with
-> > my fix? With these two patches, I'm not able to trigger any sync livelock
-> > while without one of them I hit them quite easily...
+On Saturday 31 July 2010, Edgardo Hames wrote:
 > 
-> This looks OK. However note that redirty_tail() can modify
-> dirtied_when unexpectedly. So the more we rely on wb_start, the more
-> possibility an inode is (wrongly) skipped by sync. I have a bunch of
-> patches to remove redirty_tail(). However they may not be good
-> candidates for 2.6.36..
+> -typedef struct p80211ioctl_req {
+> +struct p80211ioctl_req {
+>         char name[WLAN_DEVNAMELEN_MAX];
+>         caddr_t data;
+>         u32 magic;
+>         u16 len;
+>         u32 result;
+> -} __attribute__ ((packed)) p80211ioctl_req_t;
+> +} __attribute__ ((packed));
 
-It looks that setting wb_start at the beginning of
-writeback_inodes_wb() won't be easily affected by redirty_tail().
+BTW, this data structure is broken and needs fixing.
+Putting a pointer in there means that it's incompatible
+between 32 and 64 bit user space, among other problems.
 
-So
+The TODO list for this driver already contains "move to
+use the in-kernel wireless stack", which should consequently
+imply getting rid of this p80211knetdev_do_ioctl function, but
+it may be useful to list that as a separate item.
 
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-
-Thanks,
-Fengguang
+	Arnd
