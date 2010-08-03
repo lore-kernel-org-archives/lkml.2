@@ -1,136 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab0HCCxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 22:53:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54894 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589Ab0HCCxJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 22:53:09 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
-        Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Will Drewry <wad@chromium.org>
-Subject: [PATCH v2 RFC] efi: add and expose efi_partition_by_guid
-Date: Mon,  2 Aug 2010 21:52:46 -0500
-Message-Id: <1280803966-11603-1-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20100802.160057.91342787.davem@davemloft.net>
-References: <20100802.160057.91342787.davem@davemloft.net>
+	id S1753668Ab0HCDBr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 23:01:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39144 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752835Ab0HCDBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 23:01:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,306,1278313200"; 
+   d="scan'208";a="592279882"
+Date: Tue, 3 Aug 2010 11:01:25 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
+ sync works
+Message-ID: <20100803030125.GA12070@localhost>
+References: <20100729115142.102255590@intel.com>
+ <20100729121423.332557547@intel.com>
+ <20100729162027.GF12690@quack.suse.cz>
+ <20100730040306.GA5694@localhost>
+ <20100802205152.GL3278@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802205152.GL3278@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI's GPT partitioning scheme expects that all partitions have a unique
-identifiers.  After initial partition scanning, this information is
-completely lost to the rest of the kernel.
+On Tue, Aug 03, 2010 at 04:51:52AM +0800, Jan Kara wrote:
+> On Fri 30-07-10 12:03:06, Wu Fengguang wrote:
+> > On Fri, Jul 30, 2010 at 12:20:27AM +0800, Jan Kara wrote:
+> > > On Thu 29-07-10 19:51:44, Wu Fengguang wrote:
+> > > > The periodic/background writeback can run forever. So when any
+> > > > sync work is enqueued, increase bdi->sync_works to notify the
+> > > > active non-sync works to exit. Non-sync works queued after sync
+> > > > works won't be affected.
+> > >   Hmm, wouldn't it be simpler logic to just make for_kupdate and
+> > > for_background work always yield when there's some other work to do (as
+> > > they are livelockable from the definition of the target they have) and
+> > > make sure any other work isn't livelockable?
+> > 
+> > Good idea!
+> > 
+> > > The only downside is that
+> > > non-livelockable work cannot be "fair" in the sense that we cannot switch
+> > > inodes after writing MAX_WRITEBACK_PAGES.
+> > 
+> > Cannot switch indoes _before_ finish with the current
+> > MAX_WRITEBACK_PAGES batch? 
+>   Well, even after writing all those MAX_WRITEBACK_PAGES. Because what you
+> want to do in a non-livelockable work is: take inode, write it, never look at
+> it again for this work. Because if you later return to the inode, it can
+> have newer dirty pages and thus you cannot really avoid livelock. Of
+> course, this all assumes .nr_to_write isn't set to something small. That
+> avoids the livelock as well.
 
-efi_partition_by_guid exposes GPT parsing support in a limited fashion
-to allow other portions of the kernel to map a partition from GUID to
-map.
+I do have a poor man's solution that can handle this case.
+https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476473/thread
+It may do more extra works, but will stop livelock in theory.
 
-This change is motivated the desire to have the ability to specify a
-UUID argument to a device mapper target allowing it to select the device
-by the UUID.
+A related question is, what if some for_reclaim works get enqueued?
+Shall we postpone the sync work as well? The global sync is not likely
+to hit the dirty pages in a small memcg, or may take long time. It
+seems not a high priority task though.
 
-Change against Linus's tree: 9fe6206f400646a2322096b56c59891d530e8d51
+> > >   I even had a patch for this but it's already outdated by now. But I
+> > > can refresh it if we decide this is the way to go.
+> > 
+> > I'm very interested in your old patch, would you post it? Let's see
+> > which one is easier to work with :)
+>   OK, attached is the patch. I've rebased it against 2.6.35.
+> 									Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
 
-Signed-off-by: Will Drewry <wad@chromium.org>
+> From a6df0d4db148f983fe756df4791409db28dff459 Mon Sep 17 00:00:00 2001
+> From: Jan Kara <jack@suse.cz>
+> Date: Mon, 2 Aug 2010 22:30:25 +0200
+> Subject: [PATCH] mm: Stop background writeback if there is other work queued for the thread
+> 
+> Background writeback and kupdate-style writeback are easily livelockable
+> (from a definition of their target). This is inconvenient because it can
+> make sync(1) stall forever waiting on its queued work to be finished.
+> Fix the problem by interrupting background and kupdate writeback if there
+> is some other work to do. We can return to them after completing all the
+> queued work.
+> 
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/fs-writeback.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index d5be169..542471e 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -633,6 +633,14 @@ static long wb_writeback(struct bdi_writeback *wb,
+>  			break;
+>  
+>  		/*
+> +		 * Background writeout and kupdate-style writeback are
+> +		 * easily livelockable. Stop them if there is other work
+> +		 * to do so that e.g. sync can proceed.
+> +		 */
+> +		if ((work->for_background || work->for_kupdate) &&
+> +		    !list_empty(&wb->bdi->work_list))
+> +			break;
+> +		/*
 
-v2: pr_debug(KERN_WARNING -> pr_debug(. joe@perches.com
-    moved down trailing {. davem@davemloft.net
----
- fs/partitions/efi.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/efi.h |    5 ++++
- 2 files changed, 66 insertions(+), 0 deletions(-)
+I like it. It's much simpler.
 
-diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
-index 9efb2cf..8669c4f 100644
---- a/fs/partitions/efi.c
-+++ b/fs/partitions/efi.c
-@@ -633,3 +633,64 @@ int efi_partition(struct parsed_partitions *state)
- 	printk("\n");
- 	return 1;
- }
-+
-+/**
-+ * efi_partition_by_guid
-+ * @bdev:	Whole block device to scan for a GPT.
-+ * @guid:	Unique identifier for the partition to find.
-+ *
-+ * N.b., returns on the first match since it should be unique.
-+ *
-+ * Returns:
-+ * -1 if an error occurred
-+ *  0 if there was no match (or not GPT)
-+ *  >=1 is the index of the partition found.
-+ *
-+ */
-+int efi_partition_by_guid(struct block_device *bdev, efi_guid_t *guid) {
-+	gpt_header *gpt = NULL;
-+	gpt_entry *ptes = NULL;
-+	u32 i;
-+	struct parsed_partitions *state;
-+	int part = 0;
-+
-+	if (!bdev || !guid)
-+		return -1;
-+
-+	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
-+	if (!state)
-+		return -1;
-+
-+	state->limit = disk_max_parts(bdev->bd_disk);
-+	pr_debug("efi_find_partition looking for gpt\n");
-+
-+	state->bdev = bdev;
-+	if (!find_valid_gpt(state,  &gpt, &ptes) || !gpt || !ptes) {
-+		pr_debug("efi_find_partition no GPT\n");
-+		kfree(gpt);
-+		kfree(ptes);
-+		kfree(state);
-+		return 0;
-+	}
-+
-+	pr_debug("GUID Partition Table is valid!  Yea!\n");
-+	pr_debug("efi_find_partition: 0 -> %d (limit:%d)\n",
-+		 le32_to_cpu(gpt->num_partition_entries),
-+		 state->limit);
-+	for (i = 0; i < le32_to_cpu(gpt->num_partition_entries) &&
-+		    i < state->limit-1; i++) {
-+		if (!is_pte_valid(&ptes[i], last_lba(bdev)))
-+			continue;
-+
-+		/* Bails on first hit so duped "unique" GUIDs will be FCFS. */
-+		if (!efi_guidcmp(ptes[i].unique_partition_guid,
-+				 *guid)) {
-+			part = i + 1;
-+			break;
-+		}
-+	}
-+	kfree(ptes);
-+	kfree(gpt);
-+	kfree(state);
-+	return part;
-+}
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index fb737bc..1a77259 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -301,6 +301,11 @@ extern unsigned long efi_get_time(void);
- extern int efi_set_rtc_mmss(unsigned long nowtime);
- extern struct efi_memory_map memmap;
- 
-+#ifdef CONFIG_EFI_PARTITION
-+struct block_device;
-+extern int efi_partition_by_guid(struct block_device *bdev, efi_guid_t *guid);
-+#endif
-+
- /**
-  * efi_range_is_wc - check the WC bit on an address range
-  * @start: starting kvirt address
--- 
-1.7.0.4
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
 
+
+Thanks,
+Fengguang
