@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab0HCPLW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:11:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:57461 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756521Ab0HCPLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:11:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,309,1278313200"; 
-   d="scan'208";a="307666630"
-Date: Tue, 3 Aug 2010 23:10:51 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] writeback: avoid unnecessary calculation of bdi
- dirty thresholds
-Message-ID: <20100803151051.GA842@localhost>
-References: <20100711020656.340075560@intel.com>
- <20100711021748.879183413@intel.com>
- <1280847822.1923.597.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280847822.1923.597.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756960Ab0HCPN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:13:59 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57590 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756449Ab0HCPN6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 11:13:58 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>, linux-usb@vger.kernel.org,
+        dbrownell@users.sourceforge.net, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2]drivers/usb/core/sysfs.c Fix variable 'retval' set but not used
+In-Reply-To: Your message of "Tue, 03 Aug 2010 10:29:52 EDT."
+             <Pine.LNX.4.44L0.1008031027250.1853-100000@iolanthe.rowland.org>
+From: Valdis.Kletnieks@vt.edu
+References: <Pine.LNX.4.44L0.1008031027250.1853-100000@iolanthe.rowland.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1280848412_4165P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 03 Aug 2010 11:13:32 -0400
+Message-ID: <66093.1280848412@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020207.4C58321D.00D4,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 11:03:42PM +0800, Peter Zijlstra wrote:
-> On Sun, 2010-07-11 at 10:06 +0800, Wu Fengguang wrote:
-> > plain text document attachment (writeback-less-bdi-calc.patch)
-> > Split get_dirty_limits() into global_dirty_limits()+bdi_dirty_limit(),
-> > so that the latter can be avoided when under global dirty background
-> > threshold (which is the normal state for most systems).
-> 
-> The patch looks OK, although esp with the proposed comments in the
-> follow up email, bdi_dirty_limit() gets a bit confusing wrt to how and
-> what the limit is.
-> 
-> Maybe its clearer to not call task_dirty_limit() from bdi_dirty_limit(),
-> that way the comment can focus on the device write request completion
-> proportion thing.
-> 
-> > +unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
-> > +			       unsigned long dirty)
-> > +{
-> > +	u64 bdi_dirty;
-> > +	long numerator, denominator;
-> >  
-> > +	/*
-> > +	 * Calculate this BDI's share of the dirty ratio.
-> > +	 */
-> > +	bdi_writeout_fraction(bdi, &numerator, &denominator);
-> >  
-> > +	bdi_dirty = (dirty * (100 - bdi_min_ratio)) / 100;
-> > +	bdi_dirty *= numerator;
-> > +	do_div(bdi_dirty, denominator);
-> >  
-> > +	bdi_dirty += (dirty * bdi->min_ratio) / 100;
-> > +	if (bdi_dirty > (dirty * bdi->max_ratio) / 100)
-> > +		bdi_dirty = dirty * bdi->max_ratio / 100;
-> > +
->   +       return bdi_dirty;
-> >  }
-> 
-> And then add the call to task_dirty_limit() here:
-> 
-> > +++ linux-next/mm/backing-dev.c	2010-07-11 08:53:44.000000000 +0800
-> > @@ -83,7 +83,8 @@ static int bdi_debug_stats_show(struct s
-> >  		nr_more_io++;
-> >  	spin_unlock(&inode_lock);
-> >  
-> > -	get_dirty_limits(&background_thresh, &dirty_thresh, &bdi_thresh, bdi);
-> > +	global_dirty_limits(&background_thresh, &dirty_thresh);
-> > +	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
->   +       bdi_thresh = task_dirty_limit(current, bdi_thresh);
-> 
-> And add a comment to task_dirty_limit() as well, explaining its reason
-> for existence (protecting light/slow dirtying tasks from heavier/fast
-> ones).
+--==_Exmh_1280848412_4165P
+Content-Type: text/plain; charset=us-ascii
 
-Good suggestions, that would be much less confusing. Will post updated
-patches tomorrow.
+On Tue, 03 Aug 2010 10:29:52 EDT, Alan Stern said:
+> On Tue, 3 Aug 2010 Valdis.Kletnieks@vt.edu wrote:
+> 
+> > On Mon, 02 Aug 2010 21:26:28 PDT, "Justin P. Mattock" said:
+> > > diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+> > 
+> > >  	if (alt->string)
+> > > -		retval = device_create_file(&intf->dev, &dev_attr_interface);
+> > > +		device_create_file(&intf->dev, &dev_attr_interface);
+> > >  	intf->sysfs_files_created = 1;
+> > >  	return 0;
+> 
+> Justin, did you try compiling your new code?  Those unused values are 
+> there because device_create_file is declared as __must_check.
+> 
+> > What should the code do if device_create_file() manages to fail? Yes, ignoring
+> > the return value is one option, but is it the best one?  'return ret;' might be
+> > another one. Somebody who understands this code and has more caffeine than me
+> > should look this over.
+> 
+> Failure to create a file in sysfs is almost never fatal and usually not 
+> even dangerous.  Ignoring the error is generally better than failing 
+> the entire operation.
 
-Thanks,
-Fengguang
+Then why the __must_check attribute if it's usually ignorable? I thought
+that was reserved for functions that you damned sight better well check
+for errors because bad things are afoot otherwise?
+
+--==_Exmh_1280848412_4165P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMWDIccC3lWbTT17ARAnlYAJ9YUnEY9VVcanAxwJTBijx2PGbXhQCgvUEX
+SMYBvT+YenrSRPl34ZkhVtY=
+=JeBW
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1280848412_4165P--
+
