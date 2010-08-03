@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab0HCOh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 10:37:29 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38576 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756092Ab0HCOh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 10:37:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,309,1278313200"; 
-   d="scan'208";a="541505812"
-Date: Tue, 3 Aug 2010 22:36:54 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
- sync works
-Message-ID: <20100803143654.GA32335@localhost>
-References: <20100729115142.102255590@intel.com>
- <20100729121423.332557547@intel.com>
- <20100729162027.GF12690@quack.suse.cz>
- <20100730040306.GA5694@localhost>
- <20100802205152.GL3278@quack.suse.cz>
- <20100803030125.GA12070@localhost>
- <20100803105520.GA3322@quack.suse.cz>
+	id S932076Ab0HCOnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 10:43:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47318 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153Ab0HCOnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 10:43:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Jf1y2dYsEczo04LA/w7HgiPvAumDS2rRlJ7zCxoUSVIhrBacMgW7oBwJnHix8LD+9I
+         8+Z7coVe0Ox0oVTkWqmVDI9xxONgF5Cbn6VTrJsLgg5tIqVBC7U/CcrAzYiKsmARcE4c
+         dQlB6RM6AclvF0kVLjtQcGNPd7gO+Ifnkj/SA=
+Message-ID: <4C582B2B.3080804@gmail.com>
+Date: Tue, 03 Aug 2010 07:43:55 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100803105520.GA3322@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Valdis.Kletnieks@vt.edu, linux-usb@vger.kernel.org,
+        dbrownell@users.sourceforge.net, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2]drivers/usb/core/sysfs.c Fix variable 'retval' set
+ but not used
+References: <Pine.LNX.4.44L0.1008031027250.1853-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1008031027250.1853-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 06:55:20PM +0800, Jan Kara wrote:
-> On Tue 03-08-10 11:01:25, Wu Fengguang wrote:
-> > On Tue, Aug 03, 2010 at 04:51:52AM +0800, Jan Kara wrote:
-> > > On Fri 30-07-10 12:03:06, Wu Fengguang wrote:
-> > > > On Fri, Jul 30, 2010 at 12:20:27AM +0800, Jan Kara wrote:
-> > > > > On Thu 29-07-10 19:51:44, Wu Fengguang wrote:
-> > > > > > The periodic/background writeback can run forever. So when any
-> > > > > > sync work is enqueued, increase bdi->sync_works to notify the
-> > > > > > active non-sync works to exit. Non-sync works queued after sync
-> > > > > > works won't be affected.
-> > > > >   Hmm, wouldn't it be simpler logic to just make for_kupdate and
-> > > > > for_background work always yield when there's some other work to do (as
-> > > > > they are livelockable from the definition of the target they have) and
-> > > > > make sure any other work isn't livelockable?
-> > > > 
-> > > > Good idea!
-> > > > 
-> > > > > The only downside is that
-> > > > > non-livelockable work cannot be "fair" in the sense that we cannot switch
-> > > > > inodes after writing MAX_WRITEBACK_PAGES.
-> > > > 
-> > > > Cannot switch indoes _before_ finish with the current
-> > > > MAX_WRITEBACK_PAGES batch? 
-> > >   Well, even after writing all those MAX_WRITEBACK_PAGES. Because what you
-> > > want to do in a non-livelockable work is: take inode, write it, never look at
-> > > it again for this work. Because if you later return to the inode, it can
-> > > have newer dirty pages and thus you cannot really avoid livelock. Of
-> > > course, this all assumes .nr_to_write isn't set to something small. That
-> > > avoids the livelock as well.
-> > 
-> > I do have a poor man's solution that can handle this case.
-> > https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476473/thread
-> > It may do more extra works, but will stop livelock in theory.
->   So I don't think sync work on it's own is a problem. There we can just
-> give up any fairness and just go inode by inode. IMHO it's much simpler that
-> way.
+On 08/03/2010 07:29 AM, Alan Stern wrote:
+> On Tue, 3 Aug 2010 Valdis.Kletnieks@vt.edu wrote:
+>
+>> On Mon, 02 Aug 2010 21:26:28 PDT, "Justin P. Mattock" said:
+>>> diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+>>
+>>>   	if (alt->string)
+>>> -		retval = device_create_file(&intf->dev,&dev_attr_interface);
+>>> +		device_create_file(&intf->dev,&dev_attr_interface);
+>>>   	intf->sysfs_files_created = 1;
+>>>   	return 0;
+>
+> Justin, did you try compiling your new code?  Those unused values are
+> there because device_create_file is declared as __must_check.
+>
 
-I would like to reserve my opinion here. IMHO small files should
-better get synced first :)
+I went as far as compiling, once I saw no warning then figured o.k
+I'll send out what I have for feedback then go from there.
+(and just for the record I want to thank those who took the time to go 
+through and give feedback).
 
-> The remaining types of work we have are "for_reclaim" and then ones
-> triggered by filesystems to get rid of delayed allocated data. These cases
-> can easily have well defined and low nr_to_write so they wouldn't be
-> livelockable either. What do you think?
 
-Right. for_reclaim works won't livelock in itself, since it will be
-bounded by either nr_to_write or some range. They may be delayed for a
-while by large sync or nr_pages works though.
+>> What should the code do if device_create_file() manages to fail? Yes, ignoring
+>> the return value is one option, but is it the best one?  'return ret;' might be
+>> another one. Somebody who understands this code and has more caffeine than me
+>> should look this over.
+>
+> Failure to create a file in sysfs is almost never fatal and usually not
+> even dangerous.  Ignoring the error is generally better than failing
+> the entire operation.
+>
+> Alan Stern
+>
+>
 
-> > A related question is, what if some for_reclaim works get enqueued?
-> > Shall we postpone the sync work as well? The global sync is not likely
-> > to hit the dirty pages in a small memcg, or may take long time. It
-> > seems not a high priority task though.
->   I see some incentive to do this but the simple thing with for_background
-> and for_kupdate work is that they are essentially state-less and so they
-> can be easily (and automatically) restarted. It would be really hard to
-> implement something like this for sync and still avoid livelocks.
+ahh.. you made this more clear for me.. cool thanks!
 
-So let's ignore the issue for now.
-
-Thanks,
-Fengguang
-
+Justin P. Mattock
