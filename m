@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab0HCKA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 06:00:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36159 "EHLO mx2.suse.de"
+	id S1755797Ab0HCKFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 06:05:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36345 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754194Ab0HCKA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 06:00:58 -0400
-Message-ID: <4C57E88B.8070505@suse.cz>
-Date: Tue, 03 Aug 2010 11:59:39 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1755546Ab0HCKFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 06:05:07 -0400
+Date: Tue, 3 Aug 2010 12:05:05 +0200
+From: Matthias Hopf <mhopf@suse.de>
+To: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        Matthew Garrett <mjg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Julia Lawall <julia@diku.dk>, oneukum@suse.de
+Cc: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI / PM: Traverse video_device_list for backlight
+	restoration
+Message-ID: <20100803100505.GA26948@suse.de>
+Mail-Followup-To: Zhang Rui <rui.zhang@intel.com>,
+	Len Brown <lenb@kernel.org>, Matthew Garrett <mjg@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Julia Lawall <julia@diku.dk>, oneukum@suse.de,
+	linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, zippel@linux-m68k.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Nir Tzachar <nir.tzachar@gmail.com>
-Subject: Re: [PATCH]scripts/kconfig/nconf.gui.c Fix warning: value computed
- is not used
-References: <1280790966-417-1-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1280790966-417-1-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-ACPI-PM-Traverse-video_device_list-for-backlight.patch"
+Organization: SUSE LINUX Products GmbH, =?iso-8859-1?Q?G?=
+	=?iso-8859-1?Q?F=3A_Markus_Rex=2C_HRB_16746_=28AG_N=FCrnberg=29?=
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.8.2010 01:16, Justin P. Mattock wrote:
-> The below patch fixes some warning messages Im getting when doing
-> make nconfig
-> 
->  make nconfig
->   HOSTCC  scripts/kconfig/nconf.gui.o
-> scripts/kconfig/nconf.gui.c: In function 'print_in_middle':
-> scripts/kconfig/nconf.gui.c:170:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c: In function 'btn_dialog':
-> scripts/kconfig/nconf.gui.c:300:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c:304:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c: In function 'dialog_inputbox':
-> scripts/kconfig/nconf.gui.c:395:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c:397:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c:399:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c:404:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c: In function 'show_scroll_win':
-> scripts/kconfig/nconf.gui.c:534:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c:549:2: warning: value computed is not used
-> scripts/kconfig/nconf.gui.c:551:2: warning: value computed is not used
->   HOSTLD  scripts/kconfig/nconf
-> scripts/kconfig/nconf arch/x86/Kconfig
-> 
-> I looked around for a way to fix these, but am not familiar with ncurses.
-> if there's a better way let me know and/or send a seperate fix.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
-> ---
->  scripts/kconfig/nconf.gui.c |   11 -----------
->  1 files changed, 0 insertions(+), 11 deletions(-)
-> 
-> diff --git a/scripts/kconfig/nconf.gui.c b/scripts/kconfig/nconf.gui.c
-> index a9d9344..08a5a04 100644
-> --- a/scripts/kconfig/nconf.gui.c
-> +++ b/scripts/kconfig/nconf.gui.c
-> @@ -167,7 +167,6 @@ void print_in_middle(WINDOW *win,
->  	length = strlen(string);
->  	temp = (width - length) / 2;
->  	x = startx + (int)temp;
-> -	wattrset(win, color);
+.bind_info in active_list[] is NULL by construction - and used to determine
+the acpi_video_device pointer during backlight restoration during resume.
 
-Huh? :) This change makes nconfig look black and white. I'm all for
-eliminating warnings, but please do not eliminate features at the same
-time (or submit a patch with "Subject: make nconfig black and white" and
-do not mask it as warning fixes).
+Using the list instead fixes backlight restoration for systems where the BIOS
+doesn't do this by itself already.
 
-Michal
+Signed-off-by: Matthias Hopf <mhopf@suse.de>
+---
+ drivers/acpi/video.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 9865d46..887ac2b 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -2346,7 +2346,6 @@ static int acpi_video_resume(struct notifier_block *nb,
+ {
+ 	struct acpi_video_bus *video;
+ 	struct acpi_video_device *video_device;
+-	int i;
+ 
+ 	switch (val) {
+ 	case PM_HIBERNATION_PREPARE:
+@@ -2359,11 +2358,12 @@ static int acpi_video_resume(struct notifier_block *nb,
+ 
+ 	dev_info(&video->device->dev, "Restoring backlight state\n");
+ 
+-	for (i = 0; i < video->attached_count; i++) {
+-		video_device = video->attached_array[i].bind_info;
++	mutex_lock(&video->device_list_lock);
++	list_for_each_entry(video_device, &video->video_device_list, entry) {
+ 		if (video_device && video_device->backlight)
+ 			acpi_video_set_brightness(video_device->backlight);
+ 	}
++	mutex_unlock(&video->device_list_lock);
+ 
+ 	return NOTIFY_OK;
+ }
+-- 
+1.6.0.2
+
