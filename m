@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab0HCWAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 18:00:49 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65316 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab0HCWAq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 18:00:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100803215137.GU26313@bicker>
-References: <Pine.LNX.4.64.1008032334420.20393@ask.diku.dk> 
-	<20100803215137.GU26313@bicker>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 3 Aug 2010 16:00:25 -0600
-X-Google-Sender-Auth: n_9GLQUP7XfiQ9FbPoR8iK-8tHs
-Message-ID: <AANLkTi=yOJ0Zfsn_h_xWai5O=OPkccMb-hDwKK+dWZwf@mail.gmail.com>
-Subject: Re: [PATCH 8/9] arch/powerpc/kernel: Drop unnecessary null test
-To: Dan Carpenter <error27@gmail.com>, Julia Lawall <julia@diku.dk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932806Ab0HCWGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:06:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27738 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932556Ab0HCWGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 18:06:30 -0400
+Subject: Re: [PATCH] flex_array: add helpers to get and put to make
+ pointers easy to use
+From: Eric Paris <eparis@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
+        dave@linux.vnet.ibm.com, Andrew Morton <akpm@linux-foundation.org>,
+        jmorris@namei.org, sds@tycho.nsa.gov
+In-Reply-To: <alpine.DEB.2.00.1008031351290.13924@chino.kir.corp.google.com>
+References: <20100803193623.22126.18019.stgit@paris.rdu.redhat.com>
+	 <alpine.DEB.2.00.1008031351290.13924@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Aug 2010 18:05:46 -0400
+Message-ID: <1280873146.23348.7.camel@dhcp231-200.rdu.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 3:51 PM, Dan Carpenter <error27@gmail.com> wrote:
-> On Tue, Aug 03, 2010 at 11:35:17PM +0200, Julia Lawall wrote:
->> diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
->> index 6ddb795..62dd363 100644
->> --- a/arch/powerpc/kernel/pci_of_scan.c
->> +++ b/arch/powerpc/kernel/pci_of_scan.c
->> @@ -336,8 +336,7 @@ static void __devinit __of_scan_bus(struct device_node *node,
->>               if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
->>                   dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
->>                       struct device_node *child = pci_device_to_OF_node(dev);
->> -                     if (dev)
->> -                             of_scan_pci_bridge(child, dev);
->> +                     of_scan_pci_bridge(child, dev);
->
-> The intention was probably to check "child" instead of "dev".
-> pci_device_to_OF_node() can return NULL.  On the other hand the code
-> has been this way for a year and no one has complained...
+On Tue, 2010-08-03 at 13:55 -0700, David Rientjes wrote:
+> On Tue, 3 Aug 2010, Eric Paris wrote:
+> 
+> > Getting and putting arrays of pointers with flex arrays is a PITA.  You
+> > have to remember to pass &ptr to the _put and you have to do weird and
+> > wacky casting to get the ptr back from the _get.  Add two functions
+> > flex_array_get_ptr() and flex_array_put_ptr() to handle all of the magic.
+> > 
+> 
+> There's no code currently in the tree that uses the flex array interface, 
+> so is this something that you've encountered in practice or only by 
+> inspection?  If it's the former, is that code on its way for 2.6.36?
 
-Still, it should be fixed.  It is likely that I'll be generalizing
-this code for other architectures in the near future.  I'll spin a
-patch.
+I did decide to use flex_arrays on code intended for .36
+http://git.kernel.org/?p=linux/kernel/git/jmorris/security-testing-2.6.git;a=commitdiff;h=6371dcd36f649d9d07823f31400618155a20dde1
 
-g.
+> I'm hoping distros aren't creating internal dependencies on this interface 
+> that could practically be removed from upstream at any time given its lack 
+> of popularity.
+
+I've got some more patches that I'm looking towards .37 which would use
+the _ptr helpers I suggested:
+
+http://marc.info/?l=selinux&m=128086475312322&w=2
+http://marc.info/?l=selinux&m=128086558513723&w=2
+
