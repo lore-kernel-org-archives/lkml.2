@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab0HCPso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:48:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49144 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756981Ab0HCPsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:48:42 -0400
-Date: Tue, 3 Aug 2010 18:42:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, "Hans J. Koch" <hjk@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Tejun Heo <tj@kernel.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11] uio: do not use PCI resources before
- pci_enable_device()
-Message-ID: <20100803154252.GA6511@redhat.com>
-References: <1280850264-6258-1-git-send-email-segooon@gmail.com>
+	id S932305Ab0HCPsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:48:55 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40756 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271Ab0HCPsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 11:48:51 -0400
+Date: Tue, 3 Aug 2010 17:49:01 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: 2.6.35 hangs on early boot in KVM
+Message-ID: <20100803154901.GF28136@aftab>
+References: <201008031028.57263.tvrtko.ursulin@sophos.com>
+ <201008031557.04613.tvrtko.ursulin@sophos.com>
+ <201008031617.21418.tvrtko.ursulin@sophos.com>
+ <201008031631.03111.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1280850264-6258-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <201008031631.03111.tvrtko.ursulin@sophos.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 07:44:23PM +0400, Kulikov Vasiliy wrote:
-> IRQ and resource[] may not have correct values until
-> after PCI hotplug setup occurs at pci_enable_device() time.
-> 
-> The semantic match that finds this problem is as follows:
-> 
-> // <smpl>
-> @@
-> identifier x;
-> identifier request ~= "pci_request.*|pci_resource.*";
-> @@
-> 
-> (
-> * x->irq
-> |
-> * x->resource
-> |
-> * request(x, ...)
-> )
->  ...
-> *pci_enable_device(x)
-> // </smpl>
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Date: Tue, Aug 03, 2010 at 11:31:02AM -0400
 
-Looks sane.
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-
-> ---
->  drivers/uio/uio_pci_generic.c |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
+> > One interesting waning spotted:
+> >
+> > include/config/auto.conf:555:warning: symbol value '-fcall-saved-ecx
+> > -fcall- saved-edx' invalid for ARCH_HWEIGHT_CFLAGS
 > 
-> diff --git a/drivers/uio/uio_pci_generic.c b/drivers/uio/uio_pci_generic.c
-> index 85c9884..fc22e1e 100644
-> --- a/drivers/uio/uio_pci_generic.c
-> +++ b/drivers/uio/uio_pci_generic.c
-> @@ -128,12 +128,6 @@ static int __devinit probe(struct pci_dev *pdev,
->  	struct uio_pci_generic_dev *gdev;
->  	int err;
->  
-> -	if (!pdev->irq) {
-> -		dev_warn(&pdev->dev, "No IRQ assigned to device: "
-> -			 "no support for interrupts?\n");
-> -		return -ENODEV;
-> -	}
-> -
->  	err = pci_enable_device(pdev);
->  	if (err) {
->  		dev_err(&pdev->dev, "%s: pci_enable_device failed: %d\n",
-> @@ -141,6 +135,13 @@ static int __devinit probe(struct pci_dev *pdev,
->  		return err;
->  	}
->  
-> +	if (!pdev->irq) {
-> +		dev_warn(&pdev->dev, "No IRQ assigned to device: "
-> +			 "no support for interrupts?\n");
-> +		pci_disable_device(pdev);
-> +		return -ENODEV;
-> +	}
-> +
->  	err = verify_pci_2_3(pdev);
->  	if (err)
->  		goto err_verify;
-> -- 
-> 1.7.0.4
+> Copying Peter and Borislav, guys please look at the above warning. I am
+> bisecting a non-bootable 2.6.35 under KVM and while I am not there yet, it is
+> close to the hweight commit (cb41838bbc4403f7270a94b93a9a0d9fc9c2e7ea) and I
+> spotted this warning.
+
+That's because you're at a bisection point before the hweight patch but
+your .config already contains the ARCH_HWEIGHT_CFLAGS variable because
+of the previous bisection point which contained the hweight patch.
+
+I think this can be safely ignored.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
