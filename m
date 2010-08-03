@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab0HCCLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 22:11:43 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51971 "EHLO
+	id S1753452Ab0HCCLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 22:11:48 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:51995 "EHLO
 	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab0HCCLm (ORCPT
+	with ESMTP id S1753144Ab0HCCLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 22:11:42 -0400
-X-AuditID: b753bd60-a92d1ba000005dcc-5a-4c577adbf561
-Message-ID: <4C577AD8.50808@hitachi.com>
-Date: Tue, 03 Aug 2010 11:11:36 +0900
+	Mon, 2 Aug 2010 22:11:45 -0400
+X-AuditID: b753bd60-a5abcba000005a63-4f-4c577adf559d
+Message-ID: <4C577ADC.1000309@hitachi.com>
+Date: Tue, 03 Aug 2010 11:11:40 +0900
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Organization: Systems Development Lab., Hitachi, Ltd., Japan
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
@@ -18,10 +18,10 @@ To: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: [PATCH 1/2] [BUGFIX] perf probe: Fix to copy the type for raw	parameters
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
+Subject: [PATCH 2/2] [BUGFIX] perf probe: Fix memory leaks in	add_perf_probe_events
+References: <20100802121739.31805.94789.stgit@ltc236.sdl.hitachi.co.jp>
+In-Reply-To: <20100802121739.31805.94789.stgit@ltc236.sdl.hitachi.co.jp>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Brightmail-Tracker: AAAAAA==
@@ -30,41 +30,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copy type field if it is for raw parameters.
-Without this fix, perf probe drops the type if user passes it
-for raw parameters (e.g. %ax:u32 will be converted to %ax).
+Fix several memory leaks of pkgs and tevs in add_perf_probe_events().
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: linux-kernel@vger.kernel.org
 ---
 
- tools/perf/util/probe-finder.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ tools/perf/util/probe-event.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 840f1aa..b69d194 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -706,8 +706,12 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
- 		pf->tvar->value = strdup(pf->pvar->var);
- 		if (pf->tvar->value == NULL)
- 			return -ENOMEM;
--		else
--			return 0;
-+		if (pf->pvar->type) {
-+			pf->tvar->type = strdup(pf->pvar->type);
-+			if (pf->tvar->type == NULL)
-+				return -ENOMEM;
-+		}
-+		return 0;
- 	}
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 2e665cb..e72f05c 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1606,8 +1606,10 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
 
- 	pr_debug("Searching '%s' variable in context.\n",
+ 	/* Init vmlinux path */
+ 	ret = init_vmlinux();
+-	if (ret < 0)
++	if (ret < 0) {
++		free(pkgs);
+ 		return ret;
++	}
+
+ 	/* Loop 1: convert all events */
+ 	for (i = 0; i < npevs; i++) {
+@@ -1625,10 +1627,13 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 		ret = __add_probe_trace_events(pkgs[i].pev, pkgs[i].tevs,
+ 						pkgs[i].ntevs, force_add);
+ end:
+-	/* Loop 3: cleanup trace events  */
+-	for (i = 0; i < npevs; i++)
++	/* Loop 3: cleanup and free trace events  */
++	for (i = 0; i < npevs; i++) {
+ 		for (j = 0; j < pkgs[i].ntevs; j++)
+ 			clear_probe_trace_event(&pkgs[i].tevs[j]);
++		free(pkgs[i].tevs);
++	}
++	free(pkgs);
+
+ 	return ret;
+ }
 
 
 -- 
