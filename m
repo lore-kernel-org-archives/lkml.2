@@ -1,221 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797Ab0HCBob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 21:44:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49949 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab0HCBo3 convert rfc822-to-8bit (ORCPT
+	id S1752085Ab0HCBqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 21:46:16 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51746 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab0HCBqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 21:44:29 -0400
-Date: Tue, 3 Aug 2010 11:44:10 +1000
-From: Neil Brown <neilb@suse.de>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Xiaotian Feng <dfeng@redhat.com>, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, netdev@vger.kernel.org, riel@redhat.com,
-        cl@linux-foundation.org, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, lwang@redhat.com,
-        akpm@linux-foundation.org, davem@davemloft.net
-Subject: Re: [PATCH -mmotm 05/30] mm: sl[au]b: add knowledge of reserve
- pages
-Message-ID: <20100803114410.420ae7ba@notabene>
-In-Reply-To: <AANLkTilj5GrhbRJZfSsfXP1v9cQSRlARFmxpys1vUelr@mail.gmail.com>
-References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-	<20100713101747.2835.45722.sendpatchset@danny.redhat>
-	<AANLkTilj5GrhbRJZfSsfXP1v9cQSRlARFmxpys1vUelr@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Aug 2010 21:46:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=sq5r+avZrjQyq1BqYy0T83veW8GOkKA+706DCO3p8iqe0kJ1BgOT+XyOF6woQN/eQC
+         eV6oY24ZdDXyBaiagusTj4npgjYe3o5mKKGrZU4nxRxH4lGB46+fD9/hGaxvRlWMTdl9
+         Z0IKvw8VluQ97wcQAWr6SINX70kYk3+DigcZU=
+Date: Mon, 2 Aug 2010 18:46:08 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.36-rc0
+Message-ID: <20100803014608.GA3436@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 23:33:14 +0300
-Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+Hi Linus,
 
-> Hi Xiaotian!
-> 
-> I would actually prefer that the SLAB, SLOB, and SLUB changes were in
-> separate patches to make reviewing easier.
-> 
-> Looking at SLUB:
-> 
-> On Tue, Jul 13, 2010 at 1:17 PM, Xiaotian Feng <dfeng@redhat.com> wrote:
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index 7bb7940..7a5d6dc 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -27,6 +27,8 @@
-> >  #include <linux/memory.h>
-> >  #include <linux/math64.h>
-> >  #include <linux/fault-inject.h>
-> > +#include "internal.h"
-> > +
-> >
-> >  /*
-> >  * Lock order:
-> > @@ -1139,7 +1141,8 @@ static void setup_object(struct kmem_cache *s, struct page *page,
-> >                s->ctor(object);
-> >  }
-> >
-> > -static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
-> > +static
-> > +struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node, int *reserve)
-> >  {
-> >        struct page *page;
-> >        void *start;
-> > @@ -1153,6 +1156,8 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
-> >        if (!page)
-> >                goto out;
-> >
-> > +       *reserve = page->reserve;
-> > +
-> >        inc_slabs_node(s, page_to_nid(page), page->objects);
-> >        page->slab = s;
-> >        page->flags |= 1 << PG_slab;
-> > @@ -1606,10 +1611,20 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
-> >  {
-> >        void **object;
-> >        struct page *new;
-> > +       int reserve;
-> >
-> >        /* We handle __GFP_ZERO in the caller */
-> >        gfpflags &= ~__GFP_ZERO;
-> >
-> > +       if (unlikely(c->reserve)) {
-> > +               /*
-> > +                * If the current slab is a reserve slab and the current
-> > +                * allocation context does not allow access to the reserves we
-> > +                * must force an allocation to test the current levels.
-> > +                */
-> > +               if (!(gfp_to_alloc_flags(gfpflags) & ALLOC_NO_WATERMARKS))
-> > +                       goto grow_slab;
-> 
-> OK, so assume that:
-> 
->   (1) c->reserve is set to one
-> 
->   (2) GFP flags don't allow dipping into the reserves
-> 
->   (3) we've managed to free enough pages so normal
->        allocations are fine
-> 
->   (4) the page from reserves is not yet empty
-> 
-> we will call flush_slab() and put the "emergency page" on partial list
-> and clear c->reserve. This effectively means that now some other
-> allocation can fetch the partial page and start to use it. Is this OK?
-> Who makes sure the emergency reserves are large enough for the next
-> out-of-memory condition where we swap over NFS?
+Please pull from:
 
-Yes, this is OK.  The emergency reserves are maintained at a lower level -
-within alloc_page.
-The fact that (3) normal allocations are fine means that there are enough
-free pages to satisfy any swap-out allocation - so any pages that were
-previously allocated as 'emergency' pages can have their emergency status
-forgotten (the emergency has passed).
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-This is a subtle but important aspect of the emergency reservation scheme in
-swap-over-NFS.  It is the act-of-allocating that is emergency-or-not.  The
-memory itself, once allocated, is not special.
+to receive updates for the input subsystem.
 
-c->reserve means "the last page allocated required an emergency allocation".
-This means that parts of that page, or any other page, can only be given as
-emergency allocations.  Once the slab succeeds at a non-emergency allocation,
-the flag should obviously be cleared.
+Changelog:
+---------
 
-Similarly the page->reserve flag does not mean "this is a reserve page", but
-simply "when this page was allocated, it was an emergency allocation".  The
-flag is often soon lost as it is in a union with e.g. freelist.  But that
-doesn't matter as it is only really meaningful at the moment of allocation.
+Anatolij Gustschin (2):
+      Input: ads7846 - allow specifying irq trigger type in platform data
+      Input: ads7846 - extend the driver for ads7845 controller support
 
-I hope that clarifies the situation,
+Axel Lin (3):
+      Input: wistron_btns - fix a memory leak in wb_module_init error path
+      Input: atlas_btns - adds a missing owner field for atlas_acpi_driver
+      Input: atlas_btns - fix mixing acpi_status and int for return value
 
-NeilBrown
+Chris Bagwell (2):
+      Input: synaptics - only report width on hardware that supports it
+      Input: synaptics - set min/max for finger width
 
-> 
-> > +       }
-> >        if (!c->page)
-> >                goto new_slab;
-> >
-> > @@ -1623,8 +1638,8 @@ load_freelist:
-> >        object = c->page->freelist;
-> >        if (unlikely(!object))
-> >                goto another_slab;
-> > -       if (unlikely(SLABDEBUG && PageSlubDebug(c->page)))
-> > -               goto debug;
-> > +       if (unlikely(SLABDEBUG && PageSlubDebug(c->page) || c->reserve))
-> > +               goto slow_path;
-> >
-> >        c->freelist = get_freepointer(s, object);
-> >        c->page->inuse = c->page->objects;
-> > @@ -1646,16 +1661,18 @@ new_slab:
-> >                goto load_freelist;
-> >        }
-> >
-> > +grow_slab:
-> >        if (gfpflags & __GFP_WAIT)
-> >                local_irq_enable();
-> >
-> > -       new = new_slab(s, gfpflags, node);
-> > +       new = new_slab(s, gfpflags, node, &reserve);
-> >
-> >        if (gfpflags & __GFP_WAIT)
-> >                local_irq_disable();
-> >
-> >        if (new) {
-> >                c = __this_cpu_ptr(s->cpu_slab);
-> > +               c->reserve = reserve;
-> >                stat(s, ALLOC_SLAB);
-> >                if (c->page)
-> >                        flush_slab(s, c);
-> > @@ -1667,10 +1684,20 @@ new_slab:
-> >        if (!(gfpflags & __GFP_NOWARN) && printk_ratelimit())
-> >                slab_out_of_memory(s, gfpflags, node);
-> >        return NULL;
-> > -debug:
-> > -       if (!alloc_debug_processing(s, c->page, object, addr))
-> > +
-> > +slow_path:
-> > +       if (!c->reserve && !alloc_debug_processing(s, c->page, object, addr))
-> >                goto another_slab;
-> >
-> > +       /*
-> > +        * Avoid the slub fast path in slab_alloc() by not setting
-> > +        * c->freelist and the fast path in slab_free() by making
-> > +        * node_match() fail by setting c->node to -1.
-> > +        *
-> > +        * We use this for for debug and reserve checks which need
-> > +        * to be done for each allocation.
-> > +        */
-> > +
-> >        c->page->inuse++;
-> >        c->page->freelist = get_freepointer(s, object);
-> >        c->node = -1;
-> > @@ -2095,10 +2122,11 @@ static void early_kmem_cache_node_alloc(gfp_t gfpflags, int node)
-> >        struct page *page;
-> >        struct kmem_cache_node *n;
-> >        unsigned long flags;
-> > +       int reserve;
-> >
-> >        BUG_ON(kmalloc_caches->size < sizeof(struct kmem_cache_node));
-> >
-> > -       page = new_slab(kmalloc_caches, gfpflags, node);
-> > +       page = new_slab(kmalloc_caches, gfpflags, node, &reserve);
-> >
-> >        BUG_ON(!page);
-> >        if (page_to_nid(page) != node) {
-> > --
-> > 1.7.1.1
-> >
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Chris Merrett (1):
+      Input: xpad - add product ID for Hori Fighting Stick EX2
+
+Christoph Egger (1):
+      Input: i8042 - remove SPRUCE support
+
+Christoph Fritz (1):
+      Input: xpad - remove mouse buttons and axes for dance pads
+
+Dan Carpenter (2):
+      Input: lm8323 - fix error handling in lm8323_probe()
+      Input: adxl34x - fix leak and use after free
+
+Dmitry Torokhov (11):
+      Input: usbtouchscreen - reduce number fo be16_to_cpu conversions
+      Input: ad7879 - use threaded IRQ
+      Input: ad7879 - add open and close methods
+      Input: adxl34 - make enable/disable separate from suspend/resume
+      Input: ads7846 - do not allow altering platform data
+      Input: atlas_btns - switch to using pr_err() and friends
+      Input: fix signedness warning in input_set_keycode()
+      Input: change input handlers to use bool when possible
+      Input: evdev - signal that device is writable in evdev_poll()
+      Input: i8042 - reset keyboard controller wehen resuming from S2R
+      Input: adp5588-keypad - fix NULL dereference in adp5588_gpio_add()
+
+Grazvydas Ignotas (1):
+      Input: gpio-keys - add gpiolib debounce support
+
+Henrik Rydberg (7):
+      Input: evdev - convert to dynamic event buffer
+      Input: evdev - use driver hint to compute size of event buffer
+      Input: bcm5974 - set the average number of events per MT event packet
+      Input: hid-input - use a larger event buffer for MT devices
+      Input: evdev - never leave the client buffer empty after write
+      Input: introduce MT event slots
+      Input: document the MT event slot protocol
+
+Jiri Slaby (1):
+      Input: tps6507x-ts - remove unneeded NULL test
+
+Joonyoung Shim (3):
+      Input: mcs - Add MCS touchkey driver
+      Input: Add ATMEL QT602240 touchscreen driver
+      Input: samsung-keypad - Add samsung keypad driver
+
+Julien Moutinho (1):
+      Input: mousedev - signal that device is writable in mousedev_poll()
+
+Lars-Peter Clausen (1):
+      Input: Add pwm beeper driver
+
+Luo Jinghua (1):
+      Input: bcm5974 - turn wellspring mode off if failed to start traffic
+
+Luotao Fu (1):
+      Input: matrix_keypad - add support for clustered irq
+
+Markus Lehtonen (1):
+      Input: twl4030-pwrbutton - replace __devinit with __init
+
+Michael Hennerich (5):
+      Input: add driver for ADXL345/346 Digital Accelerometers
+      Input: adxl34x - add support for ADXL346 orientation sensing
+      Input: ad7879 - use i2c_smbus_read_i2c_block_data() to lower overhead
+      Input: ad7879 - fix spi word size to 16 bit
+      Input: ad7879 - report EV_KEY/BTN_TOUCH events
+
+Mike Frysinger (1):
+      Input: ad7879 - split bus logic out
+
+Oliver Neukum (4):
+      Input: release pressed keys when resuming device
+      Input: usbtouchscreen - implement basic suspend/resume
+      Input: usbtouchscreen - implement runtime power management
+      Input: usbtouchscreen - implement reset_resume
+
+Petr Štetiar (2):
+      Input: usbtouchscreen - add support for ET&T TC4UM touchscreen controller
+      HID - blacklist ET&T TC4UH touchscreen controller
+
+Ping Cheng (1):
+      Input: wacom - add support for DTU2231 and DTU1631
+
+Samuel Thibault (1):
+      Input: keyboard - also match braille-only keyboards
+
+Samuli Konttila (1):
+      Input: cy8ctmg110 - capacitive touchscreen support
+
+Xiaolong CHEN (1):
+      Input: adp5588-keys - support GPI events for ADP5588 devices
+
+Xiaolong Chen (1):
+      Input: adp5588-keys - export unused GPIO pins
+
+
+Diffstat:
+--------
+
+ Documentation/input/multi-touch-protocol.txt |  218 +++--
+ arch/arm/plat-samsung/include/plat/keypad.h  |   43 +
+ drivers/char/keyboard.c                      |    6 +-
+ drivers/hid/hid-core.c                       |    1 +
+ drivers/hid/hid-ids.h                        |    1 +
+ drivers/hid/hid-input.c                      |    3 +
+ drivers/input/evdev.c                        |   54 +-
+ drivers/input/input.c                        |  182 +++--
+ drivers/input/joydev.c                       |    7 +-
+ drivers/input/joystick/xpad.c                |  108 ++-
+ drivers/input/keyboard/Kconfig               |   21 +
+ drivers/input/keyboard/Makefile              |    2 +
+ drivers/input/keyboard/adp5588-keys.c        |  351 +++++++-
+ drivers/input/keyboard/gpio_keys.c           |   19 +-
+ drivers/input/keyboard/lm8323.c              |   12 +-
+ drivers/input/keyboard/matrix_keypad.c       |  108 ++-
+ drivers/input/keyboard/mcs_touchkey.c        |  239 +++++
+ drivers/input/keyboard/samsung-keypad.c      |  491 +++++++++
+ drivers/input/misc/Kconfig                   |   48 +
+ drivers/input/misc/Makefile                  |    4 +
+ drivers/input/misc/adxl34x-i2c.c             |  163 +++
+ drivers/input/misc/adxl34x-spi.c             |  145 +++
+ drivers/input/misc/adxl34x.c                 |  915 +++++++++++++++++
+ drivers/input/misc/adxl34x.h                 |   30 +
+ drivers/input/misc/atlas_btns.c              |   38 +-
+ drivers/input/misc/pwm-beeper.c              |  199 ++++
+ drivers/input/misc/twl4030-pwrbutton.c       |   12 +-
+ drivers/input/misc/wistron_btns.c            |    4 +-
+ drivers/input/mouse/bcm5974.c                |   23 +-
+ drivers/input/mouse/synaptics.c              |    8 +-
+ drivers/input/mousedev.c                     |   15 +-
+ drivers/input/serio/i8042-ppcio.h            |   75 --
+ drivers/input/serio/i8042.c                  |   65 +-
+ drivers/input/tablet/wacom_wac.c             |   44 +
+ drivers/input/tablet/wacom_wac.h             |    1 +
+ drivers/input/touchscreen/Kconfig            |   67 +-
+ drivers/input/touchscreen/Makefile           |    6 +-
+ drivers/input/touchscreen/ad7879-i2c.c       |  143 +++
+ drivers/input/touchscreen/ad7879-spi.c       |  198 ++++
+ drivers/input/touchscreen/ad7879.c           |  625 ++++--------
+ drivers/input/touchscreen/ad7879.h           |   30 +
+ drivers/input/touchscreen/ads7846.c          |  206 +++-
+ drivers/input/touchscreen/cy8ctmg110_ts.c    |  363 +++++++
+ drivers/input/touchscreen/mcs5000_ts.c       |    6 +-
+ drivers/input/touchscreen/qt602240_ts.c      | 1401 ++++++++++++++++++++++++++
+ drivers/input/touchscreen/tps6507x-ts.c      |    3 -
+ drivers/input/touchscreen/usbtouchscreen.c   |  215 +++--
+ include/linux/i2c/adp5588.h                  |   37 +
+ include/linux/i2c/mcs.h                      |   34 +
+ include/linux/i2c/mcs5000_ts.h               |   24 -
+ include/linux/i2c/qt602240_ts.h              |   38 +
+ include/linux/input.h                        |   60 ++-
+ include/linux/input/adxl34x.h                |  349 +++++++
+ include/linux/input/cy8ctmg110_pdata.h       |   10 +
+ include/linux/input/matrix_keypad.h          |    6 +
+ include/linux/spi/ads7846.h                  |    3 +-
+ 56 files changed, 6496 insertions(+), 983 deletions(-)
+ create mode 100644 arch/arm/plat-samsung/include/plat/keypad.h
+ create mode 100644 drivers/input/keyboard/mcs_touchkey.c
+ create mode 100644 drivers/input/keyboard/samsung-keypad.c
+ create mode 100644 drivers/input/misc/adxl34x-i2c.c
+ create mode 100644 drivers/input/misc/adxl34x-spi.c
+ create mode 100644 drivers/input/misc/adxl34x.c
+ create mode 100644 drivers/input/misc/adxl34x.h
+ create mode 100644 drivers/input/misc/pwm-beeper.c
+ create mode 100644 drivers/input/touchscreen/ad7879-i2c.c
+ create mode 100644 drivers/input/touchscreen/ad7879-spi.c
+ create mode 100644 drivers/input/touchscreen/ad7879.h
+ create mode 100644 drivers/input/touchscreen/cy8ctmg110_ts.c
+ create mode 100644 drivers/input/touchscreen/qt602240_ts.c
+ create mode 100644 include/linux/i2c/mcs.h
+ delete mode 100644 include/linux/i2c/mcs5000_ts.h
+ create mode 100644 include/linux/i2c/qt602240_ts.h
+ create mode 100644 include/linux/input/adxl34x.h
+ create mode 100644 include/linux/input/cy8ctmg110_pdata.h
+
+-- 
+Dmitry
 
