@@ -1,42 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab0HCWQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 18:16:10 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:45499 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757224Ab0HCWQI (ORCPT
+	id S1757929Ab0HCWUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:20:00 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8414 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab0HCWTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 18:16:08 -0400
-Date: Tue, 3 Aug 2010 23:15:37 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Huang Ying <ying.huang@intel.com>, "Tang, Feng" <feng.tang@intel.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: EFI runtime-services on x86_64
-Message-ID: <20100803221537.GA4893@srcf.ucam.org>
-References: <201007301458.50263.bjorn.helgaas@hp.com> <20100802103535.6442ab49@feng-i7> <1280716920.2771.1519.camel@yhuang-dev> <m14ofbgyki.fsf@fess.ebiederm.org> <20100803215346.GA4476@srcf.ucam.org> <m1lj8nfjf1.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1lj8nfjf1.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 3 Aug 2010 18:19:53 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=gBrVsq9wqf4Kf0OroM6ObTm2StkhUgLcltAFE9iLcZwXfpZAFkbydpsf069EvNniG
+	EjPkDtXPrcSvHuDYsDmAA==
+From: Michael Rubin <mrubin@google.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: jack@suse.cz, akpm@linux-foundation.org, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk, Michael Rubin <mrubin@google.com>
+Subject: [PATCH 0/2] Adding four writeback files in /proc/sys/vm
+Date: Tue,  3 Aug 2010 15:19:07 -0700
+Message-Id: <1280873949-20460-1-git-send-email-mrubin@google.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 02:58:10PM -0700, Eric W. Biederman wrote:
+Patch #1 sets up some helper functions for accounting.
 
-> Only if you have EFI runtime services enabled in your kernel.  You can
-> skip the efi junk and the kernel runs just fine.  Doing what we do on
-> every other platform which appears to be a combination of ACPI and
-> direct hardware access appears to be good enough, and that is a path
-> that actually gets tested regularly.
+Patch #2 adds some writeback files for visibility
 
-I think wanting to set the nvram variables so that your bootloader works 
-is a pretty typical usecase...
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+To help developers and applications gain visibility into writeback
+behaviour adding four read-only sysctl files into /proc/sys/vm.
+These files allow user apps to understand writeback behaviour over time
+and learn how it is impacting their performance.
+
+   # cat /proc/sys/vm/pages_dirtied
+   3747
+   # cat /proc/sys/vm/pages_entered_writeback
+   3618
+   # cat /proc/sys/vm/dirty_threshold_kbytes
+   816673
+   # cat /proc/sys/vm/dirty_background_threshold_kbytes
+   408336
+
+The files fall into two groups.
+
+pages_dirtied and pages_entered_writeback:
+
+These two new files are necessary to give visibility into writeback
+behaviour. We have /proc/diskstats which lets us understand the io in
+the block layer. We have blktrace for more indepth understanding. We have
+e2fsprogs and debugsfs to give insight into the file systems behaviour,
+but we don't offer our users the ability understand what writeback is
+doing. There is no non-debugfs way to know how active it is, if it's
+falling behind or to quantify it's efforts on a system. With these values
+exported users can easily see how much data applications are sending
+through writeback and also at what rates writeback is processing this
+data. Comparing the rates of change between the two allow developers
+to see when writeback is not able to keep up with incoming traffic and
+the rate of dirty memory being sent to the IO back end.  This allows
+folks to understand their io workloads and track kernel issues. Non
+kernel engineers at Google often use these counters to solve puzzling
+performance problems.
+
+dirty_threshold_kbytes and dirty_background_threshold kbytes:
+
+We already expose these thresholds in /proc/sys/vm with
+dirty_background_ratio and background_ratio. What's frustrating about
+the ratio variables and the need for these are that they are not
+honored by the kernel. Instead the kernel may alter the number
+requested without giving the user any indication that is the case.
+An app developer can set the ratio to 2% but end up with 5% as
+get_dirty_limits makes sure it is never lower than 5% when set from
+the ratio. Arguably that can be fixed too but the limits which decide
+whether writeback is invoked to aggressively clean dirty pages is
+dependent on changing page state retrieved in
+determine_dirtyable_memory. It makes understanding when the kernel
+decides to writeback data a moving target that no app can ever
+determine. With these thresholds visible and collected over time it
+gives apps a chance to know why writeback happened, or why it did not.
+As systems get larger and larger RAM developers use the ratios to
+predict when their workloads will see writeback invoked. Today there
+is no way to accurately indicate what the kernel will use to kick off
+writeback. Hence the need for these two new files.
+
+Michael Rubin (2):
+  mm: helper functions for dirty and writeback accounting
+  writeback: Adding four read-only files to /proc/sys/vm
+
+ Documentation/sysctl/vm.txt |   41 ++++++++++++++++++++++--
+ drivers/base/node.c         |   14 ++++++++
+ fs/ceph/addr.c              |    8 +---
+ fs/nilfs2/segment.c         |    2 +-
+ include/linux/mm.h          |    1 +
+ include/linux/mmzone.h      |    2 +
+ include/linux/writeback.h   |   17 ++++++++++
+ kernel/sysctl.c             |   28 ++++++++++++++++
+ mm/page-writeback.c         |   73 +++++++++++++++++++++++++++++++++++++++++--
+ mm/vmstat.c                 |    2 +
+ 10 files changed, 174 insertions(+), 14 deletions(-)
+
