@@ -1,123 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab0HCIid (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 04:38:33 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60270 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab0HCIia (ORCPT
+	id S1755325Ab0HCIkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 04:40:14 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:39056 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753953Ab0HCIkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 04:38:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=MoK2Xx0EczGI+GUGZn30SstogdC1ImpGTY1JA9cA33wj2/y4HhA/Fjh8IxBw489Weg
-         TwfTEDWIT4Lj4s2CGB2a/yLL8w+X6ZoIglGfLODSpbMl1WcFuu2U7/kTL6xXr+PKvx5p
-         bSpSGYO0PqN877KW+r6QbLVjRcQWs6+FS3bbA=
+	Tue, 3 Aug 2010 04:40:10 -0400
+X-SpamScore: -61
+X-BigFish: VPS-61(z6c9Rz1432N1a09M9370J98dN936eM1447R9371Pzz1202hzz15d4Rz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L6KILG-01-HP2-02
+X-M-MSG: 
+From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Organization: AMD OSRC
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM (was: Re: HDD not suspending properly / dead on resume)
+Date: Tue, 3 Aug 2010 10:36:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-pm-link-fix; KDE/4.4.5; x86_64; ; )
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <201008022248.45135.stephan.diestelhorst@gmail.com> <201008022338.05195.rjw@sisk.pl>
+In-Reply-To: <201008022338.05195.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=p-_owFPD1_uD4c2KvO0RB-c-GO3Cq-y9b0EfR@mail.gmail.com>
-References: <1280460642.2173.3.camel@localhost.localdomain>
-	<AANLkTi=p-_owFPD1_uD4c2KvO0RB-c-GO3Cq-y9b0EfR@mail.gmail.com>
-Date: Tue, 3 Aug 2010 10:38:30 +0200
-X-Google-Sender-Auth: jBtyBD45WgK6TxyWpDa3jyt0QdA
-Message-ID: <AANLkTi=2t-HenNu+im+Q_X0Ts7=ipxVsgz0-53XvZJQA@mail.gmail.com>
-Subject: Re: 2.6.33.6-rt26: oops
-From: John Kacur <jkacur@redhat.com>
-To: Fernando Lopez-Lezcano <nando@ccrma.stanford.edu>
-Cc: john stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-ID: <201008031036.51012.stephan.diestelhorst@amd.com>
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 10:18 AM, John Kacur <jkacur@redhat.com> wrote:
-> On Fri, Jul 30, 2010 at 5:30 AM, Fernando Lopez-Lezcano
-> <nando@ccrma.stanford.edu> wrote:
->> Hi all...
->> This may not be rt related but here it goes anyway. It happened when I
->> tried to restart my iptables service (/sbin/service iptables start). I
->> think a day or two ago I had another network related hang, but it was a
->> complete hang (no clues left behind - power button to reset).
->>
->> -- Fernando
->>
->>
->>
->> Jul 29 18:27:57 localhost kernel: BUG: unable to handle kernel NULL
->> pointer dereference at (null)
->> Jul 29 18:27:57 localhost kernel: IP: [<c045ad40>] exit_creds+0xc/0x54
->> Jul 29 18:27:57 localhost kernel: *pdpt = 0000000000a68001 *pde =
->> 0000000000000000
->> Jul 29 18:27:57 localhost kernel: Oops: 0000 [#1] PREEMPT SMP
->> Jul 29 18:27:57 localhost kernel: last sysfs
->> file: /sys/devices/virtual/net/pan0/statistics/collisions
->> Jul 29 18:27:57 localhost kernel: Modules linked in: snd_seq_midi
->> snd_seq_midi_event snd_seq_dummy snd_usb_audio snd_usb_lib snd_rawmidi
->> fuse rfcomm sco bridge stp llc bnep l2cap sunrpc cpufreq_ondemand
->> acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
->> ipv6 dm_multipath uinput arc4 snd_hda_codec_analog ecb iwl3945
->> snd_hda_intel snd_hda_codec iwlcore thinkpad_acpi btusb sdhci_pci sdhci
->> mmc_core snd_hwdep e1000e snd_seq ohci1394 ricoh_mmc snd_seq_device
->> snd_pcm snd_timer snd mac80211 i2c_i801 iTCO_wdt iTCO_vendor_support
->> joydev cfg80211 bluetooth snd_page_alloc rfkill soundcore yenta_socket
->> rsrc_nonstatic i915 drm_kms_helper drm i2c_algo_bit i2c_core video
->> output [last unloaded: microcode]
->> Jul 29 18:27:57 localhost kernel:
->> Jul 29 18:27:57 localhost kernel: Pid: 6956, comm: sirq-rcu/1 Not
->> tainted 2.6.33.6-147.2.4.rt26.1.fc12.ccrma.i686.rtPAE #1 6463CTO/6463CTO
->> Jul 29 18:27:57 localhost kernel: EIP: 0060:[<c045ad40>] EFLAGS:
->> 00010287 CPU: 1
->> Jul 29 18:27:57 localhost kernel: EIP is at exit_creds+0xc/0x54
->> Jul 29 18:27:57 localhost kernel: EAX: 00000000 EBX: f0e1a430 ECX:
->> f0e1a960 EDX: 00000000
->> Jul 29 18:27:57 localhost kernel: ESI: c410434c EDI: f0e1a960 EBP:
->> f3321f38 ESP: f3321f34
->> Jul 29 18:27:57 localhost kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0
->> SS: 0068 preempt:00000000
->> Jul 29 18:27:57 localhost kernel: Process sirq-rcu/1 (pid: 6956,
->> ti=f3320000 task=f2b92d30 task.ti=f3320000)
->> Jul 29 18:27:57 localhost kernel: Stack:
->> Jul 29 18:27:57 localhost kernel: f0e1a430 f3321f44 c043e974 c4104334
->> f3321f4c c043e9b4 f3321f70 c048507b
->> Jul 29 18:27:57 localhost kernel: <0> 00000000 00000000 c099bbc0
->> 00000283 c4103fdc c0a5cfec 00000200 f3321f78
->> Jul 29 18:27:57 localhost kernel: <0> c0485192 f3321fa4 c044445e
->> c0a5cfec f2b92d30 fffffdff 00000001 00000000
->> Jul 29 18:27:57 localhost kernel: Call Trace:
->> Jul 29 18:27:57 localhost kernel: [<c043e974>] ? __put_task_struct
->> +0x54/0x87
->> Jul 29 18:27:57 localhost kernel: [<c043e9b4>] ? __put_task_struct_cb
->> +0xd/0xf
->> Jul 29 18:27:57 localhost kernel: [<c048507b>] ? __rcu_process_callbacks
->> +0x153/0x21a
->> Jul 29 18:27:57 localhost kernel: [<c0485192>] ? rcu_process_callbacks
->> +0x50/0x57
->> Jul 29 18:27:57 localhost kernel: [<c044445e>] ? run_ksoftirqd
->> +0x138/0x236
->> Jul 29 18:27:57 localhost kernel: [<c0444326>] ? run_ksoftirqd+0x0/0x236
->> Jul 29 18:27:57 localhost kernel: [<c04557ae>] ? kthread+0x5f/0x64
->> Jul 29 18:27:57 localhost kernel: [<c045574f>] ? kthread+0x0/0x64
->> Jul 29 18:27:57 localhost kernel: [<c040907e>] ? kernel_thread_helper
->> +0x6/0x10
->> Jul 29 18:27:57 localhost kernel: Code: 00 00 00 89 f8 e8 cb d7 1d 00 89
->> f0 e8 bc fd ff ff 89 f0 e8 b5 fd ff ff 31 c0 5b 5e 5f 5d c3 55 89 e5 53
->> 89 c3 8b 80 0c 03 00 00 <8b> 00 8b 83 08 03 00 00 c7 83 08 03 00 00 00
->> 00 00 00 e8 8b fd
->> Jul 29 18:27:57 localhost kernel: EIP: [<c045ad40>] exit_creds+0xc/0x54
->> SS:ESP 0068:f3321f34
->> Jul 29 18:27:57 localhost kernel: CR2: 0000000000000000
->> Jul 29 18:27:57 localhost kernel: ---[ end trace ebf66505b4c2cac5 ]---
->>
->
-> Is this easily reproducible? If so, can you try again with v2.6.33.6-rt28?
-> Thanks
->
+On Monday 02 August 2010, 23:38:05 Rafael J. Wysocki wrote:
+> On Monday, August 02, 2010, Stephan Diestelhorst wrote:
+> > On Wednesday 28 July 2010, 23:50:09 Rafael J. Wysocki wrote:
+> > > On Saturday, July 10, 2010, Tejun Heo wrote:
+> > > > On 07/10/2010 08:50 AM, Stephan Diestelhorst wrote:
+> > > > >> I have a box where this problem is kind of reproducible, but it happens _very_
+> > > > >> rarely.  Also I can't reproduce it on demand running suspend-resume in a tight
+> > > > >> loop.  Are you able to reproduce it more regurarly?
+> > > > > 
+> > > > > For me it is much more reproducible. If I run multiple direct writing
+> > > > > dd-s to the disk in question I trigger it rather reliably (~75% or
+> > > > > higher). See the attached script from an earlier email.
+> > > > > Maybe that helps triggering your case more reliabl, too?
+> > > > 
+> > > That didn't help, but the appended patch fixes the problem for me.
+> > 
+> > <snip>
+> > 
+> > Sorry for taking ages. Vacation and catching up after it are to blame,
+> > as is me forgetting to build a proper initrd...
+> > 
+> > Thanks for the patch! It certainly changes behaviour, however, in a
+> > very strange way for me. With your patch my machine does not suspend
+> > to ram anymore (a simple echo mem > /proc/sys/state blocks), and
+> > nothing happens in dmesg if there is a lot of write I/O while
+> > suspending. (A number of parallel dd's with oflag=direct)
+> > 
+> > If I stop the I/O, the system eventually goes into suspend to RAM.
+> > However, that takes a while, after the I/O has stopped, and also
+> > from "Preparing system for suspend" log entry until it is actually
+> > done.
+> > 
+> > Is this intentional?
+> 
+> It surely isn't.
+> 
+> > Let me know how I can debug this further!
+> > Ideally I'd like to be able to suspend the machine under I/O load,
+> > too. (E.g. during a compile job.)
+> > 
+> > Can you reproduce this at your end, too?
+> 
+> Well, I didn't try suspending with a number of parallel dd's with oflag=direct
+> in the background, but otherwise I'm not reproducing the issue with
+> the patch applied.
 
-Ugh, sorry for the noise, I didn't see the other thread in which Thomas says
-"Yeah, that's the iptables locking problem, which is fixed in rt27."
-More coffee needed.
+Mhmhm, I have tried to reproduce my issue again, and also added some
+dev_printk's around your code to understand where the delay is
+happening.
 
-John
+However, I have not been able to reproduce the issue (with and without
+the debug output) anymore, and I am happy to report that for now your
+patch helps.
+
+I'd like to keep this under observation for a little while longer,
+though.
+
+Many thanks,
+  Stephan
+
+-- 
+Stephan Diestelhorst, AMD Operating System Research Center
+stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
