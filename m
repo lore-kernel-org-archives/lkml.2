@@ -1,56 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab0HCDPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 23:15:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60378 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852Ab0HCDPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 23:15:01 -0400
-Message-ID: <4C57895C.1070402@zytor.com>
-Date: Mon, 02 Aug 2010 20:13:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1753988Ab0HCDV5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 23:21:57 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:65307 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab0HCDV4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 23:21:56 -0400
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-References: <20100803022310.bec3ba79.sfr@canb.auug.org.au>	 <20100802162810.GB4755@flint.arm.linux.org.uk> <1280799724.1902.84.camel@pasglop>
-In-Reply-To: <1280799724.1902.84.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100731215214.2543c07e@infradead.org>
+	<20100801054816.GI2470@linux.vnet.ibm.com>
+	<20100731230101.7cc1d8c7@infradead.org>
+	<20100801191228.GL2470@linux.vnet.ibm.com>
+	<20100801204026.GH31324@thunk.org>
+	<20100802030304.GU2470@linux.vnet.ibm.com>
+	<20100801210548.23f77ff6@infradead.org>
+	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
+	<20100802140933.GB2405@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
+Date: Mon, 2 Aug 2010 20:21:55 -0700
+Message-ID: <AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: david@lang.hm
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 06:42 PM, Benjamin Herrenschmidt wrote:
-> 
-> I'm happy to wait and sit on the memblock churn until after ARM's in.
-> 
-> I can then fixup my patches.
-> 
+On Mon, Aug 2, 2010 at 5:08 PM,  <david@lang.hm> wrote:
+> On Mon, 2 Aug 2010, Paul E. McKenney wrote:
+>
+>> On Sun, Aug 01, 2010 at 10:06:34PM -0700, david@lang.hm wrote:
+>>>
+>>> On Sun, 1 Aug 2010, Arjan van de Ven wrote:
+>>>
+>>>> I'm a little worried that this whole "I need to block suspend" is
+>>>> temporary. Yes today there is silicon from ARM and Intel where suspend
+>>>> is a heavy operation, yet at the same time it's not all THAT heavy
+>>>> anymore.... at least on the Intel side it's good enough to use pretty
+>>>> much all the time (when the screen is off for now, but that's a memory
+>>>> controller issue more than anything else). I'm pretty sure the ARM guys
+>>>> will not be far behind.
+>>>
+>>> remember that this 'block suspend' is really 'block overriding the
+>>> fact that there are still runable processes and suspending anyway"
+>>>
+>>> having it labeled as 'suspend blocker' or even 'wakelock' makes it
+>>> sound as if it blocks any attempt to suspend, and I'm not sure
+>>> that's what's really intended. Itsounds like the normal syspend
+>>> process would continue to work, just this 'ignore if these other
+>>> apps are busy' mode of operation would not work.
+>>>
+>>> which makes me wonder, would it be possible to tell the normal idle
+>>> detection mechanism to ignore specific processes when deciding if it
+>>> should suspend or not? how about only considering processes in one
+>>> cgroup when deciding to suspend and ignoring all others?
+>>
+>> Why not flesh this out and compare it to the draft requirements?
+>> (I expect to be sending another version by end of day Pacific Time.)
+>>
+>> The biggest issue I see right off-hand is that a straightforward
+>> implementation of your idea would require moving processes from one
+>> cgroup to another when acquiring or releasing a suspend blocker, which
+>> from what I understand would be way to heavyweight.  On the other hand,
+>> if acquiring and releasing a suspend blocker does not move the process
+>> from one cgroup to another, then you need something very like the
+>> suspend-blocker mechanism to handle those processes that are permitted
+>> to acquire suspend blockers, and which are thus not a member of the
+>> cgroup in question.
+>>
+>> That said, I did see some hint from the Android guys that it -might-
+>> be possible to leverage cgroups in the way that you suggest might help
+>> save power during times when suspend was blocked but (for example) the
+>> screen was turned off.  The idea would be to freeze the cgroup whenever
+>> the screen blanked, even if suspend was blocked.  The biggest issue
+>> here is that any process that can hold a suspend blocker must never to
+>> an unconditional wait on any process in this cgroup.  Seems to me that
+>> this should be possible in theory, but the devil would be in the details.
+>>
+>> If I am misunderstanding your proposal, please enlighten me!
+>
+> you are close, but I think what I'm proposing is actually simpler (assuming
+> that the scheduler can be configured to generate the appropriate stats)
+>
+> my thought was not to move applications between cgroups as they
+> aquire/release the suspend-block lock, bur rather to say that any
+> application that you would trust to get the suspend-block lock should be in
+> cgroup A while all other applications are in cgroup B
+>
+> when you are deciding if the system shoudl go to sleep because it is idle,
+> ignore the activity of all applications in cgroup B
+>
+> if cgroup A applications are busy, the system is not idle and should not
+> suspend.
+>
 
-As far as x86 is concerned, I would like to try to get the whole thing
-into -tip fairly early in a kernel cycle, so that it can get -tip/-next
-testing for a while before merging.
+Triggering suspend from idle has been suggested before. However, idle
+is not a signal that it is safe to suspend since timers stop in
+suspend (or the code could temporarily be waiting on a non-wakeup
+interrupt). If you add suspend blockers or wakelocks to prevent
+suspend while events you care about are pending, then it does not make
+a lot of sense to prevent suspend just because the cpu is not idle.
 
-I would much rather smoke out bugs like the qla2xxx failing to implement
-.shutdown and therefore doing DMA on random memory than just paper it
-over by functionally re-implementing a bunch of the memblock guts in x86.
+> this requires that the applications in cgroup A actually go idle as opposed
+> to simply releaseing the suspend-block lock, but it would mean that there
+> are no application changes required for to move a system from the status
+> "even if it's busy, go ahead ans suspend" to "this application is important,
+> don't suspend if it's got work to do", it would just be classifying the
+> application in one cgroup or the other.
+>
+> This assumes that an application that you would trust to hold the
+> suspend-block lock is going to be well behaved (if it isn't, how can you
+> trust it to not grab the lock inappropriatly?)
+>
+> David Lang
+>
 
-I still think that the memblock approach of having a separate data
-structure for all of memory and one for various used blocks is flawed,
-and that it would be a lot better to have a single data structure with
-attributes.  It would definitely make allocation saner.  Given that,
-there is a strong reason to keep as little of the guts exposed as possible.
-
-	-hpa
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Arve Hjønnevåg
