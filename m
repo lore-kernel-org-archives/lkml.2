@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab0HCDde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 23:33:34 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43255 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab0HCDdd (ORCPT
+	id S1754166Ab0HCDhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 23:37:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59551 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab0HCDhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 23:33:33 -0400
-Date: Tue, 3 Aug 2010 09:03:27 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 3/5] memcg scalable file stat accounting method
-Message-ID: <20100803033327.GD3863@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
- <20100802191559.6af0cded.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100802191559.6af0cded.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Mon, 2 Aug 2010 23:37:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DOxfm1TqMB+e0EtljW7VL+fsfKjbMmXYFqV75zUeXLs/nU0LlmBf74DUBDL/aEM0n5
+         2uuXnHSdQuFLGqhXwgdgBXsxbVHo3LzDywXfEZWP3e07dRYBuU21bvVtWKG61PJlcGxK
+         kpEueBFDtv+yifAOU2UnUThYdpbg2+YRR/amc=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]drivers/usb/host/ehci-sched.c Fix typo
+Date: Mon,  2 Aug 2010 20:37:50 -0700
+Message-Id: <1280806670-21009-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-02 19:15:59]:
+The below patch fixes a typo in a comment.
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> At accounting file events per memory cgroup, we need to find memory cgroup
-> via page_cgroup->mem_cgroup. Now, we use lock_page_cgroup().
-> 
-> But, considering the context which page-cgroup for files are accessed,
-> we can use alternative light-weight mutual execusion in the most case.
-> At handling file-caches, the only race we have to take care of is "moving"
-> account, IOW, overwriting page_cgroup->mem_cgroup. Because file status
-> update is done while the page-cache is in stable state, we don't have to
-> take care of race with charge/uncharge.
-> 
-> Unlike charge/uncharge, "move" happens not so frequently. It happens only when
-> rmdir() and task-moving (with a special settings.)
-> This patch adds a race-checker for file-cache-status accounting v.s. account
-> moving. The new per-cpu-per-memcg counter MEM_CGROUP_ON_MOVE is added.
-> The routine for account move 
->   1. Increment it before start moving
->   2. Call synchronize_rcu()
->   3. Decrement it after the end of moving.
-> By this, file-status-counting routine can check it needs to call
-> lock_page_cgroup(). In most case, I doesn't need to call it.
-> 
-> 
-> Changelog: 20100730
->  - some cleanup.
-> Changelog: 20100729
->  - replaced __this_cpu_xxx() with this_cpu_xxx
->    (because we don't call spinlock)
->  - added VM_BUG_ON().
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   78 +++++++++++++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 66 insertions(+), 12 deletions(-)
-> 
-> Index: mmotm-0727/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0727.orig/mm/memcontrol.c
-> +++ mmotm-0727/mm/memcontrol.c
-> @@ -88,6 +88,7 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
->  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
->  	MEM_CGROUP_EVENTS,	/* incremented at every  pagein/pageout */
-> +	MEM_CGROUP_ON_MOVE,   /* A check for locking move account/status */
-> 
->  	MEM_CGROUP_STAT_NSTATS,
->  };
-> @@ -1074,7 +1075,49 @@ static unsigned int get_swappiness(struc
->  	return swappiness;
->  }
-> 
-> -/* A routine for testing mem is not under move_account */
-> +static void mem_cgroup_start_move(struct mem_cgroup *mem)
-> +{
-> +	int cpu;
-> +	/* for fast checking in mem_cgroup_update_file_stat() etc..*/
-> +	spin_lock(&mc.lock);
-> +	for_each_possible_cpu(cpu)
-> +		per_cpu(mem->stat->count[MEM_CGROUP_ON_MOVE], cpu) += 1;
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Is for_each_possible really required? Won't online cpus suffice? There
-can be a race if a hotplug event happens between start and end move,
-shouldn't we handle that. My concern is that with something like 1024
-cpus possible today, we might need to optimize this further.
+---
+ drivers/usb/host/ehci-sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-May be we can do this first and optimize later.
-
+diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
+index 805ec63..3c170a9 100644
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1662,7 +1662,7 @@ itd_link_urb (
+ 
+ #define	ISO_ERRS (EHCI_ISOC_BUF_ERR | EHCI_ISOC_BABBLE | EHCI_ISOC_XACTERR)
+ 
+-/* Process and recycle a completed ITD.  Return true iff its urb completed,
++/* Process and recycle a completed ITD.  Return true if its urb completed,
+  * and hence its completion callback probably added things to the hardware
+  * schedule.
+  *
 -- 
-	Three Cheers,
-	Balbir
+1.7.1.rc1.21.gf3bd6
+
