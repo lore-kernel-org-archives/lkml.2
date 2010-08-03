@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab0HCJKg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:10:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44209 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640Ab0HCJKe (ORCPT
+	id S1755587Ab0HCJLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:11:11 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48236 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640Ab0HCJLI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:10:34 -0400
-Message-ID: <4C57DCCF.4000202@kernel.org>
-Date: Tue, 03 Aug 2010 02:09:35 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Tue, 3 Aug 2010 05:11:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DKQFVSs33MG6WpQK2PNnt0UU7yHQbg67yyUy4nkHfqrTzD6EKjbBTo04BQV5w+Cot6
+         YfN4YNK/EG8EuH5tpAciCQdis6vtW2yO3qlc1WocHBQ+tyTvjURlsxR5pXX1/a60eARU
+         O/NnRjTf8vMHmPS6dmndncY0zLfQZU3joD4oM=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3] x86: Setup early console as early as possible
-References: <4C56701B.1030000@kernel.org>	<20100802150958.GA5544@lenovo>	<4C571B25.3080806@kernel.org>	<20100802201750.GG5544@lenovo>	<4C57C1DE.9050400@kernel.org> <20100803020638.4e2177c3.akpm@linux-foundation.org>
-In-Reply-To: <20100803020638.4e2177c3.akpm@linux-foundation.org>
+In-Reply-To: <1280826359.1923.440.camel@laptop>
+References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
+	<AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>
+	<1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>
+	<4C3D89AC.4040303@cs.helsinki.fi>
+	<1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>
+	<4C3F2F52.2050101@cs.helsinki.fi>
+	<20100715162805.GA10240@brouette>
+	<20100715191638.GA3694@brouette>
+	<AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com>
+	<20100715200012.GA4175@brouette>
+	<AANLkTilnLXVSkWfnaPtpzxH-C3-5h1mnBz3O0vAFHG32@mail.gmail.com>
+	<1280826359.1923.440.camel@laptop>
+Date: Tue, 3 Aug 2010 11:11:06 +0200
+Message-ID: <AANLkTi=VuLwcmjTpOeK-OzgiWeycu14hJpfUuH9cKnUj@mail.gmail.com>
+Subject: Re: kmemleak, cpu usage jump out of nowhere
+From: Zeno Davatz <zdavatz@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Damien Wyart <damien.wyart@free.fr>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        mingo@elte.hu, yinghai@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C57DCD3.006A,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2010 02:06 AM, Andrew Morton wrote:
-> On Tue, 03 Aug 2010 00:14:38 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
-> 
+On Tue, Aug 3, 2010 at 11:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-07-15 at 23:52 +0300, Pekka Enberg wrote:
+>> On Thu, Jul 15, 2010 at 11:00 PM, Damien Wyart <damien.wyart@free.fr> wrote:
+>> >> > For now, I can't reproduce the problem with CONFIG_NO_BOOTMEM disabled ;
+>> >> > with the option and rc5 the problem was happening quite quickly after
+>> >> > boot and normal use of the machine. So it seems I can confirme what Zeno
+>> >> > has seen and I hope this will give a hint to debug the problem. I guess
+>> >> > this has not been reported that much because many testers might not have
+>> >> > enabled CONFIG_NO_BOOTMEM... Maybe the scheduler folks could test their
+>> >> > benchmark with a kernel having this option enabled?
+>> >
+>> > * Pekka Enberg <penberg@cs.helsinki.fi> [2010-07-15 22:50]:
+>> >> To be honest, the bug is bit odd. It's related to boot-time memory
+>> >> allocator changes but yet it seems to manifest itself as a scheduling
+>> >> problem. So if you have some spare time and want to speed up the
+>> >> debugging process, please test v2.6.34 and v2.6.35-rc1 with
+>> >> CONFIG_NO_BOOTMEM and if former is good and latter is bad, try to see
+>> >> if you can identify the offending commit with "git bisect."
+>> >
+>> > Not sure I will have enough time in the coming days (doing that remotely
+>> > is fishy since ssh access is almost stuck when the problem occurs); if
+>> > Zeno can and would like to do it, maybe this could be done faster.
+>> >
+>> > As the scheduler is now very well instrumented (many debugging features
+>> > are available), reproducing the bug on a test platform (it happens quite
+>> > quickly for me) might also give some hints. So testers, if you have
+>> > time, please test 2.6.35-rc5 with CONFIG_NO_BOOTMEM on a Core i7 and see
+>> > if you can reproduce the problem!
 >>
->> Analyze "console=uart8250,io,0x3f8,115200n8" in i386_start_kernel/x86_64_start_kernel,
->> and call setup_early_serial8250_console() to init early serial console.
+>> Yeah, there's "perf sched" tool available for that:
 >>
->> only can handle io port kind of 8250. because mmio need ioremap.
+>>   http://lwn.net/Articles/353295/
 >>
->> -v2: use boot_params.hdr.version instead of adding another variable, Suggested by hpa
->>      update after using x86 memblock patchset
->> -v3: x86 memblock can not make into with 2.6.36 now
->>      so update this patch to be applied before x86 memblock patchset again.
->>
->> ...
->>
->> --- linux-2.6.orig/kernel/printk.c
->> +++ linux-2.6/kernel/printk.c
->> @@ -1203,6 +1203,10 @@ void register_console(struct console *ne
->>  	if (console_drivers && newcon->flags & CON_BOOT) {
->>  		/* find the last or real console */
->>  		for_each_console(bcon) {
->> +			/* not again */
->> +			if (bcon == newcon)
->> +				return;
->> +
->>  			if (!(bcon->flags & CON_BOOT)) {
->>  				printk(KERN_INFO "Too late to register bootconsole %s%d\n",
-> 
-> Why this change?
+>> The only problem is that we'd need a scheduler hacker to decipher the
+>> report and all of them seem to be missing at the moment (probably at
+>> OLS). Anyway, like I said, git bisect will probably speed up the
+>> debugging process, that's all.
+>
+> Vacation.. but now I'm back ;-)
+>
+> Even something simple as: perf top -r 1 (make sure you're root in order
+> to run with real-time prios) could give a clue as to what is consuming
+> all your cpu-time.
+>
+> Or did the issue get sorted already?
 
-it seems register the same console as early console will dead loop.
+Thank you for the hint.
 
-let me double check that again to see if can remove that change.
+I am on 2.6.35 now and all seems to be fine again.
 
-Yinghai
+Best
+Zeno
