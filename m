@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab0HCElV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:41:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:61285 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab0HCElT (ORCPT
+	id S1755020Ab0HCEl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:41:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50442 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960Ab0HCElX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:41:19 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=wEBIAJl40p/WC4eIDK3JKOJQ7+C6Zu9IGregiDVTQpk9lvhoTDmF8dLGEwLmn4z6r
-	Azwx8i7YxI14TDAJ84eFQ==
+	Tue, 3 Aug 2010 00:41:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=StczKaWqufKZs/WOSnRgIIs8jHDr6O/No2gzHm1jE0X0TDhESpudn+imZei8e1skiy
+         LN2GQP+nU5gXArsqxf/4hWgBqI3WMOcFBWGabWpEqZGug+d0UMQzbw0KSk7fn7S0RjIA
+         hckEgoKOAd29Z+yAa6tO8qTt5DfY7G+4jHP18=
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008020200450.25170@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100731215214.2543c07e@infradead.org>
-	<20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100731230101.7cc1d8c7@infradead.org>
-	<20100801191228.GL2470@linux.vnet.ibm.com>
-	<20100801204026.GH31324@thunk.org>
-	<20100802030304.GU2470@linux.vnet.ibm.com>
-	<20100801210548.23f77ff6@infradead.org>
-	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
-	<20100802074429.73a9dfd9@schatten.dmk.lab>
-	<alpine.DEB.2.00.1008012303160.25170@asgard.lang.hm>
-	<20100802084003.1c4c2bdb@schatten.dmk.lab>
-	<20100802085332.23dd22f6@schatten.dmk.lab>
-	<alpine.DEB.2.00.1008012355210.25170@asgard.lang.hm>
-	<20100802092347.692dac32@schatten.dmk.lab>
-	<alpine.DEB.2.00.1008020200450.25170@asgard.lang.hm>
-Date: Mon, 2 Aug 2010 21:41:17 -0700
-Message-ID: <AANLkTinGjktpuNi8062BQPegr4mofF6bx2EfBAsbOhCe@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Paul Menage <menage@google.com>
-To: david@lang.hm
-Cc: Florian Mickler <florian@mickler.org>,
-        Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
-        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
+In-Reply-To: <57767.148.87.67.132.1280784139.squirrel@www.xenotime.net>
+References: <AANLkTik1p0oK=-msd0a-4wA88Z-Cv29qHVNUYeEETcJD@mail.gmail.com>
+	<1280647233-2578-1-git-send-email-nir.tzachar@gmail.com>
+	<57767.148.87.67.132.1280784139.squirrel@www.xenotime.net>
+Date: Tue, 3 Aug 2010 07:41:21 +0300
+Message-ID: <AANLkTimyDwWtLbc682rW-QORjU0+r+txZO-iKAini1H1@mail.gmail.com>
+Subject: Re: [PATCH] nconfig: add search support
+From: Nir Tzachar <nir.tzachar@gmail.com>
+To: rdunlap@xenotime.net
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org, trapdoor6@gmail.com, justinmattock@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 2, 2010 at 2:06 AM,  <david@lang.hm> wrote:
+On Tue, Aug 3, 2010 at 12:22 AM,  <rdunlap@xenotime.net> wrote:
+> On Sun, August 1, 2010 12:20 am, nir.tzachar@gmail.com wrote:
+>> From: Nir Tzachar <nir.tzachar@gmail.com>
+>>
+>>
+>> Remove the old hotkeys feature, and replace by a regular string search.
+>> From nconfig help:
+>>
+>>
+>> Pressing '/' triggers search mode. nconfig does regular string match,
+>> case insensitive, starting at the begining of each menu line. Pressing
+>> Enter highlights the next match, Backspace removes one character from
+>> the match string. Pressing either '/' again or ESC exits search mode.
+>>
+>> Rebind the '/' key (which allowed to search for symbols) to F8
+>>
+>>
+>> Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
+>> ---
+>> scripts/kconfig/nconf.c |  261
+>> ++++++++++++++++++++++-------------------------
+>> scripts/kconfig/nconf.h |    3 +- 2 files changed, 125 insertions(+), 139
+>> deletions(-)
 >
-> yes, it could mean a doubleing in the number of cgroups that you need on a
-> system. and if there are other features like this you can end up in a
-> geometric explosion in the number of cgroups.
+>
+> A few other comments:
+>
+> These help text lines should end with a period:
+>
+>  Pressing SpaceBar toggles between the above options
+>
+>  <Esc> always leaves the current window
+>
 
-No, it would be additive - you can mount different subsystems on
-separate hierarchies. So if you had X divisions for memory, Y
-divisions for CPU and Z divisions for suspend-blocking (where Z=2,
-probably?) you could mount three separate hierarchies and have X+Y+Z
-complexity, not X*Y*Z.
+Sure.
 
-(Not that I have a strong opinion on whether cgroups is an appropriate
-mechanism for solving this problem - just that the problem you forsee
-shouldn't occur in practice).
+> The F-key help along the bottom line should be forced to fit
+> into 80 columns.  F9 (exit) especially should be visible.
 
-Paul
+They were, however I think that the symbol search (F-8) kind of ruind
+it. I'll shorten its name.
+
+>
+> This F3 should be F5:
+>
+>  Press <Esc>, <F3> or <left-arrow> to go back one menu,
+
+10x.
+
+>
+> How about we make nconfig the default in linux-next
+> so that it will be used more?
+
+I would love to see that. Let me finalize a patch which properly
+supports searching (based on Sam's input) so as to remove the current
+upper case ugliness.
+
+Cheers.
