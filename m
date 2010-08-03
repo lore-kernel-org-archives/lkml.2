@@ -1,90 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab0HCQOl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 12:14:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38146 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932214Ab0HCQOi convert rfc822-to-8bit (ORCPT
+	id S932307Ab0HCQV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 12:21:56 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33096 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab0HCQVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 12:14:38 -0400
+	Tue, 3 Aug 2010 12:21:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=v23dYPbrlVlniw9217U/SvwYwwlomzYPhEC2O3gwLHC8qJgGc5DKl3J5EFIVh98I4n
-         fqI3m7DQYmGIp8rRMOEfOI68D8kKgd2zDmDf6B9S1b1sR+yjhCNpOw6m6ugpdZ9iuByx
-         KTL+UQEAYv4Iph0u+UFRrVNwcMhULeQ04o5TU=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH] USB-serial dummy cable driver
-Date: Tue, 3 Aug 2010 18:14:15 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        nm127@freemail.hu, linux-kernel@vger.kernel.org, maxinbjohn@gmail.com,
-        forest.bond@outpostembedded.com, vijaykumar@zilogic.com
-References: <1280728807-20296-1-git-send-email-marek.vasut@gmail.com> <20100802224718.GC28821@suse.de>
-In-Reply-To: <20100802224718.GC28821@suse.de>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=iHjZBYJ+IMDuGBhEyPKsWVQEs0xg7P1HopfLm60XGq6TUP0qwh3zEDliWGiu+AwfH8
+         Pkly4Zev0VxBrZgNFnF7PAjEwx1CZi6snRY61ZdVEalQ3skqF7mUv0zgBU+xG9sxK4i6
+         jQ9JRFBhrwdtkFaL/5D/3nNdADvWxWvoBal6M=
+Message-ID: <4C584233.9080404@gmail.com>
+Date: Tue, 03 Aug 2010 09:22:11 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201008031814.15859.marek.vasut@gmail.com>
+To: Nir Tzachar <nir.tzachar@gmail.com>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        zippel@linux-m68k.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]scripts/kconfig/nconf.gui.c Fix warning: value computed
+ is 	not used
+References: <1280790966-417-1-git-send-email-justinmattock@gmail.com>	<4C57E88B.8070505@suse.cz>	<4C581CD8.1050606@gmail.com>	<AANLkTikPt7-+ThJccOGehERTPS8qBtEtyMB9Ebr2m=PQ@mail.gmail.com>	<4C582883.6090203@gmail.com> <AANLkTinf9AgQ-mPTmNGzbbkYOH3xbuw_E2pT80YbrUZ4@mail.gmail.com>
+In-Reply-To: <AANLkTinf9AgQ-mPTmNGzbbkYOH3xbuw_E2pT80YbrUZ4@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne Út 3. srpna 2010 00:47:18 Greg KH napsal(a):
-> On Mon, Aug 02, 2010 at 08:00:07AM +0200, Marek Vasut wrote:
-> > This driver is used to implement USB-serial like behaviour over dummy
-> > 
-> > USB cables. These are used in the following devices:
-> > 	Funsoft Serial USB driver
-> > 	Genesys Logic GL620USB USB Laplink cable
-> > 	HP4x (48/49) Serial cable
-> > 	Motorola phones
-> > 	Siemens USB-MPI Serial USB driver
-> > 	ViVOpay USB Serial Driver
-> > 	ZIO Motherboard USB driver
-> 
-> I like the idea, but not the name :)
+On 08/03/2010 08:54 AM, Nir Tzachar wrote:
+> On Tue, Aug 3, 2010 at 5:32 PM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> On 08/03/2010 06:46 AM, Nir Tzachar wrote:
+>>>
+>>> 2010/8/3 Justin P. Mattock<justinmattock@gmail.com>:
+>>>>
+>>>> On 08/03/2010 02:59 AM, Michal Marek wrote:
+>>>>>
+>>>>> On 3.8.2010 01:16, Justin P. Mattock wrote:
+>>>>>>
+>>>>>> The below patch fixes some warning messages Im getting when doing
+>>>>>> make nconfig
+>>>>>>
+>>>>>>   make nconfig
+>>>>>>    HOSTCC  scripts/kconfig/nconf.gui.o
+>>>>>> scripts/kconfig/nconf.gui.c: In function 'print_in_middle':
+>>>>>> scripts/kconfig/nconf.gui.c:170:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c: In function 'btn_dialog':
+>>>>>> scripts/kconfig/nconf.gui.c:300:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c:304:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c: In function 'dialog_inputbox':
+>>>>>> scripts/kconfig/nconf.gui.c:395:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c:397:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c:399:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c:404:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c: In function 'show_scroll_win':
+>>>>>> scripts/kconfig/nconf.gui.c:534:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c:549:2: warning: value computed is not used
+>>>>>> scripts/kconfig/nconf.gui.c:551:2: warning: value computed is not used
+>>>>>>    HOSTLD  scripts/kconfig/nconf
+>>>>>> scripts/kconfig/nconf arch/x86/Kconfig
+>>>>>>
+>>>>>> I looked around for a way to fix these, but am not familiar with
+>>>>>> ncurses.
+>>>>>> if there's a better way let me know and/or send a seperate fix.
+>>>>>>
+>>>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>>>>
+>>>>>> ---
+>>>>>>   scripts/kconfig/nconf.gui.c |   11 -----------
+>>>>>>   1 files changed, 0 insertions(+), 11 deletions(-)
+>>>>>>
+>>>>>> diff --git a/scripts/kconfig/nconf.gui.c b/scripts/kconfig/nconf.gui.c
+>>>>>> index a9d9344..08a5a04 100644
+>>>>>> --- a/scripts/kconfig/nconf.gui.c
+>>>>>> +++ b/scripts/kconfig/nconf.gui.c
+>>>>>> @@ -167,7 +167,6 @@ void print_in_middle(WINDOW *win,
+>>>>>>         length = strlen(string);
+>>>>>>         temp = (width - length) / 2;
+>>>>>>         x = startx + (int)temp;
+>>>>>> -       wattrset(win, color);
+>>>>>
+>>>>> Huh? :) This change makes nconfig look black and white. I'm all for
+>>>>> eliminating warnings, but please do not eliminate features at the same
+>>>>> time (or submit a patch with "Subject: make nconfig black and white" and
+>>>>> do not mask it as warning fixes).
+>>>>>
+>>>>> Michal
+>>>>>
+>>>>
+>>>> hmm.. make nconfig is black and white even without this patch, is that
+>>>> normal?
+>>>
+>>> No. It should be using colors. Which terminal are you using? Also,
+>>> make sure you do not have the wide characters version of ncurses
+>>> installed.
+>>
+>> Im using xterm.. ncurses was built with --enable-widec on both machines
+>> which probably explains why the whole black and white look.
+>
+> There is a problem with ncurses compiled with wide characters support.
+> We need to make sure nconfig is linked only against the regular
+> version, and only the regular headers are used. If you are willing,
+> take a look at scripts/kconfig/lxdialog/check-lxdialog.sh and see if
+> removing all mentions of ncursesw fixes the problem.
+>
 
-Please don't expect miracles from me after 26 hours without sleep ;-)
-> 
-> Ideally, all of these would be able to be handled by the usb-serial
-> generic driver directly.
+I'll have a look and see.
 
-I just noticed that one. Stupid me.
-> 
-> But really, having these multiple drivers is a good thing, they properly
-> convey to the user what the device is, and it gives these developers and
-> companies a sense of ownership over the code, and that matters at times.
-> 
-> So you lost the names of the devices with this patch, which isn't good.
+> There might also be a problem if your include files are set up
+> incorrectly, that is, /usr/include/ncurses.h is actually from the wide
+> version and you are linking against the regular version. I think
+> someone mentioned this was a problem on debian.
+>
+> Cheers.
+>
+>
 
-Sheesh ... that's true, but having pile of copies of the same code is not good 
-either. Can't we then just deprecate all these drivers and set correct udev 
-rules?
-> 
-> It's my end-goal to move the usb-serial layer to be more like libata,
-> where it is dirt-simple to make a new disk driver, only a few fields to
-> fill in, what you want to override.  So, any work toward simplification
-> of the generic layer would be appreciated to make these individual
-> drivers even smaller in the end.
-> 
-> So don't delete them, but try to consolidate the code, or just make it
-> so that it can be deleted, and you only need a simple module init/exit
-> function that registeres a single structure, like libata.
-> 
-> Sound reasonable?
+ncurses is a bit funky to build i.e. my system is cblfs so I used this 
+to build:
+http://cross-lfs.org/view/clfs-sysroot/alpha/final-system/ncurses.html
 
-Sounds ok, I'd like to help you but I'm dead busy with a pile of ARM machines 
-here. This hack was really just a side-job. I'll try looking into it if I wont 
-get insane ;-)
+from what I remember I built ncurses normally, then rebuilt with the 
+newer libs(*++w.a) or widec etc.. things get a bit confusing with the 
+symlinks in there.
+(main reason(I think)for doing this at the time is the screen for the 
+nvidia drivers gets all messd up without the widec switch turned on)
 
-Cheers
-> 
-> thanks,
-> 
-> greg k-h
+Anyways I'll have a look and see.
+
+Justin P. Mattock
