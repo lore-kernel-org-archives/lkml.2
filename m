@@ -1,99 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab0HCGeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 02:34:21 -0400
-Received: from ozlabs.org ([203.10.76.45]:40430 "EHLO ozlabs.org"
+	id S1755336Ab0HCGjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 02:39:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56571 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755327Ab0HCGeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 02:34:19 -0400
-Date: Tue, 3 Aug 2010 16:29:15 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] iommu: inline iommu_num_pages
-Message-ID: <20100803062914.GC31448@kryten>
+	id S1755173Ab0HCGjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 02:39:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,308,1278313200"; 
+   d="scan'208";a="592328926"
+Date: Tue, 3 Aug 2010 14:39:29 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Chris Webb <chris@arachsys.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Over-eager swapping
+Message-ID: <20100803063929.GB17955@localhost>
+References: <20100802124734.GI2486@arachsys.com>
+ <AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
+ <20100803033108.GA23117@arachsys.com>
+ <AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
+ <20100803042835.GA17377@localhost>
+ <AANLkTimC1z0MwTxUjxED7N1-R4D_YXtvnPSbiKXdR+4W@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimC1z0MwTxUjxED7N1-R4D_YXtvnPSbiKXdR+4W@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 03, 2010 at 12:47:36PM +0800, Minchan Kim wrote:
+> On Tue, Aug 3, 2010 at 1:28 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > On Tue, Aug 03, 2010 at 12:09:18PM +0800, Minchan Kim wrote:
+> >> On Tue, Aug 3, 2010 at 12:31 PM, Chris Webb <chris@arachsys.com> wrote:
+> >> > Minchan Kim <minchan.kim@gmail.com> writes:
+> >> >
+> >> >> Another possibility is _zone_reclaim_ in NUMA.
+> >> >> Your working set has many anonymous page.
+> >> >>
+> >> >> The zone_reclaim set priority to ZONE_RECLAIM_PRIORITY.
+> >> >> It can make reclaim mode to lumpy so it can page out anon pages.
+> >> >>
+> >> >> Could you show me /proc/sys/vm/[zone_reclaim_mode/min_unmapped_ratio] ?
+> >> >
+> >> > Sure, no problem. On the machine with the /proc/meminfo I showed earlier,
+> >> > these are
+> >> >
+> >> >  # cat /proc/sys/vm/zone_reclaim_mode
+> >> >  0
+> >> >  # cat /proc/sys/vm/min_unmapped_ratio
+> >> >  1
+> >>
+> >> if zone_reclaim_mode is zero, it doesn't swap out anon_pages.
+> >
+> > If there are lots of order-1 or higher allocations, anonymous pages
+> > will be randomly evicted, regardless of their LRU ages. This is
+> 
+> I thought swapped out page is huge (ie, 3G) even though it enters lumpy mode.
+> But it's possible. :)
+> 
+> > probably another factor why the users claim. Are there easy ways to
+> > confirm this other than patching the kernel?
+> 
+> cat /proc/buddyinfo can help?
 
-A profile of a network benchmark showed iommu_num_pages rather high up:
+Some high order slab caches may show up there :)
 
-     0.52%  iommu_num_pages
+> Off-topic:
+> It would be better to add new vmstat of lumpy entrance.
 
-Looking at the profile, an integer divide is taking almost all of the time:
+I think it's a good debug entry. Although convenient, lumpy reclaim
+is accompanied with some bad side effects. When something goes wrong,
+it helps to check the number of lumpy reclaims.
 
-      %         
-         :      c000000000376ea4 <.iommu_num_pages>:
-    1.93 :      c000000000376ea4:       fb e1 ff f8     std     r31,-8(r1)
-    0.00 :      c000000000376ea8:       f8 21 ff c1     stdu    r1,-64(r1)
-    0.00 :      c000000000376eac:       7c 3f 0b 78     mr      r31,r1
-    3.86 :      c000000000376eb0:       38 84 ff ff     addi    r4,r4,-1
-    0.00 :      c000000000376eb4:       38 05 ff ff     addi    r0,r5,-1
-    0.00 :      c000000000376eb8:       7c 84 2a 14     add     r4,r4,r5
-   46.95 :      c000000000376ebc:       7c 00 18 38     and     r0,r0,r3
-   45.66 :      c000000000376ec0:       7c 84 02 14     add     r4,r4,r0
-    0.00 :      c000000000376ec4:       7c 64 2b 92     divdu   r3,r4,r5
-    0.00 :      c000000000376ec8:       38 3f 00 40     addi    r1,r31,64
-    0.00 :      c000000000376ecc:       eb e1 ff f8     ld      r31,-8(r1)
-    1.61 :      c000000000376ed0:       4e 80 00 20     blr
+Thanks,
+Fengguang
 
-Since every caller of iommu_num_pages passes in a constant power of two
-we can inline this such that the divide is replaced by a shift. The
-entire function is only a few instructions once optimised, so it is
-a good candidate for inlining overall.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
---
-
-Index: powerpc.git/include/linux/iommu-helper.h
-===================================================================
---- powerpc.git.orig/include/linux/iommu-helper.h	2010-07-30 11:51:49.900741505 +1000
-+++ powerpc.git/include/linux/iommu-helper.h	2010-07-30 11:53:49.310741623 +1000
-@@ -1,6 +1,8 @@
- #ifndef _LINUX_IOMMU_HELPER_H
- #define _LINUX_IOMMU_HELPER_H
- 
-+#include <linux/kernel.h>
-+
- static inline unsigned long iommu_device_max_index(unsigned long size,
- 						   unsigned long offset,
- 						   u64 dma_mask)
-@@ -20,7 +22,13 @@ extern unsigned long iommu_area_alloc(un
- 				      unsigned long boundary_size,
- 				      unsigned long align_mask);
- 
--extern unsigned long iommu_num_pages(unsigned long addr, unsigned long len,
--				     unsigned long io_page_size);
-+static inline unsigned long iommu_num_pages(unsigned long addr,
-+					    unsigned long len,
-+					    unsigned long io_page_size)
-+{
-+	unsigned long size = (addr & (io_page_size - 1)) + len;
-+
-+	return DIV_ROUND_UP(size, io_page_size);
-+}
- 
- #endif
-Index: powerpc.git/lib/iommu-helper.c
-===================================================================
---- powerpc.git.orig/lib/iommu-helper.c	2010-07-30 11:45:10.860741495 +1000
-+++ powerpc.git/lib/iommu-helper.c	2010-07-30 11:52:20.732001414 +1000
-@@ -38,12 +38,3 @@ again:
- 	return -1;
- }
- EXPORT_SYMBOL(iommu_area_alloc);
--
--unsigned long iommu_num_pages(unsigned long addr, unsigned long len,
--			      unsigned long io_page_size)
--{
--	unsigned long size = (addr & (io_page_size - 1)) + len;
--
--	return DIV_ROUND_UP(size, io_page_size);
--}
--EXPORT_SYMBOL(iommu_num_pages);
+> Pseudo code.
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 0f9f624..d10ff4e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1641,7 +1641,7 @@ out:
+>         }
+>  }
+> 
+> -static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc)
+> +static void set_lumpy_reclaim_mode(int priority, struct scan_control
+> *sc, struct zone *zone)
+>  {
+>         /*
+>          * If we need a large contiguous chunk of memory, or have
+> @@ -1654,6 +1654,9 @@ static void set_lumpy_reclaim_mode(int priority,
+> struct scan_control *sc)
+>                 sc->lumpy_reclaim_mode = 1;
+>         else
+>                 sc->lumpy_reclaim_mode = 0;
+> +
+> +       if (sc->lumpy_reclaim_mode)
+> +               inc_zone_state(zone, NR_LUMPY);
+>  }
+> 
+>  /*
+> @@ -1670,7 +1673,7 @@ static void shrink_zone(int priority, struct zone *zone,
+> 
+>         get_scan_count(zone, sc, nr, priority);
+> 
+> -       set_lumpy_reclaim_mode(priority, sc);
+> +       set_lumpy_reclaim_mode(priority, sc, zone);
+> 
+>         while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+>                                         nr[LRU_INACTIVE_FILE]) {
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
