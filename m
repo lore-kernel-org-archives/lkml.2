@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab0HCRDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:03:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42409 "EHLO mx1.suse.de"
+	id S932433Ab0HCRER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:04:17 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39009 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756621Ab0HCRDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:03:10 -0400
-Date: Tue, 3 Aug 2010 09:38:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        nm127@freemail.hu, linux-kernel@vger.kernel.org, maxinbjohn@gmail.com,
-        forest.bond@outpostembedded.com, vijaykumar@zilogic.com
-Subject: Re: [PATCH] USB-serial dummy cable driver
-Message-ID: <20100803163826.GA757@suse.de>
-References: <1280728807-20296-1-git-send-email-marek.vasut@gmail.com>
- <20100802224718.GC28821@suse.de>
- <201008031814.15859.marek.vasut@gmail.com>
+	id S1757175Ab0HCREP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 13:04:15 -0400
+Date: Tue, 3 Aug 2010 10:04:04 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+Message-ID: <20100803170404.GH3948@outflux.net>
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+ <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
+ <20100802122421.GA12130@infradead.org>
+ <20100802165936.GV3948@outflux.net>
+ <1280774061.2673.115.camel@moss-terrapins.epoch.ncsc.mil>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201008031814.15859.marek.vasut@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1280774061.2673.115.camel@moss-terrapins.epoch.ncsc.mil>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 06:14:15PM +0200, Marek Vasut wrote:
-> Dne Út 3. srpna 2010 00:47:18 Greg KH napsal(a):
-> > On Mon, Aug 02, 2010 at 08:00:07AM +0200, Marek Vasut wrote:
-> > > This driver is used to implement USB-serial like behaviour over dummy
-> > > 
-> > > USB cables. These are used in the following devices:
-> > > 	Funsoft Serial USB driver
-> > > 	Genesys Logic GL620USB USB Laplink cable
-> > > 	HP4x (48/49) Serial cable
-> > > 	Motorola phones
-> > > 	Siemens USB-MPI Serial USB driver
-> > > 	ViVOpay USB Serial Driver
-> > > 	ZIO Motherboard USB driver
+Hi David,
+
+On Mon, Aug 02, 2010 at 02:34:21PM -0400, David P. Quigley wrote:
+> On Mon, 2010-08-02 at 09:59 -0700, Kees Cook wrote:
+> [...snip]
 > > 
-> > I like the idea, but not the name :)
+> > I've seen two so far. Both are addressed with a one line fix. And I would
+> > stress that no other existing subsystem in the kernel can provide the same
+> > level of control that my ptrace exception logic provides. SELinux cannot do
+> > this.
+> > 
 > 
-> Please don't expect miracles from me after 26 hours without sleep ;-)
-> > 
-> > Ideally, all of these would be able to be handled by the usb-serial
-> > generic driver directly.
-> 
-> I just noticed that one. Stupid me.
-> > 
-> > But really, having these multiple drivers is a good thing, they properly
-> > convey to the user what the device is, and it gives these developers and
-> > companies a sense of ownership over the code, and that matters at times.
-> > 
-> > So you lost the names of the devices with this patch, which isn't good.
-> 
-> Sheesh ... that's true, but having pile of copies of the same code is not good 
-> either.
+> Would you mind explaining to me what you believe this patch can do that
+> SELinux can't? Based on what I read in the kconfig entry for the feature
+> and the subsequent exception patch I'm not seeing anything here that
+> SELinux can't do. If there is something we are missing I'd like to
+> understand it so we can make the decision on whether or not our ptrace
+> access control checks need to be modified.
 
-I agree, that's why I said it should be reduced.
+Sure thing. When looking at how PTRACE is used, it seemed clear that there
+were exactly 2 use-cases:
+ - tracking children (either for monitoring or debugging)
+ - in-memory crash handlers
 
-> Can't we then just deprecate all these drivers and set correct udev
-> rules?
+Allowing child-tracing was easy: this is discoverable through process
+ancestry. Doing the crash handlers is different, since the handler can come
+from anywhere. One thing that seemed common was that the crashing program
+would know which pid was going to attach to it, so if those programs
+declared to the kernel which pid is allowed to attach, then it could make
+an exception for it. I did not find a heuristic approach that the kernel
+could use to figure this out for itself (maybe I missed something).
 
-udev can not change the name of the device in sysfs, or the name in the
-kernel of the device.
+It seems to me that SELinux (and AppArmor and maybe others?) can
+declare general relationships of who can PTRACE who, etc, but nothing
+that specifically says "only _this_ instance". Instead of "the crash
+handler binary running as $identity can attach to program foo running
+as $identity", it is "the crash handler process specified by program foo
+at the time of the crash, can attach to foo", which is much more specific.
 
-thanks,
+If there's a way to do this already, I am genuinely interested to learn
+more about it. Perhaps I've grossly misunderstood something.
 
-greg k-h
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
