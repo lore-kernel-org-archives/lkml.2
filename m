@@ -1,60 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab0HCKJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 06:09:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45078 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755759Ab0HCKJB (ORCPT
+	id S1755919Ab0HCKJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 06:09:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35424 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755843Ab0HCKJP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 06:09:01 -0400
+	Tue, 3 Aug 2010 06:09:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rMJEJxWFvXdr3VWq+rQG1yCg5FulAFUhHmsiLCPdWSLuHmO7GVtsN/145O5UomMnEA
-         Z5KiZh7b2IsDV13REMlYbBwuSrKOihVNpIKSUG9/E9Gfqx9nYJkbXdF1QlpEwbT6/mIC
-         3jISIc3xqeUY16OM6HpkA7EwlUH/4jG/F37Go=
-Date: Tue, 3 Aug 2010 18:12:20 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: hacklu <embedway.linux@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Re: how about KBUILD_MODNAME
-Message-ID: <20100803101220.GI5129@cr0.nay.redhat.com>
-References: <201008031037022524247@gmail.com>
- <201008031511572638256@gmail.com>
- <201008031735377545190@gmail.com>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NTyP109+bKiKYp0plGr2iKooT4xbjlLt6eJJYXGZHW26vBb401lzkzYjRQXqCbPe+o
+         jFhme2xFkyx6UIeknk6T67ozdFWE9bxWmVSvJ076BJo/uj5426Y3mtrmXnyLKgEc5Yrs
+         HpxqJqw2UrxgvuP+YPcgMOyujn+lh5zdMGRlk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008031735377545190@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimn9n22zuDDd3YaAH--2OK=8j2UDTsxtsL5FqJo@mail.gmail.com>
+References: <AANLkTild_NZP5B33ITuaS67bvuREiukbQCtcguKEO4XG@mail.gmail.com>
+	<20100802181449.GA3071@pema>
+	<AANLkTikU6_Cuaqk2xaPWCjkToMgd1yO8Y_qZ9Kcbk9c-@mail.gmail.com>
+	<20100803081743.GA6566@pema>
+	<AANLkTimn9n22zuDDd3YaAH--2OK=8j2UDTsxtsL5FqJo@mail.gmail.com>
+Date: Tue, 3 Aug 2010 11:09:13 +0100
+Message-ID: <AANLkTinC9cKet9-OSo1teWnJ_3HzvqYTsUPKPn_95nhm@mail.gmail.com>
+Subject: Re: PC Beeps not working with HDA Intel module
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: =?ISO-8859-1?B?U2jpcmFi?= <Sebastien.Hinderer@ens-lyon.org>,
+        Takashi Iwai <tiwai@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 05:35:40PM +0800, hacklu wrote:
+On 3 August 2010 10:02, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+> On 3 August 2010 09:17, Shérab <Sebastien.Hinderer@ens-lyon.org> wrote:
+>> Dear Daniel and Takashi,
+>>
+>> First of all many thanks to both of you for your so prompt and so
+>> efficient reply ! Quite impressive.
+>>
+>> Daniel J Blueman (2010/08/02 22:41 +0100):
+>>> Testing with value 27 (ie 48000/4*27~=440), we hear the expected tone:
+>>> $ sudo ./hda-verb /dev/snd/hwC0D0 0x1c SET_BEEP_CONTROL 27
+>>> (of course, your beep widget may not be 0x1c)
+>>
+>> I don't know and don't even know what beep widget means, I'm sorry.
+>> If you can explain and also tell me where to find this hda-verb program
+>> you are using, I am willing to test if that's your wish.
 >
->I am compiling the boardcom's driver now.
->the driver had defined EXTRA_CFLAGS = -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags) 
->in the a.makefile.
->and the a.makefile was included by b.makefile.
->when in the b.makefile,
->there is this command.
-> $(CC) $(DEPS_OPT) $(CFLAGS) $(EXTRA_CFLAGS) -o $@ -c $< ;) 
+> hda-verb is at:
+> http://ftp1.kernel.org/pub/linux/kernel/people/tiwai/misc/hda-verb/hda-verb-0.3.tar.bz2
 >
->I had add "echo $(EXTRA_CFLAGS)" before this line;but returns NULL;
+> From your alsa-info.sh, your beep widget (ie device) is at 0x26.
 >
->so I suspicion the $(EXTRA_CFLAGS) hasn't been work.
+>>> The problem is the assumption in patch_sigmatel.c:stac92xx_parse_auto_config():
+>>
+>> [...]
+>>
+>> So is there anything more I can/should do now ?
 >
+> Nothing further, as we know the source of the issue.
 
+Ok, this patch works for me; I've modified it with the ground-truth we
+have (thus there are likely other codecs to fix up later). Shérab, can
+you test from your end?
 
-You don't need to write this line by yourself, you just
-need to provide a correct: obj-$(XXXXX) += your_module.o,
-kbuild will automatically compile it with proper flags.
-(If not, try CFLAGS_MODULE.)
+Fix HDA beep frequency on IDT 92HD73xx and 92HD71Bxx codecs.
 
-If you insist to do this, I think you can just append
--D"KBUILD_MODNAME=your_module" to that line by hand.
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
-Hope this helps.
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index f1e7bab..b8d730c 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -202,6 +202,7 @@ struct sigmatel_spec {
+ 	unsigned int spdif_mute: 1;
+ 	unsigned int check_volume_offset:1;
+ 	unsigned int auto_mic:1;
++	unsigned int linear_tone_beep:1;
+
+ 	/* gpio lines */
+ 	unsigned int eapd_mask;
+@@ -3802,7 +3803,7 @@ static int stac92xx_parse_auto_config(struct
+hda_codec *codec, hda_nid_t dig_out
+ 			return err;
+ 		if (codec->beep) {
+ 			/* IDT/STAC codecs have linear beep tone parameter */
+-			codec->beep->linear_tone = 1;
++			codec->beep->linear_tone = spec->linear_tone_beep;
+ 			/* if no beep switch is available, make its own one */
+ 			caps = query_amp_caps(codec, nid, HDA_OUTPUT);
+ 			if (!(caps & AC_AMPCAP_MUTE)) {
+@@ -5005,6 +5006,7 @@ static int patch_stac9200(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 1;
+ 	spec->num_pins = ARRAY_SIZE(stac9200_pin_nids);
+ 	spec->pin_nids = stac9200_pin_nids;
+ 	spec->board_config = snd_hda_check_board_config(codec, STAC_9200_MODELS,
+@@ -5068,6 +5070,7 @@ static int patch_stac925x(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 1;
+ 	spec->num_pins = ARRAY_SIZE(stac925x_pin_nids);
+ 	spec->pin_nids = stac925x_pin_nids;
+
+@@ -5153,6 +5156,7 @@ static int patch_stac92hd73xx(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 0;
+ 	codec->slave_dig_outs = stac92hd73xx_slave_dig_outs;
+ 	spec->num_pins = ARRAY_SIZE(stac92hd73xx_pin_nids);
+ 	spec->pin_nids = stac92hd73xx_pin_nids;
+@@ -5300,6 +5304,7 @@ static int patch_stac92hd83xxx(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 1;
+ 	codec->slave_dig_outs = stac92hd83xxx_slave_dig_outs;
+ 	spec->digbeep_nid = 0x21;
+ 	spec->mux_nids = stac92hd83xxx_mux_nids;
+@@ -5522,6 +5527,7 @@ static int patch_stac92hd71bxx(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 0;
+ 	codec->patch_ops = stac92xx_patch_ops;
+ 	spec->num_pins = STAC92HD71BXX_NUM_PINS;
+ 	switch (codec->vendor_id) {
+@@ -5779,6 +5785,7 @@ static int patch_stac922x(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 1;
+ 	spec->num_pins = ARRAY_SIZE(stac922x_pin_nids);
+ 	spec->pin_nids = stac922x_pin_nids;
+ 	spec->board_config = snd_hda_check_board_config(codec, STAC_922X_MODELS,
+@@ -5883,6 +5890,7 @@ static int patch_stac927x(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 1;
+ 	codec->slave_dig_outs = stac927x_slave_dig_outs;
+ 	spec->num_pins = ARRAY_SIZE(stac927x_pin_nids);
+ 	spec->pin_nids = stac927x_pin_nids;
+@@ -6018,6 +6026,7 @@ static int patch_stac9205(struct hda_codec *codec)
+
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 1;
+ 	spec->num_pins = ARRAY_SIZE(stac9205_pin_nids);
+ 	spec->pin_nids = stac9205_pin_nids;
+ 	spec->board_config = snd_hda_check_board_config(codec, STAC_9205_MODELS,
+@@ -6174,6 +6183,7 @@ static int patch_stac9872(struct hda_codec *codec)
+ 		return -ENOMEM;
+ 	codec->no_trigger_sense = 1;
+ 	codec->spec = spec;
++	spec->linear_tone_beep = 1;
+ 	spec->num_pins = ARRAY_SIZE(stac9872_pin_nids);
+ 	spec->pin_nids = stac9872_pin_nids;
+
+-- 
+Daniel J Blueman
