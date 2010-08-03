@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab0HCAqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 20:46:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46151 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab0HCAqT (ORCPT
+	id S1754526Ab0HCA4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 20:56:37 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56753 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab0HCA4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 20:46:19 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Subject: Re: [PATCH] mm: only build per-node scan_unevictable when NUMA is enabled
-Cc: kosaki.motohiro@jp.fujitsu.com, Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <1280780612-10548-1-git-send-email-cascardo@holoscopio.com>
-References: <1280780612-10548-1-git-send-email-cascardo@holoscopio.com>
-Message-Id: <20100803085421.5A5E.A69D9226@jp.fujitsu.com>
+	Mon, 2 Aug 2010 20:56:34 -0400
+Message-Id: <201008030055.o730tgXK091413@www262.sakura.ne.jp>
+Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner comment
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: paulmck@linux.vnet.ibm.com
+Cc: torvalds@osdl.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        David Howells <dhowells@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  3 Aug 2010 09:46:11 +0900 (JST)
+Date: Tue, 03 Aug 2010 09:55:42 +0900
+References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk> <20100729114555.29508.4525.stgit@warthog.procyon.org.uk> <20100802204000.GH2405@linux.vnet.ibm.com>
+In-Reply-To: <20100802204000.GH2405@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 27072010 #3944634, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Non-NUMA systems do never create these files anyway, since they are only
-> created by driver subsystem when NUMA is configured.
-> 
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+I got below warning. Is this related to this patch?
 
-This patch look good to me.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
-However, I'm not sure scan_unevictable feature have enough worth that
-we continue to maintain. This feature mean "admins can restore unevictable
-even if kernel have some bug". but I haven't seen such situation.
-
-Anyway, I'm waiting Lee's response.
-
-
-> ---
->  include/linux/swap.h |    5 +++++
->  mm/vmscan.c          |    3 ++-
->  2 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index ff4acea..3c0876d 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -271,8 +271,13 @@ extern void scan_mapping_unevictable_pages(struct address_space *);
->  extern unsigned long scan_unevictable_pages;
->  extern int scan_unevictable_handler(struct ctl_table *, int,
->  					void __user *, size_t *, loff_t *);
-> +#ifdef CONFIG_NUMA
->  extern int scan_unevictable_register_node(struct node *node);
->  extern void scan_unevictable_unregister_node(struct node *node);
-> +#else
-> +static inline int scan_unevictable_register_node(struct node *node) {return 0;}
-> +static inline void scan_unevictable_unregister_node(struct node *node) {}
-> +#endif
->  
->  extern int kswapd_run(int nid);
->  extern void kswapd_stop(int nid);
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index b94fe1b..ba8f6fd 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2898,6 +2898,7 @@ int scan_unevictable_handler(struct ctl_table *table, int write,
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_NUMA
->  /*
->   * per node 'scan_unevictable_pages' attribute.  On demand re-scan of
->   * a specified node's per zone unevictable lists for evictable pages.
-> @@ -2944,4 +2945,4 @@ void scan_unevictable_unregister_node(struct node *node)
->  {
->  	sysdev_remove_file(&node->sysdev, &attr_scan_unevictable_pages);
->  }
-> -
-> +#endif
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
-
+[  140.173556] ===================================================
+[  140.215379] [ INFO: suspicious rcu_dereference_check() usage. ]
+[  140.216461] ---------------------------------------------------
+[  140.217530] kernel/signal.c:660 invoked rcu_dereference_check() without protection!
+[  140.218937] 
+[  140.218938] other info that might help us debug this:
+[  140.218939] 
+[  140.220508] 
+[  140.220509] rcu_scheduler_active = 1, debug_locks = 1
+[  140.221991] 1 lock held by init/1:
+[  140.222668]  #0:  (tasklist_lock){.+.+..}, at: [<c104a0ac>] kill_something_info+0x7c/0x160
+[  140.224709] 
+[  140.224711] stack backtrace:
+[  140.225661] Pid: 1, comm: init Not tainted 2.6.35 #1
+[  140.226576] Call Trace:
+[  140.227111]  [<c103cca8>] ? printk+0x18/0x20
+[  140.227908]  [<c1069884>] lockdep_rcu_dereference+0x94/0xb0
+[  140.228931]  [<c104936a>] check_kill_permission+0x15a/0x170
+[  140.229932]  [<c104a0ac>] ? kill_something_info+0x7c/0x160
+[  140.230921]  [<c1049cca>] group_send_sig_info+0x1a/0x50
+[  140.231866]  [<c1049d36>] __kill_pgrp_info+0x36/0x60
+[  140.232780]  [<c104a0d0>] kill_something_info+0xa0/0x160
+[  140.233740]  [<c10831c5>] ? __call_rcu+0xa5/0x110
+[  140.234596]  [<c104b7ee>] sys_kill+0x5e/0x70
+[  140.235387]  [<c10d1eee>] ? mntput_no_expire+0x1e/0xa0
+[  140.236329]  [<c10bbd10>] ? __fput+0x170/0x220
+[  140.257756]  [<c10bbdd9>] ? fput+0x19/0x20
+[  140.258529]  [<c137ad94>] ? restore_all_notrace+0x0/0x18
+[  140.259496]  [<c11bfb04>] ? trace_hardirqs_on_thunk+0xc/0x10
+[  140.260531]  [<c137ad61>] syscall_call+0x7/0xb
+[  144.627841] nfsd: last server has exited, flushing export cache
+[  154.040420] Restarting system.
+[  154.041061] machine restart
