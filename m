@@ -1,225 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0HCWeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 18:34:11 -0400
-Received: from xenotime.net ([72.52.115.56]:39841 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755997Ab0HCWeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 18:34:10 -0400
-Date: Tue, 3 Aug 2010 15:34:01 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Donald Parsons <dparsons@brightdsl.net>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Harald Hoyer <harald.hoyer@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.35
-Message-Id: <20100803153401.6534dfcd.rdunlap@xenotime.net>
-In-Reply-To: <1280857545.5209.61.camel@falcon.homelinux.org>
-References: <1280716262.5125.42.camel@falcon.homelinux.org>
-	<201008012138.39036.bjorn.helgaas@hp.com>
-	<1280722876.5125.83.camel@falcon.homelinux.org>
-	<AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com>
-	<1280802701.5836.10.camel@falcon.homelinux.org>
-	<20100802214249.b0fee617.rdunlap@xenotime.net>
-	<1280852810.5209.40.camel@falcon.homelinux.org>
-	<20100803094031.2fb8e538.rdunlap@xenotime.net>
-	<1280857545.5209.61.camel@falcon.homelinux.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757938Ab0HCWfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:35:10 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:60448 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755997Ab0HCWfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 18:35:08 -0400
+Date: Tue, 3 Aug 2010 15:34:51 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+Message-ID: <20100803223451.GB4138@outflux.net>
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+ <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
+ <20100802122421.GA12130@infradead.org>
+ <20100802165936.GV3948@outflux.net>
+ <15424.1280775073@localhost>
+ <20100803165010.GG3948@outflux.net>
+ <78690.1280871500@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <78690.1280871500@localhost>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 03 Aug 2010 13:45:45 -0400 Donald Parsons wrote:
-
-> On Tue, 2010-08-03 at 09:40 -0700, Randy Dunlap wrote:
-> > On Tue, 03 Aug 2010 12:26:50 -0400 Donald Parsons wrote:
+On Tue, Aug 03, 2010 at 05:38:20PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 03 Aug 2010 09:50:10 PDT, Kees Cook said:
+> > > You're overlooking step zero of Al's advice: First, *think* about the issue
+> > > in a deep fashion, rather than a knee-jerk patch to fix one instance of
+> > > the problem.
 > > 
-> > > Resending to all...
-> > > On Mon, 2010-08-02 at 21:42 -0700, Randy Dunlap wrote:
-> > > > On Mon, 02 Aug 2010 22:31:41 -0400 Donald Parsons wrote:
-> > > > 
-> > > > > On Mon, 2010-08-02 at 18:08 +0200, Harald Hoyer wrote: 
-> > > > > > On Mon, Aug 2, 2010 at 6:21 AM, Donald Parsons <dparsons@brightdsl.net> wrote:
-> > > > > > > On Sun, 2010-08-01 at 21:38 -0600, Bjorn Helgaas wrote:
-> > > > > > >> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
-> > > > > > >> > 2.6.35 still fails to boot for me, as first reported here:
-> > > > > > >> >  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
-> > > > > > >> >
-> > > > > > >> > I've manually bisected it down to around May 20 between
-> > > > > > >> >   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
-> > > > > > >> > Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
-> > > > > > >> >
-> > > > > > >> > Unfortunately first time I tried was with 2.6.35-rc6 and
-> > > > > > >> > it failed to boot.
-> > > > > > >> >
-> > > > > > >> > Failure when switching from initramfs to real /root?
-> > > > > > >> > Removing kernel "quiet" param appears to show several
-> > > > > > >> > lines listing:
-> > > > > > >> >
-> > > > > > >> >   usb drives/hubs? followed by
-> > > > > > >> >   dracut switching root (when booting works)
-> > > > > > >> >               or
-> > > > > > >> >   usb drives/hubs? followed by
-> > > > > > >> >         (missing dracut... line)
-> > > > > > >> >   No root device found
-> > > > > > >> >   Boot has failed, sleeping forever.   (when it does not boot)
-> > > > > > >> >
-> > > > > > >> > Grub, typical entry:
-> > > > > > >> > title Fedora (2.6.35)
-> > > > > > >> >     root (hd0,0)
-> > > > > > >> >     kernel /vmlinuz-2.6.35 ro
-> > > > > > >> > root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
-> > > > > > >> > SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
-> > > > > > >> > rdblacklist=nouveau init=/sbin/bootchartd
-> > > > > > >> >     initrd /initramfs-2.6.35.img
-> > > > > > >> >
-> > > > > > >> >
-> > > > > > >> > My boot failure seems to be different than other two reported
-> > > > > > >> > in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
-> > > > > > >> > under Bug #16173 and #16228
-> > > > > > >>
-> > > > > > >> Will it boot with the "pci=nocrs" option?  If so, please open a
-> > > > > > >
-> > > > > > > No, I tried this on a few attempts when I saw it mentioned under
-> > > > > > > bug #16228.  But it had no effect/benefit.  Sorry, I should have
-> > > > > > > mentioned this.
-> > > > > > >
-> > > > > > >> report at https://bugzilla.kernel.org, mark it a regression, assign
-> > > > > > >> it to me, and attach the complete dmesg log.  And please respond to
-> > > > > > >> this thread with a pointer to the bugzilla.
-> > > > > > >>
-> > > > > > >> Otherwise, a complete console log should have a clue.  The best
-> > > > > > >> thing would be a log from a serial console or netconsole, with
-> > > > > > >> "ignore_loglevel".
-> > > > > > >
-> > > > > > > Maybe I will try netconsole tomorrow.  But is Ethernet up when
-> > > > > > > this boot failure happens?  I think not, since initramfs should
-> > > > > > > not need networking.
-> > > > > > >
-> > > > > > > Should I try building sata driver into kernel?  Oh, I am using
-> > > > > > > ext3, and fdisk -l shows:
-> > > > > > 
-> > > > > > # dracut --add-drivers "sata" ....
-> > > > > > 
-> > > > > > or edit /etc/dracut.conf:
-> > > > > > 
-> > > > > > add_drivers+=" sata "
-> > > > > 
-> > > > > But the kernel used to boot with same identical modules before
-> > > > > but not after 2.6.34-git4.
-> > > > >  --------
-> > > > > 
-> > > > > Using your suggestion as to where the problem lies, I investigated
-> > > > > more deeply and found:
-> > > > > 
-> > > > > I've now got 2.6.35-rc6-git3 to boot (and almost certainly 2.6.35 final)
-> > > > > 
-> > > > > Make oldconfig broke at the transition where boot began failed, ie,
-> > > > > between 2.6.34-git4 and 2.6.34-git5.   Even though modules are the
-> > > > > same, boot fails.  If I use gconfig and set CONFIG_SATA_AHCI=y
-> > > > > instead of CONFIG_SATA_AHCI=m it works, except cannot select =y
-> > > > > unless CONFIG_ATA changed from m to y.
-> > > > > 
-> > > > > So at some point in past, make oldconfig had apparently changed
-> > > > > CONFIG_SATA_AHCI from y to m and system still booted.  But between
-> > > > > 2.6.34-git4 and 2.6.34-git5 the ability to boot was lost.
-> > > > > 
-> > > > > So make oldconfig is not 100% trustworthy in this case.  I do not
-> > > > > know if this is a problem that should be fixed.  Ask if you want
-> > > > > any .config diffs.
-> > > > > 
-> > > > > I am going to reboot with 2.6.35 to make sure it boots. Yes!
-> > > > > 
-> > > > > I consider this boot problem solved unless someone wants to
-> > > > > improve "make oldconfig" behavior.
-> > > > 
-> > > > It would be good to be able to explain what you are seeing & describing,
-> > > > so yes, if you can send a .config file that exhibits the problem, I'd
-> > > > love to look at it.
-> > > > 
-> > > > thanks,
-> > > > ---
-> > > > ~Randy
-> > > 
-> > > 
-> > > Okay, here is the diff between 2.6.34-git4 and 2.6.34-git5
-> > > It should be equivalent to make silentoldconfig as I made no
-> > > changes, just enter to accept defaults.  The git4 boots and
-> > > git5 does not boot.     (Both based off 2.6.34.1.config)
-> > 
-> > Yes, I had just generated this same diff.
-> > The only config change that could remotely make a difference is:
-> > > +# CONFIG_SATA_AHCI_PLATFORM is not set
-> > 
-> > and I don't see how it could matter.
-> > 
-> > > (and attached config-2.6.34-git4.gz, because .config was too
-> > >  big for mail list last time.)
-> > 
-> > Last time being recently?  lkml accepts email sizes (with attachments)
-> > up to 300 KB, IIRC.
+> > I think this is unfair. This solution has been used for 15 years in other
+> > hardened kernel patches. It's not knee-jerk at all. Not fixing this is not
+> > getting the "good" for the sake of wanting the "perfect".
 > 
-> Maybe http://lkml.indiana.edu/hypermail/linux/kernel/1008.0/index.html
-> throws out large email but the actual lkml does not?  I did not see
-> it show up; here is header of email that had large (56.48K) .config:
-> 
-> From: 	Donald Parsons
-> To: 	Randy Dunlap
-> Cc: 	linux-kernel <linux-kernel@vger.k.o>, Linus Torvalds
-> Subject: Re: Linux 2.6.35
-> Date: 	08/01/2010 11:41:31 PM  (this is EDT)
-> Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-> 
-> 
-> > > --- config-2.6.34-git4  2010-08-01 19:52:48.000000000 -0400
-> > > +++ config-2.6.34-git5  2010-08-01 18:10:14.000000000 -0400
-> > > @@ -1,7 +1,7 @@
-> > >  #
-> > >  # Automatically generated make config: don't edit
-> ...deleted most lines...
-> > > -#
-> > >  # CONFIG_STAGING is not set
-> > >  CONFIG_X86_PLATFORM_DEVICES=y
-> > >  # CONFIG_ACER_WMI is not set
-> > > 
-> > > -------------------------------------------
-> > > 
-> > > Can possibly duplicate problem if you have a 
-> > > sata based PC from last few years.
-> > > 
-> > > Set  CONFIG_ATA=m
-> > 
-> > That's already =m in this config file.
-> > 
-> > > and this becomes CONFIG_SATA_AHCI=m  (cannot select=y)
-> > 
-> > That's as expected.  CONFIG_ATA value controls CONFIG_SATA_AHCI
-> > possible values.
-> > 
-> > > 
-> > > Then 2.6.34.[01] (probably 2 also) will boot.
-> > > Make silentoldconfig with this .config and see
-> > > that 2.6.35 will not boot.
-> > 
-> > So with CONFIG_ATA=m and CONFIG_SATA_AHCI=m, does 2.6.34-git4 boot
-> > but 2.6.34-git5 fails to boot?
-> 
-> Yes, that is exactly correct.
+> The fact that a patch for one case has been used for years doesn't mean
+> that it's a well thought out fix for the general case.
 
-OK, I built and booted 2.6.34-git4 and -git5 with your .config file
-and only default changes for -git5.
+Well, we clearly disagree on this point. :)
 
-They both booted successfully for me on an f11 box.
-I am not using dracut, if that matters.
+> It will likely not be accepted as an in-tree LSM, especially given that currently
+> it's rather difficult to stack two LSM's - which means that if a site wants to
+> run Yama, it becomes unable to take advantage of all the *other* security
+> features of SELinux or something similar.  In other words - if you want to be
+> an LSM, you need to be full-featured enough to cover all the bases, not just
+> a few cherry-picked ones.
 
-I don't know what to try next.
+Well, I can make Yama stack, but I suspect I shouldn't waste my time on
+that since Yama itself would be rejected on different grounds. I'm sure you
+can see how this appears to be a catch 22. "We don't need stacking because
+nothing needs to be stacked, and we don't need a micro-LSM because it can't
+be used due to lack of stacking."
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> protect".  I won't disagree with the concept that DAC isn't usually sufficient
+> - the point is that ad-hoc fixes for the low-hanging fruit isn't doing anybody
+> any favors.
+
+This is the basis of our disagreement. Fixing it does do people a favor. At
+the very least, it does me a favor because now I don't have to publish
+security updates for an entire class of vulnerability.
+
+> The problem is that "proving it does what it claims" and "proving it
+> actually provides security" are two very different things.
+
+Understood. I get what you're saying about the models, and my only real
+defense here is that I didn't want these features in an LSM to begin with,
+so I don't mind it not being an LSM. That said, again, we disagree, it does
+actually provide security. I can point to lists of vulnerabilities where
+the symlink/hardlink protection actually does really block the exploit.
+
+> If somebody attacks via a different symlink attack than Yama checks for, is it
+> a Yama failure? If somebody attacks via a non-symlink attack, was that a Yama
+> failure or no?
+
+I think this is irrelevant; the symlink/hardlink combo fixes a
+vulnerability with DAC. It's a break in the DAC security model.
+
+> If I find a way to trick SELinux into allowing me to scribble on /etc/passwd,
+> that's an SELinux failure.  If I find a way to do an end-run around Tomoyo, or
+> Smack, or AppArmor, that's a failure. And if I write to the SELinux or Tomoyo
+> or Smack or AppArmor folks, I'm quite certain they'll all send back a reply "Oh
+> damn, that shouldn't happen, we'll think about a policy or code fix to prevent
+> that".
+
+Right, though my objection to all MACs is that they are on top of DAC, and
+that large portions of the Linux user base do not use a MAC, but they
+cannot avoid DAC. Since the symlink/hardlink issue is with DAC, it should
+be fixed there, not in a MAC layer above.
+
+> But scribbling on /etc/passwd by using any of the 4,394 different known attacks
+> against Linux except the 1 that Yama protects against isn't considered a
+> problem.
+> 
+> Do you see the difference?
+
+I get what you're saying. It is convincing me that the symlink/hardlink
+features make no sense as an LSM.
+
+> "There are two kinds of cryptography in this world: cryptography that will stop
+> your kid sister from reading your files, and cryptography that will stop major
+> governments from reading your files.  This book is about the latter."
+> 		-- Bruce Schneier, "Applied Cryptography"
+> 
+> The same sort of distinction applies to security.
+
+Right. But I'm trying to help protect people from their kid sister too.
+Unfortunately, the use-case is where it's both the kid sister admin with no
+MAC policy being attacked by the kid sister script kiddie with a symlink
+race exploit due to the kid sister programmer who wrote an application that
+uses a guessable /tmp file. (With apologies to kid sisters everywhere; I
+just wanted to continue the quoted metaphor.)
+
+> I'm sure there's several dozen other practical attacks that a motivated
+> attacker can come up with. So now you've traded "protect one ptrace() syscall"
+> for "protect against abuse of at least a dozen system calls".
+
+You're completely right that the PTRACE exception idea isn't perfect. It
+could be raced between the crasher's fork()/exec() and prctl(). There are
+probably more cases, but it sure is better than just letting everything
+PTRACE everything else.
+
+While waiting for smarter people than me make it impossible to exploit
+security vulnerabilities in the future, I want to make it harder for
+attackers to exploit security vulnerabilities now.
+
+> That's why you need an actual model, not ad-hoc rules.  Start with "This program
+> has data we don't want leaked, by ptrace or any other means".  Work from there.
+
+Heh, well, I have a PTRACE model. :) "Only CAP_SYSADMIN can PTRACE_ATTACH."
+Unfortunately, I'm stuck with these damned crash handlers which are really
+just hacks to avoid writing a core to disk. Oddly, this is a solved problem
+(via core dump patterns and distro-wide crash handlers), but some
+applications want to opt out of it instead of providing proper system hooks
+to do crash analysis. Of course, with PTRACE still allowed, there's no
+carrot (or stick) to encourage application writers to use distro-provided
+crash handlers.
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
