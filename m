@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab0HCPmh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:42:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36387 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab0HCPmf (ORCPT
+	id S932216Ab0HCPmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:42:43 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46575 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756621Ab0HCPmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:42:35 -0400
+	Tue, 3 Aug 2010 11:42:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=GeMHF4oTS1eMrvjwBaVMjOJxZiZLUrHec7BmR04AwOrW1l57Xc6hd1YkWuqzKjPeqQ
-         b1AH6wdjMpYkePqkz5TdzEKtlwXWp2SjgIsrv6kLvK+uhsJZzTHmeNG/BZ1cy+hRLMx0
-         PxshO93d9OlMnRDQjmfHEtzA9zr21Ig3F0VJs=
+        b=Ecw03tSnfMcO3J0ayMIP0/UuAcKVWrrZOQZNvu2G2O7PF4Bo1Bg+kn4gSSeBXL5ccM
+         3xohTwaoR87obBvhXPRk26kB25VkBRqU2IqasU1JRNj9gNLvTJrpCL/m3Z4soag6qzqv
+         lhtOF1Il8K6c8o7mvQmlyWNp2eo+lbtR5SNHs=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Eric Anholt <eric@anholt.net>, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/11] agp: efficeon-agp: do not use PCI resources before pci_enable_device()
-Date: Tue,  3 Aug 2010 19:42:30 +0400
-Message-Id: <1280850150-4967-1-git-send-email-segooon@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
+        Zhenyu Wang <zhenyuw@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 02/11] agp: intel-agp: do not use PCI resources before pci_enable_device()
+Date: Tue,  3 Aug 2010 19:42:34 +0400
+Message-Id: <1280850154-5010-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -49,15 +53,15 @@ identifier request ~= "pci_request.*|pci_resource.*";
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/char/agp/efficeon-agp.c |   22 +++++++++++-----------
+ drivers/char/agp/intel-agp.c |   22 +++++++++++-----------
  1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/char/agp/efficeon-agp.c b/drivers/char/agp/efficeon-agp.c
-index aa109cb..d607f53 100644
---- a/drivers/char/agp/efficeon-agp.c
-+++ b/drivers/char/agp/efficeon-agp.c
-@@ -372,6 +372,17 @@ static int __devinit agp_efficeon_probe(struct pci_dev *pdev,
- 	bridge->capndx = cap_ptr;
+diff --git a/drivers/char/agp/intel-agp.c b/drivers/char/agp/intel-agp.c
+index d836a71..237dd23 100644
+--- a/drivers/char/agp/intel-agp.c
++++ b/drivers/char/agp/intel-agp.c
+@@ -908,6 +908,17 @@ static int __devinit agp_intel_probe(struct pci_dev *pdev,
+ 	dev_info(&pdev->dev, "Intel %s Chipset\n", intel_agp_chipsets[i].name);
  
  	/*
 +	* If the device has not been properly setup, the following will catch
@@ -65,7 +69,7 @@ index aa109cb..d607f53 100644
 +	* 20030610 - hamish@zot.org
 +	*/
 +	if (pci_enable_device(pdev)) {
-+		printk(KERN_ERR PFX "Unable to Enable PCI device\n");
++		dev_err(&pdev->dev, "can't enable PCI device\n");
 +		agp_put_bridge(bridge);
 +		return -ENODEV;
 +	}
@@ -74,7 +78,7 @@ index aa109cb..d607f53 100644
  	* The following fixes the case where the BIOS has "forgotten" to
  	* provide an address range for the GART.
  	* 20030610 - hamish@zot.org
-@@ -385,17 +396,6 @@ static int __devinit agp_efficeon_probe(struct pci_dev *pdev,
+@@ -921,17 +932,6 @@ static int __devinit agp_intel_probe(struct pci_dev *pdev,
  		}
  	}
  
@@ -84,7 +88,7 @@ index aa109cb..d607f53 100644
 -	* 20030610 - hamish@zot.org
 -	*/
 -	if (pci_enable_device(pdev)) {
--		printk(KERN_ERR PFX "Unable to Enable PCI device\n");
+-		dev_err(&pdev->dev, "can't enable PCI device\n");
 -		agp_put_bridge(bridge);
 -		return -ENODEV;
 -	}
