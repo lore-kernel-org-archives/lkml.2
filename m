@@ -1,131 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab0HCDV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 23:21:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65307 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab0HCDV4 convert rfc822-to-8bit (ORCPT
+	id S1754103Ab0HCDWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 23:22:25 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41034 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab0HCDWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 23:21:56 -0400
+	Mon, 2 Aug 2010 23:22:22 -0400
+Date: Tue, 3 Aug 2010 08:52:16 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 1/5] quick lookup memcg by ID
+Message-ID: <20100803032216.GC3863@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100731215214.2543c07e@infradead.org>
-	<20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100731230101.7cc1d8c7@infradead.org>
-	<20100801191228.GL2470@linux.vnet.ibm.com>
-	<20100801204026.GH31324@thunk.org>
-	<20100802030304.GU2470@linux.vnet.ibm.com>
-	<20100801210548.23f77ff6@infradead.org>
-	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
-	<20100802140933.GB2405@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
-Date: Mon, 2 Aug 2010 20:21:55 -0700
-Message-ID: <AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: david@lang.hm
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 2, 2010 at 5:08 PM,  <david@lang.hm> wrote:
-> On Mon, 2 Aug 2010, Paul E. McKenney wrote:
->
->> On Sun, Aug 01, 2010 at 10:06:34PM -0700, david@lang.hm wrote:
->>>
->>> On Sun, 1 Aug 2010, Arjan van de Ven wrote:
->>>
->>>> I'm a little worried that this whole "I need to block suspend" is
->>>> temporary. Yes today there is silicon from ARM and Intel where suspend
->>>> is a heavy operation, yet at the same time it's not all THAT heavy
->>>> anymore.... at least on the Intel side it's good enough to use pretty
->>>> much all the time (when the screen is off for now, but that's a memory
->>>> controller issue more than anything else). I'm pretty sure the ARM guys
->>>> will not be far behind.
->>>
->>> remember that this 'block suspend' is really 'block overriding the
->>> fact that there are still runable processes and suspending anyway"
->>>
->>> having it labeled as 'suspend blocker' or even 'wakelock' makes it
->>> sound as if it blocks any attempt to suspend, and I'm not sure
->>> that's what's really intended. Itsounds like the normal syspend
->>> process would continue to work, just this 'ignore if these other
->>> apps are busy' mode of operation would not work.
->>>
->>> which makes me wonder, would it be possible to tell the normal idle
->>> detection mechanism to ignore specific processes when deciding if it
->>> should suspend or not? how about only considering processes in one
->>> cgroup when deciding to suspend and ignoring all others?
->>
->> Why not flesh this out and compare it to the draft requirements?
->> (I expect to be sending another version by end of day Pacific Time.)
->>
->> The biggest issue I see right off-hand is that a straightforward
->> implementation of your idea would require moving processes from one
->> cgroup to another when acquiring or releasing a suspend blocker, which
->> from what I understand would be way to heavyweight.  On the other hand,
->> if acquiring and releasing a suspend blocker does not move the process
->> from one cgroup to another, then you need something very like the
->> suspend-blocker mechanism to handle those processes that are permitted
->> to acquire suspend blockers, and which are thus not a member of the
->> cgroup in question.
->>
->> That said, I did see some hint from the Android guys that it -might-
->> be possible to leverage cgroups in the way that you suggest might help
->> save power during times when suspend was blocked but (for example) the
->> screen was turned off.  The idea would be to freeze the cgroup whenever
->> the screen blanked, even if suspend was blocked.  The biggest issue
->> here is that any process that can hold a suspend blocker must never to
->> an unconditional wait on any process in this cgroup.  Seems to me that
->> this should be possible in theory, but the devil would be in the details.
->>
->> If I am misunderstanding your proposal, please enlighten me!
->
-> you are close, but I think what I'm proposing is actually simpler (assuming
-> that the scheduler can be configured to generate the appropriate stats)
->
-> my thought was not to move applications between cgroups as they
-> aquire/release the suspend-block lock, bur rather to say that any
-> application that you would trust to get the suspend-block lock should be in
-> cgroup A while all other applications are in cgroup B
->
-> when you are deciding if the system shoudl go to sleep because it is idle,
-> ignore the activity of all applications in cgroup B
->
-> if cgroup A applications are busy, the system is not idle and should not
-> suspend.
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-02 19:13:04]:
+
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Now, memory cgroup has an ID per cgroup and make use of it at
+>  - hierarchy walk,
+>  - swap recording.
+> 
+> This patch is for making more use of it. The final purpose is
+> to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
+> 
+> This patch caches a pointer of memcg in an array. By this, we
+> don't have to call css_lookup() which requires radix-hash walk.
+> This saves some amount of memory footprint at lookup memcg via id.
 >
 
-Triggering suspend from idle has been suggested before. However, idle
-is not a signal that it is safe to suspend since timers stop in
-suspend (or the code could temporarily be waiting on a non-wakeup
-interrupt). If you add suspend blockers or wakelocks to prevent
-suspend while events you care about are pending, then it does not make
-a lot of sense to prevent suspend just because the cpu is not idle.
-
-> this requires that the applications in cgroup A actually go idle as opposed
-> to simply releaseing the suspend-block lock, but it would mean that there
-> are no application changes required for to move a system from the status
-> "even if it's busy, go ahead ans suspend" to "this application is important,
-> don't suspend if it's got work to do", it would just be classifying the
-> application in one cgroup or the other.
->
-> This assumes that an application that you would trust to hold the
-> suspend-block lock is going to be well behaved (if it isn't, how can you
-> trust it to not grab the lock inappropriatly?)
->
-> David Lang
->
-
+It is a memory versus speed tradeoff, but if the number of created
+cgroups is low, it might not be all that slow, besides we do that for
+swap_cgroup anyway - no?
+ 
 
 -- 
-Arve Hjønnevåg
+	Three Cheers,
+	Balbir
