@@ -1,154 +1,443 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab0HCMj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 08:39:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46599 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab0HCMj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 08:39:56 -0400
-Date: Tue, 3 Aug 2010 14:39:22 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
- sync works
-Message-ID: <20100803123922.GC3322@quack.suse.cz>
-References: <20100729115142.102255590@intel.com>
- <20100729121423.332557547@intel.com>
- <20100729162027.GF12690@quack.suse.cz>
- <20100730040306.GA5694@localhost>
- <20100802205152.GL3278@quack.suse.cz>
- <20100803030125.GA12070@localhost>
- <20100803105520.GA3322@quack.suse.cz>
+	id S1756246Ab0HCMny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 08:43:54 -0400
+Received: from anguilla.debian.or.at ([86.59.21.37]:45153 "EHLO
+	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756215Ab0HCMnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 08:43:53 -0400
+Date: Tue, 3 Aug 2010 14:43:51 +0200
+From: Peter Palfrader <peter@palfrader.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: mingo@redhat.com, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        glommer@redhat.com, alan@lxorguk.ukuu.org.uk, zamsden@redhat.com,
+        stable@kernel.org, mtosatti@redhat.com, gregkh@suse.de,
+        tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86: Add memory modify constraints to xchg()
+	and cmpxchg()
+Message-ID: <20100803124351.GJ27199@anguilla.noreply.org>
+Mail-Followup-To: Peter Palfrader <peter@palfrader.org>,
+	Jeremy Fitzhardinge <jeremy@goop.org>, mingo@redhat.com,
+	"H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+	torvalds@linux-foundation.org, glommer@redhat.com,
+	alan@lxorguk.ukuu.org.uk, zamsden@redhat.com, stable@kernel.org,
+	mtosatti@redhat.com, gregkh@suse.de, tglx@linutronix.de,
+	avi@redhat.com, linux-tip-commits@vger.kernel.org
+References: <4C4F7277.8050306@zytor.com> <tip-113fc5a6e8c2288619ff7e8187a6f556b7e0d372@git.kernel.org> <4C5759FF.1000807@goop.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="bp/iNruPH9dso1Pn"
+Content-Type: multipart/mixed; boundary="QKdGvSO+nmPlgiQ/"
 Content-Disposition: inline
-In-Reply-To: <20100803105520.GA3322@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C5759FF.1000807@goop.org>
+X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
+X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
+X-Accept-Language: de, en
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
+--QKdGvSO+nmPlgiQ/
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
 
-On Tue 03-08-10 12:55:20, Jan Kara wrote:
-> On Tue 03-08-10 11:01:25, Wu Fengguang wrote:
-> > On Tue, Aug 03, 2010 at 04:51:52AM +0800, Jan Kara wrote:
-> > > On Fri 30-07-10 12:03:06, Wu Fengguang wrote:
-> > > > On Fri, Jul 30, 2010 at 12:20:27AM +0800, Jan Kara wrote:
-> > > > > On Thu 29-07-10 19:51:44, Wu Fengguang wrote:
-> > > > > > The periodic/background writeback can run forever. So when any
-> > > > > > sync work is enqueued, increase bdi->sync_works to notify the
-> > > > > > active non-sync works to exit. Non-sync works queued after sync
-> > > > > > works won't be affected.
-> > > > >   Hmm, wouldn't it be simpler logic to just make for_kupdate and
-> > > > > for_background work always yield when there's some other work to do (as
-> > > > > they are livelockable from the definition of the target they have) and
-> > > > > make sure any other work isn't livelockable?
-> > > > 
-> > > > Good idea!
-> > > > 
-> > > > > The only downside is that
-> > > > > non-livelockable work cannot be "fair" in the sense that we cannot switch
-> > > > > inodes after writing MAX_WRITEBACK_PAGES.
-> > > > 
-> > > > Cannot switch indoes _before_ finish with the current
-> > > > MAX_WRITEBACK_PAGES batch? 
-> > >   Well, even after writing all those MAX_WRITEBACK_PAGES. Because what you
-> > > want to do in a non-livelockable work is: take inode, write it, never look at
-> > > it again for this work. Because if you later return to the inode, it can
-> > > have newer dirty pages and thus you cannot really avoid livelock. Of
-> > > course, this all assumes .nr_to_write isn't set to something small. That
-> > > avoids the livelock as well.
-> > 
-> > I do have a poor man's solution that can handle this case.
-> > https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476473/thread
-> > It may do more extra works, but will stop livelock in theory.
->   So I don't think sync work on it's own is a problem. There we can just
-> give up any fairness and just go inode by inode. IMHO it's much simpler that
-> way. The remaining types of work we have are "for_reclaim" and then ones
-> triggered by filesystems to get rid of delayed allocated data. These cases
-> can easily have well defined and low nr_to_write so they wouldn't be
-> livelockable either. What do you think?
-  Fengguang, how about merging also the attached simple patch together with
-my fix? With these two patches, I'm not able to trigger any sync livelock
-while without one of them I hit them quite easily...
+On Mon, 02 Aug 2010, Jeremy Fitzhardinge wrote:
 
-								Honza
+>> Commit-ID:  113fc5a6e8c2288619ff7e8187a6f556b7e0d372
+>> Gitweb:     http://git.kernel.org/tip/113fc5a6e8c2288619ff7e8187a6f556b7e0d372
+>> Author:     H. Peter Anvin<hpa@zytor.com>
+>> AuthorDate: Tue, 27 Jul 2010 17:01:49 -0700
+>> Committer:  H. Peter Anvin<hpa@zytor.com>
+>> CommitDate: Tue, 27 Jul 2010 17:14:02 -0700
+>>
+>> x86: Add memory modify constraints to xchg() and cmpxchg()
+>
+> Here's the 2.6.32 version for stable.
+
+Thanks a lot everyone.  This patch resolves the issue for me on top
+of 2.6.32.17.
+
+(I had some whitespace issue with applying the patch, so I've attached
+the cleaned up version in case it wasn't just me.)
+
+Cheers,
+Peter
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+                           |  .''`.  ** Debian GNU/Linux **
+      Peter Palfrader      | : :' :      The  universal
+ http://www.palfrader.org/ | `. `'      Operating System
+                           |   `-    http://www.debian.org/
 
---bp/iNruPH9dso1Pn
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-mm-Avoid-resetting-wb_start-after-each-writeback-ro.patch"
+--QKdGvSO+nmPlgiQ/
+Content-Type: text/x-diff; charset=iso-8859-15
+Content-Disposition: attachment; filename="0001-x86-Add-memory-modify-constraints-to-xchg-and-cmp.patch"
+Content-Transfer-Encoding: quoted-printable
 
->From e4b708115825bca6a1020eed2356e2aab0567e3a Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Tue, 3 Aug 2010 10:35:02 +0000
-Subject: [PATCH] mm: Avoid resetting wb_start after each writeback round
+=46rom f6fd342ddae3f7edecd0254e5c4e6795d4fba4a9 Mon Sep 17 00:00:00 2001
+=46rom: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Tue, 27 Jul 2010 23:03:58 -0700
+Subject: [PATCH] x86: Add memory modify constraints to xchg() and cmpxchg()
 
-WB_SYNC_NONE writeback is done in rounds of 1024 pages so that we don't write
-out some huge inode for too long while starving writeout of other inodes. To
-avoid livelocks, we record time we started writeback in wbc->wb_start and do
-not write out inodes which were dirtied after this time. But currently,
-writeback_inodes_wb() resets wb_start each time it is called thus effectively
-invalidating this logic and making any WB_SYNC_NONE writeback prone to
-livelocks.
+xchg() and cmpxchg() modify their memory operands, not merely read
+them.  For some versions of gcc the "memory" clobber has apparently
+dealt with the situation, but not for all.
 
-This patch makes sure wb_start is set only once when we start writeback.
+Also adds the missing 8-byte case for __sync_cmpxchg().
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Based on HPA's patch.
+
+Signed-off-by: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
+Cc: "H. Peter Anvin"<hpa@zytor.com>
+Cc: Stable Kernel<stable@kernel.org>
 ---
- fs/fs-writeback.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/cmpxchg_32.h |   86 +++++++++++++++++----------------=
+--
+ arch/x86/include/asm/cmpxchg_64.h |   88 ++++++++++++++++++++-------------=
+----
+ 2 files changed, 89 insertions(+), 85 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 6bdc924..aa59394 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -530,7 +530,8 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxc=
+hg_32.h
+index ee1931b..5af5051 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -34,12 +34,12 @@ static inline void __set_64bit(unsigned long long *ptr,
+ 			       unsigned int low, unsigned int high)
  {
- 	int ret = 0;
- 
--	wbc->wb_start = jiffies; /* livelock avoidance */
-+	if (!wbc->wb_start)
-+		wbc->wb_start = jiffies; /* livelock avoidance */
- 	spin_lock(&inode_lock);
- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- 		queue_io(wb, wbc->older_than_this);
-@@ -559,7 +560,6 @@ static void __writeback_inodes_sb(struct super_block *sb,
- {
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
--	wbc->wb_start = jiffies; /* livelock avoidance */
- 	spin_lock(&inode_lock);
- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- 		queue_io(wb, wbc->older_than_this);
-@@ -625,6 +625,7 @@ static long wb_writeback(struct bdi_writeback *wb,
- 		wbc.range_end = LLONG_MAX;
+ 	asm volatile("\n1:\t"
+-		     "movl (%0), %%eax\n\t"
+-		     "movl 4(%0), %%edx\n\t"
+-		     LOCK_PREFIX "cmpxchg8b (%0)\n\t"
++		     "movl (%1), %%eax\n\t"
++		     "movl 4(%1), %%edx\n\t"
++		     LOCK_PREFIX "cmpxchg8b %0\n\t"
+ 		     "jnz 1b"
+-		     : /* no outputs */
+-		     : "D"(ptr),
++		     : "=3Dm"(*ptr)
++		     : "D" (ptr),
+ 		       "b"(low),
+ 		       "c"(high)
+ 		     : "ax", "dx", "memory");
+@@ -82,20 +82,20 @@ static inline unsigned long __xchg(unsigned long x, vol=
+atile void *ptr,
+ 	switch (size) {
+ 	case 1:
+ 		asm volatile("xchgb %b0,%1"
+-			     : "=3Dq" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=3Dq" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 2:
+ 		asm volatile("xchgw %w0,%1"
+-			     : "=3Dr" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=3Dr" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 4:
+ 		asm volatile("xchgl %0,%1"
+-			     : "=3Dr" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=3Dr" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
  	}
- 
-+	wbc.wb_start = jiffies; /* livelock avoidance */
- 	for (;;) {
- 		/*
- 		 * Stop writeback when nr_pages has been consumed
--- 
-1.6.0.2
+@@ -139,21 +139,21 @@ static inline unsigned long __cmpxchg(volatile void *=
+ptr, unsigned long old,
+ 	unsigned long prev;
+ 	switch (size) {
+ 	case 1:
+-		asm volatile(LOCK_PREFIX "cmpxchgb %b1,%2"
+-			     : "=3Da"(prev)
+-			     : "q"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile(LOCK_PREFIX "cmpxchgb %b2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "q"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 2:
+-		asm volatile(LOCK_PREFIX "cmpxchgw %w1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile(LOCK_PREFIX "cmpxchgw %w2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 4:
+-		asm volatile(LOCK_PREFIX "cmpxchgl %1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile(LOCK_PREFIX "cmpxchgl %2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	}
+@@ -172,21 +172,21 @@ static inline unsigned long __sync_cmpxchg(volatile v=
+oid *ptr,
+ 	unsigned long prev;
+ 	switch (size) {
+ 	case 1:
+-		asm volatile("lock; cmpxchgb %b1,%2"
+-			     : "=3Da"(prev)
+-			     : "q"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("lock; cmpxchgb %b2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "q"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 2:
+-		asm volatile("lock; cmpxchgw %w1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("lock; cmpxchgw %w2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 4:
+-		asm volatile("lock; cmpxchgl %1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("lock; cmpxchgl %2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	}
+@@ -200,21 +200,21 @@ static inline unsigned long __cmpxchg_local(volatile =
+void *ptr,
+ 	unsigned long prev;
+ 	switch (size) {
+ 	case 1:
+-		asm volatile("cmpxchgb %b1,%2"
+-			     : "=3Da"(prev)
+-			     : "q"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("cmpxchgb %b2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "q"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 2:
+-		asm volatile("cmpxchgw %w1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("cmpxchgw %w2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 4:
+-		asm volatile("cmpxchgl %1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("cmpxchgl %2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	}
+@@ -226,11 +226,10 @@ static inline unsigned long long __cmpxchg64(volatile=
+ void *ptr,
+ 					     unsigned long long new)
+ {
+ 	unsigned long long prev;
+-	asm volatile(LOCK_PREFIX "cmpxchg8b %3"
+-		     : "=3DA"(prev)
++	asm volatile(LOCK_PREFIX "cmpxchg8b %1"
++		     : "=3DA"(prev), "+m" (*__xg(ptr))
+ 		     : "b"((unsigned long)new),
+ 		       "c"((unsigned long)(new >> 32)),
+-		       "m"(*__xg(ptr)),
+ 		       "0"(old)
+ 		     : "memory");
+ 	return prev;
+@@ -241,11 +240,10 @@ static inline unsigned long long __cmpxchg64_local(vo=
+latile void *ptr,
+ 						   unsigned long long new)
+ {
+ 	unsigned long long prev;
+-	asm volatile("cmpxchg8b %3"
+-		     : "=3DA"(prev)
++	asm volatile("cmpxchg8b %1"
++		     : "=3DA"(prev), "+m"(*__xg(ptr))
+ 		     : "b"((unsigned long)new),
+ 		       "c"((unsigned long)(new >> 32)),
+-		       "m"(*__xg(ptr)),
+ 		       "0"(old)
+ 		     : "memory");
+ 	return prev;
+diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxc=
+hg_64.h
+index 52de72e..1871cb0 100644
+--- a/arch/x86/include/asm/cmpxchg_64.h
++++ b/arch/x86/include/asm/cmpxchg_64.h
+@@ -26,26 +26,26 @@ static inline unsigned long __xchg(unsigned long x, vol=
+atile void *ptr,
+ 	switch (size) {
+ 	case 1:
+ 		asm volatile("xchgb %b0,%1"
+-			     : "=3Dq" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=3Dq" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 2:
+ 		asm volatile("xchgw %w0,%1"
+-			     : "=3Dr" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=3Dr" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 4:
+ 		asm volatile("xchgl %k0,%1"
+-			     : "=3Dr" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=3Dr" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 8:
+ 		asm volatile("xchgq %0,%1"
+-			     : "=3Dr" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=3Dr" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	}
+@@ -66,27 +66,27 @@ static inline unsigned long __cmpxchg(volatile void *pt=
+r, unsigned long old,
+ 	unsigned long prev;
+ 	switch (size) {
+ 	case 1:
+-		asm volatile(LOCK_PREFIX "cmpxchgb %b1,%2"
+-			     : "=3Da"(prev)
+-			     : "q"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile(LOCK_PREFIX "cmpxchgb %b2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "q"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 2:
+-		asm volatile(LOCK_PREFIX "cmpxchgw %w1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile(LOCK_PREFIX "cmpxchgw %w2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 4:
+-		asm volatile(LOCK_PREFIX "cmpxchgl %k1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile(LOCK_PREFIX "cmpxchgl %k2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 8:
+-		asm volatile(LOCK_PREFIX "cmpxchgq %1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile(LOCK_PREFIX "cmpxchgq %2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	}
+@@ -105,21 +105,27 @@ static inline unsigned long __sync_cmpxchg(volatile v=
+oid *ptr,
+ 	unsigned long prev;
+ 	switch (size) {
+ 	case 1:
+-		asm volatile("lock; cmpxchgb %b1,%2"
+-			     : "=3Da"(prev)
+-			     : "q"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("lock; cmpxchgb %b2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "q"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 2:
+-		asm volatile("lock; cmpxchgw %w1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("lock; cmpxchgw %w2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 4:
+-		asm volatile("lock; cmpxchgl %1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("lock; cmpxchgl %k2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
++			     : "memory");
++		return prev;
++	case 8:
++		asm volatile("lock; cmpxchgq %2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	}
+@@ -133,27 +139,27 @@ static inline unsigned long __cmpxchg_local(volatile =
+void *ptr,
+ 	unsigned long prev;
+ 	switch (size) {
+ 	case 1:
+-		asm volatile("cmpxchgb %b1,%2"
+-			     : "=3Da"(prev)
+-			     : "q"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("cmpxchgb %b2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "q"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 2:
+-		asm volatile("cmpxchgw %w1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("cmpxchgw %w2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 4:
+-		asm volatile("cmpxchgl %k1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("cmpxchgl %k2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	case 8:
+-		asm volatile("cmpxchgq %1,%2"
+-			     : "=3Da"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
++		asm volatile("cmpxchgq %2,%1"
++			     : "=3Da"(prev), "+m"(*__xg(ptr))
++			     : "r"(new), "0"(old)
+ 			     : "memory");
+ 		return prev;
+ 	}
+--=20
+1.5.6.5
 
 
---bp/iNruPH9dso1Pn--
+--QKdGvSO+nmPlgiQ/--
