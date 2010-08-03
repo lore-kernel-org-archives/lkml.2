@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab0HCKKh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 06:10:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54073 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755759Ab0HCKKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 06:10:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,308,1278313200"; 
-   d="scan'208";a="824213811"
-Date: Tue, 3 Aug 2010 12:10:38 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/2] mfd/mc13783: get rid of now unused private header
-Message-ID: <20100803101037.GA2635@sortiz-mobl>
-References: <20100802100455.GC3334@sortiz-mobl>
- <1280756884-25340-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1755916Ab0HCKLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 06:11:34 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64581 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755724Ab0HCKLd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 06:11:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=S7UkTNsaqDOOTuCVdaApulnzstP2s1DoVvNJLfayKRzrbBBNZMdpGDSxYFW8/Za36j
+         M8+rHazcHjruiI/WM0JVYMcpfBR5TGnlz2VCDUYqh0idCuCK4nxkhv0dEuj/hL6Q2z9C
+         FuVypTOa4cefpABWwgfCOqC5u2eptb/Rx83Zc=
+Date: Tue, 3 Aug 2010 18:15:44 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: hacklu <embedway.linux@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: how about KBUILD_MODNAME
+Message-ID: <20100803101544.GJ5129@cr0.nay.redhat.com>
+References: <201008031037022524247@gmail.com>
+ <201008031511572638256@gmail.com>
+ <4C57E6F9.6080104@panasas.com>
+ <4C57E7EB.4090904@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1280756884-25340-1-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <4C57E7EB.4090904@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+On Tue, Aug 03, 2010 at 12:56:59PM +0300, Boaz Harrosh wrote:
+>On 08/03/2010 12:52 PM, Boaz Harrosh wrote:
+>> On 08/03/2010 10:11 AM, hacklu wrote:
+>>>
+>>> I don't understand the macro KBUILD_MODNAME .
+>>> when I compile a  driver program. It returns me "linux/pci.h:655: error: 'KBUILD_MODNAME' undeclared (first use in this function) "
+>>>
+>>> In the makefile I had used the "-D" options
+>>>
+>>> thanks a lot
+>>>
+>>> 2010-08-03 
+>>>
+>>> hacklu 
+>>>
+>> 
+>> The KBUILD_MODNAME fails to be set when there are two drivers built from the same
+>> directory. There are many directories in the source tree with more then one driver
+>> but they don't use the pr_debug macro.
+>> 
+>> Cheers
+>> Boaz
+>
+>Rrr it was a long time since I fought this. Maybe it's not the problem with two
+>drivers in same dir, maybe it's when two drivers share the same foo.c file.
+>
 
-On Mon, Aug 02, 2010 at 03:48:04PM +0200, Uwe Kleine-König wrote:
-> This adds all remaining definitions that are used by the core driver
-> to the .c file.
-Patch applied, many thanks.
+No, it is not, you can find many drivers under drivers/net/. ;)
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+And it doesn't make sense to hold two drivers in one .c file.
