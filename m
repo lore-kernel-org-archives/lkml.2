@@ -1,131 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab0HCNna (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:43:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49444 "EHLO e9.ny.us.ibm.com"
+	id S1756624Ab0HCNnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:43:39 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49888 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756209Ab0HCNn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:43:28 -0400
-Message-ID: <4C581CFB.6010306@austin.ibm.com>
-Date: Tue, 03 Aug 2010 08:43:23 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
-CC: Greg KH <greg@kroah.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [PATCH 8/9] v4  Define memory_block_size_bytes() for ppc/pseries
-References: <4C581A6D.9030908@austin.ibm.com>
-In-Reply-To: <4C581A6D.9030908@austin.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756588Ab0HCNni convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 09:43:38 -0400
+From: Kumar Gala <galak@kernel.crashing.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: setting up of platform device archdata?
+Date: Tue, 3 Aug 2010 08:43:30 -0500
+Message-Id: <8AD41167-5FB1-4C42-83A7-9F0CC6AF69AA@kernel.crashing.org>
+Cc: "linuxppc-dev@ozlabs.org list" <linuxppc-dev@ozlabs.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+To: Greg KH <greg@kroah.com>
+Mime-Version: 1.0 (Apple Message framework v1081)
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a version of memory_block_size_bytes() for powerpc/pseries such that
-a memory block spans an entire lmb.
+Greg,
 
-Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
----
- arch/powerpc/platforms/pseries/hotplug-memory.c |   66 +++++++++++++++++++-----
- 1 file changed, 53 insertions(+), 13 deletions(-)
+We are running into in issue in that we need the platform device archdata setup before platform_device_add gets called since we need some data in archdata setup to allow the bus notifiers to work properly.  On PPC we need this to get the dma masks setup properly that we than use in the bus notifiers to determine if we need SWIOTLB support for a given device or not.  Any suggestions on how to do this? Something like below?
 
-Index: linux-2.6/arch/powerpc/platforms/pseries/hotplug-memory.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-08-02 13:57:03.000000000 -0500
-+++ linux-2.6/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-08-02 14:09:52.000000000 -0500
-@@ -17,6 +17,54 @@
- #include <asm/pSeries_reconfig.h>
- #include <asm/sparsemem.h>
- 
-+static u32 get_memblock_size(void)
-+{
-+	struct device_node *np;
-+	unsigned int memblock_size = 0;
-+
-+	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
-+	if (np) {
-+		const unsigned long *size;
-+
-+		size = of_get_property(np, "ibm,lmb-size", NULL);
-+		memblock_size = size ? *size : 0;
-+
-+		of_node_put(np);
-+	} else {
-+		unsigned int memzero_size = 0;
-+		const unsigned int *regs;
-+
-+		np = of_find_node_by_path("/memory@0");
-+		if (np) {
-+			regs = of_get_property(np, "reg", NULL);
-+			memzero_size = regs ? regs[3] : 0;
-+			of_node_put(np);
-+		}
-+
-+		if (memzero_size) {
-+			/* We now know the size of memory@0, use this to find
-+			 * the first memoryblock and get its size.
-+			 */
-+			char buf[64];
-+
-+			sprintf(buf, "/memory@%x", memzero_size);
-+			np = of_find_node_by_path(buf);
-+			if (np) {
-+				regs = of_get_property(np, "reg", NULL);
-+				memblock_size = regs ? regs[3] : 0;
-+				of_node_put(np);
-+			}
-+		}
-+	}
-+
-+	return memblock_size;
-+}
-+
-+u32 memory_block_size_bytes(void)
-+{
-+	return get_memblock_size();
-+}
-+
- static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
- {
- 	unsigned long start, start_pfn;
-@@ -127,30 +175,22 @@ static int pseries_add_memory(struct dev
- 
- static int pseries_drconf_memory(unsigned long *base, unsigned int action)
- {
--	struct device_node *np;
--	const unsigned long *lmb_size;
-+	unsigned long memblock_size;
- 	int rc;
- 
--	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
--	if (!np)
-+	memblock_size = get_memblock_size();
-+	if (!memblock_size)
- 		return -EINVAL;
- 
--	lmb_size = of_get_property(np, "ibm,lmb-size", NULL);
--	if (!lmb_size) {
--		of_node_put(np);
--		return -EINVAL;
--	}
--
- 	if (action == PSERIES_DRCONF_MEM_ADD) {
--		rc = memblock_add(*base, *lmb_size);
-+		rc = memblock_add(*base, memblock_size);
- 		rc = (rc < 0) ? -EINVAL : 0;
- 	} else if (action == PSERIES_DRCONF_MEM_REMOVE) {
--		rc = pseries_remove_memblock(*base, *lmb_size);
-+		rc = pseries_remove_memblock(*base, memblock_size);
- 	} else {
- 		rc = -EINVAL;
- 	}
- 
--	of_node_put(np);
- 	return rc;
- }
- 
+struct platform_device *platform_device_alloc(const char *name, int id)
 
+...
+        if (pa) {
+                strcpy(pa->name, name);
+                pa->pdev.name = pa->name;
+                pa->pdev.id = id;
+                device_initialize(&pa->pdev.dev);
+                pa->pdev.dev.release = platform_device_release;
+#ifdef ARCH_HAS_PDEV_ARCHDATA_SETUP
+		arch_setup_pdev_archdata(&pa->pdev.dev);
+#endif
+        }
 
+- k
