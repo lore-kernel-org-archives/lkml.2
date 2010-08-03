@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab0HCDWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 23:22:25 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41034 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab0HCDWW (ORCPT
+	id S1753947Ab0HCD0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 23:26:35 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:49434 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab0HCD0e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 23:22:22 -0400
-Date: Tue, 3 Aug 2010 08:52:16 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 1/5] quick lookup memcg by ID
-Message-ID: <20100803032216.GC3863@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
- <20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
+	Mon, 2 Aug 2010 23:26:34 -0400
+To: Dave Airlie <airlied@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: oops in ioapic_write_entry
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
+	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
+	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 02 Aug 2010 20:26:29 -0700
+In-Reply-To: <AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com> (Dave Airlie's message of "Tue\, 3 Aug 2010 09\:17\:16 +1000")
+Message-ID: <m139uw1imy.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-02 19:13:04]:
+Dave Airlie <airlied@gmail.com> writes:
 
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Now, memory cgroup has an ID per cgroup and make use of it at
->  - hierarchy walk,
->  - swap recording.
-> 
-> This patch is for making more use of it. The final purpose is
-> to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
-> 
-> This patch caches a pointer of memcg in an array. By this, we
-> don't have to call css_lookup() which requires radix-hash walk.
-> This saves some amount of memory footprint at lookup memcg via id.
+>>
+>> the kernel is using mptable, and the  system have mcp55, so how come
+>> with irq 35?
+>> assume we should only have ioapic irq 0 - 23 ...
+>>
+>> Can you send out boot log with "debug apic=debug pci=routeirq" with
+>> 2.6.32 and 2.6.35?
 >
+> Okay el6log is from a RHEL6 2.6.32 kernel, but it should give a good
+> baseline, the 2.6.35 oops even earlier with all those options and is
+> in the second attachment.
 
-It is a memory versus speed tradeoff, but if the number of created
-cgroups is low, it might not be all that slow, besides we do that for
-swap_cgroup anyway - no?
- 
+It appears we have a smoking gun:
 
--- 
-	Three Cheers,
-	Balbir
+For some reason setup_IO_APIC_IRQS thinks we at least 2 io_apics,
+but we have only setup 1 io_apic.  Since io_apics need a kmap entry
+accessing an apic that hasn't been setup will definitely give a
+page fault.  It sounds like something is stomping nr_ioapics.
+
+From: 2.6.35-debuglog
+IOAPIC[0]: apic_id 8, version 17, address 0xfec00000, GSI 0-23
+....
+IOAPIC[1]: Set routing entry (0-16 -> 0x51 -> IRQ 16 Mode:1 Active:1)
+
+Can we get your System.map of the failing kernel (so we can see what
+is close to nr_ioapics), and could you add a print statement in
+arch/x86/kernel/apic/io_apic:setup_IO_APIC_irqs to print nr_ioapics?
+
+I would be surprised if drm changes could have affected this.
+
+Eric
+
