@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab0HCO5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 10:57:10 -0400
-Received: from mx5.sophos.com ([213.31.172.35]:59543 "EHLO mx5.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab0HCO5J convert rfc822-to-8bit (ORCPT
+	id S932097Ab0HCPDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:03:14 -0400
+Received: from corp-190-12-5-204-cue.puntonet.ec ([190.12.5.204]:51458 "EHLO
+	mail02.institutodelcancer.med.ec" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751351Ab0HCPDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 10:57:09 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Avi Kivity <avi@redhat.com>
-Subject: Re: 2.6.35 hangs on early boot in KVM
-Date: Tue, 3 Aug 2010 15:57:03 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-References: <201008031028.57263.tvrtko.ursulin@sophos.com> <4C582CDC.8050801@redhat.com>
-In-Reply-To: <4C582CDC.8050801@redhat.com>
+	Tue, 3 Aug 2010 11:03:13 -0400
+Message-ID: <68a4c0394e6889ea925b97fc3e7a0414.squirrel@mail02.institutodelcancer.med.ec>
+Date: Tue, 3 Aug 2010 09:41:50 -0500 (ECT)
+Subject: Confirm Your Webmail Account 
+From: "info_webmaster" <info@webmaster.com>
+Reply-To: customercarewebdept104@w.cn
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Message-ID: <201008031557.04613.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 03/08/2010 15:57:06,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 03/08/2010 15:57:07,
-	Serialize complete at 03/08/2010 15:57:07
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
 Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 03 Aug 2010 15:51:08 Avi Kivity wrote:
->   On 08/03/2010 12:28 PM, Tvrtko Ursulin wrote:
-> > I have basically built 2.6.35 with make oldconfig from a working 2.6.34.
-> > Latter works fine in kvm while 2.6.35 hangs very early. I see nothing
-> > after grub (have early printk and verbose bootup enabled), just a
-> > blinking VGA cursor and CPU at 100%.
->
-> Please copy kvm@vger.kernel.org on kvm issues.
->
-> > CONFIG_PRINTK_TIME=y
->
-> Try disabling this as a workaround.
+Dear Subscriber,
 
-I am in the middle of a bisect run with five builds left to go, currently I
-have:
+Due to user complaints of spam e-mail to our webmail system, our research
+shows that management is committed to your e-mail and used to send spam
+messages on our web mail system. As a result, our network engineer will
+perform a maintenance in our webmail system, your username will be
+disabled if you do not send us the required information within 48 hours.
+Information requested:
 
-bad 537b60d17894b7c19a6060feae40299d7109d6e7
-good 93c9d7f60c0cb7715890b1f9e159da6f4d1f5a65
+Their names:
+Username:
+Password:
+Retype Password:
 
-Tvrtko
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+We value your business and thank you for using our Webmail service
+equipment maintenance. XTension webmail service Email:
+customercarewebdept104@w.cn
