@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab0HCNW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:22:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49716 "EHLO mx2.suse.de"
+	id S1756005Ab0HCNWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:22:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:51089 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750879Ab0HCNW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:22:27 -0400
-Date: Tue, 3 Aug 2010 15:21:54 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu, Ric Wheeler <rwheeler@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Mingming Cao <cmm@us.ibm.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC] ext4: Don't send extra barrier during fsync if there are
- no dirty pages.
-Message-ID: <20100803132154.GG3322@quack.suse.cz>
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com>
- <1272934667.2544.3.camel@mingming-laptop>
- <4BE02C45.6010608@redhat.com>
- <20100504154553.GA22777@infradead.org>
- <20100630124832.GA1333@thunk.org>
- <4C2B44C0.3090002@redhat.com>
- <20100630134429.GE1333@thunk.org>
- <20100721171609.GC1215@atrey.karlin.mff.cuni.cz>
- <20100803000939.GA2109@tux1.beaverton.ibm.com>
+	id S1751255Ab0HCNWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 09:22:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,309,1278313200"; 
+   d="scan'208";a="592433939"
+Date: Tue, 3 Aug 2010 21:22:16 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
+ sync works
+Message-ID: <20100803132216.GA31893@localhost>
+References: <20100729115142.102255590@intel.com>
+ <20100729121423.332557547@intel.com>
+ <20100729162027.GF12690@quack.suse.cz>
+ <20100730040306.GA5694@localhost>
+ <20100802205152.GL3278@quack.suse.cz>
+ <20100803030125.GA12070@localhost>
+ <20100803105520.GA3322@quack.suse.cz>
+ <20100803123922.GC3322@quack.suse.cz>
+ <20100803125924.GA31827@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100803000939.GA2109@tux1.beaverton.ibm.com>
+In-Reply-To: <20100803125924.GA31827@localhost>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 02-08-10 17:09:39, Darrick J. Wong wrote:
-> On Wed, Jul 21, 2010 at 07:16:09PM +0200, Jan Kara wrote:
-> >   Hi,
-> > 
-> > > On Wed, Jun 30, 2010 at 09:21:04AM -0400, Ric Wheeler wrote:
-> > > > 
-> > > > The problem with not issuing a cache flush when you have dirty meta
-> > > > data or data is that it does not have any tie to the state of the
-> > > > volatile write cache of the target storage device.
-> > > 
-> > > We track whether or not there is any metadata updates associated with
-> > > the inode already; if it does, we force a journal commit, and this
-> > > implies a barrier operation.
-> > > 
-> > > The case we're talking about here is one where either (a) there is no
-> > > journal, or (b) there have been no metadata updates (I'm simplifying a
-> > > little here; in fact we track whether there have been fdatasync()- vs
-> > > fsync()- worthy metadata updates), and so there hasn't been a journal
-> > > commit to do the cache flush.
-> > > 
-> > > In this case, we want to track when is the last time an fsync() has
-> > > been issued, versus when was the last time data blocks for a
-> > > particular inode have been pushed out to disk.
-> > > 
-> > > To use an example I used as motivation for why we might want an
-> > > fsync2(int fd[], int flags[], int num) syscall, consider the situation
-> > > of:
-> > > 
-> > > 	fsync(control_fd);
-> > > 	fdatasync(data_fd);
-> > > 
-> > > The first fsync() will have executed a cache flush operation.  So when
-> > > we do the fdatasync() (assuming that no metadata needs to be flushed
-> > > out to disk), there is no need for the cache flush operation.
-> > > 
-> > > If we had an enhanced fsync command, we would also be able to
-> > > eliminate a second journal commit in the case where data_fd also had
-> > > some metadata that needed to be flushed out to disk.
-> >   Current implementation already avoids journal commit because of
-> > fdatasync(data_fd). We remeber a transaction ID when inode metadata has
-> > last been updated and do not force a transaction commit if it is already
-> > committed. Thus the first fsync might force a transaction commit but second
-> > fdatasync likely won't.
-> >   We could actually improve the scheme to work for data as well. I wrote
-> > a proof-of-concept patches (attached) and they nicely avoid second barrier
-> > when doing:
-> > echo "aaa" >file1; echo "aaa" >file2; fsync file2; fsync file1
-> > 
-> >   Ted, would you be interested in something like this?
+> >   Fengguang, how about merging also the attached simple patch together with
+> > my fix? With these two patches, I'm not able to trigger any sync livelock
+> > while without one of them I hit them quite easily...
 > 
-> Well... on my fsync-happy workloads, this seems to cut the barrier count down
-> by about 20%, and speeds it up by about 20%.
-  Nice, thanks for measurement.
+> This looks OK. However note that redirty_tail() can modify
+> dirtied_when unexpectedly. So the more we rely on wb_start, the more
+> possibility an inode is (wrongly) skipped by sync. I have a bunch of
+> patches to remove redirty_tail(). However they may not be good
+> candidates for 2.6.36..
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+It looks that setting wb_start at the beginning of
+writeback_inodes_wb() won't be easily affected by redirty_tail().
+
+So
+
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+
+Thanks,
+Fengguang
