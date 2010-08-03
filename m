@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab0HCJCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:02:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43790 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189Ab0HCJCf convert rfc822-to-8bit (ORCPT
+	id S1755288Ab0HCJGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:06:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49538 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754106Ab0HCJGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:02:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qZZUNI9Li3nBPAZm9dPfzjA02kW9qo0EezaskWZupQdqPqWaNdf44z1e4p0eKa9A83
-         rGCCGPSgiXbBkqPop9cvRwiqVUJduNwLOPUWVZlHY20TYb9hLfb1SLWn6u91wY8utdPi
-         fM1cOa+CT47PXclVUJeyCAT4Q05X2Lwgbwo58=
-MIME-Version: 1.0
-In-Reply-To: <20100803081743.GA6566@pema>
-References: <AANLkTild_NZP5B33ITuaS67bvuREiukbQCtcguKEO4XG@mail.gmail.com>
-	<20100802181449.GA3071@pema>
-	<AANLkTikU6_Cuaqk2xaPWCjkToMgd1yO8Y_qZ9Kcbk9c-@mail.gmail.com>
-	<20100803081743.GA6566@pema>
-Date: Tue, 3 Aug 2010 10:02:33 +0100
-Message-ID: <AANLkTimn9n22zuDDd3YaAH--2OK=8j2UDTsxtsL5FqJo@mail.gmail.com>
-Subject: Re: PC Beeps not working with HDA Intel module
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: =?ISO-8859-1?B?U2jpcmFi?= <Sebastien.Hinderer@ens-lyon.org>
-Cc: Takashi Iwai <tiwai@suse.de>, Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Aug 2010 05:06:21 -0400
+Date: Tue, 3 Aug 2010 02:06:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3] x86: Setup early console as early as possible
+Message-Id: <20100803020638.4e2177c3.akpm@linux-foundation.org>
+In-Reply-To: <4C57C1DE.9050400@kernel.org>
+References: <4C56701B.1030000@kernel.org>
+	<20100802150958.GA5544@lenovo>
+	<4C571B25.3080806@kernel.org>
+	<20100802201750.GG5544@lenovo>
+	<4C57C1DE.9050400@kernel.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 August 2010 09:17, Shérab <Sebastien.Hinderer@ens-lyon.org> wrote:
-> Dear Daniel and Takashi,
->
-> First of all many thanks to both of you for your so prompt and so
-> efficient reply ! Quite impressive.
->
-> Daniel J Blueman (2010/08/02 22:41 +0100):
->> Testing with value 27 (ie 48000/4*27~=440), we hear the expected tone:
->> $ sudo ./hda-verb /dev/snd/hwC0D0 0x1c SET_BEEP_CONTROL 27
->> (of course, your beep widget may not be 0x1c)
->
-> I don't know and don't even know what beep widget means, I'm sorry.
-> If you can explain and also tell me where to find this hda-verb program
-> you are using, I am willing to test if that's your wish.
+On Tue, 03 Aug 2010 00:14:38 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
 
-hda-verb is at:
-http://ftp1.kernel.org/pub/linux/kernel/people/tiwai/misc/hda-verb/hda-verb-0.3.tar.bz2
-
->From your alsa-info.sh, your beep widget (ie device) is at 0x26.
-
->> The problem is the assumption in patch_sigmatel.c:stac92xx_parse_auto_config():
+> 
+> Analyze "console=uart8250,io,0x3f8,115200n8" in i386_start_kernel/x86_64_start_kernel,
+> and call setup_early_serial8250_console() to init early serial console.
+> 
+> only can handle io port kind of 8250. because mmio need ioremap.
+> 
+> -v2: use boot_params.hdr.version instead of adding another variable, Suggested by hpa
+>      update after using x86 memblock patchset
+> -v3: x86 memblock can not make into with 2.6.36 now
+>      so update this patch to be applied before x86 memblock patchset again.
+> 
+> ...
 >
-> [...]
->
-> So is there anything more I can/should do now ?
+> --- linux-2.6.orig/kernel/printk.c
+> +++ linux-2.6/kernel/printk.c
+> @@ -1203,6 +1203,10 @@ void register_console(struct console *ne
+>  	if (console_drivers && newcon->flags & CON_BOOT) {
+>  		/* find the last or real console */
+>  		for_each_console(bcon) {
+> +			/* not again */
+> +			if (bcon == newcon)
+> +				return;
+> +
+>  			if (!(bcon->flags & CON_BOOT)) {
+>  				printk(KERN_INFO "Too late to register bootconsole %s%d\n",
 
-Nothing further, as we know the source of the issue.
-
-Thanks,
-  Daniel
--- 
-Daniel J Blueman
+Why this change?
