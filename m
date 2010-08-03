@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269Ab0HCPni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:43:38 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56537 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932212Ab0HCPnd (ORCPT
+	id S932274Ab0HCPoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:44:24 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51653 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab0HCPoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:43:33 -0400
+	Tue, 3 Aug 2010 11:44:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=J/7wAxbwwyi8VgmbUx+sgx6Y/JWiszkPnMEbEqbmCnJKh+ehbsZkyDeR3dxb5TsERA
-         lbO9VQjvXkZFYDDdxyDBOY0C1XjkVxwxs1jipcpuBd8JpCILkkWmP5mQLt1SM7Da+HXl
-         uqWIewxDTvMBCKjgFIB4FqFP+2TtA3zyn5l10=
+        b=npk5BPnICUD8LjLKv+DTGopva9TRj6naIhTd+W43eTftNnXZWYDRJN79YZEUEPvzyk
+         HSw5oL9mOotCMhXHy6P5LapyktPDyoISKwi6fAg0PBUZTUVzjj3zqg1p9isXgU+W15Ra
+         du5ubpIp0yyc9HCuzg32w+QVoMTpJ4zgbDadI=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        Alban Browaeys <prahal@yahoo.com>, linux-wireless@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/11] rt2x00: do not use PCI resources before pci_enable_device()
-Date: Tue,  3 Aug 2010 19:43:22 +0400
-Message-Id: <1280850203-5532-1-git-send-email-segooon@gmail.com>
+Cc: Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Frans Pop <elendil@planet.nl>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 07/11] parisc: superio: do not use PCI resources before pci_enable_device()
+Date: Tue,  3 Aug 2010 19:44:13 +0400
+Message-Id: <1280850253-6128-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -54,69 +51,32 @@ identifier request ~= "pci_request.*|pci_resource.*";
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/wireless/rt2x00/rt2x00pci.c |   21 ++++++++++-----------
- 1 files changed, 10 insertions(+), 11 deletions(-)
+ drivers/parisc/superio.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00pci.c b/drivers/net/wireless/rt2x00/rt2x00pci.c
-index 19b262e..63c2cc4 100644
---- a/drivers/net/wireless/rt2x00/rt2x00pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
-@@ -240,16 +240,16 @@ int rt2x00pci_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
- 	struct rt2x00_dev *rt2x00dev;
- 	int retval;
+diff --git a/drivers/parisc/superio.c b/drivers/parisc/superio.c
+index f7806d8..c8a36a2 100644
+--- a/drivers/parisc/superio.c
++++ b/drivers/parisc/superio.c
+@@ -169,8 +169,6 @@ superio_init(struct pci_dev *pcidev)
+ 	/* ...then properly fixup the USB to point at suckyio PIC */
+ 	sio->usb_pdev->irq = superio_fixup_irq(sio->usb_pdev);
  
--	retval = pci_request_regions(pci_dev, pci_name(pci_dev));
-+	retval = pci_enable_device(pci_dev);
- 	if (retval) {
--		ERROR_PROBE("PCI request regions failed.\n");
-+		ERROR_PROBE("Enable device failed.\n");
- 		return retval;
- 	}
+-	printk(KERN_INFO PFX "Found NS87560 Legacy I/O device at %s (IRQ %i)\n",
+-	       pci_name(pdev), pdev->irq);
  
--	retval = pci_enable_device(pci_dev);
-+	retval = pci_request_regions(pci_dev, pci_name(pci_dev));
- 	if (retval) {
--		ERROR_PROBE("Enable device failed.\n");
--		goto exit_release_regions;
-+		ERROR_PROBE("PCI request regions failed.\n");
-+		goto exit_disable_device;
- 	}
+ 	pci_read_config_dword (pdev, SIO_SP1BAR, &sio->sp1_base);
+ 	sio->sp1_base &= ~1;
+@@ -204,6 +202,9 @@ superio_init(struct pci_dev *pcidev)
+ 	ret = pci_enable_device(pdev);
+ 	BUG_ON(ret < 0);	/* not too much we can do about this... */
  
- 	pci_set_master(pci_dev);
-@@ -260,14 +260,14 @@ int rt2x00pci_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
- 	if (dma_set_mask(&pci_dev->dev, DMA_BIT_MASK(32))) {
- 		ERROR_PROBE("PCI DMA not supported.\n");
- 		retval = -EIO;
--		goto exit_disable_device;
-+		goto exit_release_regions;
- 	}
- 
- 	hw = ieee80211_alloc_hw(sizeof(struct rt2x00_dev), ops->hw);
- 	if (!hw) {
- 		ERROR_PROBE("Failed to allocate hardware.\n");
- 		retval = -ENOMEM;
--		goto exit_disable_device;
-+		goto exit_release_regions;
- 	}
- 
- 	pci_set_drvdata(pci_dev, hw);
-@@ -300,13 +300,12 @@ exit_free_reg:
- exit_free_device:
- 	ieee80211_free_hw(hw);
- 
--exit_disable_device:
--	if (retval != -EBUSY)
--		pci_disable_device(pci_dev);
--
- exit_release_regions:
- 	pci_release_regions(pci_dev);
- 
-+exit_disable_device:
-+	pci_disable_device(pci_dev);
++	printk(KERN_INFO PFX "Found NS87560 Legacy I/O device at %s (IRQ %i)\n",
++	       pci_name(pdev), pdev->irq);
 +
- 	pci_set_drvdata(pci_dev, NULL);
- 
- 	return retval;
+ 	/*
+ 	 * Next project is programming the onboard interrupt controllers.
+ 	 * PDC hasn't done this for us, since it's using polled I/O.
 -- 
 1.7.0.4
 
