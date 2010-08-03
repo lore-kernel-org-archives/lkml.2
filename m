@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab0HCL0u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 07:26:50 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:36568 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752983Ab0HCL0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 07:26:49 -0400
-Date: Tue, 3 Aug 2010 13:26:33 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Paul Menage <menage@google.com>
-Cc: david@lang.hm, Arjan van de Ven <arjan@infradead.org>,
-        paulmck@linux.vnet.ibm.com, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100803132633.7cb720df@schatten.dmk.lab>
-In-Reply-To: <AANLkTinGjktpuNi8062BQPegr4mofF6bx2EfBAsbOhCe@mail.gmail.com>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100731215214.2543c07e@infradead.org>
-	<20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100731230101.7cc1d8c7@infradead.org>
-	<20100801191228.GL2470@linux.vnet.ibm.com>
-	<20100801204026.GH31324@thunk.org>
-	<20100802030304.GU2470@linux.vnet.ibm.com>
-	<20100801210548.23f77ff6@infradead.org>
-	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
-	<20100802074429.73a9dfd9@schatten.dmk.lab>
-	<alpine.DEB.2.00.1008012303160.25170@asgard.lang.hm>
-	<20100802084003.1c4c2bdb@schatten.dmk.lab>
-	<20100802085332.23dd22f6@schatten.dmk.lab>
-	<alpine.DEB.2.00.1008012355210.25170@asgard.lang.hm>
-	<20100802092347.692dac32@schatten.dmk.lab>
-	<alpine.DEB.2.00.1008020200450.25170@asgard.lang.hm>
-	<AANLkTinGjktpuNi8062BQPegr4mofF6bx2EfBAsbOhCe@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+	id S1756131Ab0HCL2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 07:28:40 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41813 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756005Ab0HCL2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 07:28:38 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-usb@vger.kernel.org, dbrownell@users.sourceforge.net, gregkh@suse.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2]drivers/usb/core/sysfs.c Fix variable 'retval' set but not used
+In-Reply-To: Your message of "Mon, 02 Aug 2010 21:26:28 PDT."
+             <1280809589-23649-1-git-send-email-justinmattock@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1280809589-23649-1-git-send-email-justinmattock@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; boundary="==_Exmh_1280834905_4165P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 03 Aug 2010 07:28:25 -0400
+Message-ID: <58611.1280834905@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A02020A.4C57FD5A.01AB,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010 21:41:17 -0700
-Paul Menage <menage@google.com> wrote:
+--==_Exmh_1280834905_4165P
+Content-Type: text/plain; charset=us-ascii
 
-> On Mon, Aug 2, 2010 at 2:06 AM,  <david@lang.hm> wrote:
-> >
-> > yes, it could mean a doubleing in the number of cgroups that you need on a
-> > system. and if there are other features like this you can end up in a
-> > geometric explosion in the number of cgroups.
-> 
-> No, it would be additive - you can mount different subsystems on
-> separate hierarchies. So if you had X divisions for memory, Y
-> divisions for CPU and Z divisions for suspend-blocking (where Z=2,
-> probably?) you could mount three separate hierarchies and have X+Y+Z
-> complexity, not X*Y*Z.
-> 
-> (Not that I have a strong opinion on whether cgroups is an appropriate
-> mechanism for solving this problem - just that the problem you forsee
-> shouldn't occur in practice).
-> 
-> Paul
+On Mon, 02 Aug 2010 21:26:28 PDT, "Justin P. Mattock" said:
+> diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
 
-Ah yes, mea culpa. I've got this wrong.
+>  	if (alt->string)
+> -		retval = device_create_file(&intf->dev, &dev_attr_interface);
+> +		device_create_file(&intf->dev, &dev_attr_interface);
+>  	intf->sysfs_files_created = 1;
+>  	return 0;
 
-Cheers,
-Flo
+What should the code do if device_create_file() manages to fail? Yes, ignoring
+the return value is one option, but is it the best one?  'return ret;' might be
+another one. Somebody who understands this code and has more caffeine than me
+should look this over.
+
+(Nothing personal Justin - it's just my opinion that *anytime* we have a patch
+that remove a check for a return code, it needs to justify that ignoring the
+return code is appropriate).
+
+
+--==_Exmh_1280834905_4165P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMV/1ZcC3lWbTT17ARAnQiAKCjcjMn62jke6aBWRDoRTwK6hku+wCgg4QH
+QFnbYVqvu+q0psxI7JZDZl4=
+=m5gp
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1280834905_4165P--
+
