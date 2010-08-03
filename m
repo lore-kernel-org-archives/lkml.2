@@ -1,133 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab0HCQu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 12:50:28 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:41516 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932283Ab0HCQuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 12:50:24 -0400
-Date: Tue, 3 Aug 2010 09:50:10 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@ftp.linux.org.uk>
-Subject: Re: Preview of changes to the Security susbystem for 2.6.36
-Message-ID: <20100803165010.GG3948@outflux.net>
-References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
- <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
- <20100802122421.GA12130@infradead.org>
- <20100802165936.GV3948@outflux.net>
- <15424.1280775073@localhost>
+	id S932408Ab0HCQya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 12:54:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45057 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757149Ab0HCQy2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 12:54:28 -0400
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Kevin Cernekee <cernekee@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Date: Tue, 3 Aug 2010 22:23:45 +0530
+Subject: RE: Additional fix : (was [v2]printk: fix delayed messages from CPU
+ hotplug events)
+Thread-Topic: Additional fix : (was [v2]printk: fix delayed messages from
+ CPU hotplug events)
+Thread-Index: AcszIA3V0iNm2hToRuGdfHm4WzcbUwAC6xGA
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02C641DD23@dbde02.ent.ti.com>
+References: <EAF47CD23C76F840A9E7FCE10091EFAB02C5DB6D1F@dbde02.ent.ti.com>
+	<20100802154434.5615bcf9.akpm@linux-foundation.org>
+	<EAF47CD23C76F840A9E7FCE10091EFAB02C641D8EC@dbde02.ent.ti.com>
+ <20100803082456.3b91e7a5.rdunlap@xenotime.net>
+In-Reply-To: <20100803082456.3b91e7a5.rdunlap@xenotime.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_EAF47CD23C76F840A9E7FCE10091EFAB02C641DD23dbde02enttico_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <15424.1280775073@localhost>
-Organization: Canonical
-X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 02:51:13PM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 02 Aug 2010 09:59:36 PDT, Kees Cook said:
-> > > Al gave you some very clear advice how a the sticky check should be
-> > 
-> > This is patently false. "Very clear advice" would have included actionable
-> > instructions. He (and everyone else) has ignored my requests for
-> > clarification[2]. If you see how the check should be implemented, please
-> > send a patch demonstrating how. I would greatly prefer having these
-> > protections in the VFS itself.
-> 
-> You're overlooking step zero of Al's advice: First, *think* about the issue
-> in a deep fashion, rather than a knee-jerk patch to fix one instance of
-> the problem.
+--_002_EAF47CD23C76F840A9E7FCE10091EFAB02C641DD23dbde02enttico_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-I think this is unfair. This solution has been used for 15 years in other
-hardened kernel patches. It's not knee-jerk at all. Not fixing this is not
-getting the "good" for the sake of wanting the "perfect".
+> -----Original Message-----
+> From: Randy Dunlap [mailto:rdunlap@xenotime.net]
+> Sent: Tuesday, August 03, 2010 8:55 PM
+> To: Shilimkar, Santosh
+> Cc: Andrew Morton; Kevin Cernekee; linux-kernel@vger.kernel.org; Russell
+> King - ARM Linux
+> Subject: Re: Additional fix : (was [v2]printk: fix delayed messages from
+> CPU hotplug events)
+>=20
+> On Tue, 3 Aug 2010 13:03:25 +0530 Shilimkar, Santosh wrote:
+>=20
 
-> The problem is that although your patch closes *one set* of symlink attacks
-> that has been traditionally a problem, it doesn't do a very good job of
-> creating a conceptual model and then *really* dealing with the issue. That's
-> the big distinction between SELinux, Tomoyo, Smack, and your proposal - they
-> form a *model* of what's important to protect, and what actions need to be
-> taken to *actually* protect them.  They don't just apply one arbitrary rule
-> that closes some attacks - they make an honest effort to deal with all
-> variants of the attack, and other attacks that allow bypass, and so on.
+<snip>
 
-Okay, thanks for this explanation of why people don't want Yama as an LSM.
-I disagree with the logic, but at least I understand the reasoning now.
-"Since Yama does not provide a security model, it cannot be an LSM." This
-then leaves a gap for people wanting to make small changes to the logic of
-how the kernel works without resorting to endlessly carrying a patchset.
+> >  /**
+> > + * console_cpu_notify - print deferred console messages after CPU
+> hotplug
+> > + *
+> > + * If printk() is called from a CPU that is not online yet, the
+> messages
+> > + * will be spooled but will not show up on the console.  This function
+> is
+> > + * called when a new CPU comes online and ensures that any such output
+> > + * gets printed.
+> > + */
+> > +static int __cpuinit console_cpu_notify(struct notifier_block *self,
+> > +	unsigned long action, void *hcpu)
+> > +{
+>=20
+>=20
+> kernel-doc notation should include function parameters also, please.
+>=20
+Sure. Here is an updated version.
+--------------------------------------------
+>From 127c0ea58982762ad194f22d1281baaf529c9cbc Mon Sep 17 00:00:00 2001
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Tue, 3 Aug 2010 12:58:22 +0530
+Subject: [PATCH v2] console: flush delayed log messages from cpu-hotplug ev=
+ents
 
-> The reason people are worried that this might grow into a "large" LSM is that
-> quite often, throwing in a bunch of ad-hoc rules may create *apparent*
-> security, but not provide any *real* security.  You yourself admit that Yama
+When a secondary CPU is being brought up, it is not uncommon for
+printk() to be invoked when cpu_online(smp_processor_id()) =3D=3D 0.  The
+case that I witnessed personally was on MIPS:
 
-I can accept this as a theoretical position, but it's not like I've
-suddenly invented some new unproven protection. Given a choice between
-fighting to have it be an LSM and fighting to have it in the VFS, I prefer
-the VFS, since I'm trying to fix a flaw in DAC.
+http://lkml.org/lkml/2010/5/30/4
 
-> only closes one set of symlink attacks without addressing the general issue of
-> symlinks, hard links, TOCTOU races, and a lot of *other* similar "the file you
-> actually opened is not the one you intended to open" attacks. And the reason it
-> doesn't address the general issue is because it lacks a security model.  And
-> the reason you're having so much trouble getting it into the tree is because if
-> you're going to apply this at either the VFS or LSM layers, you need to address
-> the *general* problem and not one ad-hoc variant of it.
+If (can_use_console() =3D=3D 0), printk() will spool its output to log_buf
+and it will be visible in "dmesg", but that output will NOT be echoed to
+the console until somebody calls release_console_sem() from a CPU that
+is online.  Therefore, the boot time messages from the new CPU can get
+stuck in "limbo" for a long time, and might suddenly appear on the
+screen when a completely unrelated event (e.g. "eth0: link is down")
+occurs.
 
-Well, here we disagree. DAC is flawed, this fixes a giant class of security
-problems. The model is "fix what sticky means for symlinks" and "fix when
-hardlinks are created". :P
+This patch modifies the console code so that any pending messages are
+automatically flushed out to the console whenever a CPU hotplug
+operation completes successfully or aborts.
+This is true even when CPU is getting hot-plugged out(offline) so
+need to add additional hotplug events.
 
-> And quite frankly, the idea of this morphing into a "large" LSM containing a
-> lot of ad-hoc rules scares most security people, because without a good
-> conceptual model, it's hard to define if the security is in fact working, or
-> what the problem is if it isn't working.
+The issue was seen on 2.6.34.
 
-I have regression tests for all the Yama features. I can prove if it's
-working or not.
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ kernel/printk.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
-> > I've seen two so far. Both are addressed with a one line fix. And I would
-> > stress that no other existing subsystem in the kernel can provide the same
-> > level of control that my ptrace exception logic provides. SELinux cannot do
-> > this.
-> 
-> Quick question: Now is that "SELinux doesn't consider the added granularity
-> important and doesn't bother doing it", or "SELinux can't do it *currently*",
-> or "there are innate structural reasons why SELinux is by design unable to do
-> it"?  Note that it's a big difference, and it's dangerous for your cause to
-> bring it up without understanding which it is, and why...
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 444b770..c145cef 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -37,6 +37,8 @@
+ #include <linux/ratelimit.h>
+ #include <linux/kmsg_dump.h>
+ #include <linux/syslog.h>
++#include <linux/cpu.h>
++#include <linux/notifier.h>
+=20
+ #include <asm/uaccess.h>
+=20
+@@ -985,6 +987,43 @@ void resume_console(void)
+ }
+=20
+ /**
++ * console_cpu_notify - print deferred console messages after CPU hotplug
++ * @self: pointer to notfier block
++ * @action: cpu-hotplug events
++ * @hcpu: void poniter to pass any data
++ *
++ * If printk() is called from a CPU that is not online yet, the messages
++ * will be spooled but will not show up on the console.  This function is
++ * called when a new CPU comes online or goes offline and ensures that
++ * any such output gets printed.
++ */
++static int __cpuinit console_cpu_notify(struct notifier_block *self,
++	unsigned long action, void *hcpu)
++{
++	switch (action) {
++	case CPU_ONLINE:
++	case CPU_DEAD:
++	case CPU_DYING:
++	case CPU_DOWN_FAILED:
++	case CPU_UP_CANCELED:
++		if (try_acquire_console_sem() =3D=3D 0)
++			release_console_sem();
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __cpuinitdata console_nb =3D {
++	.notifier_call		=3D console_cpu_notify,
++};
++
++static int __init console_notifier_init(void)
++{
++	register_cpu_notifier(&console_nb);
++	return 0;
++}
++late_initcall(console_notifier_init);
++
++/**
+  * acquire_console_sem - lock the console system for exclusive use.
+  *
+  * Acquires a semaphore which guarantees that the caller has
+--=20
+1.6.0.4
 
-I don't know the answer to this, but other people I've asked have said they
-didn't think it was possible. I would tend to agree since it requires an
-explicit action from the debugee.
 
-MAC is system-owner defined. This is programmer defined. I want my program
-to be able to declare that a single specific pid can PTRACE it and nothing
-else. Another example of programmer defined access control would be the
-ability to "give up" access to syscalls, a finer-grained version of
-SECCOMP.
+--_002_EAF47CD23C76F840A9E7FCE10091EFAB02C641DD23dbde02enttico_
+Content-Type: application/octet-stream;
+	name="console-flush-delayed-log-messages-from-cpu-hotplug_v2.patch"
+Content-Description: console-flush-delayed-log-messages-from-cpu-hotplug_v2.patch
+Content-Disposition: attachment;
+	filename="console-flush-delayed-log-messages-from-cpu-hotplug_v2.patch";
+	size=2975; creation-date="Tue, 03 Aug 2010 22:24:25 GMT";
+	modification-date="Tue, 03 Aug 2010 22:24:25 GMT"
+Content-Transfer-Encoding: base64
 
-> You were told to go back and form an actual *security model*. What's important
-> to protect? What attacks can be made against it? What syscalls are included in
-> the forseeable attacks (hint - probably more than you think - if you're
-> mediating symlink access, a bit of thought will show symlinks aren't the only
-> problem you need to worry about to *actually* secure the resource).
+RnJvbSAxMjdjMGVhNTg5ODI3NjJhZDE5NGYyMmQxMjgxYmFhZjUyOWM5Y2JjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBTYW50b3NoIFNoaWxpbWthciA8c2FudG9zaC5zaGlsaW1rYXJA
+dGkuY29tPgpEYXRlOiBUdWUsIDMgQXVnIDIwMTAgMTI6NTg6MjIgKzA1MzAKU3ViamVjdDogW1BB
+VENIIHYyXSBjb25zb2xlOiBmbHVzaCBkZWxheWVkIGxvZyBtZXNzYWdlcyBmcm9tIGNwdS1ob3Rw
+bHVnIGV2ZW50cwoKV2hlbiBhIHNlY29uZGFyeSBDUFUgaXMgYmVpbmcgYnJvdWdodCB1cCwgaXQg
+aXMgbm90IHVuY29tbW9uIGZvcgpwcmludGsoKSB0byBiZSBpbnZva2VkIHdoZW4gY3B1X29ubGlu
+ZShzbXBfcHJvY2Vzc29yX2lkKCkpID09IDAuICBUaGUKY2FzZSB0aGF0IEkgd2l0bmVzc2VkIHBl
+cnNvbmFsbHkgd2FzIG9uIE1JUFM6CgpodHRwOi8vbGttbC5vcmcvbGttbC8yMDEwLzUvMzAvNAoK
+SWYgKGNhbl91c2VfY29uc29sZSgpID09IDApLCBwcmludGsoKSB3aWxsIHNwb29sIGl0cyBvdXRw
+dXQgdG8gbG9nX2J1ZgphbmQgaXQgd2lsbCBiZSB2aXNpYmxlIGluICJkbWVzZyIsIGJ1dCB0aGF0
+IG91dHB1dCB3aWxsIE5PVCBiZSBlY2hvZWQgdG8KdGhlIGNvbnNvbGUgdW50aWwgc29tZWJvZHkg
+Y2FsbHMgcmVsZWFzZV9jb25zb2xlX3NlbSgpIGZyb20gYSBDUFUgdGhhdAppcyBvbmxpbmUuICBU
+aGVyZWZvcmUsIHRoZSBib290IHRpbWUgbWVzc2FnZXMgZnJvbSB0aGUgbmV3IENQVSBjYW4gZ2V0
+CnN0dWNrIGluICJsaW1ibyIgZm9yIGEgbG9uZyB0aW1lLCBhbmQgbWlnaHQgc3VkZGVubHkgYXBw
+ZWFyIG9uIHRoZQpzY3JlZW4gd2hlbiBhIGNvbXBsZXRlbHkgdW5yZWxhdGVkIGV2ZW50IChlLmcu
+ICJldGgwOiBsaW5rIGlzIGRvd24iKQpvY2N1cnMuCgpUaGlzIHBhdGNoIG1vZGlmaWVzIHRoZSBj
+b25zb2xlIGNvZGUgc28gdGhhdCBhbnkgcGVuZGluZyBtZXNzYWdlcyBhcmUKYXV0b21hdGljYWxs
+eSBmbHVzaGVkIG91dCB0byB0aGUgY29uc29sZSB3aGVuZXZlciBhIENQVSBob3RwbHVnCm9wZXJh
+dGlvbiBjb21wbGV0ZXMgc3VjY2Vzc2Z1bGx5IG9yIGFib3J0cy4KVGhpcyBpcyB0cnVlIGV2ZW4g
+d2hlbiBDUFUgaXMgZ2V0dGluZyBob3QtcGx1Z2dlZCBvdXQob2ZmbGluZSkgc28KbmVlZCB0byBh
+ZGQgYWRkaXRpb25hbCBob3RwbHVnIGV2ZW50cy4KClRoZSBpc3N1ZSB3YXMgc2VlbiBvbiAyLjYu
+MzQuCgpTaWduZWQtb2ZmLWJ5OiBTYW50b3NoIFNoaWxpbWthciA8c2FudG9zaC5zaGlsaW1rYXJA
+dGkuY29tPgpTaWduZWQtb2ZmLWJ5OiBLZXZpbiBDZXJuZWtlZSA8Y2VybmVrZWVAZ21haWwuY29t
+PgotLS0KIGtlcm5lbC9wcmludGsuYyB8ICAgMzkgKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrCiAxIGZpbGVzIGNoYW5nZWQsIDM5IGluc2VydGlvbnMoKyksIDAgZGVsZXRp
+b25zKC0pCgpkaWZmIC0tZ2l0IGEva2VybmVsL3ByaW50ay5jIGIva2VybmVsL3ByaW50ay5jCmlu
+ZGV4IDQ0NGI3NzAuLmMxNDVjZWYgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9wcmludGsuYworKysgYi9r
+ZXJuZWwvcHJpbnRrLmMKQEAgLTM3LDYgKzM3LDggQEAKICNpbmNsdWRlIDxsaW51eC9yYXRlbGlt
+aXQuaD4KICNpbmNsdWRlIDxsaW51eC9rbXNnX2R1bXAuaD4KICNpbmNsdWRlIDxsaW51eC9zeXNs
+b2cuaD4KKyNpbmNsdWRlIDxsaW51eC9jcHUuaD4KKyNpbmNsdWRlIDxsaW51eC9ub3RpZmllci5o
+PgogCiAjaW5jbHVkZSA8YXNtL3VhY2Nlc3MuaD4KIApAQCAtOTg1LDYgKzk4Nyw0MyBAQCB2b2lk
+IHJlc3VtZV9jb25zb2xlKHZvaWQpCiB9CiAKIC8qKgorICogY29uc29sZV9jcHVfbm90aWZ5IC0g
+cHJpbnQgZGVmZXJyZWQgY29uc29sZSBtZXNzYWdlcyBhZnRlciBDUFUgaG90cGx1ZworICogQHNl
+bGY6IHBvaW50ZXIgdG8gbm90ZmllciBibG9jaworICogQGFjdGlvbjogY3B1LWhvdHBsdWcgZXZl
+bnRzCisgKiBAaGNwdTogdm9pZCBwb25pdGVyIHRvIHBhc3MgYW55IGRhdGEKKyAqCisgKiBJZiBw
+cmludGsoKSBpcyBjYWxsZWQgZnJvbSBhIENQVSB0aGF0IGlzIG5vdCBvbmxpbmUgeWV0LCB0aGUg
+bWVzc2FnZXMKKyAqIHdpbGwgYmUgc3Bvb2xlZCBidXQgd2lsbCBub3Qgc2hvdyB1cCBvbiB0aGUg
+Y29uc29sZS4gIFRoaXMgZnVuY3Rpb24gaXMKKyAqIGNhbGxlZCB3aGVuIGEgbmV3IENQVSBjb21l
+cyBvbmxpbmUgb3IgZ29lcyBvZmZsaW5lIGFuZCBlbnN1cmVzIHRoYXQKKyAqIGFueSBzdWNoIG91
+dHB1dCBnZXRzIHByaW50ZWQuCisgKi8KK3N0YXRpYyBpbnQgX19jcHVpbml0IGNvbnNvbGVfY3B1
+X25vdGlmeShzdHJ1Y3Qgbm90aWZpZXJfYmxvY2sgKnNlbGYsCisJdW5zaWduZWQgbG9uZyBhY3Rp
+b24sIHZvaWQgKmhjcHUpCit7CisJc3dpdGNoIChhY3Rpb24pIHsKKwljYXNlIENQVV9PTkxJTkU6
+CisJY2FzZSBDUFVfREVBRDoKKwljYXNlIENQVV9EWUlORzoKKwljYXNlIENQVV9ET1dOX0ZBSUxF
+RDoKKwljYXNlIENQVV9VUF9DQU5DRUxFRDoKKwkJaWYgKHRyeV9hY3F1aXJlX2NvbnNvbGVfc2Vt
+KCkgPT0gMCkKKwkJCXJlbGVhc2VfY29uc29sZV9zZW0oKTsKKwl9CisJcmV0dXJuIE5PVElGWV9P
+SzsKK30KKworc3RhdGljIHN0cnVjdCBub3RpZmllcl9ibG9jayBfX2NwdWluaXRkYXRhIGNvbnNv
+bGVfbmIgPSB7CisJLm5vdGlmaWVyX2NhbGwJCT0gY29uc29sZV9jcHVfbm90aWZ5LAorfTsKKwor
+c3RhdGljIGludCBfX2luaXQgY29uc29sZV9ub3RpZmllcl9pbml0KHZvaWQpCit7CisJcmVnaXN0
+ZXJfY3B1X25vdGlmaWVyKCZjb25zb2xlX25iKTsKKwlyZXR1cm4gMDsKK30KK2xhdGVfaW5pdGNh
+bGwoY29uc29sZV9ub3RpZmllcl9pbml0KTsKKworLyoqCiAgKiBhY3F1aXJlX2NvbnNvbGVfc2Vt
+IC0gbG9jayB0aGUgY29uc29sZSBzeXN0ZW0gZm9yIGV4Y2x1c2l2ZSB1c2UuCiAgKgogICogQWNx
+dWlyZXMgYSBzZW1hcGhvcmUgd2hpY2ggZ3VhcmFudGVlcyB0aGF0IHRoZSBjYWxsZXIgaGFzCi0t
+IAoxLjYuMC40Cgo=
 
-Cross-uid symlink following and cross-permission hardlink creation are
-flaws in DAC that lead to a large persistent class of ToCToU
-vulnerabilities that are trivially avoidable. It's been fixed for 15 years.
-I'm not exactly sure how to model this. We've discussed how shared /tmp is
-one aspect of the problem, but it's not the entire problem. We've discussed
-how per-user /tmp is untenable in the short-term, etc. This is a way to get
-there now while per-user /tmp is slowly adopted over the next 15 years.
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+--_002_EAF47CD23C76F840A9E7FCE10091EFAB02C641DD23dbde02enttico_--
