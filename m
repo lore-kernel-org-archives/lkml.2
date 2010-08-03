@@ -1,120 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab0HCBgi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 21:36:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34688 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab0HCBgh (ORCPT
+	id S1751797Ab0HCBob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 21:44:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49949 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab0HCBo3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 21:36:37 -0400
-Message-ID: <4C57723C.1060400@kernel.org>
-Date: Mon, 02 Aug 2010 18:34:52 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com> <AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com> <4C577197.9020003@kernel.org>
-In-Reply-To: <4C577197.9020003@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C577296.02C1,ss=1,fgs=0
+	Mon, 2 Aug 2010 21:44:29 -0400
+Date: Tue, 3 Aug 2010 11:44:10 +1000
+From: Neil Brown <neilb@suse.de>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Xiaotian Feng <dfeng@redhat.com>, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org, netdev@vger.kernel.org, riel@redhat.com,
+        cl@linux-foundation.org, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, lwang@redhat.com,
+        akpm@linux-foundation.org, davem@davemloft.net
+Subject: Re: [PATCH -mmotm 05/30] mm: sl[au]b: add knowledge of reserve
+ pages
+Message-ID: <20100803114410.420ae7ba@notabene>
+In-Reply-To: <AANLkTilj5GrhbRJZfSsfXP1v9cQSRlARFmxpys1vUelr@mail.gmail.com>
+References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
+	<20100713101747.2835.45722.sendpatchset@danny.redhat>
+	<AANLkTilj5GrhbRJZfSsfXP1v9cQSRlARFmxpys1vUelr@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 06:32 PM, Yinghai Lu wrote:
-> On 08/02/2010 04:17 PM, Dave Airlie wrote:
->>>
->>> the kernel is using mptable, and the  system have mcp55, so how come
->>> with irq 35?
->>> assume we should only have ioapic irq 0 - 23 ...
->>>
->>> Can you send out boot log with "debug apic=debug pci=routeirq" with
->>> 2.6.32 and 2.6.35?
->>
->> Okay el6log is from a RHEL6 2.6.32 kernel, but it should give a good
->> baseline, the 2.6.35 oops even earlier with all those options and is
->> in the second attachment.
+On Tue, 13 Jul 2010 23:33:14 +0300
+Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+
+> Hi Xiaotian!
 > 
+> I would actually prefer that the SLAB, SLOB, and SLUB changes were in
+> separate patches to make reviewing easier.
+> 
+> Looking at SLUB:
+> 
+> On Tue, Jul 13, 2010 at 1:17 PM, Xiaotian Feng <dfeng@redhat.com> wrote:
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index 7bb7940..7a5d6dc 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -27,6 +27,8 @@
+> >  #include <linux/memory.h>
+> >  #include <linux/math64.h>
+> >  #include <linux/fault-inject.h>
+> > +#include "internal.h"
+> > +
+> >
+> >  /*
+> >  * Lock order:
+> > @@ -1139,7 +1141,8 @@ static void setup_object(struct kmem_cache *s, struct page *page,
+> >                s->ctor(object);
+> >  }
+> >
+> > -static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+> > +static
+> > +struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node, int *reserve)
+> >  {
+> >        struct page *page;
+> >        void *start;
+> > @@ -1153,6 +1156,8 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+> >        if (!page)
+> >                goto out;
+> >
+> > +       *reserve = page->reserve;
+> > +
+> >        inc_slabs_node(s, page_to_nid(page), page->objects);
+> >        page->slab = s;
+> >        page->flags |= 1 << PG_slab;
+> > @@ -1606,10 +1611,20 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+> >  {
+> >        void **object;
+> >        struct page *new;
+> > +       int reserve;
+> >
+> >        /* We handle __GFP_ZERO in the caller */
+> >        gfpflags &= ~__GFP_ZERO;
+> >
+> > +       if (unlikely(c->reserve)) {
+> > +               /*
+> > +                * If the current slab is a reserve slab and the current
+> > +                * allocation context does not allow access to the reserves we
+> > +                * must force an allocation to test the current levels.
+> > +                */
+> > +               if (!(gfp_to_alloc_flags(gfpflags) & ALLOC_NO_WATERMARKS))
+> > +                       goto grow_slab;
+> 
+> OK, so assume that:
+> 
+>   (1) c->reserve is set to one
+> 
+>   (2) GFP flags don't allow dipping into the reserves
+> 
+>   (3) we've managed to free enough pages so normal
+>        allocations are fine
+> 
+>   (4) the page from reserves is not yet empty
+> 
+> we will call flush_slab() and put the "emergency page" on partial list
+> and clear c->reserve. This effectively means that now some other
+> allocation can fetch the partial page and start to use it. Is this OK?
+> Who makes sure the emergency reserves are large enough for the next
+> out-of-memory condition where we swap over NFS?
 
-please use this one instead..., forget to run quilt refresh before sending it.
+Yes, this is OK.  The emergency reserves are maintained at a lower level -
+within alloc_page.
+The fact that (3) normal allocations are fine means that there are enough
+free pages to satisfy any swap-out allocation - so any pages that were
+previously allocated as 'emergency' pages can have their emergency status
+forgotten (the emergency has passed).
 
-[PATCH -v2] x86: fix pin_2_irq mapping
+This is a subtle but important aspect of the emergency reservation scheme in
+swap-over-NFS.  It is the act-of-allocating that is emergency-or-not.  The
+memory itself, once allocated, is not special.
 
-We should not twist gsi to irq mapping if acpi is not used.
+c->reserve means "the last page allocated required an emergency allocation".
+This means that parts of that page, or any other page, can only be given as
+emergency allocations.  Once the slab succeeds at a non-emergency allocation,
+the flag should obviously be cleared.
 
--v2 remove not used irq_to_gsi()
+Similarly the page->reserve flag does not mean "this is a reserve page", but
+simply "when this page was allocated, it was an emergency allocation".  The
+flag is often soon lost as it is in a union with e.g. freelist.  But that
+doesn't matter as it is only really meaningful at the moment of allocation.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+I hope that clarifies the situation,
 
----
- arch/x86/include/asm/io_apic.h |   10 ++++++++++
- arch/x86/kernel/acpi/boot.c    |    4 ++--
- arch/x86/kernel/apic/io_apic.c |    5 +----
- 3 files changed, 13 insertions(+), 6 deletions(-)
+NeilBrown
 
-Index: linux-2.6/arch/x86/include/asm/io_apic.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/io_apic.h
-+++ linux-2.6/arch/x86/include/asm/io_apic.h
-@@ -185,6 +185,16 @@ int mp_find_ioapic_pin(int ioapic, u32 g
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
- extern void __init pre_init_apic_IRQ0(void);
- 
-+#ifdef CONFIG_ACPI
-+unsigned int gsi_to_irq(unsigned int gsi);
-+u32 irq_to_gsi(int irq);
-+#else
-+static inline unsigned int gsi_to_irq(unsigned int gsi)
-+{
-+	return gsi;
-+}
-+#endif
-+
- #else  /* !CONFIG_X86_IO_APIC */
- 
- #define io_apic_assign_pci_irqs 0
-Index: linux-2.6/arch/x86/kernel/acpi/boot.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
-+++ linux-2.6/arch/x86/kernel/acpi/boot.c
-@@ -100,7 +100,7 @@ static u32 isa_irq_to_gsi[NR_IRQS_LEGACY
- 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
- };
- 
--static unsigned int gsi_to_irq(unsigned int gsi)
-+unsigned int gsi_to_irq(unsigned int gsi)
- {
- 	unsigned int irq = gsi + NR_IRQS_LEGACY;
- 	unsigned int i;
-@@ -123,7 +123,7 @@ static unsigned int gsi_to_irq(unsigned
- 	return irq;
- }
- 
--static u32 irq_to_gsi(int irq)
-+u32 irq_to_gsi(int irq)
- {
- 	unsigned int gsi;
- 
-Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-@@ -1029,10 +1029,7 @@ static int pin_2_irq(int idx, int apic,
- 	} else {
- 		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
- 
--		if (gsi >= NR_IRQS_LEGACY)
--			irq = gsi;
--		else
--			irq = gsi_top + gsi;
-+		irq = gsi_to_irq(gsi);
- 	}
- 
- #ifdef CONFIG_X86_32
+> 
+> > +       }
+> >        if (!c->page)
+> >                goto new_slab;
+> >
+> > @@ -1623,8 +1638,8 @@ load_freelist:
+> >        object = c->page->freelist;
+> >        if (unlikely(!object))
+> >                goto another_slab;
+> > -       if (unlikely(SLABDEBUG && PageSlubDebug(c->page)))
+> > -               goto debug;
+> > +       if (unlikely(SLABDEBUG && PageSlubDebug(c->page) || c->reserve))
+> > +               goto slow_path;
+> >
+> >        c->freelist = get_freepointer(s, object);
+> >        c->page->inuse = c->page->objects;
+> > @@ -1646,16 +1661,18 @@ new_slab:
+> >                goto load_freelist;
+> >        }
+> >
+> > +grow_slab:
+> >        if (gfpflags & __GFP_WAIT)
+> >                local_irq_enable();
+> >
+> > -       new = new_slab(s, gfpflags, node);
+> > +       new = new_slab(s, gfpflags, node, &reserve);
+> >
+> >        if (gfpflags & __GFP_WAIT)
+> >                local_irq_disable();
+> >
+> >        if (new) {
+> >                c = __this_cpu_ptr(s->cpu_slab);
+> > +               c->reserve = reserve;
+> >                stat(s, ALLOC_SLAB);
+> >                if (c->page)
+> >                        flush_slab(s, c);
+> > @@ -1667,10 +1684,20 @@ new_slab:
+> >        if (!(gfpflags & __GFP_NOWARN) && printk_ratelimit())
+> >                slab_out_of_memory(s, gfpflags, node);
+> >        return NULL;
+> > -debug:
+> > -       if (!alloc_debug_processing(s, c->page, object, addr))
+> > +
+> > +slow_path:
+> > +       if (!c->reserve && !alloc_debug_processing(s, c->page, object, addr))
+> >                goto another_slab;
+> >
+> > +       /*
+> > +        * Avoid the slub fast path in slab_alloc() by not setting
+> > +        * c->freelist and the fast path in slab_free() by making
+> > +        * node_match() fail by setting c->node to -1.
+> > +        *
+> > +        * We use this for for debug and reserve checks which need
+> > +        * to be done for each allocation.
+> > +        */
+> > +
+> >        c->page->inuse++;
+> >        c->page->freelist = get_freepointer(s, object);
+> >        c->node = -1;
+> > @@ -2095,10 +2122,11 @@ static void early_kmem_cache_node_alloc(gfp_t gfpflags, int node)
+> >        struct page *page;
+> >        struct kmem_cache_node *n;
+> >        unsigned long flags;
+> > +       int reserve;
+> >
+> >        BUG_ON(kmalloc_caches->size < sizeof(struct kmem_cache_node));
+> >
+> > -       page = new_slab(kmalloc_caches, gfpflags, node);
+> > +       page = new_slab(kmalloc_caches, gfpflags, node, &reserve);
+> >
+> >        BUG_ON(!page);
+> >        if (page_to_nid(page) != node) {
+> > --
+> > 1.7.1.1
+> >
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
