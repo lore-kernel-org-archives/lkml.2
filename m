@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab0HCRiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:38:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34306 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836Ab0HCRhB convert rfc822-to-8bit (ORCPT
+	id S1757409Ab0HCRip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:38:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26083 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598Ab0HCRin convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:37:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=xRkdedb5GlaDA4wwiaH6oO8gaaUdNfzmi7BPrQyohpTVtW5T3HUrFi+kWu8ODyqKtR
-         aIp9FvHSt0DNgNsfQLZef5eqIayYpARjwgtrCbCVXvOheohcnvgjRoDcjIKFPbiHCa+o
-         0jLmdQttYPMkdwNhAIlcSPN7PRtkqy799NrbI=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH] USB-serial dummy cable driver
-Date: Tue, 3 Aug 2010 19:36:39 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        nm127@freemail.hu, linux-kernel@vger.kernel.org, maxinbjohn@gmail.com,
-        forest.bond@outpostembedded.com, vijaykumar@zilogic.com
-References: <1280728807-20296-1-git-send-email-marek.vasut@gmail.com> <201008031814.15859.marek.vasut@gmail.com> <20100803163826.GA757@suse.de>
-In-Reply-To: <20100803163826.GA757@suse.de>
+	Tue, 3 Aug 2010 13:38:43 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Message-ID: <a7f4db53-c348-4cff-8762-7ea4031e4813@default>
+Date: Tue, 3 Aug 2010 10:35:57 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Christoph Hellwig <hch@infradead.org>, ngupta@vflare.org,
+        akpm@linux-foundation.org, Chris Mason <chris.mason@oracle.com>,
+        viro@zeniv.linux.org.uk, adilger@sun.com, tytso@mit.edu,
+        mfasheh@suse.com, Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
+        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
+        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
+        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>
+Subject: RE: [PATCH V3 0/8] Cleancache: overview
+References: <20100621231809.GA11111@ca-server1.us.oracle.com4C49468B.40307@vflare.org>
+ <840b32ff-a303-468e-9d4e-30fc92f629f8@default>
+ <20100723140440.GA12423@infradead.org>
+ <364c83bd-ccb2-48cc-920d-ffcf9ca7df19@default>
+ <fc254547-5926-4cb9-98e1-7a79f7284e30@default 4C58424C.1020208@panasas.com>
+In-Reply-To: <4C58424C.1020208@panasas.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
+ 12.0.6535.5005]
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201008031936.39556.marek.vasut@gmail.com>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C5853E4.0332:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne Út 3. srpna 2010 18:38:26 Greg KH napsal(a):
-> On Tue, Aug 03, 2010 at 06:14:15PM +0200, Marek Vasut wrote:
-> > Dne Út 3. srpna 2010 00:47:18 Greg KH napsal(a):
-> > > On Mon, Aug 02, 2010 at 08:00:07AM +0200, Marek Vasut wrote:
-> > > > This driver is used to implement USB-serial like behaviour over dummy
-> > > > 
-> > > > USB cables. These are used in the following devices:
-> > > > 	Funsoft Serial USB driver
-> > > > 	Genesys Logic GL620USB USB Laplink cable
-> > > > 	HP4x (48/49) Serial cable
-> > > > 	Motorola phones
-> > > > 	Siemens USB-MPI Serial USB driver
-> > > > 	ViVOpay USB Serial Driver
-> > > > 	ZIO Motherboard USB driver
-> > > 
-> > > I like the idea, but not the name :)
-> > 
-> > Please don't expect miracles from me after 26 hours without sleep ;-)
-> > 
-> > > Ideally, all of these would be able to be handled by the usb-serial
-> > > generic driver directly.
-> > 
-> > I just noticed that one. Stupid me.
-> > 
-> > > But really, having these multiple drivers is a good thing, they
-> > > properly convey to the user what the device is, and it gives these
-> > > developers and companies a sense of ownership over the code, and that
-> > > matters at times.
-> > > 
-> > > So you lost the names of the devices with this patch, which isn't good.
-> > 
-> > Sheesh ... that's true, but having pile of copies of the same code is not
-> > good either.
+> From: Boaz Harrosh [mailto:bharrosh@panasas.com]
+> Sent: Tuesday, August 03, 2010 10:23 AM
+> To: Dan Magenheimer
+> Subject: Re: [PATCH V3 0/8] Cleancache: overview
 > 
-> I agree, that's why I said it should be reduced.
+> On 07/24/2010 12:17 AM, Dan Magenheimer wrote:
+> >>> On Fri, Jul 23, 2010 at 06:58:03AM -0700, Dan Magenheimer wrote:
+> >>>> CHRISTOPH AND ANDREW, if you disagree and your concerns have
+> >>>> not been resolved, please speak up.
+> >>
+> >> Hi Christoph --
+> >>
+> >> Thanks very much for the quick (instantaneous?) reply!
+> >>
+> >>> Anything that need modification of a normal non-shared fs is
+> utterly
+> >>> broken and you'll get a clear NAK, so the propsal before is a good
+> >>> one.
+> >>
+> >> No, the per-fs opt-in is very sensible; and its design is
+> >> very minimal.
+> >
+> > Not to belabor the point, but maybe the right way to think about
+> > this is:
+> >
+> > Cleancache is a new optional feature provided by the VFS layer
+> > that potentially dramatically increases page cache effectiveness
+> > for many workloads in many environments at a negligible cost.
+> >
+> > Filesystems that are well-behaved and conform to certain restrictions
+> > can utilize cleancache simply by making a call to cleancache_init_fs
+> > at mount time.  Unusual, misbehaving, or poorly layered filesystems
+> > must either add additional hooks and/or undergo extensive additional
+> > testing... or should just not enable the optional cleancache.
 > 
-> > Can't we then just deprecate all these drivers and set correct udev
-> > rules?
-> 
-> udev can not change the name of the device in sysfs, or the name in the
-> kernel of the device.
+> OK, So I maintain a filesystem in Kernel. How do I know if my FS
+> is not "Unusual, misbehaving, or poorly layered"
 
-That's right, but it can bind the generic driver with the hardware. And who 
-would care about the driver name, really ? The interface just appears and that's 
-what matters (to me and probably to users) ...
-> 
-> thanks,
-> 
-> greg k-h
+A reasonable question.  I'm not a FS expert so this may not be
+a complete answer, but please consider it a start:
+
+- The FS should be block-device-based (e.g. a ram-based FS
+  such as tmpfs should not enable cleancache)
+
+- To ensure coherency/correctness, the FS must ensure that all
+  file removal or truncation operations either go through VFS
+  or add hooks to do the equivalent "flush" operations (e.g.
+  I started looking at FS-cache-based net FS's and was concerned
+  there might be problems, dunno for sure)
+
+- To ensure coherency/correctness, inode numbers must be unique
+  (e.g. no emulating 64-bit inode space on 32-bit inode numbers)
+
+- The FS must call the VFS superblock alloc and deactivate routines
+  or add hooks to do the equivalent cleancache calls done there.
+
+- To maximize performance, all pages fetched from the FS should
+  go through the do_mpage_readpage routine or the FS should add
+  hooks to do the equivalent (e.g. btrfs requires a hook for this)
+
+- Currently, the FS blocksize must be the same as PAGESIZE.  This
+  is not an architectural restriction, but no backends currently
+  support anything different (e.g. hugetlbfs? should not enable
+  cleancache)
+
+- A clustered FS should invoke the "shared_init_fs" cleancache
+  hook to get best performance for some backends.
+
+Does that help?
+
+Thanks,
+Dan
