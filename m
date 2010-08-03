@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab0HCNt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:49:29 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36023 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755867Ab0HCNt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:49:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,309,1278313200"; 
-   d="scan'208";a="592442581"
-Date: Tue, 3 Aug 2010 21:48:54 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
- sync works
-Message-ID: <20100803134854.GA32257@localhost>
-References: <20100729121423.332557547@intel.com>
- <20100729162027.GF12690@quack.suse.cz>
- <20100730040306.GA5694@localhost>
- <20100802205152.GL3278@quack.suse.cz>
- <20100803030125.GA12070@localhost>
- <20100803105520.GA3322@quack.suse.cz>
- <20100803123922.GC3322@quack.suse.cz>
- <20100803125924.GA31827@localhost>
- <20100803132216.GA31893@localhost>
- <20100803134431.GA32173@localhost>
+	id S1756743Ab0HCNuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:50:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36753 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab0HCNui (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 3 Aug 2010 09:50:38 -0400
+Date: Tue, 3 Aug 2010 09:49:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Konrad@rcsinet12.oracle.com, Sheng Yang <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] linux-next: manual merge of the xen tree with the
+ swiotlb tree
+Message-ID: <20100803134947.GC4751@phenom.dumpdata.com>
+References: <20100803141351.cd70beca.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100803134431.GA32173@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100803141351.cd70beca.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C581EA1.0287:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 09:44:31PM +0800, Wu Fengguang wrote:
-> On Tue, Aug 03, 2010 at 09:22:16PM +0800, Wu Fengguang wrote:
-> > > >   Fengguang, how about merging also the attached simple patch together with
-> > > > my fix? With these two patches, I'm not able to trigger any sync livelock
-> > > > while without one of them I hit them quite easily...
-> > > 
-> > > This looks OK. However note that redirty_tail() can modify
-> > > dirtied_when unexpectedly. So the more we rely on wb_start, the more
-> > > possibility an inode is (wrongly) skipped by sync. I have a bunch of
-> > > patches to remove redirty_tail(). However they may not be good
-> > > candidates for 2.6.36..
-> > 
-> > It looks that setting wb_start at the beginning of
-> > writeback_inodes_wb() won't be easily affected by redirty_tail().
+On Tue, Aug 03, 2010 at 02:13:51PM +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Except for this redirty_tail(), which may mess up the dirtied_when
-> ordering in b_dirty and later on break the assumption of
-> inode_dirtied_after(inode, wbc->wb_start).
-
-Oh well, it seems still OK (it does sound crazy). Please ignore the
-below patch, sorry for the noise..
-
-Thanks,
-Fengguang
-
-> It can be replaced by a requeue_io() for now.  Christoph mentioned a
-> patchset to introduce sb->s_wb, which should be a better solution.
+> Today's linux-next merge of the xen tree got a conflict in
+> drivers/xen/Kconfig drivers/xen/Makefile between commit
+> b097186fd29d5bc5a26d1ae87995821ffc27b66e ("swiotlb-xen: SWIOTLB library
+> for Xen PV guest with PCI passthrough") from the swiotlb tree and commit
+> 183d03cc4ff39e0f0d952c09aa96d0abfd6e0c3c ("xen: Xen PCI platform device
+> driver") from the xen tree.
 > 
-> Thanks,
-> Fengguang
+> Just overlapping additions.  I fixed it up (see below) and can carry the
+> fix as necessary.
+
+Thank you!
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index a178828..e56e68b 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -457,12 +457,7 @@ int generic_writeback_sb_inodes(struct super_block *sb,
->  
->  		if (inode->i_sb != sb) {
->  			if (only_this_sb) {
-> -				/*
-> -				 * We only want to write back data for this
-> -				 * superblock, move all inodes not belonging
-> -				 * to it back onto the dirty list.
-> -				 */
-> -				redirty_tail(inode);
-> +				requeue_io(inode);
->  				continue;
->  			}
->  
+> diff --cc drivers/xen/Kconfig
+> index 97199c2,0a88269..0000000
+> --- a/drivers/xen/Kconfig
+> +++ b/drivers/xen/Kconfig
+> @@@ -62,8 -62,13 +62,18 @@@ config XEN_SYS_HYPERVISO
+>   	 virtual environment, /sys/hypervisor will still be present,
+>   	 but will have no xen contents.
+>   
+>  +config SWIOTLB_XEN
+>  +	def_bool y
+>  +	depends on SWIOTLB
+>  +
+> + config XEN_PLATFORM_PCI
+> + 	tristate "xen platform pci device driver"
+> + 	depends on XEN_PVHVM
+> + 	default m
+> + 	help
+> + 	  Driver for the Xen PCI Platform device: it is responsible for
+> + 	  initializing xenbus and grant_table when running in a Xen HVM
+> + 	  domain. As a consequence this driver is required to run any Xen PV
+> + 	  frontend on Xen HVM.
+> ++
+>   endmenu
+> diff --cc drivers/xen/Makefile
+> index 85f84cf,e392fb7..0000000
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@@ -10,4 -10,4 +10,5 @@@ obj-$(CONFIG_XEN_BALLOON)	+= balloon.
+>   obj-$(CONFIG_XEN_DEV_EVTCHN)	+= evtchn.o
+>   obj-$(CONFIG_XENFS)		+= xenfs/
+>   obj-$(CONFIG_XEN_SYS_HYPERVISOR)	+= sys-hypervisor.o
+>  +obj-$(CONFIG_SWIOTLB_XEN)	+= swiotlb-xen.o
+> + obj-$(CONFIG_XEN_PLATFORM_PCI)	+= platform-pci.o
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
