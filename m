@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab0HCSV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 14:21:57 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:15779 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756928Ab0HCSVz convert rfc822-to-8bit (ORCPT
+	id S1757539Ab0HCSWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 14:22:40 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:19446 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757392Ab0HCSWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 14:21:55 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        "'gregkh@suse.de'" <gregkh@suse.de>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: RE: [PATCH 1/1] staging: hv: Fix missing functions for
- net_device_ops (resubmit)
-Thread-Topic: [PATCH 1/1] staging: hv: Fix missing functions for
- net_device_ops (resubmit)
-Thread-Index: AQHLMmqUZKh2eb7ENEOe42IZNUMKnZLPZ1sAgACg9MA=
-Date: Tue, 3 Aug 2010 18:21:50 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF728380C2F4@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF7280E8556B@TK5EX14MBXC121.redmond.corp.microsoft.com>
- <20100803013013.GC3814@kroah.com>
-In-Reply-To: <20100803013013.GC3814@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 3 Aug 2010 14:22:38 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org, ananth@in.ibm.com,
+        anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        masami.hiramatsu.pt@hitachi.com
+Cc: linux-kernel@vger.kernel.org, hschauhan@nulltrace.org,
+        David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH 0/5] KProbes support for MIPS
+Date: Tue,  3 Aug 2010 11:22:17 -0700
+Message-Id: <1280859742-26364-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.1.1
+X-OriginalArrivalTime: 03 Aug 2010 18:22:36.0641 (UTC) FILETIME=[D942CD10:01CB3338]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Monday, August 02, 2010 9:30 PM
-> Why put the subject in the body of the email?  This forces me to edit
-> it again :(
+This patch set adds KProbs, JProbs and KRetProbes support for the MIPS
+archetecture.
 
-Sure, I'll remove it.
+It was tested on a 64-bit big-endian kernel (Octeon), but should work
+equally well on 32-bit and little-endian as well.
 
-> > functions. We need to put them into net_device_ops. For example,
-> > eth_change_mtu prevents setting MTU beyond 1500. This is necessary
-> > because we don't support jumbo frame at this time.
-> 
-> What does this mean?  Is it a bug?  Just not going as fast as possible?
-> Something else?
+As you can see from the patches it is partially based on previous work
+by Sony and Himanshu Chauhan.
 
-Yes, it's a bug when porting Linux IC from 2.6.27 to 2.6.32. In 2.6.27,
-the default functions for Ethernet, like eth_change_mtu(), were assigned
-by ether_setup(). But in 2.6.32, these function pointers moved to
-net_device_ops structure and no longer be assigned in ether_setup(). So we
-need to set these functions in our driver code. It will ensure the MTU won't
-be set beyong 1500. Otherwise, this can cause an error on the server side,
-because the HyperV linux driver doesn't support jumbo frame yet.
+David Daney (5):
+  MIPS: Define regs_return_value()
+  MIPS: Add instrunction format for BREAK and SYSCALL
+  MIPS: Add KProbe support.
+  samples: kprobe_example: Make it print something on MIPS.
+  documentation: Mention that KProbes is supported on MIPS
 
-> >   It affects kernel 2.6.32 and later, which are all versions
-> > containing Hyper-V drivers.
-> 
-> So is this fixing a bug that needs to be backported to these older
-> kernels (i.e. the staging tree?)  Is this something that is causing
-> people problems?
-
-Yes it should be backported. The bug can cause error on guest and host.
-
-Thanks,
-
-- Haiyang
+ Documentation/kprobes.txt        |    1 +
+ arch/mips/Kconfig                |    2 +
+ arch/mips/Makefile               |    3 +
+ arch/mips/include/asm/break.h    |    2 +
+ arch/mips/include/asm/inst.h     |   15 +-
+ arch/mips/include/asm/kdebug.h   |    3 +
+ arch/mips/include/asm/kprobes.h  |   91 ++++++
+ arch/mips/include/asm/ptrace.h   |    1 +
+ arch/mips/kernel/Makefile        |    1 +
+ arch/mips/kernel/kprobes.c       |  562 ++++++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/traps.c         |   22 ++-
+ arch/mips/mm/fault.c             |   15 +-
+ samples/kprobes/kprobe_example.c |    9 +
+ 13 files changed, 724 insertions(+), 3 deletions(-)
+ create mode 100644 arch/mips/include/asm/kprobes.h
+ create mode 100644 arch/mips/kernel/kprobes.c
 
