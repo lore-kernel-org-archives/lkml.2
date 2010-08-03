@@ -1,107 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab0HCWrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 18:47:40 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61720 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab0HCWrj convert rfc822-to-8bit (ORCPT
+	id S932830Ab0HCWwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:52:13 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59222 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932797Ab0HCWwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 18:47:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008022203470.6545@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100731215214.2543c07e@infradead.org>
-	<20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100731230101.7cc1d8c7@infradead.org>
-	<20100801191228.GL2470@linux.vnet.ibm.com>
-	<20100801204026.GH31324@thunk.org>
-	<20100802030304.GU2470@linux.vnet.ibm.com>
-	<20100801210548.23f77ff6@infradead.org>
-	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
-	<20100802140933.GB2405@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
-	<AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
-	<alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
-	<AANLkTikhcYzNp8CPp8cqrV7Ey5CLMWu1sJTNxUtEi2as@mail.gmail.com>
-	<alpine.DEB.2.00.1008022203470.6545@asgard.lang.hm>
-Date: Tue, 3 Aug 2010 15:47:38 -0700
-Message-ID: <AANLkTinFT5jq4nUhUpzS5S4TVDQGj0S7RtRgxNhsz2UF@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: david@lang.hm
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Aug 2010 18:52:11 -0400
+Date: Tue, 3 Aug 2010 15:51:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, apw@canonical.com, corbet@lwn.net,
+        arjan@linux.intel.com, linux-arm-msm@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH 1/4] timer: Added usleep_range timer
+Message-Id: <20100803155134.b3c4bf73.akpm@linux-foundation.org>
+In-Reply-To: <1280786467-26999-2-git-send-email-ppannuto@codeaurora.org>
+References: <1280786467-26999-1-git-send-email-ppannuto@codeaurora.org>
+	<1280786467-26999-2-git-send-email-ppannuto@codeaurora.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/2  <david@lang.hm>:
-> On Mon, 2 Aug 2010, Arve Hj?nnev?g wrote:
->
->> 2010/8/2  <david@lang.hm>:
->>>
->>> On Mon, 2 Aug 2010, Arve Hj?nnev?g wrote:
->>>
->>>> On Mon, Aug 2, 2010 at 5:08 PM,  <david@lang.hm> wrote:
->>>>>
->>>>> On Mon, 2 Aug 2010, Paul E. McKenney wrote:
->>>>>
->>>>>
->>>>> you are close, but I think what I'm proposing is actually simpler
->>>>> (assuming
->>>>> that the scheduler can be configured to generate the appropriate stats)
->>>>>
->>>>> my thought was not to move applications between cgroups as they
->>>>> aquire/release the suspend-block lock, bur rather to say that any
->>>>> application that you would trust to get the suspend-block lock should
->>>>> be
->>>>> in
->>>>> cgroup A while all other applications are in cgroup B
->>>>>
->>>>> when you are deciding if the system shoudl go to sleep because it is
->>>>> idle,
->>>>> ignore the activity of all applications in cgroup B
->>>>>
->>>>> if cgroup A applications are busy, the system is not idle and should
->>>>> not
->>>>> suspend.
->>>>>
->>>>
->>>> Triggering suspend from idle has been suggested before. However, idle
->>>> is not a signal that it is safe to suspend since timers stop in
->>>> suspend (or the code could temporarily be waiting on a non-wakeup
->>>> interrupt). If you add suspend blockers or wakelocks to prevent
->>>> suspend while events you care about are pending, then it does not make
->>>> a lot of sense to prevent suspend just because the cpu is not idle.
->>>
->>> isn't this a matter of making the suspend decision look at what timers
->>> have
->>> been set to expire in the near future and/or tweaking how long the system
->>> needs to be idle before going to sleep?
->>>
->>
->> You are describing low power idle modes, not suspend. Most timers stop
->> in suspend, so a timer set 10 seconds from now when entering suspend
->> will go off 10 seconds after resume so it should have no impact on how
->> long you decide to stay in suspend.
->
-> so what is the fundamental difference between deciding to go into low-power
-> idle modes to wake up back up on a given point in the future and deciding
-> that you are going to be idle for so long that you may as well suspend until
-> there is user input?
->
+On Mon,  2 Aug 2010 15:01:04 -0700
+Patrick Pannuto <ppannuto@codeaurora.org> wrote:
 
-Low power idle modes are supposed to be transparent. Suspend stops the
-monotonic clock, ignores ready threads and switches over to a separate
-set of wakeup events/interrupts. We don't suspend until there is user
-input, we suspend until there is a wakeup event (user-input, incoming
-network data/phone-calls, alarms etc..).
+> usleep_range is a finer precision implementations of msleep
+> and is designed to be a drop-in replacement for udelay where
+> a precise sleep / busy-wait is unnecessary.
 
--- 
-Arve Hjønnevåg
+Thomas has merged an older version of this patch into his tree.  He
+doesn't appear to have merged the other three patches.  I queued a
+revert of the old patch to remove it from linux-next and I then queued
+the other three.
+
+Now I'll just sit here and see what happens.
