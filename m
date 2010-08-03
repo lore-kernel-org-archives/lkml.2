@@ -1,66 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945Ab0HCXuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 19:50:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47611 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757147Ab0HCXuT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 19:50:19 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 4 Aug 2010 08:45:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, ebiederm@xmission.com,
-        lizf@cn.fujitsu.com, matthltc@us.ibm.com, menage@google.com,
-        oleg@redhat.com
-Subject: Re: [PATCH v4 0/2] cgroups: implement moving a threadgroup's
- threads atomically with cgroup.procs
-Message-Id: <20100804084523.768cd353.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100803125827.0822e6ab.akpm@linux-foundation.org>
-References: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
-	<20100803125827.0822e6ab.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757973Ab0HCX6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 19:58:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46118 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756886Ab0HCX6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 19:58:12 -0400
+Date: Tue, 3 Aug 2010 16:56:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-omap@vger.kernel.org, damm@opensource.se, lethal@linux-sh.org,
+        rjw@sisk.pl, dtor@mail.ru, eric.y.miao@gmail.com,
+        netdev@vger.kernel.org
+Subject: Re: [RFC PATCH] platform: Faciliatate the creation of
+ pseduo-platform busses
+Message-ID: <20100803235631.GA17759@suse.de>
+References: <4C58A7AA.8020007@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C58A7AA.8020007@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Aug 2010 12:58:27 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Fri, 30 Jul 2010 19:56:49 -0400
-> Ben Blum <bblum@andrew.cmu.edu> wrote:
+On Tue, Aug 03, 2010 at 04:35:06PM -0700, Patrick Pannuto wrote:
+> Inspiration for this comes from:
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
 > 
-> > This patch series implements a write function for the 'cgroup.procs'
-> > per-cgroup file, which enables atomic movement of multithreaded
-> > applications between cgroups. Writing the thread-ID of any thread in a
-> > threadgroup to a cgroup's procs file causes all threads in the group to
-> > be moved to that cgroup safely with respect to threads forking/exiting.
-> > (Possible usage scenario: If running a multithreaded build system that
-> > sucks up system resources, this lets you restrict it all at once into a
-> > new cgroup to keep it under control.)
+> INTRO
 > 
-> I can see how that would be useful.  No comments from anyone else?
+> As SOCs become more popular, the desire to quickly define a simple,
+> but functional, bus type with only a few unique properties becomes
+> desirable. As they become more complicated, the ability to nest these
+> simple busses and otherwise orchestrate them to match the actual
+> topology also becomes desirable.
 > 
-
-I think the feature itself is good and useful. I welcome this.
-
-> patch 1/2 makes me cry with all those ifdefs.  Maybe helper functions
-> would help, but not a lot.
+> EXAMPLE USAGE
 > 
-Add static inline functions ?
+> /arch/ARCH/MY_ARCH/my_bus.c:
+> 
+> 	#include <linux/device.h>
+> 	#include <linux/platform_device.h>
+> 
+> 	struct bus_type my_bus_type = {
+> 		.name	= "mybus",
+> 	};
+> 	EXPORT_SYMBOL_GPL(my_bus_type);
+> 
+> 	struct platform_device sub_bus1 = {
+> 		.name		= "sub_bus1",
+> 		.id		= -1,
+> 		.dev.bus	= &my_bus_type,
+> 	}
+> 	EXPORT_SYMBOL_GPL(sub_bus1);
 
+You really want a bus hanging off of a bus?  Normally you need a device
+to do that, which is what I think you have here, but the naming is a bit
+odd to me.
 
-> patch 2/2 looks very complicated.
+What would you do with this "sub bus"?  It's just a device, but you are
+wanting it to be around for something.
 
-yes. that's a concern.
-I'd like to look deeper, today.
+> 
+> 	struct platform_device sub_bus2 = {
+> 		.name		= "sub_bus2",
+> 		.id		= -1,
+> 		.dev.bus	= &my_bus_type,
+> 	}
+> 	EXPORT_SYMBOL_GPL(sub_bus2);
+> 
+> 	static int __init my_bus_init(void)
+> 	{
+> 		int error;
+> 		platform_bus_type_init(&my_bus_type);
+> 
+> 		error = bus_register(&my_bus_type);
+> 		if (error)
+> 			return error;
+> 
+> 		error = platform_device_register(&sub_bus1);
+> 		if (error)
+> 			goto fail_sub_bus1;
+> 
+> 		error = platform_device_register(&sub_bus2);
+> 		if (error)
+> 			goto fail_sub_bus2;
+> 
+> 		return error;
+> 
+> 	fail_sub_bus2:
+> 		platform_device_unregister(&sub_bus1);
+> 	fail_sub_bus2:
+> 		bus_unregister(&my_bus_type);
+> 
+> 		return error;
+> 	}
+> 	postcore_initcall(my_bus_init);
+> 	EXPORT_SYMBOL_CPY(my_bus_init);
+> 
+> /drivers/my_driver.c
+> 	static struct platform_driver my_driver = {
+> 		.driver	= {
+> 			.name	= "my-driver",
+> 			.owner	= THIS_MODULE,
+> 			.bus	= &my_bus_type,
+> 		},
+> 	};
+> 
+> /somewhere/my_device.c
+> 	static struct platform_device my_device = {
+> 		.name		= "my-device",
+> 		.id		= -1,
+> 		.dev.bus	= &my_bus_type,
+> 		.dev.parent	= &sub_bus_1.dev,
+> 	};
 
-Thanks,
--Kame
+Ah, you put devices on this "sub bus".  But why?  Why not just put it on
+your "normal" bus that you created?  What's with the extra level of
+nesting here?
 
+Other than that, it looks like a nice idea, are there portions of kernel
+code that can be simplified because of this?
+
+> @@ -539,12 +541,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
+>  	 * if the probe was successful, and make sure any forced probes of
+>  	 * new devices fail.
+>  	 */
+> -	spin_lock(&platform_bus_type.p->klist_drivers.k_lock);
+> +	spin_lock(&drv->driver.bus->p->klist_drivers.k_lock);
+>  	drv->probe = NULL;
+>  	if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
+>  		retval = -ENODEV;
+>  	drv->driver.probe = platform_drv_probe_fail;
+> -	spin_unlock(&platform_bus_type.p->klist_drivers.k_lock);
+> +	spin_unlock(&drv->driver.bus->p->klist_drivers.k_lock);
+>  
+>  	if (code != retval)
+>  		platform_driver_unregister(drv);
+
+I'm guessing that this chunk can be applied now, right?
+
+> @@ -1017,6 +1019,26 @@ struct bus_type platform_bus_type = {
+>  };
+>  EXPORT_SYMBOL_GPL(platform_bus_type);
+>  
+> +/** platform_bus_type_init - fill in a pseudo-platform-bus
+> +  * @bus: foriegn bus type
+> +  *
+> +  * This init is basically a selective memcpy that
+> +  * won't overwrite any user-defined attributes and
+> +  * only copies things that platform bus defines anyway
+> +  */
+> +void platform_bus_type_init(struct bus_type *bus)
+> +{
+> +	if (!bus->dev_attrs)
+> +		bus->dev_attrs = platform_bus_type.dev_attrs;
+> +	if (!bus->match)
+> +		bus->match = platform_bus_type.match;
+> +	if (!bus->uevent)
+> +		bus->uevent = platform_bus_type.uevent;
+> +	if (!bus->pm)
+> +		bus->pm = platform_bus_type.pm;
+
+Watch out for things in "write only" memory here.  That could cause
+problems.
+
+thanks,
+
+greg k-h
