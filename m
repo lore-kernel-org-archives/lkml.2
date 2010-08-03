@@ -1,92 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab0HCEl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:41:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50442 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960Ab0HCElX convert rfc822-to-8bit (ORCPT
+	id S1754821Ab0HCEmV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:42:21 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59697 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777Ab0HCEmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:41:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=StczKaWqufKZs/WOSnRgIIs8jHDr6O/No2gzHm1jE0X0TDhESpudn+imZei8e1skiy
-         LN2GQP+nU5gXArsqxf/4hWgBqI3WMOcFBWGabWpEqZGug+d0UMQzbw0KSk7fn7S0RjIA
-         hckEgoKOAd29Z+yAa6tO8qTt5DfY7G+4jHP18=
-MIME-Version: 1.0
-In-Reply-To: <57767.148.87.67.132.1280784139.squirrel@www.xenotime.net>
-References: <AANLkTik1p0oK=-msd0a-4wA88Z-Cv29qHVNUYeEETcJD@mail.gmail.com>
-	<1280647233-2578-1-git-send-email-nir.tzachar@gmail.com>
-	<57767.148.87.67.132.1280784139.squirrel@www.xenotime.net>
-Date: Tue, 3 Aug 2010 07:41:21 +0300
-Message-ID: <AANLkTimyDwWtLbc682rW-QORjU0+r+txZO-iKAini1H1@mail.gmail.com>
-Subject: Re: [PATCH] nconfig: add search support
-From: Nir Tzachar <nir.tzachar@gmail.com>
-To: rdunlap@xenotime.net
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org, trapdoor6@gmail.com, justinmattock@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Aug 2010 00:42:19 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 3 Aug 2010 13:37:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-mm@kvack.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 1/5] quick lookup memcg by ID
+Message-Id: <20100803133723.bb6487a0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100803133109.c0e6f150.nishimura@mxp.nes.nec.co.jp>
+References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100803133109.c0e6f150.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 12:22 AM,  <rdunlap@xenotime.net> wrote:
-> On Sun, August 1, 2010 12:20 am, nir.tzachar@gmail.com wrote:
->> From: Nir Tzachar <nir.tzachar@gmail.com>
->>
->>
->> Remove the old hotkeys feature, and replace by a regular string search.
->> From nconfig help:
->>
->>
->> Pressing '/' triggers search mode. nconfig does regular string match,
->> case insensitive, starting at the begining of each menu line. Pressing
->> Enter highlights the next match, Backspace removes one character from
->> the match string. Pressing either '/' again or ESC exits search mode.
->>
->> Rebind the '/' key (which allowed to search for symbols) to F8
->>
->>
->> Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
->> ---
->> scripts/kconfig/nconf.c |  261
->> ++++++++++++++++++++++-------------------------
->> scripts/kconfig/nconf.h |    3 +- 2 files changed, 125 insertions(+), 139
->> deletions(-)
->
->
-> A few other comments:
->
-> These help text lines should end with a period:
->
->  Pressing SpaceBar toggles between the above options
->
->  <Esc> always leaves the current window
->
+On Tue, 3 Aug 2010 13:31:09 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-Sure.
+> Hi.
+> 
+> Thank you for all of your works.
+> 
+> Several comments are inlined.
+> 
+> On Mon, 2 Aug 2010 19:13:04 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > Now, memory cgroup has an ID per cgroup and make use of it at
+> >  - hierarchy walk,
+> >  - swap recording.
+> > 
+> > This patch is for making more use of it. The final purpose is
+> > to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
+> > 
+> > This patch caches a pointer of memcg in an array. By this, we
+> > don't have to call css_lookup() which requires radix-hash walk.
+> > This saves some amount of memory footprint at lookup memcg via id.
+> > 
+> > Changelog: 20100730
+> >  - fixed rcu_read_unlock() placement.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  init/Kconfig    |   11 +++++++++++
+> >  mm/memcontrol.c |   48 ++++++++++++++++++++++++++++++++++--------------
+> >  2 files changed, 45 insertions(+), 14 deletions(-)
+> > 
+> > Index: mmotm-0727/mm/memcontrol.c
+> > ===================================================================
+> > --- mmotm-0727.orig/mm/memcontrol.c
+> > +++ mmotm-0727/mm/memcontrol.c
+> > @@ -292,6 +292,30 @@ static bool move_file(void)
+> >  					&mc.to->move_charge_at_immigrate);
+> >  }
+> >  
+> > +/* 0 is unused */
+> > +static atomic_t mem_cgroup_num;
+> > +#define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
+> > +static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
+> > +
+> > +static struct mem_cgroup *id_to_memcg(unsigned short id)
+> > +{
+> > +	/*
+> > +	 * This array is set to NULL when mem_cgroup is freed.
+> > +	 * IOW, there are no more references && rcu_synchronized().
+> > +	 * This lookup-caching is safe.
+> > +	 */
+> > +	if (unlikely(!mem_cgroups[id])) {
+> > +		struct cgroup_subsys_state *css;
+> > +
+> > +		rcu_read_lock();
+> > +		css = css_lookup(&mem_cgroup_subsys, id);
+> > +		rcu_read_unlock();
+> > +		if (!css)
+> > +			return NULL;
+> > +		mem_cgroups[id] = container_of(css, struct mem_cgroup, css);
+> > +	}
+> > +	return mem_cgroups[id];
+> > +}
+> id_to_memcg() seems to be called under rcu_read_lock() already, so I think
+> rcu_read_lock()/unlock() would be unnecessary.
+> 
 
-> The F-key help along the bottom line should be forced to fit
-> into 80 columns.  F9 (exit) especially should be visible.
+Maybe. I thought about which is better to add
 
-They were, however I think that the symbol search (F-8) kind of ruind
-it. I'll shorten its name.
+	VM_BUG_ON(!rcu_read_lock_held);
+or
+	rcu_read_lock()
+	..
+	rcu_read_unlock()
 
->
-> This F3 should be F5:
->
->  Press <Esc>, <F3> or <left-arrow> to go back one menu,
+Do you like former ? If so, it's ok to remove rcu-read-lock.
 
-10x.
 
->
-> How about we make nconfig the default in linux-next
-> so that it will be used more?
 
-I would love to see that. Let me finalize a patch which properly
-supports searching (based on Sam's input) so as to remove the current
-upper case ugliness.
+> > Index: mmotm-0727/init/Kconfig
+> > ===================================================================
+> > --- mmotm-0727.orig/init/Kconfig
+> > +++ mmotm-0727/init/Kconfig
+> > @@ -594,6 +594,17 @@ config CGROUP_MEM_RES_CTLR_SWAP
+> >  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+> >  	  size is 4096bytes, 512k per 1Gbytes of swap.
+> >  
+> > +config MEM_CGROUP_MAX_GROUPS
+> > +	int "Maximum number of memory cgroups on a system"
+> > +	range 1 65535
+> > +	default 8192 if 64BIT
+> > +	default 2048 if 32BIT
+> > +	help
+> > +	  Memory cgroup has limitation of the number of groups created.
+> > +	  Please select your favorite value. The more you allow, the more
+> > +	  memory will be consumed. This consumes vmalloc() area, so,
+> > +	  this should be small on 32bit arch.
+> > +
+> We don't use vmalloc() area in this version :)
+> 
+Oh. yes. thank you. I'll fix
 
-Cheers.
+Thanks,
+-Kame
+
+
