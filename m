@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab0HCJlb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:41:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44477 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754213Ab0HCJla convert rfc822-to-8bit (ORCPT
+	id S1755568Ab0HCJo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:44:56 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:7065 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754079Ab0HCJoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:41:30 -0400
-Subject: Re: periods and deadlines in SCHED_DEADLINE
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bjoern Brandenburg <bbb@email.unc.edu>
-Cc: Raistlin <raistlin@linux.it>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Song Yuan <song.yuan@ericsson.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <lucabe72@email.it>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        Harald Gustafsson <harald.gustafsson@ericsson.com>, bastoni@cs.unc.edu,
-        Giuseppe Lipari <lipari@retis.sssup.it>
-In-Reply-To: <F96CDA2C-534B-4344-B4B4-F890F9BA1D8E@email.unc.edu>
-References: <1278682707.6083.227.camel@Palantir>
-	 <1278685133.1900.201.camel@laptop>
-	 <51F8E441-58D7-45E1-B7A0-7A717EDF08B5@email.unc.edu>
-	 <1278693304.1900.266.camel@laptop> <1278752489.4390.97.camel@Palantir>
-	 <F96CDA2C-534B-4344-B4B4-F890F9BA1D8E@email.unc.edu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 03 Aug 2010 11:41:15 +0200
-Message-ID: <1280828475.1923.444.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 3 Aug 2010 05:44:55 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAL+BV0x5LcpI/2dsb2JhbACgCXLBX4U5BA
+Date: Tue, 3 Aug 2010 19:44:51 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
+        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH RFC 10/12] x86/pvticketlock: keep count of blocked cpus
+Message-ID: <20100803094451.GA5556@amd>
+References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com>
+ <9d5625e61c7f35e72156e8cb881e55910b4fa5dc.1279328276.git.jeremy.fitzhardinge@citrix.com>
+ <1280824360.1923.421.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280824360.1923.421.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-11 at 08:42 +0200, Bjoern Brandenburg wrote:
+On Tue, Aug 03, 2010 at 10:32:40AM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-07-16 at 18:03 -0700, Jeremy Fitzhardinge wrote:
+> > @@ -26,6 +26,9 @@ typedef struct arch_spinlock {
+> >                         __ticket_t head, tail;
+> >                 } tickets;
+> >         };
+> > +#ifdef CONFIG_PARAVIRT_SPINLOCKS
+> > +       __ticket_t waiting;
+> > +#endif
+> >  } arch_spinlock_t; 
 > 
-> If you want to do G-EDF with limited and different budgets on each CPU
-> (e.g., G-EDF tasks may only run for 100 out of 1000 ms on CPU 0, but
-> for 400 out of 1000 ms on CPU 1), then you are entering the domain of
-> restricted-supply scheduling, which is significantly more complicated
-> to analyze (see [1,2]). 
+> This bloats spinlock_t from u32 to u64 on most distro configs I think,
+> since they'll have NR_CPUS=4096 or something large like that and
+> probably also want to have this PARAVIRT_SPINLOCKS thing.
 
-Without having looked at the refs, won't the soft case still have
-bounded tardiness? Since the boundedness property mostly depends on
-u<=1, that is, as long as we can always run everything within the
-available time we won't start drifting.
-
-> As far as I know there is no exiting analysis for "almost G-EDF",
-> i.e.,  the case where each task may only migrate among a subset of the
-> processors (= affinity masks), except for the special case of
-> clustered EDF (C-EDF), wherein the subsets of processors are
-> non-overlapping. 
-
-Right, affinity masks are a pain, hence I proposed to limit that to
-either 1 cpu (yielding fully paritioned) or the full cluster.
-
-That will leave us with only having to stack a partitioned and global
-scheduler on top of each other, and per the previous point, I think that
-ought to work out trivially for soft, hard otoh will get 'interesting'.
-
-
+Which sucks for carefully packed data structures like dentry.
+They'll tend to grow by 8 bytes per spinlock.
