@@ -1,144 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757496Ab0HCTpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 15:45:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57768 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421Ab0HCTpm (ORCPT
+	id S1757571Ab0HCTp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 15:45:58 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:42737 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757516Ab0HCTp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 15:45:42 -0400
-Message-ID: <4C5871BC.4070007@kernel.org>
-Date: Tue, 03 Aug 2010 12:45:00 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Tue, 3 Aug 2010 15:45:56 -0400
+Date: Tue, 3 Aug 2010 15:45:53 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100803194553.GA27688@Krystal>
+References: <20100714193652.GA13630@nowhere> <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com> <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal> <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal> <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal> <1280855904.1923.675.camel@laptop> <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
-        Gary Hade <garyhade@us.ibm.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org> <m18w4onebi.fsf@fess.ebiederm.org>
-In-Reply-To: <m18w4onebi.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C5871D5.012C,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:27:19 up 192 days, 22:04,  7 users,  load average: 0.07, 0.05,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2010 04:08 AM, Eric W. Biederman wrote:
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Tue, Aug 3, 2010 at 10:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > FWIW I really utterly detest the whole concept of sub-buffers.
 > 
-> For the common case I think we still do the right thing, even now, for
-> these broken bios tables.  There is likely an uncommon case for which
-> something like your shared_legacy_irq deserves to be used, especially
-> at it preserves our well tested historical behavior.
+> I'm not quite sure why. Is it something fundamental, or just an
+> implementation issue?
 
-Dave, Irnna, Gary:
+The real issue here, IMHO, is that Perf has tied gory ring buffer implementation
+details to the userspace perf ABI, and there is now strong unwillingness from
+Perf developers to break this ABI.
 
-can you check this patch on your systems?
+About the sub-buffer definition: it only means that a buffer is splitted into
+many regions. Their boundary are synchronization points between the data
+producer and consumer. This involves padding the end of regions when records do
+not fit in the remaining space.
 
-Thanks
+I think that the problem lays in that Peter wants all his ring-buffer data to be
+side-to-side, without padding. He needs this because the perf ABI, presented to
+the user-space perf program, requires this: every implementation detail is
+exposed to user-space through a mmap'd memory region (yeah, even the control
+data is touched by both the kernel and userland through that shared page).
 
-Yinghai
+When Perf has been initially proposed, I've thought that because the perf
+user-space tool is shipped along with the kernel sources, we could change the
+ABI easily afterward, but Peter seems to disagree and wants it to stay the as it
+is for backward compatibility and not offending contributors. If I had known
+this when the ABI first came in, I would have surely nack'd it.
 
-[PATCH] x86: check if apic/pin is shared with legacy one
+Now we are stucked with this ABI which exposes every tiny ring buffer
+implementation detail to userspace, which simply kills any future enhancement.
 
-fix system that external device that have io apic on apic0/pin(0-15)
+Thanks,
 
-also
-for the io apic out of order system:
-<6>ACPI: IOAPIC (id[0x10] address[0xfecff000] gsi_base[0])
-<6>IOAPIC[0]: apic_id 16, version 0, address 0xfecff000, GSI 0-2
-<6>ACPI: IOAPIC (id[0x0f] address[0xfec00000] gsi_base[3])
-<6>IOAPIC[1]: apic_id 15, version 0, address 0xfec00000, GSI 3-38
-<6>ACPI: IOAPIC (id[0x0e] address[0xfec01000] gsi_base[39])
-<6>IOAPIC[2]: apic_id 14, version 0, address 0xfec01000, GSI 39-74
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 1 global_irq 4 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 5 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 3 global_irq 6 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 4 global_irq 7 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 6 global_irq 9 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 7 global_irq 10 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 8 global_irq 11 low edge)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 12 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 12 global_irq 15 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 13 global_irq 16 dfl dfl)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 14 global_irq 17 low edge)
-<6>ACPI: INT_SRC_OVR (bus 0 bus_irq 15 global_irq 18 dfl dfl)
+Mathieu
 
-after this patch will get
+P.S.: I'm holding back reply to the rest of your email to increase focus on the
+fundamental perf ABI problem.
 
-apic0, pin0, GSI 0: irq 0+75
-apic0, pin1, GSI 1: irq 1+75
-apic0, pin2, GSI 2: irq 2
-apic1, pin0, GSI 3: irq 3+75
-apic1, pin5, GSI 8: irq 8+75
-apic1, pin10,GSI 13: irq 13+75
-apic1, pin11,GSI 14: irq 14+75
-
-because mp_config_acpi_legacy_irqs will put apic0, pin2, irq2 in mp_irqs...
-so pin_2_irq_legacy will report 2.
-irq_to_gsi will still report 2. so it is right.
-gsi_to_irq will report 2.
-
-for GSI 0, 1, 3, 8, 13, 14: still right as before.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/kernel/apic/io_apic.c |   31 ++++++++++++++++++++++++++++---
- 1 file changed, 28 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-@@ -1013,6 +1013,28 @@ static inline int irq_trigger(int idx)
- 	return MPBIOS_trigger(idx);
- }
- 
-+static int pin_2_irq_leagcy(int apic, int pin)
-+{
-+	int i;
-+
-+	for (i = 0; i < mp_irq_entries; i++) {
-+		int bus = mp_irqs[i].srcbus;
-+
-+		if (!test_bit(bus, mp_bus_not_pci))
-+			continue;
-+
-+		if (mp_ioapics[apic].apicid != mp_irqs[i].dstapic)
-+			continue;
-+
-+		if (mp_irqs[i].dstirq != pin)
-+			continue;
-+
-+		return mp_irqs[i].srcbusirq;
-+	}
-+
-+	return -1;
-+}
-+
- static int pin_2_irq(int idx, int apic, int pin)
- {
- 	int irq;
-@@ -1029,10 +1051,13 @@ static int pin_2_irq(int idx, int apic,
- 	} else {
- 		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
- 
--		if (gsi >= NR_IRQS_LEGACY)
-+		if (gsi >= NR_IRQS_LEGACY) {
- 			irq = gsi;
--		else
--			irq = gsi_top + gsi;
-+		} else {
-+			irq = pin_2_irq_legacy(apic, pin);
-+			if (irq < 0)
-+				irq = gsi_top + gsi;
-+		}
- 	}
- 
- #ifdef CONFIG_X86_32
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
