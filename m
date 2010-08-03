@@ -1,72 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757892Ab0HCWcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 18:32:17 -0400
-Received: from ozlabs.org ([203.10.76.45]:53019 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756695Ab0HCWcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 18:32:15 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: David Howells <dhowells@redhat.com>
-cc: stable@kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>
-Subject: [PATCH 2.6.32/stable] CIFS: Fix compile error with __init in cifs_init_dns_resolver() definition
-In-reply-to: <12482.1280871625@redhat.com>
-References: <19826.1280811821@neuling.org> <19789.1280811783@neuling.org> <12482.1280871625@redhat.com>
-Comments: In-reply-to David Howells <dhowells@redhat.com>
-   message dated "Tue, 03 Aug 2010 22:40:25 +0100."
-X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
-Date: Wed, 04 Aug 2010 08:32:13 +1000
-Message-ID: <20749.1280874733@neuling.org>
+	id S1757921Ab0HCWeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:34:11 -0400
+Received: from xenotime.net ([72.52.115.56]:39841 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755997Ab0HCWeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 18:34:10 -0400
+Date: Tue, 3 Aug 2010 15:34:01 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Donald Parsons <dparsons@brightdsl.net>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Harald Hoyer <harald.hoyer@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux 2.6.35
+Message-Id: <20100803153401.6534dfcd.rdunlap@xenotime.net>
+In-Reply-To: <1280857545.5209.61.camel@falcon.homelinux.org>
+References: <1280716262.5125.42.camel@falcon.homelinux.org>
+	<201008012138.39036.bjorn.helgaas@hp.com>
+	<1280722876.5125.83.camel@falcon.homelinux.org>
+	<AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com>
+	<1280802701.5836.10.camel@falcon.homelinux.org>
+	<20100802214249.b0fee617.rdunlap@xenotime.net>
+	<1280852810.5209.40.camel@falcon.homelinux.org>
+	<20100803094031.2fb8e538.rdunlap@xenotime.net>
+	<1280857545.5209.61.camel@falcon.homelinux.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In message <12482.1280871625@redhat.com> you wrote:
-> Michael Neuling <mikey@neuling.org> wrote:
-> 
-> > An allmodconfig compile on ppc64 with 2.6.32.17 currently gives this error
+On Tue, 03 Aug 2010 13:45:45 -0400 Donald Parsons wrote:
+
+> On Tue, 2010-08-03 at 09:40 -0700, Randy Dunlap wrote:
+> > On Tue, 03 Aug 2010 12:26:50 -0400 Donald Parsons wrote:
 > > 
-> > fs/cifs/dns_resolve.h:27: error: expected '=', ',', ';', 'asm' or '__attrib
-ute__' before 'cifs_init_dns_resolver'
+> > > Resending to all...
+> > > On Mon, 2010-08-02 at 21:42 -0700, Randy Dunlap wrote:
+> > > > On Mon, 02 Aug 2010 22:31:41 -0400 Donald Parsons wrote:
+> > > > 
+> > > > > On Mon, 2010-08-02 at 18:08 +0200, Harald Hoyer wrote: 
+> > > > > > On Mon, Aug 2, 2010 at 6:21 AM, Donald Parsons <dparsons@brightdsl.net> wrote:
+> > > > > > > On Sun, 2010-08-01 at 21:38 -0600, Bjorn Helgaas wrote:
+> > > > > > >> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
+> > > > > > >> > 2.6.35 still fails to boot for me, as first reported here:
+> > > > > > >> >  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
+> > > > > > >> >
+> > > > > > >> > I've manually bisected it down to around May 20 between
+> > > > > > >> >   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
+> > > > > > >> > Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
+> > > > > > >> >
+> > > > > > >> > Unfortunately first time I tried was with 2.6.35-rc6 and
+> > > > > > >> > it failed to boot.
+> > > > > > >> >
+> > > > > > >> > Failure when switching from initramfs to real /root?
+> > > > > > >> > Removing kernel "quiet" param appears to show several
+> > > > > > >> > lines listing:
+> > > > > > >> >
+> > > > > > >> >   usb drives/hubs? followed by
+> > > > > > >> >   dracut switching root (when booting works)
+> > > > > > >> >               or
+> > > > > > >> >   usb drives/hubs? followed by
+> > > > > > >> >         (missing dracut... line)
+> > > > > > >> >   No root device found
+> > > > > > >> >   Boot has failed, sleeping forever.   (when it does not boot)
+> > > > > > >> >
+> > > > > > >> > Grub, typical entry:
+> > > > > > >> > title Fedora (2.6.35)
+> > > > > > >> >     root (hd0,0)
+> > > > > > >> >     kernel /vmlinuz-2.6.35 ro
+> > > > > > >> > root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
+> > > > > > >> > SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
+> > > > > > >> > rdblacklist=nouveau init=/sbin/bootchartd
+> > > > > > >> >     initrd /initramfs-2.6.35.img
+> > > > > > >> >
+> > > > > > >> >
+> > > > > > >> > My boot failure seems to be different than other two reported
+> > > > > > >> > in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
+> > > > > > >> > under Bug #16173 and #16228
+> > > > > > >>
+> > > > > > >> Will it boot with the "pci=nocrs" option?  If so, please open a
+> > > > > > >
+> > > > > > > No, I tried this on a few attempts when I saw it mentioned under
+> > > > > > > bug #16228.  But it had no effect/benefit.  Sorry, I should have
+> > > > > > > mentioned this.
+> > > > > > >
+> > > > > > >> report at https://bugzilla.kernel.org, mark it a regression, assign
+> > > > > > >> it to me, and attach the complete dmesg log.  And please respond to
+> > > > > > >> this thread with a pointer to the bugzilla.
+> > > > > > >>
+> > > > > > >> Otherwise, a complete console log should have a clue.  The best
+> > > > > > >> thing would be a log from a serial console or netconsole, with
+> > > > > > >> "ignore_loglevel".
+> > > > > > >
+> > > > > > > Maybe I will try netconsole tomorrow.  But is Ethernet up when
+> > > > > > > this boot failure happens?  I think not, since initramfs should
+> > > > > > > not need networking.
+> > > > > > >
+> > > > > > > Should I try building sata driver into kernel?  Oh, I am using
+> > > > > > > ext3, and fdisk -l shows:
+> > > > > > 
+> > > > > > # dracut --add-drivers "sata" ....
+> > > > > > 
+> > > > > > or edit /etc/dracut.conf:
+> > > > > > 
+> > > > > > add_drivers+=" sata "
+> > > > > 
+> > > > > But the kernel used to boot with same identical modules before
+> > > > > but not after 2.6.34-git4.
+> > > > >  --------
+> > > > > 
+> > > > > Using your suggestion as to where the problem lies, I investigated
+> > > > > more deeply and found:
+> > > > > 
+> > > > > I've now got 2.6.35-rc6-git3 to boot (and almost certainly 2.6.35 final)
+> > > > > 
+> > > > > Make oldconfig broke at the transition where boot began failed, ie,
+> > > > > between 2.6.34-git4 and 2.6.34-git5.   Even though modules are the
+> > > > > same, boot fails.  If I use gconfig and set CONFIG_SATA_AHCI=y
+> > > > > instead of CONFIG_SATA_AHCI=m it works, except cannot select =y
+> > > > > unless CONFIG_ATA changed from m to y.
+> > > > > 
+> > > > > So at some point in past, make oldconfig had apparently changed
+> > > > > CONFIG_SATA_AHCI from y to m and system still booted.  But between
+> > > > > 2.6.34-git4 and 2.6.34-git5 the ability to boot was lost.
+> > > > > 
+> > > > > So make oldconfig is not 100% trustworthy in this case.  I do not
+> > > > > know if this is a problem that should be fixed.  Ask if you want
+> > > > > any .config diffs.
+> > > > > 
+> > > > > I am going to reboot with 2.6.35 to make sure it boots. Yes!
+> > > > > 
+> > > > > I consider this boot problem solved unless someone wants to
+> > > > > improve "make oldconfig" behavior.
+> > > > 
+> > > > It would be good to be able to explain what you are seeing & describing,
+> > > > so yes, if you can send a .config file that exhibits the problem, I'd
+> > > > love to look at it.
+> > > > 
+> > > > thanks,
+> > > > ---
+> > > > ~Randy
+> > > 
+> > > 
+> > > Okay, here is the diff between 2.6.34-git4 and 2.6.34-git5
+> > > It should be equivalent to make silentoldconfig as I made no
+> > > changes, just enter to accept defaults.  The git4 boots and
+> > > git5 does not boot.     (Both based off 2.6.34.1.config)
 > > 
-> > This removes the __init from cifs_init_dns_resolver()
+> > Yes, I had just generated this same diff.
+> > The only config change that could remotely make a difference is:
+> > > +# CONFIG_SATA_AHCI_PLATFORM is not set
+> > 
+> > and I don't see how it could matter.
+> > 
+> > > (and attached config-2.6.34-git4.gz, because .config was too
+> > >  big for mail list last time.)
+> > 
+> > Last time being recently?  lkml accepts email sizes (with attachments)
+> > up to 300 KB, IIRC.
 > 
-> That's not really a good idea as the assembler may choose different pieces of
-> assembly to do variable references and jumps, depending on the section
-> information.
+> Maybe http://lkml.indiana.edu/hypermail/linux/kernel/1008.0/index.html
+> throws out large email but the actual lkml does not?  I did not see
+> it show up; here is header of email that had large (56.48K) .config:
 > 
-> A better fix is to add:
+> From: 	Donald Parsons
+> To: 	Randy Dunlap
+> Cc: 	linux-kernel <linux-kernel@vger.k.o>, Linus Torvalds
+> Subject: Re: Linux 2.6.35
+> Date: 	08/01/2010 11:41:31 PM  (this is EDT)
+> Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 > 
-> 	#include <linux/module.h>
 > 
-> to the header file.
+> > > --- config-2.6.34-git4  2010-08-01 19:52:48.000000000 -0400
+> > > +++ config-2.6.34-git5  2010-08-01 18:10:14.000000000 -0400
+> > > @@ -1,7 +1,7 @@
+> > >  #
+> > >  # Automatically generated make config: don't edit
+> ...deleted most lines...
+> > > -#
+> > >  # CONFIG_STAGING is not set
+> > >  CONFIG_X86_PLATFORM_DEVICES=y
+> > >  # CONFIG_ACER_WMI is not set
+> > > 
+> > > -------------------------------------------
+> > > 
+> > > Can possibly duplicate problem if you have a 
+> > > sata based PC from last few years.
+> > > 
+> > > Set  CONFIG_ATA=m
+> > 
+> > That's already =m in this config file.
+> > 
+> > > and this becomes CONFIG_SATA_AHCI=m  (cannot select=y)
+> > 
+> > That's as expected.  CONFIG_ATA value controls CONFIG_SATA_AHCI
+> > possible values.
+> > 
+> > > 
+> > > Then 2.6.34.[01] (probably 2 also) will boot.
+> > > Make silentoldconfig with this .config and see
+> > > that 2.6.35 will not boot.
+> > 
+> > So with CONFIG_ATA=m and CONFIG_SATA_AHCI=m, does 2.6.34-git4 boot
+> > but 2.6.34-git5 fails to boot?
+> 
+> Yes, that is exactly correct.
 
-Ok, new patch below.
+OK, I built and booted 2.6.34-git4 and -git5 with your .config file
+and only default changes for -git5.
 
+They both booted successfully for me on an f11 box.
+I am not using dracut, if that matters.
 
+I don't know what to try next.
 
-CIFS: Fix compile error with __init in cifs_init_dns_resolver() definition
-
-An allmodconfig compile on ppc64 with 2.6.32.17 currently gives this error
-
-fs/cifs/dns_resolve.h:27: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'cifs_init_dns_resolver'
-
-This adds the correct header file to fix this. 
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-cc: stable@kernel.org (for 2.6.32)
-
-Index: linux-2.6-ozlabs/fs/cifs/dns_resolve.h
-===================================================================
---- linux-2.6-ozlabs.orig/fs/cifs/dns_resolve.h
-+++ linux-2.6-ozlabs/fs/cifs/dns_resolve.h
-@@ -24,6 +24,8 @@
- #define _DNS_RESOLVE_H
- 
- #ifdef __KERNEL__
-+#include <linux/module.h>
-+
- extern int __init cifs_init_dns_resolver(void);
- extern void cifs_exit_dns_resolver(void);
- extern int dns_resolve_server_name_to_ip(const char *unc, char **ip_addr);
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
