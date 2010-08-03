@@ -1,138 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab0HCSwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 14:52:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58447 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab0HCSwj convert rfc822-to-8bit (ORCPT
+	id S932445Ab0HCSxq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 14:53:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39419 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab0HCSxo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 14:52:39 -0400
+	Tue, 3 Aug 2010 14:53:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=U5IR6k+0n8aqzhLQ7Wz59wD8418lblCjYw4wKPQ/xXclHuAljqfTkCBgQSFeyJW+0O
+         4zDQNfb0urkMQ7M8MVJO/dpzvldibdiGNRKcU09LqZ8fyqgenf3lDeysU5wSO7zShItY
+         3PeuEhVxtoHO1RRoLMD/9HAJ2IOG8bsVCFN64=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinqfU46N1BrQWLZB=yWJGZ4FA6PXWKMMZFBZW8V@mail.gmail.com>
-References: <1280776623-1337-1-git-send-email-wad@chromium.org>
-	<4C583EE6.4030203@kernel.org>
-	<AANLkTim=fyBDjZORcBygeb6hXQ1bdruufrF7KLqfUfzK@mail.gmail.com>
-	<AANLkTi=z+rg7JH97PMswCzL1PXy_SiAQXYrwhF5Q=ZX1@mail.gmail.com>
-	<AANLkTinqfU46N1BrQWLZB=yWJGZ4FA6PXWKMMZFBZW8V@mail.gmail.com>
-Date: Tue, 3 Aug 2010 13:52:38 -0500
-Message-ID: <AANLkTin3+LfXOpW5MsPSgs_5Z0UFnQTwBAXSocrU1Xs8@mail.gmail.com>
-Subject: Re: [PATCH RFC] efi: add and expose efi_partition_by_guid
-From: Will Drewry <wad@chromium.org>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, axboe@kernel.dk,
-        Karel Zak <kzak@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20100803184915.GA23847@psychosis.jim.sh>
+References: <AANLkTilgQSu3qi7qoTtjnV22r-8Sh1hbDAB_nlPImWNt@mail.gmail.com>
+	<4C34B8BE.5080504@kernel.org>
+	<AANLkTilDbrA6lLPSOAtA8_4mLNkUZibHweTliqU5jd03@mail.gmail.com>
+	<4C44BD42.3030904@kernel.org>
+	<7141c88bc8c27f26c2187252c0594318.squirrel@thechecks.ca>
+	<4C45AF40.7030800@kernel.org>
+	<AANLkTinxDjPCk46eItZrXziTbf6efqvNNNTbkZDXIbns@mail.gmail.com>
+	<4C483BF4.3090006@kernel.org>
+	<AANLkTinwJLE=jjwG5zL8UBO91tzDpX36_W9GORKag8RK@mail.gmail.com>
+	<20100803114105.7f199878.randy.dunlap@oracle.com>
+	<20100803184915.GA23847@psychosis.jim.sh>
+Date: Tue, 3 Aug 2010 11:53:42 -0700
+Message-ID: <AANLkTi=1dFZ+APFx=W8YawtTDhOjVn1sVshUnSJ3OyCB@mail.gmail.com>
+Subject: Re: Drives missing at boot
+From: Mark Knecht <markknecht@gmail.com>
+To: Jim Paris <jim@jtan.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        Paul Check <paul@thechecks.ca>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 1:23 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Tue, Aug 3, 2010 at 19:55, Will Drewry <wad@chromium.org> wrote:
->> On Tue, Aug 3, 2010 at 12:17 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->>> On Tue, Aug 3, 2010 at 18:08, Tejun Heo <tj@kernel.org> wrote:
->>>> On 08/02/2010 09:17 PM, Will Drewry wrote:
->>>>> EFI's GPT partitioning scheme expects that all partitions have a unique
->>>>> identifiers.  After initial partition scanning, this information is
->>>>> completely lost to the rest of the kernel.
->>>>>
->>>>> efi_partition_by_guid exposes GPT parsing support in a limited fashion
->>>>> to allow other portions of the kernel to map a partition from GUID to
->>>>> map.
->>>
->>>> Kay, you were talking about using GUID in GPT for finding out root
->>>> device and so on.  Does this fit your use case too?  If not it would
->>>> be nice to find out something which can be shared.
->>>
->>> Yeah, we have something similar in mind since a while, to be able to
->>> safely boot a box without an initramfs, and to be able to to specify
->>> something like:
->>>  root=PARTUUID=6547567-575-7567-567567-57
->>>  root=PARTLABEL=foo
->>> on the kernel commandline.
+On Tue, Aug 3, 2010 at 11:49 AM, Jim Paris <jim@jtan.com> wrote:
+> Randy Dunlap wrote:
+>> On Mon, 2 Aug 2010 15:07:11 -0700 Mark Knecht wrote:
 >>
->> Cool. So I'd like this as well (at least the UUID part), and I'd like
->> this to be available for other consumers in the kernel, like
->> dm_get_device() or at least for mapped device targets to implement
->> support for themselves.  (I have a separate patch for
->> mimicking md= for device mapper devices which I should probably post
->> to the lists again soon.)
+>> > On Thu, Jul 22, 2010 at 5:39 AM, Tejun Heo <tj@kernel.org> wrote:
+>> >
+>> > Hi Tejun,
+>> > Â  Â I'm finally home and trying to get back to this. I'm really a bad
+>> > programmer so I don't know what I've done wrong but it seems patch
+>> > isn't happy with me.
+>> >
+>> > c2stable linux # patch --dry-run -p1 <../ata_piix-sidpr-lock.patch
+>> > patching file drivers/ata/ata_piix.c
+>> > patch: **** malformed patch at line 13:
 >>
->>> The current 'blkid' already reports stuff like, to have the same
->>> information in userspace:
->>>  $ blkid -p -oudev /dev/sde1
->>>  ID_FS_LABEL=10GB
->>>  ID_FS_LABEL_ENC=10GB
->>>  ID_FS_UUID=5aafa1bb-70a7-4fe6-b93f-30658ec99fac
->>>  ID_FS_UUID_ENC=5aafa1bb-70a7-4fe6-b93f-30658ec99fac
->>>  ID_FS_VERSION=1.0
->>>  ID_FS_TYPE=ext4
->>>  ID_FS_USAGE=filesystem
->>>  ID_PART_ENTRY_SCHEME=gpt
->>>  ID_PART_ENTRY_UUID=1f765dcb-5214-bd47-b1c5-f2f18848335e
->>>  ID_PART_ENTRY_TYPE=a2a0d0eb-e5b9-3344-87c0-68b6b72699c7
->>>  ID_PART_ENTRY_NUMBER=1
->>>
->>> I guess we want to store these identifiers directly into the partition
->>> structure, independent of the partition format, so any code can
->>> register a callback for a new block device, and can just check if
->>> that's the device in question. Walking the block devices would just be
->>> something usual provided by the driver core, instead of having some
->>> specific EFI walk functions.
->>
->> Yeah - when I use this function, I end up doing a walk over all the
->> block devices, checking if they are whole disk entries, then calling
->> the efi_partition_by_guid() function. (Or the walker which I posted
->> separately.)  It's not ideal but it has the smallest impact on the
->> existing code. (Not having disk_type available is irritating though.)
->>
->> Would the type GUID and unique GUID be viable additions to a more
->> public struct?  If they were CONFIG_EFI_PARTITION guarded, then they
->> wouldn't waste memory for systems without GPT support, but it seems a
->> bit specific.  Also, I don't think it'd make sense to put it in the
->> partition struct as that represents the on-disk format for some tables
->> (from a quick scan over the code).  However, hd_struct looks the
->> sanest to me.
->>
->> I'd be happy to pull together a potential change that exposes this
->> data once after disk (re)scan, but I'd hate to do so in a way that'd
->> be fundamentally unacceptable (but I don't want to end up down the
->> deep hole of adding support across all the part tables either if I can
->> :).
->>
->> So I could see something like:
->>
->> struct hd_struct {
->> ...
->> #ifdef CONFIG_EFI_PARTITION
->>  efi_guid_t type_guid;
->>  efi_guid_t uuid;
->>  u16 label[72 / ...];
->> };
->>
->> Alternatively, a slightly more generic option might be:
->>
->> #ifdef CONFIG_PARTITION_INFO
->>  /* ASCII hex-formatted uuids inclusive of hyphens */
->>  u8 type_guid[MAX_HD_STRUCT_UUID_SIZE];
->>  u8 uuid[MAX_HD_STRUCT_UUID_SIZE];
->>  u16 label[MAX_HD_STRUCT_NAME + sizeof(u16)];
->> #endif
->>
->>
->> Any way, if any of this seems slightly palatable, let me know.  I'd
->> love to make this data accessible to the rest of the kernel.
+>> Whenever the patch file was saved on this system, line 13 of it was
+>> split (probably by an email client). Â Whenever I see this, I just
+>> join (merge) that line and the next one and try again... sometimes
+>> several lines are malformed and have to be fixed like this.
 >
-> Maybe we go for a single pointer in the partition device, and allocate
-> a struct partition_meta_info, or something like this, if we have such
-> data to store. In that structure we can add all needed fields we need?
-> That would not really waste anything if it's not needed, or it can
-> possibly be free()d later, if nothing needs it anymore.
+> Tejun asked Mark to add a printk, and Mark added it directly to the
+> patch. Â Mark, just apply the original patch as-is, and then add the
+> printk to the source code in ata_piix.c. Â You should add it somewhere
+> like the piix_init_one function, e.g. right before the "Save IOCFG"
+> comment around line 1575.
+>
+> -jim
 
-Sounds reasonable to me.  I'll see what I can cook up and post it back
-to this thread.
+Thanks Jim. I'll give it a shot.
 
-cheers!
-will
+Cheers,
+Mark
