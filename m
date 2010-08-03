@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab0HCJSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:18:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53427 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878Ab0HCJSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:18:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=hjZx+AW6+8V0ogvA8aeldzw9VPVbaXxrTh6FNwPyqfrpKb7/cTViZrImCuSFWP7e7b
-         vINWrU2pHvpn1ubqIQsTQcfeD74qcbRORoAOKzwnjd6JqyjWHW1hxAv6j9pFdl51FkxA
-         UylrpyUscKbhWBHLVMj8lPA6pU5wIMuCDvWbI=
-MIME-Version: 1.0
-In-Reply-To: <1280826924.4c57de2c3a6b0@imp.free.fr>
-References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
-	<AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>
-	<1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>
-	<4C3D89AC.4040303@cs.helsinki.fi>
-	<1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>
-	<4C3F2F52.2050101@cs.helsinki.fi>
-	<20100715162805.GA10240@brouette>
-	<20100715191638.GA3694@brouette>
-	<AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com>
-	<20100715200012.GA4175@brouette>
-	<AANLkTilnLXVSkWfnaPtpzxH-C3-5h1mnBz3O0vAFHG32@mail.gmail.com>
-	<1280826359.1923.440.camel@laptop>
-	<AANLkTi=VuLwcmjTpOeK-OzgiWeycu14hJpfUuH9cKnUj@mail.gmail.com>
-	<1280826924.4c57de2c3a6b0@imp.free.fr>
-Date: Tue, 3 Aug 2010 11:18:12 +0200
-Message-ID: <AANLkTimM_jTTRVsJdht9gyBiiBw758nP4_pw-dx5OtZn@mail.gmail.com>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-From: Zeno Davatz <zdavatz@gmail.com>
-To: damien.wyart@free.fr
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        mingo@elte.hu, yinghai@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755486Ab0HCJXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:23:13 -0400
+Received: from lo.gmane.org ([80.91.229.12]:32993 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754079Ab0HCJXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 05:23:11 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Manuel Reimer <Manuel.Spam@nurfuerspam.de>
+Subject: Re: Getting error message "Cannot read inode bitmap". Someone able
+ to help?
+Date: Tue, 03 Aug 2010 11:20:07 +0200
+Message-ID: <i38n5j$pui$1@dough.gmane.org>
+References: <i2nj7d$lpi$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: p4fd4a43d.dip0.t-ipconnect.de
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100721 SeaMonkey/2.0.6
+In-Reply-To: <i2nj7d$lpi$1@dough.gmane.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 11:15 AM,  <damien.wyart@free.fr> wrote:
->> > Vacation.. but now I'm back ;-)
->> >
->> > Even something simple as: perf top -r 1 (make sure you're root in order
->> > to run with real-time prios) could give a clue as to what is consuming
->> > all your cpu-time.
->> >
->> > Or did the issue get sorted already?
->>
->> Thank you for the hint.
->>
->> I am on 2.6.35 now and all seems to be fine again.
->
-> Are you 100% sure you compiled it with CONFIG_NO_BOOTMEM enabled?
->
-> I did not test 2.6.35 yet but I did not see anything related to this bug
-> commited since the discussion so I am very surprised the problem disappeared by
-> itself...
->
-> Will be on vacation very soon, so not sure I will have time to test 2.6.35
-> before leaving.
+Manuel Reimer wrote:
+> With my first try (ext2 on target disk) I got the error "Cannot read
+> inode bitmap". The kernel reported this error for the *target* device
+> (the brand new SATA hard drive). I did a second try and reformated the
+> target drive to ext3 and, again, I got the same error. So I installed
+> "smartmontools" into my running live system and checked the drive. The
+> new drive has no "reallocated sectors" but several read errors (about 500).
 
-Yes: I got:
+Sorry for the spam (maybe I'm on the wrong ML at all... don't know...) 
+but I fixed this on my own. I didn't expect the new disk to be the 
+reason for this problem, but after checking for badblocks I got a value 
+far over 1000 of bad blocks.
 
-# CONFIG_PARAVIRT_SPINLOCKS is not set
-CONFIG_PARAVIRT_CLOCK=y
-# CONFIG_PARAVIRT_DEBUG is not set
-CONFIG_NO_BOOTMEM=y
-# CONFIG_MEMTEST is not set
-# CONFIG_M386 is not set
-# CONFIG_M486 is not set
+So I'll send this disk back to the vendor to get my money back and get a 
+new one...
 
-in my .config.
+Nice to know, that Linux was *not* the reason for those errors.
 
-Linux zenogentoo 2.6.35 #122 SMP Mon Aug 2 10:26:05 CEST 2010 i686
-Intel(R) Core(TM) i7 CPU 960 @ 3.20GHz GenuineIntel GNU/Linux
+Yours
 
-Best
-Zeno
+Manuel
+
