@@ -1,21 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab0HCVdJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 17:33:09 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:57744 "EHLO mgw2.diku.dk"
+	id S1756920Ab0HCVd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 17:33:28 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:57760 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756298Ab0HCVdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 17:33:05 -0400
-Date: Tue, 3 Aug 2010 23:33:03 +0200 (CEST)
+	id S1756306Ab0HCVd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 17:33:26 -0400
+Date: Tue, 3 Aug 2010 23:33:24 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        "J, ames E.J. Bottomley" <James.Bottomley@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/9] drivers/scsi/qla2xxx/qla_init.c: Drop unnecessary null
- test
-Message-ID: <Pine.LNX.4.64.1008032331360.20393@ask.diku.dk>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 3/9] drivers/gpu/drm/i915: Drop unnecessary null test
+Message-ID: <Pine.LNX.4.64.1008032333040.20393@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,27 +33,41 @@ expression x,E;
 @@
 
 I(x,...) { <...
+(
+- (x == NULL) || 
+  E
+|
 - (x != NULL) &&
   E
+)
   ...> }
 // </smpl>
 
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/scsi/qla2xxx/qla_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
-index d863ed2..9c6af9c 100644
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -3796,7 +3796,7 @@ qla2x00_update_fcports(scsi_qla_host_t *base_vha)
- 	/* Go with deferred removal of rport references. */
- 	list_for_each_entry_safe(vha, tvp, &base_vha->hw->vp_list, list)
- 		list_for_each_entry(fcport, &vha->vp_fcports, list)
--			if (fcport && fcport->drport &&
-+			if (fcport->drport &&
- 			    atomic_read(&fcport->state) != FCS_UNCONFIGURED)
- 				qla2x00_rport_del(fcport);
- }
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 07da3ae..d81874d 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -746,7 +746,7 @@ bool intel_pipe_has_type (struct drm_crtc *crtc, int type)
+     struct drm_encoder *l_entry;
+ 
+     list_for_each_entry(l_entry, &mode_config->encoder_list, head) {
+-	    if (l_entry && l_entry->crtc == crtc) {
++	    if (l_entry->crtc == crtc) {
+ 		    struct intel_encoder *intel_encoder = enc_to_intel_encoder(l_entry);
+ 		    if (intel_encoder->type == type)
+ 			    return true;
+@@ -3343,7 +3343,7 @@ static int intel_crtc_mode_set(struct drm_crtc *crtc,
+ 
+ 	list_for_each_entry(encoder, &mode_config->encoder_list, head) {
+ 
+-		if (!encoder || encoder->crtc != crtc)
++		if (encoder->crtc != crtc)
+ 			continue;
+ 
+ 		intel_encoder = enc_to_intel_encoder(encoder);
