@@ -1,143 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab0HCJNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:13:07 -0400
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:36414 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab0HCJNE (ORCPT
+	id S1755655Ab0HCJPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:15:13 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:51318 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567Ab0HCJPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:13:04 -0400
-Message-ID: <4C57DD6F.1010004@linux.vnet.ibm.com>
-Date: Tue, 03 Aug 2010 11:12:15 +0200
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+	Tue, 3 Aug 2010 05:15:12 -0400
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: oops in ioapic_write_entry
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
+	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
+	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
+	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>
+	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>
+	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>
+	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 03 Aug 2010 02:15:07 -0700
+In-Reply-To: <4C57DACF.1090503@kernel.org> (Yinghai Lu's message of "Tue\, 03 Aug 2010 02\:01\:03 -0700")
+Message-ID: <m17hk8oy5g.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: "George G. Davis" <gdavis@mvista.com>
-CC: Karol Lewandowski <k.lewandowsk@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: GCOV doesn't seem to work on ARM with kernel 2.6.35-rc6
-References: <4C4D6458.6040402@samsung.com> <4C4D6554.30707@samsung.com> <4C4DBE8E.70102@linux.vnet.ibm.com> <4C4E8C2C.3000903@samsung.com> <4C502CC5.7070205@linux.vnet.ibm.com> <4C50342F.2080001@samsung.local> <4C50536A.1090205@linux.vnet.ibm.com> <4C51AB7F.70805@samsung.com> <20100803052051.GA17719@mvista.com>
-In-Reply-To: <20100803052051.GA17719@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.08.2010 07:20, George G. Davis wrote:
-> On Thu, Jul 29, 2010 at 06:25:35PM +0200, Karol Lewandowski wrote:
->> On 07/28/2010 05:57 PM, Peter Oberparleiter wrote:
->>> On 28.07.2010 15:44, Karol Lewandowski wrote:
->>>> On 07/28/2010 03:12 PM, Peter Oberparleiter wrote:
->>>>> On 27.07.2010 09:35, Karol Lewandowski wrote:
->>>>>> On 07/26/2010 06:57 PM, Peter Oberparleiter wrote:
->>>>>>> Karol Lewandowski wrote:
->>>>>>>> On 07/26/2010 12:32 PM, Karol Lewandowski wrote:
->>>>>>>>> I'm trying to use code coverage measurements with mainline Linux
->>>>>>>>> kernel
->>>>>>>>> 2.6.35-rc6 on ARM platform (specifically on Samsung's S5PC110
->>>>>>>>> board).
->>>>>> ...
->>>>>>> I just tested gcov support for 2.6.35-rc6 on s390 and it works without
->>>>>>> a problem. My assumption would be that you are using an EABI-GCC to
->>>>>>> compile your kernel. Those compilers name their constructor symbols
->>>>>>
->>>>>> Exactly.
->>>>>>
->>>>>>> differently than the vanilla GCC so that the whole constructor calling
->>>>>>> mechanism on which the gcov support relies, will fail. If that is
->>>>>>> indeed the case, the following testing patch should solve your
->>>>>>> problem:
->>>>>>
->>>>>> Yes, that was the case and your patch indeed solved my problem.
+Yinghai Lu <yinghai@kernel.org> writes:
+
+> On 08/03/2010 01:56 AM, Eric W. Biederman wrote:
+>> Yinghai Lu <yinghai@kernel.org> writes:
+>> 
+>>> On 08/03/2010 01:00 AM, Eric W. Biederman wrote:
+>>>> Yinghai Lu <yinghai@kernel.org> writes:
+>>>>
+>>>>>>> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+>>>>>>> ===================================================================
+>>>>>>> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
+>>>>>>> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+>>>>>>> @@ -1029,10 +1029,7 @@ static int pin_2_irq(int idx, int apic,
+>>>>>>>  	} else {
+>>>>>>>  		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
+>>>>>>>  
+>>>>>>> -		if (gsi >= NR_IRQS_LEGACY)
+>>>>>>> -			irq = gsi;
+>>>>>>> -		else
+>>>>>>> -			irq = gsi_top + gsi;
+>>>>>>> +		irq = gsi_to_irq(gsi);
+>>>>>>>  	}
+>>>>>>>  
+>>>>>>>  #ifdef CONFIG_X86_32
 >>>>>
->>>>> Excellent. I could imagine that other ARM users might also benefit from
->>>>> this patch. Before I submit it for integration though, I need to make
->>>>> sure that it also works for kernel modules. Could you enable profiling
->>>>> for a kernel module and verify that you are seeing files in
->>>>> /sys/kernel/debug/gcov belonging to that module??
+>>>>> what is the point for making irq = gsi_top + gsi when mptable is used instead of acpi?
 >>>>
->>>> That does work too.
->>>>
->>>> However, having seen this[x] patch I would ask if constructor name might
->>>> be dynamically selected via user-(in)visible Kconfig option (like in
->>>> that patch?) I've tested it and it does seem to work too.
->>>>
->>>> [x]
->>>> http://groups.google.com/group/linux.kernel/browse_thread/thread/84439151c5386e0f/d7dbec62b9d7989f?show_docid=d7dbec62b9d7989f
->>>>
->>>>
->>>>
->>>> I've copy pasted interesting parts from that patch below - I'm sure you
->>>> get the idea.
->>>>
->>>> Thanks.
->>>>
->>>> --- a/include/asm-generic/vmlinux.lds.h
->>>> +++ b/include/asm-generic/vmlinux.lds.h
->>>> @@ -442,7 +442,7 @@
->>>> #ifdef CONFIG_CONSTRUCTORS
->>>> #define KERNEL_CTORS() . = ALIGN(8); \
->>>> VMLINUX_SYMBOL(__ctors_start) = .; \
->>>> - *(.ctors) \
->>>> + *(CONFIG_GCOV_CTORS) \
+>>>> Because it is only convention that when mptables are used that the
+>>>> first apic pins 0-15 are the ISA irqs.  This thread witnessed and a
+>>>> pci irq that came in pin < 16 that was not an ISA irq.  The truly rare
+>>>> and exotic case would be for the ISA irqs to be outside the first 16
+>>>> ioapic pins but the es7000 did exactly that.
 >>>
->>> This should be named differently - gcov uses constructors but this
->>> doesn't mean that constructors rely on gcov at all.
->
-> I actually changed that patch [x] long ago relative to the above but
-> haven't gotten around to following up with a new version and no one
-> has been anxious to reply about it since anyway.  ; )
-
-I wasn't aware of the patch until now or I would have replied.
-
->  The original
-> version of [x] had a GCOV_CTORS depends on GCOV_KERNEL bug where
-> GCOV_KERNEL could be disabled resulting in a CONSTRUCTORS build
-> error due to undefined GCOV_CTORS.  A new version of [x] is
-> attached below.
->
+>>> nvidia chipset if acpi is enabled, external pci device will use ioapic from 16 to 23.
 >>>
->>>> --- a/kernel/gcov/Kconfig
->>>> +++ b/kernel/gcov/Kconfig
->>>> +config GCOV_CTORS
->>>> + string
->>>> + depends on GCOV_KERNEL
->>>> + default ".init_array" if ARM&&  AEABI
->>>> + default ".ctors"
->>>
->>> Is it guaranteed that gcc will only create EABI compliant object files
->>> if CONFIG_AEABI is defined? I don't have personal experience with arm so
->>> my previous assumption was that if you're using an EABI gcc, you would
->>> always get EABI object code, no matter what the compiler options were.
->>
->> Honestly - I don't know.  Maybe George - author of cited patch could
->> explain this?  (CC added).
+>>> if mptable is used, external pci device will not use pin from 16 to 23..., and lot of devices will share same pin.
+>> 
+>> Exactly.  Pins < 16 are not necessarily ISA irqs, and can be possibly
+>> shared level triggered PCI irqs.  Unfortunately there are strange
+>> boards like the es7000 where pins > 16 are ISA irqs.
+>> 
+>> The other thing that is gained by having pin_2_irq always remap pins <
+>> 16 is we can get away with the numerous hard codes in the arch/x86 and elsewhere
+>> that assume irq < 16 is an ISA irq.
 >
-> Yes that is correct.
+> how about this one ?
 
-Ok, that makes things easier. Your patch looks good to me, but it needs 
-to be split into two parts:
-1. kernel: constructor support for ARM EABI compilers
-2. gcov: enable GCOV_PROFILE_ALL for arm
+You can't share an edge triggered ISA irq, it isn't really physically
+possible.  So I don't see how this extra complexity will change anything.
 
-For both, it would be great if you could provide a good explanation of 
-what the changes do and why they are needed for arm. For 1, it's 
-obvious, but the author of the original arm-hack patches wasn't too 
-clear about those points for 2.
-
-Also, when you re-post these patches, please add the following people to 
-cc (in addition to the current cc list):
-
-1. For the constructor change:
-Rusty Russell <rusty@rustcorp.com.au> (for module comments)
-Sam Ravnborg <sam@ravnborg.org> (for kbuild comnents)
-Michal Marek <mmarek@suse.cz> (for kbuild comments)
-Andrew Morton <akpm@linux-foundation.org> (hopefully for integration)
-
-2. For the gcov-arm change:
-Andrew Morton <akpm@linux-foundation.org>
+Eric
 
 
-Regards,
-   Peter
-
+> ---
+>  arch/x86/kernel/apic/io_apic.c |   31 ++++++++++++++++++++++++++++---
+>  1 file changed, 28 insertions(+), 3 deletions(-)
+>
+> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
+> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+> @@ -1013,6 +1013,28 @@ static inline int irq_trigger(int idx)
+>  	return MPBIOS_trigger(idx);
+>  }
+>  
+> +static int shared_with_legacy(int apic, int pin)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < mp_irq_entries; i++) {
+> +		int bus = mp_irqs[i].srcbus;
+> +
+> +		if (!test_bit(bus, mp_bus_not_pci))
+> +			continue;
+> +
+> +		if (mp_ioapics[apic].apicid != mp_irqs[i].dstapic)
+> +			continue;
+> +
+> +		if (mp_irqs[i].dstirq != pin)
+> +			continue;
+> +
+> +		return mp_irqs[i].srcbusirq;
+> +	}
+> +
+> +	return -1;
+> +}
+> +
+>  static int pin_2_irq(int idx, int apic, int pin)
+>  {
+>  	int irq;
+> @@ -1029,10 +1051,13 @@ static int pin_2_irq(int idx, int apic,
+>  	} else {
+>  		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
+>  
+> -		if (gsi >= NR_IRQS_LEGACY)
+> +		if (gsi >= NR_IRQS_LEGACY) {
+>  			irq = gsi;
+> -		else
+> -			irq = gsi_top + gsi;
+> +		} else {
+> +			irq = shared_with_legacy(apic, pin);
+> +			if (irq < 0)
+> +				irq = gsi_top + gsi;
+> +		}
+>  	}
+>  
+>  #ifdef CONFIG_X86_32
