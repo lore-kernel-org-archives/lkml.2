@@ -1,193 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab0HCFzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 01:55:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45669 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755199Ab0HCFzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 01:55:40 -0400
-Date: Tue, 3 Aug 2010 05:55:18 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org, efault@gmx.de,
-        fweisbec@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, efault@gmx.de,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Don't keep unreferenced maps when unmaps are detected
-Message-ID: <tip-0a1eae391d0d92b60cff9f55cdaf3861b4e33922@git.kernel.org>
-Git-Commit-ID: 0a1eae391d0d92b60cff9f55cdaf3861b4e33922
-X-Mailer: tip-git-log-daemon
+	id S1755240Ab0HCGAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 02:00:23 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:55880 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755145Ab0HCGAW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 02:00:22 -0400
+To: Dave Airlie <airlied@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: oops in ioapic_write_entry
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
+	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
+	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
+	<m139uw1imy.fsf@fess.ebiederm.org>
+	<AANLkTi=qtLkY0=h77=EVL+y1q41b_cMBODvL4Hu6A6wL@mail.gmail.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 02 Aug 2010 23:00:13 -0700
+In-Reply-To: <AANLkTi=qtLkY0=h77=EVL+y1q41b_cMBODvL4Hu6A6wL@mail.gmail.com> (Dave Airlie's message of "Tue\, 3 Aug 2010 14\:02\:46 +1000")
+Message-ID: <m1bp9kxmky.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 05:55:18 +0000 (UTC)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a1eae391d0d92b60cff9f55cdaf3861b4e33922
-Gitweb:     http://git.kernel.org/tip/0a1eae391d0d92b60cff9f55cdaf3861b4e33922
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 2 Aug 2010 19:45:23 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 2 Aug 2010 19:45:23 -0300
+Dave Airlie <airlied@gmail.com> writes:
 
-perf tools: Don't keep unreferenced maps when unmaps are detected
+> On Tue, Aug 3, 2010 at 1:26 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> Dave Airlie <airlied@gmail.com> writes:
 
-For a file with:
+>>> Okay el6log is from a RHEL6 2.6.32 kernel, but it should give a good
+>>> baseline, the 2.6.35 oops even earlier with all those options and is
+>>> in the second attachment.
+>>
+>> It appears we have a smoking gun:
+>>
+>> For some reason setup_IO_APIC_IRQS thinks we at least 2 io_apics,
+>> but we have only setup 1 io_apic.  Since io_apics need a kmap entry
+>> accessing an apic that hasn't been setup will definitely give a
+>> page fault.  It sounds like something is stomping nr_ioapics.
+>>
+>> From: 2.6.35-debuglog
+>> IOAPIC[0]: apic_id 8, version 17, address 0xfec00000, GSI 0-23
+>> ....
+>> IOAPIC[1]: Set routing entry (0-16 -> 0x51 -> IRQ 16 Mode:1 Active:1)
+>>
+>> Can we get your System.map of the failing kernel (so we can see what
+>> is close to nr_ioapics), and could you add a print statement in
+>> arch/x86/kernel/apic/io_apic:setup_IO_APIC_irqs to print nr_ioapics?
+>>
+>> I would be surprised if drm changes could have affected this.
+>>
+>
+> Okay, from my debug addition it still only seems to have one ioapic
 
-[root@emilia linux-2.6-tip]# perf report -D -fi allmodconfig-j32.perf.data | grep events:
-     TOTAL events:      36933
-      MMAP events:       9056
-      LOST events:          0
-      COMM events:       1702
-      EXIT events:       1887
-  THROTTLE events:          8
-UNTHROTTLE events:          8
-      FORK events:       1894
-      READ events:          0
-    SAMPLE events:      22378
-      ATTR events:          0
-EVENT_TYPE events:          0
-TRACING_DATA events:          0
-  BUILD_ID events:          0
-[root@emilia linux-2.6-tip]#
+Thanks. I goofed reading that code.  I saw setup_IO_APIC_irq and made
+the incorrect leap that said we came from setup_IO_APIC_irqs, when
+in fact we are coming from io_apic_set_pci_routing.
 
-Testing with valgrind and making perf_session__delete() a nop, so that
-we can notice how many maps were actually deleted due to not having any
-samples on it:
+So let's see can I figure out why we are getting a bad apic_id.
 
-==== HEAP SUMMARY:
+For that I need to track back to pirq_enable_irq, which leads
+me to IO_APIC_get_PCI_irq_vector.  The likely canidate is that we
+simply are not finding the apicid that is present in the mp_irqs
+entry that we decided to return.  The patch below should add
+appropriate debugging and fix the lookup 
 
-Before:
+The real difference appears to be that acpi is disabled where it
+is not disabled in your reference kernel.
 
-==10339==     in use at exit: 8,909,997 bytes in 68,690 blocks
-==10339==   total heap usage: 78,696 allocs, 10,007 frees, 11,925,853 bytes allocated
+Dave can you verify this fixes the oops for you?
 
-After:
+It would be nice if we didn't crash early in boot even without
+acpi present.
 
-==10506==     in use at exit: 8,902,605 bytes in 68,606 blocks
-==10506==   total heap usage: 78,696 allocs, 10,091 frees, 11,925,853 bytes allocated
+Eric
 
-I.e. just 84 detected unmaps with no hits out of 9056 for this workload,
-not much, but in some other long running workload this may save more
-bytes.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/hist.c |    2 ++
- tools/perf/util/map.c  |   31 +++++++++++++++++++++----------
- tools/perf/util/map.h  |    3 ++-
- 3 files changed, 25 insertions(+), 11 deletions(-)
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a6cea28..e7263d4 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -93,6 +93,8 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 	if (self != NULL) {
- 		*self = *template;
- 		self->nr_events = 1;
-+		if (self->ms.map)
-+			self->ms.map->referenced = true;
- 		if (symbol_conf.use_callchain)
- 			callchain_init(self->callchain);
- 	}
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 801e696..3a7eb6e 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -29,6 +29,7 @@ void map__init(struct map *self, enum map_type type,
- 	self->unmap_ip = map__unmap_ip;
- 	RB_CLEAR_NODE(&self->rb_node);
- 	self->groups   = NULL;
-+	self->referenced = false;
- }
- 
- struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
-@@ -387,6 +388,7 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e41ed24..e824e14 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1067,7 +1067,7 @@ static int pin_2_irq(int idx, int apic, int pin)
+ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 				struct io_apic_irq_attr *irq_attr)
  {
- 	struct rb_root *root = &self->maps[map->type];
- 	struct rb_node *next = rb_first(root);
-+	int err = 0;
+-	int apic, i, best_guess = -1;
++	int i, best_guess = -1;
  
- 	while (next) {
- 		struct map *pos = rb_entry(next, struct map, rb_node);
-@@ -403,20 +405,16 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
+ 	apic_printk(APIC_DEBUG,
+ 		    "querying PCI -> IRQ mapping bus:%d, slot:%d, pin:%d.\n",
+@@ -1080,16 +1080,29 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 	for (i = 0; i < mp_irq_entries; i++) {
+ 		int lbus = mp_irqs[i].srcbus;
  
- 		rb_erase(&pos->rb_node, root);
- 		/*
--		 * We may have references to this map, for instance in some
--		 * hist_entry instances, so just move them to a separate
--		 * list.
--		 */
--		list_add_tail(&pos->node, &self->removed_maps[map->type]);
--		/*
- 		 * Now check if we need to create new maps for areas not
- 		 * overlapped by the new map:
- 		 */
- 		if (map->start > pos->start) {
- 			struct map *before = map__clone(pos);
- 
--			if (before == NULL)
--				return -ENOMEM;
-+			if (before == NULL) {
-+				err = -ENOMEM;
-+				goto move_map;
-+			}
- 
- 			before->end = map->start - 1;
- 			map_groups__insert(self, before);
-@@ -427,14 +425,27 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
- 		if (map->end < pos->end) {
- 			struct map *after = map__clone(pos);
- 
--			if (after == NULL)
--				return -ENOMEM;
-+			if (after == NULL) {
-+				err = -ENOMEM;
-+				goto move_map;
-+			}
- 
- 			after->start = map->end + 1;
- 			map_groups__insert(self, after);
- 			if (verbose >= 2)
- 				map__fprintf(after, fp);
- 		}
-+move_map:
-+		/*
-+		 * If we have references, just move them to a separate list.
-+		 */
-+		if (pos->referenced)
-+			list_add_tail(&pos->node, &self->removed_maps[map->type]);
-+		else
-+			map__delete(pos);
+-		for (apic = 0; apic < nr_ioapics; apic++)
+-			if (mp_ioapics[apic].apicid == mp_irqs[i].dstapic ||
+-			    mp_irqs[i].dstapic == MP_APIC_ALL)
+-				break;
+-
+ 		if (!test_bit(lbus, mp_bus_not_pci) &&
+ 		    !mp_irqs[i].irqtype &&
+ 		    (bus == lbus) &&
+ 		    (slot == ((mp_irqs[i].srcbusirq >> 2) & 0x1f))) {
+-			int irq = pin_2_irq(i, apic, mp_irqs[i].dstirq);
++			int apic;
++			int irq;
 +
-+		if (err)
-+			return err;
++			/* Lookup the ioapic by id */
++			for (apic = 0; apic < nr_ioapics; apic++)
++				if (mp_ioapics[apic].apicid == mp_irqs[i].dstapic ||
++					mp_irqs[i].dstapic == MP_APIC_ALL)
++					break;
++
++			/* Verify we found the ioapic */
++			if (apic >= nr_ioapics) {
++				printk(KERN_ERR 
++					"%02x:%02x.%c: APIC_ID %u pin: %u not found BIOS bug?\n",
++					bus, slot, 'A' + pin - 1,
++					mp_irqs[i].dstapic, mp_irqs[i].dstirq);
++				continue;
++			}
++
++			irq = pin_2_irq(i, apic, mp_irqs[i].dstirq);
+ 
+ 			if (!(apic || IO_APIC_IRQ(irq)))
+ 				continue;
+@@ -1099,7 +1112,8 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 						     mp_irqs[i].dstirq,
+ 						     irq_trigger(i),
+ 						     irq_polarity(i));
+-				return irq;
++				best_guess = irq;
++				goto out;
+ 			}
+ 			/*
+ 			 * Use the first all-but-pin matching entry as a
+@@ -1114,6 +1128,12 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 			}
+ 		}
  	}
- 
- 	return 0;
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 5b51bbd..7857579 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -29,7 +29,8 @@ struct map {
- 	};
- 	u64			start;
- 	u64			end;
--	enum map_type		type;
-+	u8 /* enum map_type */	type;
-+	bool			referenced;
- 	u32			priv;
- 	u64			pgoff;
- 
++out:
++	if (best_guess >= 0)
++		apic_printk(APIC_DEBUG,
++			"%02x:%02x.%c: IRQ %u IOAPIC: %u pin: %u",
++			bus, slot, 'A' + pin - 1,
++			best_guess, irq_attr->ioapic, irq_attr->ioapic_pin);
+ 	return best_guess;
+ }
+ EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
