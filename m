@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab0HCRhB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:37:01 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:15580 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab0HCRg7 convert rfc822-to-8bit (ORCPT
+	id S1757387Ab0HCRiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:38:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34306 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756836Ab0HCRhB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:36:59 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "'gregkh@suse.de'" <gregkh@suse.de>
-Subject: [PATCH 4/6] staging: hv: Removed TODO for VMBUS, it mirrors HYPER-V
- behavior to closely
-Thread-Topic: [PATCH 4/6] staging: hv: Removed TODO for VMBUS, it mirrors
- HYPER-V behavior to closely
-Thread-Index: AcszLQid728lvz1rQMimYb0ghjtRrQ==
-Date: Tue, 3 Aug 2010 17:31:54 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FD1D2F@TK5EX14MBXC114.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 3 Aug 2010 13:37:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=xRkdedb5GlaDA4wwiaH6oO8gaaUdNfzmi7BPrQyohpTVtW5T3HUrFi+kWu8ODyqKtR
+         aIp9FvHSt0DNgNsfQLZef5eqIayYpARjwgtrCbCVXvOheohcnvgjRoDcjIKFPbiHCa+o
+         0jLmdQttYPMkdwNhAIlcSPN7PRtkqy799NrbI=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH] USB-serial dummy cable driver
+Date: Tue, 3 Aug 2010 19:36:39 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        nm127@freemail.hu, linux-kernel@vger.kernel.org, maxinbjohn@gmail.com,
+        forest.bond@outpostembedded.com, vijaykumar@zilogic.com
+References: <1280728807-20296-1-git-send-email-marek.vasut@gmail.com> <201008031814.15859.marek.vasut@gmail.com> <20100803163826.GA757@suse.de>
+In-Reply-To: <20100803163826.GA757@suse.de>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008031936.39556.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hank Janssen <hjanssen@microsoft.com>
+Dne Út 3. srpna 2010 18:38:26 Greg KH napsal(a):
+> On Tue, Aug 03, 2010 at 06:14:15PM +0200, Marek Vasut wrote:
+> > Dne Út 3. srpna 2010 00:47:18 Greg KH napsal(a):
+> > > On Mon, Aug 02, 2010 at 08:00:07AM +0200, Marek Vasut wrote:
+> > > > This driver is used to implement USB-serial like behaviour over dummy
+> > > > 
+> > > > USB cables. These are used in the following devices:
+> > > > 	Funsoft Serial USB driver
+> > > > 	Genesys Logic GL620USB USB Laplink cable
+> > > > 	HP4x (48/49) Serial cable
+> > > > 	Motorola phones
+> > > > 	Siemens USB-MPI Serial USB driver
+> > > > 	ViVOpay USB Serial Driver
+> > > > 	ZIO Motherboard USB driver
+> > > 
+> > > I like the idea, but not the name :)
+> > 
+> > Please don't expect miracles from me after 26 hours without sleep ;-)
+> > 
+> > > Ideally, all of these would be able to be handled by the usb-serial
+> > > generic driver directly.
+> > 
+> > I just noticed that one. Stupid me.
+> > 
+> > > But really, having these multiple drivers is a good thing, they
+> > > properly convey to the user what the device is, and it gives these
+> > > developers and companies a sense of ownership over the code, and that
+> > > matters at times.
+> > > 
+> > > So you lost the names of the devices with this patch, which isn't good.
+> > 
+> > Sheesh ... that's true, but having pile of copies of the same code is not
+> > good either.
+> 
+> I agree, that's why I said it should be reduced.
+> 
+> > Can't we then just deprecate all these drivers and set correct udev
+> > rules?
+> 
+> udev can not change the name of the device in sysfs, or the name in the
+> kernel of the device.
 
-Removed TODO for VMBUS, it mirrors HYPER-V behaviour to closely and does not really share any 
-usable functionality of the Linux kernel facilities. There is not really an easy way to combine functionality.
-
-Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
-
----
- drivers/staging/hv/TODO |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/hv/TODO b/drivers/staging/hv/TODO index 66a89c8..8ca2947 100644
---- a/drivers/staging/hv/TODO
-+++ b/drivers/staging/hv/TODO
-@@ -4,8 +4,6 @@ TODO:
- 	  driver model
- 	- convert vmbus driver interface function pointer tables
-           to constant, a.k.a vmbus_ops
--	- see if the vmbus can be merged with the other virtual busses
--	  in the kernel
- 	- audit the network driver
- 	  - checking for carrier inside open is wrong, network device API
-             confusion??
---
-1.6.0.2
-
+That's right, but it can bind the generic driver with the hardware. And who 
+would care about the driver name, really ? The interface just appears and that's 
+what matters (to me and probably to users) ...
+> 
+> thanks,
+> 
+> greg k-h
