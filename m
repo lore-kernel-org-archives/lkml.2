@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab0HCKZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 06:25:26 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:48994 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab0HCKZZ (ORCPT
+	id S1755863Ab0HCKZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 06:25:42 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48781 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801Ab0HCKZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 06:25:25 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C57EE60.2000601@s5r6.in-berlin.de>
-Date: Tue, 03 Aug 2010 12:24:32 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Tue, 3 Aug 2010 06:25:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=vmwcalXA7HnjEUbIsH2irQ/cIYxFzXZWXo/A3v+UMr0j7x2S2D1MnnEotr8l9qsuFb
+         uYYfFsXZtN8Khg/0oHQl5OXxnrcIvccZFptbQPc6CO3rMNqoPlX4fUXERkdQaMISrlYu
+         KZ6balnRCmeAzUPxcF0eq69UhgG7Q0PBu0oaU=
+Message-ID: <4C57EE9A.7040308@gmail.com>
+Date: Tue, 03 Aug 2010 11:25:30 +0100
+From: Andy Chittenden <andyc.bluearc@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Donald Parsons <dparsons@brightdsl.net>,
-        Harald Hoyer <harald.hoyer@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.35
-References: <1280716262.5125.42.camel@falcon.homelinux.org>	<201008012138.39036.bjorn.helgaas@hp.com>	<1280722876.5125.83.camel@falcon.homelinux.org>	<AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com>	<1280802701.5836.10.camel@falcon.homelinux.org> <20100802214249.b0fee617.rdunlap@xenotime.net>
-In-Reply-To: <20100802214249.b0fee617.rdunlap@xenotime.net>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com,
+        William.Allen.Simpson@gmail.com, gilad@codefidence.com,
+        ilpo.jarvinen@helsinki.fi, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] [Bug 16494] NFS client over TCP hangs due to packet loss
+References: <4c57cfe8.887b0e0a.2f79.4772@mx.google.com>	<20100803.012144.267950450.davem@davemloft.net> <20100803021110.f0b3877b.akpm@linux-foundation.org>
+In-Reply-To: <20100803021110.f0b3877b.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap wrote:
-> On Mon, 02 Aug 2010 22:31:41 -0400 Donald Parsons wrote:
->>>>> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
->>>>>> 2.6.35 still fails to boot for me, as first reported here:
->>>>>>  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
->>>>>>
->>>>>> I've manually bisected it down to around May 20 between
->>>>>>   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
->>>>>> Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
-[...]
-
-To recap:  Donald uses ata_generic,pata_acpi,pata_jmicron,ahci for Asus
-P5B Deluxe which has
-
-00:1f.2 SATA controller: Intel Corporation 82801HB (ICH8) SATA AHCI
-Controller (rev 02)
-03:00.0 SATA controller: JMicron Technologies, Inc. JMicron 20360/20363
-AHCI Controller (rev 02)
-03:00.1 IDE interface: JMicron Technologies, Inc. JMicron 20360/20363
-AHCI Controller (rev 02)
-
-On which interface is the disk with the root filesystem?
-
-[...]
->> Using your suggestion as to where the problem lies, I investigated
->> more deeply and found:
+On 2010-08-03 10:11, Andrew Morton wrote:
+> (cc linux-nfs)
+>
+> On Tue, 03 Aug 2010 01:21:44 -0700 (PDT) David Miller<davem@davemloft.net>  wrote:
+>
+>> From: "Andy Chittenden"<andyc.bluearc@gmail.com>
+>> Date: Tue, 3 Aug 2010 09:14:31 +0100
 >>
->> I've now got 2.6.35-rc6-git3 to boot (and almost certainly 2.6.35 final)
+>>> I don't know whether this patch is the correct fix or not but it enables the
+>>> NFS client to recover.
+>>>
+>>> Kernel version: 2.6.34.1 and 2.6.32.
+>>>
+>>> Fixes<https://bugzilla.kernel.org/show_bug.cgi?id=16494>. It clears down
+>>> any previous shutdown attempts so that reconnects on a socket that's been
+>>> shutdown leave the socket in a usable state (otherwise tcp_sendmsg() returns
+>>> -EPIPE).
 >>
->> Make oldconfig broke at the transition where boot began failed, ie,
->> between 2.6.34-git4 and 2.6.34-git5.   Even though modules are the
->> same, boot fails.  If I use gconfig and set CONFIG_SATA_AHCI=y
->> instead of CONFIG_SATA_AHCI=m it works, except cannot select =y
->> unless CONFIG_ATA changed from m to y.
->>
->> So at some point in past, make oldconfig had apparently changed
->> CONFIG_SATA_AHCI from y to m and system still booted.  But between
->> 2.6.34-git4 and 2.6.34-git5 the ability to boot was lost.
->>
->> So make oldconfig is not 100% trustworthy in this case.  I do not
->> know if this is a problem that should be fixed.  Ask if you want
->> any .config diffs.
->>
->> I am going to reboot with 2.6.35 to make sure it boots. Yes!
->>
->> I consider this boot problem solved unless someone wants to
->> improve "make oldconfig" behavior.
+>> If the SunRPC code wants to close a TCP socket then use it again,
+>> it should disconnect by doing a connect() with sa_family == AF_UNSPEC
 
-There was at least the following notable change in drivers/ata/Kconfig:
-Commit 9a7780c9acb821fe1c2b6fc53f74cc2556ff5364 "libata-sff: make BMDMA
-optional" added a new intermediary configuration option, ATA_SFF.  The
-option PATA_JMICRON depends on this new option now.  ATA_GENERIC,
-PATA_ACPI, SATA_AHCI do not depend on it.
+There is code to do that in the SunRPC code in xs_abort_connection() but 
+that's conditionally called from xs_tcp_reuse_connection():
 
-("make oldconfig" asks for ATA_BMDMA and defaults to Y, as does the help
-text recommend.  Still, people who switch from 2.6.34 to 2.6.35 might be
-convied that they do not need it as they already used kernels that did
-not have this option with their controllers.)
+static void xs_tcp_reuse_connection(struct rpc_xprt *xprt, struct 
+sock_xprt *transport)
+{
+	unsigned int state = transport->inet->sk_state;
 
-Might the problem be with the order in which interfaces and disks are
-discovered and hence enumerated?
+	if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED)
+		return;
+	if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT))
+		return;
+	xs_abort_connection(xprt, transport);
+}
 
-> It would be good to be able to explain what you are seeing & describing,
-> so yes, if you can send a .config file that exhibits the problem, I'd
-> love to look at it.
+That's changed since 2.6.26 where it unconditionally did the connect() 
+with sa_family == AF_UNSPEC. FWIW we cannot reproduce this problem with 
+2.6.26.
 
-Could be enlightening.
--- 
-Stefan Richter
--=====-==-=- =--- ---==
-http://arcgraph.de/sr/
+
