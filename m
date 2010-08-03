@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab0HCOfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 10:35:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64201 "EHLO mx1.redhat.com"
+	id S1756877Ab0HCOh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 10:37:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38576 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756092Ab0HCOff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 10:35:35 -0400
-Message-ID: <4C582845.6070408@ds.jp.nec.com>
-Date: Tue, 03 Aug 2010 10:31:33 -0400
-From: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1756092Ab0HCOh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 10:37:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,309,1278313200"; 
+   d="scan'208";a="541505812"
+Date: Tue, 3 Aug 2010 22:36:54 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
+ sync works
+Message-ID: <20100803143654.GA32335@localhost>
+References: <20100729115142.102255590@intel.com>
+ <20100729121423.332557547@intel.com>
+ <20100729162027.GF12690@quack.suse.cz>
+ <20100730040306.GA5694@localhost>
+ <20100802205152.GL3278@quack.suse.cz>
+ <20100803030125.GA12070@localhost>
+ <20100803105520.GA3322@quack.suse.cz>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, Ryo Tsuruta <ryov@valinux.co.jp>,
-        taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
-        Andrea Righi <righi.andrea@gmail.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-        balbir@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH 00/11] blkiocg async support
-References: <4C369009.80503@ds.jp.nec.com> <20100802205834.GD24697@redhat.com>
-In-Reply-To: <20100802205834.GD24697@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100803105520.GA3322@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote, on 08/02/2010 04:58 PM:
-> On Thu, Jul 08, 2010 at 10:57:13PM -0400, Munehiro Ikeda wrote:
->> These RFC patches are trial to add async (cached) write support on blkio
->> controller.
->>
->> Only test which has been done is to compile, boot, and that write bandwidth
->> seems prioritized when pages which were dirtied by two different processes in
->> different cgroups are written back to a device simultaneously.  I know this
->> is the minimum (or less) test but I posted this as RFC because I would like
->> to hear your opinions about the design direction in the early stage.
->>
->> Patches are for 2.6.35-rc4.
->>
->> This patch series consists of two chunks.
->>
->> (1) iotrack (patch 01/11 -- 06/11)
->>
->> This is a functionality to track who dirtied a page, in exact which cgroup a
->> process which dirtied a page belongs to.  Blkio controller will read the info
->> later and prioritize when the page is actually written to a block device.
->> This work is originated from Ryo Tsuruta and Hirokazu Takahashi and includes
->> Andrea Righi's idea.  It was posted as a part of dm-ioband which was one of
->> proposals for IO controller.
->>
->>
->> (2) blkio controller modification (07/11 -- 11/11)
->>
->> The main part of blkio controller async write support.
->> Currently async queues are device-wide and async write IOs are always treated
->> as root group.
->> These patches make async queues per a cfq_group per a device to control them.
->> Async write is handled by flush kernel thread.  Because queue pointers are
->> stored in cfq_io_context, io_context of the thread has to have multiple
->> cfq_io_contexts per a device.  So these patches make cfq_io_context per an
->> io_context per a cfq_group, which means per an io_context per a cgroup per a
->> device.
->>
->>
->
-> Muuh,
->
-> You will require one more piece and that is support for per cgroup request
-> descriptors on request queue. With writes, it is so easy to consume those
-> 128 request descriptors.
+On Tue, Aug 03, 2010 at 06:55:20PM +0800, Jan Kara wrote:
+> On Tue 03-08-10 11:01:25, Wu Fengguang wrote:
+> > On Tue, Aug 03, 2010 at 04:51:52AM +0800, Jan Kara wrote:
+> > > On Fri 30-07-10 12:03:06, Wu Fengguang wrote:
+> > > > On Fri, Jul 30, 2010 at 12:20:27AM +0800, Jan Kara wrote:
+> > > > > On Thu 29-07-10 19:51:44, Wu Fengguang wrote:
+> > > > > > The periodic/background writeback can run forever. So when any
+> > > > > > sync work is enqueued, increase bdi->sync_works to notify the
+> > > > > > active non-sync works to exit. Non-sync works queued after sync
+> > > > > > works won't be affected.
+> > > > >   Hmm, wouldn't it be simpler logic to just make for_kupdate and
+> > > > > for_background work always yield when there's some other work to do (as
+> > > > > they are livelockable from the definition of the target they have) and
+> > > > > make sure any other work isn't livelockable?
+> > > > 
+> > > > Good idea!
+> > > > 
+> > > > > The only downside is that
+> > > > > non-livelockable work cannot be "fair" in the sense that we cannot switch
+> > > > > inodes after writing MAX_WRITEBACK_PAGES.
+> > > > 
+> > > > Cannot switch indoes _before_ finish with the current
+> > > > MAX_WRITEBACK_PAGES batch? 
+> > >   Well, even after writing all those MAX_WRITEBACK_PAGES. Because what you
+> > > want to do in a non-livelockable work is: take inode, write it, never look at
+> > > it again for this work. Because if you later return to the inode, it can
+> > > have newer dirty pages and thus you cannot really avoid livelock. Of
+> > > course, this all assumes .nr_to_write isn't set to something small. That
+> > > avoids the livelock as well.
+> > 
+> > I do have a poor man's solution that can handle this case.
+> > https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476473/thread
+> > It may do more extra works, but will stop livelock in theory.
+>   So I don't think sync work on it's own is a problem. There we can just
+> give up any fairness and just go inode by inode. IMHO it's much simpler that
+> way.
 
-Hi Vivek,
+I would like to reserve my opinion here. IMHO small files should
+better get synced first :)
 
-Yes.  Thank you for the comment.
-I have two concerns to do that.
+> The remaining types of work we have are "for_reclaim" and then ones
+> triggered by filesystems to get rid of delayed allocated data. These cases
+> can easily have well defined and low nr_to_write so they wouldn't be
+> livelockable either. What do you think?
 
-(1) technical concern
-If there is fixed device-wide limitation and there are so many groups,
-the number of request descriptors distributed to each group can be too
-few.  My only idea for this is to make device-wide limitation flexible,
-but I'm not sure if it is the best or even can be allowed.
+Right. for_reclaim works won't livelock in itself, since it will be
+bounded by either nr_to_write or some range. They may be delayed for a
+while by large sync or nr_pages works though.
 
-(2) implementation concern
-Now the limitation is done by generic block layer which doesn't know
-about grouping.  The idea in my head to solve this is to add a new
-interface on elevator_ops to ask IO scheduler if a new request can
-be allocated.
+> > A related question is, what if some for_reclaim works get enqueued?
+> > Shall we postpone the sync work as well? The global sync is not likely
+> > to hit the dirty pages in a small memcg, or may take long time. It
+> > seems not a high priority task though.
+>   I see some incentive to do this but the simple thing with for_background
+> and for_kupdate work is that they are essentially state-less and so they
+> can be easily (and automatically) restarted. It would be really hard to
+> implement something like this for sync and still avoid livelocks.
 
-Anyway, simple RFC patch first and testing it would be preferable,
-I think.
-
+So let's ignore the issue for now.
 
 Thanks,
-Muuhh
-
-
--- 
-IKEDA, Munehiro
-   NEC Corporation of America
-     m-ikeda@ds.jp.nec.com
+Fengguang
 
