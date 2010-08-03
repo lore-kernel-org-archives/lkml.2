@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab0HCIOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 04:14:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62143 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab0HCIOf (ORCPT
+	id S1754628Ab0HCIPP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 04:15:15 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:59441 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab0HCIPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 04:14:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:mime-version:content-type
-         :content-transfer-encoding:x-mailer:thread-index:content-language;
-        b=P0WaBWNkCeSZ0/Jp3CSdow2/EykXO+pJoGUL+ClCmn19lr9CfrUAn66fB6kZjMEk/6
-         OB2Ll4bzEX5ozOklME4aNfzgg49E9WizRCRRF9aBegnuQ0pXiKN8rUBy0x8k6aDdbgIJ
-         5bwHTPTEbklFLml2X7BsPEwt1kNix6Gmlh8DI=
-From: "Andy Chittenden" <andyc.bluearc@gmail.com>
-To: "'David S. Miller'" <davem@davemloft.net>,
-        "'Alexey Kuznetsov'" <kuznet@ms2.inr.ac.ru>,
-        "'Pekka Savola \(ipv6'" <pekkas@netcore.fi>,
-        "'James Morris'" <jmorris@namei.org>,
-        "'Hideaki YOSHIFUJI'" <yoshfuji@linux-ipv6.org>,
-        "'Patrick McHardy'" <kaber@trash.net>,
-        "'Eric Dumazet'" <eric.dumazet@gmail.com>,
-        <William.Allen.Simpson@gmail.com>,
-        "'Gilad Ben-Yossef'" <gilad@codefidence.com>,
-        "=?iso-8859-1?Q?'Ilpo_J=E4rvinen'?=" <ilpo.jarvinen@helsinki.fi>,
-        <netdev@vger.kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Cc: <akpm@linux-foundation.org>
-Subject: [PATCH] [Bug 16494] NFS client over TCP hangs due to packet loss
-Date: Tue, 3 Aug 2010 09:14:31 +0100
-Message-ID: <4c57cfe8.887b0e0a.2f79.4772@mx.google.com>
+	Tue, 3 Aug 2010 04:15:12 -0400
+To: Hui Zhu <teawater@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Simon Kagstrom <simon.kagstrom@netinsight.net>,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gdb@sourceware.org
+Subject: Re: [PATCH] kexec: set prstatus.pr_pid to cpu id when current->pid is  0
+References: <AANLkTikuUi=i6Lk-ZpE65Gr0tWOeVnrnpWPe85T=J=Ph@mail.gmail.com>
+	<m1zkx4w3hx.fsf@fess.ebiederm.org>
+	<AANLkTi=-By6ZWjo9bW0s4MndFftHegROO7oa0jbpnCho@mail.gmail.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 03 Aug 2010 01:15:04 -0700
+In-Reply-To: <AANLkTi=-By6ZWjo9bW0s4MndFftHegROO7oa0jbpnCho@mail.gmail.com> (Hui Zhu's message of "Tue\, 3 Aug 2010 15\:44\:35 +0800")
+Message-ID: <m1d3u0un7b.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acsy4+Ym1XbCjbCOR4Oi4FAImm0DJg==
-Content-Language: en-gb
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't know whether this patch is the correct fix or not but it enables the
-NFS client to recover.
+Hui Zhu <teawater@gmail.com> writes:
 
-Kernel version: 2.6.34.1 and 2.6.32.
+> On Tue, Aug 3, 2010 at 15:37, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> Hui Zhu <teawater@gmail.com> writes:
+>>
+>
+> Equal 0 is not a bug, the trouble is a lot of core's pid is same.
+>
+> This is what gdb say:
+> /* Found an old thread with the same id.  It has to be dead,
+>        otherwise we wouldn't be adding a new thread with the same id.
+>        The OS is reusing this id --- delete it, and recreate a new
+>        one.  */
 
-Fixes <https://bugzilla.kernel.org/show_bug.cgi?id=16494>. It clears down
-any previous shutdown attempts so that reconnects on a socket that's been
-shutdown leave the socket in a usable state (otherwise tcp_sendmsg() returns
--EPIPE).
+gdb bug compatibility is not a primary goal.  Having an extensible
+format and not inventing it totally out of the blue is the goal.
 
-# diff -up /home/company/software/src/linux-2.6.34.1/net/ipv4/tcp_output.c
-net/ipv4
---- /home/company/software/src/linux-2.6.34.1/net/ipv4/tcp_output.c
-2010-07-27 08:46:46.917000000 +0100
-+++ net/ipv4/tcp_output.c       2010-07-27 09:19:16.000000000 +0100
-@@ -2522,6 +2522,13 @@ static void tcp_connect_init(struct sock
-        struct tcp_sock *tp = tcp_sk(sk);
-        __u8 rcv_wscale;
+The goal was always that something could post process the output of
+the kernel crashdump and create something that is gdb compatible.  It
+looks to me like it would take just a moment to strip out all of the
+idle threads.
 
-+       /* clear down any previous shutdown attempts so that
-+        * reconnects on a socket that's been shutdown leave the
-+        * socket in a usable state (otherwise tcp_sendmsg() returns
-+        * -EPIPE).
-+        */
-+       sk->sk_shutdown = 0;
-+
-        /* We'll fix this up when we get a response from the other end.
-         * See tcp_input.c:tcp_rcv_state_process case TCP_SYN_SENT.
-         */
+Claiming the pid is the cpu number when the pid is the idle pid gives
+you no insulation against duplication, and it looses information.
 
-Signed-off-by: Andy Chittenden <andyc.bluearc@gmail.com>
-
-
-
+Eric
