@@ -1,156 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0HCNJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:09:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49273 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755949Ab0HCNJR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:09:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aIHWKaHVQUQ1Om86PFQ6NRfvlglfnZRThXQzmQ+iRMYqq4qXUyaUpKclXvGpw09Axq
-         9/yREMFL/L5wRCeNL6dUti7mbCFQwABKnGehSgNbdMERpqoe8aqRuvPoiH/rnxbgNnJb
-         Bp03DEQSitd7SdWSGmidxpkbBM7ktuJVBxSS8=
+	id S1756062Ab0HCNSp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:18:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58549 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751668Ab0HCNSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 09:18:44 -0400
+Date: Tue, 3 Aug 2010 15:18:06 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
+ sync works
+Message-ID: <20100803131806.GF3322@quack.suse.cz>
+References: <20100729115142.102255590@intel.com>
+ <20100729121423.332557547@intel.com>
+ <20100729162027.GF12690@quack.suse.cz>
+ <20100730040306.GA5694@localhost>
+ <20100802205152.GL3278@quack.suse.cz>
+ <20100803030125.GA12070@localhost>
+ <20100803105520.GA3322@quack.suse.cz>
+ <20100803123922.GC3322@quack.suse.cz>
+ <20100803125924.GA31827@localhost>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008030009400.1789@davide-laptop>
-References: <4C565845.30307@gmail.com>
-	<alpine.DEB.2.00.1008030009400.1789@davide-laptop>
-Date: Tue, 3 Aug 2010 13:09:15 +0000
-Message-ID: <AANLkTinjNOC3nVn0GAVuUSTgiQM_QA+ueOxPzJX+aRFb@mail.gmail.com>
-Subject: Re: [PATCH] New EPOLL flag: EPOLLHEAD
-From: Li Yu <raise.sail@gmail.com>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100803125924.GA31827@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-;), I know that epoll is stackable, i.e. we can use epoll_wait() on fd
-that return from epoll_create() However, If we just have a few of
-priorities, for example, which are less than 5 (one is controlling
-connection, otherwise are some data connections), thus it seem that
-stacked epoll() usage is too expensive here, receiving each packet
-always requires extra times that switching into kernel in such case,
-thus I think that head-inserting ready-events into ep->rdllist is an
-excellence solution for this case, in my word, is it right? or have we
-more better solution here? Thanks!
+On Tue 03-08-10 20:59:24, Wu Fengguang wrote:
+> On Tue, Aug 03, 2010 at 08:39:22PM +0800, Jan Kara wrote:
+> > On Tue 03-08-10 12:55:20, Jan Kara wrote:
+> > > On Tue 03-08-10 11:01:25, Wu Fengguang wrote:
+> > > > On Tue, Aug 03, 2010 at 04:51:52AM +0800, Jan Kara wrote:
+> > > > > On Fri 30-07-10 12:03:06, Wu Fengguang wrote:
+> > > > > > On Fri, Jul 30, 2010 at 12:20:27AM +0800, Jan Kara wrote:
+> > > > > > > On Thu 29-07-10 19:51:44, Wu Fengguang wrote:
+> > > > > > > > The periodic/background writeback can run forever. So when any
+> > > > > > > > sync work is enqueued, increase bdi->sync_works to notify the
+> > > > > > > > active non-sync works to exit. Non-sync works queued after sync
+> > > > > > > > works won't be affected.
+> > > > > > >   Hmm, wouldn't it be simpler logic to just make for_kupdate and
+> > > > > > > for_background work always yield when there's some other work to do (as
+> > > > > > > they are livelockable from the definition of the target they have) and
+> > > > > > > make sure any other work isn't livelockable?
+> > > > > > 
+> > > > > > Good idea!
+> > > > > > 
+> > > > > > > The only downside is that
+> > > > > > > non-livelockable work cannot be "fair" in the sense that we cannot switch
+> > > > > > > inodes after writing MAX_WRITEBACK_PAGES.
+> > > > > > 
+> > > > > > Cannot switch indoes _before_ finish with the current
+> > > > > > MAX_WRITEBACK_PAGES batch? 
+> > > > >   Well, even after writing all those MAX_WRITEBACK_PAGES. Because what you
+> > > > > want to do in a non-livelockable work is: take inode, write it, never look at
+> > > > > it again for this work. Because if you later return to the inode, it can
+> > > > > have newer dirty pages and thus you cannot really avoid livelock. Of
+> > > > > course, this all assumes .nr_to_write isn't set to something small. That
+> > > > > avoids the livelock as well.
+> > > > 
+> > > > I do have a poor man's solution that can handle this case.
+> > > > https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476473/thread
+> > > > It may do more extra works, but will stop livelock in theory.
+> > >   So I don't think sync work on it's own is a problem. There we can just
+> > > give up any fairness and just go inode by inode. IMHO it's much simpler that
+> > > way. The remaining types of work we have are "for_reclaim" and then ones
+> > > triggered by filesystems to get rid of delayed allocated data. These cases
+> > > can easily have well defined and low nr_to_write so they wouldn't be
+> > > livelockable either. What do you think?
+> >   Fengguang, how about merging also the attached simple patch together with
+> > my fix? With these two patches, I'm not able to trigger any sync livelock
+> > while without one of them I hit them quite easily...
+> 
+> This looks OK. However note that redirty_tail() can modify
+> dirtied_when unexpectedly. So the more we rely on wb_start, the more
+> possibility an inode is (wrongly) skipped by sync. I have a bunch of
+> patches to remove redirty_tail(). However they may not be good
+> candidates for 2.6.36..
+  Yes, I'm aware of this. But if I'm right, after your changes to the
+logic in writeback_single_inode() Andrew has in his tree, we use
+requeue_io() in case inode still has any dirty pages. Thus after these
+patches we should be mostly fine. Shouldn't we?
 
-Yu
-
-2010/8/3 Davide Libenzi <davidel@xmailserver.org>:
-> On Mon, 2 Aug 2010, Li Yu wrote:
->
->> This patch introduces to new epoll flag EPOLLHEAD. Using this flag, the trigged events will be insert at head of ready events linked list, so they likely can be processed earlier in user space. In fact, this is the most simplest events priority, is it right?
->
-> If you have such a high number of ready events in a continous manner, that
-> resolving priorities at ready-time (O(Nready)) is a burden for you, you
-> can simply create M epoll fds (one per priority), add the fds into the
-> proper epoll fd, and use another epoll fd (or even poll(2) - if M is
-> small) to gather them.
->
->
->
->>
->> BTW: I did not subscribe linux-fsdevel mail list, so please also send reply to my gmail, thanks!
->>
->> Signed-off-by: Li Yu <raise.sail@gmail.com>
->> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
->> index 3817149..ddd1500 100644
->> --- a/fs/eventpoll.c
->> +++ b/fs/eventpoll.c
->> @@ -72,7 +72,7 @@
->>   */
->>
->>  /* Epoll private bits inside the event mask */
->> -#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
->> +#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET | EPOLLHEAD)
->>
->>  /* Maximum number of nesting allowed inside epoll sets */
->>  #define EP_MAX_NESTS 4
->> @@ -281,6 +281,15 @@ static inline int ep_is_linked(struct list_head *p)
->>       return !list_empty(p);
->>  }
->>
->> +/* The events with EPOLLHEAD can be detected first by user space. */
->> +static inline void ep_event_ready(struct eventpoll *ep, struct epitem *epi)
->> +{
->> +     if (epi->event.events & EPOLLHEAD)
->> +             list_add(&epi->rdllink, &ep->rdllist);
->> +     else
->> +             list_add_tail(&epi->rdllink, &ep->rdllist);
->> +}
->> +
->>  /* Get the "struct epitem" from a wait queue pointer */
->>  static inline struct epitem *ep_item_from_wait(wait_queue_t *p)
->>  {
->> @@ -494,7 +503,7 @@ static int ep_scan_ready_list(struct eventpoll *ep,
->>                * contain them, and the list_splice() below takes care of them.
->>                */
->>               if (!ep_is_linked(&epi->rdllink))
->> -                     list_add_tail(&epi->rdllink, &ep->rdllist);
->> +                     ep_event_ready(ep, epi);
->>       }
->>       /*
->>        * We need to set back ep->ovflist to EP_UNACTIVE_PTR, so that after
->> @@ -829,7 +838,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
->>
->>       /* If this file is already in the ready list we exit soon */
->>       if (!ep_is_linked(&epi->rdllink))
->> -             list_add_tail(&epi->rdllink, &ep->rdllist);
->> +             ep_event_ready(ep, epi);
->>
->>       /*
->>        * Wake up ( if active ) both the eventpoll wait list and the ->poll()
->> @@ -957,7 +966,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
->>
->>       /* If the file is already "ready" we drop it inside the ready list */
->>       if ((revents & event->events) && !ep_is_linked(&epi->rdllink)) {
->> -             list_add_tail(&epi->rdllink, &ep->rdllist);
->> +             ep_event_ready(ep, epi);
->>
->>               /* Notify waiting tasks that events are available */
->>               if (waitqueue_active(&ep->wq))
->> @@ -1025,7 +1034,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
->>       if (revents & event->events) {
->>               spin_lock_irq(&ep->lock);
->>               if (!ep_is_linked(&epi->rdllink)) {
->> -                     list_add_tail(&epi->rdllink, &ep->rdllist);
->> +                     ep_event_ready(ep, epi);
->>
->>                       /* Notify waiting tasks that events are available */
->>                       if (waitqueue_active(&ep->wq))
->> @@ -1094,7 +1103,7 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
->>                                * ep_scan_ready_list() holding "mtx" and the
->>                                * poll callback will queue them in ep->ovflist.
->>                                */
->> -                             list_add_tail(&epi->rdllink, &ep->rdllist);
->> +                             ep_event_ready(ep, epi);
->>                       }
->>               }
->>       }
->> diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
->> index f6856a5..b7658e1 100644
->> --- a/include/linux/eventpoll.h
->> +++ b/include/linux/eventpoll.h
->> @@ -26,6 +26,9 @@
->>  #define EPOLL_CTL_DEL 2
->>  #define EPOLL_CTL_MOD 3
->>
->> +/* When target file descriptor is ready, insert it into head of ready list */
->> +#define EPOLLHEAD (1 << 29)
->> +
->>  /* Set the One Shot behaviour for the target file descriptor */
->>  #define EPOLLONESHOT (1 << 30)
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
