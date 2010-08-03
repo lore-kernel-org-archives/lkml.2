@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab0HCErj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:47:39 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51011 "EHLO
+	id S1754932Ab0HCE4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:56:13 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39264 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab0HCErh convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752254Ab0HCE4L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:47:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=RTfHXFeFJ4UZ544lVB34Yz7yQAFn8MYnwA9eo1ihAZQy+sEo6ZpZi1lqPlnuqA+uP9
-         H0rvOPazZsuTywtP/zqDWujLsGwNHstDioo8bClKx6RlvUG0k+7VEx+9gz/XjlB+HkZY
-         EHsMKqTW+MYFeFq5JKnSQxmVnsszyjN3Wx7kg=
+	Tue, 3 Aug 2010 00:56:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100803042835.GA17377@localhost>
-References: <20100802124734.GI2486@arachsys.com>
-	<AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
-	<20100803033108.GA23117@arachsys.com>
-	<AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
-	<20100803042835.GA17377@localhost>
-Date: Tue, 3 Aug 2010 13:47:36 +0900
-Message-ID: <AANLkTimC1z0MwTxUjxED7N1-R4D_YXtvnPSbiKXdR+4W@mail.gmail.com>
-Subject: Re: Over-eager swapping
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Chris Webb <chris@arachsys.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+In-Reply-To: <20100802011006.GS2470@linux.vnet.ibm.com>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100731215214.2543c07e@infradead.org>
+	<20100801054816.GI2470@linux.vnet.ibm.com>
+	<20100731230101.7cc1d8c7@infradead.org>
+	<20100801191228.GL2470@linux.vnet.ibm.com>
+	<20100801154708.19817b75@infradead.org>
+	<20100802011006.GS2470@linux.vnet.ibm.com>
+Date: Mon, 2 Aug 2010 21:56:10 -0700
+Message-ID: <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 1:28 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> On Tue, Aug 03, 2010 at 12:09:18PM +0800, Minchan Kim wrote:
->> On Tue, Aug 3, 2010 at 12:31 PM, Chris Webb <chris@arachsys.com> wrote:
->> > Minchan Kim <minchan.kim@gmail.com> writes:
->> >
->> >> Another possibility is _zone_reclaim_ in NUMA.
->> >> Your working set has many anonymous page.
->> >>
->> >> The zone_reclaim set priority to ZONE_RECLAIM_PRIORITY.
->> >> It can make reclaim mode to lumpy so it can page out anon pages.
->> >>
->> >> Could you show me /proc/sys/vm/[zone_reclaim_mode/min_unmapped_ratio] ?
->> >
->> > Sure, no problem. On the machine with the /proc/meminfo I showed earlier,
->> > these are
->> >
->> >  # cat /proc/sys/vm/zone_reclaim_mode
->> >  0
->> >  # cat /proc/sys/vm/min_unmapped_ratio
->> >  1
->>
->> if zone_reclaim_mode is zero, it doesn't swap out anon_pages.
+On Sun, Aug 1, 2010 at 6:10 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Sun, Aug 01, 2010 at 03:47:08PM -0700, Arjan van de Ven wrote:
+...
+>> Another one: freezing whole cgroups..... we have that today. it
+>> actually works quite well.... of course the hard part is the decision
+>> what to put in which cgroup, and at what frequency and duration you let
+>> cgroups run.
 >
-> If there are lots of order-1 or higher allocations, anonymous pages
-> will be randomly evicted, regardless of their LRU ages. This is
+> Indeed, the Android guys seemed to be quite excited by cgroup freezing
+> until they thought about the application-classification problem.
+> Seems like it should be easy for some types of applications, but I do
+> admit that apps can have non-trivial and non-obvious dependencies.
+>
 
-I thought swapped out page is huge (ie, 3G) even though it enters lumpy mode.
-But it's possible. :)
-
-> probably another factor why the users claim. Are there easy ways to
-> confirm this other than patching the kernel?
-
-cat /proc/buddyinfo can help?
-
-Off-topic:
-It would be better to add new vmstat of lumpy entrance.
-
-Pseudo code.
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0f9f624..d10ff4e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1641,7 +1641,7 @@ out:
-        }
- }
-
--static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc)
-+static void set_lumpy_reclaim_mode(int priority, struct scan_control
-*sc, struct zone *zone)
- {
-        /*
-         * If we need a large contiguous chunk of memory, or have
-@@ -1654,6 +1654,9 @@ static void set_lumpy_reclaim_mode(int priority,
-struct scan_control *sc)
-                sc->lumpy_reclaim_mode = 1;
-        else
-                sc->lumpy_reclaim_mode = 0;
-+
-+       if (sc->lumpy_reclaim_mode)
-+               inc_zone_state(zone, NR_LUMPY);
- }
-
- /*
-@@ -1670,7 +1673,7 @@ static void shrink_zone(int priority, struct zone *zone,
-
-        get_scan_count(zone, sc, nr, priority);
-
--       set_lumpy_reclaim_mode(priority, sc);
-+       set_lumpy_reclaim_mode(priority, sc, zone);
-
-        while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
-                                        nr[LRU_INACTIVE_FILE]) {
+The dependencies is what made this solution uninteresting to us. For
+instance, we currently use cgroup scheduling to reduce the impact of
+some background tasks, but we occasionally saw a watchdog restart of
+the system process were critical services were waiting on a kernel
+mutex owned by a background task for more than 20 seconds. If we froze
+a cgroup instead, we would not hit this particular problem since tasks
+cannot be frozen while executing kernel code the same way they can be
+preempted, but nothing prevents a task from being frozen while holding
+a user-space resource.
 
 -- 
-Kind regards,
-Minchan Kim
+Arve Hjønnevåg
