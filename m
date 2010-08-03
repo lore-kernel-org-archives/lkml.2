@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab0HCRXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:23:04 -0400
-Received: from www.tglx.de ([62.245.132.106]:48772 "EHLO www.tglx.de"
+	id S1756435Ab0HCRbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:31:55 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:49522 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755563Ab0HCRXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:23:01 -0400
-Date: Tue, 3 Aug 2010 19:20:33 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        "Hans J. Koch" <hjk@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Tejun Heo <tj@kernel.org>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/11] uio: do not use PCI resources before
- pci_enable_device()
-Message-ID: <20100803172033.GC2208@silverbox.local>
-References: <1280850264-6258-1-git-send-email-segooon@gmail.com>
+	id S1755628Ab0HCRby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 13:31:54 -0400
+X-ASG-Debug-ID: 1280856712-642d00030000-xx1T2L
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C585287.80806@fusionio.com>
+Date: Tue, 3 Aug 2010 19:31:51 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280850264-6258-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: Jan Harkes <jaharkes@cs.cmu.edu>, "coda@cs.cmu.edu" <coda@cs.cmu.edu>,
+        "stable@kernel.org" <stable@kernel.org>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
+        Bryan Mesich <bryan.mesich@ndsu.edu>,
+        "scst-devel@lists.sourceforge.net" <scst-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Neil Brown <neilb@suse.de>
+X-ASG-Orig-Subj: Re: [PATCH] coda: rename REQ_* to CODA_REQ_*
+Subject: Re: [PATCH] coda: rename REQ_* to CODA_REQ_*
+References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net>	<4C52A98A.7060507@kernel.org> <20100802104227.79340b49@notabene> <4C56D397.8010305@kernel.org> <4C5724E8.9010204@kernel.dk> <4C57E722.5060809@kernel.org> <4C57FA57.2000601@kernel.dk> <4C57FBAD.1080809@fusionio.com> <4C583B3B.3060301@kernel.org> <4C583DAD.4080507@kernel.org>
+In-Reply-To: <4C583DAD.4080507@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1280856712
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 07:44:23PM +0400, Kulikov Vasiliy wrote:
-> IRQ and resource[] may not have correct values until
-> after PCI hotplug setup occurs at pci_enable_device() time.
-> 
-> The semantic match that finds this problem is as follows:
-> 
-> // <smpl>
-> @@
-> identifier x;
-> identifier request ~= "pci_request.*|pci_resource.*";
-> @@
-> 
-> (
-> * x->irq
-> |
-> * x->resource
-> |
-> * request(x, ...)
-> )
->  ...
-> *pci_enable_device(x)
-> // </smpl>
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+On 2010-08-03 18:02, Tejun Heo wrote:
+> REQ_* constants are used for block layer requests causing inconsistent
+> duplicate definitions of REQ_WRITE.  Rename REQ_* used by coda to
+> CODA_REQ_*.
 
-Looks alright to me, thanks!
+Should have been clear, I committed the fixup already:
 
-Signed-off-by: Hans J. Koch <hjk@linutronix.de>
+http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=ceb1fde0d5c7611fdb9004176ac34140d27e745a
 
-> ---
->  drivers/uio/uio_pci_generic.c |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/uio/uio_pci_generic.c b/drivers/uio/uio_pci_generic.c
-> index 85c9884..fc22e1e 100644
-> --- a/drivers/uio/uio_pci_generic.c
-> +++ b/drivers/uio/uio_pci_generic.c
-> @@ -128,12 +128,6 @@ static int __devinit probe(struct pci_dev *pdev,
->  	struct uio_pci_generic_dev *gdev;
->  	int err;
->  
-> -	if (!pdev->irq) {
-> -		dev_warn(&pdev->dev, "No IRQ assigned to device: "
-> -			 "no support for interrupts?\n");
-> -		return -ENODEV;
-> -	}
-> -
->  	err = pci_enable_device(pdev);
->  	if (err) {
->  		dev_err(&pdev->dev, "%s: pci_enable_device failed: %d\n",
-> @@ -141,6 +135,13 @@ static int __devinit probe(struct pci_dev *pdev,
->  		return err;
->  	}
->  
-> +	if (!pdev->irq) {
-> +		dev_warn(&pdev->dev, "No IRQ assigned to device: "
-> +			 "no support for interrupts?\n");
-> +		pci_disable_device(pdev);
-> +		return -ENODEV;
-> +	}
-> +
->  	err = verify_pci_2_3(pdev);
->  	if (err)
->  		goto err_verify;
-> -- 
-> 1.7.0.4
+Looks byte-for-byte identical :-)
+
+-- 
+Jens Axboe
+
+
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
