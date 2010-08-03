@@ -1,132 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab0HCDBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 23:01:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39144 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab0HCDBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 23:01:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,306,1278313200"; 
-   d="scan'208";a="592279882"
-Date: Tue, 3 Aug 2010 11:01:25 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 2/5] writeback: stop periodic/background work on seeing
- sync works
-Message-ID: <20100803030125.GA12070@localhost>
-References: <20100729115142.102255590@intel.com>
- <20100729121423.332557547@intel.com>
- <20100729162027.GF12690@quack.suse.cz>
- <20100730040306.GA5694@localhost>
- <20100802205152.GL3278@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100802205152.GL3278@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753819Ab0HCDJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 23:09:35 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47117 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab0HCDJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 23:09:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=SA1+BoN8etlKZMPpViGs703TJJGuUmYtr+8rodvpNZhhAovsK/Kgg1ySXLgZ6JKMpr
+         optyTS9Vhbkx/iYTX9v9Nmkzq8ZWqeNcYxrHwISvh31fWP2b7gsuC3+3zhPb4aTNcUml
+         yNTY6HIPWUJ3N5MeHMTnfaOHUz+H3PMGfJ5uM=
+Subject: [PATCH] tc6393xb: fix wrong goto labels for error handling
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Ian Molton <ian@mnementh.co.uk>
+Content-Type: text/plain
+Date: Tue, 03 Aug 2010 11:10:41 +0800
+Message-Id: <1280805041.27646.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 04:51:52AM +0800, Jan Kara wrote:
-> On Fri 30-07-10 12:03:06, Wu Fengguang wrote:
-> > On Fri, Jul 30, 2010 at 12:20:27AM +0800, Jan Kara wrote:
-> > > On Thu 29-07-10 19:51:44, Wu Fengguang wrote:
-> > > > The periodic/background writeback can run forever. So when any
-> > > > sync work is enqueued, increase bdi->sync_works to notify the
-> > > > active non-sync works to exit. Non-sync works queued after sync
-> > > > works won't be affected.
-> > >   Hmm, wouldn't it be simpler logic to just make for_kupdate and
-> > > for_background work always yield when there's some other work to do (as
-> > > they are livelockable from the definition of the target they have) and
-> > > make sure any other work isn't livelockable?
-> > 
-> > Good idea!
-> > 
-> > > The only downside is that
-> > > non-livelockable work cannot be "fair" in the sense that we cannot switch
-> > > inodes after writing MAX_WRITEBACK_PAGES.
-> > 
-> > Cannot switch indoes _before_ finish with the current
-> > MAX_WRITEBACK_PAGES batch? 
->   Well, even after writing all those MAX_WRITEBACK_PAGES. Because what you
-> want to do in a non-livelockable work is: take inode, write it, never look at
-> it again for this work. Because if you later return to the inode, it can
-> have newer dirty pages and thus you cannot really avoid livelock. Of
-> course, this all assumes .nr_to_write isn't set to something small. That
-> avoids the livelock as well.
+This patch corrects the error handling path.
 
-I do have a poor man's solution that can handle this case.
-https://kerneltrap.org/mailarchive/linux-fsdevel/2009/10/7/6476473/thread
-It may do more extra works, but will stop livelock in theory.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/tc6393xb.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-A related question is, what if some for_reclaim works get enqueued?
-Shall we postpone the sync work as well? The global sync is not likely
-to hit the dirty pages in a small memcg, or may take long time. It
-seems not a high priority task though.
-
-> > >   I even had a patch for this but it's already outdated by now. But I
-> > > can refresh it if we decide this is the way to go.
-> > 
-> > I'm very interested in your old patch, would you post it? Let's see
-> > which one is easier to work with :)
->   OK, attached is the patch. I've rebased it against 2.6.35.
-> 									Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-
-> From a6df0d4db148f983fe756df4791409db28dff459 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Mon, 2 Aug 2010 22:30:25 +0200
-> Subject: [PATCH] mm: Stop background writeback if there is other work queued for the thread
-> 
-> Background writeback and kupdate-style writeback are easily livelockable
-> (from a definition of their target). This is inconvenient because it can
-> make sync(1) stall forever waiting on its queued work to be finished.
-> Fix the problem by interrupting background and kupdate writeback if there
-> is some other work to do. We can return to them after completing all the
-> queued work.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/fs-writeback.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index d5be169..542471e 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -633,6 +633,14 @@ static long wb_writeback(struct bdi_writeback *wb,
->  			break;
->  
->  		/*
-> +		 * Background writeout and kupdate-style writeback are
-> +		 * easily livelockable. Stop them if there is other work
-> +		 * to do so that e.g. sync can proceed.
-> +		 */
-> +		if ((work->for_background || work->for_kupdate) &&
-> +		    !list_empty(&wb->bdi->work_list))
-> +			break;
-> +		/*
-
-I like it. It's much simpler.
-
-Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+index fcf9068..ef6c42c 100644
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -732,9 +732,9 @@ err_gpio_add:
+ 	if (tc6393xb->gpio.base != -1)
+ 		temp = gpiochip_remove(&tc6393xb->gpio);
+ 	tcpd->disable(dev);
+-err_clk_enable:
+-	clk_disable(tc6393xb->clk);
+ err_enable:
++	clk_disable(tc6393xb->clk);
++err_clk_enable:
+ 	iounmap(tc6393xb->scr);
+ err_ioremap:
+ 	release_resource(&tc6393xb->rscr);
+-- 
+1.5.4.3
 
 
-Thanks,
-Fengguang
+
