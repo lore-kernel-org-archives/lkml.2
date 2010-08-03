@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab0HCSgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 14:36:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64764 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab0HCSgr convert rfc822-to-8bit (ORCPT
+	id S1757440Ab0HCSid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 14:38:33 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49462 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232Ab0HCSib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 14:36:47 -0400
-Subject: Re: [PATCH V3 0/8] Cleancache: overview
-Mime-Version: 1.0 (Apple Message framework v1081)
+	Tue, 3 Aug 2010 14:38:31 -0400
+Date: Tue, 3 Aug 2010 20:38:49 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] amd64_edac patchqueue for .36
+Message-ID: <20100803183849.GA303@aftab>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <andreas.dilger@oracle.com>
-X-Priority: 3
-In-Reply-To: <a7f4db53-c348-4cff-8762-7ea4031e4813@default>
-Date: Tue, 3 Aug 2010 12:34:19 -0600
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Christoph Hellwig <hch@infradead.org>,
-        ngupta@vflare.org, akpm@linux-foundation.org,
-        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-        Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <22A6238E-0BA4-4AB9-A4FA-28B206A47513@oracle.com>
-References: <20100621231809.GA11111%ca-server1.us.oracle.com4C49468B.40307@vflare.org> <840b32ff-a303-468e-9d4e-30fc92f629f8@default> <20100723140440.GA12423@infradead.org> <364c83bd-ccb2-48cc-920d-ffcf9ca7df19@default> <a7f4db53-c348-4cff-8762-7ea4031e4813@default>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-X-Mailer: Apple Mail (2.1081)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C58617F.00FB:SCFMA4539814,ss=1,fgs=0
+Content-Disposition: inline
+user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-03, at 11:35, Dan Magenheimer wrote:
-> - The FS should be block-device-based (e.g. a ram-based FS
->  such as tmpfs should not enable cleancache)
+[ Forgot to add LKML to CC ]
 
-When you say "block device based", does this exclude network filesystems?  It would seem cleancache, like fscache, is actually best suited to high-latency network filesystems.
+Hi Linus,
 
-> - To ensure coherency/correctness, inode numbers must be unique
->  (e.g. no emulating 64-bit inode space on 32-bit inode numbers)
+please pull the following patchqueue of mostly cleanups and fixes.
 
-Does it need to be restricted to inode numbers at all (i.e. can it use an opaque internal identifier like the NFS file handle)?  Disallowing cleancache on a filesystem that uses 64-bit (or larger) inodes on a 32-bit system reduces its usefulness.
+On thing that stands out is the removal of EDAC's quirky polling
+mechanism in favor of using the MCE decoder notifier chain for non-fatal
+MCEs (of which CECCs are part of). Thus the out-of-tree oneliner to
+<arch/x86/kernel/cpu/mcheck/mce.c> which Ingo already acked.
 
-Cheers, Andreas
---
-Andreas Dilger
-Lustre Technical Lead
-Oracle Corporation Canada Inc.
+Thanks.
 
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+
+  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-linus
+
+Borislav Petkov (10):
+      amd64_edac: Sanitize syndrome extraction
+      edac: Remove EDAC_DEBUG_VERBOSE
+      amd64_edac: Remove unneeded defines
+      x86, mce: Notify about corrected events too
+      amd64_edac: Remove polling mechanism
+      amd64_edac: Fix DCT base address selector
+      amd64_edac: Correct scrub rate setting
+      edac, mc: Improve scrub rate handling
+      amd64_edac: Fix operator precendence error
+      amd64_edac: Minor formatting fix
+
+ arch/x86/kernel/cpu/mcheck/mce.c |    1 +
+ drivers/edac/Kconfig             |    8 --
+ drivers/edac/amd64_edac.c        |  213 ++++++++++----------------------------
+ drivers/edac/amd64_edac.h        |   48 +++------
+ drivers/edac/e752x_edac.c        |    4 +-
+ drivers/edac/edac_core.h         |   17 +---
+ drivers/edac/edac_mc_sysfs.c     |   86 +++++++---------
+ drivers/edac/edac_mce_amd.c      |   16 ++--
+ drivers/edac/i5100_edac.c        |    7 +-
+ 9 files changed, 121 insertions(+), 279 deletions(-)
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
