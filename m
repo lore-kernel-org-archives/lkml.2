@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab0HCPmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:42:43 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46575 "EHLO
+	id S932235Ab0HCPnX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:43:23 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46162 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab0HCPmj (ORCPT
+	with ESMTP id S1756010Ab0HCPnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:42:39 -0400
+	Tue, 3 Aug 2010 11:43:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Ecw03tSnfMcO3J0ayMIP0/UuAcKVWrrZOQZNvu2G2O7PF4Bo1Bg+kn4gSSeBXL5ccM
-         3xohTwaoR87obBvhXPRk26kB25VkBRqU2IqasU1JRNj9gNLvTJrpCL/m3Z4soag6qzqv
-         lhtOF1Il8K6c8o7mvQmlyWNp2eo+lbtR5SNHs=
+        b=pw5sc6/PMFURraGvgfPkHCCMO72k4DOhVATm3r2KKHsWbuiZJp8EZ8gB9Cwjd2ZPPn
+         +EnR2aODb3YFOqxTU5pFeoJoLykRjzP6rYBf+nMcvncqYPKw5i6Vm1HqDwQdG95B1/I7
+         3Axw93+y5lN8X+szMkeRYsG0W5AFTnk34QWE8=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
-        Zhenyu Wang <zhenyuw@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 02/11] agp: intel-agp: do not use PCI resources before pci_enable_device()
-Date: Tue,  3 Aug 2010 19:42:34 +0400
-Message-Id: <1280850154-5010-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 04/11] cxgb4vf: do not use PCI resources before pci_enable_device()
+Date: Tue,  3 Aug 2010 19:43:15 +0400
+Message-Id: <1280850196-5448-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -53,49 +49,90 @@ identifier request ~= "pci_request.*|pci_resource.*";
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/char/agp/intel-agp.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/net/cxgb4vf/cxgb4vf_main.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/char/agp/intel-agp.c b/drivers/char/agp/intel-agp.c
-index d836a71..237dd23 100644
---- a/drivers/char/agp/intel-agp.c
-+++ b/drivers/char/agp/intel-agp.c
-@@ -908,6 +908,17 @@ static int __devinit agp_intel_probe(struct pci_dev *pdev,
- 	dev_info(&pdev->dev, "Intel %s Chipset\n", intel_agp_chipsets[i].name);
- 
- 	/*
-+	* If the device has not been properly setup, the following will catch
-+	* the problem and should stop the system from crashing.
-+	* 20030610 - hamish@zot.org
-+	*/
-+	if (pci_enable_device(pdev)) {
-+		dev_err(&pdev->dev, "can't enable PCI device\n");
-+		agp_put_bridge(bridge);
-+		return -ENODEV;
-+	}
-+
-+	/*
- 	* The following fixes the case where the BIOS has "forgotten" to
- 	* provide an address range for the GART.
- 	* 20030610 - hamish@zot.org
-@@ -921,17 +932,6 @@ static int __devinit agp_intel_probe(struct pci_dev *pdev,
- 		}
+diff --git a/drivers/net/cxgb4vf/cxgb4vf_main.c b/drivers/net/cxgb4vf/cxgb4vf_main.c
+index a165632..7b6d07f 100644
+--- a/drivers/net/cxgb4vf/cxgb4vf_main.c
++++ b/drivers/net/cxgb4vf/cxgb4vf_main.c
+@@ -2462,23 +2462,24 @@ static int __devinit cxgb4vf_pci_probe(struct pci_dev *pdev,
+ 		version_printed = 1;
  	}
  
--	/*
--	* If the device has not been properly setup, the following will catch
--	* the problem and should stop the system from crashing.
--	* 20030610 - hamish@zot.org
--	*/
--	if (pci_enable_device(pdev)) {
--		dev_err(&pdev->dev, "can't enable PCI device\n");
--		agp_put_bridge(bridge);
--		return -ENODEV;
--	}
++
+ 	/*
+-	 * Reserve PCI resources for the device.  If we can't get them some
+-	 * other driver may have already claimed the device ...
++	 * Initialize generic PCI device state.
+ 	 */
+-	err = pci_request_regions(pdev, KBUILD_MODNAME);
++	err = pci_enable_device(pdev);
+ 	if (err) {
+-		dev_err(&pdev->dev, "cannot obtain PCI resources\n");
++		dev_err(&pdev->dev, "cannot enable PCI device\n");
+ 		return err;
+ 	}
+ 
+ 	/*
+-	 * Initialize generic PCI device state.
++	 * Reserve PCI resources for the device.  If we can't get them some
++	 * other driver may have already claimed the device ...
+ 	 */
+-	err = pci_enable_device(pdev);
++	err = pci_request_regions(pdev, KBUILD_MODNAME);
+ 	if (err) {
+-		dev_err(&pdev->dev, "cannot enable PCI device\n");
+-		goto err_release_regions;
++		dev_err(&pdev->dev, "cannot obtain PCI resources\n");
++		goto err_disable_device;
+ 	}
+ 
+ 	/*
+@@ -2491,14 +2492,14 @@ static int __devinit cxgb4vf_pci_probe(struct pci_dev *pdev,
+ 		if (err) {
+ 			dev_err(&pdev->dev, "unable to obtain 64-bit DMA for"
+ 				" coherent allocations\n");
+-			goto err_disable_device;
++			goto err_release_regions;
+ 		}
+ 		pci_using_dac = 1;
+ 	} else {
+ 		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+ 		if (err != 0) {
+ 			dev_err(&pdev->dev, "no usable DMA configuration\n");
+-			goto err_disable_device;
++			goto err_release_regions;
+ 		}
+ 		pci_using_dac = 0;
+ 	}
+@@ -2514,7 +2515,7 @@ static int __devinit cxgb4vf_pci_probe(struct pci_dev *pdev,
+ 	adapter = kzalloc(sizeof(*adapter), GFP_KERNEL);
+ 	if (!adapter) {
+ 		err = -ENOMEM;
+-		goto err_disable_device;
++		goto err_release_regions;
+ 	}
+ 	pci_set_drvdata(pdev, adapter);
+ 	adapter->pdev = pdev;
+@@ -2750,13 +2751,13 @@ err_free_adapter:
+ 	kfree(adapter);
+ 	pci_set_drvdata(pdev, NULL);
+ 
+-err_disable_device:
+-	pci_disable_device(pdev);
+-	pci_clear_master(pdev);
 -
- 	/* Fill in the mode register */
- 	if (cap_ptr) {
- 		pci_read_config_dword(pdev,
+ err_release_regions:
+ 	pci_release_regions(pdev);
+ 	pci_set_drvdata(pdev, NULL);
++	pci_clear_master(pdev);
++
++err_disable_device:
++	pci_disable_device(pdev);
+ 
+ err_out:
+ 	return err;
 -- 
 1.7.0.4
 
