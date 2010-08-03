@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab0HCVeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 17:34:06 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41588 "EHLO mgw2.diku.dk"
+	id S1757346Ab0HCVeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 17:34:20 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41605 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756488Ab0HCVeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 17:34:02 -0400
-Date: Tue, 3 Aug 2010 23:34:00 +0200 (CEST)
+	id S1757260Ab0HCVeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 17:34:18 -0400
+Date: Tue, 3 Aug 2010 23:34:16 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 5/9] drivers/spi: Drop unnecessary null test
-Message-ID: <Pine.LNX.4.64.1008032333440.20393@ask.diku.dk>
+To: Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>, cluster-devel@redhat.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 6/9] fs/dlm: Drop unnecessary null test
+Message-ID: <Pine.LNX.4.64.1008032334010.20393@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,7 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-list_for_each_entry binds its first argument to a non-null value, and thus
+hlist_for_each_entry binds its first argument to a non-null value, and thus
 any null test on the value of that argument is superfluous.
 
 The semantic patch that makes this change is as follows:
@@ -31,7 +30,8 @@ The semantic patch that makes this change is as follows:
 // <smpl>
 @@
 iterator I;
-expression x,E;
+expression x,E,E1,E2;
+statement S,S1,S2;
 @@
 
 I(x,...) { <...
@@ -43,28 +43,19 @@ I(x,...) { <...
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/spi/orion_spi.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/dlm/lowcomms.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/spi/orion_spi.c b/drivers/spi/orion_spi.c
-index 3aea50d..0b677dc 100644
---- a/drivers/spi/orion_spi.c
-+++ b/drivers/spi/orion_spi.c
-@@ -404,7 +404,7 @@ static int orion_spi_transfer(struct spi_device *spi, struct spi_message *m)
- 			goto msg_rejected;
- 		}
+diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+index c0d35c6..37a34c2 100644
+--- a/fs/dlm/lowcomms.c
++++ b/fs/dlm/lowcomms.c
+@@ -248,7 +248,7 @@ static struct connection *assoc2con(int assoc_id)
  
--		if ((t != NULL) && t->bits_per_word)
-+		if (t->bits_per_word)
- 			bits_per_word = t->bits_per_word;
- 
- 		if ((bits_per_word != 8) && (bits_per_word != 16)) {
-@@ -415,7 +415,7 @@ static int orion_spi_transfer(struct spi_device *spi, struct spi_message *m)
- 			goto msg_rejected;
- 		}
- 		/*make sure buffer length is even when working in 16 bit mode*/
--		if ((t != NULL) && (t->bits_per_word == 16) && (t->len & 1)) {
-+		if ((t->bits_per_word == 16) && (t->len & 1)) {
- 			dev_err(&spi->dev,
- 				"message rejected : "
- 				"odd data length (%d) while in 16 bit mode\n",
+ 	for (i = 0 ; i < CONN_HASH_SIZE; i++) {
+ 		hlist_for_each_entry(con, h, &connection_hash[i], list) {
+-			if (con && con->sctp_assoc == assoc_id) {
++			if (con->sctp_assoc == assoc_id) {
+ 				mutex_unlock(&connections_lock);
+ 				return con;
+ 			}
