@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab0HCEmV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:42:21 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59697 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab0HCEmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:42:19 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 3 Aug 2010 13:37:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: linux-mm@kvack.org,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm 1/5] quick lookup memcg by ID
-Message-Id: <20100803133723.bb6487a0.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100803133109.c0e6f150.nishimura@mxp.nes.nec.co.jp>
-References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100802191304.8e520808.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100803133109.c0e6f150.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1754887Ab0HCEm5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:42:57 -0400
+Received: from xenotime.net ([72.52.115.56]:38974 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751189Ab0HCEm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 00:42:56 -0400
+Date: Mon, 2 Aug 2010 21:42:49 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Donald Parsons <dparsons@brightdsl.net>
+Cc: Harald Hoyer <harald.hoyer@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux 2.6.35
+Message-Id: <20100802214249.b0fee617.rdunlap@xenotime.net>
+In-Reply-To: <1280802701.5836.10.camel@falcon.homelinux.org>
+References: <1280716262.5125.42.camel@falcon.homelinux.org>
+	<201008012138.39036.bjorn.helgaas@hp.com>
+	<1280722876.5125.83.camel@falcon.homelinux.org>
+	<AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com>
+	<1280802701.5836.10.camel@falcon.homelinux.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,112 +30,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Aug 2010 13:31:09 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Mon, 02 Aug 2010 22:31:41 -0400 Donald Parsons wrote:
 
-> Hi.
-> 
-> Thank you for all of your works.
-> 
-> Several comments are inlined.
-> 
-> On Mon, 2 Aug 2010 19:13:04 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> On Mon, 2010-08-02 at 18:08 +0200, Harald Hoyer wrote: 
+> > On Mon, Aug 2, 2010 at 6:21 AM, Donald Parsons <dparsons@brightdsl.net> wrote:
+> > > On Sun, 2010-08-01 at 21:38 -0600, Bjorn Helgaas wrote:
+> > >> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
+> > >> > 2.6.35 still fails to boot for me, as first reported here:
+> > >> >  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
+> > >> >
+> > >> > I've manually bisected it down to around May 20 between
+> > >> >   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
+> > >> > Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
+> > >> >
+> > >> > Unfortunately first time I tried was with 2.6.35-rc6 and
+> > >> > it failed to boot.
+> > >> >
+> > >> > Failure when switching from initramfs to real /root?
+> > >> > Removing kernel "quiet" param appears to show several
+> > >> > lines listing:
+> > >> >
+> > >> >   usb drives/hubs? followed by
+> > >> >   dracut switching root (when booting works)
+> > >> >               or
+> > >> >   usb drives/hubs? followed by
+> > >> >         (missing dracut... line)
+> > >> >   No root device found
+> > >> >   Boot has failed, sleeping forever.   (when it does not boot)
+> > >> >
+> > >> > Grub, typical entry:
+> > >> > title Fedora (2.6.35)
+> > >> >     root (hd0,0)
+> > >> >     kernel /vmlinuz-2.6.35 ro
+> > >> > root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
+> > >> > SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
+> > >> > rdblacklist=nouveau init=/sbin/bootchartd
+> > >> >     initrd /initramfs-2.6.35.img
+> > >> >
+> > >> >
+> > >> > My boot failure seems to be different than other two reported
+> > >> > in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
+> > >> > under Bug #16173 and #16228
+> > >>
+> > >> Will it boot with the "pci=nocrs" option?  If so, please open a
+> > >
+> > > No, I tried this on a few attempts when I saw it mentioned under
+> > > bug #16228.  But it had no effect/benefit.  Sorry, I should have
+> > > mentioned this.
+> > >
+> > >> report at https://bugzilla.kernel.org, mark it a regression, assign
+> > >> it to me, and attach the complete dmesg log.  And please respond to
+> > >> this thread with a pointer to the bugzilla.
+> > >>
+> > >> Otherwise, a complete console log should have a clue.  The best
+> > >> thing would be a log from a serial console or netconsole, with
+> > >> "ignore_loglevel".
+> > >
+> > > Maybe I will try netconsole tomorrow.  But is Ethernet up when
+> > > this boot failure happens?  I think not, since initramfs should
+> > > not need networking.
+> > >
+> > > Should I try building sata driver into kernel?  Oh, I am using
+> > > ext3, and fdisk -l shows:
 > > 
-> > Now, memory cgroup has an ID per cgroup and make use of it at
-> >  - hierarchy walk,
-> >  - swap recording.
+> > # dracut --add-drivers "sata" ....
 > > 
-> > This patch is for making more use of it. The final purpose is
-> > to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
+> > or edit /etc/dracut.conf:
 > > 
-> > This patch caches a pointer of memcg in an array. By this, we
-> > don't have to call css_lookup() which requires radix-hash walk.
-> > This saves some amount of memory footprint at lookup memcg via id.
-> > 
-> > Changelog: 20100730
-> >  - fixed rcu_read_unlock() placement.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  init/Kconfig    |   11 +++++++++++
-> >  mm/memcontrol.c |   48 ++++++++++++++++++++++++++++++++++--------------
-> >  2 files changed, 45 insertions(+), 14 deletions(-)
-> > 
-> > Index: mmotm-0727/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0727.orig/mm/memcontrol.c
-> > +++ mmotm-0727/mm/memcontrol.c
-> > @@ -292,6 +292,30 @@ static bool move_file(void)
-> >  					&mc.to->move_charge_at_immigrate);
-> >  }
-> >  
-> > +/* 0 is unused */
-> > +static atomic_t mem_cgroup_num;
-> > +#define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
-> > +static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
-> > +
-> > +static struct mem_cgroup *id_to_memcg(unsigned short id)
-> > +{
-> > +	/*
-> > +	 * This array is set to NULL when mem_cgroup is freed.
-> > +	 * IOW, there are no more references && rcu_synchronized().
-> > +	 * This lookup-caching is safe.
-> > +	 */
-> > +	if (unlikely(!mem_cgroups[id])) {
-> > +		struct cgroup_subsys_state *css;
-> > +
-> > +		rcu_read_lock();
-> > +		css = css_lookup(&mem_cgroup_subsys, id);
-> > +		rcu_read_unlock();
-> > +		if (!css)
-> > +			return NULL;
-> > +		mem_cgroups[id] = container_of(css, struct mem_cgroup, css);
-> > +	}
-> > +	return mem_cgroups[id];
-> > +}
-> id_to_memcg() seems to be called under rcu_read_lock() already, so I think
-> rcu_read_lock()/unlock() would be unnecessary.
+> > add_drivers+=" sata "
 > 
-
-Maybe. I thought about which is better to add
-
-	VM_BUG_ON(!rcu_read_lock_held);
-or
-	rcu_read_lock()
-	..
-	rcu_read_unlock()
-
-Do you like former ? If so, it's ok to remove rcu-read-lock.
-
-
-
-> > Index: mmotm-0727/init/Kconfig
-> > ===================================================================
-> > --- mmotm-0727.orig/init/Kconfig
-> > +++ mmotm-0727/init/Kconfig
-> > @@ -594,6 +594,17 @@ config CGROUP_MEM_RES_CTLR_SWAP
-> >  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
-> >  	  size is 4096bytes, 512k per 1Gbytes of swap.
-> >  
-> > +config MEM_CGROUP_MAX_GROUPS
-> > +	int "Maximum number of memory cgroups on a system"
-> > +	range 1 65535
-> > +	default 8192 if 64BIT
-> > +	default 2048 if 32BIT
-> > +	help
-> > +	  Memory cgroup has limitation of the number of groups created.
-> > +	  Please select your favorite value. The more you allow, the more
-> > +	  memory will be consumed. This consumes vmalloc() area, so,
-> > +	  this should be small on 32bit arch.
-> > +
-> We don't use vmalloc() area in this version :)
+> But the kernel used to boot with same identical modules before
+> but not after 2.6.34-git4.
+>  --------
 > 
-Oh. yes. thank you. I'll fix
+> Using your suggestion as to where the problem lies, I investigated
+> more deeply and found:
+> 
+> I've now got 2.6.35-rc6-git3 to boot (and almost certainly 2.6.35 final)
+> 
+> Make oldconfig broke at the transition where boot began failed, ie,
+> between 2.6.34-git4 and 2.6.34-git5.   Even though modules are the
+> same, boot fails.  If I use gconfig and set CONFIG_SATA_AHCI=y
+> instead of CONFIG_SATA_AHCI=m it works, except cannot select =y
+> unless CONFIG_ATA changed from m to y.
+> 
+> So at some point in past, make oldconfig had apparently changed
+> CONFIG_SATA_AHCI from y to m and system still booted.  But between
+> 2.6.34-git4 and 2.6.34-git5 the ability to boot was lost.
+> 
+> So make oldconfig is not 100% trustworthy in this case.  I do not
+> know if this is a problem that should be fixed.  Ask if you want
+> any .config diffs.
+> 
+> I am going to reboot with 2.6.35 to make sure it boots. Yes!
+> 
+> I consider this boot problem solved unless someone wants to
+> improve "make oldconfig" behavior.
 
-Thanks,
--Kame
+It would be good to be able to explain what you are seeing & describing,
+so yes, if you can send a .config file that exhibits the problem, I'd
+love to look at it.
 
-
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
