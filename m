@@ -1,218 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab0HCMUz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 08:20:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55171 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab0HCMUx convert rfc822-to-8bit (ORCPT
+	id S1756183Ab0HCMWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 08:22:32 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34447 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756010Ab0HCMWa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 08:20:53 -0400
-Subject: Re: perf failed with kernel 2.6.35-rc
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-In-Reply-To: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
-References: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 3 Aug 2010 08:22:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KyAtmFPxjCVaQKic1mOpqDTgy4HoFcEEuJoyi8YIlS6zDX42JPNRCeLm/sU/D2cCuy
+         3qrxIMJ2/tRNif3xXCQsCSxKfdAcWJd0oYfR0oiP6r/tjJNyzYBDrUC3fjB1ipmCrvpM
+         9+hZ1+iENxd2Dx6VTmiaJtnn/RizN/qAlDe10=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1007291934310.16616@casper.infradead.org>
+References: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com>
+	<20100722122111.4cf4ca2f@lxorguk.ukuu.org.uk>
+	<AANLkTilKJx18oyc815DhKfPv-Yjdv8UmfJ4WTDxZxaab@mail.gmail.com>
+	<AANLkTimnxkn5eLRHOAs6v_TJE0hM5=dQ3OWaiQP6tPJd@mail.gmail.com>
+	<loom.20100724T155117-833@post.gmane.org>
+	<AANLkTi=LAHhHEK3vbtwefroOrpoKpUs5B5=iu5_asMp6@mail.gmail.com>
+	<AANLkTimHQ5DoqXikCu7=Nse16axKYYTJZEBJsSxFEH2y@mail.gmail.com>
+	<20100728203921.0dd6562d@lxorguk.ukuu.org.uk>
+	<alpine.LFD.2.00.1007291659400.16616@casper.infradead.org>
+	<20100729190515.6ec85db2@lxorguk.ukuu.org.uk>
+	<alpine.LFD.2.00.1007291934310.16616@casper.infradead.org>
+Date: Tue, 3 Aug 2010 14:22:29 +0200
+Message-ID: <AANLkTi=HZP85cpn2LFDxAOxwR0LE1Etp97EWJYnUd2o+@mail.gmail.com>
+Subject: Re: Introducing the LCD-Linux project
+From: Mattia Jona-Lasinio <mattia.jona@gmail.com>
+To: James Simmons <jsimmons@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-kernel@vger.kernel.org, lcd-linux-users@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 03 Aug 2010 14:20:43 +0200
-Message-ID: <1280838043.1923.587.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 16:14 +0800, Zhang, Yanmin wrote:
+I explored the kernel sources dealing with the console emulation,
+framebuffer support and console drivers. I do realize that if we want to fix
+all layers in a clean way there is a lot of work to do.
 
-> If I comment out the workaround in function intel_pmu_nhm_enable_all,
-> perf could work.
-> 
-> A quick glance shows:
-> wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-> should be:
-> wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+But before going any further I'd like to know some preliminary things.
+We are talking about a massive rewrite of code, also including a redesign
+of the console layer and (at least) the VGA driver (vgacon) and framebuffer
+driver (fbcon), not just a couple of patches to throw in. Do we have the will
+to do this job? I mean, I personally do but I don't want to spend time and
+effort in something that will be eventually rejected.
+Linux has a console system, so we are not in a hurry and we can
+think about it. So the main question: how do we proceed?
 
-Correct, I've got a patch for that laying around,.. posted it several
-times in the struct pmu rework series.
+In case we want to fix this, we should discuss about the design and
+implementation
+to follow. Presently the struct vc_data contains a lot of information
+common to the driver and the
+console layers. We should split this struct in order to have a more
+transparent interface
+between the two parts. Ideally the driver should not know anything
+about the console
+implementation and the members of the vc_data and it should only take care about
+displaying the right thing at the right place.
+The vt_struct should represent a physical device, like a monitor or a
+LCD display.
+Every vt_struct can have one or more vc_data associated to it. All
+available vt_struct
+are physically refreshed but for every vt_struct, only the currently
+visible vc_data on that struct is
+actually updated. The others are just "software updated". I don't know
+if all this is
+the same idea that James was suggesting.
 
-> I triggered sysrq to dump PMU registers and found the last bit of
-> global status register is 1. I added a status reset operation like below patch:
-> 
-> --- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 09:38:11.000000000 +0800
-> +++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 14:41:42.000000000 +0800
-> @@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
->  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
->  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
->  
-> -		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-> +		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
->  		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
-> +		/*
-> +		 * Reset the last 3 bits of global status register in case
-> +		 * previous enabling causes overflows.
-> +		 */
-> +		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+We should avoid fixed size vectors of pointers to these structs by
+making them elements
+of linked lists.
 
-Like Stephane already pointed out (and the comment above this function
-mentions), these counters should be non-counting, and thus should not
-cause an overflow (and this function gets called with GLOBAL_CTRL
-cleared, so it shouldn't be counting to begin with).
+I agree on the mapping between vc and vt but I'd like to make the
+number of vc per vt
+an option to be passed at boot time or when init is launched (for
+instance), not a
+compile time option.
 
-The Nehalem-EX errata BA72 seems to agree (assuming Xeon-7500 is indeed
-the EX, Intel really should do something about this naming madness)
-http://www.intel.com/Assets/en_US/PDF/specupdate/323344.pdf
+I totally agree that all this must be somewhat separated from the tty
+layer, to have
+a console without a tty driver, or at least a very light one.
 
-[ Also see the trace outout below, PERFCTR[12] stay 0 ]
+What do you think?
 
->  		for (i = 0; i < 3; i++) {
->  			struct perf_event *event = cpuc->events[i];
-> 
-> 
-> 
-> However, it still doesn't work. Current right way is to comment out
-> the workaround.
+Coming back to LCD-Linux, I will write a module to make it use the
+present framework,
+basically deactivating the terminal emulation and a bunch of other things, but
+keeping the virtual display. Let's see the result ;)
 
-So I frobbed the below patchlet to debug things, as it appears I can
-indeed reproduce on my westmere.
+BTW, I currently use lcd-linux with a 4x40 LCD display
+which has two controllers onboard. The possibility to drive displays
+with more than one
+(up to 7) controller onboard is a feature of the present hd44780 driver.
 
----
- arch/x86/kernel/cpu/perf_event.c       |   24 +++++++++++++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel.c |    2 +-
- 2 files changed, 24 insertions(+), 2 deletions(-)
+Greetings
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f2da20f..2ca41f7 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -31,7 +31,7 @@
- #include <asm/nmi.h>
- #include <asm/compat.h>
- 
--#if 0
-+#if 1
- #undef wrmsrl
- #define wrmsrl(msr, val) 					\
- do {								\
-@@ -42,6 +42,16 @@ do {								\
- } while (0)
- #endif
- 
-+#if 1
-+#undef rdmsrl
-+#define rdmsrl(msr, val)					\
-+do {								\
-+	(val) = native_read_msr(msr);				\
-+	trace_printk("rdmsrl(%lx, %lx)\n", (unsigned long)(msr),\
-+			(unsigned long)(val));			\
-+} while (0)
-+#endif
-+
- /*
-  * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
-  */
-@@ -583,6 +593,14 @@ static void x86_pmu_disable_all(void)
- 	}
- }
- 
-+static void noinline check_status(void)
-+{
-+	u64 status;
-+	rdmsrl(MSR_CORE_PERF_GLOBAL_STATUS, status);
-+	if (WARN_ON(status))
-+		perf_event_print_debug();
-+}
-+
- void hw_perf_disable(void)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-@@ -598,6 +616,8 @@ void hw_perf_disable(void)
- 	barrier();
- 
- 	x86_pmu.disable_all();
-+
-+	check_status();
- }
- 
- static void x86_pmu_enable_all(int added)
-@@ -816,6 +836,8 @@ void hw_perf_enable(void)
- 	if (cpuc->enabled)
- 		return;
- 
-+	check_status();
-+
- 	if (cpuc->n_added) {
- 		int n_running = cpuc->n_events - cpuc->n_added;
- 		/*
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 214ac86..56ce7dc 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -505,7 +505,7 @@ static void intel_pmu_nhm_enable_all(int added)
- 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
- 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
- 
--		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-+		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
- 		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
- 
- 		for (i = 0; i < 3; i++) {
----
+Mattia
 
-It results in the below trace (edited out some superfluous stack traces:
 
-           <...>-1871  [000]    96.759853: intel_pmu_disable_all: wrmsrl(38f, 0)
-           <...>-1871  [000]    96.759853: <stack trace>
- => hw_perf_disable
- => perf_disable
- => perf_ctx_adjust_freq
- => perf_event_task_tick
- => scheduler_tick
- => update_process_times
- => tick_sched_timer
- => __run_hrtimer
-           <...>-1871  [000]    96.759872: check_status: rdmsrl(38e, 1)
-           <...>-1871  [000]    96.759872: <stack trace>
- => hw_perf_disable
- => perf_disable
- => perf_ctx_adjust_freq
- => perf_event_task_tick
- => scheduler_tick
- => update_process_times
- => tick_sched_timer
- => __run_hrtimer
-           <...>-1871  [000]    96.760180: perf_event_print_debug: rdmsrl(38f, 0)
-           <...>-1871  [000]    96.760186: perf_event_print_debug: rdmsrl(38e, 1)
-           <...>-1871  [000]    96.760191: perf_event_print_debug: rdmsrl(390, 0)
-           <...>-1871  [000]    96.760196: perf_event_print_debug: rdmsrl(38d, 0)
-           <...>-1871  [000]    96.760201: perf_event_print_debug: rdmsrl(3f1, 0)
-           <...>-1871  [000]    96.760248: perf_event_print_debug: rdmsrl(186, 53003c)
-           <...>-1871  [000]    96.760258: perf_event_print_debug: rdmsrl(c1, d1e91)
-           <...>-1871  [000]    96.760285: perf_event_print_debug: rdmsrl(187, 4300b1)
-           <...>-1871  [000]    96.760290: perf_event_print_debug: rdmsrl(c2, 0)
-           <...>-1871  [000]    96.760320: perf_event_print_debug: rdmsrl(188, 4300b5)
-           <...>-1871  [000]    96.760340: perf_event_print_debug: rdmsrl(c3, 0)
-           <...>-1871  [000]    96.760359: perf_event_print_debug: rdmsrl(189, 0)
-           <...>-1871  [000]    96.760379: perf_event_print_debug: rdmsrl(c4, 0)
-           <...>-1871  [000]    96.760398: perf_event_print_debug: rdmsrl(309, 0)
-           <...>-1871  [000]    96.760417: perf_event_print_debug: rdmsrl(30a, 0)
-           <...>-1871  [000]    96.760432: perf_event_print_debug: rdmsrl(30b, 0)
-           <...>-1871  [000]    96.760432: <stack trace>
- => check_status
- => hw_perf_disable
- => perf_disable
- => perf_ctx_adjust_freq
- => perf_event_task_tick
- => scheduler_tick
- => update_process_times
- => tick_sched_timer
-
-Which seems to indicate we somehow disable the PMU (clear GLOBAL_CTRL)
-with a pending overflow (as indicated by GLOBAL_STATUS and PERFCTR0).
-
-So there's two questions:
- 1) how can we end up in the above state
- 2) why does the fixup change things
-
-most confusing..
+On Thu, Jul 29, 2010 at 8:39 PM, James Simmons <jsimmons@infradead.org> wrote:
+>
+>> > 3) Invert the VT layer. Currently the console/printk driver is on top of
+>> >    the tty layer. It would be nice to be able to only use a very light
+>> >    weight vt printk without the VT tty on top for embedded platforms.
+>>
+>> No. printk hits console drivers why may or may not be frame buffer
+>> interfaces. Has done for a very long time. Keith Packard has also been
+>> doing stuff with crash time oops displays etc over an X display.
+>
+> Correct. What I mean is have the ability to just register the console
+> driver but not the tty driver.
+>
+>> > 4) Seperate out the VT emulation layer. Related to 3.
+>>
+>> Separate from what ?
+>
+> We can still have a basic tty layer without the control characters, think
+> do_con_trol in vt.c, junk compiled into the kernel. Make it a options for
+> userland to do the vt100 emulation.
+>
+>> > 5) Multiple independent VT support. Which brings up the question what
+>> >    should the mapping of VCs to a VT look like.
