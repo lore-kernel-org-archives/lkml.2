@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab0HCRg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:36:58 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:45886 "EHLO
+	id S1757246Ab0HCRhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:37:05 -0400
+Received: from mail1.microsoft.com ([131.107.115.212]:15361 "EHLO
 	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab0HCRg4 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756727Ab0HCRg6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:36:56 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Aug 2010 13:36:56 EDT
+	Tue, 3 Aug 2010 13:36:58 -0400
 From: Hank Janssen <hjanssen@microsoft.com>
 To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
         "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
         "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>
-CC: "'gregkh@suse.de'" <gregkh@suse.de>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using correct
- index
-Thread-Topic: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
- correct index
-Thread-Index: AcszLH4zXLsEPQuASP+5uxzSPyjpcg==
-Date: Tue, 3 Aug 2010 17:31:51 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FD0D21@TK5EX14MBXC114.redmond.corp.microsoft.com>
+CC: Haiyang Zhang <haiyangz@microsoft.com>,
+        "'gregkh@suse.de'" <gregkh@suse.de>
+Subject: [PATCH 2/6] staging: hv: Fixed lockup problem with bounce_buffer
+ scatter list
+Thread-Topic: [PATCH 2/6] staging: hv: Fixed lockup problem with
+ bounce_buffer scatter list
+Thread-Index: AcszLN0XE1cvJoW/S1u5tYxf4xhZuw==
+Date: Tue, 3 Aug 2010 17:31:53 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FD1D29@TK5EX14MBXC114.redmond.corp.microsoft.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -33,40 +32,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hank Janssen <hjanssen@microsoft.com> 
+From: Hank Janssen <hjanssen@microsoft.com>
 
-Fixed bounce offset kmap problem by using correct index
+Fixed lockup problem with bounce_buffer scatter list which caused crashes in heavy loads.
 
 Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com> 
 
 ---
- drivers/staging/hv/storvsc_drv.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 075b61b..3b9ccb0 100644
+index 3b9ccb0..169d701 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -495,7 +495,7 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
+@@ -615,6 +615,7 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
+ 	unsigned int request_size = 0;
+ 	int i;
+ 	struct scatterlist *sgl;
++	unsigned int sg_count = 0;
  
- 		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
+ 	DPRINT_DBG(STORVSC_DRV, "scmnd %p dir %d, use_sg %d buf %p len %d "
+ 		   "queue depth %d tagged %d", scmnd, scmnd->sc_data_direction, @@ -697,6 +698,7 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
+ 	request->DataBuffer.Length = scsi_bufflen(scmnd);
+ 	if (scsi_sg_count(scmnd)) {
+ 		sgl = (struct scatterlist *)scsi_sglist(scmnd);
++		sg_count = scsi_sg_count(scmnd);
  
--		if (j == 0)
-+		if (bounce_addr == 0)
- 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
+ 		/* check if we need to bounce the sgl */
+ 		if (do_bounce_buffer(sgl, scsi_sg_count(scmnd)) != -1) { @@ -731,15 +733,16 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
+ 					      scsi_sg_count(scmnd));
  
- 		while (srclen) {
-@@ -556,7 +556,7 @@ static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
- 		destlen = orig_sgl[i].length;
- 		/* ASSERT(orig_sgl[i].offset + orig_sgl[i].length <= PAGE_SIZE); */
+ 			sgl = cmd_request->bounce_sgl;
++			sg_count = cmd_request->bounce_sgl_count;
+ 		}
  
--		if (j == 0)
-+		if (bounce_addr == 0)
- 			bounce_addr = (unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])), KM_IRQ0);
+ 		request->DataBuffer.Offset = sgl[0].offset;
  
- 		while (destlen) {
+-		for (i = 0; i < scsi_sg_count(scmnd); i++) {
++		for (i = 0; i < sg_count; i++) {
+ 			DPRINT_DBG(STORVSC_DRV, "sgl[%d] len %d offset %d\n",
+ 				   i, sgl[i].length, sgl[i].offset);
+-			request->DataBuffer.PfnArray[i] =
+-					page_to_pfn(sg_page((&sgl[i])));
++			request->DataBuffer.PfnArray[i] = 
++				page_to_pfn(sg_page((&sgl[i])));
+ 		}
+ 	} else if (scsi_sglist(scmnd)) {
+ 		/* ASSERT(scsi_bufflen(scmnd) <= PAGE_SIZE); */
 --
 1.6.0.2
-
 
