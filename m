@@ -1,240 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab0HCXfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 19:35:09 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4615 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756741Ab0HCXfH (ORCPT
+	id S1757960Ab0HCXgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 19:36:17 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40157 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756529Ab0HCXgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 19:35:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6063"; a="49640137"
-Message-ID: <4C58A7AA.8020007@codeaurora.org>
-Date: Tue, 03 Aug 2010 16:35:06 -0700
-From: Patrick Pannuto <ppannuto@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12pre) Gecko/20100715 Shredder/3.0.7pre
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-arm-msm@vger.kernel.org, linux-omap.vger.kernel.org@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, damm@opensource.se,
-        lethal@linux-sh.org, rjw@sisk.pl, dtor@mail.ru, eric.y.miao@gmail.com,
-        netdev@vger.kernel.org
-Subject: [RFC PATCH] platform: Faciliatate the creation of pseduo-platform
- busses
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Aug 2010 19:36:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 4 Aug 2010 08:31:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC][PATCH -mm] hibernation: freeze swap at hibernation (Was
+ Re: Memory corruption during hibernation since 2.6.31
+Message-Id: <20100804083119.8b7cd3f0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201008040109.15818.rjw@sisk.pl>
+References: <201007282334.08063.rjw@sisk.pl>
+	<20100730131432.891df49a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
+	<201008040109.15818.rjw@sisk.pl>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inspiration for this comes from:
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
+On Wed, 4 Aug 2010 01:09:15 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-INTRO
+> On Monday, August 02, 2010, KAMEZAWA Hiroyuki wrote:
+> > On Fri, 30 Jul 2010 13:14:32 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > On Thu, 29 Jul 2010 21:10:10 -0700
+> > > Hugh Dickins <hughd@google.com> wrote:
+> > > 
+> > > > On Thu, Jul 29, 2010 at 5:01 PM, KAMEZAWA Hiroyuki
+> > > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > > 
+> > > > > I think the best way is kexec(). But maybe rollback from hibernation failure
+> > > > > will be difficult. Considering how crash-dump works well and under maintainance
+> > > > > by many enterprise guys, hibernation-by-kexec is a choice. I think. It can make
+> > > > > reuse of kdump code, ...or, hibernation-resume code can eat kdump image
+> > > > > directly. Maybe the problem will be the speed of dump.
+> > > > 
+> > > > I've no appetite for a total rework of hibernation, and I don't see
+> > > > how that would
+> > > > address the issue: I'm just looking for some protection against swap
+> > > > reuse danger.
+> > > > 
+> > > Okay ;) (And I forget that kexec has to prepare memory at boot time for 2nd kernel.
+> > > It will be harmful for small device guys.)
+> > > 
+> > > I'll prepare a routine not-quick-fix.
+> > 
+> > Ok, here. Passed easy tests as
+> > # echo disk > /sys/power/state
+> > 
+> > 
+> > Looks like a big hammer ? But I think following kind of patch is required.
+> > About swap-reuse, it's only possible when a page is added to swap cache
+> > but try_to_unmap() fails and the page remains in memory. IIUC, most of this
+> > kind of pages will be backed to swap by shrink_all_memory(). So, reuse-swap
+> > happens only when the user unlucky. This patch ignores reuse-swap but freeze
+> > swap_map[] for saving swap_map[] to the disk in consistent way.
+> > 
+> > ==
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > swap_map[] is a one of objects which can be update while hibernation. I.E,
+> > usage counter in swap_map[] is updated while hibernation is making a copy
+> > of memory image to the disk.
+> > 
+> > At resume, hibenation code doesn't call swap_free() against the swaps they
+> > used...So, the swap_map[] will turns to be an initial state.
+> > 
+> > With small consideration, the question is how swap_map[] updated before
+> > dumping to the disk is treated. In swap-system view, there are no guarantee
+> > that swap_map[] are properly reloaded and there is no leak in swap count.
+> > 
+> > This patch tries to freeze swap_map[] during hibernation.
+> > By this, no updates will be happen to swap_map[] among save_image().
+> > At load_image(), the swap_map[] has no record for swap entries used by
+> > save_image(), we can simply forget it.
+> > 
+> > Note: I'm not a specialist of hibernation...so, I'm not sure the hooks
+> >       to kernel/power/user.c is appropriate or not.
+> >       And this disables swap-out once hibernation starts saving.
+> >       Should we afraid of OOM ?
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> I have only one comment (below).
+> 
+> > ---
+> ...
+> > Index: mmotm-0727/kernel/power/user.c
+> > ===================================================================
+> > --- mmotm-0727.orig/kernel/power/user.c
+> > +++ mmotm-0727/kernel/power/user.c
+> > @@ -135,6 +135,7 @@ static int snapshot_release(struct inode
+> >  	free_basic_memory_bitmaps();
+> >  	data = filp->private_data;
+> >  	free_all_swap_pages(data->swap);
+> > +	hibernation_thaw_swap();
+> 
+> free_all_swap_pages() calls hibernation_thaw_swap(), so it doesn't need to be
+> called again.
+> 
 
-As SOCs become more popular, the desire to quickly define a simple,
-but functional, bus type with only a few unique properties becomes
-desirable. As they become more complicated, the ability to nest these
-simple busses and otherwise orchestrate them to match the actual
-topology also becomes desirable.
+Ah, yes. Thank you for review.
 
-EXAMPLE USAGE
+Regards,
+-Kame
 
-/arch/ARCH/MY_ARCH/my_bus.c:
-
-	#include <linux/device.h>
-	#include <linux/platform_device.h>
-
-	struct bus_type my_bus_type = {
-		.name	= "mybus",
-	};
-	EXPORT_SYMBOL_GPL(my_bus_type);
-
-	struct platform_device sub_bus1 = {
-		.name		= "sub_bus1",
-		.id		= -1,
-		.dev.bus	= &my_bus_type,
-	}
-	EXPORT_SYMBOL_GPL(sub_bus1);
-
-	struct platform_device sub_bus2 = {
-		.name		= "sub_bus2",
-		.id		= -1,
-		.dev.bus	= &my_bus_type,
-	}
-	EXPORT_SYMBOL_GPL(sub_bus2);
-
-	static int __init my_bus_init(void)
-	{
-		int error;
-		platform_bus_type_init(&my_bus_type);
-
-		error = bus_register(&my_bus_type);
-		if (error)
-			return error;
-
-		error = platform_device_register(&sub_bus1);
-		if (error)
-			goto fail_sub_bus1;
-
-		error = platform_device_register(&sub_bus2);
-		if (error)
-			goto fail_sub_bus2;
-
-		return error;
-
-	fail_sub_bus2:
-		platform_device_unregister(&sub_bus1);
-	fail_sub_bus2:
-		bus_unregister(&my_bus_type);
-
-		return error;
-	}
-	postcore_initcall(my_bus_init);
-	EXPORT_SYMBOL_CPY(my_bus_init);
-
-/drivers/my_driver.c
-	static struct platform_driver my_driver = {
-		.driver	= {
-			.name	= "my-driver",
-			.owner	= THIS_MODULE,
-			.bus	= &my_bus_type,
-		},
-	};
-
-/somewhere/my_device.c
-	static struct platform_device my_device = {
-		.name		= "my-device",
-		.id		= -1,
-		.dev.bus	= &my_bus_type,
-		.dev.parent	= &sub_bus_1.dev,
-	};
-
-Notice that for a device / driver, only 3 lines were added to
-switch from the platform bus to the new my_bus. This is
-especially valuable if we consider supporting a legacy SOCs
-and new SOCs where the same driver is used, but may need to
-be on either the platform bus or the new my_bus. The above
-code then becomes:
-
-	(possibly in a header)
-	#ifdef CONFIG_MY_BUS
-	#define MY_BUS_TYPE	&my_bus_type
-	#else
-	#define MY_BUS_TYPE	NULL
-	#endif
-
-/drivers/my_driver.c
-	static struct platform_driver my_driver = {
-		.driver	= {
-			.name	= "my-driver",
-			.owner	= THIS_MODULE,
-			.bus	= MY_BUS_TYPE,
-		},
-	};
-
-Which will allow the same driver to easily to used on either
-the platform bus or the newly defined bus type.
-
-This will build a device tree that mirrors the actual configuration:
-    /sys/bus
-    |-- my_bus
-    |   |-- devices
-    |   |   |-- sub_bus1 -> ../../../devices/platform/sub_bus1
-    |   |   |-- sub_bus2 -> ../../../devices/platform/sub_bus2
-    |   |   |-- my-device -> ../../../devices/platform/sub_bus1/my-device
-    |   |-- drivers
-    |   |   |-- my-driver
-
-I believe this to be a fairly elegant and simple solution to the
-problem, but humbly RFC
-
--Pat
-
-Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
----
- drivers/base/platform.c         |   30 ++++++++++++++++++++++++++----
- include/linux/platform_device.h |    2 ++
- 2 files changed, 28 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 4d99c8b..c86be03 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -241,7 +241,8 @@ int platform_device_add(struct platform_device *pdev)
- 	if (!pdev->dev.parent)
- 		pdev->dev.parent = &platform_bus;
- 
--	pdev->dev.bus = &platform_bus_type;
-+	if (!pdev->dev.bus)
-+		pdev->dev.bus = &platform_bus_type;
- 
- 	if (pdev->id != -1)
- 		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
-@@ -482,7 +483,8 @@ static void platform_drv_shutdown(struct device *_dev)
-  */
- int platform_driver_register(struct platform_driver *drv)
- {
--	drv->driver.bus = &platform_bus_type;
-+	if (!drv->driver.bus)
-+		drv->driver.bus = &platform_bus_type;
- 	if (drv->probe)
- 		drv->driver.probe = platform_drv_probe;
- 	if (drv->remove)
-@@ -539,12 +541,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
- 	 * if the probe was successful, and make sure any forced probes of
- 	 * new devices fail.
- 	 */
--	spin_lock(&platform_bus_type.p->klist_drivers.k_lock);
-+	spin_lock(&drv->driver.bus->p->klist_drivers.k_lock);
- 	drv->probe = NULL;
- 	if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
- 		retval = -ENODEV;
- 	drv->driver.probe = platform_drv_probe_fail;
--	spin_unlock(&platform_bus_type.p->klist_drivers.k_lock);
-+	spin_unlock(&drv->driver.bus->p->klist_drivers.k_lock);
- 
- 	if (code != retval)
- 		platform_driver_unregister(drv);
-@@ -1017,6 +1019,26 @@ struct bus_type platform_bus_type = {
- };
- EXPORT_SYMBOL_GPL(platform_bus_type);
- 
-+/** platform_bus_type_init - fill in a pseudo-platform-bus
-+  * @bus: foriegn bus type
-+  *
-+  * This init is basically a selective memcpy that
-+  * won't overwrite any user-defined attributes and
-+  * only copies things that platform bus defines anyway
-+  */
-+void platform_bus_type_init(struct bus_type *bus)
-+{
-+	if (!bus->dev_attrs)
-+		bus->dev_attrs = platform_bus_type.dev_attrs;
-+	if (!bus->match)
-+		bus->match = platform_bus_type.match;
-+	if (!bus->uevent)
-+		bus->uevent = platform_bus_type.uevent;
-+	if (!bus->pm)
-+		bus->pm = platform_bus_type.pm;
-+}
-+EXPORT_SYMBOL_GPL(platform_bus_type_init);
-+
- int __init platform_bus_init(void)
- {
- 	int error;
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index 5417944..fa8c35a 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -79,6 +79,8 @@ extern int platform_driver_probe(struct platform_driver *driver,
- #define platform_get_drvdata(_dev)	dev_get_drvdata(&(_dev)->dev)
- #define platform_set_drvdata(_dev,data)	dev_set_drvdata(&(_dev)->dev, (data))
- 
-+extern void platform_bus_type_init(struct bus_type *);
-+
- extern struct platform_device *platform_create_bundle(struct platform_driver *driver,
- 					int (*probe)(struct platform_device *),
- 					struct resource *res, unsigned int n_res,
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
