@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672Ab0HCSus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 14:50:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46056 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757605Ab0HCSuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 14:50:24 -0400
-Date: Tue, 3 Aug 2010 11:37:55 -0700
-From: Greg KH <gregkh@suse.de>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        nm127@freemail.hu, linux-kernel@vger.kernel.org, maxinbjohn@gmail.com,
-        forest.bond@outpostembedded.com, vijaykumar@zilogic.com
-Subject: Re: [PATCH] USB-serial dummy cable driver
-Message-ID: <20100803183755.GA5281@suse.de>
-References: <1280728807-20296-1-git-send-email-marek.vasut@gmail.com>
- <201008031936.39556.marek.vasut@gmail.com>
- <20100803174912.GA2190@suse.de>
- <201008032021.07504.marek.vasut@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201008032021.07504.marek.vasut@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757625Ab0HCSvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 14:51:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55363 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757559Ab0HCSvp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 14:51:45 -0400
+Date: Tue, 3 Aug 2010 11:50:41 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Karel Zak <kzak@redhat.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v2 RFC] efi: add and expose efi_partition_by_guid
+Message-Id: <20100803115041.101630be.randy.dunlap@oracle.com>
+In-Reply-To: <1280803966-11603-1-git-send-email-wad@chromium.org>
+References: <20100802.160057.91342787.davem@davemloft.net>
+	<1280803966-11603-1-git-send-email-wad@chromium.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C586518.01AE:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 08:21:07PM +0200, Marek Vasut wrote:
-> Dne Út 3. srpna 2010 19:49:12 Greg KH napsal(a):
-> > On Tue, Aug 03, 2010 at 07:36:39PM +0200, Marek Vasut wrote:
-> > > Dne Út 3. srpna 2010 18:38:26 Greg KH napsal(a):
-> > > > On Tue, Aug 03, 2010 at 06:14:15PM +0200, Marek Vasut wrote:
-> > > > > Dne Út 3. srpna 2010 00:47:18 Greg KH napsal(a):
-> > > > > > On Mon, Aug 02, 2010 at 08:00:07AM +0200, Marek Vasut wrote:
-> > > > > > > This driver is used to implement USB-serial like behaviour over
-> > > > > > > dummy
-> > > > > > > 
-> > > > > > > USB cables. These are used in the following devices:
-> > > > > > > 	Funsoft Serial USB driver
-> > > > > > > 	Genesys Logic GL620USB USB Laplink cable
-> > > > > > > 	HP4x (48/49) Serial cable
-> > > > > > > 	Motorola phones
-> > > > > > > 	Siemens USB-MPI Serial USB driver
-> > > > > > > 	ViVOpay USB Serial Driver
-> > > > > > > 	ZIO Motherboard USB driver
-> > > > > > 
-> > > > > > I like the idea, but not the name :)
-> > > > > 
-> > > > > Please don't expect miracles from me after 26 hours without sleep ;-)
-> > > > > 
-> > > > > > Ideally, all of these would be able to be handled by the usb-serial
-> > > > > > generic driver directly.
-> > > > > 
-> > > > > I just noticed that one. Stupid me.
-> > > > > 
-> > > > > > But really, having these multiple drivers is a good thing, they
-> > > > > > properly convey to the user what the device is, and it gives these
-> > > > > > developers and companies a sense of ownership over the code, and
-> > > > > > that matters at times.
-> > > > > > 
-> > > > > > So you lost the names of the devices with this patch, which isn't
-> > > > > > good.
-> > > > > 
-> > > > > Sheesh ... that's true, but having pile of copies of the same code is
-> > > > > not good either.
-> > > > 
-> > > > I agree, that's why I said it should be reduced.
-> > > > 
-> > > > > Can't we then just deprecate all these drivers and set correct udev
-> > > > > rules?
-> > > > 
-> > > > udev can not change the name of the device in sysfs, or the name in the
-> > > > kernel of the device.
-> > > 
-> > > That's right, but it can bind the generic driver with the hardware. And
-> > > who would care about the driver name, really ? The interface just
-> > > appears and that's what matters (to me and probably to users) ...
-> > 
-> > There are persistant device links in /dev/serial/ that might care about
-> > the driver name.  We don't want to break them, right?
+On Mon,  2 Aug 2010 21:52:46 -0500 Will Drewry wrote:
+
+
+> v2: pr_debug(KERN_WARNING -> pr_debug(. joe@perches.com
+>     moved down trailing {. davem@davemloft.net
+
+Eh?  see below.
+
+> ---
+>  fs/partitions/efi.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/efi.h |    5 ++++
+>  2 files changed, 66 insertions(+), 0 deletions(-)
 > 
-> We can start a slow migration though. Eg. push the serial-generic as a way-to-go 
-> so the distro teams can pick this change and incorporate it into their stuff.
-> 
-> Maybe just mark all those drivers as "DEPRECATED" and add a note there "use 
-> generic-serial".
+> diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
+> index 9efb2cf..8669c4f 100644
+> --- a/fs/partitions/efi.c
+> +++ b/fs/partitions/efi.c
+> @@ -633,3 +633,64 @@ int efi_partition(struct parsed_partitions *state)
+>  	printk("\n");
+>  	return 1;
+>  }
+> +
+> +/**
+> + * efi_partition_by_guid
+> + * @bdev:	Whole block device to scan for a GPT.
+> + * @guid:	Unique identifier for the partition to find.
+> + *
+> + * N.b., returns on the first match since it should be unique.
+> + *
+> + * Returns:
+> + * -1 if an error occurred
+> + *  0 if there was no match (or not GPT)
+> + *  >=1 is the index of the partition found.
+> + *
+> + */
+> +int efi_partition_by_guid(struct block_device *bdev, efi_guid_t *guid) {
 
-{sigh}
+That opening brace should be on a line by itself:
 
-No, the goal is to provide a way for the generic driver to be able to
-specify a "name" so that you don't have to worry about ever breaking
-userspace like this.
+int efi_partition_by_guid(struct block_device *bdev, efi_guid_t *guid)
+{
 
-thanks,
+and the kernel-doc function description should be like so:
 
-greg k-h
+/**
+ * efi_partition_by_guid - find the first (only) matching guid on a block device
+
+or some such short function description.
+
+
+
+> +	gpt_header *gpt = NULL;
+> +	gpt_entry *ptes = NULL;
+> +	u32 i;
+> +	struct parsed_partitions *state;
+> +	int part = 0;
+
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
