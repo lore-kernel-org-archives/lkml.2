@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab0HCMap (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 08:30:45 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33780 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab0HCMao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 08:30:44 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Jeff Roberson <jroberson@jroberson.net>
-Cc: linux-kernel@vger.kernel.org, aaronp@clustrix.com
-Subject: Re: PCI-E Link training bug
-In-Reply-To: Your message of "Tue, 03 Aug 2010 00:36:35 -1000."
-             <alpine.BSF.2.00.1008030030430.1414@desktop>
-From: Valdis.Kletnieks@vt.edu
-References: <alpine.BSF.2.00.1008030030430.1414@desktop>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1280838641_4165P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1756226Ab0HCMcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 08:32:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46347 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156Ab0HCMcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 08:32:10 -0400
+Message-ID: <4C580BF9.6090706@suse.cz>
+Date: Tue, 03 Aug 2010 14:30:49 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Roman Zippel <zippel@linux-m68k.org>,
+        Aristeu Rozanski <aris@redhat.com>
+Subject: Re: [PATCH v2 0/9] kconfig: introduce saveconfig and alldefconfig
+ (+more)
+References: <20100731212907.GA7554@merkur.ravnborg.org>
+In-Reply-To: <20100731212907.GA7554@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Tue, 03 Aug 2010 08:30:41 -0400
-Message-ID: <60320.1280838641@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020203.4C580BF1.03B8,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1280838641_4165P
-Content-Type: text/plain; charset=us-ascii
+On 31.7.2010 23:29, Sam Ravnborg wrote:
+> This is an update of patches previous posted.
+> 
+> Version 2 have addressed the following feedback:
+> - Drop the idea of introducing allrandconfig (Michal, Randy)
+> - Do more code refactoring (Michal)
+> - Use long options in conf.c (Michal)
+> - savedefconfig shall list symbols in same order as in .config (Uwe)
+>  
+> The major feature is the introduction of "make savedefconfig".
+> 
+> Make savedefconfig creates a minimal configuration
+> as have been discussed recently and which is already
+> done for arm and powerpc.
+> savedefconfig utilise the knowledge kconfig has to do so
+> much faster than the phyton script posted.
+> [...]
 
-On Tue, 03 Aug 2010 00:36:35 -1000, Jeff Roberson said:
+Applied, thanks.
 
-> At least one intel chipset will occasionally negotiate a 4x link for an 8x 
-> device in an 8x port.  It is a known errata in the 5400 mch.  
-
-Can this get wrapped in some sort of 'if (chipset == MCH5400)'?  There's no
-sense in adding an entire second of delay going around this loop 4 times when
-it's a valid config on a non-5400 chipset.
-
-
---==_Exmh_1280838641_4165P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMWAvxcC3lWbTT17ARAptMAKC3SpRBXroopZc12PBKq60gCiBxTwCglBFm
-eJsjhG13Ys1k0lwYj8g39OQ=
-=gmxO
------END PGP SIGNATURE-----
-
---==_Exmh_1280838641_4165P--
-
+Michal
