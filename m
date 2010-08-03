@@ -1,78 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab0HCKZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 06:25:42 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48781 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801Ab0HCKZk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 06:25:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=vmwcalXA7HnjEUbIsH2irQ/cIYxFzXZWXo/A3v+UMr0j7x2S2D1MnnEotr8l9qsuFb
-         uYYfFsXZtN8Khg/0oHQl5OXxnrcIvccZFptbQPc6CO3rMNqoPlX4fUXERkdQaMISrlYu
-         KZ6balnRCmeAzUPxcF0eq69UhgG7Q0PBu0oaU=
-Message-ID: <4C57EE9A.7040308@gmail.com>
-Date: Tue, 03 Aug 2010 11:25:30 +0100
-From: Andy Chittenden <andyc.bluearc@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-GB; rv:1.9.2.7) Gecko/20100713 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1755960Ab0HCKdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 06:33:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49528 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754253Ab0HCKc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 06:32:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,308,1278313200"; 
+   d="scan'208";a="644211689"
+Date: Tue, 3 Aug 2010 12:33:01 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ian Molton <ian@mnementh.co.uk>
+Subject: Re: [PATCH] tc6393xb: fix wrong goto labels for error handling
+Message-ID: <20100803103300.GB2635@sortiz-mobl>
+References: <1280805041.27646.1.camel@mola>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Miller <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com,
-        William.Allen.Simpson@gmail.com, gilad@codefidence.com,
-        ilpo.jarvinen@helsinki.fi, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] [Bug 16494] NFS client over TCP hangs due to packet loss
-References: <4c57cfe8.887b0e0a.2f79.4772@mx.google.com>	<20100803.012144.267950450.davem@davemloft.net> <20100803021110.f0b3877b.akpm@linux-foundation.org>
-In-Reply-To: <20100803021110.f0b3877b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280805041.27646.1.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-03 10:11, Andrew Morton wrote:
-> (cc linux-nfs)
->
-> On Tue, 03 Aug 2010 01:21:44 -0700 (PDT) David Miller<davem@davemloft.net>  wrote:
->
->> From: "Andy Chittenden"<andyc.bluearc@gmail.com>
->> Date: Tue, 3 Aug 2010 09:14:31 +0100
->>
->>> I don't know whether this patch is the correct fix or not but it enables the
->>> NFS client to recover.
->>>
->>> Kernel version: 2.6.34.1 and 2.6.32.
->>>
->>> Fixes<https://bugzilla.kernel.org/show_bug.cgi?id=16494>. It clears down
->>> any previous shutdown attempts so that reconnects on a socket that's been
->>> shutdown leave the socket in a usable state (otherwise tcp_sendmsg() returns
->>> -EPIPE).
->>
->> If the SunRPC code wants to close a TCP socket then use it again,
->> it should disconnect by doing a connect() with sa_family == AF_UNSPEC
+On Tue, Aug 03, 2010 at 11:10:41AM +0800, Axel Lin wrote:
+> This patch corrects the error handling path.
+Applied, thanks.
 
-There is code to do that in the SunRPC code in xs_abort_connection() but 
-that's conditionally called from xs_tcp_reuse_connection():
+Cheers,
+Samuel.
 
-static void xs_tcp_reuse_connection(struct rpc_xprt *xprt, struct 
-sock_xprt *transport)
-{
-	unsigned int state = transport->inet->sk_state;
-
-	if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED)
-		return;
-	if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT))
-		return;
-	xs_abort_connection(xprt, transport);
-}
-
-That's changed since 2.6.26 where it unconditionally did the connect() 
-with sa_family == AF_UNSPEC. FWIW we cannot reproduce this problem with 
-2.6.26.
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
