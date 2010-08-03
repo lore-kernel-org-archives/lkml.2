@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab0HCBEf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 21:04:35 -0400
-Received: from ozlabs.org ([203.10.76.45]:50874 "EHLO ozlabs.org"
+	id S1754795Ab0HCBIP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 21:08:15 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52426 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754414Ab0HCBEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 21:04:33 -0400
-Date: Tue, 3 Aug 2010 11:04:12 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Scott Wood <scottwood@freescale.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Please pull my perf.git master branch
-Message-ID: <20100803010412.GA28995@brick.ozlabs.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754414Ab0HCBIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 21:08:14 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (tip
+ tree related)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <4C56F317.7030008@zytor.com>
+References: <20100803022310.bec3ba79.sfr@canb.auug.org.au>
+	 <20100802162810.GB4755@flint.arm.linux.org.uk> <4C56F317.7030008@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Aug 2010 11:07:34 +1000
+Message-ID: <1280797654.1902.79.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+On Mon, 2010-08-02 at 09:32 -0700, H. Peter Anvin wrote:
+> > Please, no, don't break the memblock code now.  I'm not reworking the
+> > ARM implementation just as the merge window has opened - especially
+> > as the ARM implementation has now been pulled into other people's
+> > trees.
+> > 
+> > If there's changes to memblock which haven't been in linux-next (which,
+> > as this is a new failure, that is most definitely the case), then they
+> > shouldn't be going into this merge window.
+> > 
+> 
+> Ben, what's your tack on this?
 
-Please do a pull from my perf.git tree at:
+I'm perfectly happy to wait for the next merge window.. or even delay it
+a bit til we can make sure ARM stuff is in, then memblock is updated to
+also update ARM.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulus/perf.git master
+The latest failure is a bit of a concern... it shows that sh and
+microblaze have not tested the series when I asked them to a while back
+then, but then, I suppose everybody is short on time.
 
-to get two commits.  They only affect the driver for the PMU on the
-Freescale embedded PowerPC processors.  One is from Peter Z. and has
-been around for some time.  The other fixes a bug introduced by a
-patch from Peter Z. that I sent upstream recently.
+In any case, I'll fixup those glitches in my memblock branch, and we can
+look at the ARM situation then and decide what to do.
 
-Thanks,
-Paul.
+Cheers,
+Ben.
+ 
 
-Peter Zijlstra (1):
-      perf, powerpc: Convert the FSL driver to use local64_t
-
-Scott Wood (1):
-      perf, powerpc: fsl_emb: Restore setting perf_sample_data.period
-
- arch/powerpc/kernel/perf_event_fsl_emb.c |   29 +++++++++++++++--------------
- 1 files changed, 15 insertions(+), 14 deletions(-)
