@@ -1,184 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab0HCRyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:54:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55747 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756835Ab0HCRyp (ORCPT
+	id S1757478Ab0HCRzO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:55:14 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62548 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756835Ab0HCRzM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:54:45 -0400
-Date: Tue, 3 Aug 2010 10:53:12 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Dan Kruchinin <dkruchinin@acm.org>,
+	Tue, 3 Aug 2010 13:55:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTim=fyBDjZORcBygeb6hXQ1bdruufrF7KLqfUfzK@mail.gmail.com>
+References: <1280776623-1337-1-git-send-email-wad@chromium.org>
+	<4C583EE6.4030203@kernel.org>
+	<AANLkTim=fyBDjZORcBygeb6hXQ1bdruufrF7KLqfUfzK@mail.gmail.com>
+Date: Tue, 3 Aug 2010 12:55:10 -0500
+Message-ID: <AANLkTi=z+rg7JH97PMswCzL1PXy_SiAQXYrwhF5Q=ZX1@mail.gmail.com>
+Subject: Re: [PATCH RFC] efi: add and expose efi_partition_by_guid
+From: Will Drewry <wad@chromium.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org, axboe@kernel.dk,
+        Karel Zak <kzak@redhat.com>, "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] padata: update API documentation
-Message-Id: <20100803105312.953f42c2.randy.dunlap@oracle.com>
-In-Reply-To: <20100727052047.GP11081@secunet.com>
-References: <20100727051347.GI11081@secunet.com>
-	<20100727052047.GP11081@secunet.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C585797.00BB:SCFMA4539814,ss=1,fgs=0
+        Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Jul 2010 07:20:47 +0200 Steffen Klassert wrote:
+On Tue, Aug 3, 2010 at 12:17 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Tue, Aug 3, 2010 at 18:08, Tejun Heo <tj@kernel.org> wrote:
+>> On 08/02/2010 09:17 PM, Will Drewry wrote:
+>>> EFI's GPT partitioning scheme expects that all partitions have a unique
+>>> identifiers.  After initial partition scanning, this information is
+>>> completely lost to the rest of the kernel.
+>>>
+>>> efi_partition_by_guid exposes GPT parsing support in a limited fashion
+>>> to allow other portions of the kernel to map a partition from GUID to
+>>> map.
+>
+>> Kay, you were talking about using GUID in GPT for finding out root
+>> device and so on.  Does this fit your use case too?  If not it would
+>> be nice to find out something which can be shared.
+>
+> Yeah, we have something similar in mind since a while, to be able to
+> safely boot a box without an initramfs, and to be able to to specify
+> something like:
+>  root=PARTUUID=6547567-575-7567-567567-57
+>  root=PARTLABEL=foo
+> on the kernel commandline.
 
-> 
-> Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-> ---
->  Documentation/padata.txt |   76 ++++++++++++++++++++++++++++++++++++++-------
->  1 files changed, 64 insertions(+), 12 deletions(-)
-> 
-> diff --git a/Documentation/padata.txt b/Documentation/padata.txt
-> index 93dd4e6..ad2a0ff 100644
-> --- a/Documentation/padata.txt
-> +++ b/Documentation/padata.txt
-> @@ -1,5 +1,5 @@
->  The padata parallel execution mechanism
-> -Last updated for 2.6.34
-> +Last updated for 2.6.36
->  
->  Padata is a mechanism by which the kernel can farm work out to be done in
->  parallel on multiple CPUs while retaining the ordering of tasks.  It was
-> @@ -13,12 +13,28 @@ overall control of how tasks are to be run:
->  
->      #include <linux/padata.h>
->  
-> -    struct padata_instance *padata_alloc(const struct cpumask *cpumask,
-> -				         struct workqueue_struct *wq);
-> +    struct padata_instance *padata_alloc(struct workqueue_struct *wq,
-> +					 const struct cpumask *pcpumask,
-> +					 const struct cpumask *cbcpumask);
->  
-> -The cpumask describes which processors will be used to execute work
-> -submitted to this instance.  The workqueue wq is where the work will
-> -actually be done; it should be a multithreaded queue, naturally.
-> +The pcpumask describes which processors will be used to execute work
-> +submitted to this instance in parallel. The cbcpumask defines which
-> +processors are allowed to use as the serialization callback processor.
+Cool. So I'd like this as well (at least the UUID part), and I'd like
+this to be available for other consumers in the kernel, like
+dm_get_device() or at least for mapped device targets to implement
+support for themselves.  (I have a separate patch for
+mimicking md= for device mapper devices which I should probably post
+to the lists again soon.)
 
-                          to be used as
+> The current 'blkid' already reports stuff like, to have the same
+> information in userspace:
+>  $ blkid -p -oudev /dev/sde1
+>  ID_FS_LABEL=10GB
+>  ID_FS_LABEL_ENC=10GB
+>  ID_FS_UUID=5aafa1bb-70a7-4fe6-b93f-30658ec99fac
+>  ID_FS_UUID_ENC=5aafa1bb-70a7-4fe6-b93f-30658ec99fac
+>  ID_FS_VERSION=1.0
+>  ID_FS_TYPE=ext4
+>  ID_FS_USAGE=filesystem
+>  ID_PART_ENTRY_SCHEME=gpt
+>  ID_PART_ENTRY_UUID=1f765dcb-5214-bd47-b1c5-f2f18848335e
+>  ID_PART_ENTRY_TYPE=a2a0d0eb-e5b9-3344-87c0-68b6b72699c7
+>  ID_PART_ENTRY_NUMBER=1
+>
+> I guess we want to store these identifiers directly into the partition
+> structure, independent of the partition format, so any code can
+> register a callback for a new block device, and can just check if
+> that's the device in question. Walking the block devices would just be
+> something usual provided by the driver core, instead of having some
+> specific EFI walk functions.
 
-> +The workqueue wq is where the work will actually be done; it should be
-> +a multithreaded queue, naturally.
-> +
-> +To allocate a padata instance with the cpu_possible_mask for both 
-> +cpumasks this helper function can be used:
-> +
-> +    struct padata_instance *padata_alloc_possible(struct workqueue_struct *wq);
-> +
-> +Note: Padata maintains two kinds of cpumasks internally. The user supplied
-> +cpumasks, submitted by padata_alloc/padata_alloc_possible and the 'usable'
-> +cpumasks. The usable cpumasks are always the subset of active cpus in the
+Yeah - when I use this function, I end up doing a walk over all the
+block devices, checking if they are whole disk entries, then calling
+the efi_partition_by_guid() function. (Or the walker which I posted
+separately.)  It's not ideal but it has the smallest impact on the
+existing code. (Not having disk_type available is irritating though.)
 
-                                            a subset of
+Would the type GUID and unique GUID be viable additions to a more
+public struct?  If they were CONFIG_EFI_PARTITION guarded, then they
+wouldn't waste memory for systems without GPT support, but it seems a
+bit specific.  Also, I don't think it'd make sense to put it in the
+partition struct as that represents the on-disk format for some tables
+(from a quick scan over the code).  However, hd_struct looks the
+sanest to me.
 
-> +user supplied cpumasks, these are the cpumasks padata actually use. So
+I'd be happy to pull together a potential change that exposes this
+data once after disk (re)scan, but I'd hate to do so in a way that'd
+be fundamentally unacceptable (but I don't want to end up down the
+deep hole of adding support across all the part tables either if I can
+:).
 
-                 cpumasks;                                        uses.
+So I could see something like:
 
-> +it is legal to supply a cpumask to padata that contains offline cpus.
-> +Once a offline cpu in the user supplied cpumask comes online, padata
+struct hd_struct {
+...
+#ifdef CONFIG_EFI_PARTITION
+  efi_guid_t type_guid;
+  efi_guid_t uuid;
+  u16 label[72 / ...];
+};
 
-        an offline
+Alternatively, a slightly more generic option might be:
 
-and prefer s/cpu/CPU/ throughout (in text, but not when it is a function
-parameter, of course)
-
-
-> +is going to use it.
->  
->  There are functions for enabling and disabling the instance:
->  
-> @@ -34,13 +50,49 @@ is unused.
->  
->  The list of CPUs to be used can be adjusted with these functions:
->  
-> -    int padata_set_cpumask(struct padata_instance *pinst,
-> +    int padata_set_cpumasks(struct padata_instance *pinst,
-> +    			    cpumask_var_t pcpumask,
-> +			    cpumask_var_t cbcpumask);
-> +    int padata_set_cpumask(struct padata_instance *pinst, int cpumask_type,
->  			   cpumask_var_t cpumask);
-> -    int padata_add_cpu(struct padata_instance *pinst, int cpu);
-> -    int padata_remove_cpu(struct padata_instance *pinst, int cpu);
-> +    int padata_add_cpu(struct padata_instance *pinst, int cpu, int mask);
-> +    int padata_remove_cpu(struct padata_instance *pinst, int cpu, int mask);
-> +
-> +Changing the CPU masks are expensive operations, though, so it should not be
-> +done with great frequency.
-> +
-> +It's possible to change both cpumasks of a padata instance with
-> +padata_set_cpumasks by specifying the cpumasks for parallel execution (pcpumask)
-> +and for the serial callback function (cbcpumask). padata_set_cpumask is to
-
-                                                                        is used to
-
-> +change just one of the cpumasks. Here cpumask_type is one of PADATA_CPU_SERIAL,
-> +PADATA_CPU_PARALLEL and cpumask specifies the new cpumask to use.
-> +To simply add or remove one cpu from a certain cpumask the functions
-> +padata_add_cpu/padata_remove_cpu are used. cpu specifies the cpu to add or
-> +remove and mask is one of PADATA_CPU_SERIAL, PADATA_CPU_PARALLEL.
-> +
-> +If a user is interested in padata cpumask changes, he can register to
-> +the padata cpumask change notifier:
-> +
-> +    int padata_register_cpumask_notifier(struct padata_instance *pinst,
-> +    					 struct notifier_block *nblock);
-> +
-> +To unregister from that notifier:
-> +
-> +    int padata_unregister_cpumask_notifier(struct padata_instance *pinst,
-> +    					   struct notifier_block *nblock);
-> +
-> +The padata cpumask change notifier notifies about changes of the usable
-> +cpumasks, i.e. the subset of active cpus in the user supplied cpumask.
-> +
-> +Padata calls the notifier chain with:
-> +
-> +    blocking_notifier_call_chain(&pinst->cpumask_change_notifier,
-> +    				 notification_mask,
-> +				 &pd_new->cpumask);
->  
-> -Changing the CPU mask has the look of an expensive operation, though, so it
-> -probably should not be done with great frequency.
-> +Here cpumask_change_notifier is registered notifier, notification_mask
-> +is one of PADATA_CPU_SERIAL, PADATA_CPU_PARALLEL and cpumask is a pointer
-> +to a struct padata_cpumask that contains the new cpumask informations.
-
-                                                            information.
-
->  
->  Actually submitting work to the padata instance requires the creation of a
->  padata_priv structure:
-> @@ -53,7 +105,7 @@ padata_priv structure:
->  
->  This structure will almost certainly be embedded within some larger
->  structure specific to the work to be done.  Most its fields are private to
-
-                                               Most of its
-
-> -padata, but the structure should be zeroed at initialization time, and the
-> +padata, but the structure should be zeroed at initialisation time, and the
-
-                                                 ^^either spelling is OK
-
->  parallel() and serial() functions should be provided.  Those functions will
->  be called in the process of getting the work done as we will see
->  momentarily.
-> -- 
+#ifdef CONFIG_PARTITION_INFO
+  /* ASCII hex-formatted uuids inclusive of hyphens */
+  u8 type_guid[MAX_HD_STRUCT_UUID_SIZE];
+  u8 uuid[MAX_HD_STRUCT_UUID_SIZE];
+  u16 label[MAX_HD_STRUCT_NAME + sizeof(u16)];
+#endif
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Any way, if any of this seems slightly palatable, let me know.  I'd
+love to make this data accessible to the rest of the kernel.
+
+thanks!
+will
