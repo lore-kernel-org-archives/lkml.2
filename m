@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab0HCPwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 11:52:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47234 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756249Ab0HCPwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 11:52:39 -0400
-Message-ID: <4C583B3B.3060301@kernel.org>
-Date: Tue, 03 Aug 2010 17:52:27 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        coda@cs.cmu.edu
-CC: stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH 1/2 block#for-2.6.36] bio, fs: update RWA_MASK, READA
- and  SWRITE to match the corresponding BIO_RW_* bits
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net>	<4C52A98A.7060507@kernel.org> <20100802104227.79340b49@notabene> <4C56D397.8010305@kernel.org> <4C5724E8.9010204@kernel.dk> <4C57E722.5060809@kernel.org> <4C57FA57.2000601@kernel.dk> <4C57FBAD.1080809@fusionio.com>
-In-Reply-To: <4C57FBAD.1080809@fusionio.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932290Ab0HCPwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 11:52:45 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:33419 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757076Ab0HCPwm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 11:52:42 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=VHaDI2J2TlYMHOZ8tIYNSMDxMBj6pjeX6efLG+OuNS+Xqqch7usA7nXoJ7W3jFtT/heUUxw5skB+46M1YVMoaHCWNhsaYJ0zzMtvfwoJAdITh1GFtc3oCyx34P7sRjLL;
+Date: Tue, 3 Aug 2010 08:52:39 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Jeff Roberson <jroberson@jroberson.net>, linux-kernel@vger.kernel.org,
+        aaronp@clustrix.com
+Subject: Re: PCI-E Link training bug
+Message-ID: <20100803085239.6766fb0e@virtuousgeek.org>
+In-Reply-To: <60320.1280838641@localhost>
+References: <alpine.BSF.2.00.1008030030430.1414@desktop>
+	<60320.1280838641@localhost>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 15:52:06 +0000 (UTC)
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing CODA people)
-Hello,
+On Tue, 03 Aug 2010 08:30:41 -0400
+Valdis.Kletnieks@vt.edu wrote:
 
-On 08/03/2010 01:21 PM, Jens Axboe wrote:
->>> Signed-off-by: Tejun Heo <tj@kernel.org>
->>> Reported-and-bisected-by: Vladislav Bolkhovitin <vst@vlnb.net>
->>> Root-caused-by: Neil Brown <neilb@suse.de>
->>> Cc: Jens Axobe <axboe@kernel.dk>
->>            ^^^^^
->>
->> (Too) common typo :-)
->>
->> Anyway, applied to for-2.6.36, thanks a lot.
-
-Oops, I'm sorry.  Heh, it reminds me of misspelling Linus's last name
-as Tolvards in a number of patches.  :-)
-
-> Irk, we have an issue:
+> On Tue, 03 Aug 2010 00:36:35 -1000, Jeff Roberson said:
 > 
-> In file included from fs/coda/psdev.c:48:
-> include/linux/coda_psdev.h:91:1: warning: "REQ_WRITE" redefined
-> In file included from include/linux/fs.h:11,
->                  from include/linux/proc_fs.h:5,
->                  from fs/coda/psdev.c:31:
-> include/linux/blk_types.h:154:1: warning: this is the location of the previous definition
+> > At least one intel chipset will occasionally negotiate a 4x link for an 8x 
+> > device in an 8x port.  It is a known errata in the 5400 mch.  
 > 
-> And from include/linux/coda_psdev.h:
-> 
-> #define REQ_ASYNC  0x1
-> #define REQ_READ   0x2
-> #define REQ_WRITE  0x4
-> #define REQ_ABORT  0x8
-> 
-> which unfortunately seem to not be under __KERNEL__ protection, but
-> there are things like wait_queue_head_t structs there as well so should
-> be safe to change.
+> Can this get wrapped in some sort of 'if (chipset == MCH5400)'?  There's no
+> sense in adding an entire second of delay going around this loop 4 times when
+> it's a valid config on a non-5400 chipset.
 
-Yeah, I hate it when symbols in non-core code doesn't have proper
-prefix.  Prefixing CODA_ in front of those macros should do it.  Jan
-Harkes, would that work for CODA?
+Yeah, it would be good to limit it to affected chipsets.  Also, please
+post it to linux-pci@vger.kernel.org as well, and cc me, and we'll get
+the fix in quickly.
 
-Thanks.
-
+Thanks,
 -- 
-tejun
+Jesse Barnes, Intel Open Source Technology Center
