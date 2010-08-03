@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab0HCFoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 01:44:08 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45997 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755184Ab0HCFoF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 01:44:05 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAH9JV0x5LcpI/2dsb2JhbACDFZxycrFskhCBJoMgcwQ
-Date: Tue, 3 Aug 2010 15:44:00 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Nick Piggin <npiggin@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Frank Mayhar <fmayhar@google.com>
-Subject: Re: VFS scalability git tree
-Message-ID: <20100803054400.GA7398@amd>
-References: <20100722190100.GA22269@amd>
- <20100730091226.GA10437@amd>
- <1280795279.3966.47.camel@localhost.localdomain>
+	id S1755262Ab0HCFo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 01:44:27 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43813 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755194Ab0HCFo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 01:44:26 -0400
+Date: Tue, 3 Aug 2010 07:44:19 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/3] perf/core fixes and improvements
+Message-ID: <20100803054419.GB1130@elte.hu>
+References: <1280801352-4630-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1280795279.3966.47.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1280801352-4630-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 05:27:59PM -0700, John Stultz wrote:
-> On Fri, 2010-07-30 at 19:12 +1000, Nick Piggin wrote:
-> > On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
-> > > I'm pleased to announce I have a git tree up of my vfs scalability work.
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
-> > > http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
-> > > 
-> > > Branch vfs-scale-working
-> > > 
-> > > The really interesting new item is the store-free path walk, (43fe2b)
-> > > which I've re-introduced. It has had a complete redesign, it has much
-> > > better performance and scalability in more cases, and is actually sane
-> > > code now.
-> > 
-> > Things are progressing well here with fixes and improvements to the
-> > branch.
-> 
-> Hey Nick,
-> 	Just another minor compile issue with today's vfs-scale-working branch.
-> 
-> fs/fuse/dir.c:231: error: ‘fuse_dentry_revalidate_rcu’ undeclared here
-> (not in a function)
-> 
-> >From looking at the vfat and ecryptfs changes in
-> 582c56f032983e9a8e4b4bd6fac58d18811f7d41 it looks like you intended to
-> add the following? 
 
-Thanks John, you're right.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-I thought I actually linked and ran this, but I must not have had fuse
-compiled in.
+> Hi Ingo,
+> 
+>         Please pull from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (3):
+>   perf session: Free the ref_reloc_sym memory at the right place
+>   perf session: Invalidate last_match when removing threads from rb_tree
+>   perf tools: Don't keep unreferenced maps when unmaps are detected
+> 
+>  tools/perf/util/hist.c    |    2 +
+>  tools/perf/util/map.c     |   49 +++++++++++++++++++++++++++++---------------
+>  tools/perf/util/map.h     |   10 ++++++++-
+>  tools/perf/util/session.c |    8 +++++++
+>  tools/perf/util/symbol.c  |   43 +++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/symbol.h  |    2 +
+>  6 files changed, 96 insertions(+), 18 deletions(-)
 
+Pulled, thanks Arnaldo!
+
+	Ingo
