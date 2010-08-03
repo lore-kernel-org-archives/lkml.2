@@ -1,65 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab0HCVfk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 17:35:40 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41854 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756298Ab0HCVfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 17:35:37 -0400
-Date: Tue, 3 Aug 2010 23:35:36 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-        Christoph Raisch <raisch@de.ibm.com>,
-        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 9/9] drivers/infiniband/hw/ehca: Drop unnecessary null test
-Message-ID: <Pine.LNX.4.64.1008032335190.20393@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757150Ab0HCVgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 17:36:31 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34907 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab0HCVga (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 17:36:30 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Jens Axboe <axboe@kernel.dk>,
+        Karel Zak <kzak@redhat.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Will Drewry <wad@chromium.org>
+Subject: [PATCH 1/2] block, partition: add partition_meta_info to hd_struct
+Date: Tue,  3 Aug 2010 16:35:35 -0500
+Message-Id: <1280871336-31046-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <AANLkTin3+LfXOpW5MsPSgs_5Z0UFnQTwBAXSocrU1Xs8@mail.gmail.com>
+References: <AANLkTin3+LfXOpW5MsPSgs_5Z0UFnQTwBAXSocrU1Xs8@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+This changes adds a partition_meta_info struct which itself contains a
+union of structures that provide partition table specific metadata.
 
-list_for_each_entry binds its first argument to a non-null value, and thus
-any null test on the value of that argument is superfluous.
+This change leaves the union empty. The subsequent patch includes an
+implementation for CONFIG_EFI_PARTITION-based metadata.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-iterator I;
-expression x;
-statement S,S1,S2;
-@@
-
-I(x,...) { <...
-- if (x == NULL && ...) S
-  ...> }
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- drivers/infiniband/hw/ehca/ehca_mrmw.c |    5 -----
- 1 file changed, 5 deletions(-)
+ block/genhd.c         |    1 +
+ block/ioctl.c         |    2 +-
+ fs/partitions/check.c |   21 ++++++++++++++++++---
+ fs/partitions/check.h |    2 ++
+ include/linux/genhd.h |   32 ++++++++++++++++++++++++++++++--
+ 5 files changed, 52 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ehca/ehca_mrmw.c b/drivers/infiniband/hw/ehca/ehca_mrmw.c
-index 31a68b9..53f4cd4 100644
---- a/drivers/infiniband/hw/ehca/ehca_mrmw.c
-+++ b/drivers/infiniband/hw/ehca/ehca_mrmw.c
-@@ -933,11 +933,6 @@ int ehca_unmap_fmr(struct list_head *fmr_list)
- 	/* check all FMR belong to same SHCA, and check internal flag */
- 	list_for_each_entry(ib_fmr, fmr_list, list) {
- 		prev_shca = shca;
--		if (!ib_fmr) {
--			ehca_gen_err("bad fmr=%p in list", ib_fmr);
--			ret = -EINVAL;
--			goto unmap_fmr_exit0;
--		}
- 		shca = container_of(ib_fmr->device, struct ehca_shca,
- 				    ib_device);
- 		e_fmr = container_of(ib_fmr, struct ehca_mr, ib.ib_fmr);
+diff --git a/block/genhd.c b/block/genhd.c
+index 59a2db6..c8da120 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1004,6 +1004,7 @@ static void disk_release(struct device *dev)
+ 	kfree(disk->random);
+ 	disk_replace_part_tbl(disk, NULL);
+ 	free_part_stats(&disk->part0);
++	free_part_info(&disk->part0);
+ 	kfree(disk);
+ }
+ struct class block_class = {
+diff --git a/block/ioctl.c b/block/ioctl.c
+index e8eb679..f8e4bfe 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -62,7 +62,7 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
+ 
+ 			/* all seems OK */
+ 			part = add_partition(disk, partno, start, length,
+-					     ADDPART_FLAG_NONE);
++					     ADDPART_FLAG_NONE, NULL);
+ 			mutex_unlock(&bdev->bd_mutex);
+ 			return IS_ERR(part) ? PTR_ERR(part) : 0;
+ 		case BLKPG_DEL_PARTITION:
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index 5dcd4b0..635725a 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -196,6 +196,8 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
+ 		printk(" unknown partition table\n");
+ 	else if (warn_no_part)
+ 		printk(" unable to read partition table\n");
++	for (i = 0; i < DISK_MAX_PARTS; ++i)
++		kfree(state->parts[i].info);
+ 	kfree(state);
+ 	return ERR_PTR(res);
+ }
+@@ -338,6 +340,7 @@ static void part_release(struct device *dev)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
+ 	free_part_stats(p);
++	free_part_info(p);
+ 	kfree(p);
+ }
+ 
+@@ -387,7 +390,8 @@ static DEVICE_ATTR(whole_disk, S_IRUSR | S_IRGRP | S_IROTH,
+ 		   whole_disk_show, NULL);
+ 
+ struct hd_struct *add_partition(struct gendisk *disk, int partno,
+-				sector_t start, sector_t len, int flags)
++				sector_t start, sector_t len, int flags,
++				struct partition_meta_info *info)
+ {
+ 	struct hd_struct *p;
+ 	dev_t devt = MKDEV(0, 0);
+@@ -424,6 +428,13 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ 	p->partno = partno;
+ 	p->policy = get_disk_ro(disk);
+ 
++	if (info) {
++		p->info = alloc_part_info(disk);
++		if (!p->info)
++			goto out_free_stats;
++		memcpy(p->info, info, sizeof(*info));
++	}
++
+ 	dname = dev_name(ddev);
+ 	if (isdigit(dname[strlen(dname) - 1]))
+ 		dev_set_name(pdev, "%sp%d", dname, partno);
+@@ -437,7 +448,7 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ 
+ 	err = blk_alloc_devt(p, &devt);
+ 	if (err)
+-		goto out_free_stats;
++		goto out_free_info;
+ 	pdev->devt = devt;
+ 
+ 	/* delay uevent until 'holders' subdir is created */
+@@ -468,6 +479,8 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ 
+ 	return p;
+ 
++out_free_info:
++	free_part_info(p);
+ out_free_stats:
+ 	free_part_stats(p);
+ out_free:
+@@ -663,7 +676,9 @@ rescan:
+ 			}
+ 		}
+ 		part = add_partition(disk, p, from, size,
+-				     state->parts[p].flags);
++				     state->parts[p].flags,
++				     state->parts[p].info);
++		kfree(state->parts[p].info);
+ 		if (IS_ERR(part)) {
+ 			printk(KERN_ERR " %s: p%d could not be added: %ld\n",
+ 			       disk->disk_name, p, -PTR_ERR(part));
+diff --git a/fs/partitions/check.h b/fs/partitions/check.h
+index 52f8bd3..8c724a7 100644
+--- a/fs/partitions/check.h
++++ b/fs/partitions/check.h
+@@ -1,6 +1,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/blkdev.h>
+ 
++struct partition_meta_info;
+ /*
+  * add_gd_partition adds a partitions details to the devices partition
+  * description.
+@@ -12,6 +13,7 @@ struct parsed_partitions {
+ 		sector_t from;
+ 		sector_t size;
+ 		int flags;
++		struct partition_meta_info *info;
+ 	} parts[DISK_MAX_PARTS];
+ 	int next;
+ 	int limit;
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 5f2f4c4..7b6644a 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -12,6 +12,7 @@
+ #include <linux/types.h>
+ #include <linux/kdev_t.h>
+ #include <linux/rcupdate.h>
++#include <linux/slab.h>
+ 
+ #ifdef CONFIG_BLOCK
+ 
+@@ -86,7 +87,18 @@ struct disk_stats {
+ 	unsigned long io_ticks;
+ 	unsigned long time_in_queue;
+ };
+-	
++
++enum partition_meta_info_format_t {
++	/* Partition info format */
++	PARTITION_META_INFO_FORMAT_NONE = 0,
++};
++
++struct partition_meta_info {
++	enum partition_meta_info_format_t format;
++	union {
++	};
++};
++
+ struct hd_struct {
+ 	sector_t start_sect;
+ 	sector_t nr_sects;
+@@ -95,6 +107,7 @@ struct hd_struct {
+ 	struct device __dev;
+ 	struct kobject *holder_dir;
+ 	int policy, partno;
++	struct partition_meta_info *info;
+ #ifdef CONFIG_FAIL_MAKE_REQUEST
+ 	int make_it_fail;
+ #endif
+@@ -342,6 +355,19 @@ static inline int part_in_flight(struct hd_struct *part)
+ 	return part->in_flight[0] + part->in_flight[1];
+ }
+ 
++static inline struct partition_meta_info *alloc_part_info(struct gendisk *disk)
++{
++	if (disk)
++		return kzalloc_node(sizeof(struct partition_meta_info),
++				    GFP_KERNEL, disk->node_id);
++	return kzalloc(sizeof(struct partition_meta_info), GFP_KERNEL);
++}
++
++static inline void free_part_info(struct hd_struct *part)
++{
++	kfree(part->info);
++}
++
+ /* block/blk-core.c */
+ extern void part_round_stats(int cpu, struct hd_struct *part);
+ 
+@@ -533,7 +559,9 @@ extern int disk_expand_part_tbl(struct gendisk *disk, int target);
+ extern int rescan_partitions(struct gendisk *disk, struct block_device *bdev);
+ extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
+ 						     int partno, sector_t start,
+-						     sector_t len, int flags);
++						     sector_t len, int flags,
++						     struct partition_meta_info
++						       *info);
+ extern void delete_partition(struct gendisk *, int);
+ extern void printk_all_partitions(void);
+ 
+-- 
+1.7.0.4
+
