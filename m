@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab0HCOnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 10:43:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47318 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab0HCOnj (ORCPT
+	id S932084Ab0HCOsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 10:48:16 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39701 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153Ab0HCOsO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 10:43:39 -0400
+	Tue, 3 Aug 2010 10:48:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Jf1y2dYsEczo04LA/w7HgiPvAumDS2rRlJ7zCxoUSVIhrBacMgW7oBwJnHix8LD+9I
-         8+Z7coVe0Ox0oVTkWqmVDI9xxONgF5Cbn6VTrJsLgg5tIqVBC7U/CcrAzYiKsmARcE4c
-         dQlB6RM6AclvF0kVLjtQcGNPd7gO+Ifnkj/SA=
-Message-ID: <4C582B2B.3080804@gmail.com>
-Date: Tue, 03 Aug 2010 07:43:55 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=PgWrZY6L9nrjJe8eO/lQhV/S5APhu15+zgflrgvkl7otZZbbBf+JganVJ5CTsSmnh/
+         TrYOK41QkQIJT2yt9s3+HbBINAw9mh3fqT/3bEpzw9QVNiZASuwg24tI2tcEy/dV/ujg
+         GtixRYpzJKtrgD6Q3pJV3YH3uGRsdcvYWn/ug=
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Valdis.Kletnieks@vt.edu, linux-usb@vger.kernel.org,
-        dbrownell@users.sourceforge.net, gregkh@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2]drivers/usb/core/sysfs.c Fix variable 'retval' set
- but not used
-References: <Pine.LNX.4.44L0.1008031027250.1853-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1008031027250.1853-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: dkirjanov@kernel.org
+In-Reply-To: <201008030940.28831.rgetz@blackfin.uclinux.org>
+References: <cover.1280447281.git.joe@perches.com>
+	<AANLkTikYn+qpDxxLeJ4eu5SsEs=7n_wAu5RzM5pZhVwU@mail.gmail.com>
+	<1280454323.21777.4.camel@Joe-Laptop.home>
+	<201008030940.28831.rgetz@blackfin.uclinux.org>
+Date: Tue, 3 Aug 2010 18:48:13 +0400
+Message-ID: <AANLkTimKvr2ozzBFWcfbM88kV-i7i=Qh4pZsMsbWJZ_R@mail.gmail.com>
+Subject: Re: [PATCH net-next 3/3] drivers/net/bfin_mac.c: Misc function 
+	cleanups, neatening
+From: Denis Kirjanov <kirjanov@gmail.com>
+To: Robin Getz <rgetz@blackfin.uclinux.org>
+Cc: Joe Perches <joe@perches.com>, Mike Frysinger <vapier.adi@gmail.com>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2010 07:29 AM, Alan Stern wrote:
-> On Tue, 3 Aug 2010 Valdis.Kletnieks@vt.edu wrote:
->
->> On Mon, 02 Aug 2010 21:26:28 PDT, "Justin P. Mattock" said:
->>> diff --git a/drivers/usb/core/sysfs.c b/drivers/usb/core/sysfs.c
+On Tue, Aug 3, 2010 at 5:40 PM, Robin Getz <rgetz@blackfin.uclinux.org> wrote:
+> On Thu 29 Jul 2010 21:45, Joe Perches pondered:
+>> On Thu, 2010-07-29 at 20:18 -0400, Mike Frysinger wrote:
+>> > i'll ack the idea, but i think it better i pull these patches into the
+>> > Blackfin repo to get some real hardware testing before i forward them
+>> > back to David/netdev ...
+>> >
+>> > that OK with you ?
 >>
->>>   	if (alt->string)
->>> -		retval = device_create_file(&intf->dev,&dev_attr_interface);
->>> +		device_create_file(&intf->dev,&dev_attr_interface);
->>>   	intf->sysfs_files_created = 1;
->>>   	return 0;
+>> Fine by me.  These are trivial patches.
+>> I don't have the hardware.
 >
-> Justin, did you try compiling your new code?  Those unused values are
-> there because device_create_file is declared as __must_check.
+> Do you want the hardware?
+>
+> I'm moving my office, and found some extras if anyone wants them...
+
+I can take one if that is no problem..
+
+>
+> -Robin
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 
-I went as far as compiling, once I saw no warning then figured o.k
-I'll send out what I have for feedback then go from there.
-(and just for the record I want to thank those who took the time to go 
-through and give feedback).
 
 
->> What should the code do if device_create_file() manages to fail? Yes, ignoring
->> the return value is one option, but is it the best one?  'return ret;' might be
->> another one. Somebody who understands this code and has more caffeine than me
->> should look this over.
->
-> Failure to create a file in sysfs is almost never fatal and usually not
-> even dangerous.  Ignoring the error is generally better than failing
-> the entire operation.
->
-> Alan Stern
->
->
-
-ahh.. you made this more clear for me.. cool thanks!
-
-Justin P. Mattock
+-- 
+Regards,
+Denis
