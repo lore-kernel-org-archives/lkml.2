@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab0HCIFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 04:05:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26531 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab0HCIFJ (ORCPT
+	id S1754404Ab0HCIIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 04:08:10 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:41861 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab0HCIII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 04:05:09 -0400
-Message-ID: <4C57CD9C.70602@kernel.org>
-Date: Tue, 03 Aug 2010 01:04:44 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Tue, 3 Aug 2010 04:08:08 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: CPU Hotplug add/remove optimizations
+References: <4C5742FE.5040907@codeaurora.org>
+Date: Tue, 03 Aug 2010 10:07:58 +0200
+In-Reply-To: <4C5742FE.5040907@codeaurora.org> (Rohit Vaswani's message of
+	"Mon, 02 Aug 2010 15:13:18 -0700")
+Message-ID: <87y6codspt.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org> <m11vagw2fl.fsf@fess.ebiederm.org>
-In-Reply-To: <m11vagw2fl.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C57CDA7.01B9,ss=1,fgs=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2010 01:00 AM, Eric W. Biederman wrote:
-> Yinghai Lu <yinghai@kernel.org> writes:
-> 
->>>> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
->>>> ===================================================================
->>>> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
->>>> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
->>>> @@ -1029,10 +1029,7 @@ static int pin_2_irq(int idx, int apic,
->>>>  	} else {
->>>>  		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
->>>>  
->>>> -		if (gsi >= NR_IRQS_LEGACY)
->>>> -			irq = gsi;
->>>> -		else
->>>> -			irq = gsi_top + gsi;
->>>> +		irq = gsi_to_irq(gsi);
->>>>  	}
->>>>  
->>>>  #ifdef CONFIG_X86_32
->>
->> what is the point for making irq = gsi_top + gsi when mptable is used instead of acpi?
-> 
-> Because it is only convention that when mptables are used that the
-> first apic pins 0-15 are the ISA irqs.  This thread witnessed and a
-> pci irq that came in pin < 16 that was not an ISA irq.  The truly rare
-> and exotic case would be for the ISA irqs to be outside the first 16
-> ioapic pins but the es7000 did exactly that.
+Rohit Vaswani <rvaswani@codeaurora.org> writes:
 
-nvidia chipset if acpi is enabled, external pci device will use ioapic from 16 to 23.
+>  Hi,
+>
+> We are trying to use cpu hotplug to turn off a cpu when it is not in
+> use to improve power management.
 
-if mptable is used, external pci device will not use pin from 16 to 23..., and lot of devices will share same pin.
+It might not be a big issue on smaller systems, but CPU hotunplug
+involves stop_machine() and that is a very costly thing
+to do as systems become larger.
 
-Yinghai
+
+> I am trying to optimize the cpu
+> hotplug add and cpu hotplug remove timings. Currently cpu hotplug add
+> takes around 250ms and cpu hotplug remove takes 190 ms. For the
+> current purposes we want to assume that we are removing and adding the
+> same core. It seems that since we are actually not replacing the core
+> – there could be a lot of initialization overhead that could be
+> saved and restored instead of calibrating the entire core again.
+> One such thing we have been looking at is that once a core is powered
+> up during cpu hotplug add, it runs the calibrate_delay routine to
+> calculate the value of loops_per_jiffy. In such a case could we bypass
+> the calibrate_delay function and just save and restore the value of
+> loops_per_jiffy?
+> Does this approach seem wrong to anyone?
+
+It's wrong on a system that supports socket hotplug. The CPU you're
+power up again might not be the same.
+
+In theory you could have some low level interface that distingushes
+these two cases, but right now that's not there.
+
+> Can we safely assume that the core will start at the same clock speed
+> at which the value was stored and then restored?
+
+That neither.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
