@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab0HCQBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 12:01:33 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:1111 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab0HCQBb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 12:01:31 -0400
-Date: Tue, 3 Aug 2010 13:00:13 -0300
-From: Leandro Lucarella <luca@llucax.com.ar>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Kailang Yang <kailang@realtek.com>, Daniel T Chen <crimsun@ubuntu.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: Regression 2.6.35: Intel N10/ICH 7 Family HDA (Realtek ALC662
- rev1) beep broken
-Message-ID: <20100803160013.GF3508@llucax.com.ar>
-References: <20100803040054.GX3508@llucax.com.ar>
- <s5h39uw6ymf.wl%tiwai@suse.de>
- <20100803134409.GA3508@llucax.com.ar>
- <s5hhbjblscn.wl%tiwai@suse.de>
- <20100803144810.GD3508@llucax.com.ar>
- <s5h7hk7lnxg.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S932366Ab0HCQC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 12:02:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38706 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176Ab0HCQC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 12:02:26 -0400
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
+From: James Bottomley <James.Bottomley@suse.de>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: paulmck@linux.vnet.ibm.com, peterz@infradead.org, swetland@google.com,
+        linux-kernel@vger.kernel.org, florian@mickler.org,
+        linux-pm@lists.linux-foundation.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+In-Reply-To: <AANLkTi=hoGF7egpyB9sLKJoXv5aiGrxfa9_5iH-96SA=@mail.gmail.com>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	 <AANLkTi=hoGF7egpyB9sLKJoXv5aiGrxfa9_5iH-96SA=@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Aug 2010 11:02:18 -0500
+Message-ID: <1280851338.2774.30.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <s5h7hk7lnxg.wl%tiwai@suse.de>
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai, el  3 de agosto a las 17:24 me escribiste:
-> > > I can add such a trivial patch manually, of course.  But I'd need
-> > > to know which machine you have (vendor/model name, etc).
-> > 
-> > Is a desktop box.
-> > CPU Intel(R) Core(TM)2 Quad CPU    Q8400  @ 2.66GHz
-> > Motherboard Intel Corporation DG41RQ
+On Mon, 2010-08-02 at 21:18 -0700, Arve Hjønnevåg wrote:
+> > o       A power-aware application must be able to efficiently communicate
+> >        its needs to the system, so that such communication can be
+> >        performed on hot code paths.  Communication via open() and
+> >        close() is considered too slow, but communication via ioctl()
+> >        is acceptable.
+> >
 > 
-> OK, it's fine, I just wanted to be sure that it's no other brand.
-> The fix is now applied to sound tree, and will be included in the next
-> pull request, then will reach to stable tree.
+> The problem with using open and close to prevent an allow suspend is
+> not that it is too slow but that it interferes with collecting stats.
 
-Thank you.
+Please elaborate on this.  I expect the pm-qos stats interface will
+collect stats across user open/close because that's how it currently
+works.  What's the problem?
 
--- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-La esperanza es una amiga que nos presta la ilusión.
+> The wakelock code has a sysfs interface that allow you to use a
+> open/write/close sequence to block or unblock suspend. There is no
+> limit to the amount of kernel memory that a process can consume with
+> this interface, so the suspend blocker patchset uses a /dev interface
+> with ioctls to block or unblock suspend and it destroys the kernel
+> object when the file descriptor is closed.
+
+This is an implementation detail only.  The pm-qos objects are long
+lived, so their stats would be too.  I would guess that explicit stat
+clearing might be a useful option.
+
+James
+
+
