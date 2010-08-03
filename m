@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab0HCIRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 04:17:49 -0400
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:51864 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052Ab0HCIRq (ORCPT
+	id S1755194Ab0HCISe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 04:18:34 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:52554 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754607Ab0HCISb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 04:17:46 -0400
-Date: Tue, 3 Aug 2010 10:17:43 +0200
-From: =?iso-8859-1?Q?Sh=E9rab?= <Sebastien.Hinderer@ens-lyon.org>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: PC Beeps not working with HDA Intel module
-Message-ID: <20100803081743.GA6566@pema>
-References: <AANLkTild_NZP5B33ITuaS67bvuREiukbQCtcguKEO4XG@mail.gmail.com>
- <20100802181449.GA3071@pema>
- <AANLkTikU6_Cuaqk2xaPWCjkToMgd1yO8Y_qZ9Kcbk9c-@mail.gmail.com>
+	Tue, 3 Aug 2010 04:18:31 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        npiggin@suse.de
+Subject: Re: Linux 2.6.35
+References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
+	<20100802023322.GA19164@dastard>
+Date: Tue, 03 Aug 2010 10:18:30 +0200
+In-Reply-To: <20100802023322.GA19164@dastard> (Dave Chinner's message of "Mon,
+	2 Aug 2010 12:33:22 +1000")
+Message-ID: <87tyncds89.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikU6_Cuaqk2xaPWCjkToMgd1yO8Y_qZ9Kcbk9c-@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Daniel and Takashi,
+Dave Chinner <david@fromorbit.com> writes:
 
-First of all many thanks to both of you for your so prompt and so
-efficient reply ! Quite impressive.
+> On Sun, Aug 01, 2010 at 04:52:42PM -0700, Linus Torvalds wrote:
+>> On a slightly happier note: one thing I do hope we can merge in the
+>> upcoming merge window is Nick Piggin's cool VFS scalability series.
+>> I've been using it on my own machine, and gone through all the commits
+>> (not that I shouldn't go through some of them some more), and am
+>> personally really excited about it. It's seldom we see major
+>> performance improvements in core code that are quite that noticeable,
+>> and Nick's whole RCU pathname lookup in particular just tickles me
+>> pink.
+>
+> There hasn't been nearly enough review or testing of this patch
+> series yet.  Before a merge, it needs to be split up in smaller,
+> more digestable chunks for more comprehensive review, regression
+> testing and behavioural analysis.
 
-Daniel J Blueman (2010/08/02 22:41 +0100):
-> Testing with value 27 (ie 48000/4*27~=440), we hear the expected tone:
-> $ sudo ./hda-verb /dev/snd/hwC0D0 0x1c SET_BEEP_CONTROL 27
-> (of course, your beep widget may not be 0x1c)
+We started some testing of the VFS series on larger systems and so
+far it looks all very good and the performance improvements are impressive
+(but of course new bottlenecks are being exposed then)
 
-I don't know and don't even know what beep widget means, I'm sorry.
-If you can explain and also tell me where to find this hda-verb program
-you are using, I am willing to test if that's your wish.
+The only snag found so far was that an ACL enabled file system
+disables all the nice path walk improvements, so right now you
+need to remount with noacl. I'm hoping this can be fixed
+before a mainline release, otherwise I suspect it would disable
+the improvements for lots of people (common distributions default
+to acl on)
 
-> The problem is the assumption in patch_sigmatel.c:stac92xx_parse_auto_config():
+-Andi
 
-[...]
-
-So is there anything more I can/should do now ?
-
-Thanks !
-Shérab.
+-- 
+ak@linux.intel.com -- Speaking for myself only.
