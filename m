@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab0HCOvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 10:51:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932070Ab0HCOvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 10:51:11 -0400
-Message-ID: <4C582CDC.8050801@redhat.com>
-Date: Tue, 03 Aug 2010 17:51:08 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: 2.6.35 hangs on early boot in KVM
-References: <201008031028.57263.tvrtko.ursulin@sophos.com>
-In-Reply-To: <201008031028.57263.tvrtko.ursulin@sophos.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932111Ab0HCOxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 10:53:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52593 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932090Ab0HCOxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 10:53:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=dN8lpRLO92AHC38+Z824u1MuzNWI3V+pTvP2gP50V0tck0Hfn987s5VN+Kgcf0Ni8/
+         63TI8UfQIn6QNNVwPLdju7m26mM15SHZq5j92td5k/abqIWzw14BjiaZJxOk63TiPn11
+         q4WYZtpkF4nPQ5Kr5ZEzc0z85dMOJOkqXkAcw=
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] Driver for Ricoh cardreader
+Date: Tue,  3 Aug 2010 17:53:04 +0300
+Message-Id: <1280847186-11501-1-git-send-email-maximlevitsky@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/03/2010 12:28 PM, Tvrtko Ursulin wrote:
-> I have basically built 2.6.35 with make oldconfig from a working 2.6.34.
-> Latter works fine in kvm while 2.6.35 hangs very early. I see nothing after
-> grub (have early printk and verbose bootup enabled), just a blinking VGA
-> cursor and CPU at 100%.
->
+Hi,
 
-Please copy kvm@vger.kernel.org on kvm issues.
+Here is the driver for the reader I have.
+Plus one fix for hangs on unclean removal introduced my changes in block core.
 
-> CONFIG_PRINTK_TIME=y
+This is just writen and debbuged, but works very well now.
+I don't know if possible, but I would like to see that in 2.6.36, because
+this is new driver, so no posiibility of regressions.
 
+Best regards,
+	Maxim Levitsky
 
-Try disabling this as a workaround.
-
--- 
-error compiling committee.c: too many arguments to function
 
