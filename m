@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab0HCCCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 22:02:15 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:61354 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab0HCCCO (ORCPT
+	id S1752732Ab0HCCDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 22:03:21 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:51443 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab0HCCDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 22:02:14 -0400
-Date: Tue, 03 Aug 2010 11:02:12 +0900
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH v2 3/3] rtc: Add MAX8998 rtc driver
-In-reply-to: <20100803020847.58795fbd@linux.lan.towertech.it>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-        broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk,
-        akpm@linux-foundation.org, p_gortmaker@yahoo.com,
-        kyungmin.park@samsung.com, m.szyprowski@samsung.com
-Message-id: <4C5778A4.80002@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
-References: <1280734507-8398-1-git-send-email-jy0922.shim@samsung.com>
- <1280734507-8398-3-git-send-email-jy0922.shim@samsung.com>
- <20100803020847.58795fbd@linux.lan.towertech.it>
-X-OriginalArrivalTime: 03 Aug 2010 02:02:12.0622 (UTC)
- FILETIME=[E369D2E0:01CB32AF]
+	Mon, 2 Aug 2010 22:03:19 -0400
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kexec@lists.infradead.org
+Subject: Re: [PATCH] x86,setup: add serial_console_port_base in boot_params
+References: <4C3F8B46.7080809@kernel.org> <20100731083409.GC5859@lenovo>
+	<4C5469AF.2010608@zytor.com> <20100731183211.GB29357@lenovo>
+	<4C548F7D.6000509@zytor.com> <4C54D3AD.8020906@kernel.org>
+	<m14offuk8p.fsf@fess.ebiederm.org> <4C55041C.1030008@kernel.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 02 Aug 2010 19:03:04 -0700
+In-Reply-To: <4C55041C.1030008@kernel.org> (Yinghai Lu's message of "Sat\, 31 Jul 2010 22\:20\:28 -0700")
+Message-ID: <m18w4o4fmv.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/3/2010 9:08 AM, Alessandro Zummo wrote:
-> On Mon, 02 Aug 2010 16:35:07 +0900
-> Joonyoung Shim <jy0922.shim@samsung.com> wrote:
-> 
->> This adds support for the RTC provided by the Maxim 8998 chip. This
->> driver was tested on a GONI board by using the rtc-test application from
->> the Documentation/rtc.txt.
->>
->> Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> 
->  Seems nice. I'd add rtc_valid_tm where appropriate.
->  And maybe free that irq you requested ;)
-> 
+Yinghai Lu <yinghai@kernel.org> writes:
 
-Right, i missed.
+> On 07/31/2010 07:42 PM, Eric W. Biederman wrote:
+>> Yinghai Lu <yinghai@kernel.org> writes:
+>> 
+>>> On 07/31/2010 02:02 PM, H. Peter Anvin wrote:
+>>>> On 07/31/2010 11:32 AM, Cyrill Gorcunov wrote:
+>>>>>>
+>>>>>> No, this is the internal part of the boot protocol, so it's not an issue.
+>>>>>>
+>>>>>
+>>>>> Peter, I didn't mean any issue here, I meant that bootloaders don't know about
+>>>>> this field yet and they will have to update own sources to pass port value
+>>>>> at proper place of boot params. Or I miss something?
+>>>>>
+>>>>
+>>>> Boot loaders that use the 16-bit entry point are unaffected.
+>>>>
+>>>> Boot loaders which use the 32-bit entry point but properly clears the
+>>>> zero page simply will not have the feature.
+>>>>
+>>>> Boot loaders which use the 32-bit entry point but doesn't clear the zero
+>>>> page are broken.
+>>>>
+>>> can you if this one is right for kexec path?
+>> 
+>> I am walking out the door, but this seems like nonsense to me.
+>> 
+>> Further I don't see why we would add something to the zero page
+>> when we have a perfectly good way to pass this information via
+>> the kernel command line.  strstr and strtoul are trivial little
+>> functions so I don't see why anything would need to parse anything
+>> other than console= or early_printk=.  The difference in code size
+>> is negligible.
+>> 
+> so you prefer to check command line for console info in arch/x86/boot/compressed/misc.c again?
+>
+> that commandline is analyzed in arch/x86/boot/tty.c already.
 
->  pending those changes, you have my 
-> 
->   Acked-by: Alessandro Zummo <a.zummo@towertech.it>
-> 
-> 
+Instead of changing 2 or 3 bootloaders, waiting years for the change
+to propagate, and then trying to change users habits.
 
-Thanks.
+I definitely do.
+
+Eric
