@@ -1,85 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab0HCEqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 00:46:31 -0400
-Received: from mail.lang.hm ([64.81.33.126]:58815 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453Ab0HCEqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 00:46:30 -0400
-Date: Mon, 2 Aug 2010 21:44:44 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mjg59@srcf.ucam.org, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100731215214.2543c07e@infradead.org> <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801204026.GH31324@thunk.org>
- <20100802030304.GU2470@linux.vnet.ibm.com> <20100801210548.23f77ff6@infradead.org> <alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm> <20100802140933.GB2405@linux.vnet.ibm.com> <alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
- <AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754891Ab0HCErj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 00:47:39 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51011 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab0HCErh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 00:47:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=RTfHXFeFJ4UZ544lVB34Yz7yQAFn8MYnwA9eo1ihAZQy+sEo6ZpZi1lqPlnuqA+uP9
+         H0rvOPazZsuTywtP/zqDWujLsGwNHstDioo8bClKx6RlvUG0k+7VEx+9gz/XjlB+HkZY
+         EHsMKqTW+MYFeFq5JKnSQxmVnsszyjN3Wx7kg=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <20100803042835.GA17377@localhost>
+References: <20100802124734.GI2486@arachsys.com>
+	<AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
+	<20100803033108.GA23117@arachsys.com>
+	<AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
+	<20100803042835.GA17377@localhost>
+Date: Tue, 3 Aug 2010 13:47:36 +0900
+Message-ID: <AANLkTimC1z0MwTxUjxED7N1-R4D_YXtvnPSbiKXdR+4W@mail.gmail.com>
+Subject: Re: Over-eager swapping
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Chris Webb <chris@arachsys.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010, Arve Hj?nnev?g wrote:
-
-> On Mon, Aug 2, 2010 at 5:08 PM,  <david@lang.hm> wrote:
->> On Mon, 2 Aug 2010, Paul E. McKenney wrote:
+On Tue, Aug 3, 2010 at 1:28 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
+> On Tue, Aug 03, 2010 at 12:09:18PM +0800, Minchan Kim wrote:
+>> On Tue, Aug 3, 2010 at 12:31 PM, Chris Webb <chris@arachsys.com> wrote:
+>> > Minchan Kim <minchan.kim@gmail.com> writes:
+>> >
+>> >> Another possibility is _zone_reclaim_ in NUMA.
+>> >> Your working set has many anonymous page.
+>> >>
+>> >> The zone_reclaim set priority to ZONE_RECLAIM_PRIORITY.
+>> >> It can make reclaim mode to lumpy so it can page out anon pages.
+>> >>
+>> >> Could you show me /proc/sys/vm/[zone_reclaim_mode/min_unmapped_ratio] ?
+>> >
+>> > Sure, no problem. On the machine with the /proc/meminfo I showed earlier,
+>> > these are
+>> >
+>> >  # cat /proc/sys/vm/zone_reclaim_mode
+>> >  0
+>> >  # cat /proc/sys/vm/min_unmapped_ratio
+>> >  1
 >>
->>
->> you are close, but I think what I'm proposing is actually simpler (assuming
->> that the scheduler can be configured to generate the appropriate stats)
->>
->> my thought was not to move applications between cgroups as they
->> aquire/release the suspend-block lock, bur rather to say that any
->> application that you would trust to get the suspend-block lock should be in
->> cgroup A while all other applications are in cgroup B
->>
->> when you are deciding if the system shoudl go to sleep because it is idle,
->> ignore the activity of all applications in cgroup B
->>
->> if cgroup A applications are busy, the system is not idle and should not
->> suspend.
->>
+>> if zone_reclaim_mode is zero, it doesn't swap out anon_pages.
 >
-> Triggering suspend from idle has been suggested before. However, idle
-> is not a signal that it is safe to suspend since timers stop in
-> suspend (or the code could temporarily be waiting on a non-wakeup
-> interrupt). If you add suspend blockers or wakelocks to prevent
-> suspend while events you care about are pending, then it does not make
-> a lot of sense to prevent suspend just because the cpu is not idle.
+> If there are lots of order-1 or higher allocations, anonymous pages
+> will be randomly evicted, regardless of their LRU ages. This is
 
-isn't this a matter of making the suspend decision look at what timers 
-have been set to expire in the near future and/or tweaking how long the 
-system needs to be idle before going to sleep?
+I thought swapped out page is huge (ie, 3G) even though it enters lumpy mode.
+But it's possible. :)
 
-to properly do a good job at suspending hyperagressivly you need to look 
-at when you need to wake back up (after all, if you are only going to 
-sleep for 1 second, it makes no sense to try and enter a sleep state that 
-takes .5 seconds to get into and .6 seconds to get out of, you need to 
-pick a lighter power saving mode)
+> probably another factor why the users claim. Are there easy ways to
+> confirm this other than patching the kernel?
 
-if you really want to have the application be able to say 'I am ready for 
-you to go to sleep NOW and I don't want any chance of waking back up until 
-the system is ready for me to do so' it may be possible to have a special 
-dev file that when a program attempts to read from it the program is 
-considered to have been idle forever (expiring any 'delay since last 
-activity' timers that are running for that process) and when the device 
-wakes back up (or after a little bit of time if the device decides not to 
-go back to sleep), allow the return from the blocking call to allow the 
-app to continue running.
+cat /proc/buddyinfo can help?
 
-but I am not sure that something like that is needed. I think just 
-checking for timers that are due to expire 'soon' and tweaking how long 
-the system must be 'idle' before it decides to go to sleep should be good 
-enough.
+Off-topic:
+It would be better to add new vmstat of lumpy entrance.
 
-David Lang
+Pseudo code.
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 0f9f624..d10ff4e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1641,7 +1641,7 @@ out:
+        }
+ }
+
+-static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc)
++static void set_lumpy_reclaim_mode(int priority, struct scan_control
+*sc, struct zone *zone)
+ {
+        /*
+         * If we need a large contiguous chunk of memory, or have
+@@ -1654,6 +1654,9 @@ static void set_lumpy_reclaim_mode(int priority,
+struct scan_control *sc)
+                sc->lumpy_reclaim_mode = 1;
+        else
+                sc->lumpy_reclaim_mode = 0;
++
++       if (sc->lumpy_reclaim_mode)
++               inc_zone_state(zone, NR_LUMPY);
+ }
+
+ /*
+@@ -1670,7 +1673,7 @@ static void shrink_zone(int priority, struct zone *zone,
+
+        get_scan_count(zone, sc, nr, priority);
+
+-       set_lumpy_reclaim_mode(priority, sc);
++       set_lumpy_reclaim_mode(priority, sc, zone);
+
+        while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+                                        nr[LRU_INACTIVE_FILE]) {
+
+-- 
+Kind regards,
+Minchan Kim
