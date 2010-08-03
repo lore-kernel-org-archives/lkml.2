@@ -1,130 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab0HCCb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 22:31:57 -0400
-Received: from phil.doycomm.com ([66.219.128.249]:53579 "EHLO phil.doycomm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000Ab0HCCb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 22:31:56 -0400
-Subject: Re: Linux 2.6.35
-From: Donald Parsons <dparsons@brightdsl.net>
-To: Harald Hoyer <harald.hoyer@gmail.com>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com>
-References: <1280716262.5125.42.camel@falcon.homelinux.org>
-	 <201008012138.39036.bjorn.helgaas@hp.com>
-	 <1280722876.5125.83.camel@falcon.homelinux.org>
-	 <AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 02 Aug 2010 22:31:41 -0400
-Message-ID: <1280802701.5836.10.camel@falcon.homelinux.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752744Ab0HCCg7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 22:36:59 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:58160 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab0HCCg5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 22:36:57 -0400
+Date: Tue, 3 Aug 2010 08:06:48 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm 0/5] towards I/O aware memory cgroup v3.
+Message-ID: <20100803023648.GB3863@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100802191113.05c982e4.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 18:08 +0200, Harald Hoyer wrote: 
-> On Mon, Aug 2, 2010 at 6:21 AM, Donald Parsons <dparsons@brightdsl.net> wrote:
-> > On Sun, 2010-08-01 at 21:38 -0600, Bjorn Helgaas wrote:
-> >> On Sunday, August 01, 2010 08:31:02 pm Donald Parsons wrote:
-> >> > 2.6.35 still fails to boot for me, as first reported here:
-> >> >  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/01144.html
-> >> >
-> >> > I've manually bisected it down to around May 20 between
-> >> >   2.6.34-git4 (boots) and 2.6.34-git5 (boot fails)
-> >> > Also -git[23] boot, and -git8, -rc[126], rc6-git[136] all fail.
-> >> >
-> >> > Unfortunately first time I tried was with 2.6.35-rc6 and
-> >> > it failed to boot.
-> >> >
-> >> > Failure when switching from initramfs to real /root?
-> >> > Removing kernel "quiet" param appears to show several
-> >> > lines listing:
-> >> >
-> >> >   usb drives/hubs? followed by
-> >> >   dracut switching root (when booting works)
-> >> >               or
-> >> >   usb drives/hubs? followed by
-> >> >         (missing dracut... line)
-> >> >   No root device found
-> >> >   Boot has failed, sleeping forever.   (when it does not boot)
-> >> >
-> >> > Grub, typical entry:
-> >> > title Fedora (2.6.35)
-> >> >     root (hd0,0)
-> >> >     kernel /vmlinuz-2.6.35 ro
-> >> > root=UUID=686dc496-8814-4c36-8fb7-5ded2916e825 rhgb
-> >> > SYSFONT=latarcyrheb-sun16 LANG=en_US.UTF-8 KEYTABLE=us
-> >> > rdblacklist=nouveau init=/sbin/bootchartd
-> >> >     initrd /initramfs-2.6.35.img
-> >> >
-> >> >
-> >> > My boot failure seems to be different than other two reported
-> >> > in the thread "2.6.35-rc6-git6: Reported regressions from 2.6.34"
-> >> > under Bug #16173 and #16228
-> >>
-> >> Will it boot with the "pci=nocrs" option?  If so, please open a
-> >
-> > No, I tried this on a few attempts when I saw it mentioned under
-> > bug #16228.  But it had no effect/benefit.  Sorry, I should have
-> > mentioned this.
-> >
-> >> report at https://bugzilla.kernel.org, mark it a regression, assign
-> >> it to me, and attach the complete dmesg log.  And please respond to
-> >> this thread with a pointer to the bugzilla.
-> >>
-> >> Otherwise, a complete console log should have a clue.  The best
-> >> thing would be a log from a serial console or netconsole, with
-> >> "ignore_loglevel".
-> >
-> > Maybe I will try netconsole tomorrow.  But is Ethernet up when
-> > this boot failure happens?  I think not, since initramfs should
-> > not need networking.
-> >
-> > Should I try building sata driver into kernel?  Oh, I am using
-> > ext3, and fdisk -l shows:
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-08-02 19:11:13]:
+
 > 
-> # dracut --add-drivers "sata" ....
+> This is v3. removed terrble garbages from v2 and tested.(no big changes)
 > 
-> or edit /etc/dracut.conf:
+> Now, it's merge-window and I'll have to maintain this in my box for a while.
+> I'll continue to update this. Maybe we can make new progress after LinuxCon.
+> (And I'll be busy for a while.)
+>
+
+
+I was catching up with my inbox, did not realize you had moved onto v3
+and hence reviewed v1 first.
+ 
+> This set has 2+1 purposes.
+>  1. re-desgin struct page_cgroup and makes room for blocckio-cgroup ID.
+>  2. implement quick updating method for memcg's file stat.
+>  3. optionally? use spin_lock instead of bit_spinlock.
 > 
-> add_drivers+=" sata "
+> Plans after this.
+> 
+>  1. check influence of Mel's new writeback method.
+>     I think we'll see OOM easier. IIUC, memory cgroup needs a thread like kswapd
+>     to do background writeback or low-high watermark.
+>     (By this, we can control priority of background writeout thread priority
+>      by CFS. This is very good.)
 
-But the kernel used to boot with same identical modules before
-but not after 2.6.34-git4.
- --------
+Agreed, background watermark based reclaim is something we should look
+at.
 
-Using your suggestion as to where the problem lies, I investigated
-more deeply and found:
+> 
+>  2. implementing dirty_ratio.
+>     Now, Greg Thelen is working on. One of biggest problems of previous trial was
+>     update cost of status. I think this patch set can reduce it.
 
-I've now got 2.6.35-rc6-git3 to boot (and almost certainly 2.6.35 final)
+That is good news
 
-Make oldconfig broke at the transition where boot began failed, ie,
-between 2.6.34-git4 and 2.6.34-git5.   Even though modules are the
-same, boot fails.  If I use gconfig and set CONFIG_SATA_AHCI=y
-instead of CONFIG_SATA_AHCI=m it works, except cannot select =y
-unless CONFIG_ATA changed from m to y.
+> 
+>  3. record blockio cgroup's ID.
+>     Ikeda posted one. IIUC, it requires some consideration on (swapin)readahead
+>     for assigning IDs. But it seemed to be good in general.
+> 
+> Importance is in this order in my mind. But all aboves can be done in parallel.
+> 
+> Beyond that, some guys has problem with file-cache-control. If it need to use
+> account migration, we have to take care of races.
+> 
 
-So at some point in past, make oldconfig had apparently changed
-CONFIG_SATA_AHCI from y to m and system still booted.  But between
-2.6.34-git4 and 2.6.34-git5 the ability to boot was lost.
-
-So make oldconfig is not 100% trustworthy in this case.  I do not
-know if this is a problem that should be fixed.  Ask if you want
-any .config diffs.
-
-I am going to reboot with 2.6.35 to make sure it boots. Yes!
-
-I consider this boot problem solved unless someone wants to
-improve "make oldconfig" behavior.
-
-Thanks,
-Don
-
-
-
-
+-- 
+	Three Cheers,
+	Balbir
