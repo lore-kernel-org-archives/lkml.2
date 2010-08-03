@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab0HCIZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 04:25:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57916 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab0HCIZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 04:25:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: stefani@seibold.net
-Subject: Re: [PATCH] Change struct flchip_shared spinlock locking into mutex
-Date: Tue, 3 Aug 2010 10:25:52 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Vasiliy Kulikov <segooon@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>,
-        Jiri Slaby <jslaby@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mtd@lists.infradead.org
-References: <1280778048-6208-1-git-send-email-stefani@seibold.net>
-In-Reply-To: <1280778048-6208-1-git-send-email-stefani@seibold.net>
+	id S1754879Ab0HCI0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 04:26:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49932 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753852Ab0HCI0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 04:26:04 -0400
+Message-ID: <4C57D3BB.5020309@cn.fujitsu.com>
+Date: Tue, 03 Aug 2010 16:30:51 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+CC: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Paul Menage <menage@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/3] cgroup : add clone_children control file
+References: <20100729195629.GA13378@hallyn.com>
+In-Reply-To: <20100729195629.GA13378@hallyn.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008031025.52409.arnd@arndb.de>
-X-Provags-ID: V02:K0:KMnFIomcCNIjvEpCu+0vbAEJj0N8KA5Ocv1cfrs0vXf
- 1SO0Bg6A3VM9t9AKffs0CVVQZOIFVfLzDQI5dZprT++gJZzURH
- D+HskEsOENdVIL5nseesHAjgTkti1M95WsMi1oj+YvfJgqiRRQ
- xKhp3OsKxfinjfIXoH1GlRVfHdRPjuEfsWeOouBFSQMyCvq2Oc
- 4xP9bhzczhWAUthv+olKA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 02 August 2010, stefani@seibold.net wrote:
-> From: Stefani Seibold <stefani@seibold.net>
+Cc: Andrew Morton (to pick up those patches)
+
+Serge E. Hallyn wrote:
+> This patch is sent as an answer to a previous thread around the ns_cgroup.
 > 
-> This patch prevent to schedule while atomic by changing the
-> flchip_shared spinlock into a mutex. This should be save since no atomic
-> path will use this lock.
+> https://lists.linux-foundation.org/pipermail/containers/2009-June/018627.html
+> 
+> It adds a control file 'clone_children' for a cgroup.
+> This control file is a boolean specifying if the child cgroup should
+> be a clone of the parent cgroup or not. The default value is 'false'.
+> 
+> This flag makes the child cgroup to call the post_clone callback of all
+> the subsystem, if it is available.
+> 
+> At present, the cpuset is the only one which had implemented the post_clone
+> callback.
+> 
+> The option can be set at mount time by specifying the 'clone_children' mount
+> option.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Paul Menage <menage@google.com>
 
-I don't know this code well, but the patch looks correct and seems
-to be needed.
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
