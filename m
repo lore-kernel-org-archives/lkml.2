@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816Ab0HCV6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 17:58:15 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:39694 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757597Ab0HCV6O (ORCPT
+	id S932561Ab0HCWAt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:00:49 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:65316 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932521Ab0HCWAq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 17:58:14 -0400
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Huang Ying <ying.huang@intel.com>, "Tang\, Feng" <feng.tang@intel.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: EFI runtime-services on x86_64
-References: <201007301458.50263.bjorn.helgaas@hp.com>
-	<20100802103535.6442ab49@feng-i7>
-	<1280716920.2771.1519.camel@yhuang-dev>
-	<m14ofbgyki.fsf@fess.ebiederm.org>
-	<20100803215346.GA4476@srcf.ucam.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 03 Aug 2010 14:58:10 -0700
-In-Reply-To: <20100803215346.GA4476@srcf.ucam.org> (Matthew Garrett's message of "Tue\, 3 Aug 2010 22\:53\:46 +0100")
-Message-ID: <m1lj8nfjf1.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Tue, 3 Aug 2010 18:00:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <20100803215137.GU26313@bicker>
+References: <Pine.LNX.4.64.1008032334420.20393@ask.diku.dk> 
+	<20100803215137.GU26313@bicker>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 3 Aug 2010 16:00:25 -0600
+X-Google-Sender-Auth: n_9GLQUP7XfiQ9FbPoR8iK-8tHs
+Message-ID: <AANLkTi=yOJ0Zfsn_h_xWai5O=OPkccMb-hDwKK+dWZwf@mail.gmail.com>
+Subject: Re: [PATCH 8/9] arch/powerpc/kernel: Drop unnecessary null test
+To: Dan Carpenter <error27@gmail.com>, Julia Lawall <julia@diku.dk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg59@srcf.ucam.org> writes:
-
-> On Tue, Aug 03, 2010 at 02:45:33PM -0700, Eric W. Biederman wrote:
+On Tue, Aug 3, 2010 at 3:51 PM, Dan Carpenter <error27@gmail.com> wrote:
+> On Tue, Aug 03, 2010 at 11:35:17PM +0200, Julia Lawall wrote:
+>> diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
+>> index 6ddb795..62dd363 100644
+>> --- a/arch/powerpc/kernel/pci_of_scan.c
+>> +++ b/arch/powerpc/kernel/pci_of_scan.c
+>> @@ -336,8 +336,7 @@ static void __devinit __of_scan_bus(struct device_node *node,
+>>               if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
+>>                   dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+>>                       struct device_node *child = pci_device_to_OF_node(dev);
+>> -                     if (dev)
+>> -                             of_scan_pci_bridge(child, dev);
+>> +                     of_scan_pci_bridge(child, dev);
 >
->> EFI runtime calls have the nasty fact that they don't work in general even
->> if EFI is present because you may have the wrong word size EFI running on
->> your machine.  A 32bit EFI and a 64bit kernel or a 64bit EFI and a 32bit kernel.
->
-> You've already failed to boot in that case.
+> The intention was probably to check "child" instead of "dev".
+> pci_device_to_OF_node() can return NULL.  On the other hand the code
+> has been this way for a year and no one has complained...
 
-Only if you have EFI runtime services enabled in your kernel.  You can
-skip the efi junk and the kernel runs just fine.  Doing what we do on
-every other platform which appears to be a combination of ACPI and
-direct hardware access appears to be good enough, and that is a path
-that actually gets tested regularly.
+Still, it should be fixed.  It is likely that I'll be generalizing
+this code for other architectures in the near future.  I'll spin a
+patch.
 
-Eric
+g.
