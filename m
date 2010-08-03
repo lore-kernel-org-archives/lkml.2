@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040Ab0HCKiJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 06:38:09 -0400
-Received: from saarni.dnainternet.net ([83.102.40.136]:50167 "EHLO
-	saarni.dnainternet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab0HCKiE (ORCPT
+	id S1756023Ab0HCKoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 06:44:15 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3563 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755996Ab0HCKoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 06:38:04 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1.36
-From: Anssi Hannula <anssi.hannula@iki.fi>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] ALSA: hda - support HDMI HBR passthrough
-Date: Tue,  3 Aug 2010 13:28:56 +0300
-Message-Id: <1280831338-4596-1-git-send-email-anssi.hannula@iki.fi>
-X-Mailer: git-send-email 1.7.2
+	Tue, 3 Aug 2010 06:44:14 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o73AiAki022405
+Subject: Re: a Great Idea - include Kademlia networking protocol in kernel
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: hp fk <fkhp101@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
+References: <AANLkTik7powjUaJ51bA_bgPVb03U-RVZay3NffHBYLzx@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Aug 2010 12:44:09 +0200
+Message-ID: <1280832249.19803.37.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+On Mon, 2010-08-02 at 20:24 +0800, hp fk wrote:
 
-This patchset adds support for passing through IEC 61937 encapsulated
-compressed audio at high bitrates (i.e. those over 6.144Mbps).
-At least TrueHD and DTS-HD are such formats.
+-ENO_REALNAME
 
-I've tested this using an NVIDIA hdmi codec and the following ffmpeg
-patch which adds support for TrueHD in its IEC 61937 muxer:
-http://lists.mplayerhq.hu/pipermail/ffmpeg-devel/2010-August/094317.html
+> Kademlia protocol is widely used by many p2p applications, if kernel
 
-One needs to set the AES0 & 0x02 (non-audio) bit during playback so that
-the data is not transmitted as normal 8 channel PCM audio.
+-ENO_URL_WITH_INTRODUCTION_ON_KADEMLIA
+-ENO_PATCH
 
----
-Anssi Hannula (2):
-      ALSA: hda - Set Stream Type in Stream Format according to AES0
-      ALSA: hda - Add support for HDMI HBR passthrough
+[ Untechnical marketing and sales blurb deleted ]
 
- sound/pci/hda/hda_codec.c       |    6 ++++-
- sound/pci/hda/hda_codec.h       |    6 ++++-
- sound/pci/hda/hda_intel.c       |    3 +-
- sound/pci/hda/patch_hdmi.c      |   40 ++++++++++++++++++++++++++++++++++++++-
- sound/pci/hda/patch_intelhdmi.c |    3 +-
- sound/pci/hda/patch_nvhdmi.c    |    3 +-
- 6 files changed, 53 insertions(+), 8 deletions(-)
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
