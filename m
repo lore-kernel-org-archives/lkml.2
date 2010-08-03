@@ -1,68 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab0HCJAu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:00:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754531Ab0HCJAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:00:48 -0400
-Subject: GFS2: Pull request (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 03 Aug 2010 10:06:07 +0100
-Message-ID: <1280826367.2498.5.camel@localhost>
-Mime-Version: 1.0
+	id S1755538Ab0HCJBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:01:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24175 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab0HCJBY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 05:01:24 -0400
+Message-ID: <4C57DACF.1090503@kernel.org>
+Date: Tue, 03 Aug 2010 02:01:03 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: oops in ioapic_write_entry
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org> <m1fwywoz0f.fsf@fess.ebiederm.org>
+In-Reply-To: <m1fwywoz0f.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C57DAD9.01E2,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 08/03/2010 01:56 AM, Eric W. Biederman wrote:
+> Yinghai Lu <yinghai@kernel.org> writes:
+> 
+>> On 08/03/2010 01:00 AM, Eric W. Biederman wrote:
+>>> Yinghai Lu <yinghai@kernel.org> writes:
+>>>
+>>>>>> Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+>>>>>> ===================================================================
+>>>>>> --- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
+>>>>>> +++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+>>>>>> @@ -1029,10 +1029,7 @@ static int pin_2_irq(int idx, int apic,
+>>>>>>  	} else {
+>>>>>>  		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
+>>>>>>  
+>>>>>> -		if (gsi >= NR_IRQS_LEGACY)
+>>>>>> -			irq = gsi;
+>>>>>> -		else
+>>>>>> -			irq = gsi_top + gsi;
+>>>>>> +		irq = gsi_to_irq(gsi);
+>>>>>>  	}
+>>>>>>  
+>>>>>>  #ifdef CONFIG_X86_32
+>>>>
+>>>> what is the point for making irq = gsi_top + gsi when mptable is used instead of acpi?
+>>>
+>>> Because it is only convention that when mptables are used that the
+>>> first apic pins 0-15 are the ISA irqs.  This thread witnessed and a
+>>> pci irq that came in pin < 16 that was not an ISA irq.  The truly rare
+>>> and exotic case would be for the ISA irqs to be outside the first 16
+>>> ioapic pins but the es7000 did exactly that.
+>>
+>> nvidia chipset if acpi is enabled, external pci device will use ioapic from 16 to 23.
+>>
+>> if mptable is used, external pci device will not use pin from 16 to 23..., and lot of devices will share same pin.
+> 
+> Exactly.  Pins < 16 are not necessarily ISA irqs, and can be possibly
+> shared level triggered PCI irqs.  Unfortunately there are strange
+> boards like the es7000 where pins > 16 are ISA irqs.
+> 
+> The other thing that is gained by having pin_2_irq always remap pins <
+> 16 is we can get away with the numerous hard codes in the arch/x86 and elsewhere
+> that assume irq < 16 is an ISA irq.
 
-Please consider pulling the following patches,
+how about this one ?
 
-Steve.
+---
+ arch/x86/kernel/apic/io_apic.c |   31 ++++++++++++++++++++++++++++---
+ 1 file changed, 28 insertions(+), 3 deletions(-)
 
----------------------------------------------------------------------------------
-The following changes since commit 540ad6b62b3a188a53b51cac81d8a60d40e29fbd:
-
-  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb (2010-07-28 20:01:26 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-nmw.git master
-
-Abhijith Das (1):
-      GFS2: Fix typo in stuffed file data copy handling
-
-Bob Peterson (1):
-      GFS2: Simplify gfs2_write_alloc_required
-
-David Rientjes (1):
-      GFS2: remove dependency on __GFP_NOFAIL
-
-Steven Whitehouse (5):
-      GFS2: Use nobh_writepage
-      GFS2: Wait for journal id on mount if not specified on mount command line
-      GFS2: Make "try" lock not try quite so hard
-      Revert "GFS2: recovery stuck on transaction lock"
-      GFS2: Fix recovery stuck bug (try #2)
-
- fs/gfs2/aops.c       |    9 +---
- fs/gfs2/bmap.c       |   17 +++-----
- fs/gfs2/bmap.h       |    2 +-
- fs/gfs2/dir.c        |   11 ++++-
- fs/gfs2/file.c       |    4 +-
- fs/gfs2/glock.c      |  105 ++++++++++++++++++++++++++++++-------------------
- fs/gfs2/incore.h     |    1 +
- fs/gfs2/ops_fstype.c |   27 ++++++++++++-
- fs/gfs2/quota.c      |   15 +------
- fs/gfs2/super.c      |    9 +---
- fs/gfs2/sys.c        |   57 +++++++++++++++++++++++++-
- 11 files changed, 169 insertions(+), 88 deletions(-)
-
-
+Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
++++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+@@ -1013,6 +1013,28 @@ static inline int irq_trigger(int idx)
+ 	return MPBIOS_trigger(idx);
+ }
+ 
++static int shared_with_legacy(int apic, int pin)
++{
++	int i;
++
++	for (i = 0; i < mp_irq_entries; i++) {
++		int bus = mp_irqs[i].srcbus;
++
++		if (!test_bit(bus, mp_bus_not_pci))
++			continue;
++
++		if (mp_ioapics[apic].apicid != mp_irqs[i].dstapic)
++			continue;
++
++		if (mp_irqs[i].dstirq != pin)
++			continue;
++
++		return mp_irqs[i].srcbusirq;
++	}
++
++	return -1;
++}
++
+ static int pin_2_irq(int idx, int apic, int pin)
+ {
+ 	int irq;
+@@ -1029,10 +1051,13 @@ static int pin_2_irq(int idx, int apic,
+ 	} else {
+ 		u32 gsi = mp_gsi_routing[apic].gsi_base + pin;
+ 
+-		if (gsi >= NR_IRQS_LEGACY)
++		if (gsi >= NR_IRQS_LEGACY) {
+ 			irq = gsi;
+-		else
+-			irq = gsi_top + gsi;
++		} else {
++			irq = shared_with_legacy(apic, pin);
++			if (irq < 0)
++				irq = gsi_top + gsi;
++		}
+ 	}
+ 
+ #ifdef CONFIG_X86_32
