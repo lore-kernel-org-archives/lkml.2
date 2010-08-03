@@ -1,83 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0HCNyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:54:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12105 "EHLO mx1.redhat.com"
+	id S1756676Ab0HCN6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:58:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34592 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755865Ab0HCNyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:54:36 -0400
-Date: Tue, 3 Aug 2010 10:54:20 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        kernel-team@lists.ubuntu.com, Will Deacon <Will.Deacon@arm.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>
-Subject: Re: [PATCH 0/2] perf: symbol offset breakage with separated debug
-Message-ID: <20100803135420.GV29507@ghostprotocols.net>
-References: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
+	id S1756061Ab0HCN6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 09:58:23 -0400
+Date: Tue, 3 Aug 2010 15:56:15 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Izik Eidus <ieidus@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Transparent Hugepage Support #29
+Message-ID: <20100803135615.GG6071@random.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 03, 2010 at 12:48:34PM +0100, Dave Martin escreveu:
-> Hi all,
-> 
-> I've hit some problems in trying to get perf record/report to
-> work correctly on systems with separated debug images (Ubuntu,
-> in particular).  I worked on some patches to ensure that
-> separate debug images do actually get loaded, when present --
-> these commits have now been merged in linux-2.6-tip/master.
-> (See below for a list of the commits.)
-> 
-> Now that these are in place, I'm observing a new problem which
-> can mess up symbol locations -- though I think there might be a
-> practical workaround, I can't see a trivial solution, so I'm
-> keen to hear if anyone has any ideas.
-> 
-> 
-> The problem:
-> 
-> perf makes some incorrect assumptions, which mean that the
-> symbol locations seen by perf report and friends can be
-> incorrect.
-> 
-> My analysis:
-> 
-> 	a) perf represents symbols as offsets from the start of
-> 		the mmap'd code region which contains each
-> 		symbol.
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
 
-The symbol library in perf uses separate map_ip and unmap_ip to cope
-with those, covering things like prelinked binaries, the kernel with its
-absolute addresses, kexec cases where we capture a reference relocation
-symbol so that we can adjust later when using the unrelocated vmlinux,
-etc.
- 
-> 	b) For shared libs (ET_DYN objects), the desired offset
-> 		is (usually) equal to the VMA of each given
+first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+later: git fetch; git checkout -f origin/master
 
-VMA here stands for Virtual Memory Address, not Virtual Memory Area
-where a map is loaded, right? I guess so, but trying to get to common
-ground.
+The tree is rebased and git pull won't work.
 
-> 		symbol in the image.  Perf assumes that these
-> 		offsets are always equal, and this normally
-> 		works.
-> 
-> 		Atypical link configurations could cause this
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35/transparent_hugepage-29/
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35/transparent_hugepage-29.gz
 
-Which ones? We need to detect those and act accordingly, doing
-adjustments at load time or by using a separate map_ip/unmap_ip pair of
-functions in struct map.
+Diff #28 -> #29:
 
-I'll continue reading your patches, the first one probably fixes a bug,
-but wonder if you looked at the struct map->{map_ip,unmap_ip} routines
-in tools/perf/util/map.h.
+ THP-disable-on-small-systems    |   41 ++++++++
 
-- Arnaldo
+Disable THP on <500M systems, from Rik.
+
+ compaction-kswapd               |  194 ++++++++++++++++++++++++++++++++++++++++
+
+Add a compaction mode for kswapd to fully replace obsolete blind lumpy
+reclaim.
+
+ free_pages-count                |   60 ++++++++++++
+ free_pages-drain_all_pages      |   62 ++++++++++++
+ free_pages-vmstat               |  156 ++++++++++++++++++++++++++++++++
+
+Make free page statistics more accurate from Mel.
+
+ ksmd-khugepaged-freeze          |   97 ++++++++++++++++++++
+
+kswapd uses set_freezing, so shall ksmd and khugepaged.
+
+ transparent-hugepage-nr_rotated |   36 +++++++
+ transparent-hugepage-stat       |  166 ++++++++++++++++++++++++++++++++++
+
+Fix inactive/active stats and nr_rotated, from Rik.
+
+ Documentation/vm/transhuge.txt        |  283 ++++
+ arch/alpha/include/asm/mman.h         |    2 
+ arch/mips/include/asm/mman.h          |    2 
+ arch/parisc/include/asm/mman.h        |    2 
+ arch/powerpc/mm/gup.c                 |   12 
+ arch/x86/include/asm/kvm_host.h       |    1 
+ arch/x86/include/asm/paravirt.h       |   23 
+ arch/x86/include/asm/paravirt_types.h |    6 
+ arch/x86/include/asm/pgtable-2level.h |    9 
+ arch/x86/include/asm/pgtable-3level.h |   23 
+ arch/x86/include/asm/pgtable.h        |  149 ++
+ arch/x86/include/asm/pgtable_64.h     |   28 
+ arch/x86/include/asm/pgtable_types.h  |    3 
+ arch/x86/kernel/paravirt.c            |    3 
+ arch/x86/kernel/vm86_32.c             |    1 
+ arch/x86/kvm/mmu.c                    |   68 -
+ arch/x86/kvm/paging_tmpl.h            |    6 
+ arch/x86/mm/gup.c                     |   28 
+ arch/x86/mm/pgtable.c                 |   66 +
+ arch/xtensa/include/asm/mman.h        |    2 
+ fs/Kconfig                            |    2 
+ fs/exec.c                             |   44 
+ fs/proc/meminfo.c                     |   14 
+ fs/proc/page.c                        |   14 
+ include/asm-generic/mman-common.h     |    2 
+ include/asm-generic/pgtable.h         |  130 +
+ include/linux/compaction.h            |   13 
+ include/linux/gfp.h                   |   14 
+ include/linux/huge_mm.h               |  151 ++
+ include/linux/khugepaged.h            |   66 +
+ include/linux/ksm.h                   |   20 
+ include/linux/kvm_host.h              |    4 
+ include/linux/memory_hotplug.h        |   14 
+ include/linux/mm.h                    |  114 +
+ include/linux/mm_inline.h             |   19 
+ include/linux/mm_types.h              |    3 
+ include/linux/mmu_notifier.h          |   66 +
+ include/linux/mmzone.h                |    1 
+ include/linux/page-flags.h            |   36 
+ include/linux/res_counter.h           |   12 
+ include/linux/rmap.h                  |   33 
+ include/linux/sched.h                 |    1 
+ include/linux/swap.h                  |    2 
+ include/linux/vmstat.h                |    4 
+ kernel/fork.c                         |   12 
+ kernel/futex.c                        |   55 
+ mm/Kconfig                            |   38 
+ mm/Makefile                           |    1 
+ mm/compaction.c                       |   48 
+ mm/huge_memory.c                      | 2212 ++++++++++++++++++++++++++++++++++
+ mm/hugetlb.c                          |   69 -
+ mm/ksm.c                              |   86 -
+ mm/madvise.c                          |    8 
+ mm/memcontrol.c                       |  169 +-
+ mm/memory-failure.c                   |    2 
+ mm/memory.c                           |  241 +++
+ mm/memory_hotplug.c                   |   14 
+ mm/mempolicy.c                        |   14 
+ mm/migrate.c                          |   22 
+ mm/mincore.c                          |    7 
+ mm/mmap.c                             |   57 
+ mm/mmu_notifier.c                     |   20 
+ mm/mprotect.c                         |   20 
+ mm/mremap.c                           |    8 
+ mm/oom_kill.c                         |    1 
+ mm/page_alloc.c                       |   58 
+ mm/pagewalk.c                         |    1 
+ mm/rmap.c                             |  228 ++-
+ mm/sparse.c                           |    4 
+ mm/swap.c                             |  117 +
+ mm/swap_state.c                       |    6 
+ mm/swapfile.c                         |    2 
+ mm/vmscan.c                           |  102 -
+ mm/vmstat.c                           |   31 
+ virt/kvm/iommu.c                      |    2 
+ virt/kvm/kvm_main.c                   |   56 
+ 76 files changed, 4680 insertions(+), 527 deletions(-)
