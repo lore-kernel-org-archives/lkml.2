@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab0HCLn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 07:43:58 -0400
-Received: from www.tglx.de ([62.245.132.106]:38104 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755936Ab0HCLn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 07:43:57 -0400
-Date: Tue, 3 Aug 2010 13:43:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tejun Heo <teheo@suse.de>
-cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-        Greg KH <gregkh@suse.de>
-Subject: Re: [GIT PULL tip/genirq] Please pull from lost-spurious-irq
-In-Reply-To: <4C57D836.1060106@suse.de>
-Message-ID: <alpine.LFD.2.00.1008031217120.3225@localhost.localdomain>
-References: <4C5033D9.7030800@kernel.org> <4C50349F.7020002@suse.de> <alpine.LFD.2.00.1007291042441.2471@localhost.localdomain> <4C529F59.3020404@suse.de> <alpine.LFD.2.00.1008020956080.9198@localhost.localdomain> <4C56E42D.5010300@suse.de>
- <alpine.LFD.2.00.1008021730250.27107@localhost.localdomain> <4C572F26.1040200@suse.de> <alpine.LFD.2.00.1008022353220.3225@localhost.localdomain> <4C57D836.1060106@suse.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756080Ab0HCLs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 07:48:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52235 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752109Ab0HCLs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 07:48:58 -0400
+From: Dave Martin <dave.martin@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, kernel-team@lists.ubuntu.com,
+        Will Deacon <Will.Deacon@arm.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Dave Martin <dave.martin@linaro.org>
+Subject: [PATCH 1/2] perf events: Fix mmap offset determination
+Date: Tue,  3 Aug 2010 12:48:35 +0100
+Message-Id: <1280836116-6654-2-git-send-email-dave.martin@linaro.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
+References: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun,
+Fix buggy-looking code which unnecessarily adjusts the file offset
+fields read from /proc/*/maps.
 
-On Tue, 3 Aug 2010, Tejun Heo wrote:
-> I agree that timer multiplexing is a rather ugly thing and it would be
-> great to remove it.  You're right that it doesn't make whole lot of
-> difference whether the timer is global or local if it's low frequency
-> and in fast paths expect/unexpect would be able to just test its list
-> entry and set/clear currently expecting status without messing with
-> the global timer or lock.  Then, we can have a single low freq timer
-> for expect/unexpect and the other for actual polling.
+This may have gone unnoticed since the offset is usually 0 (and the
+logic in util/symbol.c may work incorrectly for other offset values).
 
-And the third one for watch, right ? That would give us separate timer
-functions which each serve a particular purpose.
+I make assumptions about the intended design here.  The cover note
+accompanying this patch contains a more detailed explanation.
 
-When you go for it, can you please simplify all the heuristics? 
+Signed-off-by: Dave Martin <dave.martin@linaro.org>
+---
+ tools/perf/util/event.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-spurious poll: 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 6b0db55..db8a1d4 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -151,7 +151,6 @@ static int event__synthesize_mmap_events(pid_t pid, pid_t tgid,
+ 			continue;
+ 		pbf += n + 3;
+ 		if (*pbf == 'x') { /* vm_exec */
+-			u64 vm_pgoff;
+ 			char *execname = strchr(bf, '/');
+ 
+ 			/* Catch VDSO */
+@@ -162,12 +161,7 @@ static int event__synthesize_mmap_events(pid_t pid, pid_t tgid,
+ 				continue;
+ 
+ 			pbf += 3;
+-			n = hex2u64(pbf, &vm_pgoff);
+-			/* pgoff is in bytes, not pages */
+-			if (n >= 0)
+-				ev.mmap.pgoff = vm_pgoff << getpagesize();
+-			else
+-				ev.mmap.pgoff = 0;
++			n = hex2u64(pbf, &ev.mmap.pgoff);
+ 
+ 			size = strlen(execname);
+ 			execname[size - 1] = '\0'; /* Remove \n */
+-- 
+1.7.0.4
 
- One fixed poll interval is enough. The retry logic can be made
- simple, just set it back to interrupt delivery once per minute and
- limit the storm to 10.
-
-watch:
-
- Get rid of the interrupt context work and do all the work in the
- timer. Use a fixed interval and either keep it forever or remove it.
-
-expect:
-
- Use a slow fixed interval and just do the expect/unexpect fast
- marking. A nice thing would be to have a counter of expect calls so
- we can switch off the timer when there is no activity within 10
- seconds.
-
-> How does that sound to you?
-
-Way better. :)
-
-Thanks,
-
-	tglx
