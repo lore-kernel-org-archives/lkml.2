@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab0HCTug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 15:50:36 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:45613 "EHLO mgw2.diku.dk"
+	id S932400Ab0HCTxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 15:53:38 -0400
+Received: from mail.perches.com ([173.55.12.10]:2226 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757332Ab0HCTuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 15:50:35 -0400
-Date: Tue, 3 Aug 2010 21:50:32 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH] arch/powerpc: Drop unnecessary of_node_put
-Message-ID: <Pine.LNX.4.64.1008032149410.20393@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932106Ab0HCTxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 15:53:37 -0400
+Subject: Re: [PATCH] flex_array: add helpers to get and put to make
+ pointers easy to use
+From: Joe Perches <joe@perches.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
+        dave@linux.vnet.ibm.com, akpm@linux-foundation.org, jmorris@namei.org,
+        sds@tycho.nsa.gov
+In-Reply-To: <20100803193623.22126.18019.stgit@paris.rdu.redhat.com>
+References: <20100803193623.22126.18019.stgit@paris.rdu.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Aug 2010 12:53:33 -0700
+Message-ID: <1280865213.6088.15.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Tue, 2010-08-03 at 15:36 -0400, Eric Paris wrote:
+> Getting and putting arrays of pointers with flex arrays is a PITA.  You
+> have to remember to pass &ptr to the _put and you have to do weird and
+> wacky casting to get the ptr back from the _get.  Add two functions
+> flex_array_get_ptr() and flex_array_put_ptr() to handle all of the magic.
+> 
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+> 
+>  include/linux/flex_array.h |    6 ++++++
+>  lib/flex_array.c           |   25 ++++++++++++++++++++++++-
+>  2 files changed, 30 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/flex_array.h b/include/linux/flex_array.h
+> index 1d747f7..f4e4eb2 100644
+> --- a/include/linux/flex_array.h
+> +++ b/include/linux/flex_array.h
+> @@ -70,4 +70,10 @@ int flex_array_clear(struct flex_array *fa, unsigned int element_nr);
+>  void *flex_array_get(struct flex_array *fa, unsigned int element_nr);
+>  int flex_array_shrink(struct flex_array *fa);
+>  
+> +#define flex_array_put_ptr(fa, nr, src, gfp)	({						\
+> +						 void *_src = (src);				\
+> +						 flex_array_put((fa), (nr), &_src, (gfp));	\
+> +						})
 
-for_each_node_by_name only exits when its first argument is NULL, and a
-subsequent call to of_node_put on that argument is unnecessary.
+Might be nicer to use fewer indents.
+Isn't this equivalent?
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+#define flex_array_put_ptr(fa, nr, src, gfp)			\
+	flex_array_put(fa, nr, &(void *)(src), gfp)
 
-// <smpl>
-@@
-iterator name for_each_node_by_name;
-expression np,E;
-identifier l;
-@@
 
-for_each_node_by_name(np,...) {
-  ... when != break;
-      when != goto l;
-}
-... when != np = E
-- of_node_put(np);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- arch/powerpc/platforms/powermac/feature.c |    1 -
- arch/powerpc/platforms/powermac/pci.c     |    2 --
- 2 files changed, 3 deletions(-)
-
-diff -u -p a/arch/powerpc/platforms/powermac/feature.c b/arch/powerpc/platforms/powermac/feature.c
---- a/arch/powerpc/platforms/powermac/feature.c
-+++ b/arch/powerpc/platforms/powermac/feature.c
-@@ -2872,7 +2872,6 @@ set_initial_features(void)
- 				core99_airport_enable(np, 0, 0);
- 			}
- 		}
--		of_node_put(np);
- 	}
- 
- 	/* On all machines that support sound PM, switch sound off */
-diff -u -p a/arch/powerpc/platforms/powermac/pci.c b/arch/powerpc/platforms/powermac/pci.c
---- a/arch/powerpc/platforms/powermac/pci.c
-+++ b/arch/powerpc/platforms/powermac/pci.c
-@@ -1155,13 +1155,11 @@ void __init pmac_pcibios_after_init(void
- 			pmac_call_feature(PMAC_FTR_1394_CABLE_POWER, nd, 0, 0);
- 		}
- 	}
--	of_node_put(nd);
- 	for_each_node_by_name(nd, "ethernet") {
- 		if (nd->parent && of_device_is_compatible(nd, "gmac")
- 		    && of_device_is_compatible(nd->parent, "uni-north"))
- 			pmac_call_feature(PMAC_FTR_GMAC_ENABLE, nd, 0, 0);
- 	}
--	of_node_put(nd);
- }
- 
- void pmac_pci_fixup_cardbus(struct pci_dev* dev)
