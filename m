@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab0HCGsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 02:48:51 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:60135 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755173Ab0HCGsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 02:48:50 -0400
-Date: Tue, 3 Aug 2010 08:48:48 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Thomas Backlund <tmb@mandriva.org>
-Cc: Michal Marek <mmarek@suse.cz>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "bug-make@gnu.org" <bug-make@gnu.org>
-Subject: Re: make 3.82 fails on powerpc defconfig update [was: Linux 2.6.35]
-Message-ID: <20100803064848.GB19193@merkur.ravnborg.org>
-References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com> <4C5686FF.9010803@mandriva.org> <20100802182848.GA16394@merkur.ravnborg.org> <4C572EB0.7060706@mandriva.org> <20100802205121.GA16520@merkur.ravnborg.org> <4C5732A7.2050003@mandriva.org>
+	id S1755380Ab0HCGvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 02:51:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56584 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755173Ab0HCGvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 02:51:39 -0400
+Message-ID: <4C57BC6D.8060306@redhat.com>
+Date: Tue, 03 Aug 2010 09:51:25 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C5732A7.2050003@mandriva.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] kvm cleanup: Introduce sibling_pte and do cleanup for
+ reverse map and parent_pte
+References: <4C577F45.9030208@cn.fujitsu.com>
+In-Reply-To: <4C577F45.9030208@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 12:03:35AM +0300, Thomas Backlund wrote:
-> 02.08.2010 23:51, Sam Ravnborg skrev:
-> >>
-> >> Thanks, this seems to fix the first issue, but then I get the same erro on the following line 190:
-> >>
-> >> 190: bootwrapper_install %.dtb:
-> >> 191:        $(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
-> >>
-> > 
-> > Obviously - dunno how I missed that.
-> > Updated patch below.
-> > 
-> > I will do a proper submission after you
-> > confirm that powerpc build is working with make 3.82.
-> > 
-> 
-> Yeah, that was an obvious fix, thanks!
-> 
-> One small typo fix below...
-> (a missing ':')
-> 
-> Otherwise it works here, so:
-> 
-> Tested-by: Thomas Backlund <tmb@mandriva.org>
+  On 08/03/2010 05:30 AM, Lai Jiangshan wrote:
+> This patch is just a big cleanup. it reduces 220 lines of code.
+>
+> It introduces sibling_pte array for tracking identical sptes, so the
+> identical sptes can be linked as a single linked list by their
+> corresponding sibling_pte. A reverse map or a parent_pte points at
+> the head of this single linked list. So we can do cleanup for
+> reverse map and parent_pte VERY LARGELY.
+>
+> BAD:
+>    If most rmap have only one entry or most sp have only one parent,
+>    this patch may use more memory than before.
 
-Thanks.
-I have sent a proper patch to Ben/Paul (powerpc maintainers).
+That is the case with NPT and EPT.  Each page has exactly one spte 
+(except a few vga pages), and each sp has exactly one parent_pte (except 
+the root pages).
 
-	Sam
+> GOOD:
+>    1) Reduce a lot of code, The functions which are in hot path becomes
+>       very very simple and terrifically fast.
+>    2) rmap_next(): O(N) ->  O(1). traveling a ramp: O(N*N) ->  O(N)
+
+The existing rmap_next() is not O(N), it's O(RMAP_EXT), which is 4.  The 
+data structure was chosen over a simple linked list to avoid extra cache 
+misses.
+
+>    3) Remove the ugly interlayer: struct kvm_rmap_desc, struct kvm_pte_chain
+
+kvm_rmap_desc and kvm_pte_chain are indeed ugly, but they do save a lot 
+of memory and cache misses.
+
+>    4) We don't need to allocate any thing when we change the mappings.
+>       So we can avoid allocation when we have held kvm mmu spin lock.
+>       (this feature is very helpful in future).
+>    5) better readability.
+
+I agree the new code is more readable.  Unfortunately it uses more 
+memory and is likely to be slower.  You add a cache miss for every spte, 
+while kvm_rmap_desc amortizes the cache miss among 4 sptes, and special 
+cases 1 spte to have no cache misses (or extra memory requirements).
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
