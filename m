@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab0HCNcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:32:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59961 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756413Ab0HCNce (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:32:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=P1cVO9NAekablDWodZRP5kFsJpDnrExI6Rjr4szZO5v9w0ONlHcqkrUBikXnCpHOoj
-         YasZwhmL1mKveGZjFzjJyZnZI6ZHN03YFBPmbtPx6Vkz0yQ/1U0JQNnrr0hPN2r+GcwL
-         BfjcHOfaOPJfU4Vft2nN0li9nhbjYOqVz3Oro=
+	id S1756490Ab0HCNcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:32:53 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55278 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756379Ab0HCNch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 09:32:37 -0400
+Message-ID: <4C581A6D.9030908@austin.ibm.com>
+Date: Tue, 03 Aug 2010 08:32:29 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Date: Tue, 3 Aug 2010 14:32:32 +0100
-Message-ID: <AANLkTim7JxJz2L27Nhr-BmJpDMY6LibGA8gvQB7Lsr8P@mail.gmail.com>
-Subject: [2.6.36, patch] unprotected access to task credentials in waitid()
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: [PATCH 0/9] v4  De-couple sysfs memory directories from memory sections
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling waitid [1] on a stopped process results in access to the
-task's credentials without the RCU read lock, which may change in the
-meantime, eliciting a warning [2].
+This set of patches de-couples the idea that there is a single
+directory in sysfs for each memory section.  The intent of the
+patches is to reduce the number of sysfs directories created to
+resolve a boot-time performance issue.  On very large systems
+boot time are getting very long (as seen on powerpc hardware)
+due to the enormous number of sysfs directories being created.
+On a system with 1 TB of memory we create ~63,000 directories.
+For even larger systems boot times are being measured in hours.
 
-This is fixed by:
+This set of patches allows for each directory created in sysfs
+to cover more than one memory section.  The default behavior for
+sysfs directory creation is the same, in that each directory
+represents a single memory section.  A new file 'end_phys_index'
+in each directory contains the physical_id of the last memory
+section covered by the directory so that users can easily
+determine the memory section range of a directory.
 
-Ensure the task's credentials don't change before calling
-wait_noreap_copyout via acquisition of the RCU read lock.
+Updates for version 4 of the patchset includes an additional
+patch [4/9] that introduces a new mutex to be taken for any
+add or remove (not hotplug) of memory.  The following updates
+are also included.
+ 
+Patch 2/9 Add new phys_index properties
+- The start_phys_index property was reverted to the original
+  phys_index name.
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Patch 3/9 Add section count to memory_block
+- Use atomic_dec_and_test()
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index ceffc67..cc8b4b9 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -1457,6 +1457,7 @@ static int wait_task_continued(struct wait_opts
-*wo, struct task_struct *p)
- 	}
- 	if (!unlikely(wo->wo_flags & WNOWAIT))
- 		p->signal->flags &= ~SIGNAL_STOP_CONTINUED;
-+	rcu_read_lock();
- 	uid = __task_cred(p)->uid;
- 	spin_unlock_irq(&p->sighand->siglock);
+Patch 7/9 Update the node sysfs code
+- Update the inline definition of unregister_mem_sects_under_nodes
+  for !CONFIG_NUMA builds.
 
-@@ -1477,6 +1478,7 @@ static int wait_task_continued(struct wait_opts
-*wo, struct task_struct *p)
- 					     CLD_CONTINUED, SIGCONT);
- 		BUG_ON(retval == 0);
- 	}
-+	rcu_read_unlock();
+Patch 8/9 Define memory_block_size_bytes() for ppc/pseries
+- Use an unsigned long for getting property value.
 
- 	return retval;
- }
+Patch 9/9 Update memory-hotplug documentation
+- Minor updates for reversion of phys_index property name.
 
---- [1]
+Thanks,
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-
-int main(void) {
-	id_t id;
-	siginfo_t infop;
-	pid_t res;
-
-	id = fork();
-	if (id == 0) {
-		sleep(1);
-		exit(0);
-	}
-
-	kill(id, SIGSTOP);
-	alarm(1);
-
-	res = waitid(P_PID, id, &infop, WCONTINUED);
-
-	return 0;
-}
-
---- [2]
-
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-kernel/exit.c:1460 invoked rcu_dereference_check() without protection!
-
-other info that might help us debug this:
-
-rcu_scheduler_active = 1, debug_locks = 1
-2 locks held by waitid02/22252:
- #0:  (tasklist_lock){.?.?..}, at: [<ffffffff81061ce5>] do_wait+0xc5/0x310
- #1:  (&(&sighand->siglock)->rlock){-.-...}, at: [<ffffffff810611da>]
-wait_consider_task+0x19a/0xbe0
-
-stack backtrace:
-Pid: 22252, comm: waitid02 Not tainted 2.6.35-323cd+ #3
-Call Trace:
- [<ffffffff81095da4>] lockdep_rcu_dereference+0xa4/0xc0
- [<ffffffff81061b31>] wait_consider_task+0xaf1/0xbe0
- [<ffffffff81061d15>] do_wait+0xf5/0x310
- [<ffffffff810620b6>] sys_waitid+0x86/0x1f0
- [<ffffffff8105fce0>] ? child_wait_callback+0x0/0x70
- [<ffffffff81003282>] system_call_fastpath+0x16/0x1b
--- 
-Daniel J Blueman
+Nathan Fontenot
