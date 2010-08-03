@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab0HCJXN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 05:23:13 -0400
-Received: from lo.gmane.org ([80.91.229.12]:32993 "EHLO lo.gmane.org"
+	id S1755697Ab0HCJXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 05:23:18 -0400
+Received: from www.tglx.de ([62.245.132.106]:60547 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab0HCJXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 05:23:11 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Manuel Reimer <Manuel.Spam@nurfuerspam.de>
-Subject: Re: Getting error message "Cannot read inode bitmap". Someone able
- to help?
-Date: Tue, 03 Aug 2010 11:20:07 +0200
-Message-ID: <i38n5j$pui$1@dough.gmane.org>
-References: <i2nj7d$lpi$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: p4fd4a43d.dip0.t-ipconnect.de
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100721 SeaMonkey/2.0.6
-In-Reply-To: <i2nj7d$lpi$1@dough.gmane.org>
+	id S1755634Ab0HCJXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 05:23:16 -0400
+Date: Tue, 3 Aug 2010 11:23:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: rt-users <linux-rt-users@vger.kernel.org>
+Subject: [ANNOUNCE] 2.6.33.7-rt29
+In-Reply-To: <alpine.LFD.2.00.1007311530510.2471@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1008031118270.3225@localhost.localdomain>
+References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain> <alpine.LFD.2.00.1002262041020.4245@localhost.localdomain> <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain> <alpine.LFD.2.00.1003211158130.3147@localhost.localdomain>
+ <alpine.LFD.2.00.1004071619490.32352@localhost.localdomain> <alpine.LFD.2.00.1004271744280.2951@localhost.localdomain> <alpine.LFD.2.00.1004301156590.2951@localhost.localdomain> <alpine.LFD.2.00.1005022109150.25342@localhost.localdomain>
+ <alpine.LFD.2.00.1006091837410.2933@localhost.localdomain> <alpine.LFD.2.00.1007131745230.3321@localhost.localdomain> <alpine.LFD.2.00.1007311530510.2471@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Manuel Reimer wrote:
-> With my first try (ext2 on target disk) I got the error "Cannot read
-> inode bitmap". The kernel reported this error for the *target* device
-> (the brand new SATA hard drive). I did a second try and reformated the
-> target drive to ext3 and, again, I got the same error. So I installed
-> "smartmontools" into my running live system and checked the drive. The
-> new drive has no "reallocated sectors" but several read errors (about 500).
+We are pleased to announce the next update to our new preempt-rt
+series.
+  
+Changes from 2.6.33.6-rt28 to 2.6.33.7-rt29:
+ c88417f: Merge stable update
 
-Sorry for the spam (maybe I'm on the wrong ML at all... don't know...) 
-but I fixed this on my own. I didn't expect the new disk to be the 
-reason for this problem, but after checking for badblocks I got a value 
-far over 1000 of bad blocks.
+Changes from 2.6.33.6-rt27 to 2.6.33.6-rt28:
+ 8a990ab: printk: Restore irqs before calling release_console_mutex()
 
-So I'll send this disk back to the vendor to get my money back and get a 
-new one...
+Download locations:
+   
+   http://www.kernel.org/pub/linux/kernel/projects/rt/
 
-Nice to know, that Linux was *not* the reason for those errors.
+Git release branch:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git rt/2.6.33
 
-Yours
+Gitweb:
+   http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=shortlog;h=rt/2.6.33
 
-Manuel
+Information on the RT patch can be found at:
 
+   http://rt.wiki.kernel.org/index.php/Main_Page
+
+To build the 2.6.33.7-rt29 tree, the following patches should be
+applied:
+
+   http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.33.7.tar.bz2
+   http://www.kernel.org/pub/linux/kernel/projects/rt/patch-2.6.33.7-rt29.bz2
+
+Enjoy !
+
+      tglx
