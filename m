@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756435Ab0HCRbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 13:31:55 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:49522 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628Ab0HCRby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 13:31:54 -0400
-X-ASG-Debug-ID: 1280856712-642d00030000-xx1T2L
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4C585287.80806@fusionio.com>
-Date: Tue, 3 Aug 2010 19:31:51 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Jan Harkes <jaharkes@cs.cmu.edu>, "coda@cs.cmu.edu" <coda@cs.cmu.edu>,
-        "stable@kernel.org" <stable@kernel.org>,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>,
-        "scst-devel@lists.sourceforge.net" <scst-devel@lists.sourceforge.net>,
+	id S1756654Ab0HCReH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 13:34:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47430 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756281Ab0HCReF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 13:34:05 -0400
+From: "Ramos Falcon, Ernesto" <ernesto@ti.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        Neil Brown <neilb@suse.de>
-X-ASG-Orig-Subj: Re: [PATCH] coda: rename REQ_* to CODA_REQ_*
-Subject: Re: [PATCH] coda: rename REQ_* to CODA_REQ_*
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net>	<4C52A98A.7060507@kernel.org> <20100802104227.79340b49@notabene> <4C56D397.8010305@kernel.org> <4C5724E8.9010204@kernel.dk> <4C57E722.5060809@kernel.org> <4C57FA57.2000601@kernel.dk> <4C57FBAD.1080809@fusionio.com> <4C583B3B.3060301@kernel.org> <4C583DAD.4080507@kernel.org>
-In-Reply-To: <4C583DAD.4080507@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1280856712
-X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
+        "Menon, Nishanth" <nm@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Tue, 3 Aug 2010 12:33:51 -0500
+Subject: RE: [PATCH 5/5] staging:ti dspbridge: replace simple_strtoul by
+ 	strict_strtoul
+Thread-Topic: [PATCH 5/5] staging:ti dspbridge: replace simple_strtoul by
+ 	strict_strtoul
+Thread-Index: AcsuhNbxBO4KETqERrKatfHMU4JUcAEn4QOA
+Message-ID: <B852767254C5C94EBB1040EE0EFA060094D17A30@dlee01.ent.ti.com>
+References: <1280328052-31292-1-git-send-email-ernesto@ti.com>
+	<1280328052-31292-2-git-send-email-ernesto@ti.com>
+	<1280328052-31292-3-git-send-email-ernesto@ti.com>
+	<1280328052-31292-4-git-send-email-ernesto@ti.com>
+	<1280328052-31292-5-git-send-email-ernesto@ti.com>
+	<1280328052-31292-6-git-send-email-ernesto@ti.com>
+ <AANLkTin-2_JC0-18QWAdo9r36Jx0QdnDwnB2+2AdePyc@mail.gmail.com>
+In-Reply-To: <AANLkTin-2_JC0-18QWAdo9r36Jx0QdnDwnB2+2AdePyc@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-03 18:02, Tejun Heo wrote:
-> REQ_* constants are used for block layer requests causing inconsistent
-> duplicate definitions of REQ_WRITE.  Rename REQ_* used by coda to
-> CODA_REQ_*.
+Hi,
 
-Should have been clear, I committed the fixup already:
+>-----Original Message-----
+>From: Andy Shevchenko [mailto:andy.shevchenko@gmail.com]
+>Sent: Wednesday, July 28, 2010 1:44 PM
+>To: Ramos Falcon, Ernesto
+>Cc: gregkh@suse.de; Ramirez Luna, Omar; ohad@wizery.com;
+>ameya.palande@nokia.com; felipe.contreras@nokia.com; Guzman Lugo, Fernando;
+>linux-kernel@vger.kernel.org; Menon, Nishanth; linux-omap@vger.kernel.org
+>Subject: Re: [PATCH 5/5] staging:ti dspbridge: replace simple_strtoul by
+>strict_strtoul
+>
+>On Wed, Jul 28, 2010 at 5:40 PM, Ernesto Ramos <ernesto@ti.com> wrote:
+>> Replace simple_strtoul by strict_strtoul in atoi function.
+>In general the question what is the purpose here to do the change?
+>
 
-http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=ceb1fde0d5c7611fdb9004176ac34140d27e745a
+It is recommended to use strict_strtoul instead of simple_strtoul since ensures the string is really a valid unsigned long. This also removes checkpatch warning message.
 
-Looks byte-for-byte identical :-)
+>> @@ -1023,7 +1025,9 @@ static s32 atoi(char *psz_buf)
+>>                base = 16;
+>>        }
+>>
+>> -       return simple_strtoul(pch, NULL, base);
+>> +       ret_val = strict_strtoul(pch, base, &res);
+>> +
+>> +       return ret_val ? : res;
+>May be better to use explicit values in condition?
+>
 
--- 
-Jens Axboe
+I think this is ok as it is, I'm not sure but I think it maybe defined in any C ansi book, in this case if ret_val is unequal to 0 ret_val is returned.
 
-
-Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
+>--
+>With Best Regards,
+>Andy Shevchenko
