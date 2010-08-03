@@ -1,156 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756986Ab0HCQId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 12:08:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39946 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756010Ab0HCQIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 12:08:32 -0400
-Message-ID: <4C583EE6.4030203@kernel.org>
-Date: Tue, 03 Aug 2010 18:08:06 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S932245Ab0HCQJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 12:09:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56556 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757023Ab0HCQJD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 12:09:03 -0400
 MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-        Karel Zak <kzak@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH RFC] efi: add and expose efi_partition_by_guid
-References: <1280776623-1337-1-git-send-email-wad@chromium.org>
-In-Reply-To: <1280776623-1337-1-git-send-email-wad@chromium.org>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <30552.1280828047@redhat.com>
+References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk> 
+	<20100729114555.29508.4525.stgit@warthog.procyon.org.uk> <20100802204000.GH2405@linux.vnet.ibm.com> 
+	<201008030055.o730tgXK091413@www262.sakura.ne.jp> <30552.1280828047@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 3 Aug 2010 09:07:55 -0700
+Message-ID: <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
+Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner 
+	comment
+To: David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 16:07:44 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Kay and quoting whole message for him)
+Added Oleg and Thomas to the participants.
 
-Kay, you were talking about using GUID in GPT for finding out root
-device and so on.  Does this fit your use case too?  If not it would
-be nice to find out something which can be shared.
+Oleg/Thomas: the whole thread is on lkml, but I'm quoting most of the
+relevant parts..
 
-On 08/02/2010 09:17 PM, Will Drewry wrote:
-> EFI's GPT partitioning scheme expects that all partitions have a unique
-> identifiers.  After initial partition scanning, this information is
-> completely lost to the rest of the kernel.
-> 
-> efi_partition_by_guid exposes GPT parsing support in a limited fashion
-> to allow other portions of the kernel to map a partition from GUID to
-> map.
-> 
-> An alternate implementation (and more generic) would be to expose a function
-> (efi_partition_walk) that iterates over the partition table providing access to
-> each partitions information to a callback, much like device class iterators.
-> 
-> The motivation for this change is the ability to have device mapper targets
-> resolve backing devices by GUID instead of specifically by partition number.
-> This could also be used in the init boot path (root=GUID) quite simply by
-> modeling scanning code on printk_all_partitions(), or with another patchset
-> allowing dm="" in the boot path: http://lkml.org/lkml/2010/6/7/418
-> 
-> [ Additional context: http://codereview.chromium.org/3026039/show ]
-> 
-> Would a change like this or something that exposes the GPT information via a
-> walking function be something that would be of any interest, or is it explicitly
-> against the current design/access goals with respect to partition information?
-> 
-> Any and all feedback is truly appreciated.
-> 
-> Signed-off-by: Will Drewry <wad@chromium.org>
+On Tue, Aug 3, 2010 at 2:34 AM, David Howells <dhowells@redhat.com> wrote:
+>
+> A previous patch:
+>
+>        commit 8f92054e7ca1d3a3ae50fb42d2253ac8730d9b2a
+>        Author: David Howells <dhowells@redhat.com>
+>        Date:   Thu Jul 29 12:45:55 2010 +0100
+>        Subject: CRED: Fix __task_cred()'s lockdep check and banner comment
+>
+> fixed the lockdep checks on __task_cred().  This has shown up a place in the
+> signalling code where a lock should be held - namely that
+> check_kill_permission() requires its callers to hold the RCU lock.
+
+It's not just check_kill_permission(), is it? I thought we could do
+the "for_each_process()" loops with just RCU, rather than holding the
+whole tasklist_lock? So I _think_ that getting the RCU read-lock would
+make it possible to get rid of the tasklist_lock in there too? At
+least in kill_something_info().
+
+Yes/no? What am I missing? This is an Oleg question, mainly.
+
+> It's may be that it would be better to add RCU read lock calls in
+> group_send_sig_info() only, around the call to check_kill_permission().  On the
+> other hand, some of the callers are either holding the RCU read lock already,
+> or have disabled interrupts, in which case, it's just extra overhead to do it
+> in g_s_s_i().
+>
+> Without this patch, the following warning can occur:
+>
+> [  140.173556] ===================================================
+> [  140.215379] [ INFO: suspicious rcu_dereference_check() usage. ]
+> [  140.216461] ---------------------------------------------------
+> [  140.217530] kernel/signal.c:660 invoked rcu_dereference_check() without protection!
+> [  140.218937]
+> [  140.218938] other info that might help us debug this:
+> [  140.218939]
+> [  140.220508]
+> [  140.220509] rcu_scheduler_active = 1, debug_locks = 1
+> [  140.221991] 1 lock held by init/1:
+> [  140.222668]  #0:  (tasklist_lock){.+.+..}, at: [<c104a0ac>] kill_something_info+0x7c/0x160
+> [  140.224709]
+> [  140.224711] stack backtrace:
+> [  140.225661] Pid: 1, comm: init Not tainted 2.6.35 #1
+> [  140.226576] Call Trace:
+> [  140.227111]  [<c103cca8>] ? printk+0x18/0x20
+> [  140.227908]  [<c1069884>] lockdep_rcu_dereference+0x94/0xb0
+> [  140.228931]  [<c104936a>] check_kill_permission+0x15a/0x170
+> [  140.229932]  [<c104a0ac>] ? kill_something_info+0x7c/0x160
+> [  140.230921]  [<c1049cca>] group_send_sig_info+0x1a/0x50
+> [  140.231866]  [<c1049d36>] __kill_pgrp_info+0x36/0x60
+> [  140.232780]  [<c104a0d0>] kill_something_info+0xa0/0x160
+> [  140.233740]  [<c10831c5>] ? __call_rcu+0xa5/0x110
+> [  140.234596]  [<c104b7ee>] sys_kill+0x5e/0x70
+> [  140.235387]  [<c10d1eee>] ? mntput_no_expire+0x1e/0xa0
+> [  140.236329]  [<c10bbd10>] ? __fput+0x170/0x220
+> [  140.257756]  [<c10bbdd9>] ? fput+0x19/0x20
+> [  140.258529]  [<c137ad94>] ? restore_all_notrace+0x0/0x18
+> [  140.259496]  [<c11bfb04>] ? trace_hardirqs_on_thunk+0xc/0x10
+> [  140.260531]  [<c137ad61>] syscall_call+0x7/0xb
+> [  144.627841] nfsd: last server has exited, flushing export cache
+> [  154.040420] Restarting system.
+> [  154.041061] machine restart
+>
+> Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+> Signed-off-by: David Howells <dhowells@redhat.com>
 > ---
->  fs/partitions/efi.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/efi.h |    5 ++++
->  2 files changed, 66 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
-> index 9efb2cf..4f642c5 100644
-> --- a/fs/partitions/efi.c
-> +++ b/fs/partitions/efi.c
-> @@ -633,3 +633,64 @@ int efi_partition(struct parsed_partitions *state)
->  	printk("\n");
->  	return 1;
->  }
-> +
-> +/**
-> + * efi_partition_by_guid
-> + * @bdev:	Whole block device to scan for a GPT.
-> + * @guid:	Unique identifier for the partition to find.
-> + *
-> + * N.b., returns on the first match since it should be unique.
-> + *
-> + * Returns:
-> + * -1 if an error occurred
-> + *  0 if there was no match (or not GPT)
-> + *  >=1 is the index of the partition found.
-> + *
-> + */
-> +int efi_partition_by_guid(struct block_device *bdev, efi_guid_t *guid) {
-> +	gpt_header *gpt = NULL;
-> +	gpt_entry *ptes = NULL;
-> +	u32 i;
-> +	struct parsed_partitions *state;
-> +	int part = 0;
-> +
-> +	if (!bdev || !guid)
-> +		return -1;
-> +
-> +	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
-> +	if (!state)
-> +		return -1;
-> +
-> +	state->limit = disk_max_parts(bdev->bd_disk);
-> +	pr_debug(KERN_WARNING "efi_find_partition looking for gpt\n");
-> +
-> +	state->bdev = bdev;
-> +	if (!find_valid_gpt(state,  &gpt, &ptes) || !gpt || !ptes) {
-> +		pr_debug(KERN_WARNING "efi_find_partition no GPT\n");
-> +		kfree(gpt);
-> +		kfree(ptes);
-> +		kfree(state);
-> +		return 0;
-> +	}
-> +
-> +	pr_debug("GUID Partition Table is valid!  Yea!\n");
-> +	pr_debug(KERN_WARNING "efi_find_partition: 0 -> %d (limit:%d)\n",
-> +		 le32_to_cpu(gpt->num_partition_entries),
-> +		 state->limit);
-> +	for (i = 0; i < le32_to_cpu(gpt->num_partition_entries) &&
-> +		    i < state->limit-1; i++) {
-> +		if (!is_pte_valid(&ptes[i], last_lba(bdev)))
-> +			continue;
-> +
-> +		/* Bails on first hit so duped "unique" GUIDs will be FCFS. */
-> +		if (!efi_guidcmp(ptes[i].unique_partition_guid,
-> +				 *guid)) {
-> +			part = i + 1;
-> +			break;
-> +		}
-> +	}
-> +	kfree(ptes);
-> +	kfree(gpt);
-> +	kfree(state);
-> +	return part;
-> +}
-> diff --git a/include/linux/efi.h b/include/linux/efi.h
-> index fb737bc..1a77259 100644
-> --- a/include/linux/efi.h
-> +++ b/include/linux/efi.h
-> @@ -301,6 +301,11 @@ extern unsigned long efi_get_time(void);
->  extern int efi_set_rtc_mmss(unsigned long nowtime);
->  extern struct efi_memory_map memmap;
->  
-> +#ifdef CONFIG_EFI_PARTITION
-> +struct block_device;
-> +extern int efi_partition_by_guid(struct block_device *bdev, efi_guid_t *guid);
-> +#endif
-> +
->  /**
->   * efi_range_is_wc - check the WC bit on an address range
->   * @start: starting kvirt address
+>
+>  kernel/exit.c   |    2 ++
+>  kernel/signal.c |    8 ++++++--
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+>
+>
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index ceffc67..7858ebf 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -773,6 +773,7 @@ static void forget_original_parent(struct task_struct *father)
+>
+>        exit_ptrace(father);
+>
+> +       rcu_read_lock();
+>        write_lock_irq(&tasklist_lock);
+>        reaper = find_new_reaper(father);
+>
+> @@ -791,6 +792,7 @@ static void forget_original_parent(struct task_struct *father)
+>                reparent_leader(father, p, &dead_children);
+>        }
+>        write_unlock_irq(&tasklist_lock);
+> +       rcu_read_unlock();
+>
+>        BUG_ON(!list_empty(&father->children));
+>
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 906ae5a..f771156 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -637,7 +637,7 @@ static inline bool si_fromuser(const struct siginfo *info)
+>
+>  /*
+>  * Bad permissions for sending the signal
+> - * - the caller must hold at least the RCU read lock
+> + * - the caller must hold the RCU read lock
+>  */
+>  static int check_kill_permission(int sig, struct siginfo *info,
+>                                 struct task_struct *t)
+> @@ -1127,7 +1127,7 @@ struct sighand_struct *lock_task_sighand(struct task_struct *tsk, unsigned long
+>
+>  /*
+>  * send signal info to all the members of a group
+> - * - the caller must hold the RCU read lock at least
+> + * - the caller must hold the RCU read lock
+>  */
+>  int group_send_sig_info(int sig, struct siginfo *info, struct task_struct *p)
+>  {
+> @@ -1151,11 +1151,13 @@ int __kill_pgrp_info(int sig, struct siginfo *info, struct pid *pgrp)
+>
+>        success = 0;
+>        retval = -ESRCH;
+> +       rcu_read_lock();
+>        do_each_pid_task(pgrp, PIDTYPE_PGID, p) {
+>                int err = group_send_sig_info(sig, info, p);
+>                success |= !err;
+>                retval = err;
+>        } while_each_pid_task(pgrp, PIDTYPE_PGID, p);
+> +       rcu_read_unlock();
 
--- 
-tejun
+Ok, makes sense. At the same time, I do wonder if we shouldn't perhaps
+do this in the caller. The callers would seem to all want it - look at
+kill_something_info(), for example, where it really looks like it
+would be nicer to put that _whole_ function under rcu_read_lock() (in
+the caller itself). Or in kernel/exit.c, we have two calls
+back-to-back, so doing it in the caller would clean that up and do it
+just once.
+
+Look here:
+
+> @@ -1261,6 +1263,7 @@ static int kill_something_info(int sig, struct siginfo *info, pid_t pid)
+>                int retval = 0, count = 0;
+>                struct task_struct * p;
+>
+> +               rcu_read_lock();
+>                for_each_process(p) {
+>                        if (task_pid_vnr(p) > 1 &&
+>                                        !same_thread_group(p, current)) {
+> @@ -1270,6 +1273,7 @@ static int kill_something_info(int sig, struct siginfo *info, pid_t pid)
+>                                        retval = err;
+>                        }
+>                }
+> +               rcu_read_unlock();
+>                ret = count ? retval : -ESRCH;
+>        }
+>        read_unlock(&tasklist_lock);
+
+with those fragments, we now end up having rcu_read_lock() for _all_
+the three cases in kill_something_info(), but rather than do it once,
+we do it explicitly, and we do it in two different ways (two cases do
+it explicitly, the middle one does it implicitly when it calls
+__kill_pgrp_info().
+
+So I think the patch is correct, but at the same time I do get the
+feeling that we should just do it slightly differently.
+
+Comments?
+
+            Linus
