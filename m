@@ -1,175 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab0HCQDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 12:03:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42697 "EHLO hera.kernel.org"
+	id S932379Ab0HCQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 12:03:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8908 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932341Ab0HCQDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 12:03:12 -0400
-Message-ID: <4C583DAD.4080507@kernel.org>
-Date: Tue, 03 Aug 2010 18:02:53 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S932176Ab0HCQDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 12:03:54 -0400
+Date: Tue, 3 Aug 2010 18:01:31 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Izik Eidus <ieidus@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org
+Subject: Kernel build bench with Transparent Hugepage Support #29
+Message-ID: <20100803160131.GI6071@random.random>
+References: <20100803135615.GG6071@random.random>
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        coda@cs.cmu.edu
-CC: stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
-Subject: [PATCH] coda: rename REQ_* to CODA_REQ_*
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net>	<4C52A98A.7060507@kernel.org> <20100802104227.79340b49@notabene> <4C56D397.8010305@kernel.org> <4C5724E8.9010204@kernel.dk> <4C57E722.5060809@kernel.org> <4C57FA57.2000601@kernel.dk> <4C57FBAD.1080809@fusionio.com> <4C583B3B.3060301@kernel.org>
-In-Reply-To: <4C583B3B.3060301@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 16:02:31 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100803135615.GG6071@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-REQ_* constants are used for block layer requests causing inconsistent
-duplicate definitions of REQ_WRITE.  Rename REQ_* used by coda to
-CODA_REQ_*.
+Transparent Hugepage Support worst case macro benchmark: kernel build.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-So, something like this.  Build tested only.
+host: 24-way SMP (12cores, 2 sockets) 16G RAM
+guest: 24-way SMP (24 vcpus) 15G RAM
 
-Thanks.
+- Same kernel in guest and host: aa.git tag THP-29 (2.6.35 based)
+  http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=summary
+  (see linux-mm for more info)
+- Same gcc (and userland) patched with the patch at the end.
+- Same kernel source, same .config, on tmpfs (tmpfs only eliminates the
+  measurement error across different runs but ext4 leads to the same average
+  results).
+- khugepaged default settings (khugepaged taking 0% CPU)
+- no glibc align tweak (that would improve performance a little further with
+  THP always)
 
- fs/coda/psdev.c            |   14 +++++++-------
- fs/coda/upcall.c           |   12 ++++++------
- include/linux/coda_psdev.h |    8 ++++----
- 3 files changed, 17 insertions(+), 17 deletions(-)
+The measurement also includes the "make clean", and the full "make -j32" that
+includes lots of other time consuming operations not getting any benefit from
+transparent hugepages. If this was pure "gcc" the percentage speedup would be
+much higher than this. This is a very real life workload that we run on a daily
+basis, not a microbenchmark at all.
 
-Index: work/fs/coda/psdev.c
-===================================================================
---- work.orig/fs/coda/psdev.c
-+++ work/fs/coda/psdev.c
-@@ -177,7 +177,7 @@ static ssize_t coda_psdev_write(struct f
- 		nbytes = req->uc_outSize; /* don't have more space! */
- 	}
-         if (copy_from_user(req->uc_data, buf, nbytes)) {
--		req->uc_flags |= REQ_ABORT;
-+		req->uc_flags |= CODA_REQ_ABORT;
- 		wake_up(&req->uc_sleep);
- 		retval = -EFAULT;
- 		goto out;
-@@ -185,7 +185,7 @@ static ssize_t coda_psdev_write(struct f
+Kernel build on bare metal (note the dTLB-load-misses):
 
- 	/* adjust outsize. is this useful ?? */
-         req->uc_outSize = nbytes;	
--        req->uc_flags |= REQ_WRITE;
-+        req->uc_flags |= CODA_REQ_WRITE;
- 	count = nbytes;
+====== build ======
+#!/bin/bash
+make clean >/dev/null; make -j32 >/dev/null
+===================
+perf stat -e cycles -e instructions -e dtlb-loads -e dtlb-load-misses --repeat 3 ./build
+===================
 
- 	/* Convert filedescriptor into a file handle */
-@@ -254,8 +254,8 @@ static ssize_t coda_psdev_read(struct fi
- 	        retval = -EFAULT;
+THP always host (fastest base result)
 
- 	/* If request was not a signal, enqueue and don't free */
--	if (!(req->uc_flags & REQ_ASYNC)) {
--		req->uc_flags |= REQ_READ;
-+	if (!(req->uc_flags & CODA_REQ_ASYNC)) {
-+		req->uc_flags |= CODA_REQ_READ;
- 		list_add_tail(&(req->uc_chain), &vcp->vc_processing);
- 		goto out;
- 	}
-@@ -315,19 +315,19 @@ static int coda_psdev_release(struct ino
- 		list_del(&req->uc_chain);
+ Performance counter stats for './build' (3 runs):
 
- 		/* Async requests need to be freed here */
--		if (req->uc_flags & REQ_ASYNC) {
-+		if (req->uc_flags & CODA_REQ_ASYNC) {
- 			CODA_FREE(req->uc_data, sizeof(struct coda_in_hdr));
- 			kfree(req);
- 			continue;
- 		}
--		req->uc_flags |= REQ_ABORT;
-+		req->uc_flags |= CODA_REQ_ABORT;
- 		wake_up(&req->uc_sleep);
- 	}
+      4420734012848  cycles                     ( +-   0.007% )
+      2692414418384  instructions             #      0.609 IPC     ( +-   0.000% )
+       696638665612  dTLB-loads                 ( +-   0.001% )
+         2982343758  dTLB-load-misses           ( +-   0.051% )
 
- 	list_for_each_entry_safe(req, tmp, &vcp->vc_processing, uc_chain) {
- 		list_del(&req->uc_chain);
+       83.855147696  seconds time elapsed   ( +-   0.058% )
 
--		req->uc_flags |= REQ_ABORT;
-+		req->uc_flags |= CODA_REQ_ABORT;
- 		wake_up(&req->uc_sleep);
- 	}
+THP never host (slowdown 4.06%)
 
-Index: work/fs/coda/upcall.c
-===================================================================
---- work.orig/fs/coda/upcall.c
-+++ work/fs/coda/upcall.c
-@@ -604,7 +604,7 @@ static void coda_unblock_signals(sigset_
- 			       (((r)->uc_opcode != CODA_CLOSE && \
- 				 (r)->uc_opcode != CODA_STORE && \
- 				 (r)->uc_opcode != CODA_RELEASE) || \
--				(r)->uc_flags & REQ_READ))
-+				(r)->uc_flags & CODA_REQ_READ))
+ Performance counter stats for './build' (3 runs):
 
- static inline void coda_waitfor_upcall(struct upc_req *req)
- {
-@@ -624,7 +624,7 @@ static inline void coda_waitfor_upcall(s
- 			set_current_state(TASK_UNINTERRUPTIBLE);
+      4599325985460  cycles                     ( +-   0.013% )
+      2747874065083  instructions             #      0.597 IPC     ( +-   0.000% )
+       710631792376  dTLB-loads                 ( +-   0.000% )
+         4425816093  dTLB-load-misses           ( +-   0.039% )
 
- 		/* got a reply */
--		if (req->uc_flags & (REQ_WRITE | REQ_ABORT))
-+		if (req->uc_flags & (CODA_REQ_WRITE | CODA_REQ_ABORT))
- 			break;
+       87.260443531  seconds time elapsed   ( +-   0.075% )
+ 
+Kernel build on KVM powered guest:
 
- 		if (blocked && time_after(jiffies, timeout) &&
-@@ -708,7 +708,7 @@ static int coda_upcall(struct venus_comm
- 	coda_waitfor_upcall(req);
+=======
+time (make clean; make -j32) >/dev/null
+=======
 
- 	/* Op went through, interrupt or not... */
--	if (req->uc_flags & REQ_WRITE) {
-+	if (req->uc_flags & CODA_REQ_WRITE) {
- 		out = (union outputArgs *)req->uc_data;
- 		/* here we map positive Venus errors to kernel errors */
- 		error = -out->oh.result;
-@@ -717,13 +717,13 @@ static int coda_upcall(struct venus_comm
- 	}
+THP always guest, EPT on + THP always host (slowdown 5.67%)
 
- 	error = -EINTR;
--	if ((req->uc_flags & REQ_ABORT) || !signal_pending(current)) {
-+	if ((req->uc_flags & CODA_REQ_ABORT) || !signal_pending(current)) {
- 		printk(KERN_WARNING "coda: Unexpected interruption.\n");
- 		goto exit;
- 	}
+NOTE: the total KVM virtualization slowdown for the kernel build with
+THP always in guest and host compared with bare metal with THP never
+(like current upstream) is only 1.54%.
 
- 	/* Interrupted before venus read it. */
--	if (!(req->uc_flags & REQ_READ))
-+	if (!(req->uc_flags & CODA_REQ_READ))
- 		goto exit;
+real 1m28.612s -> 88.612 seconds
+user 26m13.862s
+sys  2m11.376s
 
- 	/* Venus saw the upcall, make sure we can send interrupt signal */
-@@ -747,7 +747,7 @@ static int coda_upcall(struct venus_comm
- 	sig_inputArgs->ih.opcode = CODA_SIGNAL;
- 	sig_inputArgs->ih.unique = req->uc_unique;
+THP never guest, EPT on + THP always host (slowdown 12.71%)
 
--	sig_req->uc_flags = REQ_ASYNC;
-+	sig_req->uc_flags = CODA_REQ_ASYNC;
- 	sig_req->uc_opcode = sig_inputArgs->ih.opcode;
- 	sig_req->uc_unique = sig_inputArgs->ih.unique;
- 	sig_req->uc_inSize = sizeof(struct coda_in_hdr);
-Index: work/include/linux/coda_psdev.h
-===================================================================
---- work.orig/include/linux/coda_psdev.h
-+++ work/include/linux/coda_psdev.h
-@@ -86,9 +86,9 @@ struct upc_req {
- 	wait_queue_head_t   uc_sleep;   /* process' wait queue */
- };
+real 1m34.516s -> 94.516 seconds
+user 26m52.929s
+sys  3m35.509s
 
--#define REQ_ASYNC  0x1
--#define REQ_READ   0x2
--#define REQ_WRITE  0x4
--#define REQ_ABORT  0x8
-+#define CODA_REQ_ASYNC		0x1
-+#define CODA_REQ_READ		0x2
-+#define CODA_REQ_WRITE		0x4
-+#define CODA_REQ_ABORT		0x8
+THP never guest, EPT on + THP never host (slowdown 24.81%)
 
+real 1m44.663s -> 104.663 seconds
+user 28m13.382s
+sys  5m39.373s
+
+THP always guest, EPT off + THP always host (slowdown 198.33%)
+
+real 4m10.166s -> 250.166 seconds
+user 41m5.674s
+sys  47m37.671s
+
+THP never guest, EPT off + THP always host (slowdown 254.43%)
+
+real 4m57.211s -> 297.211 seconds
+user 53m44.302s
+sys  53m21.600s
+
+THP never guest, EPT off + THP never host (slowdown 260.15%)
+
+real 5m2.006s -> 302.006 seconds
+user 53m25.876s
+sys  53m32.649s
+
+This is trivial to reproduce, you can try yourself with aa.git and the
+below gcc patch. The results are similar to what I got with NPT some
+time ago with a less complete benchmark (no gcc patched in guest) and
+only 4 cores.
+
+After this worst case macro benchmark, I'll go ahead with more optimal
+benchmarks (with bigger memory footprint and longer-living tasks not
+quitting so fast and not including make -j32/make clean etc...) and I
+expect more pronounced speedups, like the qemu-kvm translate.o gcc
+build (the file with the automatic generated .c source for JIT
+emulation), Java etc... And I'll include these results and all other
+results I'll be getting, in my KVM Forum 2010 talk on Transparent
+Hugepage Support next week in Boston.
+
+Thanks!
+Andrea
+
+--- /var/tmp/portage/sys-devel/gcc-4.4.2/work/gcc-4.4.2/gcc/ggc-page.c	2008-07-28 16:33:56.000000000 +0200
++++ /tmp/gcc-4.4.2/gcc/ggc-page.c	2010-04-25 06:01:32.829753566 +0200
+@@ -450,6 +450,11 @@
+ #define BITMAP_SIZE(Num_objects) \
+   (CEIL ((Num_objects), HOST_BITS_PER_LONG) * sizeof(long))
+ 
++#ifdef __x86_64__
++#define HPAGE_SIZE (2*1024*1024)
++#define GGC_QUIRE_SIZE 512
++#endif
++
+ /* Allocate pages in chunks of this size, to throttle calls to memory
+    allocation routines.  The first page is used, the rest go onto the
+    free list.  This cannot be larger than HOST_BITS_PER_INT for the
+@@ -457,7 +462,7 @@
+    can override this by defining GGC_QUIRE_SIZE explicitly.  */
+ #ifndef GGC_QUIRE_SIZE
+ # ifdef USING_MMAP
+-#  define GGC_QUIRE_SIZE 256
++#  define GGC_QUIRE_SIZE 512
+ # else
+ #  define GGC_QUIRE_SIZE 16
+ # endif
+@@ -654,6 +659,23 @@
+ #ifdef HAVE_MMAP_ANON
+   char *page = (char *) mmap (pref, size, PROT_READ | PROT_WRITE,
+ 			      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++#ifdef HPAGE_SIZE
++  if (!(size & (HPAGE_SIZE-1)) &&
++      page != (char *) MAP_FAILED && (size_t) page & (HPAGE_SIZE-1)) {
++	  char *old_page;
++	  munmap(page, size);
++	  page = (char *) mmap (pref, size + HPAGE_SIZE-1,
++				PROT_READ | PROT_WRITE,
++				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++	  old_page = page;
++	  page = (char *) (((size_t)page + HPAGE_SIZE-1)
++			   & ~(HPAGE_SIZE-1));
++	  if (old_page != page)
++		  munmap(old_page, page-old_page);
++	  if (page != old_page + HPAGE_SIZE-1)
++		  munmap(page+size, old_page+HPAGE_SIZE-1-page);
++  }
++#endif
  #endif
+ #ifdef HAVE_MMAP_DEV_ZERO
+   char *page = (char *) mmap (pref, size, PROT_READ | PROT_WRITE,
+
