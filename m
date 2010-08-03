@@ -1,173 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757973Ab0HCX6N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 19:58:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46118 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756886Ab0HCX6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 19:58:12 -0400
-Date: Tue, 3 Aug 2010 16:56:31 -0700
-From: Greg KH <gregkh@suse.de>
-To: Patrick Pannuto <ppannuto@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-omap@vger.kernel.org, damm@opensource.se, lethal@linux-sh.org,
-        rjw@sisk.pl, dtor@mail.ru, eric.y.miao@gmail.com,
-        netdev@vger.kernel.org
-Subject: Re: [RFC PATCH] platform: Faciliatate the creation of
- pseduo-platform busses
-Message-ID: <20100803235631.GA17759@suse.de>
-References: <4C58A7AA.8020007@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C58A7AA.8020007@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757971Ab0HCX7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 19:59:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48959 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757554Ab0HCX7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 19:59:43 -0400
+Date: Tue, 3 Aug 2010 16:59:26 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Cc: Kevin Cernekee <cernekee@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: Additional fix : (was [v2]printk: fix delayed messages from CPU
+ hotplug events)
+Message-Id: <20100803165926.2e37d355.akpm@linux-foundation.org>
+In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB02C641D8EC@dbde02.ent.ti.com>
+References: <EAF47CD23C76F840A9E7FCE10091EFAB02C5DB6D1F@dbde02.ent.ti.com>
+	<20100802154434.5615bcf9.akpm@linux-foundation.org>
+	<EAF47CD23C76F840A9E7FCE10091EFAB02C641D8EC@dbde02.ent.ti.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 04:35:06PM -0700, Patrick Pannuto wrote:
-> Inspiration for this comes from:
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
-> 
-> INTRO
-> 
-> As SOCs become more popular, the desire to quickly define a simple,
-> but functional, bus type with only a few unique properties becomes
-> desirable. As they become more complicated, the ability to nest these
-> simple busses and otherwise orchestrate them to match the actual
-> topology also becomes desirable.
-> 
-> EXAMPLE USAGE
-> 
-> /arch/ARCH/MY_ARCH/my_bus.c:
-> 
-> 	#include <linux/device.h>
-> 	#include <linux/platform_device.h>
-> 
-> 	struct bus_type my_bus_type = {
-> 		.name	= "mybus",
-> 	};
-> 	EXPORT_SYMBOL_GPL(my_bus_type);
-> 
-> 	struct platform_device sub_bus1 = {
-> 		.name		= "sub_bus1",
-> 		.id		= -1,
-> 		.dev.bus	= &my_bus_type,
-> 	}
-> 	EXPORT_SYMBOL_GPL(sub_bus1);
+On Tue, 3 Aug 2010 13:03:25 +0530
+"Shilimkar, Santosh" <santosh.shilimkar@ti.com> wrote:
 
-You really want a bus hanging off of a bus?  Normally you need a device
-to do that, which is what I think you have here, but the naming is a bit
-odd to me.
-
-What would you do with this "sub bus"?  It's just a device, but you are
-wanting it to be around for something.
-
+> > thought that those events simply aren't occurring, and that the patch
+> > has no effect.  Confused - please explain further.
+> These events can come during the CPU hotplug(offline). Below is the
+> complete patch. Also attaching it in case some email format screw
+> up.
 > 
-> 	struct platform_device sub_bus2 = {
-> 		.name		= "sub_bus2",
-> 		.id		= -1,
-> 		.dev.bus	= &my_bus_type,
-> 	}
-> 	EXPORT_SYMBOL_GPL(sub_bus2);
+> -----------------------------------------------
+> >From b99271ce43cc82cda28447444004933d0f218ee3 Mon Sep 17 00:00:00 2001
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date: Tue, 3 Aug 2010 12:58:22 +0530
+> Subject: [PATCH] console: flush delayed log messages from cpu-hotplug events
 > 
-> 	static int __init my_bus_init(void)
-> 	{
-> 		int error;
-> 		platform_bus_type_init(&my_bus_type);
+> When a secondary CPU is being brought up, it is not uncommon for
+> printk() to be invoked when cpu_online(smp_processor_id()) == 0.  The
+> case that I witnessed personally was on MIPS:
 > 
-> 		error = bus_register(&my_bus_type);
-> 		if (error)
-> 			return error;
+> http://lkml.org/lkml/2010/5/30/4
 > 
-> 		error = platform_device_register(&sub_bus1);
-> 		if (error)
-> 			goto fail_sub_bus1;
+> If (can_use_console() == 0), printk() will spool its output to log_buf
+> and it will be visible in "dmesg", but that output will NOT be echoed to
+> the console until somebody calls release_console_sem() from a CPU that
+> is online.  Therefore, the boot time messages from the new CPU can get
+> stuck in "limbo" for a long time, and might suddenly appear on the
+> screen when a completely unrelated event (e.g. "eth0: link is down")
+> occurs.
 > 
-> 		error = platform_device_register(&sub_bus2);
-> 		if (error)
-> 			goto fail_sub_bus2;
+> This patch modifies the console code so that any pending messages are
+> automatically flushed out to the console whenever a CPU hotplug
+> operation completes successfully or aborts.
+> This is true even when CPU is getting hot-plugged out(offline) so
+> need to add additional hotplug events.
 > 
-> 		return error;
+> The issue was seen on 2.6.34.
 > 
-> 	fail_sub_bus2:
-> 		platform_device_unregister(&sub_bus1);
-> 	fail_sub_bus2:
-> 		bus_unregister(&my_bus_type);
-> 
-> 		return error;
-> 	}
-> 	postcore_initcall(my_bus_init);
-> 	EXPORT_SYMBOL_CPY(my_bus_init);
-> 
-> /drivers/my_driver.c
-> 	static struct platform_driver my_driver = {
-> 		.driver	= {
-> 			.name	= "my-driver",
-> 			.owner	= THIS_MODULE,
-> 			.bus	= &my_bus_type,
-> 		},
-> 	};
-> 
-> /somewhere/my_device.c
-> 	static struct platform_device my_device = {
-> 		.name		= "my-device",
-> 		.id		= -1,
-> 		.dev.bus	= &my_bus_type,
-> 		.dev.parent	= &sub_bus_1.dev,
-> 	};
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 
-Ah, you put devices on this "sub bus".  But why?  Why not just put it on
-your "normal" bus that you created?  What's with the extra level of
-nesting here?
+An older version of this patch is present in linux-next, committed by
+Paul Mundt, who wasn't cc'ed here(!).
 
-Other than that, it looks like a nice idea, are there portions of kernel
-code that can be simplified because of this?
+Paul, please update.  Be aware that the version of the patch to which I
+replied is also not the latest.
 
-> @@ -539,12 +541,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
->  	 * if the probe was successful, and make sure any forced probes of
->  	 * new devices fail.
->  	 */
-> -	spin_lock(&platform_bus_type.p->klist_drivers.k_lock);
-> +	spin_lock(&drv->driver.bus->p->klist_drivers.k_lock);
->  	drv->probe = NULL;
->  	if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
->  		retval = -ENODEV;
->  	drv->driver.probe = platform_drv_probe_fail;
-> -	spin_unlock(&platform_bus_type.p->klist_drivers.k_lock);
-> +	spin_unlock(&drv->driver.bus->p->klist_drivers.k_lock);
->  
->  	if (code != retval)
->  		platform_driver_unregister(drv);
-
-I'm guessing that this chunk can be applied now, right?
-
-> @@ -1017,6 +1019,26 @@ struct bus_type platform_bus_type = {
->  };
->  EXPORT_SYMBOL_GPL(platform_bus_type);
->  
-> +/** platform_bus_type_init - fill in a pseudo-platform-bus
-> +  * @bus: foriegn bus type
-> +  *
-> +  * This init is basically a selective memcpy that
-> +  * won't overwrite any user-defined attributes and
-> +  * only copies things that platform bus defines anyway
-> +  */
-> +void platform_bus_type_init(struct bus_type *bus)
-> +{
-> +	if (!bus->dev_attrs)
-> +		bus->dev_attrs = platform_bus_type.dev_attrs;
-> +	if (!bus->match)
-> +		bus->match = platform_bus_type.match;
-> +	if (!bus->uevent)
-> +		bus->uevent = platform_bus_type.uevent;
-> +	if (!bus->pm)
-> +		bus->pm = platform_bus_type.pm;
-
-Watch out for things in "write only" memory here.  That could cause
-problems.
-
-thanks,
-
-greg k-h
