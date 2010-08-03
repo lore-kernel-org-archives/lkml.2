@@ -1,158 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab0HCGAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 02:00:23 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:55880 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab0HCGAW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 02:00:22 -0400
-To: Dave Airlie <airlied@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
-	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
-	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
-	<m139uw1imy.fsf@fess.ebiederm.org>
-	<AANLkTi=qtLkY0=h77=EVL+y1q41b_cMBODvL4Hu6A6wL@mail.gmail.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 02 Aug 2010 23:00:13 -0700
-In-Reply-To: <AANLkTi=qtLkY0=h77=EVL+y1q41b_cMBODvL4Hu6A6wL@mail.gmail.com> (Dave Airlie's message of "Tue\, 3 Aug 2010 14\:02\:46 +1000")
-Message-ID: <m1bp9kxmky.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	id S1755283Ab0HCGDu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 02:03:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52527 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754820Ab0HCGDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 02:03:48 -0400
+Date: Tue, 3 Aug 2010 16:03:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for August 3
+Message-Id: <20100803160341.25110a19.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__3_Aug_2010_16_03_41_+1000_e0GHy.KjExMJ.mxy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie <airlied@gmail.com> writes:
+--Signature=_Tue__3_Aug_2010_16_03_41_+1000_e0GHy.KjExMJ.mxy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Tue, Aug 3, 2010 at 1:26 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Dave Airlie <airlied@gmail.com> writes:
+Hi all,
 
->>> Okay el6log is from a RHEL6 2.6.32 kernel, but it should give a good
->>> baseline, the 2.6.35 oops even earlier with all those options and is
->>> in the second attachment.
->>
->> It appears we have a smoking gun:
->>
->> For some reason setup_IO_APIC_IRQS thinks we at least 2 io_apics,
->> but we have only setup 1 io_apic.  Since io_apics need a kmap entry
->> accessing an apic that hasn't been setup will definitely give a
->> page fault.  It sounds like something is stomping nr_ioapics.
->>
->> From: 2.6.35-debuglog
->> IOAPIC[0]: apic_id 8, version 17, address 0xfec00000, GSI 0-23
->> ....
->> IOAPIC[1]: Set routing entry (0-16 -> 0x51 -> IRQ 16 Mode:1 Active:1)
->>
->> Can we get your System.map of the failing kernel (so we can see what
->> is close to nr_ioapics), and could you add a print statement in
->> arch/x86/kernel/apic/io_apic:setup_IO_APIC_irqs to print nr_ioapics?
->>
->> I would be surprised if drm changes could have affected this.
->>
->
-> Okay, from my debug addition it still only seems to have one ioapic
+Changes since 20100802:
 
-Thanks. I goofed reading that code.  I saw setup_IO_APIC_irq and made
-the incorrect leap that said we came from setup_IO_APIC_irqs, when
-in fact we are coming from io_apic_set_pci_routing.
+The davinci tree gained a conflict against Linus' tree.
 
-So let's see can I figure out why we are getting a bad apic_id.
+The omap tree lost its conflicts.
 
-For that I need to track back to pirq_enable_irq, which leads
-me to IO_APIC_get_PCI_irq_vector.  The likely canidate is that we
-simply are not finding the apicid that is present in the mp_irqs
-entry that we decided to return.  The patch below should add
-appropriate debugging and fix the lookup 
+The kvm tree lost its build failure.
 
-The real difference appears to be that acpi is disabled where it
-is not disabled in your reference kernel.
+The block tree gained a build failure due to an interaction with the ceph
+tree so I applied a merge fix patch.
 
-Dave can you verify this fixes the oops for you?
+The device-mapper tree lost its build failure.
 
-It would be nice if we didn't crash early in boot even without
-acpi present.
+The xen tree gained conflicts against the swiotlb tree.
 
-Eric
+----------------------------------------------------------------------------
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index e41ed24..e824e14 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1067,7 +1067,7 @@ static int pin_2_irq(int idx, int apic, int pin)
- int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
- 				struct io_apic_irq_attr *irq_attr)
- {
--	int apic, i, best_guess = -1;
-+	int i, best_guess = -1;
- 
- 	apic_printk(APIC_DEBUG,
- 		    "querying PCI -> IRQ mapping bus:%d, slot:%d, pin:%d.\n",
-@@ -1080,16 +1080,29 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
- 	for (i = 0; i < mp_irq_entries; i++) {
- 		int lbus = mp_irqs[i].srcbus;
- 
--		for (apic = 0; apic < nr_ioapics; apic++)
--			if (mp_ioapics[apic].apicid == mp_irqs[i].dstapic ||
--			    mp_irqs[i].dstapic == MP_APIC_ALL)
--				break;
--
- 		if (!test_bit(lbus, mp_bus_not_pci) &&
- 		    !mp_irqs[i].irqtype &&
- 		    (bus == lbus) &&
- 		    (slot == ((mp_irqs[i].srcbusirq >> 2) & 0x1f))) {
--			int irq = pin_2_irq(i, apic, mp_irqs[i].dstirq);
-+			int apic;
-+			int irq;
-+
-+			/* Lookup the ioapic by id */
-+			for (apic = 0; apic < nr_ioapics; apic++)
-+				if (mp_ioapics[apic].apicid == mp_irqs[i].dstapic ||
-+					mp_irqs[i].dstapic == MP_APIC_ALL)
-+					break;
-+
-+			/* Verify we found the ioapic */
-+			if (apic >= nr_ioapics) {
-+				printk(KERN_ERR 
-+					"%02x:%02x.%c: APIC_ID %u pin: %u not found BIOS bug?\n",
-+					bus, slot, 'A' + pin - 1,
-+					mp_irqs[i].dstapic, mp_irqs[i].dstirq);
-+				continue;
-+			}
-+
-+			irq = pin_2_irq(i, apic, mp_irqs[i].dstirq);
- 
- 			if (!(apic || IO_APIC_IRQ(irq)))
- 				continue;
-@@ -1099,7 +1112,8 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
- 						     mp_irqs[i].dstirq,
- 						     irq_trigger(i),
- 						     irq_polarity(i));
--				return irq;
-+				best_guess = irq;
-+				goto out;
- 			}
- 			/*
- 			 * Use the first all-but-pin matching entry as a
-@@ -1114,6 +1128,12 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
- 			}
- 		}
- 	}
-+out:
-+	if (best_guess >= 0)
-+		apic_printk(APIC_DEBUG,
-+			"%02x:%02x.%c: IRQ %u IOAPIC: %u pin: %u",
-+			bus, slot, 'A' + pin - 1,
-+			best_guess, irq_attr->ioapic, irq_attr->ioapic_pin);
- 	return best_guess;
- }
- EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 168 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+CONFLICT (content): Merge conflict in arch/arm/mach-davinci/board-da850-evm=
+.c
+Merging i.MX/for-next
+CONFLICT (add/add): Merge conflict in drivers/media/video/mx2_camera.c
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+Merging tegra/for-next
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+CONFLICT (content): Merge conflict in arch/arm/mm/Kconfig
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+CONFLICT (content): Merge conflict in arch/arm/configs/ap4evb_defconfig
+CONFLICT (content): Merge conflict in arch/arm/configs/g3evm_defconfig
+CONFLICT (content): Merge conflict in arch/arm/configs/g4evm_defconfig
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+CONFLICT (content): Merge conflict in fs/ext4/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_aops.c
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/nilfs2/super.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_aops.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+Applying: v9fs: fixup for inode_setattr being removed
+Applying: xfs: update tracing for clear_inode to evit_inode transition
+Applying: cifs: fix for clear_inode -> evict_inode API change
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging swiotlb/master
+Merging scsi/master
+Merging async_tx/next
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/devices-db8500.c
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/e1000e/hw.h
+CONFLICT (content): Merge conflict in net/bridge/br_device.c
+CONFLICT (content): Merge conflict in net/bridge/br_input.c
+Merging wireless/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (content): Merge conflict in Documentation/kernel-parameters.txt
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in arch/um/drivers/hostaudio_kern.c
+Merging input/next
+CONFLICT (add/add): Merge conflict in arch/arm/plat-samsung/include/plat/ke=
+ypad.h
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in drivers/block/virtio_blk.c
+CONFLICT (content): Merge conflict in drivers/scsi/scsi_error.c
+Applying: ceph: update for removal of request flag wrappers
+Merging quilt/device-mapper
+CONFLICT (content): Merge conflict in drivers/md/dm.c
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+CONFLICT (content): Merge conflict in drivers/power/Kconfig
+CONFLICT (content): Merge conflict in drivers/power/Makefile
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-davinci/board-da850-evm=
+.c
+Merging security-testing/next
+Applying: AppArmor: update for module_param_named API change
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+CONFLICT (content): Merge conflict in drivers/net/wireless/ipw2x00/ipw2100.c
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
+or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
+eft in tree.
+$ git rm -f fs/notify/inotify/inotify.c
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/io.h
+CONFLICT (content): Merge conflict in arch/arm/kernel/entry-armv.S
+CONFLICT (content): Merge conflict in arch/arm/mm/cache-l2x0.c
+CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
+Merging alacrity/linux-next
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging devicetree/next-devicetree
+CONFLICT (content): Merge conflict in arch/microblaze/kernel/Makefile
+Merging spi/next-spi
+Merging limits/writable_limits
+CONFLICT (content): Merge conflict in arch/x86/ia32/ia32entry.S
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_32.h
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_64.h
+CONFLICT (content): Merge conflict in arch/x86/kernel/syscall_table_32.S
+CONFLICT (content): Merge conflict in include/asm-generic/unistd.h
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+CONFLICT (content): Merge conflict in drivers/xen/Kconfig
+CONFLICT (content): Merge conflict in drivers/xen/Makefile
+CONFLICT (content): Merge conflict in include/xen/xen-ops.h
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+CONFLICT (content): Merge conflict in Makefile
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/time.c
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in drivers/cpufreq/cpufreq.c
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/sata_fsl.c
+CONFLICT (content): Merge conflict in drivers/ata/sata_mv.c
+CONFLICT (content): Merge conflict in drivers/ata/sata_nv.c
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+CONFLICT (content): Merge conflict in fs/cifs/cifsfs.c
+CONFLICT (content): Merge conflict in fs/cifs/cifsglob.h
+CONFLICT (content): Merge conflict in fs/cifs/file.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+CONFLICT (content): Merge conflict in include/linux/workqueue.h
+CONFLICT (content): Merge conflict in kernel/trace/Kconfig
+CONFLICT (content): Merge conflict in kernel/workqueue.c
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+CONFLICT (content): Merge conflict in mm/memory-failure.c
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+CONFLICT (content): Merge conflict in include/linux/serial_core.h
+Merging quilt/usb
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/bat_sysfs.c
+CONFLICT (delete/modify): drivers/staging/batman-adv/device.c deleted in st=
+aging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagi=
+ng/batman-adv/device.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
+face.c
+CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/quatec=
+h_daqp_cs.c
+CONFLICT (delete/modify): drivers/staging/cx25821/cx25821-audups11.c delete=
+d in HEAD and modified in staging-next/staging-next. Version staging-next/s=
+taging-next of drivers/staging/cx25821/cx25821-audups11.c left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/wlags49_h2/wl_cs.c
+$ git rm -f drivers/staging/cx25821/cx25821-audups11.c
+$ git rm -f drivers/staging/batman-adv/device.c
+Merging slabh/slabh
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+Applying: [SCSI] be2iscsi: Add support for iscsi boot
+Applying: [SCSI] be2iscsi: Increase max sector
+Applying: [SCSI] be2iscsi: Driver Version change to 2.0.549.0
+Applying: [SCSI] be2iscsi: select ISCSI_BOOT_SYSFS
+
+--Signature=_Tue__3_Aug_2010_16_03_41_+1000_e0GHy.KjExMJ.mxy
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMV7E9AAoJEDMEi1NhKgbs+BoH/jwMf5l6bu8zhnbPaPwA+w4H
+tVqlPgOHS79BYxJc7pJ5WKeGrAgGGcILMErNa8YvCOcJKnLRzVeh+ejAAgLnMuM2
+9p6SJStLcl5NnNssO6udTuCTd6ghNIEdbMcTCRiXtWlfnzfO13WXX+FeqylLh3HK
+kXpVJJ3i30gVQoX/obIHys9Ve3IL3aHZ1YB0c9hl87kYrIRmzCGeVQq+EhUyYh7d
+1260l/SP6SSUAe83rpHTnUr/3omELUzKo13AimKqtnCjkvHc1y40u8mEb6VjxJpO
+H4Fv8Zb2uQ1eGlU2fscC3/DFRTAm6Lg/95WRnKtC6Ur3/QvjM849ehsP4saorXo=
+=MBUO
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__3_Aug_2010_16_03_41_+1000_e0GHy.KjExMJ.mxy--
