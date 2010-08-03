@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab0HCHCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 03:02:16 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43004 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755245Ab0HCHCP (ORCPT
+	id S1755433Ab0HCHFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 03:05:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:50176 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab0HCHFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 03:02:15 -0400
-MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 3 Aug 2010 01:01:51 -0600
-X-Google-Sender-Auth: WQakqaU69y30f0q9QUBBy-bWlB8
-Message-ID: <AANLkTimMR6_zuA8BRy+ZcDQS0o7N5h4u9PikoqAhxisO@mail.gmail.com>
-Subject: [git pull] spi tree
-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Tue, 3 Aug 2010 03:05:20 -0400
+Date: Tue, 3 Aug 2010 09:05:14 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Yu, Luming" <luming.yu@intel.com>,
+        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+        Andi Kleen <andi@firstfloor.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kevin Wells <kevin.wells@nxp.com>, Ernst Schwab <eschwab@online.de>,
-        Cory Maccarrone <darkstar6262@gmail.com>,
-        Brian Niebuhr <bniebuhr3@gmail.com>,
-        Anatolij Gustschin <agust@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "venki@google.com" <venki@google.com>
+Subject: Re: [PATCH] ACPI: make acpi_idle Nehalem-aware
+Message-ID: <20100803070514.GA31096@basil.fritz.box>
+References: <alpine.LFD.2.00.1004301218280.2489@sony>
+ <20100430174447.GA14889@srcf.ucam.org>
+ <d7f2dd35a4361e5156079278543769a0@localhost>
+ <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
+ <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com>
+ <20100525124325.GC7876@srcf.ucam.org>
+ <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain>
+ <20100525185507.GA15997@srcf.ucam.org>
+ <alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
+ <20100803065514.GE3344@ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100803065514.GE3344@ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Aug 03, 2010 at 08:55:14AM +0200, Pavel Machek wrote:
+> On Wed 2010-07-21 17:31:27, Len Brown wrote:
+> > From: Len Brown <len.brown@intel.com>
+> > 
+> > The BIOS exports deep C-states on modern Intel processors
+> > as "C3-type" to satisfy various legacy Operating Systems.
+> 
+> Can you elaborate on this? I though the only difference between
+> C2-type and C3-type is busmastering...
 
-Here are the spi driver changes queued up for 2.6.36.
+The main difference is latency.
 
-Cheers,
-g.
-
-The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
-  Linus Torvalds (1):
-        Linux 2.6.35
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 next-spi
-
-Anatolij Gustschin (1):
-      spi/mpc5121: change annotations for probe and remove functions
-
-Brian Niebuhr (1):
-      spi/bitbang: reinitialize transfer parameters for every message
-
-Cory Maccarrone (1):
-      SPI100k: Fix 8-bit and RX-only transfers
-
-Ernst Schwab (2):
-      spi/mmc_spi: SPI bus locking API, using mutex
-      spi/mmc_spi: mmc_spi adaptations for SPI bus locking API
-
-Grant Likely (1):
-      Merge commit 'v2.6.35-rc6' into spi/test
-
-Kevin Wells (1):
-      spi/amba_pl022: Fix probe and remove hook section annotations.
-
-Marek Szyprowski (2):
-      spi/bitbang: add support for SPI_MASTER_NO_{TX, RX} modes
-      spi/spi-gpio: add support for controllers without MISO or MOSI pin
-
- drivers/mmc/host/mmc_spi.c     |   59 ++---------
- drivers/spi/amba-pl022.c       |    6 +-
- drivers/spi/mpc512x_psc_spi.c  |   16 ++--
- drivers/spi/omap_spi_100k.c    |   23 ++--
- drivers/spi/spi.c              |  225 ++++++++++++++++++++++++++++++++++------
- drivers/spi/spi_bitbang.c      |    9 +-
- drivers/spi/spi_bitbang_txrx.h |   16 ++-
- drivers/spi/spi_butterfly.c    |    2 +-
- drivers/spi/spi_gpio.c         |  109 +++++++++++++++----
- drivers/spi/spi_lm70llp.c      |    2 +-
- drivers/spi/spi_s3c24xx_gpio.c |    8 +-
- drivers/spi/spi_sh_sci.c       |    8 +-
- include/linux/spi/spi.h        |   12 ++
- include/linux/spi/spi_gpio.h   |    5 +
- 14 files changed, 353 insertions(+), 147 deletions(-)
-
+-Andi
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+ak@linux.intel.com -- Speaking for myself only.
