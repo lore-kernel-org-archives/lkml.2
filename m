@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab0HCHh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 03:37:56 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:42344 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab0HCHhy (ORCPT
+	id S1753349Ab0HCHlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 03:41:09 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59088 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab0HCHlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 03:37:54 -0400
-To: Hui Zhu <teawater@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kexec: set prstatus.pr_pid to cpu id when current->pid is 0
-References: <AANLkTikuUi=i6Lk-ZpE65Gr0tWOeVnrnpWPe85T=J=Ph@mail.gmail.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 03 Aug 2010 00:37:46 -0700
-In-Reply-To: <AANLkTikuUi=i6Lk-ZpE65Gr0tWOeVnrnpWPe85T=J=Ph@mail.gmail.com> (Hui Zhu's message of "Tue\, 3 Aug 2010 15\:21\:49 +0800")
-Message-ID: <m1zkx4w3hx.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Tue, 3 Aug 2010 03:41:06 -0400
+Date: Tue, 3 Aug 2010 09:40:57 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Greg KH <gregkh@suse.de>
+Cc: Julia Lawall <julia@diku.dk>,
+        =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>,
+        linux-usb@vger.kernel.org, David Brownell <david-b@pacbell.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb gadget: don't save bind callback in struct
+	usb_gadget_driver
+Message-ID: <20100803074056.GB17297@pengutronix.de>
+References: <op.vgs04dub7p4s8u@pikus> <1280752803-11441-1-git-send-email-u.kleine-koenig@pengutronix.de> <Pine.LNX.4.64.1008021446470.10662@ask.diku.dk> <20100802131248.GD13900@pengutronix.de> <20100802225440.GA9190@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100802225440.GA9190@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hui Zhu <teawater@gmail.com> writes:
+[stripped down Cc: list to annoy fewer people]
 
-> Hi,
->
-> I found that from gdb 7.1 to gdb-cvs-head cannot analyze the core file
-> that get from kdump.
-> What I got:
-> [New <main task>]
-> [New Thread 2719]
-> ../../src/gdb/thread.c:884: internal-error: switch_to_thread:
-> Assertion `inf != NULL' failed.
-> A problem internal to GDB has been detected,
-> further debugging may prove unreliable.
-> Quit this debugging session? (y or n)
-> That is because:
->  objdump -h ./vmcore
->
-> ./vmcore:     file format elf64-x86-64
->
-> Sections:
-> Idx Name          Size      VMA               LMA               File off  Algn
->   0 note0         00000a48  0000000000000000  0000000000000000  00000238  2**0
->                   CONTENTS, READONLY
->   1 .reg/0        000000d8  0000000000000000  0000000000000000  000002bc  2**2
->                   CONTENTS
->   2 .reg          000000d8  0000000000000000  0000000000000000  000002bc  2**2
->                   CONTENTS
->   3 .reg/2719     000000d8  0000000000000000  0000000000000000  00000420  2**2
->                   CONTENTS
->   4 .reg/0        000000d8  0000000000000000  0000000000000000  00000584  2**2
->                   CONTENTS
->   5 .reg/0        000000d8  0000000000000000  0000000000000000  000006e8  2**2
->                   CONTENTS
-> Each of reg/n is a cpu core note.  It will be a GDB thread.  n is the
-> prstatus.pr_pid that will be the thread lwpid.  Because the 3 threads
-> pid is same, so GDB get error.
->
-> current->pid is 0 because this cpu is in idle.  So I add a check, set
-> prstatus.pr_pid to cpu id when current->pid is 0.  Then GDB work OK
-> with the core.
+On Mon, Aug 02, 2010 at 03:54:40PM -0700, Greg KH wrote:
+> On Mon, Aug 02, 2010 at 03:12:48PM +0200, Uwe Kleine-König wrote:
+> > On Mon, Aug 02, 2010 at 02:51:36PM +0200, Julia Lawall wrote:
+> > > > diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
+> > > > index 731150d..c266c1e 100644
+> > > > --- a/drivers/usb/gadget/amd5536udc.c
+> > > > +++ b/drivers/usb/gadget/amd5536udc.c
+> > > > @@ -1954,13 +1954,14 @@ static int setup_ep0(struct udc *dev)
+> > > >  }
+> > > >  
+> > > >  /* Called by gadget driver to register itself */
+> > > > -int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+> > > > +int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+> > > > +		int (*bind)(struct usb_gadget *))
+> > > >  {
+> > > >  	struct udc		*dev = udc;
+> > > >  	int			retval;
+> > > >  	u32 tmp;
+> > > >  
+> > > > -	if (!driver || !driver->bind || !driver->setup
+> > > > +	if (!driver || bind || !driver->setup
+> > > 
+> > > I have the impression that this should be !bind rather than bind.  
+> > ah, now I see what you meant.  Obviously you're right.  I fixed it up
+> > locally here for now.  Greg, just tell me when/if you need a fixed
+> > patch.
+> 
+> Didn't you already post a "fixed" patch?
+Yes, I did:
 
-That is a gdb limitation.  It looks to me like applying this patch will
-loose information, and give you no guarantee that prstatus.pr_pid will
-not equal 0.
+	http://article.gmane.org/gmane.linux.ports.arm.kernel/86640
+	http://article.gmane.org/gmane.linux.kernel/1017575
 
-If you want to change something please do it in a post processing tool.
+If you append '/raw' to the URL they should be applicable by
+git/quilt/whatever you use.
 
-Eric
+Best regards
+Uwe
 
-
-> Thanks,
-> Hui
->
-> Signed-off-by: Hui Zhu <teawater@gmail.com>
-> ---
->  kernel/kexec.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1191,7 +1191,10 @@ void crash_save_cpu(struct pt_regs *regs
->  	if (!buf)
->  		return;
->  	memset(&prstatus, 0, sizeof(prstatus));
-> -	prstatus.pr_pid = current->pid;
-> +	if (current->pid)
-> +		prstatus.pr_pid = current->pid;
-> +	else
-> +		prstatus.pr_pid = cpu;
->  	elf_core_copy_kernel_regs(&prstatus.pr_reg, regs);
->  	buf = append_elf_note(buf, KEXEC_CORE_NOTE_NAME, NT_PRSTATUS,
->  		      	      &prstatus, sizeof(prstatus));
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
