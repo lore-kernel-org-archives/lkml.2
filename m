@@ -1,119 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab0HCXLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 19:11:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34158 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756417Ab0HCXLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 19:11:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC][PATCH -mm] hibernation: freeze swap at hibernation (Was Re: Memory corruption during hibernation since 2.6.31
-Date: Wed, 4 Aug 2010 01:09:15 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-References: <201007282334.08063.rjw@sisk.pl> <20100730131432.891df49a.kamezawa.hiroyu@jp.fujitsu.com> <20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1757947Ab0HCXM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 19:12:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32949 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab0HCXM0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 19:12:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=axp1KgO56I9r/Gb8hMXpB12rx70R69FteZr/7ZJa+48nWmOGWRUQNzBVlV3gSqnBpv
+         kClALVpnZkK1K4DCpxlkauATZE8OXiLl72iWG443+5okN+wZKgPm2eI+TZcsOBcB6qVW
+         vHVnj5/Shf3bVtqy9B3JllrWyPqfC9opRGiRo=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008040109.15818.rjw@sisk.pl>
+In-Reply-To: <m1bp9jgyww.fsf@fess.ebiederm.org>
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
+	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
+	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
+	<4C577197.9020003@kernel.org>
+	<4C57723C.1060400@kernel.org>
+	<m1bp9k2xsg.fsf@fess.ebiederm.org>
+	<4C57C319.8070800@kernel.org>
+	<m11vagw2fl.fsf@fess.ebiederm.org>
+	<4C57CD9C.70602@kernel.org>
+	<m1fwywoz0f.fsf@fess.ebiederm.org>
+	<4C57DACF.1090503@kernel.org>
+	<m17hk8oy5g.fsf@fess.ebiederm.org>
+	<4C57E32A.9070401@kernel.org>
+	<m18w4onebi.fsf@fess.ebiederm.org>
+	<4C5871BC.4070007@kernel.org>
+	<m1bp9jgyww.fsf@fess.ebiederm.org>
+Date: Wed, 4 Aug 2010 09:12:25 +1000
+Message-ID: <AANLkTin-OmHiRK58d3j5jzESanvmLz2h+weXCEzb+Xxz@mail.gmail.com>
+Subject: Re: oops in ioapic_write_entry
+From: Dave Airlie <airlied@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
+        Gary Hade <garyhade@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, August 02, 2010, KAMEZAWA Hiroyuki wrote:
-> On Fri, 30 Jul 2010 13:14:32 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > On Thu, 29 Jul 2010 21:10:10 -0700
-> > Hugh Dickins <hughd@google.com> wrote:
-> > 
-> > > On Thu, Jul 29, 2010 at 5:01 PM, KAMEZAWA Hiroyuki
-> > > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > 
-> > > > I think the best way is kexec(). But maybe rollback from hibernation failure
-> > > > will be difficult. Considering how crash-dump works well and under maintainance
-> > > > by many enterprise guys, hibernation-by-kexec is a choice. I think. It can make
-> > > > reuse of kdump code, ...or, hibernation-resume code can eat kdump image
-> > > > directly. Maybe the problem will be the speed of dump.
-> > > 
-> > > I've no appetite for a total rework of hibernation, and I don't see
-> > > how that would
-> > > address the issue: I'm just looking for some protection against swap
-> > > reuse danger.
-> > > 
-> > Okay ;) (And I forget that kexec has to prepare memory at boot time for 2nd kernel.
-> > It will be harmful for small device guys.)
-> > 
-> > I'll prepare a routine not-quick-fix.
-> 
-> Ok, here. Passed easy tests as
-> # echo disk > /sys/power/state
-> 
-> 
-> Looks like a big hammer ? But I think following kind of patch is required.
-> About swap-reuse, it's only possible when a page is added to swap cache
-> but try_to_unmap() fails and the page remains in memory. IIUC, most of this
-> kind of pages will be backed to swap by shrink_all_memory(). So, reuse-swap
-> happens only when the user unlucky. This patch ignores reuse-swap but freeze
-> swap_map[] for saving swap_map[] to the disk in consistent way.
-> 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> swap_map[] is a one of objects which can be update while hibernation. I.E,
-> usage counter in swap_map[] is updated while hibernation is making a copy
-> of memory image to the disk.
-> 
-> At resume, hibenation code doesn't call swap_free() against the swaps they
-> used...So, the swap_map[] will turns to be an initial state.
-> 
-> With small consideration, the question is how swap_map[] updated before
-> dumping to the disk is treated. In swap-system view, there are no guarantee
-> that swap_map[] are properly reloaded and there is no leak in swap count.
-> 
-> This patch tries to freeze swap_map[] during hibernation.
-> By this, no updates will be happen to swap_map[] among save_image().
-> At load_image(), the swap_map[] has no record for swap entries used by
-> save_image(), we can simply forget it.
-> 
-> Note: I'm not a specialist of hibernation...so, I'm not sure the hooks
->       to kernel/power/user.c is appropriate or not.
->       And this disables swap-out once hibernation starts saving.
->       Should we afraid of OOM ?
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, Aug 4, 2010 at 7:38 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Yinghai Lu <yinghai@kernel.org> writes:
+>
+>> On 08/03/2010 04:08 AM, Eric W. Biederman wrote:
+>>>
+>>> For the common case I think we still do the right thing, even now, for
+>>> these broken bios tables.  There is likely an uncommon case for which
+>>> something like your shared_legacy_irq deserves to be used, especially
+>>> at it preserves our well tested historical behavior.
+>>
+>> Dave, Irnna, Gary:
+>>
+>> can you check this patch on your systems?
+>
+>
+>
+>>
+>> Thanks
+>>
+>> Yinghai
+>>
+>> [PATCH] x86: check if apic/pin is shared with legacy one
+>>
+>> fix system that external device that have io apic on apic0/pin(0-15)
+>
+> Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+>
+> Your patch addresses what appears to be a theoretical issue, caused by
+> a BIOS bug.  So far you have not presented a credible scenario where
+> this would affect anything in real life except the user visible irq
+> number.
+>
+> Will you please stop, think, and describe what is going on clearly
+> and how you expect this patch to affect anything, and please stop
+> selling this patch as the solution to all of the world's ills.  You
+> are being sloppy and wasting everyone's time.
+>
+> This patch definitely does not solve Dave Airlie's problem.  That was
+> clearly caused by a (ACPI being disabled compared to the test case)
+> and a bad BIOS provided MP table with an invalid apic_id, and our
+> attempt to lookup the ioapic and failed.
 
-I have only one comment (below).
+Oh wow, I totally missed I had ACPI off on this build, I turned it off
+a few kernels back to test the build didn't break, and forgot to turn
+it back on.
 
-> ---
-...
-> Index: mmotm-0727/kernel/power/user.c
-> ===================================================================
-> --- mmotm-0727.orig/kernel/power/user.c
-> +++ mmotm-0727/kernel/power/user.c
-> @@ -135,6 +135,7 @@ static int snapshot_release(struct inode
->  	free_basic_memory_bitmaps();
->  	data = filp->private_data;
->  	free_all_swap_pages(data->swap);
-> +	hibernation_thaw_swap();
+So clearly my mptable is just busted and we can probably move along,
+I'll rebuild/boot with ACPI now, and I think you can assume it works
+fine unless I get back to you.
 
-free_all_swap_pages() calls hibernation_thaw_swap(), so it doesn't need to be
-called again.
+Thanks, and sorry for wasting time.
 
->  	if (data->frozen)
->  		thaw_processes();
->  	pm_notifier_call_chain(data->mode == O_WRONLY ?
-> 
-> 
-> --
-
-Rafael
+Dave.
