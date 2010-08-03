@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab0HCBIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 21:08:15 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52426 "EHLO gate.crashing.org"
+	id S1754846Ab0HCBIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 21:08:39 -0400
+Received: from kroah.org ([198.145.64.141]:54492 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754414Ab0HCBIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 21:08:14 -0400
-Subject: Re: linux-next: build failure after merge of the final tree (tip
- tree related)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <4C56F317.7030008@zytor.com>
-References: <20100803022310.bec3ba79.sfr@canb.auug.org.au>
-	 <20100802162810.GB4755@flint.arm.linux.org.uk> <4C56F317.7030008@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 03 Aug 2010 11:07:34 +1000
-Message-ID: <1280797654.1902.79.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754414Ab0HCBIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 21:08:38 -0400
+Date: Mon, 2 Aug 2010 18:05:59 -0700
+From: Greg KH <greg@kroah.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "ss@aao.gov.au" <ss@aao.gov.au>, "gregkh@suse.de" <gregkh@suse.de>
+Subject: Re: [PATCH] Staging: dt3155: properly export the module parameter
+Message-ID: <20100803010559.GA3814@kroah.com>
+References: <201007280948.33247.hartleys@visionengravers.com>
+ <4C509A18.3090607@gmail.com>
+ <0D753D10438DA54287A00B027084269763743B4D7C@AUSP01VMBX24.collaborationhost.net>
+ <4C517D80.6010106@gmail.com>
+ <0D753D10438DA54287A00B027084269763743B552E@AUSP01VMBX24.collaborationhost.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0D753D10438DA54287A00B027084269763743B552E@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 09:32 -0700, H. Peter Anvin wrote:
-> > Please, no, don't break the memblock code now.  I'm not reworking the
-> > ARM implementation just as the merge window has opened - especially
-> > as the ARM implementation has now been pulled into other people's
-> > trees.
-> > 
-> > If there's changes to memblock which haven't been in linux-next (which,
-> > as this is a new failure, that is most definitely the case), then they
-> > shouldn't be going into this merge window.
-> > 
+On Thu, Jul 29, 2010 at 11:02:38AM -0500, H Hartley Sweeten wrote:
+> On Thursday, July 29, 2010 6:09 AM, Jiri Slaby wrote:
+> > On 07/29/2010 02:55 AM, H Hartley Sweeten wrote:
+> >> On Wednesday, July 28, 2010 1:59 PM, Jiri Slaby wrote:
+> >>> On 07/28/2010 06:48 PM, H Hartley Sweeten wrote:
+> >>>> --- a/drivers/staging/dt3155/dt3155_drv.c
+> >>>> +++ b/drivers/staging/dt3155/dt3155_drv.c
+> >>>> @@ -99,7 +99,9 @@ wait_queue_head_t dt3155_read_wait_queue[MAXBOARDS];
+> >>>>  
+> >>>>  /* set to dynamicaly allocate, but it is tunable: */
+> >>>>  /* insmod DT_3155 dt3155 dt3155_major=XX */
+> >>>> -int dt3155_major = 0;
+> >>>> +static int dt3155_major;
+> >>>> +module_param(dt3155_major, int, 0);
+> >>>> +MODULE_PARM_DESC(dt3155_major, "Major device number");
+> >>>
+> >>> Is it necessary in the age of udev?
+> >>>
+> >>> I would personally get rid of that completely...
+> >> 
+> >> I agree but I'm not quite sure if the user space app is ready to handle that.
+> >
+> > Given it was never exposed as a parameter, applications should handle
+> > that. 0 means allocate major dynamically...
 > 
-> Ben, what's your tack on this?
+> Understood.
+> 
+> I finally found the "official" site for the "DT3155 Framegrabber Linux Device Driver"
+> 
+> http://sourceforge.net/projects/dt3155a/
+> 
+> The script provided to load the module does grep /proc/devices to determine the major
+> device number and then mknod's the appropriate devices.
+> 
+> I will update my patch and remove the "parameter" since it is not needed.
 
-I'm perfectly happy to wait for the next merge window.. or even delay it
-a bit til we can make sure ARM stuff is in, then memblock is updated to
-also update ARM.
+As there is another driver already in the tree for this device,
+dt3155v4l, I'm about to delete the dt3155 driver as it's no longer
+needed.  So you might want to reconsider your work on this driver for
+the near future.
 
-The latest failure is a bit of a concern... it shows that sh and
-microblaze have not tested the series when I asked them to a while back
-then, but then, I suppose everybody is short on time.
+thanks,
 
-In any case, I'll fixup those glitches in my memblock branch, and we can
-look at the ARM situation then and decide what to do.
-
-Cheers,
-Ben.
- 
-
+greg k-h
