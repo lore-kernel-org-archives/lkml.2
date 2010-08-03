@@ -1,144 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab0HCD1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 23:27:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57442 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753780Ab0HCD1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 23:27:46 -0400
-Message-ID: <4C578D94.2020205@cn.fujitsu.com>
-Date: Tue, 03 Aug 2010 11:31:32 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1754066Ab0HCDbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 23:31:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38165 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752254Ab0HCDbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 23:31:08 -0400
+Date: Tue, 3 Aug 2010 03:30:53 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <4C57382E.8050501@zytor.com>
+References: <4C57382E.8050501@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/setup] x86, setup: Allow global variables and functions in the decompressor
+Message-ID: <tip-22a57f5896df218356bae6203dfaf04bcfd6c88c@git.kernel.org>
+Git-Commit-ID: 22a57f5896df218356bae6203dfaf04bcfd6c88c
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, Izik Eidus <ieidus@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH resend] ksm:  cleanup for mm_slots_hash
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 03 Aug 2010 03:30:54 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  22a57f5896df218356bae6203dfaf04bcfd6c88c
+Gitweb:     http://git.kernel.org/tip/22a57f5896df218356bae6203dfaf04bcfd6c88c
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 2 Aug 2010 15:34:44 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 2 Aug 2010 15:34:44 -0700
 
-Andrea Arcangeli <aarcange@redhat.com> wrote:
-> 
-> I just talked with Izik and he agrees with patch! ;)
+x86, setup: Allow global variables and functions in the decompressor
 
-Avi Kivity <avi@redhat.com> wrote:
-> Note, to get the patch merged your best bet is to copy linux-mm and
-> Andrew Morton.
+In order for global variables and functions to work in the
+decompressor, we need to fix up the GOT in assembly code.
 
-Subject: [PATCH resend] ksm: cleanup for mm_slots_hash
-
-Use compile-allocated memory instead of dynamic allocated
-memory for mm_slots_hash.
-
-Use hash_ptr() instead divisions for bucket calculation.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Izik Eidus <ieidus@redhat.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+LKML-Reference: <4C57382E.8050501@zytor.com>
 ---
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 6c3e99b..f69ff28 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -33,6 +33,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/swap.h>
- #include <linux/ksm.h>
-+#include <linux/hash.h>
+ arch/x86/boot/compressed/head_32.S     |   13 +++++++++++++
+ arch/x86/boot/compressed/head_64.S     |   13 +++++++++++++
+ arch/x86/boot/compressed/vmlinux.lds.S |    6 ++++++
+ 3 files changed, 32 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+index f543b70..67a655a 100644
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -124,6 +124,19 @@ relocated:
+ 	rep	stosl
  
- #include <asm/tlbflush.h>
- #include "internal.h"
-@@ -153,8 +154,9 @@ struct rmap_item {
- static struct rb_root root_stable_tree = RB_ROOT;
- static struct rb_root root_unstable_tree = RB_ROOT;
+ /*
++ * Adjust our own GOT
++ */
++	leal	_got(%ebx), %edx
++	leal	_egot(%ebx), %ecx
++1:
++	cmpl	%ecx, %edx
++	jae	2f
++	addl	%ebx, (%edx)
++	addl	$4, %edx
++	jmp	1b
++2:
++
++/*
+  * Do the decompression, and jump to the new kernel..
+  */
+ 	leal	z_extract_offset_negative(%ebx), %ebp
+diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+index faff0dc..52f85a1 100644
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -280,6 +280,19 @@ relocated:
+ 	rep	stosq
  
--#define MM_SLOTS_HASH_HEADS 1024
--static struct hlist_head *mm_slots_hash;
-+#define MM_SLOTS_HASH_SHIFT 10
-+#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
-+static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
- 
- static struct mm_slot ksm_mm_head = {
- 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
-@@ -269,28 +271,13 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 	kmem_cache_free(mm_slot_cache, mm_slot);
- }
- 
--static int __init mm_slots_hash_init(void)
--{
--	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
--				GFP_KERNEL);
--	if (!mm_slots_hash)
--		return -ENOMEM;
--	return 0;
--}
--
--static void __init mm_slots_hash_free(void)
--{
--	kfree(mm_slots_hash);
--}
--
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
- 	struct mm_slot *mm_slot;
- 	struct hlist_head *bucket;
- 	struct hlist_node *node;
- 
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
-+	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	hlist_for_each_entry(mm_slot, node, bucket, link) {
- 		if (mm == mm_slot->mm)
- 			return mm_slot;
-@@ -303,8 +290,7 @@ static void insert_to_mm_slots_hash(struct mm_struct *mm,
- {
- 	struct hlist_head *bucket;
- 
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
-+	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	mm_slot->mm = mm;
- 	hlist_add_head(&mm_slot->link, bucket);
- }
-@@ -1943,15 +1929,11 @@ static int __init ksm_init(void)
- 	if (err)
- 		goto out;
- 
--	err = mm_slots_hash_init();
--	if (err)
--		goto out_free1;
--
- 	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
- 	if (IS_ERR(ksm_thread)) {
- 		printk(KERN_ERR "ksm: creating kthread failed\n");
- 		err = PTR_ERR(ksm_thread);
--		goto out_free2;
-+		goto out_free;
+ /*
++ * Adjust our own GOT
++ */
++	leaq	_got(%rip), %rdx
++	leaq	_egot(%rip), %rcx
++1:
++	cmpq	%rcx, %rdx
++	jae	2f
++	addq	%rbx, (%rdx)
++	addq	$8, %rdx
++	jmp	1b
++2:
++	
++/*
+  * Do the decompression, and jump to the new kernel..
+  */
+ 	pushq	%rsi			/* Save the real mode argument */
+diff --git a/arch/x86/boot/compressed/vmlinux.lds.S b/arch/x86/boot/compressed/vmlinux.lds.S
+index 5ddabce..34d047c 100644
+--- a/arch/x86/boot/compressed/vmlinux.lds.S
++++ b/arch/x86/boot/compressed/vmlinux.lds.S
+@@ -41,6 +41,12 @@ SECTIONS
+ 		*(.rodata.*)
+ 		_erodata = . ;
  	}
- 
- #ifdef CONFIG_SYSFS
-@@ -1959,7 +1941,7 @@ static int __init ksm_init(void)
- 	if (err) {
- 		printk(KERN_ERR "ksm: register sysfs failed\n");
- 		kthread_stop(ksm_thread);
--		goto out_free2;
-+		goto out_free;
- 	}
- #else
- 	ksm_run = KSM_RUN_MERGE;	/* no way for user to start it */
-@@ -1975,9 +1957,7 @@ static int __init ksm_init(void)
- #endif
- 	return 0;
- 
--out_free2:
--	mm_slots_hash_free();
--out_free1:
-+out_free:
- 	ksm_slab_free();
- out:
- 	return err;
++	.got : {
++		_got = .;
++		KEEP(*(.got.plt))
++		KEEP(*(.got))
++		_egot = .;
++	}
+ 	.data :	{
+ 		_data = . ;
+ 		*(.data)
