@@ -1,61 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab0HCNCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 09:02:24 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:47377 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab0HCNCX (ORCPT
+	id S1756004Ab0HCNJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 09:09:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49273 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949Ab0HCNJR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 09:02:23 -0400
+	Tue, 3 Aug 2010 09:09:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=qNVeIlTzozhY9MXH5PHYIsAL8T7zOBZ+0hWrBlbEy0PiBHW1AAv9nNd6FspugBZVUW
-         q7iPmhg0n6Oa3KFBNjs42dInyCPUqiQs10rGTQCJsSVITmZ/NA9sf8FFbI+Dg7xQiJKj
-         TN/8W0tBK9mUiqVvoO1avTKG1hqyMwTdMqlaM=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=aIHWKaHVQUQ1Om86PFQ6NRfvlglfnZRThXQzmQ+iRMYqq4qXUyaUpKclXvGpw09Axq
+         9/yREMFL/L5wRCeNL6dUti7mbCFQwABKnGehSgNbdMERpqoe8aqRuvPoiH/rnxbgNnJb
+         Bp03DEQSitd7SdWSGmidxpkbBM7ktuJVBxSS8=
 MIME-Version: 1.0
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E5520114309D@CORPEXCH1.na.ads.idt.com>
-References: <20100308191005.GE4324@amak.tundra.com> <AANLkTine3pc2Ai2Woj81Y9fS_KgGs1sIMb2NMR6G74ww@mail.gmail.com> 
-	<AANLkTinKbimKyLpvFD7KOvavshu_n8gRcp2BvEJj0XZQ@mail.gmail.com> 
-	<4381.1280815590@neuling.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520114309D@CORPEXCH1.na.ads.idt.com>
-From: Timur Tabi <timur@freescale.com>
-Date: Tue, 3 Aug 2010 08:01:51 -0500
-X-Google-Sender-Auth: lBedzmn1VMYh0pQjuCJuDw-lNh8
-Message-ID: <AANLkTinpwYnyc1oN1VbtBgUF6bk6E5q_Gq1Dj3WXV3wc@mail.gmail.com>
-Subject: Re: [PATCH v2 5/7] powerpc/85xx: Add MChk handler for SRIO port
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-        Alexandre Bounine <abounine@tundra.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, thomas.moll@sysgo.com,
-        Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <alpine.DEB.2.00.1008030009400.1789@davide-laptop>
+References: <4C565845.30307@gmail.com>
+	<alpine.DEB.2.00.1008030009400.1789@davide-laptop>
+Date: Tue, 3 Aug 2010 13:09:15 +0000
+Message-ID: <AANLkTinjNOC3nVn0GAVuUSTgiQM_QA+ueOxPzJX+aRFb@mail.gmail.com>
+Subject: Re: [PATCH] New EPOLL flag: EPOLLHEAD
+From: Li Yu <raise.sail@gmail.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 7:17 AM, Bounine, Alexandre
-<Alexandre.Bounine@idt.com> wrote:
-> This happened after change to book-e definitions.
-> There are patches that address this issue.
+;), I know that epoll is stackable, i.e. we can use epoll_wait() on fd
+that return from epoll_create() However, If we just have a few of
+priorities, for example, which are less than 5 (one is controlling
+connection, otherwise are some data connections), thus it seem that
+stacked epoll() usage is too expensive here, receiving each packet
+always requires extra times that switching into kernel in such case,
+thus I think that head-inserting ready-events into ep->rdllist is an
+excellence solution for this case, in my word, is it right? or have we
+more better solution here? Thanks!
 
-And those patches should have been applied before 2.6.35 was released.
- Someone dropped the ball.  2.6.35 is broken for a number of PowerPC
-boards:
+Yu
 
-$ make mpc85xx_defconfig
-...
-$ make
-...
-  CC      arch/powerpc/sysdev/fsl_rio.o
-arch/powerpc/sysdev/fsl_rio.c: In function 'fsl_rio_mcheck_exception':
-arch/powerpc/sysdev/fsl_rio.c:248: error: 'MCSR_MASK' undeclared
-(first use in this function)
-arch/powerpc/sysdev/fsl_rio.c:248: error: (Each undeclared identifier
-is reported only once
-arch/powerpc/sysdev/fsl_rio.c:248: error: for each function it appears in.)
-make[1]: *** [arch/powerpc/sysdev/fsl_rio.o] Error 1
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+2010/8/3 Davide Libenzi <davidel@xmailserver.org>:
+> On Mon, 2 Aug 2010, Li Yu wrote:
+>
+>> This patch introduces to new epoll flag EPOLLHEAD. Using this flag, the trigged events will be insert at head of ready events linked list, so they likely can be processed earlier in user space. In fact, this is the most simplest events priority, is it right?
+>
+> If you have such a high number of ready events in a continous manner, that
+> resolving priorities at ready-time (O(Nready)) is a burden for you, you
+> can simply create M epoll fds (one per priority), add the fds into the
+> proper epoll fd, and use another epoll fd (or even poll(2) - if M is
+> small) to gather them.
+>
+>
+>
+>>
+>> BTW: I did not subscribe linux-fsdevel mail list, so please also send reply to my gmail, thanks!
+>>
+>> Signed-off-by: Li Yu <raise.sail@gmail.com>
+>> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+>> index 3817149..ddd1500 100644
+>> --- a/fs/eventpoll.c
+>> +++ b/fs/eventpoll.c
+>> @@ -72,7 +72,7 @@
+>>   */
+>>
+>>  /* Epoll private bits inside the event mask */
+>> -#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
+>> +#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET | EPOLLHEAD)
+>>
+>>  /* Maximum number of nesting allowed inside epoll sets */
+>>  #define EP_MAX_NESTS 4
+>> @@ -281,6 +281,15 @@ static inline int ep_is_linked(struct list_head *p)
+>>       return !list_empty(p);
+>>  }
+>>
+>> +/* The events with EPOLLHEAD can be detected first by user space. */
+>> +static inline void ep_event_ready(struct eventpoll *ep, struct epitem *epi)
+>> +{
+>> +     if (epi->event.events & EPOLLHEAD)
+>> +             list_add(&epi->rdllink, &ep->rdllist);
+>> +     else
+>> +             list_add_tail(&epi->rdllink, &ep->rdllist);
+>> +}
+>> +
+>>  /* Get the "struct epitem" from a wait queue pointer */
+>>  static inline struct epitem *ep_item_from_wait(wait_queue_t *p)
+>>  {
+>> @@ -494,7 +503,7 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+>>                * contain them, and the list_splice() below takes care of them.
+>>                */
+>>               if (!ep_is_linked(&epi->rdllink))
+>> -                     list_add_tail(&epi->rdllink, &ep->rdllist);
+>> +                     ep_event_ready(ep, epi);
+>>       }
+>>       /*
+>>        * We need to set back ep->ovflist to EP_UNACTIVE_PTR, so that after
+>> @@ -829,7 +838,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
+>>
+>>       /* If this file is already in the ready list we exit soon */
+>>       if (!ep_is_linked(&epi->rdllink))
+>> -             list_add_tail(&epi->rdllink, &ep->rdllist);
+>> +             ep_event_ready(ep, epi);
+>>
+>>       /*
+>>        * Wake up ( if active ) both the eventpoll wait list and the ->poll()
+>> @@ -957,7 +966,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+>>
+>>       /* If the file is already "ready" we drop it inside the ready list */
+>>       if ((revents & event->events) && !ep_is_linked(&epi->rdllink)) {
+>> -             list_add_tail(&epi->rdllink, &ep->rdllist);
+>> +             ep_event_ready(ep, epi);
+>>
+>>               /* Notify waiting tasks that events are available */
+>>               if (waitqueue_active(&ep->wq))
+>> @@ -1025,7 +1034,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
+>>       if (revents & event->events) {
+>>               spin_lock_irq(&ep->lock);
+>>               if (!ep_is_linked(&epi->rdllink)) {
+>> -                     list_add_tail(&epi->rdllink, &ep->rdllist);
+>> +                     ep_event_ready(ep, epi);
+>>
+>>                       /* Notify waiting tasks that events are available */
+>>                       if (waitqueue_active(&ep->wq))
+>> @@ -1094,7 +1103,7 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+>>                                * ep_scan_ready_list() holding "mtx" and the
+>>                                * poll callback will queue them in ep->ovflist.
+>>                                */
+>> -                             list_add_tail(&epi->rdllink, &ep->rdllist);
+>> +                             ep_event_ready(ep, epi);
+>>                       }
+>>               }
+>>       }
+>> diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
+>> index f6856a5..b7658e1 100644
+>> --- a/include/linux/eventpoll.h
+>> +++ b/include/linux/eventpoll.h
+>> @@ -26,6 +26,9 @@
+>>  #define EPOLL_CTL_DEL 2
+>>  #define EPOLL_CTL_MOD 3
+>>
+>> +/* When target file descriptor is ready, insert it into head of ready list */
+>> +#define EPOLLHEAD (1 << 29)
+>> +
+>>  /* Set the One Shot behaviour for the target file descriptor */
+>>  #define EPOLLONESHOT (1 << 30)
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
