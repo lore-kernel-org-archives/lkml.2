@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab0HCAFL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 20:05:11 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:47320 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab0HCAFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 20:05:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=pR5hHQnfHPhFPyA5KbJhbG9vOC9wUEt4ygV0LJLvhwGNorLnj5Scg+WmseJdCZafly
-         cPiz5g7ujpP6DUTebK6K7A85D0UzaQ0RS2PJ54z8OdCFvWD/iDua9BHooIyLjjyiw9RL
-         U3iPEG48OdjA13lFOjt/0VTBfQzq+qrmIz7nw=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, j@w1.fi,
-        linville@tuxdriver.com, "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]hostap:hostap_hw.c Fix variable 'fc' set but not used
-Date: Mon,  2 Aug 2010 17:05:06 -0700
-Message-Id: <1280793906-1810-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+	id S1754130Ab0HCAJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 20:09:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:37438 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752718Ab0HCAJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Aug 2010 20:09:44 -0400
+Date: Mon, 2 Aug 2010 17:09:39 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jan Kara <jack@suse.cz>
+Cc: tytso@mit.edu, Ric Wheeler <rwheeler@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, Mingming Cao <cmm@us.ibm.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC] ext4: Don't send extra barrier during fsync if there are
+	no dirty pages.
+Message-ID: <20100803000939.GA2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <20100504154553.GA22777@infradead.org> <20100630124832.GA1333@thunk.org> <4C2B44C0.3090002@redhat.com> <20100630134429.GE1333@thunk.org> <20100721171609.GC1215@atrey.karlin.mff.cuni.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100721171609.GC1215@atrey.karlin.mff.cuni.cz>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The below fixes a build wanring from GCC.
+On Wed, Jul 21, 2010 at 07:16:09PM +0200, Jan Kara wrote:
+>   Hi,
+> 
+> > On Wed, Jun 30, 2010 at 09:21:04AM -0400, Ric Wheeler wrote:
+> > > 
+> > > The problem with not issuing a cache flush when you have dirty meta
+> > > data or data is that it does not have any tie to the state of the
+> > > volatile write cache of the target storage device.
+> > 
+> > We track whether or not there is any metadata updates associated with
+> > the inode already; if it does, we force a journal commit, and this
+> > implies a barrier operation.
+> > 
+> > The case we're talking about here is one where either (a) there is no
+> > journal, or (b) there have been no metadata updates (I'm simplifying a
+> > little here; in fact we track whether there have been fdatasync()- vs
+> > fsync()- worthy metadata updates), and so there hasn't been a journal
+> > commit to do the cache flush.
+> > 
+> > In this case, we want to track when is the last time an fsync() has
+> > been issued, versus when was the last time data blocks for a
+> > particular inode have been pushed out to disk.
+> > 
+> > To use an example I used as motivation for why we might want an
+> > fsync2(int fd[], int flags[], int num) syscall, consider the situation
+> > of:
+> > 
+> > 	fsync(control_fd);
+> > 	fdatasync(data_fd);
+> > 
+> > The first fsync() will have executed a cache flush operation.  So when
+> > we do the fdatasync() (assuming that no metadata needs to be flushed
+> > out to disk), there is no need for the cache flush operation.
+> > 
+> > If we had an enhanced fsync command, we would also be able to
+> > eliminate a second journal commit in the case where data_fd also had
+> > some metadata that needed to be flushed out to disk.
+>   Current implementation already avoids journal commit because of
+> fdatasync(data_fd). We remeber a transaction ID when inode metadata has
+> last been updated and do not force a transaction commit if it is already
+> committed. Thus the first fsync might force a transaction commit but second
+> fdatasync likely won't.
+>   We could actually improve the scheme to work for data as well. I wrote
+> a proof-of-concept patches (attached) and they nicely avoid second barrier
+> when doing:
+> echo "aaa" >file1; echo "aaa" >file2; fsync file2; fsync file1
+> 
+>   Ted, would you be interested in something like this?
 
-  CC [M]  drivers/net/wireless/hostap/hostap_plx.o
-In file included from drivers/net/wireless/hostap/hostap_plx.c:264:0:
-drivers/net/wireless/hostap/hostap_hw.c: In function 'prism2_tx_80211':
-drivers/net/wireless/hostap/hostap_hw.c:1816:18: warning: variable 'fc' set but not used
+Well... on my fsync-happy workloads, this seems to cut the barrier count down
+by about 20%, and speeds it up by about 20%.
 
-Removing fc from this just introduces a new warning
-  CC [M]  drivers/net/wireless/hostap/hostap_plx.o
-In file included from drivers/net/wireless/hostap/hostap_plx.c:264:0:
-drivers/net/wireless/hostap/hostap_hw.c: In function 'prism2_tx_80211':
-drivers/net/wireless/hostap/hostap_hw.c:1839:3: warning: statement with no effect
+I also have a patch to ext4_sync_files that batches the fsync requests together
+for a further 20% decrease in barrier IOs, which makes it run another 20%
+faster.  I'll send that one out shortly, though I've not safety-tested it at
+all.
 
-So I went and removed the whole thing. Let me know if theres another solution.
-
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-
----
- drivers/net/wireless/hostap/hostap_hw.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/hostap/hostap_hw.c b/drivers/net/wireless/hostap/hostap_hw.c
-index e9d9d62..d734f3e 100644
---- a/drivers/net/wireless/hostap/hostap_hw.c
-+++ b/drivers/net/wireless/hostap/hostap_hw.c
-@@ -1813,7 +1813,7 @@ static int prism2_tx_80211(struct sk_buff *skb, struct net_device *dev)
- 	struct hfa384x_tx_frame txdesc;
- 	struct hostap_skb_tx_data *meta;
- 	int hdr_len, data_len, idx, res, ret = -1;
--	u16 tx_control, fc;
-+	u16 tx_control;
- 
- 	iface = netdev_priv(dev);
- 	local = iface->local;
-@@ -1836,7 +1836,6 @@ static int prism2_tx_80211(struct sk_buff *skb, struct net_device *dev)
- 	/* skb->data starts with txdesc->frame_control */
- 	hdr_len = 24;
- 	skb_copy_from_linear_data(skb, &txdesc.frame_control, hdr_len);
-- 	fc = le16_to_cpu(txdesc.frame_control);
- 	if (ieee80211_is_data(txdesc.frame_control) &&
- 	    ieee80211_has_a4(txdesc.frame_control) &&
- 	    skb->len >= 30) {
--- 
-1.7.1.rc1.21.gf3bd6
-
+--D
