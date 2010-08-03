@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab0HCBJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Aug 2010 21:09:53 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:33580 "EHLO
+	id S1754929Ab0HCBKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Aug 2010 21:10:04 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:33584 "EHLO
 	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab0HCBJw (ORCPT
+	with ESMTP id S1754891Ab0HCBJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Aug 2010 21:09:52 -0400
+	Mon, 2 Aug 2010 21:09:59 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Subject: Re: linux-next: build failure after merge of the final tree (scsi-post-merge tree related)
-Date: Mon, 2 Aug 2010 20:51:25 -0400
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [GIT PULL] iBFT features for v2.6.36
+Date: Mon, 2 Aug 2010 21:08:03 -0400
 User-Agent: KMail/1.9.10
 Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jayamohan Kallickal <jayamohank@serverengines.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "linux-scsi" <linux-scsi@vger.kernel.org>
-References: <20100803024445.0bf7ec86.sfr@canb.auug.org.au> <20100802195940.GC32503@andromeda.dapyr.net> <1280780042.2843.628.camel@mulgrave.site>
-In-Reply-To: <1280780042.2843.628.camel@mulgrave.site>
+        Konrad Rzeszutek <konrad@hera.kernel.org>,
+        torvalds@linux-foundation.org, James.Bottomley@suse.de,
+        linux-kernel@vger.kernel.org, pjones@redhat.com, lenb@kernel.org,
+        michaelc@cs.wisc.edu
+References: <20100802143642.GA15428@hera.kernel.org> <20100802195248.GB32503@andromeda.dapyr.net> <4C572A13.4010303@zytor.com>
+In-Reply-To: <4C572A13.4010303@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Message-Id: <201008022051.26695.konrad@kernel.org>
+Message-Id: <201008022108.04024.konrad@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  2). Reviewed-by: Konrad Rzeszutek Wilk <konrad@kernel.org> for the
-> >  the part that puts in drivers/scsi and will make it now under James'
-> >  mainternship.
+On Monday 02 August 2010 16:26:59 H. Peter Anvin wrote:
+> On 08/02/2010 12:52 PM, Konrad Rzeszutek Wilk wrote:
+> >> Unfortunately, we're increasingly seeing a proliferation of this kind of
+> >> nonstandard ACPI tables, because it is difficult to add data to ACPI at
 > >
-> > James,
+> > Keep in mind that iBFT is now a standard (woot!)
+>
+> Yes, but the discovery method is ad hoc, as opposed to the standard ACPI
+> mechanisms.
+
+The set of patches that I am asking Linus to pull now can use the ACPI table 
+to find the table or in the fallback case the old method of scanning the 
+memory. However if the machine has UEFI it will only do ACPI table lookup.
+
+Can you point me what 'standard ACPI mechanism' is? Like sticking the code in 
+the drivers/acpi ? And then having a generic driver to handle the 
+[i,a,s,m]BFT tables and maybe some subordinate ones for specific pieces where 
+the generic can't handle it?
+
+> >> It would be good to have some kind of common structure framework for
+> >> these.
 > >
-> > I've asked Linus to pull my iBFT tree before yours as there was this
-> > dependency. Are you OK putting this patch in your tree, or would you
-> > prefer that I expunge Mike's patch from mine?
+> > I need to grok those tables some more to figure out what they all do.
 >
-> I can put this patch into my post merge tree.  I suspect you having a
-> post-post-merge tree (needed for the build problems) might be a bit
-> overkill ...
->
-> James
-OK. Thanks.
+> More or less the same thing as iBFT, but for AoE, SRP, or in-memory disk.
+
+What is the tools state ? For iBFT, iscsi-initiator-utils scans 
+the /sys/firmware directory to extract the relevant data and does its thing. 
+Are there tools for AoE, SCSI RDMA Protocol (SRP), and in-memory disk?
