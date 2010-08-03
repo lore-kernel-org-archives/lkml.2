@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab0HCW1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 18:27:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48117 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab0HCW1F (ORCPT
+	id S1757905Ab0HCW2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 18:28:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41813 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755997Ab0HCW22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 18:27:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimX-5v4qNeK1DD84n8z6-jpq8DSvCa5PepuhgM5@mail.gmail.com>
-References: <AANLkTin3+LfXOpW5MsPSgs_5Z0UFnQTwBAXSocrU1Xs8@mail.gmail.com>
-	<1280871336-31046-2-git-send-email-wad@chromium.org>
-	<AANLkTimX-5v4qNeK1DD84n8z6-jpq8DSvCa5PepuhgM5@mail.gmail.com>
-Date: Tue, 3 Aug 2010 17:27:04 -0500
-Message-ID: <AANLkTik4DRO3685HG8-Hkp3=s=vinUdTQ=votQuf4-8N@mail.gmail.com>
-Subject: Re: [PATCH 2/2] genhd, efi: add efi partition metadata to hd_structs
-From: Will Drewry <wad@chromium.org>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        Karel Zak <kzak@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Aug 2010 18:28:28 -0400
+Date: Tue, 3 Aug 2010 15:28:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ben Woodard <bwoodard@llnl.gov>, Brian Behlendorf <behlendorf1@llnl.gov>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Mark Grondona <mgrondona@llnl.gov>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial, document that div64_u64() is not precise on
+ 32bit platforms
+Message-Id: <20100803152812.210439dc.akpm@linux-foundation.org>
+In-Reply-To: <20100802160951.GA13385@redhat.com>
+References: <20100802160951.GA13385@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 4:54 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Tue, Aug 3, 2010 at 23:35, Will Drewry <wad@chromium.org> wrote:
->> This change extends the partition_meta_info structure to
->> support EFI GPT-specific metadata and ensures that data
->> is copied in on partition scanning.
->>
->> Adding this information would make it possible to identify a
->> partition by GUID using something like disk_part_iter_*(),
->> calls that make hd_struct accessible, or even class_find_device.
->
-> Wow, you are fast. :) Sounds and looks good to me.
+On Mon, 2 Aug 2010 18:09:51 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Thanks!
+> We have a bugreport which blames div64_u64() on 32bit platforms.
+> 
+> However, the code obviously doesn't even try to pretend it can do
+> the 64bit division precisely. If there is something in the high
+> word of divisor, div64_u64() just shifts both arguments and throws
+> out the low bits.
+> 
+> Add a small comment to avoid the confusion.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+> 
+>  lib/div64.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> --- a/lib/div64.c
+> +++ b/lib/div64.c
+> @@ -77,7 +77,10 @@ s64 div_s64_rem(s64 dividend, s32 diviso
+>  EXPORT_SYMBOL(div_s64_rem);
+>  #endif
+>  
+> -/* 64bit divisor, dividend and result. dynamic precision */
+> +/*
+> + * 64bit divisor, dividend and result. Dynamic precision, unless
+> + * divisor fits in u32 result is not exactly correct.
+> + */
+>  #ifndef div64_u64
+>  u64 div64_u64(u64 dividend, u64 divisor)
+>  {
 
-> I guess we should assign the meta structure only after all values are
-> filled in? Otherwise we could get partial reads from a possible user?
+Well that was a bit lazy of us - I wonder how hard it is to fix.
 
-In add_partition(), I don't think the partition itself is shared until
-rcu_assign_pointer is called, and I don't think that parsed_partitions
-is safe to be shared inside check.c, but perhaps that's a dangerous
-assumption
+At present people will test their code on 64-bit only to find out later
+that it doesn't work correctly on 32-bit.  Bad.  Perhaps we should
+similarly break the 64-bit version :)
 
-I can certainly move the pointer assignment to occur after the data is
-copied over since it shouldn't hurt anything.
-
-> Did you already test to put a lookup-call to the in-kernel mounter, if
-> we use some special partition table uuid identifier for root=? That
-> would be nice to see, if all that works as expected, and we can get to
-> the data we collect.
-
-Not yet, but I'd like to have it working there (and in my
-device-mapper target) as soon as possible.  Hopefully, I'll have that
-done pretty soon and I'll repost the series inclusive of an init:
-change.
-
-Any preferences on the variable? I'll start with your example of
-PARTUUID=, but that follows the initramfs model (UUID=) and not the
-existing magic root devices (/dev/nfs, /dev/ram).
-/dev/by-part-uuid/XXX... doesn't seem super-friendly though :)
-
-cheers -
-will
