@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934370Ab0HDVPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:15:12 -0400
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:54004 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759069Ab0HDVN6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:13:58 -0400
-X-Spam-ASN: 
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        john stultz <johnstul@us.ibm.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Joonwoo Park <joonwpark81@gmail.com>
-Subject: [PATCHv3 03/16] pps: fix race in PPS_FETCH handler
-Date: Thu,  5 Aug 2010 01:06:40 +0400
-Message-Id: <033148d225d9e4929fcc02ed8de0fcfa3637cffe.1280952801.git.lasaine@lvk.cs.msu.su>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
-References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+	id S934551Ab0HDVPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:15:37 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:42265 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934871Ab0HDVP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 17:15:27 -0400
+Date: Wed, 4 Aug 2010 14:15:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, david@lang.hm,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100804211521.GI24163@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100801054816.GI2470@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
+ <20100804185520.GA2417@srcf.ucam.org>
+ <201008042251.08266.rjw@sisk.pl>
+ <20100804205654.GA4986@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100804205654.GA4986@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was a race in PPS_FETCH ioctl handler when several processes want
-to obtain PPS data simultaneously using sleeping PPS_FETCH. They all
-sleep most of the time in the system call.
-With the old approach when the first process waiting on the pps queue
-is waken up it makes new system call right away and zeroes pps->go. So
-other processes continue to sleep. This is a clear race condition
-because of the global 'go' variable.
-With the new approach pps->last_ev holds some value increasing at each
-PPS event. PPS_FETCH ioctl handler saves current value to the local
-variable at the very beginning so it can safely check that there is a
-new event by just comparing both variables.
+On Wed, Aug 04, 2010 at 09:56:55PM +0100, Matthew Garrett wrote:
+> On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
+> > On Wednesday, August 04, 2010, Matthew Garrett wrote:
+> > > No! And that's precisely the issue. Android's existing behaviour could 
+> > > be entirely implemented in the form of binary that manually triggers 
+> > > suspend when (a) the screen is off and (b) no userspace applications 
+> > > have indicated that the system shouldn't sleep, except for the wakeup 
+> > > event race. Imagine the following:
+> > > 
+> > > 1) The policy timeout is about to expire. No applications are holding 
+> > > wakelocks. The system will suspend providing nothing takes a wakelock.
+> > > 2) A network packet arrives indicating an incoming SIP call
+> > > 3) The VOIP application takes a wakelock and prevents the phone from 
+> > > suspending while the call is in progress
+> > > 
+> > > What stops the system going to sleep between (2) and (3)? cgroups don't, 
+> > > because the voip app is an otherwise untrusted application that you've 
+> > > just told the scheduler to ignore.
+> > 
+> > I _think_ you can use the just-merged /sys/power/wakeup_count mechanism to
+> > avoid the race (if pm_wakeup_event() is called at 2)).
+> 
+> Yes, I think that solves the problem. The only question then is whether 
+> it's preferable to use cgroups or suspend fully, which is pretty much up 
+> to the implementation. In other words, is there a reason we're still 
+> having this conversation? :) It'd be good to have some feedback from 
+> Google as to whether this satisfies their functional requirements.
 
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
----
- drivers/pps/kapi.c         |    4 ++--
- drivers/pps/pps.c          |   10 +++++++---
- include/linux/pps_kernel.h |    2 +-
- 3 files changed, 10 insertions(+), 6 deletions(-)
+The issue with cgroup freezer as currently defined is that it can freeze
+processes that hold user-level resources (pthread mutexes, SysV semas,
+...).  If some non-frozen process attempts to acquire that resource, you
+get a hang.  There might be some ways to work around this, for example,
+Arjan suggests momentarily unfreezing periodically, and I suggested doing
+the freeze in user-space code, but we don't know if either of these will
+really do what is required.
 
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 55f3961..3f89f5e 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -326,8 +326,8 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 
- 	/* Wake up if captured something */
- 	if (captured) {
--		pps->go = ~0;
--		wake_up_interruptible(&pps->queue);
-+		pps->last_ev++;
-+		wake_up_interruptible_all(&pps->queue);
- 
- 		kill_fasync(&pps->async_queue, SIGIO, POLL_IN);
- 	}
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index c76afb9..cb24147 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -136,6 +136,7 @@ static long pps_cdev_ioctl(struct file *file,
- 
- 	case PPS_FETCH: {
- 		struct pps_fdata fdata;
-+		unsigned int ev;
- 
- 		pr_debug("PPS_FETCH: source %d\n", pps->id);
- 
-@@ -143,11 +144,12 @@ static long pps_cdev_ioctl(struct file *file,
- 		if (err)
- 			return -EFAULT;
- 
--		pps->go = 0;
-+		ev = pps->last_ev;
- 
- 		/* Manage the timeout */
- 		if (fdata.timeout.flags & PPS_TIME_INVALID)
--			err = wait_event_interruptible(pps->queue, pps->go);
-+			err = wait_event_interruptible(pps->queue,
-+					ev < pps->last_ev);
- 		else {
- 			unsigned long ticks;
- 
-@@ -159,7 +161,9 @@ static long pps_cdev_ioctl(struct file *file,
- 
- 			if (ticks != 0) {
- 				err = wait_event_interruptible_timeout(
--						pps->queue, pps->go, ticks);
-+						pps->queue,
-+						ev < pps->last_ev,
-+						ticks);
- 				if (err == 0)
- 					return -ETIMEDOUT;
- 			}
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index c930d11..c3aed4b 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -55,7 +55,7 @@ struct pps_device {
- 	struct pps_ktime clear_tu;
- 	int current_mode;			/* PPS mode at event time */
- 
--	int go;					/* PPS event is arrived? */
-+	unsigned int last_ev;			/* last PPS event id */
- 	wait_queue_head_t queue;		/* PPS event queue */
- 
- 	unsigned int id;			/* PPS source unique ID */
--- 
-1.7.1
+Also, I believe that Android's use of cgroups would be in addition to
+suspending fully rather than instead of.  Freezing a subset of the
+applications allows cutting power drain from output-only apps when
+the screen blanks but where some app such as a download needs to keep
+the system active.  They still would need to suspend once the download
+completes.
 
+But we do need to hear from the Android guys on these points.
+
+							Thanx, Paul
