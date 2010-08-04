@@ -1,145 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520Ab0HDC4t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:56:49 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:39586 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932258Ab0HDCwK (ORCPT
+	id S1758248Ab0HDC4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:56:54 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:48633 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932242Ab0HDCwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Aug 2010 22:52:10 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: NLeSSb8VM1nKcJPSd6FxbHkKftQK0h966WVIAPWtFMzpY7b
- 1tA82gtfjF66jHz70uu5g5hqy42rSwamnwNptR1vupBuTGZGWyMzq1TNpMeI
- 3om2SLHYi.naDQccAuOQq0atK_rs95EY5kJ0vZoWrwRMQ7S513IZB35zFkKw
- Sq9zDM7.Ca39JTBKff_aEideJxND_YF8.YDcL6ufDLuA27uK8BcAHjmQiVDd
- TwRtxICG0d8.ZiInm8gs5DGKrv9rAOW9.FhSVRYpOI4lXscEhWEz_7_19pHO
- 5GBgwCQ--
+X-YMail-OSG: 6e2QonEVM1kE62f90MJfjwZ10uN1KOOlb8KAF3u8G4P2htk
+ CcQLzjDopi0ByHh2Hx9f.Jh3PfKps2YqwE9aIltJYo5t9FFqIAaVKF7JjcBD
+ EssYSavxA2Z7JKXCWC4Kcu3HaPXcBXRx98BuDyZnPsibgHD4JGvoPB.37uSG
+ IFNApy1Kjg5_ZrmezQjLtmzPJ0yNgQOM9A2b94EQeapXOCAZVt0fn7FOLUgI
+ mgaSj1IOGWmqXb8Gs5oEy3cKk3kw8.2n_wv_GYzhfekjREMu9EfQQ6JFr0IQ
+ Om5X5X2HWt7eZPdhi
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20100804024529.634058590@linux.com>
+Message-Id: <20100804024527.878097777@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 Aug 2010 21:45:24 -0500
+Date: Tue, 03 Aug 2010 21:45:21 -0500
 From: Christoph Lameter <cl@linux-foundation.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Roland Dreier <rdreier@cisco.com>
+Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Nick Piggin <npiggin@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q3 10/23] slub: Allow removal of slab caches during boot V2
+Subject: [S+Q3 07/23] slub: Use kmem_cache flags to detect if slab is in debugging mode.
 References: <20100804024514.139976032@linux.com>
-Content-Disposition: inline; filename=slub_sysfs_remove_during_boot
+Content-Disposition: inline; filename=slub_debug_on
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Serialize kmem_cache_create and kmem_cache_destroy using the slub_lock. Only
-possible after the use of the slub_lock during dynamic dma creation has been
-removed.
+The cacheline with the flags is reachable from the hot paths after the
+percpu allocator changes went in. So there is no need anymore to put a
+flag into each slab page. Get rid of the SlubDebug flag and use
+the flags in kmem_cache instead.
 
-Then make sure that the setup of the slab sysfs entries does not race
-with kmem_cache_create and kmem_cache destroy.
-
-If a slab cache is removed before we have setup sysfs then simply skip over
-the sysfs handling.
-
-V1->V2:
-- Do proper synchronization to address race conditions
-
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Roland Dreier <rdreier@cisco.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 
 ---
- mm/slub.c |   24 +++++++++++++++---------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+ include/linux/page-flags.h |    2 --
+ mm/slub.c                  |   33 ++++++++++++---------------------
+ 2 files changed, 12 insertions(+), 23 deletions(-)
 
+Index: linux-2.6/include/linux/page-flags.h
+===================================================================
+--- linux-2.6.orig/include/linux/page-flags.h	2010-07-28 12:03:19.000000000 -0500
++++ linux-2.6/include/linux/page-flags.h	2010-07-28 12:44:57.000000000 -0500
+@@ -128,7 +128,6 @@ enum pageflags {
+ 
+ 	/* SLUB */
+ 	PG_slub_frozen = PG_active,
+-	PG_slub_debug = PG_error,
+ };
+ 
+ #ifndef __GENERATING_BOUNDS_H
+@@ -215,7 +214,6 @@ PAGEFLAG(SwapBacked, swapbacked) __CLEAR
+ __PAGEFLAG(SlobFree, slob_free)
+ 
+ __PAGEFLAG(SlubFrozen, slub_frozen)
+-__PAGEFLAG(SlubDebug, slub_debug)
+ 
+ /*
+  * Private page markings that may be used by the filesystem that owns the page
 Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-27 22:51:41.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-27 22:51:43.000000000 -0500
-@@ -2482,7 +2482,6 @@ void kmem_cache_destroy(struct kmem_cach
- 	s->refcount--;
- 	if (!s->refcount) {
- 		list_del(&s->list);
--		up_write(&slub_lock);
- 		if (kmem_cache_close(s)) {
- 			printk(KERN_ERR "SLUB %s: %s called for cache that "
- 				"still has objects.\n", s->name, __func__);
-@@ -2491,8 +2490,8 @@ void kmem_cache_destroy(struct kmem_cach
- 		if (s->flags & SLAB_DESTROY_BY_RCU)
- 			rcu_barrier();
- 		sysfs_slab_remove(s);
--	} else
--		up_write(&slub_lock);
-+	}
-+	up_write(&slub_lock);
- }
- EXPORT_SYMBOL(kmem_cache_destroy);
+--- linux-2.6.orig/mm/slub.c	2010-07-28 12:44:56.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-07-28 12:44:57.000000000 -0500
+@@ -107,11 +107,17 @@
+  * 			the fast path and disables lockless freelists.
+  */
  
-@@ -3147,14 +3146,12 @@ struct kmem_cache *kmem_cache_create(con
- 		 */
- 		s->objsize = max(s->objsize, (int)size);
- 		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
--		up_write(&slub_lock);
- 
- 		if (sysfs_slab_alias(s, name)) {
--			down_write(&slub_lock);
- 			s->refcount--;
--			up_write(&slub_lock);
- 			goto err;
- 		}
-+		up_write(&slub_lock);
- 		return s;
- 	}
- 
-@@ -3163,14 +3160,12 @@ struct kmem_cache *kmem_cache_create(con
- 		if (kmem_cache_open(s, name,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
--			up_write(&slub_lock);
- 			if (sysfs_slab_add(s)) {
--				down_write(&slub_lock);
- 				list_del(&s->list);
--				up_write(&slub_lock);
- 				kfree(s);
- 				goto err;
- 			}
-+			up_write(&slub_lock);
- 			return s;
- 		}
- 		kfree(s);
-@@ -4418,6 +4413,13 @@ static int sysfs_slab_add(struct kmem_ca
- 
- static void sysfs_slab_remove(struct kmem_cache *s)
- {
-+	if (slab_state < SYSFS)
-+		/*
-+		 * Sysfs has not been setup yet so no need to remove the
-+		 * cache from sysfs.
-+		 */
-+		return;
++#define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
++		SLAB_TRACE | SLAB_DEBUG_FREE)
 +
- 	kobject_uevent(&s->kobj, KOBJ_REMOVE);
- 	kobject_del(&s->kobj);
- 	kobject_put(&s->kobj);
-@@ -4463,8 +4465,11 @@ static int __init slab_sysfs_init(void)
- 	struct kmem_cache *s;
- 	int err;
++static inline int kmem_cache_debug(struct kmem_cache *s)
++{
+ #ifdef CONFIG_SLUB_DEBUG
+-#define SLABDEBUG 1
++	return unlikely(s->flags & SLAB_DEBUG_FLAGS);
+ #else
+-#define SLABDEBUG 0
++	return 0;
+ #endif
++}
  
-+	down_write(&slub_lock);
-+
- 	slab_kset = kset_create_and_add("slab", &slab_uevent_ops, kernel_kobj);
- 	if (!slab_kset) {
-+		up_write(&slub_lock);
- 		printk(KERN_ERR "Cannot register slab subsystem.\n");
- 		return -ENOSYS;
- 	}
-@@ -4489,6 +4494,7 @@ static int __init slab_sysfs_init(void)
- 		kfree(al);
+ /*
+  * Issues still to be resolved:
+@@ -1157,9 +1163,6 @@ static struct page *new_slab(struct kmem
+ 	inc_slabs_node(s, page_to_nid(page), page->objects);
+ 	page->slab = s;
+ 	page->flags |= 1 << PG_slab;
+-	if (s->flags & (SLAB_DEBUG_FREE | SLAB_RED_ZONE | SLAB_POISON |
+-			SLAB_STORE_USER | SLAB_TRACE))
+-		__SetPageSlubDebug(page);
+ 
+ 	start = page_address(page);
+ 
+@@ -1186,14 +1189,13 @@ static void __free_slab(struct kmem_cach
+ 	int order = compound_order(page);
+ 	int pages = 1 << order;
+ 
+-	if (unlikely(SLABDEBUG && PageSlubDebug(page))) {
++	if (kmem_cache_debug(s)) {
+ 		void *p;
+ 
+ 		slab_pad_check(s, page);
+ 		for_each_object(p, s, page_address(page),
+ 						page->objects)
+ 			check_object(s, page, p, 0);
+-		__ClearPageSlubDebug(page);
  	}
  
-+	up_write(&slub_lock);
- 	resiliency_test();
- 	return 0;
+ 	kmemcheck_free_shadow(page, compound_order(page));
+@@ -1415,8 +1417,7 @@ static void unfreeze_slab(struct kmem_ca
+ 			stat(s, tail ? DEACTIVATE_TO_TAIL : DEACTIVATE_TO_HEAD);
+ 		} else {
+ 			stat(s, DEACTIVATE_FULL);
+-			if (SLABDEBUG && PageSlubDebug(page) &&
+-						(s->flags & SLAB_STORE_USER))
++			if (kmem_cache_debug(s) && (s->flags & SLAB_STORE_USER))
+ 				add_full(n, page);
+ 		}
+ 		slab_unlock(page);
+@@ -1624,7 +1625,7 @@ load_freelist:
+ 	object = c->page->freelist;
+ 	if (unlikely(!object))
+ 		goto another_slab;
+-	if (unlikely(SLABDEBUG && PageSlubDebug(c->page)))
++	if (kmem_cache_debug(s))
+ 		goto debug;
+ 
+ 	c->freelist = get_freepointer(s, object);
+@@ -1783,7 +1784,7 @@ static void __slab_free(struct kmem_cach
+ 	stat(s, FREE_SLOWPATH);
+ 	slab_lock(page);
+ 
+-	if (unlikely(SLABDEBUG && PageSlubDebug(page)))
++	if (kmem_cache_debug(s))
+ 		goto debug;
+ 
+ checks_ok:
+@@ -3398,16 +3399,6 @@ static void validate_slab_slab(struct km
+ 	} else
+ 		printk(KERN_INFO "SLUB %s: Skipped busy slab 0x%p\n",
+ 			s->name, page);
+-
+-	if (s->flags & DEBUG_DEFAULT_FLAGS) {
+-		if (!PageSlubDebug(page))
+-			printk(KERN_ERR "SLUB %s: SlubDebug not set "
+-				"on slab 0x%p\n", s->name, page);
+-	} else {
+-		if (PageSlubDebug(page))
+-			printk(KERN_ERR "SLUB %s: SlubDebug set on "
+-				"slab 0x%p\n", s->name, page);
+-	}
  }
+ 
+ static int validate_slab_node(struct kmem_cache *s,
 
