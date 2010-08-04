@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab0HDDOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 23:14:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47686 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757957Ab0HDDOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 23:14:15 -0400
-Date: Wed, 4 Aug 2010 13:14:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@suse.de>,
-        mark gross <markgross@thegnar.org>,
-        Florian Mickler <florian@mickler.org>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the suspend tree with the net tree
-Message-Id: <20100804131411.85975b86.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932503Ab0HDDXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 23:23:13 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:47757 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932419Ab0HDDXL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 23:23:11 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>
+Subject: RE: [PATCH 5/6] staging: hv: Increased storvsc ringbuffer and
+ max_io_requests
+Thread-Topic: [PATCH 5/6] staging: hv: Increased storvsc ringbuffer and
+ max_io_requests
+Thread-Index: AcszLcUhHXq5Q0YpSPmrzukUj2qQ+AAP8+aAAAV/g1A=
+Date: Wed, 4 Aug 2010 03:23:09 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FE59CB@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <8AFC7968D54FB448A30D8F38F259C56223FD1D36@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100803174005.GC1455@suse.de>
+In-Reply-To: <20100803174005.GC1455@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
 
-Today's linux-next merge of the suspend tree got a conflict in
-drivers/net/e1000e/netdev.c between commit
-c128ec29208d410568469bd8bb373b4cdc10912a ("e1000e: register pm_qos
-request on hardware activation") from the net tree and commit
-82f682514a5df89ffb3890627eebf0897b7a84ec ("pm_qos: Get rid of the
-allocation in pm_qos_add_request()") from the suspend tree.
+>>And than Greg KH spoke these words:
+>>On Tue, Aug 03, 2010 at 05:31:55PM +0000, Hank Janssen wrote:
+> >From: Hank Janssen <hjanssen@microsoft.com>
+> >
+> >Increased storvsc ringbuffer and max_io_requests. This now more 
+> >closely mimics the numbers on Hyper-V.
+>
+>What do you mean by this?  The max provided by the hypervisor?
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Max_IO is set to double from what it was before, Hyper-V allows it and
+We have had appliance builder requests to see if it was a problem to increase
+The number.
 
-diff --cc drivers/net/e1000e/netdev.c
-index 35c7dbd,9f13b66..0000000
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@@ -3525,12 -3495,6 +3525,13 @@@ static int e1000_open(struct net_devic
-  	     E1000_MNG_DHCP_COOKIE_STATUS_VLAN))
-  		e1000_update_mng_vlan(adapter);
-  
- +	/* DMA latency requirement to workaround early-receive/jumbo issue */
- +	if (adapter->flags & FLAG_HAS_ERT)
-- 		adapter->netdev->pm_qos_req =
-- 		                    pm_qos_add_request(PM_QOS_CPU_DMA_LATENCY,
-- 		                                       PM_QOS_DEFAULT_VALUE);
-++		pm_qos_add_request(&adapter->netdev->pm_qos_req,
-++				   PM_QOS_CPU_DMA_LATENCY,
-++				   PM_QOS_DEFAULT_VALUE);
-++
- +
-  	/*
-  	 * before we allocate an interrupt, we must be ready to handle it.
-  	 * Setting DEBUG_SHIRQ in the kernel makes it fire an interrupt
-@@@ -3635,11 -3599,6 +3636,10 @@@ static int e1000_close(struct net_devic
-  	if (adapter->flags & FLAG_HAS_AMT)
-  		e1000_release_hw_control(adapter);
-  
-- 	if (adapter->flags & FLAG_HAS_ERT) {
-- 		pm_qos_remove_request(adapter->netdev->pm_qos_req);
-- 		adapter->netdev->pm_qos_req = NULL;
-- 	}
-++	if (adapter->flags & FLAG_HAS_ERT)
-++		pm_qos_remove_request(&adapter->netdev->pm_qos_req);
-++
- +
-  	pm_runtime_put_sync(&pdev->dev);
-  
-  	return 0;
+Ringbuffer size for storvsc is now increased because I have seen 
+A few buffer problems on extremely busy systems. They where 
+Set pretty low before. And since max_io_requests is increased I
+Really needed to increase the buffer as well.
+
+>> And will allow more IO requests to take place for the SCSI driver.
+>
+>Which means what, better throughput?  Or just more outstanding requests and the same speed overall?
+
+It means better throughput of high load systems, else you get buffer
+Contention. 
+
+Thanks,
+
+Hank.
+
