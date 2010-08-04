@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab0HDPuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:50:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7158 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754584Ab0HDPuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:50:19 -0400
-Date: Wed, 4 Aug 2010 11:50:02 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: A question of perf NMI handler
-Message-ID: <20100804155002.GS3353@redhat.com>
-References: <1280913670.20797.179.camel@minggr.sh.intel.com>
- <20100804100116.GH26154@erda.amd.com>
- <20100804140021.GN3353@redhat.com>
- <1280931093.1923.1194.camel@laptop>
- <20100804145203.GP3353@redhat.com>
- <1280934161.1923.1294.camel@laptop>
- <20100804151858.GB5130@lenovo>
+	id S1755456Ab0HDPvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 11:51:14 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:43035 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab0HDPvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 11:51:11 -0400
+Date: Wed, 4 Aug 2010 18:49:48 +0300
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+Message-ID: <20100804154948.GC28519@shisha.kicks-ass.net>
+Mail-Followup-To: Bastien ROUCARIES <roucaries.bastien@gmail.com>,
+	lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	John Stultz <johnstul@us.ibm.com>,
+	Martin Schwidefsky <schwidefsky@de.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+	linux-kernel@vger.kernel.org
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+ <AANLkTimmD1wijmyiSY8xHLyr_fQF52LyUpn3fmT1W_3=@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100804151858.GB5130@lenovo>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTimmD1wijmyiSY8xHLyr_fQF52LyUpn3fmT1W_3=@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 07:18:58PM +0400, Cyrill Gorcunov wrote:
-> On Wed, Aug 04, 2010 at 05:02:41PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2010-08-04 at 10:52 -0400, Don Zickus wrote:
-> > > > Right so I looked up your thing and while that limits the damage in that
-> > > > at some point it will let NMIs pass, it will still consume too many.
-> > > > Meaning that Yinghai will have to potentially press his NMI button
-> > > > several times before it registers.
-> > > 
-> > > Ok.  Thanks for reviewing.  How does it consume to many?  I probably don't
-> > > understand how perf is being used in the non-simple scenarios.
-> > 
-> > Suppose you have 4 counters (AMD, intel-nhm+), when more than 2 overflow
-> > the first will raise the PMI, if the other 2+ overflow before we disable
-> > the PMU it will try to raise 2+ more PMIs, but because hardware only has
-> > a single interrupt pending bit it will at most cause a single extra
-> > interrupt after we finish servicing the first one.
-> > 
-> > So then the first interrupt will see 3+ overflows, return 3+, and will
-> > thus eat 2+ NMIs, only one of which will be the pending interrupt,
-> > leaving 1+ NMIs from other sources to consume unhandled.
-> > 
-> > In which case Yinghai will have to press his NMI button 2+ times before
-> > it registers.
-> > 
-> > That said, that might be a better situation than always consuming
-> > unknown NMIs.. 
-> > 
+On Wed, Aug 04, 2010 at 02:54:12 +0200, Bastien ROUCARIES wrote:
+> On Wed, Aug 4, 2010 at 2:48 PM, Alexander Shishkin <virtuoso@slind.org> wrote:
+> > Certain userspace applications (like "clock" desktop applets or ntpd) might
+> > want to be notified when some other application changes the system time. It
+> > might also be important for an application to be able to distinguish between
+> > its own and somebody else's time changes.
 > 
-> Well, first I guess having Yinghai CC'ed is a bonus ;)
-> The second thing is that I don't get why perf handler can't be _last_
-> call in default_do_nmi, if there were any nmi with reason (serr or parity)
-> I think they should be calling first which of course don't eliminate
-> the former issue but somewhat make it weaken.
+> Why not implementing somtehing like http://lwn.net/Articles/323658/ a
+> la plan 9 with a poll callback ?
 
-Because the reason registers are never set.  If they were, then the code
-wouldn't have to walk the notify_chain. :-)
+Thanks for pointing this out, I'll investigate this approach.
 
-Unknown nmis are unknown nmis, nobody is claiming them.  Even worse, there
-are customers that want to register their nmi handler below the perf
-handler to claim all the unknown nmis, so they can be logged on the system
-before being rebooted.
+> It will be plan9 compatible and so unix
 
-Cheers,
-Don
+I don't think that plan9 == unix statement is broadly correct, but I don't
+know enough on the topic yet.
+
+Regards,
+--
+Alex
