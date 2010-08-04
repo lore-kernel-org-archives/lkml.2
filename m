@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab0HDI4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 04:56:23 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55911 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756845Ab0HDI4U (ORCPT
+	id S1757233Ab0HDI4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 04:56:41 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40119 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757151Ab0HDI4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 04:56:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Dong, Eddie" <eddie.dong@intel.com>
-Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM virtio-net.
-Date: Wed, 4 Aug 2010 10:56:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Shirley Ma <mashirle@us.ibm.com>, "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com> <201007311130.17000.arnd@arndb.de> <1A42CE6F5F474C41B63392A5F80372B228FCE7B1@shsmsx501.ccr.corp.intel.com>
-In-Reply-To: <1A42CE6F5F474C41B63392A5F80372B228FCE7B1@shsmsx501.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 4 Aug 2010 04:56:38 -0400
+Date: Wed, 4 Aug 2010 10:09:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        David Miller <davem@davemloft.net>, Fenghua Yu <fenghua.yu@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 1/3] Input: sysrq - drop tty argument from sysrq ops
+ handlers
+Message-ID: <20100804100926.3f24f5e5@lxorguk.ukuu.org.uk>
+In-Reply-To: <1280910830.1902.144.camel@pasglop>
+References: <20100804075602.30647.91462.stgit@localhost.localdomain>
+	<20100804075900.30647.46910.stgit@localhost.localdomain>
+	<1280910830.1902.144.camel@pasglop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008041056.08505.arnd@arndb.de>
-X-Provags-ID: V02:K0:tRpbdNL5jGlZSXgNe6cS0xQjZZrD8gNpGRrm/qr1Hgz
- twwU1409NrptKKx/tiTKdqZWVm0IAxI62EDh3zc3PzgvP4cyqP
- 9lMGfGKTfJ/NVRtNu/5+MmDwcb3qNE8WU/SPXJ6CodTH+xFg/z
- ZR47o4tEfetX6uea9exvxyANSm8Dg9EHQr97hfYkeHIC4KZyst
- cVJGC85x3PTE0i/y1jikw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 August 2010, Dong, Eddie wrote:
-> Arnd Bergmann wrote:
-> > On Friday 30 July 2010 17:51:52 Shirley Ma wrote:
-> >> I think it should be less duplicated code in the kernel if we use
-> >> macvtap to support what media passthrough driver here. Since macvtap
-> >> has support virtio_net head and offloading already, the only missing
-> >> func is zero copy. Also QEMU supports macvtap, we just need add a
-> >> zero copy flag in option.
-> > 
-> > Yes, I fully agree and that was one of the intended directions for
-> > macvtap to start with. Thank you so much for following up on that,
-> > I've long been planning to work on macvtap zero-copy myself but it's
-> > now lower on my priorities, so it's good to hear that you made
-> > progress on it, even if there are still performance issues.
-> > 
-> 
-> But zero-copy is a Linux generic feature that can be used by other
-> VMMs as well if the BE service drivers want to incorporate.  If we
-> can make mp device VMM-agnostic (it may be not yet in current patch),
-> that will help Linux more.
+> I have a patch to drop the lock in serial_core.h, I'll post that
+> tomorrow hopefully, just checking if there's any objection there ? The
 
-But the tun/tap protocol is what most hypervisors use today on Linux,
-and one of the design goals of macvtap was to keep that interface
-so that everyone gets the features like zero-copy if that is added
-to macvtap. The mp device interface is currently not supported by
-anything else than vhost with these patches, and making it more
-generic would turn the interface into a copy of macvtap.
+Fundamentally - no. However the impact it has on a lot of the drivers
+will be significant and you'll be submitting a huge patch pile to fix up
+all the locking assumptions (for one it means port->tty might change
+across any call that ends up in sysrq)
 
-	Arnd
+> serial drivers might need to be audited a bit to make sure they cope
+> with the lock being dropped and re-acquired around the sysrq call.
+
+Architecturally I think it would make more sense to add a new sysrq
+helper which merely sets a flag, and check that flag at the end of the IRQ
+when dropping the lock anyway.
+
+Otherwise it'll be a huge amount of work to even build test all those
+consoles.
+
+Alan
