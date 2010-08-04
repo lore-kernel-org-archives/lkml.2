@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab0HDPqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61876 "EHLO mx1.redhat.com"
+	id S1754764Ab0HDPrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 11:47:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36960 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab0HDPqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:46:18 -0400
-Date: Wed, 4 Aug 2010 11:45:52 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: A question of perf NMI handler
-Message-ID: <20100804154552.GR3353@redhat.com>
-References: <1280913670.20797.179.camel@minggr.sh.intel.com>
- <20100804100116.GH26154@erda.amd.com>
- <20100804140021.GN3353@redhat.com>
- <1280931093.1923.1194.camel@laptop>
- <20100804145203.GP3353@redhat.com>
- <1280934161.1923.1294.camel@laptop>
+	id S1753893Ab0HDPrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 11:47:17 -0400
+Date: Wed, 4 Aug 2010 17:44:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>, Roland McGrath <roland@redhat.com>
+Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner
+	comment
+Message-ID: <20100804154412.GA8822@redhat.com>
+References: <20100804150805.GA5634@redhat.com> <20100804131749.GA2139@redhat.com> <20100729114549.29508.44899.stgit@warthog.procyon.org.uk> <20100729114555.29508.4525.stgit@warthog.procyon.org.uk> <20100802204000.GH2405@linux.vnet.ibm.com> <201008030055.o730tgXK091413@www262.sakura.ne.jp> <30552.1280828047@redhat.com> <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com> <23577.1280930470@redhat.com> <25284.1280935357@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1280934161.1923.1294.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <25284.1280935357@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 05:02:41PM +0200, Peter Zijlstra wrote:
-> So then the first interrupt will see 3+ overflows, return 3+, and will
-> thus eat 2+ NMIs, only one of which will be the pending interrupt,
-> leaving 1+ NMIs from other sources to consume unhandled.
-> 
-> In which case Yinghai will have to press his NMI button 2+ times before
-> it registers.
-> 
-> That said, that might be a better situation than always consuming
-> unknown NMIs.. 
+On 08/04, David Howells wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > > > I must admit, at first glance changing check_kill_permission() to take
+> > > > rcu lock looks better to me.
+> > >
+> > > I think group_send_sig_info() would be better.  The only other caller of
+> > > c_k_p() already has to hold the RCU read lock for other reasons.
+> > >
+> > > How about the attached patch then?
+> >
+> > Agreed, the patch looks fine to me.
+>
+> Can I take that as an Acked-by?
 
-Well if the worse case scenario is only one extra NMI, then I can change
-the logic in my patch to eat a max of 1 possible NMI instead of 2 as in the
-example you gave above.
+Yes, thanks, please feel free to add
 
-It still won't be 100% accurate but how often are people running perf
-where they need 4 counters, have to hit an external nmi button or run into
-broken firmware all at the same time? :-)
-
-Cheers,
-Don
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
