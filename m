@@ -1,160 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab0HDMPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:15:13 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:39668 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755789Ab0HDMPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:15:10 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: Transparent Hugepage Support #29
-Date: Wed, 4 Aug 2010 08:15:02 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-crc+; KDE/4.4.5; x86_64; ; )
-References: <20100803135615.GG6071@random.random>
-In-Reply-To: <20100803135615.GG6071@random.random>
-Cc: linux-kernel@vger.kernel.org
+	id S1757856Ab0HDMQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:16:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56063 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757621Ab0HDMQR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 08:16:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=QjCmH/toAHTN0IpFe/9/aQR4162JCpVbHAMFGVFgXYnbuDm2v5mdqYRPshI6//+e0i
+         5eCDOsPpr6j5NzaN1EWP2UyO49YooL85PdhGjA9PmE/7Ll72D25ffAO3Pf5zKod5ulTx
+         No5QCZaiie4mzkTZ9hlM64yLelKNvWVQ10tLs=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008040815.02368.edt@aei.ca>
+In-Reply-To: <AANLkTil2-YNAa-jyOYD4cNtbJQ1XQJ6-v3iJ6wxpz7br@mail.gmail.com>
+References: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>
+	<20100621120613.86cad1a4.akpm@linux-foundation.org>
+	<4C1FC35C.8090201@suse.cz>
+	<AANLkTil2-YNAa-jyOYD4cNtbJQ1XQJ6-v3iJ6wxpz7br@mail.gmail.com>
+Date: Wed, 4 Aug 2010 14:16:15 +0200
+Message-ID: <AANLkTinC6Sqs7W--=14nmJFDcTS4HQn0=ysn7VhYDDX6@mail.gmail.com>
+Subject: Re: [PATCH] Fix CONFIG_CROSS_COMPILE issue in .config
+From: Yegor Yefremov <yegorslists@googlemail.com>
+To: Tiago Maluta <tiago.maluta@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Roland McGrath <roland@redhat.com>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrea,
+On Wed, Jun 23, 2010 at 5:44 AM, Tiago Maluta <tiago.maluta@gmail.com> wrote:
+> On Mon, Jun 21, 2010 at 4:54 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> On 21.6.2010 21:06, Andrew Morton wrote:
+>>> On Thu, 17 Jun 2010 12:50:52 +0000
+>>> Tiago Maluta <tiago.maluta@gmail.com> wrote:
+>>>
+>>>> Linux has an recent option to define CROSS_COMPILE in menuconfig.
+>>>>
+>>>> Typically, one of the options when building for another target is
+>>>> ('arm' is just an example):
+>>>>
+>>>> # make ARCH=arm CROSS_COMPILE=arm-cc O=../build
+>>>>
+>>>> If I omit CROSS_COMPILE and use the new way in .config:
+>>>> CONFIG_CROSS_COMPILE="arm-cc"
+>>>>
+>>>> I got:
+>>>>
+>>>>    cc1: error: unrecognized command line option "-mlittle-endian"
+>>>>    cc1: error: unrecognized command line option "-mabi=aapcs-linux"
+>>>>    cc1: error: unrecognized command line option "-mno-thumb-interwork"
+>>>>    /usr/src/linux/kernel/bounds.c:1: error: bad value (armv5t) for
+>>>> -march= switch
+>>>>    /usr/src/linux/kernel/bounds.c:1: error: bad value (armv5t) for
+>>>> -mtune= switch
+>>>>    make[2]: *** [kernel/bounds.s] Error 1
+>>>>    make[1]: *** [prepare0] Error 2
+>>>>    make: *** [sub-make] Error 2
+>>>>
+>>>> Verbose output clearly says that I'm using the host compiler instead
+>>>> cross compiler.
+>>>> This patch fixed my problem:
+>>>>
+>>>> ---
+>>>> __Makefile |______ 2 +-
+>>>> __1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/Makefile b/Makefile
+>>>> index d49d96c..5a6c7d5 100644
+>>>> --- a/Makefile
+>>>> +++ b/Makefile
+>>>> @@ -190,7 +190,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/
+>>>> -e s/sun4u/sparc64/ \
+>>>> __export KBUILD_BUILDHOST := $(SUBARCH)
+>>>> __ARCH____________________ ?= $(SUBARCH)
+>>>> __CROSS_COMPILE__ ?=
+>>>> -CROSS_COMPILE__ ?= $(CONFIG_CROSS_COMPILE:"%"=%)
+>>>> +CROSS_COMPILE__ := $(shell grep CONFIG_CROSS_COMPILE .config | cut -d'"' -f2)
+>>>>
+>>>> __# Architecture as present in compile.h
+>>>> __UTS_MACHINE______ := $(ARCH)
+>>>> --
+>>>
+>>> Perhaps the "%"=% thing isn't supported with your version of make(1).
+>>> Which version are you using?
+>>
+>> My guess is that something expands $(CROSS_COMPILE) before make
+>> silentoldconfig generates include/config/auto.conf (which is where the
+>> makefile reads the CONFIG_* variables from). Tiago, can you try changing
+>> the $(shell ...) line to
+>>
+>> CROSS_COMPILE := $(shell ls include/config/auto.conf >&2; \
+>>    echo "CONFIG_CROSS_COMPILE $(CONFIG_CROSS_COMPILE) >&2; \
+>>    grep CONFIG_CROSS_COMPILE .config | cut -d'"'  -f2)
+>>
+>> and tell us what it prints?
+>
+> I'm using GNU Make 3.81.
+>
+> I think you missed a quote in echo..., I using:
+>
+> CROSS_COMPILE := $(shell ls include/config/auto.conf >&2; \
+>    echo "CONFIG_CROSS_COMPILE" $(CONFIG_CROSS_COMPILE) >&2; \
+>    grep CONFIG_CROSS_COMPILE .config | cut -d'"'  -f2)
+>
+> And the output:
+> $ make ARCH=arm O=../build
+>
+> include/config/auto.conf
+> CONFIG_CROSS_COMPILE
+>  Using /usr/src/linux as source for kernel
+>  GEN     /usr/src/build/Makefile
+>  CHK     include/linux/version.h
+>  CHK     include/generated/utsrelease.h
+> make[2]: `include/generated/mach-types.h' is up to date.
+>  CALL    /usr/src/linux/scripts/checksyscalls.sh
+>  CHK     include/generated/compile.h
+>  CC      arch/arm/mm/init.o
+>
+> ^C
+>
+> Means that is nothing CONFIG_CROSS_COMPILE.
+>
+> I agree with Andrew, directly grepping .config isn't the right thing to do.
+> I'd like to discuss a better solution.
 
-I have been tracking & testing this for a while.   It looks very much like Linus wants to merge (or a big chunk of it):
+What about such a solution:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git vfs-scale-working
+just remove empty  CROSS_COMPILE  ?=
 
-When I pull an aa-29 on top of this there is one conflict in vmscan.c that git cannot resolve.
-It would be really nice to have a version of the THS patchs that can be tested with the vfs scaling
-tree.
+Regards,
+Yegor
 
-TIA
-Ed Tomlinson
+Fix CONFIG_CROSS_COMPILE issue in .config
 
-On Tuesday 03 August 2010 09:56:15 you wrote:
-> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
-> 
-> first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-> or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-> later: git fetch; git checkout -f origin/master
-> 
-> The tree is rebased and git pull won't work.
-> 
-> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35/transparent_hugepage-29/
-> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35/transparent_hugepage-29.gz
-> 
-> Diff #28 -> #29:
-> 
->  THP-disable-on-small-systems    |   41 ++++++++
-> 
-> Disable THP on <500M systems, from Rik.
-> 
->  compaction-kswapd               |  194 ++++++++++++++++++++++++++++++++++++++++
-> 
-> Add a compaction mode for kswapd to fully replace obsolete blind lumpy
-> reclaim.
-> 
->  free_pages-count                |   60 ++++++++++++
->  free_pages-drain_all_pages      |   62 ++++++++++++
->  free_pages-vmstat               |  156 ++++++++++++++++++++++++++++++++
-> 
-> Make free page statistics more accurate from Mel.
-> 
->  ksmd-khugepaged-freeze          |   97 ++++++++++++++++++++
-> 
-> kswapd uses set_freezing, so shall ksmd and khugepaged.
-> 
->  transparent-hugepage-nr_rotated |   36 +++++++
->  transparent-hugepage-stat       |  166 ++++++++++++++++++++++++++++++++++
-> 
-> Fix inactive/active stats and nr_rotated, from Rik.
-> 
->  Documentation/vm/transhuge.txt        |  283 ++++
->  arch/alpha/include/asm/mman.h         |    2 
->  arch/mips/include/asm/mman.h          |    2 
->  arch/parisc/include/asm/mman.h        |    2 
->  arch/powerpc/mm/gup.c                 |   12 
->  arch/x86/include/asm/kvm_host.h       |    1 
->  arch/x86/include/asm/paravirt.h       |   23 
->  arch/x86/include/asm/paravirt_types.h |    6 
->  arch/x86/include/asm/pgtable-2level.h |    9 
->  arch/x86/include/asm/pgtable-3level.h |   23 
->  arch/x86/include/asm/pgtable.h        |  149 ++
->  arch/x86/include/asm/pgtable_64.h     |   28 
->  arch/x86/include/asm/pgtable_types.h  |    3 
->  arch/x86/kernel/paravirt.c            |    3 
->  arch/x86/kernel/vm86_32.c             |    1 
->  arch/x86/kvm/mmu.c                    |   68 -
->  arch/x86/kvm/paging_tmpl.h            |    6 
->  arch/x86/mm/gup.c                     |   28 
->  arch/x86/mm/pgtable.c                 |   66 +
->  arch/xtensa/include/asm/mman.h        |    2 
->  fs/Kconfig                            |    2 
->  fs/exec.c                             |   44 
->  fs/proc/meminfo.c                     |   14 
->  fs/proc/page.c                        |   14 
->  include/asm-generic/mman-common.h     |    2 
->  include/asm-generic/pgtable.h         |  130 +
->  include/linux/compaction.h            |   13 
->  include/linux/gfp.h                   |   14 
->  include/linux/huge_mm.h               |  151 ++
->  include/linux/khugepaged.h            |   66 +
->  include/linux/ksm.h                   |   20 
->  include/linux/kvm_host.h              |    4 
->  include/linux/memory_hotplug.h        |   14 
->  include/linux/mm.h                    |  114 +
->  include/linux/mm_inline.h             |   19 
->  include/linux/mm_types.h              |    3 
->  include/linux/mmu_notifier.h          |   66 +
->  include/linux/mmzone.h                |    1 
->  include/linux/page-flags.h            |   36 
->  include/linux/res_counter.h           |   12 
->  include/linux/rmap.h                  |   33 
->  include/linux/sched.h                 |    1 
->  include/linux/swap.h                  |    2 
->  include/linux/vmstat.h                |    4 
->  kernel/fork.c                         |   12 
->  kernel/futex.c                        |   55 
->  mm/Kconfig                            |   38 
->  mm/Makefile                           |    1 
->  mm/compaction.c                       |   48 
->  mm/huge_memory.c                      | 2212 ++++++++++++++++++++++++++++++++++
->  mm/hugetlb.c                          |   69 -
->  mm/ksm.c                              |   86 -
->  mm/madvise.c                          |    8 
->  mm/memcontrol.c                       |  169 +-
->  mm/memory-failure.c                   |    2 
->  mm/memory.c                           |  241 +++
->  mm/memory_hotplug.c                   |   14 
->  mm/mempolicy.c                        |   14 
->  mm/migrate.c                          |   22 
->  mm/mincore.c                          |    7 
->  mm/mmap.c                             |   57 
->  mm/mmu_notifier.c                     |   20 
->  mm/mprotect.c                         |   20 
->  mm/mremap.c                           |    8 
->  mm/oom_kill.c                         |    1 
->  mm/page_alloc.c                       |   58 
->  mm/pagewalk.c                         |    1 
->  mm/rmap.c                             |  228 ++-
->  mm/sparse.c                           |    4 
->  mm/swap.c                             |  117 +
->  mm/swap_state.c                       |    6 
->  mm/swapfile.c                         |    2 
->  mm/vmscan.c                           |  102 -
->  mm/vmstat.c                           |   31 
->  virt/kvm/iommu.c                      |    2 
->  virt/kvm/kvm_main.c                   |   56 
->  76 files changed, 4680 insertions(+), 527 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+
+Index: b/Makefile
+===================================================================
+--- a/Makefile	2010-08-02 00:11:14.000000000 +0200
++++ b/Makefile	2010-08-04 14:08:51.000000000 +0200
+@@ -189,7 +189,6 @@
+ # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
+ export KBUILD_BUILDHOST := $(SUBARCH)
+ ARCH		?= $(SUBARCH)
+-CROSS_COMPILE	?=
+ CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+
+ # Architecture as present in compile.h
