@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab0HDOig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 10:38:36 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:57457 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757538Ab0HDOif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 10:38:35 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
+	id S932851Ab0HDOjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 10:39:15 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:35033 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932838Ab0HDOjJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 10:39:09 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <19545.30920.745148.710816@stoffel.org>
+Date: Wed, 4 Aug 2010 10:27:20 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
+        Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [RFC PATCH 0/2] Prioritise inodes and zones for writeback required by page reclaim
-Date: Wed,  4 Aug 2010 15:38:29 +0100
-Message-Id: <1280932711-23696-1-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.7.1
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 2/2] genhd, efi: add efi partition metadata to hd_structs
+In-Reply-To: <AANLkTim6Bn++JaspY0cbpLLvi=MYBLNgUhARwKQkoYpE@mail.gmail.com>
+References: <AANLkTin3+LfXOpW5MsPSgs_5Z0UFnQTwBAXSocrU1Xs8@mail.gmail.com>
+	<1280871336-31046-2-git-send-email-wad@chromium.org>
+	<AANLkTimX-5v4qNeK1DD84n8z6-jpq8DSvCa5PepuhgM5@mail.gmail.com>
+	<AANLkTik4DRO3685HG8-Hkp3=s=vinUdTQ=votQuf4-8N@mail.gmail.com>
+	<AANLkTim6Bn++JaspY0cbpLLvi=MYBLNgUhARwKQkoYpE@mail.gmail.com>
+X-Mailer: VM 8.0.9 under Emacs 22.3.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commenting on the series "Reduce writeback from page reclaim context V6"
-Andrew Morton noted;
+>>>>> "Kay" == Kay Sievers <kay.sievers@vrfy.org> writes:
 
-  direct-reclaim wants to write a dirty page because that page is in the
-  zone which the caller wants to allocate from!  Telling the flusher threads
-  to perform generic writeback will sometimes cause them to just gum the
-  disk up with pages from different zones, making it even harder/slower to
-  allocate a page from the zones we're interested in, no?
+Kay> On Wed, Aug 4, 2010 at 00:27, Will Drewry <wad@chromium.org> wrote:
+>> On Tue, Aug 3, 2010 at 4:54 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
 
-On the machines used to test the series, there were relatively few zones
-and only one BDI so the scenario describes is a possibility. This series is
-a very early prototype series aimed at mitigating the problem.
+>>> Did you already test to put a lookup-call to the in-kernel mounter, if
+>>> we use some special partition table uuid identifier for root=? That
+>>> would be nice to see, if all that works as expected, and we can get to
+>>> the data we collect.
+>> 
+>> Not yet, but I'd like to have it working there (and in my
+>> device-mapper target) as soon as possible.  Hopefully, I'll have that
+>> done pretty soon and I'll repost the series inclusive of an init:
+>> change.
 
-Patch 1 adds wakeup_flusher_threads_pages() which takes a list of pages
-from page reclaim. Each inode belonging to a page on the list is marked
-I_DIRTY_RECLAIM. When the flusher thread wakes, inodes with this tag are
-unconditionally moved to the wb->b_io list for writing.
+Kay> Nice.
 
-Patch 2 notes that writing back inodes does not necessarily write back
-pages belonging to the zone page reclaim is concerned with. In response, it
-adds a zone and counter to wb_writeback_work. As pages from the target zone
-are written, the zone-specific counter is updated. When the flusher thread
-then checks the zone counters if a specific zone is being targeted. While
-more pages may be written than necessary, the assumption is that the pages
-need cleaning eventually, the inode must be relatively old to have pages at
-the end of the LRU, the IO will be relatively efficient due to less random
-seeks and that pages from the target zone will still be cleaned.
+>> Any preferences on the variable? I'll start with your example of
+>> PARTUUID=, but that follows the initramfs model (UUID=) and not the
+>> existing magic root devices (/dev/nfs, /dev/ram).
+>> /dev/by-part-uuid/XXX... doesn't seem super-friendly though :)
 
-Testing did not show any significant differences in terms of reducing dirty
-file pages being written back but the lack of multiple BDIs and NUMA nodes in
-the test rig is a problem. Maybe someone else has access to a more suitable
-test rig.
+Kay> Yeah, this stuff does not really fit in to the path notation
+Kay> stuff, unless we use the udev-style link names, which some people
+Kay> like to avoid, and prefer some more abstract thing here.
 
-Any comment as to the suitability for such a direction?
+Kay> We have UUID=, LABEL= for mount and fstab, I think PARTUUID=,
+Kay> PARTLABEL= matches this.
 
- fs/fs-writeback.c         |   83 +++++++++++++++++++++++++++++++++++++++++---
- include/linux/fs.h        |    5 ++-
- include/linux/writeback.h |    5 +++
- mm/page-writeback.c       |   12 ++++++-
- mm/vmscan.c               |   11 ++++--
- 5 files changed, 103 insertions(+), 13 deletions(-)
+Ugh, why do we care whether a UUID refers to a disk or a partition?
+It should be unique no matter what, so just do /dev/uuid/XXXX and call
+it done.
 
+John
