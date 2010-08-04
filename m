@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab0HDRQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 13:16:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58590 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755107Ab0HDRQl (ORCPT
+	id S1756700Ab0HDRRZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 13:17:25 -0400
+Received: from mail2.microsoft.com ([131.107.115.215]:42980 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107Ab0HDRRX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 13:16:41 -0400
-Date: Wed, 4 Aug 2010 10:16:24 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Sage Weil <sage@newdream.net>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ceph-devel@vger.kernel.org
-Subject: [PATCH -next] ceph: rbd depends on BLOCK
-Message-Id: <20100804101624.5189893c.randy.dunlap@oracle.com>
-In-Reply-To: <20100804151035.14678528.sfr@canb.auug.org.au>
-References: <20100804151035.14678528.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0209.4C59A06F.001A:SCFMA4539814,ss=1,fgs=0
+	Wed, 4 Aug 2010 13:17:23 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
+ correct index
+Thread-Topic: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
+ correct index
+Thread-Index: AcszLH4zXLsEPQuASP+5uxzSPyjpcgAQLtUAAAgzgxAAKOwtAAAOQtlQ
+Date: Wed, 4 Aug 2010 17:17:21 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FE8EF5@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <8AFC7968D54FB448A30D8F38F259C56223FD0D21@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100803173732.GA1455@suse.de>
+ <8AFC7968D54FB448A30D8F38F259C56223FE8B19@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100804170406.GA28217@suse.de>
+In-Reply-To: <20100804170406.GA28217@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
 
-When CONFIG_BLOCK is not enabled, fs/ceph/rbd has:
-file: fs/ceph/rbd.c: errors: 71, warnings: 18
+>And then Greg spoke:
+>> And then Greg spoke:
+> >>>On Tue, Aug 03, 2010 at 05:31:51PM +0000, Hank Janssen wrote:
+> >>> From: Hank Janssen <hjanssen@microsoft.com>
+> >>> 
+> >> >Fixed bounce offset kmap problem by using correct index
+> >>
 
-This is due to BLOCK being spelled as CONFIG_BLOCK
-(and depends on being spelled as select).
+SNIP
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- fs/ceph/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> > I actually goofed up in my previous code and used an incorrect index 
+> > number For this part of the code. It should have shown up in more 
+> > situations than what I have seen oddly enough.
+>
+>Please provide this type of information in the changelog section.
+>
+>If you want something backported to older stable kernels, add a:
+>	Cc: stable <stable@kernel.org>
 
---- linux-next-20100804.orig/fs/ceph/Kconfig
-+++ linux-next-20100804/fs/ceph/Kconfig
-@@ -28,7 +28,7 @@ config CEPH_FS_PRETTYDEBUG
- config CEPH_RBD
- 	bool "Rados block device (RBD)"
- 	depends on CEPH_FS
--	select  CONFIG_BLOCK
-+	depends on BLOCK
- 	default y
- 	help
- 	  If you say Y here, ceph will include rbd, the RADOS block
+I will re-submit all 5 patches and CC the stable mailing list on it as well.
+
+Thanks!
+
+Hank.
 
