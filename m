@@ -1,111 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab0HDCvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:51:35 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58434 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab0HDCve (ORCPT
+	id S932522Ab0HDCwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:52:22 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:48603 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758194Ab0HDCwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:51:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 4 Aug 2010 11:46:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Gelmini <andrea.gelmini@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>, nigel@tuxonice.net,
-        stable@kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [BUGFIX][PATCH] fix corruption of hibernation caused by reusing
- swap at saving image
-Message-Id: <20100804114631.16cacffe.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100804113122.071a6b8c.kamezawa.hiroyu@jp.fujitsu.com>
-References: <201007282320.39528.linux@rainbow-software.org>
-	<201007282334.08063.rjw@sisk.pl>
-	<20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTim5STgpNEdh3JSU_BG5X8Wxh-gbXDmWYLdufNb3@mail.gmail.com>
-	<20100804083652.92b5b2df.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100804105054.af68ee5c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100804113122.071a6b8c.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Aug 2010 22:52:09 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: I8FNbzcVM1ky.3eTqv7HFoXS6HzHoRG5ID0MYr71Q3rGbQy
+ .eoYa9hhBxf1Pj6XAjOBhTm8H.mu07SA84xK2qMRDHR8QMb8Hn02S6.E2Qkc
+ nMxt3jHs4nzwvnW.wHyL6L.7Frt3zJCTJ00W0egLT3vRJHMcBzznGVLEAcbG
+ n9NxKeZ3vivCyZd.1qtUMbXH7tEutzRaEG6UtiyIYXoZjN8qRX.BxAqgNrSo
+ lrol7ksriY22FiAw_pHCJ_fg.lR7u2X.Q
+X-Yahoo-Newman-Property: ymail-3
+Message-Id: <20100804024524.971222174@linux.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 03 Aug 2010 21:45:16 -0500
+From: Christoph Lameter <cl@linux-foundation.org>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: linux-mm@kvack.org, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: Nick Piggin <npiggin@suse.de>
+Cc: David Rientjes <rientjes@google.com>
+Subject: [S+Q3 02/23] percpu: allow limited allocation before slab is online
+References: <20100804024514.139976032@linux.com>
+Content-Disposition: inline; filename=percpu_early_2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010 11:31:22 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+From: Tejun Heo <tj@kernel.org>
 
-> On Wed, 4 Aug 2010 10:50:54 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > This patch is created against 2.6.35. CC'ed stable.
-> > Thank you for all helps.
-> > 
-> 
-> I'm sorry I now doubt this patch is wrong.
+This patch updates percpu allocator such that it can serve limited
+amount of allocation before slab comes online.  This is primarily to
+allow slab to depend on working percpu allocator.
 
-Changed the description.
-Maybe the patch description/my understanding was wrong
-but the patch itself should work.
+Two parameters, PERCPU_DYNAMIC_EARLY_SIZE and SLOTS, determine how
+much memory space and allocation map slots are reserved.  If this
+reserved area is exhausted, WARN_ON_ONCE() will trigger and allocation
+will fail till slab comes online.
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+The following changes are made to implement early alloc.
 
-Since 2.6.31, swap_map[]'s refcounting was changed to show that
-a used swap entry is just for swap-cache, can be reused.
-Then, while scanning free entry in swap_map[], a swap entry may
-be able to be reclaimed and reused. It was by the commit
-c9e444103b5e7a5a3519f9913f59767f92e33baf.
+* pcpu_mem_alloc() now checks slab_is_available()
 
-But this caused deta corruption at resume.
-The scenario is
-	- Assume a clean-swap cache, but mapped.
-	- at hibernation_snapshot[], clean-swap-cache is saved as
-	  clean-swap-cache and swap_map[] is marked as SWAP_HAS_CACHE.
-	- then, save_image() is called. And reuse SWAP_HAS_CACHE entry
-	  to save image, and break the contents.
-	After resume.
-	- the memory reclaim runs and finds clean-not-referenced-swap-cache
-	  and discards it because it's marked as clean.
-	  But here, the contents on disk and swap-cache is inconsistent.
+* Chunks are allocated using pcpu_mem_alloc()
 
-Here, memory is corrupted.
+* Init paths make sure ai->dyn_size is at least as large as
+  PERCPU_DYNAMIC_EARLY_SIZE.
 
+* Initial alloc maps are allocated in __initdata and copied to
+  kmalloc'd areas once slab is online.
 
-This patch is for avoiding bug by not reclaiming swap-entry at hibernation.
-This is a quick fix for backporting.
-
-Cc: stable@kernel.org
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Reported-by: Ondreg Zary <linux@rainbow-software.org>
-Tested-by: Andrea Gelmini <andrea.gelmini@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 ---
- mm/swapfile.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ include/linux/percpu.h |   13 ++++++++++++
+ init/main.c            |    1
+ include/linux/percpu.h |   13 ++++++++++++
+ init/main.c            |    1 
+ mm/percpu.c            |   52 +++++++++++++++++++++++++++++++++++++------------
+ 3 files changed, 54 insertions(+), 12 deletions(-)
 
-Index: linux-2.6.35.org/mm/swapfile.c
+Index: linux-2.6/mm/percpu.c
 ===================================================================
---- linux-2.6.35.org.orig/mm/swapfile.c
-+++ linux-2.6.35.org/mm/swapfile.c
-@@ -318,8 +318,10 @@ checks:
- 	if (offset > si->highest_bit)
- 		scan_base = offset = si->lowest_bit;
+--- linux-2.6.orig/mm/percpu.c	2010-07-07 08:47:18.000000000 -0500
++++ linux-2.6/mm/percpu.c	2010-07-07 08:47:19.000000000 -0500
+@@ -282,6 +282,9 @@ static void __maybe_unused pcpu_next_pop
+  */
+ static void *pcpu_mem_alloc(size_t size)
+ {
++	if (WARN_ON_ONCE(!slab_is_available()))
++		return NULL;
++
+ 	if (size <= PAGE_SIZE)
+ 		return kzalloc(size, GFP_KERNEL);
+ 	else {
+@@ -392,13 +395,6 @@ static int pcpu_extend_area_map(struct p
+ 	old_size = chunk->map_alloc * sizeof(chunk->map[0]);
+ 	memcpy(new, chunk->map, old_size);
  
--	/* reuse swap entry of cache-only swap if not busy. */
--	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-+	/* reuse swap entry of cache-only swap if not hibernation. */
-+	if (vm_swap_full()
-+		&& usage == SWAP_HAS_CACHE
-+		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
- 		int swap_was_freed;
- 		spin_unlock(&swap_lock);
- 		swap_was_freed = __try_to_reclaim_swap(si, offset);
+-	/*
+-	 * map_alloc < PCPU_DFL_MAP_ALLOC indicates that the chunk is
+-	 * one of the first chunks and still using static map.
+-	 */
+-	if (chunk->map_alloc >= PCPU_DFL_MAP_ALLOC)
+-		old = chunk->map;
+-
+ 	chunk->map_alloc = new_alloc;
+ 	chunk->map = new;
+ 	new = NULL;
+@@ -604,7 +600,7 @@ static struct pcpu_chunk *pcpu_alloc_chu
+ {
+ 	struct pcpu_chunk *chunk;
+ 
+-	chunk = kzalloc(pcpu_chunk_struct_size, GFP_KERNEL);
++	chunk = pcpu_mem_alloc(pcpu_chunk_struct_size);
+ 	if (!chunk)
+ 		return NULL;
+ 
+@@ -1109,7 +1105,9 @@ static struct pcpu_alloc_info * __init p
+ 	memset(group_map, 0, sizeof(group_map));
+ 	memset(group_cnt, 0, sizeof(group_cnt));
+ 
+-	size_sum = PFN_ALIGN(static_size + reserved_size + dyn_size);
++	/* calculate size_sum and ensure dyn_size is enough for early alloc */
++	size_sum = PFN_ALIGN(static_size + reserved_size +
++			    max_t(size_t, dyn_size, PERCPU_DYNAMIC_EARLY_SIZE));
+ 	dyn_size = size_sum - static_size - reserved_size;
+ 
+ 	/*
+@@ -1338,7 +1336,8 @@ int __init pcpu_setup_first_chunk(const 
+ 				  void *base_addr)
+ {
+ 	static char cpus_buf[4096] __initdata;
+-	static int smap[2], dmap[2];
++	static int smap[PERCPU_DYNAMIC_EARLY_SLOTS] __initdata;
++	static int dmap[PERCPU_DYNAMIC_EARLY_SLOTS] __initdata;
+ 	size_t dyn_size = ai->dyn_size;
+ 	size_t size_sum = ai->static_size + ai->reserved_size + dyn_size;
+ 	struct pcpu_chunk *schunk, *dchunk = NULL;
+@@ -1361,14 +1360,13 @@ int __init pcpu_setup_first_chunk(const 
+ } while (0)
+ 
+ 	/* sanity checks */
+-	BUILD_BUG_ON(ARRAY_SIZE(smap) >= PCPU_DFL_MAP_ALLOC ||
+-		     ARRAY_SIZE(dmap) >= PCPU_DFL_MAP_ALLOC);
+ 	PCPU_SETUP_BUG_ON(ai->nr_groups <= 0);
+ 	PCPU_SETUP_BUG_ON(!ai->static_size);
+ 	PCPU_SETUP_BUG_ON(!base_addr);
+ 	PCPU_SETUP_BUG_ON(ai->unit_size < size_sum);
+ 	PCPU_SETUP_BUG_ON(ai->unit_size & ~PAGE_MASK);
+ 	PCPU_SETUP_BUG_ON(ai->unit_size < PCPU_MIN_UNIT_SIZE);
++	PCPU_SETUP_BUG_ON(ai->dyn_size < PERCPU_DYNAMIC_EARLY_SIZE);
+ 	PCPU_SETUP_BUG_ON(pcpu_verify_alloc_info(ai) < 0);
+ 
+ 	/* process group information and build config tables accordingly */
+@@ -1806,3 +1804,33 @@ void __init setup_per_cpu_areas(void)
+ 		__per_cpu_offset[cpu] = delta + pcpu_unit_offsets[cpu];
+ }
+ #endif /* CONFIG_HAVE_SETUP_PER_CPU_AREA */
++
++/*
++ * First and reserved chunks are initialized with temporary allocation
++ * map in initdata so that they can be used before slab is online.
++ * This function is called after slab is brought up and replaces those
++ * with properly allocated maps.
++ */
++void __init percpu_init_late(void)
++{
++	struct pcpu_chunk *target_chunks[] =
++		{ pcpu_first_chunk, pcpu_reserved_chunk, NULL };
++	struct pcpu_chunk *chunk;
++	unsigned long flags;
++	int i;
++
++	for (i = 0; (chunk = target_chunks[i]); i++) {
++		int *map;
++		const size_t size = PERCPU_DYNAMIC_EARLY_SLOTS * sizeof(map[0]);
++
++		BUILD_BUG_ON(size > PAGE_SIZE);
++
++		map = pcpu_mem_alloc(size);
++		BUG_ON(!map);
++
++		spin_lock_irqsave(&pcpu_lock, flags);
++		memcpy(map, chunk->map, size);
++		chunk->map = map;
++		spin_unlock_irqrestore(&pcpu_lock, flags);
++	}
++}
+Index: linux-2.6/init/main.c
+===================================================================
+--- linux-2.6.orig/init/main.c	2010-07-07 08:45:22.000000000 -0500
++++ linux-2.6/init/main.c	2010-07-07 08:47:19.000000000 -0500
+@@ -532,6 +532,7 @@ static void __init mm_init(void)
+ 	page_cgroup_init_flatmem();
+ 	mem_init();
+ 	kmem_cache_init();
++	percpu_init_late();
+ 	pgtable_cache_init();
+ 	vmalloc_init();
+ }
+Index: linux-2.6/include/linux/percpu.h
+===================================================================
+--- linux-2.6.orig/include/linux/percpu.h	2010-07-07 08:47:18.000000000 -0500
++++ linux-2.6/include/linux/percpu.h	2010-07-07 08:47:19.000000000 -0500
+@@ -45,6 +45,16 @@
+ #define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(64 << 10)
+ 
+ /*
++ * Percpu allocator can serve percpu allocations before slab is
++ * initialized which allows slab to depend on the percpu allocator.
++ * The following two parameters decide how much resource to
++ * preallocate for this.  Keep PERCPU_DYNAMIC_RESERVE equal to or
++ * larger than PERCPU_DYNAMIC_EARLY_SIZE.
++ */
++#define PERCPU_DYNAMIC_EARLY_SLOTS	128
++#define PERCPU_DYNAMIC_EARLY_SIZE	(12 << 10)
++
++/*
+  * PERCPU_DYNAMIC_RESERVE indicates the amount of free area to piggy
+  * back on the first chunk for dynamic percpu allocation if arch is
+  * manually allocating and mapping it for faster access (as a part of
+@@ -135,6 +145,7 @@ extern bool is_kernel_percpu_address(uns
+ #ifndef CONFIG_HAVE_SETUP_PER_CPU_AREA
+ extern void __init setup_per_cpu_areas(void);
+ #endif
++extern void __init percpu_init_late(void);
+ 
+ #else /* CONFIG_SMP */
+ 
+@@ -148,6 +159,8 @@ static inline bool is_kernel_percpu_addr
+ 
+ static inline void __init setup_per_cpu_areas(void) { }
+ 
++static inline void __init percpu_init_late(void) { }
++
+ static inline void *pcpu_lpage_remapped(void *kaddr)
+ {
+ 	return NULL;
 
