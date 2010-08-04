@@ -1,1378 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab0HDSUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:20:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56476 "EHLO
+	id S1758438Ab0HDSUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:20:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55608 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab0HDSUn (ORCPT
+	with ESMTP id S1758323Ab0HDSUe (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 4 Aug 2010 14:20:43 -0400
+	Wed, 4 Aug 2010 14:20:34 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: alex.williamson@redhat.com, Ryan Wilson <hap9@epoch.ncsc.mil>,
+Cc: alex.williamson@redhat.com, Gerd Hoffmann <kraxel@xeni.home.kraxel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 20/20] xen-pcifront: Xen PCI frontend driver.
-Date: Wed,  4 Aug 2010 14:19:15 -0400
-Message-Id: <1280945955-14229-21-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 03/20] xen: implement pirq type event channels
+Date: Wed,  4 Aug 2010 14:18:58 -0400
+Message-Id: <1280945955-14229-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
 References: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C59AF70.037A:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4C59AF65.00AD:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ryan Wilson <hap9@epoch.ncsc.mil>
+From: Gerd Hoffmann <kraxel@xeni.home.kraxel.org>
 
-This is a port of the 2.6.18 Xen PCI front driver with fixes
-to make it build under 2.6.34 and later (for the full list of
-changes: git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
-historic/xen-pcifront-0.1). It also includes the fixes
-to make it work properly.
+A privileged PV Xen domain can get direct access to hardware.  In
+order for this to be useful, it must be able to get hardware
+interrupts.
 
+Being a PV Xen domain, all interrupts are delivered as event channels.
+PIRQ event channels are bound to a pirq number and an interrupt
+vector.  When a IO APIC raises a hardware interrupt on that vector, it
+is delivered as an event channel, which we can deliver to the
+appropriate device driver(s).
+
+This patch simply implements the infrastructure for dealing with pirq
+event channels.
+
+[ Impact: integrate hardware interrupts into Xen's event scheme ]
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/pci/Kconfig              |   16 +
- drivers/pci/Makefile             |    2 +
- drivers/pci/xen-pcifront.c       | 1157 ++++++++++++++++++++++++++++++++++++++
- include/xen/interface/io/pciif.h |  122 ++++
- 4 files changed, 1297 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pci/xen-pcifront.c
- create mode 100644 include/xen/interface/io/pciif.h
+ drivers/xen/events.c |  245 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/xen/events.h |   11 +++
+ 2 files changed, 253 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 34ef70d..72a7d83 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -40,6 +40,22 @@ config PCI_STUB
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index db8f506..288077f 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -16,7 +16,7 @@
+  *    (typically dom0).
+  * 2. VIRQs, typically used for timers.  These are per-cpu events.
+  * 3. IPIs.
+- * 4. Hardware interrupts. Not supported at present.
++ * 4. PIRQs - Hardware interrupts.
+  *
+  * Jeremy Fitzhardinge <jeremy@xensource.com>, XenSource Inc, 2007
+  */
+@@ -41,6 +41,9 @@
+ #include <xen/interface/xen.h>
+ #include <xen/interface/event_channel.h>
  
- 	  When in doubt, say N.
++/* Leave low irqs free for identity mapping */
++#define LEGACY_IRQS	16
++
+ /*
+  * This lock protects updates to the following mapping and reference-count
+  * arrays. The lock does not need to be acquired to read the mapping tables.
+@@ -84,10 +87,12 @@ struct irq_info
+ 		enum ipi_vector ipi;
+ 		struct {
+ 			unsigned short gsi;
+-			unsigned short vector;
++			unsigned char vector;
++			unsigned char flags;
+ 		} pirq;
+ 	} u;
+ };
++#define PIRQ_NEEDS_EOI	(1 << 0)
  
-+config XEN_PCIDEV_FRONTEND
-+        tristate "Xen PCI Frontend"
-+        depends on X86
-+        select HOTPLUG
-+	select XEN_XENBUS_FRONTEND
-+	select PCI_XEN
-+	default y
-+        help
-+          The PCI device frontend driver allows the kernel to import arbitrary
-+          PCI devices from a PCI backend to support PCI driver domains.
-+
-+config XEN_PCIDEV_FE_DEBUG
-+        bool
-+        depends on PCI_DEBUG
-+        default n
-+
- config HT_IRQ
- 	bool "Interrupts on hypertransport devices"
- 	default y
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index 0b51857..8de352d 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -62,6 +62,8 @@ obj-$(CONFIG_PCI_SYSCALL) += syscall.o
+ static struct irq_info irq_info[NR_IRQS];
  
- obj-$(CONFIG_PCI_STUB) += pci-stub.o
+@@ -107,6 +112,7 @@ static inline unsigned long *cpu_evtchn_mask(int cpu)
+ #define VALID_EVTCHN(chn)	((chn) != 0)
  
-+obj-$(CONFIG_XEN_PCIDEV_FRONTEND) += xen-pcifront.o
+ static struct irq_chip xen_dynamic_chip;
++static struct irq_chip xen_pirq_chip;
+ 
+ /* Constructor for packed IRQ information. */
+ static struct irq_info mk_unbound_info(void)
+@@ -219,6 +225,15 @@ static unsigned int cpu_from_evtchn(unsigned int evtchn)
+ 	return ret;
+ }
+ 
++static bool pirq_needs_eoi(unsigned irq)
++{
++	struct irq_info *info = info_for_irq(irq);
 +
- ifeq ($(CONFIG_PCI_DEBUG),y)
- EXTRA_CFLAGS += -DDEBUG
- endif
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-new file mode 100644
-index 0000000..a48a733
---- /dev/null
-+++ b/drivers/pci/xen-pcifront.c
-@@ -0,0 +1,1157 @@
-+/*
-+ * Xen PCI Frontend.
-+ *
-+ *   Author: Ryan Wilson <hap9@epoch.ncsc.mil>
-+ */
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/mm.h>
-+#include <xen/xenbus.h>
-+#include <xen/events.h>
-+#include <xen/grant_table.h>
-+#include <xen/page.h>
-+#include <linux/spinlock.h>
-+#include <linux/pci.h>
-+#include <linux/msi.h>
-+#include <xen/xenbus.h>
-+#include <xen/interface/io/pciif.h>
-+#include <asm/xen/pci.h>
-+#include <linux/interrupt.h>
-+#include <asm/atomic.h>
-+#include <linux/workqueue.h>
-+#include <linux/bitops.h>
-+#include <linux/time.h>
++	BUG_ON(info->type != IRQT_PIRQ);
 +
++	return info->u.pirq.flags & PIRQ_NEEDS_EOI;
++}
 +
-+#ifndef __init_refok
-+#define __init_refok
-+#endif
+ static inline unsigned long active_evtchns(unsigned int cpu,
+ 					   struct shared_info *sh,
+ 					   unsigned int idx)
+@@ -335,7 +350,7 @@ static int find_unbound_irq(void)
+ 	int irq;
+ 	struct irq_desc *desc;
+ 
+-	for (irq = 0; irq < nr_irqs; irq++)
++	for (irq = LEGACY_IRQS; irq < nr_irqs; irq++)
+ 		if (irq_info[irq].type == IRQT_UNBOUND)
+ 			break;
+ 
+@@ -351,6 +366,210 @@ static int find_unbound_irq(void)
+ 	return irq;
+ }
+ 
++static bool identity_mapped_irq(unsigned irq)
++{
++	/* only identity map legacy irqs */
++	return irq < LEGACY_IRQS;
++}
 +
-+#define INVALID_GRANT_REF (0)
-+#define INVALID_EVTCHN    (-1)
++static void pirq_unmask_notify(int irq)
++{
++	struct physdev_eoi eoi = { .irq = irq };
 +
++	if (unlikely(pirq_needs_eoi(irq))) {
++		int rc = HYPERVISOR_physdev_op(PHYSDEVOP_eoi, &eoi);
++		WARN_ON(rc);
++	}
++}
 +
-+struct pci_bus_entry {
-+	struct list_head list;
-+	struct pci_bus *bus;
-+};
++static void pirq_query_unmask(int irq)
++{
++	struct physdev_irq_status_query irq_status;
++	struct irq_info *info = info_for_irq(irq);
 +
-+#define _PDEVB_op_active		(0)
-+#define PDEVB_op_active			(1 << (_PDEVB_op_active))
++	BUG_ON(info->type != IRQT_PIRQ);
 +
-+struct pcifront_device {
-+	struct xenbus_device *xdev;
-+	struct list_head root_buses;
++	irq_status.irq = irq;
++	if (HYPERVISOR_physdev_op(PHYSDEVOP_irq_status_query, &irq_status))
++		irq_status.flags = 0;
 +
-+	int evtchn;
-+	int gnt_ref;
++	info->u.pirq.flags &= ~PIRQ_NEEDS_EOI;
++	if (irq_status.flags & XENIRQSTAT_needs_eoi)
++		info->u.pirq.flags |= PIRQ_NEEDS_EOI;
++}
 +
++static bool probing_irq(int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	return desc && desc->action == NULL;
++}
++
++static unsigned int startup_pirq(unsigned int irq)
++{
++	struct evtchn_bind_pirq bind_pirq;
++	struct irq_info *info = info_for_irq(irq);
++	int evtchn = evtchn_from_irq(irq);
++
++	BUG_ON(info->type != IRQT_PIRQ);
++
++	if (VALID_EVTCHN(evtchn))
++		goto out;
++
++	bind_pirq.pirq = irq;
++	/* NB. We are happy to share unless we are probing. */
++	bind_pirq.flags = probing_irq(irq) ? 0 : BIND_PIRQ__WILL_SHARE;
++	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq) != 0) {
++		if (!probing_irq(irq))
++			printk(KERN_INFO "Failed to obtain physical IRQ %d\n",
++			       irq);
++		return 0;
++	}
++	evtchn = bind_pirq.port;
++
++	pirq_query_unmask(irq);
++
++	evtchn_to_irq[evtchn] = irq;
++	bind_evtchn_to_cpu(evtchn, 0);
++	info->evtchn = evtchn;
++
++ out:
++	unmask_evtchn(evtchn);
++	pirq_unmask_notify(irq);
++
++	return 0;
++}
++
++static void shutdown_pirq(unsigned int irq)
++{
++	struct evtchn_close close;
++	struct irq_info *info = info_for_irq(irq);
++	int evtchn = evtchn_from_irq(irq);
++
++	BUG_ON(info->type != IRQT_PIRQ);
++
++	if (!VALID_EVTCHN(evtchn))
++		return;
++
++	mask_evtchn(evtchn);
++
++	close.port = evtchn;
++	if (HYPERVISOR_event_channel_op(EVTCHNOP_close, &close) != 0)
++		BUG();
++
++	bind_evtchn_to_cpu(evtchn, 0);
++	evtchn_to_irq[evtchn] = -1;
++	info->evtchn = 0;
++}
++
++static void enable_pirq(unsigned int irq)
++{
++	startup_pirq(irq);
++}
++
++static void disable_pirq(unsigned int irq)
++{
++}
++
++static void ack_pirq(unsigned int irq)
++{
++	int evtchn = evtchn_from_irq(irq);
++
++	move_native_irq(irq);
++
++	if (VALID_EVTCHN(evtchn)) {
++		mask_evtchn(evtchn);
++		clear_evtchn(evtchn);
++	}
++}
++
++static void end_pirq(unsigned int irq)
++{
++	int evtchn = evtchn_from_irq(irq);
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (WARN_ON(!desc))
++		return;
++
++	if ((desc->status & (IRQ_DISABLED|IRQ_PENDING)) ==
++	    (IRQ_DISABLED|IRQ_PENDING)) {
++		shutdown_pirq(irq);
++	} else if (VALID_EVTCHN(evtchn)) {
++		unmask_evtchn(evtchn);
++		pirq_unmask_notify(irq);
++	}
++}
++
++static int find_irq_by_gsi(unsigned gsi)
++{
 +	int irq;
 +
-+	/* Lock this when doing any operations in sh_info */
-+	spinlock_t sh_info_lock;
-+	struct xen_pci_sharedinfo *sh_info;
-+	struct work_struct op_work;
-+	unsigned long flags;
++	for (irq = 0; irq < NR_IRQS; irq++) {
++		struct irq_info *info = info_for_irq(irq);
 +
-+};
-+
-+struct pcifront_sd {
-+	int domain;
-+	struct pcifront_device *pdev;
-+};
-+
-+static inline struct pcifront_device *
-+pcifront_get_pdev(struct pcifront_sd *sd)
-+{
-+	return sd->pdev;
-+}
-+
-+static inline void pcifront_init_sd(struct pcifront_sd *sd,
-+				    unsigned int domain, unsigned int bus,
-+				    struct pcifront_device *pdev)
-+{
-+	sd->domain = domain;
-+	sd->pdev = pdev;
-+}
-+
-+static inline void pcifront_setup_root_resources(struct pci_bus *bus,
-+						 struct pcifront_sd *sd)
-+{
-+}
-+
-+
-+DEFINE_SPINLOCK(pcifront_dev_lock);
-+static struct pcifront_device *pcifront_dev;
-+
-+static int verbose_request;
-+module_param(verbose_request, int, 0644);
-+
-+static int errno_to_pcibios_err(int errno)
-+{
-+	switch (errno) {
-+	case XEN_PCI_ERR_success:
-+		return PCIBIOS_SUCCESSFUL;
-+
-+	case XEN_PCI_ERR_dev_not_found:
-+		return PCIBIOS_DEVICE_NOT_FOUND;
-+
-+	case XEN_PCI_ERR_invalid_offset:
-+	case XEN_PCI_ERR_op_failed:
-+		return PCIBIOS_BAD_REGISTER_NUMBER;
-+
-+	case XEN_PCI_ERR_not_implemented:
-+		return PCIBIOS_FUNC_NOT_SUPPORTED;
-+
-+	case XEN_PCI_ERR_access_denied:
-+		return PCIBIOS_SET_FAILED;
-+	}
-+	return errno;
-+}
-+
-+static inline void schedule_pcifront_aer_op(struct pcifront_device *pdev)
-+{
-+	if (test_bit(_XEN_PCIB_active, (unsigned long *)&pdev->sh_info->flags)
-+		&& !test_and_set_bit(_PDEVB_op_active, &pdev->flags)) {
-+		dev_dbg(&pdev->xdev->dev, "schedule aer frontend job\n");
-+		schedule_work(&pdev->op_work);
-+	}
-+}
-+
-+static int do_pci_op(struct pcifront_device *pdev, struct xen_pci_op *op)
-+{
-+	int err = 0;
-+	struct xen_pci_op *active_op = &pdev->sh_info->op;
-+	unsigned long irq_flags;
-+	evtchn_port_t port = pdev->evtchn;
-+	unsigned irq = pdev->irq;
-+	s64 ns, ns_timeout;
-+	struct timeval tv;
-+
-+	spin_lock_irqsave(&pdev->sh_info_lock, irq_flags);
-+
-+	memcpy(active_op, op, sizeof(struct xen_pci_op));
-+
-+	/* Go */
-+	wmb();
-+	set_bit(_XEN_PCIF_active, (unsigned long *)&pdev->sh_info->flags);
-+	notify_remote_via_evtchn(port);
-+
-+	/*
-+	 * We set a poll timeout of 3 seconds but give up on return after
-+	 * 2 seconds. It is better to time out too late rather than too early
-+	 * (in the latter case we end up continually re-executing poll() with a
-+	 * timeout in the past). 1s difference gives plenty of slack for error.
-+	 */
-+	do_gettimeofday(&tv);
-+	ns_timeout = timeval_to_ns(&tv) + 2 * (s64)NSEC_PER_SEC;
-+
-+	xen_clear_irq_pending(irq);
-+
-+	while (test_bit(_XEN_PCIF_active,
-+			(unsigned long *)&pdev->sh_info->flags)) {
-+		xen_poll_irq_timeout(irq, jiffies + 3*HZ);
-+		xen_clear_irq_pending(irq);
-+		do_gettimeofday(&tv);
-+		ns = timeval_to_ns(&tv);
-+		if (ns > ns_timeout) {
-+			dev_err(&pdev->xdev->dev,
-+				"pciback not responding!!!\n");
-+			clear_bit(_XEN_PCIF_active,
-+				  (unsigned long *)&pdev->sh_info->flags);
-+			err = XEN_PCI_ERR_dev_not_found;
-+			goto out;
-+		}
-+	}
-+
-+	/*
-+	* We might lose backend service request since we
-+	* reuse same evtchn with pci_conf backend response. So re-schedule
-+	* aer pcifront service.
-+	*/
-+	if (test_bit(_XEN_PCIB_active,
-+			(unsigned long *)&pdev->sh_info->flags)) {
-+		dev_err(&pdev->xdev->dev,
-+			"schedule aer pcifront service\n");
-+		schedule_pcifront_aer_op(pdev);
-+	}
-+
-+	memcpy(op, active_op, sizeof(struct xen_pci_op));
-+
-+	err = op->err;
-+out:
-+	spin_unlock_irqrestore(&pdev->sh_info_lock, irq_flags);
-+	return err;
-+}
-+
-+/* Access to this function is spinlocked in drivers/pci/access.c */
-+static int pcifront_bus_read(struct pci_bus *bus, unsigned int devfn,
-+			     int where, int size, u32 *val)
-+{
-+	int err = 0;
-+	struct xen_pci_op op = {
-+		.cmd    = XEN_PCI_OP_conf_read,
-+		.domain = pci_domain_nr(bus),
-+		.bus    = bus->number,
-+		.devfn  = devfn,
-+		.offset = where,
-+		.size   = size,
-+	};
-+	struct pcifront_sd *sd = bus->sysdata;
-+	struct pcifront_device *pdev = pcifront_get_pdev(sd);
-+
-+	if (verbose_request)
-+		dev_info(&pdev->xdev->dev,
-+			 "read dev=%04x:%02x:%02x.%01x - offset %x size %d\n",
-+			 pci_domain_nr(bus), bus->number, PCI_SLOT(devfn),
-+			 PCI_FUNC(devfn), where, size);
-+
-+	err = do_pci_op(pdev, &op);
-+
-+	if (likely(!err)) {
-+		if (verbose_request)
-+			dev_info(&pdev->xdev->dev, "read got back value %x\n",
-+				 op.value);
-+
-+		*val = op.value;
-+	} else if (err == -ENODEV) {
-+		/* No device here, pretend that it just returned 0 */
-+		err = 0;
-+		*val = 0;
-+	}
-+
-+	return errno_to_pcibios_err(err);
-+}
-+
-+/* Access to this function is spinlocked in drivers/pci/access.c */
-+static int pcifront_bus_write(struct pci_bus *bus, unsigned int devfn,
-+			      int where, int size, u32 val)
-+{
-+	struct xen_pci_op op = {
-+		.cmd    = XEN_PCI_OP_conf_write,
-+		.domain = pci_domain_nr(bus),
-+		.bus    = bus->number,
-+		.devfn  = devfn,
-+		.offset = where,
-+		.size   = size,
-+		.value  = val,
-+	};
-+	struct pcifront_sd *sd = bus->sysdata;
-+	struct pcifront_device *pdev = pcifront_get_pdev(sd);
-+
-+	if (verbose_request)
-+		dev_info(&pdev->xdev->dev,
-+			 "write dev=%04x:%02x:%02x.%01x - "
-+			 "offset %x size %d val %x\n",
-+			 pci_domain_nr(bus), bus->number,
-+			 PCI_SLOT(devfn), PCI_FUNC(devfn), where, size, val);
-+
-+	return errno_to_pcibios_err(do_pci_op(pdev, &op));
-+}
-+
-+struct pci_ops pcifront_bus_ops = {
-+	.read = pcifront_bus_read,
-+	.write = pcifront_bus_write,
-+};
-+
-+#ifdef CONFIG_PCI_MSI
-+static int pci_frontend_enable_msix(struct pci_dev *dev,
-+				    int **vector, int nvec)
-+{
-+	int err;
-+	int i;
-+	struct xen_pci_op op = {
-+		.cmd    = XEN_PCI_OP_enable_msix,
-+		.domain = pci_domain_nr(dev->bus),
-+		.bus = dev->bus->number,
-+		.devfn = dev->devfn,
-+		.value = nvec,
-+	};
-+	struct pcifront_sd *sd = dev->bus->sysdata;
-+	struct pcifront_device *pdev = pcifront_get_pdev(sd);
-+	struct msi_desc *entry;
-+
-+	if (nvec > SH_INFO_MAX_VEC) {
-+		dev_err(&dev->dev, "too much vector for pci frontend: %x."
-+				   " Increase SH_INFO_MAX_VEC.\n", nvec);
-+		return -EINVAL;
-+	}
-+
-+	i = 0;
-+	list_for_each_entry(entry, &dev->msi_list, list) {
-+		op.msix_entries[i].entry = entry->msi_attrib.entry_nr;
-+		/* Vector is useless at this point. */
-+		op.msix_entries[i].vector = -1;
-+		i++;
-+	}
-+
-+	err = do_pci_op(pdev, &op);
-+
-+	if (likely(!err)) {
-+		if (likely(!op.value)) {
-+			/* we get the result */
-+			for (i = 0; i < nvec; i++)
-+				*(*vector+i) = op.msix_entries[i].vector;
-+			return 0;
-+		} else {
-+			printk(KERN_DEBUG "enable msix get value %x\n",
-+				op.value);
-+			return op.value;
-+		}
-+	} else {
-+		dev_err(&dev->dev, "enable msix get err %x\n", err);
-+		return err;
-+	}
-+}
-+
-+static void pci_frontend_disable_msix(struct pci_dev *dev)
-+{
-+	int err;
-+	struct xen_pci_op op = {
-+		.cmd    = XEN_PCI_OP_disable_msix,
-+		.domain = pci_domain_nr(dev->bus),
-+		.bus = dev->bus->number,
-+		.devfn = dev->devfn,
-+	};
-+	struct pcifront_sd *sd = dev->bus->sysdata;
-+	struct pcifront_device *pdev = pcifront_get_pdev(sd);
-+
-+	err = do_pci_op(pdev, &op);
-+
-+	/* What should do for error ? */
-+	if (err)
-+		dev_err(&dev->dev, "pci_disable_msix get err %x\n", err);
-+}
-+
-+static int pci_frontend_enable_msi(struct pci_dev *dev, int **vector)
-+{
-+	int err;
-+	struct xen_pci_op op = {
-+		.cmd    = XEN_PCI_OP_enable_msi,
-+		.domain = pci_domain_nr(dev->bus),
-+		.bus = dev->bus->number,
-+		.devfn = dev->devfn,
-+	};
-+	struct pcifront_sd *sd = dev->bus->sysdata;
-+	struct pcifront_device *pdev = pcifront_get_pdev(sd);
-+
-+	err = do_pci_op(pdev, &op);
-+	if (likely(!err)) {
-+		*(*vector) = op.value;
-+	} else {
-+		dev_err(&dev->dev, "pci frontend enable msi failed for dev "
-+				    "%x:%x\n", op.bus, op.devfn);
-+		err = -EINVAL;
-+	}
-+	return err;
-+}
-+
-+static void pci_frontend_disable_msi(struct pci_dev *dev)
-+{
-+	int err;
-+	struct xen_pci_op op = {
-+		.cmd    = XEN_PCI_OP_disable_msi,
-+		.domain = pci_domain_nr(dev->bus),
-+		.bus = dev->bus->number,
-+		.devfn = dev->devfn,
-+	};
-+	struct pcifront_sd *sd = dev->bus->sysdata;
-+	struct pcifront_device *pdev = pcifront_get_pdev(sd);
-+
-+	err = do_pci_op(pdev, &op);
-+	if (err == XEN_PCI_ERR_dev_not_found) {
-+		/* XXX No response from backend, what shall we do? */
-+		printk(KERN_DEBUG "get no response from backend for disable MSI\n");
-+		return;
-+	}
-+	if (err)
-+		/* how can pciback notify us fail? */
-+		printk(KERN_DEBUG "get fake response frombackend\n");
-+}
-+
-+static struct xen_pci_frontend_ops pci_frontend_ops = {
-+	.enable_msi = pci_frontend_enable_msi,
-+	.disable_msi = pci_frontend_disable_msi,
-+	.enable_msix = pci_frontend_enable_msix,
-+	.disable_msix = pci_frontend_disable_msix,
-+};
-+
-+static void pci_frontend_registrar(int enable)
-+{
-+	if (enable)
-+		xen_pci_frontend = &pci_frontend_ops;
-+	else
-+		xen_pci_frontend = NULL;
-+};
-+#else
-+static inline void pci_frontend_registrar(int enable) { };
-+#endif /* CONFIG_PCI_MSI */
-+
-+/* Claim resources for the PCI frontend as-is, backend won't allow changes */
-+static int pcifront_claim_resource(struct pci_dev *dev, void *data)
-+{
-+	struct pcifront_device *pdev = data;
-+	int i;
-+	struct resource *r;
-+
-+	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-+		r = &dev->resource[i];
-+
-+		if (!r->parent && r->start && r->flags) {
-+			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
-+				pci_name(dev), i);
-+			if (pci_claim_resource(dev, i)) {
-+				dev_err(&pdev->xdev->dev, "Could not claim "
-+					"resource %s/%d! Device offline. Try "
-+					"giving less than 4GB to domain.\n",
-+					pci_name(dev), i);
-+			}
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int __devinit pcifront_scan_bus(struct pcifront_device *pdev,
-+				unsigned int domain, unsigned int bus,
-+				struct pci_bus *b)
-+{
-+	struct pci_dev *d;
-+	unsigned int devfn;
-+
-+	/* Scan the bus for functions and add.
-+	 * We omit handling of PCI bridge attachment because pciback prevents
-+	 * bridges from being exported.
-+	 */
-+	for (devfn = 0; devfn < 0x100; devfn++) {
-+		d = pci_get_slot(b, devfn);
-+		if (d) {
-+			/* Device is already known. */
-+			pci_dev_put(d);
-+			continue;
-+		}
-+
-+		d = pci_scan_single_device(b, devfn);
-+		if (d)
-+			dev_info(&pdev->xdev->dev, "New device on "
-+				 "%04x:%02x:%02x.%02x found.\n", domain, bus,
-+				 PCI_SLOT(devfn), PCI_FUNC(devfn));
-+	}
-+
-+	return 0;
-+}
-+
-+int __devinit pcifront_scan_root(struct pcifront_device *pdev,
-+				 unsigned int domain, unsigned int bus)
-+{
-+	struct pci_bus *b;
-+	struct pcifront_sd *sd = NULL;
-+	struct pci_bus_entry *bus_entry = NULL;
-+	int err = 0;
-+
-+#ifndef CONFIG_PCI_DOMAINS
-+	if (domain != 0) {
-+		dev_err(&pdev->xdev->dev,
-+			"PCI Root in non-zero PCI Domain! domain=%d\n", domain);
-+		dev_err(&pdev->xdev->dev,
-+			"Please compile with CONFIG_PCI_DOMAINS\n");
-+		err = -EINVAL;
-+		goto err_out;
-+	}
-+#endif
-+
-+	dev_info(&pdev->xdev->dev, "Creating PCI Frontend Bus %04x:%02x\n",
-+		 domain, bus);
-+
-+	bus_entry = kmalloc(sizeof(*bus_entry), GFP_KERNEL);
-+	sd = kmalloc(sizeof(*sd), GFP_KERNEL);
-+	if (!bus_entry || !sd) {
-+		err = -ENOMEM;
-+		goto err_out;
-+	}
-+	pcifront_init_sd(sd, domain, bus, pdev);
-+
-+	b = pci_scan_bus_parented(&pdev->xdev->dev, bus,
-+				  &pcifront_bus_ops, sd);
-+	if (!b) {
-+		dev_err(&pdev->xdev->dev,
-+			"Error creating PCI Frontend Bus!\n");
-+		err = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	pcifront_setup_root_resources(b, sd);
-+	bus_entry->bus = b;
-+
-+	list_add(&bus_entry->list, &pdev->root_buses);
-+
-+	/* pci_scan_bus_parented skips devices which do not have a have
-+	* devfn==0. The pcifront_scan_bus enumerates all devfn. */
-+	err = pcifront_scan_bus(pdev, domain, bus, b);
-+
-+	/* Claim resources before going "live" with our devices */
-+	pci_walk_bus(b, pcifront_claim_resource, pdev);
-+
-+	/* Create SysFS and notify udev of the devices. Aka: "going live" */
-+	pci_bus_add_devices(b);
-+
-+	return err;
-+
-+err_out:
-+	kfree(bus_entry);
-+	kfree(sd);
-+
-+	return err;
-+}
-+
-+int __devinit pcifront_rescan_root(struct pcifront_device *pdev,
-+				   unsigned int domain, unsigned int bus)
-+{
-+	int err;
-+	struct pci_bus *b;
-+
-+#ifndef CONFIG_PCI_DOMAINS
-+	if (domain != 0) {
-+		dev_err(&pdev->xdev->dev,
-+			"PCI Root in non-zero PCI Domain! domain=%d\n", domain);
-+		dev_err(&pdev->xdev->dev,
-+			"Please compile with CONFIG_PCI_DOMAINS\n");
-+		return -EINVAL;
-+	}
-+#endif
-+
-+	dev_info(&pdev->xdev->dev, "Rescanning PCI Frontend Bus %04x:%02x\n",
-+		 domain, bus);
-+
-+	b = pci_find_bus(domain, bus);
-+	if (!b)
-+		/* If the bus is unknown, create it. */
-+		return pcifront_scan_root(pdev, domain, bus);
-+
-+	err = pcifront_scan_bus(pdev, domain, bus, b);
-+
-+	/* Claim resources before going "live" with our devices */
-+	pci_walk_bus(b, pcifront_claim_resource, pdev);
-+
-+	/* Create SysFS and notify udev of the devices. Aka: "going live" */
-+	pci_bus_add_devices(b);
-+
-+	return err;
-+}
-+
-+static void free_root_bus_devs(struct pci_bus *bus)
-+{
-+	struct pci_dev *dev;
-+
-+	while (!list_empty(&bus->devices)) {
-+		dev = container_of(bus->devices.next, struct pci_dev,
-+				   bus_list);
-+		dev_dbg(&dev->dev, "removing device\n");
-+		pci_remove_bus_device(dev);
-+	}
-+}
-+
-+void pcifront_free_roots(struct pcifront_device *pdev)
-+{
-+	struct pci_bus_entry *bus_entry, *t;
-+
-+	dev_dbg(&pdev->xdev->dev, "cleaning up root buses\n");
-+
-+	list_for_each_entry_safe(bus_entry, t, &pdev->root_buses, list) {
-+		list_del(&bus_entry->list);
-+
-+		free_root_bus_devs(bus_entry->bus);
-+
-+		kfree(bus_entry->bus->sysdata);
-+
-+		device_unregister(bus_entry->bus->bridge);
-+		pci_remove_bus(bus_entry->bus);
-+
-+		kfree(bus_entry);
-+	}
-+}
-+
-+static pci_ers_result_t pcifront_common_process(int cmd,
-+						struct pcifront_device *pdev,
-+						pci_channel_state_t state)
-+{
-+	pci_ers_result_t result;
-+	struct pci_driver *pdrv;
-+	int bus = pdev->sh_info->aer_op.bus;
-+	int devfn = pdev->sh_info->aer_op.devfn;
-+	struct pci_dev *pcidev;
-+	int flag = 0;
-+
-+	dev_dbg(&pdev->xdev->dev,
-+		"pcifront AER process: cmd %x (bus:%x, devfn%x)",
-+		cmd, bus, devfn);
-+	result = PCI_ERS_RESULT_NONE;
-+
-+	pcidev = pci_get_bus_and_slot(bus, devfn);
-+	if (!pcidev || !pcidev->driver) {
-+		dev_err(&pcidev->dev,
-+			"device or driver is NULL\n");
-+		return result;
-+	}
-+	pdrv = pcidev->driver;
-+
-+	if (get_driver(&pdrv->driver)) {
-+		if (pdrv->err_handler && pdrv->err_handler->error_detected) {
-+			dev_dbg(&pcidev->dev,
-+				"trying to call AER service\n");
-+			if (pcidev) {
-+				flag = 1;
-+				switch (cmd) {
-+				case XEN_PCI_OP_aer_detected:
-+					result = pdrv->err_handler->
-+						 error_detected(pcidev, state);
-+					break;
-+				case XEN_PCI_OP_aer_mmio:
-+					result = pdrv->err_handler->
-+						 mmio_enabled(pcidev);
-+					break;
-+				case XEN_PCI_OP_aer_slotreset:
-+					result = pdrv->err_handler->
-+						 slot_reset(pcidev);
-+					break;
-+				case XEN_PCI_OP_aer_resume:
-+					pdrv->err_handler->resume(pcidev);
-+					break;
-+				default:
-+					dev_err(&pdev->xdev->dev,
-+						"bad request in aer recovery "
-+						"operation!\n");
-+
-+				}
-+			}
-+		}
-+		put_driver(&pdrv->driver);
-+	}
-+	if (!flag)
-+		result = PCI_ERS_RESULT_NONE;
-+
-+	return result;
-+}
-+
-+
-+void pcifront_do_aer(struct work_struct *data)
-+{
-+	struct pcifront_device *pdev =
-+		container_of(data, struct pcifront_device, op_work);
-+	int cmd = pdev->sh_info->aer_op.cmd;
-+	pci_channel_state_t state =
-+		(pci_channel_state_t)pdev->sh_info->aer_op.err;
-+
-+	/*If a pci_conf op is in progress,
-+		we have to wait until it is done before service aer op*/
-+	dev_dbg(&pdev->xdev->dev,
-+		"pcifront service aer bus %x devfn %x\n",
-+		pdev->sh_info->aer_op.bus, pdev->sh_info->aer_op.devfn);
-+
-+	pdev->sh_info->aer_op.err = pcifront_common_process(cmd, pdev, state);
-+
-+	/* Post the operation to the guest. */
-+	wmb();
-+	clear_bit(_XEN_PCIB_active, (unsigned long *)&pdev->sh_info->flags);
-+	notify_remote_via_evtchn(pdev->evtchn);
-+
-+	/*in case of we lost an aer request in four lines time_window*/
-+	smp_mb__before_clear_bit();
-+	clear_bit(_PDEVB_op_active, &pdev->flags);
-+	smp_mb__after_clear_bit();
-+
-+	schedule_pcifront_aer_op(pdev);
-+
-+}
-+
-+irqreturn_t pcifront_handler_aer(int irq, void *dev)
-+{
-+	struct pcifront_device *pdev = dev;
-+	schedule_pcifront_aer_op(pdev);
-+	return IRQ_HANDLED;
-+}
-+int pcifront_connect(struct pcifront_device *pdev)
-+{
-+	int err = 0;
-+
-+	spin_lock(&pcifront_dev_lock);
-+
-+	if (!pcifront_dev) {
-+		dev_info(&pdev->xdev->dev, "Installing PCI frontend\n");
-+		pcifront_dev = pdev;
-+	} else {
-+		dev_err(&pdev->xdev->dev, "PCI frontend already installed!\n");
-+		err = -EEXIST;
-+	}
-+
-+	spin_unlock(&pcifront_dev_lock);
-+
-+	return err;
-+}
-+
-+void pcifront_disconnect(struct pcifront_device *pdev)
-+{
-+	spin_lock(&pcifront_dev_lock);
-+
-+	if (pdev == pcifront_dev) {
-+		dev_info(&pdev->xdev->dev,
-+			 "Disconnecting PCI Frontend Buses\n");
-+		pcifront_dev = NULL;
-+	}
-+
-+	spin_unlock(&pcifront_dev_lock);
-+}
-+static struct pcifront_device *alloc_pdev(struct xenbus_device *xdev)
-+{
-+	struct pcifront_device *pdev;
-+
-+	pdev = kzalloc(sizeof(struct pcifront_device), GFP_KERNEL);
-+	if (pdev == NULL)
-+		goto out;
-+
-+	pdev->sh_info =
-+	    (struct xen_pci_sharedinfo *)__get_free_page(GFP_KERNEL);
-+	if (pdev->sh_info == NULL) {
-+		kfree(pdev);
-+		pdev = NULL;
-+		goto out;
-+	}
-+	pdev->sh_info->flags = 0;
-+
-+	/*Flag for registering PV AER handler*/
-+	set_bit(_XEN_PCIB_AERHANDLER, (void *)&pdev->sh_info->flags);
-+
-+	dev_set_drvdata(&xdev->dev, pdev);
-+	pdev->xdev = xdev;
-+
-+	INIT_LIST_HEAD(&pdev->root_buses);
-+
-+	spin_lock_init(&pdev->sh_info_lock);
-+
-+	pdev->evtchn = INVALID_EVTCHN;
-+	pdev->gnt_ref = INVALID_GRANT_REF;
-+	pdev->irq = -1;
-+
-+	INIT_WORK(&pdev->op_work, pcifront_do_aer);
-+
-+	dev_dbg(&xdev->dev, "Allocated pdev @ 0x%p pdev->sh_info @ 0x%p\n",
-+		pdev, pdev->sh_info);
-+out:
-+	return pdev;
-+}
-+
-+static void free_pdev(struct pcifront_device *pdev)
-+{
-+	dev_dbg(&pdev->xdev->dev, "freeing pdev @ 0x%p\n", pdev);
-+
-+	pcifront_free_roots(pdev);
-+
-+	/*For PCIE_AER error handling job*/
-+	flush_scheduled_work();
-+	unbind_from_irqhandler(pdev->irq, pdev);
-+
-+	if (pdev->evtchn != INVALID_EVTCHN)
-+		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
-+
-+	if (pdev->gnt_ref != INVALID_GRANT_REF)
-+		gnttab_end_foreign_access(pdev->gnt_ref, 0 /* r/w page */,
-+					  (unsigned long)pdev->sh_info);
-+
-+	dev_set_drvdata(&pdev->xdev->dev, NULL);
-+
-+	kfree(pdev);
-+}
-+
-+static int pcifront_publish_info(struct pcifront_device *pdev)
-+{
-+	int err = 0;
-+	struct xenbus_transaction trans;
-+
-+	err = xenbus_grant_ring(pdev->xdev, virt_to_mfn(pdev->sh_info));
-+	if (err < 0)
-+		goto out;
-+
-+	pdev->gnt_ref = err;
-+
-+	err = xenbus_alloc_evtchn(pdev->xdev, &pdev->evtchn);
-+	if (err)
-+		goto out;
-+
-+	err = bind_evtchn_to_irqhandler(pdev->evtchn, pcifront_handler_aer,
-+		0, "pcifront", pdev);
-+	if (err < 0) {
-+		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
-+		xenbus_dev_fatal(pdev->xdev, err, "Failed to bind evtchn to "
-+				 "irqhandler.\n");
-+		return err;
-+	}
-+	pdev->irq = err;
-+
-+do_publish:
-+	err = xenbus_transaction_start(&trans);
-+	if (err) {
-+		xenbus_dev_fatal(pdev->xdev, err,
-+				 "Error writing configuration for backend "
-+				 "(start transaction)");
-+		goto out;
-+	}
-+
-+	err = xenbus_printf(trans, pdev->xdev->nodename,
-+			    "pci-op-ref", "%u", pdev->gnt_ref);
-+	if (!err)
-+		err = xenbus_printf(trans, pdev->xdev->nodename,
-+				    "event-channel", "%u", pdev->evtchn);
-+	if (!err)
-+		err = xenbus_printf(trans, pdev->xdev->nodename,
-+				    "magic", XEN_PCI_MAGIC);
-+
-+	if (err) {
-+		xenbus_transaction_end(trans, 1);
-+		xenbus_dev_fatal(pdev->xdev, err,
-+				 "Error writing configuration for backend");
-+		goto out;
-+	} else {
-+		err = xenbus_transaction_end(trans, 0);
-+		if (err == -EAGAIN)
-+			goto do_publish;
-+		else if (err) {
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error completing transaction "
-+					 "for backend");
-+			goto out;
-+		}
-+	}
-+
-+	xenbus_switch_state(pdev->xdev, XenbusStateInitialised);
-+
-+	dev_dbg(&pdev->xdev->dev, "publishing successful!\n");
-+
-+out:
-+	return err;
-+}
-+
-+static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
-+{
-+	int err = -EFAULT;
-+	int i, num_roots, len;
-+	char str[64];
-+	unsigned int domain, bus;
-+
-+
-+	/* Only connect once */
-+	if (xenbus_read_driver_state(pdev->xdev->nodename) !=
-+	    XenbusStateInitialised)
-+		goto out;
-+
-+	err = pcifront_connect(pdev);
-+	if (err) {
-+		xenbus_dev_fatal(pdev->xdev, err,
-+				 "Error connecting PCI Frontend");
-+		goto out;
-+	}
-+
-+	err = xenbus_scanf(XBT_NIL, pdev->xdev->otherend,
-+			   "root_num", "%d", &num_roots);
-+	if (err == -ENOENT) {
-+		xenbus_dev_error(pdev->xdev, err,
-+				 "No PCI Roots found, trying 0000:00");
-+		err = pcifront_scan_root(pdev, 0, 0);
-+		num_roots = 0;
-+	} else if (err != 1) {
-+		if (err == 0)
-+			err = -EINVAL;
-+		xenbus_dev_fatal(pdev->xdev, err,
-+				 "Error reading number of PCI roots");
-+		goto out;
-+	}
-+
-+	for (i = 0; i < num_roots; i++) {
-+		len = snprintf(str, sizeof(str), "root-%d", i);
-+		if (unlikely(len >= (sizeof(str) - 1))) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
-+
-+		err = xenbus_scanf(XBT_NIL, pdev->xdev->otherend, str,
-+				   "%x:%x", &domain, &bus);
-+		if (err != 2) {
-+			if (err >= 0)
-+				err = -EINVAL;
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error reading PCI root %d", i);
-+			goto out;
-+		}
-+
-+		err = pcifront_scan_root(pdev, domain, bus);
-+		if (err) {
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error scanning PCI root %04x:%02x",
-+					 domain, bus);
-+			goto out;
-+		}
-+	}
-+
-+	err = xenbus_switch_state(pdev->xdev, XenbusStateConnected);
-+
-+out:
-+	return err;
-+}
-+
-+static int pcifront_try_disconnect(struct pcifront_device *pdev)
-+{
-+	int err = 0;
-+	enum xenbus_state prev_state;
-+
-+
-+	prev_state = xenbus_read_driver_state(pdev->xdev->nodename);
-+
-+	if (prev_state >= XenbusStateClosing)
-+		goto out;
-+
-+	if (prev_state == XenbusStateConnected) {
-+		pcifront_free_roots(pdev);
-+		pcifront_disconnect(pdev);
-+	}
-+
-+	err = xenbus_switch_state(pdev->xdev, XenbusStateClosed);
-+
-+out:
-+
-+	return err;
-+}
-+
-+static int __devinit pcifront_attach_devices(struct pcifront_device *pdev)
-+{
-+	int err = -EFAULT;
-+	int i, num_roots, len;
-+	unsigned int domain, bus;
-+	char str[64];
-+
-+	if (xenbus_read_driver_state(pdev->xdev->nodename) !=
-+	    XenbusStateReconfiguring)
-+		goto out;
-+
-+	err = xenbus_scanf(XBT_NIL, pdev->xdev->otherend,
-+			   "root_num", "%d", &num_roots);
-+	if (err == -ENOENT) {
-+		xenbus_dev_error(pdev->xdev, err,
-+				 "No PCI Roots found, trying 0000:00");
-+		err = pcifront_rescan_root(pdev, 0, 0);
-+		num_roots = 0;
-+	} else if (err != 1) {
-+		if (err == 0)
-+			err = -EINVAL;
-+		xenbus_dev_fatal(pdev->xdev, err,
-+				 "Error reading number of PCI roots");
-+		goto out;
-+	}
-+
-+	for (i = 0; i < num_roots; i++) {
-+		len = snprintf(str, sizeof(str), "root-%d", i);
-+		if (unlikely(len >= (sizeof(str) - 1))) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
-+
-+		err = xenbus_scanf(XBT_NIL, pdev->xdev->otherend, str,
-+				   "%x:%x", &domain, &bus);
-+		if (err != 2) {
-+			if (err >= 0)
-+				err = -EINVAL;
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error reading PCI root %d", i);
-+			goto out;
-+		}
-+
-+		err = pcifront_rescan_root(pdev, domain, bus);
-+		if (err) {
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error scanning PCI root %04x:%02x",
-+					 domain, bus);
-+			goto out;
-+		}
-+	}
-+
-+	xenbus_switch_state(pdev->xdev, XenbusStateConnected);
-+
-+out:
-+	return err;
-+}
-+
-+static int pcifront_detach_devices(struct pcifront_device *pdev)
-+{
-+	int err = 0;
-+	int i, num_devs;
-+	unsigned int domain, bus, slot, func;
-+	struct pci_bus *pci_bus;
-+	struct pci_dev *pci_dev;
-+	char str[64];
-+
-+	if (xenbus_read_driver_state(pdev->xdev->nodename) !=
-+	    XenbusStateConnected)
-+		goto out;
-+
-+	err = xenbus_scanf(XBT_NIL, pdev->xdev->otherend, "num_devs", "%d",
-+			   &num_devs);
-+	if (err != 1) {
-+		if (err >= 0)
-+			err = -EINVAL;
-+		xenbus_dev_fatal(pdev->xdev, err,
-+				 "Error reading number of PCI devices");
-+		goto out;
-+	}
-+
-+	/* Find devices being detached and remove them. */
-+	for (i = 0; i < num_devs; i++) {
-+		int l, state;
-+		l = snprintf(str, sizeof(str), "state-%d", i);
-+		if (unlikely(l >= (sizeof(str) - 1))) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
-+		err = xenbus_scanf(XBT_NIL, pdev->xdev->otherend, str, "%d",
-+				   &state);
-+		if (err != 1)
-+			state = XenbusStateUnknown;
-+
-+		if (state != XenbusStateClosing)
++		if (info == NULL || info->type != IRQT_PIRQ)
 +			continue;
 +
-+		/* Remove device. */
-+		l = snprintf(str, sizeof(str), "vdev-%d", i);
-+		if (unlikely(l >= (sizeof(str) - 1))) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
-+		err = xenbus_scanf(XBT_NIL, pdev->xdev->otherend, str,
-+				   "%x:%x:%x.%x", &domain, &bus, &slot, &func);
-+		if (err != 4) {
-+			if (err >= 0)
-+				err = -EINVAL;
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error reading PCI device %d", i);
-+			goto out;
-+		}
-+
-+		pci_bus = pci_find_bus(domain, bus);
-+		if (!pci_bus) {
-+			dev_dbg(&pdev->xdev->dev, "Cannot get bus %04x:%02x\n",
-+				domain, bus);
-+			continue;
-+		}
-+		pci_dev = pci_get_slot(pci_bus, PCI_DEVFN(slot, func));
-+		if (!pci_dev) {
-+			dev_dbg(&pdev->xdev->dev,
-+				"Cannot get PCI device %04x:%02x:%02x.%02x\n",
-+				domain, bus, slot, func);
-+			continue;
-+		}
-+		pci_remove_bus_device(pci_dev);
-+		pci_dev_put(pci_dev);
-+
-+		dev_dbg(&pdev->xdev->dev,
-+			"PCI device %04x:%02x:%02x.%02x removed.\n",
-+			domain, bus, slot, func);
++		if (gsi_from_irq(irq) == gsi)
++			return irq;
 +	}
 +
-+	err = xenbus_switch_state(pdev->xdev, XenbusStateReconfiguring);
-+
-+out:
-+	return err;
++	return -1;
 +}
-+
-+static void __init_refok pcifront_backend_changed(struct xenbus_device *xdev,
-+						  enum xenbus_state be_state)
-+{
-+	struct pcifront_device *pdev = dev_get_drvdata(&xdev->dev);
-+
-+	switch (be_state) {
-+	case XenbusStateUnknown:
-+	case XenbusStateInitialising:
-+	case XenbusStateInitWait:
-+	case XenbusStateInitialised:
-+	case XenbusStateClosed:
-+		break;
-+
-+	case XenbusStateConnected:
-+		pcifront_try_connect(pdev);
-+		break;
-+
-+	case XenbusStateClosing:
-+		dev_warn(&xdev->dev, "backend going away!\n");
-+		pcifront_try_disconnect(pdev);
-+		break;
-+
-+	case XenbusStateReconfiguring:
-+		pcifront_detach_devices(pdev);
-+		break;
-+
-+	case XenbusStateReconfigured:
-+		pcifront_attach_devices(pdev);
-+		break;
-+	}
-+}
-+
-+static int pcifront_xenbus_probe(struct xenbus_device *xdev,
-+				 const struct xenbus_device_id *id)
-+{
-+	int err = 0;
-+	struct pcifront_device *pdev = alloc_pdev(xdev);
-+
-+	if (pdev == NULL) {
-+		err = -ENOMEM;
-+		xenbus_dev_fatal(xdev, err,
-+				 "Error allocating pcifront_device struct");
-+		goto out;
-+	}
-+
-+	err = pcifront_publish_info(pdev);
-+
-+out:
-+	return err;
-+}
-+
-+static int pcifront_xenbus_remove(struct xenbus_device *xdev)
-+{
-+	struct pcifront_device *pdev = dev_get_drvdata(&xdev->dev);
-+	if (pdev)
-+		free_pdev(pdev);
-+
-+	return 0;
-+}
-+
-+static const struct xenbus_device_id xenpci_ids[] = {
-+	{"pci"},
-+	{""},
-+};
-+
-+static struct xenbus_driver xenbus_pcifront_driver = {
-+	.name			= "pcifront",
-+	.owner			= THIS_MODULE,
-+	.ids			= xenpci_ids,
-+	.probe			= pcifront_xenbus_probe,
-+	.remove			= pcifront_xenbus_remove,
-+	.otherend_changed	= pcifront_backend_changed,
-+};
-+
-+static int __init pcifront_init(void)
-+{
-+	if (!xen_domain())
-+		return -ENODEV;
-+
-+	pci_frontend_registrar(1 /* enable */);
-+
-+	return xenbus_register_frontend(&xenbus_pcifront_driver);
-+}
-+
-+static void __exit pcifront_cleanup(void)
-+{
-+	xenbus_unregister_driver(&xenbus_pcifront_driver);
-+	pci_frontend_registrar(0 /* disable */);
-+}
-+module_init(pcifront_init);
-+module_exit(pcifront_cleanup);
-+
-+MODULE_DESCRIPTION("Xen PCI passthrough frontend.");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("xen:pci");
-diff --git a/include/xen/interface/io/pciif.h b/include/xen/interface/io/pciif.h
-new file mode 100644
-index 0000000..c955a1d
---- /dev/null
-+++ b/include/xen/interface/io/pciif.h
-@@ -0,0 +1,122 @@
-+/*
-+ * PCI Backend/Frontend Common Data Structures & Macros
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ *
-+ *   Author: Ryan Wilson <hap9@epoch.ncsc.mil>
-+ */
-+#ifndef __XEN_PCI_COMMON_H__
-+#define __XEN_PCI_COMMON_H__
-+
-+/* Be sure to bump this number if you change this file */
-+#define XEN_PCI_MAGIC "7"
-+
-+/* xen_pci_sharedinfo flags */
-+#define	_XEN_PCIF_active		(0)
-+#define	XEN_PCIF_active			(1<<_XEN_PCIF_active)
-+#define	_XEN_PCIB_AERHANDLER		(1)
-+#define	XEN_PCIB_AERHANDLER		(1<<_XEN_PCIB_AERHANDLER)
-+#define	_XEN_PCIB_active		(2)
-+#define	XEN_PCIB_active			(1<<_XEN_PCIB_active)
-+
-+/* xen_pci_op commands */
-+#define	XEN_PCI_OP_conf_read		(0)
-+#define	XEN_PCI_OP_conf_write		(1)
-+#define	XEN_PCI_OP_enable_msi		(2)
-+#define	XEN_PCI_OP_disable_msi		(3)
-+#define	XEN_PCI_OP_enable_msix		(4)
-+#define	XEN_PCI_OP_disable_msix		(5)
-+#define	XEN_PCI_OP_aer_detected		(6)
-+#define	XEN_PCI_OP_aer_resume		(7)
-+#define	XEN_PCI_OP_aer_mmio		(8)
-+#define	XEN_PCI_OP_aer_slotreset	(9)
-+
-+/* xen_pci_op error numbers */
-+#define	XEN_PCI_ERR_success		(0)
-+#define	XEN_PCI_ERR_dev_not_found	(-1)
-+#define	XEN_PCI_ERR_invalid_offset	(-2)
-+#define	XEN_PCI_ERR_access_denied	(-3)
-+#define	XEN_PCI_ERR_not_implemented	(-4)
-+/* XEN_PCI_ERR_op_failed - backend failed to complete the operation */
-+#define XEN_PCI_ERR_op_failed		(-5)
 +
 +/*
-+ * it should be PAGE_SIZE-sizeof(struct xen_pci_op))/sizeof(struct msix_entry))
-+ * Should not exceed 128
++ * Allocate a physical irq, along with a vector.  We don't assign an
++ * event channel until the irq actually started up.  Return an
++ * existing irq if we've already got one for the gsi.
 + */
-+#define SH_INFO_MAX_VEC			128
++int xen_allocate_pirq(unsigned gsi)
++{
++	int irq;
++	struct physdev_irq irq_op;
 +
-+struct xen_msix_entry {
-+    uint16_t vector;
-+    uint16_t entry;
++	spin_lock(&irq_mapping_update_lock);
++
++	irq = find_irq_by_gsi(gsi);
++	if (irq != -1) {
++		printk(KERN_INFO "xen_allocate_pirq: returning irq %d for gsi %u\n",
++		       irq, gsi);
++		goto out;	/* XXX need refcount? */
++	}
++
++	if (identity_mapped_irq(gsi)) {
++		irq = gsi;
++		dynamic_irq_init(irq);
++	} else
++		irq = find_unbound_irq();
++
++	set_irq_chip_and_handler_name(irq, &xen_pirq_chip,
++				      handle_level_irq, "pirq");
++
++	irq_op.irq = irq;
++	if (HYPERVISOR_physdev_op(PHYSDEVOP_alloc_irq_vector, &irq_op)) {
++		dynamic_irq_cleanup(irq);
++		irq = -ENOSPC;
++		goto out;
++	}
++
++	irq_info[irq] = mk_pirq_info(0, gsi, irq_op.vector);
++
++out:
++	spin_unlock(&irq_mapping_update_lock);
++
++	return irq;
++}
++
++int xen_vector_from_irq(unsigned irq)
++{
++	return vector_from_irq(irq);
++}
++
++int xen_gsi_from_irq(unsigned irq)
++{
++	return gsi_from_irq(irq);
++}
++
+ int bind_evtchn_to_irq(unsigned int evtchn)
+ {
+ 	int irq;
+@@ -933,6 +1152,26 @@ static struct irq_chip xen_dynamic_chip __read_mostly = {
+ 	.retrigger	= retrigger_dynirq,
+ };
+ 
++static struct irq_chip xen_pirq_chip __read_mostly = {
++	.name		= "xen-pirq",
++
++	.startup	= startup_pirq,
++	.shutdown	= shutdown_pirq,
++
++	.enable		= enable_pirq,
++	.unmask		= enable_pirq,
++
++	.disable	= disable_pirq,
++	.mask		= disable_pirq,
++
++	.ack		= ack_pirq,
++	.end		= end_pirq,
++
++	.set_affinity	= set_affinity_irq,
++
++	.retrigger	= retrigger_dynirq,
 +};
-+struct xen_pci_op {
-+    /* IN: what action to perform: XEN_PCI_OP_* */
-+    uint32_t cmd;
 +
-+    /* OUT: will contain an error number (if any) from errno.h */
-+    int32_t err;
+ void __init xen_init_IRQ(void)
+ {
+ 	int i;
+diff --git a/include/xen/events.h b/include/xen/events.h
+index e68d59a..2303180 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -56,4 +56,15 @@ void xen_poll_irq(int irq);
+ /* Determine the IRQ which is bound to an event channel */
+ unsigned irq_from_evtchn(unsigned int evtchn);
+ 
++/* Allocate an irq for a physical interrupt, given a gsi.  "Legacy"
++   GSIs are identity mapped; others are dynamically allocated as
++   usual. */
++int xen_allocate_pirq(unsigned gsi);
 +
-+    /* IN: which device to touch */
-+    uint32_t domain; /* PCI Domain/Segment */
-+    uint32_t bus;
-+    uint32_t devfn;
++/* Return vector allocated to pirq */
++int xen_vector_from_irq(unsigned pirq);
 +
-+    /* IN: which configuration registers to touch */
-+    int32_t offset;
-+    int32_t size;
++/* Return gsi allocated to pirq */
++int xen_gsi_from_irq(unsigned pirq);
 +
-+    /* IN/OUT: Contains the result after a READ or the value to WRITE */
-+    uint32_t value;
-+    /* IN: Contains extra infor for this operation */
-+    uint32_t info;
-+    /*IN:  param for msi-x */
-+    struct xen_msix_entry msix_entries[SH_INFO_MAX_VEC];
-+};
-+
-+/*used for pcie aer handling*/
-+struct xen_pcie_aer_op {
-+    /* IN: what action to perform: XEN_PCI_OP_* */
-+    uint32_t cmd;
-+    /*IN/OUT: return aer_op result or carry error_detected state as input*/
-+    int32_t err;
-+
-+    /* IN: which device to touch */
-+    uint32_t domain; /* PCI Domain/Segment*/
-+    uint32_t bus;
-+    uint32_t devfn;
-+};
-+struct xen_pci_sharedinfo {
-+    /* flags - XEN_PCIF_* */
-+    uint32_t flags;
-+    struct xen_pci_op op;
-+    struct xen_pcie_aer_op aer_op;
-+};
-+
-+#endif /* __XEN_PCI_COMMON_H__ */
-+
-+/*
-+ * Local variables:
-+ * mode: C
-+ * c-set-style: "BSD"
-+ * c-basic-offset: 4
-+ * tab-width: 4
-+ * indent-tabs-mode: nil
-+ * End:
-+ */
+ #endif	/* _XEN_EVENTS_H */
 -- 
 1.7.0.1
 
