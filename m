@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab0HDLA2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 07:00:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36283 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755789Ab0HDLA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 07:00:26 -0400
-Date: Wed, 4 Aug 2010 13:00:23 +0200
-From: Matthias Hopf <mhopf@suse.de>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, Matthew Garrett <mjg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Julia Lawall <julia@diku.dk>, Oliver Neukum <oneukum@suse.de>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI / PM: Traverse video_device_list for backlight
-	restoration
-Message-ID: <20100804110023.GA17385@suse.de>
-Mail-Followup-To: Zhang Rui <rui.zhang@intel.com>,
-	Len Brown <lenb@kernel.org>, Matthew Garrett <mjg@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Julia Lawall <julia@diku.dk>, Oliver Neukum <oneukum@suse.de>,
-	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-	"linux-pm@lists.linux-foundation.org" <linux-pm@lists.linux-foundation.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20100803100505.GA26948@suse.de> <20100803101157.GA29721@suse.de> <1280885249.1779.97.camel@rui>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280885249.1779.97.camel@rui>
-Organization: SUSE LINUX Products GmbH, =?iso-8859-1?Q?G?=
-	=?iso-8859-1?Q?F=3A_Markus_Rex=2C_HRB_16746_=28AG_N=FCrnberg=29?=
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S932513Ab0HDLJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 07:09:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60038 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab0HDLJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 07:09:00 -0400
+Subject: RE: [PATCH 1/2] mtdpart: memory accessor interface for MTD layer
+From: David Woodhouse <dwmw2@infradead.org>
+To: David Brownell <david-b@pacbell.net>
+Cc: "'Kevin Hilman'" <khilman@deeprootsystems.com>,
+        Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
+        "'Bernd Schmidt'" <bernd.schmidt@analog.com>,
+        "'Nicolas Pitre'" <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        "'David Howells'" <dhowells@redhat.com>,
+        "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        linux-mtd@lists.infradead.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+In-Reply-To: <350720.60481.qm@web180309.mail.gq1.yahoo.com>
+References: <350720.60481.qm@web180309.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Aug 2010 12:08:47 +0100
+Message-ID: <1280920127.19499.20.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.6 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 04, 10 09:27:29 +0800, Zhang Rui wrote:
-> On Tue, 2010-08-03 at 18:11 +0800, Matthias Hopf wrote:
-> > The .bind_info is later used in acpi_video_resume() to re-set the backlight
-> > - but it's only evaluated on the active_list[], on which all .bind_info are
-> > NULL by construction.
-> why? .bind_info in active_list is initialized in acpi_video_device_bind.
+On Wed, 2010-08-04 at 03:31 -0700, David Brownell wrote:
+> Point is to ensure that enough of the right context
+> information is available to initialize correctly.
+> So the right data is extracted and passed on.
 
-Hm. Right. acpi_video_bus_get_one_device() is called after _enumerate().
-Dunno why I didn't read this correctly.
+Forgive me if I'm being dim (and in particular, please forgive me if I'm
+going over something that was already discussed; I know it's been a
+while). But I don't see why it needs to be passed through the core MTD
+code.
 
-> > I don't understand
-> > why the list is (partially) transformed into an array in the first place,
-> > especially as both the array *and* the list are used in the code...
-> > 
-> no, the active_list is an array in fact, which equals
-> acpi_video_bus->attached_array. Maybe we need to change it to a more
-> proper name.
+To take the simple case of an unpartitioned MTD device -- why can't the
+map driver (or whatever) just call the maccessor setup function for
+itself, directly, right after calling add_mtd_device() with its
+newly-probed MTD device?
 
-:-)
+And for partitions, why can't it do the same, on the appropriate
+partition.
 
-> I'm still wondering why the patch works for you.
+OK, the answer to the latter question is that you don't actually *have*
+the pointers to each partition you register. But that's easily fixed.
 
-Same to me.
+If we make add_mtd_partitions() take an extra 'struct mtd_info **'
+argument and put pointers to the slave mtd 'devices' into that, it means
+that your board driver *can* reliably get the mtd pointer for the fourth
+partition, or whatever it needs. And can then just do the memory
+accessor setup for itself.
 
-> could you please attach the acpidump output of this laptop?
-
-Will do.
-
-> please rebuild your kernel with CONFIG_ACPI_DEBUG=y, and reboot with
-> kernel parameter "acpi.debug_layer=0x10 acpi.debug_level=0x400".
-> and attach the dmesg output after resume, both w/ and w/o the patch you
-> attached.
-
-The most intriguing thing here is that the system starts writing to
-/var/log/messages continuously, thus dmesg output is sort-of worthless.
-This might be a reasonable side effect, it might be an indication of the
-original issue.
-I'll try to compile something for you.
-
-Thanks
-
-Matthias
+Isn't that enough?
 
 -- 
-Matthias Hopf <mhopf@suse.de>      __        __   __
-Maxfeldstr. 5 / 90409 Nuernberg   (_   | |  (_   |__          mat@mshopf.de
-Phone +49-911-74053-715           __)  |_|  __)  |__  R & D   www.mshopf.de
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
+
