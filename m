@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921Ab0HDOqG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 10:46:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44891 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932840Ab0HDOqB convert rfc822-to-8bit (ORCPT
+	id S932885Ab0HDOuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 10:50:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36090 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932838Ab0HDOuu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 10:46:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C591D65.4070508@kernel.org>
-References: <AANLkTim6Bn++JaspY0cbpLLvi=MYBLNgUhARwKQkoYpE@mail.gmail.com>
-	<1280887483-2979-1-git-send-email-wad@chromium.org>
-	<4C591D65.4070508@kernel.org>
-Date: Wed, 4 Aug 2010 09:46:00 -0500
-Message-ID: <AANLkTinqNuKkvk8NPpUyr5VZuNmgLJzju9N0KTPvPdxn@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] block, partition: add partition_meta_info to 
-	hd_struct
-From: Will Drewry <wad@chromium.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+	Wed, 4 Aug 2010 10:50:50 -0400
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+In-Reply-To: <20100804140605.GA29371@Krystal>
+References: <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
+	 <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal>
+	 <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal>
+	 <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal>
+	 <1280855904.1923.675.camel@laptop>
+	 <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+	 <1280903273.1923.682.camel@laptop>  <20100804140605.GA29371@Krystal>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Wed, 04 Aug 2010 16:50:10 +0200
+Message-ID: <1280933410.1923.1267.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 2:57 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> On 08/04/2010 04:04 AM, Will Drewry wrote:
->> This changes adds a partition_meta_info struct which itself contains a
->> union of structures that provide partition table specific metadata.
->>
->> This change leaves the union empty. The subsequent patch includes an
->> implementation for CONFIG_EFI_PARTITION-based metadata.
->>
->> Signed-off-by: Will Drewry <wad@chromium.org>
->
-> Generally looks good to me.
->
->>  /*
->>   * add_gd_partition adds a partitions details to the devices partition
->>   * description.
->> @@ -12,6 +13,7 @@ struct parsed_partitions {
->>               sector_t from;
->>               sector_t size;
->>               int flags;
->> +             struct partition_meta_info *info;
->>       } parts[DISK_MAX_PARTS];
->
-> But you can just embed the structure here.  It's a temp data structure
-> to make things easier for individual partition scan code.  There's no
-> need to save bytes.
+On Wed, 2010-08-04 at 10:06 -0400, Mathieu Desnoyers wrote:
 
-Great - that'll simplify the code more.
+> The first major gain is the ability to implement flight recorder tracing
+> (overwrite mode), which Perf still lacks.
 
-Thanks!
+http://lkml.org/lkml/2009/7/6/178
+
+I've send out something like that several times, but nobody took it
+(that is, tested it and provided a user). Note how it doesn't require
+anything like sub-buffers.
+
+> A second major gain: having these sub-buffers lets the trace analyzer seek in
+> the trace very efficiently by allowing it to perform a binary search for time to
+> find the appropriate sub-buffer. It becomes immensely useful with large traces.
+
+You can add sync events with a specific magic cookie in. Once you find
+the cookie you can sync and start reading it reliably -- the advantage
+is that sync events are very easy to have as an option and don't
+complicate the reserve path.
+
+> The third major gain: for live streaming of traces, having sub-buffer lets you
+> "package" the event data you send over the network into sub-buffers.
+
+See the sync events. Also, a transport can rewrite the stream any which
+way it pretty well wants to, as long as the kernel<->user interface is
+reliable an unreliable user<->user transport can repackage it to suit
+its needs.
+
+> Making sure events don't cross sub-buffer boundaries simplify a lot of things,
+> starting with dealing with "overwritten" sub-buffers in flight recorder mode.
+> Trying to deal with a partially overwritten event is just insane.
+
+See the above patch, simply parse the events and push the tail pointer
+ahead of the reservation before you trample on it.
+
+If you worry about the cost of parsing the events, you can amortize that
+by things like keeping the offset of the first event in every page in
+the pageframe, or the offset of the next sync event or whatever scheme
+you want.
+
+Again, no need for sub-buffers.
+
+Also, not having sub-buffers makes reservation easier since you don't
+need to worry about those empty tails.
