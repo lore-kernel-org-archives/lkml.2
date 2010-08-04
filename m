@@ -1,127 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab0HDC4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:56:17 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:29081 "HELO
+	id S932474Ab0HDCwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:52:12 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:29064 "HELO
 	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758195Ab0HDCwN (ORCPT
+	by vger.kernel.org with SMTP id S1756860Ab0HDCwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:52:13 -0400
+	Tue, 3 Aug 2010 22:52:08 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Aug 2010 22:52:08 EDT
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 5hRaqJwVM1nRxx9HPPdEgQxEEBYCdtkhKvSbcskd_wp7Xta
- vzH.d.XtOJ4._3d9IAGzLzvBu.PQC9iP1uod9b6DddHuoigy3W.fseFZM9.v
- nmVi_m075u7O0SHY2r6IOR.NV8PfUp3FYNUm4r.bpJzD6kgROzhALOnRf1AV
- FA6bNPwUUqD3Dp8Zv29hGv5_GqUmLGU2gIHfo9q89jX6CvEP21sJFU4NgtBr
- qmDMV2Q5LZH167JYdZdaDhJgj.nYHxMVYENUPOJtdjQOPfVQanYAGGYlIeWT
- W3c7eT7QavEfq_fVA
+X-YMail-OSG: sgwIarcVM1mxgQ9Ol8dmgkpjhlPixDr6diVrUp3PCREh0nD
+ vCOzOjTFV9yhMDVvEBmdP2KMbvqZ8bWYXq0I8MKMxQMTuCmkoVfFPLggVHYk
+ _fQL4Sr5iaRIS6xkVzfcCXtKYuqZTkD_rUmP85rn94TQ0kRvdGxIm4nabgel
+ OodNzW1dy0PAM3qMC2DUSBW5nOT6qj68ygT9.shXB.Z8Uad3scenIO9oLH3v
+ 5AhMZ2jm3iYcekow7TBig_HRk99p7GfhrmcigEvDiH.K4ktTVAFejXZqjcHz
+ a
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20100804024530.755052163@linux.com>
+Message-Id: <20100804024524.401853913@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 Aug 2010 21:45:26 -0500
+Date: Tue, 03 Aug 2010 21:45:15 -0500
 From: Christoph Lameter <cl@linux-foundation.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org
+Cc: linux-mm@kvack.org, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: Nick Piggin <npiggin@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q3 12/23] slub: Extract hooks for memory checkers from hotpaths
+Subject: [S+Q3 01/23] percpu: make @dyn_size always mean min dyn_size in first chunk init functions
 References: <20100804024514.139976032@linux.com>
-Content-Disposition: inline; filename=slub_extract
+Content-Disposition: inline; filename=percpu_early_1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extract the code that memory checkers and other verification tools use from
-the hotpaths. Makes it easier to add new ones and reduces the disturbances
-of the hotpaths.
+From: Tejun Heo <tj@kernel.org>
 
+In pcpu_build_alloc_info() and pcpu_embed_first_chunk(), @dyn_size was
+ssize_t, -1 meant auto-size, 0 forced 0 and positive meant minimum
+size.  There's no use case for forcing 0 and the upcoming early alloc
+support always requires non-zero dynamic size.  Make @dyn_size always
+mean minimum dyn_size.
+
+While at it, make pcpu_build_alloc_info() static which doesn't have
+any external caller as suggested by David Rientjes.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 
----
- mm/slub.c |   49 ++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 38 insertions(+), 11 deletions(-)
-
-Index: linux-2.6/mm/slub.c
+Index: work/include/linux/percpu.h
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-26 14:26:24.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-26 14:26:33.000000000 -0500
-@@ -793,6 +793,37 @@ static void trace(struct kmem_cache *s, 
- }
- 
- /*
-+ * Hooks for other subsystems that check memory allocations. In a typical
-+ * production configuration these hooks all should produce no code at all.
-+ */
-+static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
-+{
-+	lockdep_trace_alloc(flags);
-+	might_sleep_if(flags & __GFP_WAIT);
-+
-+	return should_failslab(s->objsize, flags, s->flags);
-+}
-+
-+static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags, void *object)
-+{
-+	kmemcheck_slab_alloc(s, flags, object, s->objsize);
-+	kmemleak_alloc_recursive(object, s->objsize, 1, s->flags, flags);
-+}
-+
-+static inline void slab_free_hook(struct kmem_cache *s, void *x)
-+{
-+	kmemleak_free_recursive(x, s->flags);
-+}
-+
-+static inline void slab_free_hook_irq(struct kmem_cache *s, void *object)
-+{
-+	kmemcheck_slab_free(s, object, s->objsize);
-+	debug_check_no_locks_freed(object, s->objsize);
-+	if (!(s->flags & SLAB_DEBUG_OBJECTS))
-+		debug_check_no_obj_freed(object, s->objsize);
-+}
-+
-+/*
-  * Tracking of fully allocated slabs for debugging purposes.
-  */
- static void add_full(struct kmem_cache_node *n, struct page *page)
-@@ -1698,10 +1729,7 @@ static __always_inline void *slab_alloc(
- 
- 	gfpflags &= gfp_allowed_mask;
- 
--	lockdep_trace_alloc(gfpflags);
--	might_sleep_if(gfpflags & __GFP_WAIT);
+--- work.orig/include/linux/percpu.h
++++ work/include/linux/percpu.h
+@@ -104,16 +104,11 @@ extern struct pcpu_alloc_info * __init p
+ 							     int nr_units);
+ extern void __init pcpu_free_alloc_info(struct pcpu_alloc_info *ai);
+
+-extern struct pcpu_alloc_info * __init pcpu_build_alloc_info(
+-				size_t reserved_size, ssize_t dyn_size,
+-				size_t atom_size,
+-				pcpu_fc_cpu_distance_fn_t cpu_distance_fn);
 -
--	if (should_failslab(s->objsize, gfpflags, s->flags))
-+	if (!slab_pre_alloc_hook(s, gfpflags))
- 		return NULL;
- 
- 	local_irq_save(flags);
-@@ -1720,8 +1748,7 @@ static __always_inline void *slab_alloc(
- 	if (unlikely(gfpflags & __GFP_ZERO) && object)
- 		memset(object, 0, s->objsize);
- 
--	kmemcheck_slab_alloc(s, gfpflags, object, s->objsize);
--	kmemleak_alloc_recursive(object, s->objsize, 1, s->flags, gfpflags);
-+	slab_post_alloc_hook(s, gfpflags, object);
- 
- 	return object;
+ extern int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 					 void *base_addr);
+
+ #ifdef CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK
+-extern int __init pcpu_embed_first_chunk(size_t reserved_size, ssize_t dyn_size,
++extern int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 				size_t atom_size,
+ 				pcpu_fc_cpu_distance_fn_t cpu_distance_fn,
+ 				pcpu_fc_alloc_fn_t alloc_fn,
+Index: work/mm/percpu.c
+===================================================================
+--- work.orig/mm/percpu.c
++++ work/mm/percpu.c
+@@ -1013,20 +1013,6 @@ phys_addr_t per_cpu_ptr_to_phys(void *ad
+ 		return page_to_phys(pcpu_addr_to_page(addr));
  }
-@@ -1851,13 +1878,13 @@ static __always_inline void slab_free(st
- 	struct kmem_cache_cpu *c;
- 	unsigned long flags;
- 
--	kmemleak_free_recursive(x, s->flags);
-+	slab_free_hook(s, x);
+
+-static inline size_t pcpu_calc_fc_sizes(size_t static_size,
+-					size_t reserved_size,
+-					ssize_t *dyn_sizep)
+-{
+-	size_t size_sum;
+-
+-	size_sum = PFN_ALIGN(static_size + reserved_size +
+-			     (*dyn_sizep >= 0 ? *dyn_sizep : 0));
+-	if (*dyn_sizep != 0)
+-		*dyn_sizep = size_sum - static_size - reserved_size;
+-
+-	return size_sum;
+-}
+-
+ /**
+  * pcpu_alloc_alloc_info - allocate percpu allocation info
+  * @nr_groups: the number of groups
+@@ -1085,7 +1071,7 @@ void __init pcpu_free_alloc_info(struct
+ /**
+  * pcpu_build_alloc_info - build alloc_info considering distances between CPUs
+  * @reserved_size: the size of reserved percpu area in bytes
+- * @dyn_size: free size for dynamic allocation in bytes, -1 for auto
++ * @dyn_size: minimum free size for dynamic allocation in bytes
+  * @atom_size: allocation atom size
+  * @cpu_distance_fn: callback to determine distance between cpus, optional
+  *
+@@ -1103,8 +1089,8 @@ void __init pcpu_free_alloc_info(struct
+  * On success, pointer to the new allocation_info is returned.  On
+  * failure, ERR_PTR value is returned.
+  */
+-struct pcpu_alloc_info * __init pcpu_build_alloc_info(
+-				size_t reserved_size, ssize_t dyn_size,
++static struct pcpu_alloc_info * __init pcpu_build_alloc_info(
++				size_t reserved_size, size_t dyn_size,
+ 				size_t atom_size,
+ 				pcpu_fc_cpu_distance_fn_t cpu_distance_fn)
+ {
+@@ -1123,13 +1109,15 @@ struct pcpu_alloc_info * __init pcpu_bui
+ 	memset(group_map, 0, sizeof(group_map));
+ 	memset(group_cnt, 0, sizeof(group_cnt));
+
++	size_sum = PFN_ALIGN(static_size + reserved_size + dyn_size);
++	dyn_size = size_sum - static_size - reserved_size;
 +
- 	local_irq_save(flags);
- 	c = __this_cpu_ptr(s->cpu_slab);
--	kmemcheck_slab_free(s, object, s->objsize);
--	debug_check_no_locks_freed(object, s->objsize);
--	if (!(s->flags & SLAB_DEBUG_OBJECTS))
--		debug_check_no_obj_freed(object, s->objsize);
-+
-+	slab_free_hook_irq(s, x);
-+
- 	if (likely(page == c->page && c->node >= 0)) {
- 		set_freepointer(s, object, c->freelist);
- 		c->freelist = object;
+ 	/*
+ 	 * Determine min_unit_size, alloc_size and max_upa such that
+ 	 * alloc_size is multiple of atom_size and is the smallest
+ 	 * which can accomodate 4k aligned segments which are equal to
+ 	 * or larger than min_unit_size.
+ 	 */
+-	size_sum = pcpu_calc_fc_sizes(static_size, reserved_size, &dyn_size);
+ 	min_unit_size = max_t(size_t, size_sum, PCPU_MIN_UNIT_SIZE);
+
+ 	alloc_size = roundup(min_unit_size, atom_size);
+@@ -1532,7 +1520,7 @@ early_param("percpu_alloc", percpu_alloc
+ /**
+  * pcpu_embed_first_chunk - embed the first percpu chunk into bootmem
+  * @reserved_size: the size of reserved percpu area in bytes
+- * @dyn_size: free size for dynamic allocation in bytes, -1 for auto
++ * @dyn_size: minimum free size for dynamic allocation in bytes
+  * @atom_size: allocation atom size
+  * @cpu_distance_fn: callback to determine distance between cpus, optional
+  * @alloc_fn: function to allocate percpu page
+@@ -1553,10 +1541,7 @@ early_param("percpu_alloc", percpu_alloc
+  * vmalloc space is not orders of magnitude larger than distances
+  * between node memory addresses (ie. 32bit NUMA machines).
+  *
+- * When @dyn_size is positive, dynamic area might be larger than
+- * specified to fill page alignment.  When @dyn_size is auto,
+- * @dyn_size is just big enough to fill page alignment after static
+- * and reserved areas.
++ * @dyn_size specifies the minimum dynamic area size.
+  *
+  * If the needed size is smaller than the minimum or specified unit
+  * size, the leftover is returned using @free_fn.
+@@ -1564,7 +1549,7 @@ early_param("percpu_alloc", percpu_alloc
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int __init pcpu_embed_first_chunk(size_t reserved_size, ssize_t dyn_size,
++int __init pcpu_embed_first_chunk(size_t reserved_size, size_t dyn_size,
+ 				  size_t atom_size,
+ 				  pcpu_fc_cpu_distance_fn_t cpu_distance_fn,
+ 				  pcpu_fc_alloc_fn_t alloc_fn,
+@@ -1695,7 +1680,7 @@ int __init pcpu_page_first_chunk(size_t
+
+ 	snprintf(psize_str, sizeof(psize_str), "%luK", PAGE_SIZE >> 10);
+
+-	ai = pcpu_build_alloc_info(reserved_size, -1, PAGE_SIZE, NULL);
++	ai = pcpu_build_alloc_info(reserved_size, 0, PAGE_SIZE, NULL);
+ 	if (IS_ERR(ai))
+ 		return PTR_ERR(ai);
+ 	BUG_ON(ai->nr_groups != 1);
 
