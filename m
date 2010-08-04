@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab0HDWoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:44:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34907 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751742Ab0HDWny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:43:54 -0400
-Date: Wed, 4 Aug 2010 15:42:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-Cc: linux-kernel@vger.kernel.org, Trevor Keith <tsrk@tsrk.net>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] fixed resource leak in scripts/mod/modpost.c
-Message-Id: <20100804154248.866f8eb9.akpm@linux-foundation.org>
-In-Reply-To: <1280925523.4449.158.camel@alex-desktop>
-References: <1280925523.4449.158.camel@alex-desktop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S1758081Ab0HDWsr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:48:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754585Ab0HDWsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 18:48:46 -0400
+Date: Wed, 4 Aug 2010 18:48:31 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100804224831.GB29353@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+In-Reply-To: <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Aug 2010 15:38:43 +0300
-Alexey Fomenko <ext-alexey.fomenko@nokia.com> wrote:
 
-> sec2annotation returns malloc'ed buffer directly to printf as an
-> argument. Patch lets free this buffer after printing. 
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
+> On Tue, 15 Jun 2010, Valerie Aurora wrote:
+> > Add support for fallthru directory entries to ext2.
 > 
+> If a previously used ext2 filesystem with is mounted again then
+> fallthroughs don't appear to work as expected.  Stat returns ENOENT
+> for these entries.
 > 
-> [0001-fixed-resource-leak-in-scripts-mod-modpost.c.patch  text/x-patch (5.3KB)]
-> >From 57bde7f335730f95eac75bcec5a27fb6686df25a Mon Sep 17 00:00:00 2001
-> From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-> Date: Tue, 27 Jul 2010 17:59:04 +0300
-> Subject: [PATCH] fixed resource leak in scripts/mod/modpost.c
-> 
+> Can't see anything obviously wrong with the code.
 
-Against 2.6.35:
+Hm, I wrote one test case for this that worked (attached).  Can you
+give me more details on your test case?  Thanks,
 
-patching file scripts/mod/modpost.c
-Hunk #1 succeeded at 1195 (offset 37 lines).
-Hunk #2 FAILED at 1221.
-Hunk #3 FAILED at 1243.
-Hunk #4 FAILED at 1268.
-Hunk #5 FAILED at 1301.
-Hunk #6 FAILED at 1318.
-5 out of 6 hunks FAILED -- saving rejects to file scripts/mod/modpost.c.rej
+-VAL
 
-please check up on that.
+--zYM0uCDKw75PZbzx
+Content-Type: application/x-sh
+Content-Disposition: attachment; filename="ext2_remount_fallthrus.sh"
+Content-Transfer-Encoding: quoted-printable
 
-Please also cc Rusty on this change.
+#!/bin/bash=0A=0Aecho -n "Check if ext2 fallthrus still fall through after =
+a umount/remount... "=0A=0Amount -o ro,loop ./img/ro ./mnt/union=0A=0Add if=
+=3D/dev/zero of=3D./img/rw bs=3D4096 seek=3D255 count=3D1 >/dev/null 2>&1=
+=0A/sbin/mkfs.ext2 -F -O whiteout,fallthru ./img/rw >/dev/null 2>&1=0Amount=
+ -o loop,union ./img/rw ./mnt/union/=0A=0A# Create some fallthrus=0Als ./mn=
+t/union/ >/dev/null=0A=0A# See if we can lookup through a fallthru=0Astat .=
+/mnt/union/ro_file >/dev/null=0A=0Aif [ "$?" !=3D "0" ]; then=0A    echo "L=
+ookup of fallthru failed!"=0A    exit 1=0Afi=0A=0A# Mount it somewhere else=
+ and make sure we haven't copied up the file=0Aumount ./mnt/union=0Amount -=
+o loop ./img/rw ./mnt/scratch=0A=0Astat ./mnt/scratch/ro_file >/dev/null 2>=
+&1=0A=0Aif [ "$?" =3D "0" ]; then=0A    echo "Test won't work, stat copied =
+up the file instead of making a fallthru!"=0A    exit 1=0Afi=0A=0A# Unmount=
+ it, remount it as a union, see if fallthru still works=0Aumount ./mnt/scra=
+tch=0Amount -o loop,union ./img/rw ./mnt/union/=0A=0Astat ./mnt/union/ro_fi=
+le >/dev/null=0A=0Aif [ "$?" !=3D "0" ]; then=0A    echo "Lookup of fallthr=
+u after umount/mount failed!"=0A    exit 1=0Afi=0A=0Aumount ./mnt/union=0Ai=
+f [ "$?" !=3D "0" ]; then=0A    echo "umount failed!"=0A    exit 1=0Afi=0Au=
+mount ./mnt/union=0Aif [ "$?" !=3D "0" ]; then=0A    echo "umount failed!"=
+=0A    exit 1=0Afi=0A=0Aexit 0=0A
+--zYM0uCDKw75PZbzx--
