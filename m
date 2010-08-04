@@ -1,115 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759482Ab0HDX2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:28:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39036 "EHLO ogre.sisk.pl"
+	id S1759486Ab0HDXaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:30:21 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:57492 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757837Ab0HDX2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:28:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1759439Ab0HDXaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 19:30:17 -0400
+Date: Wed, 4 Aug 2010 16:30:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: david@lang.hm
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Date: Thu, 5 Aug 2010 01:26:20 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org,
-        "linux-kernel" <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
         swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
         alan@lxorguk.ukuu.org.uk
-References: <20100801210548.23f77ff6@infradead.org> <201008042231.51901.rjw@sisk.pl> <alpine.DEB.2.00.1008041600060.6545@asgard.lang.hm>
-In-Reply-To: <alpine.DEB.2.00.1008041600060.6545@asgard.lang.hm>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100804233013.GN24163@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100801054816.GI2470@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
+ <20100804185520.GA2417@srcf.ucam.org>
+ <201008042251.08266.rjw@sisk.pl>
+ <20100804205654.GA4986@srcf.ucam.org>
+ <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
+ <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
+ <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
+ <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com>
+ <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008050126.20812.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 05, 2010, david@lang.hm wrote:
-> On Wed, 4 Aug 2010, Rafael J. Wysocki wrote:
+On Wed, Aug 04, 2010 at 04:23:43PM -0700, david@lang.hm wrote:
+> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
 > 
-> > Subject: Re: Attempted summary of suspend-blockers LKML thread
-> > 
-> > On Wednesday, August 04, 2010, david@lang.hm wrote:
-> >> On Wed, 4 Aug 2010, Rafael J. Wysocki wrote:
-> >>> In the suspend case, when you have frozen all applications, you can
-> >>> sequentially disable all interrupts except for a few selected ("wakeup") ones
-> >>> in a safe way.   By disabling them, you ensure that the CPU will only be
-> >>> "revived" by a limited set of events and that allows the system to stay
-> >>> low-power for extended time intervals.
+> >2010/8/4  <david@lang.hm>:
+> >>On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
 > >>
-> >> the benifit of this will depend on what wakeups you are able to avoid by
-> >> putting the hardware to sleep. Depending on the hardware, this may be not
-> >> matter that much.
-> >
-> > That's correct, but evidently it does make a difference with the hardware
-> > Android commonly runs on.
-> 
-> Ok, but is there a way to put some of this to sleep without involving a 
-> full suspend?
-
-Technically, maybe, but we have no generic infrastructure in the kernel for that.
-There may be SoC-specific implementations, but nothing general enough.
-
-> >> In addition, there are input devices like a touchscreen that could be
-> >> disabled even short of a full suspend, as long as there is some way to get
-> >> them reactivated.
-> >
-> > That's correct again, but it doesn't matter too much as far as the difference
-> > between "deep idle" and suspend is concerned.  These devices are generally not
-> > the interrupt sources that are difficult to shut down safely in the "idle" case.
-> >
-> >>> To achieve the same result in the "idle" case, you'll need to have a mechanism
-> >>> to disable interrupts (except for the "wakeup" ones) avoiding synchronization
-> >>> problems (eg. situations in which task A, blocked on a "suspended" device
-> >>> access, holds a mutex waited for by task B that needs to run so that we can
-> >>> "suspend" another device).  That, however, is a difficult problem.
+> >>>On Wed, Aug 4, 2010 at 3:31 PM,  <david@lang.hm> wrote:
+> >>>>
+> >>>>On Wed, 4 Aug 2010, Matthew Garrett wrote:
+> >>>>
+> >>>>>On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
+> >>>>>>
+> >>>>>>On Wednesday, August 04, 2010, Matthew Garrett wrote:
+> >>>>>>>
+> >>>>>>>No! And that's precisely the issue. Android's existing behaviour could
+> >>>>>>>be entirely implemented in the form of binary that manually triggers
+> >>>>>>>suspend when (a) the screen is off and (b) no userspace applications
+> >>>>>>>have indicated that the system shouldn't sleep, except for the wakeup
+> >>>>>>>event race. Imagine the following:
+> >>>>>>>
+> >>>>>>>1) The policy timeout is about to expire. No applications are holding
+> >>>>>>>wakelocks. The system will suspend providing nothing takes a wakelock.
+> >>>>>>>2) A network packet arrives indicating an incoming SIP call
+> >>>>>>>3) The VOIP application takes a wakelock and prevents the phone from
+> >>>>>>>suspending while the call is in progress
+> >>>>>>>
+> >>>>>>>What stops the system going to sleep between (2) and (3)? cgroups
+> >>>>>>>don't,
+> >>>>>>>because the voip app is an otherwise untrusted application that you've
+> >>>>>>>just told the scheduler to ignore.
+> >>>>>>
+> >>>>>>I _think_ you can use the just-merged /sys/power/wakeup_count mechanism
+> >>>>>>to
+> >>>>>>avoid the race (if pm_wakeup_event() is called at 2)).
+> >>>>>
+> >>>>>Yes, I think that solves the problem. The only question then is whether
+> >>>>>it's preferable to use cgroups or suspend fully, which is pretty much up
+> >>>>>to the implementation. In other words, is there a reason we're still
+> >>>>>having this conversation? :) It'd be good to have some feedback from
+> >>>>>Google as to whether this satisfies their functional requirements.
+> >>>>
+> >>>>the proposal that I nade was not to use cgroups to freeze some processes
+> >>>>and
+> >>>>not others, but to use cgroups to decide to ignore some processes when
+> >>>>deciding if the system is idle, stop everything or nothing. cgroups are
+> >>>>just
+> >>>>a way of easily grouping processes (and their children) into different
+> >>>>groups.
+> >>>>
+> >>>
+> >>>That does not avoid the dependency problem. A process may be waiting
+> >>>on a resource that a process you ignore owns. I you ignore the process
+> >>>that owns the resource and enter idle when it is ready to run (or
+> >>>waiting on a timer), you are still effectively blocking the other
+> >>>process.
 > >>
-> >> I would say that the difficulty of the problem depends on the hardware and
-> >> how much userspace interaction is needed. If the kernel can disable the
-> >> hardware in the driver (so that it can wake it up again when accessed by
-> >> an application) it would seem that this isn't a problem.
+> >>and if you don't have a wakelock the same thing will happen. If you expect
 > >
-> > Well, I guess it's useful to consider the sequence of events in the "idle"
-> > case.
-> >
-> > We first detect that a CPU is idle, so it can be put into a C-state (or
-> > equivalent).  It's easy to put that CPU into such a state, but suppose we
-> > want to do more and put all devices into low-power states at that point.
-> > We have to ensure that there are no devices in the middle of DMA and that
-> > the other CPUs are idle (that's kind of easy, but still).  Next, we have to
-> > figure out the right ordering in which to put devices into low-power states
-> > (that is not trivial, because the tasks that use those devices may depend on
-> > each other in various ways).  If we decide to shut down clock source
-> > interrupts, we must ensure that the timekeeping will be correct after that and
-> > so on.  Moreover, things get ugly if there are shared interrupts.
-> >
-> > Suspend kind of works around these difficulties by taking the entire user
-> > space out of the picture with one big sledgehammer called the freezer,
-> > but these problems would have to be actually _solved_ in the "idle" case.
+> >Not the same thing. If you don't hold a wakelock the entire system
+> >will suspend and when it wakes up it continues where it left off.
+> >Timeout still have time left before they expire.
 > 
-> I'm not opposed to doing a suspend if the system is idle enough, I'm just 
-> questioning if suspend is really that different, or if it can be viewed as 
-> yet another low power mode (one that's significantly more expensive to 
-> transition in and out of)
+> in what I'm proposing, if the 'privilaged/trusted" processes are
+> idle long enough the entire system will suspend, and when it wakes
+> up everything will continue to process normally
+> 
+> >>the process to take a while you can set a timeout to wake up every 30
+> >>seconds or so and wait again, this would be enough to prevent you from going
+> >
+> >I don't think polling is an acceptable solution to this problem. You
+> >user space code know needs to know what "idle" timeout you have
+> >selected so it can choose a faster poll rate. When is it safe to stop
+> >polling?
+> 
+> I think the timeouts are of such an order of magnatude that the
+> polling can be infrequent enough to not be a significant amount of
+> load, but be faster than any timeout
+> 
+> >>to sleep (or am I misunderstanding how long before you go into suspend
+> >>without a wakelock set, see my other e-mail for the full question)
+> >>
+> >
+> >We suspend as soon as no wakelocks are held. There is no delay.
+> 
+> So, if I have a bookreader app that is not allowed to get the
+> wakelock, and nothing else is running, the system will suspend
+> immediatly after I click a button to go to the next page? it will
+> not stay awake to give me a chance to read the page at all?
+> 
+> how can any application run without wakelock privilages?
 
-Suspend is really different.  First, the way it is entered is different (ie. it
-starts from the freezing of user space and sequentially powers down things
-going from leaf devices towards the "core" of the system).  Second, it shuts
-down interrupt sources that cannot be easily shut down from idle (at least
-in general).  Finally, on some platforms (eg. ACPI) it requires extra hardware
-black magic that cannot be triggered from the cpuidle context.
+Isn't a wakelock held as long as the display is lit, so that the
+system would continue running as long as the page was visible?
 
-The deactivation of more interrupt sources appears to be the most significant
-difference from the energy saving point of view, but it is achieved because of
-the way suspend is entered.  It may or may not be achieved in a different way,
-but (1) no one has implemented anything close to a working alternative
-solution yet and (2) it is not certain that's worth doing.
-
-Thanks,
-Rafael
+							Thanx, Paul
