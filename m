@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933165Ab0HDXuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:50:18 -0400
-Received: from mail.lang.hm ([64.81.33.126]:37188 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933085Ab0HDXuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:50:14 -0400
-Date: Wed, 4 Aug 2010 16:49:22 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100804233013.GN24163@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm>
-References: <20100801054816.GI2470@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm> <20100804185520.GA2417@srcf.ucam.org> <201008042251.08266.rjw@sisk.pl> <20100804205654.GA4986@srcf.ucam.org> <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
- <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com> <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm> <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com> <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm>
- <20100804233013.GN24163@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1759533Ab0HDXuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:50:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44117 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753900Ab0HDXuv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 19:50:51 -0400
+Date: Wed, 4 Aug 2010 16:49:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Alexander Gordeev <lasaine@lvk.cs.msu.su>, linux-kernel@vger.kernel.org,
+        "Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCHv3 12/16] ntp: add hardpps implementation
+Message-Id: <20100804164930.3c210f02.akpm@linux-foundation.org>
+In-Reply-To: <4C59FA21.9060006@caviumnetworks.com>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
+	<358275628c418f5f328adc4a4ea23fc902776566.1280952801.git.lasaine@lvk.cs.msu.su>
+	<20100804162630.2cebcb91.akpm@linux-foundation.org>
+	<4C59FA21.9060006@caviumnetworks.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+On Wed, 04 Aug 2010 16:39:13 -0700
+David Daney <ddaney@caviumnetworks.com> wrote:
 
-> On Wed, Aug 04, 2010 at 04:23:43PM -0700, david@lang.hm wrote:
->> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
->>
->>>
->>> We suspend as soon as no wakelocks are held. There is no delay.
->>
->> So, if I have a bookreader app that is not allowed to get the
->> wakelock, and nothing else is running, the system will suspend
->> immediatly after I click a button to go to the next page? it will
->> not stay awake to give me a chance to read the page at all?
->>
->> how can any application run without wakelock privilages?
->
-> Isn't a wakelock held as long as the display is lit, so that the
-> system would continue running as long as the page was visible?
+> On 08/04/2010 04:26 PM, Andrew Morton wrote:
+> > sigh.  The amount of inlining which this patch does is nutty.
+> 
+> Well one could ask about the rationale behind it all and hope that it 
+> wasn't purely gratuitous.
+> 
 
-what holds this wakelock, and what sort of timeout does it have? (and why 
-could that same timeout be used in other ways instead)
+Rationale needs rethinking, because removing every one of those inlines
+makes no change at all to the generated code.
 
-how many apps really need to keep running after the screen blanks? there 
-are a few (audio output apps, including music player and Navigation 
-directions), but I don't have see a problem with them being marked as the 
-'trusted' apps to pay attention instead.
-
-if the backlight being on holds the wakelock, it would seem that almost 
-every other use of the wakelock could (and probably should) be replaced by 
-something that tickles the display to stay on longer.
-
-David Lang
