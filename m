@@ -1,105 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab0HDKu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 06:50:57 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:6247 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab0HDKu4 (ORCPT
+	id S1757558Ab0HDK4N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 06:56:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49494 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab0HDK4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 06:50:56 -0400
-X-SpamScore: -3
-X-BigFish: VPS-3(zz4015Lzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L6MJBD-02-0VS-02
-X-M-MSG: 
-Date: Wed, 4 Aug 2010 12:47:38 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>
-Subject: [GIT PULL] oprofile: updates for v2.6.34
-Message-ID: <20100804104738.GJ26154@erda.amd.com>
+	Wed, 4 Aug 2010 06:56:12 -0400
+Message-ID: <4C594740.1090608@vlnb.net>
+Date: Wed, 04 Aug 2010 14:56:00 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Mailer: git-send-email 1.6.6
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.35: suspicious rcu_dereference_check() usage
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:LnO7PupMlFIUc7gel5kYr+QrDky++vK6P3PnAzwhZ3x
+ OcA15uqa6CMiNgGHEtNcrep7flj4wyXGZu2mYFyCczpJuqptwn
+ P4yGuiMr6yv5sH/XkQgiOmzE/pqiYuUeNThq+hJp3921uFQbVp
+ kTCAbuJyMBunOcrA0j4uh9R+0W10qjMMhXTkOltXPLn7PT9ekf
+ UP5uREPBwSjp0AWYxa8RQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+Hello,
 
-please pull oprofile updates for v2.6.36:
+Today I gave a first try to 2.6.35 and it immediately produced:
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+Aug  4 15:12:09 tgt kernel: [  183.799040] ===================================================                                              
+Aug  4 15:12:09 tgt kernel: [  183.799158] [ INFO: suspicious rcu_dereference_check() usage. ]                                              
+Aug  4 15:12:09 tgt kernel: [  183.799158] ---------------------------------------------------                                              
+Aug  4 15:12:09 tgt kernel: [  183.799158] kernel/exit.c:1387 invoked rcu_dereference_check() without protection!                           
+Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
+Aug  4 15:12:09 tgt kernel: [  183.799158] other info that might help us debug this:                                                        
+Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
+Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
+Aug  4 15:12:09 tgt kernel: [  183.799158] rcu_scheduler_active = 1, debug_locks = 1                                                        
+Aug  4 15:12:09 tgt kernel: [  183.799158] 2 locks held by mc/3751:                                                                         
+Aug  4 15:12:09 tgt kernel: [  183.799158]  #0:  (tasklist_lock){.+.+..}, at: [<7813d277>] do_wait+0xa1/0x24f                               
+Aug  4 15:12:09 tgt kernel: [  183.799158]  #1:  (&(&sighand->siglock)->rlock){-.....}, at: [<7813c6eb>] wait_consider_task+0xdd/0xbc8      
+Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
+Aug  4 15:12:09 tgt kernel: [  183.799158] stack backtrace:                                                                                 
+Aug  4 15:12:09 tgt kernel: [  183.799158] Pid: 3751, comm: mc Not tainted 2.6.35-scst-dbg #3                                               
+Aug  4 15:12:09 tgt kernel: [  183.799158] Call Trace:                                                                                      
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<784660a3>] ? printk+0x2d/0x32                                                                 
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78165d6e>] lockdep_rcu_dereference+0x8e/0x96                                                  
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813caa3>] wait_consider_task+0x495/0xbc8                                                     
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7846c809>] ? sub_preempt_count+0x9/0xad                                                       
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78164056>] ? put_lock_stats+0xd/0x28                                                          
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d277>] ? do_wait+0xa1/0x24f                                                               
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78469218>] ? _raw_read_lock+0x6b/0x72                                                         
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d2ca>] do_wait+0xf4/0x24f                                                                 
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d48d>] sys_wait4+0x68/0xb2                                                                
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813afbd>] ? child_wait_callback+0x0/0x73                                                     
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d503>] sys_waitpid+0x2c/0x2e                                                              
+Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78102d13>] sysenter_do_call+0x12/0x32                                                         
 
-It's just a small number of patches, see the log below. The branch is
-already in linux-next for a long time.
+I guess, it was just after I started mc.
 
-Thanks,
-
--Robert
-
-$ git log --stat --first-parent cc49b092d308f8ea8634134b0d95d831a88a674b..729419f0090601406abe714c5f8872a3bd53ff68 | cat
-commit 729419f0090601406abe714c5f8872a3bd53ff68
-Author: Arnd Bergmann <arnd@arndb.de>
-Date:   Wed Jul 7 17:40:13 2010 -0400
-
-    oprofile: make event buffer nonseekable
-    
-    The event buffer cannot deal with seeks, so
-    we should forbid that outright.
-    
-    Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-    Cc: Robert Richter <robert.richter@amd.com>
-    Cc: oprofile-list@lists.sf.net
-    Signed-off-by: Robert Richter <robert.richter@amd.com>
-
- drivers/oprofile/event_buffer.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-commit b12eab1a796a306caef7046b21a76efa35f5f489
-Author: Denis Kirjanov <dkirjanov@hera.kernel.org>
-Date:   Tue Jun 1 15:43:34 2010 -0400
-
-    powerpc/oprofile: fix potential buffer overrun in op_model_cell.c
-    
-    Fix potential initial_lfsr buffer overrun.
-    Writing past the end of the buffer could happen when index == ENTRIES
-    
-    Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
-    Cc: stable@kernel.org
-    Signed-off-by: Robert Richter <robert.richter@amd.com>
-
- arch/powerpc/oprofile/op_model_cell.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-commit d8a382d2662822248a97ce9d670b90e68aefbd3a
-Merge: 45c34e0 c6df8d5
-Author: Robert Richter <robert.richter@amd.com>
-Date:   Fri Jun 4 11:33:10 2010 +0200
-
-    Merge remote branch 'tip/perf/urgent' into oprofile/urgent
-
-commit 45c34e05c4e3d36e7c44e790241ea11a1d90d54e
-Author: John Villalovos <sodarock@gmail.com>
-Date:   Fri May 7 12:41:40 2010 -0400
-
-    Oprofile: Change CPUIDS from decimal to hex, and add some comments
-    
-    Back when the patch was submitted for "Add Xeon 7500 series support to
-    oprofile", Robert Richter had asked for a followon patch that
-    converted all the CPU ID values to hex.
-    
-    I have done that here for the "i386/core_i7" and "i386/atom" class
-    processors in the ppro_init() function and also added some comments on
-    where to find documentation on the Intel processors.
-    
-    Signed-off-by: John L. Villalovos <john.l.villalovos@intel.com>
-    Signed-off-by: Robert Richter <robert.richter@amd.com>
-
- arch/x86/oprofile/nmi_int.c |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
-
+Vlad
