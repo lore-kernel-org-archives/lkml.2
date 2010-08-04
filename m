@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab0HDM6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:58:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61157 "EHLO mx1.redhat.com"
+	id S932826Ab0HDM7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:59:13 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:35483 "EHLO mail-out1.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932738Ab0HDM6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:58:04 -0400
-Date: Wed, 4 Aug 2010 08:56:31 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Mikael Abrahamsson <swmike@swm.pp.se>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Michael Monnerie <michael.monnerie@is.it-management.at>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>, xfs@oss.sgi.com,
-        linux-raid@vger.kernel.org
-Subject: Re: How to track down abysmal performance ata - raid1 - crypto -
- vg/lv - xfs
-Message-ID: <20100804125631.GC17263@redhat.com>
-References: <20100804073546.GA7494@comet.dominikbrodowski.net>
- <20100804085039.GA11671@infradead.org>
- <20100804091317.GA27779@isilmar-3.linta.de>
- <20100804092122.GA2998@infradead.org>
- <20100804073546.GA7494@comet.dominikbrodowski.net>
- <201008041116.09822@zmi.at>
- <20100804102526.GB13766@isilmar-3.linta.de>
- <20100804111803.GA32643@infradead.org>
- <alpine.DEB.1.10.1008041351100.19930@uplift.swm.pp.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.1.10.1008041351100.19930@uplift.swm.pp.se>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S932455Ab0HDM7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 08:59:11 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (nfs
+ tree related)
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100804145406.f0fc5ea4.sfr@canb.auug.org.au>
+References: <20100804145406.f0fc5ea4.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Aug 2010 08:58:56 -0400
+Message-ID: <1280926736.3011.24.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 8 sum msgs/h 2 total rcpts 802 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 3EB03AAF1A6C9D89467176E3F59A4BF53DF68108
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 310 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04 2010 at  7:53am -0400,
-Mikael Abrahamsson <swmike@swm.pp.se> wrote:
-
-> On Wed, 4 Aug 2010, Christoph Hellwig wrote:
+On Wed, 2010-08-04 at 14:54 +1000, Stephen Rothwell wrote:
+> Hi Trond,
 > 
-> >The good news is that you have it tracked down, the bad news is
-> >that I know very little about dm-crypt.  Maybe the issue is the
-> >single threaded decryption in dm-crypt?  Can you check how much
-> >CPU time the dm crypt kernel thread uses?
+> After merging the final tree, today's linux-next build (sparc
+> defconfig) failed like this:
 > 
-> I'm not sure it's that. I have a Core i5 with AES-NI and that didn't
-> significantly increase my overall performance, as it's not there the
-> bottleneck is (at least in my system).
+> `rpc_destroy_authunix' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
+> 
+> Caused by commit 4c09a3aef02ef9bfab8322fadde269290563ede2 ("NFS: Ensure
+> the AUTH_UNIX credcache is allocated dynamically").
+> 
+> It also caused these warnings:
+> 
+> WARNING: vmlinux.o(.init.text+0x1e3b4): Section mismatch in reference from the f
+> unction rpcauth_init_module() to the function .exit.text:rpc_destroy_authunix()
+> The function __init rpcauth_init_module() references
+> a function __exit rpc_destroy_authunix().
+> This is often seen when error handling in the init function
+> uses functionality in the exit path.
+> The fix is often to remove the __exit annotation of
+> rpc_destroy_authunix() so it may be used outside an exit section.
+> 
+> I applied the following patch for today:
 
-You could try applying both of these patches that are pending review for
-hopeful inclussion in 2.6.36:
+Hi Stephen,
 
-https://patchwork.kernel.org/patch/103404/
-https://patchwork.kernel.org/patch/112657/
+Thanks! I've fixed this up in the NFS linux-next tree.
+
+Cheers
+  Trond
+
