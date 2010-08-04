@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758568Ab0HDWwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:52:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44573 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756404Ab0HDWwD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:52:03 -0400
+	id S1758303Ab0HDWzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:55:13 -0400
+Received: from mail.lang.hm ([64.81.33.126]:45834 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757556Ab0HDWzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 18:55:07 -0400
+Date: Wed, 4 Aug 2010 15:54:16 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Pavel Machek <pavel@ucw.cz>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <20100804204839.GA4743@srcf.ucam.org>
+Message-ID: <alpine.DEB.2.00.1008041543030.6545@asgard.lang.hm>
+References: <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801154708.19817b75@infradead.org> <20100802011006.GS2470@linux.vnet.ibm.com> <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
+ <20100803183447.0275c134@infradead.org> <20100804163216.GB24163@linux.vnet.ibm.com> <20100804163509.GA31523@srcf.ucam.org> <20100804204208.GA21452@elf.ucw.cz> <20100804204839.GA4743@srcf.ucam.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1280895197.11045.317.camel@mulgrave.site>
-References: <1280895197.11045.317.camel@mulgrave.site>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 Aug 2010 15:51:17 -0700
-Message-ID: <AANLkTintTMXirWF+Y-CwK4dn8Mqk8=ba9_+yjX9P837V@mail.gmail.com>
-Subject: Re: [GIT PULL] first round of SCSI updates for the 2.6.36 merge 
-	window
-To: James Bottomley <James.Bottomley@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 9:13 PM, James Bottomley <James.Bottomley@suse.de> wrote:
+On Wed, 4 Aug 2010, Matthew Garrett wrote:
+
+> On Wed, Aug 04, 2010 at 10:42:08PM +0200, Pavel Machek wrote:
 >
-> Alan Stern (3):
->      sd: add support for runtime PM
->      implement runtime Power Management
->      convert to the new PM framework
+>> This came like a bit of a shock to me ("why do they make it so complex
+>> then"), but... it also means that as soon as you are able to stop
+>> "unwanted" processing, you can just leave normal cpuidle mechanisms to
+>> deal with the rest...
+>
+> How do you differentiate between "unwanted" and "wanted" processing in
+> the same task in a race-free manner?
 
-Guys, these kind of crazy games really aren't appropriate:
+how much do you care? (not from a theoretical point of view, but from a 
+practical point of view, how much difference does it make)
 
-  +/* scsi_pm.c */
-  +#ifdef CONFIG_PM_OPS
-  +extern const struct dev_pm_ops scsi_bus_pm_ops;
-  +#else
-  +#define scsi_bus_pm_ops                (*NULL)
-  +#endif
+how much "unwanted" processing would you allow a process to do before 
+shutting down?
 
-that's just crazy. Yes, I see how it's then used (address-of operator
-turns it back into NULL), but the compiler warns about it
-("drivers/scsi/scsi_sysfs.c:384: warning: dereferencing ‘void *’
-pointer") and I think the compiler is 100% correct about warning about
-it.
+how likely are apps that you would trust to just assert "I know better 
+than the system or the user how important I am, don't you dare sleep now" 
+that do this properly, but then do other processing that you really don't 
+want to have happen? (I expect that if the authors of those apps ever ran 
+into this case, they would just add another wakelock to prevent it)
 
-It's not just the (*NULL) games, btw. The above can cause confusion.
-It's ugly not just because it causes the compiler to warn, but because
-you use a very subtle and non-standard way of using #define's, so that
-when you look at the source code where this is used, it's not at all
-obvious what is going on. The code looks like
 
-    .pm             = &scsi_bus_pm_ops,
+If the only things you have running are apps that are trusted to take the 
+wakelock, are you really going to sleep any more frequently with the 
+wakelock infrastructure than you would with just idle detection? (this can 
+be tested today by just stubbing out the wakelock checks so they have no 
+effect on sleeping)
 
-and dammit, it would be rather understandable if some _human_ that
-reads that is also confused and thinks that the above means that the
-.pm pointer can never be NULL. The address-of would certainly throw
-me, and not necessarily at all make me grep for "could that possibly
-be some crazy way to say NULL".
 
-And there is absolutely no reason to play games like that. It would
-have been entirely understandable if you just put the #ifdef in the C
-code itself, or if you used a #define that just said
-
-  #ifdef CONFIG_PM_OPS
-  #define SCSI_BUS_PM_OPS &scsi_bus_pm_ops
-  #else
-  #define SCSI_BUS_PM_OPS NULL
-  #endif
-
-and I think it would be less confusing, and it wouldn't upset the compiler.
-
-Yes, yes, I realize that we do these kinds of things for function
-pointers all the time, so I do understand where the pattern comes
-from. At the same time, I rather think that function pointers are a
-bit different, and they don't have the whole address-of problem.
-
-I guess I should be happy that you didn't use some linker tricks to
-make "&scsi_bus_pm_ops" turn into NULL at link time. That could be
-done too, and would have been even more subtly confusing.
-
-                      Linus
+David Lang
