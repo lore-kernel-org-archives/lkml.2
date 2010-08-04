@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab0HDXKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:10:12 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:55670 "EHLO e2.ny.us.ibm.com"
+	id S933140Ab0HDXLc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:11:32 -0400
+Received: from ozlabs.org ([203.10.76.45]:57221 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933132Ab0HDXKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:10:07 -0400
-Date: Wed, 4 Aug 2010 16:10:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: david@lang.hm
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100804231003.GL24163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
- <20100804185520.GA2417@srcf.ucam.org>
- <201008042251.08266.rjw@sisk.pl>
- <20100804205654.GA4986@srcf.ucam.org>
- <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
- <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
- <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933102Ab0HDXL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 19:11:27 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: ebiederm@xmission.com (Eric W. Biederman)
+cc: Simon Horman <horms@verge.net.au>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [rfc] Merge kexec-tools into the kernel tree
+In-reply-to: <m17hk6de62.fsf@fess.ebiederm.org>
+References: <20100804070647.GB24064@verge.net.au> <m17hk6de62.fsf@fess.ebiederm.org>
+Comments: In-reply-to ebiederm@xmission.com (Eric W. Biederman)
+   message dated "Wed, 04 Aug 2010 00:34:29 -0700."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
+Date: Thu, 05 Aug 2010 09:11:26 +1000
+Message-ID: <30114.1280963486@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 03:56:42PM -0700, david@lang.hm wrote:
-> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
-> 
-> >On Wed, Aug 4, 2010 at 3:31 PM,  <david@lang.hm> wrote:
-> >>On Wed, 4 Aug 2010, Matthew Garrett wrote:
-> >>
-> >>>On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
-> >>>>
-> >>>>On Wednesday, August 04, 2010, Matthew Garrett wrote:
-> >>>>>
-> >>>>>No! And that's precisely the issue. Android's existing behaviour could
-> >>>>>be entirely implemented in the form of binary that manually triggers
-> >>>>>suspend when (a) the screen is off and (b) no userspace applications
-> >>>>>have indicated that the system shouldn't sleep, except for the wakeup
-> >>>>>event race. Imagine the following:
-> >>>>>
-> >>>>>1) The policy timeout is about to expire. No applications are holding
-> >>>>>wakelocks. The system will suspend providing nothing takes a wakelock.
-> >>>>>2) A network packet arrives indicating an incoming SIP call
-> >>>>>3) The VOIP application takes a wakelock and prevents the phone from
-> >>>>>suspending while the call is in progress
-> >>>>>
-> >>>>>What stops the system going to sleep between (2) and (3)? cgroups don't,
-> >>>>>because the voip app is an otherwise untrusted application that you've
-> >>>>>just told the scheduler to ignore.
-> >>>>
-> >>>>I _think_ you can use the just-merged /sys/power/wakeup_count mechanism
-> >>>>to
-> >>>>avoid the race (if pm_wakeup_event() is called at 2)).
-> >>>
-> >>>Yes, I think that solves the problem. The only question then is whether
-> >>>it's preferable to use cgroups or suspend fully, which is pretty much up
-> >>>to the implementation. In other words, is there a reason we're still
-> >>>having this conversation? :) It'd be good to have some feedback from
-> >>>Google as to whether this satisfies their functional requirements.
-> >>
-> >>the proposal that I nade was not to use cgroups to freeze some processes and
-> >>not others, but to use cgroups to decide to ignore some processes when
-> >>deciding if the system is idle, stop everything or nothing. cgroups are just
-> >>a way of easily grouping processes (and their children) into different
-> >>groups.
+> > After all the excitement of relocating kexec-tools from
+> > one location on kernel.org to another last week it was
+> > suggested to me by Michael Neuling that the merging
+> > kexec-tools into the kernel tree would be a good idea.
 > >
-> >That does not avoid the dependency problem. A process may be waiting
-> >on a resource that a process you ignore owns. I you ignore the process
-> >that owns the resource and enter idle when it is ready to run (or
-> >waiting on a timer), you are still effectively blocking the other
-> >process.
+> > Given that there have been a bunch of issues with kexec
+> > on power that this would resolve. and there is precedence
+> > for tools in the kernel tree, this sounds entirely reasonable to me.
+> > So with my kexec-tools maintainer hat on, I would like to start
+> > a conversation about this.
 > 
-> and if you don't have a wakelock the same thing will happen. If you
-> expect the process to take a while you can set a timeout to wake up
-> every 30 seconds or so and wait again, this would be enough to
-> prevent you from going to sleep (or am I misunderstanding how long
-> before you go into suspend without a wakelock set, see my other
-> e-mail for the full question)
+> What are the issues with kexec on power?  Did someone fail to maintain
+> ABI compatibility?
+> 
+> The interface isn't even supposed to be linux specific, so I can't
+> imagine what would motivate moving this into the kernel tree.
+> 
+> I'm afraid that someone has a good answer for why their lives would be
+> simpler if /sbin/kexec was in the kernel tree and I will be absolutely
+> horrified and about someones stupidity when I hear that answer.
 
-The difference between the Android scheme and your proposal is that the
-Android scheme freezes -all- the processes, not just a subset of them.
-Therefore, in the Android scheme, the case of one process attempting to
-acquire a resource held by a frozen process.  In contrast, any scheme
-that attempts to freeze only a subset of the processes must somehow
-either avoid or properly handle the situation where a frozen process is
-holding a resource that a running process is trying to acquire.
+I may have misrepresented how bad it is for power to Horms.  None of the
+issues would be solved by a merge, but it would make life easier IMHO.
 
-							Thanx, Paul
+In power we've added features to kexec which have required changes to
+both the kernel and kexec-tools.  These have been backwards compatible,
+so not to break to the ABI.  The problem here is getting users and
+distros to take the correct versions of both sources if they want this
+new feature.
+
+Similarly with bugs.  We recently went through a round of bug fixes for
+new larger power7 machines.  We found bugs in both kexec-tools and the
+kernel.  That meant we had to ensure users and distros were getting
+correctly updated versions of both tools.
+
+Neither of these problems are show stoppers or power specific but I
+think it would make life easier in these scenarios if the sources were
+merged.  We could just tell users and distros to grab (say) 2.6.35
+sources and we'd know they'd be right for both userspace and the kernel.
+
+Also, I think kexec-tools would benefit from the same release process as
+the kernel, with a merge window followed by bug fixes.  Of course,
+kexec-tools doesn't need to be in the kernel for this, but it might be
+easier for Horms to enforce if it was.  kexec-tools only gets a trickle
+patches.
+
+I'd also hope that kexec-tools would get some addition community
+exposure and TLC if they were in the kernel sources.
+
+My question is, why not?  What qualifies a tool to be added to tools/?
+I think kexec-tools are tied to the kernel at least as much as perf is.
+Certainly the ABI for the image we are booting into is not Linux
+specific, but should that disqualify it from being in tools/?
+
+Mikey
