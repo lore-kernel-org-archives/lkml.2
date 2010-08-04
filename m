@@ -1,119 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab0HDQAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 12:00:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41877 "EHLO mx1.redhat.com"
+	id S1755871Ab0HDQKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 12:10:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:53232 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab0HDQA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 12:00:29 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] CRED: Fix RCU warning due to previous patch fixing
-	__task_cred()'s checks
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: penguin-kernel@i-love.sakura.ne.jp, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, jolsa@redhat.com,
-        paulmck@linux.vnet.ibm.com, David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Date: Wed, 04 Aug 2010 16:59:14 +0100
-Message-ID: <20100804155914.25978.10918.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1752313Ab0HDQKJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 12:10:09 -0400
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 4 Aug 2010 21:39:51 +0530
+Subject: RE: linux-next: manual merge of the davinci tree with Linus' tree
+Thread-Topic: linux-next: manual merge of the davinci tree with Linus' tree
+Thread-Index: Acsyrguxk8hxm2ZfQxq9aZfcsf4CcQBQSSIg
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB59301E7F6ED59@dbde02.ent.ti.com>
+References: <20100803114853.27a29365.sfr@canb.auug.org.au>
+In-Reply-To: <20100803114853.27a29365.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A previous patch:
+Hi Stephen,
 
-	commit 8f92054e7ca1d3a3ae50fb42d2253ac8730d9b2a
-	Author: David Howells <dhowells@redhat.com>
-	Date:   Thu Jul 29 12:45:55 2010 +0100
-	Subject: CRED: Fix __task_cred()'s lockdep check and banner comment
+On Tue, Aug 03, 2010 at 07:18:53, Stephen Rothwell wrote:
+> Hi Kevin,
+>
+> Today's linux-next merge of the davinci tree got a conflict in
+> arch/arm/mach-davinci/board-da850-evm.c between commit
+> 8b24599e72c9aee1ea1187e29cb9c5de9f449cce ("davinci: da850/omap-l138 evm:
+> account for DEFDCDC{2,3} being tied high") from Linus' tree and commit
+> ebd1e7808b2fe72d627bdab7bcf61126a831ca5a ("davinci: da850 evm: sparse
+> cleanup: make file local variables static") from the davinci tree.
+>
+> Just context changes.  I fixed it up (see below) and can carry the fix
+> for a while.
 
-fixed the lockdep checks on __task_cred().  This has shown up a place in the
-signalling code where a lock should be held - namely that
-check_kill_permission() requires its callers to hold the RCU lock.
+Thanks for fixing this.
 
-Fix group_send_sig_info() to get the RCU read lock around its call to
-check_kill_permission().
+Kevin is on a vacation. There would be a delayed response.
 
-Without this patch, the following warning can occur:
-
-[  140.173556] ===================================================
-[  140.215379] [ INFO: suspicious rcu_dereference_check() usage. ]
-[  140.216461] ---------------------------------------------------
-[  140.217530] kernel/signal.c:660 invoked rcu_dereference_check() without protection!
-[  140.218937]
-[  140.218938] other info that might help us debug this:
-[  140.218939]
-[  140.220508]
-[  140.220509] rcu_scheduler_active = 1, debug_locks = 1
-[  140.221991] 1 lock held by init/1:
-[  140.222668]  #0:  (tasklist_lock){.+.+..}, at: [<c104a0ac>] kill_something_info+0x7c/0x160
-[  140.224709]
-[  140.224711] stack backtrace:
-[  140.225661] Pid: 1, comm: init Not tainted 2.6.35 #1
-[  140.226576] Call Trace:
-[  140.227111]  [<c103cca8>] ? printk+0x18/0x20
-[  140.227908]  [<c1069884>] lockdep_rcu_dereference+0x94/0xb0
-[  140.228931]  [<c104936a>] check_kill_permission+0x15a/0x170
-[  140.229932]  [<c104a0ac>] ? kill_something_info+0x7c/0x160
-[  140.230921]  [<c1049cca>] group_send_sig_info+0x1a/0x50
-[  140.231866]  [<c1049d36>] __kill_pgrp_info+0x36/0x60
-[  140.232780]  [<c104a0d0>] kill_something_info+0xa0/0x160
-[  140.233740]  [<c10831c5>] ? __call_rcu+0xa5/0x110
-[  140.234596]  [<c104b7ee>] sys_kill+0x5e/0x70
-[  140.235387]  [<c10d1eee>] ? mntput_no_expire+0x1e/0xa0
-[  140.236329]  [<c10bbd10>] ? __fput+0x170/0x220
-[  140.257756]  [<c10bbdd9>] ? fput+0x19/0x20
-[  140.258529]  [<c137ad94>] ? restore_all_notrace+0x0/0x18
-[  140.259496]  [<c11bfb04>] ? trace_hardirqs_on_thunk+0xc/0x10
-[  140.260531]  [<c137ad61>] syscall_call+0x7/0xb
-[  144.627841] nfsd: last server has exited, flushing export cache
-[  154.040420] Restarting system.
-[  154.041061] machine restart
-
-Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
----
-
- kernel/signal.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 906ae5a..bded651 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -637,7 +637,7 @@ static inline bool si_fromuser(const struct siginfo *info)
- 
- /*
-  * Bad permissions for sending the signal
-- * - the caller must hold at least the RCU read lock
-+ * - the caller must hold the RCU read lock
-  */
- static int check_kill_permission(int sig, struct siginfo *info,
- 				 struct task_struct *t)
-@@ -1127,11 +1127,14 @@ struct sighand_struct *lock_task_sighand(struct task_struct *tsk, unsigned long
- 
- /*
-  * send signal info to all the members of a group
-- * - the caller must hold the RCU read lock at least
-  */
- int group_send_sig_info(int sig, struct siginfo *info, struct task_struct *p)
- {
--	int ret = check_kill_permission(sig, info, p);
-+	int ret;
-+
-+	rcu_read_lock();
-+	ret = check_kill_permission(sig, info, p);
-+	rcu_read_unlock();
- 
- 	if (!ret && sig)
- 		ret = do_send_sig_info(sig, info, p, true);
-
+Regards,
+Sekhar
