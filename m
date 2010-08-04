@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758926Ab0HDVUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:20:08 -0400
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:57593 "EHLO
+	id S1759196Ab0HDVUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:20:17 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:57584 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759071Ab0HDVS4 (ORCPT
+	with ESMTP id S1759044Ab0HDVS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Aug 2010 17:18:56 -0400
 X-Spam-ASN: 
@@ -14,11 +14,10 @@ Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         john stultz <johnstul@us.ibm.com>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Joonwoo Park <joonwpark81@gmail.com>
-Subject: [PATCHv3 09/16] pps: don't disable interrupts when using spin locks
-Date: Thu,  5 Aug 2010 01:06:46 +0400
-Message-Id: <cde2add660f3354fcfe7a677ec6b5c57ba0d09aa.1280952801.git.lasaine@lvk.cs.msu.su>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCHv3 15/16] pps: add parallel port PPS client
+Date: Thu,  5 Aug 2010 01:06:52 +0400
+Message-Id: <5d5d3c3916cb79104160467035603093ea4f623f.1280952801.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
 References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
@@ -27,137 +26,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now all PPS spin locks are never used in interrupt context so we can
-safely replace spin_lock_irq*/spin_unlock_irq* with plain
-spin_lock/spin_unlock.
+Add parallel port PPS client. It uses a standard method for capturing
+timestamps for assert edge transitions: getting a timestamp soon after
+an interrupt has happened. This is not a very precise source of time
+information due to interrupt handling delays. However, timestamps for
+clear edge transitions are much more precise because the interrupt
+handler continuously polls hardware port until the transition is done.
+Hardware port operations require only about 1us so the maximum error
+should not exceed this value. This was my primary goal when developing
+this client.
+Clear edge capture could be disabled using clear_wait parameter.
 
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- drivers/pps/kapi.c |    5 ++---
- drivers/pps/pps.c  |   24 ++++++++++++------------
- 2 files changed, 14 insertions(+), 15 deletions(-)
+ drivers/pps/clients/Kconfig       |    7 +
+ drivers/pps/clients/Makefile      |    1 +
+ drivers/pps/clients/pps_parport.c |  244 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 252 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pps/clients/pps_parport.c
 
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index d5f18ce..8c557c4 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -172,7 +172,6 @@ EXPORT_SYMBOL(pps_unregister_source);
- void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
- 		void *data)
- {
--	unsigned long flags;
- 	int captured = 0;
- 	struct pps_ktime ts_real;
+diff --git a/drivers/pps/clients/Kconfig b/drivers/pps/clients/Kconfig
+index 4e801bd..8520a7f 100644
+--- a/drivers/pps/clients/Kconfig
++++ b/drivers/pps/clients/Kconfig
+@@ -22,4 +22,11 @@ config PPS_CLIENT_LDISC
+ 	  If you say yes here you get support for a PPS source connected
+ 	  with the CD (Carrier Detect) pin of your serial port.
  
-@@ -186,7 +185,7 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
++config PPS_CLIENT_PARPORT
++	tristate "Parallel port PPS client"
++	depends on PPS && PARPORT
++	help
++	  If you say yes here you get support for a PPS source connected
++	  with the interrupt pin of your parallel port.
++
+ endif
+diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
+index 812c9b1..42517da 100644
+--- a/drivers/pps/clients/Makefile
++++ b/drivers/pps/clients/Makefile
+@@ -4,6 +4,7 @@
  
- 	timespec_to_pps_ktime(&ts_real, ts->ts_real);
+ obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
+ obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
++obj-$(CONFIG_PPS_CLIENT_PARPORT) += pps_parport.o
  
--	spin_lock_irqsave(&pps->lock, flags);
-+	spin_lock(&pps->lock);
- 
- 	/* Must call the echo function? */
- 	if ((pps->params.mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)))
-@@ -233,7 +232,7 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
- 		kill_fasync(&pps->async_queue, SIGIO, POLL_IN);
- 	}
- 
--	spin_unlock_irqrestore(&pps->lock, flags);
-+	spin_unlock(&pps->lock);
- }
- EXPORT_SYMBOL(pps_event);
- 
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index 81adb33..4f02718 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -73,12 +73,12 @@ static long pps_cdev_ioctl(struct file *file,
- 	case PPS_GETPARAMS:
- 		dev_dbg(pps->dev, "PPS_GETPARAMS\n");
- 
--		spin_lock_irq(&pps->lock);
-+		spin_lock(&pps->lock);
- 
- 		/* Get the current parameters */
- 		params = pps->params;
- 
--		spin_unlock_irq(&pps->lock);
-+		spin_unlock(&pps->lock);
- 
- 		err = copy_to_user(uarg, &params, sizeof(struct pps_kparams));
- 		if (err)
-@@ -109,7 +109,7 @@ static long pps_cdev_ioctl(struct file *file,
- 			return -EINVAL;
- 		}
- 
--		spin_lock_irq(&pps->lock);
-+		spin_lock(&pps->lock);
- 
- 		/* Save the new parameters */
- 		pps->params = params;
-@@ -125,7 +125,7 @@ static long pps_cdev_ioctl(struct file *file,
- 			pps->params.mode |= PPS_CANWAIT;
- 		pps->params.api_version = PPS_API_VERS;
- 
--		spin_unlock_irq(&pps->lock);
-+		spin_unlock(&pps->lock);
- 
- 		break;
- 
-@@ -180,7 +180,7 @@ static long pps_cdev_ioctl(struct file *file,
- 		}
- 
- 		/* Return the fetched timestamp */
--		spin_lock_irq(&pps->lock);
-+		spin_lock(&pps->lock);
- 
- 		fdata.info.assert_sequence = pps->assert_sequence;
- 		fdata.info.clear_sequence = pps->clear_sequence;
-@@ -188,7 +188,7 @@ static long pps_cdev_ioctl(struct file *file,
- 		fdata.info.clear_tu = pps->clear_tu;
- 		fdata.info.current_mode = pps->current_mode;
- 
--		spin_unlock_irq(&pps->lock);
-+		spin_unlock(&pps->lock);
- 
- 		err = copy_to_user(uarg, &fdata, sizeof(struct pps_fdata));
- 		if (err)
-@@ -238,9 +238,9 @@ static void pps_device_destruct(struct device *dev)
- 
- 	/* release id here to protect others from using it while it's
- 	 * still in use */
--	spin_lock_irq(&pps_idr_lock);
-+	spin_lock(&pps_idr_lock);
- 	idr_remove(&pps_idr, pps->id);
--	spin_unlock_irq(&pps_idr_lock);
-+	spin_unlock(&pps_idr_lock);
- 
- 	kfree(dev);
- }
-@@ -258,9 +258,9 @@ int pps_register_cdev(struct pps_device *pps)
- 	 * After idr_get_new() calling the new source will be freely available
- 	 * into the kernel.
- 	 */
--	spin_lock_irq(&pps_idr_lock);
-+	spin_lock(&pps_idr_lock);
- 	err = idr_get_new(&pps_idr, pps, &pps->id);
--	spin_unlock_irq(&pps_idr_lock);
-+	spin_unlock(&pps_idr_lock);
- 
- 	if (err < 0)
- 		return err;
-@@ -300,9 +300,9 @@ del_cdev:
- 	cdev_del(&pps->cdev);
- 
- free_idr:
--	spin_lock_irq(&pps_idr_lock);
-+	spin_lock(&pps_idr_lock);
- 	idr_remove(&pps_idr, pps->id);
--	spin_unlock_irq(&pps_idr_lock);
-+	spin_unlock(&pps_idr_lock);
- 
- 	return err;
- }
+ ifeq ($(CONFIG_PPS_DEBUG),y)
+ EXTRA_CFLAGS += -DDEBUG
+diff --git a/drivers/pps/clients/pps_parport.c b/drivers/pps/clients/pps_parport.c
+new file mode 100644
+index 0000000..71d8958
+--- /dev/null
++++ b/drivers/pps/clients/pps_parport.c
+@@ -0,0 +1,244 @@
++/*
++ * pps_parport.c -- kernel parallel port PPS client
++ *
++ *
++ * Copyright (C) 2009   Alexander Gordeev <lasaine@lvk.cs.msu.su>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++
++/*
++ * TODO:
++ * implement echo over SEL pin
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/irqnr.h>
++#include <linux/time.h>
++#include <linux/parport.h>
++#include <linux/pps_kernel.h>
++
++#define DRVNAME "pps_parport"
++#define DRVDESC "parallel port PPS client"
++
++/* module parameters */
++
++#define CLEAR_WAIT_MAX		100
++#define CLEAR_WAIT_MAX_ERRORS	5
++
++static unsigned int clear_wait = 100;
++MODULE_PARM_DESC(clear_wait,
++	"Maximum number of port reads when polling for signal clear,"
++	" zero turns clear edge capture off entirely");
++module_param(clear_wait, uint, 0);
++
++
++/* internal per port structure */
++struct pps_client_pp {
++	struct pardevice *pardev;	/* parport device */
++	struct pps_device *pps;		/* PPS device */
++	unsigned int cw;		/* port clear timeout */
++	unsigned int cw_err;		/* number of timeouts */
++};
++
++#define SIGNAL_IS_SET(port) \
++	((port->ops->read_status(port) & PARPORT_STATUS_ACK) != 0)
++
++/* parport interrupt handler */
++static void parport_irq(void *handle)
++{
++	struct pps_event_time ts_assert, ts_clear;
++	struct pps_client_pp *dev = handle;
++	struct parport *port = dev->pardev->port;
++	unsigned int i;
++	unsigned long flags;
++
++	/* first of all we get the time stamp... */
++	pps_get_ts(&ts_assert);
++
++	if (dev->cw == 0)
++		/* clear edge capture disabled */
++		goto out_assert;
++
++	/* try capture the clear edge */
++	local_irq_save(flags);
++	/* check the signal (no signal means the pulse is lost this time) */
++	if (!SIGNAL_IS_SET(port)) {
++		local_irq_restore(flags);
++		dev_err(dev->pps->dev, "lost the signal\n");
++		goto out_assert;
++	}
++
++	/* poll the port until the signal is unset */
++	for (i = dev->cw; i; i--)
++		if (!SIGNAL_IS_SET(port)) {
++			pps_get_ts(&ts_clear);
++			local_irq_restore(flags);
++			dev->cw_err = 0;
++			goto out_both;
++		}
++	local_irq_restore(flags);
++
++	/* timeout */
++	dev->cw_err++;
++	if (dev->cw_err >= CLEAR_WAIT_MAX_ERRORS) {
++		dev_err(dev->pps->dev, "disabled clear edge capture after %d"
++				" timeouts\n", dev->cw_err);
++		dev->cw = 0;
++		dev->cw_err = 0;
++	}
++
++out_assert:
++	/* fire assert event */
++	pps_event_irq(dev->pps, &ts_assert,
++			PPS_CAPTUREASSERT, NULL);
++	return;
++
++out_both:
++	/* fire assert event */
++	pps_event_irq(dev->pps, &ts_assert,
++			PPS_CAPTUREASSERT, NULL);
++	/* fire clear event */
++	pps_event_irq(dev->pps, &ts_clear,
++			PPS_CAPTURECLEAR, NULL);
++	return;
++}
++
++/* the PPS echo function */
++static void pps_echo(struct pps_device *pps, int event, void *data)
++{
++	dev_info(pps->dev, "echo %s %s\n",
++		event & PPS_CAPTUREASSERT ? "assert" : "",
++		event & PPS_CAPTURECLEAR ? "clear" : "");
++}
++
++static void parport_attach(struct parport *port)
++{
++	struct pps_client_pp *device;
++	struct pps_source_info info = {
++		.name		= DRVNAME,
++		.path		= "",
++		.mode		= PPS_CAPTUREBOTH | \
++				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
++				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
++				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
++		.echo		= pps_echo,
++		.owner		= THIS_MODULE,
++		.dev		= NULL
++	};
++
++	device = kzalloc(sizeof(struct pps_client_pp), GFP_KERNEL);
++	if (!device) {
++		pr_err(DRVNAME ": memory allocation failed, not attaching\n");
++		return;
++	}
++
++	device->pardev = parport_register_device(port, DRVNAME,
++			NULL, NULL, parport_irq, 0, device);
++	if (!device->pardev) {
++		pr_err(DRVNAME ": couldn't register with %s\n", port->name);
++		goto err_free;
++	}
++
++	if (parport_claim_or_block(device->pardev) < 0) {
++		pr_err(DRVNAME ": couldn't claim %s\n", port->name);
++		goto err_unregister_dev;
++	}
++
++	device->pps = pps_register_source(&info,
++			PPS_CAPTUREBOTH | PPS_OFFSETASSERT | PPS_OFFSETCLEAR);
++	if (device->pps == NULL) {
++		pr_err(DRVNAME ": couldn't register PPS source\n");
++		goto err_release_dev;
++	}
++
++	device->cw = clear_wait;
++
++	port->ops->enable_irq(port);
++
++	pr_info(DRVNAME ": attached to %s\n", port->name);
++
++	return;
++
++err_release_dev:
++	parport_release(device->pardev);
++err_unregister_dev:
++	parport_unregister_device(device->pardev);
++err_free:
++	kfree(device);
++}
++
++static void parport_detach(struct parport *port)
++{
++	struct pardevice *pardev = port->cad;
++	struct pps_client_pp *device;
++
++	/* FIXME: oooh, this is ugly! */
++	if (strcmp(pardev->name, DRVNAME))
++		/* not our port */
++		return;
++
++	device = pardev->private;
++
++	port->ops->disable_irq(port);
++	pps_unregister_source(device->pps);
++	parport_release(pardev);
++	parport_unregister_device(pardev);
++	kfree(device);
++}
++
++static struct parport_driver pps_parport_driver = {
++	.name = DRVNAME,
++	.attach = parport_attach,
++	.detach = parport_detach,
++};
++
++/* module staff */
++
++static int __init pps_parport_init(void)
++{
++	int ret;
++
++	pr_info(DRVNAME ": " DRVDESC "\n");
++
++	if (clear_wait > CLEAR_WAIT_MAX) {
++		pr_err(DRVNAME ": clear_wait value should be not"
++				" greater then %d\n", CLEAR_WAIT_MAX);
++		return -EINVAL;
++	}
++
++	ret = parport_register_driver(&pps_parport_driver);
++	if (ret) {
++		pr_err(DRVNAME ": unable to register with parport\n");
++		return ret;
++	}
++
++	return  0;
++}
++
++static void __exit pps_parport_exit(void)
++{
++	parport_unregister_driver(&pps_parport_driver);
++}
++
++module_init(pps_parport_init);
++module_exit(pps_parport_exit);
++
++MODULE_AUTHOR("Alexander Gordeev <lasaine@lvk.cs.msu.su>");
++MODULE_DESCRIPTION(DRVDESC);
++MODULE_LICENSE("GPL");
 -- 
 1.7.1
 
