@@ -1,211 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758631Ab0HDTYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 15:24:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53397 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757165Ab0HDTYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 15:24:21 -0400
-Date: Wed, 4 Aug 2010 19:24:08 +0000
-From: Denis Kirjanov <dkirjanov@kernel.org>
-To: gregkh@suse.de
-Cc: greg@kroah.com, liodot@gmail.com, dkirjanov@kernel.org,
-        charrer@alacritech.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH -staging] slicoss: Remove explicit arch dependencies
-Message-ID: <20100804192408.GA11385@hera.kernel.org>
+	id S1758745Ab0HDT1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 15:27:07 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41954 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758752Ab0HDT1F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 15:27:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t8Q0yqkdHsH7VB6ry1XZPv6O/q0dSo/3b5fUwyQi4QA9LNwtJ8b46ZmhzjgwIB7ipA
+         6Rttt+2AxAgYYteTQL/2DN2F+2AOVtr9XDBnWLCGyU5RTb1FXbA3M8u/S3SRjdvKq5kL
+         0Y8YMmCC0+zDiuU8+nCXYCZG4rvMXSG/RADW4=
+Date: Wed, 4 Aug 2010 23:26:34 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: A question of perf NMI handler
+Message-ID: <20100804192634.GG5130@lenovo>
+References: <20100804140021.GN3353@redhat.com> <1280931093.1923.1194.camel@laptop> <20100804145203.GP3353@redhat.com> <1280934161.1923.1294.camel@laptop> <20100804151858.GB5130@lenovo> <20100804155002.GS3353@redhat.com> <20100804161046.GC5130@lenovo> <20100804162026.GU3353@redhat.com> <20100804163930.GE5130@lenovo> <20100804184806.GL26154@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 04 Aug 2010 19:24:09 +0000 (UTC)
+In-Reply-To: <20100804184806.GL26154@erda.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove explicit arch dependencies
+On Wed, Aug 04, 2010 at 08:48:06PM +0200, Robert Richter wrote:
+> (cc'ing Andi)
+> 
+> On 04.08.10 12:39:30, Cyrill Gorcunov wrote:
+> > On Wed, Aug 04, 2010 at 12:20:26PM -0400, Don Zickus wrote:
+> 
+> > > there.  The problem is the bits in register 0x61 are not always set
+> > > correctly in the case of SERRs (well at least in all the cases I have
+> > > dealt with).  So you can easily can a flood of unknown nmis from an SERR
+> > > and register 0x61 would have the PERR/SERR bits set to 0.  Fun, huh?
+> > 
+> > if there is nothing in nmi_sc the code flows into another branch. And
+> > it hits the problem of perf events eating all nmi giving no chance the
+> > others. So we take if (!(reason & 0xc0)) case and hit DIE_NMI_IPI
+> > (/me scratching the head why it's not under CONFIG_X86_LOCAL_APIC) and
+> > drop all code, unpleasant.
+> 
+> Only the upper 2 bits in io_61h indicate the nmi reason, so in case of
+> (!(reason & 0xc0)) the source simply can not be determined and all nmi
+> handlers in the chain must be called (DIE_NMI/DIE_NMI_IPI). The
+> perfctr handler then stops it.
 
-Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
----
-diff --git a/drivers/staging/slicoss/slic.h b/drivers/staging/slicoss/slic.h
-index beab400..ebdcc6f 100644
---- a/drivers/staging/slicoss/slic.h
-+++ b/drivers/staging/slicoss/slic.h
-@@ -515,14 +515,16 @@ struct adapter {
-     (largestat) += ((newstat) - (oldstat));                              \
- }
- 
--#if defined(CONFIG_X86_64) || defined(CONFIG_IA64)
-+#if BITS_PER_LONG == 64
- #define   SLIC_GET_ADDR_LOW(_addr)  (u32)((u64)(_addr) & \
- 	0x00000000FFFFFFFF)
- #define   SLIC_GET_ADDR_HIGH(_addr)  (u32)(((u64)(_addr) >> 32) & \
- 	0x00000000FFFFFFFF)
--#else
--#define   SLIC_GET_ADDR_LOW(_addr)   (u32)_addr
-+#elif BITS_PER_LONG == 32
-+#define   SLIC_GET_ADDR_LOW(_addr)   (u32)(_addr)
- #define   SLIC_GET_ADDR_HIGH(_addr)  (u32)0
-+#else
-+#error BITS_PER_LONG must be 32 or 64
- #endif
- 
- #define FLUSH		true
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index f8c4b12..58ff123 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -1099,19 +1099,17 @@ static void slic_link_upr_complete(struct adapter *adapter, u32 isr)
- 		struct slic_shmem *pshmem;
- 
- 		pshmem = (struct slic_shmem *)adapter->phys_shmem;
--#if defined(CONFIG_X86_64)
-+#if BITS_PER_LONG == 64
- 		slic_upr_queue_request(adapter,
- 				       SLIC_UPR_RLSR,
- 				       SLIC_GET_ADDR_LOW(&pshmem->linkstatus),
- 				       SLIC_GET_ADDR_HIGH(&pshmem->linkstatus),
- 				       0, 0);
--#elif defined(CONFIG_X86)
-+#else
- 		slic_upr_queue_request(adapter,
- 				       SLIC_UPR_RLSR,
- 				       (u32) &pshmem->linkstatus,
- 				       SLIC_GET_ADDR_HIGH(pshmem), 0, 0);
--#else
--		Stop Compilation;
- #endif
- 		return;
- 	}
-@@ -1327,7 +1325,7 @@ static ushort slic_eeprom_cksum(char *m, int len)
- 	s_util.s = 0;
- 
- 	w = (u16 *)m;
--#ifdef CONFIG_X86_64
-+#if BITS_PER_LONG == 64
- 	w_int = (u32) ((ulong) w & 0x00000000FFFFFFFF);
- #else
- 	w_int = (u32) (w);
-@@ -1439,12 +1437,16 @@ static int slic_rspqueue_init(struct adapter *adapter)
- 			slic_rspqueue_free(adapter);
- 			return -ENOMEM;
- 		}
-+		/* FIXME:
-+		 * do we really need this assertions (4K PAGE_SIZE aligned addr)? */
-+#if 0
- #ifndef CONFIG_X86_64
- 		ASSERT(((u32) rspq->vaddr[i] & 0xFFFFF000) ==
- 		       (u32) rspq->vaddr[i]);
- 		ASSERT(((u32) rspq->paddr[i] & 0xFFFFF000) ==
- 		       (u32) rspq->paddr[i]);
- #endif
-+#endif
- 		memset(rspq->vaddr[i], 0, PAGE_SIZE);
- 
- 		if (paddrh == 0) {
-@@ -1473,13 +1475,13 @@ static struct slic_rspbuf *slic_rspqueue_getnext(struct adapter *adapter)
- 		return NULL;
- 
- 	buf = rspq->rspbuf;
--#ifndef CONFIG_X86_64
-+#if BITS_PER_LONG == 32
- 	ASSERT((buf->status & 0xFFFFFFE0) == 0);
- #endif
- 	ASSERT(buf->hosthandle);
- 	if (++rspq->offset < SLIC_RSPQ_BUFSINPAGE) {
- 		rspq->rspbuf++;
--#ifndef CONFIG_X86_64
-+#if BITS_PER_LONG == 32
- 		ASSERT(((u32) rspq->rspbuf & 0xFFFFFFE0) ==
- 		       (u32) rspq->rspbuf);
- #endif
-@@ -1492,12 +1494,12 @@ static struct slic_rspbuf *slic_rspqueue_getnext(struct adapter *adapter)
- 		rspq->offset = 0;
- 		rspq->rspbuf = (struct slic_rspbuf *)
- 						rspq->vaddr[rspq->pageindex];
--#ifndef CONFIG_X86_64
-+#if BITS_PER_LONG == 32
- 		ASSERT(((u32) rspq->rspbuf & 0xFFFFF000) ==
- 		       (u32) rspq->rspbuf);
- #endif
- 	}
--#ifndef CONFIG_X86_64
-+#if BITS_PER_LONG == 32
- 	ASSERT(((u32) buf & 0xFFFFFFE0) == (u32) buf);
- #endif
- 	return buf;
-@@ -1538,7 +1540,7 @@ static u32 *slic_cmdqmem_addpage(struct adapter *adapter)
- 					&cmdqmem->dma_pages[cmdqmem->pagecnt]);
- 	if (!pageaddr)
- 		return NULL;
--#ifndef CONFIG_X86_64
-+#if BITS_PER_LONG == 32
- 	ASSERT(((u32) pageaddr & 0xFFFFF000) == (u32) pageaddr);
- #endif
- 	cmdqmem->pages[cmdqmem->pagecnt] = pageaddr;
-@@ -1650,7 +1652,7 @@ static int slic_cmdq_init(struct adapter *adapter)
- 	adapter->slic_handle_ix = 1;
- 	for (i = 0; i < SLIC_CMDQ_INITPAGES; i++) {
- 		pageaddr = slic_cmdqmem_addpage(adapter);
--#ifndef CONFIG_X86_64
-+#if BITS_PER_LONG == 32
- 		ASSERT(((u32) pageaddr & 0xFFFFF000) == (u32) pageaddr);
- #endif
- 		if (!pageaddr) {
-@@ -2447,18 +2449,16 @@ static void slic_link_event_handler(struct adapter *adapter)
- 
- 	pshmem = (struct slic_shmem *)adapter->phys_shmem;
- 
--#if defined(CONFIG_X86_64)
-+#if BITS_PER_LONG == 64
- 	status = slic_upr_request(adapter,
- 				  SLIC_UPR_RLSR,
- 				  SLIC_GET_ADDR_LOW(&pshmem->linkstatus),
- 				  SLIC_GET_ADDR_HIGH(&pshmem->linkstatus),
- 				  0, 0);
--#elif defined(CONFIG_X86)
-+#else
- 	status = slic_upr_request(adapter, SLIC_UPR_RLSR,
- 		(u32) &pshmem->linkstatus,	/* no 4GB wrap guaranteed */
- 				  0, 0, 0);
--#else
--	Stop compilation;
- #endif
- 	ASSERT(status == 0);
- }
-@@ -2575,14 +2575,12 @@ static void slic_xmit_build_request(struct adapter *adapter,
- 	ihcmd->u.slic_buffers.bufs[0].paddrl = SLIC_GET_ADDR_LOW(phys_addr);
- 	ihcmd->u.slic_buffers.bufs[0].paddrh = SLIC_GET_ADDR_HIGH(phys_addr);
- 	ihcmd->u.slic_buffers.bufs[0].length = skb->len;
--#if defined(CONFIG_X86_64)
-+#if BITS_PER_LONG == 64
- 	hcmd->cmdsize = (u32) ((((u64)&ihcmd->u.slic_buffers.bufs[1] -
- 				     (u64) hcmd) + 31) >> 5);
--#elif defined(CONFIG_X86)
-+#else
- 	hcmd->cmdsize = ((((u32) &ihcmd->u.slic_buffers.bufs[1] -
- 			   (u32) hcmd) + 31) >> 5);
--#else
--	Stop Compilation;
- #endif
- }
- 
-@@ -3078,16 +3076,14 @@ static int slic_if_init(struct adapter *adapter)
- 		spin_lock_irqsave(&adapter->bit64reglock.lock,
- 					adapter->bit64reglock.flags);
- 
--#if defined(CONFIG_X86_64)
-+#if BITS_PER_LONG == 64
- 		slic_reg32_write(&slic_regs->slic_addr_upper,
- 				 SLIC_GET_ADDR_HIGH(&pshmem->isr), DONT_FLUSH);
- 		slic_reg32_write(&slic_regs->slic_isp,
- 				 SLIC_GET_ADDR_LOW(&pshmem->isr), FLUSH);
--#elif defined(CONFIG_X86)
-+#else
- 		slic_reg32_write(&slic_regs->slic_addr_upper, 0, DONT_FLUSH);
- 		slic_reg32_write(&slic_regs->slic_isp, (u32)&pshmem->isr, FLUSH);
--#else
--		Stop Compilations
- #endif
- 		spin_unlock_irqrestore(&adapter->bit64reglock.lock,
- 					adapter->bit64reglock.flags);
+yes, that is what I meant by nmi_sc register. I think we need to restucturize
+current default_do_nmi handler but how to be with perfs I don't know at moment
+if perf register gets overflowed (ie already has pedning nmi) but we handle
+it in early nmi cycle this would lead to strange results. Need to think.
+
+> 
+> So you can decide to either get an unrecovered nmi panic triggered by
+> a perfctr or losing unknown nmis from other sources. Maybe this can be
+> fixed by implementing handlers for those sources.
+> 
+> -Robert
+> 
+> -- 
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+> 
+	-- Cyrill
