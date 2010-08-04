@@ -1,35 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab0HDHze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 03:55:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36546 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750699Ab0HDHzd (ORCPT
+	id S1754839Ab0HDH5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 03:57:04 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:60853 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0HDH5B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 03:55:33 -0400
-Date: Wed, 4 Aug 2010 08:55:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH] wm8994-core: fix wm8994_device_init() return value
-Message-ID: <20100804075530.GB22446@rakim.wolfsonmicro.main>
-References: <1280886287.31990.1.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280886287.31990.1.camel@mola>
-X-Cookie: Colorless green ideas sleep furiously.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 4 Aug 2010 03:57:01 -0400
+Date: Wed, 04 Aug 2010 09:55:16 +0200
+From: Pawel Osciak <p.osciak@samsung.com>
+Subject: RE: [PATCH 1/3 v2] media: Add a cached version of the contiguous video
+ buffers
+In-reply-to: <1280848711.19898.161.camel@debian>
+To: "=?utf-8?Q?'Richard_R=C3=B6jfors'?=" <richard.rojfors@pelagicore.com>,
+        "'Linux Media Mailing List'" <linux-media@vger.kernel.org>
+Cc: "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
+        "'Mauro Carvalho Chehab'" <mchehab@redhat.com>,
+        "'Douglas Schilling Landgraf'" <dougsland@gmail.com>,
+        "'Samuel Ortiz'" <sameo@linux.intel.com>
+Message-id: <000d01cb33aa$606faee0$214f0ca0$%osciak@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: pl
+Content-transfer-encoding: 8BIT
+Thread-index: AcszIC71j/uiyNpETM2zQ9w+F1Xp7QAh7sFQ
+References: <1280848711.19898.161.camel@debian>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 09:44:47AM +0800, Axel Lin wrote:
-> wm8994_device_init() will return 0 in the case of kzalloc fail
-> in current implementation.
-> This patch fixes the return value.
+Hi Richard,
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>Richard Röjfors wrote:
+>This patch adds another init functions in the videobuf-dma-contig
+>which is named _cached in the end. It creates a buffer factory
+>which allocates buffers using kmalloc and the buffers are cached.
+>
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Before I review this in more detail, could you elaborate more on
+this? How large are your buffers, can kmalloc really allocate them
+for you? I am not convinced how this is supposed to work reliably,
+especially in a long-running systems.
+
+Best regards
+--
+Pawel Osciak
+Linux Platform Group
+Samsung Poland R&D Center
+
+
+
+
+
