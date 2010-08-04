@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552Ab0HDJYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 05:24:17 -0400
-Received: from mailsrv1.zmi.at ([212.69.164.54]:42269 "EHLO mailsrv14.zmi.at"
+	id S932215Ab0HDJZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 05:25:48 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52111 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756253Ab0HDJYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 05:24:15 -0400
-X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 05:24:15 EDT
-From: Michael Monnerie <michael.monnerie@is.it-management.at>
-Organization: it-management http://it-management.at
-To: Dominik Brodowski <linux@dominikbrodowski.net>, linux-raid@vger.kernel.org,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: How to track down abysmal performance ata - raid1 - crypto - vg/lv - xfs
-Date: Wed, 4 Aug 2010 11:16:09 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34.1-zmi; KDE/4.3.5; x86_64; ; )
-References: <20100804073546.GA7494@comet.dominikbrodowski.net>
-In-Reply-To: <20100804073546.GA7494@comet.dominikbrodowski.net>
+	id S1756526Ab0HDJZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 05:25:46 -0400
+Date: Wed, 4 Aug 2010 11:25:31 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: bifferos <bifferos@yahoo.co.uk>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
+        hpa@linux.intel.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what
+ c_ident is
+Message-ID: <20100804092531.GB2395@elte.hu>
+References: <20100803192557.GA13595@elte.hu>
+ <646233.80914.qm@web27008.mail.ukl.yahoo.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart41331569.taeFQ0rjha";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008041116.09822@zmi.at>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <646233.80914.qm@web27008.mail.ukl.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.2442]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart41331569.taeFQ0rjha
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
 
-On Mittwoch, 4. August 2010 Dominik Brodowski wrote:
-> The read performance is abysmal. The ata devices can be ruled out, as
->  hdparm
->=20
-> resulted in acceptable performance:
-> > Timing cached reads:   9444 MB in  2.00 seconds =3D 4733.59 MB/sec
-> > Timing buffered disk reads:  298 MB in  3.02 seconds =3D  98.73
-> > MB/sec
+* bifferos <bifferos@yahoo.co.uk> wrote:
 
-Has that system been running acceptable before? If yes, what has been=20
-changed that performance is down now?
+> I couldn't reproduce this with 2.6.35 (without Peter's change),
+> I was trying on VirtualBox.  If the detection code is causing a 
+> problem we can just skip it if the CPU has cpuid.
 
-Or is it a new setup? Then why is it in production already?
+As i reported:
 
-Can you run bonnie on that system?
-What does "dd if=3D<your device> of=3D/dev/null bs=3D1m count=3D1024" say?
-What does "dd if=3D/dev/zero of=3D<your device> bs=3D1m count=3D1024" say?
+> > -tip testing found that these RDC patches cause a boot
+> > crash if a X86_RDC321X=y kernel is booted on a regular PC:
 
+Those two patches caused the crash, with the config i sent, on a regular PC.
 
-=2D-=20
-mit freundlichen Gr=FCssen,
-Michael Monnerie, Ing. BSc
-
-it-management Internet Services
-http://proteger.at [gesprochen: Prot-e-schee]
-Tel: 0660 / 415 65 31
-
-****** Aktuelles Radiointerview! ******
-http://www.it-podcast.at/aktuelle-sendung.html
-
-// Wir haben im Moment zwei H=E4user zu verkaufen:
-// http://zmi.at/langegg/
-// http://zmi.at/haus2009/
-
---nextPart41331569.taeFQ0rjha
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.12 (GNU/Linux)
-
-iEYEABECAAYFAkxZL9kACgkQzhSR9xwSCbTecACeIaIGfwqb9W43UiPu6DtTRiXr
-RWQAn0J6cBGwcUqCSGFRDblkJA/XaA/s
-=7bjv
------END PGP SIGNATURE-----
-
---nextPart41331569.taeFQ0rjha--
+	Ingo
