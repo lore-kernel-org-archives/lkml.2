@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757647Ab0HDKEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 06:04:41 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:40272 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756983Ab0HDKEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 06:04:39 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h64h)
-X-Spam-TCS-SCL: 3:0
-X-WSS-ID: 0L6MH63-02-23G-02
-X-M-MSG: 
-Date: Wed, 4 Aug 2010 12:01:16 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: A question of perf NMI handler
-Message-ID: <20100804100116.GH26154@erda.amd.com>
-References: <1280913670.20797.179.camel@minggr.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1280913670.20797.179.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S932318Ab0HDKJD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 06:09:03 -0400
+Received: from sh.osrg.net ([192.16.179.4]:52627 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932146Ab0HDKJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 06:09:00 -0400
+Date: Wed, 4 Aug 2010 19:08:51 +0900
+To: sa212+lkml@cyconix.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Driver: PCIe: 'pci_map_sg' returning invalid bus address?
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C593245.5070303@cyconix.com>
+References: <4C5002AD.6070206@cyconix.com>
+	<4C593245.5070303@cyconix.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100804190808D.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 04 Aug 2010 19:08:52 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.08.10 05:21:10, Lin Ming wrote:
+On Wed, 04 Aug 2010 10:26:29 +0100
+Evan Lavelle <sa212+lkml@cyconix.com> wrote:
 
-> With nmi_watchdog enabled, perf_event_nmi_handler always return
-> NOTIFY_STOP(active_events > 0), and the notifier call chain will not
-> call further.
+> Made some progress here. The problem is that this is 32-bit PAE kernel, 
+> so 'dma_addr_t' is 64-bit. However, I have a 32-bit PCIe card, so I need 
+> a 32-bit dma_addr_t. How do I do this? In other words, how do I handle 
+> 32-bit PCI cards on PAE or 64-bit systems? My code sets the DMA mask to 
+> 32 bits but this is *not* sufficient:
 > 
-> If it was not perf NMI, does the perf nmi handler may stop the real NMI
-> handler get called because NOTIFY_STOP is returned??
+> pci_set_dma_mask(my_dev, DMA_32BIT_MASK)
 
-There is no general mechanism for recording the NMI source (except if
-it was external triggered, e.g. by the southbridge). Also, all nmis
-are mapped to NMI vector 2 and therefore there is no way to find out
-the reason by using apic mask registers.
+It doesn't work on x86_32 kernel if your driver doesn't work with the
+block layer or the network subsystem.
 
-Now, if multiple perfctrs trigger an nmi, it may happen that a handler
-has nothing to do because the counter was already handled by the
-previous one. Thus, it is valid to have unhandled nmis caused by
-perfctrs.
+If your driver can't handle 64bit DMA, you need bounce buffer. I don't
+know what your driver do, but a subsystem passes a buffer to your
+driver. If a buffer is not below 32bit address, for example, if you
+read data from hardware, you need to allocate a temporary buffer
+(below 32bit), do DMA with the buffer, copy the data to the original
+buffer, then free the temporary buffer.
 
-So, with counters enabled we always have to return stop for *all* nmis
-as we cannot detect that it was an perfctr nmi. Otherwise we could
-trigger an unhandled nmi. To ensure that all other nmi handlers are
-called, the perfctr's nmi handler must have the lowest priority. Then,
-the handler will be the last in the chain.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+The block layer and the network subsystem have the own bounce
+mechanism. x86_64 kernel has swiotlb, which is the generic bounce
+buffer mechanism. So if a driver sets the dma mask, they do bounce
+buffer for the driver.
