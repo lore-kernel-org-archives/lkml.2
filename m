@@ -1,139 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab0HDXXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:23:08 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:2615 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759372Ab0HDXXF (ORCPT
+	id S1759454Ab0HDXYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:24:49 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:38090 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759372Ab0HDXYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:23:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6064"; a="49900642"
-Message-ID: <4C59F656.3010701@codeaurora.org>
-Date: Wed, 04 Aug 2010 16:23:02 -0700
-From: Patrick Pannuto <ppannuto@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12pre) Gecko/20100715 Shredder/3.0.7pre
+	Wed, 4 Aug 2010 19:24:48 -0400
+X-Greylist: delayed 1377 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 19:24:47 EDT
+Date: Wed, 4 Aug 2010 16:01:48 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: stefani@seibold.net
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, tytso@mit.edu
+Subject: Re: new gerneric kfifo API
+Message-ID: <20100804230147.GI23951@ovro.caltech.edu>
+References: <201005132135.o4DLZ9WI021613@imap1.linux-foundation.org>
+ <1280905854.8441.3.camel@wall-e.seibold.net>
+ <20100804194617.GA30773@suse.de>
+ <1280952551.8594.0.camel@wall-e.seibold.net>
+ <20100804201724.GA32100@suse.de>
+ <20100804145205.524c1c03.akpm@linux-foundation.org>
+ <20100805000246.57246lmy2qeimft2@mail.your-server.de>
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joe@perches.com, akpm@linux-foundation.org, tglx@linutronix.de,
-        ppannuto@codeaurora.org
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/core] Checkpatch: Prefer usleep_range over udelay
-References: <1280786467-26999-4-git-send-email-ppannuto@codeaurora.org> <tip-022d60db2ab6e97f93c98808d08fd883003048c7@git.kernel.org>
-In-Reply-To: <tip-022d60db2ab6e97f93c98808d08fd883003048c7@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805000246.57246lmy2qeimft2@mail.your-server.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Wed, 04 Aug 2010 16:01:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2010 02:25 AM, tip-bot for Patrick Pannuto wrote:
-> Commit-ID:  022d60db2ab6e97f93c98808d08fd883003048c7
-> Gitweb:     http://git.kernel.org/tip/022d60db2ab6e97f93c98808d08fd883003048c7
-> Author:     Patrick Pannuto <ppannuto@codeaurora.org>
-> AuthorDate: Mon, 2 Aug 2010 15:01:06 -0700
-> Committer:  Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Wed, 4 Aug 2010 11:00:45 +0200
+On Thu, Aug 05, 2010 at 12:02:46AM +0200, stefani@seibold.net wrote:
 > 
-> Checkpatch: Prefer usleep_range over udelay
+> Zitat von Andrew Morton <akpm@linux-foundation.org>:
 > 
-> When possible, sleeping is (usually) better than delaying;
-> however, don't bother callers of udelay < 10us, as those
-> cases are generally not worth the switch to usleep
+> > On Wed, 4 Aug 2010 13:17:24 -0700
+> > Greg KH <gregkh@suse.de> wrote:
+> >
+> >> On Wed, Aug 04, 2010 at 10:09:11PM +0200, Stefani Seibold wrote:
+> >> > Am Mittwoch, den 04.08.2010, 12:46 -0700 schrieb Greg KH:
+> >> > > On Wed, Aug 04, 2010 at 09:10:54AM +0200, Stefani Seibold wrote:
+> >> > > > Hi,
+> >> > > >
+> >> > > > once again. Kernel 2.6.35 is out and i want to know if there  
+> >> is play plan to
+> >> > > > merge the generic kfifo API. All complains was fixed, so there is no
+> >> > > > reason to shift the merge again. Please gibe me a short answer.
+> >> > >
+> >> > > These have been in the -mm tree for a few major kernel releases now,
+> >> > > right?  And they are API safe, and only change the internals, right?
+> >> > >
+> >> > > If so, I see no objection to merging them now, especially as you will be
+> >> > > around to fix up any problems that people have, right?  :)
+> >> > >
+> >> >
+> >> > right!
+> >>
+> >> Great.  As Andrew doesn't have the time to send them on, want me to?  If
+> >> so, care to point me at them in his tree, or resend them to me?
+> >>
+> >
+> > One does a little more than "send things on"...
+> >
+> > I have a little pile of kfifo changes queud for 2.6.36.  The "generic
+> > kfifo" patches are a large rotorooting of the whole facility, based on
+> > that work (I hope).
+> >
+> > There's also the abandoned
+> > kfifo-replace-the-old-non-generic-api-kfifo-fix-scatterlist-usage.patch
+> > which never got resolved with the originator.
+> >
+> >
 > 
-> Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
-> Cc: apw@canonical.com
-> Cc: corbet@lwn.net
-> Cc: arjan@linux.intel.com
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> LKML-Reference: <1280786467-26999-4-git-send-email-ppannuto@codeaurora.org>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  scripts/checkpatch.pl |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
+> This patch was included in the latest version i had posted last week.
 > 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index bd88f11..1698c63 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2570,6 +2570,14 @@ sub process {
->  			}
->  		}
->  
-> +# prefer usleep_range over udelay
-> +		if (($line =~ /\budelay\s*\(\s*(\w+)\s*\)/ {
-> +			# ignore udelay's < 10, however
-> +			if (! (($1 =~ /(\d+)/) && ($1 < 10)) ) {
-> +				CHK("usleep_range is preferred over udelay; see Documentation/timers/timers-howto.txt\n" . $line);
-> +			}
-> +		}
-> +
->  # warn about #ifdefs in C files
->  #		if ($line =~ /^.\s*\#\s*if(|n)def/ && ($realfile =~ /\.c$/)) {
->  #			print "#ifdef in C files should be avoided\n";
 
+Hello Stefani, Andrew,
 
-Andrew Morton's patch to fix the parentheses imbalance in the original
-patch was missed (sorry for the initial error).  This breaks checkpatch
-in tip; could you pull in this too from -mm to tip?
+I've reviewed the updated patch from Stefani which has incorporated the
+fixes I suggested into the DMA routines. The DMA routines have my ack,
+though I have not ported any code to them yet.
 
-Sorry for the extra trouble
-
--Pat
-
-
-(FROM ANDREW):
-
-The patch titled
-     checkpatch-prefer-usleep_range-over-udelay-fix
-has been added to the -mm tree.  Its filename is
-     checkpatch-prefer-usleep_range-over-udelay-fix.patch
-
-Before you just go and hit "reply", please:
-   a) Consider who else should be cc'ed
-   b) Prefer to cc a suitable mailing list as well
-   c) Ideally: find the original patch on the mailing list and do a
-      reply-to-all to that, adding suitable additional cc's
-
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
-
-See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
-out what to do about this
-
-The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
-
-------------------------------------------------------
-Subject: checkpatch-prefer-usleep_range-over-udelay-fix
-From: Andrew Morton <akpm@linux-foundation.org>
-
-syntax error at scripts/checkpatch.pl line 2598, near "/\budelay\s*\(\s*(\w+)\s*\)/ {"
-
-mismatched parentheses?
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Patrick Pannuto <ppannuto@codeaurora.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- scripts/checkpatch.pl |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -puN scripts/checkpatch.pl~checkpatch-prefer-usleep_range-over-udelay-fix scripts/checkpatch.pl
---- a/scripts/checkpatch.pl~checkpatch-prefer-usleep_range-over-udelay-fix
-+++ a/scripts/checkpatch.pl
-@@ -2595,7 +2595,7 @@ sub process {
- 		}
- 
- # prefer usleep_range over udelay
--		if (($line =~ /\budelay\s*\(\s*(\w+)\s*\)/ {
-+		if ($line =~ /\budelay\s*\(\s*(\w+)\s*\)/) {
- 			# ignore udelay's < 10, however
- 			if (! (($1 =~ /(\d+)/) && ($1 < 10)) ) {
- 				CHK("usleep_range is preferred over udelay; see Documentation/timers/timers-howto.txt\n" . $line);
-
-
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Thanks,
+Ira
