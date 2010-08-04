@@ -1,63 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759267Ab0HDVYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:24:21 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:49507 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759089Ab0HDVYP (ORCPT
+	id S1759270Ab0HDV0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:26:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41338 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab0HDV0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:24:15 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=pCen0gnRzWs98skDnhSdN+L1n3oPVwdzSCG28joRmTlDbIy4s6Ek+/hjCnug44SyQulgTKsLtqxESWXUltdvASCCNuTsox9G+PUF0wBtm9Ci2+SXXFWr9hNMN3L5ElLq;
-Date: Wed, 4 Aug 2010 14:24:12 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Narendra K <Narendra_K@dell.com>,
-        Jordan Hargrave <jordan_hargrave@dell.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20100804142412.429e6b06@virtuousgeek.org>
-In-Reply-To: <20100804142531.aea95c0b.sfr@canb.auug.org.au>
-References: <20100804142531.aea95c0b.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Wed, 4 Aug 2010 17:26:09 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/3] perf: expose event__process function
+Date: Wed,  4 Aug 2010 18:26:03 -0300
+Message-Id: <1280957164-14274-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1280957164-14274-1-git-send-email-acme@infradead.org>
+References: <1280957164-14274-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010 14:25:31 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-> Hi Greg,
-> 
-> After merging the driver-core tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/pci/pci-label.c:100: error: unknown field 'owner' specified in initializer
-> drivers/pci/pci-label.c:100: warning: initialization from incompatible pointer type
-> drivers/pci/pci-label.c:105: error: unknown field 'owner' specified in initializer
-> drivers/pci/pci-label.c:105: warning: initialization from incompatible pointer type
-> 
-> Caused by commit 60cc62ad579afa0eb5bded82e08dd0617d461d52 ("sysfs: Remove
-> owner field from sysfs struct attribute") interacting with commit
-> 911e1c9b05a8e3559a7aa89083930700a0b9e7ee ("PCI: export SMBIOS provided
-> firmware instance and label to sysfs") from the pci tree.
-> 
-> I applied the following merge fix patch (Jesse, this patch can already be
-> applied to the pci tree without problems):
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 4 Aug 2010 14:21:42 +1000
-> Subject: [PATCH] pci: update for owner removal from struct device_attribute
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+The event__process function is useful in processing /proc/<pid>/maps.  All of
+the functions that are called from event__process are defined in util/event.c.
+Though its defined in builtin-top.c, it could be reused for perf probe for
+uprobes. Hence moving it to util/event.c and exporting the function.
 
-Applied, thanks.
+LKML-Reference: <20100802123851.GD22812@linux.vnet.ibm.com>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-top.c |   20 --------------------
+ tools/perf/util/event.c  |   20 ++++++++++++++++++++
+ tools/perf/util/event.h  |    1 +
+ 3 files changed, 21 insertions(+), 20 deletions(-)
 
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 1e8e92e..b513e40 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1082,26 +1082,6 @@ static void event__process_sample(const event_t *self,
+ 	}
+ }
+ 
+-static int event__process(event_t *event, struct perf_session *session)
+-{
+-	switch (event->header.type) {
+-	case PERF_RECORD_COMM:
+-		event__process_comm(event, session);
+-		break;
+-	case PERF_RECORD_MMAP:
+-		event__process_mmap(event, session);
+-		break;
+-	case PERF_RECORD_FORK:
+-	case PERF_RECORD_EXIT:
+-		event__process_task(event, session);
+-		break;
+-	default:
+-		break;
+-	}
+-
+-	return 0;
+-}
+-
+ struct mmap_data {
+ 	int			counter;
+ 	void			*base;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index db8a1d4..dab9e75 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -548,6 +548,26 @@ int event__process_task(event_t *self, struct perf_session *session)
+ 	return 0;
+ }
+ 
++int event__process(event_t *event, struct perf_session *session)
++{
++	switch (event->header.type) {
++	case PERF_RECORD_COMM:
++		event__process_comm(event, session);
++		break;
++	case PERF_RECORD_MMAP:
++		event__process_mmap(event, session);
++		break;
++	case PERF_RECORD_FORK:
++	case PERF_RECORD_EXIT:
++		event__process_task(event, session);
++		break;
++	default:
++		break;
++	}
++
++	return 0;
++}
++
+ void thread__find_addr_map(struct thread *self,
+ 			   struct perf_session *session, u8 cpumode,
+ 			   enum map_type type, pid_t pid, u64 addr,
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 887ee63..8e790da 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -154,6 +154,7 @@ int event__process_comm(event_t *self, struct perf_session *session);
+ int event__process_lost(event_t *self, struct perf_session *session);
+ int event__process_mmap(event_t *self, struct perf_session *session);
+ int event__process_task(event_t *self, struct perf_session *session);
++int event__process(event_t *event, struct perf_session *session);
+ 
+ struct addr_location;
+ int event__preprocess_sample(const event_t *self, struct perf_session *session,
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+1.6.2.5
+
