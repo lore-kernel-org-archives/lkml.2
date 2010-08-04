@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab0HDCy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:54:57 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:46045 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758207Ab0HDCwP (ORCPT
+	id S932577Ab0HDCyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:54:52 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:39605 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758208Ab0HDCwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 3 Aug 2010 22:52:15 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: Hs4YhH8VM1m6HihKu7AWL6ceECCv5i2_p1Sz05vq8nB6ZW9
- Dc67463273mfOmBRJV5Oi9Q2HE68qlU24StjVmu2zaPVXX9efN0G.4gX0p76
- c5tZ.hL7teCZFSInj55Lgvvs2sFcqSIzvNXcGqcS5O_yv7snHsDZdHK4LRdt
- d09arNoPWiPufVDNhTARvR.W5TPYqrNxL0r6LKrnJZjCelJCQsVkDMS7cdal
- 0n5wwpAWHMW2.MHo2JQtfarhFxV1nF1DbEi9R0GbYeJbkU0rM
+X-YMail-OSG: qqYMVJkVM1krO0ZLnUyLD_E3a2JQjzv6iDd6k4tTlpwkZwc
+ cI6gAftVb3abWu8U8uGPnjPyEvOxXHBwyV5dDrZIT0eJBo4UEOvbhV5eJJnR
+ IDZIzVIx.lzxyhiV3KnhfvtJ3UzXEvo_jbA6u5uRY1w_PNqfsAUIHAhTNygK
+ DaFPR2dJ16oR36mn1OgZ27uNfabYXX61TjniPtI1z7ffuIRtpTnP_RtaD_0b
+ STwwgMjfEd3iY4cV6UlGBPkaYa4LEXvhc.iXSH6v381ONLULlo_riZpT3PRp
+ hGMtCxdudFx5GpP6d
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20100804024533.630677170@linux.com>
+Message-Id: <20100804024533.069345035@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 Aug 2010 21:45:31 -0500
+Date: Tue, 03 Aug 2010 21:45:30 -0500
 From: Christoph Lameter <cl@linux-foundation.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 Cc: Nick Piggin <npiggin@suse.de>
 Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q3 17/23] slub: Remove MAX_OBJS limitation
+Subject: [S+Q3 16/23] slub: Get rid of useless function count_free()
 References: <20100804024514.139976032@linux.com>
-Content-Disposition: inline; filename=unified_unlimited
+Content-Disposition: inline; filename=unified_drop_count_free
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need anymore for the "inuse" field in the page struct.
-Extend the objects field to 32 bit allowing a practically unlimited
-number of objects.
+count_free() == available()
 
 Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 
 ---
- include/linux/mm_types.h |    5 +----
- mm/slub.c                |    7 -------
- 2 files changed, 1 insertion(+), 11 deletions(-)
+ mm/slub.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-Index: linux-2.6/include/linux/mm_types.h
-===================================================================
---- linux-2.6.orig/include/linux/mm_types.h	2010-07-30 18:37:56.171016883 -0500
-+++ linux-2.6/include/linux/mm_types.h	2010-07-30 18:45:28.624439565 -0500
-@@ -40,10 +40,7 @@
- 					 * to show when page is mapped
- 					 * & limit reverse map searches.
- 					 */
--		struct {		/* SLUB */
--			u16 inuse;
--			u16 objects;
--		};
-+		u32 objects;		/* SLUB */
- 	};
- 	union {
- 	    struct {
 Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-30 18:45:24.248349179 -0500
-+++ linux-2.6/mm/slub.c	2010-07-30 18:45:28.628439648 -0500
-@@ -144,7 +144,6 @@
+--- linux-2.6.orig/mm/slub.c	2010-07-30 18:44:54.767739966 -0500
++++ linux-2.6/mm/slub.c	2010-07-30 18:45:24.248349179 -0500
+@@ -1697,11 +1697,6 @@
+ 	return 1;
+ }
  
- #define OO_SHIFT	16
- #define OO_MASK		((1 << OO_SHIFT) - 1)
--#define MAX_OBJS_PER_PAGE	65535 /* since page.objects is u16 */
+-static int count_free(struct page *page)
+-{
+-	return available(page);
+-}
+-
+ static unsigned long count_partial(struct kmem_cache_node *n,
+ 					int (*get_count)(struct page *))
+ {
+@@ -1750,7 +1745,7 @@
+ 		if (!n)
+ 			continue;
  
- /* Internal SLUB flags */
- #define __OBJECT_POISON		0x80000000UL /* Poison object */
-@@ -791,9 +790,6 @@
- 			max_objects = ((void *)page->freelist - start) / s->size;
+-		nr_free  = count_partial(n, count_free);
++		nr_free  = count_partial(n, available);
+ 		nr_slabs = node_nr_slabs(n);
+ 		nr_objs  = node_nr_objs(n);
+ 
+@@ -3906,7 +3901,7 @@
+ 			x = atomic_long_read(&n->total_objects);
+ 		else if (flags & SO_OBJECTS)
+ 			x = atomic_long_read(&n->total_objects) -
+-				count_partial(n, count_free);
++				count_partial(n, available);
+ 
+ 			else
+ 				x = atomic_long_read(&n->nr_slabs);
+@@ -4792,7 +4787,7 @@
+ 		nr_partials += n->nr_partial;
+ 		nr_slabs += atomic_long_read(&n->nr_slabs);
+ 		nr_objs += atomic_long_read(&n->total_objects);
+-		nr_free += count_partial(n, count_free);
++		nr_free += count_partial(n, available);
  	}
  
--	if (max_objects > MAX_OBJS_PER_PAGE)
--		max_objects = MAX_OBJS_PER_PAGE;
--
- 	if (page->objects != max_objects) {
- 		slab_err(s, page, "Wrong number of objects. Found %d but "
- 			"should be %d", page->objects, max_objects);
-@@ -2060,9 +2056,6 @@
- 	int rem;
- 	int min_order = slub_min_order;
- 
--	if ((PAGE_SIZE << min_order) / size > MAX_OBJS_PER_PAGE)
--		return get_order(size * MAX_OBJS_PER_PAGE) - 1;
--
- 	for (order = max(min_order,
- 				fls(min_objects * size - 1) - PAGE_SHIFT);
- 			order <= max_order; order++) {
+ 	nr_inuse = nr_objs - nr_free;
 
