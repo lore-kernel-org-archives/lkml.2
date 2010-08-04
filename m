@@ -1,109 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab0HDWFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:05:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51016 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751487Ab0HDWFZ (ORCPT
+	id S1756662Ab0HDWHH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:07:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20756 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab0HDWHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:05:25 -0400
-Date: Wed, 4 Aug 2010 15:04:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michael Rubin <mrubin@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
-        axboe@kernel.dk
-Subject: Re: [PATCH 0/2] Adding four writeback files in /proc/sys/vm
-Message-Id: <20100804150422.c52b308e.akpm@linux-foundation.org>
-In-Reply-To: <1280873949-20460-1-git-send-email-mrubin@google.com>
-References: <1280873949-20460-1-git-send-email-mrubin@google.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 4 Aug 2010 18:07:01 -0400
+Message-ID: <4C59E44E.5040800@kernel.org>
+Date: Wed, 04 Aug 2010 15:06:06 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Dave Airlie <airlied@gmail.com>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
+        Gary Hade <garyhade@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: oops in ioapic_write_entry
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org>	<m18w4onebi.fsf@fess.ebiederm.org> <4C5871BC.4070007@kernel.org>	<m1bp9jgyww.fsf@fess.ebiederm.org> <4C592BF5.3070008@kernel.org>	<m1mxt28tku.fsf@fess.ebiederm.org> <4C59BE0D.7020604@kernel.org> <m162zq86ck.fsf@fess.ebiederm.org>
+In-Reply-To: <m162zq86ck.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C59E457.00F3,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Aug 2010 15:19:07 -0700
-Michael Rubin <mrubin@google.com> wrote:
+Please check if this one address your concerns.
 
-> Patch #1 sets up some helper functions for accounting.
-> 
-> Patch #2 adds some writeback files for visibility
-> 
-> To help developers and applications gain visibility into writeback
-> behaviour adding four read-only sysctl files into /proc/sys/vm.
-> These files allow user apps to understand writeback behaviour over time
-> and learn how it is impacting their performance.
-> 
->    # cat /proc/sys/vm/pages_dirtied
->    3747
->    # cat /proc/sys/vm/pages_entered_writeback
->    3618
->    # cat /proc/sys/vm/dirty_threshold_kbytes
->    816673
->    # cat /proc/sys/vm/dirty_background_threshold_kbytes
->    408336
-> 
-> The files fall into two groups.
-> 
-> pages_dirtied and pages_entered_writeback:
-> 
-> These two new files are necessary to give visibility into writeback
-> behaviour. We have /proc/diskstats which lets us understand the io in
-> the block layer. We have blktrace for more indepth understanding. We have
-> e2fsprogs and debugsfs to give insight into the file systems behaviour,
-> but we don't offer our users the ability understand what writeback is
-> doing. There is no non-debugfs way to know how active it is,
+Thanks
 
-I see what you did there!
+Yinghai
 
-So is there a debugfs-based way of getting this info?  If so, that
-should be sufficient.
+---
+ arch/x86/kernel/mpparse.c |   88 ++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 77 insertions(+), 11 deletions(-)
 
-> if it's
-> falling behind or to quantify it's efforts on a system. With these values
-> exported users can easily see how much data applications are sending
-> through writeback and also at what rates writeback is processing this
-> data. Comparing the rates of change between the two allow developers
-> to see when writeback is not able to keep up with incoming traffic and
-> the rate of dirty memory being sent to the IO back end.  This allows
-> folks to understand their io workloads and track kernel issues. Non
-> kernel engineers at Google often use these counters to solve puzzling
-> performance problems.
-> 
-> dirty_threshold_kbytes and dirty_background_threshold kbytes:
-> 
-> We already expose these thresholds in /proc/sys/vm with
-> dirty_background_ratio and background_ratio. What's frustrating about
-> the ratio variables and the need for these are that they are not
-> honored by the kernel. Instead the kernel may alter the number
-> requested without giving the user any indication that is the case.
-> An app developer can set the ratio to 2% but end up with 5% as
-> get_dirty_limits makes sure it is never lower than 5% when set from
-> the ratio. Arguably that can be fixed too but the limits which decide
-> whether writeback is invoked to aggressively clean dirty pages is
-> dependent on changing page state retrieved in
-> determine_dirtyable_memory. It makes understanding when the kernel
-> decides to writeback data a moving target that no app can ever
-> determine. With these thresholds visible and collected over time it
-> gives apps a chance to know why writeback happened, or why it did not.
-> As systems get larger and larger RAM developers use the ratios to
-> predict when their workloads will see writeback invoked. Today there
-> is no way to accurately indicate what the kernel will use to kick off
-> writeback. Hence the need for these two new files.
-> 
-
-We should be very reluctant to add files to /proc which are tied to any
-particular internal implementation.  Because when we change that
-implementation (and boy does writeback need changing!), we have to
-somehow make those files still contain meaningful values.
-
-For pages_dirtied and pages_entered_writeback: it's hard to see how any
-reimplementation of writeback would have any problem implementing
-these, so OK.
-
-But dirty_threshold_kbytes and dirty_background_threshold_kbytes are
-closely tied to the implementation-of-the-day and so I don't think they
-should be presented in /proc.
+Index: linux-2.6/arch/x86/kernel/mpparse.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/mpparse.c
++++ linux-2.6/arch/x86/kernel/mpparse.c
+@@ -173,17 +173,17 @@ static int __init mp_irq_mpc_intsrc_cmp(
+ {
+ 	if (mp_irq->dstapic != m->dstapic)
+ 		return 1;
+-	if (mp_irq->type != m->type)
++	if (mp_irq->dstirq != m->dstirq)
+ 		return 2;
+-	if (mp_irq->irqtype != m->irqtype)
++	if (mp_irq->srcbus != m->srcbus)
+ 		return 3;
+-	if (mp_irq->irqflag != m->irqflag)
++	if (mp_irq->type != m->type)
+ 		return 4;
+-	if (mp_irq->srcbus != m->srcbus)
++	if (mp_irq->irqtype != m->irqtype)
+ 		return 5;
+-	if (mp_irq->srcbusirq != m->srcbusirq)
++	if (mp_irq->irqflag != m->irqflag)
+ 		return 6;
+-	if (mp_irq->dstirq != m->dstirq)
++	if (mp_irq->srcbusirq != m->srcbusirq)
+ 		return 7;
+ 
+ 	return 0;
+@@ -195,9 +195,45 @@ static void __init MP_intsrc_info(struct
+ 
+ 	print_MP_intsrc_info(m);
+ 
++	/*
++	 *  All BUS, and IOAPIC entries are processed already
++	 */
++
++	/* check if dstapic is right */
++	for (i = 0; i < nr_ioapics; i++) {
++		if (mp_ioapics[i].apicid == m->dstapic)
++			break;
++	}
++	if (i == nr_ioapics) {
++		apic_printk(APIC_VERBOSE, "intsrc with wrong apic id is skipped\n");
++		return;
++	}
++
+ 	for (i = 0; i < mp_irq_entries; i++) {
+-		if (!mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m))
++		int ret = mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m);
++
++		/* duplicated entries ? */
++		if (!ret) {
++			apic_printk(APIC_VERBOSE, "Duplicated intsrc is skipped\n");
+ 			return;
++		}
++
++		/* same apic/pin, but different bus */
++		if (ret == 3) {
++			/* overwrite wrong legacy one */
++			if (test_bit(mp_irqs[i].srcbus, mp_bus_not_pci) &&
++			    !test_bit(m->srcbus, mp_bus_not_pci)) {
++				apic_printk(APIC_VERBOSE, "Wrong legacy entry with same apic/pin is removed\n");
++				assign_to_mp_irq(m, &mp_irqs[i]);
++				return;
++			}
++			/* dump this legacy one */
++			if (!test_bit(mp_irqs[i].srcbus, mp_bus_not_pci) &&
++			    test_bit(m->srcbus, mp_bus_not_pci)) {
++				apic_printk(APIC_VERBOSE, "Wrong legacy entry is skipped\n");
++				return;
++			}
++		}
+ 	}
+ 
+ 	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
+@@ -280,8 +316,8 @@ static int __init smp_read_mpc(struct mp
+ 	char str[16];
+ 	char oem[10];
+ 
+-	int count = sizeof(*mpc);
+-	unsigned char *mpt = ((unsigned char *)mpc) + count;
++	int count;
++	unsigned char *mpt;
+ 
+ 	if (!smp_check_mpc(mpc, oem, str))
+ 		return 0;
+@@ -305,8 +341,9 @@ static int __init smp_read_mpc(struct mp
+ 	/*
+ 	 *      Now process the configuration blocks.
+ 	 */
++	count = sizeof(*mpc);
++	mpt = ((unsigned char *)mpc) + count;
+ 	x86_init.mpparse.mpc_record(0);
+-
+ 	while (count < mpc->length) {
+ 		switch (*mpt) {
+ 		case MP_PROCESSOR:
+@@ -324,7 +361,7 @@ static int __init smp_read_mpc(struct mp
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
+ 			break;
+ 		case MP_INTSRC:
+-			MP_intsrc_info((struct mpc_intsrc *)mpt);
++			/* check that next pass */
+ 			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
+ 			break;
+ 		case MP_LINTSRC:
+@@ -337,6 +374,35 @@ static int __init smp_read_mpc(struct mp
+ 			count = mpc->length;
+ 			break;
+ 		}
++		x86_init.mpparse.mpc_record(1);
++	}
++
++	/* second pass for INTSRC */
++	count = sizeof(*mpc);
++	mpt = ((unsigned char *)mpc) + count;
++	x86_init.mpparse.mpc_record(0);
++	while (count < mpc->length) {
++		switch (*mpt) {
++		case MP_PROCESSOR:
++			skip_entry(&mpt, &count, sizeof(struct mpc_cpu));
++			break;
++		case MP_BUS:
++			skip_entry(&mpt, &count, sizeof(struct mpc_bus));
++			break;
++		case MP_IOAPIC:
++			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
++			break;
++		case MP_INTSRC:
++			MP_intsrc_info((struct mpc_intsrc *)mpt);
++			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
++			break;
++		case MP_LINTSRC:
++			skip_entry(&mpt, &count, sizeof(struct mpc_lintsrc));
++			break;
++		default:
++			count = mpc->length;
++			break;
++		}
+ 		x86_init.mpparse.mpc_record(1);
+ 	}
+ 
