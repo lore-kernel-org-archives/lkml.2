@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab0HDLKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 07:10:24 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:56926 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932201Ab0HDLKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 07:10:22 -0400
-Date: Wed, 4 Aug 2010 12:10:06 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
-Message-ID: <20100804111005.GA17745@csn.ul.ie>
-References: <20100730115222.4AD8.A69D9226@jp.fujitsu.com> <20100730103018.GE3571@csn.ul.ie> <20100801174229.4B08.A69D9226@jp.fujitsu.com>
+	id S932530Ab0HDLN1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 07:13:27 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:18886 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab0HDLN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 07:13:26 -0400
+Date: Wed, 4 Aug 2010 14:11:56 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Section Mismatches
+Message-ID: <20100804111156.GD19377@nokia.com>
+Reply-To: felipe.balbi@nokia.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <20100801174229.4B08.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 04 Aug 2010 11:13:11.0087 (UTC) FILETIME=[063503F0:01CB33C6]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 05:47:08PM +0900, KOSAKI Motohiro wrote:
-> > > side note: page lock contention is very common case.
-> > > 
-> > > For case (8), I don't think sleeping is right way. get_page() is used in really various place of
-> > > our kernel. so we can't assume it's only temporary reference count increasing.
-> > 
-> > In what case is a munlocked pages reference count permanently increased and
-> > why is this not a memory leak?
-> 
-> V4L, audio, GEM and/or other multimedia driver?
-> 
+Hi Uwe,
 
-Ok, that is quite likely. Have you made a start on a series related to
-lumpy reclaim? I was holding off making a start on such a thing while I
-reviewed the other writeback issues and travelling to MM Summit is going
-to delay things for me. If you haven't started when I get back, I'll
-make some sort of stab at it.
+I see that your commit 0db252452378aa7a9e001a13226e1cd1dc61453d removed 
+the *_driver from the symbol whitelist when referencing init section 
+(heh, it took a while), but could you explain what's the rationale 
+behind that ?
+
+Thanks a lot
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+balbi
+
+DefectiveByDesign.org
