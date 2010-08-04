@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab0HDAnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 20:43:19 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44798 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab0HDAnR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 20:43:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=jGM4WVcb3eLU+Jer9fgHyhQvl0T3Y76wosW2lRGMULRRHHxOFjrzUgzI2ZYbOTwqB4
-         AyzbgEkGL0JMzsaOLBQf9qSDEZYDpKJdIXK4n0yRao1WHm3Jt4WrEwl9qsQXE7YXkNim
-         cuZcI6x2vVCQ3PzpkGZIlgOCaWcD8BG+G594Q=
+	id S932326Ab0HDAtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 20:49:50 -0400
+Received: from claw.goop.org ([74.207.240.146]:33781 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757877Ab0HDAtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 20:49:49 -0400
+Message-ID: <4C58B92A.4090605@goop.org>
+Date: Tue, 03 Aug 2010 17:49:46 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1280882391.1005.13.camel@Joe-Laptop.home>
-References: <20100804001429.6571.95116.stgit@localhost.localdomain>
-	<1280882391.1005.13.camel@Joe-Laptop.home>
-Date: Tue, 3 Aug 2010 17:43:16 -0700
-X-Google-Sender-Auth: 87Iqf6zQq_aLail0vF38oqk4s6I
-Message-ID: <AANLkTikqE83dRwmmH192rgHPnfyf8Og-BMCsjeVmfGNc@mail.gmail.com>
-Subject: Re: [PATCH 1/2] igb.txt: Add igb documentation
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gospo@redhat.com, bphilips@novell.com
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Xen-devel@lists.xensource.com, dongxiao.xu@intel.com
+Subject: Re: [GIT PULL] xen-netfront driver updates for 2.6.36
+References: <4C586271.3010902@goop.org> <20100803.163700.71134702.davem@davemloft.net>
+In-Reply-To: <20100803.163700.71134702.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 17:39, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2010-08-03 at 17:15 -0700, Jeff Kirsher wrote:
->> Add documentation for the igb networking driver.
+  On 08/03/2010 04:37 PM, David Miller wrote:
+> From: Jeremy Fitzhardinge<jeremy@goop.org>
+> Date: Tue, 03 Aug 2010 11:39:45 -0700
 >
-> It'd be nice if you could scare up
-> register level ipw-2xxx docs.
+>> Here's a git branch with some updates to the Xen netfront driver,
+>> which add a new "smartpoll" mode to the netfront backend protocol,
+>> which is basically equivalent to interrupt mitigation.  This merges
+>> cleanly with current linux-next (it previously just had a small
+>> constification conflict).
+>>
+>> Do you want to take this via the net tree, or are you OK with me
+>> submitting them directly?
+> Well from my perspective:
 >
->
-> --
+> 1) It's too late to put into my tree because the merge window has
+>     already started.  If you want me to include this you should have
+>     asked me to pull it in days if not weeks ago.
 
-That would be wireless, and I am with Wired LAN.  Although Joe, I will
-see what I can come up with, but I cannot promise anything... :)
+OK, there's no particular rush.
 
--- 
-Cheers,
-Jeff
+> 2) Your tree is absolutely not in a state I can pull it.  It has lots
+>     of completely unrelated commits which are not in net-next-2.6 which
+>     in no way should I be pulling into my tree.
+
+It's based on v2.6.35.  I can rebase to net-next-2.6.
+
+> When you want me to take changes, your tree should be based upon mine.
+> And when I pull from your tree I should get only your specific
+> xen-netfront driver changes, and nothing more.
+
+Sure.
+
+Thanks,
+     J
