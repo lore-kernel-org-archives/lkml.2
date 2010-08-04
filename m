@@ -1,109 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758244Ab0HDD6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 23:58:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54785 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758008Ab0HDD6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 23:58:15 -0400
-Date: Tue, 3 Aug 2010 20:57:58 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: david@lang.hm, Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+	id S1751519Ab0HDEAw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 00:00:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59987 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750699Ab0HDEAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 00:00:50 -0400
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
+From: James Bottomley <James.Bottomley@suse.de>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: paulmck@linux.vnet.ibm.com, peterz@infradead.org, swetland@google.com,
+        linux-kernel@vger.kernel.org, florian@mickler.org,
+        linux-pm@lists.linux-foundation.org, tglx@linutronix.de,
         alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100803205758.21fcf372@infradead.org>
-In-Reply-To: <20100804001015.GJ2407@linux.vnet.ibm.com>
-References: <20100801210548.23f77ff6@infradead.org>
-	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
-	<20100802140933.GB2405@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
-	<AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
-	<alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
-	<AANLkTikhcYzNp8CPp8cqrV7Ey5CLMWu1sJTNxUtEi2as@mail.gmail.com>
-	<alpine.DEB.2.00.1008022203470.6545@asgard.lang.hm>
-	<AANLkTinFT5jq4nUhUpzS5S4TVDQGj0S7RtRgxNhsz2UF@mail.gmail.com>
-	<alpine.DEB.2.00.1008031611100.6545@asgard.lang.hm>
-	<20100804001015.GJ2407@linux.vnet.ibm.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+In-Reply-To: <AANLkTinJ2jy18bAS-=abtDLaQWVmQdK1Oq105FcNDNyJ@mail.gmail.com>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	 <AANLkTi=hoGF7egpyB9sLKJoXv5aiGrxfa9_5iH-96SA=@mail.gmail.com>
+	 <1280851338.2774.30.camel@mulgrave.site>
+	 <AANLkTinJ2jy18bAS-=abtDLaQWVmQdK1Oq105FcNDNyJ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Aug 2010 00:00:27 -0400
+Message-ID: <1280894427.11045.293.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Aug 2010 17:10:15 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Tue, 2010-08-03 at 15:08 -0700, Arve Hjønnevåg wrote:
+> 2010/8/3 James Bottomley <James.Bottomley@suse.de>:
+> > On Mon, 2010-08-02 at 21:18 -0700, Arve Hjønnevåg wrote:
+> >> > o       A power-aware application must be able to efficiently communicate
+> >> >        its needs to the system, so that such communication can be
+> >> >        performed on hot code paths.  Communication via open() and
+> >> >        close() is considered too slow, but communication via ioctl()
+> >> >        is acceptable.
+> >> >
+> >>
+> >> The problem with using open and close to prevent an allow suspend is
+> >> not that it is too slow but that it interferes with collecting stats.
+> >
+> > Please elaborate on this.  I expect the pm-qos stats interface will
+> > collect stats across user open/close because that's how it currently
+> > works.  What's the problem?
+> >
 > 
-> OK, I'll bite...
+> The pm-qos interface creates the request object in open and destroys
+> it in release just like the suspend blocker interface. We need stats
+> for each client which is lost if you free the object every time you
+> unblock suspend.
+
+? right at the moment it doesn't do stats.  I don't see why adding a per
+pid or per name stat count on the long lived object won't work here.
+
+> Or are you talking about user space opening and closing the stats
+> interface (which does not cause any problems)?
+
+There is no stat interface yet; it's for us to define.
+
+> >> The wakelock code has a sysfs interface that allow you to use a
+> >> open/write/close sequence to block or unblock suspend. There is no
+> >> limit to the amount of kernel memory that a process can consume with
+> >> this interface, so the suspend blocker patchset uses a /dev interface
+> >> with ioctls to block or unblock suspend and it destroys the kernel
+> >> object when the file descriptor is closed.
+> >
+> > This is an implementation detail only.
 > 
-> >From an Android perspective, the differences are as follows:
+> There is no way fix it without changing the user space visible
+> behavior of the API. The kernel does not know when it is safe to free
+> the objects.
+
+They're freed on destruction of the long lived kernel object or on user
+space clear request.  Surely that's definitive enough?
+
+> > The pm-qos objects are long
+> > lived, so their stats would be too.  I would guess that explicit stat
+> > clearing might be a useful option.
+> >
 > 
-> 1.	Deep idle states are entered only if there are no runnable
-> tasks. In contrast, opportunistic suspend can happen even when there
-> 	are tasks that are ready, willing, and able to run.
+> Which pm-qos objects are you referring to? The struct pm_qos_object
+> that backs each pm-qos class is long lived (I don't know why this is
+> named pm_qos_object), but we need stats in struct pm_qos_request_list.
 
-for "system suspend", this is an absolutely valid statement.
-for "use suspend as idle state", it's not so clearly valid.
-(but this is sort of a separate problem, basically the "when do we
-freeze the tasks that we don't like for power reasons" problem,
-which in first order is independent on what kind of idle power state
-you pick, and discussed extensively elsewhere in this thread)
+Actually, why not two separate lists?  one for the request and one for
+the stats?
 
-> 
-> 2.	There can be a set of input events that do not bring the
-> system out of suspend, but which would bring the system out of a deep
-> 	idle state.  For example, I believe that it was stated that
-> one of the Android-based smartphones ignores touchscreen input while
-> 	suspended, but pays attention to it while in deep idle states.
+OK, so I'm tired and I've had a long flight to get to where I am, so I
+may be a bit jaded, but this isn't fucking rocket science the question
+is how do we implement what you want on what we have ... there looks to
+be multiple useful solutions ... we just have to pick one and agree on
+it (that's standard open source).
 
-I would argue that this is both a hardware specific issue, but also a
-policy issue. From the user point of view, screen off with idle and
-screen off with suspend aren't all that different (if my phone would
-decide to idle rather than suspend because some app blocks suspend... I
-wouldn't expect a difference in behavior when I touch the screen).
-"Screen off -> don't honor touch after a bit" is almost an independent,
-but very real, policy problem (and a forced one in suspend, I'll grant
-you that). I could even argue that the policy decision "we don't care
-about the touch screen input" is a pre-condition for entering suspend
-(or in android speak, caring for touch screen input/having the touch
-screen path active would be a suspend blocker)
-
-> 
-> 3.	The system comes out of a deep idle state when a timer
-> 	expires.  In contrast, timers cannot expire while the
-> 	system is suspended.  (This one is debatable: some people
-> 	argue that timers are subject to jitter, and the suspend
-> 	case for timers is the same as that for deep idle states,
-> 	but with unbounded timer jitter.  Others disagree.  The
-> 	resulting discussions have produced much heat, but little
-> 	light.  Such is life.)
-
-I'll debate it even harder in that it's platform specific whether
-timers can get the system out of suspend or not. Clearly on the Android
-platform in question that's not the case, but for some of the Intel
-phone silicon for example, timers CAN be wake sources to get you out of
-suspend just fine. It just depend on which exact hw you talk about.
-Generally, even if the fast timers aren't wake up sources, there'll be
-some sort of alarm thing that you can pre-wake.. but yes you are right
-in saying that's rather lame. 
-Either way, it's not a general property of suspend, but a property of
-suspend on the specific platform in question.
+James
 
 
-
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
