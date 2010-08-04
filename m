@@ -1,78 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab0HDSM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:12:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32906 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab0HDSM0 convert rfc822-to-8bit (ORCPT
+	id S1757450Ab0HDSQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:16:26 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:51808 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756987Ab0HDSQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:12:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Kw+mGF6259cN71HCJAxZgaSZk4jaJtnwYNK8gRoWkIHFGd+V50jXJ+WWPmcOUbWotv
-         aX1bYL5L5+vpFVmLoKHjfckIC7DJo5tmtyARcHM7y8DnpM5Q5M8810RlvVmR7YDUWAZY
-         iV9ZTnmPhYQK3N7hBgwZWP3apGj4auRJxaFOs=
+	Wed, 4 Aug 2010 14:16:24 -0400
+Date: Wed, 4 Aug 2010 11:16:01 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, tytso@mit.edu, Ric Wheeler <rwheeler@redhat.com>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC] ext4: Don't send extra barrier during fsync if there are
+	no dirty pages.
+Message-ID: <20100804181601.GB2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <20100504154553.GA22777@infradead.org> <20100630124832.GA1333@thunk.org> <4C2B44C0.3090002@redhat.com> <20100630134429.GE1333@thunk.org> <20100721171609.GC1215@atrey.karlin.mff.cuni.cz> <20100803000939.GA2109@tux1.beaverton.ibm.com> <20100803090152.GA6676@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20100804115658.GA21357@merkur.ravnborg.org>
-References: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com> 
-	<20100804115658.GA21357@merkur.ravnborg.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 4 Aug 2010 14:12:03 -0400
-Message-ID: <AANLkTikz7pvirg7VUxrm-6v=yrLwHy4UeaJTS0wz3BLc@mail.gmail.com>
-Subject: Re: missing .data.shared_align placement in vmlinux
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100803090152.GA6676@infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 07:56, Sam Ravnborg wrote:
-> On Fri, May 21, 2010 at 04:58:53PM -0400, Mike Frysinger wrote:
->> am i missing something or does the .data.shared_align section lack
->> definition in vmlinux.lds.h and all arch vmlinux.lds.S files ?
->>
->> with the recent change "net: remove time limit in process_backlog()",
->> the softnet_data variable changed from "DEFINE_PER_CPU()" to
->> "DEFINE_PER_CPU_ALIGNED()" which moved it from the .data section to
->> the .data.shared_align section.  i'm not saying this patch is wrong,
->> just that is what caused me to notice this larger problem.  no one
->> else in the kernel is using this aligned macro variant, so i imagine
->> that's why no one has noticed yet.
->>
->> since .data.shared_align isnt declared in any vmlinux files that i can
->> see, the linker just places it last.  this "just works" for most
->> people, but when building a ROM kernel on Blackfin systems, it causes
->> section overlap errors:
->> bfin-uclinux-ld.real: section .init.data [00000000202e06b8 ->
->> 00000000202e48b7] overlaps section .data.shared_aligned
->> [00000000202e06b8 -> 00000000202e0723]
->> i imagine other arches which support the ROM config option and thus do
->> funky placement would see similar issues ...
->>
->> on x86, it is stuck in a dedicated section:
->>   [ 8] .data             PROGBITS        ffffffff810ec000 2ec000
->> 0303a8 00  WA  0   0 4096
->>   [ 9] .data.shared_alig PROGBITS        ffffffff8111c3c0 31c3c0
->> 0000c8 00  WA  0   0 64
->>
->> the ifdef forest in asm-generic/percpu.h is beyond a quick glance &
->> fix, so i leave it up to someone else ;)
->
-> as there any resolution on this?
-> I briefly looked at it some time ago.
-> And it looks like a plain oversight.
+On Tue, Aug 03, 2010 at 05:01:52AM -0400, Christoph Hellwig wrote:
+> On Mon, Aug 02, 2010 at 05:09:39PM -0700, Darrick J. Wong wrote:
+> > Well... on my fsync-happy workloads, this seems to cut the barrier count down
+> > by about 20%, and speeds it up by about 20%.
+> 
+> Care to share the test case for this?  I'd be especially interesting on
+> how it behaves with non-draining barriers / cache flushes in fsync.
 
-no, it's still broken in 2.6.35 :(
-$ make ARCH=blackfin BF537-STAMP_defconfig
-$ make ARCH=blackfin -s -j4
-$ readelf -WS vmlinux | grep '\<data\>'
-  [10] .data             PROGBITS        0018369c 17269c 012964 00  WA  0   0  4
-  [11] .data..shared_aligned PROGBITS        00196000 185000 00006c 00
- WA  0   0  4
--mike
+Sure.  When I run blktrace with the ffsb profile, I get these results:
+
+barriers	transactions/sec
+16212		206
+15625		201
+10442		269
+10870		266
+15658		201
+
+Without Jan's patch:
+barriers	transactions/sec
+20855		177
+20963		177
+20340		174
+20908		177
+
+The two ~270 results are a little odd... if we ignore them, the net gain with
+Jan's patch is about a 25% reduction in barriers issued and about a 15%
+increase in tps.  (If we don't, it's ~30% and ~30%, respectively.)  That said,
+I was running mkfs between runs, so it's possible that the disk layout could
+have shifted a bit.  If I turn off the fsync parts of the ffsb profile, the
+barrier counts drop to about a couple every second or so, which means that
+Jan's patch doesn't have much of an effect.  But it does help if someone is
+hammering on the filesystem with fsync.
+
+The ffsb profile is attached below.
+
+--D
+
+-----------
+
+time=300
+alignio=1
+directio=1
+
+[filesystem0]
+	location=/mnt/
+	num_files=100000
+	num_dirs=1000
+
+reuse=1
+	# File sizes range from 1kB to 1MB.
+	size_weight 1KB 10
+	size_weight 2KB 15
+	size_weight 4KB 16
+	size_weight 8KB 16
+	size_weight 16KB 15
+	size_weight 32KB 10
+	size_weight 64KB 8
+	size_weight 128KB 4
+	size_weight 256KB 3
+	size_weight 512KB 2
+	size_weight 1MB 1
+
+create_blocksize=1048576
+[end0]
+
+[threadgroup0]
+	num_threads=64
+
+	readall_weight=4
+	create_fsync_weight=2
+	delete_weight=1
+
+	append_weight		= 1
+	append_fsync_weight	= 1
+	stat_weight		= 1
+	create_weight		= 1
+	writeall_weight		= 1
+	writeall_fsync_weight	= 1
+	open_close_weight	= 1
+
+
+	write_size=64KB
+	write_blocksize=512KB
+
+	read_size=64KB
+	read_blocksize=512KB
+
+	[stats]
+		enable_stats=1
+		enable_range=1
+
+		msec_range    0.00      0.01
+		msec_range    0.01      0.02
+		msec_range    0.02      0.05
+		msec_range    0.05      0.10
+		msec_range    0.10      0.20
+		msec_range    0.20      0.50
+		msec_range    0.50      1.00
+		msec_range    1.00      2.00
+		msec_range    2.00      5.00
+		msec_range    5.00     10.00
+		msec_range   10.00     20.00
+		msec_range   20.00     50.00
+		msec_range   50.00    100.00
+		msec_range  100.00    200.00
+		msec_range  200.00    500.00
+		msec_range  500.00   1000.00
+		msec_range 1000.00   2000.00
+		msec_range 2000.00   5000.00
+		msec_range 5000.00  10000.00
+	[end]
+[end0]
