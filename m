@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550Ab0HDISb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 04:18:31 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.41]:36097 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab0HDISI (ORCPT
+	id S1756786Ab0HDITI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 04:19:08 -0400
+Received: from mx3.sophos.com ([74.202.89.160]:33440 "EHLO mx3.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755725Ab0HDITF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 04:18:08 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 04:18:08 EDT
-Date: Wed, 4 Aug 2010 10:08:13 +0200
-From: Bernhard Walle <bernhard@bwalle.de>
-To: Simon Horman <horms@verge.net.au>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Wed, 4 Aug 2010 04:19:05 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: 2.6.35 hangs on early boot in KVM
+Date: Wed, 4 Aug 2010 09:18:57 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [rfc] Merge kexec-tools into the kernel tree
-Message-ID: <20100804080813.GA20178@bwalle.de>
-Mail-Followup-To: Simon Horman <horms@verge.net.au>,
-	kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-	Michael Neuling <mikey@neuling.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>
-References: <20100804070647.GB24064@verge.net.au>
+References: <201008031028.57263.tvrtko.ursulin@sophos.com> <201008031659.58736.tvrtko.ursulin@sophos.com> <AANLkTi=WDRCcmpi_VrEm1b18Hep0KgAXX0KY5Xo5sywf@mail.gmail.com>
+In-Reply-To: <AANLkTi=WDRCcmpi_VrEm1b18Hep0KgAXX0KY5Xo5sywf@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100804070647.GB24064@verge.net.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Df-Sender: 1227806
+Message-ID: <201008040918.58318.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 04/08/2010 09:18:59,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 04/08/2010 09:18:59,
+	Serialize complete at 04/08/2010 09:18:59
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Simon Horman <horms@verge.net.au> [2010-08-04 09:06]:
-> 
-> Given that there have been a bunch of issues with kexec
-> on power that this would resolve. and there is precedence
-> for tools in the kernel tree, this sounds entirely reasonable to me.
-> So with my kexec-tools maintainer hat on, I would like to start
-> a conversation about this.
+On Tuesday 03 Aug 2010 21:57:48 Yinghai Lu wrote:
+> On Tue, Aug 3, 2010 at 8:59 AM, Tvrtko Ursulin
+>
+> <tvrtko.ursulin@sophos.com> wrote:
+> > On Tuesday 03 Aug 2010 16:17:20 Tvrtko Ursulin wrote:
+> >> On Tuesday 03 Aug 2010 15:57:03 Tvrtko Ursulin wrote:
+> >> > On Tuesday 03 Aug 2010 15:51:08 Avi Kivity wrote:
+> >> > >   On 08/03/2010 12:28 PM, Tvrtko Ursulin wrote:
+> >> > > > I have basically built 2.6.35 with make oldconfig from a working
+> >> > > > 2.6.34. Latter works fine in kvm while 2.6.35 hangs very early. I
+> >> > > > see nothing after grub (have early printk and verbose bootup
+> >> > > > enabled), just a blinking VGA cursor and CPU at 100%.
+> >> > >
+> >> > > Please copy kvm@vger.kernel.org on kvm issues.
+> >> > >
+> >> > > > CONFIG_PRINTK_TIME=y
+> >> > >
+> >> > > Try disabling this as a workaround.
+> >> >
+> >> > I am in the middle of a bisect run with five builds left to go,
+> >> > currently I have:
+> >> >
+> >> > bad 537b60d17894b7c19a6060feae40299d7109d6e7
+> >> > good 93c9d7f60c0cb7715890b1f9e159da6f4d1f5a65
+> >>
+> >> Bisect is looking good, narrowed it to ten revisions, but I am not sure
+> >> to make it to the end today:
+> >>
+> >> bad cb41838bbc4403f7270a94b93a9a0d9fc9c2e7ea
+> >> good 41d59102e146a4423a490b8eca68a5860af4fe1c
+> >
+> > Bisect points the finger to "x86, ioapic: In mpparse use
+> > mp_register_ioapic" (cf7500c0ea133d66f8449d86392d83f840102632), so I am
+> > copying Eric. No idea whether this commit is solely to blame or it is a
+> > combined interaction with KVM, but I am sure you guys will know.
+> >
+> > If you want me to test something else please shout.
+>
+> please try attached patch, to see if it help.
 
-Well, honestly I don't understand the reason behind it.
+No luck (no visible difference, no output on VGA or serial console). (Btw
+there is a typo in pin_2_irq_leagcy so that you do not push it directly).
 
-If it's about dependencies between the kexec binary and the kernel
-version -- there are also dependencies between makedumpfile and crash to
-the kernel version. Should we move makedumpfile and crash in the kernel
-tree, too (which means that we have a GDB copy in the kernel tree)?
+Tvrtko
 
 
-Regards,
-Bernhard
+
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
