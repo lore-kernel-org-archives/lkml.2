@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759410Ab0HDXTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:19:45 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55580 "EHLO e9.ny.us.ibm.com"
+	id S1759432Ab0HDXT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:19:57 -0400
+Received: from mail.lang.hm ([64.81.33.126]:52789 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757547Ab0HDXTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:19:43 -0400
-Date: Wed, 4 Aug 2010 16:19:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: david@lang.hm, Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+	id S1759419Ab0HDXTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 19:19:54 -0400
+Date: Wed, 4 Aug 2010 16:19:20 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
         Matthew Garrett <mjg59@srcf.ucam.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         Arjan van de Ven <arjan@infradead.org>,
@@ -18,30 +19,92 @@ Cc: david@lang.hm, Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
         swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
         alan@lxorguk.ukuu.org.uk
 Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100804231939.GM24163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
- <20100804185520.GA2417@srcf.ucam.org>
- <201008042251.08266.rjw@sisk.pl>
- <20100804205654.GA4986@srcf.ucam.org>
- <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
- <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
- <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
- <20100804231003.GL24163@linux.vnet.ibm.com>
- <AANLkTim_eCPSrPh3ayXHTky5u5WTfaBzvYcSXb219Me=@mail.gmail.com>
+In-Reply-To: <20100804231003.GL24163@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008041616160.6545@asgard.lang.hm>
+References: <20100801054816.GI2470@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm> <20100804185520.GA2417@srcf.ucam.org> <201008042251.08266.rjw@sisk.pl> <20100804205654.GA4986@srcf.ucam.org> <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
+ <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com> <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm> <20100804231003.GL24163@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim_eCPSrPh3ayXHTky5u5WTfaBzvYcSXb219Me=@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 02:13:00AM +0300, Anca Emanuel wrote:
-> One suggestion: Get an Android Phone, test your ideas on it, then comment.
+On Wed, 4 Aug 2010, Paul E. McKenney wrote:
 
-I actually have played with an Android phone.  ;-)
+> On Wed, Aug 04, 2010 at 03:56:42PM -0700, david@lang.hm wrote:
+>> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
+>>
+>>> On Wed, Aug 4, 2010 at 3:31 PM,  <david@lang.hm> wrote:
+>>>> On Wed, 4 Aug 2010, Matthew Garrett wrote:
+>>>>
+>>>>> On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
+>>>>>>
+>>>>>> On Wednesday, August 04, 2010, Matthew Garrett wrote:
+>>>>>>>
+>>>>>>> No! And that's precisely the issue. Android's existing behaviour could
+>>>>>>> be entirely implemented in the form of binary that manually triggers
+>>>>>>> suspend when (a) the screen is off and (b) no userspace applications
+>>>>>>> have indicated that the system shouldn't sleep, except for the wakeup
+>>>>>>> event race. Imagine the following:
+>>>>>>>
+>>>>>>> 1) The policy timeout is about to expire. No applications are holding
+>>>>>>> wakelocks. The system will suspend providing nothing takes a wakelock.
+>>>>>>> 2) A network packet arrives indicating an incoming SIP call
+>>>>>>> 3) The VOIP application takes a wakelock and prevents the phone from
+>>>>>>> suspending while the call is in progress
+>>>>>>>
+>>>>>>> What stops the system going to sleep between (2) and (3)? cgroups don't,
+>>>>>>> because the voip app is an otherwise untrusted application that you've
+>>>>>>> just told the scheduler to ignore.
+>>>>>>
+>>>>>> I _think_ you can use the just-merged /sys/power/wakeup_count mechanism
+>>>>>> to
+>>>>>> avoid the race (if pm_wakeup_event() is called at 2)).
+>>>>>
+>>>>> Yes, I think that solves the problem. The only question then is whether
+>>>>> it's preferable to use cgroups or suspend fully, which is pretty much up
+>>>>> to the implementation. In other words, is there a reason we're still
+>>>>> having this conversation? :) It'd be good to have some feedback from
+>>>>> Google as to whether this satisfies their functional requirements.
+>>>>
+>>>> the proposal that I nade was not to use cgroups to freeze some processes and
+>>>> not others, but to use cgroups to decide to ignore some processes when
+>>>> deciding if the system is idle, stop everything or nothing. cgroups are just
+>>>> a way of easily grouping processes (and their children) into different
+>>>> groups.
+>>>
+>>> That does not avoid the dependency problem. A process may be waiting
+>>> on a resource that a process you ignore owns. I you ignore the process
+>>> that owns the resource and enter idle when it is ready to run (or
+>>> waiting on a timer), you are still effectively blocking the other
+>>> process.
+>>
+>> and if you don't have a wakelock the same thing will happen. If you
+>> expect the process to take a while you can set a timeout to wake up
+>> every 30 seconds or so and wait again, this would be enough to
+>> prevent you from going to sleep (or am I misunderstanding how long
+>> before you go into suspend without a wakelock set, see my other
+>> e-mail for the full question)
+>
+> The difference between the Android scheme and your proposal is that the
+> Android scheme freezes -all- the processes, not just a subset of them.
+> Therefore, in the Android scheme, the case of one process attempting to
+> acquire a resource held by a frozen process.  In contrast, any scheme
+> that attempts to freeze only a subset of the processes must somehow
+> either avoid or properly handle the situation where a frozen process is
+> holding a resource that a running process is trying to acquire.
 
-							Thanx, Paul
+My proposal would never freeze a subset of processes.
+
+what my proposal:
+
+only consider the activity of a subset of processes when deciding if we 
+should suspend or not. If the decision is to suspend, freeze everything.
+
+you (and many other people) are confusing what I've proposed (use cgroups 
+to indicate what processes to care about and what ones to not care about 
+when deciding to suspend/go to idle) with the prior cgroup proposal (use 
+cgroups to freeze a subset of tasks while leaving others runnable)
+
+David Lang
