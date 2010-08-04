@@ -1,543 +1,404 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab0HDCz0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:55:26 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:35694 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758202Ab0HDCwO (ORCPT
+	id S1758220Ab0HDCzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:55:46 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:45630 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758198Ab0HDCwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:52:14 -0400
+	Tue, 3 Aug 2010 22:52:13 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ko.o5.cVM1k5aMCrJCNLwf0tZAKqbBwfUmz.IIi5H7AxOxc
- yZl1UdjJ35P2HgkwMx.fsP6lk5eyu2ivPRMt1L7d4ZoNA.1BA.TGWLpRUg5L
- T13j8W9cid1rT5_DytZWBB926CppLn7zCd_HCar9UiiiAoV0ZC8OuXq.Damz
- XTbqziFuKA.hC6i9Si89ag8U_aq9fGw2dp7XkDpreTDZ5xOgJ5Z7ci0fR70y
- K9SvTxu92CMhkJJhv8vLeeL6wdelykjponvRRZVV522jFwxha4OcuYHGTx2S
- 5n00JS3kavF.4XirC
+X-YMail-OSG: rCPI6GIVM1lUb7L3vP5qkV4r4xN18BJC42kgNRVNnnx0lx_
+ 3wjZwqJF.WaeZzT.1svJ_9nL9GN79OeKdfd9hSgdBpDuuZBrT9bqRvP9VBWm
+ NE_z9G7k7tmlmnEvcmV0Ei3zVrxA7XVd8zc65GxM6cvIhD1_a59NMZ1ylDRB
+ kO4pwyiGBuZHnPJFRJkdDS7gWoNuP0PV7bXKIcKuzx29m9YJ8KxTsyn1JHxh
+ 2IGyFiu_T3j7ubGS2c8dfV0m4bX3Wl9PfmcrqE.uDCxlRWzhqU8dYYuijFBc
+ z5ccHNaC4BMiIC7Pm
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20100804024532.510006548@linux.com>
+Message-Id: <20100804024530.196610522@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 Aug 2010 21:45:29 -0500
+Date: Tue, 03 Aug 2010 21:45:25 -0500
 From: Christoph Lameter <cl@linux-foundation.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 Cc: Nick Piggin <npiggin@suse.de>
 Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q3 15/23] slub: Allow resizing of per cpu queues
+Subject: [S+Q3 11/23] slub: Dynamically size kmalloc cache allocations
 References: <20100804024514.139976032@linux.com>
-Content-Disposition: inline; filename=unified_resize
+Content-Disposition: inline; filename=slub_dynamic_kmem_alloc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow resizing of cpu queue and batch size. This is done in the
-basic steps that are also followed by SLAB.
+kmalloc caches are statically defined and may take up a lot of space just
+because the sizes of the node array has to be dimensioned for the largest
+node count supported.
 
-Careful: The ->cpu pointer is becoming volatile. References
-to the ->cpu pointer either
-
-A. Occur with interrupts disabled. This guarantees that nothing on the
-   processor itself interferes. This only serializes access to a single
-   processor specific area.
-
-B. Occur with slub_lock taken for operations on all per cpu areas.
-   Taking the slub_lock guarantees that no resizing operation will occur
-   while accessing the percpu areas. The data in the percpu areas
-   is volatile even with slub_lock since the alloc and free functions
-   do not take slub_lock and will operate on fields of kmem_cache_cpu.
-
-C. Are racy: Tolerable for statistics. The ->cpu pointer must always
-   point to a valid kmem_cache_cpu area.
+This patch makes the size of the kmem_cache structure dynamic throughout by
+creating a kmem_cache slab cache for the kmem_cache objects. The bootstrap
+occurs by allocating the initial one or two kmem_cache objects from the
+page allocator.
 
 Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 
 ---
- include/linux/slub_def.h |    9 -
- mm/slub.c                |  218 +++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 197 insertions(+), 30 deletions(-)
+ include/linux/slub_def.h |    7 -
+ mm/slub.c                |  181 +++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 139 insertions(+), 49 deletions(-)
 
+Index: linux-2.6/include/linux/slub_def.h
+===================================================================
+--- linux-2.6.orig/include/linux/slub_def.h	2010-07-26 14:25:16.000000000 -0500
++++ linux-2.6/include/linux/slub_def.h	2010-07-26 14:26:24.000000000 -0500
+@@ -136,19 +136,16 @@ struct kmem_cache {
+ 
+ #ifdef CONFIG_ZONE_DMA
+ #define SLUB_DMA __GFP_DMA
+-/* Reserve extra caches for potential DMA use */
+-#define KMALLOC_CACHES (2 * SLUB_PAGE_SHIFT)
+ #else
+ /* Disable DMA functionality */
+ #define SLUB_DMA (__force gfp_t)0
+-#define KMALLOC_CACHES SLUB_PAGE_SHIFT
+ #endif
+ 
+ /*
+  * We keep the general caches in an array of slab caches that are used for
+  * 2^x bytes of allocations.
+  */
+-extern struct kmem_cache kmalloc_caches[KMALLOC_CACHES];
++extern struct kmem_cache *kmalloc_caches[SLUB_PAGE_SHIFT];
+ 
+ /*
+  * Sorry that the following has to be that ugly but some versions of GCC
+@@ -213,7 +210,7 @@ static __always_inline struct kmem_cache
+ 	if (index == 0)
+ 		return NULL;
+ 
+-	return &kmalloc_caches[index];
++	return kmalloc_caches[index];
+ }
+ 
+ void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
 Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-31 18:25:53.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-31 19:02:05.003563067 -0500
-@@ -195,10 +195,19 @@
+--- linux-2.6.orig/mm/slub.c	2010-07-26 14:26:20.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-07-26 14:26:24.000000000 -0500
+@@ -179,7 +179,7 @@ static struct notifier_block slab_notifi
  
- #endif
- 
-+/*
-+ * We allow stat calls while slub_lock is taken or while interrupts
-+ * are enabled for simplicities sake.
-+ *
-+ * This results in potential inaccuracies. If the platform does not
-+ * support per cpu atomic operations vs. interrupts then the counters
-+ * may be updated in a racy manner due to slab processing in
-+ * interrupts.
-+ */
- static inline void stat(struct kmem_cache *s, enum stat_item si)
- {
- #ifdef CONFIG_SLUB_STATS
--	__this_cpu_inc(s->cpu_slab->stat[si]);
-+	__this_cpu_inc(s->cpu->stat[si]);
- #endif
- }
- 
-@@ -303,7 +312,7 @@
- 
- static inline int queue_full(struct kmem_cache_queue *q)
- {
--	return q->objects == QUEUE_SIZE;
-+	return q->objects == q->max;
- }
- 
- static inline int queue_empty(struct kmem_cache_queue *q)
-@@ -1571,6 +1580,11 @@
-  	stat(s, QUEUE_FLUSH);
- }
- 
-+struct flush_control {
-+	struct kmem_cache *s;
-+	struct kmem_cache_cpu *c;
-+};
-+
- /*
-  * Flush cpu objects.
-  *
-@@ -1578,22 +1592,96 @@
-  */
- static void __flush_cpu_objects(void *d)
- {
--	struct kmem_cache *s = d;
--	struct kmem_cache_cpu *c = __this_cpu_ptr(s->cpu_slab);
-+	struct flush_control *f = d;
-+	struct kmem_cache_cpu *c = __this_cpu_ptr(f->c);
- 
- 	if (c->q.objects)
--		flush_cpu_objects(s, c);
-+		flush_cpu_objects(f->s, c);
- }
- 
- static void flush_all(struct kmem_cache *s)
- {
--	on_each_cpu(__flush_cpu_objects, s, 1);
-+	struct flush_control f = { s, s->cpu };
-+
-+	on_each_cpu(__flush_cpu_objects, &f, 1);
- }
- 
- struct kmem_cache_cpu *alloc_kmem_cache_cpu(struct kmem_cache *s, int n)
- {
--	return __alloc_percpu(sizeof(struct kmem_cache_cpu),
--		__alignof__(struct kmem_cache_cpu));
-+	struct kmem_cache_cpu *k;
-+	int cpu;
-+	int size;
-+	int max;
-+
-+	/* Size the queue and the allocation to cacheline sizes */
-+	size = ALIGN(n * sizeof(void *) + sizeof(struct kmem_cache_cpu), cache_line_size());
-+
-+	k = __alloc_percpu(size, cache_line_size());
-+	if (!k)
-+		return NULL;
-+
-+	max = (size - sizeof(struct kmem_cache_cpu)) / sizeof(void *);
-+
-+	for_each_possible_cpu(cpu) {
-+		struct kmem_cache_cpu *c = per_cpu_ptr(k, cpu);
-+
-+		c->q.max = max;
-+	}
-+
-+	s->cpu_queue = max;
-+	return k;
-+}
-+
-+
-+static void resize_cpu_queue(struct kmem_cache *s, int queue)
-+{
-+	struct kmem_cache_cpu *n = alloc_kmem_cache_cpu(s, queue);
-+	struct flush_control f;
-+
-+	/* Create the new cpu queue and then free the old one */
-+	f.s = s;
-+	f.c = s->cpu;
-+
-+	/* We can only shrink the queue here since the new
-+	 * queue size may be smaller and there may be concurrent
-+	 * slab operations. The update of the queue must be seen
-+	 * before the change of the location of the percpu queue.
-+	 *
-+	 * Note that the queue may contain more object than the
-+	 * queue size after this operation.
-+	 */
-+	if (queue < s->queue) {
-+		s->queue = queue;
-+		s->batch = (s->queue + 1) / 2;
-+		barrier();
-+	}
-+
-+	/* This is critical since allocation and free runs
-+	 * concurrently without taking the slub_lock!
-+	 * We point the cpu pointer to a different per cpu
-+	 * segment to redirect current processing and then
-+	 * flush the cpu objects on the old cpu structure.
-+	 *
-+	 * The old percpu structure is no longer reachable
-+	 * since slab_alloc/free must have terminated in order
-+	 * to execute __flush_cpu_objects. Both require
-+	 * interrupts to be disabled.
-+	 */
-+	s->cpu = n;
-+	on_each_cpu(__flush_cpu_objects, &f, 1);
-+
-+	/*
-+	 * If the queue needs to be extended then we deferred
-+	 * the update until now when the larger sized queue
-+	 * has been allocated and is working.
-+	 */
-+	if (queue > s->queue) {
-+		s->queue = queue;
-+		s->batch = (s->queue + 1) / 2;
-+	}
-+
-+	if (slab_state > UP)
-+		free_percpu(f.c);
- }
- 
- /*
-@@ -1706,7 +1794,7 @@
- {
- 	int d;
- 
--	d = min(BATCH_SIZE - q->objects, nr);
-+	d = min(s->batch - q->objects, nr);
- 	retrieve_objects(s, page, q->object + q->objects, d);
- 	q->objects += d;
- }
-@@ -1747,7 +1835,7 @@
- 
- redo:
- 	local_irq_save(flags);
--	c = __this_cpu_ptr(s->cpu_slab);
-+	c = __this_cpu_ptr(s->cpu);
- 	q = &c->q;
- 	if (unlikely(queue_empty(q) || !node_match(c, node))) {
- 
-@@ -1756,7 +1844,7 @@
- 			c->node = node;
- 		}
- 
--		while (q->objects < BATCH_SIZE) {
-+		while (q->objects < s->batch) {
- 			struct page *new;
- 
- 			new = get_partial(s, gfpflags & ~__GFP_ZERO, node);
-@@ -1773,7 +1861,7 @@
- 					local_irq_disable();
- 
- 				/* process may have moved to different cpu */
--				c = __this_cpu_ptr(s->cpu_slab);
-+				c = __this_cpu_ptr(s->cpu);
- 				q = &c->q;
- 
-  				if (!new) {
-@@ -1875,7 +1963,7 @@
- 
- 	slab_free_hook_irq(s, x);
- 
--	c = __this_cpu_ptr(s->cpu_slab);
-+	c = __this_cpu_ptr(s->cpu);
- 
- 	if (NUMA_BUILD) {
- 		int node = page_to_nid(page);
-@@ -1891,7 +1979,7 @@
- 
- 	if (unlikely(queue_full(q))) {
- 
--		drain_queue(s, q, BATCH_SIZE);
-+		drain_queue(s, q, s->batch);
- 		stat(s, FREE_SLOWPATH);
- 
- 	} else
-@@ -2093,9 +2181,9 @@
- 	BUILD_BUG_ON(PERCPU_DYNAMIC_EARLY_SIZE <
- 			SLUB_PAGE_SHIFT * sizeof(struct kmem_cache));
- 
--	s->cpu_slab = alloc_percpu(struct kmem_cache_cpu);
-+	s->cpu = alloc_kmem_cache_cpu(s, s->queue);
- 
--	return s->cpu_slab != NULL;
-+	return s->cpu != NULL;
+ static enum {
+ 	DOWN,		/* No slab functionality available */
+-	PARTIAL,	/* kmem_cache_open() works but kmalloc does not */
++	PARTIAL,	/* Kmem_cache_node works */
+ 	UP,		/* Everything works but does not show up in sysfs */
+ 	SYSFS		/* Sysfs up */
+ } slab_state = DOWN;
+@@ -2074,6 +2074,8 @@ static inline int alloc_kmem_cache_cpus(
  }
  
  #ifdef CONFIG_NUMA
-@@ -2317,6 +2405,18 @@
++static struct kmem_cache *kmem_cache_node;
++
+ /*
+  * No kmalloc_node yet so do it by hand. We know that this is the first
+  * slab on the node for this slabcache. There are no concurrent accesses
+@@ -2089,9 +2091,9 @@ static void early_kmem_cache_node_alloc(
+ 	struct kmem_cache_node *n;
+ 	unsigned long flags;
  
+-	BUG_ON(kmalloc_caches->size < sizeof(struct kmem_cache_node));
++	BUG_ON(kmem_cache_node->size < sizeof(struct kmem_cache_node));
+ 
+-	page = new_slab(kmalloc_caches, GFP_KERNEL, node);
++	page = new_slab(kmem_cache_node, GFP_KERNEL, node);
+ 
+ 	BUG_ON(!page);
+ 	if (page_to_nid(page) != node) {
+@@ -2103,15 +2105,15 @@ static void early_kmem_cache_node_alloc(
+ 
+ 	n = page->freelist;
+ 	BUG_ON(!n);
+-	page->freelist = get_freepointer(kmalloc_caches, n);
++	page->freelist = get_freepointer(kmem_cache_node, n);
+ 	page->inuse++;
+-	kmalloc_caches->node[node] = n;
++	kmem_cache_node->node[node] = n;
+ #ifdef CONFIG_SLUB_DEBUG
+-	init_object(kmalloc_caches, n, 1);
+-	init_tracking(kmalloc_caches, n);
++	init_object(kmem_cache_node, n, 1);
++	init_tracking(kmem_cache_node, n);
+ #endif
+-	init_kmem_cache_node(n, kmalloc_caches);
+-	inc_slabs_node(kmalloc_caches, node, page->objects);
++	init_kmem_cache_node(n, kmem_cache_node);
++	inc_slabs_node(kmem_cache_node, node, page->objects);
+ 
+ 	/*
+ 	 * lockdep requires consistent irq usage for each lock
+@@ -2129,8 +2131,10 @@ static void free_kmem_cache_nodes(struct
+ 
+ 	for_each_node_state(node, N_NORMAL_MEMORY) {
+ 		struct kmem_cache_node *n = s->node[node];
++
+ 		if (n)
+-			kmem_cache_free(kmalloc_caches, n);
++			kmem_cache_free(kmem_cache_node, n);
++
+ 		s->node[node] = NULL;
+ 	}
+ }
+@@ -2146,7 +2150,7 @@ static int init_kmem_cache_nodes(struct 
+ 			early_kmem_cache_node_alloc(node);
+ 			continue;
+ 		}
+-		n = kmem_cache_alloc_node(kmalloc_caches,
++		n = kmem_cache_alloc_node(kmem_cache_node,
+ 						GFP_KERNEL, node);
+ 
+ 		if (!n) {
+@@ -2499,11 +2503,13 @@ EXPORT_SYMBOL(kmem_cache_destroy);
+  *		Kmalloc subsystem
+  *******************************************************************/
+ 
+-struct kmem_cache kmalloc_caches[KMALLOC_CACHES] __cacheline_aligned;
++struct kmem_cache *kmalloc_caches[SLUB_PAGE_SHIFT];
+ EXPORT_SYMBOL(kmalloc_caches);
+ 
++static struct kmem_cache *kmem_cache;
++
+ #ifdef CONFIG_ZONE_DMA
+-static struct kmem_cache kmalloc_dma_caches[SLUB_PAGE_SHIFT];
++static struct kmem_cache *kmalloc_dma_caches[SLUB_PAGE_SHIFT];
+ #endif
+ 
+ static int __init setup_slub_min_order(char *str)
+@@ -2542,9 +2548,13 @@ static int __init setup_slub_nomerge(cha
+ 
+ __setup("slub_nomerge", setup_slub_nomerge);
+ 
+-static void create_kmalloc_cache(struct kmem_cache *s,
++static void __init create_kmalloc_cache(struct kmem_cache **sp,
+ 		const char *name, int size, unsigned int flags)
+ {
++	struct kmem_cache *s;
++
++	s = kmem_cache_alloc(kmem_cache, GFP_NOWAIT);
++
+ 	/*
+ 	 * This function is called with IRQs disabled during early-boot on
+ 	 * single CPU so there's no need to take slub_lock here.
+@@ -2553,6 +2563,8 @@ static void create_kmalloc_cache(struct 
+ 								flags, NULL))
+ 		goto panic;
+ 
++	*sp = s;
++
+ 	list_add(&s->list, &slab_caches);
+ 
+ 	if (!sysfs_slab_add(s))
+@@ -2614,10 +2626,10 @@ static struct kmem_cache *get_slab(size_
+ 
+ #ifdef CONFIG_ZONE_DMA
+ 	if (unlikely((flags & SLUB_DMA)))
+-		return &kmalloc_dma_caches[index];
++		return kmalloc_dma_caches[index];
+ 
+ #endif
+-	return &kmalloc_caches[index];
++	return kmalloc_caches[index];
  }
  
-+static int initial_queue_size(int size)
+ void *__kmalloc(size_t size, gfp_t flags)
+@@ -2941,46 +2953,114 @@ static int slab_memory_callback(struct n
+  *			Basic setup of slabs
+  *******************************************************************/
+ 
++/*
++ * Used for early kmem_cache structures that were allocated using
++ * the page allocator
++ */
++
++static void __init kmem_cache_bootstrap_fixup(struct kmem_cache *s)
 +{
-+	if (size > PAGE_SIZE)
-+		return 8;
-+	else if (size > 1024)
-+		return 24;
-+	else if (size > 256)
-+		return 54;
-+	else
-+		return 120;
++	int node;
++
++	list_add(&s->list, &slab_caches);
++	sysfs_slab_add(s);
++	s->refcount = -1;
++
++	for_each_node(node) {
++		struct kmem_cache_node *n = get_node(s, node);
++		struct page *p;
++
++		if (n) {
++			list_for_each_entry(p, &n->partial, lru)
++				p->slab = s;
++
++#ifdef CONFIG_SLAB_DEBUG
++			list_for_each_entry(p, &n->full, lru)
++				p->slab = s;
++#endif
++		}
++	}
 +}
 +
- static int kmem_cache_open(struct kmem_cache *s,
- 		const char *name, size_t size,
- 		size_t align, unsigned long flags,
-@@ -2355,6 +2455,9 @@
- 	if (!init_kmem_cache_nodes(s))
- 		goto error;
- 
-+	s->queue = initial_queue_size(s->size);
-+	s->batch = (s->queue + 1) / 2;
-+
- 	if (alloc_kmem_cache_cpus(s))
- 		return 1;
- 
-@@ -2465,8 +2568,9 @@
+ void __init kmem_cache_init(void)
  {
- 	int node;
+ 	int i;
+ 	int caches = 0;
++	struct kmem_cache *temp_kmem_cache;
++	int order;
  
-+	down_read(&slub_lock);
- 	flush_all(s);
--	free_percpu(s->cpu_slab);
-+	free_percpu(s->cpu);
- 	/* Attempt to free all objects */
- 	for_each_node_state(node, N_NORMAL_MEMORY) {
- 		struct kmem_cache_node *n = get_node(s, node);
-@@ -2476,6 +2580,7 @@
- 			return 1;
+ #ifdef CONFIG_NUMA
++	struct kmem_cache *temp_kmem_cache_node;
++	unsigned long kmalloc_size;
++
++	kmem_size = offsetof(struct kmem_cache, node) +
++				nr_node_ids * sizeof(struct kmem_cache_node *);
++
++	/* Allocate two kmem_caches from the page allocator */
++	kmalloc_size = ALIGN(kmem_size, cache_line_size());
++	order = get_order(2 * kmalloc_size);
++	kmem_cache = (void *)__get_free_pages(GFP_NOWAIT, order);
++
+ 	/*
+ 	 * Must first have the slab cache available for the allocations of the
+ 	 * struct kmem_cache_node's. There is special bootstrap code in
+ 	 * kmem_cache_open for slab_state == DOWN.
+ 	 */
+-	create_kmalloc_cache(&kmalloc_caches[0], "kmem_cache_node",
+-		sizeof(struct kmem_cache_node), 0);
+-	kmalloc_caches[0].refcount = -1;
+-	caches++;
++	kmem_cache_node = (void *)kmem_cache + kmalloc_size;
++
++	kmem_cache_open(kmem_cache_node, "kmem_cache_node",
++		sizeof(struct kmem_cache_node),
++		0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
+ 
+ 	hotplug_memory_notifier(slab_memory_callback, SLAB_CALLBACK_PRI);
++#else
++	/* Allocate a single kmem_cache from the page allocator */
++	kmem_size = sizeof(struct kmem_cache);
++	order = get_order(kmem_size);
++	kmem_cache = (void *)__get_free_pages(GFP_NOWAIT, order);
+ #endif
+ 
+ 	/* Able to allocate the per node structures */
+ 	slab_state = PARTIAL;
+ 
+-	/* Caches that are not of the two-to-the-power-of size */
+-	if (KMALLOC_MIN_SIZE <= 32) {
+-		create_kmalloc_cache(&kmalloc_caches[1],
+-				"kmalloc-96", 96, 0);
+-		caches++;
+-	}
+-	if (KMALLOC_MIN_SIZE <= 64) {
+-		create_kmalloc_cache(&kmalloc_caches[2],
+-				"kmalloc-192", 192, 0);
+-		caches++;
+-	}
++	temp_kmem_cache = kmem_cache;
++	kmem_cache_open(kmem_cache, "kmem_cache", kmem_size,
++		0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
++	kmem_cache = kmem_cache_alloc(kmem_cache, GFP_NOWAIT);
++	memcpy(kmem_cache, temp_kmem_cache, kmem_size);
+ 
+-	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
+-		create_kmalloc_cache(&kmalloc_caches[i],
+-			"kmalloc", 1 << i, 0);
+-		caches++;
+-	}
++#ifdef CONFIG_NUMA
++	/*
++	 * Allocate kmem_cache_node properly from the kmem_cache slab.
++	 * kmem_cache_node is separately allocated so no need to
++	 * update any list pointers.
++	 */
++	temp_kmem_cache_node = kmem_cache_node;
+ 
++	kmem_cache_node = kmem_cache_alloc(kmem_cache, GFP_NOWAIT);
++	memcpy(kmem_cache_node, temp_kmem_cache_node, kmem_size);
++
++	kmem_cache_bootstrap_fixup(kmem_cache_node);
++
++	caches++;
++#else
++	/*
++	 * kmem_cache has kmem_cache_node embedded and we moved it!
++	 * Update the list heads
++	 */
++	INIT_LIST_HEAD(&kmem_cache->local_node.partial);
++	list_splice(&temp_kmem_cache->local_node.partial, &kmem_cache->local_node.partial);
++#ifdef CONFIG_SLUB_DEBUG
++	INIT_LIST_HEAD(&kmem_cache->local_node.full);
++	list_splice(&temp_kmem_cache->local_node.full, &kmem_cache->local_node.full);
++#endif
++#endif
++	kmem_cache_bootstrap_fixup(kmem_cache);
++	caches++;
++	/* Free temporary boot structure */
++	free_pages((unsigned long)temp_kmem_cache, order);
++
++	/* Now we can use the kmem_cache to allocate kmalloc slabs */
+ 
+ 	/*
+ 	 * Patch up the size_index table if we have strange large alignment
+@@ -3020,6 +3100,25 @@ void __init kmem_cache_init(void)
+ 			size_index[size_index_elem(i)] = 8;
  	}
- 	free_kmem_cache_nodes(s);
-+	up_read(&slub_lock);
- 	return 0;
- }
  
-@@ -3122,6 +3227,7 @@
- 		caches++;
- 	}
- 
-+	/* Now the kmalloc array is fully functional (*not* the dma array) */
++	/* Caches that are not of the two-to-the-power-of size */
++	if (KMALLOC_MIN_SIZE <= 32) {
++		create_kmalloc_cache(&kmalloc_caches[1],
++				"kmalloc-96", 96, 0);
++		caches++;
++	}
++
++	if (KMALLOC_MIN_SIZE <= 64) {
++		create_kmalloc_cache(&kmalloc_caches[2],
++				"kmalloc-192", 192, 0);
++		caches++;
++	}
++
++	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
++		create_kmalloc_cache(&kmalloc_caches[i],
++			"kmalloc", 1 << i, 0);
++		caches++;
++	}
++
  	slab_state = UP;
  
  	/* Provide the correct kmalloc names now that the caches are up */
-@@ -3149,6 +3255,7 @@
- #ifdef CONFIG_ZONE_DMA
+@@ -3027,18 +3126,12 @@ void __init kmem_cache_init(void)
+ 		char *s = kasprintf(GFP_NOWAIT, "kmalloc-%d", 1 << i);
+ 
+ 		BUG_ON(!s);
+-		kmalloc_caches[i].name = s;
++		kmalloc_caches[i]->name = s;
+ 	}
+ 
+ #ifdef CONFIG_SMP
+ 	register_cpu_notifier(&slab_notifier);
+ #endif
+-#ifdef CONFIG_NUMA
+-	kmem_size = offsetof(struct kmem_cache, node) +
+-				nr_node_ids * sizeof(struct kmem_cache_node *);
+-#else
+-	kmem_size = sizeof(struct kmem_cache);
+-#endif
+ 
+ 	printk(KERN_INFO
+ 		"SLUB: Genslabs=%d, HWalign=%d, Order=%d-%d, MinObjects=%d,"
+@@ -3054,7 +3147,7 @@ void __init kmem_cache_init_late(void)
  	int i;
  
-+	/* Create the dma kmalloc array and make it operational */
  	for (i = 0; i < SLUB_PAGE_SHIFT; i++) {
- 		struct kmem_cache *s = kmalloc_caches[i];
+-		struct kmem_cache *s = &kmalloc_caches[i];
++		struct kmem_cache *s = kmalloc_caches[i];
  
-@@ -3297,7 +3404,7 @@
- 		down_read(&slub_lock);
- 		list_for_each_entry(s, &slab_caches, list) {
- 			local_irq_save(flags);
--			flush_cpu_objects(s, per_cpu_ptr(s->cpu_slab ,cpu));
-+			flush_cpu_objects(s, per_cpu_ptr(s->cpu, cpu));
- 			local_irq_restore(flags);
- 		}
- 		up_read(&slub_lock);
-@@ -3764,6 +3871,7 @@
- 		return -ENOMEM;
- 	per_cpu = nodes + nr_node_ids;
- 
-+	down_read(&slub_lock);
- 	if (flags & SO_ALL) {
- 		for_each_node_state(node, N_NORMAL_MEMORY) {
- 			struct kmem_cache_node *n = get_node(s, node);
-@@ -3794,6 +3902,7 @@
- 			nodes[node] += x;
- 		}
- 	}
-+
- 	x = sprintf(buf, "%lu", total);
- #ifdef CONFIG_NUMA
- 	for_each_node_state(node, N_NORMAL_MEMORY)
-@@ -3801,6 +3910,7 @@
- 			x += sprintf(buf + x, " N%d=%lu",
- 					node, nodes[node]);
- #endif
-+	up_read(&slub_lock);
- 	kfree(nodes);
- 	return x + sprintf(buf + x, "\n");
- }
-@@ -3904,6 +4014,57 @@
- }
- SLAB_ATTR(min_partial);
- 
-+static ssize_t cpu_queue_size_show(struct kmem_cache *s, char *buf)
-+{
-+	return sprintf(buf, "%u\n", s->queue);
-+}
-+
-+static ssize_t cpu_queue_size_store(struct kmem_cache *s,
-+			 const char *buf, size_t length)
-+{
-+	unsigned long queue;
-+	int err;
-+
-+	err = strict_strtoul(buf, 10, &queue);
-+	if (err)
-+		return err;
-+
-+	if (queue > 10000 || queue < 4)
-+		return -EINVAL;
-+
-+	if (s->batch > queue)
-+		s->batch = queue;
-+
-+	down_write(&slub_lock);
-+	resize_cpu_queue(s, queue);
-+	up_write(&slub_lock);
-+	return length;
-+}
-+SLAB_ATTR(cpu_queue_size);
-+
-+static ssize_t cpu_batch_size_show(struct kmem_cache *s, char *buf)
-+{
-+	return sprintf(buf, "%u\n", s->batch);
-+}
-+
-+static ssize_t cpu_batch_size_store(struct kmem_cache *s,
-+			 const char *buf, size_t length)
-+{
-+	unsigned long batch;
-+	int err;
-+
-+	err = strict_strtoul(buf, 10, &batch);
-+	if (err)
-+		return err;
-+
-+	if (batch < s->queue || batch < 4)
-+		return -EINVAL;
-+
-+	s->batch = batch;
-+	return length;
-+}
-+SLAB_ATTR(cpu_batch_size);
-+
- static ssize_t ctor_show(struct kmem_cache *s, char *buf)
- {
- 	if (s->ctor) {
-@@ -3944,8 +4105,9 @@
- 	if (!cpus)
- 		return -ENOMEM;
- 
-+	down_read(&slub_lock);
- 	for_each_online_cpu(cpu) {
--		struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
-+		struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu, cpu);
- 
- 		total += c->q.objects;
- 	}
-@@ -3953,11 +4115,14 @@
- 	x = sprintf(buf, "%lu", total);
- 
- 	for_each_online_cpu(cpu) {
--		struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
-+		struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu, cpu);
-+		struct kmem_cache_queue *q = &c->q;
- 
--		if (c->q.objects)
--			x += sprintf(buf + x, " C%d=%u", cpu, c->q.objects);
-+		if (!queue_empty(q))
-+			x += sprintf(buf + x, " C%d=%u/%u",
-+				cpu, q->objects, q->max);
- 	}
-+	up_read(&slub_lock);
- 	kfree(cpus);
- 	return x + sprintf(buf + x, "\n");
- }
-@@ -4209,12 +4374,14 @@
- 	if (!data)
- 		return -ENOMEM;
- 
-+	down_read(&slub_lock);
- 	for_each_online_cpu(cpu) {
--		unsigned x = per_cpu_ptr(s->cpu_slab, cpu)->stat[si];
-+		unsigned x = per_cpu_ptr(s->cpu, cpu)->stat[si];
- 
- 		data[cpu] = x;
- 		sum += x;
- 	}
-+	up_read(&slub_lock);
- 
- 	len = sprintf(buf, "%lu", sum);
- 
-@@ -4232,8 +4399,10 @@
- {
- 	int cpu;
- 
-+	down_write(&slub_lock);
- 	for_each_online_cpu(cpu)
--		per_cpu_ptr(s->cpu_slab, cpu)->stat[si] = 0;
-+		per_cpu_ptr(s->cpu, cpu)->stat[si] = 0;
-+	up_write(&slub_lock);
- }
- 
- #define STAT_ATTR(si, text) 					\
-@@ -4270,6 +4439,8 @@
- 	&objs_per_slab_attr.attr,
- 	&order_attr.attr,
- 	&min_partial_attr.attr,
-+	&cpu_queue_size_attr.attr,
-+	&cpu_batch_size_attr.attr,
- 	&objects_attr.attr,
- 	&objects_partial_attr.attr,
- 	&total_objects_attr.attr,
-@@ -4631,7 +4802,7 @@
- 	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d", s->name, nr_inuse,
- 		   nr_objs, s->size, oo_objects(s->oo),
- 		   (1 << oo_order(s->oo)));
--	seq_printf(m, " : tunables %4u %4u %4u", 0, 0, 0);
-+	seq_printf(m, " : tunables %4u %4u %4u", s->queue, s->batch, 0);
- 	seq_printf(m, " : slabdata %6lu %6lu %6lu", nr_slabs, nr_slabs,
- 		   0UL);
- 	seq_putc(m, '\n');
-Index: linux-2.6/include/linux/slub_def.h
-===================================================================
---- linux-2.6.orig/include/linux/slub_def.h	2010-07-31 18:25:28.000000000 -0500
-+++ linux-2.6/include/linux/slub_def.h	2010-07-31 19:00:58.738236361 -0500
-@@ -29,14 +29,11 @@
- 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
- 	NR_SLUB_STAT_ITEMS };
- 
--#define QUEUE_SIZE 50
--#define BATCH_SIZE 25
--
- /* Queueing structure used for per cpu, l3 cache and alien queueing */
- struct kmem_cache_queue {
- 	int objects;		/* Available objects */
- 	int max;		/* Queue capacity */
--	void *object[QUEUE_SIZE];
-+	void *object[];
- };
- 
- struct kmem_cache_cpu {
-@@ -71,7 +68,7 @@
-  * Slab cache management.
-  */
- struct kmem_cache {
--	struct kmem_cache_cpu *cpu_slab;
-+	struct kmem_cache_cpu *cpu;
- 	/* Used for retriving partial slabs etc */
- 	unsigned long flags;
- 	int size;		/* The size of an object including meta data */
-@@ -87,6 +84,8 @@
- 	void (*ctor)(void *);
- 	int inuse;		/* Offset to metadata */
- 	int align;		/* Alignment */
-+	int queue;		/* specified queue size */
-+	int cpu_queue;		/* cpu queue size */
- 	unsigned long min_partial;
- 	const char *name;	/* Name (only for display!) */
- 	struct list_head list;	/* List of slab caches */
+ 		if (s && s->size) {
+ 			char *name = kasprintf(GFP_KERNEL,
 
