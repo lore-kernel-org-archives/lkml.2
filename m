@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab0HDEXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 00:23:43 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43493 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab0HDEXi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 00:23:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=pV7TKngmjkY3QGKbF/ka7TFTATvuKJA6bDXJ2jr0Nv56UKUQ78eCg5ktdI7Zh5T+gO
-         Axx3qjIJYFISJxhNO/GOm84pVI089MURMIjyWiyJG65votFgEh9xXCE7BQ/dD2im4XUP
-         dI3hXQJdStNs3SL60TRCyQkyA+7af4qG+wung=
-Message-ID: <4C58EB17.6080803@garzik.org>
-Date: Wed, 04 Aug 2010 00:22:47 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: mingo@elte.hu, tglx@linutronix.de, bphilips@suse.de, yinghai@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        stern@rowland.harvard.edu, gregkh@suse.de, khali@linux-fr.org,
-        Ashish Kalra <ashish.kalra@freescale.com>,
-        Saeed Bishara <saeed@marvell.com>, Mark Lord <liml@rtr.ca>,
-        Robert Hancock <hancockr@shaw.ca>
-Subject: Re: [PATCH 1/2 #upstream] sata_fsl,mv,nv: prepare for NCQ command
- completion update
-References: <1276443098-20653-1-git-send-email-tj@kernel.org> <1276443098-20653-12-git-send-email-tj@kernel.org> <4C23F6C1.7070603@garzik.org> <4C245E50.7090701@kernel.org> <4C247B54.2050900@garzik.org> <4C247C36.6040007@kernel.org> <4C24A903.4060908@kernel.org> <4C5607AF.8020109@garzik.org> <4C567137.9060407@kernel.org>
-In-Reply-To: <4C567137.9060407@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753804Ab0HDEZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 00:25:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39501 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752577Ab0HDEZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 00:25:38 -0400
+Date: Wed, 4 Aug 2010 14:25:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Narendra K <Narendra_K@dell.com>,
+        Jordan Hargrave <jordan_hargrave@dell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: linux-next: build failure after merge of the driver-core tree
+Message-Id: <20100804142531.aea95c0b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 03:18 AM, Tejun Heo wrote:
-> Hello, Jeff.
->
-> On 08/02/2010 01:47 AM, Jeff Garzik wrote:
->>> So, something like this.  I tested both flavors of sata_nv but don't
->>> have access to sata_mv or sata_fsl, but the conversion is pretty
->>> straight forward and failures should be pretty easy to catch.
->>
->> applied
->
-> Are you planning on applying the second patch too?
+Hi Greg,
 
-sata_mv is behaving weirdly in 2.6.35 + these patches, on the older 6081 
-chip, embedded in a Dell server box.  Looking into it...
+After merging the driver-core tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-	Jeff
+drivers/pci/pci-label.c:100: error: unknown field 'owner' specified in initializer
+drivers/pci/pci-label.c:100: warning: initialization from incompatible pointer type
+drivers/pci/pci-label.c:105: error: unknown field 'owner' specified in initializer
+drivers/pci/pci-label.c:105: warning: initialization from incompatible pointer type
 
+Caused by commit 60cc62ad579afa0eb5bded82e08dd0617d461d52 ("sysfs: Remove
+owner field from sysfs struct attribute") interacting with commit
+911e1c9b05a8e3559a7aa89083930700a0b9e7ee ("PCI: export SMBIOS provided
+firmware instance and label to sysfs") from the pci tree.
 
+I applied the following merge fix patch (Jesse, this patch can already be
+applied to the pci tree without problems):
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 4 Aug 2010 14:21:42 +1000
+Subject: [PATCH] pci: update for owner removal from struct device_attribute
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/pci/pci-label.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
+index 111500e..90c0a72 100644
+--- a/drivers/pci/pci-label.c
++++ b/drivers/pci/pci-label.c
+@@ -97,12 +97,12 @@ smbiosinstance_show(struct device *dev,
+ }
+ 
+ static struct device_attribute smbios_attr_label = {
+-	.attr = {.name = "label", .mode = 0444, .owner = THIS_MODULE},
++	.attr = {.name = "label", .mode = 0444},
+ 	.show = smbioslabel_show,
+ };
+ 
+ static struct device_attribute smbios_attr_instance = {
+-	.attr = {.name = "index", .mode = 0444, .owner = THIS_MODULE},
++	.attr = {.name = "index", .mode = 0444},
+ 	.show = smbiosinstance_show,
+ };
+ 
+-- 
+1.7.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
