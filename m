@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab0HDLJB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 07:09:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60038 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932201Ab0HDLJA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 07:09:00 -0400
-Subject: RE: [PATCH 1/2] mtdpart: memory accessor interface for MTD layer
-From: David Woodhouse <dwmw2@infradead.org>
-To: David Brownell <david-b@pacbell.net>
-Cc: "'Kevin Hilman'" <khilman@deeprootsystems.com>,
-        Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-        "'Bernd Schmidt'" <bernd.schmidt@analog.com>,
-        "'Nicolas Pitre'" <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        "'David Howells'" <dhowells@redhat.com>,
-        "'David Brownell'" <dbrownell@users.sourceforge.net>,
-        linux-mtd@lists.infradead.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-In-Reply-To: <350720.60481.qm@web180309.mail.gq1.yahoo.com>
-References: <350720.60481.qm@web180309.mail.gq1.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 12:08:47 +0100
-Message-ID: <1280920127.19499.20.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.6 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932525Ab0HDLKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 07:10:24 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:56926 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932201Ab0HDLKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 07:10:22 -0400
+Date: Wed, 4 Aug 2010 12:10:06 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
+Message-ID: <20100804111005.GA17745@csn.ul.ie>
+References: <20100730115222.4AD8.A69D9226@jp.fujitsu.com> <20100730103018.GE3571@csn.ul.ie> <20100801174229.4B08.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100801174229.4B08.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 03:31 -0700, David Brownell wrote:
-> Point is to ensure that enough of the right context
-> information is available to initialize correctly.
-> So the right data is extracted and passed on.
+On Sun, Aug 01, 2010 at 05:47:08PM +0900, KOSAKI Motohiro wrote:
+> > > side note: page lock contention is very common case.
+> > > 
+> > > For case (8), I don't think sleeping is right way. get_page() is used in really various place of
+> > > our kernel. so we can't assume it's only temporary reference count increasing.
+> > 
+> > In what case is a munlocked pages reference count permanently increased and
+> > why is this not a memory leak?
+> 
+> V4L, audio, GEM and/or other multimedia driver?
+> 
 
-Forgive me if I'm being dim (and in particular, please forgive me if I'm
-going over something that was already discussed; I know it's been a
-while). But I don't see why it needs to be passed through the core MTD
-code.
-
-To take the simple case of an unpartitioned MTD device -- why can't the
-map driver (or whatever) just call the maccessor setup function for
-itself, directly, right after calling add_mtd_device() with its
-newly-probed MTD device?
-
-And for partitions, why can't it do the same, on the appropriate
-partition.
-
-OK, the answer to the latter question is that you don't actually *have*
-the pointers to each partition you register. But that's easily fixed.
-
-If we make add_mtd_partitions() take an extra 'struct mtd_info **'
-argument and put pointers to the slave mtd 'devices' into that, it means
-that your board driver *can* reliably get the mtd pointer for the fourth
-partition, or whatever it needs. And can then just do the memory
-accessor setup for itself.
-
-Isn't that enough?
+Ok, that is quite likely. Have you made a start on a series related to
+lumpy reclaim? I was holding off making a start on such a thing while I
+reviewed the other writeback issues and travelling to MM Summit is going
+to delay things for me. If you haven't started when I get back, I'll
+make some sort of stab at it.
 
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
