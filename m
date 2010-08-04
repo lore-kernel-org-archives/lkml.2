@@ -1,176 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab0HDJQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 05:16:59 -0400
-Received: from tuxonice.net ([74.207.252.127]:51900 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756938Ab0HDJQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 05:16:58 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C593007.7040708@tuxonice.net>
-Date: Wed, 04 Aug 2010 19:16:55 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1757087Ab0HDJTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 05:19:37 -0400
+Received: from web27008.mail.ukl.yahoo.com ([217.146.177.8]:47406 "HELO
+	web27008.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756207Ab0HDJTe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 05:19:34 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 05:19:34 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.uk;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=KaIr1XKBwHVIjQm5/DegFsPUelXvYQsnbe/n2GIyuopAy7LKWtXS5OFkpbaQXdF7SYIo6lGmTzZEf3FXXD1oRNZORzMiIgCJIfEMZiFlXhiBH7q6cY9IUxRpgsgHWWCdGV4z5kmEeJmQGHa6Y4htrbggL+Td4GJyvwdf+V7R3ek=;
+Message-ID: <646233.80914.qm@web27008.mail.ukl.yahoo.com>
+X-YMail-OSG: GCV8IrYVM1mqnVPIGanTCHdWbw6abt5jrsdQ7T9JbMSnBUc
+ XrnBWOq6a3axjHTEcdg6xEzoQjA2NKVUCwt2hm.uRak7e7vyBtv_17qrObMa
+ xkfrF75paVbwiEq7Lk_DR_Ij61UVAsuTqwCUnSYEUWLo3hJwP7HzL8luYSqb
+ jQfp6AT6y9tBoZHx.k.zXqznnCo46u1EueZWRJKIhs6MB8PfjnrN0pA.7R7j
+ JrG_cste0fdeQy267LR715qWQdP8TewWU7FwPHb9A1JwkmpCk4VyKOexIkCT
+ h7070U2vlUuxkD_NqC0U8ngA2b2E0vZI1DshPbOg-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Wed, 4 Aug 2010 09:12:52 +0000 (GMT)
+From: bifferos <bifferos@yahoo.co.uk>
+Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what c_ident is
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
+        hpa@linux.intel.com, Ingo Molnar <mingo@elte.hu>
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <20100803192557.GA13595@elte.hu>
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't
- used!
-References: <4C58C528.4000606@tuxonice.net> <4C592BFE.7070701@s5r6.in-berlin.de>
-In-Reply-To: <4C592BFE.7070701@s5r6.in-berlin.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
 
-On 04/08/10 18:59, Stefan Richter wrote:
-> (adding Cc: linux-scsi)
->
-> Nigel Cunningham wrote:
->> I've just given hibernation a go under 2.6.35, and at first I thought
->> there was some sort of hang in freezing processes. The computer sat
->> there for aaaaaages, apparently doing nothing. Switched from TuxOnIce to
->> swsusp to see if it was specific to my code but no - the problem was
->> there too. I used the nifty new kdb support to get a backtrace, which was:
->>
->> get_swap_page_of_type
->> discard_swap_cluster
->> blk_dev_issue_discard
->> wait_for_completion
->>
->> Adding a printk in discard swap cluster gives the following:
->>
->> [   46.758330] Discarding 256 pages from bdev 800003 beginning at page 640377.
->> [   47.003363] Discarding 256 pages from bdev 800003 beginning at page 640633.
->> [   47.246514] Discarding 256 pages from bdev 800003 beginning at page 640889.
->>
->> ...
->>
->> [  221.877465] Discarding 256 pages from bdev 800003 beginning at page 826745.
->> [  222.121284] Discarding 256 pages from bdev 800003 beginning at page 827001.
->> [  222.365908] Discarding 256 pages from bdev 800003 beginning at page 827257.
->> [  222.610311] Discarding 256 pages from bdev 800003 beginning at page 827513.
->>
->> So allocating 4GB of swap on my SSD now takes 176 seconds instead of
->> virtually no time at all. (This code is completely unchanged from 2.6.34).
->>
->> I have a couple of questions:
->>
->> 1) As far as I can see, there haven't been any changes in mm/swapfile.c
->> that would cause this slowdown, so something in the block layer has
->> (from my point of view) regressed. Is this a known issue?
->
-> Perhaps ATA TRIM is enabled for this SSD in 2.6.35 but not in 2.6.34?
-> Or the discard code has been changed to issue many moderately sized ATA
-> TRIMs instead of a single huge one, and the former was much more optimal
-> for your particular SSD?
+I couldn't reproduce this with 2.6.35 (without Peter's change),
+I was trying on VirtualBox.  If the detection code is causing a 
+problem we can just skip it if the CPU has cpuid.
 
-Mmmm. Wonder how I tell. Something in dmesg or hdparm -I?
+Incidentally if you need some hardware to test the RDC port on I can
+arrange that.
 
-ata3.00: ATA-8: ARSSD56GBP, 1916, max UDMA/133
-ata3.00: 500118192 sectors, multi 1: LBA48 NCQ (depth 31/32), AA
-ata3.00: configured for UDMA/133
-scsi 2:0:0:0: Direct-Access     ATA      ARSSD56GBP       1916 PQ: 0 ANSI: 5
-sd 2:0:0:0: Attached scsi generic sg1 type 0
-sd 2:0:0:0: [sda] 500118192 512-byte logical blocks: (256 GB/238 GiB)
-sd 2:0:0:0: [sda] Write Protect is off
-sd 2:0:0:0: [sda] Mode Sense: 00 3a 00 00
-sd 2:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't 
-support DPO or FUA
-sda: sda1 sda2 sda3 sda4
-sd 2:0:0:0: [sda] Attached SCSI disk
+regards,
+Mark
 
-/dev/sda:
+--- On Tue, 3/8/10, Ingo Molnar <mingo@elte.hu> wrote:
 
-ATA device, with non-removable media
-	Model Number:       ARSSD56GBP
-	Serial Number:      DC2210200F1B40015
-	Firmware Revision:  1916
-Standards:
-	Supported: 8 7 6 5
-	Likely used: 8
-Configuration:
-	Logical		max	current
-	cylinders	16383	16383
-	heads		16	16
-	sectors/track	63	63
-	--
-	CHS current addressable sectors:   16514064
-	LBA    user addressable sectors:  268435455
-	LBA48  user addressable sectors:  500118192
-	Logical  Sector size:                   512 bytes
-	Physical Sector size:                   512 bytes
-	device size with M = 1024*1024:      244198 MBytes
-	device size with M = 1000*1000:      256060 MBytes (256 GB)
-	cache/buffer size  = unknown
-	Nominal Media Rotation Rate: Solid State Device
-Capabilities:
-	LBA, IORDY(can be disabled)
-	Queue depth: 32
-	Standby timer values: spec'd by Standard, no device specific minimum
-	R/W multiple sector transfer: Max = 1	Current = 1
-	DMA: mdma0 mdma1 mdma2 udma0 udma1 udma2 udma3 udma4 udma5 *udma6
-	     Cycle time: min=120ns recommended=120ns
-	PIO: pio0 pio1 pio2 pio3 pio4
-	     Cycle time: no flow control=120ns  IORDY flow control=120ns
-Commands/features:
-	Enabled	Supported:
-	   *	SMART feature set
-	    	Security Mode feature set
-	   *	Power Management feature set
-	   *	Write cache
-	   *	Look-ahead
-	   *	Host Protected Area feature set
-	   *	WRITE_BUFFER command
-	   *	READ_BUFFER command
-	   *	DOWNLOAD_MICROCODE
-	    	SET_MAX security extension
-	   *	48-bit Address feature set
-	   *	Device Configuration Overlay feature set
-	   *	Mandatory FLUSH_CACHE
-	   *	FLUSH_CACHE_EXT
-	   *	SMART self-test
-	   *	General Purpose Logging feature set
-	   *	Gen1 signaling speed (1.5Gb/s)
-	   *	Gen2 signaling speed (3.0Gb/s)
-	   *	Native Command Queueing (NCQ)
-	   *	Phy event counters
-	   *	DMA Setup Auto-Activate optimization
-	    	Device-initiated interface power management
-	   *	Software settings preservation
-	   *	Data Set Management determinate TRIM supported
-Security:
-		supported
-	not	enabled
-	not	locked
-		frozen
-	not	expired: security count
-	not	supported: enhanced erase
-Checksum: correct
+> From: Ingo Molnar <mingo@elte.hu>
+> Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what c_ident is
+> To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org, florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de, hpa@linux.intel.com
+> Cc: linux-tip-commits@vger.kernel.org
+> Date: Tuesday, 3 August, 2010, 20:25
+> 
+> * tip-bot for H. Peter Anvin <hpa@linux.intel.com>
+> wrote:
+> 
+> > Commit-ID: 
+> c0366f5f5c1615c4f70b1bd646149ba9233830b9
+> > Gitweb:     http://git.kernel.org/tip/c0366f5f5c1615c4f70b1bd646149ba9233830b9
+> > Author:     H. Peter Anvin <hpa@linux.intel.com>
+> > AuthorDate: Tue, 3 Aug 2010 10:09:56 -0700
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Tue, 3 Aug 2010 10:09:56 -0700
+> > 
+> > x86, cpu: RDC doesn't have CPUID, which is what
+> c_ident is
+> > 
+> > c_ident is supposed to be a CPUID identifier, and RDC
+> doesn't have
+> > that.
+> 
+> -tip testing found that these RDC patches cause a boot
+> crash if a 
+> X86_RDC321X=y kernel is booted on a regular PC:
+> 
+> [    0.015999] Pid: 0, comm: swapper Not tainted
+> 2.6.35-tip+ #23896 A8N-E/System Product Name 
+>    
+> [    0.015999] EIP: 0060:[<c1267d14>]
+> EFLAGS: 00010282 CPU: 0         
+>                
+>            
+> [    0.015999] EIP is at strcmp+0xf/0x22 
+>                
+>                
+>                
+>         
+> [    0.015999] EAX: c1a81541 EBX: 00000004 ECX:
+> 0000000f EDX: 00000000         
+>                
+>   
+> [    0.015999] ESI: c1a81571 EDI: 00000000 EBP:
+> c19ccf78 ESP: c19ccf70         
+>                
+>   
+> [    0.015999]  DS: 007b ES: 007b FS: 00d8
+> GS: 00e0 SS: 0068           
+>                
+>           
+> [    0.015999] Process swapper (pid: 0,
+> ti=c19cc000 task=c1a07e60 task.ti=c19cc000)   
+>            
+> [    0.015999] Stack:       
+>                
+>                
+>                
+>                
+>      
+> [    0.015999]  c1a81530 c1a81570 c19ccf8c
+> c16d9b7f c1ac8538 c1a81530 c1a81570 c19ccfac   
+>        
+> [    0.015999] <0> c16d9dcb c104dc9f
+> c1a15210 c1a81548 c1ac8538 00099800 c19ce000 c19ccfb4 
+>       
+> [    0.015999] <0> c1a89a4f c19ccfc0
+> c1a89d2d c1a96147 c19ccfe0 c1a84953 431d9715 00000006 
+>       
+> [    0.015999] Call Trace:     
+>                
+>                
+>                
+>                
+>   
+> [    0.015999]  [<c16d9b7f>] ?
+> get_cpu_vendor+0x22/0x8f         
+>                
+>              
+>    
+> [    0.015999]  [<c16d9dcb>] ?
+> identify_cpu+0xc5/0x2e0         
+>                
+>                
+>   
+> [    0.015999]  [<c104dc9f>] ?
+> sub_preempt_count+0x9/0x39         
+>                
+>            
+>    
+> [    0.015999]  [<c1a89a4f>] ?
+> identify_boot_cpu+0xd/0x23         
+>                
+>            
+>    
+> [    0.015999]  [<c1a89d2d>] ?
+> check_bugs+0xb/0xaf           
+>                
+>                
+>     
+> [    0.015999]  [<c1a96147>] ?
+> cpuset_init+0x65/0x77         
+>                
+>                
+>     
+> [    0.015999]  [<c1a84953>] ?
+> start_kernel+0x37e/0x392         
+>                
+>              
+>    
+> [    0.015999]  [<c1a840c9>] ?
+> i386_start_kernel+0xc9/0xd0       
+>                
+>                 
+> [    0.015999] Code: c0 83 c9 ff f2 ae 4f 89 d1
+> 49 78 06 ac aa 84 c0 75 f7 31 c0 aa 89 d8 5b 5e 5 
+> [    0.015999] EIP: [<c1267d14>]
+> strcmp+0xf/0x22 SS:ESP 0068:c19ccf70     
+>                
+>        
+> 
+> mercury:~> cat /proc/cpuinfo 
+> processor    : 0
+> vendor_id    : AuthenticAMD
+> cpu family    : 15
+> model        : 35
+> model name    : AMD Athlon(tm) 64 X2 Dual
+> Core Processor 3800+
+> stepping    : 2
+> cpu MHz        : 2010.301
+> cache size    : 512 KB
+> physical id    : 0
+> siblings    : 2
+> core id        : 0
+> cpu cores    : 2
+> fpu        : yes
+> fpu_exception    : yes
+> cpuid level    : 1
+> wp        : yes
+> flags        : fpu vme de pse
+> tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36
+> clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt lm
+> 3dnowext 3dnow rep_good pni lahf_lm cmp_legacy
+> bogomips    : 4021.85
+> TLB size    : 1024 4K pages
+> clflush size    : 64
+> cache_alignment    : 64
+> address sizes    : 40 bits physical, 48 bits
+> virtual
+> power management: ts fid vid ttp
+> 
+> config attached.
+> 
+> Thanks,
+> 
+>     Ingo
+> 
 
 
->> 2) Why are we calling discard_swap_cluster anyway? The swap was unused
->> and we're allocating it. I could understand calling it when freeing
->> swap, but when allocating?
->
-> At the moment when the administrator creates swap space, the kernel can
-> assume that he has no use anymore for the data that may have existed
-> previously at this space.  Hence instruct the SSD's flash translation
-> layer to return all these blocks to the list of unused logical blocks
-> which do not have to be read and backed up whenever another logical
-> block within the same erase block is written to.
->
-> However, I am surprised that this is done every time (?) when preparing
-> for hibernation.
-
-It's not hibernation per se. The discard code is called from a few 
-places in swapfile.c in (afaict from a quick scan) both swap allocation 
-and free paths.
-
-Regards,
-
-Nigel
+      
