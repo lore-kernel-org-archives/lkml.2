@@ -1,49 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab0HDIhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 04:37:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38601 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752512Ab0HDIhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 04:37:22 -0400
-Message-ID: <4C5926BD.9000804@kernel.org>
-Date: Wed, 04 Aug 2010 10:37:17 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1756905Ab0HDIiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 04:38:14 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57516 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab0HDIiN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 04:38:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=C3Vm9gmTokbR2HACsVjlK2yfQRBUHh6I24px8HpcchFEFejNVapuSIuWs6GouXrosF
+         1ZSSTu9maQp1a+HWAWlCfLUj1mZthUZojuN21ceF5LRrXRTzMlZM0TdKUX7jsFz4uP1C
+         nJARLW/MbPX+dP+w0yVo0knFkP9ZL5uxpDw6Q=
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-CC: Christoph Lameter <cl@linux-foundation.org>
-Subject: [GIT PULL] percpu for v2.6.36
-X-Enigmail-Version: 1.1.1
+Date: Wed, 4 Aug 2010 16:38:12 +0800
+Message-ID: <AANLkTi=1DxqLrqVbfRouOBRWg4RHFaHz438X7F1JWL6P@mail.gmail.com>
+Subject: question about CONFIG_BASE_SMALL
+From: Ryan Wang <openspace.wang@gmail.com>
+To: kernelnewbies@nl.linux.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 04 Aug 2010 08:36:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Hi all,
 
-Please pull from
+      I noticed CONFIG_BASE_SMALL in different parts
+of the kernel code, with ifdef/ifndef.
+      I wonder what does CONFIG_BASE_SMALL mean?
+And how can I configure it, e.g. through make menuconfig?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-linus
-
-to receive percpu changes.  It contains two patches to allow percpu
-allocator to be usable before slab comes online.  slab branch will
-have patches to make it use percpu allocator during boot strapping
-instead of dancing around static memory.
-
-Thanks.
-
-Tejun Heo (2):
-      percpu: make @dyn_size always mean min dyn_size in first chunk init functions
-      percpu: allow limited allocation before slab is online
-
- include/linux/percpu.h |   20 ++++++++---
- init/main.c            |    1 +
- mm/percpu.c            |   85 +++++++++++++++++++++++++++--------------------
- 3 files changed, 64 insertions(+), 42 deletions(-)
-
---
-tejun
+thanks,
