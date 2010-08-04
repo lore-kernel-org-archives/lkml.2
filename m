@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934782Ab0HDUlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 16:41:06 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34113
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934827Ab0HDUk5 (ORCPT
+	id S934784Ab0HDUms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 16:42:48 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:33590 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757978Ab0HDUml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 16:40:57 -0400
-Date: Wed, 04 Aug 2010 13:41:15 -0700 (PDT)
-Message-Id: <20100804.134115.260072845.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTimxv1y3QJ7s+ghi1FFCcwnUVWT1n6dvT-NNN=Oo@mail.gmail.com>
-References: <20100803.203814.59697285.davem@davemloft.net>
-	<AANLkTimxv1y3QJ7s+ghi1FFCcwnUVWT1n6dvT-NNN=Oo@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Aug 2010 16:42:41 -0400
+Date: Wed, 4 Aug 2010 22:42:08 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100804204208.GA21452@elf.ucw.cz>
+References: <20100731215214.2543c07e@infradead.org>
+ <20100801054816.GI2470@linux.vnet.ibm.com>
+ <20100731230101.7cc1d8c7@infradead.org>
+ <20100801191228.GL2470@linux.vnet.ibm.com>
+ <20100801154708.19817b75@infradead.org>
+ <20100802011006.GS2470@linux.vnet.ibm.com>
+ <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
+ <20100803183447.0275c134@infradead.org>
+ <20100804163216.GB24163@linux.vnet.ibm.com>
+ <20100804163509.GA31523@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100804163509.GA31523@srcf.ucam.org>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 Aug 2010 12:06:47 -0700
+Hi!
 
-> On Tue, Aug 3, 2010 at 8:38 PM, David Miller <davem@davemloft.net> wrote:
->>
->> Another release, another merge window, another set of networking
->> changes to merge :-)
+> > If this doesn't work for the Android folks for whatever reason, another
+> > approach would be to do the freeze in user code, which could track
+> > whether any user-level resources (pthread mutexes, SysV semas, whatever)
+> > where held, and do the freeze on a thread-by-thread basis within each
+> > "victim" application as the threads reach safe points.
 > 
-> Ok, merged. But you should double-check my merge resolution fixes,
+> The main problem I see with the cgroups solution is that it doesn't seem 
+> to do anything to handle avoiding loss of wakeup events.
 
-Will do, thanks a lot.
+In different message, Arve said they are actually using low-power idle
+to emulate suspend on Android.
 
-> I'm also a bit unhappy about how it introduces new warnings in very
-> subtle ways.
+This came like a bit of a shock to me ("why do they make it so complex
+then"), but... it also means that as soon as you are able to stop
+"unwanted" processing, you can just leave normal cpuidle mechanisms to
+deal with the rest...
 
-Joe Perches presented patches to fix this (arguably always broken)
-issue to James Bottomley and co. several weeks ago:
-
-	http://marc.info/?l=linux-next&m=127882494322533&w=2
-
-And it's been, in typical SCSI subsystem maintainer fastion, in
-"stall" mode ever since.
-
-In fact, when we noticed this problem, Joe Perches said he would only
-post the patches to the SCSI folks if I would "deal" with James
-Bottomley.  If it's to that point, well... I don't know what to say.
-
-I know the warning is introduced by changes in my tree, but I
-figured with weeks until the merge window James would be OK with
-Joe's fix for the warning by then.  Perhaps I was wrong.
-
-If under my control, I would never _ever_ let something like that
-linger for weeks upon weeks in my tree.  24 hour resolution, tops.
-
-And the same goes for Joe Perches, which is why I trust him and merged
-his changes which triggered the warning in the first place.  I can
-always count on him to do something immediately to try and fix
-fallout, or in the worst case say "ok we can't resolve this just
-revert my original change".
-
-So I'm sorry, I'll never create a situation again where the SCSI
-maintainer is in the critical path for getting a warning fixed. :-)
+(Of course, you'll also have to fix kernel timers not to beat
+unneccessarily often; still that's better solution that just stoping
+them all and then sprinkling wakelocks all over the kernel to deal
+with obvious bugs it introduces...)
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
