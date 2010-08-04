@@ -1,183 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab0HDWHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:07:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20756 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab0HDWHB (ORCPT
+	id S1756785Ab0HDWIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:08:39 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52023 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab0HDWIf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:07:01 -0400
-Message-ID: <4C59E44E.5040800@kernel.org>
-Date: Wed, 04 Aug 2010 15:06:06 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Wed, 4 Aug 2010 18:08:35 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Dave Airlie <airlied@gmail.com>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
-        Gary Hade <garyhade@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org>	<m18w4onebi.fsf@fess.ebiederm.org> <4C5871BC.4070007@kernel.org>	<m1bp9jgyww.fsf@fess.ebiederm.org> <4C592BF5.3070008@kernel.org>	<m1mxt28tku.fsf@fess.ebiederm.org> <4C59BE0D.7020604@kernel.org> <m162zq86ck.fsf@fess.ebiederm.org>
-In-Reply-To: <m162zq86ck.fsf@fess.ebiederm.org>
+In-Reply-To: <20100804205654.GA4986@srcf.ucam.org>
+References: <20100801054816.GI2470@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
+	<20100804185520.GA2417@srcf.ucam.org>
+	<201008042251.08266.rjw@sisk.pl>
+	<20100804205654.GA4986@srcf.ucam.org>
+Date: Wed, 4 Aug 2010 15:08:33 -0700
+Message-ID: <AANLkTi=fH=XqJ0QgaMwPr5efacWAFo5h0khD7RjL4n8L@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, david@lang.hm,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C59E457.00F3,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please check if this one address your concerns.
+On Wed, Aug 4, 2010 at 1:56 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
+>> On Wednesday, August 04, 2010, Matthew Garrett wrote:
+>> > No! And that's precisely the issue. Android's existing behaviour could
+>> > be entirely implemented in the form of binary that manually triggers
+>> > suspend when (a) the screen is off and (b) no userspace applications
+>> > have indicated that the system shouldn't sleep, except for the wakeup
+>> > event race. Imagine the following:
+>> >
+>> > 1) The policy timeout is about to expire. No applications are holding
+>> > wakelocks. The system will suspend providing nothing takes a wakelock.
+>> > 2) A network packet arrives indicating an incoming SIP call
+>> > 3) The VOIP application takes a wakelock and prevents the phone from
+>> > suspending while the call is in progress
+>> >
+>> > What stops the system going to sleep between (2) and (3)? cgroups don't,
+>> > because the voip app is an otherwise untrusted application that you've
+>> > just told the scheduler to ignore.
+>>
+>> I _think_ you can use the just-merged /sys/power/wakeup_count mechanism to
+>> avoid the race (if pm_wakeup_event() is called at 2)).
+>
+> Yes, I think that solves the problem. The only question then is whether
 
-Thanks
+How? By passing a timeout to pm_wakeup_event when the network driver
+gets the packet or by passing 0. If you pass a timeout it is the same
+as using a wakelock with a timeout and should work (assuming the
+timeout you picked is long enough). If you don't pass a timeout it
+does not work, since the packet may not be visible to user-space yet.
 
-Yinghai
+> it's preferable to use cgroups or suspend fully, which is pretty much up
+> to the implementation. In other words, is there a reason we're still
 
----
- arch/x86/kernel/mpparse.c |   88 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 77 insertions(+), 11 deletions(-)
+I have seen no proposed way to use cgroups that will work. If you
+leave some processes running while other processes are frozen you run
+into problems when a frozen process holds a resource that a running
+process needs.
 
-Index: linux-2.6/arch/x86/kernel/mpparse.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/mpparse.c
-+++ linux-2.6/arch/x86/kernel/mpparse.c
-@@ -173,17 +173,17 @@ static int __init mp_irq_mpc_intsrc_cmp(
- {
- 	if (mp_irq->dstapic != m->dstapic)
- 		return 1;
--	if (mp_irq->type != m->type)
-+	if (mp_irq->dstirq != m->dstirq)
- 		return 2;
--	if (mp_irq->irqtype != m->irqtype)
-+	if (mp_irq->srcbus != m->srcbus)
- 		return 3;
--	if (mp_irq->irqflag != m->irqflag)
-+	if (mp_irq->type != m->type)
- 		return 4;
--	if (mp_irq->srcbus != m->srcbus)
-+	if (mp_irq->irqtype != m->irqtype)
- 		return 5;
--	if (mp_irq->srcbusirq != m->srcbusirq)
-+	if (mp_irq->irqflag != m->irqflag)
- 		return 6;
--	if (mp_irq->dstirq != m->dstirq)
-+	if (mp_irq->srcbusirq != m->srcbusirq)
- 		return 7;
- 
- 	return 0;
-@@ -195,9 +195,45 @@ static void __init MP_intsrc_info(struct
- 
- 	print_MP_intsrc_info(m);
- 
-+	/*
-+	 *  All BUS, and IOAPIC entries are processed already
-+	 */
-+
-+	/* check if dstapic is right */
-+	for (i = 0; i < nr_ioapics; i++) {
-+		if (mp_ioapics[i].apicid == m->dstapic)
-+			break;
-+	}
-+	if (i == nr_ioapics) {
-+		apic_printk(APIC_VERBOSE, "intsrc with wrong apic id is skipped\n");
-+		return;
-+	}
-+
- 	for (i = 0; i < mp_irq_entries; i++) {
--		if (!mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m))
-+		int ret = mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m);
-+
-+		/* duplicated entries ? */
-+		if (!ret) {
-+			apic_printk(APIC_VERBOSE, "Duplicated intsrc is skipped\n");
- 			return;
-+		}
-+
-+		/* same apic/pin, but different bus */
-+		if (ret == 3) {
-+			/* overwrite wrong legacy one */
-+			if (test_bit(mp_irqs[i].srcbus, mp_bus_not_pci) &&
-+			    !test_bit(m->srcbus, mp_bus_not_pci)) {
-+				apic_printk(APIC_VERBOSE, "Wrong legacy entry with same apic/pin is removed\n");
-+				assign_to_mp_irq(m, &mp_irqs[i]);
-+				return;
-+			}
-+			/* dump this legacy one */
-+			if (!test_bit(mp_irqs[i].srcbus, mp_bus_not_pci) &&
-+			    test_bit(m->srcbus, mp_bus_not_pci)) {
-+				apic_printk(APIC_VERBOSE, "Wrong legacy entry is skipped\n");
-+				return;
-+			}
-+		}
- 	}
- 
- 	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
-@@ -280,8 +316,8 @@ static int __init smp_read_mpc(struct mp
- 	char str[16];
- 	char oem[10];
- 
--	int count = sizeof(*mpc);
--	unsigned char *mpt = ((unsigned char *)mpc) + count;
-+	int count;
-+	unsigned char *mpt;
- 
- 	if (!smp_check_mpc(mpc, oem, str))
- 		return 0;
-@@ -305,8 +341,9 @@ static int __init smp_read_mpc(struct mp
- 	/*
- 	 *      Now process the configuration blocks.
- 	 */
-+	count = sizeof(*mpc);
-+	mpt = ((unsigned char *)mpc) + count;
- 	x86_init.mpparse.mpc_record(0);
--
- 	while (count < mpc->length) {
- 		switch (*mpt) {
- 		case MP_PROCESSOR:
-@@ -324,7 +361,7 @@ static int __init smp_read_mpc(struct mp
- 			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
- 			break;
- 		case MP_INTSRC:
--			MP_intsrc_info((struct mpc_intsrc *)mpt);
-+			/* check that next pass */
- 			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
- 			break;
- 		case MP_LINTSRC:
-@@ -337,6 +374,35 @@ static int __init smp_read_mpc(struct mp
- 			count = mpc->length;
- 			break;
- 		}
-+		x86_init.mpparse.mpc_record(1);
-+	}
-+
-+	/* second pass for INTSRC */
-+	count = sizeof(*mpc);
-+	mpt = ((unsigned char *)mpc) + count;
-+	x86_init.mpparse.mpc_record(0);
-+	while (count < mpc->length) {
-+		switch (*mpt) {
-+		case MP_PROCESSOR:
-+			skip_entry(&mpt, &count, sizeof(struct mpc_cpu));
-+			break;
-+		case MP_BUS:
-+			skip_entry(&mpt, &count, sizeof(struct mpc_bus));
-+			break;
-+		case MP_IOAPIC:
-+			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
-+			break;
-+		case MP_INTSRC:
-+			MP_intsrc_info((struct mpc_intsrc *)mpt);
-+			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
-+			break;
-+		case MP_LINTSRC:
-+			skip_entry(&mpt, &count, sizeof(struct mpc_lintsrc));
-+			break;
-+		default:
-+			count = mpc->length;
-+			break;
-+		}
- 		x86_init.mpparse.mpc_record(1);
- 	}
- 
+
+> having this conversation? :) It'd be good to have some feedback from
+> Google as to whether this satisfies their functional requirements.
+>
+
+That is "this"? The merged code? If so, no it does not satisfy our
+requirements. The in kernel api, while offering similar functionality
+to the wakelock interface, does not use any handles which makes it
+impossible to get reasonable stats (You don't know which pm_stay_awake
+request pm_relax is reverting). The proposed in user-space interface
+of calling into every process that receives wakeup events before every
+suspend call is also not compatible with existing apps.
+
+-- 
+Arve Hjønnevåg
