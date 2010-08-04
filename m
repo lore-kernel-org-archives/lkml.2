@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758484Ab0HDSva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:51:30 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:38016
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757946Ab0HDSv3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:51:29 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L6N5K4-02-FSR-02
-X-M-MSG: 
-Date: Wed, 4 Aug 2010 20:48:06 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: A question of perf NMI handler
-Message-ID: <20100804184806.GL26154@erda.amd.com>
-References: <20100804100116.GH26154@erda.amd.com>
- <20100804140021.GN3353@redhat.com>
- <1280931093.1923.1194.camel@laptop>
- <20100804145203.GP3353@redhat.com>
- <1280934161.1923.1294.camel@laptop>
- <20100804151858.GB5130@lenovo>
- <20100804155002.GS3353@redhat.com>
- <20100804161046.GC5130@lenovo>
- <20100804162026.GU3353@redhat.com>
- <20100804163930.GE5130@lenovo>
+	id S1758504Ab0HDSwP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:52:15 -0400
+Received: from mail.lang.hm ([64.81.33.126]:43183 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757518Ab0HDSwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 14:52:13 -0400
+Date: Wed, 4 Aug 2010 11:51:09 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-pm@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <201008041347.25595.rjw@sisk.pl>
+Message-ID: <alpine.DEB.2.00.1008041130550.6545@asgard.lang.hm>
+References: <20100801210548.23f77ff6@infradead.org> <AANLkTikyD94wqWZTWA23K=zvN3RpKB6dDRrvFSv9szMg@mail.gmail.com> <alpine.DEB.2.00.1008040027140.25170@asgard.lang.hm> <201008041347.25595.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100804163930.GE5130@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Andi)
+On Wed, 4 Aug 2010, Rafael J. Wysocki wrote:
 
-On 04.08.10 12:39:30, Cyrill Gorcunov wrote:
-> On Wed, Aug 04, 2010 at 12:20:26PM -0400, Don Zickus wrote:
+> On Wednesday, August 04, 2010, david@lang.hm wrote:
+>> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
+>>
+>>> 2010/8/3  <david@lang.hm>:
+>>>> On Tue, 3 Aug 2010, Arve Hj?nnev?g wrote:
+>>>>
+>>>>> 2010/8/3  <david@lang.hm>:
+>>>>>>
+>>>>>> On Tue, 3 Aug 2010, Arve Hj?nnev?g wrote:
+> ...
+>>>>>>> The hardware specific idle hook can (and does) decide to go into any
+>>>>>>> power state from idle that does not disrupt any active devices.
+>>>>>>
+>>>>>> This I know is an Andoid specific thing. On other platforms power states
+>>>>>> very definantly can make user visible changes.
+>
+> It would be much better if you gave specific examples.  Because, for instance,
+> I'm not sure what platforms you have in mind.
 
-> > there.  The problem is the bits in register 0x61 are not always set
-> > correctly in the case of SERRs (well at least in all the cases I have
-> > dealt with).  So you can easily can a flood of unknown nmis from an SERR
-> > and register 0x61 would have the PERR/SERR bits set to 0.  Fun, huh?
-> 
-> if there is nothing in nmi_sc the code flows into another branch. And
-> it hits the problem of perf events eating all nmi giving no chance the
-> others. So we take if (!(reason & 0xc0)) case and hit DIE_NMI_IPI
-> (/me scratching the head why it's not under CONFIG_X86_LOCAL_APIC) and
-> drop all code, unpleasant.
+I gave examples in other messages that included dimming/turning off the 
+screen and  spinning down the disk among others.
 
-Only the upper 2 bits in io_61h indicate the nmi reason, so in case of
-(!(reason & 0xc0)) the source simply can not be determined and all nmi
-handlers in the chain must be called (DIE_NMI/DIE_NMI_IPI). The
-perfctr handler then stops it.
+the definition of 'transparently' was then clarified to not mean 
+transparent to the user, but transparent (except for possibly delays) to 
+the applications (they may have to wait for the disk to spin up for 
+example)
 
-So you can decide to either get an unrecovered nmi panic triggered by
-a perfctr or losing unknown nmis from other sources. Maybe this can be
-fixed by implementing handlers for those sources.
+>>>>> How is this Android specific?
+>>>>
+>>>> you are stating that this must be suspend because low-power idle must be
+>>>> transparent to the user.
+>>>
+>>> It must be transparent to the rest of the system.
+>>>
+>>>>
+>>>> I am saying that on Linux, low-power idle commonly is not transparent to the
+>>>> user, so the requirement for it to be transparent (therefor putting the
+>>>> suspend into a different category) is an Android only requirement.
+>>>>
+>>>
+>>> I'm am not talking about minor latencies. If you have a platform that
+>>> for instance turns off you screen dma when entering idle, it is broken
+>>> whether is running Android or not. If it does the same in suspend it
+>>> is not a problem.
+>>
+>> This isn't sounding quite right to me. I've seen too many discussions
+>> about things like idle and USB devices/hubs/drives/etc getting powered
+>> down for power savings modes to make me readily accept that everything
+>> must be as transparent as you imply. Just the case of drive spin-down
+>> shows that it's possible to do things that would be considered
+>> destructive, but you have to have a flag and wake-up path to recover
+>> within a 'reasonable' amount of time (I guess that this could be
+>> 'transparent' if that only implies that things must work eventually, which
+>> isn't what I read into the statement)
+>
+> Well, consider a single character device and suppose there is an application
+> talking to the driver using read(), write(), ioctl(), whatever.  Now suppose
+> you want to put the device into a low-power state such that the device can't
+> do the I/O in that state.  You need to ensure that the app won't be able to
+> reach the device while in that state and you can (1) arrange things so that
+> the device is put into the full-power state whenever the app tries to access
+> it and (2) "freeze" the app so that it won't try to access the device being in
+> the low-power state.
+>
+> Generally speaking (1) is what idle (and any other form of runtime PM) does and
+> (2) is what suspend does with respect to the whole system.
 
--Robert
+makes sense
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+> In the suspend case, when you have frozen all applications, you can
+> sequentially disable all interrupts except for a few selected ("wakeup") ones
+> in a safe way.   By disabling them, you ensure that the CPU will only be
+> "revived" by a limited set of events and that allows the system to stay
+> low-power for extended time intervals.
 
+the benifit of this will depend on what wakeups you are able to avoid by 
+putting the hardware to sleep. Depending on the hardware, this may be not 
+matter that much.
+
+In addition, there are input devices like a touchscreen that could be 
+disabled even short of a full suspend, as long as there is some way to get 
+them reactivated.
+
+> To achieve the same result in the "idle" case, you'll need to have a mechanism
+> to disable interrupts (except for the "wakeup" ones) avoiding synchronization
+> problems (eg. situations in which task A, blocked on a "suspended" device
+> access, holds a mutex waited for by task B that needs to run so that we can
+> "suspend" another device).  That, however, is a difficult problem.
+
+I would say that the difficulty of the problem depends on the hardware and 
+how much userspace interaction is needed. If the kernel can disable the 
+hardware in the driver (so that it can wake it up again when accessed by 
+an application) it would seem that this isn't a problem.
+
+David Lang
