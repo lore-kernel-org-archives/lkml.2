@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab0HDI1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 04:27:24 -0400
-Received: from clegg.madduck.net ([193.242.105.96]:58717 "EHLO
-	clegg.madduck.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab0HDI1V (ORCPT
+	id S1756705Ab0HDI3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 04:29:07 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64527 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab0HDI3B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 04:27:21 -0400
-X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 04:27:20 EDT
-Date: Wed, 4 Aug 2010 10:19:34 +0200
-From: martin f krafft <madduck@madduck.net>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Cc: Penelope Christine Leach <penny@mjollnir.org>
-Subject: Failing to read drive: "Very big device. Trying to use READ
- CAPACITY(16)"
-Message-ID: <20100804081934.GA9185@piper.oerlikon.madduck.net>
-Mail-Followup-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-	Penelope Christine Leach <penny@mjollnir.org>
+	Wed, 4 Aug 2010 04:29:01 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-ripemd160;
-	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
-Content-Disposition: inline
-X-Motto: Keep the good times rollin'
-X-OS: Debian GNU/Linux squeeze/sid kernel 2.6.33-2-amd64 x86_64
-X-Spamtrap: madduck.bogus@madduck.net
-X-Subliminal-Message: debian/rules!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
+References: <1280836116-6654-1-git-send-email-dave.martin@linaro.org>
+Date: Wed, 4 Aug 2010 09:29:00 +0100
+Message-ID: <AANLkTik8+8e6eibAUyfj+A982-jvL_kEsXNmFZ8_qom8@mail.gmail.com>
+Subject: Re: [PATCH 0/2] perf: symbol offset breakage with separated debug
+From: Dave Martin <dave.martin@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, kernel-team@lists.ubuntu.com,
+        Will Deacon <Will.Deacon@arm.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A follow-up on this:
 
---y0ulUmNC+osPPQO6
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 3, 2010 at 12:48 PM, Dave Martin <dave.martin@linaro.org> wrote:
 
-Dear kernel people,
+[...]
 
-We are trying to access the harddrive of a decomissioned laptop.
-It's a Western Digital Scorpio Blue 320Gb SATA drive (WD3200BEVT=B9,
-625,142,448 sectors).
+>
+>        a) perf represents symbols as offsets from the start of
+>                the mmap'd code region which contains each
+>                symbol.
 
-When we attach it via USB, however, the kernel fails to read its
-size and assumes it's 2**32 blocks long (2 TiB):
+I've looked at the code some more, and it looks like I've
+misunderstood here.  It looks like symbol addresses are stored and
+searched as _file offsets_ in relation to each mapping -- the
+map__map_ip implementation bears this out, now that I understand how
+it's used to translate from run-time vitrual address to a file offset:
 
-kernel: [ 2466.318829] scsi 9:0:0:0: Direct-Access                         =
-  PQ: 0 ANSI: 2 CCS
-kernel: [ 2466.319359] sd 9:0:0:0: Attached scsi generic sg9 type 0
-kernel: [ 2466.323641] sd 9:0:0:0: [sdh] Very big device. Trying to use REA=
-D CAPACITY(16).
-kernel: [ 2466.325387] sd 9:0:0:0: [sdh] Using 0xffffffff as device size
-kernel: [ 2466.325395] sd 9:0:0:0: [sdh] 4294967296 512-byte logical blocks=
-: (2.19 TB/2.00 TiB)
-kernel: [ 2466.326060] sd 9:0:0:0: [sdh] Write Protect is off
-kernel: [ 2466.326063] sd 9:0:0:0: [sdh] Mode Sense: 00 38 00 00
-kernel: [ 2466.326066] sd 9:0:0:0: [sdh] Assuming drive cache: write through
-kernel: [ 2466.333816]  sdh: unknown partition table
-kernel: [ 2466.360579] sd 9:0:0:0: [sdh] Attached SCSI disk
+static inline u64 map__map_ip(struct map *map, u64 ip)
+{
+        return ip - map->start + map->pgoff;
+}
 
-If we attach it directly to the SATA bus, it is not detected.
+Does this conclusion look wrong to anyone?
 
-Is there anything we can do, or is this drive simply lost?
 
-=B9) http://www.wdc.com/en/products/Products.asp?DriveID=3D377
+Assuming I've understood correctly now, this means that the existing
+code _is_ correct, except that seperated debug images aren't processed
+correctly.
 
---=20
-martin | http://madduck.net/ | http://two.sentenc.es/
-=20
-who's general failure, and why's he reading my disk?
-=20
-spamtraps: madduck.bogus@madduck.net
+This means that my patch "work around incorrect ET_EXEC symbol
+adjustment" is therefore a bodge, not a fix -- it will "work" in many
+cases, for the reasons previously discussed, but it's probably not the
+right solution.
 
---y0ulUmNC+osPPQO6
-Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
-Content-Description: Digital signature (see http://martin-krafft.net/gpg/)
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Looks like I need to think about this a bit more--- basically we need
+to have the ELF section or program headers from the each mmap'd file
+available in order to translate correctly between file offset and
+link-time virtual address for each image.  The information would need
+to be available either when loading symbols or when doing symbol
+lookups.  As already discussed, the headers from separated debug
+images are junk (at least the p_offset and sh_offset values are junk)
+and will lead to wrong address calculations.
 
-iEYEAREDAAYFAkxZIpIACgkQIgvIgzMMSnX9LwCghvAVPnUJ5FSdD0M0m1pb2X14
-SdUAoNRh8gmPdaw0CUlBZNBV8lMAMYRS
-=Aj4J
------END PGP SIGNATURE-----
+We could
+    a) Capture the relevant information during perf record, in
+addition to capturing the build-ids.  This might break the perf data
+file format, but has the advantage (?) that perf report can display
+correct image-relative virtual addresses even if the debug symbols
+can't be loaded.  map__map_ip could be converted to output
+    b) Try to read the loadable image _and_ the debug image during
+perf report.  Currently the code only loads one image per mapping.
+Loading both and cross-referencing information between them would make
+the loading process more complicated.
 
---y0ulUmNC+osPPQO6--
+For (a) we know the program headers will be correct, since they can be
+obtained from the exact file that was mapped during the profiling run.
+For (b) the "real" file may have gone, and we search other locations
+instead.  So, we would need a way to detect which set of program
+headers are the correct ones when we search for images to load.  I'm
+not sure what the best approach is for this -- maybe some checks for
+empty PT_LOAD segments (i.e., for which p_filesz == 0, or is much
+smaller than p_memsz) would work...
 
+
+Any views welcome on which approach would be best.
+
+Cheers
+---Dave
