@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757780Ab0HDLtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 07:49:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36805 "EHLO ogre.sisk.pl"
+	id S1757827Ab0HDLts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 07:49:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51335 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755789Ab0HDLtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 07:49:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: david@lang.hm
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Date: Wed, 4 Aug 2010 13:47:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org,
-        "linux-kernel" <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-References: <20100801210548.23f77ff6@infradead.org> <AANLkTikyD94wqWZTWA23K=zvN3RpKB6dDRrvFSv9szMg@mail.gmail.com> <alpine.DEB.2.00.1008040027140.25170@asgard.lang.hm>
-In-Reply-To: <alpine.DEB.2.00.1008040027140.25170@asgard.lang.hm>
+	id S1757407Ab0HDLtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 07:49:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,315,1278313200"; 
+   d="scan'208";a="308059483"
+Date: Wed, 4 Aug 2010 19:49:33 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Chris Webb <chris@arachsys.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Over-eager swapping
+Message-ID: <20100804114933.GA13527@localhost>
+References: <20100802124734.GI2486@arachsys.com>
+ <AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
+ <20100803033108.GA23117@arachsys.com>
+ <AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
+ <20100803042835.GA17377@localhost>
+ <20100803214945.GA2326@arachsys.com>
+ <20100804022148.GA5922@localhost>
+ <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
+ <20100804032400.GA14141@localhost>
+ <20100804095811.GC2326@arachsys.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008041347.25595.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100804095811.GC2326@arachsys.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 04, 2010, david@lang.hm wrote:
-> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
+On Wed, Aug 04, 2010 at 05:58:12PM +0800, Chris Webb wrote:
+> Wu Fengguang <fengguang.wu@intel.com> writes:
 > 
-> > 2010/8/3  <david@lang.hm>:
-> >> On Tue, 3 Aug 2010, Arve Hj?nnev?g wrote:
-> >>
-> >>> 2010/8/3  <david@lang.hm>:
-> >>>>
-> >>>> On Tue, 3 Aug 2010, Arve Hj?nnev?g wrote:
-...
-> >>>>> The hardware specific idle hook can (and does) decide to go into any
-> >>>>> power state from idle that does not disrupt any active devices.
-> >>>>
-> >>>> This I know is an Andoid specific thing. On other platforms power states
-> >>>> very definantly can make user visible changes.
-
-It would be much better if you gave specific examples.  Because, for instance,
-I'm not sure what platforms you have in mind.
-
-> >>> How is this Android specific?
-> >>
-> >> you are stating that this must be suspend because low-power idle must be
-> >> transparent to the user.
-> >
-> > It must be transparent to the rest of the system.
-> >
-> >>
-> >> I am saying that on Linux, low-power idle commonly is not transparent to the
-> >> user, so the requirement for it to be transparent (therefor putting the
-> >> suspend into a different category) is an Android only requirement.
-> >>
-> >
-> > I'm am not talking about minor latencies. If you have a platform that
-> > for instance turns off you screen dma when entering idle, it is broken
-> > whether is running Android or not. If it does the same in suspend it
-> > is not a problem.
+> > This is interesting. Why is it waiting for 1m here? Are there high CPU
+> > loads? Would you do a
+> > 
+> >         echo t > /proc/sysrq-trigger
+> > 
+> > and show us the dmesg?
 > 
-> This isn't sounding quite right to me. I've seen too many discussions 
-> about things like idle and USB devices/hubs/drives/etc getting powered 
-> down for power savings modes to make me readily accept that everything 
-> must be as transparent as you imply. Just the case of drive spin-down 
-> shows that it's possible to do things that would be considered 
-> destructive, but you have to have a flag and wake-up path to recover 
-> within a 'reasonable' amount of time (I guess that this could be 
-> 'transparent' if that only implies that things must work eventually, which 
-> isn't what I read into the statement)
+> Annoyingly, magic-sysrq isn't compiled in on these kernels. Is there another
+> way I can get this info for you? Replacing the kernels on the machines is a
+> painful job as I have to give the clients running on them quite a bit of
+> notice of the reboot, and I haven't been able to reproduce the problem on a
+> test machine.
 
-Well, consider a single character device and suppose there is an application
-talking to the driver using read(), write(), ioctl(), whatever.  Now suppose
-you want to put the device into a low-power state such that the device can't
-do the I/O in that state.  You need to ensure that the app won't be able to
-reach the device while in that state and you can (1) arrange things so that
-the device is put into the full-power state whenever the app tries to access
-it and (2) "freeze" the app so that it won't try to access the device being in
-the low-power state.
+Maybe turn off KSM? It helps to isolate problems. It's a relative new
+and complex feature after all.
 
-Generally speaking (1) is what idle (and any other form of runtime PM) does and
-(2) is what suspend does with respect to the whole system.
+> I also think the swap use is much better following a reboot, and only starts
+> to spiral out of control after the machines have been running for a week or
+> so.
 
-In the suspend case, when you have frozen all applications, you can
-sequentially disable all interrupts except for a few selected ("wakeup") ones
-in a safe way.   By disabling them, you ensure that the CPU will only be
-"revived" by a limited set of events and that allows the system to stay
-low-power for extended time intervals.
+Something deteriorates over long time.. It may take time to catch this bug..
 
-To achieve the same result in the "idle" case, you'll need to have a mechanism
-to disable interrupts (except for the "wakeup" ones) avoiding synchronization
-problems (eg. situations in which task A, blocked on a "suspended" device
-access, holds a mutex waited for by task B that needs to run so that we can
-"suspend" another device).  That, however, is a difficult problem.
+> However, your suggestion is right that the CPU loads on these machines are
+> typically quite high. The large number of kvm virtual machines they run mean
+> thatl oads of eight or even sixteen in /proc/loadavg are not unusual, and
+> these are higher when there's swap than after it has been removed. I assume
+> this is mostly because of increased IO wait, as this number increases
+> significantly in top.
+
+iowait = CPU (idle) waiting for disk IO
+
+So iowait means not CPU load, but somehow disk load :)
 
 Thanks,
-Rafael
+Fengguang
