@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab0HDQs5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 12:48:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24365 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755716Ab0HDQsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 12:48:55 -0400
-Date: Wed, 4 Aug 2010 09:47:55 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 4 (olpc_battery)
-Message-Id: <20100804094755.e0377eb0.randy.dunlap@oracle.com>
-In-Reply-To: <20100804151035.14678528.sfr@canb.auug.org.au>
-References: <20100804151035.14678528.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1757296Ab0HDQuR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 12:50:17 -0400
+Received: from mail.perches.com ([173.55.12.10]:2253 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751815Ab0HDQuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 12:50:14 -0400
+Subject: [PATCH net-next] drivers/s390/net/qeth_l3_main.c: Use %pI6
+From: Joe Perches <joe@perches.com>
+To: Frank Blaschka <blaschka@linux.vnet.ibm.com>
+Cc: Ursula Braun <ursula.braun@de.ibm.com>, linux390 <linux390@de.ibm.com>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Aug 2010 09:50:12 -0700
+Message-ID: <1280940612.1005.91.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C5999EF.00E9:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010 15:10:35 +1000 Stephen Rothwell wrote:
+Format an ipv6 address using vsprintf extensions.
 
-> Hi all,
-> 
-> As the merge window is open, please do not add 2.6.27 material to your
-> linux-next included trees until after 2.6.36-rc1.
-> 
-> Changes since 20100803:
-
-
-drivers/power/olpc_battery.c:387: error: unknown field 'owner' specified in initializer
-drivers/power/olpc_battery.c:387: warning: excess elements in struct initializer
-drivers/power/olpc_battery.c:387: warning: (near initialization for 'olpc_bat_eeprom.attr')
-
-
-The .owner field has been dropped from the attr struct.
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/s390/net/qeth_l3_main.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/s390/net/qeth_l3_main.c b/drivers/s390/net/qeth_l3_main.c
+index e22ae24..561bdc8 100644
+--- a/drivers/s390/net/qeth_l3_main.c
++++ b/drivers/s390/net/qeth_l3_main.c
+@@ -103,12 +103,7 @@ int qeth_l3_string_to_ipaddr4(const char *buf, __u8 *addr)
+ 
+ void qeth_l3_ipaddr6_to_string(const __u8 *addr, char *buf)
+ {
+-	sprintf(buf, "%02x%02x:%02x%02x:%02x%02x:%02x%02x"
+-		     ":%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+-		     addr[0], addr[1], addr[2], addr[3],
+-		     addr[4], addr[5], addr[6], addr[7],
+-		     addr[8], addr[9], addr[10], addr[11],
+-		     addr[12], addr[13], addr[14], addr[15]);
++	sprintf(buf, "%pI6", addr);
+ }
+ 
+ int qeth_l3_string_to_ipaddr6(const char *buf, __u8 *addr)
+
+
