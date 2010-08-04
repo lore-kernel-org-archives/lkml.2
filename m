@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759500Ab0HDXai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:30:38 -0400
-Received: from fed1rmpop108.cox.net ([68.230.241.12]:36663 "EHLO
-	fed1rmpop108.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759489Ab0HDXac (ORCPT
+	id S1759512Ab0HDXal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:30:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43551 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759492Ab0HDXae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:30:32 -0400
-X-Greylist: delayed 1127 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 19:30:32 EDT
-X-VR-Score: 130.00
-X-Authority-Analysis: v=1.1 cv=YiDXrI37Z8kmTkGjelshzcg11iyKE6AuvUpxciVT8Y0=
- c=1 sm=1 a=M58Ut_zYM0YA:10 a=aQhJvTLTyJYA:10 a=IkcTkHD0fZMA:10
- a=v4wC7XtawmFTi7m8YWyUFg==:17 a=0BmyTFfbnjZkRwbmmd4A:9
- a=mqGYrRspLv3JnnTrvQkV4_Nx-YoA:4 a=QEXdDO2ut3YA:10 a=AI_Lt9zVW2kLw-6q:21
- a=OjIWRmXd1hNL3raK:21 a=v4wC7XtawmFTi7m8YWyUFg==:117
-X-CM-Score: 0.00
-Message-ID: <20100804191145.JH7T0.312882.imail@fed1rmwml35>
-Date: Wed, 4 Aug 2010 16:11:45 -0700
-From: wins <eth65@cox.net>
-Reply-To: ericdonald200@aol.com
-Subject: read
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Wed, 4 Aug 2010 19:30:34 -0400
+Date: Wed, 4 Aug 2010 16:29:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCHv3 13/16] pps: capture MONOTONIC_RAW timestamps as well
+Message-Id: <20100804162907.5c4e6345.akpm@linux-foundation.org>
+In-Reply-To: <7e78eaffb92829465df0237fa7e4d1b183a1a511.1280952801.git.lasaine@lvk.cs.msu.su>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
+	<7e78eaffb92829465df0237fa7e4d1b183a1a511.1280952801.git.lasaine@lvk.cs.msu.su>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your e mail address was choosen in the Promo  that was perticipated
-july 29th 2010 , and you are to claim the
-sum of $1,000 000 USD.this which means you are one of our five(5) lucky
-recipents . Your winning number is: (CT-222-6747,FGN/P-900-56)
+On Thu,  5 Aug 2010 01:06:50 +0400
+Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
 
-You are to send us this details
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -286,6 +286,40 @@ void ktime_get_ts(struct timespec *ts)
+>  EXPORT_SYMBOL_GPL(ktime_get_ts);
+>  
+>  /**
+> + * getnstime_raw_and_real - Returns both the time of day an raw
+> + * monotonic time in a timespec format
+> + * @ts_mono_raw:	pointer to the timespec to be set to raw
+> + *			monotonic time
+> + * @ts_real:		pointer to the timespec to be set to the time
+> + *			of day
+> + */
+> +void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
+> +{
+> +	unsigned long seq;
+> +	s64 nsecs_raw, nsecs_real;
+> +
+> +	WARN_ON(timekeeping_suspended);
 
-NAME IN FULL: 
-DELIVERY ADDRESS: 
-AGE:
-NATIONALITY: 
-OCCUPATION: 
-PHONE: 
-SEX:
+I suspect that if this warning ever triggers, it'll trigger at some
+high frequency making a complete mess all over the floor.
+
+WARN_ON_ONCE, perhaps?  Or just remove it?
