@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab0HDXfY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:35:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33498 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759272Ab0HDXfT (ORCPT
+	id S1759520Ab0HDXj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:39:27 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:12985 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab0HDXjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:35:19 -0400
-Date: Wed, 4 Aug 2010 16:34:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
-        john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCHv3 15/16] pps: add parallel port PPS client
-Message-Id: <20100804163430.a87027c6.akpm@linux-foundation.org>
-In-Reply-To: <5d5d3c3916cb79104160467035603093ea4f623f.1280952801.git.lasaine@lvk.cs.msu.su>
-References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
-	<5d5d3c3916cb79104160467035603093ea4f623f.1280952801.git.lasaine@lvk.cs.msu.su>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 4 Aug 2010 19:39:23 -0400
+Message-ID: <4C59FA21.9060006@caviumnetworks.com>
+Date: Wed, 04 Aug 2010 16:39:13 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexander Gordeev <lasaine@lvk.cs.msu.su>, linux-kernel@vger.kernel.org,
+        "Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [PATCHv3 12/16] ntp: add hardpps implementation
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>	<358275628c418f5f328adc4a4ea23fc902776566.1280952801.git.lasaine@lvk.cs.msu.su> <20100804162630.2cebcb91.akpm@linux-foundation.org>
+In-Reply-To: <20100804162630.2cebcb91.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Aug 2010 23:39:18.0483 (UTC) FILETIME=[41A78A30:01CB342E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  5 Aug 2010 01:06:52 +0400
-Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
+On 08/04/2010 04:26 PM, Andrew Morton wrote:
+> sigh.  The amount of inlining which this patch does is nutty.
 
-> Add parallel port PPS client. It uses a standard method for capturing
-> timestamps for assert edge transitions: getting a timestamp soon after
-> an interrupt has happened. This is not a very precise source of time
-> information due to interrupt handling delays. However, timestamps for
-> clear edge transitions are much more precise because the interrupt
-> handler continuously polls hardware port until the transition is done.
-> Hardware port operations require only about 1us so the maximum error
-> should not exceed this value. This was my primary goal when developing
-> this client.
-> Clear edge capture could be disabled using clear_wait parameter.
-> 
->
-> ...
->
-> +
-> +#define SIGNAL_IS_SET(port) \
-> +	((port->ops->read_status(port) & PARPORT_STATUS_ACK) != 0)
+Well one could ask about the rationale behind it all and hope that it 
+wasn't purely gratuitous.
 
-This could (and hence should) be implemented in a regular old C
-function.
+David Daney
 
 >
-> ...
->
-> +{
-> +	struct pps_client_pp *device;
-> +	struct pps_source_info info = {
-> +		.name		= DRVNAME,
-> +		.path		= "",
-> +		.mode		= PPS_CAPTUREBOTH | \
-> +				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
-> +				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
-> +				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
-> +		.echo		= pps_echo,
-> +		.owner		= THIS_MODULE,
-> +		.dev		= NULL
-> +	};
-> +
-> +	device = kzalloc(sizeof(struct pps_client_pp), GFP_KERNEL);
-> +	if (!device) {
-> +		pr_err(DRVNAME ": memory allocation failed, not attaching\n");
-> +		return;
+> But I don't think I'll bother making a fuss over it.
 
-eww.  parport_driver.attach() returns void so there's no way to
-propagate the error code back.  That sucks a bit.
-
->
-> ...
->
