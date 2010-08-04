@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932826Ab0HDM7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:59:13 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:35483 "EHLO mail-out1.uio.no"
+	id S932793Ab0HDM76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:59:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40865 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932455Ab0HDM7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:59:11 -0400
-Subject: Re: linux-next: build failure after merge of the final tree (nfs
- tree related)
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100804145406.f0fc5ea4.sfr@canb.auug.org.au>
-References: <20100804145406.f0fc5ea4.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 08:58:56 -0400
-Message-ID: <1280926736.3011.24.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 8 sum msgs/h 2 total rcpts 802 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 3EB03AAF1A6C9D89467176E3F59A4BF53DF68108
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 310 max/h 6 blacklist 0 greylist 0 ratelimit 0
+	id S932117Ab0HDM74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 08:59:56 -0400
+Date: Wed, 4 Aug 2010 14:58:30 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ettl.martin@gmx.de, mmarek@suse.cz, npalix@diku.dk, rabin@rab.in,
+        rdreier@cisco.com, segooon@gmail.com, xiyou.wangcong@gmail.com,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild: misc changes
+Message-ID: <20100804125830.GA24407@sepie.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 14:54 +1000, Stephen Rothwell wrote:
-> Hi Trond,
-> 
-> After merging the final tree, today's linux-next build (sparc
-> defconfig) failed like this:
-> 
-> `rpc_destroy_authunix' referenced in section `.init.text' of net/built-in.o: defined in discarded section `.exit.text' of net/built-in.o
-> 
-> Caused by commit 4c09a3aef02ef9bfab8322fadde269290563ede2 ("NFS: Ensure
-> the AUTH_UNIX credcache is allocated dynamically").
-> 
-> It also caused these warnings:
-> 
-> WARNING: vmlinux.o(.init.text+0x1e3b4): Section mismatch in reference from the f
-> unction rpcauth_init_module() to the function .exit.text:rpc_destroy_authunix()
-> The function __init rpcauth_init_module() references
-> a function __exit rpc_destroy_authunix().
-> This is often seen when error handling in the init function
-> uses functionality in the exit path.
-> The fix is often to remove the __exit annotation of
-> rpc_destroy_authunix() so it may be used outside an exit section.
-> 
-> I applied the following patch for today:
+Hi Linus,
 
-Hi Stephen,
+these are the kbuild changes that did not fit anywhere else. The most
+interesting part is integration of the coccinelle tool into the kernel
+build, see Documentation/coccinelle.txt for the details. With this,
+further semantic patches should appear below scripts/coccinelle and not
+in the changelog messages.
 
-Thanks! I've fixed this up in the NFS linux-next tree.
+Michal
 
-Cheers
-  Trond
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
 
+  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git misc
+
+Américo Wang (1):
+      scripts: add nconf into gitignore file
+
+Kulikov Vasiliy (1):
+      Documentation: fix ubuntu distro name
+
+Martin Ettl (1):
+      scripts/dtc: Fix a resource leak
+
+Michal Marek (3):
+      Makefile: clarify a comment
+      Merge branch 'kbuild/coccinelle' into kbuild/misc
+      MAINTAINERS: Update kbuild git URLs
+
+Nicolas Palix (8):
+      Add a target to use the Coccinelle checker
+      Add Documentation/coccinelle.txt
+      Add scripts/coccinelle/alloc/drop_kmalloc_cast.cocci
+      Add scripts/coccinelle/alloc/kzalloc-simple.cocci
+      Add scripts/coccinelle/resource_size.cocci
+      Add scripts/coccinelle/err_cast.cocci
+      Add scripts/coccinelle/deref_null.cocci
+      Add support for the C variable in the coccicheck script
+
+Rabin Vincent (1):
+      scripts: decodecode: remove bashisms
+
+Roland Dreier (1):
+      checkkconfigsymbols.sh: Kconfig symbols sometimes have lowercase letters
+
+ Documentation/coccinelle.txt                     |  258 +++++++++++++++++++
+ MAINTAINERS                                      |   14 +-
+ Makefile                                         |   12 +-
+ scripts/Makefile.help                            |    3 +
+ scripts/checkkconfigsymbols.sh                   |    2 +-
+ scripts/coccicheck                               |   80 ++++++
+ scripts/coccinelle/alloc/drop_kmalloc_cast.cocci |   67 +++++
+ scripts/coccinelle/alloc/kzalloc-simple.cocci    |   82 ++++++
+ scripts/coccinelle/deref_null.cocci              |  293 ++++++++++++++++++++++
+ scripts/coccinelle/err_cast.cocci                |   56 ++++
+ scripts/coccinelle/resource_size.cocci           |   93 +++++++
+ scripts/decodecode                               |   10 +-
+ scripts/dtc/fstree.c                             |    1 +
+ scripts/kconfig/.gitignore                       |    1 +
+ 14 files changed, 960 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/coccinelle.txt
+ create mode 100644 scripts/Makefile.help
+ create mode 100755 scripts/coccicheck
+ create mode 100644 scripts/coccinelle/alloc/drop_kmalloc_cast.cocci
+ create mode 100644 scripts/coccinelle/alloc/kzalloc-simple.cocci
+ create mode 100644 scripts/coccinelle/deref_null.cocci
+ create mode 100644 scripts/coccinelle/err_cast.cocci
+ create mode 100644 scripts/coccinelle/resource_size.cocci
