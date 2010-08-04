@@ -1,100 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab0HDSXI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:23:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65271 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932556Ab0HDSXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932431Ab0HDSXE (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 4 Aug 2010 14:23:04 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Jens Axboe <axboe@kernel.dk>,
-        Karel Zak <kzak@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Will Drewry <wad@chromium.org>
-Subject: [PATCH v3 2/3] genhd, efi: add efi partition metadata to hd_structs
-Date: Wed,  4 Aug 2010 13:22:05 -0500
-Message-Id: <1280946126-19587-2-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com>
-References: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com>
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55160 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757999Ab0HDSU2 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 4 Aug 2010 14:20:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: alex.williamson@redhat.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 02/20] xen: define BIOVEC_PHYS_MERGEABLE()
+Date: Wed,  4 Aug 2010 14:18:57 -0400
+Message-Id: <1280945955-14229-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
+References: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C59AF5F.0182:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change extends the partition_meta_info structure to
-support EFI GPT-specific metadata and ensures that data
-is copied in on partition scanning.
+From: Jeremy Fitzhardinge <jeremy@goop.org>
 
-Signed-off-by: Will Drewry <wad@chromium.org>
+Impact: allow Xen control of bio merging
 
-v2: move info assignment after memcpy()s
-    adds _MAX to the enum after EFI
-v3: exports a generic uuid/volname format
+When running in Xen domain with device access, we need to make sure
+the block subsystem doesn't merge requests across pages which aren't
+machine physically contiguous.  To do this, we define our own
+BIOVEC_PHYS_MERGEABLE.  When CONFIG_XEN isn't enabled, or we're not
+running in a Xen domain, this has identical behaviour to the normal
+implementation.  When running under Xen, we also make sure the
+underlying machine pages are the same or adjacent.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- fs/partitions/efi.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/io.h |   13 +++++++++++++
+ drivers/xen/Makefile      |    2 +-
+ drivers/xen/biomerge.c    |   13 +++++++++++++
+ 3 files changed, 27 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/xen/biomerge.c
 
-diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
-index 9efb2cf..427f2fb 100644
---- a/fs/partitions/efi.c
-+++ b/fs/partitions/efi.c
-@@ -94,6 +94,7 @@
-  *
-  ************************************************************/
- #include <linux/crc32.h>
-+#include <linux/ctype.h>
- #include <linux/math64.h>
- #include <linux/slab.h>
- #include "check.h"
-@@ -604,6 +605,7 @@ int efi_partition(struct parsed_partitions *state)
- 	gpt_entry *ptes = NULL;
- 	u32 i;
- 	unsigned ssz = bdev_logical_block_size(state->bdev) / 512;
-+	u8 unparsed_guid[37];
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 30a3e97..0ad29d4 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -41,6 +41,8 @@
+ #include <asm-generic/int-ll64.h>
+ #include <asm/page.h>
  
- 	if (!find_valid_gpt(state, &gpt, &ptes) || !gpt || !ptes) {
- 		kfree(gpt);
-@@ -614,6 +616,9 @@ int efi_partition(struct parsed_partitions *state)
- 	pr_debug("GUID Partition Table is valid!  Yea!\n");
++#include <xen/xen.h>
++
+ #define build_mmio_read(name, size, type, reg, barrier) \
+ static inline type name(const volatile void __iomem *addr) \
+ { type ret; asm volatile("mov" size " %1,%0":reg (ret) \
+@@ -349,6 +351,17 @@ extern void __iomem *early_memremap(resource_size_t phys_addr,
+ extern void early_iounmap(void __iomem *addr, unsigned long size);
+ extern void fixup_early_ioremap(void);
  
- 	for (i = 0; i < le32_to_cpu(gpt->num_partition_entries) && i < state->limit-1; i++) {
-+		struct partition_meta_info *info;
-+		unsigned label_count = 0;
-+		unsigned label_max;
- 		u64 start = le64_to_cpu(ptes[i].starting_lba);
- 		u64 size = le64_to_cpu(ptes[i].ending_lba) -
- 			   le64_to_cpu(ptes[i].starting_lba) + 1ULL;
-@@ -627,6 +632,26 @@ int efi_partition(struct parsed_partitions *state)
- 		if (!efi_guidcmp(ptes[i].partition_type_guid,
- 				 PARTITION_LINUX_RAID_GUID))
- 			state->parts[i + 1].flags = ADDPART_FLAG_RAID;
++#ifdef CONFIG_XEN
++struct bio_vec;
 +
-+		info = &state->parts[i + 1].info;
-+		/* Instead of doing a manual swap to big endian, reuse the
-+		 * common ASCII hex format as the interim.
-+		 */
-+		efi_guid_unparse(&ptes[i].unique_partition_guid, unparsed_guid);
-+		part_pack_uuid(unparsed_guid, info->uuid);
++extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
++				      const struct bio_vec *vec2);
 +
-+		/* Naively convert UTF16-LE to 7 bits. */
-+		label_max = min(sizeof(info->volname) - 1,
-+				sizeof(ptes[i].partition_name));
-+		info->volname[label_max] = 0;
-+		while (label_count < label_max) {
-+			u8 c = ptes[i].partition_name[label_count] & 0xff;
-+			if (c && !isprint(c))
-+				c = '!';
-+			info->volname[label_count] = c;
-+			label_count++;
-+		}
-+		state->parts[i + 1].has_info = true;
- 	}
- 	kfree(ptes);
- 	kfree(gpt);
++#define BIOVEC_PHYS_MERGEABLE(vec1, vec2)				\
++	(__BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&				\
++	 (!xen_domain() || xen_biovec_phys_mergeable(vec1, vec2)))
++#endif	/* CONFIG_XEN */
++
+ #define IO_SPACE_LIMIT 0xffff
+ 
+ #endif /* _ASM_X86_IO_H */
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 7c28434..97dd5b5 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -1,4 +1,4 @@
+-obj-y	+= grant-table.o features.o events.o manage.o
++obj-y	+= grant-table.o features.o events.o manage.o biomerge.o
+ obj-y	+= xenbus/
+ 
+ nostackp := $(call cc-option, -fno-stack-protector)
+diff --git a/drivers/xen/biomerge.c b/drivers/xen/biomerge.c
+new file mode 100644
+index 0000000..ba6eda4
+--- /dev/null
++++ b/drivers/xen/biomerge.c
+@@ -0,0 +1,13 @@
++#include <linux/bio.h>
++#include <linux/io.h>
++#include <xen/page.h>
++
++bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
++			       const struct bio_vec *vec2)
++{
++	unsigned long mfn1 = pfn_to_mfn(page_to_pfn(vec1->bv_page));
++	unsigned long mfn2 = pfn_to_mfn(page_to_pfn(vec2->bv_page));
++
++	return __BIOVEC_PHYS_MERGEABLE(vec1, vec2) &&
++		((mfn1 == mfn2) || ((mfn1+1) == mfn2));
++}
 -- 
-1.7.0.4
+1.7.0.1
 
