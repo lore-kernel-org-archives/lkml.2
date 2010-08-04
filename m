@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab0HDEcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 00:32:20 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:16622 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066Ab0HDEcT convert rfc822-to-8bit (ORCPT
+	id S932493Ab0HDEdF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 00:33:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40793 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753249Ab0HDEdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 00:32:19 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>
-Subject: RE: [PATCH 2/6] staging: hv: Fixed lockup problem with
- bounce_buffer scatter list
-Thread-Topic: [PATCH 2/6] staging: hv: Fixed lockup problem with
- bounce_buffer scatter list
-Thread-Index: AcszLN0XE1cvJoW/S1u5tYxf4xhZuwAQI8eAAAgDUZA=
-Date: Wed, 4 Aug 2010 04:32:17 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FE7AF6@TK5EX14MBXC114.redmond.corp.microsoft.com>
-References: <8AFC7968D54FB448A30D8F38F259C56223FD1D29@TK5EX14MBXC114.redmond.corp.microsoft.com>
- <20100803173857.GB1455@suse.de>
-In-Reply-To: <20100803173857.GB1455@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Aug 2010 00:33:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=te8KwE9cuINQ5sthmrzxqvUjl0zdAExb8wAeWZ9eccoazYyPbk9htGIpZHz7rGHo5M
+         wEo+cTBiN52U7kU05DogswSofMTfFtI+M6FIRcyatgwGVKOk5wvgstrViV00wFTb3kw8
+         YWDB0jt9VjNGO3WhIcmcDcDv3VZOy8XHwhphg=
+Date: Tue, 3 Aug 2010 21:32:57 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-input <linux-input@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2.6.37? ] drivers/input: Use pr_<level>
+Message-ID: <20100804043256.GB25256@core.coreip.homeip.net>
+References: <1280860850.2963.24.camel@Joe-Laptop.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280860850.2963.24.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And then Greg spoke:
->> On Tue, Aug 03, 2010 at 05:31:53PM +0000, Hank Janssen wrote:
->> From: Hank Janssen <hjanssen@microsoft.com>
-> >
-> >Fixed lockup problem with bounce_buffer scatter list which caused crashes in heavy loads.
->
->Same questions for you as patch 1/6.
->
->Also, please wrap your changelog comments at 72 columns.
- 
-Under heavy loads with many clients we this problem appears, it causes a kernel 
-Panic.
+Hi Joe,
 
-Yes, this should be backported to all stable kernel releases that have the 
-Hyper-V drivers In them.  
+On Tue, Aug 03, 2010 at 11:40:50AM -0700, Joe Perches wrote:
+> Remove prefixes from printks and convert to pr_fmt/pr_<level>.
+> 
+> Always make output prefix match module name.
+> There are some existing uses that do not.  For instance:
+> spaceorb used "input: " once, probably a copy/paste error,
+> newtonkbd as well.  Synaptics used "serio: ", etc.
+> 
+> A few miscellaneous typos corrected.
+> Converted a few uses of usb macros err to pr_err.
+> 
+> Compiled x86 only, some files not compile tested
+> 
 
->> Signed-off-by:Hank Janssen <hjanssen@microsoft.com> 
->> Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
->
->What's with the trailing space?
+Thanks for doing this, however instead of using pr_xxx() I'd like
+drivers that are integrated in driver model (serio, usb, gameport, etc,
+i.e. when we have 'struct device' available, exept for psmouse) to use
+drv_xxx() instead.
 
-Same problem as wrapping my comments at 72  chars, I just upgraded to the latest
-Evil outlook 2010, and my settings in office 2007 did not transfer so I have to 
-Set up all the stuff that fixes these problems :(
+>  
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index 8c32440..e02c2a7 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -23,6 +23,8 @@
+>   * Trademarks are the property of their respective owners.
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
 
-Do you want me to re-submit with correct wrapping?
+That would make synaptics messages to come as "psmouse", right? I think
+we shoudl use
 
-Thanks,
+	#define pr_fmt(fmt) "synaptics: " fmt
 
-Hank.
+here and in the rest of specialized PS/2 protocol handlers.
 
+Thanks.
+
+-- 
+Dmitry
