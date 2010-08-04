@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab0HDBsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 21:48:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52679 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757969Ab0HDBsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 21:48:16 -0400
-Message-ID: <4C58C7FF.5060906@cn.fujitsu.com>
-Date: Wed, 04 Aug 2010 09:53:03 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] lockup_detector: Make DETECT_HUNT_TASK default depend on
- LOCKUP_DETECTOR
-Content-Type: text/plain; charset=UTF-8
+	id S1758091Ab0HDBuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 21:50:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35476 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758045Ab0HDBuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 21:50:22 -0400
+Date: Wed, 4 Aug 2010 11:50:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sripathi Kodi <sripathik@in.ibm.com>,
+        Eric Van Hensbergen <ericvh@gmail.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-Id: <20100804115019.78b5a326.sfr@canb.auug.org.au>
+In-Reply-To: <20100622112201.08505101.sfr@canb.auug.org.au>
+References: <20100622112201.08505101.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_DETECT_SOFTLOCKUP has been removed, so switch the
-default value to LOCKUP_DETECTOR.
+Hi Al,
 
-Also fix the help text of BOOT_PRINTK_DELAY.
+On Tue, 22 Jun 2010 11:22:01 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> After merging the vfs tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> fs/9p/vfs_inode.c: In function 'v9fs_vfs_setattr_dotl':
+> fs/9p/vfs_inode.c:1056: error: implicit declaration of function 'inode_setattr'
+> 
+> Caused by commit 463942d48d7f05812f0d6426dd8051ff53ea24a3 ("9p: Implement
+> client side of setattr for 9P2000.L protocol") from the v9fs tree
+> interacting with commit 3d9bf66940b6001a30aa30d5ac9f816326d9b3a0 ("remove
+> inode_setattr") from the vfs tree.
+> 
+> I have applied the following patch (using the changes in the above vfs
+> tree commit as a guide) as a merge fix for today, but am not sure if it
+> is correct.  I assume that this (or something similar) could be applied
+> to the v9fs tree now - is that correct Christoph?
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Linus has merged the v9fs tree now, so this patch can be applied to the
+vfs tree.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 22 Jun 2010 11:15:01 +1000
+Subject: [PATCH] v9fs: fixup for inode_setattr being removed
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- lib/Kconfig.debug |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/9p/vfs_inode.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 596106b..2fb7fa3 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -203,7 +203,7 @@ config BOOTPARAM_SOFTLOCKUP_PANIC_VALUE
- config DETECT_HUNG_TASK
- 	bool "Detect Hung Tasks"
- 	depends on DEBUG_KERNEL
--	default DETECT_SOFTLOCKUP
-+	default LOCKUP_DETECTOR
- 	help
- 	  Say Y here to enable the kernel to detect "hung tasks",
- 	  which are bugs that cause the task to be stuck in
-@@ -767,7 +767,7 @@ config BOOT_PRINTK_DELAY
- 	  system, and then set "lpj=M" before setting "boot_delay=N".
- 	  NOTE:  Using this option may adversely affect SMP systems.
- 	  I.e., processors other than the first one may not boot up.
--	  BOOT_PRINTK_DELAY also may cause DETECT_SOFTLOCKUP to detect
-+	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
- 	  what it believes to be lockup conditions.
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index f027a42..2ec7bfa 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1052,10 +1052,19 @@ static int v9fs_vfs_setattr_dotl(struct dentry *dentry, struct iattr *iattr)
+ 		return PTR_ERR(fid);
  
- config RCU_TORTURE_TEST
+ 	retval = p9_client_setattr(fid, &p9attr);
+-	if (retval >= 0)
+-		retval = inode_setattr(dentry->d_inode, iattr);
++	if (retval < 0)
++		return retval;
+ 
+-	return retval;
++	if ((iattr->ia_valid & ATTR_SIZE) &&
++	    iattr->ia_size != i_size_read(dentry->d_inode)) {
++		retval = vmtruncate(dentry->d_inode, iattr->ia_size);
++		if (retval)
++			return retval;
++	}
++
++	setattr_copy(dentry->d_inode, iattr);
++	mark_inode_dirty(dentry->d_inode);
++	return 0;
+ }
+ 
+ /**
 -- 
-1.6.3
+1.7.1
 
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
