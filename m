@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab0HDGTx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:19:53 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:40837 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758256Ab0HDGTv (ORCPT
+	id S1758333Ab0HDGUb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 02:20:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57401 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758256Ab0HDGU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:19:51 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: hch@infradead.org, jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@ftp.linux.org.uk, kees.cook@canonical.com
-Subject: Re: Preview of changes to the Security susbystem for 2.6.36
-In-Reply-To: Your message of "Wed, 04 Aug 2010 12:54:32 +0900."
-             <201008040354.o743sWTv078792@www262.sakura.ne.jp>
-From: Valdis.Kletnieks@vt.edu
-References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org> <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org> <20100802122421.GA12130@infradead.org> <20100802165936.GV3948@outflux.net> <15424.1280775073@localhost> <20100803165010.GG3948@outflux.net> <78690.1280871500@localhost>
-            <201008040354.o743sWTv078792@www262.sakura.ne.jp>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1280902716_3897P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 04 Aug 2010 02:18:36 -0400
-Message-ID: <5029.1280902716@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020209.4C59063D.00FE,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 4 Aug 2010 02:20:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EY4oxVzyMxLwiLNSrNw+GcQTmQL/lckcTvyUMWMfmRl7kkGkHB0wGYrf+dmy2sVCiL
+         /+LhWy3xJm5oxYPgboQsGATSzZjfV45E5c1FAAH2jcNnD9MGNbW00QkyyhT0iO33FJ7y
+         V+btPdfTqfMXwmBEXsO+zbzgh3X6THGwQADKA=
+Date: Tue, 3 Aug 2010 23:20:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>,
+        Anisse Astier <anisse@astier.eu>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100804062021.GA25742@core.coreip.homeip.net>
+References: <20100513075728.GF30110@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
+ <20100514145539.GA5598@srcf.ucam.org>
+ <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1280902716_3897P
-Content-Type: text/plain; charset=us-ascii
+On Fri, May 14, 2010 at 08:16:34AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Fri, 14 May 2010, Matthew Garrett wrote:
+> >
+> > I've done some experimentation under qemu. On ACPI systems, Windows will 
+> > *only* touch the keyboard controller if there's a device with an 
+> > appropriate PNP HID or CID and if _STA evaluates to 0x0b or 0x0f. 
+> > Otherwise it'll simply ignore the hardware entirely. By the looks of it 
+> > their keyboard probing is also somewhat different to ours, but that's 
+> > probably another story.
+> 
+> Well, I'd hate to lose the keyboard hotplug capability, but at the same 
+> time, it _is_ 2010, and while I have personally used it historically, I 
+> don't really foresee ever using it again.
+> 
+> So we _could_ decide to just try it, and see if anybody screams. If nobody 
+> does, that would be a very simple solution to the problem.
+> 
 
-On Wed, 04 Aug 2010 12:54:32 +0900, Tetsuo Handa said:
+OK, time to ressurect the topic ;)
 
-> # killall -KILL sshd
-> # /usr/sbin/sshd -o 'Banner /etc/shadow'
-> # ssh localhost
+There is another report (from Anisse - CCed) - MSI AE2220 stops for 10
+seconds when we try to see if "AUX DISABLE" command took effect (it
+doesn't). While we should reduce the time we wait and retry to something
+more reasonable it woudl not fix this issue completely.
 
-I am unable to replicate this behavior on my system with SELinux set to
-enforcing mode.  However, it does happen (which is to be expected) when SELinux
-is set to permissive mode.
+The box does not have any PS/2 ports but in this case BIOS writers _did_
+some crack and put PS/2 devices in DSDT. While the devices are most
+likely not active and thus Matthew's patch would help Anisse I do hate
+to loose the option of plugging PS/2 mouse/keyboard after boot and
+having chance of them working. I would still like to add a few blacklist
+entries instead.
 
-% rpm -q openssh selinux-policy-mls
-openssh-5.5p1-18.fc14.x86_64
-selinux-policy-mls-3.8.8-8.fc14.noarch
+Thanks.
 
-Tested by by trying both /etc/issue and /etc/shadow as banner files - in permissive
-mode, both files would be displayed. In enforcing mode, /etc/issue would show
-up and /etc/shadow would not.  In addition, checking of the actual policy
-source for ssh shows no entry for auth_read_shadow() for sshd_t, although it is
-present for many other systemd daemons that have a need to read it. So in
-enforcing mode, there's no rule allowing sshd to open /etc/shadow, so it won't
-open.
-
-Are you sure you weren't running in permissive mode when you tested this?
-
-
---==_Exmh_1280902716_3897P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMWQY8cC3lWbTT17ARAunVAKCEMULOlkb3JNCmJzR1r7u1/6xlzwCg28Za
-tfqpTgfl2E9Ym3SiDBWfb+w=
-=1hVx
------END PGP SIGNATURE-----
-
---==_Exmh_1280902716_3897P--
-
+-- 
+Dmitry
