@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934774Ab0HDUey (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 16:34:54 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:48485 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934552Ab0HDUes (ORCPT
+	id S934826Ab0HDUiT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 16:38:19 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:50371 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934829Ab0HDUfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 16:34:48 -0400
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Dave Airlie <airlied@gmail.com>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
-        Gary Hade <garyhade@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
-	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
-	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
-	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>
-	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>
-	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>
-	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>
-	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org>
-	<m18w4onebi.fsf@fess.ebiederm.org> <4C5871BC.4070007@kernel.org>
-	<m1bp9jgyww.fsf@fess.ebiederm.org> <4C592BF5.3070008@kernel.org>
-	<m1mxt28tku.fsf@fess.ebiederm.org> <4C59BE0D.7020604@kernel.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 04 Aug 2010 13:34:35 -0700
-In-Reply-To: <4C59BE0D.7020604@kernel.org> (Yinghai Lu's message of "Wed\, 04 Aug 2010 12\:22\:53 -0700")
-Message-ID: <m162zq86ck.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Wed, 4 Aug 2010 16:35:11 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Michael Monnerie <michael.monnerie@is.it-management.at>,
+        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: How to track down abysmal performance ata - raid1 - crypto - vg/lv - xfs
+In-Reply-To: Your message of "Wed, 04 Aug 2010 12:25:26 +0200."
+             <20100804102526.GB13766@isilmar-3.linta.de>
+From: Valdis.Kletnieks@vt.edu
+References: <20100804073546.GA7494@comet.dominikbrodowski.net> <20100804085039.GA11671@infradead.org> <20100804091317.GA27779@isilmar-3.linta.de> <20100804092122.GA2998@infradead.org> <20100804073546.GA7494@comet.dominikbrodowski.net> <201008041116.09822@zmi.at>
+            <20100804102526.GB13766@isilmar-3.linta.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1280953986_3909P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 04 Aug 2010 16:33:06 -0400
+Message-ID: <15446.1280953986@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020207.4C59CE83.0142,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
+--==_Exmh_1280953986_3909P
+Content-Type: text/plain; charset="us-ascii"
+Content-Id: <15440.1280953986.1@localhost>
 
-> On 08/04/2010 05:12 AM, Eric W. Biederman wrote:
->
->
->> 
->> In practice your test of looking at mp_bus_not_pci is essentially what
->> we do.  I wonder if it could be made to be a test of polarity and edge
->> mismatch instead.
->> 
->
-> Dave's system mptable pol and trig is wrong ...
+On Wed, 04 Aug 2010 12:25:26 +0200, Dominik Brodowski said:
 
-The are inconsistent.  Everything is set to the default for the bus.
+> The "good" news: it also happens on my notebook, even though it has a
+> different setup (no raid, disk -> lv/vg -> crypt). On my notebook, I'm
+> more than happy to test out different kernel versions, patches etc.
+> 
+> /dev/sd*                17.7 MB/s       (100 %)
+> /dev/mapper/vg1-*       16.2 MB/s       ( 92 %)
+> /dev/mapper/*_crypt      3.1 MB/s       ( 18 %)
 
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 00, APIC ID 8, APIC INT 00
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 01, APIC ID 8, APIC INT 01
-> Int: type 3, pol 1, trig 1, bus 0a, IRQ 00, APIC ID 8, APIC INT 02
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 03, APIC ID 8, APIC INT 03
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 04, APIC ID 8, APIC INT 04
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 05, APIC ID 8, APIC INT 05
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 06, APIC ID 8, APIC INT 06
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 07, APIC ID 8, APIC INT 07
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 08, APIC ID 8, APIC INT 08
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 09, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 0a, APIC ID 8, APIC INT 0a
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 0b, APIC ID 8, APIC INT 0b
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 0c, APIC ID 8, APIC INT 0c
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 0e, APIC ID 8, APIC INT 0e
-> Int: type 0, pol 0, trig 0, bus 0a, IRQ 0f, APIC ID 8, APIC INT 0f
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 28, APIC ID 8, APIC INT 09
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 2c, APIC ID 8, APIC INT 0a
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 2d, APIC ID 8, APIC INT 0a
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 34, APIC ID 8, APIC INT 0e
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
-> Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
->
-> Do you mean check pol/trig in addition to bus in this case?
+Unfortunately, on my laptop with a similar config, I'm seeing this:
 
-No.  I was thinking it would be nice if we could check the
-polarity and the irq trigger mode in this case.  Unfortunately
-I don't think we have access to everything thing we need to perform
-that check this early.
+# dd if=/dev/sda bs=8k count=1000000 of=/dev/null
+1000000+0 records in
+1000000+0 records out
+8192000000 bytes (8.2 GB) copied, 108.352 s, 75.6 MB/s
+# dd if=/dev/sda2 bs=8k count=1000000 of=/dev/null
+1000000+0 records in
+1000000+0 records out
+8192000000 bytes (8.2 GB) copied, 105.105 s, 77.9 MB/s
+# dd if=/dev/mapper/vg_blackice-root bs=8k count=100000 of=/dev/null
+100000+0 records in
+100000+0 records out
+819200000 bytes (819 MB) copied, 11.6469 s, 70.3 MB/s
 
-Eric
+The raw disk, the LUKS-encrypted partition that's got a LVM on it, and a
+crypted LVM partition. The last run spikes both CPUs up to about 50%CPU each.
+So whatever it is, it's somehow more subtle than that.  Maybe the fact that
+in my case, it's disk, crypto, and LVM on the crypted partition, rather than
+crypted filesystems on an LVM volume?
+
+
+--==_Exmh_1280953986_3909P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMWc6CcC3lWbTT17ARAiAuAKCfL5NTEQUgaL9kVy6x0SN/ryDfbgCg9vhS
+WfKyIOBnRrmDh2eZQDebem0=
+=iHTW
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1280953986_3909P--
+
