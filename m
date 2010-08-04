@@ -1,224 +1,547 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab0HDCwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:52:22 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:48603 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758194Ab0HDCwJ (ORCPT
+	id S932535Ab0HDCw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:52:26 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:35732 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932516Ab0HDCwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:52:09 -0400
+	Tue, 3 Aug 2010 22:52:21 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: I8FNbzcVM1ky.3eTqv7HFoXS6HzHoRG5ID0MYr71Q3rGbQy
- .eoYa9hhBxf1Pj6XAjOBhTm8H.mu07SA84xK2qMRDHR8QMb8Hn02S6.E2Qkc
- nMxt3jHs4nzwvnW.wHyL6L.7Frt3zJCTJ00W0egLT3vRJHMcBzznGVLEAcbG
- n9NxKeZ3vivCyZd.1qtUMbXH7tEutzRaEG6UtiyIYXoZjN8qRX.BxAqgNrSo
- lrol7ksriY22FiAw_pHCJ_fg.lR7u2X.Q
+X-YMail-OSG: Fy1.knQVM1nBLXMozVzigfECSbP5nQ6X_DmKge1kcQuzX5P
+ ks3AFElbYHOILleUJa1gXcA4tDTvQV_lPLI.BdQJzl8wE3xEW0NXjTXk3nLk
+ PBDp.M8yts29taDQAZgFVyGk0I8yOPJgv4RGC_Cfxv3Jj0ftzXHV7QtXETSA
+ 3vPLQUaPVvx80ni67gLC2c0KBElqaJ0BikeH4q3suTMuZR15CprpxVcT0lDz
+ T.7Ve9r1FwnmFQCqHn5a9Yx_oRiJBop7LRw--
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20100804024524.971222174@linux.com>
+Message-Id: <20100804024535.909930848@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 03 Aug 2010 21:45:16 -0500
+Date: Tue, 03 Aug 2010 21:45:35 -0500
 From: Christoph Lameter <cl@linux-foundation.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org, Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 Cc: Nick Piggin <npiggin@suse.de>
 Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q3 02/23] percpu: allow limited allocation before slab is online
+Subject: [S+Q3 21/23] slub: Support Alien Caches
 References: <20100804024514.139976032@linux.com>
-Content-Disposition: inline; filename=percpu_early_2
+Content-Disposition: inline; filename=unified_alien_cache
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+Alien caches are essential to track cachelines from a foreign node that are
+present in a local cpu cache. They are therefore a form of the prior
+introduced shared cache. Alien caches of the number of nodes minus one are
+allocated for *each* lowest level shared cpu cache.
 
-This patch updates percpu allocator such that it can serve limited
-amount of allocation before slab comes online.  This is primarily to
-allow slab to depend on working percpu allocator.
+SLABs problem in this area is that the cpu caches are not properly tracked.
+If there are multiple cpu caches on the same node then SLAB may not
+properly track cache hotness of objects.
 
-Two parameters, PERCPU_DYNAMIC_EARLY_SIZE and SLOTS, determine how
-much memory space and allocation map slots are reserved.  If this
-reserved area is exhausted, WARN_ON_ONCE() will trigger and allocation
-will fail till slab comes online.
+Alien caches are sizes differently than shared caches but are allocated
+in the same contiguous memory area. The shared cache pointer is used
+to reach the alien caches too. At positive offsets we fine shared cache
+objects. At negative objects the alien caches are placed.
 
-The following changes are made to implement early alloc.
+Alien caches can be switched off and configured on a cache by cache
+basis using files in /sys/kernel/slab/<cache>/alien_queue_size.
 
-* pcpu_mem_alloc() now checks slab_is_available()
+Alien status is available in /sys/kernel/slab/<cache>/alien_caches.
 
-* Chunks are allocated using pcpu_mem_alloc()
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-* Init paths make sure ai->dyn_size is at least as large as
-  PERCPU_DYNAMIC_EARLY_SIZE.
-
-* Initial alloc maps are allocated in __initdata and copied to
-  kmalloc'd areas once slab is online.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 ---
- include/linux/percpu.h |   13 ++++++++++++
- init/main.c            |    1
- include/linux/percpu.h |   13 ++++++++++++
- init/main.c            |    1 
- mm/percpu.c            |   52 +++++++++++++++++++++++++++++++++++++------------
- 3 files changed, 54 insertions(+), 12 deletions(-)
+ include/linux/slub_def.h |    1 
+ mm/slub.c                |  339 +++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 327 insertions(+), 13 deletions(-)
 
-Index: linux-2.6/mm/percpu.c
+Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/percpu.c	2010-07-07 08:47:18.000000000 -0500
-+++ linux-2.6/mm/percpu.c	2010-07-07 08:47:19.000000000 -0500
-@@ -282,6 +282,9 @@ static void __maybe_unused pcpu_next_pop
-  */
- static void *pcpu_mem_alloc(size_t size)
- {
-+	if (WARN_ON_ONCE(!slab_is_available()))
-+		return NULL;
-+
- 	if (size <= PAGE_SIZE)
- 		return kzalloc(size, GFP_KERNEL);
- 	else {
-@@ -392,13 +395,6 @@ static int pcpu_extend_area_map(struct p
- 	old_size = chunk->map_alloc * sizeof(chunk->map[0]);
- 	memcpy(new, chunk->map, old_size);
- 
--	/*
--	 * map_alloc < PCPU_DFL_MAP_ALLOC indicates that the chunk is
--	 * one of the first chunks and still using static map.
--	 */
--	if (chunk->map_alloc >= PCPU_DFL_MAP_ALLOC)
--		old = chunk->map;
--
- 	chunk->map_alloc = new_alloc;
- 	chunk->map = new;
- 	new = NULL;
-@@ -604,7 +600,7 @@ static struct pcpu_chunk *pcpu_alloc_chu
- {
- 	struct pcpu_chunk *chunk;
- 
--	chunk = kzalloc(pcpu_chunk_struct_size, GFP_KERNEL);
-+	chunk = pcpu_mem_alloc(pcpu_chunk_struct_size);
- 	if (!chunk)
- 		return NULL;
- 
-@@ -1109,7 +1105,9 @@ static struct pcpu_alloc_info * __init p
- 	memset(group_map, 0, sizeof(group_map));
- 	memset(group_cnt, 0, sizeof(group_cnt));
- 
--	size_sum = PFN_ALIGN(static_size + reserved_size + dyn_size);
-+	/* calculate size_sum and ensure dyn_size is enough for early alloc */
-+	size_sum = PFN_ALIGN(static_size + reserved_size +
-+			    max_t(size_t, dyn_size, PERCPU_DYNAMIC_EARLY_SIZE));
- 	dyn_size = size_sum - static_size - reserved_size;
- 
- 	/*
-@@ -1338,7 +1336,8 @@ int __init pcpu_setup_first_chunk(const 
- 				  void *base_addr)
- {
- 	static char cpus_buf[4096] __initdata;
--	static int smap[2], dmap[2];
-+	static int smap[PERCPU_DYNAMIC_EARLY_SLOTS] __initdata;
-+	static int dmap[PERCPU_DYNAMIC_EARLY_SLOTS] __initdata;
- 	size_t dyn_size = ai->dyn_size;
- 	size_t size_sum = ai->static_size + ai->reserved_size + dyn_size;
- 	struct pcpu_chunk *schunk, *dchunk = NULL;
-@@ -1361,14 +1360,13 @@ int __init pcpu_setup_first_chunk(const 
- } while (0)
- 
- 	/* sanity checks */
--	BUILD_BUG_ON(ARRAY_SIZE(smap) >= PCPU_DFL_MAP_ALLOC ||
--		     ARRAY_SIZE(dmap) >= PCPU_DFL_MAP_ALLOC);
- 	PCPU_SETUP_BUG_ON(ai->nr_groups <= 0);
- 	PCPU_SETUP_BUG_ON(!ai->static_size);
- 	PCPU_SETUP_BUG_ON(!base_addr);
- 	PCPU_SETUP_BUG_ON(ai->unit_size < size_sum);
- 	PCPU_SETUP_BUG_ON(ai->unit_size & ~PAGE_MASK);
- 	PCPU_SETUP_BUG_ON(ai->unit_size < PCPU_MIN_UNIT_SIZE);
-+	PCPU_SETUP_BUG_ON(ai->dyn_size < PERCPU_DYNAMIC_EARLY_SIZE);
- 	PCPU_SETUP_BUG_ON(pcpu_verify_alloc_info(ai) < 0);
- 
- 	/* process group information and build config tables accordingly */
-@@ -1806,3 +1804,33 @@ void __init setup_per_cpu_areas(void)
- 		__per_cpu_offset[cpu] = delta + pcpu_unit_offsets[cpu];
- }
- #endif /* CONFIG_HAVE_SETUP_PER_CPU_AREA */
-+
-+/*
-+ * First and reserved chunks are initialized with temporary allocation
-+ * map in initdata so that they can be used before slab is online.
-+ * This function is called after slab is brought up and replaces those
-+ * with properly allocated maps.
-+ */
-+void __init percpu_init_late(void)
-+{
-+	struct pcpu_chunk *target_chunks[] =
-+		{ pcpu_first_chunk, pcpu_reserved_chunk, NULL };
-+	struct pcpu_chunk *chunk;
-+	unsigned long flags;
-+	int i;
-+
-+	for (i = 0; (chunk = target_chunks[i]); i++) {
-+		int *map;
-+		const size_t size = PERCPU_DYNAMIC_EARLY_SLOTS * sizeof(map[0]);
-+
-+		BUILD_BUG_ON(size > PAGE_SIZE);
-+
-+		map = pcpu_mem_alloc(size);
-+		BUG_ON(!map);
-+
-+		spin_lock_irqsave(&pcpu_lock, flags);
-+		memcpy(map, chunk->map, size);
-+		chunk->map = map;
-+		spin_unlock_irqrestore(&pcpu_lock, flags);
-+	}
-+}
-Index: linux-2.6/init/main.c
-===================================================================
---- linux-2.6.orig/init/main.c	2010-07-07 08:45:22.000000000 -0500
-+++ linux-2.6/init/main.c	2010-07-07 08:47:19.000000000 -0500
-@@ -532,6 +532,7 @@ static void __init mm_init(void)
- 	page_cgroup_init_flatmem();
- 	mem_init();
- 	kmem_cache_init();
-+	percpu_init_late();
- 	pgtable_cache_init();
- 	vmalloc_init();
- }
-Index: linux-2.6/include/linux/percpu.h
-===================================================================
---- linux-2.6.orig/include/linux/percpu.h	2010-07-07 08:47:18.000000000 -0500
-+++ linux-2.6/include/linux/percpu.h	2010-07-07 08:47:19.000000000 -0500
-@@ -45,6 +45,16 @@
- #define PCPU_MIN_UNIT_SIZE		PFN_ALIGN(64 << 10)
+--- linux-2.6.orig/mm/slub.c	2010-08-03 15:58:51.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-08-03 15:58:53.000000000 -0500
+@@ -31,8 +31,10 @@
  
  /*
-+ * Percpu allocator can serve percpu allocations before slab is
-+ * initialized which allows slab to depend on the percpu allocator.
-+ * The following two parameters decide how much resource to
-+ * preallocate for this.  Keep PERCPU_DYNAMIC_RESERVE equal to or
-+ * larger than PERCPU_DYNAMIC_EARLY_SIZE.
+  * Lock order:
+- *   1. slab_lock(page)
+- *   2. slab->list_lock
++ *
++ *   1. alien kmem_cache_cpu->lock lock
++ *   2. slab_lock(page)
++ *   3. kmem_cache_node->list_lock
+  *
+  *   The slab_lock protects operations on the object of a particular
+  *   slab and its metadata in the page struct. If the slab lock
+@@ -148,6 +150,16 @@ static inline int kmem_cache_debug(struc
+ /* Internal SLUB flags */
+ #define __OBJECT_POISON		0x80000000UL /* Poison object */
+ #define __SYSFS_ADD_DEFERRED	0x40000000UL /* Not yet visible via sysfs */
++#define __ALIEN_CACHE		0x20000000UL /* Slab has alien caches */
++
++static inline int aliens(struct kmem_cache *s)
++{
++#ifdef CONFIG_NUMA
++	return (s->flags & __ALIEN_CACHE) != 0;
++#else
++	return 0;
++#endif
++}
+ 
+ static int kmem_size = sizeof(struct kmem_cache);
+ 
+@@ -1587,6 +1599,9 @@ static inline int drain_shared_cache(str
+ 	return n;
+ }
+ 
++static void drain_alien_caches(struct kmem_cache *s,
++				struct kmem_cache_cpu *c);
++
+ /*
+  * Drain all objects from a per cpu queue
+  */
+@@ -1596,6 +1611,7 @@ static void flush_cpu_objects(struct kme
+ 
+ 	drain_queue(s, q, q->objects);
+ 	drain_shared_cache(s, q->shared);
++	drain_alien_caches(s, c);
+  	stat(s, QUEUE_FLUSH);
+ }
+ 
+@@ -1739,6 +1755,53 @@ struct kmem_cache_queue **shared_caches(
+ }
+ 
+ /*
++ * Alien caches which are also shared caches
 + */
-+#define PERCPU_DYNAMIC_EARLY_SLOTS	128
-+#define PERCPU_DYNAMIC_EARLY_SIZE	(12 << 10)
++
++#ifdef CONFIG_NUMA
++/* Given an allocation context determine the alien queue to use */
++static inline struct kmem_cache_queue *alien_cache(struct kmem_cache *s,
++		struct kmem_cache_cpu *c, int node)
++{
++	void *p = c->q.shared;
++
++	/* If the cache does not have any alien caches return NULL */
++	if (!aliens(s) || !p || node == c->node)
++		return NULL;
++
++	/*
++	 * Map [0..(c->node - 1)] -> [1..c->node].
++	 *
++	 * This effectively removes the current node (which is serviced by
++	 * the shared cachei) from the list and avoids hitting 0 (which would
++	 * result in accessing the shared queue used for the cpu cache).
++	 */
++	if (node < c->node)
++		node++;
++
++	p -= (node << s->alien_shift);
++
++	return (struct kmem_cache_queue *)p;
++}
++
++static inline void drain_alien_caches(struct kmem_cache *s,
++					 struct kmem_cache_cpu *c)
++{
++	int node;
++
++	for_each_node(node)
++		if (node != c->node);
++			drain_shared_cache(s, alien_cache(s, c, node));
++}
++
++#else
++static inline void drain_alien_caches(struct kmem_cache *s,
++				 struct kmem_cache_cpu *c) {}
++#endif
++
++static struct kmem_cache *get_slab(size_t size, gfp_t flags);
 +
 +/*
-  * PERCPU_DYNAMIC_RESERVE indicates the amount of free area to piggy
-  * back on the first chunk for dynamic percpu allocation if arch is
-  * manually allocating and mapping it for faster access (as a part of
-@@ -135,6 +145,7 @@ extern bool is_kernel_percpu_address(uns
- #ifndef CONFIG_HAVE_SETUP_PER_CPU_AREA
- extern void __init setup_per_cpu_areas(void);
- #endif
-+extern void __init percpu_init_late(void);
+  * Allocate shared cpu caches.
+  * A shared cache is allocated for each series of cpus sharing a single cache
+  */
+@@ -1748,23 +1811,30 @@ static void alloc_shared_caches(struct k
+ 	int max;
+ 	int size;
+ 	void *p;
++	int alien_max = 0;
++	int alien_size = 0;
  
- #else /* CONFIG_SMP */
+ 	if (slab_state < SYSFS || s->shared_queue_sysfs == 0)
+ 		return;
  
-@@ -148,6 +159,8 @@ static inline bool is_kernel_percpu_addr
- 
- static inline void __init setup_per_cpu_areas(void) { }
- 
-+static inline void __init percpu_init_late(void) { }
++	if (aliens(s)) {
++		alien_size = (nr_node_ids - 1) << s->alien_shift;
++		alien_max = shared_cache_capacity(1 << s->alien_shift);
++	}
 +
- static inline void *pcpu_lpage_remapped(void *kaddr)
+ 	/*
+ 	 * Determine the size. Round it up to the size that a kmalloc cache
+ 	 * supporting that size has. This will often align the size to a
+ 	 * power of 2 especially on machines that have large kmalloc
+ 	 * alignment requirements.
+ 	 */
+-	size = shared_cache_size(s->shared_queue_sysfs);
++	size = shared_cache_size(s->shared_queue_sysfs) + alien_size;
+ 	if (size < PAGE_SIZE / 2)
+ 		size = get_slab(size, GFP_KERNEL)->objsize;
+ 	else
+ 		size = PAGE_SHIFT << get_order(size);
+ 
+-	max = shared_cache_capacity(size);
++	max = shared_cache_capacity(size - alien_size);
+ 
+ 	for_each_online_cpu(cpu) {
+ 		struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu, cpu);
+@@ -1786,8 +1856,26 @@ static void alloc_shared_caches(struct k
+ 			continue;
+ 		}
+ 
+-		l = p;
++		l = p + alien_size;
+ 		init_shared_cache(l, max);
++#ifdef CONFIG_NUMA
++		/* And initialize the alien caches now */
++		if (aliens(s)) {
++			int node;
++
++			for (node = 0; node < nr_node_ids - 1; node++) {
++				struct kmem_cache_queue *a =
++					p + (node << s->alien_shift);
++
++				init_shared_cache(a, alien_max);
++			}
++		}
++		if (cpumask_weight(map) < 2)  {
++			printk_once(KERN_WARNING "SLUB: Unusable processor"
++				" cache topology. Shared cache per numa node.\n");
++			map = cpumask_of_node(c->node);
++		}
++#endif
+ 
+ 		if (cpumask_weight(map) < 2) {
+ 
+@@ -1827,6 +1915,7 @@ static void __remove_shared_cache(void *
+ 
+ 	c->q.shared = NULL;
+ 	drain_shared_cache(s, q);
++	drain_alien_caches(s, c);
+ }
+ 
+ 
+@@ -1845,6 +1934,9 @@ static int remove_shared_caches(struct k
+ 	for(i = 0; i < s->nr_shared; i++) {
+ 		void *p = caches[i];
+ 
++		if (aliens(s))
++			p -= (nr_node_ids - 1) << s->alien_shift;
++
+ 		kfree(p);
+ 	}
+ 
+@@ -2039,11 +2131,23 @@ static void *slab_alloc_node(struct kmem
+ 						gfp_t gfpflags, int node)
  {
+ #ifdef CONFIG_NUMA
+-	struct kmem_cache_node *n = get_node(s, node);
++	struct kmem_cache_queue *a = alien_cache(s, c, node);
+ 	struct page *page;
+ 	void *object;
+ 
+-	page = get_partial_node(n);
++	if (a) {
++redo:
++		spin_lock(&a->lock);
++		if (likely(!queue_empty(a))) {
++			object = queue_get(a);
++			spin_unlock(&a->lock);
++			return object;
++		}
++		spin_unlock(&a->lock);
++	}
++
++	/* Cross node allocation and lock taking ! */
++	page = get_partial_node(s->node[node]);
+ 	if (!page) {
+ 		gfpflags &= gfp_allowed_mask;
+ 
+@@ -2061,10 +2165,19 @@ static void *slab_alloc_node(struct kmem
+ 		slab_lock(page);
+  	}
+ 
+-	retrieve_objects(s, page, &object, 1);
++	if (a) {
++		spin_lock(&a->lock);
++		refill_queue(s, a, page, available(page));
++		spin_unlock(&a->lock);
++	} else
++		retrieve_objects(s, page, &object, 1);
+ 
+ 	to_lists(s, page, 0);
+ 	slab_unlock(page);
++
++	if (a)
++		goto redo;
++
+ 	return object;
+ #else
  	return NULL;
+@@ -2075,8 +2188,17 @@ static void slab_free_alien(struct kmem_
+ 	struct kmem_cache_cpu *c, struct page *page, void *object, int node)
+ {
+ #ifdef CONFIG_NUMA
+-	/* Direct free to the slab */
+-	drain_objects(s, &object, 1);
++	struct kmem_cache_queue *a = alien_cache(s, c, node);
++
++	if (a) {
++		spin_lock(&a->lock);
++		while (unlikely(queue_full(a)))
++			drain_queue(s, a, s->batch);
++		queue_put(a, object);
++		spin_unlock(&a->lock);
++	} else
++		/* Direct free to the slab */
++		drain_objects(s, &object, 1);
+ #endif
+ }
+ 
+@@ -2741,15 +2863,53 @@ static int kmem_cache_open(struct kmem_c
+ 	 */
+ 	set_min_partial(s, ilog2(s->size));
+ 	s->refcount = 1;
+-#ifdef CONFIG_NUMA
+-	s->remote_node_defrag_ratio = 1000;
+-#endif
+ 	if (!init_kmem_cache_nodes(s))
+ 		goto error;
+ 
+ 	s->queue = initial_queue_size(s->size);
+ 	s->batch = (s->queue + 1) / 2;
+ 
++#ifdef CONFIG_NUMA
++	s->remote_node_defrag_ratio = 1000;
++	if (nr_node_ids > 1) {
++		/*
++		 * Alien cache configuration. The more NUMA nodes we have the
++		 * smaller the alien caches become since the penalties in terms
++		 * of space and latency increase. The user will have code for
++		 * locality on these boxes anyways since a large portion of
++		 * memory will be distant to the processor.
++		 *
++		 * A set of alien caches is allocated for each lowest level
++		 * cpu cache. The alien set covers all nodes except the node
++		 * that is nearest to the processor.
++		 *
++		 * Create large alien cache for small node configuration so
++		 * that these can work like shared caches do to preserve the
++		 * cpu cache hot state of objects.
++		 */
++		int lines = fls(ALIGN(shared_cache_size(s->queue),
++						cache_line_size()) -1);
++		int min = fls(cache_line_size() - 1);
++
++		/* Limit the sizes of the alien caches to some sane values */
++		if (nr_node_ids <= 4)
++			/*
++			 * Keep the sizes roughly the same as the shared cache
++			 * unless it gets too huge.
++			 */
++			s->alien_shift = min(PAGE_SHIFT - 1, lines);
++
++		else if (nr_node_ids <= 32)
++			/* Maximum of 4 cachelines */
++			s->alien_shift = min(2 + min, lines);
++		else
++			/* Clamp down to one cacheline */
++			s->alien_shift = min;
++
++		s->flags |= __ALIEN_CACHE;
++	}
++#endif
++
+ 	if (alloc_kmem_cache_cpus(s)) {
+ 		s->shared_queue_sysfs = s->queue;
+ 		alloc_shared_caches(s);
+@@ -4745,6 +4905,157 @@ static ssize_t remote_node_defrag_ratio_
+ 	return length;
+ }
+ SLAB_ATTR(remote_node_defrag_ratio);
++
++static ssize_t alien_queue_size_show(struct kmem_cache *s, char *buf)
++{
++	if (aliens(s))
++		return sprintf(buf, "%lu %u\n",
++			((1 << s->alien_shift)
++				- sizeof(struct kmem_cache_queue)) /
++				sizeof(void *), s->alien_shift);
++	else
++		return sprintf(buf, "0\n");
++}
++
++static ssize_t alien_queue_size_store(struct kmem_cache *s,
++			 const char *buf, size_t length)
++{
++	unsigned long queue;
++	int err;
++	int oldshift;
++
++	if (nr_node_ids == 1)
++		return -ENOSYS;
++
++	oldshift = s->alien_shift;
++
++	err = strict_strtoul(buf, 10, &queue);
++	if (err)
++		return err;
++
++	if (queue < 0 && queue > 65535)
++		return -EINVAL;
++
++	if (queue == 0) {
++		s->flags &= ~__ALIEN_CACHE;
++		s->alien_shift = 0;
++	} else {
++		unsigned long size;
++
++		s->flags |= __ALIEN_CACHE;
++
++		size = max_t(unsigned long, cache_line_size(),
++			 sizeof(struct kmem_cache_queue)
++				+ queue * sizeof(void *));
++		size = ALIGN(size, cache_line_size());
++		s->alien_shift = fls(size + (size -1)) - 1;
++	}
++
++	if (oldshift != s->alien_shift) {
++		down_write(&slub_lock);
++		err = remove_shared_caches(s);
++		if (!err)
++			alloc_shared_caches(s);
++		up_write(&slub_lock);
++	}
++	return err ? err : length;
++}
++SLAB_ATTR(alien_queue_size);
++
++static ssize_t alien_caches_show(struct kmem_cache *s, char *buf)
++{
++	unsigned long total;
++	int x;
++	int n;
++	int cpu, node;
++	struct kmem_cache_queue **caches;
++
++	if (!(s->flags & __ALIEN_CACHE) || s->alien_shift == 0)
++		return -ENOSYS;
++
++	down_read(&slub_lock);
++	caches = shared_caches(s);
++	if (!caches) {
++		up_read(&slub_lock);
++		return -ENOMEM;
++	}
++
++	total = 0;
++	for (n = 0; n < s->nr_shared; n++) {
++		struct kmem_cache_queue *q = caches[n];
++
++		for (n = 1; n < nr_node_ids; n++) {
++			struct kmem_cache_queue *a =
++				(void *)q - (n << s->alien_shift);
++
++			total += a->objects;
++		}
++	}
++	x = sprintf(buf, "%lu", total);
++
++	for (n = 0; n < s->nr_shared; n++) {
++		struct kmem_cache_queue *q = caches[n];
++		struct kmem_cache_queue *a;
++		struct kmem_cache_cpu *c = NULL;
++		int first;
++
++		x += sprintf(buf + x, " C");
++		first = 1;
++		/* Find cpus using the shared cache */
++		for_each_online_cpu(cpu) {
++			struct kmem_cache_cpu *z = per_cpu_ptr(s->cpu, cpu);
++
++			if (q != z->q.shared)
++				continue;
++
++			if (z)
++				c = z;
++
++			if (first)
++				first = 0;
++			else
++				x += sprintf(buf + x, ",");
++
++			x += sprintf(buf + x, "%d", cpu);
++		}
++
++		if (!c) {
++			x += sprintf(buf +x, "=<none>");
++			continue;
++		}
++
++		/* The total of objects for a particular shared cache */
++		total = 0;
++		for_each_online_node(node) {
++			struct kmem_cache_queue *a =
++				alien_cache(s, c, node);
++
++			if (a)
++				total += a->objects;
++		}
++		x += sprintf(buf +x, "=%lu[", total);
++
++		first = 1;
++		for_each_online_node(node) {
++			a = alien_cache(s, c, node);
++
++			if (a) {
++				if (first)
++					first = 0;
++				else
++					x += sprintf(buf + x, ":");
++
++				x += sprintf(buf + x, "N%d=%d/%d",
++						node, a->objects, a->max);
++			}
++		}
++		x += sprintf(buf + x, "]");
++	}
++	up_read(&slub_lock);
++	kfree(caches);
++	return x + sprintf(buf + x, "\n");
++}
++SLAB_ATTR_RO(alien_caches);
+ #endif
+ 
+ #ifdef CONFIG_SLUB_STATS
+@@ -4854,6 +5165,8 @@ static struct attribute *slab_attrs[] = 
+ #endif
+ #ifdef CONFIG_NUMA
+ 	&remote_node_defrag_ratio_attr.attr,
++	&alien_caches_attr.attr,
++	&alien_queue_size_attr.attr,
+ #endif
+ #ifdef CONFIG_SLUB_STATS
+ 	&alloc_fastpath_attr.attr,
+Index: linux-2.6/include/linux/slub_def.h
+===================================================================
+--- linux-2.6.orig/include/linux/slub_def.h	2010-08-03 15:58:51.000000000 -0500
++++ linux-2.6/include/linux/slub_def.h	2010-08-03 15:58:52.000000000 -0500
+@@ -82,6 +82,7 @@ struct kmem_cache {
+ 	int objsize;		/* The size of an object without meta data */
+ 	struct kmem_cache_order_objects oo;
+ 	int batch;		/* batch size */
++	int alien_shift;	/* Shift to size alien caches */
+ 
+ 	/* Allocation and freeing of slabs */
+ 	struct kmem_cache_order_objects max;
 
