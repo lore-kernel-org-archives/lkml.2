@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab0HDRte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 13:49:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53645 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186Ab0HDRtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 13:49:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,316,1278313200"; 
-   d="scan'208";a="541931215"
-Subject: Re: [PATCH] ioat2: catch and recover from broken vtd
- configurations v6
-From: David Woodhouse <David.Woodhouse@intel.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lkml@chrisli.org" <lkml@chrisli.org>
-In-Reply-To: <AANLkTim-otwN3mZZPLNz6s9hH1X+W4F-t93hdVCHNT+e@mail.gmail.com>
-References: <20100723224652.25725.36534.stgit@localhost.localdomain>
-	 <AANLkTim-otwN3mZZPLNz6s9hH1X+W4F-t93hdVCHNT+e@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation
-Date: Wed, 04 Aug 2010 18:49:25 +0100
-Message-ID: <1280944165.19499.50.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.6 
-Content-Transfer-Encoding: 7bit
+	id S1756742Ab0HDRu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 13:50:29 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54264 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab0HDRu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 13:50:27 -0400
+Date: Wed, 4 Aug 2010 18:50:23 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] x86 platform drivers for 2.6.36
+Message-ID: <20100804175023.GA965@srcf.ucam.org>
+References: <20100803140855.GA26161@srcf.ucam.org> <AANLkTik5eK+utozrXXH1n3-aO1wHgkzjZvHqF5TmoE=4@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik5eK+utozrXXH1n3-aO1wHgkzjZvHqF5TmoE=4@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 10:47 -0700, Dan Williams wrote:
-> On Fri, Jul 23, 2010 at 3:47 PM, Dan Williams <dan.j.williams@intel.com> wrote:
-> > On some platforms (MacPro3,1) the BIOS assigns the ioatdma device to the
-> > incorrect iommu causing faults when the driver initializes.  Add a quirk
-> > to catch this misconfiguration and try falling back to untranslated
-> > operation (which works in the MacPro3,1 case).
+On Wed, Aug 04, 2010 at 10:45:41AM -0700, Linus Torvalds wrote:
+> On Tue, Aug 3, 2010 at 7:08 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 > >
-> > Assuming there are other platforms with misconfigured iommus teach the
-> > ioatdma driver to treat initialization failures as non-fatal (just fail
-> > the driver load and emit a warning instead of triggering a BUG_ON).
+> > The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
 > >
-> > This can be classified as a boot regression since 2.6.32 on affected
-> > platforms since the ioatdma module did not autoload prior to that
-> > kernel.
+> >  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
 > >
-> > Cc: <stable@kernel.org>
-> > Cc: David Woodhouse <David.Woodhouse@intel.com>
-> > Reported-by: Chris Li <lkml@chrisli.org>
-> > Tested-by: Chris Li <lkml@chrisli.org>
-> > Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-> > ---
-> > David, looking for your sign-off to take this final version through my
-> > tree.
+> > are available in the git repository at:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for-linus
 > 
-> Ping.  I'm looking to include this in my 2.6.36 pull request.
+> No, they are not. It's branch "for_linus". Tssk.
+> 
+> (Normally I just ignore incorrect pull requests, but I did an
+> "ls-remote" to see what branches you have and just fixed it up this
+> time. But next time I might just drop it as bogus, so you do want to
+> be careful)
 
-Acked-By: David Woodhouse <David.Woodhouse@intel.com>
+Crap. Sorry about that, and thanks for fixing it up.
 
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
-
+Matthew Garrett | mjg59@srcf.ucam.org
