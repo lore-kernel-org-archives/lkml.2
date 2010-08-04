@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab0HDVxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:53:20 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59170
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754213Ab0HDVxN (ORCPT
+	id S1756135Ab0HDVxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:53:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45304 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755244Ab0HDVxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:53:13 -0400
-Date: Wed, 04 Aug 2010 14:53:32 -0700 (PDT)
-Message-Id: <20100804.145332.35061046.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100804.134115.260072845.davem@davemloft.net>
-References: <20100803.203814.59697285.davem@davemloft.net>
-	<AANLkTimxv1y3QJ7s+ghi1FFCcwnUVWT1n6dvT-NNN=Oo@mail.gmail.com>
-	<20100804.134115.260072845.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 4 Aug 2010 17:53:34 -0400
+Date: Wed, 4 Aug 2010 14:52:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        tytso@mit.edu
+Subject: Re: new gerneric kfifo API
+Message-Id: <20100804145205.524c1c03.akpm@linux-foundation.org>
+In-Reply-To: <20100804201724.GA32100@suse.de>
+References: <201005132135.o4DLZ9WI021613@imap1.linux-foundation.org>
+	<1280905854.8441.3.camel@wall-e.seibold.net>
+	<20100804194617.GA30773@suse.de>
+	<1280952551.8594.0.camel@wall-e.seibold.net>
+	<20100804201724.GA32100@suse.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Wed, 04 Aug 2010 13:41:15 -0700 (PDT)
+On Wed, 4 Aug 2010 13:17:24 -0700
+Greg KH <gregkh@suse.de> wrote:
 
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Wed, 4 Aug 2010 12:06:47 -0700
+> On Wed, Aug 04, 2010 at 10:09:11PM +0200, Stefani Seibold wrote:
+> > Am Mittwoch, den 04.08.2010, 12:46 -0700 schrieb Greg KH:
+> > > On Wed, Aug 04, 2010 at 09:10:54AM +0200, Stefani Seibold wrote:
+> > > > Hi,
+> > > > 
+> > > > once again. Kernel 2.6.35 is out and i want to know if there is play plan to
+> > > > merge the generic kfifo API. All complains was fixed, so there is no
+> > > > reason to shift the merge again. Please gibe me a short answer.
+> > > 
+> > > These have been in the -mm tree for a few major kernel releases now,
+> > > right?  And they are API safe, and only change the internals, right?
+> > > 
+> > > If so, I see no objection to merging them now, especially as you will be
+> > > around to fix up any problems that people have, right?  :)
+> > > 
+> > 
+> > right!
 > 
->> On Tue, Aug 3, 2010 at 8:38 PM, David Miller <davem@davemloft.net> wrote:
->>>
->>> Another release, another merge window, another set of networking
->>> changes to merge :-)
->> 
->> Ok, merged. But you should double-check my merge resolution fixes,
+> Great.  As Andrew doesn't have the time to send them on, want me to?  If
+> so, care to point me at them in his tree, or resend them to me?
 > 
-> Will do, thanks a lot.
 
-I just double-checked everything and it all looks fine, thanks
-again.
+One does a little more than "send things on"...
+
+I have a little pile of kfifo changes queud for 2.6.36.  The "generic
+kfifo" patches are a large rotorooting of the whole facility, based on
+that work (I hope).
+
+There's also the abandoned
+kfifo-replace-the-old-non-generic-api-kfifo-fix-scatterlist-usage.patch
+which never got resolved with the originator.
+
