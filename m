@@ -1,21 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab0HDXNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:13:06 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49757 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933102Ab0HDXNE (ORCPT
+	id S1759380Ab0HDXPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:15:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33991 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab0HDXPk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:13:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=na6IWXrSrfUkJZVy1u+3vYlCPUWkVHuOiHwO7ksQqToiBhzNPex3zCkj6xgv4O1uUv
-         5j+8YADF/mYrbKNyw6uM3AxldTT2UDQLO5WfiXDulGQt60H5fy94MFrMXwVpTZJ5BJeP
-         St34hVC2COWoentKN/jREQSa7V8H1dbVeb51A=
+	Wed, 4 Aug 2010 19:15:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100804231003.GL24163@linux.vnet.ibm.com>
+In-Reply-To: <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
 References: <20100801054816.GI2470@linux.vnet.ibm.com>
 	<alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
 	<20100804185520.GA2417@srcf.ucam.org>
@@ -24,23 +17,96 @@ References: <20100801054816.GI2470@linux.vnet.ibm.com>
 	<alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
 	<AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
 	<alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
-	<20100804231003.GL24163@linux.vnet.ibm.com>
-Date: Thu, 5 Aug 2010 02:13:00 +0300
-Message-ID: <AANLkTim_eCPSrPh3ayXHTky5u5WTfaBzvYcSXb219Me=@mail.gmail.com>
+Date: Wed, 4 Aug 2010 16:15:39 -0700
+Message-ID: <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com>
 Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: david@lang.hm, =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: david@lang.hm
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Arjan van de Ven <arjan@infradead.org>,
         linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
         swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
         alan@lxorguk.ukuu.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One suggestion: Get an Android Phone, test your ideas on it, then comment.
+2010/8/4  <david@lang.hm>:
+> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
+>
+>> On Wed, Aug 4, 2010 at 3:31 PM,  <david@lang.hm> wrote:
+>>>
+>>> On Wed, 4 Aug 2010, Matthew Garrett wrote:
+>>>
+>>>> On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
+>>>>>
+>>>>> On Wednesday, August 04, 2010, Matthew Garrett wrote:
+>>>>>>
+>>>>>> No! And that's precisely the issue. Android's existing behaviour could
+>>>>>> be entirely implemented in the form of binary that manually triggers
+>>>>>> suspend when (a) the screen is off and (b) no userspace applications
+>>>>>> have indicated that the system shouldn't sleep, except for the wakeup
+>>>>>> event race. Imagine the following:
+>>>>>>
+>>>>>> 1) The policy timeout is about to expire. No applications are holding
+>>>>>> wakelocks. The system will suspend providing nothing takes a wakelock.
+>>>>>> 2) A network packet arrives indicating an incoming SIP call
+>>>>>> 3) The VOIP application takes a wakelock and prevents the phone from
+>>>>>> suspending while the call is in progress
+>>>>>>
+>>>>>> What stops the system going to sleep between (2) and (3)? cgroups
+>>>>>> don't,
+>>>>>> because the voip app is an otherwise untrusted application that you've
+>>>>>> just told the scheduler to ignore.
+>>>>>
+>>>>> I _think_ you can use the just-merged /sys/power/wakeup_count mechanism
+>>>>> to
+>>>>> avoid the race (if pm_wakeup_event() is called at 2)).
+>>>>
+>>>> Yes, I think that solves the problem. The only question then is whether
+>>>> it's preferable to use cgroups or suspend fully, which is pretty much up
+>>>> to the implementation. In other words, is there a reason we're still
+>>>> having this conversation? :) It'd be good to have some feedback from
+>>>> Google as to whether this satisfies their functional requirements.
+>>>
+>>> the proposal that I nade was not to use cgroups to freeze some processes
+>>> and
+>>> not others, but to use cgroups to decide to ignore some processes when
+>>> deciding if the system is idle, stop everything or nothing. cgroups are
+>>> just
+>>> a way of easily grouping processes (and their children) into different
+>>> groups.
+>>>
+>>
+>> That does not avoid the dependency problem. A process may be waiting
+>> on a resource that a process you ignore owns. I you ignore the process
+>> that owns the resource and enter idle when it is ready to run (or
+>> waiting on a timer), you are still effectively blocking the other
+>> process.
+>
+> and if you don't have a wakelock the same thing will happen. If you expect
+
+Not the same thing. If you don't hold a wakelock the entire system
+will suspend and when it wakes up it continues where it left off.
+Timeout still have time left before they expire.
+
+> the process to take a while you can set a timeout to wake up every 30
+> seconds or so and wait again, this would be enough to prevent you from going
+
+I don't think polling is an acceptable solution to this problem. You
+user space code know needs to know what "idle" timeout you have
+selected so it can choose a faster poll rate. When is it safe to stop
+polling?
+
+> to sleep (or am I misunderstanding how long before you go into suspend
+> without a wakelock set, see my other e-mail for the full question)
+>
+
+We suspend as soon as no wakelocks are held. There is no delay.
+
+-- 
+Arve Hjønnevåg
