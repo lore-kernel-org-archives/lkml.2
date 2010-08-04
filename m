@@ -1,73 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933970Ab0HDUPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 16:15:52 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43456 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758370Ab0HDUPl (ORCPT
+	id S934740Ab0HDUTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 16:19:45 -0400
+Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:46790 "EHLO
+	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758926Ab0HDUTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 16:15:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=aXR9cZC4WIxpy1yKjGX7o5b2szMyobPRFVpTeb0kmZW7CodMgrSjRcfIfFPj9DPkae
-         CWmL2eU9hoSYna73j5UypkeGFBjfqBCvbsnjDSX9454DiRdRE3X9wI0/NJq+0HimXl59
-         tjkYgalZDuMzqPxC4jgnC91i4zJD102iY9Jq8=
-Message-ID: <4C59CA4F.4090003@garzik.org>
-Date: Wed, 04 Aug 2010 16:15:11 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	Wed, 4 Aug 2010 16:19:38 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C59CBA9.1030808@jic23.retrosnub.co.uk>
+Date: Wed, 04 Aug 2010 21:20:57 +0100
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100802 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Donald Parsons <dparsons@brightdsl.net>
-CC: Harald Hoyer <harald.hoyer@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.35
-References: <1280716262.5125.42.camel@falcon.homelinux.org> <201008012138.39036.bjorn.helgaas@hp.com> <1280722876.5125.83.camel@falcon.homelinux.org> <AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com> <1280802701.5836.10.camel@falcon.homelinux.org>
-In-Reply-To: <1280802701.5836.10.camel@falcon.homelinux.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Julia Lawall <julia@diku.dk>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] drivers/staging/iio: call mutex_unlock in error handling
+ code
+References: <Pine.LNX.4.64.1008042153460.30592@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1008042153460.30592@ask.diku.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2010 10:31 PM, Donald Parsons wrote:
-> Using your suggestion as to where the problem lies, I investigated
-> more deeply and found:
->
-> I've now got 2.6.35-rc6-git3 to boot (and almost certainly 2.6.35 final)
->
-> Make oldconfig broke at the transition where boot began failed, ie,
-> between 2.6.34-git4 and 2.6.34-git5.   Even though modules are the
-> same, boot fails.  If I use gconfig and set CONFIG_SATA_AHCI=y
-> instead of CONFIG_SATA_AHCI=m it works, except cannot select =y
-> unless CONFIG_ATA changed from m to y.
->
-> So at some point in past, make oldconfig had apparently changed
-> CONFIG_SATA_AHCI from y to m and system still booted.  But between
-> 2.6.34-git4 and 2.6.34-git5 the ability to boot was lost.
->
-> So make oldconfig is not 100% trustworthy in this case.  I do not
-> know if this is a problem that should be fixed.  Ask if you want
-> any .config diffs.
+On 08/04/10 20:54, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+Youch bad reviewing on my part.
 
+Had a quick look and I think you caught all instances of this...
 
-The modules are not necessarily the same:  "libahci" was introduced in
-
-	commit 365cfa1ed5a36f9bcb9f64c9f0f52155af2e9fef
-	Author: Anton Vorontsov <avorontsov@ru.mvista.com>
-	Date:   Sun Mar 28 00:22:14 2010 -0400
-
-	    ahci: Move generic code into libahci
-
-so there exists the possibility that the initramfs builder, or whatever 
-is being used to load your ATA drivers, missed this dependency.  Modern 
-initramfs builders should be able to figure out module dependencies, so 
-this /shouldn't/ be an issue...  but it might be.
-
-	Jeff
-
-
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> 
+> Adjust the error handling code so that it benefits from the call to
+> mutex_unlock at the end of the function.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @rcu exists@
+> position p1;
+> expression E;
+> @@
+> 
+> mutex_lock@p1(E);
+> ...
+> mutex_unlock(E);
+> 
+> @exists@
+> position rcu.p1;
+> expression E;
+> @@
+> 
+> *mutex_lock@p1(E);
+> ... when != mutex_unlock(E);
+> ?*return ...;
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/staging/iio/magnetometer/hmc5843.c     |   25 +++++++++++++------
+>  1 files changed, 17 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
+> index 92f6c6f..ea5f749 100644
+> --- a/drivers/staging/iio/magnetometer/hmc5843.c
+> +++ b/drivers/staging/iio/magnetometer/hmc5843.c
+> @@ -220,11 +220,15 @@ static ssize_t hmc5843_set_operating_mode(struct device *dev,
+>  	int error;
+>  	mutex_lock(&data->lock);
+>  	error = strict_strtoul(buf, 10, &operating_mode);
+> -	if (error)
+> -		return error;
+> +	if (error) {
+> +		count = error;
+> +		goto exit;
+> +	}
+>  	dev_dbg(dev, "set Conversion mode to %lu\n", operating_mode);
+> -	if (operating_mode > MODE_SLEEP)
+> -			return -EINVAL;
+> +	if (operating_mode > MODE_SLEEP) {
+> +		count = -EINVAL;
+> +		goto exit;
+> +	}
+>  
+>  	status = i2c_smbus_write_byte_data(client, this_attr->address,
+>  					operating_mode);
+> @@ -437,18 +441,23 @@ static ssize_t set_range(struct device *dev,
+>  	int error;
+>  	mutex_lock(&data->lock);
+>  	error = strict_strtoul(buf, 10, &range);
+> -	if (error)
+> -		return error;
+> +	if (error) {
+> +		count = error;
+> +		goto exit;
+> +	}
+>  	dev_dbg(dev, "set range to %lu\n", range);
+>  
+> -	if (range > RANGE_6_5)
+> -		return -EINVAL;
+> +	if (range > RANGE_6_5) {
+> +		count = -EINVAL;
+> +		goto exit;
+> +	}
+>  
+>  	data->range = range;
+>  	range = range << RANGE_GAIN_OFFSET;
+>  	if (i2c_smbus_write_byte_data(client, this_attr->address, range))
+>  		count = -EINVAL;
+>  
+> +exit:
+>  	mutex_unlock(&data->lock);
+>  	return count;
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
