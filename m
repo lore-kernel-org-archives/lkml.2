@@ -1,68 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab0HDDeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 23:34:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:62943 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab0HDDeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 23:34:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Etu0lsb53zHiOkkOVQqhA03iwOdcQ8fAX4G3hOseTJHSJB/EXwooCQUIhAmuM/ioI
-	lXbadrmX/Wt3kRkX9G9fw==
-Date: Tue, 3 Aug 2010 20:34:04 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux-foundation.org>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>
-Subject: Re: [S+Q3 03/23] slub: Use a constant for a unspecified node.
-In-Reply-To: <20100804024525.562559967@linux.com>
-Message-ID: <alpine.DEB.2.00.1008032029380.23490@chino.kir.corp.google.com>
-References: <20100804024514.139976032@linux.com> <20100804024525.562559967@linux.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932500Ab0HDDgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 23:36:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61211 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757520Ab0HDDgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 23:36:05 -0400
+Message-ID: <4C58DF26.3060305@cn.fujitsu.com>
+Date: Wed, 04 Aug 2010 11:31:50 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: [PATCH v6 2/3] KVM: MMU: introduce hva_to_pfn_atomic function
+References: <4C58DE49.1020705@cn.fujitsu.com>
+In-Reply-To: <4C58DE49.1020705@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Aug 2010, Christoph Lameter wrote:
+Introduce hva_to_pfn_atomic(), it's the fast path and can used in atomic
+context, the later patch will use it
 
-> Index: linux-2.6/mm/slub.c
-> ===================================================================
-> --- linux-2.6.orig/mm/slub.c	2010-07-26 12:57:52.000000000 -0500
-> +++ linux-2.6/mm/slub.c	2010-07-26 12:57:59.000000000 -0500
-> @@ -1073,7 +1073,7 @@ static inline struct page *alloc_slab_pa
->  
->  	flags |= __GFP_NOTRACK;
->  
-> -	if (node == -1)
-> +	if (node == NUMA_NO_NODE)
->  		return alloc_pages(flags, order);
->  	else
->  		return alloc_pages_exact_node(node, flags, order);
-> @@ -1387,7 +1387,7 @@ static struct page *get_any_partial(stru
->  static struct page *get_partial(struct kmem_cache *s, gfp_t flags, int node)
->  {
->  	struct page *page;
-> -	int searchnode = (node == -1) ? numa_node_id() : node;
-> +	int searchnode = (node == NUMA_NO_NODE) ? numa_node_id() : node;
->  
->  	page = get_partial_node(get_node(s, searchnode));
->  	if (page || (flags & __GFP_THISNODE) || node != -1)
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ include/linux/kvm_host.h |    7 +++++++
+ virt/kvm/kvm_main.c      |   30 +++++++++++++++++++-----------
+ 2 files changed, 26 insertions(+), 11 deletions(-)
 
-This has a merge conflict with 2.6.35 since it has this:
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index c13cc48..307d0e2 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -296,6 +296,7 @@ void kvm_release_page_dirty(struct page *page);
+ void kvm_set_page_dirty(struct page *page);
+ void kvm_set_page_accessed(struct page *page);
+ 
++pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr);
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn);
+@@ -518,6 +519,12 @@ static inline void kvm_guest_exit(void)
+ 	current->flags &= ~PF_VCPU;
+ }
+ 
++static inline unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot,
++					       gfn_t gfn)
++{
++	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
++}
++
+ static inline gpa_t gfn_to_gpa(gfn_t gfn)
+ {
+ 	return (gpa_t)gfn << PAGE_SHIFT;
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index b78b794..2dc0c18 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -927,11 +927,6 @@ int memslot_id(struct kvm *kvm, gfn_t gfn)
+ 	return memslot - slots->memslots;
+ }
+ 
+-static unsigned long gfn_to_hva_memslot(struct kvm_memory_slot *slot, gfn_t gfn)
+-{
+-	return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
+-}
+-
+ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ {
+ 	struct kvm_memory_slot *slot;
+@@ -943,19 +938,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+ 
+-static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
++static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+ {
+ 	struct page *page[1];
+ 	int npages;
+ 	pfn_t pfn;
+ 
+-	might_sleep();
+-
+-	npages = get_user_pages_fast(addr, 1, 1, page);
++	if (atomic)
++		npages = __get_user_pages_fast(addr, 1, 1, page);
++	else {
++		might_sleep();
++		npages = get_user_pages_fast(addr, 1, 1, page);
++	}
+ 
+ 	if (unlikely(npages != 1)) {
+ 		struct vm_area_struct *vma;
+ 
++		if (atomic)
++			goto return_fault_page;
++
+ 		down_read(&current->mm->mmap_sem);
+ 		if (is_hwpoison_address(addr)) {
+ 			up_read(&current->mm->mmap_sem);
+@@ -968,6 +969,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 		if (vma == NULL || addr < vma->vm_start ||
+ 		    !(vma->vm_flags & VM_PFNMAP)) {
+ 			up_read(&current->mm->mmap_sem);
++return_fault_page:
+ 			get_page(fault_page);
+ 			return page_to_pfn(fault_page);
+ 		}
+@@ -981,6 +983,12 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 	return pfn;
+ }
+ 
++pfn_t hva_to_pfn_atomic(struct kvm *kvm, unsigned long addr)
++{
++	return hva_to_pfn(kvm, addr, true);
++}
++EXPORT_SYMBOL_GPL(hva_to_pfn_atomic);
++
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ {
+ 	unsigned long addr;
+@@ -991,7 +999,7 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ 		return page_to_pfn(bad_page);
+ 	}
+ 
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_pfn);
+ 
+@@ -999,7 +1007,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn)
+ {
+ 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
+-- 
+1.6.1.2
 
-	page = get_partial_node(get_node(s, searchnode));
-	if (page || (flags & __GFP_THISNODE))
-		return page;
 
-	return get_any_partial(s, flags);
-
-so what happened to the dropped check for returning get_any_partial() when 
-node != -1?  I added the check for benchmarking.
