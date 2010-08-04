@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab0HDMGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:06:37 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:35514 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192Ab0HDMGg (ORCPT
+	id S932667Ab0HDMGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:06:46 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38266 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932647Ab0HDMGn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:06:36 -0400
-Date: Wed, 4 Aug 2010 13:04:32 +0100
-From: Chris Webb <chris@arachsys.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Over-eager swapping
-Message-ID: <20100804120430.GB23551@arachsys.com>
-References: <AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
- <20100803033108.GA23117@arachsys.com>
- <AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
- <20100803042835.GA17377@localhost>
- <20100803214945.GA2326@arachsys.com>
- <20100804022148.GA5922@localhost>
- <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
- <20100804032400.GA14141@localhost>
- <20100804095811.GC2326@arachsys.com>
- <20100804114933.GA13527@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100804114933.GA13527@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 4 Aug 2010 08:06:43 -0400
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 2/13]  uprobes: Breakpoint
+ insertion/removal in user space applications.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100720072202.GB19375@linux.vnet.ibm.com>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+	 <20100712103235.27491.293.sendpatchset@localhost6.localdomain6>
+	 <20100720042814.GA13624@infradead.org>
+	 <20100720072202.GB19375@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 04 Aug 2010 14:05:28 +0200
+Message-ID: <1280923528.1923.1058.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu Fengguang <fengguang.wu@intel.com> writes:
-
-> Maybe turn off KSM? It helps to isolate problems. It's a relative new
-> and complex feature after all.
-
-Good idea! I'll give that a go on one of the machines without swap at the
-moment, re-add the swap with ksm turned off, and see what happens.
-
-> > However, your suggestion is right that the CPU loads on these machines are
-> > typically quite high. The large number of kvm virtual machines they run mean
-> > thatl oads of eight or even sixteen in /proc/loadavg are not unusual, and
-> > these are higher when there's swap than after it has been removed. I assume
-> > this is mostly because of increased IO wait, as this number increases
-> > significantly in top.
+On Tue, 2010-07-20 at 12:52 +0530, Srikar Dronamraju wrote:
+> > Just wondering why these are function pointers.  Do we exepect an
+> > architecture to provide different versions of these for say 32 vs 64-bit
+> > binaries?  If not just making these arch provided helpers might be a lot
+> > simpler.  Especially in the current version where only very few of these
+> > are overriden by the architecture at all.
+> > 
+> > > +unsigned long uprobes_read_vm(struct task_struct *tsk, void __user *vaddr,
+> > > +                                   void *kbuf, unsigned long nbytes)
 > 
-> iowait = CPU (idle) waiting for disk IO
 > 
-> So iowait means not CPU load, but somehow disk load :)
+> Some of these functions are purely optional example being
+> validate_address. 
+> 
+> Some of these functions need not be defined by the architecture in
+> which case we default to the functions defined in common code. 
+> examples being: read_opcode, set_bkpt, and set_orig_insn.
+> 
+> Some of these functions are architecture mode specific, for example 
+> there is a architecture specific pre_xol needed for x86_64. However
+> generic pre_xol for x86_32 would suffice for x86_32.
+> 
+> Some of these functions need to be mandatorily defined by the
+> architecture. example being set_ip and analyze_insn.
+> 
+> Apart from the above flexibilities and enforcements that we can make
+> when we use function pointers, its would be handy to incorporate
+> more enhancements like return probes and booster. 
 
-Sorry, yes, I wrote very unclearly here. What I should have written is that
-the load numbers are fairly high even without swap, when the IO wait figure
-is pretty small. This is presumably normal CPU load from the guests.
+Still not sure why you're using this vector though, why not use weak
+function for optionals and defaults and no implementation for mandatory
+functions (and if the implementations fails to provide it, that will
+result in a link error).
 
-The load average rises significantly when swap is added, but I think that
-rise is due to an increase in processes waiting for IO (io wait %age
-increases considerably) rather than extra CPU work. Presumably this is the
-IO from swapping.
-
-Cheers,
-
-Chris.
+Are there likely to be multiple different versions of this method vector
+around on a running kernel?
