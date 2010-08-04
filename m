@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab0HDP5E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:57:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62822 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab0HDP5B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:57:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikh3pGh5jpFZ-Petoizw7DQBXZUqk1pzrHXEjmV@mail.gmail.com>
-References: <AANLkTim6Bn++JaspY0cbpLLvi=MYBLNgUhARwKQkoYpE@mail.gmail.com>
-	<1280887483-2979-2-git-send-email-wad@chromium.org>
-	<20100804090049.GH5464@nb.net.home>
-	<AANLkTin8eVm=_pw_DgP2wJW9pE0LgugqfXJE8aVXiH6R@mail.gmail.com>
-	<AANLkTik=thmEH7b+wRGM=m9LA3kjmg-dZ_yv19-SotrM@mail.gmail.com>
-	<AANLkTikh3pGh5jpFZ-Petoizw7DQBXZUqk1pzrHXEjmV@mail.gmail.com>
-Date: Wed, 4 Aug 2010 10:56:59 -0500
-Message-ID: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] genhd, efi: add efi partition metadata to 
-	hd_structs
-From: Will Drewry <wad@chromium.org>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Tejun Heo <tj@kernel.org>, Karel Zak <kzak@redhat.com>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
+	id S1754976Ab0HDP7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 11:59:12 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:42677 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab0HDP7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 11:59:09 -0400
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+From: john stultz <johnstul@us.ibm.com>
+To: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de
+Cc: lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Aug 2010 08:58:46 -0700
+Message-ID: <1280937526.28884.21.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 10:28 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Wed, Aug 4, 2010 at 16:44, Will Drewry <wad@chromium.org> wrote:
->> On Wed, Aug 4, 2010 at 5:14 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->
->>> But the only thing we are really interested in is the UUID, which,
->>> like Tejun already suggested, we should probably store
->>> format-independent, and have it always accessible. That way, we would
->>> not need any type-specific parser, we just handle the normal DCE
->>> format.
->>
->> I'll bump it out and make it the efi code generic-ify its uuid.  Out
->> of curiousity, were you and Tejun thinking of keeping it as a 36 byte
->> string or as the 16 byte packed value.  While less space efficient,
->> I'd prefer the u8[36] as it avoids dealing with versioning when
->> parsing the user-supplied string.  Instead, each partition type can
->> properly unparse its uuids according to what they expect.
->
-> I think we should use the packed version, which is case-insensitive,
-> or at least normalize it to a defined case.
+On Wed, 2010-08-04 at 15:48 +0300, Alexander Shishkin wrote:
+> Certain userspace applications (like "clock" desktop applets or ntpd) might
+> want to be notified when some other application changes the system time. It
+> might also be important for an application to be able to distinguish between
+> its own and somebody else's time changes.
 
-Yeah, I'm all for tolower()ing the entire value instead of packing :)
-, but looking at the uuid code quickly, and it seems that the only
-real difference in ordering practically is big-endian versus little
-endian.  Since sprintf supports converting both of those to strings,
-it would make sense to just have a part_pack_uuid(char *uuid) which
-will always do, let's say big endian, packing.  Then it won't be too
-much work for the partition format to export the value either directly
-to the right format or just via sprintf then pack.
+So NTP doesn't actually care, as it will notice the STA_UNSYNC flag is
+set the next time it checks adjtimex.
 
-I'll add a common packer/unpacker, and see how it looks.
+The clock apps example seems reasonable, but maybe isn't the most
+compelling argument for adding a new kernel api.
+
+Is there a actual use case that you need this for?  I don't really have
+an issue with the code I just really want to make sure the feature would
+be useful enough to justify the API and code maintenance going forward.
+
+Doing some of my own googling, I see Apple added such a notification
+method, which suggests there are apps that want this. 
+http://stackoverflow.com/questions/690326/how-can-i-get-notified-of-a-system-time-change-in-my-cocoa-application
+
+But it doesn't give any specific examples either.
+
+thanks
+-john
+
+
