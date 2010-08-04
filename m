@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab0HDWIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:08:39 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52023 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab0HDWIf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:08:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100804205654.GA4986@srcf.ucam.org>
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
-	<20100804185520.GA2417@srcf.ucam.org>
-	<201008042251.08266.rjw@sisk.pl>
-	<20100804205654.GA4986@srcf.ucam.org>
-Date: Wed, 4 Aug 2010 15:08:33 -0700
-Message-ID: <AANLkTi=fH=XqJ0QgaMwPr5efacWAFo5h0khD7RjL4n8L@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, david@lang.hm,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756847Ab0HDWOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:14:03 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:46589 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752047Ab0HDWNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 18:13:54 -0400
+Date: Thu, 5 Aug 2010 00:11:05 +0200
+From: Michael Leun <lkml20100708@newton.leun.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg KH <greg@kroah.com>, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
+ (after using openvpn) (was Re: sysfs bug when using tun with network
+ namespaces)
+Message-ID: <20100805001105.5a3453ed@xenia.leun.net>
+In-Reply-To: <20100804214618.GA6289@kroah.com>
+References: <loom.20100708T183152-326@post.gmane.org>
+	<20100709235744.GA12752@kroah.com>
+	<20100710101540.2799c9ef@xenia.leun.net>
+	<20100710140800.GA20424@kroah.com>
+	<20100710165208.59272ae6@xenia.leun.net>
+	<20100710235323.5336f627@xenia.leun.net>
+	<20100711192939.1c25dcaf@xenia.leun.net>
+	<20100804153543.56f6ecad@xenia.leun.net>
+	<20100804214618.GA6289@kroah.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 1:56 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
->> On Wednesday, August 04, 2010, Matthew Garrett wrote:
->> > No! And that's precisely the issue. Android's existing behaviour could
->> > be entirely implemented in the form of binary that manually triggers
->> > suspend when (a) the screen is off and (b) no userspace applications
->> > have indicated that the system shouldn't sleep, except for the wakeup
->> > event race. Imagine the following:
->> >
->> > 1) The policy timeout is about to expire. No applications are holding
->> > wakelocks. The system will suspend providing nothing takes a wakelock.
->> > 2) A network packet arrives indicating an incoming SIP call
->> > 3) The VOIP application takes a wakelock and prevents the phone from
->> > suspending while the call is in progress
->> >
->> > What stops the system going to sleep between (2) and (3)? cgroups don't,
->> > because the voip app is an otherwise untrusted application that you've
->> > just told the scheduler to ignore.
->>
->> I _think_ you can use the just-merged /sys/power/wakeup_count mechanism to
->> avoid the race (if pm_wakeup_event() is called at 2)).
->
-> Yes, I think that solves the problem. The only question then is whether
+Hi,
 
-How? By passing a timeout to pm_wakeup_event when the network driver
-gets the packet or by passing 0. If you pass a timeout it is the same
-as using a wakelock with a timeout and should work (assuming the
-timeout you picked is long enough). If you don't pass a timeout it
-does not work, since the packet may not be visible to user-space yet.
+On Wed, 4 Aug 2010 14:46:18 -0700
+Greg KH <greg@kroah.com> wrote:
 
-> it's preferable to use cgroups or suspend fully, which is pretty much up
-> to the implementation. In other words, is there a reason we're still
+> Eric, here's a bug with the network namespace stuff, care to work on
+> resolving it?
 
-I have seen no proposed way to use cgroups that will work. If you
-leave some processes running while other processes are frozen you run
-into problems when a frozen process holds a resource that a running
-process needs.
+Just in case I provide the complete scenario again below.
 
+If I can help somehow (provide further information, test something...)
+of course I'll happily do so.
 
-> having this conversation? :) It'd be good to have some feedback from
-> Google as to whether this satisfies their functional requirements.
->
+In an network namespace I can use an tun/tap tunnel through ssh and
+when closing that namespace then eveything is fine.
 
-That is "this"? The merged code? If so, no it does not satisfy our
-requirements. The in kernel api, while offering similar functionality
-to the wakelock interface, does not use any handles which makes it
-impossible to get reasonable stats (You don't know which pm_stay_awake
-request pm_relax is reverting). The proposed in user-space interface
-of calling into every process that receives wakeup events before every
-suspend call is also not compatible with existing apps.
+But when using openvpn (also tunnel trough tun/tap) in an network
+namespace and then closing that namespace I get:
+
+unregister_netdevice: waiting for lo to become free
+[repeated]
+
+Please see the following two examples showing that difference:
+
+# > unshare -n /bin/bash
+# > # how to setup veth device pair to get connectivity into namespace not shown here
+# > tunctl -u ml -t tap1
+# > ssh -o Tunnel=Ethernet -w 1:1 somewhere
+[ running some traffic over tap1 not shown here ]
+^d # logging out from somewhere
+# > tunctl -d tap1
+# > exit # logging out from shell in network namespace
+
+Now the veth device pair used automagically vanishes and nothing
+from that different network namespace remains - very well.
+
+but
+
+# > unshare -n /bin/bash
+# > # how to setup veth device pair to get connectivity into namespace not shown here
+# > openvpn --config some.config
+[ running some traffic over vpn device not shown here ]
+^c # stopping openvpn
+# > lsof -i
+# > netstat -an
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address
+State Active UNIX domain sockets (servers and established)
+Proto RefCnt Flags       Type       State         I-Node Path
+# > ps ax|grep openvpn|grep -v grep
+# > # cannot find anything that suggests there is anything left from that openvpn session 
+# > exit # logging out from shell in network namespace
+
+Now I get
+
+Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo to
+become free. Usage count = 3 [repeated]
+
+Now one might say it is fault of openvpn (used OpenVPN 2.1_rc20
+i586-suse-linux - the one in openSuSE 11.2 package - EDIT: meanwhile it
+is 2.1.1, openSuSE 11.3 ), openvpn didn't close some ressource and ssh
+does fine.
+
+But: should'nt kernel clean up after process when it exits?
+And/or: Should'nt kernel clean up if last process in network namespace
+exits - there is nothing left which might use that interface?!
+
 
 -- 
-Arve Hjønnevåg
+MfG,
+
+Michael Leun
+
