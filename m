@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab0HDJNV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 05:13:21 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:41503 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756207Ab0HDJNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 05:13:19 -0400
-Date: Wed, 4 Aug 2010 11:13:17 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-raid@vger.kernel.org, xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: How to track down abysmal performance ata - raid1 - crypto -
-	vg/lv - xfs
-Message-ID: <20100804091317.GA27779@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
-	xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-References: <20100804073546.GA7494@comet.dominikbrodowski.net> <20100804085039.GA11671@infradead.org>
+	id S1757085Ab0HDJOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 05:14:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55574 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab0HDJOl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 05:14:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=wSXOFyZU4zlPpkrDkwB2eGHj7qinqLs7ytViF/9PeaNie1Fg+32SEcUI1An+c+0Zbo
+         yQ2r5SfS7IWIjL2fPAgaYAKOVX65IBUg08jnbSOAeYhp7zRIO1+5tzRHiNhtV28lwfhU
+         uoMbxwrnoW2pilFGnRyCSWko6/xfLA/Y2pNnA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100804085039.GA11671@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTi=1DxqLrqVbfRouOBRWg4RHFaHz438X7F1JWL6P@mail.gmail.com>
+References: <AANLkTi=1DxqLrqVbfRouOBRWg4RHFaHz438X7F1JWL6P@mail.gmail.com>
+From: Mulyadi Santosa <mulyadi.santosa@gmail.com>
+Date: Wed, 4 Aug 2010 16:14:10 +0700
+Message-ID: <AANLkTimejYX3OEk9j+L+nWKyBuf7=rJbAOvQGhxJNPxN@mail.gmail.com>
+Subject: Re: question about CONFIG_BASE_SMALL
+To: Ryan Wang <openspace.wang@gmail.com>
+Cc: kernelnewbies@nl.linux.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph,
+Hi...
 
-On Wed, Aug 04, 2010 at 04:50:39AM -0400, Christoph Hellwig wrote:
-> On Wed, Aug 04, 2010 at 09:35:46AM +0200, Dominik Brodowski wrote:
-> > How can I best track down the cause of the performance problem, 
-> > a) without rebooting too often, and
-> > b) without breaking up the setup specified above (production system)?
-> 
-> So did you just upgrade the system from an earlier kernel that did not
-> show these problems?
+On Wed, Aug 4, 2010 at 15:38, Ryan Wang <openspace.wang@gmail.com> wrote:
+> Hi all,
+>
+>      I noticed CONFIG_BASE_SMALL in different parts
+> of the kernel code, with ifdef/ifndef.
+>      I wonder what does CONFIG_BASE_SMALL mean?
+> And how can I configure it, e.g. through make menuconfig?
 
-No, 2.6.31 to 2.6.34 show similar behaviour.
+Reply on top of my head: IIRC it means to disable certain things...or
+possibly enabling things that might reduce memory footprints.
 
->  Or did no one notice them before?
+The goal....to make Linux kernel running more suitable for embedded
+system and low level specification machine...
 
-Well, there are some reports relating to XFS on MD or RAID, though I couldn't
-find a resolution to the issues reported, e.g.
+-- 
+regards,
 
-- http://kerneltrap.org/mailarchive/linux-raid/2009/10/12/6490333
-- http://lkml.indiana.edu/hypermail/linux/kernel/1006.1/00099.html
+Mulyadi Santosa
+Freelance Linux trainer and consultant
 
-However, I think we can rule out barriers, as XFS is mounted "nobarrier"
-here.
-
-Best,
-	Dominik
+blog: the-hydra.blogspot.com
+training: mulyaditraining.blogspot.com
