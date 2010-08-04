@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594Ab0HDJvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 05:51:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39196 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757248Ab0HDJvJ convert rfc822-to-8bit (ORCPT
+	id S932333Ab0HDKAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 06:00:20 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:51836 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932090Ab0HDKAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 05:51:09 -0400
-Subject: Re: A question of perf NMI handler
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, robert.richter@amd.com,
-        fweisbec@gmail.com, linux-kernel@vger.kernel.org,
-        "Huang, Ying" <ying.huang@intel.com>
-In-Reply-To: <1280913670.20797.179.camel@minggr.sh.intel.com>
-References: <1280913670.20797.179.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 04 Aug 2010 11:50:55 +0200
-Message-ID: <1280915455.1923.890.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 4 Aug 2010 06:00:18 -0400
+Date: Wed, 4 Aug 2010 10:58:12 +0100
+From: Chris Webb <chris@arachsys.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Over-eager swapping
+Message-ID: <20100804095811.GC2326@arachsys.com>
+References: <20100802124734.GI2486@arachsys.com>
+ <AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
+ <20100803033108.GA23117@arachsys.com>
+ <AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
+ <20100803042835.GA17377@localhost>
+ <20100803214945.GA2326@arachsys.com>
+ <20100804022148.GA5922@localhost>
+ <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
+ <20100804032400.GA14141@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100804032400.GA14141@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 17:21 +0800, Lin Ming wrote:
-> With nmi_watchdog enabled, perf_event_nmi_handler always return
-> NOTIFY_STOP(active_events > 0), and the notifier call chain will not
-> call further.
-> 
-> If it was not perf NMI, does the perf nmi handler may stop the real NMI
-> handler get called because NOTIFY_STOP is returned??
-> 
-> static int __kprobes
-> perf_event_nmi_handler(struct notifier_block *self,
-> 			 unsigned long cmd, void *__args)
-> {
-> 	struct die_args *args = __args;
-> 	struct pt_regs *regs;
-> 
-> 	if (!atomic_read(&active_events)) ===> With nmi_watchdog enabled, active_events > 0
-> 		return NOTIFY_DONE;
-> 
-> 	switch (cmd) {
-> 	case DIE_NMI:
-> 	case DIE_NMI_IPI:
-> 		break;
-> 
-> 	default:
-> 		return NOTIFY_DONE;
-> 	}
-> 
-> 	regs = args->regs;
-> 
-> 	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> 	/*
-> 	 * Can't rely on the handled return value to say it was our NMI, two
-> 	 * events could trigger 'simultaneously' raising two back-to-back NMIs.
-> 	 *
-> 	 * If the first NMI handles both, the latter will be empty and daze
-> 	 * the CPU.
-> 	 */
-> 	x86_pmu.handle_irq(regs);
-> 
-> 	return NOTIFY_STOP;
-> }
+Wu Fengguang <fengguang.wu@intel.com> writes:
 
-Urgh,.. right, so what is the alternative? we don't seem to have a
-reliable way of telling where the NMI originated from.
+> This is interesting. Why is it waiting for 1m here? Are there high CPU
+> loads? Would you do a
+> 
+>         echo t > /proc/sysrq-trigger
+> 
+> and show us the dmesg?
 
-As that comment says, the PMU can raise the NMI and raise the pending
-NMI latch for a second over-run, at which point the first NMI will
-likely see the overflow status for both, clear both, and the second NMI
-will see a 0 overflow status, return it wasn't the PMU, but since the
-PMU did raise it, nobody else will claim it, and we get these silly
-dazed and confused thingies.
+Annoyingly, magic-sysrq isn't compiled in on these kernels. Is there another
+way I can get this info for you? Replacing the kernels on the machines is a
+painful job as I have to give the clients running on them quite a bit of
+notice of the reboot, and I haven't been able to reproduce the problem on a
+test machine.
 
-What NMI source are you concerned about and can it reliably tell if it
-raised the NMI or not?
+I also think the swap use is much better following a reboot, and only starts
+to spiral out of control after the machines have been running for a week or
+so.
 
+However, your suggestion is right that the CPU loads on these machines are
+typically quite high. The large number of kvm virtual machines they run mean
+thatl oads of eight or even sixteen in /proc/loadavg are not unusual, and
+these are higher when there's swap than after it has been removed. I assume
+this is mostly because of increased IO wait, as this number increases
+significantly in top.
 
+Cheers,
+
+Chris.
