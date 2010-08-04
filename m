@@ -1,158 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab0HDCHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:07:42 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49109 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758004Ab0HDCHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:07:40 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 4 Aug 2010 11:02:48 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Cc: Bojan Smojver <bojan@rexursive.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
-Message-Id: <20100804110248.13a2452b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C58C771.6040505@tuxonice.net>
-References: <1280465201.2600.10.camel@shrek.rexursive.com>
-	<1280486667.2608.1.camel@shrek.rexursive.com>
-	<4C534C9D.8000600@tuxonice.net>
-	<1280532174.2583.1.camel@shrek.rexursive.com>
-	<4C5362E7.3000706@tuxonice.net>
-	<1280538184.2583.11.camel@shrek.rexursive.com>
-	<4C537A01.5040808@tuxonice.net>
-	<1280540035.2658.5.camel@shrek.rexursive.com>
-	<1280551286.3097.6.camel@shrek.rexursive.com>
-	<20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
-	<1280710453.2727.8.camel@shrek.rexursive.com>
-	<20100802101058.d4f1c7b6.kamezawa.hiroyu@jp.fujitsu.com>
-	<1280712068.2671.0.camel@shrek.rexursive.com>
-	<20100802102750.7d414819.kamezawa.hiroyu@jp.fujitsu.com>
-	<1280713381.2673.2.camel@shrek.rexursive.com>
-	<1280800750.3305.4.camel@shrek.rexursive.com>
-	<4C58C771.6040505@tuxonice.net>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758144Ab0HDCJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:09:16 -0400
+Received: from ozlabs.org ([203.10.76.45]:56684 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758079Ab0HDCJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 22:09:10 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [RFC PATCH] x86-64: software IRQ masking and handling
+Date: Wed, 4 Aug 2010 11:39:05 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+References: <4C3A06E3.50402@kernel.org> <4C588C0C.1070702@goop.org>
+In-Reply-To: <4C588C0C.1070702@goop.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008041139.06739.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Aug 2010 11:50:41 +1000
-Nigel Cunningham <nigel@tuxonice.net> wrote:
+On Wed, 4 Aug 2010 07:07:16 am Jeremy Fitzhardinge wrote:
+> Of course if it becomes core to the x86 architecture or the kernel 
+> overall, then most of the irq-related paravirt-ops can go away and be 
+> limited to the actual interrupt handler and the machinery needed to 
+> really mask/unmask the hardware and set the pending flag (which would 
+> likely just be contained within the hypervisor-specific code, and not 
+> need any new kernel interfaces to replace the dropped paravirt irq ones).
 
-> Hi.
-> 
-> Sorry for the delay in replying.
-> 
-> On 03/08/10 11:59, Bojan Smojver wrote:
-> >> From all this, I only got "In swsusp_free()" printed on resume. So, it
-> > seems that save_image() does indeed free those vmalloc()-ed buffers and
-> > they are not saved in the image.
-> >
-> > I even put this in hibernate.c:
-> > ---------------------
-> >          /* Restore control flow magically appears here */
-> >          restore_processor_state();
-> >          if (!in_suspend)
-> >                  platform_leave(platform_mode);
-> >
-> >          printk(KERN_ERR "Resumed, checking swsusp_lzo_buffers.\n");
-> >          if (swsusp_lzo_buffers) {
-> >                  printk (KERN_ERR "Setting vmalloc() buffers.\n");
-> >                  memset(swsusp_lzo_buffers, 0, 80 * PAGE_SIZE);
-> >          }
-> > ---------------------
-> >
-> > This printed just "Resumed, checking swsusp_lzo_buffers.", meaning it
-> > was already set to NULL.
-> >
-> > Any further comments on this? Nigel, what do you reckon?
-> 
-> I don't see what all the fuss was about. save_image is called after the 
-> snapshot is made (hibernate called hibernation_snapshot to create the 
-> image, then swsusp_write which in turn calls save_image), so there's no 
-> possibility of the memory allocated by it being included in the image or 
-> of a memory leak ocuring as a result.
-> 
+Yep, we sweat over the cli/sti paravirtual implementations because it's so
+common.  If the kernel used soft cli/sti we could simply implement it with
+a hypercall and be much happier (though iret possibly still an issue).
 
-I'm sorry if I'm wrong. Here is logic in my mind. (I'm reading hibernate(void).
-not sure about user.c )
-(linenumber is from 2.6.34 global, plz ignore)
-
- 624         error = hibernation_snapshot(hibernation_mode == HIBERNATION_PLATFORM);
- 625         if (error)
- 626                 goto Thaw;
- 627 
- 628         if (in_suspend) {
- 629                 unsigned int flags = 0;
- 630 
- 631                 if (hibernation_mode == HIBERNATION_PLATFORM)
- 632                         flags |= SF_PLATFORM_MODE;
- 633                 pr_debug("PM: writing image.\n");
- 634                 error = swsusp_write(flags);
-
-Then, swsusp_write() actually writes image to the disk. Right ?
-
-It finally calls save_image(). save_image() executes following loop.
-
- 433         while (1) {
- 434                 ret = snapshot_read_next(snapshot, PAGE_SIZE);
- 435                 if (ret <= 0)
- 436                         break;
- 437                 ret = swap_write_page(handle, data_of(*snapshot), &bio);
- 438                 if (ret)
- 439                         break;
- 440                 if (!(nr_pages % m))
- 441                         printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
- 442                 nr_pages++;
- 443         }
-
-Ok, here, the image written to disk is got by snapshot_read_next().
-Then, what it does ?
-
-==
-1650                         page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
-1651                         if (PageHighMem(page)) {
-1652                                 /* Highmem pages are copied to the buffer,
-1653                                  * because we can't return with a kmapped
-1654                                  * highmem page (we may not be called again).
-1655                                  */
-1656                                 void *kaddr;
-1657 
-1658                                 kaddr = kmap_atomic(page, KM_USER0);
-1659                                 memcpy(buffer, kaddr, PAGE_SIZE);
-1660                                 kunmap_atomic(kaddr, KM_USER0);
-1661                                 handle->buffer = buffer;
-1662                         } else {
-1663                                 handle->buffer = page_address(page);
-1664                         }
-==
-
-Ok, what actually written to disk is an image of memory at save_image() is
-called.
-
-What happens at vmalloc ?
-	1. page tabels for vmalloc() is set up.
-	2. vm_struct object is allocated.
-	3. vmap is allcoated.
-
-Above "3" states are all saved into the disk image, as "used".
-
-Then, after resume, all vmalloc() area is resumed as "allocated".
-
-Wrong ?
-
-Thanks,
--Kame
-
-
- 
-
-
-
- 
-
+Cheers,
+Rusty.
