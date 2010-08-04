@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134Ab0HDI5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 04:57:53 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42372 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756929Ab0HDI5u (ORCPT
+	id S1757095Ab0HDI76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 04:59:58 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:36762 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0HDI74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 04:57:50 -0400
-Date: Wed, 4 Aug 2010 10:11:04 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Airlie <airlied@linux.ie>, David Miller <davem@davemloft.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH 0/3] SysRq: do not pass tty argument around
-Message-ID: <20100804101104.7f6e7b08@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100804075602.30647.91462.stgit@localhost.localdomain>
-References: <20100804075602.30647.91462.stgit@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 4 Aug 2010 04:59:56 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C592BFE.7070701@s5r6.in-berlin.de>
+Date: Wed, 04 Aug 2010 10:59:42 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: Nigel Cunningham <nigel@tuxonice.net>
+CC: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't
+ used!
+References: <4C58C528.4000606@tuxonice.net>
+In-Reply-To: <4C58C528.4000606@tuxonice.net>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Aug 2010 00:58:55 -0700
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+(adding Cc: linux-scsi)
 
-> Hi,
+Nigel Cunningham wrote:
+> I've just given hibernation a go under 2.6.35, and at first I thought
+> there was some sort of hang in freezing processes. The computer sat
+> there for aaaaaages, apparently doing nothing. Switched from TuxOnIce to
+> swsusp to see if it was specific to my code but no - the problem was
+> there too. I used the nifty new kdb support to get a backtrace, which was:
 > 
-> The following 3 patches get rid of 'tty' argument in SysRq handlers as
-> nobody is using it. If noone objects I'd like to get it merged through
-> my tree.
+> get_swap_page_of_type
+> discard_swap_cluster
+> blk_dev_issue_discard
+> wait_for_completion
+> 
+> Adding a printk in discard swap cluster gives the following:
+> 
+> [   46.758330] Discarding 256 pages from bdev 800003 beginning at page 640377.
+> [   47.003363] Discarding 256 pages from bdev 800003 beginning at page 640633.
+> [   47.246514] Discarding 256 pages from bdev 800003 beginning at page 640889.
+> 
+> ...
+> 
+> [  221.877465] Discarding 256 pages from bdev 800003 beginning at page 826745.
+> [  222.121284] Discarding 256 pages from bdev 800003 beginning at page 827001.
+> [  222.365908] Discarding 256 pages from bdev 800003 beginning at page 827257.
+> [  222.610311] Discarding 256 pages from bdev 800003 beginning at page 827513.
+> 
+> So allocating 4GB of swap on my SSD now takes 176 seconds instead of
+> virtually no time at all. (This code is completely unchanged from 2.6.34).
+> 
+> I have a couple of questions:
+> 
+> 1) As far as I can see, there haven't been any changes in mm/swapfile.c
+> that would cause this slowdown, so something in the block layer has
+> (from my point of view) regressed. Is this a known issue?
 
-Looks good to me.
+Perhaps ATA TRIM is enabled for this SSD in 2.6.35 but not in 2.6.34?
+Or the discard code has been changed to issue many moderately sized ATA
+TRIMs instead of a single huge one, and the former was much more optimal
+for your particular SSD?
+
+> 2) Why are we calling discard_swap_cluster anyway? The swap was unused
+> and we're allocating it. I could understand calling it when freeing
+> swap, but when allocating?
+
+At the moment when the administrator creates swap space, the kernel can
+assume that he has no use anymore for the data that may have existed
+previously at this space.  Hence instruct the SSD's flash translation
+layer to return all these blocks to the list of unused logical blocks
+which do not have to be read and backed up whenever another logical
+block within the same erase block is written to.
+
+However, I am surprised that this is done every time (?) when preparing
+for hibernation.
+-- 
+Stefan Richter
+-=====-==-=- =--- --=--
+http://arcgraph.de/sr/
