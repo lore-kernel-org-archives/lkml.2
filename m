@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab0HDBxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 21:53:07 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59260 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758060Ab0HDBxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 21:53:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=OvY0MO0T2HjJ/44qINL/KXxT9/cO7Hxx88vpBLrcXeMkPRRJf3gL3tpGSlOw0/VBpG
-         3pdXh9KugztX+Gs014kRTd9//9f/Nc48gCANlk2ajlu3gYRSL5MJKS25x0Fp/hSN6pe5
-         Z+S4j7I1h04rNYMqPuv3OG9R2e/PUrsTshV0I=
-Subject: [PATCH] wm8350-core: fix wrong kfree in error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain
-Date: Wed, 04 Aug 2010 09:54:21 +0800
-Message-Id: <1280886861.31990.5.camel@mola>
+	id S1758112Ab0HDByd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 21:54:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34354 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758008Ab0HDByb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 21:54:31 -0400
+Date: Wed, 4 Aug 2010 11:54:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        David Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com
+Subject: Re: linux-next: manual merge of the vfs tree with the xfs tree
+Message-Id: <20100804115428.420d0c07.sfr@canb.auug.org.au>
+In-Reply-To: <20100705100248.173ec8ee.sfr@canb.auug.org.au>
+References: <20100705100248.173ec8ee.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes below fixes:
-1. fix wm8350_create_cache error path
-   make sure wm8350->reg_cache is freed in error path.
-2. fix wm8350_device_init error path
-   no need to kfree(wm8350->reg_cache) in the case of goto out.
+Hi Al,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Mon, 5 Jul 2010 10:02:48 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Today's linux-next merge of the vfs tree got a conflict in
+> fs/xfs/linux-2.6/xfs_super.c between commit
+> 04d2da9c682ce2687db29136c60d8679e37e3b35 ("xfs: split xfs_itrace_entry")
+> from the xfs tree and commit b43cb885cc49c782dd0734292d3cd95631200e5c
+> ("convert remaining ->clear_inode() to ->evict_inode()") from the vfs
+> tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.  I guess that the tracing code needs updating for the
+> xfs_fs_clear_inode -> xfs_fs_evict_inode name change as well.  And I am
+> wondering if the tracing wants to go ahead of the truncate_inode_pages()
+> call?
+> 
+> In anticipation, I have added this merge fix patch as well:
+
+Linus has now merged the xfs tree, so this patch can be applied to the
+vfs tree (assuming it is ok).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 5 Jul 2010 09:43:42 +1000
+Subject: [PATCH] xfs: update tracing for clear_inode to evict_inode transition
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/mfd/wm8350-core.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ fs/xfs/linux-2.6/xfs_super.c |    4 ++--
+ fs/xfs/linux-2.6/xfs_trace.h |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/wm8350-core.c b/drivers/mfd/wm8350-core.c
-index b580748..e81cc31 100644
---- a/drivers/mfd/wm8350-core.c
-+++ b/drivers/mfd/wm8350-core.c
-@@ -536,6 +536,7 @@ static int wm8350_create_cache(struct wm8350 *wm8350, int type, int mode)
- 	}
+diff --git a/fs/xfs/linux-2.6/xfs_super.c b/fs/xfs/linux-2.6/xfs_super.c
+index 157aaed..3e5052c 100644
+--- a/fs/xfs/linux-2.6/xfs_super.c
++++ b/fs/xfs/linux-2.6/xfs_super.c
+@@ -1107,10 +1107,10 @@ xfs_fs_evict_inode(
+ {
+ 	xfs_inode_t		*ip = XFS_I(inode);
  
- out:
-+	kfree(wm8350->reg_cache);
- 	return ret;
- }
++	trace_xfs_evict_inode(ip);
++
+ 	truncate_inode_pages(&inode->i_data, 0);
+ 	end_writeback(inode);
+-	trace_xfs_clear_inode(ip);
+-
+ 	XFS_STATS_INC(vn_rele);
+ 	XFS_STATS_INC(vn_remove);
+ 	XFS_STATS_DEC(vn_active);
+diff --git a/fs/xfs/linux-2.6/xfs_trace.h b/fs/xfs/linux-2.6/xfs_trace.h
+index d506753..76de133 100644
+--- a/fs/xfs/linux-2.6/xfs_trace.h
++++ b/fs/xfs/linux-2.6/xfs_trace.h
+@@ -576,7 +576,7 @@ DEFINE_INODE_EVENT(xfs_ioctl_setattr);
+ DEFINE_INODE_EVENT(xfs_file_fsync);
+ DEFINE_INODE_EVENT(xfs_destroy_inode);
+ DEFINE_INODE_EVENT(xfs_write_inode);
+-DEFINE_INODE_EVENT(xfs_clear_inode);
++DEFINE_INODE_EVENT(xfs_evict_inode);
  
-@@ -700,7 +701,7 @@ int wm8350_device_init(struct wm8350 *wm8350, int irq,
- 
- 	ret = wm8350_irq_init(wm8350, irq, pdata);
- 	if (ret < 0)
--		goto err;
-+		goto err_free;
- 
- 	if (wm8350->irq_base) {
- 		ret = request_threaded_irq(wm8350->irq_base +
-@@ -738,8 +739,9 @@ int wm8350_device_init(struct wm8350 *wm8350, int irq,
- 
- err_irq:
- 	wm8350_irq_exit(wm8350);
--err:
-+err_free:
- 	kfree(wm8350->reg_cache);
-+err:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(wm8350_device_init);
+ DEFINE_INODE_EVENT(xfs_dquot_dqalloc);
+ DEFINE_INODE_EVENT(xfs_dquot_dqdetach);
 -- 
-1.5.4.3
+1.7.1
 
-
-
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
