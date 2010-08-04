@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755812Ab0HDScb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:32:31 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:41107 "EHLO e7.ny.us.ibm.com"
+	id S1756038Ab0HDSc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:32:57 -0400
+Received: from mail.lang.hm ([64.81.33.126]:58577 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754029Ab0HDSca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:32:30 -0400
-Date: Wed, 4 Aug 2010 11:32:25 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: david@lang.hm, Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        "Ted Ts'o" <tytso@mit.edu>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
+	id S1754029Ab0HDSc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 14:32:56 -0400
+Date: Wed, 4 Aug 2010 11:30:44 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
 Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100804183225.GC24163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100802140933.GB2405@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
- <AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
- <alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
- <AANLkTikhcYzNp8CPp8cqrV7Ey5CLMWu1sJTNxUtEi2as@mail.gmail.com>
- <alpine.DEB.2.00.1008022203470.6545@asgard.lang.hm>
- <AANLkTinFT5jq4nUhUpzS5S4TVDQGj0S7RtRgxNhsz2UF@mail.gmail.com>
- <alpine.DEB.2.00.1008031611100.6545@asgard.lang.hm>
- <20100804001015.GJ2407@linux.vnet.ibm.com>
- <20100803205758.21fcf372@infradead.org>
+In-Reply-To: <20100804163509.GA31523@srcf.ucam.org>
+Message-ID: <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100731215214.2543c07e@infradead.org> <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801154708.19817b75@infradead.org>
+ <20100802011006.GS2470@linux.vnet.ibm.com> <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com> <20100803183447.0275c134@infradead.org> <20100804163216.GB24163@linux.vnet.ibm.com> <20100804163509.GA31523@srcf.ucam.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100803205758.21fcf372@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 08:57:58PM -0700, Arjan van de Ven wrote:
-> On Tue, 3 Aug 2010 17:10:15 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > 
-> > OK, I'll bite...
-> > 
-> > >From an Android perspective, the differences are as follows:
-> > 
-> > 1.	Deep idle states are entered only if there are no runnable
-> > tasks. In contrast, opportunistic suspend can happen even when there
-> > 	are tasks that are ready, willing, and able to run.
-> 
-> for "system suspend", this is an absolutely valid statement.
-> for "use suspend as idle state", it's not so clearly valid.
-> (but this is sort of a separate problem, basically the "when do we
-> freeze the tasks that we don't like for power reasons" problem,
-> which in first order is independent on what kind of idle power state
-> you pick, and discussed extensively elsewhere in this thread)
+On Wed, 4 Aug 2010, Matthew Garrett wrote:
 
->From what I can see, the Android folks are are using "suspend" in
-the "system suspend" sense.
+> On Wed, Aug 04, 2010 at 09:32:16AM -0700, Paul E. McKenney wrote:
+>
+>> If this doesn't work for the Android folks for whatever reason, another
+>> approach would be to do the freeze in user code, which could track
+>> whether any user-level resources (pthread mutexes, SysV semas, whatever)
+>> where held, and do the freeze on a thread-by-thread basis within each
+>> "victim" application as the threads reach safe points.
+>
+> The main problem I see with the cgroups solution is that it doesn't seem
+> to do anything to handle avoiding loss of wakeup events.
 
-I agree that the proposals for freezing subsets of the tasks in the
-system are independent of whether idle or suspend is being used.
-Instead, such freezing depends on (for example) whether or not the
-display is active.
+there are two cgroup solutions in discussion at this point.
 
-That said, freezing subsets of tasks is a nice-to-have rather than a
-hard requirement for Android.  Though I suspect that the appearance
-of a reliable way of freezing subsets of tasks just might promote
-this to a hard requirement.  ;-)
+weeks ago there was the suggestion to put non-privilaged tasks in a cgroup 
+so that they could be frozen as a group. I thought the problem there was 
+that there can be user-space dpendancies that would prevent privilaged 
+tasks from working.
 
-> > 2.	There can be a set of input events that do not bring the
-> > system out of suspend, but which would bring the system out of a deep
-> > 	idle state.  For example, I believe that it was stated that
-> > one of the Android-based smartphones ignores touchscreen input while
-> > 	suspended, but pays attention to it while in deep idle states.
-> 
-> I would argue that this is both a hardware specific issue, but also a
-> policy issue. From the user point of view, screen off with idle and
-> screen off with suspend aren't all that different (if my phone would
-> decide to idle rather than suspend because some app blocks suspend... I
-> wouldn't expect a difference in behavior when I touch the screen).
-> "Screen off -> don't honor touch after a bit" is almost an independent,
-> but very real, policy problem (and a forced one in suspend, I'll grant
-> you that). I could even argue that the policy decision "we don't care
-> about the touch screen input" is a pre-condition for entering suspend
-> (or in android speak, caring for touch screen input/having the touch
-> screen path active would be a suspend blocker)
+a couple days ago I made the suggestion to put non-privilaged tasks in a 
+cgroup so that the idle/suspend decision code could ignore acitivity 
+caused by this cgroup.
 
-I agree that the subset of input events that do not bring the system out
-of suspend would be governed both by hardware capabilities and by policy.
+in the second version wakeup events would be 'activity' that would be 
+counted and therefor the system would not be idle. As for the race with 
+suspending and new things happening, wouldn't that be handled the same way 
+that it is in a normal linux box?
 
-> > 3.	The system comes out of a deep idle state when a timer
-> > 	expires.  In contrast, timers cannot expire while the
-> > 	system is suspended.  (This one is debatable: some people
-> > 	argue that timers are subject to jitter, and the suspend
-> > 	case for timers is the same as that for deep idle states,
-> > 	but with unbounded timer jitter.  Others disagree.  The
-> > 	resulting discussions have produced much heat, but little
-> > 	light.  Such is life.)
-> 
-> I'll debate it even harder in that it's platform specific whether
-> timers can get the system out of suspend or not. Clearly on the Android
-> platform in question that's not the case, but for some of the Intel
-> phone silicon for example, timers CAN be wake sources to get you out of
-> suspend just fine. It just depend on which exact hw you talk about.
-> Generally, even if the fast timers aren't wake up sources, there'll be
-> some sort of alarm thing that you can pre-wake.. but yes you are right
-> in saying that's rather lame. 
-> Either way, it's not a general property of suspend, but a property of
-> suspend on the specific platform in question.
-
-Good point, I do need to emphasize the fact that whether or not timers
-pull the system out of suspend also depends both on hardware and
-on policy.  So I will change my statement to say something like "The
-system comes out of a deep idle state when a timer expires.  In contrast,
-timers do not necessarily expire while the system is suspended, depending
-on both hardware support and platform/application policy."
-
-							Thanx, Paul
-
-> 
-> 
-> -- 
-> Arjan van de Ven 	Intel Open Source Technology Centre
-> For development, discussion and tips for power savings, 
-> visit http://www.lesswatts.org
+David Lang
