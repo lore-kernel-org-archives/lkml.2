@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab0HDVwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:52:55 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44292 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab0HDVwt convert rfc822-to-8bit (ORCPT
+	id S1755929Ab0HDVxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:53:20 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59170
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754213Ab0HDVxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:52:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=WbY80Z8vv/HvpNu5GJ5RrmpzOl+ZZOP//s9pwMIVW8eRXiCO3pFKtER55AIwuU4qHz
-         WORpGRt7lkyRb2dMBaoQ+UZTkNXK5aOzWzpR8fW0tUw/9cHVsswDA+x5g3haP2p8KzOL
-         YihOfEwOK3mLb6PZvXOS7EO5cMJSIFvhjBxPk=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=bkp+JJYQ7dF36Up3gcjJR8LypgfKBWZHLfPH-@mail.gmail.com>
-References: <1277811391-17966-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTi=jStVGbJC7jUyhOG3og14F58rw+LEN2UqnP-X0@mail.gmail.com>
-	<AANLkTi=bkp+JJYQ7dF36Up3gcjJR8LypgfKBWZHLfPH-@mail.gmail.com>
-Date: Wed, 4 Aug 2010 14:52:46 -0700
-X-Google-Sender-Auth: No_-obfwWEuUYXGFM7khSsjBTj4
-Message-ID: <AANLkTimPAeupEKwksBKOyWX8K+wHgmgc5vEJ8cXBsQtD@mail.gmail.com>
-Subject: Re: [PATCH 2/2] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        yuanyabin1978@sina.com, Peter Pearse <peter.pearse@arm.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Alessandro Rubini <rubini@unipv.it>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Aug 2010 17:53:13 -0400
+Date: Wed, 04 Aug 2010 14:53:32 -0700 (PDT)
+Message-Id: <20100804.145332.35061046.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100804.134115.260072845.davem@davemloft.net>
+References: <20100803.203814.59697285.davem@davemloft.net>
+	<AANLkTimxv1y3QJ7s+ghi1FFCcwnUVWT1n6dvT-NNN=Oo@mail.gmail.com>
+	<20100804.134115.260072845.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 28, 2010 at 4:12 PM, Linus Walleij
-<linus.ml.walleij@gmail.com> wrote:
-> 2010/7/28 Dan Williams <dan.j.williams@intel.com>:
->>> +       txd = kzalloc(sizeof(struct pl08x_txd), GFP_KERNEL);
->>
->> ...appears in the prep routines.  Will this driver be used by any
->> storage controllers on the platfom?  Might we deadlock waiting on i/o
->> that needs to allocate a descriptor to complete?
->
-> I haven't noticed anything but a descriptor pool is on my
-> list of things to look into and fix.
+From: David Miller <davem@davemloft.net>
+Date: Wed, 04 Aug 2010 13:41:15 -0700 (PDT)
 
-If there is a list of things to fix and no acked-by's from anyone on
-the cc list I assume you want to wait for 2.6.37??  I'm sending the
-dmaengine/async_tx pull request this Friday.
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Wed, 4 Aug 2010 12:06:47 -0700
+> 
+>> On Tue, Aug 3, 2010 at 8:38 PM, David Miller <davem@davemloft.net> wrote:
+>>>
+>>> Another release, another merge window, another set of networking
+>>> changes to merge :-)
+>> 
+>> Ok, merged. But you should double-check my merge resolution fixes,
+> 
+> Will do, thanks a lot.
 
---
-Dan
+I just double-checked everything and it all looks fine, thanks
+again.
