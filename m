@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934740Ab0HDUTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 16:19:45 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:46790 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758926Ab0HDUTi (ORCPT
+	id S934748Ab0HDUUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 16:20:51 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:29945 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934298Ab0HDUUp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 16:19:38 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C59CBA9.1030808@jic23.retrosnub.co.uk>
-Date: Wed, 04 Aug 2010 21:20:57 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100802 Lightning/1.0b2pre Thunderbird/3.1.1
+	Wed, 4 Aug 2010 16:20:45 -0400
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+To: Wim Van Sebroeck <wim@iguana.be>,
+        "Frazier, Daniel Kent (ProLiant Linux)" <daniel_frazier@hp.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 4 Aug 2010 20:18:22 +0000
+Subject: RE: [PATCH 09/15] Despecificate driver from iLO2
+Thread-Topic: [PATCH 09/15] Despecificate driver from iLO2
+Thread-Index: Acs0EZKzeQBJceNgQCyBTxRtPjzDcAAAInqQ
+Message-ID: <183C1D5A376DE343AA8F94FC2A1EC1497B49F88E0B@GVW1091EXB.americas.hpqcorp.net>
+References: <1280274663-9160-1-git-send-email-dannf@hp.com>
+ <1280274663-9160-10-git-send-email-dannf@hp.com>
+ <20100804201341.GC30740@infomag.iguana.be>
+In-Reply-To: <20100804201341.GC30740@infomag.iguana.be>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] drivers/staging/iio: call mutex_unlock in error handling
- code
-References: <Pine.LNX.4.64.1008042153460.30592@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1008042153460.30592@ask.diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/10 20:54, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-Youch bad reviewing on my part.
+I like that suggestion Wim. Sure would make future iLO releases easier to include.
 
-Had a quick look and I think you caught all instances of this...
 
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+Tom
+
+> -----Original Message-----
+> From: Wim Van Sebroeck [mailto:wim@iguana.be]
+> Sent: Wednesday, August 04, 2010 3:14 PM
+> To: Frazier, Daniel Kent (ProLiant Linux)
+> Cc: linux-kernel@vger.kernel.org; Mingarelli, Thomas
+> Subject: Re: [PATCH 09/15] Despecificate driver from iLO2
 > 
-> Adjust the error handling code so that it benefits from the call to
-> mutex_unlock at the end of the function.
+> Hi Dan,
 > 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
+> > This driver supports both iLO2 and iLO3, but our user-visible strings
+> > currently only reference iLO2. Let's just call it "iLO" to avoid having
+> > to update strings for each iLO generation. This driver doesn't support
+> > iLO ASICs prior to iLO2, but that is sufficiently explained in Kconfig.
 > 
-> // <smpl>
-> @rcu exists@
-> position p1;
-> expression E;
-> @@
+> Just a thought: Wouldn't it be more consistent if it's called iLO2+
+> everywhere?
 > 
-> mutex_lock@p1(E);
-> ...
-> mutex_unlock(E);
+> > -	tristate "HP Proliant iLO 2 Hardware Watchdog Timer"
+> > +	tristate "HP Proliant iLO Hardware Watchdog Timer"
 > 
-> @exists@
-> position rcu.p1;
-> expression E;
-> @@
+> would be: tristate "HP Proliant iLO2+ Hardware Watchdog Timer"
 > 
-> *mutex_lock@p1(E);
-> ... when != mutex_unlock(E);
-> ?*return ...;
-> // </smpl>
+> > -	.identity = "HP iLO2 HW Watchdog Timer",
+> > +	.identity = "HP iLO HW Watchdog Timer",
 > 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> and: .identity = "HP iLO2+ HW Watchdog Timer",
 > 
-> ---
->  drivers/staging/iio/magnetometer/hmc5843.c     |   25 +++++++++++++------
->  1 files changed, 17 insertions(+), 8 deletions(-)
+> > -	 * First let's find out if we are on an iLO2 server. We will
+> > +	 * First let's find out if we are on an iLO2+ server. We will
 > 
-> diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
-> index 92f6c6f..ea5f749 100644
-> --- a/drivers/staging/iio/magnetometer/hmc5843.c
-> +++ b/drivers/staging/iio/magnetometer/hmc5843.c
-> @@ -220,11 +220,15 @@ static ssize_t hmc5843_set_operating_mode(struct device *dev,
->  	int error;
->  	mutex_lock(&data->lock);
->  	error = strict_strtoul(buf, 10, &operating_mode);
-> -	if (error)
-> -		return error;
-> +	if (error) {
-> +		count = error;
-> +		goto exit;
-> +	}
->  	dev_dbg(dev, "set Conversion mode to %lu\n", operating_mode);
-> -	if (operating_mode > MODE_SLEEP)
-> -			return -EINVAL;
-> +	if (operating_mode > MODE_SLEEP) {
-> +		count = -EINVAL;
-> +		goto exit;
-> +	}
->  
->  	status = i2c_smbus_write_byte_data(client, this_attr->address,
->  					operating_mode);
-> @@ -437,18 +441,23 @@ static ssize_t set_range(struct device *dev,
->  	int error;
->  	mutex_lock(&data->lock);
->  	error = strict_strtoul(buf, 10, &range);
-> -	if (error)
-> -		return error;
-> +	if (error) {
-> +		count = error;
-> +		goto exit;
-> +	}
->  	dev_dbg(dev, "set range to %lu\n", range);
->  
-> -	if (range > RANGE_6_5)
-> -		return -EINVAL;
-> +	if (range > RANGE_6_5) {
-> +		count = -EINVAL;
-> +		goto exit;
-> +	}
->  
->  	data->range = range;
->  	range = range << RANGE_GAIN_OFFSET;
->  	if (i2c_smbus_write_byte_data(client, this_attr->address, range))
->  		count = -EINVAL;
->  
-> +exit:
->  	mutex_unlock(&data->lock);
->  	return count;
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> > -		dev_warn(&dev->dev,
+> > -			"This server does not have an iLO2 ASIC.\n");
+> > +		dev_warn(&dev->dev, "This server does not have an iLO ASIC"
+> > +			 " version 2 or greater.\n");
+> 
+> dev_warn(&dev->dev,
+> 	"This server does not have an iLO2+ ASIC.\n");
+> 
+> > -			"Unable to detect the iLO2 server memory.\n");
+> > +			"Unable to detect the iLO server memory.\n");
+> 
+> "Unable to detect the iLO2+ server memory.\n");
+> 
+> For the rest I'm still reviewing the code.
+> 
+> Kind regards,
+> Wim.
 
