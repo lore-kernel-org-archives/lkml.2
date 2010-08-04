@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab0HDGDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:03:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53577 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758197Ab0HDGDQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:03:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100804045813.GA33951@dspnet.fr>
-References: <alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
-	<AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
-	<alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
-	<AANLkTikhcYzNp8CPp8cqrV7Ey5CLMWu1sJTNxUtEi2as@mail.gmail.com>
-	<alpine.DEB.2.00.1008022203470.6545@asgard.lang.hm>
-	<AANLkTinFT5jq4nUhUpzS5S4TVDQGj0S7RtRgxNhsz2UF@mail.gmail.com>
-	<alpine.DEB.2.00.1008031611100.6545@asgard.lang.hm>
-	<20100804001015.GJ2407@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008031723530.6545@asgard.lang.hm>
-	<AANLkTinjH0C0bSK=Y2wKASnbJFsR2BN303xBXkaHbmRC@mail.gmail.com>
-	<20100804045813.GA33951@dspnet.fr>
-Date: Tue, 3 Aug 2010 23:03:15 -0700
-Message-ID: <AANLkTi=pwyidtK7aebRwZ+SsJCSS-6t=6cFffdvcKKnx@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Olivier Galibert <galibert@pobox.com>
-Cc: david@lang.hm, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758277Ab0HDGEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 02:04:49 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:49426 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753983Ab0HDGEs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 02:04:48 -0400
+From: viresh kumar <viresh.kumar@st.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Armando Visconti <armando.visconti@st.com>,
+        shiraz hashim <shiraz.hashim@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        Linus Walleij <linus.ml.walleij@gmail.com>
+Date: Wed, 4 Aug 2010 14:04:23 +0800
+Subject: RE: [PATCH resend] Watchdog: Adding support for ARM Primecell	SP805
+ Watchdog
+Thread-Topic: [PATCH resend] Watchdog: Adding support for ARM Primecell
+	SP805 Watchdog
+Thread-Index: AcsyMXJs0RU4MiC+QhqCeX6buU+oxgBaH7BH
+Message-ID: <F6259B467C2CCE44A8F3D92A9BFE1D3D166FD0EBE7@EAPEX1MAIL1.st.com>
+References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com>
+ <4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be>
+ <4C285A72.7030303@st.com> <20100628162430.GN3788@infomag.iguana.be>
+ <20100718193425.GD24707@n2100.arm.linux.org.uk>
+ <20100726184601.GS11857@infomag.iguana.be>
+ <4C4E5B1E.4040004@st.com>,<20100802105704.GT30740@infomag.iguana.be>
+In-Reply-To: <20100802105704.GT30740@infomag.iguana.be>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/3 Olivier Galibert <galibert@pobox.com>:
-> On Tue, Aug 03, 2010 at 08:39:22PM -0700, Arve Hjønnevåg wrote:
->> If you just program the alarm you will wake up see that the monotonic
->> clock has not advanced and set the alarm another n seconds into the
->> future. Or are proposing that suspend should be changed to keep the
->> monotonic clock running?
->
-> You're supposed to fix the clock after you wake up.  That's part of
-> the cost of going suspend.
+Hi Wim,
 
-I'm not sure what you are referring to. The generic Linux timekeeping
-code makes sure the monotonic clock stops while the system is
-suspended regardless of what values the (hardware specific)
-clocksource returns.
 
--- 
-Arve Hjønnevåg
+> After the discussion about the division: will there be a V2 of this patch or will V1 remain?
+
+Yes, i will send V2 of this patch.
+There is one change, inclusion of slab.h.
+
+viresh.
