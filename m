@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758411Ab0HDWvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:51:37 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:36707 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404Ab0HDWvf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:51:35 -0400
+	id S1758568Ab0HDWwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:52:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44573 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756404Ab0HDWwD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 18:52:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
-	<20100804185520.GA2417@srcf.ucam.org>
-	<201008042251.08266.rjw@sisk.pl>
-	<20100804205654.GA4986@srcf.ucam.org>
-	<alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
-Date: Wed, 4 Aug 2010 15:51:34 -0700
-Message-ID: <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: david@lang.hm
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1280895197.11045.317.camel@mulgrave.site>
+References: <1280895197.11045.317.camel@mulgrave.site>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 4 Aug 2010 15:51:17 -0700
+Message-ID: <AANLkTintTMXirWF+Y-CwK4dn8Mqk8=ba9_+yjX9P837V@mail.gmail.com>
+Subject: Re: [GIT PULL] first round of SCSI updates for the 2.6.36 merge 
+	window
+To: James Bottomley <James.Bottomley@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 3:31 PM,  <david@lang.hm> wrote:
-> On Wed, 4 Aug 2010, Matthew Garrett wrote:
+On Tue, Aug 3, 2010 at 9:13 PM, James Bottomley <James.Bottomley@suse.de> wrote:
 >
->> On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
->>>
->>> On Wednesday, August 04, 2010, Matthew Garrett wrote:
->>>>
->>>> No! And that's precisely the issue. Android's existing behaviour could
->>>> be entirely implemented in the form of binary that manually triggers
->>>> suspend when (a) the screen is off and (b) no userspace applications
->>>> have indicated that the system shouldn't sleep, except for the wakeup
->>>> event race. Imagine the following:
->>>>
->>>> 1) The policy timeout is about to expire. No applications are holding
->>>> wakelocks. The system will suspend providing nothing takes a wakelock.
->>>> 2) A network packet arrives indicating an incoming SIP call
->>>> 3) The VOIP application takes a wakelock and prevents the phone from
->>>> suspending while the call is in progress
->>>>
->>>> What stops the system going to sleep between (2) and (3)? cgroups don't,
->>>> because the voip app is an otherwise untrusted application that you've
->>>> just told the scheduler to ignore.
->>>
->>> I _think_ you can use the just-merged /sys/power/wakeup_count mechanism
->>> to
->>> avoid the race (if pm_wakeup_event() is called at 2)).
->>
->> Yes, I think that solves the problem. The only question then is whether
->> it's preferable to use cgroups or suspend fully, which is pretty much up
->> to the implementation. In other words, is there a reason we're still
->> having this conversation? :) It'd be good to have some feedback from
->> Google as to whether this satisfies their functional requirements.
->
-> the proposal that I nade was not to use cgroups to freeze some processes and
-> not others, but to use cgroups to decide to ignore some processes when
-> deciding if the system is idle, stop everything or nothing. cgroups are just
-> a way of easily grouping processes (and their children) into different
-> groups.
->
+> Alan Stern (3):
+>      sd: add support for runtime PM
+>      implement runtime Power Management
+>      convert to the new PM framework
 
-That does not avoid the dependency problem. A process may be waiting
-on a resource that a process you ignore owns. I you ignore the process
-that owns the resource and enter idle when it is ready to run (or
-waiting on a timer), you are still effectively blocking the other
-process.
+Guys, these kind of crazy games really aren't appropriate:
 
--- 
-Arve Hjønnevåg
+  +/* scsi_pm.c */
+  +#ifdef CONFIG_PM_OPS
+  +extern const struct dev_pm_ops scsi_bus_pm_ops;
+  +#else
+  +#define scsi_bus_pm_ops                (*NULL)
+  +#endif
+
+that's just crazy. Yes, I see how it's then used (address-of operator
+turns it back into NULL), but the compiler warns about it
+("drivers/scsi/scsi_sysfs.c:384: warning: dereferencing ‘void *’
+pointer") and I think the compiler is 100% correct about warning about
+it.
+
+It's not just the (*NULL) games, btw. The above can cause confusion.
+It's ugly not just because it causes the compiler to warn, but because
+you use a very subtle and non-standard way of using #define's, so that
+when you look at the source code where this is used, it's not at all
+obvious what is going on. The code looks like
+
+    .pm             = &scsi_bus_pm_ops,
+
+and dammit, it would be rather understandable if some _human_ that
+reads that is also confused and thinks that the above means that the
+.pm pointer can never be NULL. The address-of would certainly throw
+me, and not necessarily at all make me grep for "could that possibly
+be some crazy way to say NULL".
+
+And there is absolutely no reason to play games like that. It would
+have been entirely understandable if you just put the #ifdef in the C
+code itself, or if you used a #define that just said
+
+  #ifdef CONFIG_PM_OPS
+  #define SCSI_BUS_PM_OPS &scsi_bus_pm_ops
+  #else
+  #define SCSI_BUS_PM_OPS NULL
+  #endif
+
+and I think it would be less confusing, and it wouldn't upset the compiler.
+
+Yes, yes, I realize that we do these kinds of things for function
+pointers all the time, so I do understand where the pattern comes
+from. At the same time, I rather think that function pointers are a
+bit different, and they don't have the whole address-of problem.
+
+I guess I should be happy that you didn't use some linker tricks to
+make "&scsi_bus_pm_ops" turn into NULL at link time. That could be
+done too, and would have been even more subtly confusing.
+
+                      Linus
