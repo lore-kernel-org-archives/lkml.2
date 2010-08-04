@@ -1,150 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab0HDOFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 10:05:00 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:57154 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932663Ab0HDOEz (ORCPT
+	id S932861Ab0HDOGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 10:06:11 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:55448 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932823Ab0HDOGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 10:04:55 -0400
-Date: Wed, 4 Aug 2010 22:04:48 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Update for 2.6.36
-Message-ID: <20100804140448.GA4042@gondor.apana.org.au>
-References: <20081225001724.GA2813@gondor.apana.org.au> <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au>
+	Wed, 4 Aug 2010 10:06:09 -0400
+Date: Wed, 4 Aug 2010 10:06:05 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100804140605.GA29371@Krystal>
+References: <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com> <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal> <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal> <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal> <1280855904.1923.675.camel@laptop> <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com> <1280903273.1923.682.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100521104404.GA29530@gondor.apana.org.au>
+In-Reply-To: <1280903273.1923.682.camel@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 09:47:48 up 193 days, 16:24,  5 users,  load average: 0.11, 0.10,
+	0.03
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Tue, 2010-08-03 at 11:56 -0700, Linus Torvalds wrote:
+> > On Tue, Aug 3, 2010 at 10:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > >
+> > > FWIW I really utterly detest the whole concept of sub-buffers.
+> > 
+> > I'm not quite sure why. Is it something fundamental, or just an
+> > implementation issue?
+> 
+> The sub-buffer thing that both ftrace and lttng have is creating a large
+> buffer from a lot of small buffers, I simply don't see the point of
+> doing that. It adds complexity and limitations for very little gain.
 
-Here is the crypto update for 2.6.36:
+The first major gain is the ability to implement flight recorder tracing
+(overwrite mode), which Perf still lacks.
 
-* HMAC support for Niagara2.
-* Talitos ahash bug fix.
-* Adds sysfs interface to padata/pcrypt.
-* Fixes/clean-ups for padata/pcrypt.
-* Misc fixes.
+A second major gain: having these sub-buffers lets the trace analyzer seek in
+the trace very efficiently by allowing it to perform a binary search for time to
+find the appropriate sub-buffer. It becomes immensely useful with large traces.
 
+The third major gain: for live streaming of traces, having sub-buffer lets you
+"package" the event data you send over the network into sub-buffers. So the
+trace analyzer, receiving this information live while the trace is being
+recorded, can start using the information when the full sub-buffer is received.
+It does not have to play games with the last event (or event header) perhaps
+being incompletely sent, which imply that you absolutely _need_ to save the
+event size along with each event header (you cannot simply let the analyzer
+parse the event payload to determine the size). Here again, space wasted.
+Furthermore, this deals with information loss: a trace is still readable even if
+a sub-buffer must be discarded.
 
-Please pull from
+Making sure events don't cross sub-buffer boundaries simplify a lot of things,
+starting with dealing with "overwritten" sub-buffers in flight recorder mode.
+Trying to deal with a partially overwritten event is just insane.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> 
+> Their benefit is known synchronization points into the stream, you can
+> parse each sub-buffer independently, but you can always break up a
+> continuous stream into smaller parts or use a transport that includes
+> index points or whatever.
 
-or
+I understand that you could perform amortized synchronization without
+sub-buffers. I however don't see how flight recorder, efficient seek on multi-GB
+traces (without reading the whole event stream), and live streaming can be
+achieved.
 
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> Their down side is that you can never have individual events larger than
+> the sub-buffer,
 
+True. But with configurable sub-buffer size (can be from 4kB to many MB), I
+don't see the problem.
 
-Alexander Shishkin (1):
-      crypto: testmgr - add an option to disable cryptoalgos' self-tests
+>                 you need to be aware of the sub-buffer when reserving
+> space
 
-Andrea Gelmini (1):
-      crypto: des_s390 - Checkpatch cleanup
-
-Dan Carpenter (2):
-      crypto: mv_cesa - fixup error handling in mv_probe()
-      padata: add parenthesis in MAX_SEQ_NR macro
-
-Dan Kruchinin (3):
-      padata: Make two separate cpumasks
-      padata: Added sysfs primitives to padata subsystem
-      pcrypt: Added sysfs interface to pcrypt
-
-David S. Miller (4):
-      n2_crypto: Kill n2_base_ctx and helpers.
-      n2_crypto: Log algorithm success/failure in kernel log.
-      n2_crypto: Make ahash parameterization explicit.
-      n2_crypto: Add HMAC support.
-
-Herbert Xu (2):
-      Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/crypto-2.6
-      crypto: pcomp - Fix illegal Kconfig configuration
-
-Huang Weiyi (1):
-      crypto: omap - remove unused #include <linux/version.h>
-
-Jan Glauber (2):
-      crypto: des_s390: remove des3_ede128 mode
-      crypto: des_s390: use generic weak key check
-
-Joachim Fritschi (1):
-      crypto: twofish: Rename twofish to twofish_generic and add an alias
-
-Julia Lawall (1):
-      crypto: Use ERR_CAST
-
-Justin P. Mattock (1):
-      crypto: hifn_795x - Remove unused ctx variable
-
-Kulikov Vasiliy (1):
-      hwrng: n2-drv - remove casts from void*
-
-Lee Nipper (1):
-      crypto: talitos - fix ahash for multiple of blocksize
-
-Peter Huewe (1):
-      crypto: geode_aes - Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
-
-Richard Kennedy (1):
-      random: Reorder struct entropy_store to remove padding on 64bits
-
-Steffen Klassert (17):
-      padata: Check for valid padata instance on start
-      padata: Block until the instance is unused on stop
-      padata: Handle empty padata cpumasks
-      padata: make padata_do_parallel to return zero on success
-      padata: simplify serialization mechanism
-      padata: update documentation
-      padata: Fix cpu index counting
-      padata: Allocate cpumask dependend recources in any case
-      padata: Check for valid cpumasks
-      crypto: pcrypt - Dont calulate a callback cpu on empty callback cpumask
-      padata: Rename padata_alloc functions
-      padata: Rearrange set_cpumask functions
-      padata: Pass the padata cpumasks to the cpumask_change_notifier chain
-      crypto: pcrypt - Rename pcrypt_instance
-      crypto: pcrypt - Update pcrypt cpumask according to the padata cpumask notifier
-      padata: Remove padata_get_cpumask
-      padata: update API documentation
-
- Documentation/padata.txt                |   97 +++-
- arch/s390/crypto/Makefile               |    2 +-
- arch/s390/crypto/crypto_des.h           |    2 +-
- arch/s390/crypto/des_s390.c             |  238 +---------
- crypto/Kconfig                          |   15 +-
- crypto/Makefile                         |    4 +-
- crypto/algboss.c                        |    4 +
- crypto/authenc.c                        |    2 +-
- crypto/ctr.c                            |    2 +-
- crypto/pcrypt.c                         |  241 ++++++++---
- crypto/testmgr.c                        |   14 +
- crypto/{twofish.c => twofish_generic.c} |    1 +
- crypto/xts.c                            |    2 +-
- drivers/char/hw_random/n2-drv.c         |    2 +-
- drivers/char/random.c                   |    2 +-
- drivers/crypto/geode-aes.c              |    2 +-
- drivers/crypto/hifn_795x.c              |    4 -
- drivers/crypto/mv_cesa.c                |   10 +-
- drivers/crypto/n2_core.c                |  417 ++++++++++++-----
- drivers/crypto/omap-sham.c              |    1 -
- drivers/crypto/talitos.c                |   77 ++--
- include/linux/padata.h                  |  121 ++++--
- kernel/padata.c                         |  755 +++++++++++++++++++++++--------
- 23 files changed, 1307 insertions(+), 708 deletions(-)
+Only the ring buffer needs to be aware of that. It returns an error if the event
+is larger than the sub-buffer size.
 
 Thanks,
+
+Mathieu
+
 -- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
