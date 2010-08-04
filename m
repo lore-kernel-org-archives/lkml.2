@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758163Ab0HDO0Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 10:26:16 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57031 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757769Ab0HDO0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 10:26:15 -0400
-Date: Wed, 4 Aug 2010 16:25:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] oprofile: updates for v2.6.36
-Message-ID: <20100804142558.GA12594@elte.hu>
-References: <20100804104738.GJ26154@erda.amd.com>
+	id S1758137Ab0HDO2d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 10:28:33 -0400
+Received: from gerolde.archlinux.org ([66.211.214.132]:56214 "EHLO
+	archlinux.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757105Ab0HDO2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 10:28:31 -0400
+Message-ID: <4C59790C.4010809@archlinux.org>
+Date: Wed, 04 Aug 2010 16:28:28 +0200
+From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.7) Gecko/20100720 Lanikai/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100804104738.GJ26154@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: "John W. Linville" <linville@tuxdriver.com>
+CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: Re: WARNING at net/wireless/reg.c when wireless network is disconnected
+References: <4C5950B7.4000802@archlinux.org> <20100804134908.GB17666@tuxdriver.com>
+In-Reply-To: <20100804134908.GB17666@tuxdriver.com>
+X-Enigmail-Version: 1.1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enig210063A1CEA420DB1A047490"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig210063A1CEA420DB1A047490
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-* Robert Richter <robert.richter@amd.com> wrote:
+Am 04.08.2010 15:49, schrieb John W. Linville:
+> On Wed, Aug 04, 2010 at 01:36:23PM +0200, Thomas B=E4chler wrote:
+>> Hello,
+>>
+>> this warning has been around ever since I switched to 2.6.34, has
+>> accompanied me through the 2.6.35-rc* phase and is still there with
+>> 2.6.35. I didn't bother to report it so far, as there seems to be no h=
+arm.
+>>
+>> Whenever I disconnect/get disconnected from the wireless, I receive th=
+e
+>> below warning:
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at net/wireless/reg.c:272
+>> regulatory_hint_disconnect+0x1b3/0x230 [cfg80211]()
+>> Hardware name: TECRA A11
+>> Unexpected user alpha2: de
+>=20
+> Perhaps you need to set the regdomain as "DE" rather than "de"?
+>=20
+> John
 
-> Ingo,
-> 
-> please pull oprofile updates for v2.6.36:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
-> 
-> It's just a small number of patches, see the log below. The branch is
-> already in linux-next for a long time.
+You are actually right. I did set it to "DE" with iw, but wpa_supplicant
+had a setting country=3D"de". I just fixed that and will soon see if the
+problem disappears.
 
-Pulled, thanks a lot Robert!
+Still, the warning shouldn't look like a bad kernel bug, but rather an
+advisory to the user to set something sane. What confuses me even more
+is that this has been set to DE afterwards:
 
-	Ingo
+$ dmesg | grep cfg80211:\ Calling\ CRDA
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: de
+cfg80211: Calling CRDA for country: DE
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: DE
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: DE
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: DE
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: DE
+cfg80211: Calling CRDA to update world regulatory domain
+cfg80211: Calling CRDA for country: DE
+
+The AP has been playing with the regdom as well, I lost track of what
+has been set where in this mess.
+
+
+--------------enig210063A1CEA420DB1A047490
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEAREIAAYFAkxZeQwACgkQEda5KzHP/VBFVwCfUxrcxooArhF7+NjsD5rztYmV
+yjsAnAt0SWlyX5apmvrAaDgTfr8m1msY
+=LbFW
+-----END PGP SIGNATURE-----
+
+--------------enig210063A1CEA420DB1A047490--
