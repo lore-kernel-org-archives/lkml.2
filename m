@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab0HDSzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:55:48 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59260 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306Ab0HDSzr (ORCPT
+	id S933340Ab0HDTEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 15:04:13 -0400
+Received: from zcars04e.nortel.com ([47.129.242.56]:63167 "EHLO
+	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933321Ab0HDTEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:55:47 -0400
-Date: Wed, 4 Aug 2010 19:55:20 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: david@lang.hm
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100804185520.GA2417@srcf.ucam.org>
-References: <20100801054816.GI2470@linux.vnet.ibm.com> <20100731230101.7cc1d8c7@infradead.org> <20100801191228.GL2470@linux.vnet.ibm.com> <20100801154708.19817b75@infradead.org> <20100802011006.GS2470@linux.vnet.ibm.com> <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com> <20100803183447.0275c134@infradead.org> <20100804163216.GB24163@linux.vnet.ibm.com> <20100804163509.GA31523@srcf.ucam.org> <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
+	Wed, 4 Aug 2010 15:04:09 -0400
+X-Greylist: delayed 1372 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 15:04:09 EDT
+Message-ID: <4C59B444.7080609@nortel.com>
+Date: Wed, 04 Aug 2010 12:41:08 -0600
+From: "Chris Friesen" <cfriesen@nortel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: mount notification question
+References: <4C5734A2.7070400@free.fr>
+In-Reply-To: <4C5734A2.7070400@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Aug 2010 18:41:09.0931 (UTC) FILETIME=[9B3F1FB0:01CB3404]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 11:30:44AM -0700, david@lang.hm wrote:
-> a couple days ago I made the suggestion to put non-privilaged tasks in a  
-> cgroup so that the idle/suspend decision code could ignore acitivity  
-> caused by this cgroup.
->
-> in the second version wakeup events would be 'activity' that would be  
-> counted and therefor the system would not be idle. As for the race with  
-> suspending and new things happening, wouldn't that be handled the same 
-> way that it is in a normal linux box?
+On 08/02/2010 03:12 PM, Daniel Lezcano wrote:
+> 
+> Hi all,
+> 
+> is there a way to be notified when a mount occurs on the system ?
 
-No! And that's precisely the issue. Android's existing behaviour could 
-be entirely implemented in the form of binary that manually triggers 
-suspend when (a) the screen is off and (b) no userspace applications 
-have indicated that the system shouldn't sleep, except for the wakeup 
-event race. Imagine the following:
+Have you looked on google?  The link is a bit misleading but they do
+give a way to do it (not using inotify).
 
-1) The policy timeout is about to expire. No applications are holding 
-wakelocks. The system will suspend providing nothing takes a wakelock.
-2) A network packet arrives indicating an incoming SIP call
-3) The VOIP application takes a wakelock and prevents the phone from 
-suspending while the call is in progress
+http://stackoverflow.com/questions/1113176/how-could-i-detect-when-a-directory-is-mounted-with-inotify
 
-What stops the system going to sleep between (2) and (3)? cgroups don't, 
-because the voip app is an otherwise untrusted application that you've 
-just told the scheduler to ignore.
+Chris
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+The author works for GENBAND Corporation (GENBAND) who is solely
+responsible for this email and its contents. All enquiries regarding
+this email should be addressed to GENBAND. Nortel has provided the use
+of the nortel.com domain to GENBAND in connection with this email solely
+for the purpose of connectivity and Nortel Networks Inc. has no
+liability for the email or its contents. GENBAND's web site is
+http://www.genband.com
