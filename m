@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab0HDSqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:46:53 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41924 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab0HDSqv (ORCPT
+	id S1756461Ab0HDStc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:49:32 -0400
+Received: from exprod7og111.obsmtp.com ([64.18.2.175]:54339 "EHLO
+	exprod7og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab0HDStb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:46:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=JsJD9MOMHo1Yi0ff1Qb2zNlpQPEENQp7dLz1W+F2aFRrQc5bE3BV3lw8DYg7LfT/aS
-         Ebe8XLisqY+i1M8m5rGwjZzYKD0+Dt8LnR9e7v1zUR9cID9enTHAj47zyyM6OGttJnTZ
-         7jgRZ14kbTziO9cwhy6ceff9R5s9GnhJ1Ndg8=
-Message-ID: <4C59B576.4090807@garzik.org>
-Date: Wed, 04 Aug 2010 14:46:14 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	Wed, 4 Aug 2010 14:49:31 -0400
+Message-ID: <4C59B5E1.9040707@genband.com>
+Date: Wed, 04 Aug 2010 12:48:01 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates
-References: <20100804015530.GA8136@havoc.gtf.org> <AANLkTik-68XiTq3VC6ta3-YVL8r=FpwFErAx8nVV4CJ4@mail.gmail.com>
-In-Reply-To: <AANLkTik-68XiTq3VC6ta3-YVL8r=FpwFErAx8nVV4CJ4@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: john stultz <johnstul@us.ibm.com>
+CC: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
+        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org> <1280937526.28884.21.camel@work-vm>
+In-Reply-To: <1280937526.28884.21.camel@work-vm>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Aug 2010 18:48:04.0668 (UTC) FILETIME=[9272F7C0:01CB3405]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17550.001
+X-TM-AS-Result: No--14.454900-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2010 02:32 PM, Linus Torvalds wrote:
-> On Tue, Aug 3, 2010 at 6:55 PM, Jeff Garzik<jeff@garzik.org>  wrote:
->>
->> Tejun Heo (4):
->>       ata_generic: drop hard coded DMA force logic for CENATEK
->>       ata_piix: fix locking around SIDPR access
->>       libata: more PCI IDs for jmicron controllers
->>       sata_fsl,mv,nv: prepare for NCQ command completion update
->
-> Hmm. Aren't these the ones that you said causes "sata_mv is behaving
-> weirdly"? I think I'll wait for you to do another pull request when
-> that is sorted out..
+On 08/04/2010 09:58 AM, john stultz wrote:
 
-"prepare for..." is patch #1 of 2.  With #2, sata_mv starts behaving 
-strangely.  #1 seems to be working here.
+> Is there a actual use case that you need this for?  I don't really have
+> an issue with the code I just really want to make sure the feature would
+> be useful enough to justify the API and code maintenance going forward.
 
-	Jeff
+We actually added a time-change-notification mechanism internally a long
+time ago but never saw demand for it and so never bothered trying to
+push it upstream.  Ours is signal-based.
 
+Among other things we use it to pass on time-change notifications to an
+emulator running a proprietary OS that really cares about having an
+accurate time-of-day but can't afford a syscall to retrieve it every time.
 
+Chris
+
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
