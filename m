@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab0HDNNl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 09:13:41 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:39719 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757602Ab0HDNNk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 09:13:40 -0400
-X-SpamScore: -25
-X-BigFish: VS-25(z21eRz98dNzz1202hzz15d4Rz32i2a8h87h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L6MQ24-01-JBA-02
-X-M-MSG: 
-Date: Wed, 4 Aug 2010 15:16:34 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-CC: "subrata@linux.vnet.ibm.com" <subrata@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Linuxppc-dev@ozlabs.org" <Linuxppc-dev@ozlabs.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
-        "brking@linux.vnet.ibm.com" <brking@linux.vnet.ibm.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "rcj@linux.vnet.ibm.com" <rcj@linux.vnet.ibm.com>,
-        "devilbis@us.ibm.com" <devilbis@us.ibm.com>,
-        "santil@us.ibm.com" <santil@us.ibm.com>,
-        "sleddog@us.ibm.com" <sleddog@us.ibm.com>,
-        "sachinp@linux.vnet.ibm.com" <sachinp@linux.vnet.ibm.com>,
-        "dipraksh@linux.vnet.ibm.com" <dipraksh@linux.vnet.ibm.com>
-Subject: Re: 2.6.35-stable/ppc64/p7: Badness at lib/dma-debug.c:902, Call
- Trace	& Instruction Dump during boot
-Message-ID: <20100804131634.GX26098@amd.com>
-References: <1280746270.15317.16.camel@subratamodak.linux.ibm.com>
- <20100802205404C.fujita.tomonori@lab.ntt.co.jp>
+	id S1757932Ab0HDNVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 09:21:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757820Ab0HDNU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 09:20:58 -0400
+Date: Wed, 4 Aug 2010 15:17:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>, Roland McGrath <roland@redhat.com>
+Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner
+	comment
+Message-ID: <20100804131749.GA2139@redhat.com>
+References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk> <20100729114555.29508.4525.stgit@warthog.procyon.org.uk> <20100802204000.GH2405@linux.vnet.ibm.com> <201008030055.o730tgXK091413@www262.sakura.ne.jp> <30552.1280828047@redhat.com> <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100802205404C.fujita.tomonori@lab.ntt.co.jp>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 02, 2010 at 07:55:03AM -0400, FUJITA Tomonori wrote:
-> I guess that this driver does a partial sync with
-> dma_sync_single_for_* API. dma-debug can't handle it properly. It's
-> likely that this is a false warning.
+On 08/03, Linus Torvalds wrote:
+>
+> On Tue, Aug 3, 2010 at 2:34 AM, David Howells <dhowells@redhat.com> wrote:
+> >
+> > A previous patch:
+> >
+> >        commit 8f92054e7ca1d3a3ae50fb42d2253ac8730d9b2a
+> >        Author: David Howells <dhowells@redhat.com>
+> >        Date:   Thu Jul 29 12:45:55 2010 +0100
+> >        Subject: CRED: Fix __task_cred()'s lockdep check and banner comment
 
-If this turns out to be true it is not trivial to fix. I prepare a patch
-to test for you.
+I am not sure I understand this patch.
 
-	Joerg
+__task_cred() checks rcu_read_lock_held() || task_is_dead(), and
+task_is_dead(task) is ((task)->exit_state != 0).
 
--- 
-AMD Operating System Research Center
+OK, task_is_dead() is valid for, say, wait_task_zombie(). But
+wait_task_stopped() calls __task_cred(p) without rcu lock and p is alive.
+The code is correct, this thread can do nothing until we drop ->siglock.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+> > fixed the lockdep checks on __task_cred().  This has shown up a place in the
+> > signalling code where a lock should be held - namely that
+> > check_kill_permission() requires its callers to hold the RCU lock.
+>
+> It's not just check_kill_permission(), is it? I thought we could do
+> the "for_each_process()" loops with just RCU, rather than holding the
+> whole tasklist_lock?
+
+Yes, for_each_process() is rcu-safe by itself.
+
+> So I _think_ that getting the RCU read-lock would
+> make it possible to get rid of the tasklist_lock in there too? At
+> least in kill_something_info().
+
+As for kill_something_info(), I think yes. I even sent (iirc) the
+protoptype patch a long ago. We can't just remove tasklist, we should
+avoid the races fork/exit/exec in the kill(-1, SIG) case.
+
+The same for kill_pgrp/__kill_pgrp_info(). We need tasklist to ensure
+that nobody in this group can escape the signal. This seems solveable
+too, it was even discussed a bit.
+
+> > It's may be that it would be better to add RCU read lock calls in
+> > group_send_sig_info() only, around the call to check_kill_permission().
+
+I must admit, at first glance changing check_kill_permission() to take
+rcu lock looks better to me.
+
+> On the
+> > other hand, some of the callers are either holding the RCU read lock already,
+> > or have disabled interrupts,
+
+Hmm. So, local_irq_disable() "officially" blocks rcu? It does in practice
+(unless I missed the new version of RCU), but, say,  posix_timer_event()
+takes rcu_read_lock() exactly because I thought we shouldn't assume that
+irqs_disabled() acts as rcu_read_lock() ?
+
+There are other examples of rcu_read_lock() under local_irq_disable().
+
+> > --- a/kernel/exit.c
+> > +++ b/kernel/exit.c
+> > @@ -773,6 +773,7 @@ static void forget_original_parent(struct task_struct *father)
+> >
+> >        exit_ptrace(father);
+> >
+> > +       rcu_read_lock();
+> >        write_lock_irq(&tasklist_lock);
+> >        reaper = find_new_reaper(father);
+
+No, this doesn't look right. find_new_reaper() can drop tasklist and sleep.
+
+Besides, this patch conflicts with the change in -mm tree. And imho this
+looks a bit as "action at a distance".
+
+Oleg.
 
