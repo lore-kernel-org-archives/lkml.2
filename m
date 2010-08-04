@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab0HDTb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 15:31:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53974 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757548Ab0HDTbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 15:31:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ha+3JyVK5I2vmWYm4KS+lMWG3mVMLphKR0k7BdKyIKHCz9HXNdAQ62eI5c+fT+6qi3
-         q2avZelD0Mm6YPwzHSA8oL4XAFQzt3j/dxItXH7Uo6sWipkD2rZkkdfS+GKwk5ORx/VI
-         91ySpYqbVYAtNKF/b6i2QQt4KsxjUir0aIyRs=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1280940512.16380.4.camel@maxim-laptop>
-References: <441366.48179.qm@web37605.mail.mud.yahoo.com>
-	 <1280940512.16380.4.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 22:31:44 +0300
-Message-ID: <1280950305.16380.25.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758649Ab0HDTiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 15:38:00 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37727 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751970Ab0HDTh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 15:37:59 -0400
+Date: Wed, 4 Aug 2010 12:28:39 -0700
+From: Greg KH <gregkh@suse.de>
+To: Hank Janssen <hjanssen@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
+ correct index
+Message-ID: <20100804192839.GA29851@suse.de>
+References: <8AFC7968D54FB448A30D8F38F259C56223FD0D21@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100803173732.GA1455@suse.de>
+ <8AFC7968D54FB448A30D8F38F259C56223FE8B19@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100804170406.GA28217@suse.de>
+ <8AFC7968D54FB448A30D8F38F259C56223FE8EF5@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100804182318.GB29046@suse.de>
+ <81D58C97-B9A7-4217-9912-7EE6A3FE7DD0@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <81D58C97-B9A7-4217-9912-7EE6A3FE7DD0@microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 19:48 +0300, Maxim Levitsky wrote: 
-> On Wed, 2010-08-04 at 00:57 -0700, Alex Dubov wrote: 
-> > I see two immediate problems with this patch:
+On Wed, Aug 04, 2010 at 06:50:24PM +0000, Hank Janssen wrote:
+> On Aug 4, 2010, at 11:26, Greg KH <gregkh@suse.de> wrote:
+> > On Wed, Aug 04, 2010 at 05:17:21PM +0000, Hank Janssen wrote:
+> >>> 
+> >> 
+> >> I will re-submit all 5 patches and CC the stable mailing list on it as well.
 > > 
-> > 1. On cosmetic level, custom debug macros should not be employed. Device
-> > core already have this functionality (dynamic debug levels and such). Please,
-> > use dev_dbg and friends for print-outs.
-> This allows much easier control for debug.
-> Single module parameter is enough to adjust it.
-> This helps me help users.
-> (Eg, kernel compilation is out of question)
-> 
-> 
+> > 5?  I see 6 of them here :)
 > > 
-> > 2. On a structural level, I'd rather prefer host drivers to not start their
-> > own threads. If you look at both current host implementations, they operate
-> > in callback fashion. Apart from saving some resources, this reduces the
-> > amount of problems encountered during suspend/resume and shutdown.
-> This isn't possible.
-> Hardware doesn't support interrupts on memstick bus changes, it only
-> supports DMA done from/to internal FIFO, and DMA it only possible for
-> 512 byte TPCs.
+> > thanks,
+> > 
+> > greg k-h
+> > 
 > 
+> True but anise you rejected the todo patch there will only be 5.
+> Unless you are willing to take the todo patch. :)
 
+Doh, you are right, nevermind :)
 
-Another question.
+thanks,
 
-I see that current code ignores MEMSTICK_CAP_AUTO_GET_INT
-Instread mspro_blk.c enables this capability for parallel mode, assuming
-that hw supports it. Its true in my case, but might not be true in other
-cases.
-I think I should fix that, right?
-
-Also I see that you bath TPC_READ_LONG_DATA/TPC_READ_LONG_DATA
-Does that mean that every HW sector is larger that 512?
-If so, you are doing copy on write, right?
-I have small caching in my sm_ftl of last sector. It helps performance a
-lot.
-
-
-Also I want to clarify that the only kind of interrupts supported by hw
-(besides usual card detection interrupt), is DMA done interrupt.
-Thats why I have to use thread.
-Doing polling in r592_submit_req (which runs in atomic context is just
-cruel).
-Besides, under moderate IO load, the IO thread doesn't sleep, thus there
-is no overhead of wake/sleep.
-
-
-Best regards,
-Maxim Levitsky
-
+greg k-h
