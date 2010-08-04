@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757570Ab0HDJts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 05:49:48 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:7619 "EHLO
-	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757084Ab0HDJtp (ORCPT
+	id S1757594Ab0HDJvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 05:51:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39196 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248Ab0HDJvJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 05:49:45 -0400
-X-SpamScore: -40
-X-BigFish: VS-40(zz1432N98dN936eM1455M9371P10d1Izz1202hzz15d4Rz32i2a8h87h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L6MGM8-02-1KT-02
-X-M-MSG: 
-Date: Wed, 4 Aug 2010 11:52:37 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-CC: Zach Pfeffer <zpfeffer@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] arm: msm: Add System MMU support.
-Message-ID: <20100804095237.GH18307@amd.com>
-References: <20100729123512Y.fujita.tomonori@lab.ntt.co.jp>
- <201007291026.55928.arnd@arndb.de>
- <20100729084018.GM26098@amd.com>
- <20100729174621W.fujita.tomonori@lab.ntt.co.jp>
- <20100729090607.GN26098@amd.com>
- <4C586348.2050209@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C586348.2050209@codeaurora.org>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Wed, 4 Aug 2010 05:51:09 -0400
+Subject: Re: A question of perf NMI handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, robert.richter@amd.com,
+        fweisbec@gmail.com, linux-kernel@vger.kernel.org,
+        "Huang, Ying" <ying.huang@intel.com>
+In-Reply-To: <1280913670.20797.179.camel@minggr.sh.intel.com>
+References: <1280913670.20797.179.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 04 Aug 2010 11:50:55 +0200
+Message-ID: <1280915455.1923.890.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 02:43:20PM -0400, Stepan Moskovchenko wrote:
->   On 8/3/2010 2:23 AM, Roedel, Joerg wrote:
-> > A domain is defined by a single page-table which can be modified using
-> > the iommu_map/iommu_unmap function calls. I am not completly sure what
-> > you mean by an iommu_context. Can you describe what it means in your
-> > context?
+On Wed, 2010-08-04 at 17:21 +0800, Lin Ming wrote:
+> With nmi_watchdog enabled, perf_event_nmi_handler always return
+> NOTIFY_STOP(active_events > 0), and the notifier call chain will not
+> call further.
 > 
-> Joerg,
-> I think with some rework, all my use cases can be handled by your 
-> existing iommu API. If the domain is treated basically a page table, 
-> there will be some changes, but I think it can be done. I will push a 
-> new version of my driver in a few days.
+> If it was not perf NMI, does the perf nmi handler may stop the real NMI
+> handler get called because NOTIFY_STOP is returned??
 > 
-> One thing that may be helpful for the future, however, is maybe 
-> something like adding iommu_tlb_flush to the ops. I suppose this would 
-> either have to take a device, or the domain would need to keep a list of 
-> devices it had been attached to (so that their TLBs can be invalidated). 
-> But I suppose on the other hand, iommu_map/unmap may be able to just 
-> implicitly invalidate the TLB also, since TLB invalidation often follows 
-> map/unmap. What are your thoughts?
+> static int __kprobes
+> perf_event_nmi_handler(struct notifier_block *self,
+> 			 unsigned long cmd, void *__args)
+> {
+> 	struct die_args *args = __args;
+> 	struct pt_regs *regs;
+> 
+> 	if (!atomic_read(&active_events)) ===> With nmi_watchdog enabled, active_events > 0
+> 		return NOTIFY_DONE;
+> 
+> 	switch (cmd) {
+> 	case DIE_NMI:
+> 	case DIE_NMI_IPI:
+> 		break;
+> 
+> 	default:
+> 		return NOTIFY_DONE;
+> 	}
+> 
+> 	regs = args->regs;
+> 
+> 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+> 	/*
+> 	 * Can't rely on the handled return value to say it was our NMI, two
+> 	 * events could trigger 'simultaneously' raising two back-to-back NMIs.
+> 	 *
+> 	 * If the first NMI handles both, the latter will be empty and daze
+> 	 * the CPU.
+> 	 */
+> 	x86_pmu.handle_irq(regs);
+> 
+> 	return NOTIFY_STOP;
+> }
 
-Sounds good. I am curious for your patches :-)
+Urgh,.. right, so what is the alternative? we don't seem to have a
+reliable way of telling where the NMI originated from.
 
-For the TLB-flush question, I think it would make sense to add iommu
-tlb flushing functions to the IOMMU-API. We currently flush the TLB
-implicitly in the map/unmap calls but thats very inefficient. It would
-be better to have a seperate function for it in the API. The right
-parameter for such a function is a domain. The IOMMU driver knows which
-devices are attached to a domain an could easily flush all TLBs.
+As that comment says, the PMU can raise the NMI and raise the pending
+NMI latch for a second over-run, at which point the first NMI will
+likely see the overflow status for both, clear both, and the second NMI
+will see a 0 overflow status, return it wasn't the PMU, but since the
+PMU did raise it, nobody else will claim it, and we get these silly
+dazed and confused thingies.
 
-One alternative I can think of: An iommu_domain_commit() function which
-syncs software changes of a domain to the hardware. The map/unmap calls
-have to save which parts of the tlb need to be flushed and commit does
-flush those parts then (or flush everything).
+What NMI source are you concerned about and can it reliably tell if it
+raised the NMI or not?
 
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
