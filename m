@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758566Ab0HDSXX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:23:23 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60316 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932643Ab0HDSXG (ORCPT
+	id S932889Ab0HDSXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:23:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65271 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932556Ab0HDSXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:23:06 -0400
+	Wed, 4 Aug 2010 14:23:04 -0400
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kay Sievers <kay.sievers@vrfy.org>, Jens Axboe <axboe@kernel.dk>,
@@ -15,9 +15,9 @@ Cc: Kay Sievers <kay.sievers@vrfy.org>, Jens Axboe <axboe@kernel.dk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
         Greg Kroah-Hartman <gregkh@suse.de>, Will Drewry <wad@chromium.org>
-Subject: [PATCH v3 3/3] init: add support for root devices specified by partition UUID
-Date: Wed,  4 Aug 2010 13:22:06 -0500
-Message-Id: <1280946126-19587-3-git-send-email-wad@chromium.org>
+Subject: [PATCH v3 2/3] genhd, efi: add efi partition metadata to hd_structs
+Date: Wed,  4 Aug 2010 13:22:05 -0500
+Message-Id: <1280946126-19587-2-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com>
 References: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com>
@@ -25,150 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the third patch in a series which adds support for
-storing partition metadata, optionally, off of the hd_struct.
-
-One major use for that data is being able to resolve partition
-by other identities than just the index on a block device.  Device
-enumeration varies by platform and there's a benefit to being able
-to use something like EFI GPT's GUIDs to determine the correct
-block device and partition to mount as the root.
-
-This change adds that support to root= by adding support for
-the following syntax:
-
-  root=PARTUUID=hex-uuid
+This change extends the partition_meta_info structure to
+support EFI GPT-specific metadata and ensures that data
+is copied in on partition scanning.
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 
-v2: added to patch series
-v3: adds uuids to printk_all_partitions
-    simplifies matching to a uniform uuid packed format (big endian)
+v2: move info assignment after memcpy()s
+    adds _MAX to the enum after EFI
+v3: exports a generic uuid/volname format
 ---
- block/genhd.c    |    9 +++++-
- init/do_mounts.c |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 73 insertions(+), 2 deletions(-)
+ fs/partitions/efi.c |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index c8da120..5c9c503 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -642,6 +642,7 @@ void __init printk_all_partitions(void)
- 		struct hd_struct *part;
- 		char name_buf[BDEVNAME_SIZE];
- 		char devt_buf[BDEVT_SIZE];
-+		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
- 
- 		/*
- 		 * Don't show empty devices or things that have been
-@@ -660,10 +661,14 @@ void __init printk_all_partitions(void)
- 		while ((part = disk_part_iter_next(&piter))) {
- 			bool is_part0 = part == &disk->part0;
- 
--			printk("%s%s %10llu %s", is_part0 ? "" : "  ",
-+			uuid[0] = 0;
-+			if (part->info)
-+				part_unpack_uuid(part->info->uuid, uuid);
-+
-+			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
- 			       bdevt_str(part_devt(part), devt_buf),
- 			       (unsigned long long)part->nr_sects >> 1,
--			       disk_name(disk, part->partno, name_buf));
-+			       disk_name(disk, part->partno, name_buf), uuid);
- 			if (is_part0) {
- 				if (disk->driverfs_dev != NULL &&
- 				    disk->driverfs_dev->driver != NULL)
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 02e3ca4..804f9c6 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -58,6 +58,60 @@ static int __init readwrite(char *str)
- __setup("ro", readonly);
- __setup("rw", readwrite);
- 
-+/**
-+ * match_dev_by_uuid - callback for finding a partition using its uuid
-+ * @dev:	device passed in by the caller
-+ * @data:	opaque pointer to a 36 byte char array with a UUID
-+ *
-+ * Returns 1 if the device matches, and 0 otherwise.
-+ */
-+static int __init match_dev_by_uuid(struct device *dev, void *data)
-+{
-+	u8 *uuid = data;
-+	struct hd_struct *part = dev_to_part(dev);
-+
-+	if (!part->info)
-+		goto no_match;
-+
-+	if (memcmp(uuid, part->info->uuid, sizeof(part->info->uuid)))
-+			goto no_match;
-+
-+	return 1;
-+no_match:
-+	return 0;
-+}
-+
-+
-+/**
-+ * devt_from_partuuid - looks up the dev_t of a partition by its UUID
-+ * @uuid:	36 byte char array containing a hex ascii UUID
-+ *
-+ * The function will return the first partition which contains a matching
-+ * UUID value in its partition_meta_info struct.  This does not search
-+ * by filesystem UUIDs.
-+ *
-+ * Returns the matching dev_t on success or 0 on failure.
-+ */
-+static dev_t __init devt_from_partuuid(char *uuid_str)
-+{
-+	dev_t res = 0;
-+	struct device *dev = NULL;
-+	u8 uuid[16];
-+
-+	/* Pack the requested UUID in the expected format. */
-+	part_pack_uuid(uuid_str, uuid);
-+
-+	dev = class_find_device(&block_class, NULL, uuid, &match_dev_by_uuid);
-+	if (!dev)
-+		goto done;
-+
-+	res = dev->devt;
-+	put_device(dev);
-+
-+done:
-+	return res;
-+}
-+
- /*
-  *	Convert a name into device number.  We accept the following variants:
+diff --git a/fs/partitions/efi.c b/fs/partitions/efi.c
+index 9efb2cf..427f2fb 100644
+--- a/fs/partitions/efi.c
++++ b/fs/partitions/efi.c
+@@ -94,6 +94,7 @@
   *
-@@ -68,6 +122,8 @@ __setup("rw", readwrite);
-  *         of partition - device number of disk plus the partition number
-  *	5) /dev/<disk_name>p<decimal> - same as the above, that form is
-  *	   used when disk name of partitioned disk ends on a digit.
-+ *	6) PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF representing the
-+ *	   unique id of a partition if the partition table provides it.
-  *
-  *	If name doesn't have fall into the categories above, we return (0,0).
-  *	block_class is used to check if something is a disk name. If the disk
-@@ -82,6 +138,16 @@ dev_t name_to_dev_t(char *name)
- 	dev_t res = 0;
- 	int part;
+  ************************************************************/
+ #include <linux/crc32.h>
++#include <linux/ctype.h>
+ #include <linux/math64.h>
+ #include <linux/slab.h>
+ #include "check.h"
+@@ -604,6 +605,7 @@ int efi_partition(struct parsed_partitions *state)
+ 	gpt_entry *ptes = NULL;
+ 	u32 i;
+ 	unsigned ssz = bdev_logical_block_size(state->bdev) / 512;
++	u8 unparsed_guid[37];
  
-+	if (strncmp(name, "PARTUUID=", 9) == 0) {
-+		name += 9;
-+		if (strlen(name) != 36)
-+			goto fail;
-+		res = devt_from_partuuid(name);
-+		if (!res)
-+			goto fail;
-+		goto done;
-+	}
+ 	if (!find_valid_gpt(state, &gpt, &ptes) || !gpt || !ptes) {
+ 		kfree(gpt);
+@@ -614,6 +616,9 @@ int efi_partition(struct parsed_partitions *state)
+ 	pr_debug("GUID Partition Table is valid!  Yea!\n");
+ 
+ 	for (i = 0; i < le32_to_cpu(gpt->num_partition_entries) && i < state->limit-1; i++) {
++		struct partition_meta_info *info;
++		unsigned label_count = 0;
++		unsigned label_max;
+ 		u64 start = le64_to_cpu(ptes[i].starting_lba);
+ 		u64 size = le64_to_cpu(ptes[i].ending_lba) -
+ 			   le64_to_cpu(ptes[i].starting_lba) + 1ULL;
+@@ -627,6 +632,26 @@ int efi_partition(struct parsed_partitions *state)
+ 		if (!efi_guidcmp(ptes[i].partition_type_guid,
+ 				 PARTITION_LINUX_RAID_GUID))
+ 			state->parts[i + 1].flags = ADDPART_FLAG_RAID;
 +
- 	if (strncmp(name, "/dev/", 5) != 0) {
- 		unsigned maj, min;
- 
++		info = &state->parts[i + 1].info;
++		/* Instead of doing a manual swap to big endian, reuse the
++		 * common ASCII hex format as the interim.
++		 */
++		efi_guid_unparse(&ptes[i].unique_partition_guid, unparsed_guid);
++		part_pack_uuid(unparsed_guid, info->uuid);
++
++		/* Naively convert UTF16-LE to 7 bits. */
++		label_max = min(sizeof(info->volname) - 1,
++				sizeof(ptes[i].partition_name));
++		info->volname[label_max] = 0;
++		while (label_count < label_max) {
++			u8 c = ptes[i].partition_name[label_count] & 0xff;
++			if (c && !isprint(c))
++				c = '!';
++			info->volname[label_count] = c;
++			label_count++;
++		}
++		state->parts[i + 1].has_info = true;
+ 	}
+ 	kfree(ptes);
+ 	kfree(gpt);
 -- 
 1.7.0.4
 
