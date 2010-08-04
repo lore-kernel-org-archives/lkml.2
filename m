@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab0HDP3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:29:08 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62749 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab0HDP3G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:29:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTik=thmEH7b+wRGM=m9LA3kjmg-dZ_yv19-SotrM@mail.gmail.com>
-References: <AANLkTim6Bn++JaspY0cbpLLvi=MYBLNgUhARwKQkoYpE@mail.gmail.com> 
-	<1280887483-2979-2-git-send-email-wad@chromium.org> <20100804090049.GH5464@nb.net.home> 
-	<AANLkTin8eVm=_pw_DgP2wJW9pE0LgugqfXJE8aVXiH6R@mail.gmail.com> 
-	<AANLkTik=thmEH7b+wRGM=m9LA3kjmg-dZ_yv19-SotrM@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 4 Aug 2010 17:28:47 +0200
-Message-ID: <AANLkTikh3pGh5jpFZ-Petoizw7DQBXZUqk1pzrHXEjmV@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] genhd, efi: add efi partition metadata to 
-	hd_structs
-To: Will Drewry <wad@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>, Karel Zak <kzak@redhat.com>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
+	id S1753936Ab0HDPcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 11:32:25 -0400
+Received: from shutemov.name ([188.40.19.243]:38768 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751998Ab0HDPcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 11:32:23 -0400
+Date: Wed, 4 Aug 2010 18:32:21 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: lkml@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+Message-ID: <20100804153221.GA29109@shutemov.name>
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 16:44, Will Drewry <wad@chromium.org> wrote:
-> On Wed, Aug 4, 2010 at 5:14 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+On Wed, Aug 04, 2010 at 03:48:28PM +0300, Alexander Shishkin wrote:
+> Certain userspace applications (like "clock" desktop applets or ntpd) might
+> want to be notified when some other application changes the system time. It
+> might also be important for an application to be able to distinguish between
+> its own and somebody else's time changes.
+> 
+> This patch implements a notification interface via eventfd mechanism. Proccess
+> wishing to be notified about time changes should create an eventfd and echo
+> its file descriptor to /sys/kernel/time_notify. After that, any calls to
+> settimeofday()/stime()/adjtimex() made by other processes will be signalled
+> to this eventfd. Credits for suggesting the eventfd mechanism for this
+> purpose go te Kirill Shutemov.
+> 
+> So far, this implementation can only filter out notifications caused by
+> time change calls made by the process that wrote the eventfd descriptor to
+> sysfs, but not its children which (might) have inherited the eventfd. It
+> is so far not clear to me whether this is bad and more confusing than
+> excluding such children as well.
 
->> But the only thing we are really interested in is the UUID, which,
->> like Tejun already suggested, we should probably store
->> format-independent, and have it always accessible. That way, we would
->> not need any type-specific parser, we just handle the normal DCE
->> format.
->
-> I'll bump it out and make it the efi code generic-ify its uuid.  Out
-> of curiousity, were you and Tejun thinking of keeping it as a 36 byte
-> string or as the 16 byte packed value.  While less space efficient,
-> I'd prefer the u8[36] as it avoids dealing with versioning when
-> parsing the user-supplied string.  Instead, each partition type can
-> properly unparse its uuids according to what they expect.
+I think it's a bad idea to filter notifications. Let's leave it for
+userspace. Userspace always can check eventfd counter and understand who
+touch time based on its own activity.
 
-I think we should use the packed version, which is case-insensitive,
-or at least normalize it to a defined case.
+> Similar mechanism can also be used for signalling other (all?) system calls
+> made by certain (all?) processes without resorting to ptrace (which won't
+> help if you don't know what processes you'd like to look after), given
+> proper permission checks etc.
+> 
+> Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+> CC: Kirill A. Shutemov <kirill@shutemov.name>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: John Stultz <johnstul@us.ibm.com>
+> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Jon Hunter <jon-hunter@ti.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> CC: David Howells <dhowells@redhat.com>
+> CC: Avi Kivity <avi@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: John Kacur <jkacur@redhat.com>
+> CC: Alexander Shishkin <virtuoso@slind.org>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>  include/linux/time.h |    7 ++
+>  init/Kconfig         |    7 ++
+>  kernel/Makefile      |    1 +
+>  kernel/time.c        |   11 +++-
+>  kernel/time_notify.c |  158 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  5 files changed, 182 insertions(+), 2 deletions(-)
+>  create mode 100644 kernel/time_notify.c
+> 
+> diff --git a/include/linux/time.h b/include/linux/time.h
+> index ea3559f..9fca62b 100644
+> --- a/include/linux/time.h
+> +++ b/include/linux/time.h
+> @@ -237,6 +237,13 @@ static __always_inline void timespec_add_ns(struct timespec *a, u64 ns)
+>  	a->tv_sec += __iter_div_u64_rem(a->tv_nsec + ns, NSEC_PER_SEC, &ns);
+>  	a->tv_nsec = ns;
+>  }
+> +
+> +#ifdef CONFIG_TIME_NOTIFY
+> +void time_notify_all(void);
+> +#else
+> +#define time_notify_all() do {} while (0)
+> +#endif
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  #define NFDBITS			__NFDBITS
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 5cff9a9..f7271f8 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -976,6 +976,13 @@ config PERF_USE_VMALLOC
+>  	help
+>  	  See tools/perf/design.txt for details
+>  
+> +config TIME_NOTIFY
+> +	bool
+> +	depends on EVENTFD
+> +	help
+> +	  Enable time change notification events to userspace via
+> +	  eventfd.
+> +
 
-Kay
+Do we really need config option? I think better just use
+CONFIG_EVENTFD.
+
+linux-api@vger.kernel.org added to CC list.
+
+-- 
+ Kirill A. Shutemov
