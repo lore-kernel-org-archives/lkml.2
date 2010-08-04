@@ -1,69 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380Ab0HDGcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:32:55 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60567 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341Ab0HDGcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:32:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Q9N71+X8fSdab27rQOfWzFZKP2l7BGYOTMAO793c5PuXPeBRutibBJ8b/sVLWkQALm
-         O3h1CwsTp311TYW/NRzFV/WIVBPaD94OlySjbo0zpNiVLL/XQQstAoO3BNkpQM032aV1
-         gymoRbFA5+J7OFpLpWcoq++N+VkKmkFzTJQBY=
-Subject: [PATCH] max8998: fix off-by-one value range checking
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain
-Date: Wed, 04 Aug 2010 14:34:10 +0800
-Message-Id: <1280903650.8393.1.camel@mola>
+	id S1758376Ab0HDGhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 02:37:35 -0400
+Received: from smtp.witbe.net ([81.88.96.48]:40316 "EHLO smtp.witbe.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758259Ab0HDGhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 02:37:34 -0400
+Date: Wed, 4 Aug 2010 08:37:32 +0200
+From: Paul Rolland <rol@as2917.net>
+To: Roberto Oppedisano <roberto.oppedisano@infracom.it>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.35 suspend regression (bisected)
+Message-ID: <20100804083732.3d8dae69@tux.DEF.witbe.net>
+In-Reply-To: <4C4C9E40.7070209@infracom.it>
+References: <4C4C9E40.7070209@infracom.it>
+Organization: AS2917.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In max8998_list_voltage() and max8998_set_voltage(),
-we use ldo as array index of ldo_voltage_map.
-Thus the valid range should be 0 .. ARRAY_SIZE(ldo_voltage_map)-1.
+Hello Roberto,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8998.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On Sun, 25 Jul 2010 22:27:44 +0200
+Roberto Oppedisano <roberto.oppedisano@infracom.it> wrote:
 
-diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index 03e55a1..ab67298 100644
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -119,7 +119,7 @@ static int max8998_list_voltage(struct regulator_dev *rdev,
- 	int ldo = max8998_get_ldo(rdev);
- 	int val;
- 
--	if (ldo > ARRAY_SIZE(ldo_voltage_map))
-+	if (ldo >= ARRAY_SIZE(ldo_voltage_map))
- 		return -EINVAL;
- 
- 	desc = ldo_voltage_map[ldo];
-@@ -306,7 +306,7 @@ static int max8998_set_voltage(struct regulator_dev *rdev,
- 	u8 val;
- 	bool en_ramp = false;
- 
--	if (ldo > ARRAY_SIZE(ldo_voltage_map))
-+	if (ldo >= ARRAY_SIZE(ldo_voltage_map))
- 		return -EINVAL;
- 
- 	desc = ldo_voltage_map[ldo];
--- 
-1.5.4.3
+> My HP6730B (x86_64 kernel, uptodate lubuntu Lucid installed) fails to
+> suspend on recent git kernels, the screen goes black (backlight on) and
+> stays there forever.
 
+Have you checked the thread started by Thomas Meyer :
+2.6.35-rc6+: i915: Bisected regression
 
+He describes something similar to your problem (and I was having the same),
+and the solution he indicates worked for him, for me, and a third person so
+far.
 
+Regards,
+Paul
