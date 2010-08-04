@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab0HDNF4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 09:05:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41360 "EHLO mx2.suse.de"
+	id S932781Ab0HDNHH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 09:07:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49067 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757726Ab0HDNFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 09:05:55 -0400
-Date: Wed, 4 Aug 2010 15:05:53 +0200 (CEST)
+	id S932628Ab0HDNHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 09:07:05 -0400
+Date: Wed, 4 Aug 2010 15:07:03 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Weil <weil@mail.berlios.de>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix spelling contorller -> controller in comments
-In-Reply-To: <1280857492-4398-1-git-send-email-weil@mail.berlios.de>
-Message-ID: <alpine.LNX.2.00.1008041505460.29919@pobox.suse.cz>
-References: <1280857492-4398-1-git-send-email-weil@mail.berlios.de>
+Subject: Re: [PATCH]hostap:hostap_hw.c Fix typo.
+In-Reply-To: <1280782243-14778-1-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1008041506570.29919@pobox.suse.cz>
+References: <1280782243-14778-1-git-send-email-justinmattock@gmail.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -21,41 +21,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Aug 2010, Stefan Weil wrote:
+On Mon, 2 Aug 2010, Justin P. Mattock wrote:
 
-> Cc: Jiri Kosina <trivial@kernel.org>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Stefan Weil <weil@mail.berlios.de>
-> ---
->  drivers/dma/fsldma.c |    2 +-
->  drivers/net/sh_eth.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+> The patch below fixes a typo in a comment.
 > 
-> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-> index 8088b14..f0fd6db 100644
-> --- a/drivers/dma/fsldma.c
-> +++ b/drivers/dma/fsldma.c
-> @@ -10,7 +10,7 @@
->   * Description:
->   *   DMA engine driver for Freescale MPC8540 DMA controller, which is
->   *   also fit for MPC8560, MPC8555, MPC8548, MPC8641, and etc.
-> - *   The support for MPC8349 DMA contorller is also added.
-> + *   The support for MPC8349 DMA controller is also added.
->   *
->   * This driver instructs the DMA controller to issue the PCI Read Multiple
->   * command for PCI read operations, instead of using the default PCI Read Line
-> diff --git a/drivers/net/sh_eth.c b/drivers/net/sh_eth.c
-> index 501a55f..70a9bc5 100644
-> --- a/drivers/net/sh_eth.c
-> +++ b/drivers/net/sh_eth.c
-> @@ -1325,7 +1325,7 @@ static int sh_mdio_init(struct net_device *ndev, int id)
->  	bitbang->mdc_msk = 0x01;
->  	bitbang->ctrl.ops = &bb_ops;
->  
-> -	/* MII contorller setting */
-> +	/* MII controller setting */
->  	mdp->mii_bus = alloc_mdio_bitbang(&bitbang->ctrl);
->  	if (!mdp->mii_bus) {
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/net/wireless/hostap/hostap_hw.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/hostap/hostap_hw.c b/drivers/net/wireless/hostap/hostap_hw.c
+> index 2f999fc..e9d9d62 100644
+> --- a/drivers/net/wireless/hostap/hostap_hw.c
+> +++ b/drivers/net/wireless/hostap/hostap_hw.c
+> @@ -1896,7 +1896,7 @@ fail:
+>  /* Some SMP systems have reported number of odd errors with hostap_pci. fid
+>   * register has changed values between consecutive reads for an unknown reason.
+>   * This should really not happen, so more debugging is needed. This test
+> - * version is a big slower, but it will detect most of such register changes
+> + * version is a bit slower, but it will detect most of such register changes
+>   * and will try to get the correct fid eventually. */
+>  #define EXTRA_FID_READ_TESTS
 
 Applied, thanks.
 
