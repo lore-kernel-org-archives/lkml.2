@@ -1,141 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932614Ab0HDG7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:59:35 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58302 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758263Ab0HDG7d convert rfc822-to-8bit (ORCPT
+	id S932624Ab0HDHAu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 03:00:50 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:60686 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932516Ab0HDHAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:59:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kfS54pkzLx5DgiSIyE3N4W9HIA0v9B930hI29olOpxYSVH4tvLY2nVMH43/AnkE157
-         nwD9EtkDJcLdueGSP6T5lMbWVhBe08digpjSYlpOQJozDKqgBSApHlAITjwbY3UyPTZD
-         f17smLBxweOKpHU16yZ+9UJyRhB102f65YfiE=
+	Wed, 4 Aug 2010 03:00:48 -0400
+Message-Id: <201008040700.o7470LWi021902@www262.sakura.ne.jp>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: Valdis.Kletnieks@vt.edu
+Cc: hch@infradead.org, jmorris@namei.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@ftp.linux.org.uk, kees.cook@canonical.com
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinzvwP74oNaS+mWRnostnGrZZ-iY2SsjMzo=CW4@mail.gmail.com>
-References: <1280850203-5532-1-git-send-email-segooon@gmail.com>
-	<AANLkTinzvwP74oNaS+mWRnostnGrZZ-iY2SsjMzo=CW4@mail.gmail.com>
-Date: Wed, 4 Aug 2010 08:59:31 +0200
-Message-ID: <AANLkTi=y0Ka9+jKFCvS0_Pbku=bTrsyU3LMCSOX2VwLs@mail.gmail.com>
-Subject: Re: [PATCH 06/11] rt2x00: do not use PCI resources before 
-	pci_enable_device()
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        Alban Browaeys <prahal@yahoo.com>, linux-wireless@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gertjan van Wingerde <gwingerde@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+Date: Wed, 04 Aug 2010 16:00:21 +0900
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org> <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org> <20100802122421.GA12130@infradead.org> <20100802165936.GV3948@outflux.net> <15424.1280775073@localhost> <20100803165010.GG3948@outflux.net> <78690.1280871500@localhost> <201008040354.o743sWTv078792@www262.sakura.ne.jp> <5029.1280902716@localhost>
+In-Reply-To: <5029.1280902716@localhost>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 04082010 #3892565, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 3, 2010 at 6:14 PM, Gertjan van Wingerde
-<gwingerde@gmail.com> wrote:
-> On Tue, Aug 3, 2010 at 5:43 PM, Kulikov Vasiliy <segooon@gmail.com> wrote:
->> IRQ and resource[] may not have correct values until
->> after PCI hotplug setup occurs at pci_enable_device() time.
->>
->> The semantic match that finds this problem is as follows:
->>
->> // <smpl>
->> @@
->> identifier x;
->> identifier request ~= "pci_request.*|pci_resource.*";
->> @@
->>
->> (
->> * x->irq
->> |
->> * x->resource
->> |
->> * request(x, ...)
->> )
->>  ...
->> *pci_enable_device(x)
->> // </smpl>
->>
->> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
->
-> Good catch.
->
-> Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Valdis.Kletnieks@vt.edu wrote:
+> Are you sure you weren't running in permissive mode when you tested this?
+I'm running CentOS5.5 and RHEL6beta in enforcing mode with default configuration
+(TARGETED policy).
 
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+> I am unable to replicate this behavior on my system with SELinux set to
+> enforcing mode.  However, it does happen (which is to be expected) when SELinux
+> is set to permissive mode.
+So, MLS policy can stop this case, can't it? That's fine.
 
->> ---
->>  drivers/net/wireless/rt2x00/rt2x00pci.c |   21 ++++++++++-----------
->>  1 files changed, 10 insertions(+), 11 deletions(-)
->>
->> diff --git a/drivers/net/wireless/rt2x00/rt2x00pci.c b/drivers/net/wireless/rt2x00/rt2x00pci.c
->> index 19b262e..63c2cc4 100644
->> --- a/drivers/net/wireless/rt2x00/rt2x00pci.c
->> +++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
->> @@ -240,16 +240,16 @@ int rt2x00pci_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
->>        struct rt2x00_dev *rt2x00dev;
->>        int retval;
->>
->> -       retval = pci_request_regions(pci_dev, pci_name(pci_dev));
->> +       retval = pci_enable_device(pci_dev);
->>        if (retval) {
->> -               ERROR_PROBE("PCI request regions failed.\n");
->> +               ERROR_PROBE("Enable device failed.\n");
->>                return retval;
->>        }
->>
->> -       retval = pci_enable_device(pci_dev);
->> +       retval = pci_request_regions(pci_dev, pci_name(pci_dev));
->>        if (retval) {
->> -               ERROR_PROBE("Enable device failed.\n");
->> -               goto exit_release_regions;
->> +               ERROR_PROBE("PCI request regions failed.\n");
->> +               goto exit_disable_device;
->>        }
->>
->>        pci_set_master(pci_dev);
->> @@ -260,14 +260,14 @@ int rt2x00pci_probe(struct pci_dev *pci_dev, const struct pci_device_id *id)
->>        if (dma_set_mask(&pci_dev->dev, DMA_BIT_MASK(32))) {
->>                ERROR_PROBE("PCI DMA not supported.\n");
->>                retval = -EIO;
->> -               goto exit_disable_device;
->> +               goto exit_release_regions;
->>        }
->>
->>        hw = ieee80211_alloc_hw(sizeof(struct rt2x00_dev), ops->hw);
->>        if (!hw) {
->>                ERROR_PROBE("Failed to allocate hardware.\n");
->>                retval = -ENOMEM;
->> -               goto exit_disable_device;
->> +               goto exit_release_regions;
->>        }
->>
->>        pci_set_drvdata(pci_dev, hw);
->> @@ -300,13 +300,12 @@ exit_free_reg:
->>  exit_free_device:
->>        ieee80211_free_hw(hw);
->>
->> -exit_disable_device:
->> -       if (retval != -EBUSY)
->> -               pci_disable_device(pci_dev);
->> -
->>  exit_release_regions:
->>        pci_release_regions(pci_dev);
->>
->> +exit_disable_device:
->> +       pci_disable_device(pci_dev);
->> +
->>        pci_set_drvdata(pci_dev, NULL);
->>
->>        return retval;
->> --
->> 1.7.0.4
->>
->>
->
+But most people is using TARGETED policy, isn't it?
+How do you provide protection to those who don't use MLS policy?
+
+SSHD case is just an example which everyone can try handily.
+What I want to say is that it is up to application that how the application
+uses information if the application is allowed to access the information. Thus,
+we should try to control parameters that affect how the information is used
+as much as possible in addition to controlling whether the application can
+reach the information or not.
