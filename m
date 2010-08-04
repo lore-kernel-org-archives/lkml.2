@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758081Ab0HDWsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:48:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40782 "EHLO mx1.redhat.com"
+	id S1758492Ab0HDWt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:49:57 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:50542 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab0HDWsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:48:46 -0400
-Date: Wed, 4 Aug 2010 18:48:31 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-Message-ID: <20100804224831.GB29353@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
+	id S1754585Ab0HDWtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 18:49:55 -0400
+Subject: Re: [PATCHv3 12/16] ntp: add hardpps implementation
+From: john stultz <johnstul@us.ibm.com>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+In-Reply-To: <358275628c418f5f328adc4a4ea23fc902776566.1280952801.git.lasaine@lvk.cs.msu.su>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
+	 <358275628c418f5f328adc4a4ea23fc902776566.1280952801.git.lasaine@lvk.cs.msu.su>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Aug 2010 15:49:47 -0700
+Message-ID: <1280962187.2678.14.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="zYM0uCDKw75PZbzx"
-Content-Disposition: inline
-In-Reply-To: <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---zYM0uCDKw75PZbzx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
-> On Tue, 15 Jun 2010, Valerie Aurora wrote:
-> > Add support for fallthru directory entries to ext2.
+On Thu, 2010-08-05 at 01:06 +0400, Alexander Gordeev wrote:
+> This commit adds hardpps() implementation based upon the original one
+> from the NTPv4 reference kernel code from David Mills. However, it is
+> highly optimized towards very fast syncronization and maximum stickness
+> to PPS signal. The typical error is less then a microsecond.
+> To make it sync faster I had to throw away exponential phase filter so
+> that the full phase offset is corrected immediately. Then I also had to
+> throw away median phase filter because it gives a bigger error itself
+> if used without exponential filter.
+> Maybe we will find an appropriate filtering scheme in the future but
+> it's not necessary if the signal quality is ok.
 > 
-> If a previously used ext2 filesystem with is mounted again then
-> fallthroughs don't appear to work as expected.  Stat returns ENOENT
-> for these entries.
-> 
-> Can't see anything obviously wrong with the code.
+> Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 
-Hm, I wrote one test case for this that worked (attached).  Can you
-give me more details on your test case?  Thanks,
+[snip]
 
--VAL
+> +#ifdef	CONFIG_NTP_PPS
+> +
+> +struct pps_normtime {
+> +	__kernel_time_t	sec;	/* seconds */
+> +	long		nsec;	/* nanoseconds */
+> +};
 
---zYM0uCDKw75PZbzx
-Content-Type: application/x-sh
-Content-Disposition: attachment; filename="ext2_remount_fallthrus.sh"
-Content-Transfer-Encoding: quoted-printable
+I don't quite remember the history here (it may be I suggested you use
+this instead of overloading a timespec? I honestly don't recall), but
+could you add some extra context in a comment here for what a
+pps_normtime structure represents and why its used instead of a
+timespec? The comment below sort of hints at it, but it would be useful
+if it was more explicit.
 
-#!/bin/bash=0A=0Aecho -n "Check if ext2 fallthrus still fall through after =
-a umount/remount... "=0A=0Amount -o ro,loop ./img/ro ./mnt/union=0A=0Add if=
-=3D/dev/zero of=3D./img/rw bs=3D4096 seek=3D255 count=3D1 >/dev/null 2>&1=
-=0A/sbin/mkfs.ext2 -F -O whiteout,fallthru ./img/rw >/dev/null 2>&1=0Amount=
- -o loop,union ./img/rw ./mnt/union/=0A=0A# Create some fallthrus=0Als ./mn=
-t/union/ >/dev/null=0A=0A# See if we can lookup through a fallthru=0Astat .=
-/mnt/union/ro_file >/dev/null=0A=0Aif [ "$?" !=3D "0" ]; then=0A    echo "L=
-ookup of fallthru failed!"=0A    exit 1=0Afi=0A=0A# Mount it somewhere else=
- and make sure we haven't copied up the file=0Aumount ./mnt/union=0Amount -=
-o loop ./img/rw ./mnt/scratch=0A=0Astat ./mnt/scratch/ro_file >/dev/null 2>=
-&1=0A=0Aif [ "$?" =3D "0" ]; then=0A    echo "Test won't work, stat copied =
-up the file instead of making a fallthru!"=0A    exit 1=0Afi=0A=0A# Unmount=
- it, remount it as a union, see if fallthru still works=0Aumount ./mnt/scra=
-tch=0Amount -o loop,union ./img/rw ./mnt/union/=0A=0Astat ./mnt/union/ro_fi=
-le >/dev/null=0A=0Aif [ "$?" !=3D "0" ]; then=0A    echo "Lookup of fallthr=
-u after umount/mount failed!"=0A    exit 1=0Afi=0A=0Aumount ./mnt/union=0Ai=
-f [ "$?" !=3D "0" ]; then=0A    echo "umount failed!"=0A    exit 1=0Afi=0Au=
-mount ./mnt/union=0Aif [ "$?" !=3D "0" ]; then=0A    echo "umount failed!"=
-=0A    exit 1=0Afi=0A=0Aexit 0=0A
---zYM0uCDKw75PZbzx--
+> +/* normalize the timestamp so that nsec is in the
+> +   ( -NSEC_PER_SEC / 2, NSEC_PER_SEC / 2 ] interval */
+> +static inline struct pps_normtime pps_normalize_ts(struct timespec ts)
+> +{
+> +	struct pps_normtime norm = {
+> +		.sec = ts.tv_sec,
+> +		.nsec = ts.tv_nsec
+> +	};
+> +
+> +	if (norm.nsec > (NSEC_PER_SEC >> 1)) {
+> +		norm.nsec -= NSEC_PER_SEC;
+> +		norm.sec++;
+> +	}
+> +
+> +	return norm;
+> +}
+
+Otherwise the code looks pretty good to me.
+
+Acked-by: John Stultz <johnstul@us.ibm.com>
+
+thanks
+-john
+
+
