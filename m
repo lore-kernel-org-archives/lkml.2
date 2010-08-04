@@ -1,40 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab0HDLN1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 07:13:27 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:18886 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab0HDLN0 (ORCPT
+	id S932584Ab0HDLSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 07:18:10 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52000 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab0HDLSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 07:13:26 -0400
-Date: Wed, 4 Aug 2010 14:11:56 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Section Mismatches
-Message-ID: <20100804111156.GD19377@nokia.com>
-Reply-To: felipe.balbi@nokia.com
+	Wed, 4 Aug 2010 07:18:08 -0400
+Date: Wed, 4 Aug 2010 07:18:03 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Michael Monnerie <michael.monnerie@is.it-management.at>,
+        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: How to track down abysmal performance ata - raid1 - crypto -
+ vg/lv - xfs
+Message-ID: <20100804111803.GA32643@infradead.org>
+References: <20100804073546.GA7494@comet.dominikbrodowski.net>
+ <20100804085039.GA11671@infradead.org>
+ <20100804091317.GA27779@isilmar-3.linta.de>
+ <20100804092122.GA2998@infradead.org>
+ <20100804073546.GA7494@comet.dominikbrodowski.net>
+ <201008041116.09822@zmi.at>
+ <20100804102526.GB13766@isilmar-3.linta.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 04 Aug 2010 11:13:11.0087 (UTC) FILETIME=[063503F0:01CB33C6]
-X-Nokia-AV: Clean
+In-Reply-To: <20100804102526.GB13766@isilmar-3.linta.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+On Wed, Aug 04, 2010 at 12:25:26PM +0200, Dominik Brodowski wrote:
+> Hey,
+> 
+> many thanks for your feedback. It seems the crypto step is the culprit:
+> 
+> Reading 1.1 GB with dd, iflag=direct, bs=8k:
+> 
+> /dev/sd*                35.3 MB/s       ( 90 %)
+> /dev/md*                39.1 MB/s       (100 %)
+> /dev/mapper/md*_crypt    3.9 MB/s       ( 10 %)
+> /dev/mapper/vg1-*        3.9 MB/s       ( 10 %)
+> 
+> The "good" news: it also happens on my notebook, even though it has a
+> different setup (no raid, disk -> lv/vg -> crypt). On my notebook, I'm
+> more than happy to test out different kernel versions, patches etc.
+> 
+> /dev/sd*                17.7 MB/s       (100 %)
+> /dev/mapper/vg1-*       16.2 MB/s       ( 92 %)
+> /dev/mapper/*_crypt      3.1 MB/s       ( 18 %)
 
-I see that your commit 0db252452378aa7a9e001a13226e1cd1dc61453d removed 
-the *_driver from the symbol whitelist when referencing init section 
-(heh, it took a while), but could you explain what's the rationale 
-behind that ?
+The good news is that you have it tracked down, the bad news is that
+I know very little about dm-crypt.  Maybe the issue is the single
+threaded decryption in dm-crypt?  Can you check how much CPU time
+the dm crypt kernel thread uses?
 
-Thanks a lot
-
--- 
-balbi
-
-DefectiveByDesign.org
