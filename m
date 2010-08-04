@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab0HDH5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 03:57:47 -0400
-Received: from web37605.mail.mud.yahoo.com ([209.191.87.88]:48237 "HELO
-	web37605.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755943Ab0HDH5o convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 03:57:44 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=6vAGGK0vwjFSI5sMNrzPgZv6qvGHagFXN+D9ofbcDZ32GFTvtEHTU9KpC4JxbCO38O2wtoJrPx74iFCDBrq6AsM2GSz+0Qz1pV5nOHtjtxvBeH3C7xFVjKXSTXqsm1qexX80yTEG9679XdPrZDibiblSlJ1dxT7p5ETK6RtA8XM=;
-Message-ID: <811063.41186.qm@web37605.mail.mud.yahoo.com>
-X-YMail-OSG: iKHQHgwVM1l.fd35A4oGw.Fzn5R9v_CQGIlmb66wpbBNv17
- gwiu9umxI.3zpcDLlojvIzVV4_ePprw2mMId9J7CPP6XKoMAyulyF8MbRKBi
- lmFI0Kd0uE9BHDbLw2vJ6RrjRYVg_DuNDcXaiu2WsS_jfUpX5gL0Nv4a5aNh
- V6X_OGaw5VVJz6BBs55I5cozVVlbbZSQ_KC4FQhxhiewv6ZT027tKwi5TuS9
- R.9pG8gTvIQmeHz5U8J5lt7xa0Lvq91qBJvEtkS8KaU2s4jBkJaEzIp_COQG
- YpIOAjGhlX69rmP_13eH_uQX2w.Ov.D8S09q0w6.WGY96_tQD1hazgfv1ZO7
- XgYBUVN7kYxf6
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Wed, 4 Aug 2010 00:50:20 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 1/2] MEMSTICK: fix hangs on unexpected device removal in mspro_blk
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1280847186-11501-2-git-send-email-maximlevitsky@gmail.com>
+	id S1756051Ab0HDH7C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 03:59:02 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60589 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab0HDH67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 03:58:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:subject:to:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=M0Ts6GQgAg7iEKCC2KI0/eSO7WGYLpMAD1H6uYD4IHvrWRYvL16EcFgJUb2AsczaUa
+         xyxfVzaHm6FenrfiX7o2AiSxBTwF/YHeNNUrDYPZQfx4BDwQSPlNujlevH4otK1/z8iL
+         4BsR5gfQXfKmeu17dBPf8nu/lZ8wiWU/cWHYw=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 0/3] SysRq: do not pass tty argument around
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Airlie <airlied@linux.ie>, David Miller <davem@davemloft.net>,
+        Fenghua Yu <fenghua.yu@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>
+Date: Wed, 04 Aug 2010 00:58:55 -0700
+Message-ID: <20100804075602.30647.91462.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Tue, 3/8/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+Hi,
 
-> Now that del_gendisk syncs, we better
-> start rejecting requests right away.
+The following 3 patches get rid of 'tty' argument in SysRq handlers as
+nobody is using it. If noone objects I'd like to get it merged through
+my tree.
 
+Thanks!
 
-I don't quite see why this change is needed. My understanding is, user
-accessible interface should be marked as removed as early, as possible.
+--
+Dmitry
 
-
-> 
-> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-> ---
->  drivers/memstick/core/mspro_block.c |    5
-> +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/memstick/core/mspro_block.c
-> b/drivers/memstick/core/mspro_block.c
-> index 8327e24..8d27c13 100644
-> --- a/drivers/memstick/core/mspro_block.c
-> +++ b/drivers/memstick/core/mspro_block.c
-> @@ -1330,13 +1330,14 @@ static void
-> mspro_block_remove(struct memstick_dev *card)
->      struct mspro_block_data *msb =
-> memstick_get_drvdata(card);
->      unsigned long flags;
->  
-> -    del_gendisk(msb->disk);
-> -    dev_dbg(&card->dev, "mspro block
-> remove\n");
->      spin_lock_irqsave(&msb->q_lock,
-> flags);
->      msb->eject = 1;
->      blk_start_queue(msb->queue);
->     
-> spin_unlock_irqrestore(&msb->q_lock, flags);
->  
-> +    del_gendisk(msb->disk);
-> +    dev_dbg(&card->dev, "mspro block
-> remove\n");
-> +
->      blk_cleanup_queue(msb->queue);
->      msb->queue = NULL;
->  
-> -- 
-> 1.7.0.4
-> 
-> 
-
-
-      
