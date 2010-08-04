@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759287Ab0HDW6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:58:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54535 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759265Ab0HDW6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:58:11 -0400
-Date: Wed, 4 Aug 2010 15:56:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC PATCH 0/2] Prioritise inodes and zones for writeback
- required by page reclaim
-Message-Id: <20100804155610.2a0d5e1f.akpm@linux-foundation.org>
-In-Reply-To: <1280932711-23696-1-git-send-email-mel@csn.ul.ie>
-References: <1280932711-23696-1-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759412Ab0HDXAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:00:23 -0400
+Received: from web27001.mail.ukl.yahoo.com ([217.146.177.1]:22807 "HELO
+	web27001.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757366Ab0HDW76 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 18:59:58 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.uk;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=cfXYU6ZtagGTmHjkJt8N60n00gTvyBB5UQ1zK9sEJ3MCEejJrEUyQeUqQZ7/mCpDgvVc4QvxGwY2amQtGSTyN5YK0ZfhHkNxN/3BFdCGkf8S4a+Ycv/gesuy5b8+CwgJOAxfN557gFBlngOF1lFSBxO/jElaogl08jVIH9PTpQo=;
+Message-ID: <279129.36717.qm@web27001.mail.ukl.yahoo.com>
+X-YMail-OSG: rznU_zYVM1lvHGlHKYyzngH7vuq11rWeuTeaBMLFN2JrfoH
+ G4wfGJ2soUohT5t4V1BzqOpxfNhJgN.1vT2qZgiZxno3NdL7d827lgD0eKss
+ m7HdBOhLl2rqz.vSqwsmEa2uecKnIHX8_bLRI8ggAukPgOnqcTFkE0n4B_B8
+ Lc9qzU2XZGvkGOq01FIL0lqWgmiAVKRnlwS.O0kUYIYd7LCkWfHgiNlUOlsx
+ hHobVv_zNDcsveh8yGhSxnAxVu4nCQ.lJ8w7GnqimAQYvQMq6vxsak6EGMjV
+ xu6nT847jF1enn3i6phc-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Wed, 4 Aug 2010 22:59:56 +0000 (GMT)
+From: bifferos <bifferos@yahoo.co.uk>
+Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what c_ident is
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
+        Ingo Molnar <mingo@elte.hu>, linux-tip-commits@vger.kernel.org
+In-Reply-To: <4C59CA37.4050509@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Aug 2010 15:38:29 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
+--- On Wed, 4/8/10, H. Peter Anvin <hpa@linux.intel.com> wrote:
 
-> Commenting on the series "Reduce writeback from page reclaim context V6"
-> Andrew Morton noted;
 > 
->   direct-reclaim wants to write a dirty page because that page is in the
->   zone which the caller wants to allocate from!  Telling the flusher threads
->   to perform generic writeback will sometimes cause them to just gum the
->   disk up with pages from different zones, making it even harder/slower to
->   allocate a page from the zones we're interested in, no?
-> 
-> On the machines used to test the series, there were relatively few zones
-> and only one BDI so the scenario describes is a possibility. This series is
-> a very early prototype series aimed at mitigating the problem.
-> 
-> Patch 1 adds wakeup_flusher_threads_pages() which takes a list of pages
-> from page reclaim. Each inode belonging to a page on the list is marked
-> I_DIRTY_RECLAIM. When the flusher thread wakes, inodes with this tag are
-> unconditionally moved to the wb->b_io list for writing.
-> 
-> Patch 2 notes that writing back inodes does not necessarily write back
-> pages belonging to the zone page reclaim is concerned with. In response, it
-> adds a zone and counter to wb_writeback_work. As pages from the target zone
-> are written, the zone-specific counter is updated. When the flusher thread
-> then checks the zone counters if a specific zone is being targeted. While
-> more pages may be written than necessary, the assumption is that the pages
-> need cleaning eventually, the inode must be relatively old to have pages at
-> the end of the LRU, the IO will be relatively efficient due to less random
-> seeks and that pages from the target zone will still be cleaned.
-> 
-> Testing did not show any significant differences in terms of reducing dirty
-> file pages being written back but the lack of multiple BDIs and NUMA nodes in
-> the test rig is a problem. Maybe someone else has access to a more suitable
-> test rig.
-> 
-> Any comment as to the suitability for such a direction?
+> Incidentally, please do note that there is no concrete
+> benefit to this
+> "support", since all it does is replicate information in
+> /proc/cpuinfo
+> that is already available through lspci.
 
-um.  Might work.  Isn't pretty though.
+Without the patch RDC is misreported as Cyrix Cx486SLC.
 
-But until we can demonstrate the problem or someone reports it, we
-probably have more important issues to be looking at ;) I think that a
-better approach is to try to trigger this problem as we develop and
-test reclaim.  And if we _can't_ demonstrate it, work out why the heck
-not - either the code's smarter than we thought it was or the test is
-no good.
 
+
+
+      
