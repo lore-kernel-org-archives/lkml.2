@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758396Ab0HDGjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:39:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50831 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758320Ab0HDGjW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:39:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=tUVU2LQkhnxPZb0FAVzL1muI3fHcoRk6CGL0yfVK+pR82vxKbLCyGSz1/pTcwu2gZt
-         vw1pRwdzGOhpljQcnTSCv3pzLXwjXVUNRmOYAGTiHiab3QxR56p/L3JFCyzI2g0CByBI
-         7JZq4B69pvrur2c+kShBil5t40Vwoc14ZemRc=
-MIME-Version: 1.0
-In-Reply-To: <1280903650.8393.1.camel@mola>
-References: <1280903650.8393.1.camel@mola>
-Date: Wed, 4 Aug 2010 15:39:21 +0900
-X-Google-Sender-Auth: iCEV88Y7eYKDb8J0qhfX1Gzoxjc
-Message-ID: <AANLkTi=LBmk_o=Du5p6HqdZaPybcYh__Rrh28zm=S8Eo@mail.gmail.com>
-Subject: Re: [PATCH] max8998: fix off-by-one value range checking
-From: Kyungmin Park <kmpark@infradead.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758383Ab0HDGnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 02:43:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58270 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756120Ab0HDGnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 02:43:04 -0400
+Date: Wed, 4 Aug 2010 16:42:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Florian Mickler <florian@mickler.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@suse.de>,
+        mark gross <markgross@thegnar.org>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the suspend tree with the net tree
+Message-Id: <20100804164250.46e67b08.sfr@canb.auug.org.au>
+In-Reply-To: <20100804072302.44b6ec30@schatten.dmk.lab>
+References: <20100804131411.85975b86.sfr@canb.auug.org.au>
+	<20100804072302.44b6ec30@schatten.dmk.lab>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__4_Aug_2010_16_42_50_+1000_.wXwj0wik9pwMsWG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nice catch.
+--Signature=_Wed__4_Aug_2010_16_42_50_+1000_.wXwj0wik9pwMsWG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Hi Florian,
 
-On Wed, Aug 4, 2010 at 3:34 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> In max8998_list_voltage() and max8998_set_voltage(),
-> we use ldo as array index of ldo_voltage_map.
-> Thus the valid range should be 0 .. ARRAY_SIZE(ldo_voltage_map)-1.
+On Wed, 4 Aug 2010 07:23:02 +0200 Florian Mickler <florian@mickler.org> wro=
+te:
 >
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/max8998.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-> index 03e55a1..ab67298 100644
-> --- a/drivers/regulator/max8998.c
-> +++ b/drivers/regulator/max8998.c
-> @@ -119,7 +119,7 @@ static int max8998_list_voltage(struct regulator_dev *rdev,
->        int ldo = max8998_get_ldo(rdev);
->        int val;
->
-> -       if (ldo > ARRAY_SIZE(ldo_voltage_map))
-> +       if (ldo >= ARRAY_SIZE(ldo_voltage_map))
->                return -EINVAL;
->
->        desc = ldo_voltage_map[ldo];
-> @@ -306,7 +306,7 @@ static int max8998_set_voltage(struct regulator_dev *rdev,
->        u8 val;
->        bool en_ramp = false;
->
-> -       if (ldo > ARRAY_SIZE(ldo_voltage_map))
-> +       if (ldo >= ARRAY_SIZE(ldo_voltage_map))
->                return -EINVAL;
->
->        desc = ldo_voltage_map[ldo];
-> --
-> 1.5.4.3
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> This is the right fix. Thx.
+
+Thanks for the confirmation.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__4_Aug_2010_16_42_50_+1000_.wXwj0wik9pwMsWG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMWQvqAAoJEDMEi1NhKgbsdngH/RKVXkUXzovj0FCrP88+3q6F
+RSdgsuD7goh4RrLbUR3cwmOvU0fL2T3U4Eu+zPkBQs77LyrrTywaxzQol/Qx+FVm
+nDku5OVpDTBb6YXqsQP2AOcVX0vO4jlz7dhxsxsW3wDEHfo0SEjgfdI9k2sZTrXF
+6waF8Y3lXl3xxKefLTD9sFiUIqARwiSPY08XPaUjSZkijDSuVZCkNHLJjHKZ1PaX
+XA2smWzVXkU+ASiiayYpTmSmvgSGyvQmK4I0Twcxj8nedm8w4lkiGhr2t14NmQt8
+izTO/BbOwABqJ1bbzeuadiLpQPTbzxnvbT1/JOZLktF7GEuXTf6U4YOy78+7Xn8=
+=We/b
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__4_Aug_2010_16_42_50_+1000_.wXwj0wik9pwMsWG--
