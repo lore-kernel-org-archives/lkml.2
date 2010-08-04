@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab0HDO4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 10:56:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53931 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932902Ab0HDO4x convert rfc822-to-8bit (ORCPT
+	id S932981Ab0HDO7u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 10:59:50 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42567 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932935Ab0HDO7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 10:56:53 -0400
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-In-Reply-To: <20100804144539.GA4617@Krystal>
-References: <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
-	 <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal>
-	 <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal>
-	 <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal>
-	 <1280855904.1923.675.camel@laptop> <20100803182556.GA13798@Krystal>
-	 <1280904410.1923.700.camel@laptop>  <20100804144539.GA4617@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 04 Aug 2010 16:56:28 +0200
-Message-ID: <1280933788.1923.1281.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 4 Aug 2010 10:59:49 -0400
+Date: Wed, 4 Aug 2010 10:52:58 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: Re: WARNING at net/wireless/reg.c when wireless network is
+ disconnected
+Message-ID: <20100804145258.GC17666@tuxdriver.com>
+References: <4C5950B7.4000802@archlinux.org>
+ <20100804134908.GB17666@tuxdriver.com>
+ <4C59790C.4010809@archlinux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C59790C.4010809@archlinux.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 10:45 -0400, Mathieu Desnoyers wrote:
+On Wed, Aug 04, 2010 at 04:28:28PM +0200, Thomas Bächler wrote:
+> Am 04.08.2010 15:49, schrieb John W. Linville:
+> > On Wed, Aug 04, 2010 at 01:36:23PM +0200, Thomas Bächler wrote:
+> >> Hello,
+> >>
+> >> this warning has been around ever since I switched to 2.6.34, has
+> >> accompanied me through the 2.6.35-rc* phase and is still there with
+> >> 2.6.35. I didn't bother to report it so far, as there seems to be no harm.
+> >>
+> >> Whenever I disconnect/get disconnected from the wireless, I receive the
+> >> below warning:
+> >>
+> >> ------------[ cut here ]------------
+> >> WARNING: at net/wireless/reg.c:272
+> >> regulatory_hint_disconnect+0x1b3/0x230 [cfg80211]()
+> >> Hardware name: TECRA A11
+> >> Unexpected user alpha2: de
+> > 
+> > Perhaps you need to set the regdomain as "DE" rather than "de"?
+> > 
+> > John
+> 
+> You are actually right. I did set it to "DE" with iw, but wpa_supplicant
+> had a setting country="de". I just fixed that and will soon see if the
+> problem disappears.
+> 
+> Still, the warning shouldn't look like a bad kernel bug, but rather an
+> advisory to the user to set something sane. What confuses me even more
+> is that this has been set to DE afterwards:
 
-> How do you plan to read the data concurrently with the writer overwriting the
-> data while you are reading it without corruption ?
+Perhaps we should just upcase the alpha2 value?  I'm not sure why we don't.
 
-I don't consider reading while writing (in overwrite mode) a valid case.
+> $ dmesg | grep cfg80211:\ Calling\ CRDA
+> cfg80211: Calling CRDA to update world regulatory domain
+> cfg80211: Calling CRDA for country: de
+> cfg80211: Calling CRDA for country: DE
+> cfg80211: Calling CRDA to update world regulatory domain
+> cfg80211: Calling CRDA for country: DE
+> cfg80211: Calling CRDA to update world regulatory domain
+> cfg80211: Calling CRDA for country: DE
+> cfg80211: Calling CRDA to update world regulatory domain
+> cfg80211: Calling CRDA for country: DE
+> cfg80211: Calling CRDA to update world regulatory domain
+> cfg80211: Calling CRDA for country: DE
+> cfg80211: Calling CRDA to update world regulatory domain
+> cfg80211: Calling CRDA for country: DE
+> 
+> The AP has been playing with the regdom as well, I lost track of what
+> has been set where in this mess.
 
-If you want to use overwrite, stop the writer before reading it.
+The AP is probably sending a country IE that indicates "DE".
 
->  I think that the stack dump
-> should simply be saved directly to the ring buffer, without copy. The
-> dump_stack() functions might have to be extended so they don't just save text
-> dumbly, but can also be used to save events into the trace in binary format,
-> perhaps with the continuation cookie Linus was proposing.
-
-Because I don't want to support truncating reservations (because that
-leads to large nops for nested events) and when the event needs to go to
-multiple buffers you can re-use the stack-dump without having to do the
-unwind again.
-
-The problem with the continuation thing Linus suggested is that it would
-bloat the output 3 fold. A stack entry is a single u64. If you want to
-wrap that in a continuation event you need: a header (u64), a cookie
-(u64) and the entry (u64).
-
-Continuation events might make heaps of sense for larger data pieces,
-but I don't see them being practical for such small pieces.
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
