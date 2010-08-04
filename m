@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934551Ab0HDVPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:15:37 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42265 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934871Ab0HDVP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:15:27 -0400
-Date: Wed, 4 Aug 2010 14:15:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, david@lang.hm,
+	id S934878Ab0HDVPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:15:52 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:51284 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934820Ab0HDVPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 17:15:45 -0400
+Date: Wed, 4 Aug 2010 23:15:13 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
         Arjan van de Ven <arjan@infradead.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
+        Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
 Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100804211521.GI24163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
- <20100804185520.GA2417@srcf.ucam.org>
- <201008042251.08266.rjw@sisk.pl>
- <20100804205654.GA4986@srcf.ucam.org>
+Message-ID: <20100804211513.GC21452@elf.ucw.cz>
+References: <20100731230101.7cc1d8c7@infradead.org>
+ <20100801191228.GL2470@linux.vnet.ibm.com>
+ <20100801154708.19817b75@infradead.org>
+ <20100802011006.GS2470@linux.vnet.ibm.com>
+ <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
+ <20100803183447.0275c134@infradead.org>
+ <20100804163216.GB24163@linux.vnet.ibm.com>
+ <20100804163509.GA31523@srcf.ucam.org>
+ <20100804204208.GA21452@elf.ucw.cz>
+ <20100804205159.GH24163@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100804205654.GA4986@srcf.ucam.org>
+In-Reply-To: <20100804205159.GH24163@linux.vnet.ibm.com>
+X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 09:56:55PM +0100, Matthew Garrett wrote:
-> On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
-> > On Wednesday, August 04, 2010, Matthew Garrett wrote:
-> > > No! And that's precisely the issue. Android's existing behaviour could 
-> > > be entirely implemented in the form of binary that manually triggers 
-> > > suspend when (a) the screen is off and (b) no userspace applications 
-> > > have indicated that the system shouldn't sleep, except for the wakeup 
-> > > event race. Imagine the following:
+Hi!
+
+> > > > If this doesn't work for the Android folks for whatever reason, another
+> > > > approach would be to do the freeze in user code, which could track
+> > > > whether any user-level resources (pthread mutexes, SysV semas, whatever)
+> > > > where held, and do the freeze on a thread-by-thread basis within each
+> > > > "victim" application as the threads reach safe points.
 > > > 
-> > > 1) The policy timeout is about to expire. No applications are holding 
-> > > wakelocks. The system will suspend providing nothing takes a wakelock.
-> > > 2) A network packet arrives indicating an incoming SIP call
-> > > 3) The VOIP application takes a wakelock and prevents the phone from 
-> > > suspending while the call is in progress
-> > > 
-> > > What stops the system going to sleep between (2) and (3)? cgroups don't, 
-> > > because the voip app is an otherwise untrusted application that you've 
-> > > just told the scheduler to ignore.
+> > > The main problem I see with the cgroups solution is that it doesn't seem 
+> > > to do anything to handle avoiding loss of wakeup events.
 > > 
-> > I _think_ you can use the just-merged /sys/power/wakeup_count mechanism to
-> > avoid the race (if pm_wakeup_event() is called at 2)).
+> > In different message, Arve said they are actually using low-power idle
+> > to emulate suspend on Android.
 > 
-> Yes, I think that solves the problem. The only question then is whether 
-> it's preferable to use cgroups or suspend fully, which is pretty much up 
-> to the implementation. In other words, is there a reason we're still 
-> having this conversation? :) It'd be good to have some feedback from 
-> Google as to whether this satisfies their functional requirements.
+> Hello, Pavel,
+> 
+> Could you please point me at this message?
 
-The issue with cgroup freezer as currently defined is that it can freeze
-processes that hold user-level resources (pthread mutexes, SysV semas,
-...).  If some non-frozen process attempts to acquire that resource, you
-get a hang.  There might be some ways to work around this, for example,
-Arjan suggests momentarily unfreezing periodically, and I suggested doing
-the freeze in user-space code, but we don't know if either of these will
-really do what is required.
+AFAICT, this tells us that idle and suspend is the same hardware state
+on current Android hardware:
+								Pavel
 
-Also, I believe that Android's use of cgroups would be in addition to
-suspending fully rather than instead of.  Freezing a subset of the
-applications allows cutting power drain from output-only apps when
-the screen blanks but where some app such as a download needs to keep
-the system active.  They still would need to suspend once the download
-completes.
+Message-ID: <AANLkTinjH0C0bSK=Y2wKASnbJFsR2BN303xBXkaHbmRC@mail.gmail.com>
 
-But we do need to hear from the Android guys on these points.
+Arve said:
 
-							Thanx, Paul
+If you just program the alarm you will wake up see that the monotonic
+clock has not advanced and set the alarm another n seconds into the
+future. Or are proposing that suspend should be changed to keep the
+monotonic clock running? If you are, why? We can enter the same
+hardware states from idle, and modifying suspend to wake up more often
+would increase the average power consumption in suspend, not improve
+it for idle. In other words, if suspend wakes up as often as idle, why
+use suspend?
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
