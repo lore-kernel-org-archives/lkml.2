@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933940Ab0HDUPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 16:15:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9417 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934556Ab0HDUOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 16:14:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,317,1278313200"; 
-   d="scan'208";a="644710056"
-Message-ID: <4C59CA37.4050509@linux.intel.com>
-Date: Wed, 04 Aug 2010 13:14:47 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S933970Ab0HDUPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 16:15:52 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43456 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758370Ab0HDUPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 16:15:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=aXR9cZC4WIxpy1yKjGX7o5b2szMyobPRFVpTeb0kmZW7CodMgrSjRcfIfFPj9DPkae
+         CWmL2eU9hoSYna73j5UypkeGFBjfqBCvbsnjDSX9454DiRdRE3X9wI0/NJq+0HimXl59
+         tjkYgalZDuMzqPxC4jgnC91i4zJD102iY9Jq8=
+Message-ID: <4C59CA4F.4090003@garzik.org>
+Date: Wed, 04 Aug 2010 16:15:11 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: bifferos <bifferos@yahoo.co.uk>
-CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
-        Ingo Molnar <mingo@elte.hu>, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what
- c_ident is
-References: <646233.80914.qm@web27008.mail.ukl.yahoo.com>
-In-Reply-To: <646233.80914.qm@web27008.mail.ukl.yahoo.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Donald Parsons <dparsons@brightdsl.net>
+CC: Harald Hoyer <harald.hoyer@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Linux 2.6.35
+References: <1280716262.5125.42.camel@falcon.homelinux.org> <201008012138.39036.bjorn.helgaas@hp.com> <1280722876.5125.83.camel@falcon.homelinux.org> <AANLkTimK8sv5aWfcv_BAmipgVnukR5NJsZQOXYbb2LAH@mail.gmail.com> <1280802701.5836.10.camel@falcon.homelinux.org>
+In-Reply-To: <1280802701.5836.10.camel@falcon.homelinux.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2010 02:12 AM, bifferos wrote:
-> 
-> I couldn't reproduce this with 2.6.35 (without Peter's change),
-> I was trying on VirtualBox.  If the detection code is causing a 
-> problem we can just skip it if the CPU has cpuid.
-> 
-> Incidentally if you need some hardware to test the RDC port on I can
-> arrange that.
-> 
+On 08/02/2010 10:31 PM, Donald Parsons wrote:
+> Using your suggestion as to where the problem lies, I investigated
+> more deeply and found:
+>
+> I've now got 2.6.35-rc6-git3 to boot (and almost certainly 2.6.35 final)
+>
+> Make oldconfig broke at the transition where boot began failed, ie,
+> between 2.6.34-git4 and 2.6.34-git5.   Even though modules are the
+> same, boot fails.  If I use gconfig and set CONFIG_SATA_AHCI=y
+> instead of CONFIG_SATA_AHCI=m it works, except cannot select =y
+> unless CONFIG_ATA changed from m to y.
+>
+> So at some point in past, make oldconfig had apparently changed
+> CONFIG_SATA_AHCI from y to m and system still booted.  But between
+> 2.6.34-git4 and 2.6.34-git5 the ability to boot was lost.
+>
+> So make oldconfig is not 100% trustworthy in this case.  I do not
+> know if this is a problem that should be fixed.  Ask if you want
+> any .config diffs.
 
-Incidentally, please do note that there is no concrete benefit to this
-"support", since all it does is replicate information in /proc/cpuinfo
-that is already available through lspci.
 
-	-hpa
+The modules are not necessarily the same:  "libahci" was introduced in
+
+	commit 365cfa1ed5a36f9bcb9f64c9f0f52155af2e9fef
+	Author: Anton Vorontsov <avorontsov@ru.mvista.com>
+	Date:   Sun Mar 28 00:22:14 2010 -0400
+
+	    ahci: Move generic code into libahci
+
+so there exists the possibility that the initramfs builder, or whatever 
+is being used to load your ATA drivers, missed this dependency.  Modern 
+initramfs builders should be able to figure out module dependencies, so 
+this /shouldn't/ be an issue...  but it might be.
+
+	Jeff
+
+
+
