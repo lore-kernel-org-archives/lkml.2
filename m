@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab0HDSuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:50:10 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:43753 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306Ab0HDSuH (ORCPT
+	id S1758317Ab0HDSu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:50:28 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:58108 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab0HDSu0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:50:07 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.55,316,1278288000"; 
-   d="scan'208";a="235566448"
-From: Roland Dreier <rdreier@cisco.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-        Christoph Raisch <raisch@de.ibm.com>,
-        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 9/9] drivers/infiniband/hw/ehca: Drop unnecessary null test
-References: <Pine.LNX.4.64.1008032335190.20393@ask.diku.dk>
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 04 Aug 2010 11:50:05 -0700
-In-Reply-To: <Pine.LNX.4.64.1008032335190.20393@ask.diku.dk> (Julia Lawall's
-	message of "Tue, 3 Aug 2010 23:35:36 +0200 (CEST)")
-Message-ID: <ada1vae8b6q.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 4 Aug 2010 14:50:26 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>
+Subject: Re: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
+ correct index
+Thread-Topic: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
+ correct index
+Thread-Index: AcszLH4zXLsEPQuASP+5uxzSPyjpcgAQLtUAAAgzgxAAKOwtAAAOQtlQ//+kCgD//5I6iA==
+Date: Wed, 4 Aug 2010 18:50:24 +0000
+Message-ID: <81D58C97-B9A7-4217-9912-7EE6A3FE7DD0@microsoft.com>
+References: <8AFC7968D54FB448A30D8F38F259C56223FD0D21@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100803173732.GA1455@suse.de>
+ <8AFC7968D54FB448A30D8F38F259C56223FE8B19@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100804170406.GA28217@suse.de>
+ <8AFC7968D54FB448A30D8F38F259C56223FE8EF5@TK5EX14MBXC114.redmond.corp.microsoft.com>,<20100804182318.GB29046@suse.de>
+In-Reply-To: <20100804182318.GB29046@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks fine to me.  ehca guys, any objection?
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+
+
+
+
+
+
+On Aug 4, 2010, at 11:26, Greg KH <gregkh@suse.de> wrote:
+
+> On Wed, Aug 04, 2010 at 05:17:21PM +0000, Hank Janssen wrote:
+>>> 
+>> 
+>> I will re-submit all 5 patches and CC the stable mailing list on it as well.
+> 
+> 5?  I see 6 of them here :)
+> 
+> thanks,
+> 
+> greg k-h
+> 
+
+True but anise you rejected the todo patch there will only be 5.
+Unless you are willing to take the todo patch. :)
+
+Hank. 
