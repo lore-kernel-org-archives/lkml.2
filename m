@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab0HDK4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 06:56:13 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49494 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab0HDK4M (ORCPT
+	id S1757677Ab0HDK4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 06:56:23 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46621 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757586Ab0HDK4U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 06:56:12 -0400
-Message-ID: <4C594740.1090608@vlnb.net>
-Date: Wed, 04 Aug 2010 14:56:00 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.35: suspicious rcu_dereference_check() usage
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:LnO7PupMlFIUc7gel5kYr+QrDky++vK6P3PnAzwhZ3x
- OcA15uqa6CMiNgGHEtNcrep7flj4wyXGZu2mYFyCczpJuqptwn
- P4yGuiMr6yv5sH/XkQgiOmzE/pqiYuUeNThq+hJp3921uFQbVp
- kTCAbuJyMBunOcrA0j4uh9R+0W10qjMMhXTkOltXPLn7PT9ekf
- UP5uREPBwSjp0AWYxa8RQ==
+	Wed, 4 Aug 2010 06:56:20 -0400
+Subject: Re: [PATCH 2/3] perf: Remove dead code in buildin-record.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <87hbjwzhak.fsf@linux-g6p1.site>
+References: <4C241140.9090008@cn.fujitsu.com>
+	 <4C24119B.60200@cn.fujitsu.com>  <20100625131356.GB4078@ghostprotocols.net>
+	 <1277477285.32034.666.camel@twins> <87pqzd3jx5.fsf@linux-g6p1.site>
+	 <87hbjwzhak.fsf@linux-g6p1.site>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 04 Aug 2010 12:56:06 +0200
+Message-ID: <1280919366.1923.985.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, 2010-07-18 at 21:06 +0100, Matt Fleming wrote:
+> On Sat, 26 Jun 2010 16:14:46 +0100, Matt Fleming <matt@console-pimps.org> wrote:
+> > On Fri, 25 Jun 2010 16:48:05 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > Ah, yes, it would be nice for SH (which doesn't have a PMI) to couple a
+> > > software timer with their hardware counter to get samples.
+> > > 
+> > > Never got around to actually implementing that though, maybe Paul has a
+> > > minion interested in making that work?
+> > 
+> > I'll take a look at it.
+> 
+> How does the 'group_fd' parameter relate to the lack of PMI? Is the idea
+> to have one hrtimer that, when it fires, we sample all the counters? So
+> the first counter to be created is the group leader, which starts the
+> hrtimer, and all other counters are linked to this one? I had a go at
+> using a hrtimer per counter (minus any weighting of samples) and it
+> worked OK and seemed sensible given that we may want to sample counters
+> at different frequencies.
+> 
+> Is this what you had in mind with the 'group_fd' paramter, Peter? That
+> there'd be only one hrtimer?
 
-Today I gave a first try to 2.6.35 and it immediately produced:
+Right. So sys_perf_event_open() creates a stand alone event, but if you
+supply the group_fd param it will attach the newly created one to the
+leader indicated by group_fd.
 
-Aug  4 15:12:09 tgt kernel: [  183.799040] ===================================================                                              
-Aug  4 15:12:09 tgt kernel: [  183.799158] [ INFO: suspicious rcu_dereference_check() usage. ]                                              
-Aug  4 15:12:09 tgt kernel: [  183.799158] ---------------------------------------------------                                              
-Aug  4 15:12:09 tgt kernel: [  183.799158] kernel/exit.c:1387 invoked rcu_dereference_check() without protection!                           
-Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
-Aug  4 15:12:09 tgt kernel: [  183.799158] other info that might help us debug this:                                                        
-Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
-Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
-Aug  4 15:12:09 tgt kernel: [  183.799158] rcu_scheduler_active = 1, debug_locks = 1                                                        
-Aug  4 15:12:09 tgt kernel: [  183.799158] 2 locks held by mc/3751:                                                                         
-Aug  4 15:12:09 tgt kernel: [  183.799158]  #0:  (tasklist_lock){.+.+..}, at: [<7813d277>] do_wait+0xa1/0x24f                               
-Aug  4 15:12:09 tgt kernel: [  183.799158]  #1:  (&(&sighand->siglock)->rlock){-.....}, at: [<7813c6eb>] wait_consider_task+0xdd/0xbc8      
-Aug  4 15:12:09 tgt kernel: [  183.799158]                                                                                                  
-Aug  4 15:12:09 tgt kernel: [  183.799158] stack backtrace:                                                                                 
-Aug  4 15:12:09 tgt kernel: [  183.799158] Pid: 3751, comm: mc Not tainted 2.6.35-scst-dbg #3                                               
-Aug  4 15:12:09 tgt kernel: [  183.799158] Call Trace:                                                                                      
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<784660a3>] ? printk+0x2d/0x32                                                                 
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78165d6e>] lockdep_rcu_dereference+0x8e/0x96                                                  
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813caa3>] wait_consider_task+0x495/0xbc8                                                     
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7846c809>] ? sub_preempt_count+0x9/0xad                                                       
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78164056>] ? put_lock_stats+0xd/0x28                                                          
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d277>] ? do_wait+0xa1/0x24f                                                               
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78469218>] ? _raw_read_lock+0x6b/0x72                                                         
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d2ca>] do_wait+0xf4/0x24f                                                                 
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d48d>] sys_wait4+0x68/0xb2                                                                
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813afbd>] ? child_wait_callback+0x0/0x73                                                     
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<7813d503>] sys_waitpid+0x2c/0x2e                                                              
-Aug  4 15:12:09 tgt kernel: [  183.799158]  [<78102d13>] sysenter_do_call+0x12/0x32                                                         
+Groups have the properly that they will always be scheduled together,
+and read/sample can access/provide data of all of them.
 
-I guess, it was just after I started mc.
+So you can have a sampling leader report the counts of its siblings.
 
-Vlad
+You can make multiple groups, like {hrtimer, cycles} and {hrtimer,
+instructions} and {hrtimer, dcache-miss} and perf will schedule the
+stuff. If you'd try to do {hrtimer, cycles, insns, dcache-miss} but only
+have 2 hardware counters the group creation should fail because the
+implementation should dis-allow creating groups that cannot be
+scheduled 
+
+
