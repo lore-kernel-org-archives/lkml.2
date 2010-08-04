@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758181Ab0HDCg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:36:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48872 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756860Ab0HDCg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:36:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 4 Aug 2010 11:31:22 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+	id S1758188Ab0HDChX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:37:23 -0400
+Received: from tuxonice.net ([74.207.252.127]:54374 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757520Ab0HDChW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 22:37:22 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4C58D25F.5030705@tuxonice.net>
+Date: Wed, 04 Aug 2010 12:37:19 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Gelmini <andrea.gelmini@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>, nigel@tuxonice.net,
-        stable@kernel.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [BUGFIX][PATCH] fix corruption of hibernation caused by reusing
- swap at saving image
-Message-Id: <20100804113122.071a6b8c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100804105054.af68ee5c.kamezawa.hiroyu@jp.fujitsu.com>
-References: <201007282320.39528.linux@rainbow-software.org>
-	<201007282334.08063.rjw@sisk.pl>
-	<20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTim5STgpNEdh3JSU_BG5X8Wxh-gbXDmWYLdufNb3@mail.gmail.com>
-	<20100804083652.92b5b2df.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100804105054.af68ee5c.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+CC: Bojan Smojver <bojan@rexursive.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
+References: <1280465201.2600.10.camel@shrek.rexursive.com>	<1280486667.2608.1.camel@shrek.rexursive.com>	<4C534C9D.8000600@tuxonice.net>	<1280532174.2583.1.camel@shrek.rexursive.com>	<4C5362E7.3000706@tuxonice.net>	<1280538184.2583.11.camel@shrek.rexursive.com>	<4C537A01.5040808@tuxonice.net>	<1280540035.2658.5.camel@shrek.rexursive.com>	<1280551286.3097.6.camel@shrek.rexursive.com>	<20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>	<1280710453.2727.8.camel@shrek.rexursive.com>	<20100802101058.d4f1c7b6.kamezawa.hiroyu@jp.fujitsu.com>	<1280712068.2671.0.camel@shrek.rexursive.com>	<20100802102750.7d414819.kamezawa.hiroyu@jp.fujitsu.com>	<1280713381.2673.2.camel@shrek.rexursive.com>	<1280800750.3305.4.camel@shrek.rexursive.com>	<4C58C771.6040505@tuxonice.net>	<20100804110248.13a2452b.kamezawa.hiroyu@jp.fujitsu.com>	<1280888059.2741.8.camel@shrek.rexursive.com> <20100804111828.e4234160.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100804111828.e4234160.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010 10:50:54 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Hi.
 
-> This patch is created against 2.6.35. CC'ed stable.
-> Thank you for all helps.
-> 
+On 04/08/10 12:18, KAMEZAWA Hiroyuki wrote:
+> On Wed, 04 Aug 2010 12:14:19 +1000
+> Bojan Smojver<bojan@rexursive.com>  wrote:
+>
+>> On Wed, 2010-08-04 at 11:02 +0900, KAMEZAWA Hiroyuki wrote:
+>>> Then, after resume, all vmalloc() area is resumed as "allocated".
+>>>
+>>> Wrong ?
+>>
+>> I actually tried remembering vmalloc() returned pointers into a global
+>> variable as you suggested. On resume, they were always set to NULL,
+>> which would suggest that what has gotten into the image was the state
+>> before vmalloc() was called in save_image(). See:
+>> http://lkml.org/lkml/2010/8/2/537.
+>>
+>> Anyone else wants to comment here?
+>>
+> Hmm, ok. let's see the result.
+>
+> The reason I mention about the race is my patch corrupts saved image
+> by changing swap_map[] status and swap-cache radix-tree during save_image().
+>
+> Maybe I don't understand something important.
 
-I'm sorry I now doubt this patch is wrong.
-What should be done is stop swap-reuse before hibernation_snapshot().
-But, hmm, this one can't.
+That's a different issue.
 
-Maybe what really happens is someone (kswapd?) reuses swap while
-swsusp_alloc() is on going.
+Remember that the snapshot includes more than just the running programs. 
+It includes structs recording filesystem info and the state of swap. 
+This is why we say you can't safely hibernate, use your filesystem from 
+another kernel or OS, then resume. The use of the filesystem in another 
+kernel/OS makes the state on disk inconsistent with the state in memory 
+that we saved in our image. (I'm assuming it's written to or at least 
+that the journal is replayed).
 
-please allow me to retry..
+I'm not 100% sure, but it sounds like your issue is the same, but with 
+swap. If you free a swap page post-snapshot and it gets used for (say) 
+saving a page of the image, then you have a problem post-resume. The 
+resumed kernel will think the swap state is still as it originally was 
+and might try to swap back in the page of memory that was freed and used 
+for the snapshot, creating in-memory corruption.
 
-Thanks,
--Kame
+One solution is to allocate the swap for the image before the snapshot. 
+This is what TuxOnIce does - it freezes processes, calculates the image 
+statistics and uses them to allocate storage and free memory as 
+necessary, writes the first part of the image then does the snapshot and 
+writes the remainder. By doing things in this order, the only unknown is 
+the amount of memory needed for drivers, and that can be handled pretty 
+easily.
 
+Regards,
 
-> =
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Since 2.6.31, swap_map[]'s refcounting was changed to show that
-> a used swap entry is just for swap-cache, can be reused.
-> Then, while scanning free entry in swap_map[], a swap entry may
-> be able to be reclaimed and reused. It was by the commit
-> c9e444103b5e7a5a3519f9913f59767f92e33baf.
-> 
-> But this caused deta corruption at hibernation. Considering how
-> the image is saved, the calls of try_to_reclaim_swap() changes the
-> status of memory and there will be inconsitency between saved-memory-image's
-> swap_map[] / memmap / swapper_space because memory is saved per page with
-> swap-allocation per page.
-> 
-> This patch is for avoiding bug by not reclaiming swap-entry at hibernation.
-> This is a quick fix for backporting.
-> 
-> Cc: stable@kernel.org
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Reported-by: Ondreg Zary <linux@rainbow-software.org>
-> Tested-by: Andrea Gelmini <andrea.gelmini@gmail.com>
-> Acked-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/swapfile.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6.35.org/mm/swapfile.c
-> ===================================================================
-> --- linux-2.6.35.org.orig/mm/swapfile.c
-> +++ linux-2.6.35.org/mm/swapfile.c
-> @@ -318,8 +318,10 @@ checks:
->  	if (offset > si->highest_bit)
->  		scan_base = offset = si->lowest_bit;
->  
-> -	/* reuse swap entry of cache-only swap if not busy. */
-> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-> +	/* reuse swap entry of cache-only swap if not hibernation. */
-> +	if (vm_swap_full()
-> +		&& usage == SWAP_HAS_CACHE
-> +		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
->  		int swap_was_freed;
->  		spin_unlock(&swap_lock);
->  		swap_was_freed = __try_to_reclaim_swap(si, offset);
-> 
-> 
-
+Nigel
