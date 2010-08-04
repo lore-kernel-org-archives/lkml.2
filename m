@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab0HDBuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 21:50:46 -0400
-Received: from tuxonice.net ([74.207.252.127]:33057 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758045Ab0HDBuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 21:50:44 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C58C771.6040505@tuxonice.net>
-Date: Wed, 04 Aug 2010 11:50:41 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Bojan Smojver <bojan@rexursive.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
-References: <1280465201.2600.10.camel@shrek.rexursive.com>	 <1280486667.2608.1.camel@shrek.rexursive.com>	 <4C534C9D.8000600@tuxonice.net>	 <1280532174.2583.1.camel@shrek.rexursive.com>	 <4C5362E7.3000706@tuxonice.net>	 <1280538184.2583.11.camel@shrek.rexursive.com>	 <4C537A01.5040808@tuxonice.net>	 <1280540035.2658.5.camel@shrek.rexursive.com>	 <1280551286.3097.6.camel@shrek.rexursive.com>	 <20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>	 <1280710453.2727.8.camel@shrek.rexursive.com>	 <20100802101058.d4f1c7b6.kamezawa.hiroyu@jp.fujitsu.com>	 <1280712068.2671.0.camel@shrek.rexursive.com>	 <20100802102750.7d414819.kamezawa.hiroyu@jp.fujitsu.com>	 <1280713381.2673.2.camel@shrek.rexursive.com> <1280800750.3305.4.camel@shrek.rexursive.com>
-In-Reply-To: <1280800750.3305.4.camel@shrek.rexursive.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1758102Ab0HDBxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 21:53:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59260 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758060Ab0HDBxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 21:53:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=OvY0MO0T2HjJ/44qINL/KXxT9/cO7Hxx88vpBLrcXeMkPRRJf3gL3tpGSlOw0/VBpG
+         3pdXh9KugztX+Gs014kRTd9//9f/Nc48gCANlk2ajlu3gYRSL5MJKS25x0Fp/hSN6pe5
+         Z+S4j7I1h04rNYMqPuv3OG9R2e/PUrsTshV0I=
+Subject: [PATCH] wm8350-core: fix wrong kfree in error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain
+Date: Wed, 04 Aug 2010 09:54:21 +0800
+Message-Id: <1280886861.31990.5.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+This patch includes below fixes:
+1. fix wm8350_create_cache error path
+   make sure wm8350->reg_cache is freed in error path.
+2. fix wm8350_device_init error path
+   no need to kfree(wm8350->reg_cache) in the case of goto out.
 
-Sorry for the delay in replying.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/wm8350-core.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-On 03/08/10 11:59, Bojan Smojver wrote:
->> From all this, I only got "In swsusp_free()" printed on resume. So, it
-> seems that save_image() does indeed free those vmalloc()-ed buffers and
-> they are not saved in the image.
->
-> I even put this in hibernate.c:
-> ---------------------
->          /* Restore control flow magically appears here */
->          restore_processor_state();
->          if (!in_suspend)
->                  platform_leave(platform_mode);
->
->          printk(KERN_ERR "Resumed, checking swsusp_lzo_buffers.\n");
->          if (swsusp_lzo_buffers) {
->                  printk (KERN_ERR "Setting vmalloc() buffers.\n");
->                  memset(swsusp_lzo_buffers, 0, 80 * PAGE_SIZE);
->          }
-> ---------------------
->
-> This printed just "Resumed, checking swsusp_lzo_buffers.", meaning it
-> was already set to NULL.
->
-> Any further comments on this? Nigel, what do you reckon?
+diff --git a/drivers/mfd/wm8350-core.c b/drivers/mfd/wm8350-core.c
+index b580748..e81cc31 100644
+--- a/drivers/mfd/wm8350-core.c
++++ b/drivers/mfd/wm8350-core.c
+@@ -536,6 +536,7 @@ static int wm8350_create_cache(struct wm8350 *wm8350, int type, int mode)
+ 	}
+ 
+ out:
++	kfree(wm8350->reg_cache);
+ 	return ret;
+ }
+ 
+@@ -700,7 +701,7 @@ int wm8350_device_init(struct wm8350 *wm8350, int irq,
+ 
+ 	ret = wm8350_irq_init(wm8350, irq, pdata);
+ 	if (ret < 0)
+-		goto err;
++		goto err_free;
+ 
+ 	if (wm8350->irq_base) {
+ 		ret = request_threaded_irq(wm8350->irq_base +
+@@ -738,8 +739,9 @@ int wm8350_device_init(struct wm8350 *wm8350, int irq,
+ 
+ err_irq:
+ 	wm8350_irq_exit(wm8350);
+-err:
++err_free:
+ 	kfree(wm8350->reg_cache);
++err:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(wm8350_device_init);
+-- 
+1.5.4.3
 
-I don't see what all the fuss was about. save_image is called after the 
-snapshot is made (hibernate called hibernation_snapshot to create the 
-image, then swsusp_write which in turn calls save_image), so there's no 
-possibility of the memory allocated by it being included in the image or 
-of a memory leak ocuring as a result.
 
-Regards,
 
-Nigel
