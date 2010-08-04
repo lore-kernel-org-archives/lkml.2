@@ -1,331 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab0HDC5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:57:19 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:21310 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932133Ab0HDCwK (ORCPT
+	id S1758199Ab0HDDCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 23:02:38 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6437 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298Ab0HDDCg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:52:10 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: goO2CrgVM1ljsbZCsvwM119g93A4EUhzBeEpCCn7US0iy1Z
- 1OLUWuuRMxUIrEu3S0g2NfwjtVkWLHtqZBv0kbnxPtEOufwuQ3_u0k7UM3Cb
- DkunMo.dLAt_ahxJm1TP6l.UBj97l_YLmhAKVTRfijXsfqQc63URZOen7T0S
- SI2aXKCkYmppDU5pVWyCCq6JVubW5G71zKUVgnzX9yQ.D0Zt80tz6.gFbfXY
- MdkqlfwOudRfdnJwpgWZf59NFwV6jUVYFUOajAysVqIp2qdzB
-X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20100804024528.468967207@linux.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 03 Aug 2010 21:45:22 -0500
-From: Christoph Lameter <cl@linux-foundation.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q3 08/23] slub: remove dynamic dma slab allocation
-References: <20100804024514.139976032@linux.com>
-Content-Disposition: inline; filename=slub_remove_dynamic_dma
+	Tue, 3 Aug 2010 23:02:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6063"; a="49659538"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: uaccess: Implement strict user copy checks
+Date: Tue,  3 Aug 2010 20:02:30 -0700
+Message-Id: <1280890950-19174-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.2.1.6.g61bf12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the dynamic dma slab allocation since this causes too many issues with
-nested locks etc etc. The change avoids passing gfpflags into many functions.
+This is mostly a copy from the s390 implementation (which copied
+from x86 and sparc), except we print a warning if the Kconfig
+option is disabled.
 
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
-
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- mm/slub.c |  151 ++++++++++++++++----------------------------------------------
- 1 file changed, 40 insertions(+), 111 deletions(-)
+ arch/arm/Kconfig.debug         |   14 ++++++++++++++
+ arch/arm/include/asm/uaccess.h |   14 ++++++++++++++
+ arch/arm/lib/Makefile          |    3 ++-
+ arch/arm/lib/usercopy.c        |   25 +++++++++++++++++++++++++
+ 4 files changed, 55 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/lib/usercopy.c
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-27 22:51:36.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-27 22:51:36.000000000 -0500
-@@ -2065,7 +2065,7 @@ init_kmem_cache_node(struct kmem_cache_n
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 91344af..2cc0cdc 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -128,4 +128,18 @@ config DEBUG_S3C_UART
+ 	  The uncompressor code port configuration is now handled
+ 	  by CONFIG_S3C_LOWLEVEL_UART_PORT.
  
- static DEFINE_PER_CPU(struct kmem_cache_cpu, kmalloc_percpu[KMALLOC_CACHES]);
++config DEBUG_STRICT_USER_COPY_CHECKS
++	bool "Strict user copy size checks"
++	depends on DEBUG_KERNEL
++	help
++	  Enabling this option turns a certain set of sanity checks for user
++	  copy operations into compile time errors.
++
++	  The copy_from_user() etc checks are there to help test if there
++	  are sufficient security checks on the length argument of
++	  the copy operation, by having gcc prove that the argument is
++	  within bounds.
++
++	  If unsure, or if you run an older (pre 4.4) gcc, say N.
++
+ endmenu
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 33e4a48..3153e1a 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -401,8 +401,22 @@ extern unsigned long __must_check __clear_user_std(void __user *addr, unsigned l
+ extern unsigned long __must_check __strncpy_from_user(char *to, const char __user *from, unsigned long count);
+ extern unsigned long __must_check __strnlen_user(const char __user *s, long n);
  
--static inline int alloc_kmem_cache_cpus(struct kmem_cache *s, gfp_t flags)
-+static inline int alloc_kmem_cache_cpus(struct kmem_cache *s)
- {
- 	if (s < kmalloc_caches + KMALLOC_CACHES && s >= kmalloc_caches)
- 		/*
-@@ -2092,7 +2092,7 @@ static inline int alloc_kmem_cache_cpus(
-  * when allocating for the kmalloc_node_cache. This is used for bootstrapping
-  * memory on a fresh node that has no slab structures yet.
-  */
--static void early_kmem_cache_node_alloc(gfp_t gfpflags, int node)
-+static void early_kmem_cache_node_alloc(int node)
- {
- 	struct page *page;
- 	struct kmem_cache_node *n;
-@@ -2100,7 +2100,7 @@ static void early_kmem_cache_node_alloc(
- 
- 	BUG_ON(kmalloc_caches->size < sizeof(struct kmem_cache_node));
- 
--	page = new_slab(kmalloc_caches, gfpflags, node);
-+	page = new_slab(kmalloc_caches, GFP_KERNEL, node);
- 
- 	BUG_ON(!page);
- 	if (page_to_nid(page) != node) {
-@@ -2144,7 +2144,7 @@ static void free_kmem_cache_nodes(struct
- 	}
- }
- 
--static int init_kmem_cache_nodes(struct kmem_cache *s, gfp_t gfpflags)
-+static int init_kmem_cache_nodes(struct kmem_cache *s)
- {
- 	int node;
- 
-@@ -2152,11 +2152,11 @@ static int init_kmem_cache_nodes(struct 
- 		struct kmem_cache_node *n;
- 
- 		if (slab_state == DOWN) {
--			early_kmem_cache_node_alloc(gfpflags, node);
-+			early_kmem_cache_node_alloc(node);
- 			continue;
- 		}
- 		n = kmem_cache_alloc_node(kmalloc_caches,
--						gfpflags, node);
-+						GFP_KERNEL, node);
- 
- 		if (!n) {
- 			free_kmem_cache_nodes(s);
-@@ -2173,7 +2173,7 @@ static void free_kmem_cache_nodes(struct
- {
- }
- 
--static int init_kmem_cache_nodes(struct kmem_cache *s, gfp_t gfpflags)
-+static int init_kmem_cache_nodes(struct kmem_cache *s)
- {
- 	init_kmem_cache_node(&s->local_node, s);
- 	return 1;
-@@ -2313,7 +2313,7 @@ static int calculate_sizes(struct kmem_c
- 
- }
- 
--static int kmem_cache_open(struct kmem_cache *s, gfp_t gfpflags,
-+static int kmem_cache_open(struct kmem_cache *s,
- 		const char *name, size_t size,
- 		size_t align, unsigned long flags,
- 		void (*ctor)(void *))
-@@ -2349,10 +2349,10 @@ static int kmem_cache_open(struct kmem_c
- #ifdef CONFIG_NUMA
- 	s->remote_node_defrag_ratio = 1000;
- #endif
--	if (!init_kmem_cache_nodes(s, gfpflags & ~SLUB_DMA))
-+	if (!init_kmem_cache_nodes(s))
- 		goto error;
- 
--	if (alloc_kmem_cache_cpus(s, gfpflags & ~SLUB_DMA))
-+	if (alloc_kmem_cache_cpus(s))
- 		return 1;
- 
- 	free_kmem_cache_nodes(s);
-@@ -2512,6 +2512,10 @@ EXPORT_SYMBOL(kmem_cache_destroy);
- struct kmem_cache kmalloc_caches[KMALLOC_CACHES] __cacheline_aligned;
- EXPORT_SYMBOL(kmalloc_caches);
- 
-+#ifdef CONFIG_ZONE_DMA
-+static struct kmem_cache kmalloc_dma_caches[SLUB_PAGE_SHIFT];
++extern void copy_from_user_overflow(void)
++#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
++	__compiletime_error("copy_from_user() buffer size is not provably correct")
++#else
++	__compiletime_warning("copy_from_user() buffer size is not provably correct")
 +#endif
++;
 +
- static int __init setup_slub_min_order(char *str)
+ static inline unsigned long __must_check copy_from_user(void *to, const void __user *from, unsigned long n)
  {
- 	get_option(&str, &slub_min_order);
-@@ -2548,116 +2552,26 @@ static int __init setup_slub_nomerge(cha
- 
- __setup("slub_nomerge", setup_slub_nomerge);
- 
--static struct kmem_cache *create_kmalloc_cache(struct kmem_cache *s,
--		const char *name, int size, gfp_t gfp_flags)
-+static void create_kmalloc_cache(struct kmem_cache *s,
-+		const char *name, int size, unsigned int flags)
- {
--	unsigned int flags = 0;
--
--	if (gfp_flags & SLUB_DMA)
--		flags = SLAB_CACHE_DMA;
--
- 	/*
- 	 * This function is called with IRQs disabled during early-boot on
- 	 * single CPU so there's no need to take slub_lock here.
- 	 */
--	if (!kmem_cache_open(s, gfp_flags, name, size, ARCH_KMALLOC_MINALIGN,
-+	if (!kmem_cache_open(s, name, size, ARCH_KMALLOC_MINALIGN,
- 								flags, NULL))
- 		goto panic;
- 
- 	list_add(&s->list, &slab_caches);
- 
--	if (sysfs_slab_add(s))
--		goto panic;
--	return s;
-+	if (!sysfs_slab_add(s))
-+		return;
- 
- panic:
- 	panic("Creation of kmalloc slab %s size=%d failed.\n", name, size);
- }
- 
--#ifdef CONFIG_ZONE_DMA
--static struct kmem_cache *kmalloc_caches_dma[SLUB_PAGE_SHIFT];
--
--static void sysfs_add_func(struct work_struct *w)
--{
--	struct kmem_cache *s;
--
--	down_write(&slub_lock);
--	list_for_each_entry(s, &slab_caches, list) {
--		if (s->flags & __SYSFS_ADD_DEFERRED) {
--			s->flags &= ~__SYSFS_ADD_DEFERRED;
--			sysfs_slab_add(s);
--		}
--	}
--	up_write(&slub_lock);
--}
--
--static DECLARE_WORK(sysfs_add_work, sysfs_add_func);
--
--static noinline struct kmem_cache *dma_kmalloc_cache(int index, gfp_t flags)
--{
--	struct kmem_cache *s;
--	char *text;
--	size_t realsize;
--	unsigned long slabflags;
--	int i;
--
--	s = kmalloc_caches_dma[index];
--	if (s)
--		return s;
--
--	/* Dynamically create dma cache */
--	if (flags & __GFP_WAIT)
--		down_write(&slub_lock);
--	else {
--		if (!down_write_trylock(&slub_lock))
--			goto out;
--	}
--
--	if (kmalloc_caches_dma[index])
--		goto unlock_out;
--
--	realsize = kmalloc_caches[index].objsize;
--	text = kasprintf(flags & ~SLUB_DMA, "kmalloc_dma-%d",
--			 (unsigned int)realsize);
--
--	s = NULL;
--	for (i = 0; i < KMALLOC_CACHES; i++)
--		if (!kmalloc_caches[i].size)
--			break;
--
--	BUG_ON(i >= KMALLOC_CACHES);
--	s = kmalloc_caches + i;
--
--	/*
--	 * Must defer sysfs creation to a workqueue because we don't know
--	 * what context we are called from. Before sysfs comes up, we don't
--	 * need to do anything because our sysfs initcall will start by
--	 * adding all existing slabs to sysfs.
--	 */
--	slabflags = SLAB_CACHE_DMA|SLAB_NOTRACK;
--	if (slab_state >= SYSFS)
--		slabflags |= __SYSFS_ADD_DEFERRED;
--
--	if (!text || !kmem_cache_open(s, flags, text,
--			realsize, ARCH_KMALLOC_MINALIGN, slabflags, NULL)) {
--		s->size = 0;
--		kfree(text);
--		goto unlock_out;
--	}
--
--	list_add(&s->list, &slab_caches);
--	kmalloc_caches_dma[index] = s;
--
--	if (slab_state >= SYSFS)
--		schedule_work(&sysfs_add_work);
--
--unlock_out:
--	up_write(&slub_lock);
--out:
--	return kmalloc_caches_dma[index];
--}
--#endif
--
- /*
-  * Conversion table for small slabs sizes / 8 to the index in the
-  * kmalloc array. This is necessary for slabs < 192 since we have non power
-@@ -2710,7 +2624,7 @@ static struct kmem_cache *get_slab(size_
- 
- #ifdef CONFIG_ZONE_DMA
- 	if (unlikely((flags & SLUB_DMA)))
--		return dma_kmalloc_cache(index, flags);
-+		return &kmalloc_dma_caches[index];
- 
- #endif
- 	return &kmalloc_caches[index];
-@@ -3049,7 +2963,7 @@ void __init kmem_cache_init(void)
- 	 * kmem_cache_open for slab_state == DOWN.
- 	 */
- 	create_kmalloc_cache(&kmalloc_caches[0], "kmem_cache_node",
--		sizeof(struct kmem_cache_node), GFP_NOWAIT);
-+		sizeof(struct kmem_cache_node), 0);
- 	kmalloc_caches[0].refcount = -1;
- 	caches++;
- 
-@@ -3062,18 +2976,18 @@ void __init kmem_cache_init(void)
- 	/* Caches that are not of the two-to-the-power-of size */
- 	if (KMALLOC_MIN_SIZE <= 32) {
- 		create_kmalloc_cache(&kmalloc_caches[1],
--				"kmalloc-96", 96, GFP_NOWAIT);
-+				"kmalloc-96", 96, 0);
- 		caches++;
- 	}
- 	if (KMALLOC_MIN_SIZE <= 64) {
- 		create_kmalloc_cache(&kmalloc_caches[2],
--				"kmalloc-192", 192, GFP_NOWAIT);
-+				"kmalloc-192", 192, 0);
- 		caches++;
- 	}
- 
- 	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
- 		create_kmalloc_cache(&kmalloc_caches[i],
--			"kmalloc", 1 << i, GFP_NOWAIT);
-+			"kmalloc", 1 << i, 0);
- 		caches++;
- 	}
- 
-@@ -3146,6 +3060,21 @@ void __init kmem_cache_init(void)
- 
- void __init kmem_cache_init_late(void)
- {
-+#ifdef CONFIG_ZONE_DMA
-+	int i;
++	unsigned int sz = __compiletime_object_size(to);
 +
-+	for (i = 0; i < SLUB_PAGE_SHIFT; i++) {
-+		struct kmem_cache *s = &kmalloc_caches[i];
-+
-+		if (s && s->size) {
-+			char *name = kasprintf(GFP_KERNEL,
-+				 "dma-kmalloc-%d", s->objsize);
-+
-+			create_kmalloc_cache(&kmalloc_dma_caches[i],
-+				name, s->objsize, SLAB_CACHE_DMA);
-+		}
++	if (unlikely(sz != -1 && sz < n)) {
++		copy_from_user_overflow();
++		return n;
 +	}
-+#endif
- }
+ 	if (access_ok(VERIFY_READ, from, n))
+ 		n = __copy_from_user(to, from, n);
+ 	else /* security hole - plug it */
+diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
+index 59ff42d..561cf3d 100644
+--- a/arch/arm/lib/Makefile
++++ b/arch/arm/lib/Makefile
+@@ -13,7 +13,8 @@ lib-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
+ 		   testchangebit.o testclearbit.o testsetbit.o        \
+ 		   ashldi3.o ashrdi3.o lshrdi3.o muldi3.o             \
+ 		   ucmpdi2.o lib1funcs.o div64.o sha1.o               \
+-		   io-readsb.o io-writesb.o io-readsl.o io-writesl.o
++		   io-readsb.o io-writesb.o io-readsl.o io-writesl.o \
++		   usercopy.o
  
- /*
-@@ -3240,7 +3169,7 @@ struct kmem_cache *kmem_cache_create(con
+ mmu-y	:= clear_user.o copy_page.o getuser.o putuser.o
  
- 	s = kmalloc(kmem_size, GFP_KERNEL);
- 	if (s) {
--		if (kmem_cache_open(s, GFP_KERNEL, name,
-+		if (kmem_cache_open(s, name,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
- 			up_write(&slub_lock);
+diff --git a/arch/arm/lib/usercopy.c b/arch/arm/lib/usercopy.c
+new file mode 100644
+index 0000000..e57e6e2
+--- /dev/null
++++ b/arch/arm/lib/usercopy.c
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++#include <linux/module.h>
++#include <linux/bug.h>
++
++void copy_from_user_overflow(void)
++{
++	WARN(1, "Buffer overflow detected!\n");
++}
++EXPORT_SYMBOL(copy_from_user_overflow);
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
