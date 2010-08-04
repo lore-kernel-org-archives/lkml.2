@@ -1,92 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758474Ab0HDHJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 03:09:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51179 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758456Ab0HDHJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 03:09:37 -0400
-Message-ID: <4C591313.50402@cn.fujitsu.com>
-Date: Wed, 04 Aug 2010 15:13:23 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1758461Ab0HDHKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 03:10:23 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62073 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758290Ab0HDHKW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 03:10:22 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: [PATCH] kvm: make mmu_shrink() fit shrinker's requirement
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.00.1008032312440.25170@asgard.lang.hm>
+References: <20100801210548.23f77ff6@infradead.org>
+	<alpine.DEB.2.00.1008012153300.25170@asgard.lang.hm>
+	<20100802140933.GB2405@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008021627290.29820@asgard.lang.hm>
+	<AANLkTi=1kBuyPS_P+eNLcnRu1mJH6BzpzQW_sENZuL1L@mail.gmail.com>
+	<alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
+	<AANLkTikhcYzNp8CPp8cqrV7Ey5CLMWu1sJTNxUtEi2as@mail.gmail.com>
+	<alpine.DEB.2.00.1008022203470.6545@asgard.lang.hm>
+	<AANLkTinFT5jq4nUhUpzS5S4TVDQGj0S7RtRgxNhsz2UF@mail.gmail.com>
+	<alpine.DEB.2.00.1008031611100.6545@asgard.lang.hm>
+	<20100804001015.GJ2407@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008031723530.6545@asgard.lang.hm>
+	<AANLkTinjH0C0bSK=Y2wKASnbJFsR2BN303xBXkaHbmRC@mail.gmail.com>
+	<alpine.DEB.2.00.1008032111350.25170@asgard.lang.hm>
+	<AANLkTi=O++qfY7zz5rErqWQn0n4Tj7dfxQNcytjwiP4q@mail.gmail.com>
+	<alpine.DEB.2.00.1008032312440.25170@asgard.lang.hm>
+Date: Wed, 4 Aug 2010 00:10:21 -0700
+Message-ID: <AANLkTikyD94wqWZTWA23K=zvN3RpKB6dDRrvFSv9szMg@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: david@lang.hm
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-pm@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
+        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/8/3  <david@lang.hm>:
+> On Tue, 3 Aug 2010, Arve Hj?nnev?g wrote:
+>
+>> 2010/8/3  <david@lang.hm>:
+>>>
+>>> On Tue, 3 Aug 2010, Arve Hj?nnev?g wrote:
+>>>
+>>>> On Tue, Aug 3, 2010 at 5:51 PM,  <david@lang.hm> wrote:
+>>>>>
+>>>>> On Tue, 3 Aug 2010, Paul E. McKenney wrote:
+>>>>>
+>>>>>> OK, I'll bite...
+>>>>>
+>>>>> thanks, this is not intended to be a trap.
+>>>>>
+>>>>>> From an Android perspective, the differences are as follows:
+>>>>>>
+>>>>>> 1. ? ? ?Deep idle states are entered only if there are no runnable
+>>>>>> tasks.
+>>>>>> ? ? ? ?In contrast, opportunistic suspend can happen even when there
+>>>>>> ? ? ? ?are tasks that are ready, willing, and able to run.
+>>>>>
+>>>>> Ok, this is a complication to what I'm proposing (and seems a little
+>>>>> odd,
+>>>>> but I can see how it can work), but not neccessarily a major problem.
+>>>>> it
+>>>>> depends on exactly how the decision is made to go into low power states
+>>>>> and/or suspend. If this is done by an application that is able to look
+>>>>> at
+>>>>> either all activity or ignore one cgroup of processes at different
+>>>>> times
+>>>>> in
+>>>>> it's calculations than this would work.
+>>>>>
+>>>>>> 2. ? ? ?There can be a set of input events that do not bring the
+>>>>>> system
+>>>>>> ? ? ? ?out of suspend, but which would bring the system out of a deep
+>>>>>> ? ? ? ?idle state. ?For example, I believe that it was stated that one
+>>>>>> ? ? ? ?of the Android-based smartphones ignores touchscreen input
+>>>>>> while
+>>>>>> ? ? ? ?suspended, but pays attention to it while in deep idle states.
+>>>>>
+>>>>> I see this as simply being a matter of what devices are still enabled
+>>>>> at
+>>>>> the
+>>>>> different power savings levels. At one level the touchscreen is still
+>>>>> powered, while at another level it isn't, and at yet another level you
+>>>>> have
+>>>>> to hit the power soft-button. This isn't fundamentally different from
+>>>>> powering off a USB peripheral that the system decides is idle (and then
+>>>>> not
+>>>>> seeing input from it until something else wakes the system)
+>>>>
+>>>> The touchscreen on android devices is powered down long before we
+>>>> suspend, so that is not a good example. There is still a significant
+>>>> difference between suspend and idle though. In idle all interrupts
+>>>> work, in suspend only interrupts that the driver has called
+>>>> enable_irq_wake on will work (on platforms that support it).
+>>>
+>>> are you talking about Android here or are you talking genricly across all
+>>> platforms?
+>>>
+>>
+>> This appears to be the current Linux driver model. Old platform code
+>> hardcoded the wakeup interrupts.
+>
+> not quite the question I was trying (and failing) to ask, but from the
+> answer it sounds like setting suspend to wake up on all interrupts is the
+> same as idle.
+>
 
-mmu_shrink() should attempt to free @nr_to_scan entries.
+No, suspend does a lot more than idle.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 9c69725..1034373 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3138,37 +3138,51 @@ static int mmu_shrink(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
- {
- 	struct kvm *kvm;
- 	struct kvm *kvm_freed = NULL;
-+	struct kvm *kvm_last;
- 	int cache_count = 0;
- 
- 	spin_lock(&kvm_lock);
- 
--	list_for_each_entry(kvm, &vm_list, vm_list) {
-+	if (list_empty(&vm_list))
-+		goto out;
-+
-+	kvm_last = list_entry(vm_list.prev, struct kvm, vm_list);
-+
-+	for (;;) {
- 		int npages, idx, freed_pages;
- 		LIST_HEAD(invalid_list);
- 
-+		kvm = list_first_entry(&vm_list, struct kvm, vm_list);
- 		idx = srcu_read_lock(&kvm->srcu);
- 		spin_lock(&kvm->mmu_lock);
- 		npages = kvm->arch.n_alloc_mmu_pages -
- 			 kvm->arch.n_free_mmu_pages;
--		cache_count += npages;
--		if (!kvm_freed && nr_to_scan > 0 && npages > 0) {
-+		if (kvm_last)
-+			cache_count += npages;
-+		if (nr_to_scan > 0 && npages > 0) {
- 			freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm,
- 							  &invalid_list);
-+			kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 			cache_count -= freed_pages;
- 			kvm_freed = kvm;
--		}
--		nr_to_scan--;
-+			nr_to_scan -= freed_pages;
-+		} else if (kvm == kvm_freed)
-+			nr_to_scan = 0; /* no more page to be freed, break */
- 
--		kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 		spin_unlock(&kvm->mmu_lock);
- 		srcu_read_unlock(&kvm->srcu, idx);
--	}
--	if (kvm_freed)
- 		list_move_tail(&kvm_freed->vm_list, &vm_list);
- 
-+		if (kvm == kvm_last) /* just scaned all vms */
-+			kvm_last = NULL;
-+		if (!kvm_last && (nr_to_scan <= 0 || !kvm_freed))
-+			break;
-+	}
-+
-+out:
- 	spin_unlock(&kvm_lock);
- 
--	return cache_count;
-+	return cache_count < 0 ? 0 : cache_count;
- }
- 
- static struct shrinker mmu_shrinker = {
+> so here suspend is looking like just a variation of low-power idle
+> (different wakeup criteria)
+>
+>>>>>> 3. ? ? ?The system comes out of a deep idle state when a timer
+>>>>>> ? ? ? ?expires. ?In contrast, timers cannot expire while the
+>>>>>> ? ? ? ?system is suspended. ?(This one is debatable: some people
+>>>>>> ? ? ? ?argue that timers are subject to jitter, and the suspend
+>>>>>> ? ? ? ?case for timers is the same as that for deep idle states,
+>>>>>> ? ? ? ?but with unbounded timer jitter. ?Others disagree. ?The
+>>>>>> ? ? ? ?resulting discussions have produced much heat, but little
+>>>>>> ? ? ? ?light. ?Such is life.)
+>>>>>
+>>>>> if you have the ability to wake for an alarm, you have the ability to
+>>>>> wake
+>>>>> for a timer (if from no other method than to set the alarm to when the
+>>>>> timer
+>>>>> tick would go off)
+>>>>>
+>>>>
+>>>> If you just program the alarm you will wake up see that the monotonic
+>>>> clock has not advanced and set the alarm another n seconds into the
+>>>> future. Or are proposing that suspend should be changed to keep the
+>>>> monotonic clock running? If you are, why? We can enter the same
+>>>> hardware states from idle, and modifying suspend to wake up more often
+>>>> would increase the average power consumption in suspend, not improve
+>>>> it for idle. In other words, if suspend wakes up as often as idle, why
+>>>> use suspend?
+>>>
+>>> no, I was thinking that you set the alarm to go off, and when it goes off
+>>> and wakes you up, you correct other local clocks before doing anything
+>>> else.
+>>>
+>>> even if they wake up at the same time, you would use suspend instead of
+>>> idle
+>>> if it saved more power (allowing for the power to get in and out of
+>>> suspend
+>>> vs the power to get in and out of idle)
+>>
+>> Suspend and idle use the same power state on the devices we shipped.
+>> The power saving we get from suspend if from ignoring the timers.
+>
+> Ok, so if you set the alarm to the next time the timer for a privilaged task
+> would run and wake up then to be completely transparent to the privilaged
+> task, or you could decide to disable the timers as well
+>
+> again, this looks like suspend and idle are very closely related.
+>
+>>> in this case, another reason you would consider using suspend over idle
+>>> is
+>>> that you can suspend until the next timer that your privilaged
+>>> applications
+>>> have set, and skip timers set by the non-privilaged applications,
+>>> resulting
+>>> in more time asleep.
+>>
+>> Without wakelock or suspend blockers this can still break since a
+>> privileged application may be waiting on a resource held by a
+>> non-privileged application.
+>
+> since the non-privilaged application is never frozen when a privilaged
+> application is running, I'm not sure how you would get this to happen that
+> wouldn't also be a problem with wakelocks.
+
+With wakelocks we annotate that we have important work to do, until
+that work is accomplished we do not suspend. If you modify the idle
+code ignore some processes' timers the system may get stuck in idle
+while waiting for a non-privileged application to release a resource.
+
+>
+> if you want to have a privilaged application keep the system awake while it
+> waits for a non-privilaged application, all it would need to do is to set a
+> timer near enough in the future that it's considered 'awake' all the time.
+> this will cost a context switch every timeout period (for the application to
+> check that it's still waiting and set the next timer), but that's pretty
+> cheap.
+
+No, this will kill your idle power.
+
+>
+> one thing this would destroy is the stats currently built around the
+> wakelock, but since they would be replaced by stats of exactly the type of
+> thing that powertop was written to deal with, I don't see this as a problem
+> (powertop would just have to learn a mode where it ignores the
+> non-privilaged tasks).consolodating tools is a good thing.
+>
+>>>>>> There may well be others.
+>>>>>>
+>>>>>> Whether these distinctions are a good thing or a bad thing is one of
+>>>>>> the topics of this discussion. ?But the distinctions themselves are
+>>>>>> certainly very real, from what I can see.
+>>>>>>
+>>>>>> Or am I missing your point?
+>>>>>
+>>>>> these big distinction that I see as significant seem to be in the
+>>>>> decision
+>>>>> of when to go into the different states, and the difference between the
+>>>>> states ?themselves seem to be less significant (and either very close
+>>>>> to,
+>>>>> or
+>>>>> within the variation that already exists for power saving modes)
+>>>>>
+>>>>> If I'm right bout this, then it would seem to simplify the concept and
+>>>>> change it from some really foreign android-only thing into a special
+>>>>> case
+>>>>> variation of existing core concepts.
+>>>>
+>>>> Suspend is not an android only concept. The android extensions just
+>>>> allow us to aggressively use suspend without loosing (or delaying)
+>>>> wakeup events. On the hardware that we shipped we can enter the same
+>>>> power mode from idle as we do in suspend, but we still use suspend
+>>>> primarily because it stops the monotonic clock and all the timers that
+>>>> use it. Changing suspend to behave more like an idle mode, which seems
+>>>> to be what you are suggesting, would not buy us anything.
+>>>
+>>> Ok, If I am understanding you correctly I think this is an important
+>>> point.
+>>>
+>>> What Android calls suspend is not what other linux distros call suspend,
+>>> it's just a low-power mode with different wakeup rules.
+>>>
+>>> Is this correct?
+>>>
+>>
+>> No. Android suspend is Linux suspend. We just enter it more frequently.
+>
+> In Linux, a full suspend normally takes the system down to a mode that can't
+> be reached by the normal idle mechnism (including powering down
+> peripherals). It also takes significantly different actions to wake up. What
+> you are describing seems much milder than that.
+
+We use the normal suspend sequence. The shipping hardware we have just
+don't need to do lot
+
+>
+>>> If this is the case it seems even more so that the android suspend should
+>>> be
+>>> addressed by tieing into the power management/idle stuff rather than the
+>>> suspend/hibernate side of things
+>>>
+>>> is the reason you want to stop the onotonic clock and the timers because
+>>> the
+>>> applications need to be fooled into thinking no time has passed?
+>>>
+>>
+>> Yes, but this is not an Android extension, it is part of the normal
+>> Linux suspend sequence.
+>
+> no, as noted by others in this thread, normal linux suspend/resume modifies
+> the clock to show that time has passed since the suspend happened.
+>
+
+The monotonic clock always stops. There are a few different ways to
+maintain the realtime clock and we use one of them.
+
+>>> or is it to prevent extranious wakeups?
+>>>
+>> That too.
+>
+> as noted above, this sounds like it's configurable.
+>
+>>> or is it to save additional power?
+>>>
+>> No (assuming you are asking about the clock), the actual hardware
+>> clock (on msm) stops even in idle but it is resynchronized on wakeup
+>> with a clock that never stops when used from idle.
+>
+> so I'm left not understanding the huge desire to stop the monotonic clock.
+>
+
+If you ignore the timers and don't stop the clock they are based on,
+you break a lot of apps when you resume (watchdogs and timeouts
+trigger). If you don't ignore timers, you can't sleep very long with
+existing software.
+
+>>>>> you have many different power saving modes, the daemon (or kernel code)
+>>>>> that
+>>>>> is determining which mode to go into would need different logic
+>>>>> (including,
+>>>>> but not limited to the ability to be able to ignore one or more cgroups
+>>>>> of
+>>>>> processes). different power saving modes have different trade-offs, and
+>>>>> some
+>>>>> of them power down different peripherals (which is always a platform
+>>>>> specific, if not system specific set of trade-offs)
+>>>>>
+>>>>
+>>>> The hardware specific idle hook can (and does) decide to go into any
+>>>> power state from idle that does not disrupt any active devices.
+>>>
+>>> This I know is an Andoid specific thing. On other platforms power states
+>>> very definantly can make user visible changes.
+>>
+>> How is this Android specific?
+>
+> you are stating that this must be suspend because low-power idle must be
+> transparent to the user.
+
+It must be transparent to the rest of the system.
+
+>
+> I am saying that on Linux, low-power idle commonly is not transparent to the
+> user, so the requirement for it to be transparent (therefor putting the
+> suspend into a different category) is an Android only requirement.
+>
+
+I'm am not talking about minor latencies. If you have a platform that
+for instance turns off you screen dma when entering idle, it is broken
+whether is running Android or not. If it does the same in suspend it
+is not a problem.
+
+-- 
+Arve Hjønnevåg
