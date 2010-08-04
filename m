@@ -1,98 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab0HDEAw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 00:00:52 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59987 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699Ab0HDEAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 00:00:50 -0400
-Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
-From: James Bottomley <James.Bottomley@suse.de>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: paulmck@linux.vnet.ibm.com, peterz@infradead.org, swetland@google.com,
-        linux-kernel@vger.kernel.org, florian@mickler.org,
-        linux-pm@lists.linux-foundation.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-In-Reply-To: <AANLkTinJ2jy18bAS-=abtDLaQWVmQdK1Oq105FcNDNyJ@mail.gmail.com>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	 <AANLkTi=hoGF7egpyB9sLKJoXv5aiGrxfa9_5iH-96SA=@mail.gmail.com>
-	 <1280851338.2774.30.camel@mulgrave.site>
-	 <AANLkTinJ2jy18bAS-=abtDLaQWVmQdK1Oq105FcNDNyJ@mail.gmail.com>
+	id S1751967Ab0HDEEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 00:04:21 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:37541 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab0HDEEU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 00:04:20 -0400
+Subject: Re: [PATCH]: Compress hibernation image with LZO (in-kernel)
+From: Bojan Smojver <bojan@rexursive.com>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1280890070.2741.11.camel@shrek.rexursive.com>
+References: <1280465201.2600.10.camel@shrek.rexursive.com>
+	 <1280486667.2608.1.camel@shrek.rexursive.com>
+	 <4C534C9D.8000600@tuxonice.net>
+	 <1280532174.2583.1.camel@shrek.rexursive.com>
+	 <4C5362E7.3000706@tuxonice.net>
+	 <1280538184.2583.11.camel@shrek.rexursive.com>
+	 <4C537A01.5040808@tuxonice.net>
+	 <1280540035.2658.5.camel@shrek.rexursive.com>
+	 <1280551286.3097.6.camel@shrek.rexursive.com>
+	 <20100802091752.3c9f180d.kamezawa.hiroyu@jp.fujitsu.com>
+	 <1280710453.2727.8.camel@shrek.rexursive.com>
+	 <20100802101058.d4f1c7b6.kamezawa.hiroyu@jp.fujitsu.com>
+	 <1280712068.2671.0.camel@shrek.rexursive.com>
+	 <20100802102750.7d414819.kamezawa.hiroyu@jp.fujitsu.com>
+	 <1280713381.2673.2.camel@shrek.rexursive.com>
+	 <1280800750.3305.4.camel@shrek.rexursive.com>
+	 <1280802642.2627.2.camel@shrek.rexursive.com> <4C58D3B0.10602@tuxonice.net>
+	 <1280890070.2741.11.camel@shrek.rexursive.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 00:00:27 -0400
-Message-ID: <1280894427.11045.293.camel@mulgrave.site>
+Date: Wed, 04 Aug 2010 14:04:18 +1000
+Message-ID: <1280894658.2591.1.camel@shrek.rexursive.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-03 at 15:08 -0700, Arve Hjønnevåg wrote:
-> 2010/8/3 James Bottomley <James.Bottomley@suse.de>:
-> > On Mon, 2010-08-02 at 21:18 -0700, Arve Hjønnevåg wrote:
-> >> > o       A power-aware application must be able to efficiently communicate
-> >> >        its needs to the system, so that such communication can be
-> >> >        performed on hot code paths.  Communication via open() and
-> >> >        close() is considered too slow, but communication via ioctl()
-> >> >        is acceptable.
-> >> >
-> >>
-> >> The problem with using open and close to prevent an allow suspend is
-> >> not that it is too slow but that it interferes with collecting stats.
-> >
-> > Please elaborate on this.  I expect the pm-qos stats interface will
-> > collect stats across user open/close because that's how it currently
-> > works.  What's the problem?
-> >
-> 
-> The pm-qos interface creates the request object in open and destroys
-> it in release just like the suspend blocker interface. We need stats
-> for each client which is lost if you free the object every time you
-> unblock suspend.
+On Wed, 2010-08-04 at 12:47 +1000, Bojan Smojver wrote:
+> Points taken for all the other comments. Thank you.
 
-? right at the moment it doesn't do stats.  I don't see why adding a per
-pid or per name stat count on the long lived object won't work here.
+Style wise, does this look better?
 
-> Or are you talking about user space opening and closing the stats
-> interface (which does not cause any problems)?
+PS. Don't worry about contents yet - still working out the kinks.
 
-There is no stat interface yet; it's for us to define.
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index ca6066a..cb57eb9 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -137,6 +137,8 @@ config SUSPEND_FREEZER
+ config HIBERNATION
+ 	bool "Hibernation (aka 'suspend to disk')"
+ 	depends on PM && SWAP && ARCH_HIBERNATION_POSSIBLE
++	select LZO_COMPRESS
++	select LZO_DECOMPRESS
+ 	select SUSPEND_NVS if HAS_IOMEM
+ 	---help---
+ 	  Enable the suspend to disk (STD) functionality, which is usually
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index b0bb217..1515e2c 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -24,6 +24,7 @@
+ #include <linux/swapops.h>
+ #include <linux/pm.h>
+ #include <linux/slab.h>
++#include <linux/lzo.h>
+ 
+ #include "power.h"
+ 
+@@ -357,6 +358,30 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+ 	return error;
+ }
+ 
++/* We need to remember how much compressed data we need to read. */
++#define LZO_HEADER	sizeof(size_t)
++
++/* Number of pages/bytes we'll compress at a time. */
++#define LZO_UNC_PAGES	64
++#define LZO_UNC_SIZE	(LZO_UNC_PAGES * PAGE_SIZE)
++
++/* Number of pages/bytes we need for compressed data (worst case). */
++#define LZO_CMP_PAGES	DIV_ROUND_UP(lzo1x_worst_compress(LZO_UNC_SIZE) + \
++			             LZO_HEADER, PAGE_SIZE)
++#define LZO_CMP_SIZE	(LZO_CMP_PAGES * PAGE_SIZE)
++
++/* As per examples/overlap.c in lzo distribution, we need to add more space
++ * to the end of the buffer in order to perform overlapping compression. We
++ * also add LZO_HEADER, because our compressed data starts at that offset.
++ * Then we round it off on PAGE_SIZE boundary, so that we can copy full pages
++ * safely. We call this overhead. Magic numbers and formula below.
++ */
++#define LZO_OVH_PAGES	DIV_ROUND_UP((LZO_UNC_SIZE > 0xBFFF ? \
++			              0xBFFF : LZO_UNC_SIZE) + \
++			             LZO_UNC_SIZE / 16 + 64 + 3 + \
++			             LZO_HEADER, PAGE_SIZE)
++#define LZO_OVH_SIZE	(LZO_OVH_PAGES + PAGE_SIZE)
++
+ /**
+  *	save_image - save the suspend image data
+  */
+@@ -372,6 +397,29 @@ static int save_image(struct swap_map_handle *handle,
+ 	struct bio *bio;
+ 	struct timeval start;
+ 	struct timeval stop;
++	size_t i, unc_len, cmp_len;
++	unsigned char *buf, *wrk, *page;
++
++	page = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++	if (!page) {
++		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
++		return -ENOMEM;
++	}
++
++	wrk = vmalloc(LZO1X_1_MEM_COMPRESS);
++	if (!wrk) {
++		printk(KERN_ERR "PM: Failed to allocate LZO workspace\n");
++		free_page((unsigned long)page);
++		return -ENOMEM;
++	}
++
++	buf = vmalloc(LZO_UNC_SIZE + LZO_OVH_SIZE);
++	if (!buf) {
++		printk(KERN_ERR "PM: Failed to allocate LZO buffer\n");
++		vfree(wrk);
++		free_page((unsigned long)page);
++		return -ENOMEM;
++	}
+ 
+ 	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
+ 		nr_to_write);
+@@ -382,16 +430,59 @@ static int save_image(struct swap_map_handle *handle,
+ 	bio = NULL;
+ 	do_gettimeofday(&start);
+ 	while (1) {
+-		ret = snapshot_read_next(snapshot);
+-		if (ret <= 0)
++		for (unc_len = 0;
++		     unc_len < LZO_UNC_SIZE; unc_len += PAGE_SIZE) {
++			ret = snapshot_read_next(snapshot);
++			if (ret < 0)
++				goto out_finish;
++
++			if (!ret)
++				break;
++
++			/* Copy uncompressed data to the top of the buffer. */
++			memcpy(buf + LZO_OVH_SIZE + unc_len,
++			       data_of(*snapshot), PAGE_SIZE);
++
++			if (!(nr_pages % m))
++				printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
++			nr_pages++;
++		}
++
++		if (!unc_len)
+ 			break;
+-		ret = swap_write_page(handle, data_of(*snapshot), &bio);
+-		if (ret)
++
++		ret = lzo1x_1_compress(buf + LZO_OVH_SIZE, unc_len,
++		                       buf + LZO_HEADER, &cmp_len, wrk);
++		if (ret < 0) {
++			printk(KERN_ERR "PM: LZO compression failed\n");
++			break;
++		}
++
++		if (unlikely(!cmp_len ||
++		             cmp_len > lzo1x_worst_compress(unc_len))) {
++			printk(KERN_ERR "PM: Invalid LZO length\n");
++			ret = -1;
+ 			break;
+-		if (!(nr_pages % m))
+-			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
+-		nr_pages++;
++		}
++
++		*(size_t *)buf = cmp_len;
++
++		/* Given we are writing one page at a time to disk, we copy
++		 * that much from the buffer, although the last bit will likely
++		 * be smaller than full page. This is OK - we saved the length
++		 * of the compressed data, so any garbage at the end will be
++		 * discarded when we read it.
++		 */
++		for (i = 0; i < LZO_HEADER + cmp_len; i += PAGE_SIZE) {
++			memcpy(page, buf + i, PAGE_SIZE);
++
++			ret = swap_write_page(handle, page, &bio);
++			if (ret)
++				goto out_finish;
++		}
+ 	}
++
++out_finish:
+ 	err2 = hib_wait_on_bio_chain(&bio);
+ 	do_gettimeofday(&stop);
+ 	if (!ret)
+@@ -401,6 +492,11 @@ static int save_image(struct swap_map_handle *handle,
+ 	else
+ 		printk(KERN_CONT "\n");
+ 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
++
++	vfree(buf);
++	vfree(wrk);
++	free_page((unsigned long)page);
++
+ 	return ret;
+ }
+ 
+@@ -416,7 +512,8 @@ static int enough_swap(unsigned int nr_pages)
+ 	unsigned int free_swap = count_swap_pages(root_swap, 1);
+ 
+ 	pr_debug("PM: Free swap pages: %u\n", free_swap);
+-	return free_swap > nr_pages + PAGES_FOR_IO;
++	return free_swap >
++	       (nr_pages * LZO_CMP_PAGES) / LZO_UNC_PAGES + 1 + PAGES_FOR_IO;
+ }
+ 
+ /**
+@@ -547,9 +644,22 @@ static int load_image(struct swap_map_handle *handle,
+ 	int error = 0;
+ 	struct timeval start;
+ 	struct timeval stop;
+-	struct bio *bio;
+-	int err2;
+ 	unsigned nr_pages;
++	size_t i, off, unc_len, cmp_len;
++	unsigned char *buf, *page;
++
++	page = (void *)__get_free_page(__GFP_WAIT | __GFP_HIGH);
++	if (!page) {
++		printk(KERN_ERR "PM: Failed to allocate LZO page\n");
++		return -ENOMEM;
++	}
++
++	buf = vmalloc(LZO_CMP_SIZE);
++	if (!buf) {
++		printk(KERN_ERR "PM: Failed to allocate LZO buffer\n");
++		free_page((unsigned long)page);
++		return -ENOMEM;
++	}
+ 
+ 	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
+ 		nr_to_read);
+@@ -557,27 +667,73 @@ static int load_image(struct swap_map_handle *handle,
+ 	if (!m)
+ 		m = 1;
+ 	nr_pages = 0;
+-	bio = NULL;
+ 	do_gettimeofday(&start);
++
++	error = snapshot_write_next(snapshot);
++	if (error <= 0)
++		goto out_finish;
++
+ 	for ( ; ; ) {
+-		error = snapshot_write_next(snapshot);
+-		if (error <= 0)
+-			break;
+-		error = swap_read_page(handle, data_of(*snapshot), &bio);
++		error = swap_read_page(handle, page, NULL); /* sync */
+ 		if (error)
+ 			break;
+-		if (snapshot->sync_read)
+-			error = hib_wait_on_bio_chain(&bio);
+-		if (error)
++
++		cmp_len = *(size_t *)page;
++		if (unlikely(!cmp_len ||
++		             cmp_len > lzo1x_worst_compress(LZO_UNC_SIZE))) {
++			printk(KERN_ERR "PM: Invalid LZO length\n");
++			error = -1;
+ 			break;
+-		if (!(nr_pages % m))
+-			printk("\b\b\b\b%3d%%", nr_pages / m);
+-		nr_pages++;
++		}
++
++		/* As per examples/overlap.c in lzo distribution, we copy
++		 * compressed data to the top of the in-place decompression
++		 * buffer. */
++		off = LZO_CMP_SIZE - cmp_len;
++		memcpy(buf + off, page + LZO_HEADER,
++		       (cmp_len < PAGE_SIZE - LZO_HEADER ?
++		        cmp_len : PAGE_SIZE - LZO_HEADER));
++
++		for (i = PAGE_SIZE - LZO_HEADER; i < cmp_len; i += PAGE_SIZE) {
++			error = swap_read_page(handle, page, NULL); /* sync */
++			if (error)
++				goto out_finish;
++
++			memcpy(buf + off + i, page,
++			       (cmp_len - unc_len < PAGE_SIZE ?
++			        cmp_len - unc_len : PAGE_SIZE));
++		}
++
++		unc_len = LZO_UNC_SIZE;
++		error = lzo1x_decompress_safe(buf + off, cmp_len,
++		                              buf, &unc_len);
++		if (error < 0) {
++			printk(KERN_ERR "PM: LZO decompression failed\n");
++			break;
++		}
++
++		if (unlikely(!unc_len ||
++		             unc_len > LZO_UNC_SIZE || unc_len % PAGE_SIZE)) {
++			printk(KERN_ERR "PM: Invalid LZO length\n");
++			error = -1;
++			break;
++		}
++
++		for (i = 0; i < unc_len; i += PAGE_SIZE) {
++			memcpy(data_of(*snapshot), buf + i, PAGE_SIZE);
++
++			if (!(nr_pages % m))
++				printk("\b\b\b\b%3d%%", nr_pages / m);
++			nr_pages++;
++
++			error = snapshot_write_next(snapshot);
++			if (error <= 0)
++				goto out_finish;
++		}
+ 	}
+-	err2 = hib_wait_on_bio_chain(&bio);
++
++out_finish:
+ 	do_gettimeofday(&stop);
+-	if (!error)
+-		error = err2;
+ 	if (!error) {
+ 		printk("\b\b\b\bdone\n");
+ 		snapshot_write_finalize(snapshot);
+@@ -586,6 +742,10 @@ static int load_image(struct swap_map_handle *handle,
+ 	} else
+ 		printk("\n");
+ 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
++
++	vfree(buf);
++	free_page((unsigned long)page);
++
+ 	return error;
+ }
+ 
 
-> >> The wakelock code has a sysfs interface that allow you to use a
-> >> open/write/close sequence to block or unblock suspend. There is no
-> >> limit to the amount of kernel memory that a process can consume with
-> >> this interface, so the suspend blocker patchset uses a /dev interface
-> >> with ioctls to block or unblock suspend and it destroys the kernel
-> >> object when the file descriptor is closed.
-> >
-> > This is an implementation detail only.
-> 
-> There is no way fix it without changing the user space visible
-> behavior of the API. The kernel does not know when it is safe to free
-> the objects.
-
-They're freed on destruction of the long lived kernel object or on user
-space clear request.  Surely that's definitive enough?
-
-> > The pm-qos objects are long
-> > lived, so their stats would be too.  I would guess that explicit stat
-> > clearing might be a useful option.
-> >
-> 
-> Which pm-qos objects are you referring to? The struct pm_qos_object
-> that backs each pm-qos class is long lived (I don't know why this is
-> named pm_qos_object), but we need stats in struct pm_qos_request_list.
-
-Actually, why not two separate lists?  one for the request and one for
-the stats?
-
-OK, so I'm tired and I've had a long flight to get to where I am, so I
-may be a bit jaded, but this isn't fucking rocket science the question
-is how do we implement what you want on what we have ... there looks to
-be multiple useful solutions ... we just have to pick one and agree on
-it (that's standard open source).
-
-James
-
+-- 
+Bojan
 
