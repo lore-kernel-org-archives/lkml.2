@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab0HDEZj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 00:25:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39501 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577Ab0HDEZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 00:25:38 -0400
-Date: Wed, 4 Aug 2010 14:25:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Narendra K <Narendra_K@dell.com>,
-        Jordan Hargrave <jordan_hargrave@dell.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20100804142531.aea95c0b.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754247Ab0HDEZo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 00:25:44 -0400
+Received: from maila.microsoft.com ([131.107.115.212]:7375 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab0HDEZl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 00:25:41 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>
+Subject: RE: [PATCH 3/6] staging: hv: Fixed the value of the 64bit-hole
+ inside ring buffer
+Thread-Topic: [PATCH 3/6] staging: hv: Fixed the value of the 64bit-hole
+ inside ring buffer
+Thread-Index: AcszLO9qZOv04Uv+S4i5FuiriXxrpAAQTT0AAAeYYrA=
+Date: Wed, 4 Aug 2010 04:25:40 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FE7ADB@TK5EX14MBXC114.redmond.corp.microsoft.com>
+References: <8AFC7968D54FB448A30D8F38F259C56223FD1D45@TK5EX14MBXC114.redmond.corp.microsoft.com>
+ <20100803174405.GF1455@suse.de>
+In-Reply-To: <20100803174405.GF1455@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-After merging the driver-core tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+>>On Tue, Aug 03, 2010 at 05:31:57PM +0000, Hank Janssen wrote:
+>> From: Haiyang Zhang <haiyangz@microsoft.com>
+>> 
+>> Fixed the value of the 64bit-hole inside ring buffer, this caused a problem on Hyper-V 
+>>when running checked Windows builds.
+>
+>What was the problem, and why would this fix it?  Was it a bug in this code, 
+>by virtue that the code was incorrect in the client and the checked builds properly warned
+>of this, or something else?
 
-drivers/pci/pci-label.c:100: error: unknown field 'owner' specified in initializer
-drivers/pci/pci-label.c:100: warning: initialization from incompatible pointer type
-drivers/pci/pci-label.c:105: error: unknown field 'owner' specified in initializer
-drivers/pci/pci-label.c:105: warning: initialization from incompatible pointer type
+Checked builds of Windows are used internally and given to external system builders at times.
+They are builds that for example that all elements in a structure follow the definition of that 
+Structure. The bug this fixed was for a field that we did not fill in at all (Because we do
+Not use it on the Linux side), and the checked build of windows gives errors on it internally 
+to the Windows logs.
 
-Caused by commit 60cc62ad579afa0eb5bded82e08dd0617d461d52 ("sysfs: Remove
-owner field from sysfs struct attribute") interacting with commit
-911e1c9b05a8e3559a7aa89083930700a0b9e7ee ("PCI: export SMBIOS provided
-firmware instance and label to sysfs") from the pci tree.
+This fixes that error.
 
-I applied the following merge fix patch (Jesse, this patch can already be
-applied to the pci tree without problems):
+Thanks,
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 4 Aug 2010 14:21:42 +1000
-Subject: [PATCH] pci: update for owner removal from struct device_attribute
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/pci/pci-label.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pci/pci-label.c b/drivers/pci/pci-label.c
-index 111500e..90c0a72 100644
---- a/drivers/pci/pci-label.c
-+++ b/drivers/pci/pci-label.c
-@@ -97,12 +97,12 @@ smbiosinstance_show(struct device *dev,
- }
+Hank.
  
- static struct device_attribute smbios_attr_label = {
--	.attr = {.name = "label", .mode = 0444, .owner = THIS_MODULE},
-+	.attr = {.name = "label", .mode = 0444},
- 	.show = smbioslabel_show,
- };
- 
- static struct device_attribute smbios_attr_instance = {
--	.attr = {.name = "index", .mode = 0444, .owner = THIS_MODULE},
-+	.attr = {.name = "index", .mode = 0444},
- 	.show = smbiosinstance_show,
- };
- 
--- 
-1.7.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
