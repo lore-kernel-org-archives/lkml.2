@@ -1,77 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758333Ab0HDGUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:20:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57401 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758256Ab0HDGU3 (ORCPT
+	id S1758359Ab0HDGUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 02:20:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53275 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758344Ab0HDGUh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:20:29 -0400
+	Wed, 4 Aug 2010 02:20:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EY4oxVzyMxLwiLNSrNw+GcQTmQL/lckcTvyUMWMfmRl7kkGkHB0wGYrf+dmy2sVCiL
-         /+LhWy3xJm5oxYPgboQsGATSzZjfV45E5c1FAAH2jcNnD9MGNbW00QkyyhT0iO33FJ7y
-         V+btPdfTqfMXwmBEXsO+zbzgh3X6THGwQADKA=
-Date: Tue, 3 Aug 2010 23:20:22 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>,
-        Anisse Astier <anisse@astier.eu>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100804062021.GA25742@core.coreip.homeip.net>
-References: <20100513075728.GF30110@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
- <20100514145539.GA5598@srcf.ucam.org>
- <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nq8p1qXa+Q6KJEjg/aB2WwqWrti8sLllxnNB3hmyBsGpBjj/oJGpPYHK28Xz3YNZV6
+         kPV1BDmLitga4pswo3Y7dzvaHBZvZSKzObzWw3ZobQwyPhxoQBmnXqt+4GjE3Bczi2cH
+         sRqBA0urzsYvtxq9mcIUveoONO6W5JV8fARX8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTinjNOC3nVn0GAVuUSTgiQM_QA+ueOxPzJX+aRFb@mail.gmail.com>
+References: <4C565845.30307@gmail.com>
+	<alpine.DEB.2.00.1008030009400.1789@davide-laptop>
+	<AANLkTinjNOC3nVn0GAVuUSTgiQM_QA+ueOxPzJX+aRFb@mail.gmail.com>
+Date: Wed, 4 Aug 2010 14:20:35 +0800
+Message-ID: <AANLkTinZzT05+r7rpu8VNivaiwJVJ3rSwOW4sYAQMNMg@mail.gmail.com>
+Subject: Re: [PATCH] New EPOLL flag: EPOLLHEAD
+From: Li Yu <raise.sail@gmail.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: linux-fsdevel@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 08:16:34AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Fri, 14 May 2010, Matthew Garrett wrote:
-> >
-> > I've done some experimentation under qemu. On ACPI systems, Windows will 
-> > *only* touch the keyboard controller if there's a device with an 
-> > appropriate PNP HID or CID and if _STA evaluates to 0x0b or 0x0f. 
-> > Otherwise it'll simply ignore the hardware entirely. By the looks of it 
-> > their keyboard probing is also somewhat different to ours, but that's 
-> > probably another story.
-> 
-> Well, I'd hate to lose the keyboard hotplug capability, but at the same 
-> time, it _is_ 2010, and while I have personally used it historically, I 
-> don't really foresee ever using it again.
-> 
-> So we _could_ decide to just try it, and see if anybody screams. If nobody 
-> does, that would be a very simple solution to the problem.
-> 
+En, I have a new idea about such stacked event poll usage, if
+"eventpoll filesystem" could support memory mapping, then applications
+are able to gather ready events from mapped "event area" once
+epoll_wait() of upper layer returned. So applications can gather ready
+events although they use two layered event poll, in fact, the
+applications even can use more layers, the only runtime costs just are
+indirect memory access instead of switching into kernel multiple
+times.
 
-OK, time to ressurect the topic ;)
+Thanks!
 
-There is another report (from Anisse - CCed) - MSI AE2220 stops for 10
-seconds when we try to see if "AUX DISABLE" command took effect (it
-doesn't). While we should reduce the time we wait and retry to something
-more reasonable it woudl not fix this issue completely.
+Yu
 
-The box does not have any PS/2 ports but in this case BIOS writers _did_
-some crack and put PS/2 devices in DSDT. While the devices are most
-likely not active and thus Matthew's patch would help Anisse I do hate
-to loose the option of plugging PS/2 mouse/keyboard after boot and
-having chance of them working. I would still like to add a few blacklist
-entries instead.
-
-Thanks.
-
--- 
-Dmitry
+2010/8/3 Li Yu <raise.sail@gmail.com>:
+> ;), I know that epoll is stackable, i.e. we can use epoll_wait() on fd
+> that return from epoll_create() However, If we just have a few of
+> priorities, for example, which are less than 5 (one is controlling
+> connection, otherwise are some data connections), thus it seem that
+> stacked epoll() usage is too expensive here, receiving each packet
+> always requires extra times that switching into kernel in such case,
+> thus I think that head-inserting ready-events into ep->rdllist is an
+> excellence solution for this case, in my word, is it right? or have we
+> more better solution here? Thanks!
+>
+> Yu
+>
+> 2010/8/3 Davide Libenzi <davidel@xmailserver.org>:
+>> On Mon, 2 Aug 2010, Li Yu wrote:
+>>
+>>> This patch introduces to new epoll flag EPOLLHEAD. Using this flag, the trigged events will be insert at head of ready events linked list, so they likely can be processed earlier in user space. In fact, this is the most simplest events priority, is it right?
+>>
+>> If you have such a high number of ready events in a continous manner, that
+>> resolving priorities at ready-time (O(Nready)) is a burden for you, you
+>> can simply create M epoll fds (one per priority), add the fds into the
+>> proper epoll fd, and use another epoll fd (or even poll(2) - if M is
+>> small) to gather them.
+>>
+>>
+>>
+>>>
+>>> BTW: I did not subscribe linux-fsdevel mail list, so please also send reply to my gmail, thanks!
+>>>
+>>> Signed-off-by: Li Yu <raise.sail@gmail.com>
+>>> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+>>> index 3817149..ddd1500 100644
+>>> --- a/fs/eventpoll.c
+>>> +++ b/fs/eventpoll.c
+>>> @@ -72,7 +72,7 @@
+>>>   */
+>>>
+>>>  /* Epoll private bits inside the event mask */
+>>> -#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
+>>> +#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET | EPOLLHEAD)
+>>>
+>>>  /* Maximum number of nesting allowed inside epoll sets */
+>>>  #define EP_MAX_NESTS 4
+>>> @@ -281,6 +281,15 @@ static inline int ep_is_linked(struct list_head *p)
+>>>       return !list_empty(p);
+>>>  }
+>>>
+>>> +/* The events with EPOLLHEAD can be detected first by user space. */
+>>> +static inline void ep_event_ready(struct eventpoll *ep, struct epitem *epi)
+>>> +{
+>>> +     if (epi->event.events & EPOLLHEAD)
+>>> +             list_add(&epi->rdllink, &ep->rdllist);
+>>> +     else
+>>> +             list_add_tail(&epi->rdllink, &ep->rdllist);
+>>> +}
+>>> +
+>>>  /* Get the "struct epitem" from a wait queue pointer */
+>>>  static inline struct epitem *ep_item_from_wait(wait_queue_t *p)
+>>>  {
+>>> @@ -494,7 +503,7 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+>>>                * contain them, and the list_splice() below takes care of them.
+>>>                */
+>>>               if (!ep_is_linked(&epi->rdllink))
+>>> -                     list_add_tail(&epi->rdllink, &ep->rdllist);
+>>> +                     ep_event_ready(ep, epi);
+>>>       }
+>>>       /*
+>>>        * We need to set back ep->ovflist to EP_UNACTIVE_PTR, so that after
+>>> @@ -829,7 +838,7 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
+>>>
+>>>       /* If this file is already in the ready list we exit soon */
+>>>       if (!ep_is_linked(&epi->rdllink))
+>>> -             list_add_tail(&epi->rdllink, &ep->rdllist);
+>>> +             ep_event_ready(ep, epi);
+>>>
+>>>       /*
+>>>        * Wake up ( if active ) both the eventpoll wait list and the ->poll()
+>>> @@ -957,7 +966,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+>>>
+>>>       /* If the file is already "ready" we drop it inside the ready list */
+>>>       if ((revents & event->events) && !ep_is_linked(&epi->rdllink)) {
+>>> -             list_add_tail(&epi->rdllink, &ep->rdllist);
+>>> +             ep_event_ready(ep, epi);
+>>>
+>>>               /* Notify waiting tasks that events are available */
+>>>               if (waitqueue_active(&ep->wq))
+>>> @@ -1025,7 +1034,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
+>>>       if (revents & event->events) {
+>>>               spin_lock_irq(&ep->lock);
+>>>               if (!ep_is_linked(&epi->rdllink)) {
+>>> -                     list_add_tail(&epi->rdllink, &ep->rdllist);
+>>> +                     ep_event_ready(ep, epi);
+>>>
+>>>                       /* Notify waiting tasks that events are available */
+>>>                       if (waitqueue_active(&ep->wq))
+>>> @@ -1094,7 +1103,7 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+>>>                                * ep_scan_ready_list() holding "mtx" and the
+>>>                                * poll callback will queue them in ep->ovflist.
+>>>                                */
+>>> -                             list_add_tail(&epi->rdllink, &ep->rdllist);
+>>> +                             ep_event_ready(ep, epi);
+>>>                       }
+>>>               }
+>>>       }
+>>> diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
+>>> index f6856a5..b7658e1 100644
+>>> --- a/include/linux/eventpoll.h
+>>> +++ b/include/linux/eventpoll.h
+>>> @@ -26,6 +26,9 @@
+>>>  #define EPOLL_CTL_DEL 2
+>>>  #define EPOLL_CTL_MOD 3
+>>>
+>>> +/* When target file descriptor is ready, insert it into head of ready list */
+>>> +#define EPOLLHEAD (1 << 29)
+>>> +
+>>>  /* Set the One Shot behaviour for the target file descriptor */
+>>>  #define EPOLLONESHOT (1 << 30)
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>
