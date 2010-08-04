@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab0HDMmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:42:40 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:57231 "EHLO
+	id S932801Ab0HDMms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:42:48 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:57240 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932728Ab0HDMmh (ORCPT
+	by vger.kernel.org with ESMTP id S932476Ab0HDMmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:42:37 -0400
-Date: Wed, 4 Aug 2010 14:42:34 +0200
+	Wed, 4 Aug 2010 08:42:46 -0400
+Date: Wed, 4 Aug 2010 14:42:43 +0200
 From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 To: Greg Ungerer <gerg@uclinux.org>, linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 8/9] arch/m68knommu: Removing dead RAM_{16,32}_MB config
- option
-Message-ID: <3ba7c2ddfd4d89be04e03f3f58b8b8a7da4b06ad.1280924671.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: [PATCH 9/9] arch/m68knommu: Removing dead 68328_SERIAL_UART2
+ config option
+Message-ID: <27f32e81b41a8ef690253ea7a2d3aec4e46d09c3.1280924671.git.qy03fugy@stud.informatik.uni-erlangen.de>
 References: <cover.1280924671.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,30 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_RAM_{16,32}_MB doesn't exist in Kconfig, therefore removing
+CONFIG_68328_SERIAL_UART2 doesn't exist in Kconfig, therefore removing
 all references to it from the source.
 
 Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 ---
- arch/m68knommu/platform/68328/head-de2.S |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ arch/m68knommu/platform/68VZ328/config.c |    5 -----
+ drivers/serial/68328serial.h             |    5 -----
+ 2 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/arch/m68knommu/platform/68328/head-de2.S b/arch/m68knommu/platform/68328/head-de2.S
-index 92d9645..f632fdc 100644
---- a/arch/m68knommu/platform/68328/head-de2.S
-+++ b/arch/m68knommu/platform/68328/head-de2.S
-@@ -1,11 +1,5 @@
+diff --git a/arch/m68knommu/platform/68VZ328/config.c b/arch/m68knommu/platform/68VZ328/config.c
+index fc5c630..eabaabe 100644
+--- a/arch/m68knommu/platform/68VZ328/config.c
++++ b/arch/m68knommu/platform/68VZ328/config.c
+@@ -90,11 +90,6 @@ static void init_hardware(char *command, int size)
+ 	PDIQEG &= ~PD(1);
+ 	PDIRQEN |= PD(1);			/* IRQ enabled */
  
--#if defined(CONFIG_RAM32MB)
--#define	MEM_END	0x02000000	/* Memory size 32Mb */
--#elif defined(CONFIG_RAM16MB)
--#define	MEM_END	0x01000000	/* Memory size 16Mb */
+-#ifdef CONFIG_68328_SERIAL_UART2
+-	/* Enable RXD TXD port bits to enable UART2 */
+-	PJSEL &= ~(PJ(5) | PJ(4));
+-#endif
+-
+ #ifdef CONFIG_INIT_LCD
+ 	/* initialize LCD controller */
+ 	LSSA = (long) screen_bits;
+diff --git a/drivers/serial/68328serial.h b/drivers/serial/68328serial.h
+index 58aa215..664ceb0 100644
+--- a/drivers/serial/68328serial.h
++++ b/drivers/serial/68328serial.h
+@@ -181,13 +181,8 @@ struct m68k_serial {
+ /* 
+  * Define the number of ports supported and their irqs.
+  */
+-#ifndef CONFIG_68328_SERIAL_UART2
+ #define NR_PORTS 1
+ #define UART_IRQ_DEFNS {UART_IRQ_NUM}
 -#else
- #define	MEM_END	0x00800000	/* Memory size 8Mb */
+-#define NR_PORTS 2
+-#define UART_IRQ_DEFNS {UART1_IRQ_NUM, UART2_IRQ_NUM}
 -#endif
  
- #undef CRT_DEBUG
- 
+ #endif /* __KERNEL__ */
+ #endif /* !(_MC683XX_SERIAL_H) */
 -- 
 1.7.0.4
 
