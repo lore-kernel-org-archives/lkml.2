@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752871Ab0HDESM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 00:18:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:32986 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751628Ab0HDESJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 00:18:09 -0400
-Subject: Re: linux-next: build warning after merge of the scsi tree
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-In-Reply-To: <20100804131300.8570fe77.sfr@canb.auug.org.au>
-References: <20100804131300.8570fe77.sfr@canb.auug.org.au>
+	id S1753169Ab0HDETw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 00:19:52 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60067 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751628Ab0HDETv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 00:19:51 -0400
+Subject: [PATCH] memblock: Fix memblock_is_region_reserved() to return a
+ boolean
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 00:17:56 -0400
-Message-ID: <1280895476.11045.323.camel@mulgrave.site>
+Date: Wed, 04 Aug 2010 14:19:31 +1000
+Message-ID: <1280895571.1902.140.camel@pasglop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc linux-scsi added
+All callers expect a boolean result which is true if the region
+overlaps a reserved region. However, the implementation actually
+returns -1 if there is no overlap, and a region index (0 based)
+if there is.
 
-On Wed, 2010-08-04 at 13:13 +1000, Stephen Rothwell wrote:
-> Hi James,
-> 
-> After merging the scsi tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this warning:
-> 
-> drivers/scsi/scsi_sysfs.c:384: warning: dereferencing 'void *' pointer
-> 
-> Introduced by commit db5bd1e0b505c54ff492172ce4abc245cf6cd639 ("[SCSI]
-> convert to the new PM framework").  This build does not have
-> CONFIG_PM_OPS set.
+Make it behave as callers (and common sense) expect.
 
-So this one looks to be a compiler error.  in the none CONFIG_PM_OPS
-case, we have
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
 
-scsi_priv.h:#define scsi_bus_pm_ops             (*NULL)
+Taking that out of my memblock rework branch as it should go in
+now regardless of whether my stuff goes or not (which is still
+under discussion, I'm fixing ARM up now).
 
-So &scsi_bus_pm_ops should be NULL (not a deref of null).
+I'll send this fix to Linus tomorrow along with powerpc.git if there
+is no adverse comment.
 
-James
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 3024eb3..43840b3 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -504,7 +504,7 @@ int __init memblock_is_reserved(u64 addr)
+ 
+ int memblock_is_region_reserved(u64 base, u64 size)
+ {
+-	return memblock_overlaps_region(&memblock.reserved, base, size);
++	return memblock_overlaps_region(&memblock.reserved, base, size) >= 0;
+ }
+ 
+ /*
 
 
