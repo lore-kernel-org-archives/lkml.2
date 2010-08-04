@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab0HDP70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:59:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61231 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab0HDP7W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:59:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=Ic1KHoxe571FggKnH2zelvFw4JRyWGSXUJRWCO/46JvCsVnWQU9GuVCQBjbmAIX36L
-         A93TgTccqEczL6CtYm02BNebDFGHuMB20lyfUIoA88pPlamVzlYYX+RFeGUipRnOVWho
-         F1HH/ZxKzhm+GyU4C8i0mM2YDrIONfXIf+yok=
-Message-ID: <4C598E6B.7050405@gmail.com>
-Date: Wed, 04 Aug 2010 17:59:39 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1755858Ab0HDQAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 12:00:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440Ab0HDQA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 12:00:29 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CRED: Fix RCU warning due to previous patch fixing
+	__task_cred()'s checks
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: penguin-kernel@i-love.sakura.ne.jp, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, jolsa@redhat.com,
+        paulmck@linux.vnet.ibm.com, David Howells <dhowells@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Date: Wed, 04 Aug 2010 16:59:14 +0100
+Message-ID: <20100804155914.25978.10918.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, stable@kernel.org,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: [PATCH RESEND block#for-2.6.36] block_dev: always serialize exclusive
- open attempts
-References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera> <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com> <4C56F30D.3020304@kernel.org>
-In-Reply-To: <4C56F30D.3020304@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bd_prepare_to_claim() incorrectly allowed multiple attempts for
-exclusive open to progress in parallel if the attempting holders are
-identical.  This triggered BUG_ON() as reported in the following bug.
+A previous patch:
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=16393
+	commit 8f92054e7ca1d3a3ae50fb42d2253ac8730d9b2a
+	Author: David Howells <dhowells@redhat.com>
+	Date:   Thu Jul 29 12:45:55 2010 +0100
+	Subject: CRED: Fix __task_cred()'s lockdep check and banner comment
 
-__bd_abort_claiming() is used to finish claiming blocks and doesn't
-work if multiple openers are inside a claiming block.  Allowing
-multiple parallel open attempts to continue doesn't gain anything as
-those are serialized down in the call chain anyway.  Fix it by always
-allowing only single open attempt in a claiming block.
+fixed the lockdep checks on __task_cred().  This has shown up a place in the
+signalling code where a lock should be held - namely that
+check_kill_permission() requires its callers to hold the RCU lock.
 
-This problem can easily be reproduced by adding a delay after
-bd_prepare_to_claim() and attempting to mount two partitions of a
-disk.
+Fix group_send_sig_info() to get the RCU read lock around its call to
+check_kill_permission().
 
-stable: only applicable to v2.6.35
+Without this patch, the following warning can occur:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: stable@kernel.org
+[  140.173556] ===================================================
+[  140.215379] [ INFO: suspicious rcu_dereference_check() usage. ]
+[  140.216461] ---------------------------------------------------
+[  140.217530] kernel/signal.c:660 invoked rcu_dereference_check() without protection!
+[  140.218937]
+[  140.218938] other info that might help us debug this:
+[  140.218939]
+[  140.220508]
+[  140.220509] rcu_scheduler_active = 1, debug_locks = 1
+[  140.221991] 1 lock held by init/1:
+[  140.222668]  #0:  (tasklist_lock){.+.+..}, at: [<c104a0ac>] kill_something_info+0x7c/0x160
+[  140.224709]
+[  140.224711] stack backtrace:
+[  140.225661] Pid: 1, comm: init Not tainted 2.6.35 #1
+[  140.226576] Call Trace:
+[  140.227111]  [<c103cca8>] ? printk+0x18/0x20
+[  140.227908]  [<c1069884>] lockdep_rcu_dereference+0x94/0xb0
+[  140.228931]  [<c104936a>] check_kill_permission+0x15a/0x170
+[  140.229932]  [<c104a0ac>] ? kill_something_info+0x7c/0x160
+[  140.230921]  [<c1049cca>] group_send_sig_info+0x1a/0x50
+[  140.231866]  [<c1049d36>] __kill_pgrp_info+0x36/0x60
+[  140.232780]  [<c104a0d0>] kill_something_info+0xa0/0x160
+[  140.233740]  [<c10831c5>] ? __call_rcu+0xa5/0x110
+[  140.234596]  [<c104b7ee>] sys_kill+0x5e/0x70
+[  140.235387]  [<c10d1eee>] ? mntput_no_expire+0x1e/0xa0
+[  140.236329]  [<c10bbd10>] ? __fput+0x170/0x220
+[  140.257756]  [<c10bbdd9>] ? fput+0x19/0x20
+[  140.258529]  [<c137ad94>] ? restore_all_notrace+0x0/0x18
+[  140.259496]  [<c11bfb04>] ? trace_hardirqs_on_thunk+0xc/0x10
+[  140.260531]  [<c137ad61>] syscall_call+0x7/0xb
+[  144.627841] nfsd: last server has exited, flushing export cache
+[  154.040420] Restarting system.
+[  154.041061] machine restart
+
+Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 ---
-Oops, had the wrong reported-by credit.  Updated.
 
-Thanks.
+ kernel/signal.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
- fs/block_dev.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 99d6af8..b3171fb 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -681,8 +681,8 @@ retry:
- 	if (!bd_may_claim(bdev, whole, holder))
- 		return -EBUSY;
-
--	/* if someone else is claiming, wait for it to finish */
--	if (whole->bd_claiming && whole->bd_claiming != holder) {
-+	/* if claiming is already in progress, wait for it to finish */
-+	if (whole->bd_claiming) {
- 		wait_queue_head_t *wq = bit_waitqueue(&whole->bd_claiming, 0);
- 		DEFINE_WAIT(wait);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 906ae5a..bded651 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -637,7 +637,7 @@ static inline bool si_fromuser(const struct siginfo *info)
+ 
+ /*
+  * Bad permissions for sending the signal
+- * - the caller must hold at least the RCU read lock
++ * - the caller must hold the RCU read lock
+  */
+ static int check_kill_permission(int sig, struct siginfo *info,
+ 				 struct task_struct *t)
+@@ -1127,11 +1127,14 @@ struct sighand_struct *lock_task_sighand(struct task_struct *tsk, unsigned long
+ 
+ /*
+  * send signal info to all the members of a group
+- * - the caller must hold the RCU read lock at least
+  */
+ int group_send_sig_info(int sig, struct siginfo *info, struct task_struct *p)
+ {
+-	int ret = check_kill_permission(sig, info, p);
++	int ret;
++
++	rcu_read_lock();
++	ret = check_kill_permission(sig, info, p);
++	rcu_read_unlock();
+ 
+ 	if (!ret && sig)
+ 		ret = do_send_sig_info(sig, info, p, true);
 
