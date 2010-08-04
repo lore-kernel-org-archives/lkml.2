@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab0HDDNL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 23:13:11 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47649 "EHLO smtps.tip.net.au"
+	id S1758217Ab0HDDOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 23:14:16 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47686 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757957Ab0HDDNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 23:13:09 -0400
-Date: Wed, 4 Aug 2010 13:13:00 +1000
+	id S1757957Ab0HDDOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 23:14:15 -0400
+Date: Wed, 4 Aug 2010 13:14:11 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: linux-next: build warning after merge of the scsi tree
-Message-Id: <20100804131300.8570fe77.sfr@canb.auug.org.au>
+        James Bottomley <James.Bottomley@suse.de>,
+        mark gross <markgross@thegnar.org>,
+        Florian Mickler <florian@mickler.org>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the suspend tree with the net tree
+Message-Id: <20100804131411.85975b86.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__4_Aug_2010_13_13_00_+1000_gkjS+vD3cs9/D/PB"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Aug_2010_13_13_00_+1000_gkjS+vD3cs9/D/PB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Rafael,
 
-Hi James,
+Today's linux-next merge of the suspend tree got a conflict in
+drivers/net/e1000e/netdev.c between commit
+c128ec29208d410568469bd8bb373b4cdc10912a ("e1000e: register pm_qos
+request on hardware activation") from the net tree and commit
+82f682514a5df89ffb3890627eebf0897b7a84ec ("pm_qos: Get rid of the
+allocation in pm_qos_add_request()") from the suspend tree.
 
-After merging the scsi tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
-
-drivers/scsi/scsi_sysfs.c:384: warning: dereferencing 'void *' pointer
-
-Introduced by commit db5bd1e0b505c54ff492172ce4abc245cf6cd639 ("[SCSI]
-convert to the new PM framework").  This build does not have
-CONFIG_PM_OPS set.
-
---=20
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Wed__4_Aug_2010_13_13_00_+1000_gkjS+vD3cs9/D/PB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMWNq8AAoJEDMEi1NhKgbs9acIAITbCHXGDwOTZRj63wqyw5El
-f+VqpRlmXboHeF/wkVB3Snq5alElv/8sOyvYODUe/5Dy/8xH21HvEaOaOPENGndu
-KZ1y9GXKEb14pFZuQfpAd5RZjJdnoGRUV7w7DiiT+8iuWTYBIN7msi1xAwpPFoQL
-E3kK/bX0d4HvvKfbTyVnZvJyQfuW/DUBYVCxWqFVnrJiGxF+n9sZdfg2ZqE8QNGF
-aDJP+3KjZNDx+yL4jrJPhTdu7xLpr01FSppMG8pl67SM5gF3/7U9+hJVOUkDJuDE
-WkRy7pKxiLP7qVJpTF0rVArvrmgLlt1SKpP/D0SLlACYnTiNepKpzI9owPo4SVk=
-=YRjD
------END PGP SIGNATURE-----
-
---Signature=_Wed__4_Aug_2010_13_13_00_+1000_gkjS+vD3cs9/D/PB--
+diff --cc drivers/net/e1000e/netdev.c
+index 35c7dbd,9f13b66..0000000
+--- a/drivers/net/e1000e/netdev.c
++++ b/drivers/net/e1000e/netdev.c
+@@@ -3525,12 -3495,6 +3525,13 @@@ static int e1000_open(struct net_devic
+  	     E1000_MNG_DHCP_COOKIE_STATUS_VLAN))
+  		e1000_update_mng_vlan(adapter);
+  
+ +	/* DMA latency requirement to workaround early-receive/jumbo issue */
+ +	if (adapter->flags & FLAG_HAS_ERT)
+- 		adapter->netdev->pm_qos_req =
+- 		                    pm_qos_add_request(PM_QOS_CPU_DMA_LATENCY,
+- 		                                       PM_QOS_DEFAULT_VALUE);
+++		pm_qos_add_request(&adapter->netdev->pm_qos_req,
+++				   PM_QOS_CPU_DMA_LATENCY,
+++				   PM_QOS_DEFAULT_VALUE);
+++
+ +
+  	/*
+  	 * before we allocate an interrupt, we must be ready to handle it.
+  	 * Setting DEBUG_SHIRQ in the kernel makes it fire an interrupt
+@@@ -3635,11 -3599,6 +3636,10 @@@ static int e1000_close(struct net_devic
+  	if (adapter->flags & FLAG_HAS_AMT)
+  		e1000_release_hw_control(adapter);
+  
+- 	if (adapter->flags & FLAG_HAS_ERT) {
+- 		pm_qos_remove_request(adapter->netdev->pm_qos_req);
+- 		adapter->netdev->pm_qos_req = NULL;
+- 	}
+++	if (adapter->flags & FLAG_HAS_ERT)
+++		pm_qos_remove_request(&adapter->netdev->pm_qos_req);
+++
+ +
+  	pm_runtime_put_sync(&pdev->dev);
+  
+  	return 0;
