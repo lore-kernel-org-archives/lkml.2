@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934615Ab0HDUJb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 16:09:31 -0400
-Received: from www84.your-server.de ([213.133.104.84]:34718 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934590Ab0HDUJV (ORCPT
+	id S1756276Ab0HDUOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 16:14:07 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:17310 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934488Ab0HDUN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 16:09:21 -0400
-Subject: Re: new gerneric kfifo API
-From: Stefani Seibold <stefani@seibold.net>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        tytso@mit.edu
-In-Reply-To: <20100804194617.GA30773@suse.de>
-References: <201005132135.o4DLZ9WI021613@imap1.linux-foundation.org>
-	 <1280905854.8441.3.camel@wall-e.seibold.net>
-	 <20100804194617.GA30773@suse.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 04 Aug 2010 22:09:11 +0200
-Message-ID: <1280952551.8594.0.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 4 Aug 2010 16:13:57 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAF5nWUxQycd2/2dsb2JhbACgJ3LFVQ2CZoJIBA
+Date: Wed, 4 Aug 2010 22:13:41 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: dann frazier <dannf@hp.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Mingarelli <thomas.mingarelli@hp.com>
+Subject: Re: [PATCH 09/15] Despecificate driver from iLO2
+Message-ID: <20100804201341.GC30740@infomag.iguana.be>
+References: <1280274663-9160-1-git-send-email-dannf@hp.com> <1280274663-9160-10-git-send-email-dannf@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1280274663-9160-10-git-send-email-dannf@hp.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 04.08.2010, 12:46 -0700 schrieb Greg KH:
-> On Wed, Aug 04, 2010 at 09:10:54AM +0200, Stefani Seibold wrote:
-> > Hi,
-> > 
-> > once again. Kernel 2.6.35 is out and i want to know if there is play plan to
-> > merge the generic kfifo API. All complains was fixed, so there is no
-> > reason to shift the merge again. Please gibe me a short answer.
-> 
-> These have been in the -mm tree for a few major kernel releases now,
-> right?  And they are API safe, and only change the internals, right?
-> 
-> If so, I see no objection to merging them now, especially as you will be
-> around to fix up any problems that people have, right?  :)
-> 
+Hi Dan,
 
-right!
+> This driver supports both iLO2 and iLO3, but our user-visible strings
+> currently only reference iLO2. Let's just call it "iLO" to avoid having
+> to update strings for each iLO generation. This driver doesn't support
+> iLO ASICs prior to iLO2, but that is sufficiently explained in Kconfig.
 
+Just a thought: Wouldn't it be more consistent if it's called iLO2+ everywhere?
 
+> -	tristate "HP Proliant iLO 2 Hardware Watchdog Timer"
+> +	tristate "HP Proliant iLO Hardware Watchdog Timer"
+
+would be: tristate "HP Proliant iLO2+ Hardware Watchdog Timer"
+
+> -	.identity = "HP iLO2 HW Watchdog Timer",
+> +	.identity = "HP iLO HW Watchdog Timer",
+
+and: .identity = "HP iLO2+ HW Watchdog Timer",
+
+> -	 * First let's find out if we are on an iLO2 server. We will
+> +	 * First let's find out if we are on an iLO2+ server. We will
+
+> -		dev_warn(&dev->dev,
+> -			"This server does not have an iLO2 ASIC.\n");
+> +		dev_warn(&dev->dev, "This server does not have an iLO ASIC"
+> +			 " version 2 or greater.\n");
+
+dev_warn(&dev->dev,
+	"This server does not have an iLO2+ ASIC.\n");
+
+> -			"Unable to detect the iLO2 server memory.\n");
+> +			"Unable to detect the iLO server memory.\n");
+
+"Unable to detect the iLO2+ server memory.\n");
+
+For the rest I'm still reviewing the code.
+
+Kind regards,
+Wim.
 
