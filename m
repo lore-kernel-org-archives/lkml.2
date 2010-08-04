@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab0HDStc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:49:32 -0400
-Received: from exprod7og111.obsmtp.com ([64.18.2.175]:54339 "EHLO
-	exprod7og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab0HDStb (ORCPT
+	id S1757630Ab0HDSuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:50:10 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:43753 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab0HDSuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:49:31 -0400
-Message-ID: <4C59B5E1.9040707@genband.com>
-Date: Wed, 04 Aug 2010 12:48:01 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Wed, 4 Aug 2010 14:50:07 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.55,316,1278288000"; 
+   d="scan'208";a="235566448"
+From: Roland Dreier <rdreier@cisco.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+        Christoph Raisch <raisch@de.ibm.com>,
+        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 9/9] drivers/infiniband/hw/ehca: Drop unnecessary null test
+References: <Pine.LNX.4.64.1008032335190.20393@ask.diku.dk>
+X-Message-Flag: Warning: May contain useful information
+Date: Wed, 04 Aug 2010 11:50:05 -0700
+In-Reply-To: <Pine.LNX.4.64.1008032335190.20393@ask.diku.dk> (Julia Lawall's
+	message of "Tue, 3 Aug 2010 23:35:36 +0200 (CEST)")
+Message-ID: <ada1vae8b6q.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
-        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] notify userspace about time changes
-References: <1280926108-24668-1-git-send-email-virtuoso@slind.org> <1280937526.28884.21.camel@work-vm>
-In-Reply-To: <1280937526.28884.21.camel@work-vm>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Aug 2010 18:48:04.0668 (UTC) FILETIME=[9272F7C0:01CB3405]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17550.001
-X-TM-AS-Result: No--14.454900-5.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2010 09:58 AM, john stultz wrote:
-
-> Is there a actual use case that you need this for?  I don't really have
-> an issue with the code I just really want to make sure the feature would
-> be useful enough to justify the API and code maintenance going forward.
-
-We actually added a time-change-notification mechanism internally a long
-time ago but never saw demand for it and so never bothered trying to
-push it upstream.  Ours is signal-based.
-
-Among other things we use it to pass on time-change notifications to an
-emulator running a proprietary OS that really cares about having an
-accurate time-of-day but can't afford a syscall to retrieve it every time.
-
-Chris
-
+Looks fine to me.  ehca guys, any objection?
 -- 
-Chris Friesen
-Software Developer
-GENBAND
-chris.friesen@genband.com
-www.genband.com
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
