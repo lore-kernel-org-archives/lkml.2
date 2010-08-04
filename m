@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab0HDABt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 20:01:49 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48166 "EHLO hera.kernel.org"
+	id S1758010Ab0HDACK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 20:02:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48184 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757877Ab0HDABr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 20:01:47 -0400
-Date: Wed, 4 Aug 2010 00:01:28 GMT
+	id S1757344Ab0HDACF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 20:02:05 -0400
+Date: Wed, 4 Aug 2010 00:01:47 GMT
 From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
@@ -14,360 +14,79 @@ Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com,
         len.brown@intel.com
-In-Reply-To: <1280448826-12004-5-git-send-email-fenghua.yu@intel.com>
-References: <1280448826-12004-5-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1280448826-12004-6-git-send-email-fenghua.yu@intel.com>
+References: <1280448826-12004-6-git-send-email-fenghua.yu@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/hwmon] x86, hwmon: Package Level Thermal/Power: power limit
-Message-ID: <tip-0199114c31798af5b83841b21759b64171060d9b@git.kernel.org>
-Git-Commit-ID: 0199114c31798af5b83841b21759b64171060d9b
+Subject: [tip:x86/hwmon] x86, hwmon: Package Level Thermal/Power: pkgtemp documentation
+Message-ID: <tip-a3159864f2978bf2ace9cc787d73d315c98bbf9a@git.kernel.org>
+Git-Commit-ID: a3159864f2978bf2ace9cc787d73d315c98bbf9a
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 04 Aug 2010 00:01:28 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 04 Aug 2010 00:01:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0199114c31798af5b83841b21759b64171060d9b
-Gitweb:     http://git.kernel.org/tip/0199114c31798af5b83841b21759b64171060d9b
+Commit-ID:  a3159864f2978bf2ace9cc787d73d315c98bbf9a
+Gitweb:     http://git.kernel.org/tip/a3159864f2978bf2ace9cc787d73d315c98bbf9a
 Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Thu, 29 Jul 2010 17:13:45 -0700
+AuthorDate: Thu, 29 Jul 2010 17:13:46 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Tue, 3 Aug 2010 15:58:56 -0700
 
-x86, hwmon: Package Level Thermal/Power: power limit
+x86, hwmon: Package Level Thermal/Power: pkgtemp documentation
 
-Power limit notification feature is published in Intel 64 and IA-32
-Architectures SDMV Vol 3A 14.5.6 Power Limit Notification.
-
-It is implemented first on Intel Sandy Bridge platform.
-
-The patch handles notification interrupt. Interrupt handler dumps power limit
-information in log_buf, logs the event in mce log, and increases the event
-counters (core_power_limit and package_power_limit). Upper level applications
-could use the data to detect system health or diagnose functionality/performance
-issues.
-
-In the future, the event could be handled in a more fancy way.
+Document for package level thermal hwmon driver.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-LKML-Reference: <1280448826-12004-5-git-send-email-fenghua.yu@intel.com>
+LKML-Reference: <1280448826-12004-6-git-send-email-fenghua.yu@intel.com>
 Reviewed-by: Len Brown <len.brown@intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/therm_throt.c |  183 +++++++++++++++++++++---------
- 1 files changed, 129 insertions(+), 54 deletions(-)
+ Documentation/hwmon/pkgtemp |   36 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 36 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index d307f9f..c2a8b26 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -34,20 +34,25 @@
- /* How long to wait between reporting thermal events */
- #define CHECK_INTERVAL		(300 * HZ)
- 
-+#define THERMAL_THROTTLING_EVENT	0
-+#define POWER_LIMIT_EVENT		1
+diff --git a/Documentation/hwmon/pkgtemp b/Documentation/hwmon/pkgtemp
+new file mode 100644
+index 0000000..c8e1fb0
+--- /dev/null
++++ b/Documentation/hwmon/pkgtemp
+@@ -0,0 +1,36 @@
++Kernel driver pkgtemp
++======================
 +
- /*
-- * Current thermal throttling state:
-+ * Current thermal event state:
-  */
- struct _thermal_state {
--	bool			is_throttled;
--
-+	bool			new_event;
-+	int			event;
- 	u64			next_check;
--	unsigned long		throttle_count;
--	unsigned long		last_throttle_count;
-+	unsigned long		count;
-+	unsigned long		last_count;
- };
- 
- struct thermal_state {
--	struct _thermal_state core;
--	struct _thermal_state package;
-+	struct _thermal_state core_throttle;
-+	struct _thermal_state core_power_limit;
-+	struct _thermal_state package_throttle;
-+	struct _thermal_state package_power_limit;
- };
- 
- static DEFINE_PER_CPU(struct thermal_state, thermal_state);
-@@ -62,9 +67,9 @@ static u32 lvtthmr_init __read_mostly;
- 			   therm_throt_sysdev_show_##_name,		\
- 				   NULL)				\
- 
--#define define_therm_throt_sysdev_show_func(level, name)		\
-+#define define_therm_throt_sysdev_show_func(event, name)		\
- 									\
--static ssize_t therm_throt_sysdev_show_##level##_##name(		\
-+static ssize_t therm_throt_sysdev_show_##event##_##name(		\
- 			struct sys_device *dev,				\
- 			struct sysdev_attribute *attr,			\
- 			char *buf)					\
-@@ -75,7 +80,7 @@ static ssize_t therm_throt_sysdev_show_##level##_##name(		\
- 	preempt_disable();	/* CPU hotplug */			\
- 	if (cpu_online(cpu)) {						\
- 		ret = sprintf(buf, "%lu\n",				\
--			      per_cpu(thermal_state, cpu).level.name);	\
-+			      per_cpu(thermal_state, cpu).event.name);	\
- 	} else								\
- 		ret = 0;						\
- 	preempt_enable();						\
-@@ -83,23 +88,32 @@ static ssize_t therm_throt_sysdev_show_##level##_##name(		\
- 	return ret;							\
- }
- 
--define_therm_throt_sysdev_show_func(core, throttle_count);
-+define_therm_throt_sysdev_show_func(core_throttle, count);
- define_therm_throt_sysdev_one_ro(core_throttle_count);
- 
--define_therm_throt_sysdev_show_func(package, throttle_count);
-+define_therm_throt_sysdev_show_func(core_power_limit, count);
-+define_therm_throt_sysdev_one_ro(core_power_limit_count);
++Supported chips:
++  * Intel family
++    Prefix: 'pkgtemp'
++    CPUID:
++    Datasheet: Intel 64 and IA-32 Architectures Software Developer's Manual
++               Volume 3A: System Programming Guide
 +
-+define_therm_throt_sysdev_show_func(package_throttle, count);
- define_therm_throt_sysdev_one_ro(package_throttle_count);
- 
-+define_therm_throt_sysdev_show_func(package_power_limit, count);
-+define_therm_throt_sysdev_one_ro(package_power_limit_count);
++Author: Fenghua Yu
 +
- static struct attribute *thermal_throttle_attrs[] = {
- 	&attr_core_throttle_count.attr,
- 	NULL
- };
- 
--static struct attribute_group thermal_throttle_attr_group = {
-+static struct attribute_group thermal_attr_group = {
- 	.attrs	= thermal_throttle_attrs,
- 	.name	= "thermal_throttle"
- };
- #endif /* CONFIG_SYSFS */
- 
-+#define CORE_LEVEL	0
-+#define PACKAGE_LEVEL	1
++Description
++-----------
 +
- /***
-  * therm_throt_process - Process thermal throttling event from interrupt
-  * @curr: Whether the condition is current or not (boolean), since the
-@@ -116,49 +130,70 @@ static struct attribute_group thermal_throttle_attr_group = {
-  *          1 : Event should be logged further, and a message has been
-  *              printed to the syslog.
-  */
--#define CORE_LEVEL	0
--#define PACKAGE_LEVEL	1
--static int therm_throt_process(bool is_throttled, int level)
-+static int therm_throt_process(bool new_event, int event, int level)
- {
- 	struct _thermal_state *state;
--	unsigned int this_cpu;
--	bool was_throttled;
-+	unsigned int this_cpu = smp_processor_id();
-+	bool old_event;
- 	u64 now;
-+	struct thermal_state *pstate = &per_cpu(thermal_state, this_cpu);
- 
--	this_cpu = smp_processor_id();
- 	now = get_jiffies_64();
--	if (level == CORE_LEVEL)
--		state = &per_cpu(thermal_state, this_cpu).core;
--	else
--		state = &per_cpu(thermal_state, this_cpu).package;
-+	if (level == CORE_LEVEL) {
-+		if (event == THERMAL_THROTTLING_EVENT)
-+			state = &pstate->core_throttle;
-+		else if (event == POWER_LIMIT_EVENT)
-+			state = &pstate->core_power_limit;
-+		else
-+			 return 0;
-+	} else if (level == PACKAGE_LEVEL) {
-+		if (event == THERMAL_THROTTLING_EVENT)
-+			state = &pstate->package_throttle;
-+		else if (event == POWER_LIMIT_EVENT)
-+			state = &pstate->package_power_limit;
-+		else
-+			return 0;
-+	} else
-+		return 0;
- 
--	was_throttled = state->is_throttled;
--	state->is_throttled = is_throttled;
-+	old_event = state->new_event;
-+	state->new_event = new_event;
- 
--	if (is_throttled)
--		state->throttle_count++;
-+	if (new_event)
-+		state->count++;
- 
- 	if (time_before64(now, state->next_check) &&
--			state->throttle_count != state->last_throttle_count)
-+			state->count != state->last_count)
- 		return 0;
- 
- 	state->next_check = now + CHECK_INTERVAL;
--	state->last_throttle_count = state->throttle_count;
-+	state->last_count = state->count;
- 
- 	/* if we just entered the thermal event */
--	if (is_throttled) {
--		printk(KERN_CRIT "CPU%d: %s temperature above threshold, cpu clock throttled (total events = %lu)\n",
--		      this_cpu,
--		      level == CORE_LEVEL ? "Core" : "Package",
--		      state->throttle_count);
-+	if (new_event) {
-+		if (event == THERMAL_THROTTLING_EVENT)
-+			printk(KERN_CRIT "CPU%d: %s temperature above threshold, cpu clock throttled (total events = %lu)\n",
-+				this_cpu,
-+				level == CORE_LEVEL ? "Core" : "Package",
-+				state->count);
-+		else
-+			printk(KERN_CRIT "CPU%d: %s power limit notification (total events = %lu)\n",
-+				this_cpu,
-+				level == CORE_LEVEL ? "Core" : "Package",
-+				state->count);
- 
- 		add_taint(TAINT_MACHINE_CHECK);
- 		return 1;
- 	}
--	if (was_throttled) {
--		printk(KERN_INFO "CPU%d: %s temperature/speed normal\n",
--		       this_cpu,
--		       level == CORE_LEVEL ? "Core" : "Package");
-+	if (old_event) {
-+		if (event == THERMAL_THROTTLING_EVENT)
-+			printk(KERN_INFO "CPU%d: %s temperature/speed normal\n",
-+				this_cpu,
-+				level == CORE_LEVEL ? "Core" : "Package");
-+		else
-+			printk(KERN_INFO "CPU%d: %s power limit normal\n",
-+				this_cpu,
-+				level == CORE_LEVEL ? "Core" : "Package");
- 		return 1;
- 	}
- 
-@@ -172,21 +207,29 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev)
- 	int err;
- 	struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
- 
--	err = sysfs_create_group(&sys_dev->kobj, &thermal_throttle_attr_group);
-+	err = sysfs_create_group(&sys_dev->kobj, &thermal_attr_group);
- 	if (err)
- 		return err;
- 
-+	if (cpu_has(c, X86_FEATURE_PLN))
-+		err = sysfs_add_file_to_group(&sys_dev->kobj,
-+					      &attr_core_power_limit_count.attr,
-+					      thermal_attr_group.name);
- 	if (cpu_has(c, X86_FEATURE_PTS))
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_package_throttle_count.attr,
--					      thermal_throttle_attr_group.name);
-+					      thermal_attr_group.name);
-+		if (cpu_has(c, X86_FEATURE_PLN))
-+			err = sysfs_add_file_to_group(&sys_dev->kobj,
-+					&attr_package_power_limit_count.attr,
-+					thermal_attr_group.name);
- 
- 	return err;
- }
- 
- static __cpuinit void thermal_throttle_remove_dev(struct sys_device *sys_dev)
- {
--	sysfs_remove_group(&sys_dev->kobj, &thermal_throttle_attr_group);
-+	sysfs_remove_group(&sys_dev->kobj, &thermal_attr_group);
- }
- 
- /* Mutex protecting device creation against CPU hotplug: */
-@@ -257,6 +300,17 @@ device_initcall(thermal_throttle_init_device);
- 
- #endif /* CONFIG_SYSFS */
- 
-+/*
-+ * Set up the most two significant bit to notify mce log that this thermal
-+ * event type.
-+ * This is a temp solution. May be changed in the future with mce log
-+ * infrasture.
-+ */
-+#define CORE_THROTTLED		(0)
-+#define CORE_POWER_LIMIT	((__u64)1 << 62)
-+#define PACKAGE_THROTTLED	((__u64)2 << 62)
-+#define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
++This driver permits reading package level temperature sensor embedded inside
++Intel CPU package. The sensors can be in core, uncore, memory controller, or
++other components in a package. The feature is first implemented in Intel Sandy
++Bridge platform.
 +
- /* Thermal transition interrupt handler */
- static void intel_thermal_interrupt(void)
- {
-@@ -264,21 +318,31 @@ static void intel_thermal_interrupt(void)
- 	struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
- 
- 	rdmsrl(MSR_IA32_THERM_STATUS, msr_val);
++Temperature is measured in degrees Celsius and measurement resolution is
++1 degree C. Valid temperatures are from 0 to TjMax degrees C, because the actual
++value of temperature register is in fact a delta from TjMax.
 +
- 	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
-+				THERMAL_THROTTLING_EVENT,
- 				CORE_LEVEL) != 0)
--		mce_log_therm_throt_event(msr_val);
-+		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
++Temperature known as TjMax is the maximum junction temperature of package.
++We get this from MSR_IA32_TEMPERATURE_TARGET. If the MSR is not accessible,
++we define TjMax as 100 degrees Celsius. At this temperature, protection
++mechanism will perform actions to forcibly cool down the package. Alarm
++may be raised, if the temperature grows enough (more than TjMax) to trigger
++the Out-Of-Spec bit. Following table summarizes the exported sysfs files:
 +
-+	if (cpu_has(c, X86_FEATURE_PLN))
-+		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
-+					POWER_LIMIT_EVENT,
-+					CORE_LEVEL) != 0)
-+			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
- 
- 	if (cpu_has(c, X86_FEATURE_PTS)) {
- 		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
- 		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
-+					THERMAL_THROTTLING_EVENT,
- 					PACKAGE_LEVEL) != 0)
--			/*
--			 * Set up the most significant bit to notify mce log
--			 * that this thermal event is a package level event.
--			 * This is a temp solution. May be changed in the future
--			 * with mce log infrasture.
--			 */
--			mce_log_therm_throt_event(((__u64)1 << 63) | msr_val);
-+			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
-+		if (cpu_has(c, X86_FEATURE_PLN))
-+			if (therm_throt_process(msr_val &
-+					PACKAGE_THERM_STATUS_POWER_LIMIT,
-+					POWER_LIMIT_EVENT,
-+					PACKAGE_LEVEL) != 0)
-+				mce_log_therm_throt_event(PACKAGE_POWER_LIMIT
-+							  | msr_val);
- 	}
- }
- 
-@@ -381,14 +445,25 @@ void intel_init_thermal(struct cpuinfo_x86 *c)
- 	apic_write(APIC_LVTTHMR, h);
- 
- 	rdmsr(MSR_IA32_THERM_INTERRUPT, l, h);
--	wrmsr(MSR_IA32_THERM_INTERRUPT,
--		l | (THERM_INT_LOW_ENABLE | THERM_INT_HIGH_ENABLE), h);
-+	if (cpu_has(c, X86_FEATURE_PLN))
-+		wrmsr(MSR_IA32_THERM_INTERRUPT,
-+		      l | (THERM_INT_LOW_ENABLE
-+			| THERM_INT_HIGH_ENABLE | THERM_INT_PLN_ENABLE), h);
-+	else
-+		wrmsr(MSR_IA32_THERM_INTERRUPT,
-+		      l | (THERM_INT_LOW_ENABLE | THERM_INT_HIGH_ENABLE), h);
- 
- 	if (cpu_has(c, X86_FEATURE_PTS)) {
- 		rdmsr(MSR_IA32_PACKAGE_THERM_INTERRUPT, l, h);
--		wrmsr(MSR_IA32_PACKAGE_THERM_INTERRUPT,
--			l | (PACKAGE_THERM_INT_LOW_ENABLE
--		  | PACKAGE_THERM_INT_HIGH_ENABLE), h);
-+		if (cpu_has(c, X86_FEATURE_PLN))
-+			wrmsr(MSR_IA32_PACKAGE_THERM_INTERRUPT,
-+			      l | (PACKAGE_THERM_INT_LOW_ENABLE
-+				| PACKAGE_THERM_INT_HIGH_ENABLE
-+				| PACKAGE_THERM_INT_PLN_ENABLE), h);
-+		else
-+			wrmsr(MSR_IA32_PACKAGE_THERM_INTERRUPT,
-+			      l | (PACKAGE_THERM_INT_LOW_ENABLE
-+				| PACKAGE_THERM_INT_HIGH_ENABLE), h);
- 	}
- 
- 	smp_thermal_vector = intel_thermal_interrupt;
++temp1_input	  - Package temperature (in millidegrees Celsius).
++temp1_max        - All cooling devices should be turned on.
++temp1_crit	  - Maximum junction temperature (in millidegrees Celsius).
++temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
++		    Correct CPU operation is no longer guaranteed.
