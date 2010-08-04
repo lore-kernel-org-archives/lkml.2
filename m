@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab0HDRz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 13:55:56 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:40540 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755107Ab0HDRzz (ORCPT
+	id S1754137Ab0HDSBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:01:53 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:43798 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751186Ab0HDSBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 13:55:55 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C59A90B.8040403@s5r6.in-berlin.de>
-Date: Wed, 04 Aug 2010 19:53:15 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Wed, 4 Aug 2010 14:01:51 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: TxArbZkVM1l0O00ON.ESuPy5DlExM75Q1WoV72nFvNh_h7U
+ xF0QIkW8IcaziwZZHhzbx2IIK1fwNGjumvx0rOgKb0R._cpnWiO7Z07.qzcZ
+ jDdV1q8cPBxO0wRT.ugFsSBvLesRM0YaFSwIIpgVvmtd84z4l.HOapfzZTq2
+ JXEpAZPoUaGHUY_h63DInMKLHfb12XrPs09fab.goMiDuH0HQHxanbCV6x.e
+ v
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 4 Aug 2010 13:01:48 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Peter Crosthwaite <peter.crosthwaite@petalogix.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, Michal Simek <michal.simek@petalogix.com>,
+        "Edgar E. Iglesias" <edgar.iglesias@petalogix.com>,
+        John Williams <john.williams@petalogix.com>
+Subject: Re: Using Bootmem for large DMA buffers in the presence of the slab
+  allocator
+In-Reply-To: <AANLkTikRf6r4a=XhnOJswrzHRDTb8yvCuQjD2qnh5ETt@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008041259440.11084@router.home>
+References: <AANLkTimK4NhXasetA4ZeeCeGSGySRNm8n=UgT+1oY_2g@mail.gmail.com> <alpine.DEB.2.00.1008040951170.11084@router.home> <AANLkTikRf6r4a=XhnOJswrzHRDTb8yvCuQjD2qnh5ETt@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Daniel Walker <dwalker@codeaurora.org>
-CC: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Jeff Garzik <jeff@garzik.org>,
-        David Howells <dhowells@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Steve French <sfrench@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andy Walls <awalls@radix.net>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [GIT PULL] workqueue for v2.6.36
-References: <4C596D21.4080101@kernel.org> <1280939168.21608.10.camel@c-dwalke-linux.qualcomm.com>
-In-Reply-To: <1280939168.21608.10.camel@c-dwalke-linux.qualcomm.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Walker wrote:
-> I haven't seen anything that shows your adding back the same
-> expressiveness that your removing .. So I still don't think this should
-> be merged.
+Note also that allocating a 64M buffer will be difficult due to the
+maximum allocation size restrictions of the page allocator.
 
-Do you mean by expressiveness the ability to hack around a suboptimally
-working driver in userland (by requiring the administrator to play with
-kernel thread priorities of dedicated worker threads)?  Is it known
-whether this driver/ these drivers still require this hack after Tejun's
-patch set is applied?  If yes, how about finding someone to fix this
-driver for good.  Meanwhile, let's gets rid of the problem of having
-both too few and too many workers in countless present usages of the
-workqueue API please.
--- 
-Stefan Richter
--=====-==-=- =--- --=--
-http://arcgraph.de/sr/
+You therefore have no choice but to allocate the memory at boot
+time. Or (if you have control over the arch) increase the maximum
+allocation unit (MAX_ORDER I believe).
+
+
