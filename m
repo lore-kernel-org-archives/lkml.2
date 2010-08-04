@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab0HDLYc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 07:24:32 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:33401 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757404Ab0HDLYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 07:24:30 -0400
-Date: Wed, 4 Aug 2010 13:24:28 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Michael Monnerie <michael.monnerie@is.it-management.at>,
-        linux-raid@vger.kernel.org, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: How to track down abysmal performance ata - raid1 - crypto -
-	vg/lv - xfs
-Message-ID: <20100804112428.GA5462@isilmar-3.linta.de>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	Christoph Hellwig <hch@infradead.org>,
-	Michael Monnerie <michael.monnerie@is.it-management.at>,
-	linux-raid@vger.kernel.org, xfs@oss.sgi.com,
-	linux-kernel@vger.kernel.org, dm-devel@redhat.com
-References: <20100804073546.GA7494@comet.dominikbrodowski.net> <20100804085039.GA11671@infradead.org> <20100804091317.GA27779@isilmar-3.linta.de> <20100804092122.GA2998@infradead.org> <20100804073546.GA7494@comet.dominikbrodowski.net> <201008041116.09822@zmi.at> <20100804102526.GB13766@isilmar-3.linta.de> <20100804111803.GA32643@infradead.org>
+	id S932645Ab0HDLZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 07:25:21 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:48957 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932618Ab0HDLZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 07:25:18 -0400
+Date: Wed, 4 Aug 2010 12:25:17 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 2/3] perf: Remove dead code in buildin-record.c
+Message-ID: <20100804112517.GB25587@console-pimps.org>
+References: <4C241140.9090008@cn.fujitsu.com> <4C24119B.60200@cn.fujitsu.com> <20100625131356.GB4078@ghostprotocols.net> <1277477285.32034.666.camel@twins> <87pqzd3jx5.fsf@linux-g6p1.site> <87hbjwzhak.fsf@linux-g6p1.site> <1280919366.1923.985.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100804111803.GA32643@infradead.org>
+In-Reply-To: <1280919366.1923.985.camel@laptop>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 07:18:03AM -0400, Christoph Hellwig wrote:
-> On Wed, Aug 04, 2010 at 12:25:26PM +0200, Dominik Brodowski wrote:
-> > Hey,
+On Wed, Aug 04, 2010 at 12:56:06PM +0200, Peter Zijlstra wrote:
+> On Sun, 2010-07-18 at 21:06 +0100, Matt Fleming wrote:
 > > 
-> > many thanks for your feedback. It seems the crypto step is the culprit:
+> > How does the 'group_fd' parameter relate to the lack of PMI? Is the idea
+> > to have one hrtimer that, when it fires, we sample all the counters? So
+> > the first counter to be created is the group leader, which starts the
+> > hrtimer, and all other counters are linked to this one? I had a go at
+> > using a hrtimer per counter (minus any weighting of samples) and it
+> > worked OK and seemed sensible given that we may want to sample counters
+> > at different frequencies.
 > > 
-> > Reading 1.1 GB with dd, iflag=direct, bs=8k:
-> > 
-> > /dev/sd*                35.3 MB/s       ( 90 %)
-> > /dev/md*                39.1 MB/s       (100 %)
-> > /dev/mapper/md*_crypt    3.9 MB/s       ( 10 %)
-> > /dev/mapper/vg1-*        3.9 MB/s       ( 10 %)
-> > 
-> > The "good" news: it also happens on my notebook, even though it has a
-> > different setup (no raid, disk -> lv/vg -> crypt). On my notebook, I'm
-> > more than happy to test out different kernel versions, patches etc.
-> > 
-> > /dev/sd*                17.7 MB/s       (100 %)
-> > /dev/mapper/vg1-*       16.2 MB/s       ( 92 %)
-> > /dev/mapper/*_crypt      3.1 MB/s       ( 18 %)
+> > Is this what you had in mind with the 'group_fd' paramter, Peter? That
+> > there'd be only one hrtimer?
 > 
-> The good news is that you have it tracked down, the bad news is that
-> I know very little about dm-crypt.  Maybe the issue is the single
-> threaded decryption in dm-crypt?  Can you check how much CPU time
-> the dm crypt kernel thread uses?
+> Right. So sys_perf_event_open() creates a stand alone event, but if you
+> supply the group_fd param it will attach the newly created one to the
+> leader indicated by group_fd.
+> 
+> Groups have the properly that they will always be scheduled together,
+> and read/sample can access/provide data of all of them.
 
-2 CPUs overall:
-Cpu(s):  1.0%us,  5.7%sy,  0.0%ni, 44.8%id, 47.0%wa,  0.0%hi,  1.5%si, 0.0%st
+Ah, I think I see. The benefit of scheduling these events together is
+that we can then sample the counters at roughly the same time? As
+opposed to the case where we have multiple hrtimers firing and the
+counter values will be from vastly different times? Yeah, that makes
+sense now.
 
-Thanks & best,
-	Dominik
+> So you can have a sampling leader report the counts of its siblings.
+> 
+> You can make multiple groups, like {hrtimer, cycles} and {hrtimer,
+> instructions} and {hrtimer, dcache-miss} and perf will schedule the
+> stuff. If you'd try to do {hrtimer, cycles, insns, dcache-miss} but only
+> have 2 hardware counters the group creation should fail because the
+> implementation should dis-allow creating groups that cannot be
+> scheduled 
+
+Right, so the hrtimer is an event all by itself: the parent event?
