@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab0HDKAU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 06:00:20 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:51836 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090Ab0HDKAS (ORCPT
+	id S1757647Ab0HDKEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 06:04:41 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:40272 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756983Ab0HDKEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 06:00:18 -0400
-Date: Wed, 4 Aug 2010 10:58:12 +0100
-From: Chris Webb <chris@arachsys.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Wed, 4 Aug 2010 06:04:39 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h64h)
+X-Spam-TCS-SCL: 3:0
+X-WSS-ID: 0L6MH63-02-23G-02
+X-M-MSG: 
+Date: Wed, 4 Aug 2010 12:01:16 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: Over-eager swapping
-Message-ID: <20100804095811.GC2326@arachsys.com>
-References: <20100802124734.GI2486@arachsys.com>
- <AANLkTinnWQA-K6r_+Y+giEC9zs-MbY6GFs8dWadSq0kh@mail.gmail.com>
- <20100803033108.GA23117@arachsys.com>
- <AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
- <20100803042835.GA17377@localhost>
- <20100803214945.GA2326@arachsys.com>
- <20100804022148.GA5922@localhost>
- <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
- <20100804032400.GA14141@localhost>
+        "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: A question of perf NMI handler
+Message-ID: <20100804100116.GH26154@erda.amd.com>
+References: <1280913670.20797.179.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100804032400.GA14141@localhost>
+In-Reply-To: <1280913670.20797.179.camel@minggr.sh.intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wu Fengguang <fengguang.wu@intel.com> writes:
+On 04.08.10 05:21:10, Lin Ming wrote:
 
-> This is interesting. Why is it waiting for 1m here? Are there high CPU
-> loads? Would you do a
+> With nmi_watchdog enabled, perf_event_nmi_handler always return
+> NOTIFY_STOP(active_events > 0), and the notifier call chain will not
+> call further.
 > 
->         echo t > /proc/sysrq-trigger
-> 
-> and show us the dmesg?
+> If it was not perf NMI, does the perf nmi handler may stop the real NMI
+> handler get called because NOTIFY_STOP is returned??
 
-Annoyingly, magic-sysrq isn't compiled in on these kernels. Is there another
-way I can get this info for you? Replacing the kernels on the machines is a
-painful job as I have to give the clients running on them quite a bit of
-notice of the reboot, and I haven't been able to reproduce the problem on a
-test machine.
+There is no general mechanism for recording the NMI source (except if
+it was external triggered, e.g. by the southbridge). Also, all nmis
+are mapped to NMI vector 2 and therefore there is no way to find out
+the reason by using apic mask registers.
 
-I also think the swap use is much better following a reboot, and only starts
-to spiral out of control after the machines have been running for a week or
-so.
+Now, if multiple perfctrs trigger an nmi, it may happen that a handler
+has nothing to do because the counter was already handled by the
+previous one. Thus, it is valid to have unhandled nmis caused by
+perfctrs.
 
-However, your suggestion is right that the CPU loads on these machines are
-typically quite high. The large number of kvm virtual machines they run mean
-thatl oads of eight or even sixteen in /proc/loadavg are not unusual, and
-these are higher when there's swap than after it has been removed. I assume
-this is mostly because of increased IO wait, as this number increases
-significantly in top.
+So, with counters enabled we always have to return stop for *all* nmis
+as we cannot detect that it was an perfctr nmi. Otherwise we could
+trigger an unhandled nmi. To ensure that all other nmi handlers are
+called, the perfctr's nmi handler must have the lowest priority. Then,
+the handler will be the last in the chain.
 
-Cheers,
+-Robert
 
-Chris.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
