@@ -1,64 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758023Ab0HDACL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 20:02:11 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:51277
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757873Ab0HDACH (ORCPT
+	id S932200Ab0HDACe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 20:02:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12471 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548Ab0HDACa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 20:02:07 -0400
-X-SpamScore: -1
-X-BigFish: VPS-1(z5edIzzz1202hzzz2fh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-Message-ID: <4C58ADF4.8070201@am.sony.com>
-Date: Tue, 3 Aug 2010 17:01:56 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: frank.rowand@am.sony.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	Tue, 3 Aug 2010 20:02:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6063"; a="49776198"
+Message-ID: <4C58AE15.6090900@codeaurora.org>
+Date: Tue, 03 Aug 2010 17:02:29 -0700
+From: Patrick Pannuto <ppannuto@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12pre) Gecko/20100715 Shredder/3.0.7pre
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: peterz@infradead.org, peter.p.waskiewicz.jr@intel.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] genirq: update comments related to buslock support
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-omap@vger.kernel.org, damm@opensource.se, lethal@linux-sh.org,
+        rjw@sisk.pl, dtor@mail.ru, eric.y.miao@gmail.com,
+        netdev@vger.kernel.org
+Subject: Re: [RFC PATCH] platform: Faciliatate the creation of pseduo-platform
+ busses
+References: <4C58A7AA.8020007@codeaurora.org> <20100803235631.GA17759@suse.de>
+In-Reply-To: <20100803235631.GA17759@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Reverse-DNS: mail7.fw-bc.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/03/2010 04:56 PM, Greg KH wrote:
+> On Tue, Aug 03, 2010 at 04:35:06PM -0700, Patrick Pannuto wrote:
+>> Inspiration for this comes from:
+>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
+>>
+>> INTRO
+>>
+>> As SOCs become more popular, the desire to quickly define a simple,
+>> but functional, bus type with only a few unique properties becomes
+>> desirable. As they become more complicated, the ability to nest these
+>> simple busses and otherwise orchestrate them to match the actual
+>> topology also becomes desirable.
+>>
+>> EXAMPLE USAGE
+>>
+>> /arch/ARCH/MY_ARCH/my_bus.c:
+>>
+>> 	#include <linux/device.h>
+>> 	#include <linux/platform_device.h>
+>>
+>> 	struct bus_type my_bus_type = {
+>> 		.name	= "mybus",
+>> 	};
+>> 	EXPORT_SYMBOL_GPL(my_bus_type);
+>>
+>> 	struct platform_device sub_bus1 = {
+>> 		.name		= "sub_bus1",
+>> 		.id		= -1,
+>> 		.dev.bus	= &my_bus_type,
+>> 	}
+>> 	EXPORT_SYMBOL_GPL(sub_bus1);
+> 
+> You really want a bus hanging off of a bus?  Normally you need a device
+> to do that, which is what I think you have here, but the naming is a bit
+> odd to me.
+> 
+> What would you do with this "sub bus"?  It's just a device, but you are
+> wanting it to be around for something.
+> 
 
-Update comments to match code change in 70aedd24
+It's for power management stuff, basically, there are actual physical buses
+involved that can be completely powered off IFF all of their devices are
+not in use. Plus it actually matches bus topology this way.
 
-Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+>>
+>> 	struct platform_device sub_bus2 = {
+>> 		.name		= "sub_bus2",
+>> 		.id		= -1,
+>> 		.dev.bus	= &my_bus_type,
+>> 	}
+>> 	EXPORT_SYMBOL_GPL(sub_bus2);
+>>
+>> 	static int __init my_bus_init(void)
+>> 	{
+>> 		int error;
+>> 		platform_bus_type_init(&my_bus_type);
+>>
+>> 		error = bus_register(&my_bus_type);
+>> 		if (error)
+>> 			return error;
+>>
+>> 		error = platform_device_register(&sub_bus1);
+>> 		if (error)
+>> 			goto fail_sub_bus1;
+>>
+>> 		error = platform_device_register(&sub_bus2);
+>> 		if (error)
+>> 			goto fail_sub_bus2;
+>>
+>> 		return error;
+>>
+>> 	fail_sub_bus2:
+>> 		platform_device_unregister(&sub_bus1);
+>> 	fail_sub_bus2:
+>> 		bus_unregister(&my_bus_type);
+>>
+>> 		return error;
+>> 	}
+>> 	postcore_initcall(my_bus_init);
+>> 	EXPORT_SYMBOL_CPY(my_bus_init);
+>>
+>> /drivers/my_driver.c
+>> 	static struct platform_driver my_driver = {
+>> 		.driver	= {
+>> 			.name	= "my-driver",
+>> 			.owner	= THIS_MODULE,
+>> 			.bus	= &my_bus_type,
+>> 		},
+>> 	};
+>>
+>> /somewhere/my_device.c
+>> 	static struct platform_device my_device = {
+>> 		.name		= "my-device",
+>> 		.id		= -1,
+>> 		.dev.bus	= &my_bus_type,
+>> 		.dev.parent	= &sub_bus_1.dev,
+>> 	};
+> 
+> Ah, you put devices on this "sub bus".  But why?  Why not just put it on
+> your "normal" bus that you created?  What's with the extra level of
+> nesting here?
+> 
+> Other than that, it looks like a nice idea, are there portions of kernel
+> code that can be simplified because of this?
 
----
- kernel/irq/manage.c |    7 	5 +	2 -	0 !
- 1 file changed, 5 insertions(+), 2 deletions(-)
+See above.
 
-Index: b/kernel/irq/manage.c
-===================================================================
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -236,7 +236,8 @@ void __disable_irq(struct irq_desc *desc
-  *	Unlike disable_irq(), this function does not ensure existing
-  *	instances of the IRQ handler have completed before returning.
-  *
-- *	This function may be called from IRQ context.
-+ *	This function may be called from IRQ context only when
-+ *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
-  */
- void disable_irq_nosync(unsigned int irq)
- {
-@@ -264,7 +265,9 @@ EXPORT_SYMBOL(disable_irq_nosync);
-  *	to complete before returning. If you use this function while
-  *	holding a resource the IRQ handler may need you will deadlock.
-  *
-- *	This function may be called - with care - from IRQ context.
-+ *	This function may be called - with care - from IRQ context only when
-+ *	desc->chip->bus_lock and desc->chip->bus_sync_unlock are NULL !
-+ *	See synchronize_irq() comments for explanation of "with care".
-  */
- void disable_irq(unsigned int irq)
- {
+> 
+>> @@ -539,12 +541,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
+>>  	 * if the probe was successful, and make sure any forced probes of
+>>  	 * new devices fail.
+>>  	 */
+>> -	spin_lock(&platform_bus_type.p->klist_drivers.k_lock);
+>> +	spin_lock(&drv->driver.bus->p->klist_drivers.k_lock);
+>>  	drv->probe = NULL;
+>>  	if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
+>>  		retval = -ENODEV;
+>>  	drv->driver.probe = platform_drv_probe_fail;
+>> -	spin_unlock(&platform_bus_type.p->klist_drivers.k_lock);
+>> +	spin_unlock(&drv->driver.bus->p->klist_drivers.k_lock);
+>>  
+>>  	if (code != retval)
+>>  		platform_driver_unregister(drv);
+> 
+> I'm guessing that this chunk can be applied now, right?
 
+Probably; right now this will always work since anything that
+is a platform_driver will have .driver.bus = &platform_bus_type,
+but that does change with this patch.
+
+There is no need (IMHO) for it to be a separate patch.
+
+> 
+>> @@ -1017,6 +1019,26 @@ struct bus_type platform_bus_type = {
+>>  };
+>>  EXPORT_SYMBOL_GPL(platform_bus_type);
+>>  
+>> +/** platform_bus_type_init - fill in a pseudo-platform-bus
+>> +  * @bus: foriegn bus type
+>> +  *
+>> +  * This init is basically a selective memcpy that
+>> +  * won't overwrite any user-defined attributes and
+>> +  * only copies things that platform bus defines anyway
+>> +  */
+>> +void platform_bus_type_init(struct bus_type *bus)
+>> +{
+>> +	if (!bus->dev_attrs)
+>> +		bus->dev_attrs = platform_bus_type.dev_attrs;
+>> +	if (!bus->match)
+>> +		bus->match = platform_bus_type.match;
+>> +	if (!bus->uevent)
+>> +		bus->uevent = platform_bus_type.uevent;
+>> +	if (!bus->pm)
+>> +		bus->pm = platform_bus_type.pm;
+> 
+> Watch out for things in "write only" memory here.  That could cause
+> problems.
+
+Pardon my ignorance (I'm quite new to kernel work), what do you mean
+here? What memory could be "write only"?
+
+> 
+> thanks,
+> 
+> greg k-h
+
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
