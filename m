@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab0HDG2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:28:12 -0400
-Received: from dspnet.fr ([188.165.44.67]:52514 "EHLO dspnet.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755611Ab0HDG2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:28:10 -0400
-Date: Wed, 4 Aug 2010 08:28:04 +0200
-From: Olivier Galibert <galibert@pobox.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: david@lang.hm, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-pm@lists.linux-foundation.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100804062804.GA43413@dspnet.fr>
-References: <alpine.DEB.2.00.1008022121430.6545@asgard.lang.hm>
- <AANLkTikhcYzNp8CPp8cqrV7Ey5CLMWu1sJTNxUtEi2as@mail.gmail.com>
- <alpine.DEB.2.00.1008022203470.6545@asgard.lang.hm>
- <AANLkTinFT5jq4nUhUpzS5S4TVDQGj0S7RtRgxNhsz2UF@mail.gmail.com>
- <alpine.DEB.2.00.1008031611100.6545@asgard.lang.hm>
- <20100804001015.GJ2407@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008031723530.6545@asgard.lang.hm>
- <AANLkTinjH0C0bSK=Y2wKASnbJFsR2BN303xBXkaHbmRC@mail.gmail.com>
- <20100804045813.GA33951@dspnet.fr>
- <AANLkTi=pwyidtK7aebRwZ+SsJCSS-6t=6cFffdvcKKnx@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=pwyidtK7aebRwZ+SsJCSS-6t=6cFffdvcKKnx@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758321Ab0HDG3L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 02:29:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48943 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756120Ab0HDG3J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 02:29:09 -0400
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+In-Reply-To: <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+References: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	 <20100714184642.GA9728@elte.hu>
+	 <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
+	 <20100714193652.GA13630@nowhere>
+	 <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
+	 <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal>
+	 <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal>
+	 <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal>
+	 <1280855904.1923.675.camel@laptop>
+	 <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 04 Aug 2010 08:27:53 +0200
+Message-ID: <1280903273.1923.682.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 11:03:15PM -0700, Arve Hjønnevåg wrote:
-> 2010/8/3 Olivier Galibert <galibert@pobox.com>:
-> > On Tue, Aug 03, 2010 at 08:39:22PM -0700, Arve Hjønnevåg wrote:
-> >> If you just program the alarm you will wake up see that the monotonic
-> >> clock has not advanced and set the alarm another n seconds into the
-> >> future. Or are proposing that suspend should be changed to keep the
-> >> monotonic clock running?
+On Tue, 2010-08-03 at 11:56 -0700, Linus Torvalds wrote:
+> On Tue, Aug 3, 2010 at 10:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
 > >
-> > You're supposed to fix the clock after you wake up.  That's part of
-> > the cost of going suspend.
+> > FWIW I really utterly detest the whole concept of sub-buffers.
 > 
-> I'm not sure what you are referring to. The generic Linux timekeeping
-> code makes sure the monotonic clock stops while the system is
-> suspended regardless of what values the (hardware specific)
-> clocksource returns.
+> I'm not quite sure why. Is it something fundamental, or just an
+> implementation issue?
 
-That just means the android-like suspend should not act in that
-specific area the same as the generic suspend to ram.  Which is not
-entirely surprising.  In any case, it's not "keep the monotonic clock
-running", which would cost power.  It's fix it up afterwards, using
-the same means you already do but perhaps at a higher level currently.
-People don't want to see the wrong time of the day just because the
-phone went to suspend.  Laptop STR is different in perception because
-it shuts down things people don't want to see shutdown just by being
-idle, namely wifi connectivity.
+The sub-buffer thing that both ftrace and lttng have is creating a large
+buffer from a lot of small buffers, I simply don't see the point of
+doing that. It adds complexity and limitations for very little gain.
 
-If your next polling timer is in half an hour and the screen/touchpad
-are off, you want to go as low in power as possible until then, and
-that's the deepest level of idle you can find that responds to alarms
-which may happen to be called suspend.  But from a user point of view,
-it's just another idle level.  And from a power management code/policy
-decisions point of view, it should be the same.
+Their benefit is known synchronization points into the stream, you can
+parse each sub-buffer independently, but you can always break up a
+continuous stream into smaller parts or use a transport that includes
+index points or whatever.
 
-  OG.
+Their down side is that you can never have individual events larger than
+the sub-buffer, you need to be aware of the sub-buffer when reserving
+space etc..
+
 
