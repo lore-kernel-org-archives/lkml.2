@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab0HDSDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:03:30 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:33533 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756999Ab0HDSD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:03:28 -0400
-Date: Wed, 4 Aug 2010 11:03:23 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: linux-net@vger.kernel.org, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 2.6.35
-Message-ID: <20100804110323.40439045@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757024Ab0HDSM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:12:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32906 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab0HDSM0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 14:12:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Kw+mGF6259cN71HCJAxZgaSZk4jaJtnwYNK8gRoWkIHFGd+V50jXJ+WWPmcOUbWotv
+         aX1bYL5L5+vpFVmLoKHjfckIC7DJo5tmtyARcHM7y8DnpM5Q5M8810RlvVmR7YDUWAZY
+         iV9ZTnmPhYQK3N7hBgwZWP3apGj4auRJxaFOs=
+MIME-Version: 1.0
+In-Reply-To: <20100804115658.GA21357@merkur.ravnborg.org>
+References: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com> 
+	<20100804115658.GA21357@merkur.ravnborg.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 4 Aug 2010 14:12:03 -0400
+Message-ID: <AANLkTikz7pvirg7VUxrm-6v=yrLwHy4UeaJTS0wz3BLc@mail.gmail.com>
+Subject: Re: missing .data.shared_align placement in vmlinux
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alan Jenkins <alan-jenkins@tuffmail.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version of iproute2 utilities intended for use with 2.6.35 or
-later kernel, but should be backward compatible with older releases.
-In addition to build and man page fixes, this release includes a
-support for a couple of new kernel features:
+On Wed, Aug 4, 2010 at 07:56, Sam Ravnborg wrote:
+> On Fri, May 21, 2010 at 04:58:53PM -0400, Mike Frysinger wrote:
+>> am i missing something or does the .data.shared_align section lack
+>> definition in vmlinux.lds.h and all arch vmlinux.lds.S files ?
+>>
+>> with the recent change "net: remove time limit in process_backlog()",
+>> the softnet_data variable changed from "DEFINE_PER_CPU()" to
+>> "DEFINE_PER_CPU_ALIGNED()" which moved it from the .data section to
+>> the .data.shared_align section.  i'm not saying this patch is wrong,
+>> just that is what caused me to notice this larger problem.  no one
+>> else in the kernel is using this aligned macro variant, so i imagine
+>> that's why no one has noticed yet.
+>>
+>> since .data.shared_align isnt declared in any vmlinux files that i can
+>> see, the linker just places it last.  this "just works" for most
+>> people, but when building a ROM kernel on Blackfin systems, it causes
+>> section overlap errors:
+>> bfin-uclinux-ld.real: section .init.data [00000000202e06b8 ->
+>> 00000000202e48b7] overlaps section .data.shared_aligned
+>> [00000000202e06b8 -> 00000000202e0723]
+>> i imagine other arches which support the ROM config option and thus do
+>> funky placement would see similar issues ...
+>>
+>> on x86, it is stuck in a dedicated section:
+>>   [ 8] .data             PROGBITS        ffffffff810ec000 2ec000
+>> 0303a8 00  WA  0   0 4096
+>>   [ 9] .data.shared_alig PROGBITS        ffffffff8111c3c0 31c3c0
+>> 0000c8 00  WA  0   0 64
+>>
+>> the ifdef forest in asm-generic/percpu.h is beyond a quick glance &
+>> fix, so i leave it up to someone else ;)
+>
+> as there any resolution on this?
+> I briefly looked at it some time ago.
+> And it looks like a plain oversight.
 
-   * 64 bit network device stats
-   * multicast rules
-
-he tar ball is available at:
-  http://devresources.linuxfoundation.org/dev/iproute2/download/iproute2-2.6.35.tar.bz2
-
-Repository:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
-
-For more info on iproute2 see:
-  http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
-
-Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
-
-Changes since last release (2.6.34)
-
-Andreas Henriksson (1):
-      tc: make symbols loaded from tc action modules global.
-
-Arnd Hannemann (1):
-      iproute2: Add dsfield as alias for tos for ip rules
-
-Ben Greear (1):
-      iproute2: Fix batch-mode for mrules.
-
-Jan Engelhardt (1):
-      Add IFLA_STATS64 support
-
-Mike Frysinger (3):
-      tc: revert "echo" in install target
-      dnet: fix strict aliasing warnings
-      netem: fix installs of dist files
-
-Patrick McHardy (1):
-      ip: add support for multicast rules
-
-Petr Lautrbach (1):
-      iproute: fix tc generating ipv6 priority filter
-
-Stephen Hemminger (5):
-      Update kernel derived headers
-      Update ARP header type table
-      Fix NULL pointer reference when using basic match
-      Fix byte order of ether address match for u32
-      snapshot 100804
-
-Steve Fink (1):
-      ss -p is much too slow
-
-Ulrich Weber (3):
-      iproute2: filter routing entries based on clone flag
-      iproute2: use get_user_hz() for IPv6 print_route
-      iproute2: use int instead of long for RTAX_HOPLIMIT compare
-
+no, it's still broken in 2.6.35 :(
+$ make ARCH=blackfin BF537-STAMP_defconfig
+$ make ARCH=blackfin -s -j4
+$ readelf -WS vmlinux | grep '\<data\>'
+  [10] .data             PROGBITS        0018369c 17269c 012964 00  WA  0   0  4
+  [11] .data..shared_aligned PROGBITS        00196000 185000 00006c 00
+ WA  0   0  4
+-mike
