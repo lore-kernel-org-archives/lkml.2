@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab0HDT5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 15:57:54 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51697 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756873Ab0HDT5w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 15:57:52 -0400
-Date: Wed, 4 Aug 2010 20:57:23 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
+	id S934571Ab0HDUJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 16:09:15 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52493 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933929Ab0HDUJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 16:09:01 -0400
+Date: Wed, 4 Aug 2010 13:08:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: david@lang.hm
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
         Arjan van de Ven <arjan@infradead.org>,
         Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
         linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
@@ -18,72 +17,122 @@ Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
         tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
 Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100804195723.GA3553@srcf.ucam.org>
-References: <20100802011006.GS2470@linux.vnet.ibm.com> <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com> <20100803183447.0275c134@infradead.org> <20100804163216.GB24163@linux.vnet.ibm.com> <20100804163509.GA31523@srcf.ucam.org> <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm> <20100804185520.GA2417@srcf.ucam.org> <alpine.DEB.2.00.1008041207260.6545@asgard.lang.hm> <20100804192115.GA2946@srcf.ucam.org> <alpine.DEB.2.00.1008041222280.6545@asgard.lang.hm>
+Message-ID: <20100804200857.GF24163@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100802011006.GS2470@linux.vnet.ibm.com>
+ <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
+ <20100803183447.0275c134@infradead.org>
+ <20100804163216.GB24163@linux.vnet.ibm.com>
+ <20100804163509.GA31523@srcf.ucam.org>
+ <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
+ <20100804185520.GA2417@srcf.ucam.org>
+ <alpine.DEB.2.00.1008041207260.6545@asgard.lang.hm>
+ <20100804192115.GA2946@srcf.ucam.org>
+ <alpine.DEB.2.00.1008041222280.6545@asgard.lang.hm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <alpine.DEB.2.00.1008041222280.6545@asgard.lang.hm>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, Aug 04, 2010 at 12:29:36PM -0700, david@lang.hm wrote:
+> On Wed, 4 Aug 2010, Matthew Garrett wrote:
+> 
+> >On Wed, Aug 04, 2010 at 12:15:59PM -0700, david@lang.hm wrote:
+> >>On Wed, 4 Aug 2010, Matthew Garrett wrote:
+> >>>No! And that's precisely the issue. Android's existing behaviour could
+> >>>be entirely implemented in the form of binary that manually triggers
+> >>>suspend when (a) the screen is off and (b) no userspace applications
+> >>>have indicated that the system shouldn't sleep, except for the wakeup
+> >>>event race. Imagine the following:
+> >>>
+> >>>1) The policy timeout is about to expire. No applications are holding
+> >>>wakelocks. The system will suspend providing nothing takes a wakelock.
+> >>>2) A network packet arrives indicating an incoming SIP call
+> >>>3) The VOIP application takes a wakelock and prevents the phone from
+> >>>suspending while the call is in progress
+> >>>
+> >>>What stops the system going to sleep between (2) and (3)? cgroups don't,
+> >>>because the voip app is an otherwise untrusted application that you've
+> >>>just told the scheduler to ignore.
+> >>
+> >>Even in the current implementation (wakelocks), Since the VOIP
+> >>application isn't allowed to take a wakelock, wouldn't the system go to
+> >>sleep immediatly anyway, even if the application gets the packet and
+> >>starts the call? What would ever raise the wakelock to keep the phone
+> >>from sleeping in the middle of the call?
+> >
+> >There's two parts of that. The first is that the voip application is
+> >allowed to take a wakelock - but that doesn't mean that you trust it the
+> >rest of the time.
+> 
+> why would you trust it to take a wakelock, but not trust it the rest
+> of the time?
+> 
+> in my proposal I'm saying that if you would trust the application to
+> take a wakelock, you instead trust it to be sane in the rest of it's
+> power activity (avoiding polling, etc) and so you consider it for
+> sleep decisions.
 
-> why would you trust it to take a wakelock, but not trust it the rest of  
-> the time?
+The word "trust" does not appear to be helping here.  ;-)
 
-Because I trust that when the application author says "I explicitly need 
-the machine to stay awake" that they mean it, whereas I don't trust the 
-application author to write an application that avoids consuming 
-background CPU. The distinction is pretty important.
+The VOIP application acquires a suspend blocker when it needs to prevent
+the system from suspending, and releases that suspend blocker when it
+can tolerate the system suspending.  It is important to note that while
+the VOIP application holds the suspend blocker, the system won't suspend
+even if it is completely idle (for example, if the VOIP application uses
+blocking system calls, during the time that the VOIP application is
+waiting for its next event).
 
-> in my proposal I'm saying that if you would trust the application to take 
-> a wakelock, you instead trust it to be sane in the rest of it's power  
-> activity (avoiding polling, etc) and so you consider it for sleep  
-> decisions.
+> >The second is that the incoming network packet causes
+> >the kernel to take a wakelock that will be released once userspace has
+> >processed the network packet. This ensures that at least one wakelock is
+> >held for the entire relevant period of time.
+> 
+> how do you determine that userspace has processed the network packet
+> so that the kernel can release the wakelock (or is this one of the
+> cases where there is a timer related to the wakelock)
 
-When we say "trust", we're not using the same meaning as we do with 
-security. Yes, it's possible that an application that can block suspend 
-will do so at inopportune times. But given that blocking suspend is an 
-explicit act it's much more likely that the developer will only use it 
-in reasonable ways, while it's still entirely plausible that the 
-application will generate unnecessary wakeups. Pretending otherwise is 
-unrealistic. I recently had to fix the fact that the kernel IPMI layer 
-would generate a constant 1000 wakeups a second even if it had an 
-interrupt-driven controller or was entirely idle.
+There are two cases:
 
->> The second is that the incoming network packet causes
->> the kernel to take a wakelock that will be released once userspace has
->> processed the network packet. This ensures that at least one wakelock is
->> held for the entire relevant period of time.
->
-> how do you determine that userspace has processed the network packet so  
-> that the kernel can release the wakelock (or is this one of the cases  
-> where there is a timer related to the wakelock)
+1.	The application is permitted to acquire suspend blockers.
+	In this case, the application would acquire a suspend blocker
+	before reading the input.  It would then read the input (at
+	which point the kernel releases its suspend blocker), do any
+	needed processing, and finally release the suspend blocker.
 
-The current implementation uses a timer, but Rafael's implementation 
-should allow userspace to explicitly acknowledge it.
+	So in this case, the system knows that the application is
+	done processing the input when that application releases
+	its suspend blocker.
+
+2.	The application is prohibited from acquiring suspend blockers.
+	In this case, the system might well be suspended before the
+	application has a chance to do more than read the input.
+
+	But the application will get a chance to process the input
+	when the next input event is directed to it.
 
 > two things here,
->
-> on the dirty networks that I see as common, refusing to sleep if network  
-> packets are arriving will mean that you never go to sleep.
+> 
+> on the dirty networks that I see as common, refusing to sleep if
+> network packets are arriving will mean that you never go to sleep.
+> 
+> secondly, nothing stops the code doing the idle/suspend decision
+> from considering network activity. I would be surprised if there
+> weren't already options to support this today.
 
-Cell networks typically have no background traffic, for obvious reasons.
+I don't know about the general networking case for Android, but the
+example of downloading was discussed some time back.  The application
+doing the download acquires a suspend blocker, which it releases once
+the download is complete (or once a timeout expires, if I remember
+correctly).  In this particular case, the network packets were not
+bringing the device out of suspend.
 
-> secondly, nothing stops the code doing the idle/suspend decision from  
-> considering network activity. I would be surprised if there weren't  
-> already options to support this today.
+There might well be other cases where networking packets -do- bring
+the system out of suspend, but I must leave this to someone who knows
+more about Android than do I.
 
-If you proxy every potential wakeup event through some central server 
-then this becomes much easier, but it's also a performance hit. The 
-alternative is that you poll for network activity, but that's a power 
-hit.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+							Thanx, Paul
