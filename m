@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab0HDPTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:19:06 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46491 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab0HDPTE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:19:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Yv70WJA861TMAtGScRwvXQ4bTKGweTx8+vQkH8SirmdJeRcNipNAnczsmjM20XswQC
-         PYOFs0r1HxaT3tj6FERDUl21/+aviifX4moS8zuUEqUBjjTPgS1hDiU7s2joL1CNXqy/
-         c+v+g6SQjW2MCZ+MxJm4dJTupWlTJLnjP1BO8=
-Date: Wed, 4 Aug 2010 19:18:58 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, Robert Richter <robert.richter@amd.com>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: A question of perf NMI handler
-Message-ID: <20100804151858.GB5130@lenovo>
-References: <1280913670.20797.179.camel@minggr.sh.intel.com> <20100804100116.GH26154@erda.amd.com> <20100804140021.GN3353@redhat.com> <1280931093.1923.1194.camel@laptop> <20100804145203.GP3353@redhat.com> <1280934161.1923.1294.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280934161.1923.1294.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752622Ab0HDPXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 11:23:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751831Ab0HDPX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 11:23:28 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100804150805.GA5634@redhat.com>
+References: <20100804150805.GA5634@redhat.com> <20100804131749.GA2139@redhat.com> <20100729114549.29508.44899.stgit@warthog.procyon.org.uk> <20100729114555.29508.4525.stgit@warthog.procyon.org.uk> <20100802204000.GH2405@linux.vnet.ibm.com> <201008030055.o730tgXK091413@www262.sakura.ne.jp> <30552.1280828047@redhat.com> <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com> <23577.1280930470@redhat.com> 
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>, Roland McGrath <roland@redhat.com>
+Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner comment
+Date: Wed, 04 Aug 2010 16:22:37 +0100
+Message-ID: <25284.1280935357@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 05:02:41PM +0200, Peter Zijlstra wrote:
-> On Wed, 2010-08-04 at 10:52 -0400, Don Zickus wrote:
-> > > Right so I looked up your thing and while that limits the damage in that
-> > > at some point it will let NMIs pass, it will still consume too many.
-> > > Meaning that Yinghai will have to potentially press his NMI button
-> > > several times before it registers.
-> > 
-> > Ok.  Thanks for reviewing.  How does it consume to many?  I probably don't
-> > understand how perf is being used in the non-simple scenarios.
-> 
-> Suppose you have 4 counters (AMD, intel-nhm+), when more than 2 overflow
-> the first will raise the PMI, if the other 2+ overflow before we disable
-> the PMU it will try to raise 2+ more PMIs, but because hardware only has
-> a single interrupt pending bit it will at most cause a single extra
-> interrupt after we finish servicing the first one.
-> 
-> So then the first interrupt will see 3+ overflows, return 3+, and will
-> thus eat 2+ NMIs, only one of which will be the pending interrupt,
-> leaving 1+ NMIs from other sources to consume unhandled.
-> 
-> In which case Yinghai will have to press his NMI button 2+ times before
-> it registers.
-> 
-> That said, that might be a better situation than always consuming
-> unknown NMIs.. 
-> 
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Well, first I guess having Yinghai CC'ed is a bonus ;)
-The second thing is that I don't get why perf handler can't be _last_
-call in default_do_nmi, if there were any nmi with reason (serr or parity)
-I think they should be calling first which of course don't eliminate
-the former issue but somewhat make it weaken.
+> > > I must admit, at first glance changing check_kill_permission() to take
+> > > rcu lock looks better to me.
+> >
+> > I think group_send_sig_info() would be better.  The only other caller of
+> > c_k_p() already has to hold the RCU read lock for other reasons.
+> >
+> > How about the attached patch then?
+> 
+> Agreed, the patch looks fine to me.
 
-	-- Cyrill
+Can I take that as an Acked-by?
+
+David
