@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab0HDWEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:04:21 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:51902 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585Ab0HDWEP (ORCPT
+	id S1756706Ab0HDWFc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:05:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51016 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751487Ab0HDWFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:04:15 -0400
-To: Greg KH <greg@kroah.com>
-Cc: Michael Leun <lkml20100708@newton.leun.net>, netdev@vger.kernel.org,
-        davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free (after using openvpn)
-References: <loom.20100708T183152-326@post.gmane.org>
-	<20100709235744.GA12752@kroah.com>
-	<20100710101540.2799c9ef@xenia.leun.net>
-	<20100710140800.GA20424@kroah.com>
-	<20100710165208.59272ae6@xenia.leun.net>
-	<20100710235323.5336f627@xenia.leun.net>
-	<20100711192939.1c25dcaf@xenia.leun.net>
-	<20100804153543.56f6ecad@xenia.leun.net>
-	<20100804214618.GA6289@kroah.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 04 Aug 2010 15:04:08 -0700
-In-Reply-To: <20100804214618.GA6289@kroah.com> (Greg KH's message of "Wed\, 4 Aug 2010 14\:46\:18 -0700")
-Message-ID: <m1ocdi6nmv.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Wed, 4 Aug 2010 18:05:25 -0400
+Date: Wed, 4 Aug 2010 15:04:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michael Rubin <mrubin@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk
+Subject: Re: [PATCH 0/2] Adding four writeback files in /proc/sys/vm
+Message-Id: <20100804150422.c52b308e.akpm@linux-foundation.org>
+In-Reply-To: <1280873949-20460-1-git-send-email-mrubin@google.com>
+References: <1280873949-20460-1-git-send-email-mrubin@google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
+On Tue,  3 Aug 2010 15:19:07 -0700
+Michael Rubin <mrubin@google.com> wrote:
 
-> On Wed, Aug 04, 2010 at 03:35:43PM +0200, Michael Leun wrote:
->> Hi,
->> 
->> On Sun, 11 Jul 2010 19:29:39 +0200
->> Michael Leun <lkml20100708@newton.leun.net> wrote:
->> 
->> [...]
->> > Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo to
->> > become free. Usage count = 3 [repeated]
+> Patch #1 sets up some helper functions for accounting.
+> 
+> Patch #2 adds some writeback files for visibility
+> 
+> To help developers and applications gain visibility into writeback
+> behaviour adding four read-only sysctl files into /proc/sys/vm.
+> These files allow user apps to understand writeback behaviour over time
+> and learn how it is impacting their performance.
+> 
+>    # cat /proc/sys/vm/pages_dirtied
+>    3747
+>    # cat /proc/sys/vm/pages_entered_writeback
+>    3618
+>    # cat /proc/sys/vm/dirty_threshold_kbytes
+>    816673
+>    # cat /proc/sys/vm/dirty_background_threshold_kbytes
+>    408336
+> 
+> The files fall into two groups.
+> 
+> pages_dirtied and pages_entered_writeback:
+> 
+> These two new files are necessary to give visibility into writeback
+> behaviour. We have /proc/diskstats which lets us understand the io in
+> the block layer. We have blktrace for more indepth understanding. We have
+> e2fsprogs and debugsfs to give insight into the file systems behaviour,
+> but we don't offer our users the ability understand what writeback is
+> doing. There is no non-debugfs way to know how active it is,
 
-Does this repeat indefinitely, or are there only a couple of repetitions?
-If this repeats indefinitely every 5 seconds or so we have a serious bug.
+I see what you did there!
 
-Otherwise we just have cleanup taking longer than it should, which isn't
-ideal but it is much less severe.
+So is there a debugfs-based way of getting this info?  If so, that
+should be sufficient.
 
->> > Now one might say it is fault of openvpn (used OpenVPN 2.1_rc20
->> > i586-suse-linux - the one in openSuSE 11.2 package), openvpn didn't
->> > close some ressource and ssh does fine.
->> > 
->> > But: should'nt kernel clean up after process when it exits?
->> > And/or: Should'nt kernel clean up if last process in network namespace
->> > exits - there is nothing left which might use that interface?!
->> > 
->> > Greg KH <greg@kroah.com> wrote:
->> > 
->> > > Yes, you are correct.  Care to resend all of this to the
->> > > network-namespace developer(s) and the netdev mailing list so that
->> > > the correct people are notified so they can fix it all?
->> > 
->> > [X] done - hopefully, cannot find a particular network namespace
->> > developer in MAINTAINERS or source files. If such a one exists, please
->> > forward.
->> 
->> Did'nt work. Got no reaction from network mailinglist at all and bug
->> still is in 2.6.35.
->
-> Eric, here's a bug with the network namespace stuff, care to work on
-> resolving it?
+> if it's
+> falling behind or to quantify it's efforts on a system. With these values
+> exported users can easily see how much data applications are sending
+> through writeback and also at what rates writeback is processing this
+> data. Comparing the rates of change between the two allow developers
+> to see when writeback is not able to keep up with incoming traffic and
+> the rate of dirty memory being sent to the IO back end.  This allows
+> folks to understand their io workloads and track kernel issues. Non
+> kernel engineers at Google often use these counters to solve puzzling
+> performance problems.
+> 
+> dirty_threshold_kbytes and dirty_background_threshold kbytes:
+> 
+> We already expose these thresholds in /proc/sys/vm with
+> dirty_background_ratio and background_ratio. What's frustrating about
+> the ratio variables and the need for these are that they are not
+> honored by the kernel. Instead the kernel may alter the number
+> requested without giving the user any indication that is the case.
+> An app developer can set the ratio to 2% but end up with 5% as
+> get_dirty_limits makes sure it is never lower than 5% when set from
+> the ratio. Arguably that can be fixed too but the limits which decide
+> whether writeback is invoked to aggressively clean dirty pages is
+> dependent on changing page state retrieved in
+> determine_dirtyable_memory. It makes understanding when the kernel
+> decides to writeback data a moving target that no app can ever
+> determine. With these thresholds visible and collected over time it
+> gives apps a chance to know why writeback happened, or why it did not.
+> As systems get larger and larger RAM developers use the ratios to
+> predict when their workloads will see writeback invoked. Today there
+> is no way to accurately indicate what the kernel will use to kick off
+> writeback. Hence the need for these two new files.
+> 
 
-Greg thanks for forwarding this in my direction.
+We should be very reluctant to add files to /proc which are tied to any
+particular internal implementation.  Because when we change that
+implementation (and boy does writeback need changing!), we have to
+somehow make those files still contain meaningful values.
 
-Eric
+For pages_dirtied and pages_entered_writeback: it's hard to see how any
+reimplementation of writeback would have any problem implementing
+these, so OK.
+
+But dirty_threshold_kbytes and dirty_background_threshold_kbytes are
+closely tied to the implementation-of-the-day and so I don't think they
+should be presented in /proc.
