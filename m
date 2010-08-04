@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758414Ab0HDHRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 03:17:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51735 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752512Ab0HDHRI (ORCPT
+	id S1758456Ab0HDHSu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 03:18:50 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36431 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755980Ab0HDHSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 03:17:08 -0400
-Date: Wed, 4 Aug 2010 00:16:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Andi Kleen <andi@firstfloor.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, tytso@mit.edu
-Subject: Re: new gerneric kfifo API
-Message-Id: <20100804001641.bb7be864.akpm@linux-foundation.org>
-In-Reply-To: <1280905854.8441.3.camel@wall-e.seibold.net>
-References: <201005132135.o4DLZ9WI021613@imap1.linux-foundation.org>
-	<1280905854.8441.3.camel@wall-e.seibold.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Aug 2010 03:18:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TYwFEIGXW/JyMTYERhSYiAifnUbMD+uVWmHAqWkML2y9iE4OMPC6vm/iEXCdMJvGYE
+         fcMCLDNkyWsEMgsyIQc4vJViToh9DJgJVbuCdTsJ+SYHXifWdKthSX+qHThU30fepthv
+         avVDH19ULvDi/1lw9lbqjatRFmRIIThCletFk=
+Date: Wed, 4 Aug 2010 15:22:46 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Neuling <mikey@neuling.org>
+Subject: Re: [rfc] Merge kexec-tools into the kernel tree
+Message-ID: <20100804072246.GA5263@cr0.nay.redhat.com>
+References: <20100804070647.GB24064@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100804070647.GB24064@verge.net.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Aug 2010 09:10:54 +0200 Stefani Seibold <stefani@seibold.net> wrote:
+On Wed, Aug 04, 2010 at 04:06:48PM +0900, Simon Horman wrote:
+>Hi,
+>
+>After all the excitement of relocating kexec-tools from
+>one location on kernel.org to another last week it was
+>suggested to me by Michael Neuling that the merging
+>kexec-tools into the kernel tree would be a good idea.
+>
+>Given that there have been a bunch of issues with kexec
+>on power that this would resolve. and there is precedence
+>for tools in the kernel tree, this sounds entirely reasonable to me.
+>So with my kexec-tools maintainer hat on, I would like to start
+>a conversation about this.
+>
 
-> Hi,
-> 
-> once again. Kernel 2.6.35 is out and i want to know if there is play plan to
-> merge the generic kfifo API. All complains was fixed, so there is no
-> reason to shift the merge again. Please gibe me a short answer.
-> 
-
-Sorry, I didn't get around to looking at it.  Like those 100
-checkpoint/restart patches.
-
-We'll get there.
+But why? Just to draw more attentions from kernel community?
