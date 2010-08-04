@@ -1,211 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab0HDJTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 05:19:37 -0400
-Received: from web27008.mail.ukl.yahoo.com ([217.146.177.8]:47406 "HELO
-	web27008.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756207Ab0HDJTe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 05:19:34 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Aug 2010 05:19:34 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=KaIr1XKBwHVIjQm5/DegFsPUelXvYQsnbe/n2GIyuopAy7LKWtXS5OFkpbaQXdF7SYIo6lGmTzZEf3FXXD1oRNZORzMiIgCJIfEMZiFlXhiBH7q6cY9IUxRpgsgHWWCdGV4z5kmEeJmQGHa6Y4htrbggL+Td4GJyvwdf+V7R3ek=;
-Message-ID: <646233.80914.qm@web27008.mail.ukl.yahoo.com>
-X-YMail-OSG: GCV8IrYVM1mqnVPIGanTCHdWbw6abt5jrsdQ7T9JbMSnBUc
- XrnBWOq6a3axjHTEcdg6xEzoQjA2NKVUCwt2hm.uRak7e7vyBtv_17qrObMa
- xkfrF75paVbwiEq7Lk_DR_Ij61UVAsuTqwCUnSYEUWLo3hJwP7HzL8luYSqb
- jQfp6AT6y9tBoZHx.k.zXqznnCo46u1EueZWRJKIhs6MB8PfjnrN0pA.7R7j
- JrG_cste0fdeQy267LR715qWQdP8TewWU7FwPHb9A1JwkmpCk4VyKOexIkCT
- h7070U2vlUuxkD_NqC0U8ngA2b2E0vZI1DshPbOg-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Wed, 4 Aug 2010 09:12:52 +0000 (GMT)
-From: bifferos <bifferos@yahoo.co.uk>
-Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what c_ident is
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
-        hpa@linux.intel.com, Ingo Molnar <mingo@elte.hu>
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <20100803192557.GA13595@elte.hu>
+	id S932121Ab0HDJTz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 05:19:55 -0400
+Received: from mx1.sophos.com ([195.166.81.52]:40415 "EHLO mx1.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab0HDJTx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 05:19:53 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: 2.6.35 hangs on early boot in KVM
+Date: Wed, 4 Aug 2010 10:19:48 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+References: <201008031028.57263.tvrtko.ursulin@sophos.com> <4C592D60.5050309@kernel.org> <201008041016.09176.tvrtko.ursulin@sophos.com>
+In-Reply-To: <201008041016.09176.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Message-ID: <201008041019.48819.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 04/08/2010 10:19:49,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 04/08/2010 10:19:50,
+	Serialize complete at 04/08/2010 10:19:50
+X-TNEFEvaluated: 1
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 04 Aug 2010 10:16:08 Tvrtko Ursulin wrote:
+> On Wednesday 04 Aug 2010 10:05:36 Yinghai Lu wrote:
+> > On 08/04/2010 01:18 AM, Tvrtko Ursulin wrote:
+> > > On Tuesday 03 Aug 2010 21:57:48 Yinghai Lu wrote:
+> > >> On Tue, Aug 3, 2010 at 8:59 AM, Tvrtko Ursulin
+> > >>
+> > >> <tvrtko.ursulin@sophos.com> wrote:
+> > >>> On Tuesday 03 Aug 2010 16:17:20 Tvrtko Ursulin wrote:
+> > >>>> On Tuesday 03 Aug 2010 15:57:03 Tvrtko Ursulin wrote:
+> > >>>>> On Tuesday 03 Aug 2010 15:51:08 Avi Kivity wrote:
+> > >>>>>>   On 08/03/2010 12:28 PM, Tvrtko Ursulin wrote:
+> > >>>>>>> I have basically built 2.6.35 with make oldconfig from a working
+> > >>>>>>> 2.6.34. Latter works fine in kvm while 2.6.35 hangs very early. I
+> > >>>>>>> see nothing after grub (have early printk and verbose bootup
+> > >>>>>>> enabled), just a blinking VGA cursor and CPU at 100%.
+> > >>>>>>
+> > >>>>>> Please copy kvm@vger.kernel.org on kvm issues.
+> > >>>>>>
+> > >>>>>>> CONFIG_PRINTK_TIME=y
+> > >>>>>>
+> > >>>>>> Try disabling this as a workaround.
+> > >>>>>
+> > >>>>> I am in the middle of a bisect run with five builds left to go,
+> > >>>>> currently I have:
+> > >>>>>
+> > >>>>> bad 537b60d17894b7c19a6060feae40299d7109d6e7
+> > >>>>> good 93c9d7f60c0cb7715890b1f9e159da6f4d1f5a65
+> > >>>>
+> > >>>> Bisect is looking good, narrowed it to ten revisions, but I am not
+> > >>>> sure to make it to the end today:
+> > >>>>
+> > >>>> bad cb41838bbc4403f7270a94b93a9a0d9fc9c2e7ea
+> > >>>> good 41d59102e146a4423a490b8eca68a5860af4fe1c
+> > >>>
+> > >>> Bisect points the finger to "x86, ioapic: In mpparse use
+> > >>> mp_register_ioapic" (cf7500c0ea133d66f8449d86392d83f840102632), so I
+> > >>> am copying Eric. No idea whether this commit is solely to blame or
+> > >>> it is a combined interaction with KVM, but I am sure you guys will
+> > >>> know.
+> > >>>
+> > >>> If you want me to test something else please shout.
+> > >>
+> > >> please try attached patch, to see if it help.
+> > >
+> > > No luck (no visible difference, no output on VGA or serial console).
+> > > (Btw there is a typo in pin_2_irq_leagcy so that you do not push it
+> > > directly).
+> >
+> > can you try current tip with
+> > earlyprintk=ttyS0,115200 or console=uart8250,io,0x3f8,115200?
+>
+> Not the tip but 2.6.35 with earlyprintk=ttyS0,115200:
 
-I couldn't reproduce this with 2.6.35 (without Peter's change),
-I was trying on VirtualBox.  If the detection code is causing a 
-problem we can just skip it if the CPU has cpuid.
+Correction, crash log was from 2.6.35 plus your smp_mptable_2.patch.
 
-Incidentally if you need some hardware to test the RDC port on I can
-arrange that.
-
-regards,
-Mark
-
---- On Tue, 3/8/10, Ingo Molnar <mingo@elte.hu> wrote:
-
-> From: Ingo Molnar <mingo@elte.hu>
-> Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what c_ident is
-> To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org, florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de, hpa@linux.intel.com
-> Cc: linux-tip-commits@vger.kernel.org
-> Date: Tuesday, 3 August, 2010, 20:25
-> 
-> * tip-bot for H. Peter Anvin <hpa@linux.intel.com>
-> wrote:
-> 
-> > Commit-ID: 
-> c0366f5f5c1615c4f70b1bd646149ba9233830b9
-> > Gitweb:     http://git.kernel.org/tip/c0366f5f5c1615c4f70b1bd646149ba9233830b9
-> > Author:     H. Peter Anvin <hpa@linux.intel.com>
-> > AuthorDate: Tue, 3 Aug 2010 10:09:56 -0700
-> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> > CommitDate: Tue, 3 Aug 2010 10:09:56 -0700
-> > 
-> > x86, cpu: RDC doesn't have CPUID, which is what
-> c_ident is
-> > 
-> > c_ident is supposed to be a CPUID identifier, and RDC
-> doesn't have
-> > that.
-> 
-> -tip testing found that these RDC patches cause a boot
-> crash if a 
-> X86_RDC321X=y kernel is booted on a regular PC:
-> 
-> [    0.015999] Pid: 0, comm: swapper Not tainted
-> 2.6.35-tip+ #23896 A8N-E/System Product Name 
->    
-> [    0.015999] EIP: 0060:[<c1267d14>]
-> EFLAGS: 00010282 CPU: 0         
->                
->            
-> [    0.015999] EIP is at strcmp+0xf/0x22 
->                
->                
->                
->         
-> [    0.015999] EAX: c1a81541 EBX: 00000004 ECX:
-> 0000000f EDX: 00000000         
->                
->   
-> [    0.015999] ESI: c1a81571 EDI: 00000000 EBP:
-> c19ccf78 ESP: c19ccf70         
->                
->   
-> [    0.015999]  DS: 007b ES: 007b FS: 00d8
-> GS: 00e0 SS: 0068           
->                
->           
-> [    0.015999] Process swapper (pid: 0,
-> ti=c19cc000 task=c1a07e60 task.ti=c19cc000)   
->            
-> [    0.015999] Stack:       
->                
->                
->                
->                
->      
-> [    0.015999]  c1a81530 c1a81570 c19ccf8c
-> c16d9b7f c1ac8538 c1a81530 c1a81570 c19ccfac   
->        
-> [    0.015999] <0> c16d9dcb c104dc9f
-> c1a15210 c1a81548 c1ac8538 00099800 c19ce000 c19ccfb4 
->       
-> [    0.015999] <0> c1a89a4f c19ccfc0
-> c1a89d2d c1a96147 c19ccfe0 c1a84953 431d9715 00000006 
->       
-> [    0.015999] Call Trace:     
->                
->                
->                
->                
->   
-> [    0.015999]  [<c16d9b7f>] ?
-> get_cpu_vendor+0x22/0x8f         
->                
->              
->    
-> [    0.015999]  [<c16d9dcb>] ?
-> identify_cpu+0xc5/0x2e0         
->                
->                
->   
-> [    0.015999]  [<c104dc9f>] ?
-> sub_preempt_count+0x9/0x39         
->                
->            
->    
-> [    0.015999]  [<c1a89a4f>] ?
-> identify_boot_cpu+0xd/0x23         
->                
->            
->    
-> [    0.015999]  [<c1a89d2d>] ?
-> check_bugs+0xb/0xaf           
->                
->                
->     
-> [    0.015999]  [<c1a96147>] ?
-> cpuset_init+0x65/0x77         
->                
->                
->     
-> [    0.015999]  [<c1a84953>] ?
-> start_kernel+0x37e/0x392         
->                
->              
->    
-> [    0.015999]  [<c1a840c9>] ?
-> i386_start_kernel+0xc9/0xd0       
->                
->                 
-> [    0.015999] Code: c0 83 c9 ff f2 ae 4f 89 d1
-> 49 78 06 ac aa 84 c0 75 f7 31 c0 aa 89 d8 5b 5e 5 
-> [    0.015999] EIP: [<c1267d14>]
-> strcmp+0xf/0x22 SS:ESP 0068:c19ccf70     
->                
->        
-> 
-> mercury:~> cat /proc/cpuinfo 
-> processor    : 0
-> vendor_id    : AuthenticAMD
-> cpu family    : 15
-> model        : 35
-> model name    : AMD Athlon(tm) 64 X2 Dual
-> Core Processor 3800+
-> stepping    : 2
-> cpu MHz        : 2010.301
-> cache size    : 512 KB
-> physical id    : 0
-> siblings    : 2
-> core id        : 0
-> cpu cores    : 2
-> fpu        : yes
-> fpu_exception    : yes
-> cpuid level    : 1
-> wp        : yes
-> flags        : fpu vme de pse
-> tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36
-> clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt lm
-> 3dnowext 3dnow rep_good pni lahf_lm cmp_legacy
-> bogomips    : 4021.85
-> TLB size    : 1024 4K pages
-> clflush size    : 64
-> cache_alignment    : 64
-> address sizes    : 40 bits physical, 48 bits
-> virtual
-> power management: ts fid vid ttp
-> 
-> config attached.
-> 
-> Thanks,
-> 
->     Ingo
-> 
+Tvrtko
 
 
-      
+
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
