@@ -1,90 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758682Ab0HDTxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 15:53:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34640 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756873Ab0HDTxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 15:53:38 -0400
-Date: Wed, 4 Aug 2010 12:52:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Philippe Langlais <philippe.langlais@stericsson.com>
-Cc: <linux-kernel@vger.kernel.org>, <gregkh@suse.de>,
-        <alan@lxorguk.ukuu.org.uk>, <ludovic.barre@stericsson.com>,
-        <vincent.guittot@stericsson.com>
-Subject: Re: [PATCH] U6715 16550A serial driver support
-Message-Id: <20100804125253.3977b0d7.akpm@linux-foundation.org>
-In-Reply-To: <1280739519-26930-1-git-send-email-philippe.langlais@stericsson.com>
-References: <1280739519-26930-1-git-send-email-philippe.langlais@stericsson.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758694Ab0HDTya (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 15:54:30 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:33595 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756873Ab0HDTy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 15:54:28 -0400
+Date: Wed, 4 Aug 2010 21:54:26 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH] drivers/staging/iio: call mutex_unlock in error handling
+ code
+Message-ID: <Pine.LNX.4.64.1008042153460.30592@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010 10:58:39 +0200
-Philippe Langlais <philippe.langlais@stericsson.com> wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> UART Features extract from STEricsson U6715 data-sheet (arm926 SoC for mobile phone):
-> * Fully compatible with industry standard 16C550 and 16C450 from various
-> manufacturers
-> * RX and TX 64 byte FIFO reduces CPU interrupts
-> * Full double buffering
-> * Modem control signals include CTS, RTS, (and DSR, DTR on UART1 only)
-> * Automatic baud rate selection
-> * Manual or automatic RTS/CTS smart hardware flow control
-> * Programmable serial characteristics:
-> ___ Baud rate generation (50 to 3.25M baud)
-> ___ 5, 6, 7 or 8-bit characters
-> ___ Even, odd or no-parity bit generation and detection
-> ___ 1, 1.5 or 2 stop bit generation
-> * Independent control of transmit, receive, line status, data set interrupts and FIFOs
-> * Full status-reporting capabilities
-> * Separate DMA signaling for RX and TX
-> * Timed interrupt to spread receive interrupt on known duration
-> * DMA time-out interrupt to allow detection of end of reception
-> * Carkit pulse coding and decoding compliant with USB carkit control interface [40]
-> 
-> In 16550A auto-configuration, if the fifo size is 64 then it's an U6 16550A port
-> Add set_termios hook & export serial8250_do_set_termios to change uart
-> clock following baudrate
+Adjust the error handling code so that it benefits from the call to
+mutex_unlock at the end of the function.
 
-Confused.
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-> ...
->
-> --- a/include/linux/serial_8250.h
-> +++ b/include/linux/serial_8250.h
-> @@ -32,6 +32,9 @@ struct plat_serial8250_port {
->  	unsigned int	type;		/* If UPF_FIXED_TYPE */
->  	unsigned int	(*serial_in)(struct uart_port *, int);
->  	void		(*serial_out)(struct uart_port *, int, int);
-> +	void		(*set_termios)(struct uart_port *,
-> +			               struct ktermios *new,
-> +			               struct ktermios *old);
->  };
->  
-> ...
->
-> --- a/include/linux/serial_core.h
-> +++ b/include/linux/serial_core.h
-> @@ -279,6 +279,9 @@ struct uart_port {
->  	unsigned char __iomem	*membase;		/* read/write[bwl] */
->  	unsigned int		(*serial_in)(struct uart_port *, int);
->  	void			(*serial_out)(struct uart_port *, int, int);
-> +	void			(*set_termios)(struct uart_port *,
-> +				               struct ktermios *new,
-> +				               struct ktermios *old);
->  	unsigned int		irq;			/* irq number */
->  	unsigned long		irqflags;		/* irq flags  */
->  	unsigned int		uartclk;		/* base uart clock */
+// <smpl>
+@rcu exists@
+position p1;
+expression E;
+@@
 
-The patch adds these .set_termios hooks but doesn't actually use them
-for anything.
+mutex_lock@p1(E);
+...
+mutex_unlock(E);
 
-The changelog doesn't tell us _why_ this was done (it should) and
-lacking any code to look at it's all a bit mysterious.
+@exists@
+position rcu.p1;
+expression E;
+@@
 
+*mutex_lock@p1(E);
+... when != mutex_unlock(E);
+?*return ...;
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/staging/iio/magnetometer/hmc5843.c     |   25 +++++++++++++------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/iio/magnetometer/hmc5843.c b/drivers/staging/iio/magnetometer/hmc5843.c
+index 92f6c6f..ea5f749 100644
+--- a/drivers/staging/iio/magnetometer/hmc5843.c
++++ b/drivers/staging/iio/magnetometer/hmc5843.c
+@@ -220,11 +220,15 @@ static ssize_t hmc5843_set_operating_mode(struct device *dev,
+ 	int error;
+ 	mutex_lock(&data->lock);
+ 	error = strict_strtoul(buf, 10, &operating_mode);
+-	if (error)
+-		return error;
++	if (error) {
++		count = error;
++		goto exit;
++	}
+ 	dev_dbg(dev, "set Conversion mode to %lu\n", operating_mode);
+-	if (operating_mode > MODE_SLEEP)
+-			return -EINVAL;
++	if (operating_mode > MODE_SLEEP) {
++		count = -EINVAL;
++		goto exit;
++	}
+ 
+ 	status = i2c_smbus_write_byte_data(client, this_attr->address,
+ 					operating_mode);
+@@ -437,18 +441,23 @@ static ssize_t set_range(struct device *dev,
+ 	int error;
+ 	mutex_lock(&data->lock);
+ 	error = strict_strtoul(buf, 10, &range);
+-	if (error)
+-		return error;
++	if (error) {
++		count = error;
++		goto exit;
++	}
+ 	dev_dbg(dev, "set range to %lu\n", range);
+ 
+-	if (range > RANGE_6_5)
+-		return -EINVAL;
++	if (range > RANGE_6_5) {
++		count = -EINVAL;
++		goto exit;
++	}
+ 
+ 	data->range = range;
+ 	range = range << RANGE_GAIN_OFFSET;
+ 	if (i2c_smbus_write_byte_data(client, this_attr->address, range))
+ 		count = -EINVAL;
+ 
++exit:
+ 	mutex_unlock(&data->lock);
+ 	return count;
+ 
