@@ -1,192 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab0HDMll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:41:41 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:57095 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932711Ab0HDMlh (ORCPT
+	id S932723Ab0HDMn4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:43:56 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:54252 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757588Ab0HDMny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:41:37 -0400
-Date: Wed, 4 Aug 2010 14:41:34 +0200
-From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Roman Zippel <zippel@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Greg Kroah-Hartman <gregkh@suse.de>, John Stultz <johnstul@us.ibm.com>,
-        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 1/9] arch/m68k: Removing dead GG2 config option
-Message-ID: <fdc11b1532157d10fb58d3642565d496da794195.1280924671.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1280924671.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	Wed, 4 Aug 2010 08:43:54 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 1/3] DMAENGINE: generic slave channel control v3
+Date: Wed, 4 Aug 2010 13:37:33 +0200
+Message-ID: <1280921853-31165-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1280924671.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_GG2 doesn't exist in Kconfig, therefore removing
-all references to it from the source.
+This adds an interface to the DMAengine to make it possible to
+reconfigure a slave channel at runtime. We add a few foreseen
+config parameters to the passed struct, with a void * pointer
+for custom per-device or per-platform runtime slave data.
 
-Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- arch/m68k/Kconfig               |    4 ++--
- arch/m68k/include/asm/amigahw.h |    1 -
- arch/m68k/include/asm/io_mm.h   |   37 -------------------------------------
- arch/m68k/kernel/setup.c        |    6 ------
- 4 files changed, 2 insertions(+), 46 deletions(-)
+ include/linux/dmaengine.h |   71 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 71 insertions(+), 0 deletions(-)
 
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index 2e3737b..2df0de5 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -437,7 +437,7 @@ config PROC_HARDWARE
- 
- config ISA
- 	bool
--	depends on Q40 || AMIGA_PCMCIA || GG2
-+	depends on Q40 || AMIGA_PCMCIA
- 	default y
- 	help
- 	  Find out whether you have ISA slots on your motherboard.  ISA is the
-@@ -448,7 +448,7 @@ config ISA
- 
- config GENERIC_ISA_DMA
- 	bool
--	depends on Q40 || AMIGA_PCMCIA || GG2
-+	depends on Q40 || AMIGA_PCMCIA
- 	default y
- 
- config ZONE_DMA
-diff --git a/arch/m68k/include/asm/amigahw.h b/arch/m68k/include/asm/amigahw.h
-index 5ca5dd9..7a19b56 100644
---- a/arch/m68k/include/asm/amigahw.h
-+++ b/arch/m68k/include/asm/amigahw.h
-@@ -102,7 +102,6 @@ struct amiga_hw_present {
-     AMIGAHW_DECLARE(ALICE_NTSC);	/* NTSC Alice (8374) */
-     AMIGAHW_DECLARE(MAGIC_REKICK);	/* A3000 Magic Hard Rekick */
-     AMIGAHW_DECLARE(PCMCIA);		/* PCMCIA Slot */
--    AMIGAHW_DECLARE(GG2_ISA);		/* GG2 Zorro2ISA Bridge */
-     AMIGAHW_DECLARE(ZORRO);		/* Zorro AutoConfig */
-     AMIGAHW_DECLARE(ZORRO3);		/* Zorro III */
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 5204f01..c61d4ca 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -114,11 +114,17 @@ enum dma_ctrl_flags {
+  * @DMA_TERMINATE_ALL: terminate all ongoing transfers
+  * @DMA_PAUSE: pause ongoing transfers
+  * @DMA_RESUME: resume paused transfer
++ * @DMA_SLAVE_CONFIG: this command is only implemented by DMA controllers
++ * that need to runtime reconfigure the slave channels (as opposed to passing
++ * configuration data in statically from the platform). An additional
++ * argument of struct dma_slave_config must be passed in with this
++ * command.
+  */
+ enum dma_ctrl_cmd {
+ 	DMA_TERMINATE_ALL,
+ 	DMA_PAUSE,
+ 	DMA_RESUME,
++	DMA_SLAVE_CONFIG,
  };
-diff --git a/arch/m68k/include/asm/io_mm.h b/arch/m68k/include/asm/io_mm.h
-index 9e673e3..63f5c54 100644
---- a/arch/m68k/include/asm/io_mm.h
-+++ b/arch/m68k/include/asm/io_mm.h
-@@ -49,23 +49,6 @@
- #define MULTI_ISA 0
- #endif /* Q40 */
  
--/* GG-II Zorro to ISA bridge */
--#ifdef CONFIG_GG2
--
--extern unsigned long gg2_isa_base;
--#define GG2_ISA_IO_B(ioaddr) (gg2_isa_base+1+((unsigned long)(ioaddr)*4))
--#define GG2_ISA_IO_W(ioaddr) (gg2_isa_base+  ((unsigned long)(ioaddr)*4))
--#define GG2_ISA_MEM_B(madr)  (gg2_isa_base+1+(((unsigned long)(madr)*4) & 0xfffff))
--#define GG2_ISA_MEM_W(madr)  (gg2_isa_base+  (((unsigned long)(madr)*4) & 0xfffff))
--
--#ifndef MULTI_ISA
--#define MULTI_ISA 0
--#else
--#undef MULTI_ISA
--#define MULTI_ISA 1
--#endif
--#endif /* GG2 */
--
- #ifdef CONFIG_AMIGA_PCMCIA
- #include <asm/amigayle.h>
+ /**
+@@ -199,6 +205,71 @@ struct dma_chan_dev {
+ 	atomic_t *idr_ref;
+ };
  
-@@ -89,7 +72,6 @@ extern unsigned long gg2_isa_base;
- #endif
- 
- #define ISA_TYPE_Q40 (1)
--#define ISA_TYPE_GG2 (2)
- #define ISA_TYPE_AG  (3)
- 
- #if defined(CONFIG_Q40) && !defined(MULTI_ISA)
-@@ -100,10 +82,6 @@ extern unsigned long gg2_isa_base;
- #define ISA_TYPE ISA_TYPE_AG
- #define ISA_SEX  1
- #endif
--#if defined(CONFIG_GG2) && !defined(MULTI_ISA)
--#define ISA_TYPE ISA_TYPE_GG2
--#define ISA_SEX  0
--#endif
- 
- #ifdef MULTI_ISA
- extern int isa_type;
-@@ -125,9 +103,6 @@ static inline u8 __iomem *isa_itb(unsigned long addr)
- #ifdef CONFIG_Q40
-     case ISA_TYPE_Q40: return (u8 __iomem *)Q40_ISA_IO_B(addr);
- #endif
--#ifdef CONFIG_GG2
--    case ISA_TYPE_GG2: return (u8 __iomem *)GG2_ISA_IO_B(addr);
--#endif
- #ifdef CONFIG_AMIGA_PCMCIA
-     case ISA_TYPE_AG: return (u8 __iomem *)AG_ISA_IO_B(addr);
- #endif
-@@ -141,9 +116,6 @@ static inline u16 __iomem *isa_itw(unsigned long addr)
- #ifdef CONFIG_Q40
-     case ISA_TYPE_Q40: return (u16 __iomem *)Q40_ISA_IO_W(addr);
- #endif
--#ifdef CONFIG_GG2
--    case ISA_TYPE_GG2: return (u16 __iomem *)GG2_ISA_IO_W(addr);
--#endif
- #ifdef CONFIG_AMIGA_PCMCIA
-     case ISA_TYPE_AG: return (u16 __iomem *)AG_ISA_IO_W(addr);
- #endif
-@@ -167,9 +139,6 @@ static inline u8 __iomem *isa_mtb(unsigned long addr)
- #ifdef CONFIG_Q40
-     case ISA_TYPE_Q40: return (u8 __iomem *)Q40_ISA_MEM_B(addr);
- #endif
--#ifdef CONFIG_GG2
--    case ISA_TYPE_GG2: return (u8 __iomem *)GG2_ISA_MEM_B(addr);
--#endif
- #ifdef CONFIG_AMIGA_PCMCIA
-     case ISA_TYPE_AG: return (u8 __iomem *)addr;
- #endif
-@@ -183,9 +152,6 @@ static inline u16 __iomem *isa_mtw(unsigned long addr)
- #ifdef CONFIG_Q40
-     case ISA_TYPE_Q40: return (u16 __iomem *)Q40_ISA_MEM_W(addr);
- #endif
--#ifdef CONFIG_GG2
--    case ISA_TYPE_GG2: return (u16 __iomem *)GG2_ISA_MEM_W(addr);
--#endif
- #ifdef CONFIG_AMIGA_PCMCIA
-     case ISA_TYPE_AG: return (u16 __iomem *)addr;
- #endif
-@@ -217,9 +183,6 @@ static inline void isa_delay(void)
- #ifdef CONFIG_Q40
-     case ISA_TYPE_Q40: isa_outb(0,0x80); break;
- #endif
--#ifdef CONFIG_GG2
--    case ISA_TYPE_GG2: break;
--#endif
- #ifdef CONFIG_AMIGA_PCMCIA
-     case ISA_TYPE_AG: break;
- #endif
-diff --git a/arch/m68k/kernel/setup.c b/arch/m68k/kernel/setup.c
-index 303730a..b3963ab 100644
---- a/arch/m68k/kernel/setup.c
-+++ b/arch/m68k/kernel/setup.c
-@@ -359,12 +359,6 @@ void __init setup_arch(char **cmdline_p)
- 		isa_type = ISA_TYPE_Q40;
- 		isa_sex = 0;
- 	}
--#ifdef CONFIG_GG2
--	if (MACH_IS_AMIGA && AMIGAHW_PRESENT(GG2_ISA)) {
--		isa_type = ISA_TYPE_GG2;
--		isa_sex = 0;
--	}
--#endif
- #ifdef CONFIG_AMIGA_PCMCIA
- 	if (MACH_IS_AMIGA && AMIGAHW_PRESENT(PCMCIA)) {
- 		isa_type = ISA_TYPE_AG;
++/**
++ * enum dma_slave_buswidth - defines bus with of the DMA slave
++ * device, source or target buses
++ */
++enum dma_slave_buswidth {
++	DMA_SLAVE_BUSWIDTH_UNDEFINED = 0,
++	DMA_SLAVE_BUSWIDTH_1_BYTE = 1,
++	DMA_SLAVE_BUSWIDTH_2_BYTES = 2,
++	DMA_SLAVE_BUSWIDTH_4_BYTES = 4,
++	DMA_SLAVE_BUSWIDTH_8_BYTES = 8,
++};
++
++/**
++ * struct dma_slave_config - dma slave channel runtime config
++ * @direction: whether the data shall go in or out on this slave
++ * channel, right now. DMA_TO_DEVICE and DMA_FROM_DEVICE are
++ * legal values, DMA_BIDIRECTIONAL is not acceptable since we
++ * need to differentiate source and target addresses.
++ * @src_addr: this is the physical address where DMA slave data
++ * should be read (RX), if the source is memory this argument is
++ * ignored.
++ * @dst_addr: this is the physical address where DMA slave data
++ * should be written (TX), if the source is memory this argument
++ * is ignored.
++ * @src_addr_width: this is the width in bytes of the source (RX)
++ * register where DMA data shall be read. If the source
++ * is memory this may be ignored depending on architecture.
++ * Legal values: 1, 2, 4, 8.
++ * @dst_addr_width: same as src_addr_width but for destination
++ * target (TX) mutatis mutandis.
++ * @src_maxburst: the maximum number of words (note: words, as in
++ * units of the src_addr_width member, not bytes) that can be sent
++ * in one burst to the device. Typically something like half the
++ * FIFO depth on I/O peripherals so you don't overflow it. This
++ * may or may not be applicable on memory sources.
++ * @dst_maxburst: same as src_maxburst but for destination target
++ * mutatis mutandis.
++ *
++ * This struct is passed in as configuration data to a DMA engine
++ * in order to set up a certain channel for DMA transport at runtime.
++ * The DMA device/engine has to provide support for an additional
++ * command in the channel config interface, DMA_SLAVE_CONFIG
++ * and this struct will then be passed in as an argument to the
++ * DMA engine device_control() function.
++ *
++ * The rationale for adding configuration information to this struct
++ * is as follows: if it is likely that most DMA slave controllers in
++ * the world will support the configuration option, then make it
++ * generic. If not: if it is fixed so that it be sent in static from
++ * the platform data, then prefer to do that. Else, if it is neither
++ * fixed at runtime, nor generic enough (such as bus mastership on
++ * some CPU family and whatnot) then create a custom slave config
++ * struct and pass that, then make this config a member of that
++ * struct, if applicable.
++ */
++struct dma_slave_config {
++	enum dma_data_direction direction;
++	dma_addr_t src_addr;
++	dma_addr_t dst_addr;
++	enum dma_slave_buswidth src_addr_width;
++	enum dma_slave_buswidth dst_addr_width;
++	u32 src_maxburst;
++	u32 dst_maxburst;
++};
++
+ static inline const char *dma_chan_name(struct dma_chan *chan)
+ {
+ 	return dev_name(&chan->dev->device);
 -- 
-1.7.0.4
+1.6.3.3
 
