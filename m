@@ -1,36 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab0HDKXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 06:23:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25560 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351Ab0HDKXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 06:23:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100802112014.481889344@szeredi.hu>
-References: <20100802112014.481889344@szeredi.hu> <20100802111955.025275647@szeredi.hu>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] cachefiles: use path_get instead of lone dget
-Date: Wed, 04 Aug 2010 11:23:08 +0100
-Message-ID: <24288.1280917388@redhat.com>
+	id S1757020Ab0HDKYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 06:24:33 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42990 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0HDKYb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 06:24:31 -0400
+Subject: Re: A question of perf NMI handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+In-Reply-To: <20100804100116.GH26154@erda.amd.com>
+References: <1280913670.20797.179.camel@minggr.sh.intel.com>
+	 <20100804100116.GH26154@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 04 Aug 2010 12:24:18 +0200
+Message-ID: <1280917458.1923.937.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Wed, 2010-08-04 at 12:01 +0200, Robert Richter wrote:
+> To ensure that all other nmi handlers are
+> called, the perfctr's nmi handler must have the lowest priority. Then,
+> the handler will be the last in the chain. 
 
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Dentry references should not be acquired without a corresponding
-> vfsmount ref.
-> 
-> CC: David Howells <dhowells@redhat.com>
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-
-Acked-by: David Howells <dhowells@redhat.com>
+Well, unless another NMI handler has the exact same issue and also
+starts eating all NMIs, just in case.
