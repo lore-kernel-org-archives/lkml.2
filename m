@@ -1,117 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758357Ab0HDSUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:20:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55373 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757937Ab0HDSUa (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 4 Aug 2010 14:20:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: alex.williamson@redhat.com, Weidong Han <weidong.han@intel.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 11/20] xen: fix shared irq device passthrough
-Date: Wed,  4 Aug 2010 14:19:06 -0400
-Message-Id: <1280945955-14229-12-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
-References: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C59AF5F.0080:SCFMA4539814,ss=1,fgs=0
+	id S1758566Ab0HDSXX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:23:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60316 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932643Ab0HDSXG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 14:23:06 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Jens Axboe <axboe@kernel.dk>,
+        Karel Zak <kzak@redhat.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Will Drewry <wad@chromium.org>
+Subject: [PATCH v3 3/3] init: add support for root devices specified by partition UUID
+Date: Wed,  4 Aug 2010 13:22:06 -0500
+Message-Id: <1280946126-19587-3-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com>
+References: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Weidong Han <weidong.han@intel.com>
+This is the third patch in a series which adds support for
+storing partition metadata, optionally, off of the hd_struct.
 
-In driver/xen/events.c, whether bind_pirq is shareable or not is
-determined by desc->action is NULL or not. But in __setup_irq,
-startup(irq) is invoked before desc->action is assigned with
-new action. So desc->action in startup_irq is always NULL, and
-bind_pirq is always not shareable. This results in pt_irq_create_bind
-failure when passthrough a device which shares irq to other devices.
+One major use for that data is being able to resolve partition
+by other identities than just the index on a block device.  Device
+enumeration varies by platform and there's a benefit to being able
+to use something like EFI GPT's GUIDs to determine the correct
+block device and partition to mount as the root.
 
-This patch doesn't use probing_irq to determine if pirq is shareable
-or not, instead set shareable flag in irq_info according to trigger
-mode in xen_allocate_pirq. Set level triggered interrupts shareable.
-Thus use this flag to set bind_pirq flag accordingly.
+This change adds that support to root= by adding support for
+the following syntax:
 
-[v2: arch/x86/xen/pci.c no more, so file skipped]
+  root=PARTUUID=hex-uuid
 
-Signed-off-by: Weidong Han <weidong.han@intel.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Will Drewry <wad@chromium.org>
+
+v2: added to patch series
+v3: adds uuids to printk_all_partitions
+    simplifies matching to a uniform uuid packed format (big endian)
 ---
- drivers/xen/events.c |   11 ++++++++---
- include/xen/events.h |    2 +-
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ block/genhd.c    |    9 +++++-
+ init/do_mounts.c |   66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 9d85707..78c1525 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -92,6 +92,7 @@ struct irq_info
- 	} u;
- };
- #define PIRQ_NEEDS_EOI	(1 << 0)
-+#define PIRQ_SHAREABLE	(1 << 1)
+diff --git a/block/genhd.c b/block/genhd.c
+index c8da120..5c9c503 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -642,6 +642,7 @@ void __init printk_all_partitions(void)
+ 		struct hd_struct *part;
+ 		char name_buf[BDEVNAME_SIZE];
+ 		char devt_buf[BDEVT_SIZE];
++		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
  
- static struct irq_info *irq_info;
+ 		/*
+ 		 * Don't show empty devices or things that have been
+@@ -660,10 +661,14 @@ void __init printk_all_partitions(void)
+ 		while ((part = disk_part_iter_next(&piter))) {
+ 			bool is_part0 = part == &disk->part0;
  
-@@ -431,6 +432,7 @@ static unsigned int startup_pirq(unsigned int irq)
- 	struct evtchn_bind_pirq bind_pirq;
- 	struct irq_info *info = info_for_irq(irq);
- 	int evtchn = evtchn_from_irq(irq);
-+	int rc;
+-			printk("%s%s %10llu %s", is_part0 ? "" : "  ",
++			uuid[0] = 0;
++			if (part->info)
++				part_unpack_uuid(part->info->uuid, uuid);
++
++			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
+ 			       bdevt_str(part_devt(part), devt_buf),
+ 			       (unsigned long long)part->nr_sects >> 1,
+-			       disk_name(disk, part->partno, name_buf));
++			       disk_name(disk, part->partno, name_buf), uuid);
+ 			if (is_part0) {
+ 				if (disk->driverfs_dev != NULL &&
+ 				    disk->driverfs_dev->driver != NULL)
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 02e3ca4..804f9c6 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -58,6 +58,60 @@ static int __init readwrite(char *str)
+ __setup("ro", readonly);
+ __setup("rw", readwrite);
  
- 	BUG_ON(info->type != IRQT_PIRQ);
++/**
++ * match_dev_by_uuid - callback for finding a partition using its uuid
++ * @dev:	device passed in by the caller
++ * @data:	opaque pointer to a 36 byte char array with a UUID
++ *
++ * Returns 1 if the device matches, and 0 otherwise.
++ */
++static int __init match_dev_by_uuid(struct device *dev, void *data)
++{
++	u8 *uuid = data;
++	struct hd_struct *part = dev_to_part(dev);
++
++	if (!part->info)
++		goto no_match;
++
++	if (memcmp(uuid, part->info->uuid, sizeof(part->info->uuid)))
++			goto no_match;
++
++	return 1;
++no_match:
++	return 0;
++}
++
++
++/**
++ * devt_from_partuuid - looks up the dev_t of a partition by its UUID
++ * @uuid:	36 byte char array containing a hex ascii UUID
++ *
++ * The function will return the first partition which contains a matching
++ * UUID value in its partition_meta_info struct.  This does not search
++ * by filesystem UUIDs.
++ *
++ * Returns the matching dev_t on success or 0 on failure.
++ */
++static dev_t __init devt_from_partuuid(char *uuid_str)
++{
++	dev_t res = 0;
++	struct device *dev = NULL;
++	u8 uuid[16];
++
++	/* Pack the requested UUID in the expected format. */
++	part_pack_uuid(uuid_str, uuid);
++
++	dev = class_find_device(&block_class, NULL, uuid, &match_dev_by_uuid);
++	if (!dev)
++		goto done;
++
++	res = dev->devt;
++	put_device(dev);
++
++done:
++	return res;
++}
++
+ /*
+  *	Convert a name into device number.  We accept the following variants:
+  *
+@@ -68,6 +122,8 @@ __setup("rw", readwrite);
+  *         of partition - device number of disk plus the partition number
+  *	5) /dev/<disk_name>p<decimal> - same as the above, that form is
+  *	   used when disk name of partitioned disk ends on a digit.
++ *	6) PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF representing the
++ *	   unique id of a partition if the partition table provides it.
+  *
+  *	If name doesn't have fall into the categories above, we return (0,0).
+  *	block_class is used to check if something is a disk name. If the disk
+@@ -82,6 +138,16 @@ dev_t name_to_dev_t(char *name)
+ 	dev_t res = 0;
+ 	int part;
  
-@@ -439,8 +441,10 @@ static unsigned int startup_pirq(unsigned int irq)
++	if (strncmp(name, "PARTUUID=", 9) == 0) {
++		name += 9;
++		if (strlen(name) != 36)
++			goto fail;
++		res = devt_from_partuuid(name);
++		if (!res)
++			goto fail;
++		goto done;
++	}
++
+ 	if (strncmp(name, "/dev/", 5) != 0) {
+ 		unsigned maj, min;
  
- 	bind_pirq.pirq = irq;
- 	/* NB. We are happy to share unless we are probing. */
--	bind_pirq.flags = probing_irq(irq) ? 0 : BIND_PIRQ__WILL_SHARE;
--	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq) != 0) {
-+	bind_pirq.flags = info->u.pirq.flags & PIRQ_SHAREABLE ?
-+					BIND_PIRQ__WILL_SHARE : 0;
-+	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
-+	if (rc != 0) {
- 		if (!probing_irq(irq))
- 			printk(KERN_INFO "Failed to obtain physical IRQ %d\n",
- 			       irq);
-@@ -543,7 +547,7 @@ static int find_irq_by_gsi(unsigned gsi)
-  * event channel until the irq actually started up.  Return an
-  * existing irq if we've already got one for the gsi.
-  */
--int xen_allocate_pirq(unsigned gsi, char *name)
-+int xen_allocate_pirq(unsigned gsi, int shareable, char *name)
- {
- 	int irq;
- 	struct physdev_irq irq_op;
-@@ -575,6 +579,7 @@ int xen_allocate_pirq(unsigned gsi, char *name)
- 	}
- 
- 	irq_info[irq] = mk_pirq_info(0, gsi, irq_op.vector);
-+	irq_info[irq].u.pirq.flags |= shareable ? PIRQ_SHAREABLE : 0;
- 
- out:
- 	spin_unlock(&irq_mapping_update_lock);
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 91143b4..20e27c3 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -63,7 +63,7 @@ unsigned irq_from_evtchn(unsigned int evtchn);
- /* Allocate an irq for a physical interrupt, given a gsi.  "Legacy"
-    GSIs are identity mapped; others are dynamically allocated as
-    usual. */
--int xen_allocate_pirq(unsigned gsi, char *name);
-+int xen_allocate_pirq(unsigned gsi, int shareable, char *name);
- 
- /* Return vector allocated to pirq */
- int xen_vector_from_irq(unsigned pirq);
 -- 
-1.7.0.1
+1.7.0.4
 
