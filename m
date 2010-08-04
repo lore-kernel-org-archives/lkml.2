@@ -1,50 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab0HDPrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:47:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36960 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab0HDPrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:47:17 -0400
-Date: Wed, 4 Aug 2010 17:44:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>, Roland McGrath <roland@redhat.com>
-Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner
-	comment
-Message-ID: <20100804154412.GA8822@redhat.com>
-References: <20100804150805.GA5634@redhat.com> <20100804131749.GA2139@redhat.com> <20100729114549.29508.44899.stgit@warthog.procyon.org.uk> <20100729114555.29508.4525.stgit@warthog.procyon.org.uk> <20100802204000.GH2405@linux.vnet.ibm.com> <201008030055.o730tgXK091413@www262.sakura.ne.jp> <30552.1280828047@redhat.com> <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com> <23577.1280930470@redhat.com> <25284.1280935357@redhat.com>
+	id S1754815Ab0HDPsG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 11:48:06 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:37818 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab0HDPsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 11:48:04 -0400
+Date: Wed, 4 Aug 2010 18:46:38 +0300
+From: Alexander Shishkin <virtuoso@slind.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: lkml@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Alexander Shishkin <virtuoso@slind.org>
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+Message-ID: <20100804154638.GB28519@shisha.kicks-ass.net>
+Mail-Followup-To: "Kirill A. Shutemov" <kirill@shutemov.name>,
+	lkml@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+	John Stultz <johnstul@us.ibm.com>,
+	Martin Schwidefsky <schwidefsky@de.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+	linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+ <20100804153221.GA29109@shutemov.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <25284.1280935357@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100804153221.GA29109@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04, David Howells wrote:
->
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > > > I must admit, at first glance changing check_kill_permission() to take
-> > > > rcu lock looks better to me.
-> > >
-> > > I think group_send_sig_info() would be better.  The only other caller of
-> > > c_k_p() already has to hold the RCU read lock for other reasons.
-> > >
-> > > How about the attached patch then?
-> >
-> > Agreed, the patch looks fine to me.
->
-> Can I take that as an Acked-by?
+On Wed, Aug 04, 2010 at 06:32:21 +0300, Kirill A. Shutemov wrote:
+> On Wed, Aug 04, 2010 at 03:48:28PM +0300, Alexander Shishkin wrote:
+> > Certain userspace applications (like "clock" desktop applets or ntpd) might
+> > want to be notified when some other application changes the system time. It
+> > might also be important for an application to be able to distinguish between
+> > its own and somebody else's time changes.
+> > 
+> > This patch implements a notification interface via eventfd mechanism. Proccess
+> > wishing to be notified about time changes should create an eventfd and echo
+> > its file descriptor to /sys/kernel/time_notify. After that, any calls to
+> > settimeofday()/stime()/adjtimex() made by other processes will be signalled
+> > to this eventfd. Credits for suggesting the eventfd mechanism for this
+> > purpose go te Kirill Shutemov.
+> > 
+> > So far, this implementation can only filter out notifications caused by
+> > time change calls made by the process that wrote the eventfd descriptor to
+> > sysfs, but not its children which (might) have inherited the eventfd. It
+> > is so far not clear to me whether this is bad and more confusing than
+> > excluding such children as well.
+> 
+> I think it's a bad idea to filter notifications. Let's leave it for
 
-Yes, thanks, please feel free to add
+Why?
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
+> userspace. Userspace always can check eventfd counter and understand who
+> touch time based on its own activity.
 
+That's another way to approach this, yes. But I can think of scenarios when
+this will complicate userspace implementation. This generally means that the
+"time monitor" application will have to increment some internal counter every
+time it calls settimeofday() and friends. And when some library that it links
+against starts calling one of those functions behind the scenes, it will
+become trickier.
+
+It is also true that you can never be too good to userspace.
+
+> > Similar mechanism can also be used for signalling other (all?) system calls
+> > made by certain (all?) processes without resorting to ptrace (which won't
+> > help if you don't know what processes you'd like to look after), given
+> > proper permission checks etc.
+> > 
+> > Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+> > CC: Kirill A. Shutemov <kirill@shutemov.name>
+> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > CC: John Stultz <johnstul@us.ibm.com>
+> > CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> > CC: Andrew Morton <akpm@linux-foundation.org>
+> > CC: Jon Hunter <jon-hunter@ti.com>
+> > CC: Ingo Molnar <mingo@elte.hu>
+> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > CC: David Howells <dhowells@redhat.com>
+> > CC: Avi Kivity <avi@redhat.com>
+> > CC: "H. Peter Anvin" <hpa@zytor.com>
+> > CC: John Kacur <jkacur@redhat.com>
+> > CC: Alexander Shishkin <virtuoso@slind.org>
+> > CC: linux-kernel@vger.kernel.org
+> > ---
+> >  include/linux/time.h |    7 ++
+> >  init/Kconfig         |    7 ++
+> >  kernel/Makefile      |    1 +
+> >  kernel/time.c        |   11 +++-
+> >  kernel/time_notify.c |  158 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  5 files changed, 182 insertions(+), 2 deletions(-)
+> >  create mode 100644 kernel/time_notify.c
+> > 
+> > diff --git a/include/linux/time.h b/include/linux/time.h
+> > index ea3559f..9fca62b 100644
+> > --- a/include/linux/time.h
+> > +++ b/include/linux/time.h
+> > @@ -237,6 +237,13 @@ static __always_inline void timespec_add_ns(struct timespec *a, u64 ns)
+> >  	a->tv_sec += __iter_div_u64_rem(a->tv_nsec + ns, NSEC_PER_SEC, &ns);
+> >  	a->tv_nsec = ns;
+> >  }
+> > +
+> > +#ifdef CONFIG_TIME_NOTIFY
+> > +void time_notify_all(void);
+> > +#else
+> > +#define time_notify_all() do {} while (0)
+> > +#endif
+> > +
+> >  #endif /* __KERNEL__ */
+> >  
+> >  #define NFDBITS			__NFDBITS
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 5cff9a9..f7271f8 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -976,6 +976,13 @@ config PERF_USE_VMALLOC
+> >  	help
+> >  	  See tools/perf/design.txt for details
+> >  
+> > +config TIME_NOTIFY
+> > +	bool
+> > +	depends on EVENTFD
+> > +	help
+> > +	  Enable time change notification events to userspace via
+> > +	  eventfd.
+> > +
+> 
+> Do we really need config option? I think better just use
+> CONFIG_EVENTFD.
+
+This is quite obscure. If anything, it's better to get rid of CONFIG_EVENTFD
+and always unconditionally compile it in, while this functionality (time_notify)
+may well be optional.
+
+Regards,
+--
+Alex
