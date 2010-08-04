@@ -1,86 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab0HDWAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 18:00:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755263Ab0HDWAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 18:00:04 -0400
-Date: Wed, 4 Aug 2010 17:59:43 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Ian Kent <raven@themaw.net>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 21/38] union-mount: Support for mounting union mount file systems
-Message-ID: <20100804215943.GA29353@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-22-git-send-email-vaurora@redhat.com> <20100713044701.GF3949@zeus.themaw.net> <20100716210226.GD21201@shell> <1279595537.2979.10.camel@localhost>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279595537.2979.10.camel@localhost>
-User-Agent: Mutt/1.4.2.2i
+	id S1756438Ab0HDWBW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 18:01:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38270 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab0HDWBP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 18:01:15 -0400
+Message-ID: <4C59E30A.4000004@kernel.org>
+Date: Wed, 04 Aug 2010 15:00:42 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Len Brown <lenb@kernel.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: [PATCH 2/2] x86: remove early_init_lapic_mapping
+References: <201008031028.57263.tvrtko.ursulin@sophos.com>	<20100804093623.GE10499@redhat.com> <m1fwyuacjs.fsf@fess.ebiederm.org>	<201008041146.56406.tvrtko.ursulin@sophos.com> <m1eiee86jg.fsf_-_@fess.ebiederm.org> <4C59E2A1.4060203@kernel.org>
+In-Reply-To: <4C59E2A1.4060203@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C59E31B.0219,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 11:12:17AM +0800, Ian Kent wrote:
-> On Fri, 2010-07-16 at 17:02 -0400, Valerie Aurora wrote:
-> > On Tue, Jul 13, 2010 at 12:47:02PM +0800, Ian Kent wrote:
-> > > On Tue, Jun 15, 2010 at 11:39:51AM -0700, Valerie Aurora wrote:
-> > > > +
-> > > > +static int
-> > > > +check_mnt_union(struct path *mntpnt, struct vfsmount *topmost_mnt, int mnt_flags)
-> > > > +{
-> > > > +	struct vfsmount *lower_mnt = mntpnt->mnt;
-> > > > +
-> > > > +	if (!(mnt_flags & MNT_UNION))
-> > > > +		return 0;
-> > > > +
-> > > > +#ifndef CONFIG_UNION_MOUNT
-> > > > +	return -EINVAL;
-> > > > +#endif
-> > > > +	if (!(lower_mnt->mnt_sb->s_flags & MS_RDONLY))
-> > > > +		return -EBUSY;
-> > > > +
-> > > > +	if (!list_empty(&lower_mnt->mnt_mounts))
-> > > > +		return -EBUSY;
-> > > > +
-> > > > +	if (!IS_ROOT(mntpnt->dentry))
-> > > > +		return -EINVAL;
-> > > > +
-> > > > +	if (mnt_flags & MNT_READONLY)
-> > > > +		return -EROFS;
-> > > > +
-> > > > +	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT))
-> > > > +		return -EINVAL;
-> > > > +
-> > > 
-> > > Is there a need to check fallthru, umm ... that probably doesn't
-> > > apply for the ROOT(), right?
-> > 
-> > Actually, that's on my todo list - right now I'm assuming MS_WHITEOUT
-> > implies fallthru support as well.  But it doesn't.
-> > 
-> > We're a little short on MS_* flags.  I'm thinking of just checking
-> > ->whiteout and ->fallthru for non-NULL on the root dir and getting rid
-> > of MS_WHITEOUT entirely.  Thoughts?
-> 
-> Checking for the methods is a good idea I think, since they are assumed
-> to be present by the code, at least in some places.
-> 
-> Although it shouldn't happen, it is possible for a file system to create
-> the root dentry with these methods defined but other dentrys without
-> them defined, so a file system implementation error could cause some
-> unpleasant crashes. Maybe requiring the flags to indicate support would
-> help avoid unpleasant implementation problems like this, not sure
-> really. 
-> 
-> Also not sure if a method existence check should always be made prior to
-> use, regardless.
 
-I went for MS_WHITEOUT and MS_FALLTHRU, and added the checks for the
-ops being non-null.
+It is almost the same as smp_register_lapic_addr()
 
--VAL
+Just need to make smp_read_mpc() call smp_register_lapic_addr when early==1.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/include/asm/apic.h |    1 -
+ arch/x86/kernel/apic/apic.c |   24 ++----------------------
+ arch/x86/kernel/mpparse.c   |    8 ++------
+ arch/x86/mm/k8topology_64.c |    1 -
+ 4 files changed, 4 insertions(+), 30 deletions(-)
+
+Index: linux-2.6/arch/x86/mm/k8topology_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/k8topology_64.c
++++ linux-2.6/arch/x86/mm/k8topology_64.c
+@@ -64,7 +64,6 @@ static __init void early_get_boot_cpu_id
+ 	if (smp_found_config)
+ 		early_get_smp_config();
+ #endif
+-	early_init_lapic_mapping();
+ }
+ 
+ int __init k8_get_nodes(struct bootnode *physnodes)
+Index: linux-2.6/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/apic.c
++++ linux-2.6/arch/x86/kernel/apic/apic.c
+@@ -1560,28 +1560,6 @@ no_apic:
+ }
+ #endif
+ 
+-#ifdef CONFIG_X86_64
+-void __init early_init_lapic_mapping(void)
+-{
+-	/*
+-	 * If no local APIC can be found then go out
+-	 * : it means there is no mpatable and MADT
+-	 */
+-	if (!smp_found_config)
+-		return;
+-
+-	set_fixmap_nocache(FIX_APIC_BASE, mp_lapic_addr);
+-	apic_printk(APIC_VERBOSE, "mapped APIC to %16lx (%16lx)\n",
+-		    APIC_BASE, mp_lapic_addr);
+-
+-	/*
+-	 * Fetch the APIC ID of the BSP in case we have a
+-	 * default configuration (or the MP table is broken).
+-	 */
+-	boot_cpu_physical_apicid = read_apic_id();
+-}
+-#endif
+-
+ /**
+  * init_apic_mappings - initialize APIC mappings
+  */
+@@ -1637,6 +1615,8 @@ void __init smp_register_lapic_address(u
+ 	mp_lapic_addr = address;
+ 
+ 	set_fixmap_nocache(FIX_APIC_BASE, address);
++	apic_printk(APIC_VERBOSE, "mapped APIC to %16lx (%16lx)\n",
++		    APIC_BASE, mp_lapic_addr);
+ 	if (boot_cpu_physical_apicid == -1U) {
+ 		boot_cpu_physical_apicid  = read_apic_id();
+ 		apic_version[boot_cpu_physical_apicid] =
+Index: linux-2.6/arch/x86/kernel/mpparse.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/mpparse.c
++++ linux-2.6/arch/x86/kernel/mpparse.c
+@@ -288,17 +288,13 @@ static int __init smp_read_mpc(struct mp
+ #ifdef CONFIG_X86_32
+ 	generic_mps_oem_check(mpc, oem, str);
+ #endif
+-	/* save the local APIC address, it might be non-default */
++	/* Initialize the lapic mapping */
+ 	if (!acpi_lapic)
+-		mp_lapic_addr = mpc->lapic;
++		smp_register_lapic_address(mpc->lapic);
+ 
+ 	if (early)
+ 		return 1;
+ 
+-	/* Initialize the lapic mapping */
+-	if (!acpi_lapic)
+-		smp_register_lapic_address(mpc->lapic);
+-
+ 	if (mpc->oemptr)
+ 		x86_init.mpparse.smp_read_mpc_oem(mpc);
+ 
+Index: linux-2.6/arch/x86/include/asm/apic.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/apic.h
++++ linux-2.6/arch/x86/include/asm/apic.h
+@@ -244,7 +244,6 @@ extern void enable_NMI_through_LVT0(void
+  * On 32bit this is mach-xxx local
+  */
+ #ifdef CONFIG_X86_64
+-extern void early_init_lapic_mapping(void);
+ extern int apic_is_clustered_box(void);
+ #else
+ static inline int apic_is_clustered_box(void)
