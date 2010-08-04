@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab0HDBlA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 21:41:00 -0400
-Received: from tuxonice.net ([74.207.252.127]:52937 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757967Ab0HDBk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 21:40:58 -0400
-X-Bogosity: Ham, spamicity=0.000137
-Message-ID: <4C58C528.4000606@tuxonice.net>
-Date: Wed, 04 Aug 2010 11:40:56 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        pm list <linux-pm@lists.linux-foundation.org>
-Subject: 2.6.35 Regression: Ages spent discarding blocks that weren't used!
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1758074Ab0HDBnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 21:43:35 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51553 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757967Ab0HDBne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 21:43:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=iSdFzg3HMeDbfAQgr6JD78SnyMANw1kJrEo3ci/xTVdhLcw02gunwQU9frCPkLN/uV
+         3EJpOZ/wAcYfKHgAf+j8ij3K6KdMJ+624ImCDMh+8ZyAUYafkh+A8DDNux+tuzYsI77R
+         D6BB/ws020S612dV4lLNOjQlcbkyx7EVsxSzs=
+Subject: [PATCH] wm8994-core: fix wm8994_device_init() return value
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain
+Date: Wed, 04 Aug 2010 09:44:47 +0800
+Message-Id: <1280886287.31990.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all.
+wm8994_device_init() will return 0 in the case of kzalloc fail
+in current implementation.
+This patch fixes the return value.
 
-I've just given hibernation a go under 2.6.35, and at first I thought 
-there was some sort of hang in freezing processes. The computer sat 
-there for aaaaaages, apparently doing nothing. Switched from TuxOnIce to 
-swsusp to see if it was specific to my code but no - the problem was 
-there too. I used the nifty new kdb support to get a backtrace, which was:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/wm8994-core.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-get_swap_page_of_type
-discard_swap_cluster
-blk_dev_issue_discard
-wait_for_completion
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index ec71c93..69533f5 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -326,8 +326,10 @@ static int wm8994_device_init(struct wm8994 *wm8994, unsigned long id, int irq)
+ 	wm8994->supplies = kzalloc(sizeof(struct regulator_bulk_data) *
+ 				   ARRAY_SIZE(wm8994_main_supplies),
+ 				   GFP_KERNEL);
+-	if (!wm8994->supplies)
++	if (!wm8994->supplies) {
++		ret = -ENOMEM;
+ 		goto err;
++	}
+ 
+ 	for (i = 0; i < ARRAY_SIZE(wm8994_main_supplies); i++)
+ 		wm8994->supplies[i].supply = wm8994_main_supplies[i];
+-- 
+1.5.4.3
 
-Adding a printk in discard swap cluster gives the following:
 
-[   46.758330] Discarding 256 pages from bdev 800003 beginning at page 
-640377.
-[   47.003363] Discarding 256 pages from bdev 800003 beginning at page 
-640633.
-[   47.246514] Discarding 256 pages from bdev 800003 beginning at page 
-640889.
 
-...
-
-[  221.877465] Discarding 256 pages from bdev 800003 beginning at page 
-826745.
-[  222.121284] Discarding 256 pages from bdev 800003 beginning at page 
-827001.
-[  222.365908] Discarding 256 pages from bdev 800003 beginning at page 
-827257.
-[  222.610311] Discarding 256 pages from bdev 800003 beginning at page 
-827513.
-
-So allocating 4GB of swap on my SSD now takes 176 seconds instead of 
-virtually no time at all. (This code is completely unchanged from 2.6.34).
-
-I have a couple of questions:
-
-1) As far as I can see, there haven't been any changes in mm/swapfile.c 
-that would cause this slowdown, so something in the block layer has 
-(from my point of view) regressed. Is this a known issue?
-
-2) Why are we calling discard_swap_cluster anyway? The swap was unused 
-and we're allocating it. I could understand calling it when freeing 
-swap, but when allocating?
-
-Regards,
-
-Nigel
