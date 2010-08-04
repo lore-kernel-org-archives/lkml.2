@@ -1,68 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab0HDQjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 12:39:36 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:65380 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527Ab0HDQje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 12:39:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=SA8f+yde1rBLajjcQjZdg6IjD8BRovUZoUn9GibUYooGOv728PrB5s7nwZstWUxg+e
-         adzIHzxptqggQxeLDj5uhn4pFbfREL/2f1SbgygkAI7OERAzwhlct0iUVQ7C1lNbvYOR
-         GOItAMTOIqMNRqf9kiAerrb+J6/+uildi+A2k=
-Date: Wed, 4 Aug 2010 20:39:30 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: A question of perf NMI handler
-Message-ID: <20100804163930.GE5130@lenovo>
-References: <1280913670.20797.179.camel@minggr.sh.intel.com> <20100804100116.GH26154@erda.amd.com> <20100804140021.GN3353@redhat.com> <1280931093.1923.1194.camel@laptop> <20100804145203.GP3353@redhat.com> <1280934161.1923.1294.camel@laptop> <20100804151858.GB5130@lenovo> <20100804155002.GS3353@redhat.com> <20100804161046.GC5130@lenovo> <20100804162026.GU3353@redhat.com>
+	id S1756882Ab0HDQm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 12:42:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42390 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756813Ab0HDQm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 12:42:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,316,1278313200"; 
+   d="scan'208";a="824691066"
+Date: Thu, 5 Aug 2010 00:41:59 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] writeback: avoid unnecessary calculation of bdi
+ dirty thresholds
+Message-ID: <20100804164159.GA22189@localhost>
+References: <20100711020656.340075560@intel.com>
+ <20100711021748.879183413@intel.com>
+ <1280847822.1923.597.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100804162026.GU3353@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1280847822.1923.597.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 12:20:26PM -0400, Don Zickus wrote:
-...
-> > > 
-> > > Because the reason registers are never set.  If they were, then the code
-> > > wouldn't have to walk the notify_chain. :-)
-> > > 
-> > 
-> > maybe we're talking about different things. i meant that if there is nmi
-> > with a reason (from 0x61) the handling of such nmi should be done before
-> > notify_die I think (if only I not miss something behind).
+On Tue, Aug 03, 2010 at 11:03:42PM +0800, Peter Zijlstra wrote:
+> On Sun, 2010-07-11 at 10:06 +0800, Wu Fengguang wrote:
+> > plain text document attachment (writeback-less-bdi-calc.patch)
+> > Split get_dirty_limits() into global_dirty_limits()+bdi_dirty_limit(),
+> > so that the latter can be avoided when under global dirty background
+> > threshold (which is the normal state for most systems).
 > 
-> No we are talking about the same thing. :-)  And that code is already
-
-seems not actually ;)
-
-> there.  The problem is the bits in register 0x61 are not always set
-> correctly in the case of SERRs (well at least in all the cases I have
-> dealt with).  So you can easily can a flood of unknown nmis from an SERR
-> and register 0x61 would have the PERR/SERR bits set to 0.  Fun, huh?
-
-if there is nothing in nmi_sc the code flows into another branch. And
-it hits the problem of perf events eating all nmi giving no chance the
-others. So we take if (!(reason & 0xc0)) case and hit DIE_NMI_IPI
-(/me scratching the head why it's not under CONFIG_X86_LOCAL_APIC) and
-drop all code, unpleasant.
-
+> The patch looks OK, although esp with the proposed comments in the
+> follow up email, bdi_dirty_limit() gets a bit confusing wrt to how and
+> what the limit is.
 > 
-> Cheers,
-> Don
+> Maybe its clearer to not call task_dirty_limit() from bdi_dirty_limit(),
+> that way the comment can focus on the device write request completion
+> proportion thing.
+
+Done, thanks.
+
+> > +unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+> > +			       unsigned long dirty)
+> > +{
+> > +	u64 bdi_dirty;
+> > +	long numerator, denominator;
+> >  
+> > +	/*
+> > +	 * Calculate this BDI's share of the dirty ratio.
+> > +	 */
+> > +	bdi_writeout_fraction(bdi, &numerator, &denominator);
+> >  
+> > +	bdi_dirty = (dirty * (100 - bdi_min_ratio)) / 100;
+> > +	bdi_dirty *= numerator;
+> > +	do_div(bdi_dirty, denominator);
+> >  
+> > +	bdi_dirty += (dirty * bdi->min_ratio) / 100;
+> > +	if (bdi_dirty > (dirty * bdi->max_ratio) / 100)
+> > +		bdi_dirty = dirty * bdi->max_ratio / 100;
+> > +
+>   +       return bdi_dirty;
+> >  }
 > 
-	-- Cyrill
+> And then add the call to task_dirty_limit() here:
+
+Done. I omitted adding task_dirty_limit() to the bdi_dirty_limit()
+inside bdi_debug_stats_show() -- looks unnecessary there.
+
+> > +++ linux-next/mm/backing-dev.c	2010-07-11 08:53:44.000000000 +0800
+> > @@ -83,7 +83,8 @@ static int bdi_debug_stats_show(struct s
+> >  		nr_more_io++;
+> >  	spin_unlock(&inode_lock);
+> >  
+> > -	get_dirty_limits(&background_thresh, &dirty_thresh, &bdi_thresh, bdi);
+> > +	global_dirty_limits(&background_thresh, &dirty_thresh);
+> > +	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
+>   +       bdi_thresh = task_dirty_limit(current, bdi_thresh);
+> 
+> And add a comment to task_dirty_limit() as well, explaining its reason
+> for existence (protecting light/slow dirtying tasks from heavier/fast
+> ones).
+
+Comments updated as below. Any suggestions/corrections?
+
+Thanks,
+Fengguang
+
+Subject: writeback: add comment to the dirty limits functions
+From: Wu Fengguang <fengguang.wu@intel.com>
+Date: Thu Jul 15 09:54:25 CST 2010
+
+Document global_dirty_limits(), bdi_dirty_limit() and task_dirty_limit().
+
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   31 ++++++++++++++++++++++++++++---
+ 1 file changed, 28 insertions(+), 3 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-08-03 23:14:19.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-08-05 00:37:17.000000000 +0800
+@@ -261,11 +261,18 @@ static inline void task_dirties_fraction
+ }
+ 
+ /*
+- * scale the dirty limit
++ * task_dirty_limit - scale down dirty throttling threshold for one task
+  *
+  * task specific dirty limit:
+  *
+  *   dirty -= (dirty/8) * p_{t}
++ *
++ * To protect light/slow dirtying tasks from heavier/fast ones, we start
++ * throttling individual tasks before reaching the bdi dirty limit.
++ * Relatively low thresholds will be allocated to heavy dirtiers. So when
++ * dirty pages grow large, heavy dirtiers will be throttled first, which will
++ * effectively curb the growth of dirty pages. Light dirtiers with high enough
++ * dirty threshold may never get throttled.
+  */
+ static unsigned long task_dirty_limit(struct task_struct *tsk,
+ 				       unsigned long bdi_dirty)
+@@ -390,6 +397,15 @@ unsigned long determine_dirtyable_memory
+ 	return x + 1;	/* Ensure that we never return 0 */
+ }
+ 
++/**
++ * global_dirty_limits - background-writeback and dirty-throttling thresholds
++ *
++ * Calculate the dirty thresholds based on sysctl parameters
++ * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
++ * - vm.dirty_ratio             or  vm.dirty_bytes
++ * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
++ * runtime tasks.
++ */
+ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ {
+ 	unsigned long background;
+@@ -424,8 +440,17 @@ void global_dirty_limits(unsigned long *
+ 	*pdirty = dirty;
+ }
+ 
+-unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+-			       unsigned long dirty)
++/**
++ * bdi_dirty_limit - @bdi's share of dirty throttling threshold
++ *
++ * Allocate high/low dirty limits to fast/slow devices, in order to prevent
++ * - starving fast devices
++ * - piling up dirty pages (that will take long time to sync) on slow devices
++ *
++ * The bdi's share of dirty limit will be adapting to its throughput and
++ * bounded by the bdi->min_ratio and/or bdi->max_ratio parameters, if set.
++ */
++unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+ {
+ 	u64 bdi_dirty;
+ 	long numerator, denominator;
