@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134Ab0HDXE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:04:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36601 "EHLO mx1.redhat.com"
+	id S933146Ab0HDXFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:05:16 -0400
+Received: from mail.lang.hm ([64.81.33.126]:54458 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757602Ab0HDXEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:04:54 -0400
-Date: Wed, 4 Aug 2010 19:04:22 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-Message-ID: <20100804230421.GC29353@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+	id S933113Ab0HDXFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 19:05:10 -0400
+Date: Wed, 4 Aug 2010 16:04:18 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-pm@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <201008042231.51901.rjw@sisk.pl>
+Message-ID: <alpine.DEB.2.00.1008041600060.6545@asgard.lang.hm>
+References: <20100801210548.23f77ff6@infradead.org> <201008041347.25595.rjw@sisk.pl> <alpine.DEB.2.00.1008041130550.6545@asgard.lang.hm> <201008042231.51901.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
-> On Tue, 15 Jun 2010, Valerie Aurora wrote:
-> > Add support for fallthru directory entries to ext2.
+On Wed, 4 Aug 2010, Rafael J. Wysocki wrote:
+
+> Subject: Re: Attempted summary of suspend-blockers LKML thread
 > 
-> If a previously used ext2 filesystem with is mounted again then
-> fallthroughs don't appear to work as expected.  Stat returns ENOENT
-> for these entries.
-> 
-> Can't see anything obviously wrong with the code.
-> 
-> > 
-> > XXX What to do for d_ino for fallthrus?  If we return the inode from
-> > the the underlying file system, it comes from a different inode
-> > "namespace" and that will produce spurious matches.  This argues for
-> > implementation of fallthrus as symlinks because they have to allocate
-> > an inode (and inode number) anyway, and we can later reuse it if we
-> > copy the file up.
-> 
-> That's an idea, but I guess it won't make everyone happy since it
-> wastes both disk space and memory.
+> On Wednesday, August 04, 2010, david@lang.hm wrote:
+>> On Wed, 4 Aug 2010, Rafael J. Wysocki wrote:
+>>> In the suspend case, when you have frozen all applications, you can
+>>> sequentially disable all interrupts except for a few selected ("wakeup") ones
+>>> in a safe way.   By disabling them, you ensure that the CPU will only be
+>>> "revived" by a limited set of events and that allows the system to stay
+>>> low-power for extended time intervals.
+>>
+>> the benifit of this will depend on what wakeups you are able to avoid by
+>> putting the hardware to sleep. Depending on the hardware, this may be not
+>> matter that much.
+>
+> That's correct, but evidently it does make a difference with the hardware
+> Android commonly runs on.
 
-Hm, I should probably remove this comment - I've talked over the
-symlink implementation with a few people and it seems like it
-introduces more problems than it solves.
+Ok, but is there a way to put some of this to sleep without involving a 
+full suspend?
 
-> One of the key differentiators for union mounts concept was that it
-> doesn't duplicate inodes and dentries from the layers.  With the
-> directory copyup on lookup that's already partially lost, but that can
-> be justified by the fact that non-directories usually far outnumber
-> directories.
+>> In addition, there are input devices like a touchscreen that could be
+>> disabled even short of a full suspend, as long as there is some way to get
+>> them reactivated.
+>
+> That's correct again, but it doesn't matter too much as far as the difference
+> between "deep idle" and suspend is concerned.  These devices are generally not
+> the interrupt sources that are difficult to shut down safely in the "idle" case.
+>
+>>> To achieve the same result in the "idle" case, you'll need to have a mechanism
+>>> to disable interrupts (except for the "wakeup" ones) avoiding synchronization
+>>> problems (eg. situations in which task A, blocked on a "suspended" device
+>>> access, holds a mutex waited for by task B that needs to run so that we can
+>>> "suspend" another device).  That, however, is a difficult problem.
+>>
+>> I would say that the difficulty of the problem depends on the hardware and
+>> how much userspace interaction is needed. If the kernel can disable the
+>> hardware in the driver (so that it can wake it up again when accessed by
+>> an application) it would seem that this isn't a problem.
+>
+> Well, I guess it's useful to consider the sequence of events in the "idle"
+> case.
+>
+> We first detect that a CPU is idle, so it can be put into a C-state (or
+> equivalent).  It's easy to put that CPU into such a state, but suppose we
+> want to do more and put all devices into low-power states at that point.
+> We have to ensure that there are no devices in the middle of DMA and that
+> the other CPUs are idle (that's kind of easy, but still).  Next, we have to
+> figure out the right ordering in which to put devices into low-power states
+> (that is not trivial, because the tasks that use those devices may depend on
+> each other in various ways).  If we decide to shut down clock source
+> interrupts, we must ensure that the timekeeping will be correct after that and
+> so on.  Moreover, things get ugly if there are shared interrupts.
+>
+> Suspend kind of works around these difficulties by taking the entire user
+> space out of the picture with one big sledgehammer called the freezer,
+> but these problems would have to be actually _solved_ in the "idle" case.
 
-And it solves all the readdir() problems in one go. :)
+I'm not opposed to doing a suspend if the system is idle enough, I'm just 
+questioning if suspend is really that different, or if it can be viewed as 
+yet another low power mode (one that's significantly more expensive to 
+transition in and out of)
 
-> Another idea is to use an internal inode and make all fallthroughs be
-> hard links to that.
-> 
-> I think the same would work for whiteouts as well.  I don't like the
-> fact that whiteouts are invisible even when not mounted as part of a
-> union.
-
-I don't know if this helps, but I just wrote support for removing ext2
-whiteouts and fallthrus using tune2fs and e2fsck.  I think this does
-what people want from a "visible" whiteout feature without adding more
-complexity to the VFS.  It also takes away all consideration of race
-conditions and dentry conversion that happens with online removal of
-whiteouts and fallthrus.
-
-What are your thoughts on what a visible whiteout/fallthru would look
-like?
-
-Thanks,
-
--VAL
+David Lang
