@@ -1,404 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab0HDCzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 22:55:46 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:45630 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758198Ab0HDCwN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 22:52:13 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: rCPI6GIVM1lUb7L3vP5qkV4r4xN18BJC42kgNRVNnnx0lx_
- 3wjZwqJF.WaeZzT.1svJ_9nL9GN79OeKdfd9hSgdBpDuuZBrT9bqRvP9VBWm
- NE_z9G7k7tmlmnEvcmV0Ei3zVrxA7XVd8zc65GxM6cvIhD1_a59NMZ1ylDRB
- kO4pwyiGBuZHnPJFRJkdDS7gWoNuP0PV7bXKIcKuzx29m9YJ8KxTsyn1JHxh
- 2IGyFiu_T3j7ubGS2c8dfV0m4bX3Wl9PfmcrqE.uDCxlRWzhqU8dYYuijFBc
- z5ccHNaC4BMiIC7Pm
-X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20100804024530.196610522@linux.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 03 Aug 2010 21:45:25 -0500
-From: Christoph Lameter <cl@linux-foundation.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q3 11/23] slub: Dynamically size kmalloc cache allocations
-References: <20100804024514.139976032@linux.com>
-Content-Disposition: inline; filename=slub_dynamic_kmem_alloc
+	id S932545Ab0HDCzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 22:55:54 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:60457 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758198Ab0HDCzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Aug 2010 22:55:50 -0400
+Date: Tue, 3 Aug 2010 19:55:39 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ftp.linux.org.uk>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+Message-ID: <20100804025539.GD4138@outflux.net>
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org>
+ <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org>
+ <20100802122421.GA12130@infradead.org>
+ <20100802165936.GV3948@outflux.net>
+ <15424.1280775073@localhost>
+ <20100803165010.GG3948@outflux.net>
+ <78690.1280871500@localhost>
+ <20100803223451.GB4138@outflux.net>
+ <7184.1280887675@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7184.1280887675@localhost>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmalloc caches are statically defined and may take up a lot of space just
-because the sizes of the node array has to be dimensioned for the largest
-node count supported.
+On Tue, Aug 03, 2010 at 10:07:55PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 03 Aug 2010 15:34:51 PDT, Kees Cook said:
+> > On Tue, Aug 03, 2010 at 05:38:20PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> > > The fact that a patch for one case has been used for years doesn't mean
+> > > that it's a well thought out fix for the general case.
+> > 
+> > Well, we clearly disagree on this point. :)
+> 
+> Actually, we do, because you yourself have stated that:
+> 
+> a) It's a patch for one case.
+> b) It's been around for 15 years.
+> c) It doesn't even try to address the general case.
+> 
+> So Yama is a special case that after years still doesn't cover the genera case
+> :)
 
-This patch makes the size of the kmem_cache structure dynamic throughout by
-creating a kmem_cache slab cache for the kmem_cache objects. The bootstrap
-occurs by allocating the initial one or two kmem_cache objects from the
-page allocator.
+Well, Yama is just an LSM. The symlink/hardlink thing has been around
+forever and does sufficiently solve the general symlink race flaw. But,
+whatever, we disagree about this.
 
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+> > This is the basis of our disagreement. Fixing it does do people a favor. At
+> > the very least, it does me a favor because now I don't have to publish
+> > security updates for an entire class of vulnerability.
+> 
+> Umm.. Tell you what.  I'll give you a chance to pretend you didn't
+> send that from a vendor e-mail address... :)
+> 
+> Do you *really* want to go on record as saying "We didn't ship a fix for
+> Frobozz 3.2 because The Kernel Would Stop The Obvious Exploit", when it's
+> usually quite possible that somebody can come up with a different exploit
+> scenario?  That's also going to go over *really* well with customers who end up
+> turning off Yama because it breaks some third-party app that's doing some
+> batshit crazy thing it shouldn't be doing in the first place.
 
----
- include/linux/slub_def.h |    7 -
- mm/slub.c                |  181 +++++++++++++++++++++++++++++++++++------------
- 2 files changed, 139 insertions(+), 49 deletions(-)
+Well, it drastically reduces the urgency of such a vulnerability. Besides,
+if this makes a million systems safer and 1 less safe, that's still a
+net win.
 
-Index: linux-2.6/include/linux/slub_def.h
-===================================================================
---- linux-2.6.orig/include/linux/slub_def.h	2010-07-26 14:25:16.000000000 -0500
-+++ linux-2.6/include/linux/slub_def.h	2010-07-26 14:26:24.000000000 -0500
-@@ -136,19 +136,16 @@ struct kmem_cache {
- 
- #ifdef CONFIG_ZONE_DMA
- #define SLUB_DMA __GFP_DMA
--/* Reserve extra caches for potential DMA use */
--#define KMALLOC_CACHES (2 * SLUB_PAGE_SHIFT)
- #else
- /* Disable DMA functionality */
- #define SLUB_DMA (__force gfp_t)0
--#define KMALLOC_CACHES SLUB_PAGE_SHIFT
- #endif
- 
- /*
-  * We keep the general caches in an array of slab caches that are used for
-  * 2^x bytes of allocations.
-  */
--extern struct kmem_cache kmalloc_caches[KMALLOC_CACHES];
-+extern struct kmem_cache *kmalloc_caches[SLUB_PAGE_SHIFT];
- 
- /*
-  * Sorry that the following has to be that ugly but some versions of GCC
-@@ -213,7 +210,7 @@ static __always_inline struct kmem_cache
- 	if (index == 0)
- 		return NULL;
- 
--	return &kmalloc_caches[index];
-+	return kmalloc_caches[index];
- }
- 
- void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-26 14:26:20.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-26 14:26:24.000000000 -0500
-@@ -179,7 +179,7 @@ static struct notifier_block slab_notifi
- 
- static enum {
- 	DOWN,		/* No slab functionality available */
--	PARTIAL,	/* kmem_cache_open() works but kmalloc does not */
-+	PARTIAL,	/* Kmem_cache_node works */
- 	UP,		/* Everything works but does not show up in sysfs */
- 	SYSFS		/* Sysfs up */
- } slab_state = DOWN;
-@@ -2074,6 +2074,8 @@ static inline int alloc_kmem_cache_cpus(
- }
- 
- #ifdef CONFIG_NUMA
-+static struct kmem_cache *kmem_cache_node;
-+
- /*
-  * No kmalloc_node yet so do it by hand. We know that this is the first
-  * slab on the node for this slabcache. There are no concurrent accesses
-@@ -2089,9 +2091,9 @@ static void early_kmem_cache_node_alloc(
- 	struct kmem_cache_node *n;
- 	unsigned long flags;
- 
--	BUG_ON(kmalloc_caches->size < sizeof(struct kmem_cache_node));
-+	BUG_ON(kmem_cache_node->size < sizeof(struct kmem_cache_node));
- 
--	page = new_slab(kmalloc_caches, GFP_KERNEL, node);
-+	page = new_slab(kmem_cache_node, GFP_KERNEL, node);
- 
- 	BUG_ON(!page);
- 	if (page_to_nid(page) != node) {
-@@ -2103,15 +2105,15 @@ static void early_kmem_cache_node_alloc(
- 
- 	n = page->freelist;
- 	BUG_ON(!n);
--	page->freelist = get_freepointer(kmalloc_caches, n);
-+	page->freelist = get_freepointer(kmem_cache_node, n);
- 	page->inuse++;
--	kmalloc_caches->node[node] = n;
-+	kmem_cache_node->node[node] = n;
- #ifdef CONFIG_SLUB_DEBUG
--	init_object(kmalloc_caches, n, 1);
--	init_tracking(kmalloc_caches, n);
-+	init_object(kmem_cache_node, n, 1);
-+	init_tracking(kmem_cache_node, n);
- #endif
--	init_kmem_cache_node(n, kmalloc_caches);
--	inc_slabs_node(kmalloc_caches, node, page->objects);
-+	init_kmem_cache_node(n, kmem_cache_node);
-+	inc_slabs_node(kmem_cache_node, node, page->objects);
- 
- 	/*
- 	 * lockdep requires consistent irq usage for each lock
-@@ -2129,8 +2131,10 @@ static void free_kmem_cache_nodes(struct
- 
- 	for_each_node_state(node, N_NORMAL_MEMORY) {
- 		struct kmem_cache_node *n = s->node[node];
-+
- 		if (n)
--			kmem_cache_free(kmalloc_caches, n);
-+			kmem_cache_free(kmem_cache_node, n);
-+
- 		s->node[node] = NULL;
- 	}
- }
-@@ -2146,7 +2150,7 @@ static int init_kmem_cache_nodes(struct 
- 			early_kmem_cache_node_alloc(node);
- 			continue;
- 		}
--		n = kmem_cache_alloc_node(kmalloc_caches,
-+		n = kmem_cache_alloc_node(kmem_cache_node,
- 						GFP_KERNEL, node);
- 
- 		if (!n) {
-@@ -2499,11 +2503,13 @@ EXPORT_SYMBOL(kmem_cache_destroy);
-  *		Kmalloc subsystem
-  *******************************************************************/
- 
--struct kmem_cache kmalloc_caches[KMALLOC_CACHES] __cacheline_aligned;
-+struct kmem_cache *kmalloc_caches[SLUB_PAGE_SHIFT];
- EXPORT_SYMBOL(kmalloc_caches);
- 
-+static struct kmem_cache *kmem_cache;
-+
- #ifdef CONFIG_ZONE_DMA
--static struct kmem_cache kmalloc_dma_caches[SLUB_PAGE_SHIFT];
-+static struct kmem_cache *kmalloc_dma_caches[SLUB_PAGE_SHIFT];
- #endif
- 
- static int __init setup_slub_min_order(char *str)
-@@ -2542,9 +2548,13 @@ static int __init setup_slub_nomerge(cha
- 
- __setup("slub_nomerge", setup_slub_nomerge);
- 
--static void create_kmalloc_cache(struct kmem_cache *s,
-+static void __init create_kmalloc_cache(struct kmem_cache **sp,
- 		const char *name, int size, unsigned int flags)
- {
-+	struct kmem_cache *s;
-+
-+	s = kmem_cache_alloc(kmem_cache, GFP_NOWAIT);
-+
- 	/*
- 	 * This function is called with IRQs disabled during early-boot on
- 	 * single CPU so there's no need to take slub_lock here.
-@@ -2553,6 +2563,8 @@ static void create_kmalloc_cache(struct 
- 								flags, NULL))
- 		goto panic;
- 
-+	*sp = s;
-+
- 	list_add(&s->list, &slab_caches);
- 
- 	if (!sysfs_slab_add(s))
-@@ -2614,10 +2626,10 @@ static struct kmem_cache *get_slab(size_
- 
- #ifdef CONFIG_ZONE_DMA
- 	if (unlikely((flags & SLUB_DMA)))
--		return &kmalloc_dma_caches[index];
-+		return kmalloc_dma_caches[index];
- 
- #endif
--	return &kmalloc_caches[index];
-+	return kmalloc_caches[index];
- }
- 
- void *__kmalloc(size_t size, gfp_t flags)
-@@ -2941,46 +2953,114 @@ static int slab_memory_callback(struct n
-  *			Basic setup of slabs
-  *******************************************************************/
- 
-+/*
-+ * Used for early kmem_cache structures that were allocated using
-+ * the page allocator
-+ */
-+
-+static void __init kmem_cache_bootstrap_fixup(struct kmem_cache *s)
-+{
-+	int node;
-+
-+	list_add(&s->list, &slab_caches);
-+	sysfs_slab_add(s);
-+	s->refcount = -1;
-+
-+	for_each_node(node) {
-+		struct kmem_cache_node *n = get_node(s, node);
-+		struct page *p;
-+
-+		if (n) {
-+			list_for_each_entry(p, &n->partial, lru)
-+				p->slab = s;
-+
-+#ifdef CONFIG_SLAB_DEBUG
-+			list_for_each_entry(p, &n->full, lru)
-+				p->slab = s;
-+#endif
-+		}
-+	}
-+}
-+
- void __init kmem_cache_init(void)
- {
- 	int i;
- 	int caches = 0;
-+	struct kmem_cache *temp_kmem_cache;
-+	int order;
- 
- #ifdef CONFIG_NUMA
-+	struct kmem_cache *temp_kmem_cache_node;
-+	unsigned long kmalloc_size;
-+
-+	kmem_size = offsetof(struct kmem_cache, node) +
-+				nr_node_ids * sizeof(struct kmem_cache_node *);
-+
-+	/* Allocate two kmem_caches from the page allocator */
-+	kmalloc_size = ALIGN(kmem_size, cache_line_size());
-+	order = get_order(2 * kmalloc_size);
-+	kmem_cache = (void *)__get_free_pages(GFP_NOWAIT, order);
-+
- 	/*
- 	 * Must first have the slab cache available for the allocations of the
- 	 * struct kmem_cache_node's. There is special bootstrap code in
- 	 * kmem_cache_open for slab_state == DOWN.
- 	 */
--	create_kmalloc_cache(&kmalloc_caches[0], "kmem_cache_node",
--		sizeof(struct kmem_cache_node), 0);
--	kmalloc_caches[0].refcount = -1;
--	caches++;
-+	kmem_cache_node = (void *)kmem_cache + kmalloc_size;
-+
-+	kmem_cache_open(kmem_cache_node, "kmem_cache_node",
-+		sizeof(struct kmem_cache_node),
-+		0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
- 
- 	hotplug_memory_notifier(slab_memory_callback, SLAB_CALLBACK_PRI);
-+#else
-+	/* Allocate a single kmem_cache from the page allocator */
-+	kmem_size = sizeof(struct kmem_cache);
-+	order = get_order(kmem_size);
-+	kmem_cache = (void *)__get_free_pages(GFP_NOWAIT, order);
- #endif
- 
- 	/* Able to allocate the per node structures */
- 	slab_state = PARTIAL;
- 
--	/* Caches that are not of the two-to-the-power-of size */
--	if (KMALLOC_MIN_SIZE <= 32) {
--		create_kmalloc_cache(&kmalloc_caches[1],
--				"kmalloc-96", 96, 0);
--		caches++;
--	}
--	if (KMALLOC_MIN_SIZE <= 64) {
--		create_kmalloc_cache(&kmalloc_caches[2],
--				"kmalloc-192", 192, 0);
--		caches++;
--	}
-+	temp_kmem_cache = kmem_cache;
-+	kmem_cache_open(kmem_cache, "kmem_cache", kmem_size,
-+		0, SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
-+	kmem_cache = kmem_cache_alloc(kmem_cache, GFP_NOWAIT);
-+	memcpy(kmem_cache, temp_kmem_cache, kmem_size);
- 
--	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
--		create_kmalloc_cache(&kmalloc_caches[i],
--			"kmalloc", 1 << i, 0);
--		caches++;
--	}
-+#ifdef CONFIG_NUMA
-+	/*
-+	 * Allocate kmem_cache_node properly from the kmem_cache slab.
-+	 * kmem_cache_node is separately allocated so no need to
-+	 * update any list pointers.
-+	 */
-+	temp_kmem_cache_node = kmem_cache_node;
- 
-+	kmem_cache_node = kmem_cache_alloc(kmem_cache, GFP_NOWAIT);
-+	memcpy(kmem_cache_node, temp_kmem_cache_node, kmem_size);
-+
-+	kmem_cache_bootstrap_fixup(kmem_cache_node);
-+
-+	caches++;
-+#else
-+	/*
-+	 * kmem_cache has kmem_cache_node embedded and we moved it!
-+	 * Update the list heads
-+	 */
-+	INIT_LIST_HEAD(&kmem_cache->local_node.partial);
-+	list_splice(&temp_kmem_cache->local_node.partial, &kmem_cache->local_node.partial);
-+#ifdef CONFIG_SLUB_DEBUG
-+	INIT_LIST_HEAD(&kmem_cache->local_node.full);
-+	list_splice(&temp_kmem_cache->local_node.full, &kmem_cache->local_node.full);
-+#endif
-+#endif
-+	kmem_cache_bootstrap_fixup(kmem_cache);
-+	caches++;
-+	/* Free temporary boot structure */
-+	free_pages((unsigned long)temp_kmem_cache, order);
-+
-+	/* Now we can use the kmem_cache to allocate kmalloc slabs */
- 
- 	/*
- 	 * Patch up the size_index table if we have strange large alignment
-@@ -3020,6 +3100,25 @@ void __init kmem_cache_init(void)
- 			size_index[size_index_elem(i)] = 8;
- 	}
- 
-+	/* Caches that are not of the two-to-the-power-of size */
-+	if (KMALLOC_MIN_SIZE <= 32) {
-+		create_kmalloc_cache(&kmalloc_caches[1],
-+				"kmalloc-96", 96, 0);
-+		caches++;
-+	}
-+
-+	if (KMALLOC_MIN_SIZE <= 64) {
-+		create_kmalloc_cache(&kmalloc_caches[2],
-+				"kmalloc-192", 192, 0);
-+		caches++;
-+	}
-+
-+	for (i = KMALLOC_SHIFT_LOW; i < SLUB_PAGE_SHIFT; i++) {
-+		create_kmalloc_cache(&kmalloc_caches[i],
-+			"kmalloc", 1 << i, 0);
-+		caches++;
-+	}
-+
- 	slab_state = UP;
- 
- 	/* Provide the correct kmalloc names now that the caches are up */
-@@ -3027,18 +3126,12 @@ void __init kmem_cache_init(void)
- 		char *s = kasprintf(GFP_NOWAIT, "kmalloc-%d", 1 << i);
- 
- 		BUG_ON(!s);
--		kmalloc_caches[i].name = s;
-+		kmalloc_caches[i]->name = s;
- 	}
- 
- #ifdef CONFIG_SMP
- 	register_cpu_notifier(&slab_notifier);
- #endif
--#ifdef CONFIG_NUMA
--	kmem_size = offsetof(struct kmem_cache, node) +
--				nr_node_ids * sizeof(struct kmem_cache_node *);
--#else
--	kmem_size = sizeof(struct kmem_cache);
--#endif
- 
- 	printk(KERN_INFO
- 		"SLUB: Genslabs=%d, HWalign=%d, Order=%d-%d, MinObjects=%d,"
-@@ -3054,7 +3147,7 @@ void __init kmem_cache_init_late(void)
- 	int i;
- 
- 	for (i = 0; i < SLUB_PAGE_SHIFT; i++) {
--		struct kmem_cache *s = &kmalloc_caches[i];
-+		struct kmem_cache *s = kmalloc_caches[i];
- 
- 		if (s && s->size) {
- 			char *name = kasprintf(GFP_KERNEL,
+> > I think this is irrelevant; the symlink/hardlink combo fixes a
+> > vulnerability with DAC. It's a break in the DAC security model.
+> 
+> Actually, if you trace it through, in almost every single case of an exploit
+> abusing a symlink, at no time does the DAC model actually get violated. Every
+> single access *is* in fact done according to the DAC in effect. The problem is
+> that some of the accesses are not the ones the programmer intended the software
+> to make.
 
+I'm not convinced. I see what you're trying to say, but I just don't agree.
+The symlink/hardlink thing is a tiny corner case of the operational
+conditions under which DAC operates, and this is fixing a mistake in the
+design that leads programmers into a (well known but seemingly unavoidable)
+trap.
+
+> that implement its decisions".  (Here is where you insert the clip from Indiana
+> Jones and the Last Crusade: "He chose... poorly").
+
+Yeah, my next trick will be helping people confine their web applications.
+Hahaha ugh. That's an area of endless poor choices.
+
+> > While waiting for smarter people than me make it impossible to exploit
+> > security vulnerabilities in the future, I want to make it harder for
+> > attackers to exploit security vulnerabilities now.
+> 
+> The sad part is that there are already known ways developed by smarter people.
+> You just refuse to consider them as solutions and keep trying to deploy stuff
+> that a sufficiently clever kid sister can bypass.
+
+We'll agree to disagree. And at the same time I'll point out that if
+SELinux is off (or app is running without policy), symlink races are just
+as bad.
+
+> > Heh, well, I have a PTRACE model. :) "Only CAP_SYSADMIN can PTRACE_ATTACH."
+> 
+> That's not actually a full model. ;)
+
+alt.ptrace.die.die.die
+
+> > Unfortunately, I'm stuck with these damned crash handlers which are really
+> > just hacks to avoid writing a core to disk. Oddly, this is a solved problem
+> > (via core dump patterns and distro-wide crash handlers) , but some
+> > applications want to opt out of it instead of providing proper system hooks
+> > to do crash analysis. Of course, with PTRACE still allowed, there's no
+> > carrot (or stick) to encourage application writers to use distro-provided
+> > crash handlers.
+> 
+> So do the obvious - ship with SELinux configured to not allow the arbitrary ptrace,
+> document it, and tell them "it doesn't work, use the proper system interface instead".
+> 
+> :)
+
+Perhaps later. For the moment, I'm happy with my racey anti-PTRACE
+solution.
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
