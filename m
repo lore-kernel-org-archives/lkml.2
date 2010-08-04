@@ -1,68 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab0HDTXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 15:23:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61673 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757789Ab0HDTXb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 15:23:31 -0400
-Message-ID: <4C59BE0D.7020604@kernel.org>
-Date: Wed, 04 Aug 2010 12:22:53 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1758631Ab0HDTYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 15:24:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:53397 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757165Ab0HDTYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 15:24:21 -0400
+Date: Wed, 4 Aug 2010 19:24:08 +0000
+From: Denis Kirjanov <dkirjanov@kernel.org>
+To: gregkh@suse.de
+Cc: greg@kroah.com, liodot@gmail.com, dkirjanov@kernel.org,
+        charrer@alacritech.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH -staging] slicoss: Remove explicit arch dependencies
+Message-ID: <20100804192408.GA11385@hera.kernel.org>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Dave Airlie <airlied@gmail.com>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
-        Gary Hade <garyhade@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org>	<m18w4onebi.fsf@fess.ebiederm.org> <4C5871BC.4070007@kernel.org>	<m1bp9jgyww.fsf@fess.ebiederm.org> <4C592BF5.3070008@kernel.org> <m1mxt28tku.fsf@fess.ebiederm.org>
-In-Reply-To: <m1mxt28tku.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C59BE16.003C,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 04 Aug 2010 19:24:09 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2010 05:12 AM, Eric W. Biederman wrote:
+Remove explicit arch dependencies
 
-
-> 
-> In practice your test of looking at mp_bus_not_pci is essentially what
-> we do.  I wonder if it could be made to be a test of polarity and edge
-> mismatch instead.
-> 
-
-Dave's system mptable pol and trig is wrong ...
-
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 00, APIC ID 8, APIC INT 00
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 01, APIC ID 8, APIC INT 01
-Int: type 3, pol 1, trig 1, bus 0a, IRQ 00, APIC ID 8, APIC INT 02
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 03, APIC ID 8, APIC INT 03
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 04, APIC ID 8, APIC INT 04
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 05, APIC ID 8, APIC INT 05
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 06, APIC ID 8, APIC INT 06
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 07, APIC ID 8, APIC INT 07
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 08, APIC ID 8, APIC INT 08
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 09, APIC ID 8, APIC INT 09
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 0a, APIC ID 8, APIC INT 0a
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 0b, APIC ID 8, APIC INT 0b
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 0c, APIC ID 8, APIC INT 0c
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 0e, APIC ID 8, APIC INT 0e
-Int: type 0, pol 0, trig 0, bus 0a, IRQ 0f, APIC ID 8, APIC INT 0f
-Int: type 0, pol 0, trig 0, bus 00, IRQ 28, APIC ID 8, APIC INT 09
-Int: type 0, pol 0, trig 0, bus 00, IRQ 2c, APIC ID 8, APIC INT 0a
-Int: type 0, pol 0, trig 0, bus 00, IRQ 2d, APIC ID 8, APIC INT 0a
-Int: type 0, pol 0, trig 0, bus 00, IRQ 34, APIC ID 8, APIC INT 0e
-Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
-Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
-Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
-
-Do you mean check pol/trig in addition to bus in this case?
-
-Yinghai
+Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+---
+diff --git a/drivers/staging/slicoss/slic.h b/drivers/staging/slicoss/slic.h
+index beab400..ebdcc6f 100644
+--- a/drivers/staging/slicoss/slic.h
++++ b/drivers/staging/slicoss/slic.h
+@@ -515,14 +515,16 @@ struct adapter {
+     (largestat) += ((newstat) - (oldstat));                              \
+ }
+ 
+-#if defined(CONFIG_X86_64) || defined(CONFIG_IA64)
++#if BITS_PER_LONG == 64
+ #define   SLIC_GET_ADDR_LOW(_addr)  (u32)((u64)(_addr) & \
+ 	0x00000000FFFFFFFF)
+ #define   SLIC_GET_ADDR_HIGH(_addr)  (u32)(((u64)(_addr) >> 32) & \
+ 	0x00000000FFFFFFFF)
+-#else
+-#define   SLIC_GET_ADDR_LOW(_addr)   (u32)_addr
++#elif BITS_PER_LONG == 32
++#define   SLIC_GET_ADDR_LOW(_addr)   (u32)(_addr)
+ #define   SLIC_GET_ADDR_HIGH(_addr)  (u32)0
++#else
++#error BITS_PER_LONG must be 32 or 64
+ #endif
+ 
+ #define FLUSH		true
+diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
+index f8c4b12..58ff123 100644
+--- a/drivers/staging/slicoss/slicoss.c
++++ b/drivers/staging/slicoss/slicoss.c
+@@ -1099,19 +1099,17 @@ static void slic_link_upr_complete(struct adapter *adapter, u32 isr)
+ 		struct slic_shmem *pshmem;
+ 
+ 		pshmem = (struct slic_shmem *)adapter->phys_shmem;
+-#if defined(CONFIG_X86_64)
++#if BITS_PER_LONG == 64
+ 		slic_upr_queue_request(adapter,
+ 				       SLIC_UPR_RLSR,
+ 				       SLIC_GET_ADDR_LOW(&pshmem->linkstatus),
+ 				       SLIC_GET_ADDR_HIGH(&pshmem->linkstatus),
+ 				       0, 0);
+-#elif defined(CONFIG_X86)
++#else
+ 		slic_upr_queue_request(adapter,
+ 				       SLIC_UPR_RLSR,
+ 				       (u32) &pshmem->linkstatus,
+ 				       SLIC_GET_ADDR_HIGH(pshmem), 0, 0);
+-#else
+-		Stop Compilation;
+ #endif
+ 		return;
+ 	}
+@@ -1327,7 +1325,7 @@ static ushort slic_eeprom_cksum(char *m, int len)
+ 	s_util.s = 0;
+ 
+ 	w = (u16 *)m;
+-#ifdef CONFIG_X86_64
++#if BITS_PER_LONG == 64
+ 	w_int = (u32) ((ulong) w & 0x00000000FFFFFFFF);
+ #else
+ 	w_int = (u32) (w);
+@@ -1439,12 +1437,16 @@ static int slic_rspqueue_init(struct adapter *adapter)
+ 			slic_rspqueue_free(adapter);
+ 			return -ENOMEM;
+ 		}
++		/* FIXME:
++		 * do we really need this assertions (4K PAGE_SIZE aligned addr)? */
++#if 0
+ #ifndef CONFIG_X86_64
+ 		ASSERT(((u32) rspq->vaddr[i] & 0xFFFFF000) ==
+ 		       (u32) rspq->vaddr[i]);
+ 		ASSERT(((u32) rspq->paddr[i] & 0xFFFFF000) ==
+ 		       (u32) rspq->paddr[i]);
+ #endif
++#endif
+ 		memset(rspq->vaddr[i], 0, PAGE_SIZE);
+ 
+ 		if (paddrh == 0) {
+@@ -1473,13 +1475,13 @@ static struct slic_rspbuf *slic_rspqueue_getnext(struct adapter *adapter)
+ 		return NULL;
+ 
+ 	buf = rspq->rspbuf;
+-#ifndef CONFIG_X86_64
++#if BITS_PER_LONG == 32
+ 	ASSERT((buf->status & 0xFFFFFFE0) == 0);
+ #endif
+ 	ASSERT(buf->hosthandle);
+ 	if (++rspq->offset < SLIC_RSPQ_BUFSINPAGE) {
+ 		rspq->rspbuf++;
+-#ifndef CONFIG_X86_64
++#if BITS_PER_LONG == 32
+ 		ASSERT(((u32) rspq->rspbuf & 0xFFFFFFE0) ==
+ 		       (u32) rspq->rspbuf);
+ #endif
+@@ -1492,12 +1494,12 @@ static struct slic_rspbuf *slic_rspqueue_getnext(struct adapter *adapter)
+ 		rspq->offset = 0;
+ 		rspq->rspbuf = (struct slic_rspbuf *)
+ 						rspq->vaddr[rspq->pageindex];
+-#ifndef CONFIG_X86_64
++#if BITS_PER_LONG == 32
+ 		ASSERT(((u32) rspq->rspbuf & 0xFFFFF000) ==
+ 		       (u32) rspq->rspbuf);
+ #endif
+ 	}
+-#ifndef CONFIG_X86_64
++#if BITS_PER_LONG == 32
+ 	ASSERT(((u32) buf & 0xFFFFFFE0) == (u32) buf);
+ #endif
+ 	return buf;
+@@ -1538,7 +1540,7 @@ static u32 *slic_cmdqmem_addpage(struct adapter *adapter)
+ 					&cmdqmem->dma_pages[cmdqmem->pagecnt]);
+ 	if (!pageaddr)
+ 		return NULL;
+-#ifndef CONFIG_X86_64
++#if BITS_PER_LONG == 32
+ 	ASSERT(((u32) pageaddr & 0xFFFFF000) == (u32) pageaddr);
+ #endif
+ 	cmdqmem->pages[cmdqmem->pagecnt] = pageaddr;
+@@ -1650,7 +1652,7 @@ static int slic_cmdq_init(struct adapter *adapter)
+ 	adapter->slic_handle_ix = 1;
+ 	for (i = 0; i < SLIC_CMDQ_INITPAGES; i++) {
+ 		pageaddr = slic_cmdqmem_addpage(adapter);
+-#ifndef CONFIG_X86_64
++#if BITS_PER_LONG == 32
+ 		ASSERT(((u32) pageaddr & 0xFFFFF000) == (u32) pageaddr);
+ #endif
+ 		if (!pageaddr) {
+@@ -2447,18 +2449,16 @@ static void slic_link_event_handler(struct adapter *adapter)
+ 
+ 	pshmem = (struct slic_shmem *)adapter->phys_shmem;
+ 
+-#if defined(CONFIG_X86_64)
++#if BITS_PER_LONG == 64
+ 	status = slic_upr_request(adapter,
+ 				  SLIC_UPR_RLSR,
+ 				  SLIC_GET_ADDR_LOW(&pshmem->linkstatus),
+ 				  SLIC_GET_ADDR_HIGH(&pshmem->linkstatus),
+ 				  0, 0);
+-#elif defined(CONFIG_X86)
++#else
+ 	status = slic_upr_request(adapter, SLIC_UPR_RLSR,
+ 		(u32) &pshmem->linkstatus,	/* no 4GB wrap guaranteed */
+ 				  0, 0, 0);
+-#else
+-	Stop compilation;
+ #endif
+ 	ASSERT(status == 0);
+ }
+@@ -2575,14 +2575,12 @@ static void slic_xmit_build_request(struct adapter *adapter,
+ 	ihcmd->u.slic_buffers.bufs[0].paddrl = SLIC_GET_ADDR_LOW(phys_addr);
+ 	ihcmd->u.slic_buffers.bufs[0].paddrh = SLIC_GET_ADDR_HIGH(phys_addr);
+ 	ihcmd->u.slic_buffers.bufs[0].length = skb->len;
+-#if defined(CONFIG_X86_64)
++#if BITS_PER_LONG == 64
+ 	hcmd->cmdsize = (u32) ((((u64)&ihcmd->u.slic_buffers.bufs[1] -
+ 				     (u64) hcmd) + 31) >> 5);
+-#elif defined(CONFIG_X86)
++#else
+ 	hcmd->cmdsize = ((((u32) &ihcmd->u.slic_buffers.bufs[1] -
+ 			   (u32) hcmd) + 31) >> 5);
+-#else
+-	Stop Compilation;
+ #endif
+ }
+ 
+@@ -3078,16 +3076,14 @@ static int slic_if_init(struct adapter *adapter)
+ 		spin_lock_irqsave(&adapter->bit64reglock.lock,
+ 					adapter->bit64reglock.flags);
+ 
+-#if defined(CONFIG_X86_64)
++#if BITS_PER_LONG == 64
+ 		slic_reg32_write(&slic_regs->slic_addr_upper,
+ 				 SLIC_GET_ADDR_HIGH(&pshmem->isr), DONT_FLUSH);
+ 		slic_reg32_write(&slic_regs->slic_isp,
+ 				 SLIC_GET_ADDR_LOW(&pshmem->isr), FLUSH);
+-#elif defined(CONFIG_X86)
++#else
+ 		slic_reg32_write(&slic_regs->slic_addr_upper, 0, DONT_FLUSH);
+ 		slic_reg32_write(&slic_regs->slic_isp, (u32)&pshmem->isr, FLUSH);
+-#else
+-		Stop Compilations
+ #endif
+ 		spin_unlock_irqrestore(&adapter->bit64reglock.lock,
+ 					adapter->bit64reglock.flags);
