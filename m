@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab0HDLxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 07:53:08 -0400
-Received: from swm.pp.se ([212.247.200.143]:50849 "EHLO uplift.swm.pp.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757404Ab0HDLxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 07:53:06 -0400
-Date: Wed, 4 Aug 2010 13:53:03 +0200 (CEST)
-From: Mikael Abrahamsson <swmike@swm.pp.se>
-To: Christoph Hellwig <hch@infradead.org>
-cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Michael Monnerie <michael.monnerie@is.it-management.at>,
-        linux-raid@vger.kernel.org, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: How to track down abysmal performance ata - raid1 - crypto -
- vg/lv - xfs
-In-Reply-To: <20100804111803.GA32643@infradead.org>
-Message-ID: <alpine.DEB.1.10.1008041351100.19930@uplift.swm.pp.se>
-References: <20100804073546.GA7494@comet.dominikbrodowski.net> <20100804085039.GA11671@infradead.org> <20100804091317.GA27779@isilmar-3.linta.de> <20100804092122.GA2998@infradead.org> <20100804073546.GA7494@comet.dominikbrodowski.net> <201008041116.09822@zmi.at>
- <20100804102526.GB13766@isilmar-3.linta.de> <20100804111803.GA32643@infradead.org>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Organization: People's Front Against WWW
+	id S1757755Ab0HDL5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 07:57:03 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:48809 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248Ab0HDL5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 07:57:00 -0400
+Date: Wed, 4 Aug 2010 13:56:58 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alan Jenkins <alan-jenkins@tuffmail.co.uk>
+Subject: Re: missing .data.shared_align placement in vmlinux
+Message-ID: <20100804115658.GA21357@merkur.ravnborg.org>
+References: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilVZ3GCU_hsfVNeR4oG6ETREb9UeJ0Cv_5hSwVZ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Christoph Hellwig wrote:
+On Fri, May 21, 2010 at 04:58:53PM -0400, Mike Frysinger wrote:
+> am i missing something or does the .data.shared_align section lack
+> definition in vmlinux.lds.h and all arch vmlinux.lds.S files ?
+> 
+> with the recent change "net: remove time limit in process_backlog()",
+> the softnet_data variable changed from "DEFINE_PER_CPU()" to
+> "DEFINE_PER_CPU_ALIGNED()" which moved it from the .data section to
+> the .data.shared_align section.  i'm not saying this patch is wrong,
+> just that is what caused me to notice this larger problem.  no one
+> else in the kernel is using this aligned macro variant, so i imagine
+> that's why no one has noticed yet.
+> 
+> since .data.shared_align isnt declared in any vmlinux files that i can
+> see, the linker just places it last.  this "just works" for most
+> people, but when building a ROM kernel on Blackfin systems, it causes
+> section overlap errors:
+> bfin-uclinux-ld.real: section .init.data [00000000202e06b8 ->
+> 00000000202e48b7] overlaps section .data.shared_aligned
+> [00000000202e06b8 -> 00000000202e0723]
+> i imagine other arches which support the ROM config option and thus do
+> funky placement would see similar issues ...
+> 
+> on x86, it is stuck in a dedicated section:
+>   [ 8] .data             PROGBITS        ffffffff810ec000 2ec000
+> 0303a8 00  WA  0   0 4096
+>   [ 9] .data.shared_alig PROGBITS        ffffffff8111c3c0 31c3c0
+> 0000c8 00  WA  0   0 64
+> 
+> the ifdef forest in asm-generic/percpu.h is beyond a quick glance &
+> fix, so i leave it up to someone else ;)
 
-> The good news is that you have it tracked down, the bad news is that I 
-> know very little about dm-crypt.  Maybe the issue is the single threaded 
-> decryption in dm-crypt?  Can you check how much CPU time the dm crypt 
-> kernel thread uses?
+as there any resolution on this?
+I briefly looked at it some time ago.
+And it looks like a plain oversight.
 
-I'm not sure it's that. I have a Core i5 with AES-NI and that didn't 
-significantly increase my overall performance, as it's not there the 
-bottleneck is (at least in my system).
+But I was also a bit lost in the forest of ifdef land...
 
-I earlier sent out an email wondering if someone could shed some light on 
-how scheduling, block caching and read-ahead works together when one does 
-disks->md->crypto->lvm->fs, becase that's a lot of layers and potentially 
-a lot of unneeded buffering, readahead and scheduling magic?
-
--- 
-Mikael Abrahamsson    email: swmike@swm.pp.se
+	Sam
