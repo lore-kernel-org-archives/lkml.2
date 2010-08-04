@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab0HDQsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 12:48:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38600 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab0HDQsh (ORCPT
+	id S1757386Ab0HDQs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 12:48:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24365 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755716Ab0HDQsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 12:48:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VkF4VzbDg/U4kVKlWCUU1nDz2yxqmK6Slny7e1n0gc3+TjvMwMQcczjzrt4L0WF7BH
-         ApiAjuU0Fph7TKcC5Gcw+tWCNmosT21hpGQRmOn5TJMhp9V08QyGnumHOnYZbj02Nhjq
-         Hw4sQounqThkLLV2VXNuDJoNLv1MaWs8NDZXk=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <441366.48179.qm@web37605.mail.mud.yahoo.com>
-References: <441366.48179.qm@web37605.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 19:48:32 +0300
-Message-ID: <1280940512.16380.4.camel@maxim-laptop>
+	Wed, 4 Aug 2010 12:48:55 -0400
+Date: Wed, 4 Aug 2010 09:47:55 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 4 (olpc_battery)
+Message-Id: <20100804094755.e0377eb0.randy.dunlap@oracle.com>
+In-Reply-To: <20100804151035.14678528.sfr@canb.auug.org.au>
+References: <20100804151035.14678528.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C5999EF.00E9:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 00:57 -0700, Alex Dubov wrote: 
-> I see two immediate problems with this patch:
+On Wed, 4 Aug 2010 15:10:35 +1000 Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> 1. On cosmetic level, custom debug macros should not be employed. Device
-> core already have this functionality (dynamic debug levels and such). Please,
-> use dev_dbg and friends for print-outs.
-This allows much easier control for debug.
-Single module parameter is enough to adjust it.
-This helps me help users.
-(Eg, kernel compilation is out of question)
-
-
+> As the merge window is open, please do not add 2.6.27 material to your
+> linux-next included trees until after 2.6.36-rc1.
 > 
-> 2. On a structural level, I'd rather prefer host drivers to not start their
-> own threads. If you look at both current host implementations, they operate
-> in callback fashion. Apart from saving some resources, this reduces the
-> amount of problems encountered during suspend/resume and shutdown.
-This isn't possible.
-Hardware doesn't support interrupts on memstick bus changes, it only
-supports DMA done from/to internal FIFO, and DMA it only possible for
-512 byte TPCs.
+> Changes since 20100803:
 
 
-Best regards,
-Maxim Levitsky
+drivers/power/olpc_battery.c:387: error: unknown field 'owner' specified in initializer
+drivers/power/olpc_battery.c:387: warning: excess elements in struct initializer
+drivers/power/olpc_battery.c:387: warning: (near initialization for 'olpc_bat_eeprom.attr')
 
+
+The .owner field has been dropped from the attr struct.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
