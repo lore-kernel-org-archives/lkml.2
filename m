@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759153Ab0HDVTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:19:16 -0400
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:57583 "EHLO
+	id S1759281Ab0HDVTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:19:43 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:57595 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759039Ab0HDVSz (ORCPT
+	with ESMTP id S1759103Ab0HDVTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:18:55 -0400
+	Wed, 4 Aug 2010 17:19:00 -0400
 X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
@@ -14,14 +14,10 @@ Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         john stultz <johnstul@us.ibm.com>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCHv3 13/16] pps: capture MONOTONIC_RAW timestamps as well
-Date: Thu,  5 Aug 2010 01:06:50 +0400
-Message-Id: <7e78eaffb92829465df0237fa7e4d1b183a1a511.1280952801.git.lasaine@lvk.cs.msu.su>
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCHv3 10/16] pps: use BUG_ON for kernel API safety checks
+Date: Thu,  5 Aug 2010 01:06:47 +0400
+Message-Id: <08fcb3aee15a9e2c4910e2aeecafe1cceacd7827.1280952801.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
 References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
@@ -30,99 +26,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MONOTONIC_RAW clock timestamps are ideally suited for frequency
-calculation and also fit well into the original NTP hardpps design. Now
-phase and frequency can be adjusted separately: the former based on
-REALTIME clock and the latter based on MONOTONIC_RAW clock.
-A new function getnstime_raw_and_real is added to timekeeping subsystem
-to capture both timestamps at the same time and atomically.
+This way less overhead is involved when running production kernel.
+If you want to debug a pps client module please define DEBUG to enable
+the checks.
 
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- include/linux/pps_kernel.h |    3 ++-
- include/linux/time.h       |    2 ++
- kernel/time/timekeeping.c  |   34 ++++++++++++++++++++++++++++++++++
- 3 files changed, 38 insertions(+), 1 deletions(-)
+ drivers/pps/kapi.c |   33 ++++++++++-----------------------
+ 1 files changed, 10 insertions(+), 23 deletions(-)
 
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index 5af0498..39fc712 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -48,6 +48,7 @@ struct pps_source_info {
- };
+diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+index 8c557c4..220ab08 100644
+--- a/drivers/pps/kapi.c
++++ b/drivers/pps/kapi.c
+@@ -80,25 +80,14 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+ 	int err;
  
- struct pps_event_time {
-+	struct timespec ts_raw;
- 	struct timespec ts_real;
- };
+ 	/* Sanity checks */
+-	if ((info->mode & default_params) != default_params) {
+-		pr_err("pps: %s: unsupported default parameters\n",
+-					info->name);
+-		err = -EINVAL;
+-		goto pps_register_source_exit;
+-	}
+-	if ((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
+-			info->echo == NULL) {
+-		pr_err("pps: %s: echo function is not defined\n",
+-					info->name);
+-		err = -EINVAL;
+-		goto pps_register_source_exit;
+-	}
+-	if ((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
+-		pr_err("pps: %s: unspecified time format\n",
+-					info->name);
+-		err = -EINVAL;
+-		goto pps_register_source_exit;
+-	}
++
++	/* default_params should be supported */
++	BUG_ON((info->mode & default_params) != default_params);
++	/* echo function should be defined if we are asked to call it */
++	BUG_ON((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
++			info->echo == NULL);
++	/* time format should be specified */
++	BUG_ON((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0);
  
-@@ -111,7 +112,7 @@ static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
+ 	/* Allocate memory for the new PPS source struct */
+ 	pps = kzalloc(sizeof(struct pps_device), GFP_KERNEL);
+@@ -175,10 +164,8 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
+ 	int captured = 0;
+ 	struct pps_ktime ts_real;
  
- static inline void pps_get_ts(struct pps_event_time *ts)
- {
--	getnstimeofday(&ts->ts_real);
-+	getnstime_raw_and_real(&ts->ts_raw, &ts->ts_real);
- }
+-	if ((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0) {
+-		dev_err(pps->dev, "unknown event (%x)\n", event);
+-		return;
+-	}
++	/* check event type */
++	BUG_ON((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0);
  
- #endif /* LINUX_PPS_KERNEL_H */
-diff --git a/include/linux/time.h b/include/linux/time.h
-index ea3559f..1da8a7b 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -143,6 +143,8 @@ extern unsigned int alarm_setitimer(unsigned int seconds);
- extern int do_getitimer(int which, struct itimerval *value);
- extern void getnstimeofday(struct timespec *tv);
- extern void getrawmonotonic(struct timespec *ts);
-+extern void getnstime_raw_and_real(struct timespec *ts_raw,
-+		struct timespec *ts_real);
- extern void getboottime(struct timespec *ts);
- extern void monotonic_to_bootbased(struct timespec *ts);
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index caf8d4d..ef37b14 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -286,6 +286,40 @@ void ktime_get_ts(struct timespec *ts)
- EXPORT_SYMBOL_GPL(ktime_get_ts);
- 
- /**
-+ * getnstime_raw_and_real - Returns both the time of day an raw
-+ * monotonic time in a timespec format
-+ * @ts_mono_raw:	pointer to the timespec to be set to raw
-+ *			monotonic time
-+ * @ts_real:		pointer to the timespec to be set to the time
-+ *			of day
-+ */
-+void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
-+{
-+	unsigned long seq;
-+	s64 nsecs_raw, nsecs_real;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+
-+		*ts_raw = raw_time;
-+		*ts_real = xtime;
-+
-+		nsecs_raw = timekeeping_get_ns_raw();
-+		nsecs_real = timekeeping_get_ns();
-+
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs_real += arch_gettimeoffset();
-+
-+	} while (read_seqretry(&xtime_lock, seq));
-+
-+	timespec_add_ns(ts_raw, nsecs_raw);
-+	timespec_add_ns(ts_real, nsecs_real);
-+}
-+EXPORT_SYMBOL(getnstime_raw_and_real);
-+
-+/**
-  * do_gettimeofday - Returns the time of day in a timeval
-  * @tv:		pointer to the timeval to be set
-  *
+ 	dev_dbg(pps->dev, "PPS event at %ld.%09ld\n",
+ 			ts->ts_real.tv_sec, ts->ts_real.tv_nsec);
 -- 
 1.7.1
 
