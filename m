@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759210Ab0HDVWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:22:37 -0400
-Received: from tuxonice.net ([74.207.252.127]:58040 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759084Ab0HDVWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:22:31 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C59DA16.4020500@tuxonice.net>
-Date: Thu, 05 Aug 2010 07:22:30 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        pm list <linux-pm@lists.linux-foundation.org>
-Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't
- used!
-References: <4C58C528.4000606@tuxonice.net> <4C5960B0.7020003@teksavvy.com>
-In-Reply-To: <4C5960B0.7020003@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1759267Ab0HDVYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:24:21 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:49507 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759089Ab0HDVYP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 17:24:15 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=pCen0gnRzWs98skDnhSdN+L1n3oPVwdzSCG28joRmTlDbIy4s6Ek+/hjCnug44SyQulgTKsLtqxESWXUltdvASCCNuTsox9G+PUF0wBtm9Ci2+SXXFWr9hNMN3L5ElLq;
+Date: Wed, 4 Aug 2010 14:24:12 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Narendra K <Narendra_K@dell.com>,
+        Jordan Hargrave <jordan_hargrave@dell.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20100804142412.429e6b06@virtuousgeek.org>
+In-Reply-To: <20100804142531.aea95c0b.sfr@canb.auug.org.au>
+References: <20100804142531.aea95c0b.sfr@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Wed, 4 Aug 2010 14:25:31 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-On 04/08/10 22:44, Mark Lord wrote:
-> Looks to me like more and more things are using the block discard
-> functionality, and as predicted it is slowing things down enormously.
->
-> The problem is that we still only discard tiny bits (a single range
-> still??)
-> per TRIM command, rather than batching larger ranges and larger numbers
-> of ranges into single TRIM commands.
->
-> That's a very poor implementation, especially when things start enabling
-> it by default. Eg. the swap code, mke2fs, etc..
->
-> Ugh.
+> Hi Greg,
+> 
+> After merging the driver-core tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/pci/pci-label.c:100: error: unknown field 'owner' specified in initializer
+> drivers/pci/pci-label.c:100: warning: initialization from incompatible pointer type
+> drivers/pci/pci-label.c:105: error: unknown field 'owner' specified in initializer
+> drivers/pci/pci-label.c:105: warning: initialization from incompatible pointer type
+> 
+> Caused by commit 60cc62ad579afa0eb5bded82e08dd0617d461d52 ("sysfs: Remove
+> owner field from sysfs struct attribute") interacting with commit
+> 911e1c9b05a8e3559a7aa89083930700a0b9e7ee ("PCI: export SMBIOS provided
+> firmware instance and label to sysfs") from the pci tree.
+> 
+> I applied the following merge fix patch (Jesse, this patch can already be
+> applied to the pci tree without problems):
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 4 Aug 2010 14:21:42 +1000
+> Subject: [PATCH] pci: update for owner removal from struct device_attribute
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-I was hoping for a nice quick and simple answer. Since I haven't got 
-one, I'll try to find time to do a git bisect. I think I'll also look at 
-the swap code more carefully and see if it's doing the sensible thing. I 
-can't (at the moment) see the logic behind calling discard when 
-allocating swap. At freeing time makes much more sense to me.
+Applied, thanks.
 
-Regards,
-
-Nigel
+-- 
+Jesse Barnes, Intel Open Source Technology Center
