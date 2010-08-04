@@ -1,31 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759535Ab0HDXrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:47:08 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:43869 "EHLO h5.dl5rb.org.uk"
+	id S933165Ab0HDXuS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:50:18 -0400
+Received: from mail.lang.hm ([64.81.33.126]:37188 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759509Ab0HDXrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:47:06 -0400
-Date: Thu, 5 Aug 2010 00:46:17 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, ananth@in.ibm.com,
-        anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        hschauhan@nulltrace.org
-Subject: Re: [PATCH] MIPS: Define regs_return_value()
-Message-ID: <20100804234617.GB28115@linux-mips.org>
-References: <20100803202607.GA25233@linux-mips.org>
- <1280868804-2595-1-git-send-email-ddaney@caviumnetworks.com>
+	id S933085Ab0HDXuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 19:50:14 -0400
+Date: Wed, 4 Aug 2010 16:49:22 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <20100804233013.GN24163@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm>
+References: <20100801054816.GI2470@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm> <20100804185520.GA2417@srcf.ucam.org> <201008042251.08266.rjw@sisk.pl> <20100804205654.GA4986@srcf.ucam.org> <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
+ <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com> <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm> <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com> <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm>
+ <20100804233013.GN24163@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280868804-2595-1-git-send-email-ddaney@caviumnetworks.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, applied.
+On Wed, 4 Aug 2010, Paul E. McKenney wrote:
 
-  Ralf
+> On Wed, Aug 04, 2010 at 04:23:43PM -0700, david@lang.hm wrote:
+>> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
+>>
+>>>
+>>> We suspend as soon as no wakelocks are held. There is no delay.
+>>
+>> So, if I have a bookreader app that is not allowed to get the
+>> wakelock, and nothing else is running, the system will suspend
+>> immediatly after I click a button to go to the next page? it will
+>> not stay awake to give me a chance to read the page at all?
+>>
+>> how can any application run without wakelock privilages?
+>
+> Isn't a wakelock held as long as the display is lit, so that the
+> system would continue running as long as the page was visible?
+
+what holds this wakelock, and what sort of timeout does it have? (and why 
+could that same timeout be used in other ways instead)
+
+how many apps really need to keep running after the screen blanks? there 
+are a few (audio output apps, including music player and Navigation 
+directions), but I don't have see a problem with them being marked as the 
+'trusted' apps to pay attention instead.
+
+if the backlight being on holds the wakelock, it would seem that almost 
+every other use of the wakelock could (and probably should) be replaced by 
+something that tickles the display to stay on longer.
+
+David Lang
