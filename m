@@ -1,67 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab0HDVxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:53:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45304 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755244Ab0HDVxe (ORCPT
+	id S1756052Ab0HDVzf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:55:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46601 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab0HDVz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:53:34 -0400
-Date: Wed, 4 Aug 2010 14:52:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        tytso@mit.edu
-Subject: Re: new gerneric kfifo API
-Message-Id: <20100804145205.524c1c03.akpm@linux-foundation.org>
-In-Reply-To: <20100804201724.GA32100@suse.de>
-References: <201005132135.o4DLZ9WI021613@imap1.linux-foundation.org>
-	<1280905854.8441.3.camel@wall-e.seibold.net>
-	<20100804194617.GA30773@suse.de>
-	<1280952551.8594.0.camel@wall-e.seibold.net>
-	<20100804201724.GA32100@suse.de>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 4 Aug 2010 17:55:28 -0400
+Date: Wed, 4 Aug 2010 14:53:52 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: David Howells <dhowells@redhat.com>
+Cc: smfrench@gmail.com, jlayton@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Wang Lei <wang840925@gmail.com>
+Subject: Re: [PATCH 1/2] DNS: Separate out CIFS DNS Resolver code
+Message-Id: <20100804145352.a02a0bad.randy.dunlap@oracle.com>
+In-Reply-To: <20100804141633.23934.15025.stgit@warthog.procyon.org.uk>
+References: <20100804141633.23934.15025.stgit@warthog.procyon.org.uk>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C59E1BE.009B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010 13:17:24 -0700
-Greg KH <gregkh@suse.de> wrote:
+On Wed, 04 Aug 2010 15:16:33 +0100 David Howells wrote:
 
-> On Wed, Aug 04, 2010 at 10:09:11PM +0200, Stefani Seibold wrote:
-> > Am Mittwoch, den 04.08.2010, 12:46 -0700 schrieb Greg KH:
-> > > On Wed, Aug 04, 2010 at 09:10:54AM +0200, Stefani Seibold wrote:
-> > > > Hi,
-> > > > 
-> > > > once again. Kernel 2.6.35 is out and i want to know if there is play plan to
-> > > > merge the generic kfifo API. All complains was fixed, so there is no
-> > > > reason to shift the merge again. Please gibe me a short answer.
-> > > 
-> > > These have been in the -mm tree for a few major kernel releases now,
-> > > right?  And they are API safe, and only change the internals, right?
-> > > 
-> > > If so, I see no objection to merging them now, especially as you will be
-> > > around to fix up any problems that people have, right?  :)
-> > > 
-> > 
-> > right!
+> From: Wang Lei <wang840925@gmail.com>
 > 
-> Great.  As Andrew doesn't have the time to send them on, want me to?  If
-> so, care to point me at them in his tree, or resend them to me?
+> See the added Documentation/networking/dns_resolver.txt for more information.
+> ---
 > 
+>  Documentation/networking/dns_resolver.txt |  146 ++++++++++++++++++
+>  fs/cifs/Kconfig                           |   17 +-
+>  fs/cifs/cifsfs.c                          |   13 --
+>  fs/cifs/dns_resolve.c                     |  229 ++++++-----------------------
+>  fs/cifs/dns_resolve.h                     |    2 
+>  include/keys/dns_resolver-type.h          |   23 +++
+>  include/linux/dns_resolver.h              |   34 ++++
+>  net/Kconfig                               |    1 
+>  net/Makefile                              |    1 
+>  net/dns_resolver/Kconfig                  |   27 +++
+>  net/dns_resolver/Makefile                 |    7 +
+>  net/dns_resolver/dns_key.c                |  210 +++++++++++++++++++++++++++
+>  net/dns_resolver/dns_query.c              |  159 ++++++++++++++++++++
+>  net/dns_resolver/internal.h               |   44 ++++++
+>  14 files changed, 708 insertions(+), 205 deletions(-)
+>  create mode 100644 Documentation/networking/dns_resolver.txt
+>  create mode 100644 include/keys/dns_resolver-type.h
+>  create mode 100644 include/linux/dns_resolver.h
+>  create mode 100644 net/dns_resolver/Kconfig
+>  create mode 100644 net/dns_resolver/Makefile
+>  create mode 100644 net/dns_resolver/dns_key.c
+>  create mode 100644 net/dns_resolver/dns_query.c
+>  create mode 100644 net/dns_resolver/internal.h
+> 
+> diff --git a/Documentation/networking/dns_resolver.txt b/Documentation/networking/dns_resolver.txt
+> new file mode 100644
+> index 0000000..d8e0ce1
+> --- /dev/null
+> +++ b/Documentation/networking/dns_resolver.txt
+> @@ -0,0 +1,146 @@
+> +			     ===================
+> +			     DNS Resolver Module
+> +			     ===================
+> +
+> +Contents:
+> +
+> + - Overview.
+> + - Compilation.
+> + - Setting up.
+> + - Usage.
+> + - Mechanism.
+> + - Debugging.
+> +
+> +
+> +========
+> +OVERVIEW
+> +========
+> +
+> +The DNS resolver module provides a way for kernel services to make DNS queries
+> +by way of requesting a key of key type dns_resolver.  These queries are
+> +upcalled to userspace through /sbin/request-key.
+> +
+> +These routines must be supported by userspace tools dns.upcall, cifs.upcall and
+> +request-key.  It is under development and does not yet provide the full feature
+> +set.  The features it does support include:
+> +
+> + (*) Implements the dns_resolver key_type to contact userspace.
+> +
+> +It does not yet support the following AFS features:
+> +
+> + (*) Dns query support for AFSDB resource record.
+> +
+> +This code is extracted from the CIFS filesystem.
+> +
+> +
+> +===========
+> +COMPILATION
+> +===========
+> +
+> +The module should be enabled by turning on the kernel configuration options:
+> +
+> +	CONFIG_DNS_RESOLVER	- tristate "DNS Resolver support"
+> +
+> +
+> +==========
+> +SETTING UP
+> +==========
+> +
+> +To set up this facility, the /etc/request-key.conf file must be altered so that
+> +/sbin/request-key can appropriately direct the upcalls.  For example, to handle
+> +basic dname to IPv4/IPv6 address resolution, the following line should be
+> +added:
+> +
+> +	#OP	TYPE		DESC	CO-INFO	PROGRAM ARG1 ARG2 ARG3 ...
+> +	#======	============	=======	=======	==========================
+> +	create	dns_resolver  	*	*	/usr/sbin/cifs.upcall %k
+> +
+> +To direct a query for query type 'foo', a line of the following should be added
+> +before the more general line given above as the first match is the one taken.
+> +
+> +	create	dns_resolver  	foo:*	*	/usr/sbin/dns.foo %k
+> +
+> +
+> +
+> +=====
+> +USAGE
+> +=====
+> +
+> +To make use of this facility, one of the following functions that are
+> +implemented in the module can be called after doing:
+> +
+> +	#include <linux/dns_resolver.h>
+> +
+> + (1) int dns_query(const char *type, const char *name, size_t namelen,
+> +		   const char *options, char **_result, time_t *_expiry);
+> +
+> +     This is the basic access function.  It looks for a cached DNS query and if
+> +     it doesn't find it, it upcalls to userspace to make a new DNS query, which
+> +     may then be cached.  The key description is constructed as a string of the
+> +     form:
+> +
+> +		[<type>:]<name>
+> +
+> +     where <type> optionally specifies the particular upcall program to invoke,
+> +     and thus the type of query to do, and <name> specifies the string to be
+> +     looked up.  The default query type is a straight hostname to IP address
+> +     set lookup.
+> +
+> +     The name parameter is not required to be a NUL-terminated string, and its
+> +     length should be given by the namelen argument.
+> +
+> +     The options parameter may be NULL or it may be a set of options
+> +     appropriate to the query type.
+> +
+> +     The return value is a string appropriate to the query type.  For instance,
+> +     for the default query type it is just a list of comma-separated IPv4 and
+> +     IPv6 addresses.  The caller must free the result.
+> +
+> +     The length of the result string is returned on success, and a -ve error
 
-One does a little more than "send things on"...
+s/-ve/negative/ please.  Some readers won't know that "-ve" means.
 
-I have a little pile of kfifo changes queud for 2.6.36.  The "generic
-kfifo" patches are a large rotorooting of the whole facility, based on
-that work (I hope).
+> +     code is returned otherwise.  -EKEYREJECTED will be returned if the DNS
+> +     lookup failed.
+> +
+> +     If _expiry is non-NULL, the expiry time (TTL) of the result will be
+> +     returned also.
+> +
+> +
+> +=========
+> +MECHANISM
+> +=========
+> +
+> +The dnsresolver module registers a key type called "dns_resolver".  Keys of
+> +this type are used to transport and cache DNS lookup results from userspace.
+> +
+> +When dns_query() is invoked, it calls request_key() to search the local
+> +keyrings for a cached DNS result.  If that fails to find one, it upcalls to
+> +userspace to get a new result.
+> +
+> +Upcalls to userspace are made through the request_key() upcall vector, and are
+> +directed by means of configuration lines in /etc/request-key.conf that tell
+> +/sbin/request-key what program to run to instantiate the key.
+> +
+> +The upcall handler program is responsible for querying the DNS, processing the
+> +result into a form suitable for passing to the keyctl_instantiate_key()
+> +routine.  This then passes the data to dns_resolver_instantiate() which strips
+> +off and processes any options included in the data, and then attaches the
+> +remainder of the string to the key as its payload.
+> +
+> +The upcall handler program should set the expiry time on the key to that of the
+> +lowest TTL of all the records it has extracted a result from.  This means that
+> +the key will be discarded and recreated when the data it holds has expired.
+> +
+> +dns_query() returns a copy of the value attached to the key, or an error if
+> +that is indicated instead.
+> +
+> +See <file:Documentation/keys-request-key.txt> for further information about
+> +request-key function.
+> +
+> +
+> +=========
+> +DEBUGGING
+> +=========
+> +
+> +Debugging messages can be turned on dynamically by writing a 1 into the
+> +following file:
+> +
+> +        /sys/module/dnsresolver/parameters/debug
 
-There's also the abandoned
-kfifo-replace-the-old-non-generic-api-kfifo-fix-scatterlist-usage.patch
-which never got resolved with the originator.
 
+> diff --git a/include/keys/dns_resolver-type.h b/include/keys/dns_resolver-type.h
+> new file mode 100644
+
+I sure would prefer not to mix - and _ in the file name.
+
+
+> diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+> new file mode 100644
+> index 0000000..6c0cf31
+> --- /dev/null
+> +++ b/net/dns_resolver/dns_query.c
+> @@ -0,0 +1,159 @@
+
+...
+
+> +/*
+
+Use
+/**
+to make this kernel-doc, since the lines below here already are that.
+
+> + * dns_query - Query the DNS
+> + * @type: Query type (or NULL for straight host->IP lookup)
+> + * @name: Name to look up
+> + * @namelen: Length of name
+> + * @options: Request options (or NULL if no options)
+> + * @_result: Where to place the returned data.
+> + * @_expiry: Where to store the result expiry time (or NULL)
+> + *
+> + * The data will be returned in the pointer at *result, and the caller is
+> + * responsible for freeing it.
+> + *
+> + * The description should be of the form "[<query_type>:]<domain_name>", and
+> + * the options need to be appropriate for the query type requested.  If no
+> + * query_type is given, then the query is a straight hostname to IP address
+> + * lookup.
+> + *
+> + * The DNS resolution lookup is performed by upcalling to userspace by way of
+> + * requesting a key of type dns_resolver.
+> + *
+> + * Returns the size of the result on success, -ve error code otherwise.
+> + */
+> +int dns_query(const char *type, const char *name, size_t namelen,
+> +	      const char *options, char **_result, time_t *_expiry)
+> +{
+
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
