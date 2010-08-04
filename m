@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab0HDEjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 00:39:37 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:45613 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755741Ab0HDEjf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 00:39:35 -0400
-Date: Wed, 4 Aug 2010 00:38:49 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Paul Menage <menage@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
-        oleg@redhat.com
-Subject: Re: [PATCH v4 2/2] cgroups: make procs file writable
-Message-ID: <20100804043849.GC11950@ghc17.ghc.andrew.cmu.edu>
-References: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
- <20100730235902.GC22644@ghc17.ghc.andrew.cmu.edu>
- <20100804100811.199d73ba.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTikMofFGHSwF2QrdcAsit+hU6ihndhK5cod8duwS@mail.gmail.com>
+	id S1754924Ab0HDEnu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 00:43:50 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:60955 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935Ab0HDEns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 00:43:48 -0400
+Date: Wed, 4 Aug 2010 10:13:35 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
+        hschauhan@nulltrace.org
+Subject: Re: [PATCH 0/5] KProbes support for MIPS
+Message-ID: <20100804044335.GA23536@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <1280859742-26364-1-git-send-email-ddaney@caviumnetworks.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikMofFGHSwF2QrdcAsit+hU6ihndhK5cod8duwS@mail.gmail.com>
+In-Reply-To: <1280859742-26364-1-git-send-email-ddaney@caviumnetworks.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
-X-SMTP-Spam-Clean: 8% (
- BODY_SIZE_1000_1099 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 09:30:00PM -0700, Paul Menage wrote:
-> >> --- a/kernel/cpuset.c
-> >> +++ b/kernel/cpuset.c
-> >> @@ -1404,6 +1404,10 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
-> >> ? ? ? ? ? ? ? struct task_struct *c;
-> >>
-> >> ? ? ? ? ? ? ? rcu_read_lock();
-> >> + ? ? ? ? ? ? if (!thread_group_leader(tsk)) {
-> >> + ? ? ? ? ? ? ? ? ? ? rcu_read_unlock();
-> >> + ? ? ? ? ? ? ? ? ? ? return -EAGAIN;
-> >> + ? ? ? ? ? ? }
+On Tue, Aug 03, 2010 at 11:22:17AM -0700, David Daney wrote:
+> This patch set adds KProbs, JProbs and KRetProbes support for the MIPS
+> archetecture.
 > 
-> Why are you adding this requirement, here and in sched.c? (ns_cgroup.c
-> doesn't matter since it's being deleted).
+> It was tested on a 64-bit big-endian kernel (Octeon), but should work
+> equally well on 32-bit and little-endian as well.
 > 
-> Paul
+> As you can see from the patches it is partially based on previous work
+> by Sony and Himanshu Chauhan.
+> 
+> David Daney (5):
+>   MIPS: Define regs_return_value()
+>   MIPS: Add instrunction format for BREAK and SYSCALL
+>   MIPS: Add KProbe support.
+>   samples: kprobe_example: Make it print something on MIPS.
+>   documentation: Mention that KProbes is supported on MIPS
 
-It was either this or:
+David,
 
-rcu_read_lock();
-for_each_subsys(...) {
-	can_attach(...);
-}
-rcu_read_unlock();
+Thanks for the port!
 
-Which forces all can_attaches to not sleep. So by dropping
-rcu_read_lock(), we allow the possibility of the exec race I described
-in my last email, and therefore we have to check each time we re-acquire
-rcu_read to iterate thread_group.
+I do not know enough about MIPS internals to be able to review the
+arcane architecture specific details in the implementation.
 
-Yeah, it is not pretty. I call it "double-double-toil-and-trouble-check
-locking". But it is safe.
+It would help if you add yourself to the MAINTAINERS list for the MIPS
+port. If people hit an issue, they'll know to cc you.
 
--- Ben
+Ananth
