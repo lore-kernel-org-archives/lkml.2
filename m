@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab0HDGaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 02:30:04 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58549 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758197Ab0HDG37 (ORCPT
+	id S1758374Ab0HDGa0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 02:30:26 -0400
+Received: from fafnir.cs.unc.edu ([152.2.129.90]:45279 "EHLO fafnir.cs.unc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758255Ab0HDGaX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 02:29:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=j2xD+Mou1XVzkCzg9w/yzNXSl8tziHvonP6pD+rQlP67NCQ6pIN1Suo7RrrKPaPUwP
-         h4Ondm6NT4HFeKaR/2nPYYrrQ9L3Sc7onoDsPEALnd5w8GETVEPw7rfuXf03qkUFm5oq
-         sqIfzB09uFKDzoX9PeM4YFngSrrTVaf0dLW5g=
-Date: Tue, 3 Aug 2010 23:29:54 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>,
-        Anisse Astier <anisse@astier.eu>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100804062954.GA28706@core.coreip.homeip.net>
-References: <20100513075728.GF30110@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
- <20100514145539.GA5598@srcf.ucam.org>
- <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org>
- <20100804062021.GA25742@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100804062021.GA25742@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Wed, 4 Aug 2010 02:30:23 -0400
+References: <1278682707.6083.227.camel@Palantir> <1278685133.1900.201.camel@laptop> <51F8E441-58D7-45E1-B7A0-7A717EDF08B5@email.unc.edu> <1278745706.4390.2.camel@Palantir> <21AA2C13-8831-47A2-9464-28E84DBD72B0@email.unc.edu> <1280823360.1923.419.camel@laptop>
+Message-Id: <40739E62-2CB2-45E7-AE68-1825B542E5D4@cs.unc.edu>
+From: Bjoern Brandenburg <bbb@cs.unc.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <1280823360.1923.419.camel@laptop>
+Content-Type: text/plain;
+	charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Mailer: iPad Mail (7B405)
+Mime-Version: 1.0 (iPad Mail 7B405)
+Subject: Re: periods and deadlines in SCHED_DEADLINE
+Date: Wed, 4 Aug 2010 02:30:42 -0400
+Cc: Bjoern Brandenburg <bbb@email.unc.edu>, Raistlin <raistlin@linux.it>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Song Yuan <song.yuan@ericsson.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <lucabe72@email.it>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        "bastoni@cs.unc.edu" <bastoni@cs.unc.edu>,
+        Giuseppe Lipari <lipari@retis.sssup.it>, rostedt <rostedt@goodmis.org>,
+        Gregory Haskins <ghaskins@novell.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 11:20:22PM -0700, Dmitry Torokhov wrote:
-> On Fri, May 14, 2010 at 08:16:34AM -0700, Linus Torvalds wrote:
-> > 
-> > 
-> > On Fri, 14 May 2010, Matthew Garrett wrote:
-> > >
-> > > I've done some experimentation under qemu. On ACPI systems, Windows will 
-> > > *only* touch the keyboard controller if there's a device with an 
-> > > appropriate PNP HID or CID and if _STA evaluates to 0x0b or 0x0f. 
-> > > Otherwise it'll simply ignore the hardware entirely. By the looks of it 
-> > > their keyboard probing is also somewhat different to ours, but that's 
-> > > probably another story.
-> > 
-> > Well, I'd hate to lose the keyboard hotplug capability, but at the same 
-> > time, it _is_ 2010, and while I have personally used it historically, I 
-> > don't really foresee ever using it again.
-> > 
-> > So we _could_ decide to just try it, and see if anybody screams. If nobody 
-> > does, that would be a very simple solution to the problem.
-> > 
+On Aug 3, 2010, at 4:16 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Sun, 2010-07-11 at 08:46 +0200, Bjoern Brandenburg wrote:
+>> I'd be hesitant to just assume that it "approximates G-EDF"
+>> sufficiently well to apply any of the published G-EDF tests.
 > 
-> OK, time to ressurect the topic ;)
+> OK, suppose that for each cpu we keep the earliest and next-earliest
+> deadline in a table. Then on wakeup (job release) we pick the cpu with
+> the currently last deadline to preempt (we push the task).
 > 
-> There is another report (from Anisse - CCed) - MSI AE2220 stops for 10
-> seconds when we try to see if "AUX DISABLE" command took effect (it
-> doesn't). While we should reduce the time we wait and retry to something
-> more reasonable it woudl not fix this issue completely.
+> On sleep (job completion) we look for the earliest among all
+> next-earliest deadlines to select the next runnable task (we pull the
+> task).
 > 
+> If we serialize all this using one big lock around this [ {earliest,
+> next-earliest} ] table, we've basically implemented G-EDF, agreed?
 
-Hm, I take it back.. We won't be able to reduce timeout because we don't
-hit that code yet. Here is the excerpt from dmesg:
+Yes, agreed. (Assuming that the next-earliest filed is always kept up-to-date by finding the next-earliest when the task is pulled.)
 
-[    0.500931] drivers/input/serio/i8042.c: a7 -> i8042 (command) [9]
-[    0.502950] drivers/input/serio/i8042.c: 20 -> i8042 (command) [10]
-[    0.502950] drivers/input/serio/i8042.c:      -- i8042 (timeout) [10]
-[   11.045100] Failed to disable AUX port, but continuing anyway... Is this a SiS?
-[   11.049741] If AUX port is really absent please use the 'i8042.noaux' option.
-[   11.055417] drivers/input/serio/i8042.c: a8 -> i8042 (command) [13]
-[   11.057436] drivers/input/serio/i8042.c: 20 -> i8042 (command) [14]
-[   11.057436] drivers/input/serio/i8042.c:      -- i8042 (timeout) [14]
-
-We try do disable AUX and then read back the control register. We see
-there isn't any data coming and then box goes away for 10 seconds.
-And if we don't touch AUX port all is good...
-
-> The box does not have any PS/2 ports but in this case BIOS writers _did_
-> some crack and put PS/2 devices in DSDT. While the devices are most
-> likely not active and thus Matthew's patch would help Anisse I do hate
-> to loose the option of plugging PS/2 mouse/keyboard after boot and
-> having chance of them working. I would still like to add a few blacklist
-> entries instead.
 > 
+> Now replace that global lock with an algorithm that looks at the table,
+> finds the last-earliest or earliest-next-earliest in a lock-less
+> fashion, then locks the target cpu's rq->lock, verifies the result and
+> either continues or tries again.
 
--- 
-Dmitry
+Can this lead to tasks bouncing back-and-forth? Under a strict interpretation of G-EDF, each job arrival should cause at most one migration. Can you bound the maximum number of times that the retry-loop is taken per scheduling decision? Can you prove that the lock-less traversal of the table yields a consistent snapshot, or is it possible to accidentally miss a priority inversion due to concurrent job arrivals?
+
+In practice, repeated retries are probably not much of a problem, but not having a firm bound would violate strict validation rules (you can't prove it terminates), and would also violate academic real-time rules (again, you ought to be able to prove it correct). I realize that these rules may not be something that has a high priority for Linux, but on the other hand some properties such as the max number of migrations may be implicitly assumed in schedulability tests.    
+
+I'm not saying that the proposed implementation is not compatible with published analysis, but I'd be cautious to simply assume that it is. Some of the questions that were raised in this thread make it sound like the border between global and partitioned isn't clearly drawn in the implementation yet (e.g., handling of proc affinity masks), so my opinion may change when the code stabilizes. (This isn't meant as a criticism of Dario et al.'s good work; this is just something very hard to get right, and especially so on the first attempt.)  
+
+> So we replace the global lock with cmpxchg like loops using 2 per-cpu
+> locks. Our current SCHED_FIFO balancer does just this and is found to be
+> a very good approximation of global-fifo (iirc there's one funny case,
+> but I can't remember, maybe Steve or Gregory can remember the details).
+
+Going back to Dario's original comments, when combined with proc. affinities/partitioning you'd either have to move budget allocations from CPU to CPU or track a global utilization sum for admission test purposes.
+
+- Björn
+  
