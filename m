@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab0HDQuR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 12:50:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:2253 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab0HDQuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 12:50:14 -0400
-Subject: [PATCH net-next] drivers/s390/net/qeth_l3_main.c: Use %pI6
-From: Joe Perches <joe@perches.com>
-To: Frank Blaschka <blaschka@linux.vnet.ibm.com>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>, linux390 <linux390@de.ibm.com>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+	id S1757249Ab0HDQxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 12:53:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39172 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab0HDQxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 12:53:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=XHuK/ByaIRqMZSoaXIXToJkbjfMYSW0ABrVmJ5m+UeuWMPga9Z8iNudxKvoKdCX239
+         mLPVZkSEiyaxL8fJ3/cHl3JqlllWxbvuXfQLuwmWHMzPiVO64eGs9kI7xrQ/YttYQMIK
+         cE96iSEp/NRM6vfhnFjmigmswTzZNrS3scuXE=
+Subject: Re: [PATCH 1/2] MEMSTICK: fix hangs on unexpected device removal
+ in mspro_blk
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <811063.41186.qm@web37605.mail.mud.yahoo.com>
+References: <811063.41186.qm@web37605.mail.mud.yahoo.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 09:50:12 -0700
-Message-ID: <1280940612.1005.91.camel@Joe-Laptop.home>
+Date: Wed, 04 Aug 2010 19:53:41 +0300
+Message-ID: <1280940821.16380.10.camel@maxim-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Format an ipv6 address using vsprintf extensions.
+On Wed, 2010-08-04 at 00:50 -0700, Alex Dubov wrote: 
+> --- On Tue, 3/8/10, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> 
+> > Now that del_gendisk syncs, we better
+> > start rejecting requests right away.
+> 
+> 
+> I don't quite see why this change is needed. My understanding is, user
+> accessible interface should be marked as removed as early, as possible.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/s390/net/qeth_l3_main.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+The problem here is that del_gendisk, syncs the device.
+This is new change, made after you did your drivers.
 
-diff --git a/drivers/s390/net/qeth_l3_main.c b/drivers/s390/net/qeth_l3_main.c
-index e22ae24..561bdc8 100644
---- a/drivers/s390/net/qeth_l3_main.c
-+++ b/drivers/s390/net/qeth_l3_main.c
-@@ -103,12 +103,7 @@ int qeth_l3_string_to_ipaddr4(const char *buf, __u8 *addr)
- 
- void qeth_l3_ipaddr6_to_string(const __u8 *addr, char *buf)
- {
--	sprintf(buf, "%02x%02x:%02x%02x:%02x%02x:%02x%02x"
--		     ":%02x%02x:%02x%02x:%02x%02x:%02x%02x",
--		     addr[0], addr[1], addr[2], addr[3],
--		     addr[4], addr[5], addr[6], addr[7],
--		     addr[8], addr[9], addr[10], addr[11],
--		     addr[12], addr[13], addr[14], addr[15]);
-+	sprintf(buf, "%pI6", addr);
- }
- 
- int qeth_l3_string_to_ipaddr6(const char *buf, __u8 *addr)
+I have this problem on jMicron too (which otherwise works fine).
 
+
+PS:
+
+I have a copy of your ms_block.c.
+I would would be very happy if you share with me, what problems does it
+still have (besides need of trivial port for changes in block system,
+because I want to push it upstream too.
+
+I have MS DUO 64M to test it against.
+
+
+Best regards,
+Maxim Levitsky
 
