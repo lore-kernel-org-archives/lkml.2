@@ -1,147 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118Ab0HDXEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 19:04:37 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:50730 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932676Ab0HDXEa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 19:04:30 -0400
-Subject: Re: [PATCHv3 13/16] pps: capture MONOTONIC_RAW timestamps as well
-From: john stultz <johnstul@us.ibm.com>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        John Kacur <jkacur@redhat.com>
-In-Reply-To: <7e78eaffb92829465df0237fa7e4d1b183a1a511.1280952801.git.lasaine@lvk.cs.msu.su>
-References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
-	 <7e78eaffb92829465df0237fa7e4d1b183a1a511.1280952801.git.lasaine@lvk.cs.msu.su>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 16:03:57 -0700
-Message-ID: <1280963037.2678.28.camel@localhost.localdomain>
+	id S933134Ab0HDXE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 19:04:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36601 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757602Ab0HDXEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 19:04:54 -0400
+Date: Wed, 4 Aug 2010 19:04:22 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100804230421.GC29353@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 01:06 +0400, Alexander Gordeev wrote:
-> MONOTONIC_RAW clock timestamps are ideally suited for frequency
-> calculation and also fit well into the original NTP hardpps design. Now
-> phase and frequency can be adjusted separately: the former based on
-> REALTIME clock and the latter based on MONOTONIC_RAW clock.
-> A new function getnstime_raw_and_real is added to timekeeping subsystem
-> to capture both timestamps at the same time and atomically.
+On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
+> On Tue, 15 Jun 2010, Valerie Aurora wrote:
+> > Add support for fallthru directory entries to ext2.
 > 
-> Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-> ---
->  include/linux/pps_kernel.h |    3 ++-
->  include/linux/time.h       |    2 ++
->  kernel/time/timekeeping.c  |   34 ++++++++++++++++++++++++++++++++++
->  3 files changed, 38 insertions(+), 1 deletions(-)
+> If a previously used ext2 filesystem with is mounted again then
+> fallthroughs don't appear to work as expected.  Stat returns ENOENT
+> for these entries.
 > 
-> diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-> index 5af0498..39fc712 100644
-> --- a/include/linux/pps_kernel.h
-> +++ b/include/linux/pps_kernel.h
-> @@ -48,6 +48,7 @@ struct pps_source_info {
->  };
+> Can't see anything obviously wrong with the code.
 > 
->  struct pps_event_time {
-> +	struct timespec ts_raw;
->  	struct timespec ts_real;
->  };
+> > 
+> > XXX What to do for d_ino for fallthrus?  If we return the inode from
+> > the the underlying file system, it comes from a different inode
+> > "namespace" and that will produce spurious matches.  This argues for
+> > implementation of fallthrus as symlinks because they have to allocate
+> > an inode (and inode number) anyway, and we can later reuse it if we
+> > copy the file up.
 > 
-> @@ -111,7 +112,7 @@ static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
+> That's an idea, but I guess it won't make everyone happy since it
+> wastes both disk space and memory.
+
+Hm, I should probably remove this comment - I've talked over the
+symlink implementation with a few people and it seems like it
+introduces more problems than it solves.
+
+> One of the key differentiators for union mounts concept was that it
+> doesn't duplicate inodes and dentries from the layers.  With the
+> directory copyup on lookup that's already partially lost, but that can
+> be justified by the fact that non-directories usually far outnumber
+> directories.
+
+And it solves all the readdir() problems in one go. :)
+
+> Another idea is to use an internal inode and make all fallthroughs be
+> hard links to that.
 > 
->  static inline void pps_get_ts(struct pps_event_time *ts)
->  {
-> -	getnstimeofday(&ts->ts_real);
-> +	getnstime_raw_and_real(&ts->ts_raw, &ts->ts_real);
->  }
-> 
->  #endif /* LINUX_PPS_KERNEL_H */
-> diff --git a/include/linux/time.h b/include/linux/time.h
-> index ea3559f..1da8a7b 100644
-> --- a/include/linux/time.h
-> +++ b/include/linux/time.h
-> @@ -143,6 +143,8 @@ extern unsigned int alarm_setitimer(unsigned int seconds);
->  extern int do_getitimer(int which, struct itimerval *value);
->  extern void getnstimeofday(struct timespec *tv);
->  extern void getrawmonotonic(struct timespec *ts);
-> +extern void getnstime_raw_and_real(struct timespec *ts_raw,
-> +		struct timespec *ts_real);
->  extern void getboottime(struct timespec *ts);
->  extern void monotonic_to_bootbased(struct timespec *ts);
-> 
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index caf8d4d..ef37b14 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -286,6 +286,40 @@ void ktime_get_ts(struct timespec *ts)
->  EXPORT_SYMBOL_GPL(ktime_get_ts);
-> 
->  /**
-> + * getnstime_raw_and_real - Returns both the time of day an raw
-> + * monotonic time in a timespec format
-> + * @ts_mono_raw:	pointer to the timespec to be set to raw
-> + *			monotonic time
-> + * @ts_real:		pointer to the timespec to be set to the time
-> + *			of day
-> + */
-> +void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
-> +{
-> +	unsigned long seq;
-> +	s64 nsecs_raw, nsecs_real;
-> +
-> +	WARN_ON(timekeeping_suspended);
-> +
-> +	do {
-> +		seq = read_seqbegin(&xtime_lock);
-> +
-> +		*ts_raw = raw_time;
-> +		*ts_real = xtime;
-> +
-> +		nsecs_raw = timekeeping_get_ns_raw();
-> +		nsecs_real = timekeeping_get_ns();
-> +
-> +		/* If arch requires, add in gettimeoffset() */
-> +		nsecs_real += arch_gettimeoffset();
+> I think the same would work for whiteouts as well.  I don't like the
+> fact that whiteouts are invisible even when not mounted as part of a
+> union.
 
-Hmm. So this brings up an interesting point. If the system is an one
-which uses arch_gettimeoffset() (which means it doesn't have
-clocksources), I'm not sure if this function would return what you'd
-expect.
+I don't know if this helps, but I just wrote support for removing ext2
+whiteouts and fallthrus using tune2fs and e2fsck.  I think this does
+what people want from a "visible" whiteout feature without adding more
+complexity to the VFS.  It also takes away all consideration of race
+conditions and dentry conversion that happens with online removal of
+whiteouts and fallthrus.
 
-The issue is that jiffies is the basic clocksource that is in use on
-these systems, but the arch_gettimeoffset() function returns an
-inter-tick time value (usually by reading the interrupt generating
-decrementer or whatnot). So in this case, you'd get a
-CLOCK_MONOTONIC_RAW time that is based off the raw jiffies value at the
-last tick, and CLOCK_REALTIME time value at the exact time of the call.
+What are your thoughts on what a visible whiteout/fallthru would look
+like?
 
-That offset between the two would then vary depending on when in the
-inter-tick period the call was made.
+Thanks,
 
-
-The two solutions would be:
-1) Add the arch_gettimeoffset() value to nsecs_raw as well. Should be
-safe, as any freq variance from the raw freq will be limited to 1 tick
-length and won't accumulate.
-
-2) Don't add arch_gettimeoffset to either value, providing the raw and
-real time values at the last tick.
-
-I'd probably go with #1.
-
-Otherwise, the code looks good.
-
-thanks
--john
-
-
+-VAL
