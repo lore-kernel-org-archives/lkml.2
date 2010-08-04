@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab0HDHAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 03:00:50 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:60686 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932516Ab0HDHAs (ORCPT
+	id S1758420Ab0HDHGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 03:06:55 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:56860 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758370Ab0HDHGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 03:00:48 -0400
-Message-Id: <201008040700.o7470LWi021902@www262.sakura.ne.jp>
-Subject: Re: Preview of changes to the Security susbystem for 2.6.36
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: Valdis.Kletnieks@vt.edu
-Cc: hch@infradead.org, jmorris@namei.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        viro@ftp.linux.org.uk, kees.cook@canonical.com
+	Wed, 4 Aug 2010 03:06:54 -0400
+Date: Wed, 4 Aug 2010 16:06:48 +0900
+From: Simon Horman <horms@verge.net.au>
+To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Neuling <mikey@neuling.org>
+Subject: [rfc] Merge kexec-tools into the kernel tree
+Message-ID: <20100804070647.GB24064@verge.net.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Wed, 04 Aug 2010 16:00:21 +0900
-References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org> <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org> <20100802122421.GA12130@infradead.org> <20100802165936.GV3948@outflux.net> <15424.1280775073@localhost> <20100803165010.GG3948@outflux.net> <78690.1280871500@localhost> <201008040354.o743sWTv078792@www262.sakura.ne.jp> <5029.1280902716@localhost>
-In-Reply-To: <5029.1280902716@localhost>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 04082010 #3892565, status: clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu wrote:
-> Are you sure you weren't running in permissive mode when you tested this?
-I'm running CentOS5.5 and RHEL6beta in enforcing mode with default configuration
-(TARGETED policy).
+Hi,
 
-> I am unable to replicate this behavior on my system with SELinux set to
-> enforcing mode.  However, it does happen (which is to be expected) when SELinux
-> is set to permissive mode.
-So, MLS policy can stop this case, can't it? That's fine.
+After all the excitement of relocating kexec-tools from
+one location on kernel.org to another last week it was
+suggested to me by Michael Neuling that the merging
+kexec-tools into the kernel tree would be a good idea.
 
-But most people is using TARGETED policy, isn't it?
-How do you provide protection to those who don't use MLS policy?
+Given that there have been a bunch of issues with kexec
+on power that this would resolve. and there is precedence
+for tools in the kernel tree, this sounds entirely reasonable to me.
+So with my kexec-tools maintainer hat on, I would like to start
+a conversation about this.
 
-SSHD case is just an example which everyone can try handily.
-What I want to say is that it is up to application that how the application
-uses information if the application is allowed to access the information. Thus,
-we should try to control parameters that affect how the information is used
-as much as possible in addition to controlling whether the application can
-reach the information or not.
+In order to move the conversation along I have prepared a tree -
+a recent clone of Linus's tree + kexec tools.
+
+http://git.kernel.org/?p=linux/kernel/git/horms/kexec-tools-in-kernel-tree.git
+
+I think that a good next step would be to get this tree into linux-next.
+And then if all goes well, as Linus to pull the change some time in the future.
+
+
+
+
+
+For reference the steps taken to make the tree above were roughly as follows.
+Thanks to Michael for assistance with this.
+
+git clone
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+git clone git://git.kernel.org/pub/scm/utils/kernel/kexec/kexec-tools.git
+
+cd linux-2.6
+
+git remote add -f kexec ../kexec-tools
+git merge -s ours --no-commit kexec/master
+git read-tree --prefix=tools/kexec/ -u kexec/master
+git commit -m "Merge kexec-tools into subdirectory tools/kexec"
+
