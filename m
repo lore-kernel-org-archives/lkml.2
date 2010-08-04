@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab0HDVrC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:47:02 -0400
-Received: from kroah.org ([198.145.64.141]:35841 "EHLO coco.kroah.org"
+	id S1754577Ab0HDVqw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:46:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34409 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007Ab0HDVqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:46:50 -0400
-Date: Wed, 4 Aug 2010 14:46:18 -0700
-From: Greg KH <greg@kroah.com>
-To: Michael Leun <lkml20100708@newton.leun.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
- (after using openvpn) (was Re: sysfs bug when using tun with network
- namespaces)
-Message-ID: <20100804214618.GA6289@kroah.com>
-References: <loom.20100708T183152-326@post.gmane.org>
- <20100709235744.GA12752@kroah.com>
- <20100710101540.2799c9ef@xenia.leun.net>
- <20100710140800.GA20424@kroah.com>
- <20100710165208.59272ae6@xenia.leun.net>
- <20100710235323.5336f627@xenia.leun.net>
- <20100711192939.1c25dcaf@xenia.leun.net>
- <20100804153543.56f6ecad@xenia.leun.net>
+	id S1751855Ab0HDVqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 17:46:47 -0400
+Date: Wed, 4 Aug 2010 13:17:24 -0700
+From: Greg KH <gregkh@suse.de>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        tytso@mit.edu
+Subject: Re: new gerneric kfifo API
+Message-ID: <20100804201724.GA32100@suse.de>
+References: <201005132135.o4DLZ9WI021613@imap1.linux-foundation.org>
+ <1280905854.8441.3.camel@wall-e.seibold.net>
+ <20100804194617.GA30773@suse.de>
+ <1280952551.8594.0.camel@wall-e.seibold.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100804153543.56f6ecad@xenia.leun.net>
+In-Reply-To: <1280952551.8594.0.camel@wall-e.seibold.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 03:35:43PM +0200, Michael Leun wrote:
-> Hi,
+On Wed, Aug 04, 2010 at 10:09:11PM +0200, Stefani Seibold wrote:
+> Am Mittwoch, den 04.08.2010, 12:46 -0700 schrieb Greg KH:
+> > On Wed, Aug 04, 2010 at 09:10:54AM +0200, Stefani Seibold wrote:
+> > > Hi,
+> > > 
+> > > once again. Kernel 2.6.35 is out and i want to know if there is play plan to
+> > > merge the generic kfifo API. All complains was fixed, so there is no
+> > > reason to shift the merge again. Please gibe me a short answer.
+> > 
+> > These have been in the -mm tree for a few major kernel releases now,
+> > right?  And they are API safe, and only change the internals, right?
+> > 
+> > If so, I see no objection to merging them now, especially as you will be
+> > around to fix up any problems that people have, right?  :)
+> > 
 > 
-> On Sun, 11 Jul 2010 19:29:39 +0200
-> Michael Leun <lkml20100708@newton.leun.net> wrote:
-> 
-> [...]
-> > Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo to
-> > become free. Usage count = 3 [repeated]
-> > 
-> > Now one might say it is fault of openvpn (used OpenVPN 2.1_rc20
-> > i586-suse-linux - the one in openSuSE 11.2 package), openvpn didn't
-> > close some ressource and ssh does fine.
-> > 
-> > But: should'nt kernel clean up after process when it exits?
-> > And/or: Should'nt kernel clean up if last process in network namespace
-> > exits - there is nothing left which might use that interface?!
-> > 
-> > Greg KH <greg@kroah.com> wrote:
-> > 
-> > > Yes, you are correct.  Care to resend all of this to the
-> > > network-namespace developer(s) and the netdev mailing list so that
-> > > the correct people are notified so they can fix it all?
-> > 
-> > [X] done - hopefully, cannot find a particular network namespace
-> > developer in MAINTAINERS or source files. If such a one exists, please
-> > forward.
-> 
-> Did'nt work. Got no reaction from network mailinglist at all and bug
-> still is in 2.6.35.
+> right!
 
-Eric, here's a bug with the network namespace stuff, care to work on
-resolving it?
+Great.  As Andrew doesn't have the time to send them on, want me to?  If
+so, care to point me at them in his tree, or resend them to me?
 
 thanks,
 
