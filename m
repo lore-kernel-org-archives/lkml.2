@@ -1,155 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab0HDMNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:13:05 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:47883 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789Ab0HDMND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:13:03 -0400
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Dave Airlie <airlied@gmail.com>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
-        Gary Hade <garyhade@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: oops in ioapic_write_entry
-References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>
-	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>
-	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>
-	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>
-	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>
-	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>
-	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>
-	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org>
-	<m18w4onebi.fsf@fess.ebiederm.org> <4C5871BC.4070007@kernel.org>
-	<m1bp9jgyww.fsf@fess.ebiederm.org> <4C592BF5.3070008@kernel.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 04 Aug 2010 05:12:49 -0700
-In-Reply-To: <4C592BF5.3070008@kernel.org> (Yinghai Lu's message of "Wed\, 04 Aug 2010 01\:59\:33 -0700")
-Message-ID: <m1mxt28tku.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S932617Ab0HDMPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:15:13 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:39668 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755789Ab0HDMPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 08:15:10 -0400
+From: Ed Tomlinson <edt@aei.ca>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: Transparent Hugepage Support #29
+Date: Wed, 4 Aug 2010 08:15:02 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-crc+; KDE/4.4.5; x86_64; ; )
+References: <20100803135615.GG6071@random.random>
+In-Reply-To: <20100803135615.GG6071@random.random>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008040815.02368.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
+Andrea,
 
-> On 08/03/2010 02:38 PM, Eric W. Biederman wrote:
->> 
->> A clean solution would be to scrub the input from the MP table before
->> we attempt to use of it, instead of scrubbing the data as we use in
->> code paths like pin_2_irq.  Just touching pin_2_irq is certainly an
->> incomplete solution because you have not resolved if the pins should
->> be edge or level triggered, and what polarity we should be sampling
->> them at.
->> 
->> Until I see a plausible scenario where not handling buggy MP tables
->> exactly as we have done in the past I don't see hacks like you
->> are proposing making much sense at all.
->
-> ok, how about this one?
->
-> it will try to add entries to mp_irqs[] with some checking.
+I have been tracking & testing this for a while.   It looks very much like Linus wants to merge (or a big chunk of it):
 
-This looks roughly like the right approach.
-However I don't see what would force the ioapic entries before
-the intsrc entries in the table.  Especially when the assumption
-is we are dealing with a buggy bios.
+git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git vfs-scale-working
 
-> ---
->  arch/x86/kernel/mpparse.c |   44 +++++++++++++++++++++++++++++++++++++-------
->  1 file changed, 37 insertions(+), 7 deletions(-)
->
-> Index: linux-2.6/arch/x86/kernel/mpparse.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/mpparse.c
-> +++ linux-2.6/arch/x86/kernel/mpparse.c
-> @@ -173,17 +173,17 @@ static int __init mp_irq_mpc_intsrc_cmp(
->  {
->  	if (mp_irq->dstapic != m->dstapic)
->  		return 1;
-> -	if (mp_irq->type != m->type)
-> +	if (mp_irq->dstirq != m->dstirq)
->  		return 2;
-> -	if (mp_irq->irqtype != m->irqtype)
-> +	if (mp_irq->srcbus != m->srcbus)
->  		return 3;
-> -	if (mp_irq->irqflag != m->irqflag)
-> +	if (mp_irq->type != m->type)
->  		return 4;
-> -	if (mp_irq->srcbus != m->srcbus)
-> +	if (mp_irq->irqtype != m->irqtype)
->  		return 5;
-> -	if (mp_irq->srcbusirq != m->srcbusirq)
-> +	if (mp_irq->irqflag != m->irqflag)
->  		return 6;
-> -	if (mp_irq->dstirq != m->dstirq)
-> +	if (mp_irq->srcbusirq != m->srcbusirq)
->  		return 7;
->  
->  	return 0;
-> @@ -195,9 +195,39 @@ static void __init MP_intsrc_info(struct
->  
->  	print_MP_intsrc_info(m);
->  
-> +	/*
-> +	 *  Assume BUS, and IOAPIC entries come first all before
-> +	 *    INTSRC entries
-> +	 */
-> +
-> +	/* check if dstapic is right */
-> +	for (i = 0; i < nr_ioapics; i++) {
-> +		if (mp_ioapics[idx].apicid == m->dstapic)
-> +			break;
-> +	}
-> +	if (i == nr_ioapics)
-> +		return;
+When I pull an aa-29 on top of this there is one conflict in vmscan.c that git cannot resolve.
+It would be really nice to have a version of the THS patchs that can be tested with the vfs scaling
+tree.
 
-If we can make the algorithm two pass picking up the ioapic
-entries first this should be fine.
+TIA
+Ed Tomlinson
 
->  	for (i = 0; i < mp_irq_entries; i++) {
-> -		if (!mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m))
-> +		int ret = mp_irq_mpc_intsrc_cmp(&mp_irqs[i], m);
-> +
-> +		/* duplicated entries ? */
-> +		if (!ret)
->  			return;
-> +
-> +		/* same apic/pin, but different bus */
-> +		if (ret == 3) {
-> +			/* overwrite wrong legacy one */
-
-In practice your test of looking at mp_bus_not_pci is essentially what
-we do.  I wonder if it could be made to be a test of polarity and edge
-mismatch instead.
-
-Also if we are ditching a non-duplicate intsrc we want to print a message
-so there is a chance of debugging things if our heuristic for fixing
-up broken BIOS's goes wrong, on some common configuration.
-
-> +			if (test_bit(mp_irqs[i].srcbus, mp_bus_not_pci) &&
-> +			    !test_bit(m->srcbus, mp_bus_not_pci)) {
-> +				assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
-
-That should be.
-> +				assign_to_mp_irq(m, &mp_irqs[i]);
-
-> +				return;
-> +			}
-> +			/* dump this legacy one */
-> +			if (!test_bit(mp_irqs[i].srcbus, mp_bus_not_pci) &&
-> +			    test_bit(m->srcbus, mp_bus_not_pci))
-> +				return;
-> +		}
->  	}
->  
->  	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
-
-Eric
+On Tuesday 03 August 2010 09:56:15 you wrote:
+> http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
+> 
+> first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+> or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+> later: git fetch; git checkout -f origin/master
+> 
+> The tree is rebased and git pull won't work.
+> 
+> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35/transparent_hugepage-29/
+> http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35/transparent_hugepage-29.gz
+> 
+> Diff #28 -> #29:
+> 
+>  THP-disable-on-small-systems    |   41 ++++++++
+> 
+> Disable THP on <500M systems, from Rik.
+> 
+>  compaction-kswapd               |  194 ++++++++++++++++++++++++++++++++++++++++
+> 
+> Add a compaction mode for kswapd to fully replace obsolete blind lumpy
+> reclaim.
+> 
+>  free_pages-count                |   60 ++++++++++++
+>  free_pages-drain_all_pages      |   62 ++++++++++++
+>  free_pages-vmstat               |  156 ++++++++++++++++++++++++++++++++
+> 
+> Make free page statistics more accurate from Mel.
+> 
+>  ksmd-khugepaged-freeze          |   97 ++++++++++++++++++++
+> 
+> kswapd uses set_freezing, so shall ksmd and khugepaged.
+> 
+>  transparent-hugepage-nr_rotated |   36 +++++++
+>  transparent-hugepage-stat       |  166 ++++++++++++++++++++++++++++++++++
+> 
+> Fix inactive/active stats and nr_rotated, from Rik.
+> 
+>  Documentation/vm/transhuge.txt        |  283 ++++
+>  arch/alpha/include/asm/mman.h         |    2 
+>  arch/mips/include/asm/mman.h          |    2 
+>  arch/parisc/include/asm/mman.h        |    2 
+>  arch/powerpc/mm/gup.c                 |   12 
+>  arch/x86/include/asm/kvm_host.h       |    1 
+>  arch/x86/include/asm/paravirt.h       |   23 
+>  arch/x86/include/asm/paravirt_types.h |    6 
+>  arch/x86/include/asm/pgtable-2level.h |    9 
+>  arch/x86/include/asm/pgtable-3level.h |   23 
+>  arch/x86/include/asm/pgtable.h        |  149 ++
+>  arch/x86/include/asm/pgtable_64.h     |   28 
+>  arch/x86/include/asm/pgtable_types.h  |    3 
+>  arch/x86/kernel/paravirt.c            |    3 
+>  arch/x86/kernel/vm86_32.c             |    1 
+>  arch/x86/kvm/mmu.c                    |   68 -
+>  arch/x86/kvm/paging_tmpl.h            |    6 
+>  arch/x86/mm/gup.c                     |   28 
+>  arch/x86/mm/pgtable.c                 |   66 +
+>  arch/xtensa/include/asm/mman.h        |    2 
+>  fs/Kconfig                            |    2 
+>  fs/exec.c                             |   44 
+>  fs/proc/meminfo.c                     |   14 
+>  fs/proc/page.c                        |   14 
+>  include/asm-generic/mman-common.h     |    2 
+>  include/asm-generic/pgtable.h         |  130 +
+>  include/linux/compaction.h            |   13 
+>  include/linux/gfp.h                   |   14 
+>  include/linux/huge_mm.h               |  151 ++
+>  include/linux/khugepaged.h            |   66 +
+>  include/linux/ksm.h                   |   20 
+>  include/linux/kvm_host.h              |    4 
+>  include/linux/memory_hotplug.h        |   14 
+>  include/linux/mm.h                    |  114 +
+>  include/linux/mm_inline.h             |   19 
+>  include/linux/mm_types.h              |    3 
+>  include/linux/mmu_notifier.h          |   66 +
+>  include/linux/mmzone.h                |    1 
+>  include/linux/page-flags.h            |   36 
+>  include/linux/res_counter.h           |   12 
+>  include/linux/rmap.h                  |   33 
+>  include/linux/sched.h                 |    1 
+>  include/linux/swap.h                  |    2 
+>  include/linux/vmstat.h                |    4 
+>  kernel/fork.c                         |   12 
+>  kernel/futex.c                        |   55 
+>  mm/Kconfig                            |   38 
+>  mm/Makefile                           |    1 
+>  mm/compaction.c                       |   48 
+>  mm/huge_memory.c                      | 2212 ++++++++++++++++++++++++++++++++++
+>  mm/hugetlb.c                          |   69 -
+>  mm/ksm.c                              |   86 -
+>  mm/madvise.c                          |    8 
+>  mm/memcontrol.c                       |  169 +-
+>  mm/memory-failure.c                   |    2 
+>  mm/memory.c                           |  241 +++
+>  mm/memory_hotplug.c                   |   14 
+>  mm/mempolicy.c                        |   14 
+>  mm/migrate.c                          |   22 
+>  mm/mincore.c                          |    7 
+>  mm/mmap.c                             |   57 
+>  mm/mmu_notifier.c                     |   20 
+>  mm/mprotect.c                         |   20 
+>  mm/mremap.c                           |    8 
+>  mm/oom_kill.c                         |    1 
+>  mm/page_alloc.c                       |   58 
+>  mm/pagewalk.c                         |    1 
+>  mm/rmap.c                             |  228 ++-
+>  mm/sparse.c                           |    4 
+>  mm/swap.c                             |  117 +
+>  mm/swap_state.c                       |    6 
+>  mm/swapfile.c                         |    2 
+>  mm/vmscan.c                           |  102 -
+>  mm/vmstat.c                           |   31 
+>  virt/kvm/iommu.c                      |    2 
+>  virt/kvm/kvm_main.c                   |   56 
+>  76 files changed, 4680 insertions(+), 527 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
