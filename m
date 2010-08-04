@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758617Ab0HDTWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 15:22:12 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35131 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757739Ab0HDTWK (ORCPT
+	id S1758626Ab0HDTXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 15:23:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61673 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757789Ab0HDTXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 15:22:10 -0400
-Date: Wed, 4 Aug 2010 21:22:04 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: A question of perf NMI handler
-Message-ID: <20100804192204.GG13161@basil.fritz.box>
-References: <20100804140021.GN3353@redhat.com>
- <1280931093.1923.1194.camel@laptop>
- <20100804145203.GP3353@redhat.com>
- <1280934161.1923.1294.camel@laptop>
- <20100804151858.GB5130@lenovo>
- <20100804155002.GS3353@redhat.com>
- <20100804161046.GC5130@lenovo>
- <20100804162026.GU3353@redhat.com>
- <20100804163930.GE5130@lenovo>
- <20100804184806.GL26154@erda.amd.com>
+	Wed, 4 Aug 2010 15:23:31 -0400
+Message-ID: <4C59BE0D.7020604@kernel.org>
+Date: Wed, 04 Aug 2010 12:22:53 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100804184806.GL26154@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Dave Airlie <airlied@gmail.com>, Iranna D Ankad <iranna.ankad@in.ibm.com>,
+        Gary Hade <garyhade@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: oops in ioapic_write_entry
+References: <AANLkTimeFuABgQHJzq38uJ-4gTQbfSRfQBb91P+NPwCS@mail.gmail.com>	<AANLkTimqDPvTqOZiBgUn7t4JJhgQU4ShVTsCJEzV=8fR@mail.gmail.com>	<AANLkTi=sNRwxmv8aKN_jo7tAx6SQ-AOFfAXJxcPnNZQp@mail.gmail.com>	<4C577197.9020003@kernel.org> <4C57723C.1060400@kernel.org>	<m1bp9k2xsg.fsf@fess.ebiederm.org> <4C57C319.8070800@kernel.org>	<m11vagw2fl.fsf@fess.ebiederm.org> <4C57CD9C.70602@kernel.org>	<m1fwywoz0f.fsf@fess.ebiederm.org> <4C57DACF.1090503@kernel.org>	<m17hk8oy5g.fsf@fess.ebiederm.org> <4C57E32A.9070401@kernel.org>	<m18w4onebi.fsf@fess.ebiederm.org> <4C5871BC.4070007@kernel.org>	<m1bp9jgyww.fsf@fess.ebiederm.org> <4C592BF5.3070008@kernel.org> <m1mxt28tku.fsf@fess.ebiederm.org>
+In-Reply-To: <m1mxt28tku.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C59BE16.003C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Only the upper 2 bits in io_61h indicate the nmi reason, so in case of
-> (!(reason & 0xc0)) the source simply can not be determined and all nmi
-> handlers in the chain must be called (DIE_NMI/DIE_NMI_IPI). The
-> perfctr handler then stops it.
+On 08/04/2010 05:12 AM, Eric W. Biederman wrote:
+
+
 > 
-> So you can decide to either get an unrecovered nmi panic triggered by
-> a perfctr or losing unknown nmis from other sources. Maybe this can be
-> fixed by implementing handlers for those sources.
+> In practice your test of looking at mp_bus_not_pci is essentially what
+> we do.  I wonder if it could be made to be a test of polarity and edge
+> mismatch instead.
+> 
 
-This is a tricky area. Me and Ying have been looking at this recently.
+Dave's system mptable pol and trig is wrong ...
 
-Hardware traditionally signals NMI when it has a uncontained error and really 
-expects the OS to shut down to prevent data corruption spreading. i
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 00, APIC ID 8, APIC INT 00
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 01, APIC ID 8, APIC INT 01
+Int: type 3, pol 1, trig 1, bus 0a, IRQ 00, APIC ID 8, APIC INT 02
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 03, APIC ID 8, APIC INT 03
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 04, APIC ID 8, APIC INT 04
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 05, APIC ID 8, APIC INT 05
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 06, APIC ID 8, APIC INT 06
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 07, APIC ID 8, APIC INT 07
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 08, APIC ID 8, APIC INT 08
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 09, APIC ID 8, APIC INT 09
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 0a, APIC ID 8, APIC INT 0a
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 0b, APIC ID 8, APIC INT 0b
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 0c, APIC ID 8, APIC INT 0c
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 0e, APIC ID 8, APIC INT 0e
+Int: type 0, pol 0, trig 0, bus 0a, IRQ 0f, APIC ID 8, APIC INT 0f
+Int: type 0, pol 0, trig 0, bus 00, IRQ 28, APIC ID 8, APIC INT 09
+Int: type 0, pol 0, trig 0, bus 00, IRQ 2c, APIC ID 8, APIC INT 0a
+Int: type 0, pol 0, trig 0, bus 00, IRQ 2d, APIC ID 8, APIC INT 0a
+Int: type 0, pol 0, trig 0, bus 00, IRQ 34, APIC ID 8, APIC INT 0e
+Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
+Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
+Int: type 0, pol 0, trig 0, bus 00, IRQ 38, APIC ID 8, APIC INT 0b
 
-Unfortunately especially for some older hardware
-there can be cases where this is not expressed in port 61.
-But the default behaviour of Linux for this today is quite wrong.
+Do you mean check pol/trig in addition to bus in this case?
 
-Some cases can be also determined with the help of APEI, which
-can give you more information about the error (and tell you
-if shutdown is needed).
-
-But of course we can still have performance counter and other NMI
-users.
-
-So the right flow might be something like
-
-- check software events (like crash dump or reboot)
-- check perfctrs
-- check APEI
-- check port 61 for known events (it's probably a good idea
-to check perfctrs first because accessing io ports is quite slow.
-But the perfctr handler has to make sure it doesn't eat unknown
-events, otherwise error handling would be impacted)
-- check other event sources
-- shutdown (depending on the chipset likely)
-
-This means the NMI users who cannot determine themselves if a event
-happened and eat everything (like oprofile today) would need to be fixed.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Yinghai
