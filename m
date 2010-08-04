@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab0HDDoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Aug 2010 23:44:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3672 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758207Ab0HDDoE (ORCPT
+	id S932540Ab0HDDzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Aug 2010 23:55:00 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63219 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758008Ab0HDDy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Aug 2010 23:44:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=gcqKu/OllXHDEPKIXehuVmFzqnzMgOBUEv2VzmjTumE1UMGQ8kWc/7QTSmnbI4ZWB
-	6KxxEOPRS1T1ajswz+a8w==
+	Tue, 3 Aug 2010 23:54:58 -0400
+Message-Id: <201008040354.o743sWTv078792@www262.sakura.ne.jp>
+Subject: Re: Preview of changes to the Security susbystem for 2.6.36
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: Valdis.Kletnieks@vt.edu
+Cc: hch@infradead.org, jmorris@namei.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        viro@ftp.linux.org.uk, kees.cook@canonical.com
 MIME-Version: 1.0
-In-Reply-To: <20100730235754.GB22644@ghc17.ghc.andrew.cmu.edu>
-References: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
-	<20100730235754.GB22644@ghc17.ghc.andrew.cmu.edu>
-Date: Tue, 3 Aug 2010 20:44:01 -0700
-Message-ID: <AANLkTikpNG2Y3S3AyxAbCkMynKu1u5yKPrw=bh+uy=9R@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] cgroups: read-write lock CLONE_THREAD forking per 
-	threadgroup
-From: Paul Menage <menage@google.com>
-To: Ben Blum <bblum@andrew.cmu.edu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
-        oleg@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+Date: Wed, 04 Aug 2010 12:54:32 +0900
+References: <alpine.LRH.2.00.1007301852110.14431@tundra.namei.org> <alpine.LRH.2.00.1008021216520.31941@tundra.namei.org> <20100802122421.GA12130@infradead.org> <20100802165936.GV3948@outflux.net> <15424.1280775073@localhost> <20100803165010.GG3948@outflux.net> <78690.1280871500@localhost>
+In-Reply-To: <78690.1280871500@localhost>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 04082010 #3892565, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On Fri, Jul 30, 2010 at 4:57 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
-> +	 * The threadgroup_fork_lock prevents threads from forking with
-> +	 * CLONE_THREAD while held for writing. Use this for fork-sensitive
-> +	 * threadgroup-wide operations. It's taken for reading in fork.c in
-> +	 * copy_process().
-> +	 * Currently only needed write-side by cgroups.
-> +	 */
-> +	struct rw_semaphore threadgroup_fork_lock;
-> +#endif
+Valdis.Kletnieks@vt.edu wrote:
+> That's why you need an actual model, not ad-hoc rules.  Start with "This program
+> has data we don't want leaked, by ptrace or any other means".  Work from there.
 
-I'm not sure how best to word this comment, but I'd prefer something like:
+/usr/sbin/sshd deals data (e.g. the content of /etc/shadow) which we don't want
+leaked, by ptrace or any other means.
 
-"The threadgroup_fork_lock is taken in read mode during a CLONE_THREAD
-fork operation; taking it in write mode prevents the owning
-threadgroup from adding any new threads and thus allows you to
-synchronize against the addition of unseen threads when performing
-threadgroup-wide operations. New-process forks (without CLONE_THREAD)
-are not affected."
+Please execute below commands on a system protected by SELinux, provided that
+permissions to execute below commands are given.
 
-As far as the #ifdef mess goes, it's true that some people don't have
-CONFIG_CGROUPS defined. I'd imagine that these are likely to be
-embedded systems with a fairly small number of processes and threads
-per process. Are there really any such platforms where the cost of a
-single extra rwsem per process is going to make a difference either in
-terms of memory or lock contention? I think you should consider making
-these additions unconditional.
+# killall -KILL sshd
+# /usr/sbin/sshd -o 'Banner /etc/shadow'
+# ssh localhost
 
-Paul
+The person who manages SELinux's policy believes that /etc/shadow is not leaked
+by the root user (e.g. "cat /etc/shadow" piped to "mail" command). But the root
+user can be different from the person who manages SELinux's policy (it can be a
+non-root user executing above commands using "sudo" command).
+
+> But scribbling on /etc/passwd by using any of the 4,394 different known attacks
+> against Linux except the 1 that Yama protects against isn't considered a
+> problem.
+
+Leaking the content of /etc/shadow by using "banner" option isn't considered a
+problem, is it? What SELinux developers think "security" is not always same as
+what Linux users and non SELinux developers think.
+
+An app is dealing credit card information which we don't want leaked, by ptrace
+or any other means. But that app needs to send mail in order to report results.
+Who can prove that SELinux prevents that app from leaking credit card
+information while keeping that app working? Nobody can.
+
+SELinux is good at dealing read/write/execute permission and is a good solution
+for isolating information. But SELinux is not a perfect solution for controlling
+how the information is used (in other words, for what purpose the information
+is used). I can't believe in "information flow control" or BLP model because
+information itself cannot be labeled. Expecting LSM modules to guarantee "Data
+dealt by this program is never leaked, by ptrace or any other means" sounds an
+illusion for me.
+
+TOMOYO is less good at dealing read/write/execute permission but is better at
+dealing parameters (e.g. filename, command line arguments, environment
+variables, DAC mode) that affect how the information is used. Although, TOMOYO
+does not make any guarantee like BLP model, TOMOYO is addressing problems which
+SELinux is not addressing.
+
+> It will likely not be accepted as an in-tree LSM, especially given that currently
+> it's rather difficult to stack two LSM's - which means that if a site wants to
+> run Yama, it becomes unable to take advantage of all the *other* security
+> features of SELinux or something similar.  In other words - if you want to be
+> an LSM, you need to be full-featured enough to cover all the bases, not just
+> a few cherry-picked ones.
+
+If a site wants to run TOMOYO, it becomes unable to take advantage of SELinux.
+No LSM module is full-featured enough to cover all the bases. TOMOYO was
+accepted as an in-tree LSM nonetheless TOMOYO is covering only a few
+cherry-picked ones.
+
+I don't have a plan to make TOMOYO cover all the bases by reinventing what
+SELinux/Smack already does. Rather, I want to stack/chain LSM modules so that
+TOMOYO can be used with SELinux/Smack/AppArmor/Yama.
+
+I'm not happy to keep Yama out-of-tree because of "Yama covers only a few
+cherry-picked ones" and "LSM is not stackable/chainable".
+I believe LSM should become stackable/chainable.
