@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758317Ab0HDSu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 14:50:28 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:58108 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756162Ab0HDSu0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 14:50:26 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "Haiyang Zhang" <haiyangz@microsoft.com>
-Subject: Re: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
- correct index
-Thread-Topic: [PATCH 1/6] staging: hv: Fixed bounce kmap problem by using
- correct index
-Thread-Index: AcszLH4zXLsEPQuASP+5uxzSPyjpcgAQLtUAAAgzgxAAKOwtAAAOQtlQ//+kCgD//5I6iA==
-Date: Wed, 4 Aug 2010 18:50:24 +0000
-Message-ID: <81D58C97-B9A7-4217-9912-7EE6A3FE7DD0@microsoft.com>
-References: <8AFC7968D54FB448A30D8F38F259C56223FD0D21@TK5EX14MBXC114.redmond.corp.microsoft.com>
- <20100803173732.GA1455@suse.de>
- <8AFC7968D54FB448A30D8F38F259C56223FE8B19@TK5EX14MBXC114.redmond.corp.microsoft.com>
- <20100804170406.GA28217@suse.de>
- <8AFC7968D54FB448A30D8F38F259C56223FE8EF5@TK5EX14MBXC114.redmond.corp.microsoft.com>,<20100804182318.GB29046@suse.de>
-In-Reply-To: <20100804182318.GB29046@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1758369Ab0HDSvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 14:51:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49198 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab0HDSvH (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 4 Aug 2010 14:51:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Cc: alex.williamson@redhat.com, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 10/20] xen: Provide a variant of xen_poll_irq with timeout.
+Date: Wed,  4 Aug 2010 14:19:05 -0400
+Message-Id: <1280945955-14229-11-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.0.1
+In-Reply-To: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
+References: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C59B68C.01DD:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The 'xen_poll_irq_timeout' provides a method to pass in
+the poll timeout for IRQs if requested. We also export
+this poll function and the xen_clear_irq_pending as Xen PCI fronted uses them.
 
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ drivers/xen/events.c |   17 ++++++++++++-----
+ include/xen/events.h |    4 ++++
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index cd633fa..9d85707 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1101,7 +1101,7 @@ void xen_clear_irq_pending(int irq)
+ 	if (VALID_EVTCHN(evtchn))
+ 		clear_evtchn(evtchn);
+ }
+-
++EXPORT_SYMBOL(xen_clear_irq_pending);
+ void xen_set_irq_pending(int irq)
+ {
+ 	int evtchn = evtchn_from_irq(irq);
+@@ -1121,9 +1121,9 @@ bool xen_test_irq_pending(int irq)
+ 	return ret;
+ }
+ 
+-/* Poll waiting for an irq to become pending.  In the usual case, the
+-   irq will be disabled so it won't deliver an interrupt. */
+-void xen_poll_irq(int irq)
++/* Poll waiting for an irq to become pending with timeout.  In the usual case,
++ * the irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq_timeout(int irq, u64 timeout)
+ {
+ 	evtchn_port_t evtchn = evtchn_from_irq(irq);
+ 
+@@ -1131,13 +1131,20 @@ void xen_poll_irq(int irq)
+ 		struct sched_poll poll;
+ 
+ 		poll.nr_ports = 1;
+-		poll.timeout = 0;
++		poll.timeout = timeout;
+ 		set_xen_guest_handle(poll.ports, &evtchn);
+ 
+ 		if (HYPERVISOR_sched_op(SCHEDOP_poll, &poll) != 0)
+ 			BUG();
+ 	}
+ }
++EXPORT_SYMBOL(xen_poll_irq_timeout);
++/* Poll waiting for an irq to become pending.  In the usual case, the
++   irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq(int irq)
++{
++	xen_poll_irq_timeout(irq, 0 /* no timeout */);
++}
+ 
+ void xen_irq_resume(void)
+ {
+diff --git a/include/xen/events.h b/include/xen/events.h
+index e8f5b81..91143b4 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -53,6 +53,10 @@ bool xen_test_irq_pending(int irq);
+    irq will be disabled so it won't deliver an interrupt. */
+ void xen_poll_irq(int irq);
+ 
++/* Poll waiting for an irq to become pending with a timeout.  In the usual case,
++ * the irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq_timeout(int irq, u64 timeout);
++
+ /* Determine the IRQ which is bound to an event channel */
+ unsigned irq_from_evtchn(unsigned int evtchn);
+ 
+-- 
+1.7.0.1
 
-
-
-
-On Aug 4, 2010, at 11:26, Greg KH <gregkh@suse.de> wrote:
-
-> On Wed, Aug 04, 2010 at 05:17:21PM +0000, Hank Janssen wrote:
->>> 
->> 
->> I will re-submit all 5 patches and CC the stable mailing list on it as well.
-> 
-> 5?  I see 6 of them here :)
-> 
-> thanks,
-> 
-> greg k-h
-> 
-
-True but anise you rejected the todo patch there will only be 5.
-Unless you are willing to take the todo patch. :)
-
-Hank. 
