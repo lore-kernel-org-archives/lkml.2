@@ -1,200 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab0HDMhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:37:11 -0400
-Received: from mgw-sa02.nokia.com ([147.243.1.48]:50576 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932654Ab0HDMhI (ORCPT
+	id S932698Ab0HDMjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:39:54 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:34534 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932117Ab0HDMjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:37:08 -0400
-Subject: [PATCH] fixed resource leak in scripts/mod/modpost.c
-From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-To: linux-kernel@vger.kernel.org
-Cc: Trevor Keith <tsrk@tsrk.net>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: multipart/mixed; boundary="=-H34k/rxQ04+FwIaeczlr"
-Date: Wed, 04 Aug 2010 15:38:43 +0300
-Message-ID: <1280925523.4449.158.camel@alex-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-X-Nokia-AV: Clean
+	Wed, 4 Aug 2010 08:39:52 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] RFC: AMBA bus discardable probe() function
+Date: Wed, 4 Aug 2010 14:39:03 +0200
+Message-ID: <1280925543-6862-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fighting a compilation warning when using __init on probe():s in
+the AMBA (PrimeCell) bus abstraction, the intended effect of
+discarding AMBA probe():s is not achieveable without first adding
+the amba_driver_probe() function akin to platform_driver_probe().
 
---=-H34k/rxQ04+FwIaeczlr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+The latter does some extensive checks which I believe are
+necessary to replicate, and leads to this nasty hack,
+dereferencing structs from base/base.h like the platform bus does.
 
-sec2annotation returns malloc'ed buffer directly to printf as an
-argument. Patch lets free this buffer after printing. 
-
---=-H34k/rxQ04+FwIaeczlr
-Content-Disposition: attachment; filename="0001-fixed-resource-leak-in-scripts-mod-modpost.c.patch"
-Content-Type: text/x-patch; name="0001-fixed-resource-leak-in-scripts-mod-modpost.c.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From 57bde7f335730f95eac75bcec5a27fb6686df25a Mon Sep 17 00:00:00 2001
-From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-Date: Tue, 27 Jul 2010 17:59:04 +0300
-Subject: [PATCH] fixed resource leak in scripts/mod/modpost.c
-
-
-Signed-off-by: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- scripts/mod/modpost.c |   59 ++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 44 insertions(+), 15 deletions(-)
+I'm not sure about the proper way around this, Russell, David,
+Dmitry, Greg et al, please indicate whether this is:
 
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 801a16a..1466691 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1158,6 +1158,9 @@ static void report_sec_mismatch(const char *modname, enum mismatch mismatch,
- {
- 	const char *from, *from_p;
- 	const char *to, *to_p;
-+	char *prl_from;
-+	char *prl_to;
+1) Desirable on the AMBA bus (I think so, actually all the AMBA
+   devices that exist should be able to have their probe functions
+   as __init() functions AFAICT, they're always embedded.)
+
+2) Possible to do without the klist traversals, I'm not quite
+   following under what circumstances this is really necessary.
+   If this is just when device drivers spawn new devices then we
+   might be able to do without (though in theory it'd be needed).
+
+3) An indication that this private core stuff should somehow be
+   accessible by derivative busses anyhow?
+
+Yours,
+Linus Walleij
+---
+ drivers/amba/bus.c       |   57 ++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/spi/amba-pl022.c |    7 ++---
+ include/linux/amba/bus.h |    3 ++
+ 3 files changed, 63 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index d31590e..2a4c88f 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -18,6 +18,9 @@
+ #include <asm/irq.h>
+ #include <asm/sizes.h>
+ 
++/* Cross referencing the private driver core like the platform bus does */
++#include "../base/base.h"
 +
+ #define to_amba_device(d)	container_of(d, struct amba_device, dev)
+ #define to_amba_driver(d)	container_of(d, struct amba_driver, drv)
  
- 	switch (from_is_func) {
- 	case 0: from = "variable"; from_p = "";   break;
-@@ -1181,16 +1184,21 @@ static void report_sec_mismatch(const char *modname, enum mismatch mismatch,
+@@ -223,6 +226,59 @@ void amba_driver_unregister(struct amba_driver *drv)
+ 	driver_unregister(&drv->drv);
+ }
  
- 	switch (mismatch) {
- 	case TEXT_TO_INIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The function %s%s() references\n"
- 		"the %s %s%s%s.\n"
- 		"This is often because %s lacks a %s\n"
- 		"annotation or the annotation of %s is wrong.\n",
--		sec2annotation(fromsec), fromsym,
--		to, sec2annotation(tosec), tosym, to_p,
--		fromsym, sec2annotation(tosec), tosym);
-+		prl_from, fromsym,
-+		to, prl_to, tosym, to_p,
-+		fromsym, prl_to, tosym);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case DATA_TO_INIT: {
-+		prl_to = sec2annotation(tosec);
- 		const char **s = symbol_white_list;
- 		fprintf(stderr,
- 		"The variable %s references\n"
-@@ -1198,20 +1206,24 @@ static void report_sec_mismatch(const char *modname, enum mismatch mismatch,
- 		"If the reference is valid then annotate the\n"
- 		"variable with __init* or __refdata (see linux/init.h) "
- 		"or name the variable:\n",
--		fromsym, to, sec2annotation(tosec), tosym, to_p);
-+		fromsym, to, prl_to, tosym, to_p);
- 		while (*s)
- 			fprintf(stderr, "%s, ", *s++);
- 		fprintf(stderr, "\n");
-+		free(prl_to);
- 		break;
- 	}
- 	case TEXT_TO_EXIT:
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The function %s() references a %s in an exit section.\n"
- 		"Often the %s %s%s has valid usage outside the exit section\n"
- 		"and the fix is to remove the %sannotation of %s.\n",
--		fromsym, to, to, tosym, to_p, sec2annotation(tosec), tosym);
-+		fromsym, to, to, tosym, to_p, prl_to, tosym);
-+		free(prl_to);
- 		break;
- 	case DATA_TO_EXIT: {
-+		prl_to = sec2annotation(tosec);
- 		const char **s = symbol_white_list;
- 		fprintf(stderr,
- 		"The variable %s references\n"
-@@ -1219,24 +1231,31 @@ static void report_sec_mismatch(const char *modname, enum mismatch mismatch,
- 		"If the reference is valid then annotate the\n"
- 		"variable with __exit* (see linux/init.h) or "
- 		"name the variable:\n",
--		fromsym, to, sec2annotation(tosec), tosym, to_p);
-+		fromsym, to, prl_to, tosym, to_p);
- 		while (*s)
- 			fprintf(stderr, "%s, ", *s++);
- 		fprintf(stderr, "\n");
-+		free(prl_to);
- 		break;
- 	}
- 	case XXXINIT_TO_INIT:
- 	case XXXEXIT_TO_EXIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The %s %s%s%s references\n"
- 		"a %s %s%s%s.\n"
- 		"If %s is only used by %s then\n"
- 		"annotate %s with a matching annotation.\n",
--		from, sec2annotation(fromsec), fromsym, from_p,
--		to, sec2annotation(tosec), tosym, to_p,
-+		from, prl_from, fromsym, from_p,
-+		to, prl_to, tosym, to_p,
- 		tosym, fromsym, tosym);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case INIT_TO_EXIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The %s %s%s%s references\n"
- 		"a %s %s%s%s.\n"
-@@ -1245,11 +1264,15 @@ static void report_sec_mismatch(const char *modname, enum mismatch mismatch,
- 		"uses functionality in the exit path.\n"
- 		"The fix is often to remove the %sannotation of\n"
- 		"%s%s so it may be used outside an exit section.\n",
--		from, sec2annotation(fromsec), fromsym, from_p,
--		to, sec2annotation(tosec), tosym, to_p,
--		sec2annotation(tosec), tosym, to_p);
-+		from, prl_from, fromsym, from_p,
-+		to, prl_to, tosym, to_p,
-+		prl_to, tosym, to_p);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case EXIT_TO_INIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The %s %s%s%s references\n"
- 		"a %s %s%s%s.\n"
-@@ -1258,16 +1281,22 @@ static void report_sec_mismatch(const char *modname, enum mismatch mismatch,
- 		"uses functionality in the init path.\n"
- 		"The fix is often to remove the %sannotation of\n"
- 		"%s%s so it may be used outside an init section.\n",
--		from, sec2annotation(fromsec), fromsym, from_p,
--		to, sec2annotation(tosec), tosym, to_p,
--		sec2annotation(tosec), tosym, to_p);
-+		from, prl_from, fromsym, from_p,
-+		to, prl_to, tosym, to_p,
-+		to, tosym, to_p);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case EXPORT_TO_INIT_EXIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The symbol %s is exported and annotated %s\n"
- 		"Fix this by removing the %sannotation of %s "
- 		"or drop the export.\n",
--		tosym, sec2annotation(tosec), sec2annotation(tosec), tosym);
-+		tosym, prl_to, prl_to, tosym);
-+		free(prl_from);
-+		free(prl_to);
- 	case NO_MISMATCH:
- 		/* To get warnings on missing members */
- 		break;
++static int amba_driver_probe_fail(struct device *_dev)
++{
++	return -ENXIO;
++}
++
++
++/**
++ * amba_driver_probe - register AMBA driver for non-hotpluggable device
++ * @drv: platform driver structure
++ * @probe: the driver probe routine, probably from an __init section
++ *
++ * Use this instead of amba_driver_register() when you know the device
++ * is not hotpluggable and has already been registered, and you want to
++ * remove its run-once probe() infrastructure from memory after the driver
++ * has bound to the device.
++ *
++ * One typical use for this would be with drivers for controllers integrated
++ * into system-on-chip processors, where the controller devices have been
++ * configured as part of board setup.
++ *
++ * Returns zero if the driver registered and bound to a device, else returns
++ * a negative error code and with the driver not registered.
++ */
++int __init_or_module amba_driver_probe(struct amba_driver *drv,
++		int (*probe)(struct amba_device *,
++		struct amba_id *))
++{
++	int retval, code;
++
++	/* make sure driver won't have bind/unbind attributes */
++	drv->drv.suppress_bind_attrs = true;
++
++	/* temporary section violation during probe() */
++	drv->probe = probe;
++	retval = code = amba_driver_register(drv);
++
++	/*
++	 * Fixup that section violation, being paranoid about code scanning
++	 * the list of drivers in order to probe new devices.  Check to see
++	 * if the probe was successful, and make sure any forced probes of
++	 * new devices fail.
++	 */
++	spin_lock(&amba_bustype.p->klist_drivers.k_lock);
++	drv->probe = NULL;
++	if (code == 0 && list_empty(&drv->drv.p->klist_devices.k_list))
++		retval = -ENODEV;
++	drv->drv.probe = amba_driver_probe_fail;
++	spin_unlock(&amba_bustype.p->klist_drivers.k_lock);
++
++	if (code != retval)
++		amba_driver_unregister(drv);
++	return retval;
++}
+ 
+ static void amba_device_release(struct device *dev)
+ {
+@@ -442,6 +498,7 @@ void amba_release_regions(struct amba_device *dev)
+ 
+ EXPORT_SYMBOL(amba_driver_register);
+ EXPORT_SYMBOL(amba_driver_unregister);
++EXPORT_SYMBOL(amba_driver_probe);
+ EXPORT_SYMBOL(amba_device_register);
+ EXPORT_SYMBOL(amba_device_unregister);
+ EXPORT_SYMBOL(amba_find_device);
+diff --git a/drivers/spi/amba-pl022.c b/drivers/spi/amba-pl022.c
+index f0a1418..28dd364 100644
+--- a/drivers/spi/amba-pl022.c
++++ b/drivers/spi/amba-pl022.c
+@@ -1969,16 +1969,15 @@ static struct amba_driver pl022_driver = {
+ 		.name	= "ssp-pl022",
+ 	},
+ 	.id_table	= pl022_ids,
+-	.probe		= pl022_probe,
+ 	.remove		= __exit_p(pl022_remove),
+-	.suspend        = pl022_suspend,
+-	.resume         = pl022_resume,
++	.suspend	= pl022_suspend,
++	.resume		= pl022_resume,
+ };
+ 
+ 
+ static int __init pl022_init(void)
+ {
+-	return amba_driver_register(&pl022_driver);
++	return amba_driver_probe(&pl022_driver, pl022_probe);
+ }
+ 
+ module_init(pl022_init);
+diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
+index b0c1740..0d3d55f 100644
+--- a/include/linux/amba/bus.h
++++ b/include/linux/amba/bus.h
+@@ -58,6 +58,9 @@ enum amba_vendor {
+ 
+ int amba_driver_register(struct amba_driver *);
+ void amba_driver_unregister(struct amba_driver *);
++int amba_driver_probe(struct amba_driver *adrv,
++		      int (*probe)(struct amba_device *,
++				   struct amba_id *));
+ int amba_device_register(struct amba_device *, struct resource *);
+ void amba_device_unregister(struct amba_device *);
+ struct amba_device *amba_find_device(const char *, struct device *, unsigned int, unsigned int);
 -- 
 1.6.3.3
-
-
---=-H34k/rxQ04+FwIaeczlr--
 
