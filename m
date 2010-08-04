@@ -1,260 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934848Ab0HDVOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 17:14:50 -0400
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:54014 "EHLO
+	id S1759204Ab0HDVO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 17:14:27 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:53989 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759084Ab0HDVN7 (ORCPT
+	with ESMTP id S1759043Ab0HDVN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 17:13:59 -0400
+	Wed, 4 Aug 2010 17:13:56 -0400
 X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
 Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         john stultz <johnstul@us.ibm.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCHv3 04/16] pps: unify timestamp gathering
-Date: Thu,  5 Aug 2010 01:06:41 +0400
-Message-Id: <8d5aef7f5bec90d02e93c14c39ec470a449184c5.1280952801.git.lasaine@lvk.cs.msu.su>
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Subject: [PATCHv3 00/16] pps: several fixes and improvements
+Date: Thu,  5 Aug 2010 01:06:37 +0400
+Message-Id: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
-References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
 X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a helper function to gather timestamps. This way clients don't have
-to duplicate it.
+This patchset contains several changes that improve an overall
+design/performance of PPS subsystem. I'd like these patches to be
+merged mainline if no one objects.
 
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
----
- drivers/pps/clients/pps-ktimer.c |    9 ++-------
- drivers/pps/clients/pps-ldisc.c  |   18 ++++++------------
- drivers/pps/kapi.c               |   19 ++++++++++++-------
- include/linux/pps_kernel.h       |   19 ++++++++++++++++++-
- include/linux/serial_core.h      |    5 +++--
- include/linux/tty_ldisc.h        |    5 +++--
- 6 files changed, 44 insertions(+), 31 deletions(-)
+Patches 1-3 are bugfixes.
+Patches 4-11 are other improvements to PPS subsystem.
+Patches 12-14 add kernel consumer support.
+Patch 15 adds parallel port PPS client.
+Patch 16 adds parallel port PPS generator.
 
-diff --git a/drivers/pps/clients/pps-ktimer.c b/drivers/pps/clients/pps-ktimer.c
-index e7ef5b8..e1bdd8b 100644
---- a/drivers/pps/clients/pps-ktimer.c
-+++ b/drivers/pps/clients/pps-ktimer.c
-@@ -40,18 +40,13 @@ static struct timer_list ktimer;
- 
- static void pps_ktimer_event(unsigned long ptr)
- {
--	struct timespec __ts;
--	struct pps_ktime ts;
-+	struct pps_event_time ts;
- 
- 	/* First of all we get the time stamp... */
--	getnstimeofday(&__ts);
-+	pps_get_ts(&ts);
- 
- 	pr_info("PPS event at %lu\n", jiffies);
- 
--	/* ... and translate it to PPS time data struct */
--	ts.sec = __ts.tv_sec;
--	ts.nsec = __ts.tv_nsec;
--
- 	pps_event(source, &ts, PPS_CAPTUREASSERT, NULL);
- 
- 	mod_timer(&ktimer, jiffies + HZ);
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 8e1932d..20fc9f7 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -27,26 +27,20 @@
- #define PPS_TTY_MAGIC		0x0001
- 
- static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
--				struct timespec *ts)
-+				struct pps_event_time *ts)
- {
- 	int id = (long)tty->disc_data;
--	struct timespec __ts;
--	struct pps_ktime pps_ts;
-+	struct pps_event_time __ts;
- 
- 	/* First of all we get the time stamp... */
--	getnstimeofday(&__ts);
-+	pps_get_ts(&__ts);
- 
- 	/* Does caller give us a timestamp? */
--	if (ts) {	/* Yes. Let's use it! */
--		pps_ts.sec = ts->tv_sec;
--		pps_ts.nsec = ts->tv_nsec;
--	} else {	/* No. Do it ourself! */
--		pps_ts.sec = __ts.tv_sec;
--		pps_ts.nsec = __ts.tv_nsec;
--	}
-+	if (!ts)	/* No. Do it ourself! */
-+		ts = &__ts;
- 
- 	/* Now do the PPS event report */
--	pps_event(id, &pps_ts, status ? PPS_CAPTUREASSERT : PPS_CAPTURECLEAR,
-+	pps_event(id, ts, status ? PPS_CAPTUREASSERT : PPS_CAPTURECLEAR,
- 			NULL);
- 
- 	pr_debug("PPS %s at %lu on source #%d\n",
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 3f89f5e..b431d83 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -268,11 +268,12 @@ EXPORT_SYMBOL(pps_unregister_source);
-  *	pps->info.echo(source, event, data);
-  */
- 
--void pps_event(int source, struct pps_ktime *ts, int event, void *data)
-+void pps_event(int source, struct pps_event_time *ts, int event, void *data)
- {
- 	struct pps_device *pps;
- 	unsigned long flags;
- 	int captured = 0;
-+	struct pps_ktime ts_real;
- 
- 	if ((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0) {
- 		printk(KERN_ERR "pps: unknown event (%x) for source %d\n",
-@@ -284,8 +285,10 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 	if (!pps)
- 		return;
- 
--	pr_debug("PPS event on source %d at %llu.%06u\n",
--			pps->id, (unsigned long long) ts->sec, ts->nsec);
-+	pr_debug("PPS event on source %d at %ld.%09ld\n",
-+			pps->id, ts->ts_real.tv_sec, ts->ts_real.tv_nsec);
-+
-+	timespec_to_pps_ktime(&ts_real, ts->ts_real);
- 
- 	spin_lock_irqsave(&pps->lock, flags);
- 
-@@ -299,10 +302,11 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 			(pps->params.mode & PPS_CAPTUREASSERT)) {
- 		/* We have to add an offset? */
- 		if (pps->params.mode & PPS_OFFSETASSERT)
--			pps_add_offset(ts, &pps->params.assert_off_tu);
-+			pps_add_offset(&ts_real,
-+					&pps->params.assert_off_tu);
- 
- 		/* Save the time stamp */
--		pps->assert_tu = *ts;
-+		pps->assert_tu = ts_real;
- 		pps->assert_sequence++;
- 		pr_debug("capture assert seq #%u for source %d\n",
- 			pps->assert_sequence, source);
-@@ -313,10 +317,11 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 			(pps->params.mode & PPS_CAPTURECLEAR)) {
- 		/* We have to add an offset? */
- 		if (pps->params.mode & PPS_OFFSETCLEAR)
--			pps_add_offset(ts, &pps->params.clear_off_tu);
-+			pps_add_offset(&ts_real,
-+					&pps->params.clear_off_tu);
- 
- 		/* Save the time stamp */
--		pps->clear_tu = *ts;
-+		pps->clear_tu = ts_real;
- 		pps->clear_sequence++;
- 		pr_debug("capture clear seq #%u for source %d\n",
- 			pps->clear_sequence, source);
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index c3aed4b..32aa676 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -43,6 +43,10 @@ struct pps_source_info {
- 	struct device *dev;
- };
- 
-+struct pps_event_time {
-+	struct timespec ts_real;
-+};
-+
- /* The main struct */
- struct pps_device {
- 	struct pps_source_info info;		/* PSS source info */
-@@ -88,7 +92,20 @@ extern int pps_register_source(struct pps_source_info *info,
- extern void pps_unregister_source(int source);
- extern int pps_register_cdev(struct pps_device *pps);
- extern void pps_unregister_cdev(struct pps_device *pps);
--extern void pps_event(int source, struct pps_ktime *ts, int event, void *data);
-+extern void pps_event(int source, struct pps_event_time *ts, int event,
-+		void *data);
-+
-+static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
-+		struct timespec ts)
-+{
-+	kt->sec = ts.tv_sec;
-+	kt->nsec = ts.tv_nsec;
-+}
-+
-+static inline void pps_get_ts(struct pps_event_time *ts)
-+{
-+	getnstimeofday(&ts->ts_real);
-+}
- 
- #endif /* LINUX_PPS_KERNEL_H */
- 
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index f10db6e..17b809a 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -196,6 +196,7 @@
- #include <linux/tty.h>
- #include <linux/mutex.h>
- #include <linux/sysrq.h>
-+#include <linux/pps_kernel.h>
- 
- struct uart_port;
- struct serial_struct;
-@@ -497,10 +498,10 @@ uart_handle_dcd_change(struct uart_port *uport, unsigned int status)
- 	struct uart_state *state = uport->state;
- 	struct tty_port *port = &state->port;
- 	struct tty_ldisc *ld = tty_ldisc_ref(port->tty);
--	struct timespec ts;
-+	struct pps_event_time ts;
- 
- 	if (ld && ld->ops->dcd_change)
--		getnstimeofday(&ts);
-+		pps_get_ts(&ts);
- 
- 	uport->icount.dcd++;
- #ifdef CONFIG_HARD_PPS
-diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-index 526d66f..763e061 100644
---- a/include/linux/tty_ldisc.h
-+++ b/include/linux/tty_ldisc.h
-@@ -101,7 +101,7 @@
-  *	any pending driver I/O is completed.
-  *
-  * void (*dcd_change)(struct tty_struct *tty, unsigned int status,
-- * 			struct timespec *ts)
-+ *			struct pps_event_time *ts)
-  *
-  *	Tells the discipline that the DCD pin has changed its status and
-  *	the relative timestamp. Pointer ts can be NULL.
-@@ -109,6 +109,7 @@
- 
- #include <linux/fs.h>
- #include <linux/wait.h>
-+#include <linux/pps_kernel.h>
- 
- struct tty_ldisc_ops {
- 	int	magic;
-@@ -143,7 +144,7 @@ struct tty_ldisc_ops {
- 			       char *fp, int count);
- 	void	(*write_wakeup)(struct tty_struct *);
- 	void	(*dcd_change)(struct tty_struct *, unsigned int,
--				struct timespec *);
-+				struct pps_event_time *);
- 
- 	struct  module *owner;
- 	
--- 
-1.7.1
+You can find description for my previous patchset (it describes patches
+12-16 in more detailed) here: http://lkml.org/lkml/2010/2/24/189
+
+This patchset is tested against the vanilla 2.6.35 kernel. But we are
+actually using it on 2.6.33.7-rt29 rt-preempt kernel most of the time.
+Those who are interested in other versions of the patchset can find
+them in my git repository:
+git://github.com/ago/linux-2.6.git
+
+There is one problem however: kernel consumer works bad (if enabled)
+when CONFIG_NO_HZ is enabled. The reason for this is commit
+a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601. Without it hardpps() is able
+to sync to 1us precision in about 10 seconds. With CONFIG_NO_HZ it is
+not syncing at all. This only affects patches 12-14, others are ok.
+
+2John Stultz: the problem is not with logarithmic accumulation because
+it works good if NTP_INTERVAL_FREQ is set to 2.
+
+Changelog
+v2 -> v3:
+ * add patches 1-11
+ * add clear_wait parameter to pps_parport
+ * add delay parameter to pps_gen_parport
+ * fix seqlock unlocking
+ * fix issues pointed out by Rodolfo Giometti:
+   * move CONFIG_NTP_PPS to drivers/pps/Kconfig
+   * swap parport client and generator patches
+   * style and typo fixes
+ * move patch that adds unified timestamp gathering to be the beginning
+
+v1 -> v2:
+ * fix issues pointed out by John Stultz:
+   * style fixes
+   * add a about the authorship of the original code
+   * replace timespec with pps_normtime struct where timespec is used
+     in a wrong way
+   * fix seqlock usage in hardpps()
+ * unbind kernel consumer on device removal
+ * send raw timestamp instead of the last difference to hardpps() which
+   simplifies the code and is less error-prone
+ * update comments in the kernel consumer code to match the reality
+ * split the patch that adds MONOTONIC_RAW timestmaps into two
+ * other small fixes
+
+Alexander Gordeev (16):
+  pps: trivial fixes
+  pps: declare variables where they are used in switch
+  pps: fix race in PPS_FETCH handler
+  pps: unify timestamp gathering
+  pps: access pps device by direct pointer
+  pps: convert printk/pr_* to dev_*
+  pps: move idr stuff to pps.c
+  pps: add async PPS event handler
+  pps: don't disable interrupts when using spin locks
+  pps: use BUG_ON for kernel API safety checks
+  pps: simplify conditions a bit
+  ntp: add hardpps implementation
+  pps: capture MONOTONIC_RAW timestamps as well
+  pps: add kernel consumer support
+  pps: add parallel port PPS client
+  pps: add parallel port PPS signal generator
+
+ Documentation/ioctl/ioctl-number.txt     |    2 +-
+ drivers/pps/Kconfig                      |   10 +
+ drivers/pps/Makefile                     |    2 +-
+ drivers/pps/clients/Kconfig              |    7 +
+ drivers/pps/clients/Makefile             |    1 +
+ drivers/pps/clients/pps-ktimer.c         |   43 ++--
+ drivers/pps/clients/pps-ldisc.c          |   49 ++--
+ drivers/pps/clients/pps_parport.c        |  244 +++++++++++++++++
+ drivers/pps/generators/Kconfig           |   17 ++
+ drivers/pps/generators/Makefile          |    9 +
+ drivers/pps/generators/pps_gen_parport.c |  274 +++++++++++++++++++
+ drivers/pps/kapi.c                       |  330 +++++++++++-------------
+ drivers/pps/pps.c                        |  201 +++++++++++---
+ include/linux/pps.h                      |    7 +
+ include/linux/pps_kernel.h               |   64 ++++-
+ include/linux/serial_core.h              |    5 +-
+ include/linux/time.h                     |    2 +
+ include/linux/timex.h                    |    1 +
+ include/linux/tty_ldisc.h                |    5 +-
+ kernel/time/ntp.c                        |  421 ++++++++++++++++++++++++++++-
+ kernel/time/timekeeping.c                |   34 +++
+ 21 files changed, 1419 insertions(+), 309 deletions(-)
+ create mode 100644 drivers/pps/clients/pps_parport.c
+ create mode 100644 drivers/pps/generators/Kconfig
+ create mode 100644 drivers/pps/generators/Makefile
+ create mode 100644 drivers/pps/generators/pps_gen_parport.c
 
