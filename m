@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab0HDPkc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 11:40:32 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:38408 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754095Ab0HDPka (ORCPT
+	id S1753555Ab0HDPks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 11:40:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54770 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab0HDPkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 11:40:30 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: CGnke_AVM1naOkTliF_AKL0JlwWstdKJKAf8KUfefLtCKMd
- cRB8bENGTiXOU5O5cUdkFAk1xE5_i2yc2Dqw0iLtx1y5EEkWd4L4QCi83Hgz
- oVkkUqmnUSwogXfmIeSFhYtWKky1qyvQMQRqBA.3EQx8OukZ1jy6QJRhSaoM
- nfaHW_GJ4EGWjd3wHOJP.4c2oQ23kaIdUPXVdkkgoEe6cJ7_VnHCF5p5HjA_
- Om0AViNRVAVtlu8XBhW9_AeNjdZYfrC39fEVDqyiYVY6CluU3
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 4 Aug 2010 10:40:27 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Peter Crosthwaite <peter.crosthwaite@petalogix.com>
-cc: linux-kernel@vger.kernel.org, penberg@cs.helsinki.fi, mpm@selenic.com,
-        Michal Simek <michal.simek@petalogix.com>,
-        "Edgar E. Iglesias" <edgar.iglesias@petalogix.com>,
-        John Williams <john.williams@petalogix.com>
-Subject: Re: Using Bootmem for large DMA buffers in the presence of the slab
-  allocator
-In-Reply-To: <AANLkTimK4NhXasetA4ZeeCeGSGySRNm8n=UgT+1oY_2g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1008040951170.11084@router.home>
-References: <AANLkTimK4NhXasetA4ZeeCeGSGySRNm8n=UgT+1oY_2g@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 4 Aug 2010 11:40:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=W0Q1jXKn53UB60NLhMZhEfLYMJr2Ir2SYQi3OlQM2JxNMFSTkMUanxUAStoTz7y73R
+         cgq1hPF8DnnP8XbhteNoUZbn6WMo/zRpqfQvDZk3Yd7DZ4TfQVyikt3bjazFYTOxjD9r
+         4NAI914hR7X/Pk/XMKGiE10TGzdUfRYPpFu8E=
+Message-ID: <4C598A0B.9000301@gmail.com>
+Date: Wed, 04 Aug 2010 17:40:59 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@kernel.org,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: [PATCH block#for-2.6.36] block_dev: always serialize exclusive open
+ attempts
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera> <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com> <4C56F30D.3020304@kernel.org>
+In-Reply-To: <4C56F30D.3020304@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Peter Crosthwaite wrote:
+bd_prepare_to_claim() incorrectly allowed multiple attempts for
+exclusive open to progress in parallel if the attempting holders are
+identical.  This triggered BUG_ON() as reported in the following bug.
 
-> Because the buffer was too large for kmalloc, the kmalloc call would
-> fail. I traced the alloc_bootmem_low_pages() call further and
-> discovered that since the kmalloc call was failing, it was falling
-> back to alloc_bootmem_core(). So does this mean that the bootmem
-> allocator is trying to allocate memory while the slab allocator is up
-> and running? And is this supposed to work?
+  https://bugzilla.kernel.org/show_bug.cgi?id=16393
 
-The bootmem allocator should not work when slab is fully up. However,
-there is a grey period where the page allocator is not fully functional
-yet but the slab allocator is mostly working.
+__bd_abort_claiming() is used to finish claiming blocks and doesn't
+work if multiple openers are inside a claiming block.  Allowing
+multiple parallel open attempts to continue doesn't gain anything as
+those are serialized down in the call chain anyway.  Fix it by always
+allowing only single open attempt in a claiming block.
 
-> The reason i ask, is that when testing the system under high memory
-> usage conditions, I would get a "Bad page state" BUG() for my
-> allocated pages (see below). I have matched the pfns and confirmed
-> that they correspond to the pages allocated by the
-> alloc_bootmem_low_pages(). My theory is that the slab allocators list
-> of free pages does not get updated by the bootmem allocator, so the
-> slab allocator is seeing my DMA buffer as un-allocated. Does this
-> sound correct?
+This problem can easily be reproduced by adding a delay after
+bd_prepare_to_claim() and attempting to mount two partitions of a
+disk.
 
-bootmem allocations do not reserve page structs. So you do not have a page
-state at all. If you do something that requires a page state then you will
-have strange failures.
+stable: only applicable to v2.6.35
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: stable@kernel.org
+---
+ fs/block_dev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 99d6af8..b3171fb 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -681,8 +681,8 @@ retry:
+ 	if (!bd_may_claim(bdev, whole, holder))
+ 		return -EBUSY;
+
+-	/* if someone else is claiming, wait for it to finish */
+-	if (whole->bd_claiming && whole->bd_claiming != holder) {
++	/* if claiming is already in progress, wait for it to finish */
++	if (whole->bd_claiming) {
+ 		wait_queue_head_t *wq = bit_waitqueue(&whole->bd_claiming, 0);
+ 		DEFINE_WAIT(wait);
+
