@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab0HDMpZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 08:45:25 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47990 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932661Ab0HDMpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 08:45:24 -0400
-Date: Wed, 4 Aug 2010 14:43:53 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: amwang@redhat.com, andi@firstfloor.org, dzickus@redhat.com, mmarek@suse.cz,
-        sam@ravnborg.org, u.kleine-koenig@pengutronix.de,
-        vda.linux@googlemail.com, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild: core changes
-Message-ID: <20100804124353.GA21328@sepie.suse.cz>
+	id S932748Ab0HDMvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 08:51:19 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:50414 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932619Ab0HDMvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 08:51:18 -0400
+Date: Wed, 4 Aug 2010 18:18:22 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 2/13]  uprobes: Breakpoint
+ insertion/removal in user space applications.
+Message-ID: <20100804124822.GC28212@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+ <20100712103235.27491.293.sendpatchset@localhost6.localdomain6>
+ <20100720042814.GA13624@infradead.org>
+ <20100720072202.GB19375@linux.vnet.ibm.com>
+ <1280923528.1923.1058.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1280923528.1923.1058.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+* Peter Zijlstra <peterz@infradead.org> [2010-08-04 14:05:28]:
 
-I decided to split the kbuild stuff into multiple branches:
-* kbuild - changes to the Makefile and scripts used during build
-* kconfig
-* packaging - changes to scripts/package/
-* misc - all other stuff, i.e. not build-critical scripts and .gitignore
-  files
+> On Tue, 2010-07-20 at 12:52 +0530, Srikar Dronamraju wrote:
+> > > Just wondering why these are function pointers.  Do we exepect an
+> > > architecture to provide different versions of these for say 32 vs 64-bit
+> > > binaries?  If not just making these arch provided helpers might be a lot
+> > > simpler.  Especially in the current version where only very few of these
+> > > are overriden by the architecture at all.
+> > > 
+> > 
+> > Some of these functions are purely optional example being
+> > validate_address. 
+> > 
+> > Some of these functions need not be defined by the architecture in
+> > which case we default to the functions defined in common code. 
+> > examples being: read_opcode, set_bkpt, and set_orig_insn.
+> > 
+> > Some of these functions are architecture mode specific, for example 
+> > there is a architecture specific pre_xol needed for x86_64. However
+> > generic pre_xol for x86_32 would suffice for x86_32.
+> > 
+> > Some of these functions need to be mandatorily defined by the
+> > architecture. example being set_ip and analyze_insn.
+> > 
+> > Apart from the above flexibilities and enforcements that we can make
+> > when we use function pointers, its would be handy to incorporate
+> > more enhancements like return probes and booster. 
+> 
+> Still not sure why you're using this vector though, why not use weak
+> function for optionals and defaults and no implementation for mandatory
+> functions (and if the implementations fails to provide it, that will
+> result in a link error).
 
-Please let me know if this is OK for you or if you would prefer a single
-pull request with the four branches merged into one next time.
+Yes, we can certainly use weak functions instead of pointers. 
+One another reason why we had these as function pointers in a
+structure was that it would easy be  for a person porting uprobes to a
+new architecture. i.e person porting to a new architecture knows in one
+place(structure) which all functions need to be provided. 
 
-Anyway, here is the kbuild branch. Nothing particulary exciting this
-time. Sam made passing of custom compiler / assembler and linker flags
-more consistent, the following external variables are now supported (one
-doesn't have to remember to add any kbuild-internal flags):
+However I would go with your suggestion and make the changes to use weak
+functions in the next version of the patchset. 
 
-make AFLAGS_KERNEL=... CFLAGS_KERNEL=... \
-     AFLAGS_MODULE=... CFLAGS_MODULE=... LDFLAGS_MODULE=...
+> 
+> Are there likely to be multiple different versions of this method vector
+> around on a running kernel?
 
+No for a running kernel, there will be only one method vector.
 
-The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+Also wanted to check with if you had tried perf probes and had
+comments/suggestions on any of the other patches in the patchset.
 
-  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kbuild
-
-Amerigo Wang (1):
-      Makefile: "make kernelrelease" should show the correct full kernel version
-
-Andi Kleen (1):
-      Kbuild: Add option to set -femit-struct-debug-baseonly
-
-Denys Vlasenko (1):
-      modpost: support objects with more than 64k sections
-
-Don Zickus (1):
-      Makefile.build: make KBUILD_SYMTYPES work again
-
-Michal Marek (2):
-      Merge branch 'setlocalversion-speedup' into kbuild/kbuild
-      Merge commit 'v2.6.35' into kbuild/kbuild
-
-Sam Ravnborg (3):
-      kbuild: allow assignment to {A,C,LD}FLAGS_MODULE on the command line
-      kbuild: allow assignment to {A,C}FLAGS_KERNEL on the command line
-      frv: clean up arch/frv/Makefile
-
-Uwe Kleine-König (1):
-      trivial: fix a typo in a filename
-
- Documentation/kbuild/kbuild.txt    |   26 ++++++++-
- Documentation/kbuild/makefiles.txt |   27 ++++++++--
- Makefile                           |   29 +++++++---
- arch/avr32/Makefile                |    2 +-
- arch/blackfin/Makefile             |    4 +-
- arch/frv/Makefile                  |   22 +-------
- arch/ia64/Makefile                 |    6 +-
- arch/m32r/Makefile                 |    4 +-
- arch/m68k/Makefile                 |    2 +-
- arch/mips/Makefile                 |    6 ++-
- arch/powerpc/Makefile              |    2 +-
- arch/s390/Makefile                 |    3 +-
- arch/score/Makefile                |    3 +-
- lib/Kconfig.debug                  |   13 +++++
- scripts/Makefile.build             |   37 +++++++------
- scripts/Makefile.modpost           |    9 ++--
- scripts/mod/file2alias.c           |    6 +-
- scripts/mod/modpost.c              |  102 ++++++++++++++++++++++++++---------
- scripts/mod/modpost.h              |   43 +++++++++++++++
- 19 files changed, 246 insertions(+), 100 deletions(-)
+--
+Thanks and Regards
+Srikar
