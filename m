@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760816Ab0HEWYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:24:16 -0400
-Received: from kroah.org ([198.145.64.141]:37587 "EHLO coco.kroah.org"
+	id S934565Ab0HEWY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:24:57 -0400
+Received: from kroah.org ([198.145.64.141]:37661 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759308Ab0HEWXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:23:50 -0400
+	id S1760807Ab0HEWYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:13 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 13/67] stallion: prune lock_kernel calls
-Date: Thu,  5 Aug 2010 15:22:40 -0700
-Message-Id: <1281047014-23429-13-git-send-email-gregkh@suse.de>
+Subject: [PATCH 33/67] serial: Use block_til_ready helper
+Date: Thu,  5 Aug 2010 15:23:00 -0700
+Message-Id: <1281047014-23429-33-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -22,242 +22,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Remove unneeded tty layer lock kernel bits. Relock the needed bits using the
-port mutex. The istallion still has brd state races but those are not new
-or introduced by the removal of the lock_kernel logic.
+Our code now rather closely resembles the helper, so switch to it.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/istallion.c |   22 +++++++++++++---------
- drivers/char/stallion.c  |   20 ++++++++++++--------
- 2 files changed, 25 insertions(+), 17 deletions(-)
+ drivers/serial/serial_core.c |   87 +-----------------------------------------
+ 1 files changed, 1 insertions(+), 86 deletions(-)
 
-diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
-index 4e395c9..750650c 100644
---- a/drivers/char/istallion.c
-+++ b/drivers/char/istallion.c
-@@ -14,6 +14,7 @@
-  *	the Free Software Foundation; either version 2 of the License, or
-  *	(at your option) any later version.
-  *
-+ *	FIXME: brdp->state needs proper locking.
-  */
- 
- /*****************************************************************************/
-@@ -4011,6 +4012,7 @@ static int stli_getbrdstats(combrd_t __user *bp)
- 		return -ENODEV;
- 
- 	memset(&stli_brdstats, 0, sizeof(combrd_t));
-+
- 	stli_brdstats.brd = brdp->brdnr;
- 	stli_brdstats.type = brdp->brdtype;
- 	stli_brdstats.hwid = 0;
-@@ -4076,10 +4078,13 @@ static int stli_portcmdstats(struct tty_struct *tty, struct stliport *portp)
- 	if (brdp == NULL)
- 		return -ENODEV;
- 
-+	mutex_lock(&portp->port.mutex);
- 	if (brdp->state & BST_STARTED) {
- 		if ((rc = stli_cmdwait(brdp, portp, A_GETSTATS,
--		    &stli_cdkstats, sizeof(asystats_t), 1)) < 0)
-+		    &stli_cdkstats, sizeof(asystats_t), 1)) < 0) {
-+			mutex_unlock(&portp->port.mutex);
- 			return rc;
-+		}
- 	} else {
- 		memset(&stli_cdkstats, 0, sizeof(asystats_t));
- 	}
-@@ -4124,6 +4129,7 @@ static int stli_portcmdstats(struct tty_struct *tty, struct stliport *portp)
- 	stli_comstats.modem = stli_cdkstats.dcdcnt;
- 	stli_comstats.hwid = stli_cdkstats.hwid;
- 	stli_comstats.signals = stli_mktiocm(stli_cdkstats.signals);
-+	mutex_unlock(&portp->port.mutex);
- 
- 	return 0;
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 0603e0d..a55751a 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1526,91 +1526,6 @@ static void uart_dtr_rts(struct tty_port *port, int onoff)
+ 		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
  }
-@@ -4186,15 +4192,20 @@ static int stli_clrportstats(struct stliport *portp, comstats_t __user *cp)
- 	if (!brdp)
- 		return -ENODEV;
  
-+	mutex_lock(&portp->port.mutex);
-+
- 	if (brdp->state & BST_STARTED) {
--		if ((rc = stli_cmdwait(brdp, portp, A_CLEARSTATS, NULL, 0, 0)) < 0)
-+		if ((rc = stli_cmdwait(brdp, portp, A_CLEARSTATS, NULL, 0, 0)) < 0) {
-+			mutex_unlock(&portp->port.mutex);
- 			return rc;
-+		}
- 	}
- 
- 	memset(&stli_comstats, 0, sizeof(comstats_t));
- 	stli_comstats.brd = portp->brdnr;
- 	stli_comstats.panel = portp->panelnr;
- 	stli_comstats.port = portp->portnr;
-+	mutex_unlock(&portp->port.mutex);
- 
- 	if (copy_to_user(cp, &stli_comstats, sizeof(comstats_t)))
- 		return -EFAULT;
-@@ -4266,8 +4277,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
- 	done = 0;
- 	rc = 0;
- 
--	lock_kernel();
+-/*
+- * Block the open until the port is ready.  We must be called with
+- * the per-port semaphore held.
+- */
+-static int
+-uart_block_til_ready(struct file *filp, struct uart_state *state)
+-{
+-	DECLARE_WAITQUEUE(wait, current);
+-	struct tty_port *port = &state->port;
+-	unsigned long flags;
 -
- 	switch (cmd) {
- 	case COM_GETPORTSTATS:
- 		rc = stli_getportstats(NULL, NULL, argp);
-@@ -4290,8 +4299,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
- 		done++;
- 		break;
- 	}
--	unlock_kernel();
+-	spin_lock_irqsave(&port->lock, flags);
+-	if (!tty_hung_up_p(filp))
+-		port->count--;
+-	port->blocked_open++;
+-	spin_unlock_irqrestore(&port->lock, flags);
 -
- 	if (done)
- 		return rc;
- 
-@@ -4308,8 +4315,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
- 	if (brdp->state == 0)
- 		return -ENODEV;
- 
--	lock_kernel();
+-	add_wait_queue(&port->open_wait, &wait);
+-	while (1) {
+-		set_current_state(TASK_INTERRUPTIBLE);
 -
- 	switch (cmd) {
- 	case STL_BINTR:
- 		EBRDINTR(brdp);
-@@ -4332,7 +4337,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
- 		rc = -ENOIOCTLCMD;
- 		break;
- 	}
--	unlock_kernel();
- 	return rc;
- }
- 
-diff --git a/drivers/char/stallion.c b/drivers/char/stallion.c
-index 6049fd7..f2167f8 100644
---- a/drivers/char/stallion.c
-+++ b/drivers/char/stallion.c
-@@ -807,7 +807,6 @@ static void stl_waituntilsent(struct tty_struct *tty, int timeout)
- 		timeout = HZ;
- 	tend = jiffies + timeout;
- 
--	lock_kernel();
- 	while (stl_datastate(portp)) {
- 		if (signal_pending(current))
- 			break;
-@@ -815,7 +814,6 @@ static void stl_waituntilsent(struct tty_struct *tty, int timeout)
- 		if (time_after_eq(jiffies, tend))
- 			break;
- 	}
--	unlock_kernel();
- }
- 
- /*****************************************************************************/
-@@ -1029,6 +1027,8 @@ static int stl_getserial(struct stlport *portp, struct serial_struct __user *sp)
- 	pr_debug("stl_getserial(portp=%p,sp=%p)\n", portp, sp);
- 
- 	memset(&sio, 0, sizeof(struct serial_struct));
-+
-+	mutex_lock(&portp->port.mutex);
- 	sio.line = portp->portnr;
- 	sio.port = portp->ioaddr;
- 	sio.flags = portp->port.flags;
-@@ -1048,6 +1048,7 @@ static int stl_getserial(struct stlport *portp, struct serial_struct __user *sp)
- 	brdp = stl_brds[portp->brdnr];
- 	if (brdp != NULL)
- 		sio.irq = brdp->irq;
-+	mutex_unlock(&portp->port.mutex);
- 
- 	return copy_to_user(sp, &sio, sizeof(struct serial_struct)) ? -EFAULT : 0;
- }
-@@ -1069,12 +1070,15 @@ static int stl_setserial(struct tty_struct *tty, struct serial_struct __user *sp
- 
- 	if (copy_from_user(&sio, sp, sizeof(struct serial_struct)))
- 		return -EFAULT;
-+	mutex_lock(&portp->port.mutex);
- 	if (!capable(CAP_SYS_ADMIN)) {
- 		if ((sio.baud_base != portp->baud_base) ||
- 		    (sio.close_delay != portp->close_delay) ||
- 		    ((sio.flags & ~ASYNC_USR_MASK) !=
--		    (portp->port.flags & ~ASYNC_USR_MASK)))
-+		    (portp->port.flags & ~ASYNC_USR_MASK))) {
-+			mutex_unlock(&portp->port.mutex);
- 			return -EPERM;
-+		}
- 	} 
- 
- 	portp->port.flags = (portp->port.flags & ~ASYNC_USR_MASK) |
-@@ -1083,6 +1087,7 @@ static int stl_setserial(struct tty_struct *tty, struct serial_struct __user *sp
- 	portp->close_delay = sio.close_delay;
- 	portp->closing_wait = sio.closing_wait;
- 	portp->custom_divisor = sio.custom_divisor;
-+	mutex_unlock(&portp->port.mutex);
- 	stl_setport(portp, tty->termios);
- 	return 0;
- }
-@@ -1147,8 +1152,6 @@ static int stl_ioctl(struct tty_struct *tty, struct file *file, unsigned int cmd
- 
- 	rc = 0;
- 
--	lock_kernel();
+-		/*
+-		 * If we have been hung up, tell userspace/restart open.
+-		 */
+-		if (tty_hung_up_p(filp) || port->tty == NULL)
+-			break;
 -
- 	switch (cmd) {
- 	case TIOCGSERIAL:
- 		rc = stl_getserial(portp, argp);
-@@ -1173,7 +1176,6 @@ static int stl_ioctl(struct tty_struct *tty, struct file *file, unsigned int cmd
- 		rc = -ENOIOCTLCMD;
- 		break;
- 	}
--	unlock_kernel();
- 	return rc;
- }
+-		/*
+-		 * If the port has been closed, tell userspace/restart open.
+-		 */
+-		if (!(port->flags & ASYNC_INITIALIZED))
+-			break;
+-
+-		/*
+-		 * If non-blocking mode is set, or CLOCAL mode is set,
+-		 * we don't want to wait for the modem status lines to
+-		 * indicate that the port is ready.
+-		 *
+-		 * Also, if the port is not enabled/configured, we want
+-		 * to allow the open to succeed here.  Note that we will
+-		 * have set TTY_IO_ERROR for a non-existant port.
+-		 */
+-		if ((filp->f_flags & O_NONBLOCK) ||
+-		    (port->tty->termios->c_cflag & CLOCAL) ||
+-		    (port->tty->flags & (1 << TTY_IO_ERROR)))
+-			break;
+-
+-		/*
+-		 * Set DTR to allow modem to know we're waiting.  Do
+-		 * not set RTS here - we want to make sure we catch
+-		 * the data from the modem.
+-		 */
+-		if (port->tty->termios->c_cflag & CBAUD)
+-			tty_port_raise_dtr_rts(port);
+-
+-		/*
+-		 * and wait for the carrier to indicate that the
+-		 * modem is ready for us.
+-		 */
+-		if (tty_port_carrier_raised(port))
+-			break;
+-
+-		schedule();
+-
+-		if (signal_pending(current))
+-			break;
+-	}
+-	set_current_state(TASK_RUNNING);
+-	remove_wait_queue(&port->open_wait, &wait);
+-
+-	spin_lock_irqsave(&port->lock, flags);
+-	if (!tty_hung_up_p(filp))
+-		port->count++;
+-	port->blocked_open--;
+-	spin_unlock_irqrestore(&port->lock, flags);
+-
+-	if (signal_pending(current))
+-		return -ERESTARTSYS;
+-
+-	if (!port->tty || tty_hung_up_p(filp))
+-		return -EAGAIN;
+-
+-	return 0;
+-}
+-
+ static struct uart_state *uart_get(struct uart_driver *drv, int line)
+ {
+ 	struct uart_state *state;
+@@ -1719,7 +1634,7 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
+ 	 */
+ 	mutex_unlock(&port->mutex);
+ 	if (retval == 0)
+-		retval = uart_block_til_ready(filp, state);
++		retval = tty_port_block_til_ready(port, tty, filp);
  
-@@ -2327,6 +2329,7 @@ static int stl_getportstats(struct tty_struct *tty, struct stlport *portp, comst
- 			return -ENODEV;
- 	}
- 
-+	mutex_lock(&portp->port.mutex);
- 	portp->stats.state = portp->istate;
- 	portp->stats.flags = portp->port.flags;
- 	portp->stats.hwid = portp->hwid;
-@@ -2358,6 +2361,7 @@ static int stl_getportstats(struct tty_struct *tty, struct stlport *portp, comst
- 		(STL_TXBUFSIZE - (tail - head));
- 
- 	portp->stats.signals = (unsigned long) stl_getsignals(portp);
-+	mutex_unlock(&portp->port.mutex);
- 
- 	return copy_to_user(cp, &portp->stats,
- 			    sizeof(comstats_t)) ? -EFAULT : 0;
-@@ -2382,10 +2386,12 @@ static int stl_clrportstats(struct stlport *portp, comstats_t __user *cp)
- 			return -ENODEV;
- 	}
- 
-+	mutex_lock(&portp->port.mutex);
- 	memset(&portp->stats, 0, sizeof(comstats_t));
- 	portp->stats.brd = portp->brdnr;
- 	portp->stats.panel = portp->panelnr;
- 	portp->stats.port = portp->portnr;
-+	mutex_unlock(&portp->port.mutex);
- 	return copy_to_user(cp, &portp->stats,
- 			    sizeof(comstats_t)) ? -EFAULT : 0;
- }
-@@ -2451,7 +2457,6 @@ static long stl_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
- 		return -ENODEV;
- 	rc = 0;
- 
--	lock_kernel();
- 	switch (cmd) {
- 	case COM_GETPORTSTATS:
- 		rc = stl_getportstats(NULL, NULL, argp);
-@@ -2472,7 +2477,6 @@ static long stl_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
- 		rc = -ENOIOCTLCMD;
- 		break;
- 	}
--	unlock_kernel();
- 	return rc;
- }
- 
+ 	/*
+ 	 * If this is the first open to succeed, adjust things to suit.
 -- 
 1.7.2
 
