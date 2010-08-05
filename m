@@ -1,53 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934573Ab0HEW3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:29:38 -0400
-Received: from kroah.org ([198.145.64.141]:37865 "EHLO coco.kroah.org"
+	id S1760945Ab0HEWaC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:30:02 -0400
+Received: from kroah.org ([198.145.64.141]:37845 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934595Ab0HEWZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:25:11 -0400
+	id S934588Ab0HEWZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:25:05 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+Cc: Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 27/28] sysfs: Remove owner field from sysfs struct attribute
-Date: Thu,  5 Aug 2010 15:24:17 -0700
-Message-Id: <1281047058-23716-27-git-send-email-gregkh@suse.de>
+Subject: [PATCH 63/67] hsu: some code cleanup
+Date: Thu,  5 Aug 2010 15:23:30 -0700
+Message-Id: <1281047014-23429-63-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213314.GB13744@kroah.com>
-References: <20100805213314.GB13744@kroah.com>
+In-Reply-To: <20100805213528.GA13794@kroah.com>
+References: <20100805213528.GA13794@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Feng Tang <feng.tang@intel.com>
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-Acked-by: Tejun Heo <tj@kernel.org>
+Major changes are:
+* refine the comments in the driver
+* remove unused member from structure "hsu_port"
+* extended spin_lock protoction for dma mode in port_irq()
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/sysfs.h |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/serial/mfd.c |   85 +++++++++++--------------------------------------
+ 1 files changed, 19 insertions(+), 66 deletions(-)
 
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 8bf06b6..3c92121 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -22,14 +22,8 @@ struct kobject;
- struct module;
- enum kobj_ns_type;
+diff --git a/drivers/serial/mfd.c b/drivers/serial/mfd.c
+index ed2bf6b..f5e7569 100644
+--- a/drivers/serial/mfd.c
++++ b/drivers/serial/mfd.c
+@@ -3,7 +3,7 @@
+  *
+  * Refer pxa.c, 8250.c and some other drivers in drivers/serial/
+  *
+- * (C) Copyright 2009 Intel Corporation
++ * (C) Copyright 2010 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -11,30 +11,16 @@
+  * of the License.
+  */
  
--/* FIXME
-- * The *owner field is no longer used.
-- * x86 tree has been cleaned up. The owner
-- * attribute is still left for other arches.
+-
+ /* Notes:
+- * 1. there should be 2 types of register access method, one for
+- *    UART ports, the other for the general purpose registers
+- *
+- * 2. It used to have a Irda port, but was defeatured recently
+- *
+- * 3. Based on the info from HSU MAS, 0/1 channel are assigned to
+- *    port0, 2/3 chan to port 1, 4/5 chan to port 3. Even number
+- *    chan will be read, odd chan for write
+- *
+- * 4. HUS supports both the 64B and 16B FIFO version, but this driver
+- *    will only use 64B version
++ * 1. DMA channel allocation: 0/1 channel are assigned to port 0,
++ *    2/3 chan to port 1, 4/5 chan to port 3. Even number chans
++ *    are used for RX, odd chans for TX
+  *
+- * 5. In A0 stepping, UART will not support TX half empty flag, thus
+- *    need add a #ifdef judgement
++ * 2. In A0 stepping, UART will not support TX half empty flag
+  *
+- * 6. One more bug for A0, the loopback mode won't support AFC
+- *    auto-flow control
+- *
+- * 7. HSU has some special FCR control bits, we add it to serial_reg.h
+- *
+- * 8. The RI/DSR/DCD/DTR are not pinned out, DCD & DSR are always asserted,
+- *    only when the HW is reset the DDCD and DDSR will be triggered
++ * 3. The RI/DSR/DCD/DTR are not pinned out, DCD & DSR are always
++ *    asserted, only when the HW is reset the DDCD and DDSR will
++ *    be triggered
+  */
+ 
+ #include <linux/module.h>
+@@ -75,7 +61,7 @@ struct hsu_dma_buffer {
+ 
+ struct hsu_dma_chan {
+ 	u32	id;
+-	u32	dirt;	/* to or from device */
++	enum dma_data_direction	dirt;
+ 	struct uart_hsu_port	*uport;
+ 	void __iomem		*reg;
+ 	struct timer_list	rx_timer; /* only needed by RX channel */
+@@ -102,8 +88,6 @@ struct uart_hsu_port {
+ 
+ /* Top level data structure of HSU */
+ struct hsu_port {
+-	struct pci_device	*pdev;
+-
+ 	void __iomem	*reg;
+ 	unsigned long	paddr;
+ 	unsigned long	iolen;
+@@ -112,23 +96,9 @@ struct hsu_port {
+ 	struct uart_hsu_port	port[3];
+ 	struct hsu_dma_chan	chans[10];
+ 
+-#ifdef CONFIG_DEBUG_FS
+ 	struct dentry *debugfs;
+-#endif
+ };
+ 
+-static inline void hexdump(char *str, u8 *addr, int cnt)
+-{
+-	int i;
+-
+-	for (i = 0; i < cnt; i += 8) {
+-		printk("0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+-			addr[i], addr[i+1], addr[i+2], addr[i+3],
+-			addr[i+4], addr[i+5], addr[i+6], addr[i+7]);
+-		printk("\n");
+-	}
+-}
+-
+ static inline unsigned int serial_in(struct uart_hsu_port *up, int offset)
+ {
+ 	unsigned int val;
+@@ -353,9 +323,6 @@ void hsu_dma_tx(struct uart_hsu_port *up)
+ 						 | (0x1 << 8)
+ 						 | (0x1 << 16)
+ 						 | (0x1 << 24));
+-
+-		WARN(chan_readl(up->txc, HSU_CH_CR) & 0x1,
+-			"TX channel has already be started!!\n");
+ 		up->dma_tx_on = 1;
+ 		chan_writel(up->txc, HSU_CH_CR, 0x1);
+ 	}
+@@ -367,7 +334,6 @@ void hsu_dma_tx(struct uart_hsu_port *up)
+ /* The buffer is already cache coherent */
+ void hsu_dma_start_rx_chan(struct hsu_dma_chan *rxc, struct hsu_dma_buffer *dbuf)
+ {
+-	/* Need start RX dma channel here */
+ 	dbuf->ofs = 0;
+ 
+ 	chan_writel(rxc, HSU_CH_BSR, 32);
+@@ -426,35 +392,32 @@ void hsu_dma_rx(struct uart_hsu_port *up, u32 int_sts)
+ 		return;
+ 
+ 	/*
+-	 * first need to know how many is already transferred,
++	 * First need to know how many is already transferred,
+ 	 * then check if its a timeout DMA irq, and return
+ 	 * the trail bytes out, push them up and reenable the
+-	 * channel, better to use 2 descriptors at the same time
++	 * channel
+ 	 */
+ 
+-	/* timeout IRQ, need wait some time, see Errata 2 */
++	/* Timeout IRQ, need wait some time, see Errata 2 */
+ 	if (int_sts & 0xf00)
+ 		udelay(2);
+ 
+ 	/* Stop the channel */
+ 	chan_writel(chan, HSU_CH_CR, 0x0);
+ 
+-	/* We can use 2 ways to calc the actual transfer len */
+ 	count = chan_readl(chan, HSU_CH_D0SAR) - dbuf->dma_addr;
+-
+ 	if (!count) {
+-		/* restart the channel before we leave */
++		/* Restart the channel before we leave */
+ 		chan_writel(chan, HSU_CH_CR, 0x3);
+ 		return;
+ 	}
+-
+ 	del_timer(&chan->rx_timer);
+ 
+ 	dma_sync_single_for_cpu(port->dev, dbuf->dma_addr,
+ 			dbuf->dma_size, DMA_FROM_DEVICE);
+ 
+ 	/*
+-	 * head will only wrap around when we recycle
++	 * Head will only wrap around when we recycle
+ 	 * the DMA buffer, and when that happens, we
+ 	 * explicitly set tail to 0. So head will
+ 	 * always be greater than tail.
+@@ -496,10 +459,6 @@ static void serial_hsu_stop_rx(struct uart_port *port)
+ 	}
+ }
+ 
+-/*
+- * if there is error flag, should we just reset the FIFO or keeps
+- * working on it
 - */
- struct attribute {
- 	const char		*name;
--	struct module		*owner;
- 	mode_t			mode;
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lock_class_key	*key;
+ static inline void receive_chars(struct uart_hsu_port *up, int *status)
+ {
+ 	struct tty_struct *tty = up->port.state->port.tty;
+@@ -571,7 +530,6 @@ static void transmit_chars(struct uart_hsu_port *up)
+ {
+ 	struct circ_buf *xmit = &up->port.state->xmit;
+ 	int count;
+-	int i = 0; /* for debug use */
+ 
+ 	if (up->port.x_char) {
+ 		serial_out(up, UART_TX, up->port.x_char);
+@@ -592,13 +550,11 @@ static void transmit_chars(struct uart_hsu_port *up)
+ 	 * into it won't clear the EMPT bit, so we may need be cautious
+ 	 * by useing a shorter buffer
+ 	 */
+-	/* count = up->port.fifosize; */
+ 	count = up->port.fifosize - 4;
+ #endif
+ 	do {
+ 		serial_out(up, UART_TX, xmit->buf[xmit->tail]);
+ 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+-		i++;
+ 
+ 		up->port.icount.tx++;
+ 		if (uart_circ_empty(xmit))
+@@ -628,7 +584,7 @@ static inline void check_modem_status(struct uart_hsu_port *up)
+ 	/* We may only get DDCD when HW init and reset */
+ 	if (status & UART_MSR_DDCD)
+ 		uart_handle_dcd_change(&up->port, status & UART_MSR_DCD);
+-	/* will start/stop_tx accordingly */
++	/* Will start/stop_tx accordingly */
+ 	if (status & UART_MSR_DCTS)
+ 		uart_handle_cts_change(&up->port, status & UART_MSR_CTS);
+ 
+@@ -647,6 +603,7 @@ static irqreturn_t port_irq(int irq, void *dev_id)
+ 	if (unlikely(!up->running))
+ 		return IRQ_NONE;
+ 
++	spin_lock_irqsave(&up->port.lock, flags);
+ 	if (up->use_dma) {
+ 		lsr = serial_in(up, UART_LSR);
+ 		if (unlikely(lsr & (UART_LSR_BI | UART_LSR_PE |
+@@ -655,10 +612,10 @@ static irqreturn_t port_irq(int irq, void *dev_id)
+ 				"Got lsr irq while using DMA, lsr = 0x%2x\n",
+ 				lsr);
+ 		check_modem_status(up);
++		spin_unlock_irqrestore(&up->port.lock, flags);
+ 		return IRQ_HANDLED;
+ 	}
+ 
+-	spin_lock_irqsave(&up->port.lock, flags);
+ 	iir = serial_in(up, UART_IIR);
+ 	if (iir & UART_IIR_NO_INT) {
+ 		spin_unlock_irqrestore(&up->port.lock, flags);
+@@ -666,9 +623,9 @@ static irqreturn_t port_irq(int irq, void *dev_id)
+ 	}
+ 
+ 	lsr = serial_in(up, UART_LSR);
+-
+ 	if (lsr & UART_LSR_DR)
+ 		receive_chars(up, &lsr);
++	check_modem_status(up);
+ 
+ 	/* lsr will be renewed during the receive_chars */
+ 	if (lsr & UART_LSR_THRE)
+@@ -701,7 +658,6 @@ static inline void dma_chan_irq(struct hsu_dma_chan *chan)
+ 
+ 	/* Tx channel */
+ 	if (chan->dirt == DMA_TO_DEVICE) {
+-		/* dma for irq should be done */
+ 		chan_writel(chan, HSU_CH_CR, 0x0);
+ 		up->dma_tx_on = 0;
+ 		hsu_dma_tx(up);
+@@ -851,7 +807,6 @@ static int serial_hsu_startup(struct uart_port *port)
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ 
+ 	/* DMA init */
+-	/* When use DMA, TX/RX's FIFO and IRQ should be disabled */
+ 	if (up->use_dma) {
+ 		struct hsu_dma_buffer *dbuf;
+ 		struct circ_buf *xmit = &port->state->xmit;
+@@ -1090,11 +1045,9 @@ static int serial_hsu_request_port(struct uart_port *port)
+ 
+ static void serial_hsu_config_port(struct uart_port *port, int flags)
+ {
+-#if 0
+ 	struct uart_hsu_port *up =
+ 		container_of(port, struct uart_hsu_port, port);
+ 	up->port.type = PORT_MFD;
+-#endif
+ }
+ 
+ static int
+@@ -1426,7 +1379,7 @@ static void hsu_global_init(void)
+ 		uport->port.ops = &serial_hsu_pops;
+ 		uport->port.line = i;
+ 		uport->port.flags = UPF_IOREMAP;
+-		/* make the maxim support rate to 2746800 bps */
++		/* set the scalable maxim support rate to 2746800 bps */
+ 		uport->port.uartclk = 115200 * 24 * 16;
+ 
+ 		uport->running = 0;
 -- 
 1.7.2
 
