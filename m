@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab0HEJBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 05:01:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48487 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752012Ab0HEJA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 05:00:57 -0400
-Date: Thu, 5 Aug 2010 02:00:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Philippe Langlais <philippe.langlais@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        Vincent GUITTOT <vincent.guittot@stericsson.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] U6715 16550A serial driver support
-Message-Id: <20100805020040.48c45207.akpm@linux-foundation.org>
-In-Reply-To: <4C5A7B93.9020106@stericsson.com>
-References: <1280739519-26930-1-git-send-email-philippe.langlais@stericsson.com>
-	<20100804125253.3977b0d7.akpm@linux-foundation.org>
-	<4C5A64E0.5060807@stericsson.com>
-	<20100805002206.758777aa.akpm@linux-foundation.org>
-	<4C5A7B93.9020106@stericsson.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1760000Ab0HEJCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 05:02:54 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:55775 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758834Ab0HEJCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 05:02:52 -0400
+X-ASG-Debug-ID: 1280998969-5ad200160000-xx1T2L
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C5A7E33.3060101@fusionio.com>
+Date: Thu, 5 Aug 2010 11:02:43 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Tejun Heo <htejun@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "stable@kernel.org" <stable@kernel.org>
+X-ASG-Orig-Subj: Re: [PATCH RESEND block#for-2.6.36] block_dev: always serialize 
+ exclusive open attempts
+Subject: Re: [PATCH RESEND block#for-2.6.36] block_dev: always serialize 
+ exclusive open attempts
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera> <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com> <4C56F30D.3020304@kernel.org> <4C598E6B.7050405@gmail.com>
+In-Reply-To: <4C598E6B.7050405@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1280998969
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Aug 2010 10:51:31 +0200 Philippe Langlais <philippe.langlais@stericsson.com> wrote:
+On 2010-08-04 17:59, Tejun Heo wrote:
+> bd_prepare_to_claim() incorrectly allowed multiple attempts for
+> exclusive open to progress in parallel if the attempting holders are
+> identical.  This triggered BUG_ON() as reported in the following bug.
+> 
+>   https://bugzilla.kernel.org/show_bug.cgi?id=16393
+> 
+> __bd_abort_claiming() is used to finish claiming blocks and doesn't
+> work if multiple openers are inside a claiming block.  Allowing
+> multiple parallel open attempts to continue doesn't gain anything as
+> those are serialized down in the call chain anyway.  Fix it by always
+> allowing only single open attempt in a claiming block.
+> 
+> This problem can easily be reproduced by adding a delay after
+> bd_prepare_to_claim() and attempting to mount two partitions of a
+> disk.
+> 
+> stable: only applicable to v2.6.35
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+> Cc: stable@kernel.org
 
-> >> More things to do ?
-> >>      
-> > Update the changelog to include this rather important information.
-> >    
-> Ok is done
-> > As the patches are dependent, treat them as a single series.  Russell
-> > can merge them both with Greg's ack or Greg can merge them both with
-> > Russell's ack.
-> >
-> >    
-> This patch can be merged before U6715 platform one without problem.
-> Where I post the series in linux-kernel or linux-arm or both mailing lists ?
+Thanks Tejun, applied.
 
-Both.
+-- 
+Jens Axboe
 
-> Greg has already taken this patch in its linux-next tree, need to resend 
-> to him the patch with new comments ?
 
-Sure, Greg can probably update the changelog.
-
-> All U6715 platform patches are already posted in linux-arm mailing list.
-> It's my first contribution and I don't know how to proceed.
-
-I'd suggest that Greg merge both patches.  The patch he has at present
-doesn't do anything useful.
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
