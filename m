@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934192Ab0HEUXZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:23:25 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55629 "EHLO mgw2.diku.dk"
+	id S1760413Ab0HEUYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:24:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:57891 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932376Ab0HEUXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:23:18 -0400
-Date: Thu, 5 Aug 2010 22:23:16 +0200 (CEST)
+	id S934211Ab0HEUYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:24:15 -0400
+Date: Thu, 5 Aug 2010 22:24:12 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 21/42] drivers/pci: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052223010.31692@ask.diku.dk>
+To: Corentin Chary <corentincj@iksaif.net>,
+        Karol Kozimor <sziwan@users.sourceforge.net>,
+        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 24/42] drivers/platform/x86: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052223550.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,7 +23,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Indent the branch of an if.
+The assignment of ret to -EIO appears to only make sense if the branch that
+it is aligned with is executed, so move it into that branch.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -50,19 +54,38 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/pci/pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch changes the semantics and might not be what is intended.
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 7fa3cbd..cc232c0 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2689,7 +2689,7 @@ int pcie_get_readrq(struct pci_dev *dev)
+ drivers/platform/x86/asus_acpi.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/platform/x86/asus_acpi.c b/drivers/platform/x86/asus_acpi.c
+index e058c2b..ca05aef 100644
+--- a/drivers/platform/x86/asus_acpi.c
++++ b/drivers/platform/x86/asus_acpi.c
+@@ -938,10 +938,11 @@ static int set_brightness(int value)
+ 	/* SPLV laptop */
+ 	if (hotk->methods->brightness_set) {
+ 		if (!write_acpi_int(hotk->handle, hotk->methods->brightness_set,
+-				    value, NULL))
++				    value, NULL)) {
+ 			printk(KERN_WARNING
+ 			       "Asus ACPI: Error changing brightness\n");
+ 			ret = -EIO;
++		}
+ 		goto out;
+ 	}
  
- 	ret = pci_read_config_word(dev, cap + PCI_EXP_DEVCTL, &ctl);
- 	if (!ret)
--	ret = 128 << ((ctl & PCI_EXP_DEVCTL_READRQ) >> 12);
-+		ret = 128 << ((ctl & PCI_EXP_DEVCTL_READRQ) >> 12);
- 
+@@ -953,10 +954,11 @@ static int set_brightness(int value)
+ 					      hotk->methods->brightness_down,
+ 					      NULL, NULL);
+ 		(value > 0) ? value-- : value++;
+-		if (ACPI_FAILURE(status))
++		if (ACPI_FAILURE(status)) {
+ 			printk(KERN_WARNING
+ 			       "Asus ACPI: Error changing brightness\n");
+ 			ret = -EIO;
++		}
+ 	}
+ out:
  	return ret;
- }
